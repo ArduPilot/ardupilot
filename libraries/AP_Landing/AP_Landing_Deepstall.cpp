@@ -270,6 +270,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
     case DEEPSTALL_STAGE_LAND:
         // while in deepstall the only thing verify needs to keep the extended approach point sufficently far away
         landing.nav_controller->update_waypoint(current_loc, extended_approach);
+        landing.disarm_if_autoland_complete_fn();
         return false;
     default:
         return true;
