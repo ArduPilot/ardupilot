@@ -14,7 +14,7 @@ void Rover::set_control_channels(void)
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        if (g.skid_steer_out) {
+        if (isTypeTank) {
             SRV_Channels::set_safety_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }
     }
@@ -59,7 +59,7 @@ void Rover::init_rc_out()
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        if (g.skid_steer_out) {
+        if (isTypeTank) {
             SRV_Channels::set_safety_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }
     }
@@ -102,7 +102,7 @@ void Rover::rudder_arm_disarm_check()
             // not at full right rudder
             rudder_arm_timer = 0;
         }
-    } else if (!motor_active() & !have_skid_steering()) {
+    } else if (!motor_active() & !isTypeTank) {
         // when armed and motor not active (not moving), full left rudder starts disarming counter
         // This is disabled for skid steering otherwise when tring to turn a skid steering rover around
         // the rover would disarm

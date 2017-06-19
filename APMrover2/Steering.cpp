@@ -50,7 +50,7 @@ bool Rover::auto_check_trigger(void) {
     work out if we are going to use pivot steering
 */
 bool Rover::use_pivot_steering(void) {
-    if (control_mode >= AUTO && have_skid_steering() && g.pivot_turn_angle != 0) {
+    if (control_mode >= AUTO && isTypeTank && g.pivot_turn_angle != 0) {
         const int16_t bearing_error = wrap_180_cd(nav_controller->target_bearing_cd() - ahrs.yaw_sensor) / 100;
         if (abs(bearing_error) > g.pivot_turn_angle) {
             return true;
@@ -86,7 +86,7 @@ void Rover::calc_throttle(float target_speed) {
     if (!auto_check_trigger() || in_stationary_loiter()) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
         // Stop rotation in case of loitering and skid steering
-        if (g.skid_steer_out) {
+        if (isTypeTank) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
         }
         return;
@@ -234,7 +234,7 @@ void Rover::set_servos(void) {
             // suppress throttle if in failsafe and manual
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             // suppress steer if in failsafe and manual and skid steer mode
-            if (g.skid_steer_out) {
+            if (isTypeTank) {
                 SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             }
         }
@@ -253,7 +253,7 @@ void Rover::set_servos(void) {
             // suppress throttle if in failsafe
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
             // suppress steer if in failsafe and skid steer mode
-            if (have_skid_steering()) {
+            if (isTypeTank) {
                 SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
             }
         }
@@ -261,7 +261,7 @@ void Rover::set_servos(void) {
         if (!hal.util->get_soft_armed()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
             // suppress steer if in failsafe and skid steer mode
-            if (have_skid_steering()) {
+            if (isTypeTank) {
                 SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
             }
         }
