@@ -27,6 +27,9 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
+// Time in milliseconds before we declare the EFI to be "unhealthy"
+#define HEALTHY_LAST_RECEIVED_MS 3000
+
 // This file was created to solve circular dependancy problems when using EFI_State
 
 // Stores the current state read by the EFI system
@@ -35,6 +38,9 @@
 struct EFI_State {
     // ECU Index provided by ecotrons
     uint8_t ecu_index;
+
+    // Declaration of health of sensor by backend
+    uint32_t last_updated_ms;
 
     // Revolutions per minute of the engine
     float rpm;

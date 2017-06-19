@@ -31,6 +31,7 @@ void AP_EcotronsEFI_Backend::copy_state(const EFI_State& src, EFI_State& dst)
 {
     // Copy POD vars
     dst.ecu_index = src.ecu_index;  
+    dst.last_updated_ms = src.last_updated_ms;
     dst.rpm = src.rpm;  
     dst.fuel_level_percent = src.fuel_level_percent;  
     dst.fuel_flow_rate = src.fuel_flow_rate;  

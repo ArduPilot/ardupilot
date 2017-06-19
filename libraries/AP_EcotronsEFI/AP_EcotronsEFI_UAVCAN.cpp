@@ -55,8 +55,10 @@ void AP_EcotronsEFI_UAVCAN::handle_efi_msg(const EFI_State& message_efi_state)
 {
     if (_sem->take_nonblocking()) {
         copy_state(message_efi_state, _internal_state);
+        _internal_state.last_updated_ms = AP_HAL::millis();
         _sem->give();
     }
 }
+
 
 #endif

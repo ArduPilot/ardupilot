@@ -99,3 +99,8 @@ void AP_EcotronsEFI::update()
         _backends[i]->update();
     }
 }
+
+bool AP_EcotronsEFI::is_healthy(const EFI_State& state)
+{
+    return ((AP_HAL::millis() - state.last_updated_ms) < HEALTHY_LAST_RECEIVED_MS);
+}

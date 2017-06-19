@@ -50,6 +50,8 @@ public:
     // Returns full state of a particular backend instance
     EFI_State* get_state(uint8_t instance) { return &_state[instance]; };
 
+    static bool is_healthy(const EFI_State& state);
+
     // Parameter info
     static const struct AP_Param::GroupInfo var_info[];
 
