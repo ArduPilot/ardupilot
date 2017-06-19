@@ -105,8 +105,6 @@ void Rover::setup()
 
     in_auto_reverse = false;
 
-    rssi.init();
-
     init_ardupilot();
 
     // initialise the main loop scheduler
