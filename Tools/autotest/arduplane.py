@@ -435,6 +435,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
         return False
     if not wait_groundspeed(mav, 0, 0.5, timeout=60):
         return False
+    mavproxy.expect("Auto disarmed")
     print("Mission OK")
     return True
 
