@@ -145,9 +145,8 @@ void NavEKF2_core::EstimateTerrainOffset()
             // calculate the innovation consistency test ratio
             auxRngTestRatio = sq(innovRng) / (sq(MAX(0.01f * (float)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
 
-            // Check the innovation for consistency and don't fuse if > 5Sigma
-            if ((sq(innovRng)*SK_RNG) < 25.0f)
-            {
+            // Check the innovation test ratio and don't fuse if too large
+            if (auxRngTestRatio < 1.0f) {
                 // correct the state
                 terrainState -= K_RNG * innovRng;
 
