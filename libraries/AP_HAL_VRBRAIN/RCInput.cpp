@@ -41,6 +41,12 @@ uint8_t VRBRAINRCInput::num_channels()
     return n;
 }
 
+float VRBRAINRCInput::link_quality() 
+{
+    // Unimplemented
+    return 0.0f;
+}
+
 uint16_t VRBRAINRCInput::read(uint8_t ch)
 {
 	if (ch >= RC_INPUT_MAX_CHANNELS) {

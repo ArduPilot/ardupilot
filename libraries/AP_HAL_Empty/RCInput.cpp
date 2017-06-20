@@ -16,6 +16,10 @@ uint8_t RCInput::num_channels() {
     return 0;
 }
 
+float RCInput::link_quality() {
+    return 0.0f;
+}
+
 uint16_t RCInput::read(uint8_t ch) {
     if (ch == 2) return 900; /* throttle should be low, for safety */
     else return 1500;

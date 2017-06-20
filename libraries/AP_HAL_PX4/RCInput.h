@@ -15,6 +15,7 @@ public:
     void init() override;
     bool new_input() override;
     uint8_t num_channels() override;
+    float link_quality() override;
     uint16_t read(uint8_t ch) override;
     uint8_t read(uint16_t* periods, uint8_t len) override;
 

@@ -24,7 +24,8 @@ public:
     enum RssiType {
         RSSI_DISABLED           = 0,
         RSSI_ANALOG_PIN         = 1,
-        RSSI_RC_CHANNEL_VALUE   = 2
+        RSSI_RC_CHANNEL_VALUE   = 2,
+        SBUS_LINK_QUALITY       = 3
     };
 
     // constructor
@@ -60,6 +61,8 @@ private:
     AP_Int8         rssi_channel;                           // allows rssi to be read from given channel as PWM value
     AP_Int16        rssi_channel_low_pwm_value;             // PWM value for weakest rssi signal
     AP_Int16        rssi_channel_high_pwm_value;            // PWM value for strongest rssi signal
+    AP_Int16        rssi_sbus_low_value;                    // Receiver SBUS Link Quality low value
+    AP_Int16        rssi_sbus_high_value;                   // Receiver SBUS Link Quality high     
 
     // Analog Inputs
     // a pin for reading the receiver RSSI voltage. 
@@ -70,6 +73,9 @@ private:
 
     // read the RSSI value from a PWM value on a RC channel
     float read_channel_rssi();
+
+    // read the SBUS Link Quality
+    float read_sbus_link_quality();    
 
     // Scale and constrain a float rssi value to 0.0 to 1.0 range 
     float scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range);
