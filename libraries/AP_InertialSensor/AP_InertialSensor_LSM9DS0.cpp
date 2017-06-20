@@ -740,7 +740,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
         return;
     }
 
-    Vector3f accel_data(raw_data.x, -raw_data.y, -raw_data.z);
+    Vector3f accel_data(raw_data.x, raw_data.y, raw_data.z);
     accel_data *= _accel_scale;
 
     _rotate_and_correct_accel(_accel_instance, accel_data);
@@ -760,7 +760,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
         return;
     }
 
-    Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
+    Vector3f gyro_data(raw_data.x, raw_data.y, raw_data.z);
 
     gyro_data *= _gyro_scale;
 

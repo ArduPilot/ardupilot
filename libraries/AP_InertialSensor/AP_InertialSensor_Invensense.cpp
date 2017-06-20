@@ -569,9 +569,9 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         fsync_set = (int16_val(data, 2) & 1U) != 0;
 #endif
         
-        accel = Vector3f(int16_val(data, 1),
-                         int16_val(data, 0),
-                         -int16_val(data, 2));
+        accel = Vector3f(int16_val(data, 0),
+                         int16_val(data, 1),
+                         int16_val(data, 2));
         accel *= _accel_scale;
 
         int16_t t2 = int16_val(data, 3);
@@ -582,9 +582,9 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         }
         float temp = t2 * temp_sensitivity + temp_zero;
         
-        gyro = Vector3f(int16_val(data, 5),
-                        int16_val(data, 4),
-                        -int16_val(data, 6));
+        gyro = Vector3f(int16_val(data, 4),
+                        int16_val(data, 5),
+                        int16_val(data, 6));
         gyro *= GYRO_SCALE;
 
         _rotate_and_correct_accel(_accel_instance, accel);
@@ -628,9 +628,9 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
 
         if ((_accum.count & 1) == 0) {
             // accel data is at 4kHz
-            Vector3f a(int16_val(data, 1),
-                       int16_val(data, 0),
-                       -int16_val(data, 2));
+            Vector3f a(int16_val(data, 0),
+                       int16_val(data, 1),
+                       int16_val(data, 2));
             if (fabsf(a.x) > clip_limit ||
                 fabsf(a.y) > clip_limit ||
                 fabsf(a.z) > clip_limit) {
@@ -639,9 +639,9 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
             _accum.accel += _accum.accel_filter.apply(a);
         }
 
-        Vector3f g(int16_val(data, 5),
-                   int16_val(data, 4),
-                   -int16_val(data, 6));
+        Vector3f g(int16_val(data, 4),
+                   int16_val(data, 5),
+                   int16_val(data, 6));
 
         _accum.gyro += _accum.gyro_filter.apply(g);
         _accum.count++;

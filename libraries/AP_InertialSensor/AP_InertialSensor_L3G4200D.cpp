@@ -251,7 +251,7 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
         if (!_dev->read_registers(L3G4200D_REG_XL | L3G4200D_REG_AUTO_INCREMENT,
                                   (uint8_t *)&buffer, sizeof(buffer))) {
             for (uint8_t i=0; i < num_samples_available; i++) {
-                Vector3f gyro = Vector3f(buffer[i][0], -buffer[i][1], -buffer[i][2]);
+                Vector3f gyro = Vector3f(buffer[i][0], buffer[i][1], buffer[i][2]);
                 // Adjust for chip scaling to get radians/sec
                 gyro *= L3G4200D_GYRO_SCALE_R_S;
                 _rotate_and_correct_gyro(_gyro_instance, gyro);
@@ -272,7 +272,7 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
                                            (uint8_t *)buffer, sizeof(buffer[0]),
                                            num_samples_available)) {
             for (uint8_t i=0; i<num_samples_available; i++) {
-                Vector3f accel = Vector3f(buffer[i][0], -buffer[i][1], -buffer[i][2]);
+                Vector3f accel = Vector3f(buffer[i][0], buffer[i][1], buffer[i][2]);
                 // Adjust for chip scaling to get m/s/s
                 accel *= ADXL345_ACCELEROMETER_SCALE_M_S;
                 _rotate_and_correct_accel(_accel_instance, accel);
