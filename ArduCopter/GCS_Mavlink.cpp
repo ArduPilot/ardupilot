@@ -281,14 +281,15 @@ void NOINLINE Copter::send_ecotronsEFI(mavlink_channel_t chan)
     EFI_State* first_efi_state = ecotrons_efi.get_state(0);
     mavlink_msg_ecotrons_status_send(
         chan,
+        first_efi_state->end_of_start,
+        first_efi_state->crank_sensor_error,
+        AP_EcotronsEFI::is_healthy(*first_efi_state),
         first_efi_state->ecu_index,
         first_efi_state->rpm,
         first_efi_state->fuel_level_percent,
         first_efi_state->fuel_flow_rate,
         first_efi_state->engine_load_percent,
         first_efi_state->throttle_position_percent,
-        first_efi_state->end_of_start,
-        first_efi_state->crank_sensor_error,
         first_efi_state->spark_dwell_time_ms,
         first_efi_state->barometric_pressure,
         first_efi_state->intake_manifold_pressure,
