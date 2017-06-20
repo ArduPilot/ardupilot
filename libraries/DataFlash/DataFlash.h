@@ -213,6 +213,7 @@ public:
     bool vehicle_is_armed() const { return _armed; }
 
     void handle_log_send(class GCS_MAVLINK &);
+    bool in_log_download() const { return _in_log_download; }
 
 protected:
 
@@ -294,6 +295,9 @@ private:
     uint8_t  _log_listing:1; // sending log list
     uint8_t  _log_sending:1; // sending log data
 
+    // bolean replicating old vehicle in_log_download flag:
+    bool _in_log_download:1;
+
     // next log list entry to send
     uint16_t _log_next_list_entry;
 
@@ -318,6 +322,7 @@ private:
     // start page of log data
     uint16_t _log_data_page;
 
+    bool should_handle_log_message();
     void handle_log_message(class GCS_MAVLINK &, mavlink_message_t *msg);
 
     void handle_log_request_list(class GCS_MAVLINK &, mavlink_message_t *msg);
