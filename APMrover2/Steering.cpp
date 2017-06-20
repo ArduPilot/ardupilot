@@ -6,7 +6,7 @@
 void Rover::throttle_slew_limit(void) {
     if (g.throttle_slewrate > 0) {
         SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, g.throttle_slewrate, G_Dt);
-        if (g.skid_steer_out) {
+        if (have_skid_steering()) {
             // when skid steering also limit 2nd channel
             SRV_Channels::limit_slew_rate(SRV_Channel::k_steering, g.throttle_slewrate, G_Dt);
         }
@@ -99,7 +99,7 @@ void Rover::calc_throttle(float target_speed) {
     if (!auto_check_trigger() || in_stationary_loiter()) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
         // Stop rotation in case of loitering and skid steering
-        if (g.skid_steer_out) {
+        if (have_skid_steering()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
         }
         return;
@@ -254,7 +254,7 @@ void Rover::mix_skid_steering(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 1000.0f * motor2);
 
     // now old style skid steering with skid_steer_out
-    if (g.skid_steer_out) {
+    if (have_skid_steering()) {
         // convert the two radio_out values to skid steering values
         /*
             mixing rule:
@@ -327,7 +327,7 @@ void Rover::set_servos(void) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-            if (g.skid_steer_out) {
+            if (have_skid_steering()) {
                 SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             }
             break;
@@ -337,7 +337,7 @@ void Rover::set_servos(void) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            if (g.skid_steer_out) {
+            if (have_skid_steering()) {
                 SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             }
             break;
@@ -358,9 +358,6 @@ void Rover::set_servos(void) {
  */
 bool Rover::have_skid_steering(void)
 {
-    if (g.skid_steer_out) {
-        return true;
-    }
     if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) &&
         SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
         return true;
