@@ -312,6 +312,9 @@ bool DataFlash_Class::should_log() const
     if (!vehicle_is_armed() && !log_while_disarmed()) {
         return false;
     }
+    if (in_log_download()) {
+        return false;
+    }
     if (_next_backend == 0) {
         return false;
     }
