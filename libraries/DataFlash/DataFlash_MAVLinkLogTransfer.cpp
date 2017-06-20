@@ -24,11 +24,27 @@
 
 extern const AP_HAL::HAL& hal;
 
+// We avoid doing log messages when timing is critical:
+bool DataFlash_Class::should_handle_log_message()
+{
+    if (!WritesEnabled()) {
+        // this is currently used as a proxy for "in_mavlink_delay"
+        return false;
+    }
+    if (vehicle_is_armed()) {
+        return false;
+    }
+    return true;
+}
+
 /**
    handle all types of log download requests from the GCS
  */
 void DataFlash_Class::handle_log_message(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
+    if (!should_handle_log_message()) {
+        return;
+    }
     switch (msg->msgid) {
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         handle_log_request_list(link, msg);
@@ -85,6 +101,8 @@ void DataFlash_Class::handle_log_request_data(GCS_MAVLINK &link, mavlink_message
     mavlink_log_request_data_t packet;
     mavlink_msg_log_request_data_decode(msg, &packet);
 
+    _in_log_download = true;
+
     _log_listing = false;
     if (!_log_sending || _log_num_data != packet.id) {
         _log_sending = false;
@@ -135,6 +153,7 @@ void DataFlash_Class::handle_log_request_end(GCS_MAVLINK &link, mavlink_message_
 {
     mavlink_log_request_end_t packet;
     mavlink_msg_log_request_end_decode(msg, &packet);
+    _in_log_download = false;
     _log_sending = false;
 }
 
