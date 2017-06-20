@@ -63,6 +63,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include "AP_MotorsUGV.h"
 
 #include "AP_Arming.h"
 #include "compat.h"
@@ -108,6 +109,7 @@ public:
     // HAL::Callbacks implementation.
     void setup(void) override;
     void loop(void) override;
+    bool get_reverse() const { return in_reverse; }
 
 private:
     AP_HAL::BetterStream* cliSerial;

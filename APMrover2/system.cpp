@@ -306,6 +306,9 @@ void Rover::set_mode(enum mode mode)
     }
     g.pidSpeedThrottle.reset_I();
 
+    // update motor mode stat
+    g2.motors.autoMode(mode);
+
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode);
 #endif

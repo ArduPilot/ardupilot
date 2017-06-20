@@ -322,6 +322,9 @@ public:
 
     // Visual Odometry camera
     AP_VisualOdom visual_odom;
+
+    // Motor library
+    AP_MotorsUGV motors;
 };
 
 extern const AP_Param::Info var_info[];

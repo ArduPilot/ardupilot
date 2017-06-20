@@ -202,6 +202,7 @@ void Rover::control_failsafe(uint16_t pwm)
             failed = true;
         }
         failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);
+        g2.motors.failsafeThrottle(failed);
     }
 }
 
