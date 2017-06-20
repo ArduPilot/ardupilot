@@ -552,6 +552,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_VisualOdom/AP_VisualOdom.cpp
     AP_SUBGROUPINFO(visual_odom, "VISO", 7, ParametersG2, AP_VisualOdom),
 
+    // @Param: TYPE_CLASS
+    // @DisplayName: Type Class
+    // @Description: Controls major type class for rover component
+    // @Values: 0:Undefined, 1:Rover, 2:Robot, 3:Boat
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("TYPE_CLASS", 8, ParametersG2, type_class, Rover::UGV_TYPE_UNDEFINED),
+
     AP_GROUPEND
 };
 
@@ -614,9 +622,6 @@ void Rover::load_parameters(void)
     AP_Param::load_all();
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_ROVER);
-
-    SRV_Channels::set_default_function(CH_1, SRV_Channel::k_steering);
-    SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttle);
 
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
                                       Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,

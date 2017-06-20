@@ -115,9 +115,9 @@ void Rover::init_ardupilot()
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
-    set_control_channels();
-
     battery.init();
+
+    rssi.init();
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -164,7 +164,8 @@ void Rover::init_ardupilot()
     gps.init(&DataFlash, serial_manager);
 
     rc_override_active = hal.rcin->set_overrides(rc_override, 8);
-
+    setup_default_function((ugv_type_class)g2.type_class.get());
+    set_control_channels();
     init_rc_in();        // sets up rc channels from radio
     init_rc_out();        // sets up the timer libs
 
@@ -216,6 +217,7 @@ void Rover::init_ardupilot()
 
     // disable safety if requested
     BoardConfig.init_safety();
+    initialised = true;
 }
 
 //*********************************************************************************
@@ -293,7 +295,6 @@ void Rover::set_mode(enum mode mode)
     }
 
     control_mode = mode;
-    throttle_last = 0;
     throttle = 500;
     if (!in_auto_reverse) {
         set_reverse(false);
@@ -421,6 +422,7 @@ void Rover::startup_INS_ground(void)
     mavlink_delay(1000);
 
     ahrs.init();
+    // say to EKF that rover only move by goind forward
     ahrs.set_fly_forward(true);
     ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 

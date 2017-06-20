@@ -281,7 +281,6 @@ private:
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
-    int16_t throttle_last;
     int16_t throttle;
 
     // CH7 control
@@ -408,6 +407,21 @@ private:
     // last visual odometry update time
     uint32_t visual_odom_last_update_ms;
 
+    // True when we are doing motor test
+    bool motor_test;
+    bool initialised;
+
+    // Motors
+    enum ugv_type_class {
+        UGV_TYPE_UNDEFINED = 0,
+        UGV_TYPE_ROVER = 1,
+        UGV_TYPE_TANK = 2,
+        UGV_TYPE_BOAT = 3,
+    };
+
+    ugv_type_class motor_type_class{UGV_TYPE_UNDEFINED};  // init undefined to make the correct setup at start
+    bool isTypeTank = false;
+
 private:
     // private member functions
     void ahrs_update();
@@ -469,12 +483,13 @@ private:
     void Log_Arm_Disarm();
 
     void load_parameters(void);
-    void throttle_slew_limit(int16_t last_throttle);
+    void throttle_slew_limit(void);
     bool auto_check_trigger(void);
     bool use_pivot_steering(void);
     void calc_throttle(float target_speed);
     void calc_lateral_acceleration();
     void calc_nav_steer();
+    void mix_skid_steering();
     void set_servos(void);
     void set_auto_WP(const struct Location& loc);
     void set_guided_WP(const struct Location& loc);
@@ -586,6 +601,18 @@ private:
     void set_loiter_active(const AP_Mission::Mission_Command& cmd);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void crash_check();
+    // Motor test
+    void motor_test_output();
+    bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc);
+    uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec);
+    void motor_test_stop();
+    // Motor
+    bool setup_type_class(ugv_type_class type_class);
+    // output_to_motors - sends minimum values out to the motors
+    void output_to_motors();
+    void set_freq_group(uint8_t group, uint16_t freq_hz);
+    void setup_default_function(ugv_type_class type_class);
+    void setup_motors();
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
