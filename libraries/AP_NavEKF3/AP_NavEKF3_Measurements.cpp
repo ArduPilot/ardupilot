@@ -782,7 +782,8 @@ void NavEKF3_core::readRngBcnData()
 
     // Correct the range beacon earth frame origin for estimated offset relative to the EKF earth frame origin
     if (rngBcnDataToFuse) {
-        rngBcnDataDelayed.beacon_posNED += bcnPosOffsetNED;
+        rngBcnDataDelayed.beacon_posNED.x += bcnPosOffsetNED.x;
+        rngBcnDataDelayed.beacon_posNED.y += bcnPosOffsetNED.y;
     }
 
 }
