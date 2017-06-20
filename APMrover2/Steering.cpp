@@ -278,44 +278,30 @@ void Rover::mix_skid_steering(void)
     Set the flight control servos based on the current calculated values
 *****************************************/
 void Rover::set_servos(void) {
-    if (control_mode == MANUAL || control_mode == LEARNING) {
-        // do a direct pass through of radio values
-        SRV_Channels::set_output_pwm(SRV_Channel::k_steering, channel_steer->read());
-        SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, channel_throttle->read());
-        if (failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
-            // suppress throttle if in failsafe and manual
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            // suppress steer if in failsafe and manual and skid steer mode
-            if (g.skid_steer_out) {
-                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            }
-        }
+    if (in_reverse) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, constrain_int16(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
+                                                                                 -g.throttle_max,
+                                                                                 -g.throttle_min));
     } else {
-        if (in_reverse) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, constrain_int16(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
-                                          -g.throttle_max,
-                                          -g.throttle_min));
-        } else {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, constrain_int16(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
-                                          g.throttle_min.get(),
-                                          g.throttle_max.get()));
-        }
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, constrain_int16(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
+                                                                                 g.throttle_min,
+                                                                                 g.throttle_max));
+    }
 
-        if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) && control_mode < AUTO) {
-            // suppress throttle if in failsafe
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-            // suppress steer if in failsafe and skid steer mode
-            if (have_skid_steering()) {
-                SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
-            }
+    if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) && control_mode < AUTO) {
+        // suppress throttle if in failsafe
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        // suppress steer if in failsafe and skid steer mode
+        if (have_skid_steering()) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
         }
+    }
 
-        if (!hal.util->get_soft_armed()) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-            // suppress steer if in failsafe and skid steer mode
-            if (have_skid_steering()) {
-                SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
-            }
+    if (!hal.util->get_soft_armed()) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        // suppress steer if in failsafe and skid steer mode
+        if (have_skid_steering()) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
         }
     }
 
