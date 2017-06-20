@@ -184,10 +184,10 @@ void NavEKF2_core::EstimateTerrainOffset()
 
             // divide velocity by range, subtract body rates and apply scale factor to
             // get predicted sensed angular optical rates relative to X and Y sensor axes
-            losPred =   relVelSensor.length()/flowRngPred;
+            losPred =   norm(relVelSensor.x, relVelSensor.y)/flowRngPred;
 
             // calculate innovations
-            auxFlowObsInnov = losPred - sqrtf(sq(ofDataDelayed.flowRadXYcomp[0]) + sq(ofDataDelayed.flowRadXYcomp[1]));
+            auxFlowObsInnov = losPred - norm(ofDataDelayed.flowRadXYcomp.x, ofDataDelayed.flowRadXYcomp.y);
 
             // calculate observation jacobian
             float t3 = sq(q0);
