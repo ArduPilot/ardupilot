@@ -167,6 +167,7 @@ void Rover::calc_throttle(float target_speed) {
 
     if (guided_mode != Guided_Velocity) {
         if (use_pivot_steering()) {
+            // In Guided Velocity, only the steering input is used to calculate the pivot turn.
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
         }
     }
@@ -242,7 +243,7 @@ void Rover::mix_skid_steering(void)
     const float throttle_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0f;
     float motor1 = throttle_scaled + 0.5f * steering_scaled;
     float motor2 = throttle_scaled - 0.5f * steering_scaled;
-
+    // Check that we are doing on spot turn
     if (fabsf(throttle_scaled) <= 0.01f) {
         // Use full range for on spot turn
         motor1 = steering_scaled;
@@ -266,7 +267,7 @@ void Rover::set_servos(void) {
                                                                                  g.throttle_min,
                                                                                  g.throttle_max));
     }
-
+    // Check Throttle failsafe in non auto mode. Suppress all ouput
     if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) && control_mode < AUTO) {
         // suppress throttle if in failsafe
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
@@ -275,7 +276,7 @@ void Rover::set_servos(void) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
         }
     }
-
+    // Check if soft arm. Suppress all ouput
     if (!hal.util->get_soft_armed()) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
         // suppress steer if in failsafe and skid steer mode
@@ -283,12 +284,12 @@ void Rover::set_servos(void) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
         }
     }
-
+    // Apply slew rate limit on non Manual modes
     if (control_mode != MANUAL && control_mode != LEARNING) {
         // limit throttle movement speed
         throttle_slew_limit();
     }
-
+    // Apply skid steering mixing
     if (have_skid_steering()) {
         mix_skid_steering();
     }
