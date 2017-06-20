@@ -86,7 +86,7 @@ void Copter::esc_calibration_passthrough()
     // clear esc flag for next time
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
-    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
+    if (motors->get_pwm_type() >= PWM_TYPE_ONESHOT) {
         // run at full speed for oneshot ESCs (actually done on push)
         motors->set_update_rate(g.rc_speed);
     } else {
@@ -134,7 +134,7 @@ void Copter::esc_calibration_auto()
     // clear esc flag for next time
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
-    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
+    if (motors->get_pwm_type() >= PWM_TYPE_ONESHOT) {
         // run at full speed for oneshot ESCs (actually done on push)
         motors->set_update_rate(g.rc_speed);
     } else {

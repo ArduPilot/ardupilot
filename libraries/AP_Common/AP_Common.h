@@ -166,3 +166,10 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 #else
 #define SITL_printf(fmt, args ...)
 #endif
+
+enum pwm_type {
+    PWM_TYPE_NORMAL = 0,
+    PWM_TYPE_ONESHOT = 1,
+    PWM_TYPE_ONESHOT125 = 2,
+    PWM_TYPE_BRUSHED = 3
+};
