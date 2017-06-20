@@ -23,7 +23,7 @@ void Rover::set_control_channels(void)
     // For a rover safety is TRIM throttle
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        if (g.skid_steer_out) {
+        if (have_skid_steering()) {
             SRV_Channels::set_safety_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }
     }
@@ -57,7 +57,7 @@ void Rover::init_rc_out()
     // full speed backward.
     if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        if (g.skid_steer_out) {
+        if (have_skid_steering()) {
             SRV_Channels::set_safety_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }
     }
