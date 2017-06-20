@@ -24,7 +24,8 @@ public:
     enum RssiType {
         RSSI_DISABLED           = 0,
         RSSI_ANALOG_PIN         = 1,
-        RSSI_RC_CHANNEL_VALUE   = 2
+        RSSI_RC_CHANNEL_VALUE   = 2,
+        RSSI_RECEIVER           = 3
     };
 
     // constructor
