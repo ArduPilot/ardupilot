@@ -69,7 +69,7 @@ bool Rover::auto_check_trigger(void) {
     work out if we are going to use pivot steering
 */
 bool Rover::use_pivot_steering(void) {
-    if (control_mode >= AUTO && g.skid_steer_out && g.pivot_turn_angle != 0) {
+    if (control_mode >= AUTO && have_skid_steering() && g.pivot_turn_angle != 0) {
         const int16_t bearing_error = wrap_180_cd(nav_controller->target_bearing_cd() - ahrs.yaw_sensor) / 100;
         if (abs(bearing_error) > g.pivot_turn_angle) {
             return true;
@@ -239,12 +239,52 @@ void Rover::calc_nav_steer() {
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steerController.get_steering_out_lat_accel(lateral_acceleration));
 }
 
+/*
+  run the skid steering mixer
+ */
+void Rover::mix_skid_steering(void)
+{
+    const float steering_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_steering) / 4500.0;
+    const float throttle_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0;
+    float motor1 = throttle_scaled + 0.5f * steering_scaled;
+    float motor2 = throttle_scaled - 0.5f * steering_scaled;
+
+    if (fabsf(throttle_scaled) <= 0.01f) {
+        // Use full range for on spot turn
+        motor1 = steering_scaled;
+        motor2 = -steering_scaled;
+    }
+
+    // first new-style skid steering
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  1000 * motor1);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 1000 * motor2);
+
+    // now old style skid steering with skid_steer_out
+    if (g.skid_steer_out) {
+        // convert the two radio_out values to skid steering values
+        /*
+            mixing rule:
+            steering = motor1 - motor2
+            throttle = 0.5*(motor1 + motor2)
+            motor1 = throttle + 0.5*steering
+            motor2 = throttle - 0.5*steering
+        */
+        if ((control_mode == MANUAL || control_mode == LEARNING) && g.skid_steer_in) {
+            // Mixage is already done by a controller so just pass the value to motor
+            motor1 = steering_scaled;
+            motor2 = throttle_scaled;
+        }
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 4500 * motor1);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100 * motor2);
+    }
+}
+
 /*****************************************
     Set the flight control servos based on the current calculated values
 *****************************************/
 void Rover::set_servos(void) {
     static uint16_t last_throttle;
-    bool apply_skid_mix = true;  // Normaly true, false when the mixage is done by the controler with skid_steer_in = 1
 
     if (control_mode == MANUAL || control_mode == LEARNING) {
         // do a direct pass through of radio values
@@ -252,14 +292,11 @@ void Rover::set_servos(void) {
         SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, channel_throttle->read());
         if (failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
             // suppress throttle if in failsafe and manual
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, channel_throttle->get_radio_trim());
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             // suppress steer if in failsafe and manual and skid steer mode
             if (g.skid_steer_out) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_steering, channel_steer->get_radio_trim());
+                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             }
-        }
-        if (g.skid_steer_in) {
-            apply_skid_mix = false;
         }
     } else {
         if (in_reverse) {
@@ -276,7 +313,7 @@ void Rover::set_servos(void) {
             // suppress throttle if in failsafe
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
             // suppress steer if in failsafe and skid steer mode
-            if (g.skid_steer_out) {
+            if (have_skid_steering()) {
                 SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
             }
         }
@@ -284,7 +321,7 @@ void Rover::set_servos(void) {
         if (!hal.util->get_soft_armed()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
             // suppress steer if in failsafe and skid steer mode
-            if (g.skid_steer_out) {
+            if (have_skid_steering()) {
                 SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
             }
         }
@@ -296,31 +333,9 @@ void Rover::set_servos(void) {
     // record last throttle before we apply skid steering
     SRV_Channels::get_output_pwm(SRV_Channel::k_throttle, last_throttle);
 
-    if (g.skid_steer_out) {
-        // convert the two radio_out values to skid steering values
-        /*
-            mixing rule:
-            steering = motor1 - motor2
-            throttle = 0.5*(motor1 + motor2)
-            motor1 = throttle + 0.5*steering
-            motor2 = throttle - 0.5*steering
-        */
-        const float steering_scaled = SRV_Channels::get_output_norm(SRV_Channel::k_steering);
-        const float throttle_scaled = SRV_Channels::get_output_norm(SRV_Channel::k_throttle);
-        float motor1 = throttle_scaled + 0.5f * steering_scaled;
-        float motor2 = throttle_scaled - 0.5f * steering_scaled;
-
-        if (!apply_skid_mix) {  // Mixage is already done by a controller so just pass the value to motor
-            motor1 = steering_scaled;
-            motor2 = throttle_scaled;
-        } else if (fabsf(throttle_scaled) <= 0.01f) {  // Use full range for on spot turn
-            motor1 = steering_scaled;
-            motor2 = -steering_scaled;
+    if (have_skid_steering()) {
+        mix_skid_steering();
         }
-
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 4500 * motor1);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100 * motor2);
-    }
 
     if (!arming.is_armed()) {
         // Some ESCs get noisy (beep error msgs) if PWM == 0.
@@ -332,17 +347,21 @@ void Rover::set_servos(void) {
             break;
 
         case AP_Arming::YES_ZERO_PWM:
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, 0);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             if (g.skid_steer_out) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_steering, 0);
+                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             }
             break;
 
         case AP_Arming::YES_MIN_PWM:
         default:
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, channel_throttle->get_radio_trim());
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             if (g.skid_steer_out) {
-                SRV_Channels::set_output_pwm(SRV_Channel::k_steering, channel_steer->get_radio_trim());
+                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
             }
             break;
         }
@@ -357,4 +376,17 @@ void Rover::set_servos(void) {
 #endif
 }
 
-
+/*
+  work out if skid steering is available
+ */
+bool Rover::have_skid_steering(void)
+{
+    if (g.skid_steer_out) {
+        return true;
+    }
+    if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
+        return true;
+    }
+    return false;
+}

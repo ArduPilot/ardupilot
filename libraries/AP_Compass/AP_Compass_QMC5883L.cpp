@@ -151,7 +151,7 @@ void AP_Compass_QMC5883L::timer()
     	return;
     }
     //new data is ready
-    if(!(status & 0x04)) {
+    if (!(status & 0x04)) {
     	return;
     }
 

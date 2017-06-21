@@ -491,13 +491,10 @@ void Copter::check_usb_mux(void)
 bool Copter::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (in_mavlink_delay) {
-        return false;
-    }
     if (!(mask & g.log_bitmask)) {
         return false;
     }
-    if (!motors->armed() && !DataFlash.log_while_disarmed()) {
+    if (!DataFlash.should_log()) {
         return false;
     }
     if (in_log_download) {
@@ -695,6 +692,11 @@ void Copter::allocate_motors(void)
         break;
     }
 
+    // brushed 16kHz defaults to 16kHz pulses
+    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_BRUSHED) {
+        g.rc_speed.set_default(16000);
+    }
+    
     if (upgrading_frame_params) {
         // do frame specific upgrade. This is only done the first time we run the new firmware
 #if FRAME_CONFIG == HELI_FRAME

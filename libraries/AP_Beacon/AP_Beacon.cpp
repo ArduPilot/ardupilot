@@ -332,7 +332,7 @@ bool AP_Beacon::get_next_boundary_point(const Vector2f* boundary_pts, uint8_t nu
     float lowest_angle = M_PI_2;
     float lowest_angle_relative = M_PI_2;
     bool lowest_found = false;
-    uint8_t lowest_index;
+    uint8_t lowest_index = 0;
     for (uint8_t i=0; i < num_points; i++) {
         if (i != current_index) {
             Vector2f vec = boundary_pts[i] - curr_point;

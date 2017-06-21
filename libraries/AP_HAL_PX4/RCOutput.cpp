@@ -73,6 +73,7 @@ void PX4RCOutput::init()
     // ensure not to write zeros to disabled channels
     for (uint8_t i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
         _period[i] = PWM_IGNORE_THIS_CHANNEL;
+        _last_sent[i] = PWM_IGNORE_THIS_CHANNEL;
     }
 }
 
@@ -100,8 +101,10 @@ void PX4RCOutput::_init_alt_channels(void)
  */
 void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_t &rate_mask) 
 {
-    if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
-        freq_hz = 2000; // this maps to 16kHz due to 8MHz clock
+    if (_output_mode == MODE_PWM_BRUSHED) {
+        freq_hz /= 8; // divide by 8 for 8MHz clock
+        // remember max period
+        _period_max = 1000000UL/freq_hz;
     }
     
     // we can't set this per channel
@@ -163,7 +166,7 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_
         hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)rate_mask);
     }
 
-    if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
+    if (_output_mode == MODE_PWM_BRUSHED) {
         ioctl(fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
     }    
 }
@@ -186,7 +189,7 @@ void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     
     // greater than 400 doesn't give enough room at higher periods for
     // the down pulse
-    if (freq_hz > 400 && _output_mode != MODE_PWM_BRUSHED16KHZ) {
+    if (freq_hz > 400 && _output_mode != MODE_PWM_BRUSHED) {
         freq_hz = 400;
     }
     uint32_t primary_mask = chmask & ((1UL<<_servo_count)-1);
@@ -227,6 +230,7 @@ void PX4RCOutput::enable_ch(uint8_t ch)
     _enabled_channels |= (1U<<ch);
     if (_period[ch] == PWM_IGNORE_THIS_CHANNEL) {
         _period[ch] = 0;
+        _last_sent[ch] = 0;
     }
 }
 
@@ -327,18 +331,20 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
         _max_channel = ch + 1;
     }
 
-    if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
+    // keep unscaled value
+    _last_sent[ch] = period_us;
+        
+    if (_output_mode == MODE_PWM_BRUSHED) {
         // map from the PWM range to 0 t0 100% duty cycle. For 16kHz
         // this ends up being 0 to 500 pulse width in units of
         // 125usec.
-        const uint32_t period_max = 1000000UL/(16000/8);
         if (period_us <= _esc_pwm_min) {
             period_us = 0;
         } else if (period_us >= _esc_pwm_max) {
-            period_us = period_max;
+            period_us = _period_max;
         } else {
             uint32_t pdiff = period_us - _esc_pwm_min;
-            period_us = pdiff*period_max/(_esc_pwm_max - _esc_pwm_min);
+            period_us = pdiff*_period_max/(_esc_pwm_max - _esc_pwm_min);
         }
     }
     
@@ -385,7 +391,7 @@ uint16_t PX4RCOutput::read_last_sent(uint8_t ch)
         return 0;
     }
 
-    return _period[ch];
+    return _last_sent[ch];
 }
 
 void PX4RCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
@@ -622,7 +628,7 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
             ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 0);
         }
         break;
-    case MODE_PWM_BRUSHED16KHZ:
+    case MODE_PWM_BRUSHED:
         // setup an 8MHz clock. This has the effect of scaling all outputs by 8x
         ioctl(_pwm_fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
         if (_alt_fd != -1) {

@@ -144,7 +144,7 @@ void Rover::send_nav_controller_output(mavlink_channel_t chan)
         ahrs.groundspeed() * ins.get_gyro().z,  // use nav_pitch to hold actual Y accel
         nav_controller->nav_bearing_cd() * 0.01f,
         nav_controller->target_bearing_cd() * 0.01f,
-        wp_distance,
+        MIN(wp_distance, UINT16_MAX),
         0,
         groundspeed_error,
         nav_controller->crosstrack_error());
@@ -162,7 +162,7 @@ void Rover::send_servo_out(mavlink_channel_t chan)
         0,  // port 0
         10000 * channel_steer->norm_output(),
         0,
-        10000 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle),
+        100 * SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
         0,
         0,
         0,
@@ -179,7 +179,7 @@ void Rover::send_vfr_hud(mavlink_channel_t chan)
         gps.ground_speed(),
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
-        static_cast<uint16_t>(100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))),
+        SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
         current_loc.alt / 100.0f,
         0);
 }
@@ -1542,10 +1542,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         rover.sonar.handle_msg(msg);
         break;
 
-    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        rover.DataFlash.remote_log_block_status_msg(chan, msg);
-        break;
-
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         send_autopilot_version(FIRMWARE_VERSION);
         break;
@@ -1584,6 +1580,8 @@ void Rover::mavlink_delay_cb()
     }
 
     in_mavlink_delay = true;
+    // don't allow potentially expensive logging calls:
+    DataFlash.EnableWrites(false);
 
     const uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
@@ -1603,6 +1601,7 @@ void Rover::mavlink_delay_cb()
     }
     check_usb_mux();
 
+    DataFlash.EnableWrites(true);
     in_mavlink_delay = false;
 }
 

@@ -835,13 +835,10 @@ void Plane::print_comma(void)
 bool Plane::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (in_mavlink_delay) {
-        return false;
-    }
     if (!(mask & g.log_bitmask)) {
         return false;
     }
-    if (!hal.util->get_soft_armed() && !DataFlash.log_while_disarmed()) {
+    if (!DataFlash.should_log()) {
         return false;
     }
     if (in_log_download) {

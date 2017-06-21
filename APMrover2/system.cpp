@@ -540,13 +540,10 @@ uint8_t Rover::check_digital_pin(uint8_t pin)
  */
 bool Rover::should_log(uint32_t mask)
 {
-    if (in_mavlink_delay) {
-        return false;
-    }
     if (!(mask & g.log_bitmask)) {
         return false;
     }
-    if (!hal.util->get_soft_armed() && !DataFlash.log_while_disarmed()) {
+    if (!DataFlash.should_log()) {
         return false;
     }
     if (in_log_download) {

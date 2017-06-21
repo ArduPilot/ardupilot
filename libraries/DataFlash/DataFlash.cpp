@@ -109,6 +109,8 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
 
     Prep();
 
+    EnableWrites(true);
+
     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Prepared log system");
 }
 
@@ -305,6 +307,18 @@ void DataFlash_Class::StartUnstartedLogging(void)
     }
 }
 
+bool DataFlash_Class::should_log() const
+{
+    if (!vehicle_is_armed() && !log_while_disarmed()) {
+        return false;
+    }
+    if (_next_backend == 0) {
+        return false;
+    }
+    return true;
+}
+
+
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \
         for (uint8_t i=0; i<_next_backend; i++) { \
@@ -446,16 +460,14 @@ bool DataFlash_Class::logging_started(void) {
     return false;
 }
 
-void DataFlash_Class::EnableWrites(bool enable) {
-    FOR_EACH_BACKEND(EnableWrites(enable));
+void DataFlash_Class::handle_mavlink_msg(mavlink_channel_t chan, mavlink_message_t* msg)
+{
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+        FOR_EACH_BACKEND(remote_log_block_status_msg(chan, msg));
+        break;
+    }
 }
-
-// for DataFlash_MAVLink
-void DataFlash_Class::remote_log_block_status_msg(mavlink_channel_t chan,
-                                                  mavlink_message_t* msg) {
-    FOR_EACH_BACKEND(remote_log_block_status_msg(chan, msg));
-}
-// end for DataFlash_MAVLink
 
 void DataFlash_Class::periodic_tasks() {
      FOR_EACH_BACKEND(periodic_tasks());

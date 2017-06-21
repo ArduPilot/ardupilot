@@ -85,9 +85,9 @@ int8_t Rover::dump_log(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::erase_logs(uint8_t argc, const Menu::arg *argv)
 {
-    in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
     do_erase_logs();
-    in_mavlink_delay = false;
+    DataFlash.EnableWrites(true);
     return 0;
 }
 
@@ -278,7 +278,7 @@ void Rover::Log_Write_Nav_Tuning()
         wp_distance         : wp_distance,
         target_bearing_cd   : static_cast<uint16_t>(fabsf(nav_controller->target_bearing_cd())),
         nav_bearing_cd      : static_cast<uint16_t>(fabsf(nav_controller->nav_bearing_cd())),
-        throttle            : static_cast<int8_t>(100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle)),
+        throttle            : int8_t(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)),
         xtrack_error        : nav_controller->crosstrack_error()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -336,7 +336,7 @@ void Rover::Log_Write_Sonar()
         turn_angle      : static_cast<int8_t>(obstacle.turn_angle),
         turn_time       : turn_time,
         ground_speed    : static_cast<uint16_t>(fabsf(ground_speed * 100)),
-        throttle        : static_cast<int8_t>(100 * SRV_Channels::get_output_norm(SRV_Channel::k_throttle))
+        throttle        : int8_t(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -510,9 +510,9 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 // start a new log
 void Rover::start_logging()
 {
-    in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
     DataFlash.StartUnstartedLogging();
-    in_mavlink_delay = false;
+    DataFlash.EnableWrites(true);
 }
 
 #else  // LOGGING_ENABLED

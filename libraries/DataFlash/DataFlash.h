@@ -104,7 +104,8 @@ public:
     /* poke backends to start if they're not already started */
     void StartUnstartedLogging(void);
 
-    void EnableWrites(bool enable);
+    void EnableWrites(bool enable) { _writes_enabled = enable; }
+    bool WritesEnabled() const { return _writes_enabled; }
 
     void StopLogging();
 
@@ -167,6 +168,9 @@ public:
 
     void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
 
+    // returns true of logging of a message should be attempted
+    bool should_log() const;
+
     bool logging_started(void);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -174,10 +178,7 @@ public:
     void flush(void);
 #endif
 
-    // for DataFlash_MAVLink:
-    void remote_log_block_status_msg(mavlink_channel_t chan,
-                                     mavlink_message_t* msg);
-    // end for DataFlash_MAVLink:
+    void handle_mavlink_msg(mavlink_channel_t chan, mavlink_message_t* msg);
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
@@ -285,4 +286,7 @@ private:
 
     // possibly expensive calls to start log system:
     void Prep();
+
+    bool _writes_enabled;
+
 };

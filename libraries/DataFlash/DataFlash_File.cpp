@@ -214,7 +214,7 @@ uint32_t DataFlash_File::bufferspace_available()
 }
 
 // return true for CardInserted() if we successfully initialized
-bool DataFlash_File::CardInserted(void)
+bool DataFlash_File::CardInserted(void) const
 {
     return _initialised && !_open_error;
 }

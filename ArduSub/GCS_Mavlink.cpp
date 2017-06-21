@@ -272,12 +272,12 @@ void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
     const Vector3f &targets = attitude_control.get_att_target_euler_cd();
     mavlink_msg_nav_controller_output_send(
         chan,
-        targets.x / 1.0e2f,
-        targets.y / 1.0e2f,
-        targets.z / 1.0e2f,
-        wp_nav.get_wp_bearing_to_destination() / 1.0e2f,
-        wp_nav.get_wp_distance_to_destination() / 1.0e2f,
-        pos_control.get_alt_error() / 1.0e2f,
+        targets.x * 1.0e-2f,
+        targets.y * 1.0e-2f,
+        targets.z * 1.0e-2f,
+        wp_nav.get_wp_bearing_to_destination() * 1.0e-2f,
+        MIN(wp_nav.get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
+        pos_control.get_alt_error() * 1.0e-2f,
         0,
         0);
 }
@@ -1760,10 +1760,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     }
 #endif // AC_RALLY == ENABLED
 
-    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        sub.DataFlash.remote_log_block_status_msg(chan, msg);
-        break;
-
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         send_autopilot_version(FIRMWARE_VERSION);
         break;
@@ -1828,6 +1824,7 @@ void Sub::mavlink_delay_cb()
     }
 
     in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
 
     uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
@@ -1847,6 +1844,7 @@ void Sub::mavlink_delay_cb()
         gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
 
+    DataFlash.EnableWrites(true);
     in_mavlink_delay = false;
 }
 

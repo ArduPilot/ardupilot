@@ -583,8 +583,10 @@ void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, f
                 continue;
             }
             uint16_t max_change = (ch.get_output_max() - ch.get_output_min()) * slew_rate * dt * 0.01f;
-            if (max_change == 0) {
-                // always allow some change
+            if (max_change == 0 || dt > 1) {
+                // always allow some change. If dt > 1 then assume we
+                // are just starting out, and only allow a small
+                // change for this loop
                 max_change = 1;
             }
             ch.output_pwm = constrain_int16(ch.output_pwm, last_pwm-max_change, last_pwm+max_change);

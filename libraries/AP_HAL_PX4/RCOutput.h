@@ -45,6 +45,9 @@ private:
     int _alt_fd;
     uint16_t _freq_hz;
     uint16_t _period[PX4_NUM_OUTPUT_CHANNELS];
+    // we keep the last_sent value separately, as we need to keep the unscaled
+    // value for systems with brushed motors which scale outputs
+    uint16_t _last_sent[PX4_NUM_OUTPUT_CHANNELS];
     volatile uint8_t _max_channel;
     volatile bool _need_update;
     bool _sbus_enabled:1;
@@ -56,6 +59,7 @@ private:
     uint32_t _rate_mask_main;
     uint32_t _rate_mask_alt;
     uint16_t _enabled_channels;
+    uint32_t _period_max;
     struct {
         int pwm_sub;
         actuator_outputs_s outputs;

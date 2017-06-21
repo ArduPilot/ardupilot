@@ -175,11 +175,13 @@ void Tracker::set_home(struct Location temp)
 void Tracker::arm_servos()
 {
     hal.util->set_soft_armed(true);
+    DataFlash.set_vehicle_armed(true);
 }
 
 void Tracker::disarm_servos()
 {
     hal.util->set_soft_armed(false);
+    DataFlash.set_vehicle_armed(false);
 }
 
 /*
@@ -253,10 +255,10 @@ void Tracker::check_usb_mux(void)
  */
 bool Tracker::should_log(uint32_t mask)
 {
-    if (in_mavlink_delay) {
+    if (!(mask & g.log_bitmask)) {
         return false;
     }
-    if (!(mask & g.log_bitmask)) {
+    if (!DataFlash.should_log()) {
         return false;
     }
     return true;

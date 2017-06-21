@@ -18,8 +18,8 @@ AP_AdvancedFailsafe_Rover::AP_AdvancedFailsafe_Rover(AP_Mission &_mission, AP_Ba
 void AP_AdvancedFailsafe_Rover::terminate_vehicle(void)
 {
     // stop motors
-    SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, 0);
-    SRV_Channels::set_output_pwm(SRV_Channel::k_steering, 0);
+    SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+    SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
     rover.lateral_acceleration = 0;
 
     // disarm as well
