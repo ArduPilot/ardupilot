@@ -28,7 +28,12 @@ private:
 
     // adjust for simulated board temperature
     void temperature_adjustment(float &p, float &T);
-    
+
+    void _timer();
+    bool _has_sample;
+    uint32_t _last_sample_time;
+    float _recent_temp;
+    float _recent_press;
+
 };
 #endif // CONFIG_HAL_BOARD
-
