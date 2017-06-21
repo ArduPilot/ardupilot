@@ -65,7 +65,7 @@ AP_Compass_Backend *AP_Compass_QMC5883L::probe(Compass &compass,
         return nullptr;
     }
 
-    AP_Compass_QMC5883L *sensor = new AP_Compass_QMC5883L(compass, std::move(dev),false,rotation);
+    AP_Compass_QMC5883L *sensor = new AP_Compass_QMC5883L(compass, std::move(dev),force_external,rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
