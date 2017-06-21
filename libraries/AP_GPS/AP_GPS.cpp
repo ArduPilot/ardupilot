@@ -228,6 +228,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Units: ms
     // @Range: 0 250
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("DELAY_MS", 18, AP_GPS, _delay_ms[0], 0),
 
     // @Param: DELAY_MS2
@@ -236,6 +237,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Units: ms
     // @Range: 0 250
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("DELAY_MS2", 19, AP_GPS, _delay_ms[1], 0),
 
     // @Param: BLEND_MASK
@@ -488,12 +490,12 @@ void AP_GPS::detect_instance(uint8_t instance)
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
-        if (_auto_config == 1) {
+        if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
             send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
         }
     }
 
-    if (_auto_config == 1) {
+    if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
         send_blob_update(instance);
     }
 
@@ -592,7 +594,7 @@ void AP_GPS::update_instance(uint8_t instance)
         return;
     }
 
-    if (_auto_config == 1) {
+    if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
         send_blob_update(instance);
     }
 
@@ -1035,24 +1037,34 @@ void AP_GPS::Write_DataFlash_Log_Startup_messages()
 
 /*
   return the expected lag (in seconds) in the position and velocity readings from the gps
+  return true if the GPS hardware configuration is known or the delay parameter has been set
  */
-float AP_GPS::get_lag(uint8_t instance) const
+bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 {
     // return lag of blended GPS
-    if (instance == GPS_MAX_RECEIVERS) {
-        return _blended_lag_sec;
+    if (instance == GPS_BLENDED_INSTANCE) {
+        lag_sec = _blended_lag_sec;
+        // auto switching uses all GPS receivers, so all must be configured
+        return all_configured();
     }
 
     if (_delay_ms[instance] > 0) {
         // if the user has specified a non zero time delay, always return that value
-        return 0.001f * (float)_delay_ms[instance];
+        lag_sec = 0.001f * (float)_delay_ms[instance];
+        // the user is always right !!
+        return true;
     } else if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
-        // no GPS was detected in this instance
-        // so return a default delay of 1 measurement interval
-        return 0.001f * (float)get_rate_ms(instance);
+        // no GPS was detected in this instance so return the worst possible lag term
+        if (_type[instance] == GPS_TYPE_NONE) {
+            lag_sec = 0.0f;
+            return true;
+        } else {
+            lag_sec = GPS_WORST_LAG_SEC;
+        }
+        return _type[instance] == GPS_TYPE_AUTO;
     } else {
         // the user has not specified a delay so we determine it from the GPS type
-        return drivers[instance]->get_lag();
+        return drivers[instance]->get_lag(lag_sec);
     }
 }
 
@@ -1454,7 +1466,9 @@ void AP_GPS::calc_blended_state(void)
         if (_blend_weights[i] > 0.0f) {
             temp_time_1 += (double)timing[i].last_fix_time_ms * (double) _blend_weights[i];
             temp_time_2 += (double)timing[i].last_message_time_ms * (double)_blend_weights[i];
-            _blended_lag_sec += get_lag(i) * _blended_lag_sec;
+            float gps_lag_sec = 0;
+            get_lag(i, gps_lag_sec);
+            _blended_lag_sec += gps_lag_sec * _blend_weights[i];
         }
     }
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = (uint32_t)temp_time_1;
