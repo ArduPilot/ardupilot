@@ -88,7 +88,6 @@ void SITL_State::_sitl_setup(const char *home_str)
         // setup some initial values
 #ifndef HIL_MODE
         _update_airspeed(0);
-        _update_compass();
         _update_gps(0, 0, 0, 0, 0, 0, false);
         _update_rangefinder(0);
 #endif
@@ -167,7 +166,6 @@ void SITL_State::_fdm_input_step(void)
                     _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
                     !_sitl->gps_disable);
         _update_airspeed(_sitl->state.airspeed);
-        _update_compass();
         _update_rangefinder(_sitl->state.range);
 
         if (_sitl->adsb_plane_count >= 0 &&
@@ -430,20 +428,6 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     voltage_pin_value = ((voltage / 10.1f) / 5.0f) * 1024;
     current_pin_value = ((_current / 17.0f) / 5.0f) * 1024;
 }
-
-
-// generate a random Vector3f of size 1
-Vector3f SITL_State::_rand_vec3f(void)
-{
-    Vector3f v = Vector3f(rand_float(),
-                          rand_float(),
-                          rand_float());
-    if (v.length() != 0.0f) {
-        v.normalize();
-    }
-    return v;
-}
-
 
 void SITL_State::init(int argc, char * const argv[])
 {
