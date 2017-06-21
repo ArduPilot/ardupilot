@@ -18,9 +18,9 @@ void Rover::set_control_channels(void)
 
     // For a rover safety is TRIM throttle
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        hal.rcout->set_safety_pwm(1UL << (rcmap.throttle() - 1), channel_throttle->get_radio_trim());
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         if (g.skid_steer_out) {
-            hal.rcout->set_safety_pwm(1UL << (rcmap.roll() - 1),  channel_steer->get_radio_trim());
+            SRV_Channels::set_safety_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }
     }
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
@@ -50,9 +50,9 @@ void Rover::init_rc_out()
     // For Rover's no throttle means TRIM as rovers can go backwards i.e. MIN throttle is
     // full speed backward.
     if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        hal.rcout->set_safety_pwm(1UL << (rcmap.throttle() - 1),  channel_throttle->get_radio_trim());
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         if (g.skid_steer_out) {
-            hal.rcout->set_safety_pwm(1UL << (rcmap.roll() - 1),  channel_steer->get_radio_trim());
+            SRV_Channels::set_safety_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }
     }
 }
