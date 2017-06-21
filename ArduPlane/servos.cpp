@@ -791,9 +791,9 @@ void Plane::set_servos(void)
         // after an auto land and auto disarm, set the servos to be neutral just
         // in case we're upside down or some crazy angle and straining the servos.
         if (landing.get_then_servos_neutral() == 1) {
-            SRV_Channels::set_output_limit(SRV_Channel::k_aileron, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_elevator, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_rudder, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
         } else if (landing.get_then_servos_neutral() == 2) {
             SRV_Channels::set_output_limit(SRV_Channel::k_aileron, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_elevator, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
