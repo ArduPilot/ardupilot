@@ -249,29 +249,8 @@ void Rover::mix_skid_steering(void)
         motor2 = -steering_scaled;
     }
 
-    // first new-style skid steering
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  1000.0f * motor1);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 1000.0f * motor2);
-
-    // now old style skid steering with skid_steer_out
-    if (have_skid_steering()) {
-        // convert the two radio_out values to skid steering values
-        /*
-            mixing rule:
-            steering = motor1 - motor2
-            throttle = 0.5*(motor1 + motor2)
-            motor1 = throttle + 0.5*steering
-            motor2 = throttle - 0.5*steering
-        */
-        if ((control_mode == MANUAL || control_mode == LEARNING) && g.skid_steer_in) {
-            // Mixage is already done by a controller so just pass the value to motor
-            motor1 = steering_scaled;
-            motor2 = throttle_scaled;
-        }
-
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 4500 * motor1);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100 * motor2);
-    }
 }
 
 /*****************************************
