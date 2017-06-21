@@ -56,6 +56,7 @@ void AP_RangeFinder_MAVLink::handle_msg(mavlink_message_t *msg)
         last_update_ms = AP_HAL::millis();
         distance_cm = packet.current_distance;
     }
+    sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
 }
 
 /*
