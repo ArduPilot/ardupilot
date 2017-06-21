@@ -5,6 +5,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+#include "AP_Compass_SITL.h"
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
 #include "AP_Compass_BMM150.h"
@@ -513,7 +514,12 @@ void Compass::_detect_backends(void)
           return; \
         } \
     } while (0)
-    
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    ADD_BACKEND(new AP_Compass_SITL(*this), nullptr, false);
+    return;
+#endif
+
 #if HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
     ADD_BACKEND(AP_Compass_HIL::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
