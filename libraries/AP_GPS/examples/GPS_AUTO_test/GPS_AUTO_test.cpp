@@ -32,6 +32,9 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // create board led object
@@ -43,8 +46,6 @@ AP_GPS gps;
 // Serial manager is needed for UART comunications
 AP_SerialManager serial_manager;
 
-#define T6 1000000
-#define T7 10000000
 
 void setup()
 {
@@ -84,12 +85,12 @@ void loop()
         hal.console->printf(" Lon: ");
         print_latlon(hal.console, loc.lng);
         hal.console->printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %u/%lu STATUS: %u\n",
-                            loc.alt * 0.01f,
-                            gps.ground_speed(),
+                            (double)(loc.alt * 0.01f),
+                            (double)gps.ground_speed(),
                             (int)gps.ground_course_cd() / 100,
                             gps.num_sats(),
                             gps.time_week(),
-                            (unsigned long)gps.time_week_ms(),
+                            (long unsigned int)gps.time_week_ms(),
                             gps.status());
     }
 

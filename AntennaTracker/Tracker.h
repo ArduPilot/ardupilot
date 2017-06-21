@@ -99,7 +99,6 @@ private:
 
     // has a log download started?
     bool in_log_download = false;
-    bool logging_started = false;
     DataFlash_Class DataFlash;
 
     AP_GPS gps;

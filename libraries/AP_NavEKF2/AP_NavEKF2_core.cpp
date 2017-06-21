@@ -274,6 +274,7 @@ void NavEKF2_core::InitialiseVariables()
     memset(&storedRngMeas, 0, sizeof(storedRngMeas));
     terrainHgtStable = true;
     ekfOriginHgtVar = 0.0f;
+    ekfGpsRefHgt = 0.0;
     velOffsetNED.zero();
     posOffsetNED.zero();
 
@@ -413,13 +414,8 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
 void NavEKF2_core::CovarianceInit()
 {
     // zero the matrix
-    for (uint8_t i=1; i<=stateIndexLim; i++)
-    {
-        for (uint8_t j=0; j<=stateIndexLim; j++)
-        {
-            P[i][j] = 0.0f;
-        }
-    }
+    memset(P, 0, sizeof(P));
+
     // attitude error
     P[0][0]   = 0.1f;
     P[1][1]   = 0.1f;

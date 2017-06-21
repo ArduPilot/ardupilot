@@ -17,10 +17,6 @@
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 
-#ifndef AP_ARMING_COMPASS_OFFSETS_MAX
-// this can also be overridden for specific boards in the HAL
-#define AP_ARMING_COMPASS_OFFSETS_MAX   600
-#endif
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
@@ -43,7 +39,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: CHECK
     // @DisplayName: Arm Checks to Peform (bitmask)
-    // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed befor allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72. For most users it is recommended that you set this to 1 to enable all checks.
+    // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72. For most users it is recommended that you set this to 1 to enable all checks.
     // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Failsafe,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration
     // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration
     // @User: Standard
@@ -61,7 +57,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: MIN_VOLT
     // @DisplayName: Minimum arming voltage on the first battery
     // @Description: The minimum voltage on the first battery to arm, 0 disables the check.  This parameter is relevant for ArduPlane only.
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.1 
     // @User: Standard
     AP_GROUPINFO("MIN_VOLT",      4,     AP_Arming,  _min_voltage[0],  0),
@@ -69,7 +65,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: MIN_VOLT2
     // @DisplayName: Minimum arming voltage on the second battery
     // @Description: The minimum voltage on the first battery to arm, 0 disables the check. This parameter is relevant for ArduPlane only.
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.1 
     // @User: Standard
     AP_GROUPINFO("MIN_VOLT2",     5,     AP_Arming,  _min_voltage[1],  0),
@@ -189,13 +185,13 @@ bool AP_Arming::ins_checks(bool report)
         }
         if (!ins.get_accel_health_all()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers not healthy");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accels not healthy");
             }
             return false;
         }
         if (!ins.accel_calibrated_ok_all()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: 3D accelerometers calibration needed");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: 3D Accel calibration needed");
             }
             return false;
         }
@@ -203,7 +199,7 @@ bool AP_Arming::ins_checks(bool report)
         //check if accelerometers have calibrated and require reboot
         if (ins.accel_cal_requires_reboot()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers calibrated requires reboot");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accels calibrated requires reboot");
             }
             return false;
         }
@@ -237,7 +233,7 @@ bool AP_Arming::ins_checks(bool report)
                 }
                 if (AP_HAL::millis() - last_accel_pass_ms[i] > 10000) {
                     if (report) {
-                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers inconsistent");
+                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accels inconsistent");
                     }
                     return false;
                 }
@@ -314,7 +310,7 @@ bool AP_Arming::compass_checks(bool report)
 
         // check for unreasonable compass offsets
         Vector3f offsets = _compass.get_offsets();
-        if (offsets.length() > AP_ARMING_COMPASS_OFFSETS_MAX) {
+        if (offsets.length() > _compass.get_offsets_max()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Compass offsets too high");
             }
@@ -334,7 +330,7 @@ bool AP_Arming::compass_checks(bool report)
         if (!_compass.consistent()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: Compasses inconsistent");
-    }
+            }
             return false;
         }
     }

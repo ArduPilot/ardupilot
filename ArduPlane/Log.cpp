@@ -85,9 +85,9 @@ int8_t Plane::dump_log(uint8_t argc, const Menu::arg *argv)
 
 int8_t Plane::erase_logs(uint8_t argc, const Menu::arg *argv)
 {
-    in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
     do_erase_logs();
-    in_mavlink_delay = false;
+    DataFlash.EnableWrites(true);
     return 0;
 }
 
@@ -160,9 +160,20 @@ void Plane::Log_Write_Attitude(void)
     Vector3f targets;       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
     targets.x = nav_roll_cd;
     targets.y = nav_pitch_cd;
-    targets.z = 0;          //Plane does not have the concept of navyaw. This is a placeholder.
 
-    DataFlash.Log_Write_Attitude(ahrs, targets);
+    if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
+        // when VTOL active log the copter target yaw
+        targets.z = wrap_360_cd(quadplane.attitude_control->get_att_target_euler_cd().z);
+    } else {
+        //Plane does not have the concept of navyaw. This is a placeholder.
+        targets.z = 0;
+    }
+    
+    if (quadplane.tailsitter_active()) {
+        DataFlash.Log_Write_AttitudeView(*quadplane.ahrs_view, targets);
+    } else {
+        DataFlash.Log_Write_Attitude(ahrs, targets);
+    }
     if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
         // log quadplane PIDs separately from fixed wing PIDs
         DataFlash.Log_Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
@@ -214,6 +225,7 @@ struct PACKED log_Performance {
     uint32_t g_dt_max;
     uint32_t g_dt_min;
     uint32_t log_dropped;
+    uint32_t mem_avail;
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
@@ -226,7 +238,8 @@ void Plane::Log_Write_Performance()
         main_loop_count : perf.mainLoop_count,
         g_dt_max        : perf.G_Dt_max,
         g_dt_min        : perf.G_Dt_min,
-        log_dropped     : DataFlash.num_dropped() - perf.last_log_dropped
+        log_dropped     : DataFlash.num_dropped() - perf.last_log_dropped,
+        hal.util->available_memory()
     };
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -460,6 +473,12 @@ void Plane::Log_Write_Airspeed(void)
     DataFlash.Log_Write_Airspeed(airspeed);
 }
 
+// Write a AOA and SSA packet
+void Plane::Log_Write_AOA_SSA(void)
+{
+    DataFlash.Log_Write_AOA_SSA(ahrs);
+}
+
 // log ahrs home and EKF origin to dataflash
 void Plane::Log_Write_Home_And_Origin()
 {
@@ -480,7 +499,7 @@ void Plane::Log_Write_Home_And_Origin()
 const struct LogStructure Plane::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHIII",  "TimeUS,NLon,NLoop,MaxT,MinT,LogDrop" },
+      "PM",  "QHHIIII",  "TimeUS,NLon,NLoop,MaxT,MinT,LogDrop,Mem" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "QBH",         "TimeUS,SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
@@ -496,7 +515,9 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_STATUS_MSG, sizeof(log_Status),
       "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit" },
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
-      "QTUN", "Qffffehhffff", "TimeUS,AngBst,ThrOut,DAlt,Alt,BarAlt,DCRt,CRt,DVx,DVy,DAx,DAy" },
+      "QTUN", "Qffffhhfffff", "TimeUS,AngBst,ThrOut,DAlt,Alt,DCRt,CRt,DVx,DVy,DAx,DAy,TMix" },
+    { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA),
+      "AOA", "Qff", "TimeUS,AOA,SSA" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
@@ -534,17 +555,13 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     DataFlash.Log_Write_Mode(control_mode);
     DataFlash.Log_Write_Rally(rally);
     Log_Write_Home_And_Origin();
+    gps.Write_DataFlash_Log_Startup_messages();
 }
 
 // start a new log
 void Plane::start_logging() 
 {
-    DataFlash.set_mission(&mission);
-    DataFlash.setVehicle_Startup_Log_Writer(
-        FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
-        );
-
-    DataFlash.StartNewLog();
+    DataFlash.StartUnstartedLogging();
 }
 
 /*
@@ -553,14 +570,8 @@ void Plane::start_logging()
 void Plane::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
-    if (!DataFlash.CardInserted()) {
-        gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
-    } else if (DataFlash.NeedPrep()) {
-        gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
-        DataFlash.Prep();
-        gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
-        gcs().reset_cli_timeout();
-    }
+
+    gcs().reset_cli_timeout();
 }
 
 #else // LOGGING_ENABLED

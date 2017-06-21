@@ -19,7 +19,7 @@ void Rover::failsafe_check()
     static uint16_t last_mainLoop_count;
     static uint32_t last_timestamp;
     static bool in_failsafe;
-    uint32_t tnow = AP_HAL::micros();
+    const uint32_t tnow = AP_HAL::micros();
 
     if (mainLoop_count != last_mainLoop_count) {
         // the main loop is running, all is OK
@@ -38,12 +38,11 @@ void Rover::failsafe_check()
     }
 
     if (in_failsafe && tnow - last_timestamp > 20000 &&
-        channel_throttle->read() >= (uint16_t)g.fs_throttle_value) {
+        channel_throttle->read() >= static_cast<uint16_t>(g.fs_throttle_value)) {
         // pass RC inputs to outputs every 20ms
         last_timestamp = tnow;
         hal.rcin->clear_overrides();
-        uint8_t start_ch = 0;
-        for (uint8_t ch=start_ch; ch < 4; ch++) {
+        for (uint8_t ch = 0; ch < 4; ch++) {
             hal.rcout->write(ch, hal.rcin->read(ch));
         }
         SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);

@@ -121,6 +121,15 @@ void Plane::send_attitude(mavlink_channel_t chan)
         omega.z);
 }
 
+void Plane::send_aoa_ssa(mavlink_channel_t chan)
+{
+    mavlink_msg_aoa_ssa_send(
+        chan,
+        micros(),
+        ahrs.getAOA(),
+        ahrs.getSSA());
+}
+
 #if GEOFENCE_ENABLED == ENABLED
 void Plane::send_fence_status(mavlink_channel_t chan)
 {
@@ -190,7 +199,7 @@ void Plane::send_nav_controller_output(mavlink_channel_t chan)
         nav_pitch_cd * 0.01f,
         nav_controller->nav_bearing_cd() * 0.01f,
         nav_controller->target_bearing_cd() * 0.01f,
-        auto_state.wp_distance,
+        MIN(auto_state.wp_distance, UINT16_MAX),
         altitude_error_cm * 0.01f,
         airspeed_error * 100,
         nav_controller->crosstrack_error());
@@ -405,18 +414,6 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-void Plane::send_rangefinder(mavlink_channel_t chan)
-{
-    if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
-        // no sonar to report
-        return;
-    }
-    mavlink_msg_rangefinder_send(
-        chan,
-        rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f,
-        rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
-}
-
 void Plane::send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
@@ -588,7 +585,9 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        plane.send_rangefinder(chan);
+        send_rangefinder_downward(plane.rangefinder);
+        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+        send_distance_sensor_downward(plane.rangefinder);
         break;
 
     case MSG_TERRAIN:
@@ -683,6 +682,16 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_ADSB_VEHICLE:
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         plane.adsb.send_adsb_vehicle(chan);
+        break;
+    case MSG_BATTERY_STATUS:
+        send_battery_status(plane.battery);
+        break;
+    case MSG_AOA_SSA:
+        CHECK_PAYLOAD_SIZE(AOA_SSA);
+        plane.send_aoa_ssa(chan);
+        break;
+    case MSG_LANDING:
+        plane.landing.send_landing_message(chan);
         break;
     }
     return true;
@@ -794,14 +803,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         handle_log_send(plane.DataFlash);
     }
 
-    if (_queued_parameter != nullptr) {
-        if (streamRates[STREAM_PARAMS].get() <= 0) {
-            streamRates[STREAM_PARAMS].set(10);
-        }
-        if (stream_trigger(STREAM_PARAMS)) {
-            send_message(MSG_NEXT_PARAM);
-        }
-    }
+    send_queued_parameters();
 
     if (plane.gcs_out_of_time) return;
 
@@ -870,9 +872,12 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
         send_message(MSG_RPM);
+        send_message(MSG_AOA_SSA);
+
         if (plane.control_mode != MANUAL) {
             send_message(MSG_PID_TUNING);
         }
+        send_message(MSG_LANDING);
     }
 
     if (plane.gcs_out_of_time) return;
@@ -895,6 +900,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_MAG_CAL_REPORT);
         send_message(MSG_MAG_CAL_PROGRESS);
         send_message(MSG_BATTERY2);
+        send_message(MSG_BATTERY_STATUS);
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_EKF_STATUS_REPORT);
@@ -1153,6 +1159,11 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             }
             result = MAV_RESULT_ACCEPTED;
             break;
+
+      case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+            plane.camera.set_trigger_distance(packet.param1);
+            result = MAV_RESULT_ACCEPTED;
+            break;
 #endif // CAMERA == ENABLED
 
         case MAV_CMD_DO_MOUNT_CONTROL:
@@ -1385,12 +1396,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     plane.auto_state.next_wp_no_crosstrack = true;
                     result = MAV_RESULT_ACCEPTED;
                 }
-            }
-
-            if (result == MAV_RESULT_ACCEPTED) {
-                plane.gcs_send_text(MAV_SEVERITY_INFO,"Go around command accepted");
-            } else {
-                plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Rejected go around command");
             }
             break;
 
@@ -1947,10 +1952,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // send message to Notify
         AP_Notify::handle_play_tune(msg);
         break;
-        
-    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        plane.DataFlash.remote_log_block_status_msg(chan, msg);
-        break;
 
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
     {
@@ -2127,6 +2128,7 @@ void Plane::mavlink_delay_cb()
     if (!gcs().chan(0).initialised || in_mavlink_delay) return;
 
     in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
 
     uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
@@ -2144,8 +2146,8 @@ void Plane::mavlink_delay_cb()
         last_5s = tnow;
         gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
-    check_usb_mux();
 
+    DataFlash.EnableWrites(true);
     in_mavlink_delay = false;
 }
 

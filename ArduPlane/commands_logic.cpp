@@ -401,6 +401,11 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 
     landing.do_land(cmd, relative_altitude);
 
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+        // if we were in an abort we need to explicitly move out of the abort state, as it's sticky
+        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
+    }
+
 #if GEOFENCE_ENABLED == ENABLED 
     if (g.fence_autoenable == 1) {
         if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
@@ -512,7 +517,8 @@ bool Plane::verify_takeoff()
         const float min_gps_speed = 5;
         if (auto_state.takeoff_speed_time_ms == 0 && 
             gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
-            gps.ground_speed() > min_gps_speed) {
+            gps.ground_speed() > min_gps_speed &&
+            hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
             auto_state.takeoff_speed_time_ms = millis();
         }
         if (auto_state.takeoff_speed_time_ms != 0 &&

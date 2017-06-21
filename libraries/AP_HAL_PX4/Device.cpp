@@ -63,7 +63,7 @@ void *DeviceBus::bus_thread(void *arg)
                     callback->next_usec += callback->period_usec;
                 }
                 // call it with semaphore held
-                if (binfo->semaphore.take(0)) {
+                if (binfo->semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
                     callback->cb();
                     binfo->semaphore.give();
                 }
@@ -131,6 +131,25 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
     callbacks = callback;
 
     return callback;
+}
+
+/*
+ * Adjust the timer for the next call: it needs to be called from the bus
+ * thread, otherwise it will race with it
+ */
+bool DeviceBus::adjust_timer(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
+{
+    if (!pthread_equal(pthread_self(), thread_ctx)) {
+        fprintf(stderr, "can't adjust timer from unknown thread context\n");
+        return false;
+    }
+
+    DeviceBus::callback_info *callback = static_cast<DeviceBus::callback_info *>(h);
+
+    callback->period_usec = period_usec;
+    callback->next_usec = AP_HAL::micros64() + period_usec;
+
+    return true;
 }
 
 }

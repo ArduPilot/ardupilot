@@ -14,10 +14,10 @@ void Sub::read_barometer(void)
     if (should_log(MASK_LOG_IMU)) {
         Log_Write_Baro();
     }
-    baro_alt = barometer.get_altitude() * 100.0f;
-    baro_climbrate = barometer.get_climb_rate() * 100.0f;
 
-    motors.set_air_density_ratio(barometer.get_air_density_ratio());
+    if (ap.depth_sensor_present) {
+        sensor_health.depth = barometer.healthy(depth_sensor_idx);
+    }
 }
 
 void Sub::init_rangefinder(void)
@@ -95,17 +95,39 @@ void Sub::init_compass()
 {
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
-        cliSerial->println("COMPASS INIT ERROR");
+        hal.console->println("COMPASS INIT ERROR");
         Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
         return;
     }
     ahrs.set_compass(&compass);
 }
 
+/*
+  if the compass is enabled then try to accumulate a reading
+  also update initial location used for declination
+ */
+void Sub::compass_accumulate(void)
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    compass.accumulate();
+
+    // update initial location used for declination
+    if (!ap.compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            ap.compass_init_location = true;
+        }
+    }
+}
+
 // initialise optical flow sensor
+#if OPTFLOW == ENABLED
 void Sub::init_optflow()
 {
-#if OPTFLOW == ENABLED
     // exit immediately if not enabled
     if (!optflow.enabled()) {
         return;
@@ -113,8 +135,8 @@ void Sub::init_optflow()
 
     // initialise optical flow sensor
     optflow.init();
-#endif      // OPTFLOW == ENABLED
 }
+#endif      // OPTFLOW == ENABLED
 
 // called at 200hz
 #if OPTFLOW == ENABLED
@@ -160,15 +182,12 @@ void Sub::read_battery(void)
     if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
         motors.set_voltage(battery.voltage());
     }
+
     if (battery.has_current()) {
         motors.set_current(battery.current_amps());
     }
 
-    // check for low voltage or current if the low voltage check hasn't already been triggered
-    // we only check when we're not powered by USB to avoid false alarms during bench tests
-    if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
-        failsafe_battery_event();
-    }
+    failsafe_battery_check();
 
     // log battery info to the dataflash
     if (should_log(MASK_LOG_CURRENT)) {

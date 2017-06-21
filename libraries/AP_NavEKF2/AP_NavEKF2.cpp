@@ -123,6 +123,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This enables EKF2. Enabling EKF2 only makes the maths run, it does not mean it will be used for flight control. To use it for flight control set AHRS_EKF_TYPE=2. A reboot or restart will need to be performed after changing the value of EK2_ENABLE for it to take effect.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF2, _enable, 1, AP_PARAM_FLAG_ENABLE),
 
     // GPS measurement parameters
@@ -192,7 +193,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: milliseconds
+    // @Units: ms
+    // @RebootRequired: True
     AP_GROUPINFO("GPS_DELAY", 8, NavEKF2, _gpsDelay_ms, 220),
 
     // Height measurement parameters
@@ -227,7 +229,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
-    // @Units: milliseconds
+    // @Units: ms
+    // @RebootRequired: True
     AP_GROUPINFO("HGT_DELAY", 12, NavEKF2, _hgtDelay_ms, 60),
 
     // Magnetometer measurement parameters
@@ -238,7 +241,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 0.01 0.5
     // @Increment: 0.01
     // @User: Advanced
-    // @Units: gauss
+    // @Units: Gauss
     AP_GROUPINFO("MAG_M_NSE", 13, NavEKF2, _magNoise, MAG_M_NSE_DEFAULT),
 
     // @Param: MAG_CAL
@@ -325,10 +328,11 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
     // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
-    // @Range: 0 250
+    // @Range: 0 127
     // @Increment: 10
     // @User: Advanced
-    // @Units: milliseconds
+    // @Units: ms
+    // @RebootRequired: True
     AP_GROUPINFO("FLOW_DELAY", 23, NavEKF2, _flowDelay_ms, FLOW_MEAS_DELAY),
 
     // State and Covariance Predition Parameters
@@ -364,7 +368,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This noise controls the rate of gyro scale factor learning. Increasing it makes rate gyro scale factor estimation faster and noisier.
     // @Range: 0.000001 0.001
     // @User: Advanced
-    // @Units: 1/s
+    // @Units: Hz
     AP_GROUPINFO("GSCL_P_NSE", 27, NavEKF2, _gyroScaleProcessNoise, GSCALE_P_NSE_DEFAULT),
 
     // @Param: ABIAS_P_NSE
@@ -406,6 +410,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: 1 byte bitmap of IMUs to use in EKF2. A separate instance of EKF2 will be started for each IMU selected. Set to 1 to use the first IMU only (default), set to 2 to use the second IMU only, set to 3 to use the first and second IMU. Additional IMU's can be used up to a maximum of 6 if memory and processing resources permit. There may be insufficient memory and processing resources to run multiple instances. If this occurs EKF2 will fail to start.
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 3),
     
     // @Param: CHECK_SCALE
@@ -429,6 +434,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This sets the IMU mask of sensors to do full logging for
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("LOG_MASK", 36, NavEKF2, _logging_mask, 1),
 
     // control of magentic yaw angle fusion
@@ -464,7 +470,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This state process noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field estimation faster and noisier.
     // @Range: 0.00001 0.01
     // @User: Advanced
-    // @Units: gauss/s
+    // @Units: Gauss/s
     AP_GROUPINFO("MAGE_P_NSE", 40, NavEKF2, _magEarthProcessNoise, MAGE_P_NSE_DEFAULT),
 
     // @Param: MAGB_P_NSE
@@ -472,7 +478,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: This state process noise controls the growth of body magnetic field state error estimates. Increasing it makes magnetometer bias error estimation faster and noisier.
     // @Range: 0.00001 0.01
     // @User: Advanced
-    // @Units: gauss/s
+    // @Units: Gauss/s
     AP_GROUPINFO("MAGB_P_NSE", 41, NavEKF2, _magBodyProcessNoise, MAGB_P_NSE_DEFAULT),
 
     // @Param: RNG_USE_HGT
@@ -512,10 +518,11 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: BCN_DELAY
     // @DisplayName: Range beacon measurement delay (msec)
     // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
-    // @Range: 0 250
+    // @Range: 0 127
     // @Increment: 10
     // @User: Advanced
-    // @Units: milliseconds
+    // @Units: ms
+    // @RebootRequired: True
     AP_GROUPINFO("BCN_DELAY", 46, NavEKF2, _rngBcnDelay_ms, 50),
 
     // @Param: RNG_USE_SPD
@@ -532,7 +539,16 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: 1 byte bitmap of EKF cores that will disable magnetic field states and use simple magnetic heading fusion at all times. This parameter enables specified cores to be used as a backup for flight into an environment with high levels of external magnetic interference which may degrade the EKF attitude estimate when using 3-axis magnetometer fusion. NOTE : Use of a different magnetometer fusion algorithm on different cores makes unwanted EKF core switches due to magnetometer errors more likely.
     // @Bitmask: 0:FirstEKF,1:SecondEKF,2:ThirdEKF,3:FourthEKF,4:FifthEKF,5:SixthEKF
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("MAG_MASK", 48, NavEKF2, _magMask, 0),
+
+    // @Param: OGN_HGT_MASK
+    // @DisplayName: Bitmask control of EKF reference height correction
+    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be corrected so that the height returned by the getLLH() function is compensated for primary height sensor drift and change in datum over time. The first two bit positions control when the height datum will be corrected. Correction is performed using a Bayes filter and only operates when GPS quality permits. The third bit position controls where the corrections to the GPS reference datum are applied. Corrections can be applied to the local vertical position (default) or to the reported EKF origin height.
+    // @Bitmask: 0:Correct when using Baro height,1:Correct when using range finder height,2:Apply corrections to origin height
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("OGN_HGT_MASK", 49, NavEKF2, _originHgtMode, 0),
 
     AP_GROUPEND
 };
@@ -609,8 +625,15 @@ bool NavEKF2::InitialiseFilter(void)
     if (_enable == 0) {
         return false;
     }
+    const AP_InertialSensor &ins = _ahrs->get_ins();
 
     imuSampleTime_us = AP_HAL::micros64();
+
+    // remember expected frame time
+    _frameTimeUsec = 1e6 / ins.get_sample_rate();
+
+    // expected number of IMU frames per prediction
+    _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
     // see if we will be doing logging
     DataFlash_Class *dataflash = DataFlash_Class::instance();
@@ -621,7 +644,6 @@ bool NavEKF2::InitialiseFilter(void)
     if (core == nullptr) {
 
         // don't run multiple filters for 1 IMU
-        const AP_InertialSensor &ins = _ahrs->get_ins();
         uint8_t mask = (1U<<ins.get_accel_count())-1;
         _imuMask.set(_imuMask.get() & mask);
         
@@ -661,7 +683,7 @@ bool NavEKF2::InitialiseFilter(void)
         primary = 0;
     }
 
-    // initialse the cores. We return success only if all cores
+    // initialise the cores. We return success only if all cores
     // initialise successfully
     bool ret = true;
     for (uint8_t i=0; i<num_cores; i++) {
@@ -690,10 +712,12 @@ void NavEKF2::UpdateFilter(void)
 
     bool statePredictEnabled[num_cores];
     for (uint8_t i=0; i<num_cores; i++) {
-        // if the previous core has only recently finished a new state prediction cycle, then
-        // don't start a new cycle to allow time for fusion operations to complete if the update
-        // rate is higher than 200Hz
-        if ((i > 0) && (core[i-1].getFramesSincePredict() < 2) && (ins.get_sample_rate() > 200)) {
+        // if we have not overrun by more than 3 IMU frames, and we
+        // have already used more than 1/3 of the CPU budget for this
+        // loop then suppress the prediction step. This allows
+        // multiple EKF instances to cooperate on scheduling
+        if (core[i].getFramesSincePredict() < (_framesPerPrediction+3) &&
+            (AP_HAL::micros() - ins.get_last_update_usec()) > _frameTimeUsec/3) {
             statePredictEnabled[i] = false;
         } else {
             statePredictEnabled[i] = true;
@@ -982,22 +1006,24 @@ bool NavEKF2::getLLH(struct Location &loc) const
     return core[primary].getLLH(loc);
 }
 
-// return the latitude and longitude and height used to set the NED origin
+// Return the latitude and longitude and height used to set the NED origin for the specified instance
+// An out of range instance (eg -1) returns data for the the primary instance
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF2::getOriginLLH(struct Location &loc) const
+bool NavEKF2::getOriginLLH(int8_t instance, struct Location &loc) const
 {
+    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[primary].getOriginLLH(loc);
+    return core[instance].getOriginLLH(loc);
 }
 
 // set the latitude and longitude and height used to set the NED origin
 // All NED positions calculated by the filter will be relative to this location
 // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
 // Returns false if the filter has rejected the attempt to set the origin
-bool NavEKF2::setOriginLLH(struct Location &loc)
+bool NavEKF2::setOriginLLH(const Location &loc)
 {
     if (!core) {
         return false;
@@ -1033,10 +1059,11 @@ void NavEKF2::getRotationBodyToNED(Matrix3f &mat) const
 }
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
-void NavEKF2::getQuaternion(Quaternion &quat) const
+void NavEKF2::getQuaternion(int8_t instance, Quaternion &quat) const
 {
+    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[primary].getQuaternion(quat);
+        core[instance].getQuaternion(quat);
     }
 }
 
@@ -1445,6 +1472,21 @@ void NavEKF2::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
     pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_down_reset_data.core_changed = true;
 
+}
+
+/*
+  get timing statistics structure
+*/
+void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing)
+{
+    if (instance < 0 || instance >= num_cores) {
+        instance = primary;
+    }
+    if (core) {
+        core[instance].getTimingStatistics(timing);
+    } else {
+        memset(&timing, 0, sizeof(timing));
+    }
 }
 
 #endif //HAL_CPU_CLASS

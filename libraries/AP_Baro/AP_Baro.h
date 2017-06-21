@@ -83,8 +83,7 @@ public:
 
     // ground temperature in degrees C
     // the ground values are only valid after calibration
-    float get_ground_temperature(void) const { return get_ground_temperature(_primary); }
-    float get_ground_temperature(uint8_t i)  const { return sensors[i].ground_temperature.get(); }
+    float get_ground_temperature(void) const;
 
     // ground pressure in Pascal
     // the ground values are only valid after calibration
@@ -103,8 +102,8 @@ public:
     // settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-    float get_calibration_temperature(void) const { return get_calibration_temperature(_primary); }
-    float get_calibration_temperature(uint8_t instance) const;
+    float get_external_temperature(void) const { return get_external_temperature(_primary); };
+    float get_external_temperature(const uint8_t instance) const;
 
     // HIL (and SITL) interface, setting altitude
     void setHIL(float altitude_msl);
@@ -150,6 +149,12 @@ public:
     // get baro drift amount
     float get_baro_drift_offset(void) { return _alt_offset_active; }
 
+    // simple atmospheric model
+    static void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
+
+    // set a pressure correction from AP_TempCalibration
+    void set_pressure_correction(uint8_t instance, float p_correction);
+    
 private:
     // how many drivers do we have?
     uint8_t _num_drivers;
@@ -170,8 +175,8 @@ private:
         float pressure;                 // pressure in Pascal
         float temperature;              // temperature in degrees C
         float altitude;                 // calculated altitude
-        AP_Float ground_temperature;
         AP_Float ground_pressure;
+        float p_correction;
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
@@ -184,11 +189,12 @@ private:
     uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
     AP_Float                            _specific_gravity; // the specific gravity of fluid for an ROV 1.00 for freshwater, 1.024 for salt water
+    AP_Float                            _user_ground_temperature; // user override of the ground temperature used for EAS2TAS
     bool                                _hil_mode:1;
+    float                               _guessed_ground_temperature; // currently ground temperature estimate using our best abailable source
 
     // when did we last notify the GCS of new pressure reference?
     uint32_t                            _last_notify_ms;
 
-    void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
     bool _add_backend(AP_Baro_Backend *backend);
 };

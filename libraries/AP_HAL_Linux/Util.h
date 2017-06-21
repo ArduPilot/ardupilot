@@ -30,7 +30,7 @@ public:
         return static_cast<Util*>(util);
     }
 
-    void init(int argc, char * const *argv);
+    void init(int argc, char *const *argv);
     bool run_debug_shell(AP_HAL::BetterStream *stream) { return false; }
 
     /**
@@ -47,8 +47,8 @@ public:
       set system clock in UTC microseconds
      */
     void set_system_clock(uint64_t time_utc_usec);
-    const char* get_custom_log_directory() { return custom_log_directory; }
-    const char* get_custom_terrain_directory() { return custom_terrain_directory; }
+    const char *get_custom_log_directory() const override final { return custom_log_directory; }
+    const char *get_custom_terrain_directory() const override final { return custom_terrain_directory; }
 
     void set_custom_log_directory(const char *_custom_log_directory) { custom_log_directory = _custom_log_directory; }
     void set_custom_terrain_directory(const char *_custom_terrain_directory) { custom_terrain_directory = _custom_terrain_directory; }
@@ -106,11 +106,11 @@ private:
 #else
     static ToneAlarm _toneAlarm;
 #endif
-    Heat *_heat;
     int saved_argc;
-    char* const *saved_argv;
-    const char* custom_log_directory = nullptr;
-    const char* custom_terrain_directory = nullptr;
+    Heat *_heat;
+    char *const *saved_argv;
+    const char *custom_log_directory = nullptr;
+    const char *custom_terrain_directory = nullptr;
     static const char *_hw_names[UTIL_NUM_HARDWARES];
 };
 

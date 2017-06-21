@@ -87,12 +87,9 @@ void Copter::guided_pos_control_start()
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init();
 
-    // initialise wpnav to stopping point at current altitude
-    // To-Do: set to current location if disarmed?
-    // To-Do: set to stopping point altitude?
+    // initialise wpnav to stopping point
     Vector3f stopping_point;
-    stopping_point.z = inertial_nav.get_altitude();
-    wp_nav->get_wp_stopping_point_xy(stopping_point);
+    wp_nav->get_wp_stopping_point(stopping_point);
 
     // no need to check return status because terrain data is not used
     wp_nav->set_wp_destination(stopping_point, false);
@@ -107,7 +104,12 @@ void Copter::guided_vel_control_start()
     // set guided_mode to velocity controller
     guided_mode = Guided_Velocity;
 
-    // initialize vertical speeds and leash lengths
+    // initialise horizontal speed, acceleration and jerk
+    pos_control->set_speed_xy(wp_nav->get_speed_xy());
+    pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
+    pos_control->set_jerk_xy_to_default();
+
+    // initialize vertical speeds and acceleration
     pos_control->set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control->set_accel_z(g.pilot_accel_z);
 

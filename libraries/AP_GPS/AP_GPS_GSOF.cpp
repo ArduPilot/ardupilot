@@ -342,13 +342,3 @@ AP_GPS_GSOF::process_message(void)
     return false;
 }
 
-void
-AP_GPS_GSOF::inject_data(const uint8_t *data, uint16_t len)
-{
-    if (port->txspace() > len) {
-        last_injected_data_ms = AP_HAL::millis();
-        port->write(data, len);
-    } else {
-        Debug("GSOF: Not enough TXSPACE");
-    }
-}

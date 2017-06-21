@@ -20,7 +20,7 @@ void Sub::update_home_from_EKF()
         set_home_to_current_location_inflight();
     } else {
         // move home to current ekf location (this will set home_state to HOME_SET)
-        set_home_to_current_location();
+        set_home_to_current_location(false);
     }
 }
 
@@ -32,12 +32,12 @@ void Sub::set_home_to_current_location_inflight()
     if (inertial_nav.get_location(temp_loc)) {
         const struct Location &ekf_origin = inertial_nav.get_origin();
         temp_loc.alt = ekf_origin.alt;
-        set_home(temp_loc);
+        set_home(temp_loc, false);
     }
 }
 
 // set_home_to_current_location - set home to current GPS location
-bool Sub::set_home_to_current_location()
+bool Sub::set_home_to_current_location(bool lock)
 {
     // get current location from EKF
     Location temp_loc;
@@ -48,28 +48,7 @@ bool Sub::set_home_to_current_location()
         // This also ensures that mission items with relative altitude frame, are always
         // relative to the water's surface, whether in a high elevation lake, or at sea level.
         temp_loc.alt -= barometer.get_altitude() * 100.0f;
-        return set_home(temp_loc);
-    }
-    return false;
-}
-
-// set_home_to_current_location_and_lock - set home to current location and lock so it cannot be moved
-bool Sub::set_home_to_current_location_and_lock()
-{
-    if (set_home_to_current_location()) {
-        set_home_state(HOME_SET_AND_LOCKED);
-        return true;
-    }
-    return false;
-}
-
-// set_home_and_lock - sets ahrs home (used for RTL) to specified location and locks so it cannot be moved
-//  unless this function is called again
-bool Sub::set_home_and_lock(const Location& loc)
-{
-    if (set_home(loc)) {
-        set_home_state(HOME_SET_AND_LOCKED);
-        return true;
+        return set_home(temp_loc, lock);
     }
     return false;
 }
@@ -77,7 +56,7 @@ bool Sub::set_home_and_lock(const Location& loc)
 // set_home - sets ahrs home (used for RTL) to specified location
 //  initialises inertial nav and compass on first call
 //  returns true if home location set successfully
-bool Sub::set_home(const Location& loc)
+bool Sub::set_home(const Location& loc, bool lock)
 {
     // check location is valid
     if (loc.lat == 0 && loc.lng == 0) {
@@ -89,10 +68,6 @@ bool Sub::set_home(const Location& loc)
 
     // init inav and compass declination
     if (ap.home_state == HOME_UNSET) {
-        // Set compass declination automatically
-        if (g.compass_enabled) {
-            compass.set_initial_location(gps.location().lat, gps.location().lng);
-        }
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
         scaleLongDown = longitude_scale(loc);
         // record home is set
@@ -105,6 +80,11 @@ bool Sub::set_home(const Location& loc)
                 DataFlash.Log_Write_Mission_Cmd(mission, temp_cmd);
             }
         }
+    }
+
+    // lock home position
+    if (lock) {
+        set_home_state(HOME_SET_AND_LOCKED);
     }
 
     // log ahrs home and ekf origin dataflash
@@ -141,10 +121,9 @@ void Sub::set_system_time_from_GPS()
 
     // if we have a 3d lock and valid location
     if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        // set system clock for log timestamps
-        hal.util->set_system_clock(gps.time_epoch_usec());
         uint64_t gps_timestamp = gps.time_epoch_usec();
 
+        // set system clock for log timestamps
         hal.util->set_system_clock(gps_timestamp);
 
         // update signing timestamp

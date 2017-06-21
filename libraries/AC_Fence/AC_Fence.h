@@ -49,7 +49,7 @@ public:
     uint8_t get_enabled_fences() const;
 
     /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
-    bool pre_arm_check() const;
+    bool pre_arm_check(const char* &fail_msg) const;
 
     ///
     /// methods to check we are within the boundaries and recover

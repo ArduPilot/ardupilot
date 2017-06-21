@@ -17,9 +17,19 @@ float QuadPlane::tilt_max_change(bool up)
     } else {
         rate = tilt.max_rate_down_dps;
     }
-    if (plane.control_mode == MANUAL && tilt.tilt_type != TILT_TYPE_BINARY) {
-        // allow a minimum of 90 DPS in manual, to give fast control
-        rate = MAX(rate, 90);
+    if (tilt.tilt_type != TILT_TYPE_BINARY && !up) {
+        bool fast_tilt = false;
+        if (plane.control_mode == MANUAL) {
+            fast_tilt = true;
+        }
+        if (hal.util->get_soft_armed() && !in_vtol_mode() && !assisted_flight) {
+            fast_tilt = true;
+        }
+        if (fast_tilt) {
+            // allow a minimum of 90 DPS in manual or if we are not
+            // stabilising, to give fast control
+            rate = MAX(rate, 90);
+        }
     }
     return rate * plane.G_Dt / 90.0f;
 }
@@ -50,7 +60,7 @@ void QuadPlane::tiltrotor_continuous_update(void)
     // the maximum rate of throttle change
     float max_change;
     
-    if (!in_vtol_mode() && !assisted_flight) {
+    if (!in_vtol_mode() && (!hal.util->get_soft_armed() || !assisted_flight)) {
         // we are in pure fixed wing mode. Move the tiltable motors all the way forward and run them as
         // a forward motor
         tiltrotor_slew(1);
@@ -173,10 +183,15 @@ void QuadPlane::tiltrotor_update(void)
         // no motors to tilt
         return;
     }
+
     if (tilt.tilt_type == TILT_TYPE_BINARY) {
         tiltrotor_binary_update();
     } else {
         tiltrotor_continuous_update();
+    }
+
+    if (tilt.tilt_type == TILT_TYPE_VECTORED_YAW) {
+        tiltrotor_vectored_yaw();
     }
 }
 
@@ -327,4 +342,31 @@ bool QuadPlane::tiltrotor_fully_fwd(void)
         return false;
     }
     return (tilt.current_tilt >= 1);
+}
+
+/*
+  control vectored yaw with tilt multicopters
+ */
+void QuadPlane::tiltrotor_vectored_yaw(void)
+{
+    // total angle the tilt can go through
+    float total_angle = 90 + tilt.tilt_yaw_angle;
+    // output value (0 to 1) to get motors pointed straight up
+    float zero_out = tilt.tilt_yaw_angle / total_angle;
+
+    // calculate the basic tilt amount from current_tilt
+    float base_output = zero_out + (tilt.current_tilt * (1 - zero_out));
+    
+    float tilt_threshold = (tilt.max_angle_deg/90.0f);
+    bool no_yaw = (tilt.current_tilt > tilt_threshold);
+    if (no_yaw) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * base_output);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 1000 * base_output);
+    } else {
+        float yaw_out = motors->get_yaw();
+        float yaw_range = zero_out;
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * (base_output + yaw_out * yaw_range));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 1000 * (base_output - yaw_out * yaw_range));
+    }
 }

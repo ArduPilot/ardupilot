@@ -10,13 +10,18 @@
 #include "AP_Compass_BMM150.h"
 #include "AP_Compass_HIL.h"
 #include "AP_Compass_HMC5843.h"
+#include "AP_Compass_IST8310.h"
 #include "AP_Compass_LSM303D.h"
 #include "AP_Compass_LSM9DS1.h"
-#include "AP_Compass_PX4.h"
 #include "AP_Compass_QURT.h"
 #include "AP_Compass_qflight.h"
 #include "AP_Compass_LIS3MDL.h"
 #include "AP_Compass_AK09916.h"
+#include "AP_Compass_QMC5883L.h"
+#if HAL_WITH_UAVCAN
+#include "AP_Compass_UAVCAN.h"
+#endif
+#include "AP_Compass_MMC3416.h"
 #include "AP_Compass.h"
 
 extern AP_HAL::HAL& hal;
@@ -27,6 +32,10 @@ extern AP_HAL::HAL& hal;
 #define COMPASS_LEARN_DEFAULT Compass::LEARN_INTERNAL
 #endif
 
+#ifndef AP_COMPASS_OFFSETS_MAX_DEFAULT
+#define AP_COMPASS_OFFSETS_MAX_DEFAULT 600
+#endif
+
 const AP_Param::GroupInfo Compass::var_info[] = {
     // index 0 was used for the old orientation matrix
 
@@ -34,7 +43,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass offsets in milligauss on the X axis
     // @Description: Offset to be added to the compass x-axis values to compensate for metal in the frame
     // @Range: -400 400
-    // @Units: milligauss
+    // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
 
@@ -42,7 +51,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass offsets in milligauss on the Y axis
     // @Description: Offset to be added to the compass y-axis values to compensate for metal in the frame
     // @Range: -400 400
-    // @Units: milligauss
+    // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
 
@@ -50,7 +59,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass offsets in milligauss on the Z axis
     // @Description: Offset to be added to the compass z-axis values to compensate for metal in the frame
     // @Range: -400 400
-    // @Units: milligauss
+    // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("OFS",    1, Compass, _state[0].offset, 0),
@@ -59,7 +68,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass declination
     // @Description: An angle to compensate between the true north and magnetic north
     // @Range: -3.142 3.142
-    // @Units: Radians
+    // @Units: rad
     // @Increment: 0.01
     // @User: Standard
     AP_GROUPINFO("DEC",    2, Compass, _declination, 0),
@@ -94,25 +103,25 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: MOT_X
     // @DisplayName: Motor interference compensation for body frame X axis
-    // @Description: Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference
+    // @Description: Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
-    // @Units: Offset per Amp or at Full Throttle
+    // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
 
     // @Param: MOT_Y
     // @DisplayName: Motor interference compensation for body frame Y axis
-    // @Description: Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference
+    // @Description: Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
-    // @Units: Offset per Amp or at Full Throttle
+    // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
 
     // @Param: MOT_Z
     // @DisplayName: Motor interference compensation for body frame Z axis
-    // @Description: Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference
+    // @Description: Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
-    // @Units: Offset per Amp or at Full Throttle
+    // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("MOT",    7, Compass, _state[0].motor_compensation, 0),
@@ -135,7 +144,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass2 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass2's x-axis values to compensate for metal in the frame
     // @Range: -400 400
-    // @Units: milligauss
+    // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
 
@@ -143,7 +152,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass2 offsets in milligauss on the Y axis
     // @Description: Offset to be added to compass2's y-axis values to compensate for metal in the frame
     // @Range: -400 400
-    // @Units: milligauss
+    // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
 
@@ -151,32 +160,32 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass2 offsets in milligauss on the Z axis
     // @Description: Offset to be added to compass2's z-axis values to compensate for metal in the frame
     // @Range: -400 400
-    // @Units: milligauss
+    // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("OFS2",    10, Compass, _state[1].offset, 0),
 
     // @Param: MOT2_X
     // @DisplayName: Motor interference compensation to compass2 for body frame X axis
-    // @Description: Multiplied by the current throttle and added to compass2's x-axis values to compensate for motor interference
+    // @Description: Multiplied by the current throttle and added to compass2's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
-    // @Units: Offset per Amp or at Full Throttle
+    // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
 
     // @Param: MOT2_Y
     // @DisplayName: Motor interference compensation to compass2 for body frame Y axis
-    // @Description: Multiplied by the current throttle and added to compass2's y-axis values to compensate for motor interference
+    // @Description: Multiplied by the current throttle and added to compass2's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
-    // @Units: Offset per Amp or at Full Throttle
+    // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
 
     // @Param: MOT2_Z
     // @DisplayName: Motor interference compensation to compass2 for body frame Z axis
-    // @Description: Multiplied by the current throttle and added to compass2's z-axis values to compensate for motor interference
+    // @Description: Multiplied by the current throttle and added to compass2's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
-    // @Units: Offset per Amp or at Full Throttle
+    // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("MOT2",    11, Compass, _state[1].motor_compensation, 0),
@@ -192,7 +201,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass3 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass3's x-axis values to compensate for metal in the frame
     // @Range: -400 400
-    // @Units: milligauss
+    // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
 
@@ -200,7 +209,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass3 offsets in milligauss on the Y axis
     // @Description: Offset to be added to compass3's y-axis values to compensate for metal in the frame
     // @Range: -400 400
-    // @Units: milligauss
+    // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
 
@@ -208,32 +217,32 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass3 offsets in milligauss on the Z axis
     // @Description: Offset to be added to compass3's z-axis values to compensate for metal in the frame
     // @Range: -400 400
-    // @Units: milligauss
+    // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("OFS3",    13, Compass, _state[2].offset, 0),
 
     // @Param: MOT3_X
     // @DisplayName: Motor interference compensation to compass3 for body frame X axis
-    // @Description: Multiplied by the current throttle and added to compass3's x-axis values to compensate for motor interference
+    // @Description: Multiplied by the current throttle and added to compass3's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
-    // @Units: Offset per Amp or at Full Throttle
+    // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
 
     // @Param: MOT3_Y
     // @DisplayName: Motor interference compensation to compass3 for body frame Y axis
-    // @Description: Multiplied by the current throttle and added to compass3's y-axis values to compensate for motor interference
+    // @Description: Multiplied by the current throttle and added to compass3's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
-    // @Units: Offset per Amp or at Full Throttle
+    // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
 
     // @Param: MOT3_Z
     // @DisplayName: Motor interference compensation to compass3 for body frame Z axis
-    // @Description: Multiplied by the current throttle and added to compass3's z-axis values to compensate for motor interference
+    // @Description: Multiplied by the current throttle and added to compass3's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
-    // @Units: Offset per Amp or at Full Throttle
+    // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("MOT3",    14, Compass, _state[2].motor_compensation, 0),
@@ -403,6 +412,14 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, AP_COMPASS_CALIBRATION_FITNESS_DEFAULT),
 
+    // @Param: OFFS_MAX
+    // @DisplayName: Compass maximum offset
+    // @Description: This sets the maximum allowed compass offset in calibration and arming checks
+    // @Range: 500 3000
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("OFFS_MAX", 31, Compass, _offset_max, AP_COMPASS_OFFSETS_MAX_DEFAULT),
+    
     AP_GROUPEND
 };
 
@@ -517,8 +534,25 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR),
                                               both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_YAW_270),
                     AP_Compass_HMC5843::name, both_i2c_external);
+        //external i2c bus for QMC5883L
+        ADD_BACKEND(AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_QMC5883L_I2C_ADDR),
+                                 ROTATION_YAW_90), AP_Compass_QMC5883L::name, true);
 
+        
 #if !HAL_MINIMIZE_FEATURES
+        // AK09916 on ICM20948
+        ADD_BACKEND(AP_Compass_AK09916::probe_ICM20948(*this,
+                                                       hal.i2c_mgr->get_device(1, HAL_COMPASS_AK09916_I2C_ADDR),
+                                                       hal.i2c_mgr->get_device(1, HAL_COMPASS_ICM20948_I2C_ADDR),
+                                                       true, ROTATION_NONE),
+                     AP_Compass_AK09916::name, true);
+
+        ADD_BACKEND(AP_Compass_AK09916::probe_ICM20948(*this,
+                                                       hal.i2c_mgr->get_device(0, HAL_COMPASS_AK09916_I2C_ADDR),
+                                                       hal.i2c_mgr->get_device(0, HAL_COMPASS_ICM20948_I2C_ADDR),
+                                                       both_i2c_external, ROTATION_NONE),
+                     AP_Compass_AK09916::name, true);
+        
 #if 0
         // lis3mdl - this is disabled for now due to an errata on pixhawk2 GPS unit, pending investigation
         ADD_BACKEND(AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_LIS3MDL_I2C_ADDR),
@@ -540,6 +574,12 @@ void Compass::_detect_backends(void)
         }
         break;
 
+    case AP_BoardConfig::PX4_BOARD_AEROFC:
+#ifdef HAL_COMPASS_IST8310_I2C_BUS
+        ADD_BACKEND(AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_IST8310_I2C_BUS, HAL_COMPASS_IST8310_I2C_ADDR),
+                                              ROTATION_PITCH_180_YAW_90), AP_Compass_IST8310::name, true);
+#endif
+        break;
     default:
         break;
     }
@@ -587,8 +627,7 @@ void Compass::_detect_backends(void)
     default:
         break;
     }
-    // also add any px4 level drivers (for canbus magnetometers)
-    ADD_BACKEND(AP_Compass_PX4::detect(*this), nullptr, false);
+
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QURT
     ADD_BACKEND(AP_Compass_QURT::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_RASPILOT
@@ -640,6 +679,11 @@ void Compass::_detect_backends(void)
                  AP_Compass_AK8963::name, false);
     ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
                  AP_Compass_HMC5843::name, true);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
+    ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, hal.i2c_mgr->get_device(HAL_COMPASS_AK8963_I2C_BUS, HAL_COMPASS_AK8963_I2C_ADDR)),
+                 AP_Compass_AK8963::name, false);
+    ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
+                 AP_Compass_HMC5843::name, true);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
     ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0),
                  AP_Compass_AK8963::name, false);
@@ -667,6 +711,18 @@ void Compass::_detect_backends(void)
                  AP_Compass_LSM9DS1::name, false);
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
+#endif
+
+#if HAL_WITH_UAVCAN
+    if ((AP_BoardConfig::get_can_enable() != 0) && (hal.can_mgr != nullptr))
+    {
+        if((_backend_count < COMPASS_MAX_BACKEND) && (_compass_count < COMPASS_MAX_INSTANCES))
+        {
+            printf("Creating AP_Compass_UAVCAN\n\r");
+            _backends[_backend_count] = new AP_Compass_UAVCAN(*this);
+            _backend_count++;
+        }
+    }
 #endif
 
     if (_backend_count == 0 ||

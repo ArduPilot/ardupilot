@@ -22,13 +22,6 @@ float Sub::pv_alt_above_origin(float alt_above_home_cm)
     return alt_above_home_cm + (ahrs.get_home().alt - origin.alt);
 }
 
-// pv_alt_above_home - convert altitude above EKF origin to altitude above home
-float Sub::pv_alt_above_home(float alt_above_origin_cm)
-{
-    const struct Location &origin = inertial_nav.get_origin();
-    return alt_above_origin_cm + (origin.alt - ahrs.get_home().alt);
-}
-
 // pv_get_bearing_cd - return bearing in centi-degrees between two positions
 float Sub::pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
 {
@@ -43,11 +36,4 @@ float Sub::pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination
 float Sub::pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
 {
     return norm(destination.x-origin.x,destination.y-origin.y);
-}
-
-// returns distance between a destination and home in cm
-float Sub::pv_distance_to_home_cm(const Vector3f &destination)
-{
-    Vector3f home = pv_location_to_vector(ahrs.get_home());
-    return pv_get_horizontal_distance_cm(home, destination);
 }

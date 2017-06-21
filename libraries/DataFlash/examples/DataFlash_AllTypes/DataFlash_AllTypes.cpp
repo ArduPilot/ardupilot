@@ -94,7 +94,7 @@ void DataFlashTest_AllTypes::flush_dataflash(DataFlash_Class &_dataflash)
 
 void DataFlashTest_AllTypes::Log_Write_TypeMessages()
 {
-    dataflash.StartNewLog();
+    dataflash.StartUnstartedLogging();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
 
@@ -141,7 +141,7 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages()
 
 void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 {
-    dataflash.StartNewLog();
+    dataflash.StartUnstartedLogging();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number for Log_Write %u\n", log_num);
 
@@ -153,7 +153,7 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
                         19812,   // uint16_t
                         -98234729,   // int32_t
                         74627293,    // uint32_t
-                        35.87654,  // float
+                        35.87654f,  // float
                         (double)67.7393274658293,   // double
                         "ABCD", // char[4]
                         // char[16]:
@@ -184,15 +184,11 @@ void DataFlashTest_AllTypes::setup(void)
     hal.console->printf("Dataflash All Types 1.0\n");
 
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
+    dataflash.set_vehicle_armed(true);
 
     // Test
     hal.scheduler->delay(20);
     dataflash.ShowDeviceInfo(hal.console);
-
-    if (dataflash.NeedPrep()) {
-        hal.console->printf("Preparing dataflash...\n");
-        dataflash.Prep();
-    }
 
     Log_Write_TypeMessages();
     Log_Write_TypeMessages_Log_Write();

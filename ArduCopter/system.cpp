@@ -184,7 +184,11 @@ void Copter::init_ardupilot()
     // allocate the motors class
     allocate_motors();
 
-    init_rc_out();              // sets up motors and output to escs
+    // sets up motors and output to escs
+    init_rc_out();
+
+    // motors initialised so parameters can be sent
+    ap.initialised_params = true;
 
     // initialise which outputs Servo and Relay events can use
     ServoRelayEvents.set_channel_mask(~motors->get_motor_mask());
@@ -197,14 +201,13 @@ void Copter::init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
-    // give AHRS the rnage beacon sensor
+    // give AHRS the range beacon sensor
     ahrs.set_beacon(&g2.beacon);
 
     // Do GPS init
     gps.init(&DataFlash, serial_manager);
 
-    if(g.compass_enabled)
-        init_compass();
+    init_compass();
 
 #if OPTFLOW == ENABLED
     // make optflow available to AHRS
@@ -279,11 +282,18 @@ void Copter::init_ardupilot()
     // init beacons used for non-gps position estimation
     init_beacon();
 
+    // init visual odometry
+    init_visual_odom();
+
     // initialise AP_RPM library
     rpm_sensor.init();
 
     // initialise mission library
     mission.init();
+
+    // initialise DataFlash library
+    DataFlash.set_mission(&mission);
+    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
 
     // initialise the flight mode and aux switch
     // ---------------------------
@@ -306,6 +316,15 @@ void Copter::init_ardupilot()
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
+
+    // enable output to motors
+    arming.pre_arm_rc_checks(true);
+    if (ap.pre_arm_rc_check) {
+        enable_motor_output();
+    }
+
+    // disable safety if requested
+    BoardConfig.init_safety();
 
     cliSerial->printf("\nReady to FLY ");
 
@@ -380,11 +399,27 @@ bool Copter::ekf_position_ok()
 // optflow_position_ok - returns true if optical flow based position estimate is ok
 bool Copter::optflow_position_ok()
 {
-#if OPTFLOW != ENABLED
+#if OPTFLOW != ENABLED && VISUAL_ODOMETRY_ENABLED != ENABLED
     return false;
 #else
-    // return immediately if optflow is not enabled or EKF not used
-    if (!optflow.enabled() || !ahrs.have_inertial_nav()) {
+    // return immediately if EKF not used
+    if (!ahrs.have_inertial_nav()) {
+        return false;
+    }
+
+    // return immediately if neither optflow nor visual odometry is enabled
+    bool enabled = false;
+#if OPTFLOW == ENABLED
+    if (optflow.enabled()) {
+        enabled = true;
+    }
+#endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    if (g2.visual_odom.enabled()) {
+        enabled = true;
+    }
+#endif
+    if (!enabled) {
         return false;
     }
 
@@ -414,7 +449,7 @@ void Copter::update_auto_armed()
         if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
-#if FRAME_CONFIG == HELI_FRAME 
+#if FRAME_CONFIG == HELI_FRAME
         // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
         // so that rotor runup is checked again before attempting to take-off
         if(ap.land_complete && !motors->rotor_runup_complete()) {
@@ -456,14 +491,17 @@ void Copter::check_usb_mux(void)
 bool Copter::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
+    if (!(mask & g.log_bitmask)) {
         return false;
     }
-    bool ret = motors->armed() || DataFlash.log_while_disarmed();
-    if (ret && !DataFlash.logging_started() && !in_log_download) {
-        start_logging();
+    if (!DataFlash.should_log()) {
+        return false;
     }
-    return ret;
+    if (in_log_download) {
+        return false;
+    }
+    start_logging();
+    return true;
 #else
     return false;
 #endif
@@ -472,7 +510,8 @@ bool Copter::should_log(uint32_t mask)
 // default frame_class to match firmware if possible
 void Copter::set_default_frame_class()
 {
-    if (FRAME_CONFIG == HELI_FRAME) {
+    if (FRAME_CONFIG == HELI_FRAME &&
+        g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_DUAL) {
         g2.frame_class.set(AP_Motors::MOTOR_FRAME_HELI);
     }
 }
@@ -491,6 +530,7 @@ uint8_t Copter::get_frame_mav_type()
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
             return MAV_TYPE_OCTOROTOR;
         case AP_Motors::MOTOR_FRAME_HELI:
+        case AP_Motors::MOTOR_FRAME_HELI_DUAL:
             return MAV_TYPE_HELICOPTER;
         case AP_Motors::MOTOR_FRAME_TRI:
             return MAV_TYPE_TRICOPTER;
@@ -498,6 +538,8 @@ uint8_t Copter::get_frame_mav_type()
         case AP_Motors::MOTOR_FRAME_COAX:
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
             return MAV_TYPE_COAXIAL;
+        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
+            return MAV_TYPE_HEXAROTOR;
     }
     // unknown frame so return generic
     return MAV_TYPE_GENERIC;
@@ -519,6 +561,8 @@ const char* Copter::get_frame_string()
             return "OCTA_QUAD";
         case AP_Motors::MOTOR_FRAME_HELI:
             return "HELI";
+        case AP_Motors::MOTOR_FRAME_HELI_DUAL:
+            return "HELI_DUAL";
         case AP_Motors::MOTOR_FRAME_TRI:
             return "TRI";
         case AP_Motors::MOTOR_FRAME_SINGLE:
@@ -527,6 +571,8 @@ const char* Copter::get_frame_string()
             return "COAX";
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
             return "TAILSITTER";
+        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
+            return "DODECA_HEXA";
         case AP_Motors::MOTOR_FRAME_UNDEFINED:
         default:
             return "UNKNOWN";
@@ -538,8 +584,6 @@ const char* Copter::get_frame_string()
  */
 void Copter::allocate_motors(void)
 {
-    const struct AP_Param::GroupInfo *var_info;
-    
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
 #if FRAME_CONFIG != HELI_FRAME
         case AP_Motors::MOTOR_FRAME_QUAD:
@@ -547,57 +591,66 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_Y6:
         case AP_Motors::MOTOR_FRAME_OCTA:
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
         default:
             motors = new AP_MotorsMatrix(MAIN_LOOP_RATE);
-            var_info = AP_MotorsMatrix::var_info;
+            motors_var_info = AP_MotorsMatrix::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_TRI:
             motors = new AP_MotorsTri(MAIN_LOOP_RATE);
-            var_info = AP_MotorsTri::var_info;
+            motors_var_info = AP_MotorsTri::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
             break;
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = new AP_MotorsSingle(MAIN_LOOP_RATE);
-            var_info = AP_MotorsSingle::var_info;
+            motors_var_info = AP_MotorsSingle::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_COAX:
             motors = new AP_MotorsCoax(MAIN_LOOP_RATE);
-            var_info = AP_MotorsCoax::var_info;
+            motors_var_info = AP_MotorsCoax::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
             motors = new AP_MotorsTailsitter(MAIN_LOOP_RATE);
-            var_info = AP_MotorsTailsitter::var_info;
+            motors_var_info = AP_MotorsTailsitter::var_info;
             break;
 #else // FRAME_CONFIG == HELI_FRAME
+        case AP_Motors::MOTOR_FRAME_HELI_DUAL:
+            motors = new AP_MotorsHeli_Dual(MAIN_LOOP_RATE);
+            motors_var_info = AP_MotorsHeli_Dual::var_info;
+            AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
+            break;
+            
         case AP_Motors::MOTOR_FRAME_HELI:
         default:
             motors = new AP_MotorsHeli_Single(MAIN_LOOP_RATE);
-            var_info = AP_MotorsHeli_Single::var_info;
+            motors_var_info = AP_MotorsHeli_Single::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
-            break;            
+            break;
 #endif
     }
     if (motors == nullptr) {
         AP_HAL::panic("Unable to allocate FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
     }
-    AP_Param::load_object_from_eeprom(motors, var_info);
+    AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
     AP_AHRS_View *ahrs_view = ahrs.create_view(ROTATION_NONE);
     if (ahrs_view == nullptr) {
         AP_HAL::panic("Unable to allocate AP_AHRS_View");
     }
-    
+
+    const struct AP_Param::GroupInfo *ac_var_info;
+
 #if FRAME_CONFIG != HELI_FRAME
     attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
-    var_info = AC_AttitudeControl_Multi::var_info;
+    ac_var_info = AC_AttitudeControl_Multi::var_info;
 #else
     attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
-    var_info = AC_AttitudeControl_Heli::var_info;
+    ac_var_info = AC_AttitudeControl_Heli::var_info;
 #endif
     if (attitude_control == nullptr) {
         AP_HAL::panic("Unable to allocate AttitudeControl");
     }
-    AP_Param::load_object_from_eeprom(attitude_control, var_info);
+    AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
         
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control,
                                     g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
@@ -639,6 +692,11 @@ void Copter::allocate_motors(void)
         break;
     }
 
+    // brushed 16kHz defaults to 16kHz pulses
+    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_BRUSHED) {
+        g.rc_speed.set_default(16000);
+    }
+    
     if (upgrading_frame_params) {
         // do frame specific upgrade. This is only done the first time we run the new firmware
 #if FRAME_CONFIG == HELI_FRAME

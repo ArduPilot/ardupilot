@@ -18,7 +18,7 @@ public:
     void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
     uint64_t get_capabilities() const { return capabilities; }
 
-    virtual const char* get_custom_log_directory() { return nullptr; }
+    virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
 
     // get path to custom defaults file for AP_Param

@@ -1,11 +1,11 @@
 #include "Sub.h"
 
 
-bool Sub::surface_init(bool ignore_checks)
+bool Sub::surface_init()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor, exit immediately.
-        gcs_send_text(MAV_SEVERITY_WARNING, "Surface mode requires external pressure sensor.");
+    if (!ap.depth_sensor_present || failsafe.sensor_health) { // can't hold depth without a depth sensor, exit immediately.
+        gcs_send_text(MAV_SEVERITY_WARNING, "BAD DEPTH");
         return false;
     }
 #endif
@@ -28,7 +28,7 @@ void Sub::surface_run()
     float target_yaw_rate;
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors.armed() || !motors.get_interlock()) {
+    if (!motors.armed()) {
         motors.output_min();
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);

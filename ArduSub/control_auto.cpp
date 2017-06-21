@@ -9,36 +9,38 @@
  */
 
 // auto_init - initialise auto controller
-bool Sub::auto_init(bool ignore_checks)
+bool Sub::auto_init()
 {
-    if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
-        auto_mode = Auto_Loiter;
-
-        // stop ROI from carrying over from previous runs of the mission
-        // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
-        if (auto_yaw_mode == AUTO_YAW_ROI) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
-        }
-
-        // initialise waypoint and spline controller
-        wp_nav.wp_and_spline_init();
-
-        // clear guided limits
-        guided_limit_clear();
-
-        // start/resume the mission (based on MIS_RESTART parameter)
-        mission.start_or_resume();
-        return true;
-    } else {
+    if (!position_ok() || mission.num_commands() < 2) {
         return false;
     }
+
+    auto_mode = Auto_Loiter;
+
+    // stop ROI from carrying over from previous runs of the mission
+    // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
+    if (auto_yaw_mode == AUTO_YAW_ROI) {
+        set_auto_yaw_mode(AUTO_YAW_HOLD);
+    }
+
+    // initialise waypoint and spline controller
+    wp_nav.wp_and_spline_init();
+
+    // clear guided limits
+    guided_limit_clear();
+
+    // start/resume the mission (based on MIS_RESTART parameter)
+    mission.start_or_resume();
+    return true;
 }
 
-// auto_run - runs the auto controller
-//      should be called at 100hz or more
-//      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
+// auto_run - runs the appropriate auto controller
+// according to the current auto_mode
+// should be called at 100hz or more
 void Sub::auto_run()
 {
+    mission.update();
+
     // call the correct auto controller
     switch (auto_mode) {
 
@@ -109,8 +111,8 @@ void Sub::auto_wp_start(const Location_Class& dest_loc)
 //      called by auto_run at 100hz or more
 void Sub::auto_wp_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !motors.get_interlock()) {
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed()) {
         // To-Do: reset waypoint origin to current location because vehicle is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
         // call attitude controller
@@ -123,7 +125,7 @@ void Sub::auto_wp_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!failsafe.manual_control) {
+    if (!failsafe.pilot_input) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -196,8 +198,8 @@ void Sub::auto_spline_start(const Location_Class& destination, bool stopped_at_s
 //      called by auto_run at 100hz or more
 void Sub::auto_spline_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed()) {
         // To-Do: reset waypoint origin to current location because vehicle is probably on the ground so we don't want it lurching left or right on take-off
         //    (of course it would be better if people just used take-off)
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
@@ -209,7 +211,7 @@ void Sub::auto_spline_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!failsafe.manual_control) {
+    if (!failsafe.pilot_input) {
         // get pilot's desired yaw rat
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -223,16 +225,27 @@ void Sub::auto_spline_run()
     // run waypoint controller
     wp_nav.update_spline();
 
+    float lateral_out, forward_out;
+    translate_wpnav_rp(lateral_out, forward_out);
+
+    // Send to forward/lateral outputs
+    motors.set_lateral(lateral_out);
+    motors.set_forward(forward_out);
+
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
+
+    // get pilot desired lean angles
+    float target_roll, target_pitch;
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.input_euler_angle_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, get_auto_heading(), true, get_smoothing_gain());
     }
 }
 
@@ -374,8 +387,8 @@ bool Sub::auto_loiter_start()
 //      called by auto_run at 100hz or more
 void Sub::auto_loiter_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !motors.get_interlock()) {
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -385,7 +398,7 @@ void Sub::auto_loiter_run()
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
-    if (!failsafe.manual_control) {
+    if (!failsafe.pilot_input) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
@@ -584,6 +597,7 @@ float Sub::get_auto_heading(void)
         break;
 
     case AUTO_YAW_CORRECT_XTRACK: {
+        // TODO return current yaw if not in appropriate mode
         // Bearing of current track (centidegrees)
         float track_bearing = wp_nav.get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
 
@@ -635,7 +649,7 @@ bool Sub::auto_terrain_recover_start()
     wp_nav.init_loiter_target();
 
     // Reset z axis controller
-    pos_control.relax_alt_hold_controllers(0.0);
+    pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
 
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
@@ -658,7 +672,7 @@ void Sub::auto_terrain_recover_run()
     static uint32_t rangefinder_recovery_ms = 0;
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors.armed() || !motors.get_interlock()) {
+    if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
@@ -685,7 +699,7 @@ void Sub::auto_terrain_recover_run()
             // Start timer as soon as rangefinder is healthy
             if (rangefinder_recovery_ms == 0) {
                 rangefinder_recovery_ms = AP_HAL::millis();
-                pos_control.relax_alt_hold_controllers(0.0); // Reset alt hold targets
+                pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // Reset alt hold targets
             }
 
             // 1.5 seconds of healthy rangefinder means we can resume mission with terrain enabled

@@ -62,7 +62,8 @@ HAL_SITL::HAL_SITL() :
         &sitlRCOutput,      /* rcoutput */
         &sitlScheduler,     /* scheduler */
         &utilInstance,      /* util */
-        &emptyOpticalFlow), /* onboard optical flow */
+        &emptyOpticalFlow, /* onboard optical flow */
+        nullptr),           /* CAN */
     _sitl_state(&sitlState)
 {}
 

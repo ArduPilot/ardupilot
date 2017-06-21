@@ -21,6 +21,7 @@
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -189,16 +190,16 @@ AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
 bool
 AP_GPS_SBF::process_message(void)
 {
-    uint16_t blockid = (sbf_msg.blockid & 4095u);
+    uint16_t blockid = (sbf_msg.blockid & 8191u);
 
     Debug("BlockID %d", blockid);
 
-    // ExtEventPVTGeodetic
-    if (blockid == 4038) {
+    switch (blockid) {
+    case ExtEventPVTGeodetic:
         log_ExtEventPVTGeodetic(sbf_msg.data.msg4007u);
-    }
-    // PVTGeodetic
-    if (blockid == 4007) {
+        break;
+    case PVTGeodetic:
+    {
         const msg4007 &temp = sbf_msg.data.msg4007u;
 
         // Update time state
@@ -208,8 +209,6 @@ AP_GPS_SBF::process_message(void)
         }
 
         state.last_gps_time_ms = AP_HAL::millis();
-
-        state.hdop = last_hdop;
 
         // Update velocity state (don't use −2·10^10)
         if (temp.Vn > -200000) {
@@ -273,33 +272,59 @@ AP_GPS_SBF::process_message(void)
                 break;
         }
         
-        if ((temp.Mode & 64) > 0) // gps is in base mode
+        if ((temp.Mode & 64) > 0) { // gps is in base mode
             state.status = AP_GPS::NO_FIX;
-        if ((temp.Mode & 128) > 0) // gps only has 2d fix
+        } else if ((temp.Mode & 128) > 0) { // gps only has 2d fix
             state.status = AP_GPS::GPS_OK_FIX_2D;
+        }
                     
         return true;
     }
-    // DOP
-    if (blockid == 4001) {
+    case DOP:
+    {
         const msg4001 &temp = sbf_msg.data.msg4001u;
 
-        last_hdop = temp.HDOP;
+        state.hdop = temp.HDOP;
+        state.vdop = temp.VDOP;
+        break;
+    }
+    case ReceiverStatus:
+    {
+        const msg4014 &temp = sbf_msg.data.msg4014u;
+        RxState = temp.RxState;
+        break;
+    }
+    case VelCovGeodetic:
+    {
+        const msg5908 &temp = sbf_msg.data.msg5908u;
 
-        state.hdop = last_hdop;
+        // select the maximum variance, as the EKF will apply it to all the columnds in it's estimate
+        // FIXME: Support returning the covariance matric to the EKF
+        float max_variance_squared = MAX(temp.Cov_VnVn, MAX(temp.Cov_VeVe, temp.Cov_VuVu));
+        if (is_positive(max_variance_squared)) {
+            state.have_speed_accuracy = true;
+            state.speed_accuracy = sqrt(max_variance_squared);
+        } else {
+            state.have_speed_accuracy = false;
+        }
+        break;
+    }
     }
 
     return false;
 }
 
-void
-AP_GPS_SBF::inject_data(const uint8_t *data, uint16_t len)
+void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
-
-    if (port->txspace() > len) {
-        last_injected_data_ms = AP_HAL::millis();
-        port->write(data, len);
-    } else {
-        Debug("SBF: Not enough TXSPACE");
+    if (gps._raw_data) {
+        if (!(RxState & SBF_DISK_MOUNTED)){
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
+        }
+        else if (RxState & SBF_DISK_FULL) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
+        }
+        else if (!(RxState & SBF_DISK_ACTIVITY)) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
+        }
     }
 }

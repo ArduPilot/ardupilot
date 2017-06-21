@@ -367,6 +367,9 @@ void AP_InertialSensor_Invensense::_fifo_reset()
     hal.scheduler->delay_microseconds(1);
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
     _last_stat_user_ctrl = user_ctrl | BIT_USER_CTRL_FIFO_EN;
+
+    notify_accel_fifo_reset(_accel_instance);
+    notify_gyro_fifo_reset(_gyro_instance);
 }
 
 bool AP_InertialSensor_Invensense::_has_auxiliary_bus()
@@ -406,6 +409,30 @@ void AP_InertialSensor_Invensense::start()
         adev = DEVTYPE_ACC_MPU6000;
         break;
     }
+
+    /*
+      setup temperature sensitivity and offset. This varies
+      considerably between parts
+     */
+    switch (_mpu_type) {
+    case Invensense_MPU9250:
+        temp_zero = 21;
+        temp_sensitivity = 1.0/340;
+        break;
+
+    case Invensense_MPU6000:
+    case Invensense_MPU6500:
+        temp_zero = 36.53;
+        temp_sensitivity = 1.0/340;
+        break;
+
+    case Invensense_ICM20608:
+    case Invensense_ICM20602:
+        temp_zero = 25;
+        temp_sensitivity = 1.0/326.8; 
+        break;
+    }
+
     _gyro_instance = _imu.register_gyro(1000, _dev->get_bus_id_devtype(gdev));
     _accel_instance = _imu.register_accel(1000, _dev->get_bus_id_devtype(adev));
 
@@ -553,7 +580,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
             _fifo_reset();
             return false;
         }
-        float temp = t2/340.0f + 36.53f;
+        float temp = t2 * temp_sensitivity + temp_zero;
         
         gyro = Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
@@ -563,7 +590,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
 
-        _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), fsync_set);
+        _notify_new_accel_raw_sample(_accel_instance, accel, 0, fsync_set);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
         _temp_filtered = _temp_filter.apply(temp);
@@ -629,7 +656,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
             _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
             
-            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, AP_HAL::micros64(), false);
+            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
             
             _accum.accel.zero();
@@ -643,7 +670,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
     }
 
     if (ret) {
-        float temp = (static_cast<float>(tsum)/n_samples)/340.0f + 36.53f;
+        float temp = (static_cast<float>(tsum)/n_samples)*temp_sensitivity + temp_zero;
         _temp_filtered = _temp_filter.apply(temp);
     }
     
@@ -783,6 +810,19 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
         _fast_sampling = (_mpu_type != Invensense_MPU6000 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
         if (_fast_sampling) {
             hal.console->printf("MPU[%u]: enabled fast sampling\n", _accel_instance);
+
+            // for logging purposes set the oversamping rate
+            _set_accel_oversampling(_accel_instance, MPU_FIFO_DOWNSAMPLE_COUNT/2);
+            _set_gyro_oversampling(_gyro_instance, MPU_FIFO_DOWNSAMPLE_COUNT);
+
+            /* set divider for internal sample rate to 0x1F when fast
+             sampling enabled. This reduces the impact of the slave
+             sensor on the sample rate. It ends up with around 75Hz
+             slave rate, and reduces the impact on the gyro and accel
+             sample rate, ending up with around 7760Hz gyro rate and
+             3880Hz accel rate
+             */
+            _register_write(MPUREG_I2C_SLV4_CTRL, 0x1F);
         }
     }
     

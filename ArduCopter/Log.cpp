@@ -59,7 +59,6 @@ bool Copter::print_log_menu(void)
     return(true);
 }
 
-#if CLI_ENABLED == ENABLED
 int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv)
 {
     int16_t dump_log_num;
@@ -85,13 +84,12 @@ int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv)
     Log_Read((uint16_t)dump_log_num, dump_log_start, dump_log_end);
     return (0);
 }
-#endif
 
 int8_t Copter::erase_logs(uint8_t argc, const Menu::arg *argv)
 {
-    in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
     do_erase_logs();
-    in_mavlink_delay = false;
+    DataFlash.EnableWrites(true);
     return 0;
 }
 
@@ -351,6 +349,7 @@ struct PACKED log_Performance {
     uint8_t i2c_lockup_count;
     uint16_t ins_error_count;
     uint32_t log_dropped;
+    uint32_t mem_avail;
 };
 
 // Write a performance monitoring packet
@@ -366,6 +365,7 @@ void Copter::Log_Write_Performance()
         i2c_lockup_count : 0,
         ins_error_count  : ins.error_count(),
         log_dropped      : DataFlash.num_dropped() - perf_info_get_num_dropped(),
+        hal.util->available_memory()
     };
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -819,21 +819,6 @@ void Copter::Log_Write_Proximity()
 #endif
 }
 
-// beacon sensor logging
-struct PACKED log_Beacon {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t health;
-    uint8_t count;
-    float dist0;
-    float dist1;
-    float dist2;
-    float dist3;
-    float posx;
-    float posy;
-    float posz;
-};
-
 // Write beacon position and distances
 void Copter::Log_Write_Beacon()
 {
@@ -841,26 +826,7 @@ void Copter::Log_Write_Beacon()
     if (!g2.beacon.enabled()) {
         return;
     }
-
-    // position
-    Vector3f pos;
-    float accuracy = 0.0f;
-    g2.beacon.get_vehicle_position_ned(pos, accuracy);
-
-    struct log_Beacon pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_BEACON_MSG),
-        time_us         : AP_HAL::micros64(),
-        health          : (uint8_t)g2.beacon.healthy(),
-        count           : (uint8_t)g2.beacon.count(),
-        dist0           : g2.beacon.beacon_distance(0),
-        dist1           : g2.beacon.beacon_distance(1),
-        dist2           : g2.beacon.beacon_distance(2),
-        dist3           : g2.beacon.beacon_distance(3),
-        posx            : pos.x,
-        posy            : pos.y,
-        posz            : pos.z
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.Log_Write_Beacon(g2.beacon);
 }
 
 const struct LogStructure Copter::log_structure[] = {
@@ -880,7 +846,7 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qffffffeccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHIhBHI",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop" },
+      "PM",  "QHHIhBHII",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop,Mem" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
       "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit" },
     { LOG_EVENT_MSG, sizeof(log_Event),         
@@ -907,8 +873,6 @@ const struct LogStructure Copter::log_structure[] = {
       "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk" },
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity),
       "PRX",   "QBfffffffffff","TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis" },
-    { LOG_BEACON_MSG, sizeof(log_Beacon),
-      "BCN",   "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ" },
 };
 
 #if CLI_ENABLED == ENABLED
@@ -932,48 +896,38 @@ void Copter::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_pag
 void Copter::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
-    char frame_buf[20];
-    snprintf(frame_buf, sizeof(frame_buf), "Frame: %s", get_frame_string());
-    DataFlash.Log_Write_Message(frame_buf);
+    DataFlash.Log_Write_MessageF("Frame: %s", get_frame_string());
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 #if AC_RALLY
     DataFlash.Log_Write_Rally(rally);
 #endif
     Log_Write_Home_And_Origin();
+    gps.Write_DataFlash_Log_Startup_messages();
 }
 
 
-// start a new log
-void Copter::start_logging() 
+void Copter::start_logging()
 {
-    if (g.log_bitmask != 0 && !in_log_download) {
-        if (!ap.logging_started) {
-            ap.logging_started = true;
-            DataFlash.set_mission(&mission);
-            DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
-            DataFlash.StartNewLog();
-        } else if (!DataFlash.logging_started()) {
-            // dataflash may have stopped logging - when we get_log_data,
-            // for example.  Try to restart:
-            DataFlash.StartNewLog();
-        }
-        // enable writes
-        DataFlash.EnableWrites(true);
+    if (g.log_bitmask == 0) {
+        return;
     }
+    if (in_log_download) {
+        return;
+    }
+
+    ap.logging_started = true;
+
+    // dataflash may have stopped logging - when we get_log_data,
+    // for example.  Always try to restart:
+    DataFlash.StartUnstartedLogging();
 }
 
 void Copter::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
-    if (!DataFlash.CardInserted()) {
-        gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
-    } else if (DataFlash.NeedPrep()) {
-        gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
-        DataFlash.Prep();
-        gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
-        for (uint8_t i=0; i<num_gcs; i++) {
-            gcs_chan[i].reset_cli_timeout();
-        }
+
+    for (uint8_t i=0; i<num_gcs; i++) {
+        gcs_chan[i].reset_cli_timeout();
     }
 }
 

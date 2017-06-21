@@ -122,7 +122,7 @@ bool XPlane::receive_data(void)
     }
     ssize_t len = socket_in.recv(pkt, sizeof(pkt), wait_time_ms);
     
-    if (len < pkt_len+5 || memcmp(pkt, "DATA@", 5) != 0) {
+    if (len < pkt_len+5 || memcmp(pkt, "DATA", 4) != 0) {
         // not a data packet we understand
         goto failed;
     }
@@ -297,6 +297,7 @@ bool XPlane::receive_data(void)
     }
     position = pos + position_zero;
     update_position();
+    time_advance();
 
     accel_earth = dcm * accel_body;
     accel_earth.z += GRAVITY_MSS;
@@ -314,6 +315,7 @@ bool XPlane::receive_data(void)
         position.y = 0;
         position.z = 0;
         update_position();
+        time_advance();
     }
 
     update_mag_field_bf();
@@ -355,6 +357,7 @@ failed:
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 
     update_position();
+    time_advance();
     update_mag_field_bf();
     report.frame_count++;
     return false;

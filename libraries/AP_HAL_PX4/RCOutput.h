@@ -29,6 +29,9 @@ public:
         _esc_pwm_min = min_pwm;
         _esc_pwm_max = max_pwm;
     }
+    float    scale_esc_to_unity(uint16_t pwm) override {
+        return 2.0 * ((float) pwm - _esc_pwm_min) / (_esc_pwm_max - _esc_pwm_min) - 1.0;
+    }
     void cork();
     void push();
 
@@ -50,23 +53,23 @@ private:
     uint32_t _last_config_us;
     unsigned _servo_count;
     unsigned _alt_servo_count;
-    uint32_t _rate_mask;
+    uint32_t _rate_mask_main;
+    uint32_t _rate_mask_alt;
     uint16_t _enabled_channels;
+    uint32_t _period_max;
     struct {
         int pwm_sub;
         actuator_outputs_s outputs;
     } _outputs[ORB_MULTI_MAX_INSTANCES] {};
     actuator_armed_s _armed;
 
-    orb_advert_t _actuator_direct_pub = nullptr;
-    orb_advert_t _actuator_armed_pub = nullptr;
-    uint16_t _esc_pwm_min = 0;
-    uint16_t _esc_pwm_max = 0;
+    orb_advert_t _actuator_armed_pub;
+    uint16_t _esc_pwm_min;
+    uint16_t _esc_pwm_max;
 
     void _init_alt_channels(void);
-    void _publish_actuators(void);
     void _arm_actuators(bool arm);
-    void set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz);
+    void set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_t &rate_mask);
     bool _corking;
     enum output_mode _output_mode = MODE_PWM_NORMAL;
     void _send_outputs(void);

@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_X
     // @DisplayName: AHRS Trim Roll
     // @Description: Compensates for the roll angle difference between the control board and the frame. Positive values make the vehicle roll right.
-    // @Units: Radians
+    // @Units: rad
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Standard
@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_Y
     // @DisplayName: AHRS Trim Pitch
     // @Description: Compensates for the pitch angle difference between the control board and the frame. Positive values make the vehicle pitch up/back.
-    // @Units: Radians
+    // @Units: rad
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Standard
@@ -85,7 +85,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_Z
     // @DisplayName: AHRS Trim Yaw
     // @Description: Not Used
-    // @Units: Radians
+    // @Units: rad
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Advanced
@@ -325,4 +325,77 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation)
     }
     _view = new AP_AHRS_View(*this, rotation);
     return _view;
+}
+
+/*
+ * Update AOA and SSA estimation based on airspeed, velocity vector and wind vector
+ *
+ * Based on:
+ * "On estimation of wind velocity, angle-of-attack and sideslip angle of small UAVs using standard sensors" by
+ * Tor A. Johansen, Andrea Cristofaro, Kim Sorensen, Jakob M. Hansen, Thor I. Fossen
+ *
+ * "Multi-Stage Fusion Algorithm for Estimation of Aerodynamic Angles in Mini Aerial Vehicle" by
+ * C.Ramprasadh and Hemendra Arya
+ *
+ * "ANGLE OF ATTACK AND SIDESLIP ESTIMATION USING AN INERTIAL REFERENCE PLATFORM" by
+ * JOSEPH E. ZEIS, JR., CAPTAIN, USAF
+ */
+void AP_AHRS::update_AOA_SSA(void)
+{
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    uint32_t now = AP_HAL::millis();
+    if (now - _last_AOA_update_ms < 50) {
+        // don't update at more than 20Hz
+        return;
+    }
+    _last_AOA_update_ms = now;
+    
+    Vector3f aoa_velocity, aoa_wind;
+
+    // get velocity and wind
+    if (get_velocity_NED(aoa_velocity) == false) {
+        return;
+    }
+
+    aoa_wind = wind_estimate();
+
+    // Rotate vectors to the body frame and calculate velocity and wind
+    const Matrix3f &rot = get_rotation_body_to_ned();
+    aoa_velocity = rot.mul_transpose(aoa_velocity);
+    aoa_wind = rot.mul_transpose(aoa_wind);
+
+    // calculate relative velocity in body coordinates
+    aoa_velocity = aoa_velocity - aoa_wind;
+    float vel_len = aoa_velocity.length();
+
+    // do not calculate if speed is too low
+    if (vel_len < 2.0) {
+        _AOA = 0;
+        _SSA = 0;
+        return;
+    }
+
+    // Calculate AOA and SSA
+    if (aoa_velocity.x > 0) {
+        _AOA = degrees(atanf(aoa_velocity.z / aoa_velocity.x));
+    } else {
+        _AOA = 0;
+    }
+
+    _SSA = degrees(safe_asin(aoa_velocity.y / vel_len));
+#endif
+}
+
+// return current AOA
+float AP_AHRS::getAOA(void)
+{
+    update_AOA_SSA();
+    return _AOA;
+}
+
+// return calculated SSA
+float AP_AHRS::getSSA(void)
+{
+    update_AOA_SSA();
+    return _SSA;
 }

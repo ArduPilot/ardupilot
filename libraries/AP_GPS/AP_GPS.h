@@ -19,7 +19,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -29,15 +28,16 @@
    than 1 then redundant sensors may be available
  */
 #define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
-#define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximumum number of GPs instances including the 'virtual' GPS created by blending receiver data
+#define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPs instances including the 'virtual' GPS created by blending receiver data
 #define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #define GPS_RTK_INJECT_TO_ALL 127
 #define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
+#define GPS_UNKNOWN_DOP UINT16_MAX // set unknown DOP's to maximum value, which is also correct for MAVLink
 
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
 
-#define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52 * 10 * MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
+#define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
 class DataFlash_Class;
 class AP_GPS_Backend;
@@ -59,6 +59,7 @@ public:
     friend class AP_GPS_QURT;
     friend class AP_GPS_SBF;
     friend class AP_GPS_SBP;
+    friend class AP_GPS_SBP2;
     friend class AP_GPS_SIRF;
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
@@ -77,13 +78,13 @@ public:
         GPS_TYPE_SIRF  = 6,
         GPS_TYPE_HIL   = 7,
         GPS_TYPE_SBP   = 8,
-        GPS_TYPE_PX4   = 9,
+        GPS_TYPE_UAVCAN = 9,
         GPS_TYPE_SBF   = 10,
         GPS_TYPE_GSOF  = 11,
         GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
         GPS_TYPE_MAV = 14,
-        GPS_TYPE_NOVA = 15,
+        GPS_TYPE_NOVA = 15
     };
 
     /// GPS status codes
@@ -131,15 +132,15 @@ public:
         float ground_course;                ///< ground course in degrees
         uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint16_t vdop;                      ///< vertical dilution of precision in cm
-        uint8_t num_sats;                   ///< Number of visible satellites        
-        Vector3f velocity;                  ///< 3D velocitiy in m/s, in NED format
-        float speed_accuracy;
-        float horizontal_accuracy;
-        float vertical_accuracy;
-        bool have_vertical_velocity:1;      ///< does this GPS give vertical velocity?
-        bool have_speed_accuracy:1;
-        bool have_horizontal_accuracy:1;
-        bool have_vertical_accuracy:1;
+        uint8_t num_sats;                   ///< Number of visible satellites
+        Vector3f velocity;                  ///< 3D velocity in m/s, in NED format
+        float speed_accuracy;               ///< 3D velocity accuracy estimate in m/s
+        float horizontal_accuracy;          ///< horizontal accuracy estimate in m
+        float vertical_accuracy;            ///< vertical accuracy estimate in m
+        bool have_vertical_velocity:1;      ///< does GPS give vertical velocity? Set to true only once available.
+        bool have_speed_accuracy:1;         ///< does GPS give speed accuracy? Set to true only once available.
+        bool have_horizontal_accuracy:1;    ///< does GPS give horizontal position accuracy? Set to true only once available.
+        bool have_vertical_accuracy:1;      ///< does GPS give vertical position accuracy? Set to true only once available.
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
     };
 
@@ -297,10 +298,10 @@ public:
     }
 
 	// return true if the GPS supports vertical velocity values
-    bool have_vertical_velocity(uint8_t instance) const { 
-        return state[instance].have_vertical_velocity; 
+    bool have_vertical_velocity(uint8_t instance) const {
+        return state[instance].have_vertical_velocity;
     }
-    bool have_vertical_velocity(void) const { 
+    bool have_vertical_velocity(void) const {
         return have_vertical_velocity(primary_instance);
     }
 
@@ -312,7 +313,7 @@ public:
     const Vector3f &get_antenna_offset(uint8_t instance) const;
 
     // set position for HIL
-    void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
+    void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms,
                 const Location &location, const Vector3f &velocity, uint8_t num_sats,
                 uint16_t hdop);
 
@@ -363,6 +364,8 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    void Write_DataFlash_Log_Startup_messages();
+
 protected:
 
     // dataflash for logging, if available
@@ -389,7 +392,10 @@ protected:
     AP_Float _blend_tc;
 
 private:
-    // return gps update rate in milliseconds
+    // returns the desired gps update rate in milliseconds
+    // this does not provide any gurantee that the GPS is updating at the requested
+    // rate it is simply a helper for use in the backends for determining what rate
+    // they should be configuring the GPS to run at
     uint16_t get_rate_ms(uint8_t instance) const;
 
     struct GPS_timing {
@@ -416,15 +422,16 @@ private:
 
     // state of auto-detection process, per instance
     struct detect_state {
-        uint32_t detect_started_ms;
         uint32_t last_baud_change_ms;
         uint8_t current_baud;
+        bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
+        struct SBP2_detect_state sbp2_detect_state;
         struct ERB_detect_state erb_detect_state;
     } detect_state[GPS_MAX_RECEIVERS];
 
@@ -439,10 +446,9 @@ private:
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
-    void _broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index);
 
     /*
-      buffer for re-assembling RTCM data for GPS injection. 
+      buffer for re-assembling RTCM data for GPS injection.
       The 8 bit flags field in GPS_RTCM_DATA is interpreted as:
               1 bit for "is fragmented"
               2 bits for fragment number
@@ -464,9 +470,6 @@ private:
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t *msg);
 
-    // inject data into all backends
-    void inject_data_all(const uint8_t *data, uint16_t len);
-
     // GPS blending and switching
     Vector2f _NE_pos_offset_m[GPS_MAX_RECEIVERS]; // Filtered North,East position offset from GPS instance to blended solution in _output_state.location (m)
     float _hgt_offset_cm[GPS_MAX_RECEIVERS]; // Filtered height offset from GPS instance relative to blended solution in _output_state.location (cm)
@@ -483,5 +486,4 @@ private:
 
     // calculate the blended state
     void calc_blended_state(void);
-
 };

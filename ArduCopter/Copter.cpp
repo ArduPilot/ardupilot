@@ -80,7 +80,7 @@ Copter::Copter(void) :
     fence(ahrs, inertial_nav),
 #endif
 #if AC_AVOID_ENABLED == ENABLED
-    avoid(ahrs, inertial_nav, fence, g2.proximity),
+    avoid(ahrs, inertial_nav, fence, g2.proximity, &g2.beacon),
 #endif
 #if AC_RALLY == ENABLED
     rally(ahrs),

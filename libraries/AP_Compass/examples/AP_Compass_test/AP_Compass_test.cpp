@@ -17,7 +17,7 @@ static void setup()
 {
     hal.console->printf("Compass library test\n");
 
-    AP_BoardConfig{}.init(); // initialise the board drivers
+    AP_BoardConfig{}.init();  // initialise the board drivers
 
     if (!compass.init()) {
         AP_HAL::panic("compass initialisation failed!");
@@ -45,7 +45,7 @@ static void loop()
     if ((AP_HAL::micros() - timer) > 100000L) {
         timer = AP_HAL::micros();
         compass.read();
-        unsigned long read_time = AP_HAL::micros() - timer;
+        const uint32_t read_time = AP_HAL::micros() - timer;
 
         for (uint8_t i = 0; i < compass_count; i++) {
             float heading;
@@ -81,15 +81,17 @@ static void loop()
             offset[i][2] = -(max[i][2] + min[i][2]) / 2;
 
             // display all to user
-            hal.console->printf("Heading: %.2f (%3d,%3d,%3d)",
-                                ToDeg(heading),
+            hal.console->printf("Heading: %.2f (%3d, %3d, %3d)",
+                                (double)ToDeg(heading),
                                 (int)mag.x,
                                 (int)mag.y,
                                 (int)mag.z);
 
             // display offsets
             hal.console->printf(" offsets(%.2f, %.2f, %.2f)",
-                                offset[i][0], offset[i][1], offset[i][2]);
+                                (double)offset[i][0],
+                                (double)offset[i][1],
+                                (double)offset[i][2]);
 
             hal.console->printf(" t=%u", (unsigned)read_time);
 

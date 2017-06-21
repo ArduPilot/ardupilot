@@ -64,15 +64,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
 
-#if CLI_ENABLED == ENABLED
-    // @Param: CLI_ENABLED
-    // @DisplayName: CLI Enable
-    // @Description: This enables/disables the checking for three carriage returns on telemetry links on startup to enter the diagnostics command line interface
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    GSCALAR(cli_enabled,    "CLI_ENABLED",    0),
-#endif
-
     // @Param: PILOT_THR_FILT
     // @DisplayName: Throttle filter cutoff
     // @Description: Throttle filter cutoff (Hz) - active whenever altitude control is inactive - 0 to disable
@@ -105,14 +96,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_BATT_ENABLE
     // @DisplayName: Battery Failsafe Enable
     // @Description: Controls whether failsafe will be invoked when battery voltage or current runs low
-    // @Values: 0:Disabled
+    // @Values: 0:Disabled,1:Warn only,2:Disarm,3:Enter surface mode
     // @User: Standard
     GSCALAR(failsafe_battery_enabled, "FS_BATT_ENABLE", FS_BATT_DISABLED),
 
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
     // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe.
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", FS_BATT_VOLTAGE_DEFAULT),
@@ -120,7 +111,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_BATT_MAH
     // @DisplayName: Failsafe battery milliAmpHours
     // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe.
-    // @Units: mAh
+    // @Units: mA.h
     // @Increment: 50
     // @User: Standard
     GSCALAR(fs_batt_mah,            "FS_BATT_MAH", FS_BATT_MAH_DEFAULT),
@@ -156,14 +147,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_PRESS_MAX
     // @DisplayName: Internal Pressure Failsafe Threshold
     // @Description: The maximum internal pressure allowed before triggering failsafe. Failsafe action is determined by FS_PRESS_ENABLE parameter
-    // @Units: Pascal
+    // @Units: Pa
     // @User: Standard
     GSCALAR(failsafe_pressure_max, "FS_PRESS_MAX", FS_PRESS_MAX_DEFAULT),
 
     // @Param: FS_TEMP_MAX
     // @DisplayName: Internal Temperature Failsafe Threshold
     // @Description: The maximum internal temperature allowed before triggering failsafe. Failsafe action is determined by FS_TEMP_ENABLE parameter.
-    // @Units: Degrees Centigrade
+    // @Units: degC
     // @User: Standard
     GSCALAR(failsafe_temperature_max, "FS_TEMP_MAX", FS_TEMP_MAX_DEFAULT),
 
@@ -174,6 +165,21 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_terrain, "FS_TERRAIN_ENAB", FS_TERRAIN_DISARM),
 
+    // @Param: FS_PILOT_INPUT
+    // @DisplayName: Pilot input failsafe action
+    // @Description: Controls what action to take if no pilot input has been received after the timeout period specified by the FS_PILOT_TIMEOUT parameter
+    // @Values: 0:Disabled, 1:Warn Only, 2:Disarm
+    // @User: Standard
+    GSCALAR(failsafe_pilot_input, "FS_PILOT_INPUT", FS_PILOT_INPUT_DISARM),
+
+    // @Param: FS_PILOT_TIMEOUT
+    // @DisplayName: Timeout for activation of pilot input failsafe
+    // @Description: Controls the maximum interval between received pilot inputs before the failsafe action is triggered
+    // @Units: s
+    // @Range: 0.1 3.0
+    // @User: Standard
+    GSCALAR(failsafe_pilot_input_timeout, "FS_PILOT_TIMEOUT", 1.0f),
+
     // @Param: XTRACK_ANG_LIM
     // @DisplayName: Crosstrack correction angle limit
     // @Description: Maximum allowed angle (in degrees) between current track and desired heading during waypoint navigation
@@ -181,19 +187,12 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(xtrack_angle_limit,"XTRACK_ANG_LIM", 45),
 
-    // @Param: GPS_HDOP_GOOD
-    // @DisplayName: GPS Hdop Good
-    // @Description: GPS Hdop value at or below this value represent a good position.  Used for pre-arm checks
-    // @Range: 100 900
-    // @User: Advanced
-    GSCALAR(gps_hdop_good, "GPS_HDOP_GOOD", GPS_HDOP_GOOD_DEFAULT),
-
     // @Param: MAG_ENABLE
     // @DisplayName: Compass enable/disable
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    GSCALAR(compass_enabled,        "MAG_ENABLE",   MAGNETOMETER),
+    GSCALAR(compass_enabled,        "MAG_ENABLE",   ENABLED),
 
     // @Param: WP_YAW_BEHAVIOR
     // @DisplayName: Yaw behaviour during missions
@@ -205,7 +204,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: PILOT_VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
-    // @Units: Centimeters/Second
+    // @Units: cm/s
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -222,54 +221,12 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: THR_DZ
     // @DisplayName: Throttle deadzone
-    // @Description: The deadzone above and below mid throttle.  Used in AltHold, Loiter, PosHold flight modes
+    // @Description: The PWM deadzone in microseconds above and below mid throttle. Used in AltHold, Loiter, PosHold flight modes
     // @User: Standard
     // @Range: 0 300
-    // @Units: pwm
+    // @Units: PWM
     // @Increment: 1
     GSCALAR(throttle_deadzone,  "THR_DZ",    THR_DZ_DEFAULT),
-
-    // @Param: FLTMODE1
-    // @DisplayName: Flight Mode 1
-    // @Description: Flight mode when Channel 5 pwm is <= 1230
-    // @Values: 0:Stabilize,2:DepthHold,19:Manual
-    // @User: Standard
-    GSCALAR(flight_mode1, "FLTMODE1",               FLIGHT_MODE_1),
-
-    // @Param: FLTMODE2
-    // @DisplayName: Flight Mode 2
-    // @Description: Flight mode when Channel 5 pwm is >1230, <= 1360
-    // @Values: 0:Stabilize,2:DepthHold,19:Manual
-    // @User: Standard
-    GSCALAR(flight_mode2, "FLTMODE2",               FLIGHT_MODE_2),
-
-    // @Param: FLTMODE3
-    // @DisplayName: Flight Mode 3
-    // @Description: Flight mode when Channel 5 pwm is >1360, <= 1490
-    // @Values: 0:Stabilize,2:DepthHold,19:Manual
-    // @User: Standard
-    GSCALAR(flight_mode3, "FLTMODE3",               FLIGHT_MODE_3),
-
-    // @Param: FLTMODE4
-    // @DisplayName: Flight Mode 4
-    // @Description: Flight mode when Channel 5 pwm is >1490, <= 1620
-    // @Values: 0:Stabilize,2:DepthHold,19:Manual
-    // @User: Standard
-    GSCALAR(flight_mode4, "FLTMODE4",               FLIGHT_MODE_4),
-
-    // @Param: FLTMODE5
-    // @DisplayName: Flight Mode 5
-    // @Description: Flight mode when Channel 5 pwm is >1620, <= 1749
-    // @Values: 0:Stabilize,2:DepthHold,19:Manual
-    // @User: Standard
-    GSCALAR(flight_mode5, "FLTMODE5",               FLIGHT_MODE_5),
-
-    // @Param: FLTMODE6
-    // @DisplayName: Flight Mode 6
-    // @Description: Flight mode when Channel 5 pwm is >=1750
-    // @Values: 0:Stabilize,2:DepthHold,19:Manual
-    // @User: Standard
-    GSCALAR(flight_mode6, "FLTMODE6",               FLIGHT_MODE_6),
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
@@ -279,48 +236,10 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 
-    // @Param: ESC_CALIBRATION
-    // @DisplayName: ESC Calibration
-    // @Description: Controls whether ArduSub will enter ESC calibration on the next restart.  Do not adjust this parameter manually.
-    // @User: Advanced
-    // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle, 9:Disabled
-    GSCALAR(esc_calibrate, "ESC_CALIBRATION",       0),
-
-#if CH6_TUNE_ENABLED == ENABLED
-    // @Param: TUNE
-    // @DisplayName: Channel 6 Tuning
-    // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
-    // @User: Standard
-    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,14:Altitude Hold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,42:Loiter Speed,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,13:Heli Ext Gyro,17:OF Loiter kP,18:OF Loiter kI,19:OF Loiter kD,38:Declination,39:Circle Rate,41:RangeFinder Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF
-    GSCALAR(radio_tuning, "TUNE",                   0),
-
-    // @Param: TUNE_LOW
-    // @DisplayName: Tuning minimum
-    // @Description: The minimum value that will be applied to the parameter currently being tuned with the transmitter's channel 6 knob
-    // @User: Standard
-    // @Range: 0 32767
-    GSCALAR(radio_tuning_low, "TUNE_LOW",           0),
-
-    // @Param: TUNE_HIGH
-    // @DisplayName: Tuning maximum
-    // @Description: The maximum value that will be applied to the parameter currently being tuned with the transmitter's channel 6 knob
-    // @User: Standard
-    // @Range: 0 32767
-    GSCALAR(radio_tuning_high, "TUNE_HIGH",         1000),
-#endif
-
-    // @Param: DISARM_DELAY
-    // @DisplayName: Disarm delay
-    // @Description: Delay before automatic disarm in seconds. A value of zero disables auto disarm.
-    // @Units: Seconds
-    // @Range: 0 127
-    // @User: Advanced
-    GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),
-
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
-    // @Units: Centi-degrees
+    // @Units: cdeg
     // @Range: 1000 8000
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
@@ -337,7 +256,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
     // @Description: Controls the action that will be taken when an EKF failsafe is invoked
-    // @Values: 1:Disabled
+    // @Values: 0:Disabled, 1:Warn only, 2:Disarm
     // @User: Advanced
     GSCALAR(fs_ekf_action, "FS_EKF_ACTION",    FS_EKF_ACTION_DEFAULT),
 
@@ -351,9 +270,9 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_CRASH_CHECK
     // @DisplayName: Crash check enable
     // @Description: This enables automatic crash checking. When enabled the motors will disarm if a crash is detected.
-    // @Values: 0:Disabled
+    // @Values: 0:Disabled,1:Warn only,2:Disarm
     // @User: Advanced
-    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    0),
+    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    FS_CRASH_DISABLED),
 
     // @Param: JS_GAIN_DEFAULT
     // @DisplayName: Default gain at boot
@@ -385,16 +304,18 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: JS_CAM_TILT_STEP
     // @DisplayName: Camera tilt step size
-    // @Description: Size of PWM increment on camera tilt servo
+    // @Description: Size of PWM increment in microseconds on camera tilt servo
     // @User: Standard
     // @Range: 30 400
+    // @Units: PWM
     GSCALAR(cam_tilt_step, "JS_CAM_TILT_STEP", 50),
 
     // @Param: JS_LIGHTS_STEP
     // @DisplayName: Lights step size
-    // @Description: Size of PWM increment on lights servo
+    // @Description: Size of PWM increment in microseconds on lights servo
     // @User: Standard
     // @Range: 30 400
+    // @Units: PWM
     GSCALAR(lights_step, "JS_LIGHTS_STEP", 100),
 
     // @Param: JS_THR_GAIN
@@ -406,9 +327,10 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: CAM_CENTER
     // @DisplayName: Camera tilt mount center
-    // @Description: Servo PWM at camera center position
+    // @Description: Servo PWM in microseconds at camera center position
     // @User: Standard
     // @Range: 1000 2000
+    // @Units: PWM
     GSCALAR(cam_tilt_center, "CAM_CENTER", 1500),
 
     // @Param: FRAME_CONFIG
@@ -591,7 +513,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 1000
-    // @Units: Percent*10
+    // @Units: d%
     // @User: Standard
 
     // @Param: ACCEL_Z_D
@@ -799,6 +721,8 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 
+    GSCALAR(cam_slew_limit, "CAM_SLEW_LIMIT", 30.0),
+
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -810,13 +734,6 @@ const AP_Param::Info Sub::var_info[] = {
   2nd group of parameters
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
-
-    // @Param: WP_NAVALT_MIN
-    // @DisplayName: Minimum navigation altitude
-    // @Description: This is the altitude in meters above which for navigation can begin. This applies in auto takeoff and auto landing.
-    // @Range: 0 5
-    // @User: Standard
-    AP_GROUPINFO("WP_NAVALT_MIN", 1, ParametersG2, wp_navalt_min, 0),
 
 #if PROXIMITY_ENABLED == ENABLED
     // @Group: PRX
@@ -855,7 +772,7 @@ ParametersG2::ParametersG2(void)
 void Sub::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf("Bad var table\n");
+        hal.console->printf("Bad var table\n");
         AP_HAL::panic("Bad var table");
     }
 
@@ -867,18 +784,18 @@ void Sub::load_parameters(void)
             g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->printf("Firmware change: erasing EEPROM...\n");
+        hal.console->printf("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        cliSerial->println("done.");
+        hal.console->println("done.");
     }
 
     uint32_t before = micros();
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
-    cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
+    hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
 
@@ -895,6 +812,8 @@ void Sub::load_parameters(void)
             AP_Arming::ARMING_CHECK_BATTERY |
             AP_Arming::ARMING_CHECK_LOGGING);
     AP_Param::set_default_by_name("CIRCLE_RATE", 2.0f);
+    AP_Param::set_default_by_name("ATC_ACCEL_Y_MAX", 110000.0f);
+    AP_Param::set_default_by_name("RC3_TRIM", 1100);
 }
 
 void Sub::convert_old_parameters(void)

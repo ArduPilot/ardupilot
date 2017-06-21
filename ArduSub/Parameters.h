@@ -68,8 +68,7 @@ public:
         k_param_DataFlash, // DataFlash Logging
         k_param_serial_manager, // Serial ports, AP_SerialManager
         k_param_notify, // Notify Library, AP_Notify
-        k_param_cli_enabled, // Old (deprecated) command line interface
-        k_param_arming, // Arming checks
+        k_param_arming = 26, // Arming checks
 
 
         // Sensor objects
@@ -149,23 +148,12 @@ public:
         k_param_jbtn_15,
 
 
-        // Flight mode selection
-        k_param_flight_mode1 = 120,
-        k_param_flight_mode2,
-        k_param_flight_mode3,
-        k_param_flight_mode4,
-        k_param_flight_mode5,
-        k_param_flight_mode6,
-
-
         // PID Controllers
-        k_param_p_pos_xy,
+        k_param_p_pos_xy = 126,
         k_param_p_alt_hold,
         k_param_pi_vel_xy,
         k_param_p_vel_z,
         k_param_pid_accel_z,
-        k_param_pid_crosstrack_control, // Experimental
-        k_param_pid_heading_control, // Experimental
 
 
         // Failsafes
@@ -182,27 +170,25 @@ public:
         k_param_failsafe_battery_enabled,
         k_param_fs_batt_mah,
         k_param_fs_batt_voltage,
+        k_param_failsafe_pilot_input,
+        k_param_failsafe_pilot_input_timeout,
 
 
         // Misc Sub settings
         k_param_log_bitmask = 165,
-        k_param_arming_check, // deprecated, remove
-        k_param_angle_max,
+        k_param_angle_max = 167,
         k_param_rangefinder_gain,
-        k_param_gps_hdop_good,
-        k_param_wp_yaw_behavior,
+        k_param_wp_yaw_behavior = 170,
         k_param_xtrack_angle_limit, // Angle limit for crosstrack correction in Auto modes (degrees)
         k_param_pilot_velocity_z_max,
         k_param_pilot_accel_z,
         k_param_compass_enabled,
         k_param_surface_depth,
         k_param_rc_speed, // Main output pwm frequency
-        k_param_esc_calibrate, // Boot-time ESC calibration behavior
-        k_param_gcs_pid_mask,
+        k_param_gcs_pid_mask = 178,
         k_param_throttle_filt,
         k_param_throttle_deadzone, // Used in auto-throttle modes
-        k_param_disarm_delay,
-        k_param_terrain_follow,
+        k_param_terrain_follow = 182,
         k_param_rc_feel_rp,
         k_param_throttle_gain,
         k_param_cam_tilt_center,
@@ -222,10 +208,7 @@ public:
         // RC_Mapper Library
         k_param_rcmap, // Disabled
 
-        // CH6 Tuning
-        k_param_radio_tuning, // Disabled
-        k_param_radio_tuning_high, // Disabled
-        k_param_radio_tuning_low, // Disabled
+        k_param_cam_slew_limit = 237,
 
     };
 
@@ -236,9 +219,6 @@ public:
     //
     AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
-#if CLI_ENABLED == ENABLED
-    AP_Int8         cli_enabled;
-#endif
 
     AP_Float        throttle_filt;
 
@@ -255,10 +235,10 @@ public:
     AP_Int32        failsafe_pressure_max;
     AP_Int8         failsafe_temperature_max;
     AP_Int8         failsafe_terrain;
+    AP_Int8         failsafe_pilot_input;       // pilot input failsafe behavior
+    AP_Float        failsafe_pilot_input_timeout;
 
     AP_Int8         xtrack_angle_limit;
-
-    AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         compass_enabled;
 
@@ -274,26 +254,9 @@ public:
     //
     AP_Int16        throttle_deadzone;
 
-    // Flight modes
-    //
-    AP_Int8         flight_mode1;
-    AP_Int8         flight_mode2;
-    AP_Int8         flight_mode3;
-    AP_Int8         flight_mode4;
-    AP_Int8         flight_mode5;
-    AP_Int8         flight_mode6;
-
     // Misc
     //
     AP_Int32        log_bitmask;
-    AP_Int8         esc_calibrate;
-#if CH6_TUNE_ENABLED == ENABLED
-    AP_Int8         radio_tuning;
-    AP_Int16        radio_tuning_high;
-    AP_Int16        radio_tuning_low;
-#endif
-
-    AP_Int8         disarm_delay;
 
     AP_Int8         fs_ekf_action;
     AP_Int8         fs_crash_check;
@@ -352,6 +315,7 @@ public:
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
 
+    AP_Float cam_slew_limit;
     // Note: keep initializers here in the same order as they are declared
     // above.
     Parameters() :
@@ -382,9 +346,6 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
-
-    // altitude at which nav control can start in takeoff
-    AP_Float wp_navalt_min;
 
 #if GRIPPER_ENABLED
     AP_Gripper gripper;

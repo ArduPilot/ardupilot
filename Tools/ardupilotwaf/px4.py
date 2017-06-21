@@ -73,7 +73,7 @@ class px4_copy(Task.Task):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
 class px4_add_git_hashes(Task.Task):
-    run_str = '${PYTHON} ${PX4_ADD_GIT_HASHES} --ardupilot ${PX4_APM_ROOT} --px4 ${PX4_ROOT} --nuttx ${PX4_NUTTX_ROOT} --uavcan ${PX4_UAVCAN_ROOT} ${SRC} ${TGT}'
+    run_str = '${PYTHON} ${PX4_ADD_GIT_HASHES} --ardupilot ${PX4_APM_ROOT} --px4 ${PX4_ROOT} --nuttx ${PX4_NUTTX_ROOT} ${SRC} ${TGT}'
     color = 'CYAN'
 
     def keyword(self):
@@ -188,12 +188,20 @@ def _px4_taskgen(bld, **kw):
 @feature('_px4_romfs')
 def _process_romfs(self):
     bld = self.bld
-    file_list = (
+    file_list = [
         'init.d/rc.APM',
         'init.d/rc.error',
         'init.d/rcS',
+        'tones/startup',
         (bld.env.PX4_BOOTLOADER, 'bootloader/fmu_bl.bin'),
-    )
+    ]
+
+    if bld.env.PX4_BOARD_RC:
+        board_rc = 'init.d/rc.%s' % bld.env.get_flat('PX4_BOARD_NAME')
+        file_list.append((board_rc, 'init.d/rc.board'))
+
+    if bld.env.PX4_PARAM_DEFAULTS:
+        file_list.append((bld.env.PX4_PARAM_DEFAULTS, 'defaults.parm'))
 
     romfs_src = bld.srcnode.find_dir(bld.env.PX4_ROMFS_SRC)
     romfs_bld = bld.bldnode.make_node(bld.env.PX4_ROMFS_BLD)
@@ -203,7 +211,7 @@ def _process_romfs(self):
             src = romfs_src.make_node(item)
             dst = romfs_bld.make_node(item)
         else:
-            src = bld.srcnode.make_node(item[0])
+            src = romfs_src.make_node(item[0])
             dst = romfs_bld.make_node(item[1])
 
         bname = os.path.basename(str(src))
@@ -238,13 +246,12 @@ def configure(cfg):
     # stop using the make-based build system
     env.PX4_ROMFS_SRC = 'mk/PX4/ROMFS'
     env.PX4_ROMFS_BLD = 'px4-extra-files/ROMFS'
-    env.PX4_BOOTLOADER = 'mk/PX4/bootloader/%s' % env.PX4_BOOTLOADER_NAME
+    env.PX4_BOOTLOADER = '/../bootloader/%s' % env.PX4_BOOTLOADER_NAME
 
     env.PX4_ADD_GIT_HASHES = srcpath('Tools/scripts/add_git_hashes.py')
     env.PX4_APM_ROOT = srcpath('')
     env.PX4_ROOT = srcpath('modules/PX4Firmware')
     env.PX4_NUTTX_ROOT = srcpath('modules/PX4NuttX')
-    env.PX4_UAVCAN_ROOT = srcpath('modules/uavcan')
 
     if env.PX4_PX4IO_NAME:
         env.PX4IO_ELF_DEST = 'px4-extra-files/px4io'
@@ -254,7 +261,6 @@ def configure(cfg):
     env.PX4_CMAKE_VARS = dict(
         CONFIG=nuttx_config,
         CMAKE_MODULE_PATH=srcpath('Tools/ardupilotwaf/px4/cmake'),
-        UAVCAN_LIBUAVCAN_PATH=env.PX4_UAVCAN_ROOT,
         NUTTX_SRC=env.PX4_NUTTX_ROOT,
         PX4_NUTTX_ROMFS=bldpath(env.PX4_ROMFS_BLD),
         ARDUPILOT_BUILD='YES',

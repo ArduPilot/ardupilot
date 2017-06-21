@@ -545,6 +545,9 @@ public:
     
     // ArduSoar parameters
     SoaringController soaring_controller;
+
+    // dual motor tailsitter rudder to differential thrust scaling: 0-100%
+    AP_Int8 rudd_dt_gain;
 };
 
 extern const AP_Param::Info var_info[];

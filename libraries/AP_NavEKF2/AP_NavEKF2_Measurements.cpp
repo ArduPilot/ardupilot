@@ -325,9 +325,14 @@ void NavEKF2_core::readIMUData()
     // Keep track of the number of IMU frames since the last state prediction
     framesSincePredict++;
 
-    // If 10msec has elapsed, and the frontend has allowed us to start a new predict cycle, then store the accumulated IMU data
-    // to be used by the state prediction, ignoring the frontend permission if more than 20msec has lapsed
-    if ((dtIMUavg*(float)framesSincePredict >= EKF_TARGET_DT && startPredictEnabled) || (dtIMUavg*(float)framesSincePredict >= 2.0f*EKF_TARGET_DT)) {
+    /*
+     * If the target EKF time step has been accumulated, and the frontend has allowed start of a new predict cycle,
+     * then store the accumulated IMU data to be used by the state prediction, ignoring the frontend permission if more
+     * than twice the target time has lapsed. Adjust the target EKF step time threshold to allow for timing jitter in the
+     * IMU data.
+     */
+    if ((dtIMUavg*(float)framesSincePredict >= (EKF_TARGET_DT-(dtIMUavg*0.5)) &&
+         startPredictEnabled) || (dtIMUavg*(float)framesSincePredict >= 2.0f*EKF_TARGET_DT)) {
 
         // convert the accumulated quaternion to an equivalent delta angle
         imuQuatDownSampleNew.to_axis_angle(imuDataDownSampledNew.delAng);
@@ -365,6 +370,8 @@ void NavEKF2_core::readIMUData()
         imuDataDelayed.delAngDT = MAX(imuDataDelayed.delAngDT,minDT);
         imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
 
+        updateTimingStatistics();
+            
         // correct the extracted IMU data for sensor errors
         delAngCorrected = imuDataDelayed.delAng;
         delVelCorrected = imuDataDelayed.delVel;
@@ -492,8 +499,8 @@ void NavEKF2_core::readGpsData()
                 // and set the corresponding variances and covariances
                 alignMagStateDeclination();
 
-                // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
-                EKF_origin.alt = gpsloc.alt - baroDataNew.hgt;
+                // Set the height of the NED origin
+                ekfGpsRefHgt = (double)0.01 * (double)gpsloc.alt + (double)outputDataNew.position.z;
 
                 // Set the uncertinty of the GPS origin height
                 ekfOriginHgtVar = sq(gpsHgtAccuracy);
@@ -503,7 +510,7 @@ void NavEKF2_core::readGpsData()
             // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
             if (validOrigin) {
                 gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
-                gpsDataNew.hgt = 0.01f * (gpsloc.alt - EKF_origin.alt);
+                gpsDataNew.hgt = (float)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
                 storedGPS.push(gpsDataNew);
                 // declare GPS available for use
                 gpsNotAvailable = false;
@@ -578,10 +585,8 @@ void NavEKF2_core::calcFiltBaroOffset()
     baroHgtOffset += 0.1f * constrain_float(baroDataDelayed.hgt + stateStruct.position.z - baroHgtOffset, -5.0f, 5.0f);
 }
 
-// calculate filtered offset between GPS height measurement and EKF height estimate
-// offset should be subtracted from GPS measurement to match filter estimate
-// offset is used to switch reversion to GPS from alternate height data source
-void NavEKF2_core::calcFiltGpsHgtOffset()
+// correct the height of the EKF origin to be consistent with GPS Data using a Bayes filter.
+void NavEKF2_core::correctEkfOriginHeight()
 {
     // Estimate the WGS-84 height of the EKF's origin using a Bayes filter
 
@@ -595,14 +600,13 @@ void NavEKF2_core::calcFiltGpsHgtOffset()
         // use the worse case expected terrain gradient and vehicle horizontal speed
         const float maxTerrGrad = 0.25f;
         ekfOriginHgtVar += sq(maxTerrGrad * norm(stateStruct.velocity.x , stateStruct.velocity.y) * deltaTime);
-    } else if (activeHgtSource == HGT_SOURCE_GPS) {
-        // by definition we are using GPS height as the EKF datum in this mode
-        // so cannot run this filter
+    } else {
+        // by definition our height source is absolute so cannot run this filter
         return;
     }
     lastOriginHgtTime_ms = imuDataDelayed.time_ms;
 
-    // calculate the observation variance assuming EKF error relative to datum is independant of GPS observation error
+    // calculate the observation variance assuming EKF error relative to datum is independent of GPS observation error
     // when not using GPS as height source
     float originHgtObsVar = sq(gpsHgtAccuracy) + P[8][8];
 
@@ -615,10 +619,10 @@ void NavEKF2_core::calcFiltGpsHgtOffset()
     // check the innovation variance ratio
     float ratio = sq(innovation) / (ekfOriginHgtVar + originHgtObsVar);
 
-    // correct the EKF origin and variance estimate if the innovation variance ratio is < 5-sigma
-    if (ratio < 5.0f) {
-        EKF_origin.alt -= (int)(100.0f * gain * innovation);
-        ekfOriginHgtVar -= fmaxf(gain * ekfOriginHgtVar , 0.0f);
+    // correct the EKF origin and variance estimate if the innovation is less than 5-sigma
+    if (ratio < 25.0f && gpsAccuracyGood) {
+        ekfGpsRefHgt -= (double)(gain * innovation);
+        ekfOriginHgtVar -= MAX(gain * ekfOriginHgtVar , 0.0f);
     }
 }
 
@@ -654,7 +658,7 @@ void NavEKF2_core::readAirSpdData()
 *              Range Beacon Measurements                *
 ********************************************************/
 
-// check for new airspeed data and update stored measurements if available
+// check for new range beacon data and push to data buffer if available
 void NavEKF2_core::readRngBcnData()
 {
     // get the location of the beacon data
@@ -735,9 +739,6 @@ void NavEKF2_core::readRngBcnData()
                     // and set the corresponding variances and covariances
                     alignMagStateDeclination();
 
-                    // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
-                    EKF_origin.alt = origin_loc.alt - baroDataNew.hgt;
-
                     // Set the uncertainty of the origin height
                     ekfOriginHgtVar = sq(beaconVehiclePosErr);
                 }
@@ -758,4 +759,39 @@ void NavEKF2_core::readRngBcnData()
     rngBcnDataToFuse = storedRangeBeacon.recall(rngBcnDataDelayed,imuDataDelayed.time_ms);
 
 }
+
+/*
+  update timing statistics structure
+ */
+void NavEKF2_core::updateTimingStatistics(void)
+{
+    if (timing.count == 0) {
+        timing.dtIMUavg_max = dtIMUavg;
+        timing.dtIMUavg_min = dtIMUavg;
+        timing.dtEKFavg_max = dtEkfAvg;
+        timing.dtEKFavg_min = dtEkfAvg;
+        timing.delAngDT_max = imuDataDelayed.delAngDT;
+        timing.delAngDT_min = imuDataDelayed.delAngDT;
+        timing.delVelDT_max = imuDataDelayed.delVelDT;
+        timing.delVelDT_min = imuDataDelayed.delVelDT;
+    } else {
+        timing.dtIMUavg_max = MAX(timing.dtIMUavg_max, dtIMUavg);
+        timing.dtIMUavg_min = MIN(timing.dtIMUavg_min, dtIMUavg);
+        timing.dtEKFavg_max = MAX(timing.dtEKFavg_max, dtEkfAvg);
+        timing.dtEKFavg_min = MIN(timing.dtEKFavg_min, dtEkfAvg);
+        timing.delAngDT_max = MAX(timing.delAngDT_max, imuDataDelayed.delAngDT);
+        timing.delAngDT_min = MIN(timing.delAngDT_min, imuDataDelayed.delAngDT);
+        timing.delVelDT_max = MAX(timing.delVelDT_max, imuDataDelayed.delVelDT);
+        timing.delVelDT_min = MIN(timing.delVelDT_min, imuDataDelayed.delVelDT);
+    }
+    timing.count++;
+}
+
+// get timing statistics structure
+void NavEKF2_core::getTimingStatistics(struct ekf_timing &_timing)
+{
+    _timing = timing;
+    memset(&timing, 0, sizeof(timing));
+}
+
 #endif // HAL_CPU_CLASS

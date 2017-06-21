@@ -186,7 +186,12 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
 void DataFlash_File::periodic_1Hz(const uint32_t now)
 {
     if (!io_thread_alive()) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
+        if (io_thread_warning_decimation_counter == 0) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
+        }
+        if (io_thread_warning_decimation_counter++ > 57) {
+            io_thread_warning_decimation_counter = 0;
+        }
         // If you try to close the file here then it will almost
         // certainly block.  Since this is the main thread, this is
         // likely to cause a crash.
@@ -209,7 +214,7 @@ uint32_t DataFlash_File::bufferspace_available()
 }
 
 // return true for CardInserted() if we successfully initialized
-bool DataFlash_File::CardInserted(void)
+bool DataFlash_File::CardInserted(void) const
 {
     return _initialised && !_open_error;
 }
@@ -392,6 +397,9 @@ void DataFlash_File::Prep_MinSpace()
 #endif
 
 void DataFlash_File::Prep() {
+    if (!NeedPrep()) {
+        return;
+    }
     if (hal.util->get_soft_armed()) {
         // do not want to do any filesystem operations while we are e.g. flying
         return;
@@ -504,10 +512,27 @@ void DataFlash_File::EraseAll()
     }
 }
 
+bool DataFlash_File::WritesOK() const
+{
+    if (!DataFlash_Backend::WritesOK()) {
+        return false;
+    }
+    if (_write_fd == -1) {
+        return false;
+    }
+    if (!_initialised) {
+        return false;
+    }
+    if (_open_error) {
+        return false;
+    }
+    return true;
+}
+
 /* Write a block of data at current offset */
 bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-    if (_write_fd == -1 || !_initialised || _open_error || !_writes_enabled) {
+    if (!WritesOK()) {
         return false;
     }
 

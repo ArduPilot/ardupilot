@@ -6,150 +6,6 @@
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
-#if CLI_ENABLED == ENABLED
-
-// Creates a constant array of structs representing menu options
-// and stores them in Flash memory, not RAM.
-// User enters the string in the console to call the functions on the right.
-// See class Menu in AP_Coommon for implementation details
-static const struct Menu::command log_menu_commands[] = {
-    {"dump",        MENU_FUNC(dump_log)},
-    {"erase",       MENU_FUNC(erase_logs)},
-    {"enable",      MENU_FUNC(select_logs)},
-    {"disable",     MENU_FUNC(select_logs)}
-};
-
-// A Macro to create the Menu
-MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&sub, &Sub::print_log_menu, bool));
-
-bool Sub::print_log_menu(void)
-{
-    cliSerial->printf("logs enabled: ");
-
-    if (0 == g.log_bitmask) {
-        cliSerial->printf("none");
-    } else {
-        // Macro to make the following code a bit easier on the eye.
-        // Pass it the capitalised name of the log option, as defined
-        // in defines.h but without the LOG_ prefix.  It will check for
-        // the bit being set and print the name of the log option to suit.
-#define PLOG(_s) if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %s", # _s)
-        PLOG(ATTITUDE_FAST);
-        PLOG(ATTITUDE_MED);
-        PLOG(GPS);
-        PLOG(PM);
-        PLOG(CTUN);
-        PLOG(NTUN);
-        PLOG(RCIN);
-        PLOG(IMU);
-        PLOG(CMD);
-        PLOG(CURRENT);
-        PLOG(RCOUT);
-        PLOG(OPTFLOW);
-        PLOG(COMPASS);
-        PLOG(CAMERA);
-        PLOG(PID);
-#undef PLOG
-    }
-
-    cliSerial->println();
-
-    DataFlash.ListAvailableLogs(cliSerial);
-
-    return (true);
-}
-
-#if CLI_ENABLED == ENABLED
-int8_t Sub::dump_log(uint8_t argc, const Menu::arg *argv)
-{
-    int16_t dump_log_num;
-    uint16_t dump_log_start;
-    uint16_t dump_log_end;
-
-    // check that the requested log number can be read
-    dump_log_num = argv[1].i;
-
-    if (dump_log_num == -2) {
-        DataFlash.DumpPageInfo(cliSerial);
-        return (-1);
-    } else if (dump_log_num <= 0) {
-        cliSerial->printf("dumping all\n");
-        Log_Read(0, 1, 0);
-        return (-1);
-    } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
-        cliSerial->printf("bad log number\n");
-        return (-1);
-    }
-
-    DataFlash.get_log_boundaries(dump_log_num, dump_log_start, dump_log_end);
-    Log_Read((uint16_t)dump_log_num, dump_log_start, dump_log_end);
-    return (0);
-}
-#endif
-
-int8_t Sub::erase_logs(uint8_t argc, const Menu::arg *argv)
-{
-    in_mavlink_delay = true;
-    do_erase_logs();
-    in_mavlink_delay = false;
-    return 0;
-}
-
-int8_t Sub::select_logs(uint8_t argc, const Menu::arg *argv)
-{
-    uint16_t bits;
-
-    if (argc != 2) {
-        cliSerial->printf("missing log type\n");
-        return (-1);
-    }
-
-    bits = 0;
-
-    // Macro to make the following code a bit easier on the eye.
-    // Pass it the capitalised name of the log option, as defined
-    // in defines.h but without the LOG_ prefix.  It will check for
-    // that name as the argument to the command, and set the bit in
-    // bits accordingly.
-    //
-    if (!strcasecmp(argv[1].str, "all")) {
-        bits = ~0;
-    } else {
-#define TARG(_s)        if (!strcasecmp(argv[1].str, # _s)) bits |= MASK_LOG_ ## _s
-        TARG(ATTITUDE_FAST);
-        TARG(ATTITUDE_MED);
-        TARG(GPS);
-        TARG(PM);
-        TARG(CTUN);
-        TARG(NTUN);
-        TARG(RCIN);
-        TARG(IMU);
-        TARG(CMD);
-        TARG(CURRENT);
-        TARG(RCOUT);
-        TARG(OPTFLOW);
-        TARG(COMPASS);
-        TARG(CAMERA);
-        TARG(PID);
-#undef TARG
-    }
-
-    if (!strcasecmp(argv[0].str, "enable")) {
-        g.log_bitmask.set_and_save(g.log_bitmask | bits);
-    } else {
-        g.log_bitmask.set_and_save(g.log_bitmask & ~bits);
-    }
-
-    return (0);
-}
-
-int8_t Sub::process_logs(uint8_t argc, const Menu::arg *argv)
-{
-    log_menu.run();
-    return 0;
-}
-#endif // CLI_ENABLED
-
 void Sub::do_erase_logs(void)
 {
     gcs_send_text(MAV_SEVERITY_INFO, "Erasing logs");
@@ -249,7 +105,7 @@ struct PACKED log_Control_Tuning {
     float    throttle_hover;
     float    desired_alt;
     float    inav_alt;
-    int32_t  baro_alt;
+    float    baro_alt;
     int16_t  desired_rangefinder_alt;
     int16_t  rangefinder_alt;
     float    terr_alt;
@@ -275,7 +131,7 @@ void Sub::Log_Write_Control_Tuning()
         throttle_hover      : motors.get_throttle_hover(),
         desired_alt         : pos_control.get_alt_target() / 100.0f,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
-        baro_alt            : baro_alt,
+        baro_alt            : barometer.get_altitude(),
         desired_rangefinder_alt   : (int16_t)target_rangefinder_alt,
         rangefinder_alt           : rangefinder_state.alt_cm,
         terr_alt            : terr_alt,
@@ -295,6 +151,7 @@ struct PACKED log_Performance {
     uint8_t i2c_lockup_count;
     uint16_t ins_error_count;
     uint32_t log_dropped;
+    uint32_t mem_avail;
 };
 
 // Write a performance monitoring packet
@@ -310,6 +167,7 @@ void Sub::Log_Write_Performance()
         i2c_lockup_count : 0,
         ins_error_count  : ins.error_count(),
         log_dropped      : DataFlash.num_dropped() - perf_info_get_num_dropped(),
+        hal.util->available_memory()
     };
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -509,31 +367,6 @@ void Sub::Log_Write_Baro(void)
     }
 }
 
-struct PACKED log_ParameterTuning {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  parameter;     // parameter we are tuning, e.g. 39 is CH6_CIRCLE_RATE
-    float    tuning_value;  // normalized value used inside tuning() function
-    int16_t  control_in;    // raw tune input value
-    int16_t  tuning_low;    // tuning low end value
-    int16_t  tuning_high;   // tuning high end value
-};
-
-void Sub::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high)
-{
-    struct log_ParameterTuning pkt_tune = {
-        LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
-        time_us        : AP_HAL::micros64(),
-        parameter      : param,
-        tuning_value   : tuning_val,
-        control_in     : control_in,
-        tuning_low     : tune_low,
-        tuning_high    : tune_high
-    };
-
-    DataFlash.WriteBlock(&pkt_tune, sizeof(pkt_tune));
-}
-
 // log EKF origin and ahrs home to dataflash
 void Sub::Log_Write_Home_And_Origin()
 {
@@ -564,13 +397,6 @@ void Sub::Log_Sensor_Health()
         Log_Write_Error(ERROR_SUBSYSTEM_COMPASS, (sensor_health.compass ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
     }
 }
-
-struct PACKED log_Heli {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float   desired_rotor_speed;
-    float   main_rotor_speed;
-};
 
 struct PACKED log_GuidedTarget {
     LOG_PACKET_HEADER;
@@ -603,16 +429,14 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 
 const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-    { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
-      "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qffffffeccfhh", "TimeUS,ThrIn,ABst,ThrOut,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt" },
+      "CTUN", "Qfffffffccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHIhBHI",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop" },
+      "PM",  "QHHIhBHII",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop,Mem" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
       "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit" },
     { LOG_EVENT_MSG, sizeof(log_Event),         
@@ -629,77 +453,45 @@ const struct LogStructure Sub::log_structure[] = {
       "DFLT",  "QBf",         "TimeUS,Id,Value" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
       "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
-    { LOG_HELI_MSG, sizeof(log_Heli),
-      "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
 };
-
-#if CLI_ENABLED == ENABLED
-// Read the DataFlash log memory
-void Sub::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
-{
-    cliSerial->printf("\n" FIRMWARE_STRING
-                      "\nFree RAM: %u\n",
-                      (unsigned) hal.util->available_memory());
-
-    cliSerial->println(HAL_BOARD_NAME);
-
-    DataFlash.LogReadProcess(list_entry, start_page, end_page,
-                             FUNCTOR_BIND_MEMBER(&Sub::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),
-                             cliSerial);
-}
-#endif // CLI_ENABLED
 
 void Sub::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
     Log_Write_Home_And_Origin();
+    gps.Write_DataFlash_Log_Startup_messages();
 }
 
 
-// start a new log
 void Sub::start_logging()
 {
-    if (g.log_bitmask != 0) {
-        if (!ap.logging_started) {
-            ap.logging_started = true;
-            DataFlash.set_mission(&mission);
-            DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
-            DataFlash.StartNewLog();
-        }
-        // enable writes
-        DataFlash.EnableWrites(true);
+    if (g.log_bitmask == 0) {
+        return;
     }
+    if (in_log_download) {
+        return;
+    }
+
+    ap.logging_started = true;
+
+    // dataflash may have stopped logging - when we get_log_data,
+    // for example.  Always try to restart:
+    DataFlash.StartUnstartedLogging();
 }
 
 void Sub::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
-    if (!DataFlash.CardInserted()) {
-        gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
-        g.log_bitmask.set(0);
-    } else if (DataFlash.NeedPrep()) {
-        gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
-        DataFlash.Prep();
-        gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
-        for (uint8_t i=0; i<num_gcs; i++) {
-            gcs_chan[i].reset_cli_timeout();
-        }
+
+    for (uint8_t i=0; i<num_gcs; i++) {
+        gcs_chan[i].reset_cli_timeout();
     }
 }
 
 #else // LOGGING_ENABLED
-
-#if CLI_ENABLED == ENABLED
-bool Sub::print_log_menu(void) { return true; }
-int8_t Sub::dump_log(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Sub::erase_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Sub::select_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Sub::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-void Sub::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page) {}
-#endif // CLI_ENABLED == ENABLED
 
 void Sub::do_erase_logs(void) {}
 void Sub::Log_Write_Current() {}
@@ -717,7 +509,6 @@ void Sub::Log_Write_Data(uint8_t id, uint16_t value) {}
 void Sub::Log_Write_Data(uint8_t id, float value) {}
 void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 void Sub::Log_Write_Baro(void) {}
-void Sub::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
 void Sub::Log_Write_Home_And_Origin() {}
 void Sub::Log_Sensor_Health() {}
 void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}

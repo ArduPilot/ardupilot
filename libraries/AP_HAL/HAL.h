@@ -11,6 +11,9 @@
 #include "UARTDriver.h"
 #include "system.h"
 #include "OpticalFlow.h"
+#if HAL_WITH_UAVCAN
+#include "CAN.h"
+#endif
 
 class AP_HAL::HAL {
 public:
@@ -30,7 +33,8 @@ public:
         AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler,
         AP_HAL::Util*       _util,
-        AP_HAL::OpticalFlow *_opticalflow)
+        AP_HAL::OpticalFlow *_opticalflow,
+        AP_HAL::CANManager* _can_mgr)
         :
         uartA(_uartA),
         uartB(_uartB),
@@ -48,7 +52,8 @@ public:
         rcout(_rcout),
         scheduler(_scheduler),
         util(_util),
-        opticalflow(_opticalflow)
+        opticalflow(_opticalflow),
+        can_mgr(_can_mgr)
     {
         AP_HAL::init();
     }
@@ -88,4 +93,5 @@ public:
     AP_HAL::Scheduler*  scheduler;
     AP_HAL::Util        *util;
     AP_HAL::OpticalFlow *opticalflow;
+    AP_HAL::CANManager* can_mgr;
 };

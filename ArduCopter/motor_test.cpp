@@ -72,6 +72,12 @@ void Copter::motor_test_output()
 //  return true if tests can continue, false if not
 bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
 {
+    // check board has initialised
+    if (!ap.initialised) {
+        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Board initialising");
+        return false;
+    }
+
     // check rc has been calibrated
     arming.pre_arm_rc_checks(true);
     if(check_rc && !ap.pre_arm_rc_check) {

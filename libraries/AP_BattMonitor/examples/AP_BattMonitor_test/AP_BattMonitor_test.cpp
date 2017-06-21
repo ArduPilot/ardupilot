@@ -6,6 +6,9 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_HAL/AP_HAL.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_BattMonitor battery_mon;
@@ -26,11 +29,11 @@ void setup() {
 
 void loop()
 {
-    static uint8_t counter; // counter to slow output to the user
+    static uint8_t counter;  // counter to slow output to the user
     uint32_t now = AP_HAL::millis();
 
     // call battery monitor at 10hz
-    if((now - timer) > 100) {
+    if ((now - timer) > 100) {
         // update voltage and current readings
         battery_mon.read();
 
@@ -45,9 +48,9 @@ void loop()
     if (counter >= 10) {
         counter = 0;
         hal.console->printf("\nVoltage: %.2f \tCurrent: %.2f \tTotCurr:%.2f",
-			    battery_mon.voltage(),
-			    battery_mon.current_amps(),
-                battery_mon.current_total_mah());
+                            (double)battery_mon.voltage(),
+                            (double)battery_mon.current_amps(),
+                            (double)battery_mon.current_total_mah());
     }
 
     // delay 1ms

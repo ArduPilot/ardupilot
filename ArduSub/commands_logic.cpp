@@ -10,6 +10,20 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
+    Location_Class target_loc(cmd.content.location);
+
+    // target alt must be negative (underwater)
+    if (target_loc.alt > 0.0f) {
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "BAD NAV ALT %0.2f", (double)target_loc.alt);
+        return true;
+    }
+
+    // only tested/supported alt frame so far is ALT_FRAME_ABOVE_HOME, where Home alt is always water's surface ie zero depth
+    if (target_loc.get_alt_frame() != Location_Class::ALT_FRAME_ABOVE_HOME) {
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "BAD NAV ALT_FRAME %d", (int8_t)target_loc.get_alt_frame());
+        return true;
+    }
+
     switch (cmd.id) {
 
         ///
@@ -21,6 +35,10 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
         do_surface(cmd);
+        break;
+
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        do_RTL();
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:              // 17 Loiter indefinitely
@@ -145,8 +163,8 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 // Verify command Handlers
 /********************************************************************************/
 
-// verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
-//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
+// check to see if current command goal has been acheived
+// called by mission library in mission.update()
 bool Sub::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
     if (control_mode == AUTO) {
@@ -163,13 +181,10 @@ bool Sub::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 }
 
 
-// verify_command - this will be called repeatedly by ap_mission lib to ensure the active commands are progressing
-//  should return true once the active navigation command completes successfully
-//  called at 10hz or higher
+// check if current mission command has completed
 bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 {
     switch (cmd.id) {
-
         //
         // navigation commands
         //
@@ -178,6 +193,9 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_LAND:
         return verify_surface(cmd);
+
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        return verify_RTL();
 
     case MAV_CMD_NAV_LOITER_UNLIM:
         return verify_loiter_unlimited();
@@ -321,6 +339,11 @@ void Sub::do_surface(const AP_Mission::Mission_Command& cmd)
 
     // Go to wp location
     auto_wp_start(target_location);
+}
+
+void Sub::do_RTL()
+{
+    auto_wp_start(ahrs.get_home());
 }
 
 // do_loiter_unlimited - start loitering with no end conditions
@@ -606,6 +629,10 @@ bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
     return retval;
 }
 
+bool Sub::verify_RTL() {
+    return wp_nav.reached_wp_destination();
+}
+
 bool Sub::verify_loiter_unlimited()
 {
     return false;
@@ -744,9 +771,7 @@ bool Sub::verify_wait_delay()
 
 bool Sub::verify_within_distance()
 {
-    // update distance calculation
-    calc_wp_distance();
-    if (wp_distance < (uint32_t)MAX(condition_value,0)) {
+    if (wp_nav.get_wp_distance_to_destination() < (uint32_t)MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }
@@ -815,10 +840,10 @@ void Sub::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
-        set_home_to_current_location();
+        set_home_to_current_location(false);
     } else {
         if (!far_from_EKF_origin(cmd.content.location)) {
-            set_home(cmd.content.location);
+            set_home(cmd.content.location, false);
         }
     }
 }
@@ -832,10 +857,10 @@ void Sub::do_roi(const AP_Mission::Mission_Command& cmd)
     set_auto_yaw_roi(cmd.content.location);
 }
 
+#if CAMERA == ENABLED
 // do_digicam_configure Send Digicam Configure message with the camera library
 void Sub::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 {
-#if CAMERA == ENABLED
     camera.configure(cmd.content.digicam_configure.shooting_mode,
                      cmd.content.digicam_configure.shutter_speed,
                      cmd.content.digicam_configure.aperture,
@@ -843,13 +868,11 @@ void Sub::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
                      cmd.content.digicam_configure.exposure_type,
                      cmd.content.digicam_configure.cmd_id,
                      cmd.content.digicam_configure.engine_cutoff_time);
-#endif
 }
 
 // do_digicam_control Send Digicam Control message with the camera library
 void Sub::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
-#if CAMERA == ENABLED
     if (camera.control(cmd.content.digicam_control.session,
                        cmd.content.digicam_control.zoom_pos,
                        cmd.content.digicam_control.zoom_step,
@@ -858,16 +881,13 @@ void Sub::do_digicam_control(const AP_Mission::Mission_Command& cmd)
                        cmd.content.digicam_control.cmd_id)) {
         log_picture();
     }
-#endif
 }
 
 // do_take_picture - take a picture with the camera library
 void Sub::do_take_picture()
 {
-#if CAMERA == ENABLED
     camera.trigger_pic(true);
     log_picture();
-#endif
 }
 
 // log_picture - log picture taken and send feedback to GCS
@@ -884,6 +904,7 @@ void Sub::log_picture()
         }
     }
 }
+#endif
 
 // point the camera to a specified angle
 void Sub::do_mount_control(const AP_Mission::Mission_Command& cmd)

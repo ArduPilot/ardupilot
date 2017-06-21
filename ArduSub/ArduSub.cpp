@@ -31,25 +31,22 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(update_optical_flow,  200,    160),
 #endif
     SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK(auto_disarm_check,     10,     50),
-    SCHED_TASK(auto_trim,             10,     75),
     SCHED_TASK(read_rangefinder,      20,    100),
     SCHED_TASK(update_altitude,       10,    100),
-    SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(three_hz_loop,          3,     75),
     SCHED_TASK(update_turn_counter,   10,     50),
     SCHED_TASK(compass_accumulate,   100,    100),
     SCHED_TASK(barometer_accumulate,  50,     90),
     SCHED_TASK(update_notify,         50,     90),
     SCHED_TASK(one_hz_loop,            1,    100),
-    SCHED_TASK(ekf_check,             10,     75),
-    SCHED_TASK(lost_vehicle_check,    10,     50),
     SCHED_TASK(gcs_check_input,      400,    180),
     SCHED_TASK(gcs_send_heartbeat,     1,    110),
     SCHED_TASK(gcs_send_deferred,     50,    550),
     SCHED_TASK(gcs_data_stream_send,  50,    550),
     SCHED_TASK(update_mount,          50,     75),
+#if CAMERA == ENABLED
     SCHED_TASK(update_trigger,        50,     75),
+#endif
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
     SCHED_TASK(dataflash_periodic,    400,    300),
@@ -83,8 +80,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 
 void Sub::setup()
 {
-    cliSerial = hal.console;
-
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
 
@@ -96,16 +91,6 @@ void Sub::setup()
     // setup initial performance counters
     perf_info_reset();
     fast_loopTimer = AP_HAL::micros();
-}
-
-/*
-  if the compass is enabled then try to accumulate a reading
- */
-void Sub::compass_accumulate(void)
-{
-    if (g.compass_enabled) {
-        compass.accumulate();
-    }
 }
 
 /*
@@ -122,7 +107,7 @@ void Sub::perf_update(void)
         Log_Write_Performance();
     }
     if (scheduler.debug()) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu\n",
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
                           (unsigned)perf_info_get_num_long_running(),
                           (unsigned)perf_info_get_num_loops(),
                           (unsigned long)perf_info_get_max_time(),
@@ -169,17 +154,20 @@ void Sub::loop()
 // Main loop - 400hz
 void Sub::fast_loop()
 {
+    // update INS immediately to get current gyro data populated
+    ins.update();
+
     if (control_mode != MANUAL) { //don't run rate controller in manual mode
         // run low level rate controllers that only require IMU data
         attitude_control.rate_controller_run();
     }
 
-    // IMU DCM Algorithm
-    // --------------------
-    read_AHRS();
-
     // send outputs to the motors library
     motors_output();
+
+    // run EKF state estimator (expensive)
+    // --------------------
+    read_AHRS();
 
     // Inertial Nav
     // --------------------
@@ -187,8 +175,6 @@ void Sub::fast_loop()
 
     // check if ekf has reset target heading
     check_ekf_yaw_reset();
-
-    crash_check(MAIN_LOOP_SECONDS);
 
     // run the attitude controllers
     update_flight_mode();
@@ -213,18 +199,29 @@ void Sub::fast_loop()
 // 50 Hz tasks
 void Sub::fifty_hz_loop()
 {
-    // check auto_armed status
-    update_auto_armed();
-
     // check pilot input failsafe
-    failsafe_manual_control_check();
+    failsafe_pilot_input_check();
 
-    if (hal.rcin->new_input()) {
-        // Update servo output
-        RC_Channels::set_pwm_all();
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, 20.0f, 0.02f);
-        SRV_Channels::output_ch_all();
+    failsafe_crash_check();
+
+    failsafe_ekf_check();
+
+    failsafe_sensors_check();
+
+    // Update servo output
+    RC_Channels::set_pwm_all();
+    // wait for outputs to initialize: TODO find a better way to do this
+    if (millis() > 10000) {
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, g.cam_slew_limit, 0.02f);
     }
+    SRV_Channels::output_ch_all();
+}
+
+// updates the status of notify
+// should be called at 50hz
+void Sub::update_notify()
+{
+    notify.update();
 }
 
 // update_mount - update camera mount position
@@ -237,11 +234,10 @@ void Sub::update_mount()
 #endif
 }
 
-
+#if CAMERA == ENABLED
 // update camera trigger
 void Sub::update_trigger(void)
 {
-#if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
     if (camera.check_trigger_pin()) {
         gcs_send_message(MSG_CAMERA_FEEDBACK);
@@ -249,8 +245,8 @@ void Sub::update_trigger(void)
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
     }
-#endif
 }
+#endif
 
 // update_batt_compass - read battery and compass
 // should be called at 10hz
@@ -309,12 +305,6 @@ void Sub::ten_hz_logging_loop()
 // should be run at 25hz
 void Sub::twentyfive_hz_logging()
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    // HIL needs very fast update of the servo values
-    gcs_send_message(MSG_RADIO_OUT);
-#endif
-
-#if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
         DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
@@ -330,7 +320,6 @@ void Sub::twentyfive_hz_logging()
     if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMU(ins);
     }
-#endif
 }
 
 void Sub::dataflash_periodic(void)
@@ -341,7 +330,9 @@ void Sub::dataflash_periodic(void)
 // three_hz_loop - 3.3hz loop
 void Sub::three_hz_loop()
 {
-    set_leak_status(leak_detector.update());
+    leak_detector.update();
+
+    failsafe_leak_check();
 
     failsafe_internal_pressure_check();
 
@@ -358,18 +349,15 @@ void Sub::three_hz_loop()
     fence_check();
 #endif // AC_FENCE_ENABLED
 
-    update_events();
-
-#if CH6_TUNE_ENABLED == ENABLED
-    // update ch6 in flight tuning
-    tuning();
-#endif
+    ServoRelayEvents.update_events();
 }
 
 // one_hz_loop - runs at 1Hz
 void Sub::one_hz_loop()
 {
-    AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
+    bool arm_check = arming.pre_arm_checks(false);
+    ap.pre_arm_check = arm_check;
+    AP_Notify::flags.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_gps_check = position_ok();
 
     if (should_log(MASK_LOG_ANY)) {
@@ -386,8 +374,6 @@ void Sub::one_hz_loop()
 
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
-
-    check_usb_mux();
 
     // update position controller alt limits
     update_poscon_alt_max();
@@ -437,75 +423,13 @@ void Sub::update_GPS(void)
     }
 }
 
-void Sub::init_simple_bearing()
-{
-    // capture current cos_yaw and sin_yaw values
-    simple_cos_yaw = ahrs.cos_yaw();
-    simple_sin_yaw = ahrs.sin_yaw();
-
-    // initialise super simple heading (i.e. heading towards home) to be 180 deg from simple mode heading
-    super_simple_last_bearing = wrap_360_cd(ahrs.yaw_sensor+18000);
-    super_simple_cos_yaw = simple_cos_yaw;
-    super_simple_sin_yaw = simple_sin_yaw;
-
-    // log the simple bearing to dataflash
-    if (should_log(MASK_LOG_ANY)) {
-        Log_Write_Data(DATA_INIT_SIMPLE_BEARING, ahrs.yaw_sensor);
-    }
-}
-
-// update_simple_mode - rotates pilot input if we are in simple mode
-void Sub::update_simple_mode(void)
-{
-    float rollx, pitchx;
-
-    // exit immediately if no new radio frame or not in simple mode
-    if (ap.simple_mode == 0) {
-        return;
-    }
-
-    if (ap.simple_mode == 1) {
-        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
-        rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
-        pitchx = channel_roll->get_control_in()*simple_sin_yaw + channel_pitch->get_control_in()*simple_cos_yaw;
-    } else {
-        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
-        rollx = channel_roll->get_control_in()*super_simple_cos_yaw - channel_pitch->get_control_in()*super_simple_sin_yaw;
-        pitchx = channel_roll->get_control_in()*super_simple_sin_yaw + channel_pitch->get_control_in()*super_simple_cos_yaw;
-    }
-
-    // rotate roll, pitch input from north facing to vehicle's perspective
-    channel_roll->set_control_in(rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw());
-    channel_pitch->set_control_in(-rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw());
-}
-
-// update_super_simple_bearing - adjusts simple bearing based on location
-// should be called after home_bearing has been updated
-void Sub::update_super_simple_bearing(bool force_update)
-{
-    // check if we are in super simple mode and at least 10m from home
-    if (force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
-        // check the bearing to home has changed by at least 5 degrees
-        if (labs(super_simple_last_bearing - home_bearing) > 500) {
-            super_simple_last_bearing = home_bearing;
-            float angle_rad = radians((super_simple_last_bearing+18000)/100);
-            super_simple_cos_yaw = cosf(angle_rad);
-            super_simple_sin_yaw = sinf(angle_rad);
-        }
-    }
-}
-
 void Sub::read_AHRS(void)
 {
     // Perform IMU calculations and get attitude info
     //-----------------------------------------------
-#if HIL_MODE != HIL_MODE_DISABLED
-    // update hil before ahrs update
-    gcs_check_input();
-#endif
-
-    ahrs.update();
-    ahrs_view.update();
+    // <true> tells AHRS to skip INS update as we have already done it in fast_loop()
+    ahrs.update(true);
+    ahrs_view.update(true);
 }
 
 // read baro and rangefinder altitude at 10hz

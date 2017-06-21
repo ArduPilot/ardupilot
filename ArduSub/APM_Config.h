@@ -9,23 +9,16 @@
 //#define AC_FENCE              DISABLED            // disable fence to save 2k of flash
 //#define CAMERA                DISABLED            // disable camera trigger to save 1k of flash
 //#define RANGEFINDER_ENABLED   DISABLED            // disable rangefinder to save 1k of flash
-//#define PROXIMITY_ENABLED     DISABLED            // disable proximity sensors
 //#define POSHOLD_ENABLED       DISABLED            // disable PosHold flight mode to save 4.5k of flash
-#define GRIPPER_ENABLED           DISABLED            // disable gripper to save 500bytes of flash
-//#define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 
 // features below are disabled by default on all boards
+//#define GRIPPER_ENABLED       ENABLED            // enable gripper library
 //#define AVOIDANCE_ENABLED     ENABLED
 //#define PROXIMITY_ENABLED     ENABLED
 //#define AC_RALLY              ENABLED            // enable rally points library
 //#define AC_TERRAIN            ENABLED            // enable terrain library (Must also enable Rally)
 //#define OPTFLOW               ENABLED // enable optical flow sensor support
-//#define DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE   // disable mode changes from GCS during Radio failsafes.  Avoids a race condition for vehicle like Solo in which the RC and telemetry travel along the same link
-
-// other settings
-//#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)
-//#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 
 // User Hooks : For User Developed code that you wish to run
 // Put your variable definitions into the UserVariables.h file (or another file name and then change the #define below).

@@ -59,7 +59,7 @@ public:
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override;
 
-    void            update() override;
+    void            update(bool skip_ins_update=false) override;
     void            reset(bool recover_eulers = false) override;
 
     // reset the current attitude, used on new IMU calibration
@@ -103,6 +103,9 @@ public:
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers) override;
 
+    // return secondary attitude solution if available, as quaternion
+    bool get_secondary_quaternion(Quaternion &quat) override;
+    
     // return secondary position solution if available
     bool get_secondary_position(struct Location &loc) override;
 
@@ -120,6 +123,11 @@ public:
 
     // set home location
     void set_home(const Location &loc) override;
+
+    // set the EKF's origin location in 10e7 degrees.  This should only
+    // be called when the EKF has no absolute position reference (i.e. GPS)
+    // from which to decide the origin on its own
+    bool set_origin(const Location &loc) override;
 
     // returns the inertial navigation origin in lat/lon/alt
     bool get_origin(Location &ret) const;
@@ -149,6 +157,9 @@ public:
 
     // write optical flow measurements to EKF
     void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
+
+    // write body odometry measurements to the EKF
+    void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
 
     // inhibit GPS usage
     uint8_t setInhibitGPS(void);
@@ -237,7 +248,7 @@ public:
 
     // get the index of the current primary gyro sensor
     uint8_t get_primary_gyro_index(void) const override;
-    
+
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
                    EKF_TYPE3=3,
@@ -268,7 +279,7 @@ private:
     Flags _ekf_flags;
 
     uint8_t ekf_type(void) const;
-    void update_DCM(void);
+    void update_DCM(bool skip_ins_update);
     void update_EKF2(void);
     void update_EKF3(void);
 
@@ -277,6 +288,7 @@ private:
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
+    uint32_t _last_body_odm_update_ms = 0;
     void update_SITL(void);
 #endif    
 };

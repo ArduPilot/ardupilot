@@ -165,11 +165,6 @@ void Plane::init_ardupilot()
 
     rpm_sensor.init();
 
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
-    usb_connected = true;
-    check_usb_mux();
-
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
@@ -266,6 +261,8 @@ void Plane::init_ardupilot()
     }
 #endif
 
+    // disable safety if requested
+    BoardConfig.init_safety();
 }
 
 //********************************************************************************
@@ -299,6 +296,12 @@ void Plane::startup_ground(void)
 
     // initialise mission library
     mission.init();
+
+    // initialise DataFlash library
+    DataFlash.set_mission(&mission);
+    DataFlash.setVehicle_Startup_Log_Writer(
+        FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
+        );
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
@@ -380,6 +383,9 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     // new mode means new loiter
     loiter.start_time_ms = 0;
 
+    // record time of mode change
+    last_mode_change_ms = AP_HAL::millis();
+    
     // assume non-VTOL mode
     auto_state.vtol_mode = false;
     auto_state.vtol_loiter = false;
@@ -677,18 +683,6 @@ void Plane::resetPerfData(void)
 }
 
 
-void Plane::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    usb_connected = usb_check;
-}
-
-
 void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
@@ -841,14 +835,17 @@ void Plane::print_comma(void)
 bool Plane::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
+    if (!(mask & g.log_bitmask)) {
         return false;
     }
-    bool ret = hal.util->get_soft_armed() || DataFlash.log_while_disarmed();
-    if (ret && !DataFlash.logging_started() && !in_log_download) {
-        start_logging();
+    if (!DataFlash.should_log()) {
+        return false;
     }
-    return ret;
+    if (in_log_download) {
+        return false;
+    }
+    start_logging();
+    return true;
 #else
     return false;
 #endif

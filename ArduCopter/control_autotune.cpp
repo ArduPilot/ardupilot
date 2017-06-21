@@ -43,7 +43,7 @@
 
 #define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500     // restart tuning if pilot has left sticks in middle for 2 seconds
 #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000     // timeout for tuning mode's testing step
-#define AUTOTUNE_LEVEL_ANGLE_CD             300     // angle which qualifies as level
+#define AUTOTUNE_LEVEL_ANGLE_CD             500     // angle which qualifies as level
 #define AUTOTUNE_LEVEL_RATE_RP_CD          1000     // rate which qualifies as level for roll and pitch
 #define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the copter to be level
@@ -90,6 +90,8 @@
 #define AUTOTUNE_MESSAGE_FAILED 3
 #define AUTOTUNE_MESSAGE_SAVED_GAINS 4
 
+#define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
+
 // autotune modes (high level states)
 enum AutoTuneTuneMode {
     AUTOTUNE_MODE_UNINITIALISED = 0,        // autotune has never been run
@@ -117,21 +119,21 @@ enum AutoTuneTuneType {
     AUTOTUNE_TYPE_RD_UP = 0,                // rate D is being tuned up
     AUTOTUNE_TYPE_RD_DOWN = 1,              // rate D is being tuned down
     AUTOTUNE_TYPE_RP_UP = 2,                // rate P is being tuned up
-    AUTOTUNE_TYPE_SP_DOWN = 3,              // angle P is being tuned up
+    AUTOTUNE_TYPE_SP_DOWN = 3,              // angle P is being tuned down
     AUTOTUNE_TYPE_SP_UP = 4                 // angle P is being tuned up
 };
 
 // autotune_state_struct - hold state flags
 static struct autotune_state_struct {
     AutoTuneTuneMode    mode                : 2;    // see AutoTuneTuneMode for what modes are allowed
-    uint8_t             pilot_override      : 1;    // 1 = pilot is overriding controls so we suspend tuning temporarily
+    uint8_t             pilot_override      : 1;    // true = pilot is overriding controls so we suspend tuning temporarily
     AutoTuneAxisType    axis                : 2;    // see AutoTuneAxisType for which things can be tuned
-    uint8_t             positive_direction  : 1;    // 0 = tuning in negative direction (i.e. left for roll), 1 = positive direction (i.e. right for roll)
+    uint8_t             positive_direction  : 1;    // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
     AutoTuneStepType    step                : 2;    // see AutoTuneStepType for what steps are performed
     AutoTuneTuneType    tune_type           : 3;    // see AutoTuneTuneType
-    uint8_t             ignore_next         : 1;    // 1 = ignore the next test
-    bool                use_poshold         : 1;    // enable position hold
-    bool                have_position       : 1;    // start_position is value
+    uint8_t             ignore_next         : 1;    // true = ignore the next test
+    bool                use_poshold         : 1;    // true = enable position hold
+    bool                have_position       : 1;    // true = start_position is value
     Vector3f            start_position;
 } autotune_state;
 
@@ -159,6 +161,17 @@ static bool     orig_bf_feedforward;
 static float    tune_roll_rp, tune_roll_rd, tune_roll_sp, tune_roll_accel;
 static float    tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, tune_pitch_accel;
 static float    tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, tune_yaw_accel;
+
+static uint32_t autotune_announce_time;
+static float lean_angle;
+static float rotation_rate;
+static float autotune_roll_cd, autotune_pitch_cd;
+
+static struct {
+    Copter::AUTOTUNE_LEVEL_ISSUE issue{Copter::AUTOTUNE_LEVEL_ISSUE_NONE};
+    float maximum;
+    float current;
+} autotune_level_problem;
 
 // autotune_init - should be called when autotune mode is selected
 bool Copter::autotune_init(bool ignore_checks)
@@ -260,6 +273,123 @@ bool Copter::autotune_start(bool ignore_checks)
     return true;
 }
 
+const char *Copter::autotune_level_issue_string() const
+{
+    switch (autotune_level_problem.issue) {
+    case Copter::AUTOTUNE_LEVEL_ISSUE_NONE:
+        return "None";
+    case Copter::AUTOTUNE_LEVEL_ISSUE_ANGLE_ROLL:
+        return "Angle(R)";
+    case Copter::AUTOTUNE_LEVEL_ISSUE_ANGLE_PITCH:
+        return "Angle(P)";
+    case Copter::AUTOTUNE_LEVEL_ISSUE_ANGLE_YAW:
+        return "Angle(Y)";
+    case Copter::AUTOTUNE_LEVEL_ISSUE_RATE_ROLL:
+        return "Rate(R)";
+    case Copter::AUTOTUNE_LEVEL_ISSUE_RATE_PITCH:
+        return "Rate(P)";
+    case Copter::AUTOTUNE_LEVEL_ISSUE_RATE_YAW:
+        return "Rate(Y)";
+    }
+    return "Bug";
+}
+
+void Copter::autotune_send_step_string()
+{
+    if (autotune_state.pilot_override) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: Paused: Pilot Override Active");
+        return;
+    }
+    switch (autotune_state.step) {
+    case AUTOTUNE_STEP_WAITING_FOR_LEVEL:
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: WFL (%s) (%f > %f)", autotune_level_issue_string(), (double)(autotune_level_problem.current*0.01f), (double)(autotune_level_problem.maximum*0.01f));
+        return;
+    case AUTOTUNE_STEP_UPDATE_GAINS:
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: UPDATING_GAINS");
+        return;
+    case AUTOTUNE_STEP_TWITCHING:
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: TWITCHING");
+        return;
+    }
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: unknown step");
+}
+
+const char *Copter::autotune_type_string() const
+{
+    switch (autotune_state.tune_type) {
+    case AUTOTUNE_TYPE_RD_UP:
+        return "Rate D Up";
+    case AUTOTUNE_TYPE_RD_DOWN:
+        return "Rate D Down";
+    case AUTOTUNE_TYPE_RP_UP:
+        return "Rate P Up";
+    case AUTOTUNE_TYPE_SP_DOWN:
+        return "Angle P Down";
+    case AUTOTUNE_TYPE_SP_UP:
+        return "Angle P Up";
+    }
+    return "Bug";
+}
+
+void Copter::autotune_do_gcs_announcements()
+{
+    const uint32_t now = millis();
+    if (now - autotune_announce_time < AUTOTUNE_ANNOUNCE_INTERVAL_MS) {
+        return;
+    }
+    float tune_rp = 0.0f;
+    float tune_rd = 0.0f;
+    float tune_sp = 0.0f;
+    float tune_accel = 0.0f;
+    char axis = '?';
+    switch (autotune_state.axis) {
+    case AUTOTUNE_AXIS_ROLL:
+        tune_rp = tune_roll_rp;
+        tune_rd = tune_roll_rd;
+        tune_sp = tune_roll_sp;
+        tune_accel = tune_roll_accel;
+        axis = 'R';
+        break;
+    case AUTOTUNE_AXIS_PITCH:
+        tune_rp = tune_pitch_rp;
+        tune_rd = tune_pitch_rd;
+        tune_sp = tune_pitch_sp;
+        tune_accel = tune_pitch_accel;
+        axis = 'P';
+        break;
+    case AUTOTUNE_AXIS_YAW:
+        tune_rp = tune_yaw_rp;
+        tune_rd = tune_yaw_rLPF;
+        tune_sp = tune_yaw_sp;
+        tune_accel = tune_yaw_accel;
+        axis = 'Y';
+        break;
+    }
+
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: (%c) %s", axis, autotune_type_string());
+    autotune_send_step_string();
+    if (!is_zero(lean_angle)) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: lean=%f target=%f", (double)lean_angle, (double)autotune_target_angle);
+    }
+    if (!is_zero(rotation_rate)) {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: rotation=%f target=%f", (double)(rotation_rate*0.01f), (double)(autotune_target_rate*0.01f));
+    }
+    switch (autotune_state.tune_type) {
+    case AUTOTUNE_TYPE_RD_UP:
+    case AUTOTUNE_TYPE_RD_DOWN:
+    case AUTOTUNE_TYPE_RP_UP:
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", (double)tune_rp, (double)tune_rd);
+        break;
+    case AUTOTUNE_TYPE_SP_DOWN:
+    case AUTOTUNE_TYPE_SP_UP:
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: p=%f accel=%f", (double)tune_sp, (double)tune_accel);
+        break;
+    }
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: success %u/%u", autotune_counter, AUTOTUNE_SUCCESS_COUNT);
+
+    autotune_announce_time = now;
+}
+
 // autotune_run - runs the autotune flight mode
 // should be called at 100hz or more
 void Copter::autotune_run()
@@ -267,6 +397,9 @@ void Copter::autotune_run()
     float target_roll, target_pitch;
     float target_yaw_rate;
     int16_t target_climb_rate;
+
+    // tell the user what's going on
+    autotune_do_gcs_announcements();
 
     // initialize vertical speeds and acceleration
     pos_control->set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
@@ -329,7 +462,10 @@ void Copter::autotune_run()
             }
             // reset pilot override time
             autotune_override_time = millis();
-            autotune_state.have_position = false;
+            if (!zero_rp_input) {
+                // only reset position on roll or pitch input
+                autotune_state.have_position = false;
+            }
         }else if (autotune_state.pilot_override) {
             // check if we should resume tuning after pilot's override
             if (millis() - autotune_override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
@@ -363,11 +499,58 @@ void Copter::autotune_run()
     }
 }
 
+bool Copter::autotune_check_level(const Copter::AUTOTUNE_LEVEL_ISSUE issue, const float current, const float maximum) const
+{
+    if (current > maximum) {
+        autotune_level_problem.current = current;
+        autotune_level_problem.maximum = maximum;
+        autotune_level_problem.issue = issue;
+        return false;
+    }
+    return true;
+}
+
+bool Copter::autotune_currently_level()
+{
+    if (!autotune_check_level(Copter::AUTOTUNE_LEVEL_ISSUE_ANGLE_ROLL,
+                              labs(ahrs.roll_sensor - autotune_roll_cd),
+                              AUTOTUNE_LEVEL_ANGLE_CD)) {
+        return false;
+    }
+
+    if (!autotune_check_level(Copter::AUTOTUNE_LEVEL_ISSUE_ANGLE_PITCH,
+                              labs(ahrs.pitch_sensor - autotune_pitch_cd),
+                              AUTOTUNE_LEVEL_ANGLE_CD)) {
+        return false;
+    }
+    if (!autotune_check_level(Copter::AUTOTUNE_LEVEL_ISSUE_ANGLE_YAW,
+                              labs(wrap_180_cd(ahrs.yaw_sensor-(int32_t)autotune_desired_yaw)),
+                              AUTOTUNE_LEVEL_ANGLE_CD)) {
+        return false;
+    }
+    if (!autotune_check_level(Copter::AUTOTUNE_LEVEL_ISSUE_RATE_ROLL,
+                              (ToDeg(ahrs.get_gyro().x) * 100.0f),
+                              AUTOTUNE_LEVEL_RATE_RP_CD)) {
+        return false;
+    }
+    if (!autotune_check_level(Copter::AUTOTUNE_LEVEL_ISSUE_RATE_PITCH,
+                              (ToDeg(ahrs.get_gyro().y) * 100.0f),
+                              AUTOTUNE_LEVEL_RATE_RP_CD)) {
+        return false;
+    }
+    if (!autotune_check_level(Copter::AUTOTUNE_LEVEL_ISSUE_RATE_YAW,
+                              (ToDeg(ahrs.get_gyro().z) * 100.0f),
+                              AUTOTUNE_LEVEL_RATE_Y_CD)) {
+        return false;
+    }
+    return true;
+}
+
 // autotune_attitude_controller - sets attitude control targets during tuning
 void Copter::autotune_attitude_control()
 {
-    float rotation_rate = 0.0f;        // rotation rate in radians/second
-    float lean_angle = 0.0f;
+    rotation_rate = 0.0f;        // rotation rate in radians/second
+    lean_angle = 0.0f;
     const float direction_sign = autotune_state.positive_direction ? 1.0f : -1.0f;
 
     // check tuning step
@@ -378,7 +561,6 @@ void Copter::autotune_attitude_control()
         // re-enable rate limits
         attitude_control->use_ff_and_input_shaping(true);
 
-        float autotune_roll_cd, autotune_pitch_cd;
         autotune_get_poshold_attitude(autotune_roll_cd, autotune_pitch_cd, autotune_desired_yaw);
         
         // hold level attitude
@@ -386,17 +568,13 @@ void Copter::autotune_attitude_control()
 
         // hold the copter level for 0.5 seconds before we begin a twitch
         // reset counter if we are no longer level
-        if ((labs(ahrs.roll_sensor - autotune_roll_cd) > AUTOTUNE_LEVEL_ANGLE_CD) ||
-            (labs(ahrs.pitch_sensor - autotune_pitch_cd) > AUTOTUNE_LEVEL_ANGLE_CD) ||
-            (labs(wrap_180_cd(ahrs.yaw_sensor-(int32_t)autotune_desired_yaw)) > AUTOTUNE_LEVEL_ANGLE_CD) ||
-            ((ToDeg(ahrs.get_gyro().x) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
-            ((ToDeg(ahrs.get_gyro().y) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
-            ((ToDeg(ahrs.get_gyro().z) * 100.0f) > AUTOTUNE_LEVEL_RATE_Y_CD) ) {
+        if (!autotune_currently_level()) {
             autotune_step_start_time = millis();
         }
 
         // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
         if (millis() - autotune_step_start_time >= AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: Twitch");
             // initiate variables for next step
             autotune_state.step = AUTOTUNE_STEP_TWITCHING;
             autotune_step_start_time = millis();
@@ -1143,11 +1321,11 @@ void Copter::autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_
         // we have a good measurement of bounce back
         if (measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) {
             // ignore the next result unless it is the same as this one
-            autotune_state.ignore_next = 1;
+            autotune_state.ignore_next = true;
             // bounce back is bigger than our threshold so increment the success counter
             autotune_counter++;
         }else{
-            if (autotune_state.ignore_next == 0){
+            if (autotune_state.ignore_next == false) {
                 // bounce back is smaller than our threshold so decrement the success counter
                 if (autotune_counter > 0 ) {
                     autotune_counter--;
@@ -1161,7 +1339,7 @@ void Copter::autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_
                     Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
                 }
             } else {
-                autotune_state.ignore_next = 0;
+                autotune_state.ignore_next = false;
             }
         }
     }
@@ -1197,15 +1375,15 @@ void Copter::autotune_updating_d_down(float &tune_d, float tune_d_min, float tun
     }else{
         // we have a good measurement of bounce back
         if (measurement_max-measurement_min < measurement_max*g.autotune_aggressiveness) {
-            if (autotune_state.ignore_next == 0){
+            if (autotune_state.ignore_next == false) {
                 // bounce back is less than our threshold so increment the success counter
                 autotune_counter++;
             } else {
-                autotune_state.ignore_next = 0;
+                autotune_state.ignore_next = false;
             }
         }else{
             // ignore the next result unless it is the same as this one
-            autotune_state.ignore_next = 1;
+            autotune_state.ignore_next = true;
             // bounce back is larger than our threshold so decrement the success counter
             if (autotune_counter > 0 ) {
                 autotune_counter--;
@@ -1227,15 +1405,15 @@ void Copter::autotune_updating_d_down(float &tune_d, float tune_d_min, float tun
 void Copter::autotune_updating_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float target, float measurement_max)
 {
     if (measurement_max < target*(1+0.5f*g.autotune_aggressiveness)) {
-        if (autotune_state.ignore_next == 0){
+        if (autotune_state.ignore_next == false) {
             // if maximum measurement was lower than target so increment the success counter
             autotune_counter++;
         } else {
-            autotune_state.ignore_next = 0;
+            autotune_state.ignore_next = false;
         }
     }else{
         // ignore the next result unless it is the same as this one
-        autotune_state.ignore_next = 1;
+        autotune_state.ignore_next = true;
         // if maximum measurement was higher than target so decrement the success counter
         if (autotune_counter > 0 ) {
             autotune_counter--;
@@ -1261,7 +1439,7 @@ void Copter::autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_
         // if maximum measurement was greater than target so increment the success counter
         autotune_counter++;
     }else{
-        if (autotune_state.ignore_next == 0){
+        if (autotune_state.ignore_next == false) {
             // if maximum measurement was lower than target so decrement the success counter
             if (autotune_counter > 0 ) {
                 autotune_counter--;
@@ -1275,7 +1453,7 @@ void Copter::autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_
                 Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
             }
         } else {
-            autotune_state.ignore_next = 0;
+            autotune_state.ignore_next = false;
         }
     }
 }
@@ -1286,7 +1464,7 @@ void Copter::autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, floa
 {
     if (measurement_max > target*(1+0.5f*g.autotune_aggressiveness)) {
         // ignore the next result unless it is the same as this one
-        autotune_state.ignore_next = 1;
+        autotune_state.ignore_next = true;
         // if maximum measurement was greater than target so increment the success counter
         autotune_counter++;
     } else if ((measurement_max < target) && (measurement_max > target*(1.0f-AUTOTUNE_D_UP_DOWN_MARGIN)) && (measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) && (tune_d > tune_d_min)) {
@@ -1311,7 +1489,7 @@ void Copter::autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, floa
         // cancel change in direction
         autotune_state.positive_direction = !autotune_state.positive_direction;
     }else{
-        if (autotune_state.ignore_next == 0){
+        if (autotune_state.ignore_next == false) {
             // if maximum measurement was lower than target so decrement the success counter
             if (autotune_counter > 0 ) {
                 autotune_counter--;
@@ -1325,7 +1503,7 @@ void Copter::autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, floa
                 Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
             }
         } else {
-            autotune_state.ignore_next = 0;
+            autotune_state.ignore_next = false;
         }
     }
 }

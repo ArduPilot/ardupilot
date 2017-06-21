@@ -36,6 +36,8 @@ public:
 
     static bool _detect(struct ERB_detect_state &state, uint8_t data);
 
+    const char *name() const override { return "ERB"; }
+
 private:
     struct PACKED erb_header {
         uint8_t preamble1;
@@ -132,8 +134,6 @@ private:
 
     // Buffer parse & GPS state update
     bool _parse_gps();
-
-    void inject_data(const uint8_t *data, uint16_t len) override;
 
     // used to update fix between status and position packets
     AP_GPS::GPS_Status next_fix;

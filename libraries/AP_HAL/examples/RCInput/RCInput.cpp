@@ -4,14 +4,17 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define MAX_CHANNELS 16
 
-static uint8_t max_channels_display = 8;  //Set to 0 for display numbers of channels detected.
+static uint8_t max_channels_display = 8;  // Set to 0 for display numbers of channels detected.
 static uint16_t last_value[MAX_CHANNELS];
 
-void setup(void) 
+void setup(void)
 {
     hal.console->printf("Starting RCInput test\n");
 }
@@ -19,11 +22,11 @@ void setup(void)
 void loop(void)
 {
     bool changed = false;
-    uint8_t nchannels = hal.rcin->num_channels(); //Get the numbers channels detected by RC_INPUT.
+    uint8_t nchannels = hal.rcin->num_channels();  // Get the numbers channels detected by RC_INPUT.
     if (nchannels > MAX_CHANNELS) {
         nchannels = MAX_CHANNELS;
     }
-    if (nchannels != 0) {  //If channels detected, process.
+    if (nchannels != 0) {  // If channels detected, process.
         for (uint8_t i = 0; i < nchannels; i++) {
             uint16_t v = hal.rcin->read(i);
             if (last_value[i] != v) {

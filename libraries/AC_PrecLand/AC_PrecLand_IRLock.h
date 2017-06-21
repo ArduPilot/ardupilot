@@ -9,9 +9,6 @@
 #include <AP_IRLock/AP_IRLock_SITL.h>
 #endif
 
-// this only builds for PX4 so far
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
 /*
  * AC_PrecLand_IRLock - implements precision landing using target vectors provided
  *                         by a companion computer (i.e. Odroid) communicating via MAVLink
@@ -47,4 +44,3 @@ private:
     bool                _have_los_meas;         // true if there is a valid measurement from the camera
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
 };
-#endif

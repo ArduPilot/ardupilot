@@ -144,7 +144,7 @@ bool AP_Baro_MS56XX::_init()
     _dev->get_semaphore()->give();
 
     /* Request 100Hz update */
-    _dev->register_periodic_callback(10 * USEC_PER_MSEC,
+    _dev->register_periodic_callback(10 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void));
     return true;
 }

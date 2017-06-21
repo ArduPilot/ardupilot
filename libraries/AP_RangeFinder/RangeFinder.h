@@ -53,6 +53,7 @@ public:
         RangeFinder_TYPE_MBSER  = 13,
         RangeFinder_TYPE_TRONE  = 14,
         RangeFinder_TYPE_PLI2CV3= 15,
+        RangeFinder_TYPE_VL53L0X = 16
     };
 
     enum RangeFinder_Function {
@@ -153,6 +154,10 @@ public:
         return _ground_clearance_cm[instance];
     }
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
+
+    MAV_DISTANCE_SENSOR get_sensor_type(uint8_t instance) const;
+
+    MAV_DISTANCE_SENSOR get_sensor_type_orient(enum Rotation orientation) const;
 
     // query status
     RangeFinder_Status status(uint8_t instance) const;

@@ -10,27 +10,31 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
     // @Param: _BOOTCNT
     // @DisplayName: Boot Count
     // @Description: Number of times board has been booted
+    // @ReadOnly: True
     // @User: Standard
     AP_GROUPINFO("_BOOTCNT",    0, AP_Stats, params.bootcount, 0),
 
     // @Param: _FLTTIME
     // @DisplayName: Total FlightTime
     // @Description: Total FlightTime (seconds)
-    // @Units: seconds
+    // @Units: s
+    // @ReadOnly: True
     // @User: Standard
     AP_GROUPINFO("_FLTTIME",    1, AP_Stats, params.flttime, 0),
 
     // @Param: _RUNTIME
     // @DisplayName: Total RunTime
     // @Description: Total time autopilot has run
-    // @Units: seconds
+    // @Units: s
+    // @ReadOnly: True
     // @User: Standard
     AP_GROUPINFO("_RUNTIME",    2, AP_Stats, params.runtime, 0),
 
     // @Param: _RESET
     // @DisplayName: Reset time
     // @Description: Seconds since January 1st 2016 (Unix epoch+1451606400) since reset (set to 0 to reset statistics)
-    // @Units: seconds
+    // @Units: s
+    // @ReadOnly: True
     // @User: Standard
     AP_GROUPINFO("_RESET",    3, AP_Stats, params.reset, 1),
 

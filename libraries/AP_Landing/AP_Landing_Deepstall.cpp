@@ -25,7 +25,7 @@
 // table of user settable parameters for deepstall
 const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 
-    // @Param: DS_V_FWD
+    // @Param: V_FWD
     // @DisplayName: Deepstall forward velocity
     // @Description: The forward velocity of the aircraft while stalled
     // @Range: 0 20
@@ -33,27 +33,27 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("V_FWD", 1, AP_Landing_Deepstall, forward_speed, 1),
 
-    // @Param: DS_SLOPE_A
+    // @Param: SLOPE_A
     // @DisplayName: Deepstall slope a
     // @Description: The a component of distance = a*wind + b
     // @User: Advanced
     AP_GROUPINFO("SLOPE_A", 2, AP_Landing_Deepstall, slope_a, 1),
 
-    // @Param: DS_SLOPE_B
+    // @Param: SLOPE_B
     // @DisplayName: Deepstall slope b
     // @Description: The a component of distance = a*wind + b
     // @User: Advanced
     AP_GROUPINFO("SLOPE_B", 3, AP_Landing_Deepstall, slope_b, 1),
 
-    // @Param: DS_APP_EXT
+    // @Param: APP_EXT
     // @DisplayName: Deepstall approach extension
     // @Description: The forward velocity of the aircraft while stalled
     // @Range: 10 200
-    // @Units: meters
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("APP_EXT", 4, AP_Landing_Deepstall, approach_extension, 50),
 
-    // @Param: DS_V_DWN
+    // @Param: V_DWN
     // @DisplayName: Deepstall veloicty down
     // @Description: The downward velocity of the aircraft while stalled
     // @Range: 0 20
@@ -61,23 +61,23 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("V_DWN", 5, AP_Landing_Deepstall, down_speed, 2),
 
-    // @Param: DS_SLEW_SPD
+    // @Param: SLEW_SPD
     // @DisplayName: Deepstall slew speed
     // @Description: The speed at which the elevator slews to deepstall
     // @Range: 0 2
-    // @Units: seconds
+    // @Units: s
     // @User: Advanced
     AP_GROUPINFO("SLEW_SPD", 6, AP_Landing_Deepstall, slew_speed, 0.5),
 
-    // @Param: DS_ELEV_PWM
+    // @Param: ELEV_PWM
     // @DisplayName: Deepstall elevator PWM
-    // @Description: The PWM value for the elevator at full deflection in deepstall
+    // @Description: The PWM value in microseconds for the elevator at full deflection in deepstall
     // @Range: 900 2100
     // @Units: PWM
     // @User: Advanced
     AP_GROUPINFO("ELEV_PWM", 7, AP_Landing_Deepstall, elevator_pwm, 1500),
 
-    // @Param: DS_ARSP_MAX
+    // @Param: ARSP_MAX
     // @DisplayName: Deepstall enabled airspeed
     // @Description: The maximum aispeed where the deepstall steering controller is allowed to have control
     // @Range: 5 20
@@ -85,7 +85,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ARSP_MAX", 8, AP_Landing_Deepstall, handoff_airspeed, 15.0),
 
-    // @Param: DS_ARSP_MIN
+    // @Param: ARSP_MIN
     // @DisplayName: Deepstall minimum derating airspeed
     // @Description: Deepstall lowest airspeed where the deepstall controller isn't allowed full control
     // @Range: 5 20
@@ -93,22 +93,22 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ARSP_MIN", 9, AP_Landing_Deepstall, handoff_lower_limit_airspeed, 10.0),
 
-    // @Param: DS_L1
+    // @Param: L1
     // @DisplayName: Deepstall L1 period
     // @Description: Deepstall L1 navigational controller period
     // @Range: 5 50
-    // @Units: meters
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("L1", 10, AP_Landing_Deepstall, L1_period, 30.0),
 
-    // @Param: DS_L1_I
+    // @Param: L1_I
     // @DisplayName: Deepstall L1 I gain
     // @Description: Deepstall L1 integratior gain
     // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("L1_I", 11, AP_Landing_Deepstall, L1_i, 0),
 
-    // @Param: DS_YAW_LIM
+    // @Param: YAW_LIM
     // @DisplayName: Deepstall yaw rate limit
     // @Description: The yaw rate limit while navigating in deepstall
     // @Range: 0 90
@@ -116,7 +116,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("YAW_LIM", 12, AP_Landing_Deepstall, yaw_rate_limit, 10),
 
-    // @Param: DS_L1_TCON
+    // @Param: L1_TCON
     // @DisplayName: Deepstall L1 time constant
     // @Description: Time constant for deepstall L1 control
     // @Range: 0 1
@@ -190,12 +190,24 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             return false;
         }
         stage = DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT;
-        //compute optimal path for landing
-        build_approach_path();
+        loiter_sum_cd = 0; // reset the loiter counter
         // no break
         }
     case DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT:
+        // rebuild the approach path if we have done less then a full circle to allow it to be
+        // more into the wind as the estimator continues to refine itself, and allow better
+        // compensation on windy days. This is limited to a single full circle though, as on
+        // a no wind day you could be in this loop forever otherwise.
+        if (loiter_sum_cd < 36000) {
+            build_approach_path();
+        }
         if (!verify_breakout(current_loc, arc_entry, height)) {
+            int32_t target_bearing = landing.nav_controller->target_bearing_cd();
+            int32_t delta = wrap_180_cd(target_bearing - last_target_bearing);
+            if (delta > 0) { // only accumulate turns in the correct direction
+                loiter_sum_cd += delta;
+            }
+            last_target_bearing = target_bearing;
             landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, 1);
             return false;
         }
@@ -229,7 +241,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         float relative_alt_D;
         landing.ahrs.get_relative_position_D_home(relative_alt_D);
 
-        const float travel_distance = predict_travel_distance(landing.ahrs.wind_estimate(), -relative_alt_D);
+        const float travel_distance = predict_travel_distance(landing.ahrs.wind_estimate(), -relative_alt_D, false);
 
         memcpy(&entry_point, &landing_point, sizeof(Location));
         location_update(entry_point, target_heading_deg + 180.0, travel_distance);
@@ -241,6 +253,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             }
             return false;
         }
+        predict_travel_distance(landing.ahrs.wind_estimate(), -relative_alt_D, true);
         stage = DEEPSTALL_STAGE_LAND;
         stall_entry_time = AP_HAL::millis();
 
@@ -257,6 +270,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
     case DEEPSTALL_STAGE_LAND:
         // while in deepstall the only thing verify needs to keep the extended approach point sufficently far away
         landing.nav_controller->update_waypoint(current_loc, extended_approach);
+        landing.disarm_if_autoland_complete_fn();
         return false;
     default:
         return true;
@@ -331,6 +345,11 @@ bool AP_Landing_Deepstall::is_throttle_suppressed(void) const
     return stage == DEEPSTALL_STAGE_LAND;
 }
 
+bool AP_Landing_Deepstall::is_flying_forward(void) const
+{
+    return stage != DEEPSTALL_STAGE_LAND;
+}
+
 bool AP_Landing_Deepstall::get_target_altitude_location(Location &location)
 {
     memcpy(&location, &landing_point, sizeof(Location));
@@ -347,6 +366,24 @@ int32_t AP_Landing_Deepstall::get_target_airspeed_cm(void) const
     }
 }
 
+bool AP_Landing_Deepstall::send_deepstall_message(mavlink_channel_t chan) const
+{
+    CHECK_PAYLOAD_SIZE2(DEEPSTALL);
+    mavlink_msg_deepstall_send(
+        chan,
+        landing_point.lat,
+        landing_point.lng,
+        stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_exit.lat : 0.0f,
+        stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_exit.lng : 0.0f,
+        stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_entry.lat : 0.0f,
+        stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? arc_entry.lng : 0.0f,
+        landing_point.alt * 0.01,
+        stage >= DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT ? predicted_travel_distance : 0.0f,
+        stage == DEEPSTALL_STAGE_LAND ? crosstrack_error : 0.0f,
+        stage);
+    return true;
+}
+
 const DataFlash_Class::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
 {
     return ds_PID.get_pid_info();
@@ -354,6 +391,8 @@ const DataFlash_Class::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
 
 void AP_Landing_Deepstall::build_approach_path(void)
 {
+    float loiter_radius = landing.nav_controller->loiter_radius(landing.aparm.loiter_radius);
+
     Vector3f wind = landing.ahrs.wind_estimate();
     // TODO: Support a user defined approach heading
     target_heading_deg = (degrees(atan2f(-wind.y, -wind.x)));
@@ -364,20 +403,19 @@ void AP_Landing_Deepstall::build_approach_path(void)
     //extend the approach point to 1km away so that there is always a navigational target
     location_update(extended_approach, target_heading_deg, 1000.0);
 
-    float expected_travel_distance = predict_travel_distance(wind, landing_point.alt / 100);
+    float expected_travel_distance = predict_travel_distance(wind, landing_point.alt * 0.01f, false);
     float approach_extension_m = expected_travel_distance + approach_extension;
-    // an approach extension of 0 can result in a divide by 0
-    if (fabsf(approach_extension_m) < 1.0f) {
-        approach_extension_m = 1.0f;
-    }
+    // an approach extensions must be at least half the loiter radius, or the aircraft has a
+    // decent chance to be misaligned on final approach
+    approach_extension_m = MAX(approach_extension_m, loiter_radius * 0.5f);
 
     location_update(arc_exit, target_heading_deg + 180, approach_extension_m);
     memcpy(&arc, &arc_exit, sizeof(Location));
     memcpy(&arc_entry, &arc_exit, sizeof(Location));
 
     // TODO: Support loitering on either side of the approach path
-    location_update(arc, target_heading_deg + 90.0, landing.aparm.loiter_radius);
-    location_update(arc_entry, target_heading_deg + 90.0, landing.aparm.loiter_radius * 2);
+    location_update(arc, target_heading_deg + 90.0, loiter_radius);
+    location_update(arc_entry, target_heading_deg + 90.0, loiter_radius * 2);
 
 #ifdef DEBUG_PRINTS
     // TODO: Send this information via a MAVLink packet
@@ -396,7 +434,7 @@ void AP_Landing_Deepstall::build_approach_path(void)
 
 }
 
-float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const float height) const
+float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const float height, const bool print)
 {
     bool reverse = false;
 
@@ -428,11 +466,21 @@ float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const f
 
     float estimated_forward = cosf(estimated_crab_angle) * forward_speed_ms + cosf(theta) * wind_length;
 
-#ifdef DEBUG_PRINTS
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Predict: %f %f", stall_distance,  estimated_forward * height / down_speed + stall_distance);
-#endif // DEBUG_PRINTS
+    if (is_positive(down_speed)) {
+        predicted_travel_distance = (estimated_forward * height / down_speed) + stall_distance;
+    } else {
+        // if we don't have a sane downward speed in a deepstall (IE not zero, and not
+        // an ascent) then just provide the stall_distance as a reasonable approximation
+        predicted_travel_distance = stall_distance;
+    }
 
-    return estimated_forward * height / down_speed + stall_distance;
+    if(print) {
+        // allow printing the travel distances on the final entry as its used for tuning
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Deepstall: Entry: %0.1f (m) Travel: %0.1f (m)",
+                                         (double)stall_distance, (double)predicted_travel_distance);
+    }
+
+    return predicted_travel_distance;
 }
 
 bool AP_Landing_Deepstall::verify_breakout(const Location &current_loc, const Location &target_loc,
@@ -470,7 +518,7 @@ float AP_Landing_Deepstall::update_steering()
     ab.normalize();
     Vector2f a_air = location_diff(arc_exit, current_loc);
 
-    float crosstrack_error = a_air % ab;
+    crosstrack_error = a_air % ab;
     float sine_nu1 = constrain_float(crosstrack_error / MAX(L1_period, 0.1f), -0.7071f, 0.7107f);
     float nu1 = asinf(sine_nu1);
 

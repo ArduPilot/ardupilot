@@ -22,7 +22,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
  */
 Sub::Sub(void) :
     DataFlash {FIRMWARE_STRING},
-          flight_modes(&g.flight_mode1),
           mission(ahrs,
                   FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
                   FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
@@ -30,26 +29,15 @@ Sub::Sub(void) :
           control_mode(MANUAL),
           motors(MAIN_LOOP_RATE),
           scaleLongDown(1),
-          wp_bearing(0),
-          home_bearing(0),
-          home_distance(0),
-          wp_distance(0),
           auto_mode(Auto_WP),
           guided_mode(Guided_WP),
           circle_pilot_yaw_override(false),
-          simple_cos_yaw(1.0f),
-          simple_sin_yaw(0.0f),
-          super_simple_last_bearing(0),
-          super_simple_cos_yaw(1.0),
-          super_simple_sin_yaw(0.0f),
           initial_armed_bearing(0),
           desired_climb_rate(0),
           loiter_time_max(0),
           loiter_time(0),
           climb_rate(0),
           target_rangefinder_alt(0.0f),
-          baro_alt(0),
-          baro_climbrate(0.0f),
           auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
           yaw_look_at_WP_bearing(0.0f),
           yaw_look_at_heading(0),
@@ -72,7 +60,6 @@ Sub::Sub(void) :
           pmTest1(0),
           fast_loopTimer(0),
           mainLoop_count(0),
-          auto_trim_counter(0),
           ServoRelayEvents(relay),
 #if CAMERA == ENABLED
           camera(&relay),
@@ -103,7 +90,7 @@ Sub::Sub(void) :
     failsafe.last_heartbeat_ms = 0;
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    failsafe.manual_control = true;
+    failsafe.pilot_input = true;
 #endif
 }
 

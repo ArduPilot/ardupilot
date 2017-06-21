@@ -6,15 +6,15 @@
 
 void Copter::default_dead_zones()
 {
-    channel_roll->set_default_dead_zone(10);
-    channel_pitch->set_default_dead_zone(10);
+    channel_roll->set_default_dead_zone(20);
+    channel_pitch->set_default_dead_zone(20);
 #if FRAME_CONFIG == HELI_FRAME
     channel_throttle->set_default_dead_zone(10);
     channel_yaw->set_default_dead_zone(15);
     RC_Channels::rc_channel(CH_6)->set_default_dead_zone(10);
 #else
     channel_throttle->set_default_dead_zone(30);
-    channel_yaw->set_default_dead_zone(10);
+    channel_yaw->set_default_dead_zone(20);
 #endif
     RC_Channels::rc_channel(CH_6)->set_default_dead_zone(0);
 }
@@ -59,22 +59,6 @@ void Copter::init_rc_out()
     hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif
 
-    // delay up to 2 second for first radio input
-    uint8_t i = 0;
-    while ((i++ < 100) && (last_radio_update_ms == 0)) {
-        delay(20);
-        read_radio();
-    }
-
-    // check if we should enter esc calibration mode
-    esc_calibration_startup_check();
-
-    // enable output to motors
-    arming.pre_arm_rc_checks(true);
-    if (ap.pre_arm_rc_check) {
-        enable_motor_output();
-    }
-
     // refresh auxiliary channel to function map
     SRV_Channels::update_aux_servo_function();
 
@@ -85,6 +69,9 @@ void Copter::init_rc_out()
     uint16_t safety_ignore_mask = (~copter.motors->get_motor_mask()) & 0x3FFF;
     BoardConfig.set_default_safety_ignore_mask(safety_ignore_mask);
 #endif
+
+    // check if we should enter esc calibration mode
+    esc_calibration_startup_check();
 }
 
 
@@ -111,9 +98,6 @@ void Copter::read_radio()
         if (!failsafe.rc_override_active) {
             ap.rc_receiver_present = true;
         }
-
-        // update output on any aux channels, for manual passthru
-        SRV_Channels::output_ch_all();
 
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
         radio_passthrough_to_motors();
@@ -198,5 +182,5 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
 // pass pilot's inputs to motors library (used to allow wiggling servos while disarmed on heli, single, coax copters)
 void Copter::radio_passthrough_to_motors()
 {
-    motors->set_radio_passthrough(channel_roll->get_control_in()/1000.0f, channel_pitch->get_control_in()/1000.0f, channel_throttle->get_control_in()/1000.0f, channel_yaw->get_control_in()/1000.0f);
+    motors->set_radio_passthrough(channel_roll->norm_input(), channel_pitch->norm_input(), channel_throttle->norm_input(), channel_yaw->norm_input());
 }

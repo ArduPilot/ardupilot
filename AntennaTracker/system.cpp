@@ -86,6 +86,9 @@ void Tracker::init_tracker()
 
     init_barometer(true);
 
+    // initialise DataFlash library
+    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
+
     // set serial ports non-blocking
     serial_manager.set_blocking_writes_all(false);
 
@@ -120,6 +123,8 @@ void Tracker::init_tracker()
         prepare_servos();
     }
 
+    // disable safety if requested
+    BoardConfig.init_safety();    
 }
 
 // updates the status of the notify objects
@@ -170,11 +175,13 @@ void Tracker::set_home(struct Location temp)
 void Tracker::arm_servos()
 {
     hal.util->set_soft_armed(true);
+    DataFlash.set_vehicle_armed(true);
 }
 
 void Tracker::disarm_servos()
 {
     hal.util->set_soft_armed(false);
+    DataFlash.set_vehicle_armed(false);
 }
 
 /*
@@ -248,7 +255,10 @@ void Tracker::check_usb_mux(void)
  */
 bool Tracker::should_log(uint32_t mask)
 {
-    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
+    if (!(mask & g.log_bitmask)) {
+        return false;
+    }
+    if (!DataFlash.should_log()) {
         return false;
     }
     return true;

@@ -80,7 +80,7 @@ public:
     // An out of range instance (eg -1) returns data for the the primary instance
     void getVelNED(int8_t instance, Vector3f &vel);
 
-    // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s for the specified instance
+    // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
     // but will always be kinematically consistent with the z component of the EKF position state
@@ -147,16 +147,17 @@ public:
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
     bool getLLH(struct Location &loc) const;
 
-    // return the latitude and longitude and height used to set the NED origin
+    // Return the latitude and longitude and height used to set the NED origin for the specified instance
+    // An out of range instance (eg -1) returns data for the the primary instance
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(struct Location &loc) const;
+    bool getOriginLLH(int8_t instance, struct Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
+    // All NED positions calculated by the filter will be relative to this location
     // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
     // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(struct Location &loc);
+    bool setOriginLLH(const Location &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -170,7 +171,7 @@ public:
     void getRotationBodyToNED(Matrix3f &mat) const;
 
     // return the quaternions defining the rotation from NED to XYZ (body) axes
-    void getQuaternion(Quaternion &quat) const;
+    void getQuaternion(int8_t instance, Quaternion &quat) const;
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
@@ -182,6 +183,9 @@ public:
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
     void getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset);
+
+    // return the diagonals from the covariance matrix for the specified instance
+    void getStateVariances(int8_t instance, float stateVar[24]);
 
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
@@ -195,6 +199,28 @@ public:
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
     void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
+
+    /*
+     * Write body frame linear and angular displacement measurements from a visual odometry sensor
+     *
+     * quality is a normalised confidence value from 0 to 100
+     * delPos is the XYZ change in linear position measured in body frame and relative to the inertial reference at timeStamp_ms (m)
+     * delAng is the XYZ angular rotation measured in body frame and relative to the inertial reference at timeStamp_ms (rad)
+     * delTime is the time interval for the measurement of delPos and delAng (sec)
+     * timeStamp_ms is the timestamp of the last image used to calculate delPos and delAng (msec)
+     * posOffset is the XYZ body frame position of the camera focal point (m)
+    */
+    void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
+
+    /*
+     * Return data for debugging body frame odometry fusion:
+     *
+     * velInnov are the XYZ body frame velocity innovations (m/s)
+     * velInnovVar are the XYZ body frame velocity innovation variances (m/s)**2
+     *
+     * Return the system time stamp of the last update (msec)
+     */
+    uint32_t getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vector3f &velInnovVar);
 
     // return data for debugging optical flow fusion for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
@@ -306,6 +332,9 @@ public:
     // are we doing sensor logging inside the EKF?
     bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
 
+    // get timing statistics structure
+    void getTimingStatistics(int8_t instance, struct ekf_timing &timing);
+    
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
@@ -314,6 +343,9 @@ private:
     AP_Baro &_baro;
     const RangeFinder &_rng;
 
+    uint32_t _frameTimeUsec;        // time per IMU frame
+    uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
+    
     // EKF Mavlink Tuneable Parameters
     AP_Int8  _enable;               // zero to disable EKF3
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
@@ -362,6 +394,7 @@ private:
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
     AP_Float _accBiasLim;           // Accelerometer bias limit (m/s/s)
     AP_Int8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
+    AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration

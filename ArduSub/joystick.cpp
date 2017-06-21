@@ -5,7 +5,6 @@
 
 // Anonymous namespace to hold variables used only in this file
 namespace {
-int16_t mode_switch_pwm = 1100;
 float cam_tilt = 1500.0;
 int16_t lights1 = 1100;
 int16_t lights2 = 1100;
@@ -18,14 +17,21 @@ int16_t video_switch = 1100;
 int16_t x_last, y_last, z_last;
 uint16_t buttons_prev;
 float gain;
-bool toggle_mode = true;
+
+// Servo control output channels
+// TODO: Allow selecting output channels
+const uint8_t SERVO_CHAN_1 = 9; // Pixhawk Aux1
+const uint8_t SERVO_CHAN_2 = 10; // Pixhawk Aux2
+const uint8_t SERVO_CHAN_3 = 11; // Pixhawk Aux3
+
+uint8_t roll_pitch_flag = false; // Flag to adjust roll/pitch instead of forward/lateral
 }
 
 void Sub::init_joystick()
 {
     default_js_buttons();
 
-    set_mode((control_mode_t)flight_modes[0].get(), MODE_REASON_TX_COMMAND); // Initialize flight mode
+    set_mode(MANUAL, MODE_REASON_TX_COMMAND); // Initialize flight mode
 
     if (g.numGainSettings < 1) {
         g.numGainSettings.set_and_save(1);
@@ -78,33 +84,44 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     }
 
     // Set channels to override
-    channels[0] = 1500 + pitchTrim;                           // pitch
-    channels[1] = 1500 + rollTrim;                            // roll
-    channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900);  // throttle
-    channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                       // yaw
-    channels[4] = mode_switch_pwm;                                       // for testing only
-    channels[5] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900);           // forward for ROV
-    channels[6] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900);           // lateral for ROV
-    channels[7] = cam_tilt;                                   // camera tilt
-    channels[8] = lights1;                                    // lights 1
-    channels[9] = lights2;                                    // lights 2
-    channels[10] = video_switch;                              // video switch
+    if (!roll_pitch_flag) {
+        channels[0] = 1500 + pitchTrim; // pitch
+        channels[1] = 1500 + rollTrim;  // roll
+    } else {
+        // adjust roll and pitch with joystick input instead of forward and lateral
+        channels[0] = constrain_int16((x+pitchTrim)*rpyScale+rpyCenter,1100,1900);
+        channels[1] = constrain_int16((y+rollTrim)*rpyScale+rpyCenter,1100,1900);
+    }
+
+    channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900); // throttle
+    channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                 // yaw
+
+    if (!roll_pitch_flag) {
+        // adjust forward and lateral with joystick input instead of roll and pitch
+        channels[4] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900); // forward for ROV
+        channels[5] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900); // lateral for ROV
+    } else {
+        // neutralize forward and lateral input while we are adjusting roll and pitch
+        channels[4] = constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900); // forward for ROV
+        channels[5] = constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900); // lateral for ROV
+    }
+
+    channels[6] = 0;             // Unused
+    channels[7] = cam_tilt;      // camera tilt
+    channels[8] = lights1;       // lights 1
+    channels[9] = lights2;       // lights 2
+    channels[10] = video_switch; // video switch
 
     // Store old x, y, z values for use in input hold logic
     x_last = x;
     y_last = y;
     z_last = z;
 
-    // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-    failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
+    hal.rcin->set_overrides(channels, 10);
 }
 
 void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
 {
-    // For attempts to change control mode
-    control_mode_t next_mode = control_mode;
-    uint16_t next_mode_switch_pwm = mode_switch_pwm;
-
     // Act based on the function assigned to this button
     switch (get_button(button)->function(shift)) {
     case JSButton::button_function_t::k_arm_toggle:
@@ -120,43 +137,32 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     case JSButton::button_function_t::k_disarm:
         init_disarm_motors();
         break;
-    case JSButton::button_function_t::k_mode_toggle:
-        if (!held) {
-            next_mode = (control_mode_t)flight_modes[toggle_mode?1:0].get();
-            next_mode_switch_pwm = toggle_mode?1300:1100;
-            toggle_mode = !toggle_mode;
-        }
+
+    case JSButton::button_function_t::k_mode_manual:
+        set_mode(MANUAL, MODE_REASON_TX_COMMAND);
         break;
-    case JSButton::button_function_t::k_mode_1:
-        next_mode = (control_mode_t)flight_modes[0].get();
-        next_mode_switch_pwm = 1100;
-        toggle_mode = true;
+    case JSButton::button_function_t::k_mode_stabilize:
+        set_mode(STABILIZE, MODE_REASON_TX_COMMAND);
         break;
-    case JSButton::button_function_t::k_mode_2:
-        next_mode = (control_mode_t)flight_modes[1].get();
-        next_mode_switch_pwm = 1300;
-        toggle_mode = false;
+    case JSButton::button_function_t::k_mode_depth_hold:
+        set_mode(ALT_HOLD, MODE_REASON_TX_COMMAND);
         break;
-    case JSButton::button_function_t::k_mode_3:
-        next_mode = (control_mode_t)flight_modes[2].get();
-        next_mode_switch_pwm = 1420;
-        toggle_mode = false;
+    case JSButton::button_function_t::k_mode_auto:
+        set_mode(AUTO, MODE_REASON_TX_COMMAND);
         break;
-    case JSButton::button_function_t::k_mode_4:
-        next_mode = (control_mode_t)flight_modes[3].get();
-        next_mode_switch_pwm = 1550;
-        toggle_mode = false;
+    case JSButton::button_function_t::k_mode_guided:
+        set_mode(GUIDED, MODE_REASON_TX_COMMAND);
         break;
-    case JSButton::button_function_t::k_mode_5:
-        next_mode = (control_mode_t)flight_modes[4].get();
-        next_mode_switch_pwm = 1690;
-        toggle_mode = false;
+    case JSButton::button_function_t::k_mode_circle:
+        set_mode(CIRCLE, MODE_REASON_TX_COMMAND);
         break;
-    case JSButton::button_function_t::k_mode_6:
-        next_mode = (control_mode_t)flight_modes[5].get();
-        next_mode_switch_pwm = 1900;
-        toggle_mode = false;
+    case JSButton::button_function_t::k_mode_acro:
+        set_mode(ACRO, MODE_REASON_TX_COMMAND);
         break;
+    case JSButton::button_function_t::k_mode_poshold:
+        set_mode(POSHOLD, MODE_REASON_TX_COMMAND);
+        break;
+
     case JSButton::button_function_t::k_mount_center:
         cam_tilt = g.cam_tilt_center;
         break;
@@ -343,6 +349,121 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             relay.toggle(1);
         }
         break;
+
+    ////////////////////////////////////////////////
+    // Servo functions
+    // TODO: initialize
+    case JSButton::button_function_t::k_servo_1_inc:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_1 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out + 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_1_dec:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_1 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out - 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_1_min:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_output_min()); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_1_max:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_output_max()); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_1_center:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_trim()); // 1-indexed
+    }
+        break;
+
+    case JSButton::button_function_t::k_servo_2_inc:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_2 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out + 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_2_dec:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_2 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out - 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_2_min:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_min()); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_2_max:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_max()); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_2_center:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_trim()); // 1-indexed
+    }
+        break;
+
+    case JSButton::button_function_t::k_servo_3_inc:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_3 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out + 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_3_dec:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+        uint16_t pwm_out = hal.rcout->read(SERVO_CHAN_3 - 1); // 0-indexed
+        pwm_out = constrain_int16(pwm_out - 50, chan->get_output_min(), chan->get_output_max());
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, pwm_out); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_3_min:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_min()); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_3_max:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_max()); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_3_center:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
+    }
+        break;
+
+    case JSButton::button_function_t::k_roll_pitch_toggle:
+        if (!held) {
+            roll_pitch_flag = !roll_pitch_flag;
+        }
+        break;
+
     case JSButton::button_function_t::k_custom_1:
         // Not implemented
         break;
@@ -361,23 +482,6 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     case JSButton::button_function_t::k_custom_6:
         // Not implemented
         break;
-    }
-
-    // Update the control mode if needed
-    if (control_mode != next_mode) {
-        if (set_mode(next_mode, MODE_REASON_TX_COMMAND)) {
-            // Notify user
-            if (ap.initialised) {
-                AP_Notify::events.user_mode_change = 1;
-            }
-            // Update CH5 pwm value (For GCS)
-            mode_switch_pwm = next_mode_switch_pwm;
-        } else {
-            // Notify user
-            if (ap.initialised) {
-                AP_Notify::events.user_mode_change_failed = 1;
-            }
-        }
     }
 }
 
@@ -426,9 +530,9 @@ void Sub::default_js_buttons()
 {
     JSButton::button_function_t defaults[16][2] = {
         {JSButton::button_function_t::k_none,                   JSButton::button_function_t::k_none},
-        {JSButton::button_function_t::k_mode_1,                 JSButton::button_function_t::k_none},
-        {JSButton::button_function_t::k_mode_3,                 JSButton::button_function_t::k_none},
-        {JSButton::button_function_t::k_mode_2,                 JSButton::button_function_t::k_none},
+        {JSButton::button_function_t::k_mode_manual,            JSButton::button_function_t::k_none},
+        {JSButton::button_function_t::k_mode_depth_hold,        JSButton::button_function_t::k_none},
+        {JSButton::button_function_t::k_mode_stabilize,         JSButton::button_function_t::k_none},
 
         {JSButton::button_function_t::k_disarm,                 JSButton::button_function_t::k_none},
         {JSButton::button_function_t::k_shift,                  JSButton::button_function_t::k_none},
@@ -455,15 +559,15 @@ void Sub::set_neutral_controls()
 {
     int16_t channels[11];
 
-    for (uint8_t i = 0; i < 7; i++) {
+    for (uint8_t i = 0; i < 6; i++) {
         channels[i] = 1500;
     }
 
-    for (uint8_t i = 7; i < 11; i++) {
+    for (uint8_t i = 6; i < 11; i++) {
         channels[i] = 0xffff;
     }
 
     channels[4] = 0xffff; // Leave mode switch where it was
 
-    failsafe.rc_override_active = hal.rcin->set_overrides(channels, 10);
+    hal.rcin->set_overrides(channels, 10);
 }

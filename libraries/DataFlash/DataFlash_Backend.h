@@ -18,7 +18,7 @@ public:
 
     void internal_error();
 
-    virtual bool CardInserted(void) = 0;
+    virtual bool CardInserted(void) const = 0;
 
     // erase handling
     virtual void EraseAll() = 0;
@@ -51,12 +51,9 @@ public:
     virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
 
-    void EnableWrites(bool enable) { _writes_enabled = enable; }
-    bool logging_started(void) const { return log_write_started; }
+    virtual bool logging_started(void) const { return log_write_started; }
 
-    virtual void Init() {
-        _writes_enabled = true;
-    }
+    virtual void Init() { }
 
     void set_mission(const AP_Mission *mission);
 
@@ -140,7 +137,7 @@ protected:
                           print_mode_fn print_mode,
                           AP_HAL::BetterStream *port);
 
-    bool _writes_enabled = false;
+    virtual bool WritesOK() const;
 
     /*
       read a block

@@ -34,6 +34,8 @@ public:
 
     void inject_data(const uint8_t *data, uint16_t len) override;
 
+    const char *name() const override { return "NOVA"; }
+
 private:
 
     bool parse(uint8_t temp);

@@ -8,6 +8,9 @@
 #include <AP_Buffer/AP_Buffer.h>
 #include <Filter/Filter.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static const int16_t dec_tbl[37][73] = \
@@ -53,54 +56,44 @@ static const int16_t dec_tbl[37][73] = \
 
 static float get_declination(float lat, float lon)
 {
-    int16_t decSW, decSE, decNW, decNE, lonmin, latmin;
-    float decmin, decmax;
-    uint8_t latmin_index, lonmin_index;
-
     // Validate input values
     lat = constrain_float(lat, -90, 90);
     lon = constrain_float(lon, -180, 180);
 
-    latmin = floor(lat/5)*5;
-    lonmin = floor(lon/5)*5;
+    const int16_t latmin = floor(lat / 5) * 5;
+    const int16_t lonmin = floor(lon / 5) * 5;
 
-    latmin_index= (90+latmin)/5;
-    lonmin_index= (180+lonmin)/5;
+    const uint8_t latmin_index = (90 + latmin) / 5;
+    const uint8_t lonmin_index = (180 + lonmin) / 5;
 
-    decSW = dec_tbl[latmin_index][lonmin_index];
-    decSE = dec_tbl[latmin_index][lonmin_index+1];
-    decNE = dec_tbl[latmin_index+1][lonmin_index+1];
-    decNW = dec_tbl[latmin_index+1][lonmin_index];
+    const int16_t decSW = dec_tbl[latmin_index][lonmin_index];
+    const int16_t decSE = dec_tbl[latmin_index][lonmin_index + 1];
+    const int16_t decNE = dec_tbl[latmin_index+1][lonmin_index + 1];
+    const int16_t decNW = dec_tbl[latmin_index+1][lonmin_index];
 
-    decmin = (lon - lonmin) / 5 * (decSE - decSW) + decSW;
-    decmax = (lon - lonmin) / 5 * (decNE - decNW) + decNW;
+    const float decmin = (lon - lonmin) / 5 * (decSE - decSW) + decSW;
+    const float decmax = (lon - lonmin) / 5 * (decNE - decNW) + decNW;
     return (lat - latmin) / 5 * (decmax - decmin) + decmin;
 }
 
 void setup(void)
 {
-    float declination, declination_test;
     uint16_t pass = 0, fail = 0;
-    uint32_t total_time=0;
+    uint32_t total_time = 0;
 
     hal.console->printf("Beginning Test. Please wait...\n");
 
-    for(int16_t i = -90; i <= 90; i+=5)
-    {
-        for(int16_t j = -180; j <= 180; j+=5)
-        {
+    for (int16_t i = -90; i <= 90; i += 5) {
+        for (int16_t j = -180; j <= 180; j += 5) {
             uint32_t t1 = AP_HAL::micros();
-            declination = AP_Declination::get_declination(i, j);
+            const float declination = AP_Declination::get_declination(i, j);
             total_time += AP_HAL::micros() - t1;
-            declination_test = get_declination(i, j);
-            if(declination == declination_test)
-            {
-                //Serial.printf("Pass: %i, %i : %f, %f\n", i, j, declination, declination_test);
+            const float declination_test = get_declination(i, j);
+            if (is_equal(declination, declination_test)) {
+                hal.console->printf("Pass: %i, %i : %f, %f\n", i, j, (double)declination, (double)declination_test);
                 pass++;
-            }
-            else
-            {
-                hal.console->printf("FAIL: %i, %i : %f, %f\n", i, j, declination, declination_test);
+            } else {
+                hal.console->printf("FAIL: %i, %i : %f, %f\n", i, j, (double)declination, (double)declination_test);
                 fail++;
             }
         }
@@ -109,7 +102,7 @@ void setup(void)
     hal.console->printf("Total Pass: %i\n", pass);
     hal.console->printf("Total Fail: %i\n", fail);
     hal.console->printf("Average time per call: %.1f usec\n",
-                  total_time/(float)(pass+fail));
+                        (double)(total_time / (float)(pass + fail)));
 }
 
 void loop(void)

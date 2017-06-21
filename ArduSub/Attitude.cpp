@@ -97,7 +97,7 @@ float Sub::get_look_ahead_yaw()
 float Sub::get_pilot_desired_climb_rate(float throttle_control)
 {
     // throttle failsafe check
-    if (failsafe.manual_control) {
+    if (failsafe.pilot_input) {
         return 0.0f;
     }
 

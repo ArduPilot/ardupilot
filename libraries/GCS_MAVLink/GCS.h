@@ -70,6 +70,9 @@ enum ap_message {
     MSG_MISSION_ITEM_REACHED,
     MSG_POSITION_TARGET_GLOBAL_INT,
     MSG_ADSB_VEHICLE,
+    MSG_BATTERY_STATUS,
+    MSG_AOA_SSA,
+    MSG_LANDING,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -82,7 +85,7 @@ class GCS_MAVLINK
 public:
     GCS_MAVLINK();
     FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
-    void        update(run_cli_fn run_cli);
+    void        update(run_cli_fn run_cli, uint32_t max_time_us=1000);
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
@@ -137,6 +140,12 @@ public:
     // common send functions
     void send_meminfo(void);
     void send_power_status(void);
+    void send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const;
+    bool send_battery_status(const AP_BattMonitor &battery) const;
+    void send_distance_sensor(const RangeFinder &rangefinder, const uint8_t instance) const;
+    bool send_distance_sensor(const RangeFinder &rangefinder) const;
+    void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
+    void send_rangefinder_downward(const RangeFinder &rangefinder) const;
     void send_ahrs2(AP_AHRS &ahrs);
     bool send_gps_raw(AP_GPS &gps);
     void send_system_time(AP_GPS &gps);
@@ -157,7 +166,7 @@ public:
     void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
-    void send_accelcal_vehicle_position(uint8_t position);
+    void send_accelcal_vehicle_position(uint32_t position);
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
@@ -175,6 +184,9 @@ public:
 
     // send a PARAM_VALUE message to all active MAVLink connections.
     static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
+
+    // send queued parameters if needed
+    void send_queued_parameters(void);
     
     /*
       send a MAVLink message to all components with this vehicle's system id
@@ -254,6 +266,8 @@ protected:
 
     void handle_device_op_read(mavlink_message_t *msg);
     void handle_device_op_write(mavlink_message_t *msg);
+
+    void handle_timesync(mavlink_message_t *msg);
     
 private:
 
@@ -337,6 +351,10 @@ private:
     // start page of log data
     uint16_t _log_data_page;
 
+    // perf counters
+    static AP_HAL::Util::perf_counter_t _perf_packet;
+    static AP_HAL::Util::perf_counter_t _perf_update;
+            
     // deferred message handling
     enum ap_message deferred_messages[MSG_RETRY_DEFERRED];
     uint8_t next_deferred_message;
@@ -359,6 +377,35 @@ private:
  
     static const AP_SerialManager *serialmanager_p;
 
+    struct pending_param_request {
+        mavlink_channel_t chan;
+        int16_t param_index;
+        char param_name[AP_MAX_NAME_SIZE+1];
+    };
+
+    struct pending_param_reply {
+        mavlink_channel_t chan;        
+        float value;
+        enum ap_var_type p_type;
+        int16_t param_index;
+        uint16_t count;
+        char param_name[AP_MAX_NAME_SIZE+1];
+    };
+
+    // queue of pending parameter requests and replies
+    static ObjectBuffer<pending_param_request> param_requests;
+    static ObjectBuffer<pending_param_reply> param_replies;
+
+    // have we registered the IO timer callback?
+    static bool param_timer_registered;
+
+    // IO timer callback for parameters
+    void param_io_timer(void);
+    
+    // send an async parameter reply
+    void send_parameter_reply(void);
+    
+    
     // a vehicle can optionally snoop on messages for other systems
     static void (*msg_snoop)(const mavlink_message_t* msg);
 

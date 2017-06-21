@@ -8,6 +8,9 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <GCS_MAVLink/GCS.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // INS and Baro declaration
@@ -33,10 +36,6 @@ static DummyVehicle vehicle;
 // choose which AHRS system to use
 // AP_AHRS_DCM  ahrs(ins, baro, gps);
 AP_AHRS_NavEKF ahrs(vehicle.ahrs);
-
-
-#define HIGH 1
-#define LOW 0
 
 void setup(void)
 {
@@ -68,7 +67,7 @@ void loop(void)
     }
     last_t = now;
 
-    if (now - last_compass > 100*1000UL &&
+    if (now - last_compass > 100 * 1000UL &&
         compass.read()) {
         heading = compass.calculate_heading(ahrs.get_rotation_body_to_ned());
         // read compass at 10Hz
@@ -83,14 +82,14 @@ void loop(void)
         hal.console->printf(
                 "r:%4.1f  p:%4.1f y:%4.1f "
                     "drift=(%5.1f %5.1f %5.1f) hdg=%.1f rate=%.1f\n",
-                        ToDeg(ahrs.roll),
-                        ToDeg(ahrs.pitch),
-                        ToDeg(ahrs.yaw),
-                        ToDeg(drift.x),
-                        ToDeg(drift.y),
-                        ToDeg(drift.z),
-                        compass.use_for_yaw() ? ToDeg(heading) : 0.0f,
-                        (1.0e6f*counter)/(now-last_print));
+                (double)ToDeg(ahrs.roll),
+                (double)ToDeg(ahrs.pitch),
+                (double)ToDeg(ahrs.yaw),
+                (double)ToDeg(drift.x),
+                (double)ToDeg(drift.y),
+                (double)ToDeg(drift.z),
+                (double)(compass.use_for_yaw() ? ToDeg(heading) : 0.0f),
+                (double)((1.0e6f * counter) / (now-last_print)));
         last_print = now;
         counter = 0;
     }

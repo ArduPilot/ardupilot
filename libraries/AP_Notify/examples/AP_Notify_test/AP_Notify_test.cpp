@@ -7,6 +7,9 @@
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_Notify/AP_BoardLED.h>        // Board LED library
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // create board led object

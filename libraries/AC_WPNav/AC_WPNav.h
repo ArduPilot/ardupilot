@@ -24,6 +24,7 @@
 #define WPNAV_WP_SPEED_MIN               20.0f      // minimum horizontal speed between waypoints in cm/s
 #define WPNAV_WP_TRACK_SPEED_MIN         50.0f      // minimum speed along track of the target point the vehicle is chasing in cm/s (used as target slows down before reaching destination)
 #define WPNAV_WP_RADIUS                 200.0f      // default waypoint radius in cm
+#define WPNAV_WP_RADIUS_MIN              10.0f      // minimum waypoint radius in cm
 
 #define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
 #define WPNAV_WP_SPEED_DOWN             150.0f      // default maximum descent velocity
@@ -39,6 +40,7 @@
 #define WPNAV_LOITER_ACTIVE_TIMEOUT_MS     200      // loiter controller is considered active if it has been called within the past 200ms (0.2 seconds)
 
 #define WPNAV_YAW_DIST_MIN                 200      // minimum track length which will lead to target yaw being updated to point at next waypoint.  Under this distance the yaw target will be frozen at the current heading
+#define WPNAV_YAW_LEASH_PCT_MIN         0.134f      // target point must be at least this distance from the vehicle (expressed as a percentage of the maximum distance it can be from the vehicle - i.e. the leash length)
 
 #define WPNAV_RANGEFINDER_FILT_Z         0.25f      // range finder distance filtered at 0.25hz
 
@@ -168,6 +170,7 @@ public:
     /// get_wp_stopping_point_xy - calculates stopping point based on current position, velocity, waypoint acceleration
     ///		results placed in stopping_position vector
     void get_wp_stopping_point_xy(Vector3f& stopping_point) const;
+    void get_wp_stopping_point(Vector3f& stopping_point) const;
 
     /// get_wp_distance_to_destination - get horizontal distance to destination in cm
     float get_wp_distance_to_destination() const;
@@ -209,8 +212,8 @@ public:
     // straight-fast - next segment is straight, vehicle's destination velocity should be directly along track from this segment's destination to next segment's destination
     // spline-fast - next segment is spline, vehicle's destination velocity should be parallel to position difference vector from previous segment's origin to this segment's destination
 
-    // get_yaw - returns target yaw in centi-degrees (used for wp and spline navigation)
-    float get_yaw() const { return _yaw; }
+    // get target yaw in centi-degrees (used for wp and spline navigation)
+    float get_yaw() const;
 
     /// set_spline_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
@@ -277,6 +280,7 @@ protected:
         uint8_t recalc_wp_leash         : 1;    // true if we need to recalculate the leash lengths because of changes in speed or acceleration
         uint8_t new_wp_destination      : 1;    // true if we have just received a new destination.  allows us to freeze the position controller's xy feed forward
         SegmentType segment_type        : 1;    // active segment is either straight or spline
+        uint8_t wp_yaw_set              : 1;    // true if yaw target has been set
     } _flags;
 
     /// calc_loiter_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
@@ -308,6 +312,9 @@ protected:
     // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
     //      returns false if conversion failed (likely because terrain data was not available)
     bool get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &terrain_alt);
+
+    // set heading used for spline and waypoint navigation
+    void set_yaw_cd(float heading_cd);
 
     // references and pointers to external libraries
     const AP_InertialNav&   _inav;
@@ -341,6 +348,7 @@ protected:
     Vector3f    _destination;           // target destination in cm from home (equivalent to next_WP)
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination
     float       _track_length;          // distance in cm between origin and destination
+    float       _track_length_xy;       // horizontal distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
     float       _limited_speed_xy_cms;  // horizontal speed in cm/s used to advance the intermediate target towards the destination.  used to limit extreme acceleration after passing a waypoint
     float       _track_accel;           // acceleration along track

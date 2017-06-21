@@ -1,5 +1,42 @@
 #include "Rover.h"
 
+// initialise compass
+void Rover::init_compass()
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    if (!compass.init()|| !compass.read()) {
+        cliSerial->printf("Compass initialisation failed!\n");
+        g.compass_enabled = false;
+    } else {
+        ahrs.set_compass(&compass);
+    }
+}
+
+/*
+  if the compass is enabled then try to accumulate a reading
+  also update initial location used for declination
+ */
+void Rover::compass_accumulate(void)
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    compass.accumulate();
+
+    // update initial location used for declination
+    if (!compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            compass_init_location = true;
+        }
+    }
+}
+
 void Rover::init_barometer(bool full_calibration)
 {
     gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
@@ -14,6 +51,45 @@ void Rover::init_barometer(bool full_calibration)
 void Rover::init_sonar(void)
 {
     sonar.init();
+}
+
+// init beacons used for non-gps position estimates
+void Rover::init_beacon()
+{
+    g2.beacon.init();
+}
+
+// update beacons
+void Rover::update_beacon()
+{
+    g2.beacon.update();
+}
+
+// init visual odometry sensor
+void Rover::init_visual_odom()
+{
+    g2.visual_odom.init();
+}
+
+// update visual odometry sensor
+void Rover::update_visual_odom()
+{
+    // check for updates
+    if (g2.visual_odom.enabled() && (g2.visual_odom.get_last_update_ms() != visual_odom_last_update_ms)) {
+        visual_odom_last_update_ms = g2.visual_odom.get_last_update_ms();
+        const float time_delta_sec = g2.visual_odom.get_time_delta_usec() / 1000000.0f;
+        ahrs.writeBodyFrameOdom(g2.visual_odom.get_confidence(),
+                                g2.visual_odom.get_position_delta(),
+                                g2.visual_odom.get_angle_delta(),
+                                time_delta_sec,
+                                visual_odom_last_update_ms,
+                                g2.visual_odom.get_pos_offset());
+        // log sensor data
+        DataFlash.Log_Write_VisualOdom(time_delta_sec,
+                                       g2.visual_odom.get_angle_delta(),
+                                       g2.visual_odom.get_position_delta(),
+                                       g2.visual_odom.get_confidence());
+    }
 }
 
 // read_battery - reads battery voltage and current and invokes failsafe
@@ -65,26 +141,26 @@ void Rover::read_sonars(void)
         // we have two sonars
         obstacle.sonar1_distance_cm = sonar.distance_cm(0);
         obstacle.sonar2_distance_cm = sonar.distance_cm(1);
-        if (obstacle.sonar1_distance_cm < (uint16_t)g.sonar_trigger_cm &&
-            obstacle.sonar1_distance_cm < (uint16_t)obstacle.sonar2_distance_cm)  {
+        if (obstacle.sonar1_distance_cm < static_cast<uint16_t>(g.sonar_trigger_cm) &&
+            obstacle.sonar1_distance_cm < static_cast<uint16_t>(obstacle.sonar2_distance_cm))  {
             // we have an object on the left
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar1 obstacle %u cm",
-                                  (unsigned)obstacle.sonar1_distance_cm);
+                        static_cast<uint32_t>(obstacle.sonar1_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = g.sonar_turn_angle;
-        } else if (obstacle.sonar2_distance_cm < (uint16_t)g.sonar_trigger_cm) {
+        } else if (obstacle.sonar2_distance_cm < static_cast<uint16_t>(g.sonar_trigger_cm)) {
             // we have an object on the right
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar2 obstacle %u cm",
-                                  (unsigned)obstacle.sonar2_distance_cm);
+                        static_cast<uint32_t>(obstacle.sonar2_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = -g.sonar_turn_angle;
@@ -93,14 +169,14 @@ void Rover::read_sonars(void)
         // we have a single sonar
         obstacle.sonar1_distance_cm = sonar.distance_cm(0);
         obstacle.sonar2_distance_cm = 0;
-        if (obstacle.sonar1_distance_cm < (uint16_t)g.sonar_trigger_cm)  {
+        if (obstacle.sonar1_distance_cm < static_cast<uint16_t>(g.sonar_trigger_cm))  {
             // obstacle detected in front
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar obstacle %u cm",
-                                  (unsigned)obstacle.sonar1_distance_cm);
+                        static_cast<uint32_t>(obstacle.sonar1_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = g.sonar_turn_angle;
@@ -142,7 +218,9 @@ void Rover::update_sensor_status_flags(void)
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
-
+    if (g2.visual_odom.enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+    }
     if (rover.DataFlash.logging_present()) {  // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
@@ -196,6 +274,9 @@ void Rover::update_sensor_status_flags(void)
     }
     if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
+    }
+    if (g2.visual_odom.enabled() && !g2.visual_odom.healthy()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
     if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;

@@ -124,7 +124,7 @@ void Tracker::send_nav_controller_output(mavlink_channel_t chan)
         nav_status.pitch,
         nav_status.bearing,
         nav_status.bearing,
-        nav_status.distance,
+        MIN(nav_status.distance, UINT16_MAX),
         alt_diff,
         0,
         0);
@@ -260,6 +260,7 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
     case MSG_RANGEFINDER:
     case MSG_TERRAIN:
     case MSG_BATTERY2:
+    case MSG_BATTERY_STATUS:
     case MSG_CAMERA_FEEDBACK:
     case MSG_MOUNT_STATUS:
     case MSG_OPTICAL_FLOW:
@@ -270,6 +271,8 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
     case MSG_RPM:
     case MSG_MISSION_ITEM_REACHED:
     case MSG_POSITION_TARGET_GLOBAL_INT:
+    case MSG_AOA_SSA:
+    case MSG_LANDING:
         break; // just here to prevent a warning
     }
     return true;
@@ -366,14 +369,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 void
 GCS_MAVLINK_Tracker::data_stream_send(void)
 {
-    if (_queued_parameter != nullptr) {
-        if (streamRates[STREAM_PARAMS].get() <= 0) {
-            streamRates[STREAM_PARAMS].set(10);
-        }
-        if (stream_trigger(STREAM_PARAMS)) {
-            send_message(MSG_NEXT_PARAM);
-        }
-    }
+    send_queued_parameters();
 
     if (tracker.in_mavlink_delay) {
         // don't send any other stream types while in the delay callback
@@ -712,7 +708,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
             waypoint_request_i = 0;
             waypoint_request_last = 0;
             send_message(MSG_NEXT_WAYPOINT);
-            waypoint_receiving = true;
         }
         break;
     }
@@ -799,7 +794,8 @@ mission_failed:
             chan,
             msg->sysid,
             msg->compid,
-            result);
+            result,
+            MAV_MISSION_TYPE_MISSION);
         break;
     }
 
@@ -852,10 +848,6 @@ mission_failed:
         }
         break;
 
-    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        tracker.DataFlash.remote_log_block_status_msg(chan, msg);
-        break;
-
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, tracker.gps);
         break;
@@ -893,6 +885,7 @@ void Tracker::mavlink_delay_cb()
     if (!gcs_chan[0].initialised) return;
 
     tracker.in_mavlink_delay = true;
+    DataFlash.EnableWrites(false);
 
     uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
@@ -910,6 +903,7 @@ void Tracker::mavlink_delay_cb()
         last_5s = tnow;
         gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
+    DataFlash.EnableWrites(true);
     tracker.in_mavlink_delay = false;
 }
 

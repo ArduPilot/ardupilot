@@ -74,7 +74,7 @@ uint32_t ardupilot_set_storage(const uint8_t *buf, int len)
         HAP_PRINTF("Incorrect storage size %u", len);
         return 1;
     }
-    QURT::Storage::lock.take(0);
+    QURT::Storage::lock.take(HAL_SEMAPHORE_BLOCK_FOREVER);
     memcpy(QURT::Storage::buffer, buf, len);
     QURT::Storage::lock.give();
     return 0;
@@ -89,7 +89,7 @@ uint32_t ardupilot_get_storage(uint8_t *buf, int len)
     if (!QURT::Storage::dirty) {
         return 1;
     }
-    QURT::Storage::lock.take(0);
+    QURT::Storage::lock.take(HAL_SEMAPHORE_BLOCK_FOREVER);
     memcpy(buf, QURT::Storage::buffer, len);
     QURT::Storage::lock.give();
     return 0;

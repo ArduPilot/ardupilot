@@ -47,7 +47,7 @@ AP_AHRS_DCM::reset_gyro_drift(void)
 
 // run a full DCM update round
 void
-AP_AHRS_DCM::update(void)
+AP_AHRS_DCM::update(bool skip_ins_update)
 {
     float delta_t;
 
@@ -55,8 +55,10 @@ AP_AHRS_DCM::update(void)
         _last_startup_ms = AP_HAL::millis();
     }
 
-    // tell the IMU to grab some data
-    _ins.update();
+    if (!skip_ins_update) {
+        // tell the IMU to grab some data
+        _ins.update();
+    }
 
     // ask the IMU how much time this sensor reading represents
     delta_t = _ins.get_delta_time();
@@ -87,6 +89,9 @@ AP_AHRS_DCM::update(void)
 
     // update trig values including _cos_roll, cos_pitch
     update_trig();
+
+    // update AOA and SSA
+    update_AOA_SSA();
 }
 
 // update the DCM matrix using only the gyros

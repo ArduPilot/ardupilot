@@ -20,6 +20,7 @@
 #include <DataFlash/LogStructure.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Rally/AP_Rally.h>
+#include <AP_Beacon/AP_Beacon.h>
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -73,10 +74,6 @@ public:
     bool NeedErase(void);
     void EraseAll();
 
-    // possibly expensive calls to start log system:
-    bool NeedPrep();
-    void Prep();
-
     // get a pointer to structures
     const struct LogStructure *get_structures(uint8_t &num_types) {
         num_types = _num_types;
@@ -104,8 +101,11 @@ public:
 
     void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
 
-    void StartNewLog(void);
-    void EnableWrites(bool enable);
+    /* poke backends to start if they're not already started */
+    void StartUnstartedLogging(void);
+
+    void EnableWrites(bool enable) { _writes_enabled = enable; }
+    bool WritesEnabled() const { return _writes_enabled; }
 
     void StopLogging();
 
@@ -128,12 +128,14 @@ public:
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
     void Log_Write_Message(const char *message);
+    void Log_Write_MessageF(const char *fmt, ...);
     void Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);    
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
+    void Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets);
     void Log_Write_Current(const AP_BattMonitor &battery);
     void Log_Write_Compass(const Compass &compass, uint64_t time_us=0);
     void Log_Write_Mode(uint8_t mode, uint8_t reason = 0);
@@ -148,6 +150,9 @@ public:
                         const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control);
     void Log_Write_Rally(const AP_Rally &rally);
+    void Log_Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
+    void Log_Write_AOA_SSA(AP_AHRS &ahrs);
+    void Log_Write_Beacon(AP_Beacon &beacon);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 
@@ -163,6 +168,9 @@ public:
 
     void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
 
+    // returns true of logging of a message should be attempted
+    bool should_log() const;
+
     bool logging_started(void);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -170,10 +178,7 @@ public:
     void flush(void);
 #endif
 
-    // for DataFlash_MAVLink:
-    void remote_log_block_status_msg(mavlink_channel_t chan,
-                                     mavlink_message_t* msg);
-    // end for DataFlash_MAVLink:
+    void handle_mavlink_msg(mavlink_channel_t chan, mavlink_message_t* msg);
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
@@ -206,6 +211,7 @@ public:
     bool logging_failed() const;
 
     void set_vehicle_armed(bool armed_state);
+    bool vehicle_is_armed() const { return _armed; }
 
 protected:
 
@@ -266,7 +272,21 @@ private:
     void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
     void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
-    
+
+    void backend_starting_new_log(const DataFlash_Backend *backend);
+
 private:
     static DataFlash_Class *_instance;
+
+    void validate_structures(const struct LogStructure *logstructures, const uint8_t num_types);
+    void dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum);
+    void dump_structures(const struct LogStructure *logstructures, const uint8_t num_types);
+
+    void Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
+
+    // possibly expensive calls to start log system:
+    void Prep();
+
+    bool _writes_enabled;
+
 };

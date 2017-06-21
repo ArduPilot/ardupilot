@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 #define DEFAULT_GYRO_FILTER  20
-#define DEFAULT_ACCEL_FILTER 20
+#define DEFAULT_ACCEL_FILTER 10
 #define DEFAULT_STILL_THRESH 2.5f
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 #define DEFAULT_GYRO_FILTER  4
@@ -512,6 +512,7 @@ uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
     }
 
     _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
+    _gyro_over_sampling[_gyro_count] = 1;
 
     bool saved = _gyro_id[_gyro_count].load();
 
@@ -544,6 +545,8 @@ uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz,
     }
 
     _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
+    _accel_over_sampling[_accel_count] = 1;
+
     bool saved = _accel_id[_accel_count].load();
 
     if (!saved) {
@@ -740,6 +743,11 @@ AP_InertialSensor::detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
         _fast_sampling_mask.set_default(1);
         _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_YAW_270));
+        break;
+
+    case AP_BoardConfig::PX4_BOARD_AEROFC:
+        _fast_sampling_mask.set_default(1);
+        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU6500_NAME), ROTATION_YAW_270));
         break;
 
     default:
@@ -1252,6 +1260,8 @@ void AP_InertialSensor::update(void)
         }
     }
 
+    _last_update_usec = AP_HAL::micros();
+    
     _have_sample = false;
 }
 

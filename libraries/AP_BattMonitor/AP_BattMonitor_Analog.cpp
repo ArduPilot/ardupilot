@@ -7,11 +7,11 @@
 extern const AP_HAL::HAL& hal;
 
 /// Constructor
-AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon, uint8_t instance, AP_BattMonitor::BattMonitor_State &mon_state) :
-    AP_BattMonitor_Backend(mon, instance, mon_state)
+AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state) :
+    AP_BattMonitor_Backend(mon, mon_state)
 {
-    _volt_pin_analog_source = hal.analogin->channel(mon._volt_pin[instance]);
-    _curr_pin_analog_source = hal.analogin->channel(mon._curr_pin[instance]);
+    _volt_pin_analog_source = hal.analogin->channel(mon._volt_pin[_state.instance]);
+    _curr_pin_analog_source = hal.analogin->channel(mon._curr_pin[_state.instance]);
 
     // always healthy
     _state.healthy = true;
@@ -28,7 +28,7 @@ AP_BattMonitor_Analog::read()
     _state.voltage = _volt_pin_analog_source->voltage_average() * _mon._volt_multiplier[_state.instance];
 
     // read current
-    if (_mon.has_current(_state.instance)) {
+    if (has_current()) {
         // calculate time since last current read
         uint32_t tnow = AP_HAL::micros();
         float dt = tnow - _state.last_time_micros;
@@ -48,4 +48,10 @@ AP_BattMonitor_Analog::read()
         // record time
         _state.last_time_micros = tnow;
     }
+}
+
+/// return true if battery provides current info
+bool AP_BattMonitor_Analog::has_current() const
+{
+    return (_mon.get_type(_state.instance) == AP_BattMonitor::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT);
 }

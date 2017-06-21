@@ -6,6 +6,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <PID/PID.h> // ArduPilot Mega RC Library
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 long radio_in;
@@ -33,7 +36,9 @@ void setup()
     pid.load_gains();
     hal.console->printf(
             "P %f  I %f  D %f  imax %d\n",
-            pid.kP(), pid.kI(), pid.kD(), pid.imax());
+            (double)pid.kP(),
+            (double)pid.kI(),
+            (double)pid.kD(), pid.imax());
 }
 
 void loop()

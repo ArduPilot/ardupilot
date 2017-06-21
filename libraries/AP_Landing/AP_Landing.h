@@ -20,6 +20,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_Navigation/AP_Navigation.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_Landing_Deepstall.h"
 
 /// @class  AP_Landing
@@ -68,9 +69,11 @@ public:
     bool is_on_approach(void) const;
     bool is_ground_steering_allowed(void) const;
     bool is_throttle_suppressed(void) const;
+    bool is_flying_forward(void) const;
     void handle_flight_stage_change(const bool _in_landing_stage);
     int32_t constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
     bool get_target_altitude_location(Location &location);
+    bool send_landing_message(mavlink_channel_t chan);
 
     // helper functions
     bool restart_landing_sequence(void);
