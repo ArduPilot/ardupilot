@@ -1169,6 +1169,7 @@ void Copter::autotune_save_tuning_gains()
             orig_roll_ri = attitude_control->get_rate_roll_pid().kI();
             orig_roll_rd = attitude_control->get_rate_roll_pid().kD();
             orig_roll_sp = attitude_control->get_angle_roll_p().kP();
+            orig_roll_accel = attitude_control->get_accel_roll_max();
         }
 
         if (autotune_pitch_enabled() && !is_zero(tune_pitch_rp)) {
@@ -1190,6 +1191,7 @@ void Copter::autotune_save_tuning_gains()
             orig_pitch_ri = attitude_control->get_rate_pitch_pid().kI();
             orig_pitch_rd = attitude_control->get_rate_pitch_pid().kD();
             orig_pitch_sp = attitude_control->get_angle_pitch_p().kP();
+            orig_pitch_accel = attitude_control->get_accel_pitch_max();
         }
 
         if (autotune_yaw_enabled() && !is_zero(tune_yaw_rp)) {
@@ -1213,6 +1215,7 @@ void Copter::autotune_save_tuning_gains()
             orig_yaw_rd = attitude_control->get_rate_yaw_pid().kD();
             orig_yaw_rLPF = attitude_control->get_rate_yaw_pid().filt_hz();
             orig_yaw_sp = attitude_control->get_angle_yaw_p().kP();
+            orig_yaw_accel = attitude_control->get_accel_pitch_max();
         }
         // update GCS and log save gains event
         autotune_update_gcs(AUTOTUNE_MESSAGE_SAVED_GAINS);
