@@ -211,13 +211,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     100),
 
-    // @Param: SKID_STEER_OUT
-    // @DisplayName: Skid steering output
-    // @Description: Set this to 1 for skid steering controlled rovers (tank track style). When enabled, servo1 is used for the left track control, servo3 is used for right track control
-    // @Values: 0:Disabled, 1:SkidSteeringOutput
-    // @User: Standard
-    GSCALAR(skid_steer_out,          "SKID_STEER_OUT",     0),
-
     // @Param: SKID_STEER_IN
     // @DisplayName: Skid steering input
     // @Description: Set this to 1 for skid steering input rovers (tank track style in RC controller). When enabled, servo1 is used for the left track control, servo3 is used for right track control

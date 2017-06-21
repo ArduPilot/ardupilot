@@ -129,7 +129,7 @@ public:
         k_param_throttle_slewrate,
         k_param_throttle_reduction,
         k_param_skid_steer_in,
-        k_param_skid_steer_out,
+        k_param_skid_steer_out_old,
 
         // failsafe control
         k_param_fs_action = 180,
@@ -249,7 +249,6 @@ public:
     AP_Int8     throttle_cruise;
     AP_Int8     throttle_slewrate;
     AP_Int8     skid_steer_in;
-    AP_Int8     skid_steer_out;
 
     // failsafe control
     AP_Int8     fs_action;
