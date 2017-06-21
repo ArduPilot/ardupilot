@@ -449,6 +449,11 @@ void AP_Baro::init(void)
 #endif
         break;
 
+    case AP_BoardConfig::PX4_BOARD_PCNC1:
+        ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
+                                            std::move(hal.i2c_mgr->get_device(1, 0x63))));
+        break;
+        
     default:
         break;
     }
