@@ -650,6 +650,12 @@ void Compass::_detect_backends(void)
         }
         break;
 
+    case AP_BoardConfig::PX4_BOARD_PCNC1:
+        ADD_BACKEND(DRIVER_BMM150,
+                    AP_Compass_BMM150::probe(*this, hal.i2c_mgr->get_device(0, 0x10)),
+                    AP_Compass_BMM150::name, true);
+        break;
+        
     case AP_BoardConfig::PX4_BOARD_AEROFC:
 #ifdef HAL_COMPASS_IST8310_I2C_BUS
         ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_IST8310_I2C_BUS, HAL_COMPASS_IST8310_I2C_ADDR),
