@@ -331,12 +331,10 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
         _max_channel = ch + 1;
     }
 
-
+    // keep unscaled value
+    _last_sent[ch] = period_us;
+        
     if (_output_mode == MODE_PWM_BRUSHED) {
-
-        // keep unscaled value
-        _last_sent[ch] = period_us;
-    
         // map from the PWM range to 0 t0 100% duty cycle. For 16kHz
         // this ends up being 0 to 500 pulse width in units of
         // 125usec.
