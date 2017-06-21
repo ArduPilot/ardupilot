@@ -937,7 +937,7 @@ void Copter::autotune_attitude_control()
         autotune_state.positive_direction = !autotune_state.positive_direction;
 
         if (autotune_state.axis == AUTOTUNE_AXIS_YAW) {
-            attitude_control->input_euler_angle_roll_pitch_yaw( 0.0f, 0.0f, ahrs.yaw_sensor, false, get_smoothing_gain());
+            attitude_control->input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs.yaw_sensor, false, get_smoothing_gain());
         }
 
         // set gains to their intra-test values (which are very close to the original gains)
