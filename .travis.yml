@@ -87,4 +87,6 @@ matrix:
     - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v4"
     - compiler: "gcc"
+      env: CI_BUILD_TARGET="px4-v4pro"
+    - compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest"
