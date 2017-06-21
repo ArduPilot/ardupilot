@@ -246,3 +246,5 @@ uint16_t get_random16(void);
 // generate a random float between -1 and 1, for use in SITL
 float rand_float(void);
 
+// generate a random Vector3f of size 1
+Vector3f rand_vec3f(void);
