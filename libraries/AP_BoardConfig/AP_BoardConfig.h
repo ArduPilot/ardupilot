@@ -65,6 +65,7 @@ public:
         PX4_BOARD_PH2SLIM  = 6,
         PX4_BOARD_AEROFC   = 13,
         PX4_BOARD_AUAV21   = 20,
+        PX4_BOARD_F4BY     = 21,
         PX4_BOARD_OLDDRIVERS = 100,
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN

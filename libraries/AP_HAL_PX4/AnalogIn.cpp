@@ -60,6 +60,13 @@ static const struct {
     { 15,  6.6f/4096  },    // analog airspeed sensor, 2:1 scaling
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     { 1,   3.3f/4096  },
+#elif defined(CONFIG_ARCH_BOARD_F4BY)
+    { 10, (5.7f*3.3f)/4096 }, // FMU battery on multi-connector pin 5, // 5.7:1 scaling
+    { 11,  6.6f/4096  }, // analog airspeed input, 2:1 scaling
+    { 12,  3.3f/4096  }, // analog2, on SPI port pin 3
+	{ 13, 16.8f/4096 }, // analog3, on SPI port pin 4
+	{ 14,  6.6f/4096  }, // board voltage
+	{ 15,  6.6f/4096  }, // servorail voltage
 #else
 #error "Unknown board type for AnalogIn scaling"
 #endif
@@ -280,6 +287,15 @@ void PX4AnalogIn::_timer_tick(void)
                 // record the Vcc value for later use in
                 // voltage_average_ratiometric()
                 _board_voltage = buf_adc[i].am_data * 6.6f / 4096;
+            }
+#elif defined(CONFIG_ARCH_BOARD_F4BY)
+            if(buf_adc[i].am_channel == 14)
+            {
+                _board_voltage = buf_adc[i].am_data * 6.6f / 4096;
+            }
+            else if(buf_adc[i].am_channel == 15)
+            {
+                _servorail_voltage = buf_adc[i].am_data * 6.6f / 4096;
             }
 #endif
         }

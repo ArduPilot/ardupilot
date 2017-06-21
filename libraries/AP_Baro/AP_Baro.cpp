@@ -430,6 +430,12 @@ void AP_Baro::init(void)
                                           AP_Baro_MS56XX::BARO_MS5607));
 #endif
         break;
+    case AP_BoardConfig::PX4_BOARD_F4BY:
+#ifdef HAL_BARO_MS5611_I2C_BUS
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5611_I2C_BUS, HAL_BARO_MS5611_I2C_ADDR))));
+#endif
+        break;
 
     default:
         break;
