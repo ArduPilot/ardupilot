@@ -302,7 +302,8 @@ void NavEKF3_core::setAidingMode()
     // check to see if we are starting or stopping aiding and set states and modes as required
     if (PV_AidingMode != PV_AidingModePrev) {
         // set various  usage modes based on the condition when we start aiding. These are then held until aiding is stopped.
-        if (PV_AidingMode == AID_NONE) {
+        switch (PV_AidingMode) {
+        case AID_NONE:
             // We have ceased aiding
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 IMU%u stopped aiding",(unsigned)imu_index);
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
@@ -322,7 +323,9 @@ void NavEKF3_core::setAidingMode()
             // reset relative aiding sensor fusion activity status
             flowFusionActive = false;
             bodyVelFusionActive = false;
-        } else if (PV_AidingMode == AID_RELATIVE) {
+            break;
+
+        case AID_RELATIVE:
             // We are doing relative position navigation where velocity errors are constrained, but position drift will occur
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u started relative aiding",(unsigned)imu_index);
             if (readyToUseOptFlow()) {
@@ -336,7 +339,9 @@ void NavEKF3_core::setAidingMode()
             }
             posTimeout = true;
             velTimeout = true;
-        } else if (PV_AidingMode == AID_ABSOLUTE) {
+            break;
+
+        case AID_ABSOLUTE:
             if (readyToUseGPS()) {
                 // We are commencing aiding using GPS - this is the preferred method
                 posResetSource = GPS;
@@ -359,6 +364,10 @@ void NavEKF3_core::setAidingMode()
             lastPosPassTime_ms = imuSampleTime_ms;
             lastVelPassTime_ms = imuSampleTime_ms;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
+            break;
+
+        default:
+            break;
         }
 
         // Always reset the position and velocity when changing mode
