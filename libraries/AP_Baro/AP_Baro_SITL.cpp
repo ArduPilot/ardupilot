@@ -10,11 +10,13 @@ extern const AP_HAL::HAL& hal;
   constructor - registers instance at top Baro driver
  */
 AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
+    _has_sample(false),
     AP_Baro_Backend(baro)
 {
     sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     if (sitl != nullptr) {
         instance = _frontend.register_sensor();
+        hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Baro_SITL::_timer, void));
     }
 }
 
@@ -36,9 +38,16 @@ void AP_Baro_SITL::temperature_adjustment(float &p, float &T)
     }
 }
 
-// Read the sensor
-void AP_Baro_SITL::update(void)
+void AP_Baro_SITL::_timer()
 {
+
+    // 100Hz
+    uint32_t now = AP_HAL::millis();
+    if ((now - _last_sample_time) < 10) {
+        return;
+    }
+    _last_sample_time = now;
+
     float sim_alt = sitl->state.altitude;
 
     if (sitl->baro_disable) {
@@ -46,7 +55,6 @@ void AP_Baro_SITL::update(void)
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
     sim_alt += sitl->baro_drift * now / 1000;
     sim_alt += sitl->baro_noise * rand_float();
 
@@ -94,8 +102,25 @@ void AP_Baro_SITL::update(void)
     float T = 303.16f * theta - 273.16f; // Assume 30 degrees at sea level - converted to degrees Kelvin
 
     temperature_adjustment(p, T);
-    
-    _copy_to_frontend(instance, p, T);
+
+    _recent_press = p;
+    _recent_temp = T;
+    _has_sample = true;
+}
+
+// Read the sensor
+void AP_Baro_SITL::update(void)
+{
+    if (_sem->take_nonblocking()) {
+        if (!_has_sample) {
+            _sem->give();
+            return;
+        }
+
+        _copy_to_frontend(instance, _recent_press, _recent_temp);
+        _has_sample = false;
+        _sem->give();
+    }
 }
 
 #endif // CONFIG_HAL_BOARD
