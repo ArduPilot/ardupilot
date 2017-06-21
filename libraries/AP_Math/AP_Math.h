@@ -185,10 +185,10 @@ float sq(const T first, const Params... parameters)
  * Variadic template for calculating the norm (pythagoras) of a vector of any
  * dimension.
  */
-template<class T, class... Params>
-float norm(const T first, const Params... parameters)
+template<class T, class U, class... Params>
+float norm(const T first, const U second, const Params... parameters)
 {
-    return sqrt(static_cast<float>(sq(first, parameters...)));
+    return sqrtf(sq(first, second, parameters...));
 }
 
 template<typename A, typename B>
