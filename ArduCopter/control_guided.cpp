@@ -35,6 +35,13 @@ struct Guided_Limit {
     Vector3f start_pos; // start position as a distance from home in cm.  used for checking horiz_max limit
 } guided_limit;
 
+struct {
+    bool use_yaw;
+    float yaw;
+    bool use_yaw_rate;
+    float yaw_rate;
+} static guided_yaw_state = {false, 0.0f, false, 0.0f};
+
 // guided_init - initialise guided controller
 bool Copter::guided_init(bool ignore_checks)
 {
@@ -177,7 +184,7 @@ void Copter::guided_angle_control_start()
 // guided_set_destination - sets guided mode's target destination
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool Copter::guided_set_destination(const Vector3f& destination)
+bool Copter::guided_set_destination(const Vector3f& destination, bool use_yaw = false, float yaw = 0.0, bool use_yaw_rate = false, float yaw_rate = 0.0)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
@@ -193,6 +200,11 @@ bool Copter::guided_set_destination(const Vector3f& destination)
         return false;
     }
 #endif
+
+    guided_yaw_state.use_yaw = use_yaw;
+    guided_yaw_state.yaw = yaw;
+    guided_yaw_state.use_yaw_rate = use_yaw_rate;
+    guided_yaw_state.yaw_rate = yaw_rate;
 
     // no need to check return status because terrain data is not used
     wp_nav->set_wp_destination(destination, false);
@@ -427,8 +439,13 @@ void Copter::guided_pos_control_run()
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
     }else{
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(), true, get_smoothing_gain());
+        if (guided_yaw_state.use_yaw_rate) {
+            // roll & pitch from waypoint controller, yaw rate from GCS
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), guided_yaw_state.yaw_rate, get_smoothing_gain());
+        } else {
+            // roll, pitch from waypoint controller, yaw heading from auto_heading()
+            attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), guided_yaw_state.use_yaw ? guided_yaw_state.yaw: get_auto_heading(), true, get_smoothing_gain());
+        }
     }
 }
 
