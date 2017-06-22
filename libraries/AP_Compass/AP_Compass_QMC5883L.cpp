@@ -15,6 +15,7 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Driver by RadioLink LjWang, Jun 2017
+ * GPS compass module See<http://www.radiolink.com>
  */
 #include "AP_Compass_QMC5883L.h"
 
@@ -58,13 +59,14 @@ extern const AP_HAL::HAL &hal;
 
 AP_Compass_Backend *AP_Compass_QMC5883L::probe(Compass &compass,
                                               AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                              enum Rotation rotation)
+											  bool force_external,
+											  enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
 
-    AP_Compass_QMC5883L *sensor = new AP_Compass_QMC5883L(compass, std::move(dev),rotation);
+    AP_Compass_QMC5883L *sensor = new AP_Compass_QMC5883L(compass, std::move(dev),force_external,rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -75,10 +77,12 @@ AP_Compass_Backend *AP_Compass_QMC5883L::probe(Compass &compass,
 
 AP_Compass_QMC5883L::AP_Compass_QMC5883L(Compass &compass,
                                        AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                       enum Rotation rotation)
+									   bool force_external,
+									   enum Rotation rotation)
     : AP_Compass_Backend(compass)
     , _dev(std::move(dev))
     , _rotation(rotation)
+	, _force_external(force_external)
 {
 }
 
@@ -124,6 +128,10 @@ bool AP_Compass_QMC5883L::init()
 
     _dev->set_device_type(DEVTYPE_QMC5883L);
     set_dev_id(_instance, _dev->get_bus_id());
+
+    if (_force_external) {
+        set_external(_instance, true);
+    }
 
     //Enable 100HZ
     _dev->register_periodic_callback(10000,
@@ -173,6 +181,11 @@ void AP_Compass_QMC5883L::timer()
 
     Vector3f field = Vector3f{x * range_scale , y * range_scale, z * range_scale };
 
+    // rotate to the desired orientation
+    if (is_external(_instance)) {
+        field.rotate(ROTATION_YAW_90);
+    }
+
     /* rotate raw_field from sensor frame to body frame */
     rotate_field(field, _instance);
 
@@ -191,7 +204,6 @@ void AP_Compass_QMC5883L::timer()
         	_accum.z /= 2;
         	_accum_count = 10;
         }
-
         _sem->give();
     }
 }
