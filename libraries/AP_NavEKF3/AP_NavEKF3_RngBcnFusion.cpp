@@ -562,14 +562,15 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
         // calculate the Kalman gain
         gain = (bcnPosOffsetMaxVar * obsDeriv) / innovVar;
 
+        // calculate a filtered state change magnitude to be used to select between the high or low offset
         float stateChange = innov * gain;
-        OffsetMaxInnovFilt = (1.0f - filtAlpha) * OffsetMaxInnovFilt + fminf(fabsf(filtAlpha * stateChange) , 1.0f);
+        maxOffsetStateChangeFilt = (1.0f - filtAlpha) * maxOffsetStateChangeFilt + fminf(fabsf(filtAlpha * stateChange) , 1.0f);
 
         // Reject range innovation spikes using a 5-sigma threshold unless aligning
         if ((sq(innov) < sq(innovGateWidth) * innovVar) || aligning) {
 
             // state update
-            bcnPosDownOffsetMax -= innov * gain;
+            bcnPosDownOffsetMax -= stateChange;
 
             // covariance update
             bcnPosOffsetMaxVar -= gain * obsDeriv * bcnPosOffsetMaxVar;
@@ -602,7 +603,7 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
 
         // calculate a filtered state change magnitude to be used to select between the high or low offset
         float stateChange = innov * gain;
-        OffsetMinInnovFilt = (1.0f - filtAlpha) * OffsetMinInnovFilt + fminf(fabsf(filtAlpha * stateChange) , 1.0f);
+        minOffsetStateChangeFilt = (1.0f - filtAlpha) * minOffsetStateChangeFilt + fminf(fabsf(filtAlpha * stateChange) , 1.0f);
 
         // Reject range innovation spikes using a 5-sigma threshold unless aligning
         if ((sq(innov) < sq(innovGateWidth) * innovVar) || aligning) {
@@ -625,9 +626,9 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(float obsVar, Vector3f &vehicleP
 
     // calculate the innovation for the main filter using the offset that is most stable
     // apply hysteresis to prevent rapid switching
-    if (!usingMinHypothesis && (OffsetMinInnovFilt < (0.8f * OffsetMaxInnovFilt))) {
+    if (!usingMinHypothesis && (minOffsetStateChangeFilt < (0.8f * maxOffsetStateChangeFilt))) {
         usingMinHypothesis = true;
-    } else if (usingMinHypothesis && (OffsetMaxInnovFilt < (0.8f * OffsetMinInnovFilt))) {
+    } else if (usingMinHypothesis && (maxOffsetStateChangeFilt < (0.8f * minOffsetStateChangeFilt))) {
         usingMinHypothesis = false;
     }
     if (usingMinHypothesis) {
