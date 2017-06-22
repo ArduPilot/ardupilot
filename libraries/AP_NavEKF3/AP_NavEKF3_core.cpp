@@ -353,10 +353,10 @@ void NavEKF3_core::InitialiseVariables()
     minBcnPosD = 0.0f;
     bcnPosDownOffsetMax = 0.0f;
     bcnPosOffsetMaxVar = 0.0f;
-    OffsetMaxInnovFilt = 0.0f;
+    maxOffsetStateChangeFilt = 0.0f;
     bcnPosDownOffsetMin = 0.0f;
     bcnPosOffsetMinVar = 0.0f;
-    OffsetMinInnovFilt = 0.0f;
+    minOffsetStateChangeFilt = 0.0f;
     rngBcnFuseDataReportIndex = 0;
     memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
     bcnPosOffsetNED.zero();
