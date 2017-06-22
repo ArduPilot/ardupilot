@@ -160,7 +160,7 @@ void Copter::althold_run()
         pos_control->update_z_controller();
 
         // enable compound thruster
-        pos_control->set_radio_passthrough_forward_thruster(channel_forward->get_radio_in());
+        pos_control->set_radio_passthrough_forward_thruster(channel_forward->norm_input());
         break;
     }
 }

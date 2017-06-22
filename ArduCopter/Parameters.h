@@ -340,6 +340,7 @@ public:
         k_param_p_stabilize_pitch,  // remove
         k_param_p_stabilize_yaw,    // remove
         k_param_p_pos_xy,
+        k_param_throttle_p,
         k_param_p_loiter_lon,       // remove
         k_param_pid_loiter_rate_lat,    // remove
         k_param_pid_loiter_rate_lon,    // remove
@@ -504,7 +505,7 @@ public:
         p_alt_hold              (ALT_HOLD_P),
     #if COMPOUND_SYSTEM_ENABLED
         throttle_p              (THROTTLE_P)
-    #endif 
+    #endif
     {
     }
 };
