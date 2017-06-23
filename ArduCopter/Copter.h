@@ -870,10 +870,10 @@ private:
     void guided_vel_control_start();
     void guided_posvel_control_start();
     void guided_angle_control_start();
-    bool guided_set_destination(const Vector3f& destination, bool use_yaw, float yaw, bool use_yaw_rate, float yaw_rate);
-    bool guided_set_destination(const Location_Class& dest_loc);
-    void guided_set_velocity(const Vector3f& velocity);
-    void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
+    bool guided_set_destination(const Vector3f& destination, bool use_yaw = false, float yaw = 0.0, bool use_yaw_rate = false, float yaw_rate = 0.0);
+    bool guided_set_destination(const Location_Class& dest_loc, bool use_yaw = false, float yaw = 0.0, bool use_yaw_rate = false, float yaw_rate = 0.0);
+    void guided_set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw = 0.0, bool use_yaw_rate = false, float yaw_rate = 0.0);
+    void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw = 0.0, bool use_yaw_rate = false, float yaw_rate = 0.0);
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void guided_run();
     void guided_takeoff_run();
