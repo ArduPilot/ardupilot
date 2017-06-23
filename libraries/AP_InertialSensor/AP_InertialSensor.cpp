@@ -775,7 +775,7 @@ AP_InertialSensor::detect_backends(void)
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250_SPI
     _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME)));
 #elif HAL_INS_DEFAULT == HAL_INS_EDGE
-    AP_InertialSensor_Backend *backend = AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME));
+    AP_InertialSensor_Backend *backend = AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_YAW_90);
     if (backend) {
         _add_backend(backend);
         hal.console->printf("First IMU detected\n");
@@ -783,7 +783,7 @@ AP_InertialSensor::detect_backends(void)
         hal.console->printf("First IMU not detected\n");
     }
 
-    backend = AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME_EXT));
+    backend = AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME_EXT), ROTATION_YAW_90);
     if (backend) {
         _add_backend(backend);
         hal.console->printf("Second IMU detected\n");
