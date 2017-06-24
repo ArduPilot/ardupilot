@@ -23,55 +23,55 @@
   and the maximum time they are expected to take (in microseconds)
  */
 const AP_Task<Sub> Sub::scheduler_tasks[] = {
-    AP_Task<Sub>::create(&Sub::fifty_hz_loop,         50,     75),
-    AP_Task<Sub>::create(&Sub::update_GPS,            50,    200),
+    AP_Task<Sub>::create(&Sub::fifty_hz_loop,         50,     75, "fifty_hz_loop"),
+    AP_Task<Sub>::create(&Sub::update_GPS,            50,    200, "update_GPS"),
 #if OPTFLOW == ENABLED
-    AP_Task<Sub>::create(&Sub::update_optical_flow,  200,    160),
+    AP_Task<Sub>::create(&Sub::update_optical_flow,  200,    160, "update_optical_flow"),
 #endif
-    AP_Task<Sub>::create(&Sub::update_batt_compass,   10,    120),
-    AP_Task<Sub>::create(&Sub::read_rangefinder,      20,    100),
-    AP_Task<Sub>::create(&Sub::update_altitude,       10,    100),
-    AP_Task<Sub>::create(&Sub::three_hz_loop,          3,     75),
-    AP_Task<Sub>::create(&Sub::update_turn_counter,   10,     50),
-    AP_Task<Sub>::create(&Sub::compass_accumulate,   100,    100),
-    AP_Task<Sub>::create(&Sub::barometer_accumulate,  50,     90),
-    AP_Task<Sub>::create(&Sub::update_notify,         50,     90),
-    AP_Task<Sub>::create(&Sub::one_hz_loop,            1,    100),
-    AP_Task<Sub>::create(&Sub::gcs_check_input,      400,    180),
-    AP_Task<Sub>::create(&Sub::gcs_send_heartbeat,     1,    110),
-    AP_Task<Sub>::create(&Sub::gcs_send_deferred,     50,    550),
-    AP_Task<Sub>::create(&Sub::gcs_data_stream_send,  50,    550),
-    AP_Task<Sub>::create(&Sub::update_mount,          50,     75),
+    AP_Task<Sub>::create(&Sub::update_batt_compass,   10,    120, "update_batt_compass"),
+    AP_Task<Sub>::create(&Sub::read_rangefinder,      20,    100, "read_rangefinder"),
+    AP_Task<Sub>::create(&Sub::update_altitude,       10,    100, "update_altitude"),
+    AP_Task<Sub>::create(&Sub::three_hz_loop,          3,     75, "three_hz_loop"),
+    AP_Task<Sub>::create(&Sub::update_turn_counter,   10,     50, "update_turn_counter"),
+    AP_Task<Sub>::create(&Sub::compass_accumulate,   100,    100, "compass_accumulate"),
+    AP_Task<Sub>::create(&Sub::barometer_accumulate,  50,     90, "barometer_accumulate"),
+    AP_Task<Sub>::create(&Sub::update_notify,         50,     90, "update_notify"),
+    AP_Task<Sub>::create(&Sub::one_hz_loop,            1,    100, "one_hz_loop"),
+    AP_Task<Sub>::create(&Sub::gcs_check_input,      400,    180, "gcs_check_input"),
+    AP_Task<Sub>::create(&Sub::gcs_send_heartbeat,     1,    110, "gcs_send_heartbeat"),
+    AP_Task<Sub>::create(&Sub::gcs_send_deferred,     50,    550, "gcs_send_deferred"),
+    AP_Task<Sub>::create(&Sub::gcs_data_stream_send,  50,    550, "gcs_data_stream_send"),
+    AP_Task<Sub>::create(&Sub::update_mount,          50,     75, "update_mount"),
 #if CAMERA == ENABLED
-    AP_Task<Sub>::create(&Sub::update_trigger,        50,     75),
+    AP_Task<Sub>::create(&Sub::update_trigger,        50,     75, "update_trigger"),
 #endif
-    AP_Task<Sub>::create(&Sub::ten_hz_logging_loop,   10,    350),
-    AP_Task<Sub>::create(&Sub::twentyfive_hz_logging, 25,    110),
-    AP_Task<Sub>::create(&Sub::dataflash_periodic,    400,    300),
-    AP_Task<Sub>::create(&Sub::perf_update,           0.1,    75),
+    AP_Task<Sub>::create(&Sub::ten_hz_logging_loop,   10,    350, "ten_hz_logging_loop"),
+    AP_Task<Sub>::create(&Sub::twentyfive_hz_logging, 25,    110, "twentyfive_hz_logging"),
+    AP_Task<Sub>::create(&Sub::dataflash_periodic,    400,   300, "dataflash_periodic"),
+    AP_Task<Sub>::create(&Sub::perf_update,           0.1,    75, "perf_update"),
 #if RPM_ENABLED == ENABLED
-    AP_Task<Sub>::create(&Sub::rpm_update,            10,    200),
+    AP_Task<Sub>::create(&Sub::rpm_update,            10,    200, "rpm_update"),
 #endif
-    AP_Task<Sub>::create(&Sub::compass_cal_update,   100,    100),
-    AP_Task<Sub>::create(&Sub::accel_cal_update,      10,    100),
-    AP_Task<Sub>::create(&Sub::terrain_update,        10,    100),
+    AP_Task<Sub>::create(&Sub::compass_cal_update,   100,    100, "compass_cal_update"),
+    AP_Task<Sub>::create(&Sub::accel_cal_update,      10,    100, "accel_cal_update"),
+    AP_Task<Sub>::create(&Sub::terrain_update,        10,    100, "terrain_update"),
 #if GRIPPER_ENABLED == ENABLED
-    AP_Task<Sub>::create(&Sub::gripper_update,            10,     75),
+    AP_Task<Sub>::create(&Sub::gripper_update,        10,     75, "gripper_update"),
 #endif
 #ifdef USERHOOK_FASTLOOP
-    AP_Task<Sub>::create(&Sub::userhook_FastLoop,    100,     75),
+    AP_Task<Sub>::create(&Sub::userhook_FastLoop,    100,     75, "userhook_FastLoop"),
 #endif
 #ifdef USERHOOK_50HZLOOP
-    AP_Task<Sub>::create(&Sub::userhook_50Hz,         50,     75),
+    AP_Task<Sub>::create(&Sub::userhook_50Hz,         50,     75, "userhook_50Hz"),
 #endif
 #ifdef USERHOOK_MEDIUMLOOP
-    AP_Task<Sub>::create(&Sub::userhook_MediumLoop,   10,     75),
+    AP_Task<Sub>::create(&Sub::userhook_MediumLoop,   10,     75, "userhook_MediumLoop"),
 #endif
 #ifdef USERHOOK_SLOWLOOP
-    AP_Task<Sub>::create(&Sub::userhook_SlowLoop,     3.3,    75),
+    AP_Task<Sub>::create(&Sub::userhook_SlowLoop,     3.3,    75, "userhook_SlowLoop"),
 #endif
 #ifdef USERHOOK_SUPERSLOWLOOP
-    AP_Task<Sub>::create(&Sub::userhook_SuperSlowLoop, 1,   75),
+    AP_Task<Sub>::create(&Sub::userhook_SuperSlowLoop,  1,    75, "userhook_SuperSlowLoop"),
 #endif
 };
 
