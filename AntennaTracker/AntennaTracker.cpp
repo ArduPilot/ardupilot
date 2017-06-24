@@ -27,24 +27,24 @@
   microseconds)
  */
 const AP_Task<Tracker> Tracker::scheduler_tasks[] = {
-    AP_Task<Tracker>::create(&Tracker::update_ahrs,            50,   1000),
-    AP_Task<Tracker>::create(&Tracker::read_radio,             50,    200),
-    AP_Task<Tracker>::create(&Tracker::update_tracking,        50,   1000),
-    AP_Task<Tracker>::create(&Tracker::update_GPS,             10,   4000),
-    AP_Task<Tracker>::create(&Tracker::update_compass,         10,   1500),
-    AP_Task<Tracker>::create(&Tracker::update_barometer,       10,   1500),
-    AP_Task<Tracker>::create(&Tracker::gcs_update,             50,   1700),
-    AP_Task<Tracker>::create(&Tracker::gcs_data_stream_send,   50,   3000),
-    AP_Task<Tracker>::create(&Tracker::compass_accumulate,     50,   1500),
-    AP_Task<Tracker>::create(&Tracker::barometer_accumulate,   50,    900),
-    AP_Task<Tracker>::create(&Tracker::ten_hz_logging_loop,    10,    300),
-    AP_Task<Tracker>::create(&Tracker::dataflash_periodic,     50,    300),
-    AP_Task<Tracker>::create(&Tracker::update_notify,          50,    100),
-    AP_Task<Tracker>::create(&Tracker::check_usb_mux,          10,    300),
-    AP_Task<Tracker>::create(&Tracker::gcs_retry_deferred,     50,   1000),
-    AP_Task<Tracker>::create(&Tracker::one_second_loop,         1,   3900),
-    AP_Task<Tracker>::create(&Tracker::compass_cal_update,     50,    100),
-    AP_Task<Tracker>::create(&Tracker::accel_cal_update,       10,    100)
+    AP_Task<Tracker>::create(&Tracker::update_ahrs,            50,   1000, "update_ahrs"),
+    AP_Task<Tracker>::create(&Tracker::read_radio,             50,    200, "read_radio"),
+    AP_Task<Tracker>::create(&Tracker::update_tracking,        50,   1000, "update_tracking"),
+    AP_Task<Tracker>::create(&Tracker::update_GPS,             10,   4000, "update_GPS"),
+    AP_Task<Tracker>::create(&Tracker::update_compass,         10,   1500, "update_compass"),
+    AP_Task<Tracker>::create(&Tracker::update_barometer,       10,   1500, "update_barometer"),
+    AP_Task<Tracker>::create(&Tracker::gcs_update,             50,   1700, "gcs_update"),
+    AP_Task<Tracker>::create(&Tracker::gcs_data_stream_send,   50,   3000, "gcs_data_stream_send"),
+    AP_Task<Tracker>::create(&Tracker::compass_accumulate,     50,   1500, "compass_accumulate"),
+    AP_Task<Tracker>::create(&Tracker::barometer_accumulate,   50,    900, "barometer_accumulate"),
+    AP_Task<Tracker>::create(&Tracker::ten_hz_logging_loop,    10,    300, "ten_hz_logging_loop"),
+    AP_Task<Tracker>::create(&Tracker::dataflash_periodic,     50,    300, "dataflash_periodic"),
+    AP_Task<Tracker>::create(&Tracker::update_notify,          50,    100, "update_notify"),
+    AP_Task<Tracker>::create(&Tracker::check_usb_mux,          10,    300, "check_usb_mux"),
+    AP_Task<Tracker>::create(&Tracker::gcs_retry_deferred,     50,   1000, "gcs_retry_deferred"),
+    AP_Task<Tracker>::create(&Tracker::one_second_loop,         1,   3900, "one_second_loop"),
+    AP_Task<Tracker>::create(&Tracker::compass_cal_update,     50,    100, "compass_cal_update"),
+    AP_Task<Tracker>::create(&Tracker::accel_cal_update,       10,    100, "accel_cal_update")
 };
 
 /**
