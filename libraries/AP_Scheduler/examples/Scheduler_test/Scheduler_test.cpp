@@ -35,9 +35,9 @@ static SchedTest schedtest;
   they are expected to take (in microseconds)
  */
 const AP_Task<SchedTest> SchedTest::scheduler_tasks[] = {
-    AP_Task<SchedTest>::create(&SchedTest::ins_update,             50,   1000),
-    AP_Task<SchedTest>::create(&SchedTest::one_hz_print,            1,   1000),
-    AP_Task<SchedTest>::create(&SchedTest::five_second_call,      0.2,   1800),
+    AP_Task<SchedTest>::create(&SchedTest::ins_update,             50,   1000, "ins_update"),
+    AP_Task<SchedTest>::create(&SchedTest::one_hz_print,            1,   1000, "one_hz_print"),
+    AP_Task<SchedTest>::create(&SchedTest::five_second_call,      0.2,   1800, "five_second_call"),
 };
 
 void SchedTest::setup(void)
