@@ -201,10 +201,8 @@ bool Copter::guided_set_destination(const Vector3f& destination, bool use_yaw, f
     }
 #endif
 
-    guided_yaw_state.use_yaw = use_yaw;
-    guided_yaw_state.yaw = yaw;
-    guided_yaw_state.use_yaw_rate = use_yaw_rate;
-    guided_yaw_state.yaw_rate = yaw_rate;
+    // set yaw state
+    guided_set_yaw_state(use_yaw, yaw, use_yaw_rate, yaw_rate);
 
     // no need to check return status because terrain data is not used
     wp_nav->set_wp_destination(destination, false);
@@ -241,10 +239,8 @@ bool Copter::guided_set_destination(const Location_Class& dest_loc, bool use_yaw
         return false;
     }
 
-    guided_yaw_state.use_yaw = use_yaw;
-    guided_yaw_state.yaw = yaw;
-    guided_yaw_state.use_yaw_rate = use_yaw_rate;
-    guided_yaw_state.yaw_rate = yaw_rate;
+    // set yaw state
+    guided_set_yaw_state(use_yaw, yaw, use_yaw_rate, yaw_rate);
 
     // log target
     Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
@@ -259,10 +255,8 @@ void Copter::guided_set_velocity(const Vector3f& velocity, bool use_yaw, float y
         guided_vel_control_start();
     }
 
-    guided_yaw_state.use_yaw = use_yaw;
-    guided_yaw_state.yaw = yaw;
-    guided_yaw_state.use_yaw_rate = use_yaw_rate;
-    guided_yaw_state.yaw_rate = yaw_rate;
+    // set yaw state
+    guided_set_yaw_state(use_yaw, yaw, use_yaw_rate, yaw_rate);
 
     // record velocity target
     guided_vel_target_cms = velocity;
@@ -279,10 +273,8 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
         guided_posvel_control_start();
     }
 
-    guided_yaw_state.use_yaw = use_yaw;
-    guided_yaw_state.yaw = yaw;
-    guided_yaw_state.use_yaw_rate = use_yaw_rate;
-    guided_yaw_state.yaw_rate = yaw_rate;
+    // set yaw state
+    guided_set_yaw_state(use_yaw, yaw, use_yaw_rate, yaw_rate);
 
     posvel_update_time_ms = millis();
     guided_pos_target_cm = destination;
@@ -702,6 +694,15 @@ void Copter::guided_set_desired_velocity_with_accel_and_fence_limits(const Vecto
 
     // update position controller with new target
     pos_control->set_desired_velocity(curr_vel_des);
+}
+
+// helper function to set guided yaw state
+void Copter::guided_set_yaw_state(bool use_yaw, float yaw, bool use_yaw_rate, float yaw_rate)
+{
+    guided_yaw_state.use_yaw = use_yaw;
+    guided_yaw_state.yaw = yaw;
+    guided_yaw_state.use_yaw_rate = use_yaw_rate;
+    guided_yaw_state.yaw_rate = yaw_rate;
 }
 
 // Guided Limit code

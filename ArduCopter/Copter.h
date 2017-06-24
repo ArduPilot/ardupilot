@@ -888,6 +888,7 @@ private:
     bool guided_limit_check();
     bool guided_nogps_init(bool ignore_checks);
     void guided_nogps_run();
+    void guided_set_yaw_state(bool use_yaw, float yaw, bool use_yaw_rate, float yaw_rate);
     bool land_init(bool ignore_checks);
     void land_run();
     void land_gps_run();
