@@ -25,6 +25,12 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#define SCHEDULER_DEFAULT_LOOP_RATE 400
+#else
+#define SCHEDULER_DEFAULT_LOOP_RATE  50
+#endif
+
 /*
   A task scheduler for APM main loops
 
