@@ -4,10 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-
-#define SCHEDULER_DEFAULT_LOOP_RATE  50
 #include <AP_Scheduler/AP_Scheduler.h>
-
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();

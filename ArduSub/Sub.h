@@ -65,7 +65,6 @@
 #include <AC_WPNav/AC_WPNav.h>           // Waypoint navigation library
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AC_Fence/AC_Fence.h>           // Fence library
-#define SCHEDULER_DEFAULT_LOOP_RATE  400
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library

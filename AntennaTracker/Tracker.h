@@ -45,7 +45,6 @@
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
 #include <AC_PID/AC_PID.h>
-#define SCHEDULER_DEFAULT_LOOP_RATE  50
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>

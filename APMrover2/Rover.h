@@ -56,7 +56,6 @@
 #include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
 #include <DataFlash/DataFlash.h>
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
-#define SCHEDULER_DEFAULT_LOOP_RATE  50
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
 #include <AP_Navigation/AP_Navigation.h>
 #include <APM_Control/APM_Control.h>
