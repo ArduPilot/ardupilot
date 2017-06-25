@@ -26,7 +26,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/AP_BoardLED.h>
 #include <AP_Rally/AP_Rally.h>
-#include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Scheduler/AP_Scheduler.hpp>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>

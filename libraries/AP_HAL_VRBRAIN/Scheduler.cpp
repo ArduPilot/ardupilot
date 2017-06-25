@@ -20,7 +20,7 @@
 #include "Storage.h"
 #include "RCOutput.h"
 #include "RCInput.h"
-#include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Scheduler/AP_Scheduler.hpp>
 
 using namespace VRBRAIN;
 
