@@ -643,7 +643,7 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(leak_detector, "LEAK", AP_LeakDetector),
 
     // @Group: SCHED_
-    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.h
+    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.hpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler<Sub>),
 
 
