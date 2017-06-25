@@ -156,13 +156,10 @@ void AC_AttitudeControl::reset_rate_controller_I_terms()
 
 
 // Command a Quaternion attitude with feedforward and smoothing
-void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, float smoothing_gain)
+void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat)
 {
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
-
-    // ensure smoothing gain can not cause overshoot
-    smoothing_gain = constrain_float(smoothing_gain,1.0f,1/_dt);
 
     Quaternion attitude_error_quat = _attitude_target_quat.inverse() * attitude_desired_quat;
     Vector3f attitude_error_angle;
@@ -171,10 +168,10 @@ void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, floa
     if (_rate_bf_ff_enabled & _use_ff_and_input_shaping) {
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler
         // angular velocity that will cause the euler angle to smoothly stop at the input angle with limited deceleration
-        // and an exponential decay specified by smoothing_gain at the end.
-        _attitude_target_ang_vel.x = input_shaping_angle(wrap_PI(attitude_error_angle.x), smoothing_gain, get_accel_roll_max_radss(), _attitude_target_ang_vel.x, _dt);
-        _attitude_target_ang_vel.y = input_shaping_angle(wrap_PI(attitude_error_angle.y), smoothing_gain, get_accel_pitch_max_radss(), _attitude_target_ang_vel.y, _dt);
-        _attitude_target_ang_vel.z = input_shaping_angle(wrap_PI(attitude_error_angle.z), smoothing_gain, get_accel_yaw_max_radss(), _attitude_target_ang_vel.z, _dt);
+        // and an exponential decay specified by _smoothing_gain at the end.
+        _attitude_target_ang_vel.x = input_shaping_angle(wrap_PI(attitude_error_angle.x), _smoothing_gain, get_accel_roll_max_radss(), _attitude_target_ang_vel.x, _dt);
+        _attitude_target_ang_vel.y = input_shaping_angle(wrap_PI(attitude_error_angle.y), _smoothing_gain, get_accel_pitch_max_radss(), _attitude_target_ang_vel.y, _dt);
+        _attitude_target_ang_vel.z = input_shaping_angle(wrap_PI(attitude_error_angle.z), _smoothing_gain, get_accel_yaw_max_radss(), _attitude_target_ang_vel.z, _dt);
 
         // Convert body-frame angular velocity into euler angle derivative of desired attitude
         ang_vel_to_euler_rate(_attitude_target_euler_angle, _attitude_target_ang_vel, _attitude_target_euler_rate);
@@ -191,7 +188,7 @@ void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat, floa
 }
 
 // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain)
+void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
     float euler_roll_angle = radians(euler_roll_angle_cd*0.01f);
@@ -200,9 +197,6 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
-
-    // ensure smoothing gain can not cause overshoot
-    smoothing_gain = constrain_float(smoothing_gain,1.0f,1/_dt);
 
     // Add roll trim to compensate tail rotor thrust in heli (will return zero on multirotors)
     euler_roll_angle += get_roll_trim_rad();
@@ -214,8 +208,8 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler
         // angular velocity that will cause the euler angle to smoothly stop at the input angle with limited deceleration
         // and an exponential decay specified by smoothing_gain at the end.
-        _attitude_target_euler_rate.x = input_shaping_angle(wrap_PI(euler_roll_angle-_attitude_target_euler_angle.x), smoothing_gain, euler_accel.x, _attitude_target_euler_rate.x, _dt);
-        _attitude_target_euler_rate.y = input_shaping_angle(wrap_PI(euler_pitch_angle-_attitude_target_euler_angle.y), smoothing_gain, euler_accel.y, _attitude_target_euler_rate.y, _dt);
+        _attitude_target_euler_rate.x = input_shaping_angle(wrap_PI(euler_roll_angle-_attitude_target_euler_angle.x), _smoothing_gain, euler_accel.x, _attitude_target_euler_rate.x, _dt);
+        _attitude_target_euler_rate.y = input_shaping_angle(wrap_PI(euler_pitch_angle-_attitude_target_euler_angle.y), _smoothing_gain, euler_accel.y, _attitude_target_euler_rate.y, _dt);
 
         // When yaw acceleration limiting is enabled, the yaw input shaper constrains angular acceleration about the yaw axis, slewing
         // the output rate towards the input rate.
@@ -241,7 +235,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
 }
 
 // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
-void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw, float smoothing_gain)
+void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
     float euler_roll_angle = radians(euler_roll_angle_cd*0.01f);
@@ -250,9 +244,6 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
 
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
-
-    // ensure smoothing gain can not cause overshoot
-    smoothing_gain = constrain_float(smoothing_gain,1.0f,1/_dt);
 
     // Add roll trim to compensate tail rotor thrust in heli (will return zero on multirotors)
     euler_roll_angle += get_roll_trim_rad();
@@ -263,10 +254,10 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
 
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler
         // angular velocity that will cause the euler angle to smoothly stop at the input angle with limited deceleration
-        // and an exponential decay specified by smoothing_gain at the end.
-        _attitude_target_euler_rate.x = input_shaping_angle(wrap_PI(euler_roll_angle-_attitude_target_euler_angle.x), smoothing_gain, euler_accel.x, _attitude_target_euler_rate.x, _dt);
-        _attitude_target_euler_rate.y = input_shaping_angle(wrap_PI(euler_pitch_angle-_attitude_target_euler_angle.y), smoothing_gain, euler_accel.y, _attitude_target_euler_rate.y, _dt);
-        _attitude_target_euler_rate.z = input_shaping_angle(wrap_PI(euler_yaw_angle-_attitude_target_euler_angle.z), smoothing_gain, euler_accel.z, _attitude_target_euler_rate.z, _dt);
+        // and an exponential decay specified by _smoothing_gain at the end.
+        _attitude_target_euler_rate.x = input_shaping_angle(wrap_PI(euler_roll_angle-_attitude_target_euler_angle.x), _smoothing_gain, euler_accel.x, _attitude_target_euler_rate.x, _dt);
+        _attitude_target_euler_rate.y = input_shaping_angle(wrap_PI(euler_pitch_angle-_attitude_target_euler_angle.y), _smoothing_gain, euler_accel.y, _attitude_target_euler_rate.y, _dt);
+        _attitude_target_euler_rate.z = input_shaping_angle(wrap_PI(euler_yaw_angle-_attitude_target_euler_angle.z), _smoothing_gain, euler_accel.z, _attitude_target_euler_rate.z, _dt);
         if (slew_yaw) {
             _attitude_target_euler_rate.z = constrain_float(_attitude_target_euler_rate.z, -get_slew_yaw_rads(), get_slew_yaw_rads());
         }
@@ -498,7 +489,7 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
 }
 
 // calculates the velocity correction from an angle error. The angular velocity has acceleration and
-// deceleration limits including basic jerk limiting using smoothing_gain
+// deceleration limits including basic jerk limiting using _smoothing_gain
 float AC_AttitudeControl::input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float dt)
 {
     // Calculate the velocity as error approaches zero with acceleration limited by accel_max_radss
