@@ -22,7 +22,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_Scheduler/AP_Scheduler.hpp>
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Declination/AP_Declination.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>

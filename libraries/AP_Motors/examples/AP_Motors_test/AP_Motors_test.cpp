@@ -28,7 +28,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Scheduler/AP_Scheduler.hpp>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

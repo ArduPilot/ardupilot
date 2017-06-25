@@ -17,7 +17,7 @@
 #include "UARTDriver.h"
 #include "Storage.h"
 #include "RCOutput.h"
-#include <AP_Scheduler/AP_Scheduler.hpp>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 using namespace QURT;
 

@@ -21,7 +21,7 @@
 #include "RCOutput.h"
 #include "RCInput.h"
 
-#include <AP_Scheduler/AP_Scheduler.hpp>
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #if HAL_WITH_UAVCAN
