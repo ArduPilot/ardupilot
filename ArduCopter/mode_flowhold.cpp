@@ -290,7 +290,7 @@ void Copter::ModeFlowHold::run()
     case FlowHold_MotorStopped:
 
         copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate, copter.get_smoothing_gain());
+        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate);
 #if FRAME_CONFIG == HELI_FRAME    
         // force descent rate and call position controller
         copter.pos_control->set_alt_target_from_climb_rate(-abs(copter.g.land_speed), copter.G_Dt, false);
@@ -323,7 +323,7 @@ void Copter::ModeFlowHold::run()
         target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);
 
         // call attitude controller
-        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate, copter.get_smoothing_gain());
+        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate);
 
         // call position controller
         copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, copter.G_Dt, false);
@@ -341,7 +341,7 @@ void Copter::ModeFlowHold::run()
 
         copter.attitude_control->reset_rate_controller_I_terms();
         copter.attitude_control->set_yaw_target_to_current_heading();
-        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate, copter.get_smoothing_gain());
+        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate);
         copter.pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         copter.pos_control->update_z_controller();
         break;
@@ -355,7 +355,7 @@ void Copter::ModeFlowHold::run()
 #endif
 
         // call attitude controller
-        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate, copter.get_smoothing_gain());
+        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate);
 
         // adjust climb rate using rangefinder
         if (copter.rangefinder_alt_ok()) {
