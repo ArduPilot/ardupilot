@@ -175,8 +175,8 @@ void Copter::tuning() {
 #endif
 
     case TUNING_RC_FEEL_RP:
-        // roll-pitch input smoothing
-        g.rc_feel_rp = control_in / 10;
+        // convert from control_in to input time constant
+        attitude_control->set_input_tc(1.0f / (2.f + MAX((control_in/100.0f),0.0f)));
         break;
 
     case TUNING_RATE_PITCH_KP:
