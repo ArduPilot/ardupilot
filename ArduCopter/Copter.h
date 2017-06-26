@@ -658,7 +658,6 @@ private:
     void update_altitude();
 
     // Attitude.cpp
-    float get_smoothing_gain();
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_roi_yaw();
     float get_look_ahead_yaw();

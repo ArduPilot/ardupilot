@@ -111,7 +111,7 @@ public:
         k_param_fs_batt_mah,
         k_param_angle_rate_max,         // remove
         k_param_rssi_range,             // unused, replaced by rssi_ library parameters
-        k_param_rc_feel_rp,
+        k_param_rc_feel_rp,             // deprecated
         k_param_NavEKF,                 // deprecated - remove
         k_param_mission,                // mission library
         k_param_rc_13_old,
@@ -407,7 +407,6 @@ public:
     AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
-    AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
 
     AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
     AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
