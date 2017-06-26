@@ -459,15 +459,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
 
-    // @Param: RC_FEEL_RP
-    // @DisplayName: RC Feel Roll/Pitch
-    // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 being crisp
-    // @Range: 0 100
-    // @Increment: 10
-    // @User: Standard
-    // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
-    GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_MEDIUM),
-
     // @Param: PHLD_BRAKE_RATE
     // @DisplayName: PosHold braking rate
     // @Description: PosHold flight mode's rotation rate during braking in deg/sec

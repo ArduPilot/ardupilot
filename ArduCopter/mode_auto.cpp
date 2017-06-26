@@ -280,10 +280,10 @@ void Copter::ModeAuto::wp_run()
     // call attitude controller
     if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(),true, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(),true);
     }
 }
 
@@ -345,10 +345,10 @@ void Copter::ModeAuto::spline_run()
     // call attitude controller
     if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(), true, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(), true);
     }
 }
 
@@ -505,7 +505,7 @@ void Copter::ModeAuto::circle_run()
     pos_control->update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), copter.circle_nav->get_yaw(),true, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), copter.circle_nav->get_yaw(), true);
 }
 
 #if NAV_GUIDED == ENABLED
@@ -576,7 +576,7 @@ void Copter::ModeAuto::loiter_run()
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
     pos_control->update_z_controller();
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
 }
 
 #endif
@@ -863,7 +863,7 @@ void Copter::ModeAuto::payload_place_run_loiter()
 
     // call attitude controller
     const float target_yaw_rate = 0;
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
 
     // call position controller
     pos_control->update_z_controller();

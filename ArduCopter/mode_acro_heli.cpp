@@ -28,7 +28,7 @@ void Copter::ModeAcro_Heli::run()
 {
     float target_roll, target_pitch, target_yaw;
     float pilot_throttle_scaled;
-    
+
     // Tradheli should not reset roll, pitch, yaw targets when motors are not runup, because
     // we may be in autorotation flight.  These should be reset only when transitioning from disarmed
     // to armed, because the pilot will have placed the helicopter down on the landing pad.  This is so
