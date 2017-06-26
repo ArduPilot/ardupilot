@@ -815,7 +815,7 @@ void AP_GPS::lock_port(uint8_t instance, bool lock)
 }
 
 // Inject a packet of raw binary to a GPS
-void AP_GPS::inject_data(uint8_t *data, uint8_t len)
+void AP_GPS::inject_data(uint8_t *data, uint16_t len)
 {
     //Support broadcasting to all GPSes.
     if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
@@ -827,7 +827,7 @@ void AP_GPS::inject_data(uint8_t *data, uint8_t len)
     }
 }
 
-void AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint8_t len)
+void AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint16_t len)
 {
     if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
         drivers[instance]->inject_data(data, len);
@@ -958,6 +958,8 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
 {
     mavlink_gps_rtcm_data_t packet;
     mavlink_msg_gps_rtcm_data_decode(msg, &packet);
+
+//GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RTCM Packet of length %d received", packet.len);
 
     if (packet.len > MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN) {
         // invalid packet
