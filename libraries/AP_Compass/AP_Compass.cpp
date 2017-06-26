@@ -670,7 +670,7 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                     AP_Compass_AK8963::name, false);
         ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME),
-                                                              false, ROTATION_PITCH_180),
+                                                              false, ROTATION_NONE),
                     AP_Compass_LIS3MDL::name, false);
         break;
 
