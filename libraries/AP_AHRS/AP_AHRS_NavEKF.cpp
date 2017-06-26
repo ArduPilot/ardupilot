@@ -971,7 +971,9 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
       DCM is very robust. Note that we also check the filter status
       when fly_forward is false and we are disarmed. This is to ensure
       that the arming checks do wait for good GPS position on fixed
-      wing and rover
+      wing and rover.
+      If there is a healthy airspeed sensor, do not revert to DCM on
+      plane during flight.
      */
     if (ret != EKF_TYPE_NONE &&
         (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
