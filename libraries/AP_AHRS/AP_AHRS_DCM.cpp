@@ -1013,8 +1013,8 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 //  a relative ground position to home in meters, Down
 void AP_AHRS_DCM::get_relative_position_D_home(float &posD) const
 {
-    if (_EKF_home_present) {
-        posD = -_baro.get_altitude() - (_EKF_home.alt - _home.alt);
+    if (_EKF_origin_present) {
+        posD = -_baro.get_altitude() - (_EKF_origin.alt - _home.alt);
     } else {
         posD = -_baro.get_altitude();
     }

@@ -49,7 +49,7 @@ public:
         _imu1_weight(0.5f),
         _last_failure_ms(0),
         _last_startup_ms(0),
-        _EKF_home_present(false)
+        _EKF_origin_present(false)
     {
         _dcm_matrix.identity();
 
@@ -58,11 +58,11 @@ public:
         _ki = 0.0087f;
         _ki_yaw = 0.01f;
 
-        // Initialize _EKF_home
-        _EKF_home.options    = 0;
-        _EKF_home.alt        = 0;
-        _EKF_home.lng        = 0;
-        _EKF_home.lat        = 0;
+        // Initialize _EKF_origin
+        _EKF_origin.options    = 0;
+        _EKF_origin.alt        = 0;
+        _EKF_origin.lng        = 0;
+        _EKF_origin.lat        = 0;
     }
 
     // return the smoothed gyro vector corrected for drift
@@ -116,9 +116,9 @@ public:
     bool            use_compass() override;
 
     void set_home(const Location &loc) override;
-    void set_EKF_home(const Location &loc) {
-        _EKF_home = loc;
-        _EKF_home_present = true;
+    void set_EKF_origin(const Location &loc) {
+        _EKF_origin = loc;
+        _EKF_origin_present = true;
     }
     void estimate_wind(void);
 
@@ -219,6 +219,6 @@ private:
     uint32_t _last_startup_ms;
 
     // reference position for baro correction positions
-    struct Location _EKF_home;
-    bool _EKF_home_present;
+    struct Location _EKF_origin;
+    bool _EKF_origin_present;
 };

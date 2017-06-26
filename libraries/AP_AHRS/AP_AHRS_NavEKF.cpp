@@ -101,11 +101,11 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     Location EKF_home_loc;
     if (_ekf_type == 2 && _ekf2_started && (EKF2.getOriginHgtMode() & (1<<2)) && EKF2.healthy()) {
         EKF2.getOriginLLH(-1, EKF_home_loc);
-        AP_AHRS_DCM::set_EKF_home(EKF_home_loc);
+        AP_AHRS_DCM::set_EKF_origin(EKF_home_loc);
     }
     if (_ekf_type == 3 && _ekf3_started && (EKF3.getOriginHgtMode() & (1<<2)) && EKF3.healthy()) {
         EKF3.getOriginLLH(-1, EKF_home_loc);
-        AP_AHRS_DCM::set_EKF_home(EKF_home_loc);
+        AP_AHRS_DCM::set_EKF_origin(EKF_home_loc);
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
