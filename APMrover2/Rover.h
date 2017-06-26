@@ -140,9 +140,9 @@ private:
 
     // sensor drivers
     AP_GPS gps;
-    AP_Baro barometer;
-    Compass compass;
-    AP_InertialSensor ins;
+    AP_Baro &barometer;
+    Compass &compass;
+    AP_InertialSensor &ins;
     RangeFinder sonar { serial_manager, ROTATION_NONE };
     AP_Button button;
 
@@ -180,7 +180,7 @@ private:
     AP_RSSI rssi;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
+    SITL::SITL &sitl;
 #endif
 
     // GCS handling

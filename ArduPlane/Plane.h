@@ -196,10 +196,10 @@ private:
     // flight modes convenience array
     AP_Int8 *flight_modes = &g.flight_mode1;
 
-    AP_Baro barometer;
-    Compass compass;
+    AP_Baro &barometer;
+    Compass &compass;
 
-    AP_InertialSensor ins;
+    AP_InertialSensor &ins;
 
     RangeFinder rangefinder {serial_manager, ROTATION_PITCH_270};
 
@@ -226,7 +226,7 @@ private:
     AP_SteerController steerController {ahrs};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
+    SITL::SITL &sitl;
 #endif
 
     // Training mode

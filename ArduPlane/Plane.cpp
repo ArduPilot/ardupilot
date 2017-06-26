@@ -21,7 +21,13 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Plane class
  */
 Plane::Plane(void)
-    : DataFlash{FIRMWARE_STRING}
+    : DataFlash{FIRMWARE_STRING},
+      barometer(*AP_Baro::get_instance()),
+      compass(*Compass::get_instance()),
+      ins(*AP_InertialSensor::get_instance()),
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+      sitl(*SITL::SITL::get_instance())
+#endif
 {
     // C++11 doesn't allow in-class initialisation of bitfields
     auto_state.takeoff_complete = true;

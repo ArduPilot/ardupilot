@@ -154,7 +154,12 @@ public:
 
     // set a pressure correction from AP_TempCalibration
     void set_pressure_correction(uint8_t instance, float p_correction);
-    
+
+    static AP_Baro *get_instance(void) {
+        static AP_Baro _instance;
+        return &_instance;
+    }
+
 private:
     // how many drivers do we have?
     uint8_t _num_drivers;

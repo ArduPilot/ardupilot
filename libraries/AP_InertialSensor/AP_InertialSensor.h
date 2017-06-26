@@ -456,7 +456,6 @@ private:
 
     DataFlash_Class *_dataflash;
 
-    static AP_InertialSensor *_s_instance;
     AP_AccelCal* _acal;
 
     AccelCalibrator *_accel_calibrator;

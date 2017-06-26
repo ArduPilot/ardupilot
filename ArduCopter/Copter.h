@@ -199,9 +199,9 @@ private:
     // flight modes convenience array
     AP_Int8 *flight_modes;
 
-    AP_Baro barometer;
-    Compass compass;
-    AP_InertialSensor ins;
+    AP_Baro &barometer;
+    Compass &compass;
+    AP_InertialSensor &ins;
 
     RangeFinder rangefinder {serial_manager, ROTATION_PITCH_270};
     struct {
@@ -221,7 +221,7 @@ private:
     AP_AHRS_NavEKF ahrs{ins, barometer, gps, rangefinder, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
+    SITL::SITL &sitl;
 #endif
 
     // Mission library
