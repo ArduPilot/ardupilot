@@ -987,11 +987,14 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
             get_filter_status(filt_state);
 #endif
         }
-        if (hal.util->get_soft_armed() && !filt_state.flags.using_gps && _gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if (hal.util->get_soft_armed() &&
+            (!filt_state.flags.using_gps && _gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
+             _airspeed != nullptr && !_airspeed->healthy())) {
             // if the EKF is not fusing GPS and we have a 3D lock, then
             // plane and rover would prefer to use the GPS position from
             // DCM. This is a safety net while some issues with the EKF
-            // get sorted out
+            // get sorted out. If there is a healthy airspeed sensor,
+            // do not revert to DCM.
             return EKF_TYPE_NONE;
         }
         if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
