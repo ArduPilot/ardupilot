@@ -808,7 +808,7 @@ void AP_GPS::lock_port(uint8_t instance, bool lock)
 }
 
 // Inject a packet of raw binary to a GPS
-void AP_GPS::inject_data(uint8_t *data, uint8_t len)
+void AP_GPS::inject_data(uint8_t *data, uint16_t len)
 {
     //Support broadcasting to all GPSes.
     if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
@@ -820,7 +820,7 @@ void AP_GPS::inject_data(uint8_t *data, uint8_t len)
     }
 }
 
-void AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint8_t len)
+void AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint16_t len)
 {
     if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
         drivers[instance]->inject_data(data, len);

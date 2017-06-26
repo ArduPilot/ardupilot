@@ -323,8 +323,8 @@ public:
     void lock_port(uint8_t instance, bool locked);
 
     //Inject a packet of raw binary to a GPS
-    void inject_data(uint8_t *data, uint8_t len);
-    void inject_data(uint8_t instance, uint8_t *data, uint8_t len);
+    void inject_data(uint8_t *data, uint16_t len);
+    void inject_data(uint8_t instance, uint8_t *data, uint16_t len);
 
     //MAVLink Status Sending
     void send_mavlink_gps_raw(mavlink_channel_t chan);
