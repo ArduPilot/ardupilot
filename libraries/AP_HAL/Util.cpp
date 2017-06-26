@@ -62,7 +62,7 @@ uint64_t AP_HAL::Util::get_system_clock_ms() const
     clock_gettime(CLOCK_REALTIME, &ts);
     const uint64_t seconds = ts.tv_sec;
     const uint64_t nanoseconds = ts.tv_nsec;
-    return (seconds * 1000UL + nanoseconds/1000000UL);
+    return (seconds * 1000ULL + nanoseconds/1000000ULL);
 #endif
 }
 
