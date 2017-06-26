@@ -416,7 +416,8 @@ float AC_Avoid::get_alt_above_home() const
  */
 float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance) const
 {
-    return AC_AttitudeControl::sqrt_controller(distance, kP, accel_cmss);
+    // should use time instead of 0.0f
+    return AC_AttitudeControl::sqrt_controller(distance, kP, accel_cmss, 0.0f);
 }
 
 /*
