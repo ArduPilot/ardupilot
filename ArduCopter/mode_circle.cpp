@@ -33,6 +33,9 @@ void Copter::ModeCircle::run()
     float target_yaw_rate = 0;
     float target_climb_rate = 0;
 
+    // initialize smoothing gain
+    attitude_control->set_smoothing_gain(get_smoothing_gain());
+
     // initialize speeds and accelerations
     pos_control->set_speed_xy(wp_nav->get_speed_xy());
     pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
@@ -75,9 +78,9 @@ void Copter::ModeCircle::run()
 
     // call attitude controller
     if (pilot_yaw_override) {
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(circle_nav->get_roll(), circle_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(circle_nav->get_roll(), circle_nav->get_pitch(), target_yaw_rate);
     }else{
-        attitude_control->input_euler_angle_roll_pitch_yaw(circle_nav->get_roll(), circle_nav->get_pitch(), circle_nav->get_yaw(),true, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_yaw(circle_nav->get_roll(), circle_nav->get_pitch(), circle_nav->get_yaw(),true);
     }
 
     // adjust climb rate using rangefinder
