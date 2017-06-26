@@ -335,6 +335,11 @@ public:
     // get timing statistics structure
     void getTimingStatistics(int8_t instance, struct ekf_timing &timing);
     
+    // get _originHgtMode
+    uint8_t getOriginHgtMode(void) {
+        return _originHgtMode;
+    }
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core

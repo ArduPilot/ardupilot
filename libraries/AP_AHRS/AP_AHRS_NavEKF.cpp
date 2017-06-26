@@ -96,6 +96,18 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
         update_EKF3();
         update_EKF2();
     }
+
+    // update home location for GPS baro correction for DCM
+    Location EKF_origin_loc;
+    if (_ekf_type == 2 && _ekf2_started && (EKF2.getOriginHgtMode() & (1<<2)) && EKF2.healthy()) {
+        EKF2.getOriginLLH(-1, EKF_origin_loc);
+        AP_AHRS_DCM::set_EKF_origin(EKF_origin_loc);
+    }
+    if (_ekf_type == 3 && _ekf3_started && (EKF3.getOriginHgtMode() & (1<<2)) && EKF3.healthy()) {
+        EKF3.getOriginLLH(-1, EKF_origin_loc);
+        AP_AHRS_DCM::set_EKF_origin(EKF_origin_loc);
+    }
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     update_SITL();
 #endif
