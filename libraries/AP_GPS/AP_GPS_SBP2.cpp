@@ -459,24 +459,35 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
     }
 
     uint64_t time_us = AP_HAL::micros64();
+    uint8_t pages = 1;
 
-    struct log_SbpRAW1 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW1),
+    if (msg_len > 48) {
+        pages += (msg_len - 48) / 104 + 1;
+    }
+
+    struct log_SbpRAWH pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWH),
         time_us         : time_us,
         msg_type        : msg_type,
         sender_id       : sender_id,
+        index           : 1,
+        pages           : pages,
         msg_len         : msg_len,
     };
-    memcpy(pkt.data1, msg_buff, MIN(msg_len,64));
+    memcpy(pkt.data, msg_buff, MIN(msg_len, 48));
     gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 
-    if (msg_len > 64) {
-        struct log_SbpRAW2 pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW2),
+    for (uint8_t i = 0; i < pages - 1; i++) {
+        struct log_SbpRAWM pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWM),
             time_us         : time_us,
             msg_type        : msg_type,
+            sender_id       : sender_id,
+            index           : uint8_t(i + 2),
+            pages           : pages,
+            msg_len         : msg_len,
         };
-        memcpy(pkt2.data2, &msg_buff[64], MIN(msg_len - 64,192));
+        memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
         gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
     }
 };
