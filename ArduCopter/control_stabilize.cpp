@@ -26,6 +26,9 @@ void Copter::stabilize_run()
     float target_yaw_rate;
     float pilot_throttle_scaled;
 
+    // initialize smoothing gain
+    attitude_control->set_smoothing_gain(get_smoothing_gain());
+
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || ap.throttle_zero || !motors->get_interlock()) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -52,7 +55,7 @@ void Copter::stabilize_run()
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // body-frame rate controller is run directly from 100hz loop
 

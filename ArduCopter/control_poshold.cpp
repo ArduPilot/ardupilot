@@ -136,6 +136,9 @@ void Copter::poshold_run()
     float vel_fw, vel_right;            // vehicle's current velocity in body-frame forward and right directions
     const Vector3f& vel = inertial_nav.get_velocity();
 
+    // initialize smoothing gain
+    attitude_control->set_smoothing_gain(get_smoothing_gain());
+
     // initialize vertical speeds and acceleration
     pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_accel_z(g.pilot_accel_z);
@@ -198,7 +201,7 @@ void Copter::poshold_run()
         wp_nav->init_loiter_target();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0);
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         pos_control->update_z_controller();
         return;
@@ -524,7 +527,7 @@ void Copter::poshold_run()
         poshold.pitch = constrain_int16(poshold.pitch, -aparm.angle_max, aparm.angle_max);
 
         // update attitude controller targets
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(poshold.roll, poshold.pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(poshold.roll, poshold.pitch, target_yaw_rate);
 
         // adjust climb rate using rangefinder
         if (rangefinder_alt_ok()) {

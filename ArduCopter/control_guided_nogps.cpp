@@ -16,6 +16,9 @@ bool Copter::guided_nogps_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::guided_nogps_run()
 {
+    // initialize smoothing gain
+    attitude_control->set_smoothing_gain(get_smoothing_gain());
+
     // run angle controller
     guided_angle_control_run();
 }

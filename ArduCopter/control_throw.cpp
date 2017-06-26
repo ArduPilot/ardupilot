@@ -33,6 +33,9 @@ void Copter::throw_run()
     Throw_PosHold - the copter is kept at a constant position and height
     */
 
+    // initialize smoothing gain
+    attitude_control->set_smoothing_gain(get_smoothing_gain());
+
     // Don't enter THROW mode if interlock will prevent motors running
     if (!motors->armed() && motors->get_interlock()) {
         // state machine entry is always from a disarmed state
@@ -139,7 +142,7 @@ void Copter::throw_run()
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // demand a level roll/pitch attitude with zero yaw rate
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
 
         // output 50% throttle and turn off angle boost to maximise righting moment
         attitude_control->set_throttle_out(0.5f, false, g.throttle_filt);
@@ -152,7 +155,7 @@ void Copter::throw_run()
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
 
         // call height controller
         pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
@@ -169,7 +172,7 @@ void Copter::throw_run()
         wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
 
         // call height controller
         pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
