@@ -835,10 +835,7 @@ void Plane::print_comma(void)
 bool Plane::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!(mask & g.log_bitmask)) {
-        return false;
-    }
-    if (!DataFlash.should_log()) {
+    if (!DataFlash.should_log(mask)) {
         return false;
     }
     start_logging();
