@@ -161,7 +161,8 @@ void Rover::init_ardupilot()
     init_barometer(true);
 
     // Do GPS init
-    gps.init(&DataFlash, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
