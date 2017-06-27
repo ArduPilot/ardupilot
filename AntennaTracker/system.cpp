@@ -255,10 +255,7 @@ void Tracker::check_usb_mux(void)
  */
 bool Tracker::should_log(uint32_t mask)
 {
-    if (!(mask & g.log_bitmask)) {
-        return false;
-    }
-    if (!DataFlash.should_log()) {
+    if (!DataFlash.should_log(mask)) {
         return false;
     }
     return true;
