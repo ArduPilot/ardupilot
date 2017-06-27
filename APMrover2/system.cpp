@@ -165,6 +165,8 @@ void Rover::init_ardupilot()
 
     rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
+    ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
+
     set_control_channels();
     init_rc_in();        // sets up rc channels from radio
     init_rc_out();        // sets up the timer libs
@@ -258,9 +260,6 @@ void Rover::startup_ground(void)
     // we don't want writes to the serial port to cause us to pause
     // so set serial ports non-blocking once we are ready to drive
     serial_manager.set_blocking_writes_all(false);
-
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);
 
     gcs_send_text(MAV_SEVERITY_INFO, "Ready to drive");
 }
