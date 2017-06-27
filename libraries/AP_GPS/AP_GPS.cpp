@@ -959,8 +959,6 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
     mavlink_gps_rtcm_data_t packet;
     mavlink_msg_gps_rtcm_data_decode(msg, &packet);
 
-//GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RTCM Packet of length %d received", packet.len);
-
     if (packet.len > MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN) {
         // invalid packet
         return;
