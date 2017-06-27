@@ -223,8 +223,9 @@ void Plane::channel_output_mixer(uint8_t mixing_type, SRV_Channel::Aux_servo_fun
     chan2_out = chan2->get_output_pwm();
     
     channel_output_mixer_pwm(mixing_type, chan1_out, chan2_out);
-
+    // SRV_Channels::set_output_unlimited_once(func1);
     chan1->set_output_pwm(chan1_out);
+    // SRV_Channels::set_output_unlimited_once(func2);
     chan2->set_output_pwm(chan2_out);
 }
 
@@ -276,7 +277,9 @@ void Plane::flaperon_update(int8_t flap_percent)
     // The *5 is to take a percentage to a value from -500 to 500 for the mixer
     ch2 = 1500 - flap_percent * 5;
     channel_output_mixer_pwm(g.flaperon_output, ch1, ch2);
+    // SRV_Channels::set_output_unlimited_once(SRV_Channel::k_flaperon1);
     SRV_Channels::set_output_pwm_trimmed(SRV_Channel::k_flaperon1, ch1);
+    // SRV_Channels::set_output_unlimited_once(SRV_Channel::k_flaperon2);
     SRV_Channels::set_output_pwm_trimmed(SRV_Channel::k_flaperon2, ch2);
 }
 
@@ -365,7 +368,9 @@ void Plane::set_servos_old_elevons(void)
     }
     
     // directly set the radio_out values for elevon mode
+    SRV_Channels::set_output_unlimited_once(SRV_Channel::k_aileron);
     SRV_Channels::set_output_pwm_first(SRV_Channel::k_aileron, elevon.trim1 + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0f/ SERVO_MAX)));
+    SRV_Channels::set_output_unlimited_once(SRV_Channel::k_elevator);
     SRV_Channels::set_output_pwm_first(SRV_Channel::k_elevator, elevon.trim2 + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0f/ SERVO_MAX)));
 }
 
@@ -620,7 +625,9 @@ void Plane::servo_output_mixers(void)
                     ch4 -= ruddVal;
                 }
                 // change elevon 1 & 2 positions; constrain min/max:
+                SRV_Channels::set_output_unlimited_once(SRV_Channel::k_aileron);
                 SRV_Channels::set_output_pwm_first(SRV_Channel::k_aileron, constrain_int16(ch1, 900, 2100));
+                SRV_Channels::set_output_unlimited_once(SRV_Channel::k_elevator);
                 SRV_Channels::set_output_pwm_first(SRV_Channel::k_elevator, constrain_int16(ch2, 900, 2100));
                 // constrain min/max for intermediate dspoiler positions:
                 ch3 = constrain_int16(ch3, 900, 2100);
@@ -760,7 +767,7 @@ void Plane::set_servos(void)
             break;
 
         case AP_Arming::YES_ZERO_PWM:
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, 0);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             break;
 
         case AP_Arming::YES_MIN_PWM:

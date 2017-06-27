@@ -301,6 +301,7 @@ bool AP_Landing_Deepstall::override_servos(void)
     }
 
     // mix the elevator to the correct value
+    SRV_Channels::set_output_unlimited_once(SRV_Channel::k_elevator);
     elevator->set_output_pwm(linear_interpolate(initial_elevator_pwm, elevator_pwm,
                              slew_progress, 0.0f, 1.0f));
 

@@ -26,6 +26,8 @@
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel::servo_mask_t SRV_Channel::have_pwm_mask;
+SRV_Channel::servo_mask_t SRV_Channel::limited_pwm_mask;
+
 
 const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Param: MIN
@@ -77,7 +79,9 @@ SRV_Channel::SRV_Channel(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
     // start with all pwm at zero
-    have_pwm_mask = ~uint16_t(0);
+    have_pwm_mask = UINT16_MAX;
+    // start with all ouput limited
+    limited_pwm_mask = UINT16_MAX;
 }
 
 
@@ -110,7 +114,7 @@ uint16_t SRV_Channel::pwm_from_angle(int16_t scaled_value) const
 
 void SRV_Channel::calc_pwm(int16_t output_scaled)
 {
-    if (have_pwm_mask & (1U<<ch_num)) {
+    if (have_pwm_mask & (1U << ch_num)) {
         return;
     }
     uint16_t pwm;
@@ -124,8 +128,14 @@ void SRV_Channel::calc_pwm(int16_t output_scaled)
 
 void SRV_Channel::set_output_pwm(uint16_t pwm)
 {
+    // contrain the ouput by default
+    if (limited_pwm_mask & (1U << ch_num)) {
+        pwm = static_cast<uint16_t>(constrain_int16(static_cast<int16_t>(pwm), servo_min, servo_max));
+    }
     output_pwm = pwm;
-    have_pwm_mask |= (1U<<ch_num);
+    have_pwm_mask |= (1U << ch_num);
+    // Relimit the ouput
+    limited_pwm_mask |= (1U << ch_num);
 }
 
 // set angular range of scaled output
@@ -187,4 +197,8 @@ bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
 {
     return ((function >= SRV_Channel::k_motor1 && function <= SRV_Channel::k_motor8) ||
             (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12));
+}
+
+void SRV_Channel::set_output_unlimited_once() {
+    limited_pwm_mask &= ~(1U << ch_num);
 }
