@@ -205,7 +205,8 @@ void Copter::init_ardupilot()
     ahrs.set_beacon(&g2.beacon);
 
     // Do GPS init
-    gps.init(&DataFlash, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     init_compass();
 
