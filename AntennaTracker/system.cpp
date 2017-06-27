@@ -76,7 +76,7 @@ void Tracker::init_tracker()
     }
 
     // GPS Initialization
-    gps.init(nullptr, serial_manager);
+    gps.init(serial_manager);
 
     ahrs.init();
     ahrs.set_fly_forward(false);
