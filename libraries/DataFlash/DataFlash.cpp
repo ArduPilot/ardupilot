@@ -307,8 +307,11 @@ void DataFlash_Class::StartUnstartedLogging(void)
     }
 }
 
-bool DataFlash_Class::should_log() const
+bool DataFlash_Class::should_log(const uint32_t mask) const
 {
+    if (!(mask & _log_bitmask)) {
+        return false;
+    }
     if (!vehicle_is_armed() && !log_while_disarmed()) {
         return false;
     }
