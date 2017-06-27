@@ -40,7 +40,6 @@
 
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
-class DataFlash_Class;
 class AP_GPS_Backend;
 
 /// @class AP_GPS
@@ -146,7 +145,7 @@ public:
     };
 
     /// Startup initialisation.
-    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
+    void init(const AP_SerialManager& serial_manager);
 
     /// Update GPS state based on possible bytes received from the module.
     /// This routine must be called periodically (typically at 10Hz or
@@ -370,10 +369,10 @@ public:
 
     void Write_DataFlash_Log_Startup_messages();
 
-protected:
+    // indicate which bit in LOG_BITMASK indicates gps logging enabled
+    void set_log_gps_bit(uint32_t bit) { _log_gps_bit = bit; }
 
-    // dataflash for logging, if available
-    DataFlash_Class *_DataFlash;
+protected:
 
     // configuration parameters
     AP_Int8 _type[GPS_MAX_RECEIVERS];
@@ -394,6 +393,8 @@ protected:
     AP_Int16 _delay_ms[GPS_MAX_RECEIVERS];
     AP_Int8 _blend_mask;
     AP_Float _blend_tc;
+
+    uint32_t _log_gps_bit = -1;
 
 private:
     // returns the desired gps update rate in milliseconds
