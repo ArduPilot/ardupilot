@@ -268,9 +268,8 @@ AP_GPS::AP_GPS()
 }
 
 /// Startup initialisation.
-void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager)
+void AP_GPS::init(const AP_SerialManager& serial_manager)
 {
-    _DataFlash = dataflash;
     primary_instance = 0;
 
     // search for serial ports with gps protocol
@@ -1023,10 +1022,6 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
 
 void AP_GPS::Write_DataFlash_Log_Startup_messages()
 {
-    if (_DataFlash == nullptr) {
-        return;
-    }
-
     for (uint8_t instance=0; instance<num_instances; instance++) {
         if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
             continue;

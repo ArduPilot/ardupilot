@@ -427,7 +427,7 @@ AP_GPS_SBP2::_detect(struct SBP2_detect_state &state, uint8_t data)
 void
 AP_GPS_SBP2::logging_log_full_update()
 {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
       return;
     }
 
@@ -441,7 +441,7 @@ AP_GPS_SBP2::logging_log_full_update()
         last_injected_data_ms      : last_injected_data_ms,
         last_iar_num_hypotheses    : 0,
     };
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 };
 
 void
@@ -449,7 +449,7 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
         uint16_t sender_id,
         uint8_t msg_len,
         uint8_t *msg_buff) {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
       return;
     }
 
@@ -468,7 +468,7 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
         msg_len         : msg_len,
     };
     memcpy(pkt.data1, msg_buff, MIN(msg_len,64));
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 
     if (msg_len > 64) {
         struct log_SbpRAW2 pkt2 = {
@@ -477,6 +477,6 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
             msg_type        : msg_type,
         };
         memcpy(pkt2.data2, &msg_buff[64], MIN(msg_len - 64,192));
-        gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
+        DataFlash_Class::instance()->WriteBlock(&pkt2, sizeof(pkt2));
     }
 };
