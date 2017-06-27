@@ -494,9 +494,6 @@ void Copter::one_hz_loop()
 
     check_usb_mux();
 
-    // enable/disable raw gyro/accel logging
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-
     // log terrain data
     terrain_logging();
 
