@@ -228,7 +228,7 @@ public:
 
     /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
-    void update_xy_controller(float ekfNavVelGainScaler, bool use_althold_lean_angle);
+    void update_xy_controller(float ekfNavVelGainScaler);
 
     /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
     void set_target_to_stopping_point_xy();
@@ -340,20 +340,12 @@ protected:
     /// desired_vel_to_pos - move position target using desired velocities
     void desired_vel_to_pos(float nav_dt);
 
-    /// pos_to_rate_xy - horizontal position error to velocity controller
+    /// run horizontal position controller correcting position and velocity
     ///     converts position (_pos_target) to target velocity (_vel_target)
-    ///     when use_desired_rate is set to true:
-    ///         desired velocity (_vel_desired) is combined into final target velocity and
-    ///         velocity due to position error is reduce to a maximum of 1m/s
-    void pos_to_rate_xy(float dt, float ekfNavVelGainScaler);
-
-    /// rate_to_accel_xy - horizontal desired rate to desired acceleration
-    ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
-    void rate_to_accel_xy(float dt, float ekfNavVelGainScaler);
-
-    /// accel_to_lean_angles - horizontal desired acceleration to lean angles
-    ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-    void accel_to_lean_angles(float dt_xy, float ekfNavVelGainScaler, bool use_althold_lean_angle);
+    ///     desired velocity (_vel_desired) is combined into final target velocity
+    ///     converts desired velocities in lat/lon directions to accelerations in lat/lon frame
+    ///     converts desired accelerations provided in lat/lon frame to roll/pitch angles
+    void run_xy_controller(float dt, float ekfNavVelGainScaler);
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
