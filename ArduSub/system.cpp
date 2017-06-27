@@ -85,7 +85,8 @@ void Sub::init_ardupilot()
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
     // Do GPS init
-    gps.init(&DataFlash, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     if (g.compass_enabled) {
         init_compass();
