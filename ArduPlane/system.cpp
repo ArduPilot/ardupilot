@@ -100,6 +100,8 @@ void Plane::init_ardupilot()
     }
 #endif
 
+    ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
+
     set_control_channels();
     
 #if HAVE_PX4_MIXER
@@ -311,9 +313,6 @@ void Plane::startup_ground(void)
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
     serial_manager.set_blocking_writes_all(false);
-
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);
 
     gcs_send_text(MAV_SEVERITY_INFO,"Ground start complete");
 }
