@@ -1798,8 +1798,6 @@ void QuadPlane::vtol_position_controller(void)
 
         const Vector3f& curr_pos = inertial_nav.get_position();
         pos_control->set_xy_target(curr_pos.x, curr_pos.y);
-
-        pos_control->freeze_ff_xy();
         
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
