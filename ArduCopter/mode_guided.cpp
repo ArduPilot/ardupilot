@@ -554,7 +554,7 @@ void Copter::ModeGuided::posvel_control_run()
         pos_control->set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
 
         // run position controller
-        pos_control->update_xy_controller(AC_PosControl::XY_MODE_POS_AND_VEL_FF, ekfNavVelGainScaler, false);
+        pos_control->update_xy_controller(ekfNavVelGainScaler);
     }
 
     pos_control->update_z_controller();
