@@ -350,8 +350,6 @@ void Rover::one_second_loop(void)
         counter = 0;
     }
 
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-
     // update home position if not soft armed and gps position has
     // changed. Update every 1s at most
     if (!hal.util->get_soft_armed() &&
