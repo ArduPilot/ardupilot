@@ -393,8 +393,8 @@ void
 AP_GPS_SBP::logging_log_full_update()
 {
 
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
-      return;
+    if (!should_df_log()) {
+        return;
     }
 
     struct log_SbpHealth pkt = {
@@ -404,8 +404,8 @@ AP_GPS_SBP::logging_log_full_update()
         last_injected_data_ms      : last_injected_data_ms,
         last_iar_num_hypotheses    : last_iar_num_hypotheses,
     };
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 };
 
 void
@@ -413,8 +413,8 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         uint16_t sender_id,
         uint8_t msg_len,
         uint8_t *msg_buff) {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
-      return;
+    if (!should_df_log()) {
+        return;
     }
 
     //MASK OUT MESSAGES WE DON'T WANT TO LOG
@@ -439,7 +439,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         msg_len         : msg_len,
     };
     memcpy(pkt.data, msg_buff, MIN(msg_len, 48));
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 
     for (uint8_t i = 0; i < pages - 1; i++) {
         struct log_SbpRAWM pkt2 = {
@@ -452,7 +452,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
             msg_len         : msg_len,
         };
         memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
-        gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
+        DataFlash_Class::instance()->WriteBlock(&pkt2, sizeof(pkt2));
     }
 };
 

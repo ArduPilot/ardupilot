@@ -161,7 +161,7 @@ AP_GPS_SBF::parse(uint8_t temp)
 void
 AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
 {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
         return;
     }
 
@@ -184,7 +184,7 @@ AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
         COG:temp.COG
     };
 
-    gps._DataFlash->WriteBlock(&header, sizeof(header));
+    DataFlash_Class::instance()->WriteBlock(&header, sizeof(header));
 }
 
 bool
