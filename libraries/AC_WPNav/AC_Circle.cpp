@@ -160,7 +160,7 @@ void AC_Circle::update()
         }
 
         // update position controller
-        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f, false);
+        _pos_control.update_xy_controller(1.0f);
     }
 }
 
