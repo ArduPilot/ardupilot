@@ -484,10 +484,10 @@
 // Velocity (horizontal) gains
 //
 #ifndef VEL_XY_P
- # define VEL_XY_P              1.0f
+ # define VEL_XY_P              2.0f
 #endif
 #ifndef VEL_XY_I
- # define VEL_XY_I              0.5f
+ # define VEL_XY_I              1.0f
 #endif
 #ifndef VEL_XY_IMAX
  # define VEL_XY_IMAX           1000
