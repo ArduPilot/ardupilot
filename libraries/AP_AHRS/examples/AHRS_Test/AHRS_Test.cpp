@@ -51,7 +51,7 @@ void setup(void)
     } else {
         hal.console->printf("No compass detected\n");
     }
-    gps.init(nullptr, serial_manager);
+    gps.init(serial_manager);
 }
 
 void loop(void)
