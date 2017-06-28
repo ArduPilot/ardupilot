@@ -28,6 +28,7 @@
 #include "AP_RangeFinder_uLanding.h"
 #include "AP_RangeFinder_trone.h"
 #include "AP_RangeFinder_VL53L0X.h"
+#include "AP_RangeFinder_NRA24.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
@@ -37,7 +38,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3-I2C,16:VL53L0X
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NRA24
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, RangeFinder, _type[0], 0),
 
@@ -698,6 +699,12 @@ void RangeFinder::detect_instance(uint8_t instance)
         if (AP_RangeFinder_analog::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_analog(*this, instance, state[instance]);
+        }
+        break;
+    case RangeFinder_TYPE_NRA24:
+        if (AP_RangeFinder_NRA24::detect(*this, instance, serial_manager)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_NRA24(*this, instance, state[instance], serial_manager);
         }
         break;
     default:
