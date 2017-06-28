@@ -28,7 +28,7 @@ void setup(void)
     baro.init();
     ahrs.init();
 
-    gps.init(nullptr, serial_manager);
+    gps.init(serial_manager);
 }
 
 void loop(void)
