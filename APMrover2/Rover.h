@@ -207,6 +207,9 @@ private:
     AP_Mount camera_mount;
 #endif
 
+    // true if initialisation has completed
+    bool initialised;
+
     // if USB is connected
     bool usb_connected;
 

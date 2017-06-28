@@ -307,10 +307,14 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         return true;
 
     case MSG_EXTENDED_STATUS1:
-        CHECK_PAYLOAD_SIZE(SYS_STATUS);
-        rover.send_extended_status1(chan);
-        CHECK_PAYLOAD_SIZE(POWER_STATUS);
-        send_power_status();
+        // send extended status only once vehicle has been initialised
+        // to avoid unnecessary errors being reported to user
+        if (initialised) {
+            CHECK_PAYLOAD_SIZE(SYS_STATUS);
+            rover.send_extended_status1(chan);
+            CHECK_PAYLOAD_SIZE(POWER_STATUS);
+            send_power_status();
+        }
         break;
 
     case MSG_EXTENDED_STATUS2:
