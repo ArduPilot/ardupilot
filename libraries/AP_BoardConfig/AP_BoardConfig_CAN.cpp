@@ -153,7 +153,7 @@ void AP_BoardConfig_CAN::px4_setup_canbus(void)
             hal.scheduler->create_uavcan_thread();
 
             // Delay for magnetometer and barometer discovery
-            hal.scheduler->delay(2000);
+            hal.scheduler->delay(5000);
         }
     }
 }
