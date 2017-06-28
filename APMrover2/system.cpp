@@ -217,6 +217,9 @@ void Rover::init_ardupilot()
 
     // disable safety if requested
     BoardConfig.init_safety();
+
+    // flag that initialisation has completed
+    initialised = true;
 }
 
 //*********************************************************************************
