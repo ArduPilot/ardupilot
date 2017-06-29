@@ -62,14 +62,31 @@ bool Rover::auto_check_trigger(void) {
 /*
     work out if we are going to use pivot steering
 */
-bool Rover::use_pivot_steering(void) {
-    if (control_mode >= AUTO && have_skid_steering() && g.pivot_turn_angle != 0) {
-        const int16_t bearing_error = wrap_180_cd(nav_controller->target_bearing_cd() - ahrs.yaw_sensor) / 100;
-        if (abs(bearing_error) > g.pivot_turn_angle) {
-            return true;
-        }
+bool Rover::use_pivot_steering(void)
+{
+    // check cases where we clearly cannot use pivot steering
+    if (control_mode < AUTO || !have_skid_steering() || g.pivot_turn_angle <= 0) {
+        pivot_steering_active = false;
+        return false;
     }
-    return false;
+
+    // calc bearing error
+    const int16_t bearing_error = wrap_180_cd(nav_controller->target_bearing_cd() - ahrs.yaw_sensor) / 100;
+
+    // if error is larger than pivot_turn_angle start pivot steering
+    if (bearing_error > g.pivot_turn_angle) {
+        pivot_steering_active = true;
+        return true;
+    }
+
+    // if within 10 degrees of the target heading, exit pivot steering
+    if (bearing_error < 10) {
+        pivot_steering_active = false;
+        return false;
+    }
+
+    // by default stay in
+    return pivot_steering_active;
 }
 
 /*
