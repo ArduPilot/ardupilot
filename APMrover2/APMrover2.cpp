@@ -419,13 +419,9 @@ void Rover::update_current_mode(void)
         if (!in_auto_reverse) {
             set_reverse(false);
         }
-        if (!do_auto_rotation) {
-            calc_lateral_acceleration();
-            calc_nav_steer();
-            calc_throttle(g.speed_cruise);
-        } else {
-            do_yaw_rotation();
-        }
+        calc_lateral_acceleration();
+        calc_nav_steer();
+        calc_throttle(g.speed_cruise);
         break;
 
     case GUIDED: {
@@ -523,6 +519,9 @@ void Rover::update_current_mode(void)
     case INITIALISING:
         break;
     }
+    if (do_auto_rotation && control_mode != HOLD && control_mode != RTL) {
+        do_yaw_rotation();
+    }
 }
 
 void Rover::update_navigation()
@@ -537,9 +536,6 @@ void Rover::update_navigation()
 
     case AUTO:
         mission.update();
-        if (do_auto_rotation) {
-            do_yaw_rotation();
-        }
         break;
 
     case RTL:
@@ -581,6 +577,9 @@ void Rover::update_navigation()
             break;
         }
         break;
+    }
+    if (do_auto_rotation && control_mode != HOLD && control_mode != RTL) {
+        do_yaw_rotation();
     }
 }
 
