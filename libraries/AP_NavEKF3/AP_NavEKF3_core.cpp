@@ -1037,15 +1037,10 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
     }
 
     if (!inhibitDelVelBiasStates) {
+        // default process noise (m/s)^2
         float dVelBiasVar = sq(sq(dt) * constrain_float(frontend->_accelBiasProcessNoise, 0.0f, 1.0f));
         for (uint8_t i=3; i<=5; i++) {
-            uint8_t stateIndex = i + 10;
-            if (P[stateIndex][stateIndex] > 1E-8f) {
-                processNoiseVariance[i] = dVelBiasVar;
-            } else {
-                // increase the process noise variance up to a maximum of 100 x the nominal value if the variance is below the target minimum
-                processNoiseVariance[i] = 10.0f * dVelBiasVar * (1e-8f / fmaxf(P[stateIndex][stateIndex],1e-9f));
-            }
+            processNoiseVariance[i] = dVelBiasVar;
         }
     }
 
@@ -1789,20 +1784,28 @@ void NavEKF3_core::ConstrainVariances()
     }
 
     if (!inhibitDelVelBiasStates) {
-        // limit delta velocity bias state variance levels and request a reset if below the safe minimum
+
+        // Find the maximum delta velocity bias state variance and request a covariance reset if any variance is below the safe minimum
+        const float minSafeStateVar = 1e-9f;
+        float maxStateVar = minSafeStateVar;
         bool resetRequired = false;
-        for (uint8_t i=13; i<=15; i++) {
-            if (P[i][i] > 1E-9f) {
-                // variance is above the safe minimum
-                P[i][i] = fminf(P[i][i], sq(10.0f * dtEkfAvg));
-            } else {
-                // Set the variance to the target minimum and request a covariance reset
-                P[i][i] = 1E-8f;
+        for (uint8_t stateIndex=13; stateIndex<=15; stateIndex++) {
+            if (P[stateIndex][stateIndex] > maxStateVar) {
+                maxStateVar = P[stateIndex][stateIndex];
+            } else if (P[stateIndex][stateIndex] < minSafeStateVar) {
                 resetRequired = true;
             }
         }
 
-        // If any one axis is below the safe minimum, all delta velocity covariance terms must be reset to zero
+        // To ensure stability of the covariance matrix operations, the ratio of a max and min variance must
+        // not exceed 100 and the minimum variance must not fall below the target minimum
+        const float minStateVarTarget = 1E-8f;
+        float minAllowedStateVar = fmaxf(0.01f * maxStateVar, minStateVarTarget);
+        for (uint8_t stateIndex=13; stateIndex<=15; stateIndex++) {
+            P[stateIndex][stateIndex] = constrain_float(P[stateIndex][stateIndex], minAllowedStateVar, sq(10.0f * dtEkfAvg));
+        }
+
+        // If any one axis has fallen below the safe minimum, all delta velocity covariance terms must be reset to zero
         if (resetRequired) {
             float delVelBiasVar[3];
             // store all delta velocity bias variances
