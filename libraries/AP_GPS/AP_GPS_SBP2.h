@@ -78,6 +78,7 @@ private:
     static const uint16_t SBP_VEL_NED_MSGTYPE        = 0x020E;
     static const uint16_t SBP_TRACKING_STATE_MSGTYPE = 0x0013;
     static const uint16_t SBP_IAR_STATE_MSGTYPE      = 0x0019;
+    static const uint16_t SBP_EXT_EVENT_MSGTYPE      = 0x0101;
 
     // Heartbeat
     struct PACKED sbp_heartbeat_t {
@@ -148,6 +149,18 @@ private:
         } flags;
     }; // 22 bytes
 
+    // Messages reporting accurately-timestamped external events, e.g. camera shutter time.
+    struct PACKED sbp_ext_event_t {
+        uint16_t wn;           //< GPS week number (unit: weeks)
+        uint32_t tow;          //< GPS Time of Week (unit: ms)
+        int32_t ns_residual;   //< Nanosecond residual of millisecond-rounded TOW (ranges from -500000 to 500000)
+        struct PACKED flags {
+            uint8_t level:1;       //< New level of pin values (0: Low (falling edge), 1: High (rising edge))
+            uint8_t quality:1;     //< Time quality values (0: Unknown - don't have nav solution, 1: Good (< 1 microsecond))
+            uint8_t res:6;         //< Reserved
+        } flags;
+    }; // 12 bytes
+
     void _sbp_process();
     void _sbp_process_message();
     bool _attempt_state_update();
@@ -163,6 +176,7 @@ private:
     struct sbp_dops_t      last_dops;
     struct sbp_pos_llh_t   last_pos_llh;
     struct sbp_vel_ned_t   last_vel_ned;
+    struct sbp_ext_event_t last_event;
 
     uint32_t               last_full_update_tow;
     uint16_t               last_full_update_wn;
@@ -178,6 +192,7 @@ private:
     // ************************************************************************
 
     void logging_log_full_update();
+    void logging_ext_event();
     void logging_log_raw_sbp(uint16_t msg_type, uint16_t sender_id, uint8_t msg_len, uint8_t *msg_buff);
 
     int32_t distMod(int32_t tow1_ms, int32_t tow2_ms, int32_t mod);

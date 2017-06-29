@@ -178,24 +178,29 @@ AP_GPS_SBP2::_sbp_process_message() {
     //Here, we copy messages into local structs.
     switch (parser_state.msg_type) {
         case SBP_HEARTBEAT_MSGTYPE:
-            last_heartbeat = *((struct sbp_heartbeat_t*)parser_state.msg_buff);
+            memcpy(&last_heartbeat, parser_state.msg_buff, sizeof(struct sbp_heartbeat_t));
             last_heartbeat_received_ms = AP_HAL::millis();
             break;
 
         case SBP_GPS_TIME_MSGTYPE:
-            last_gps_time = *((struct sbp_gps_time_t*)parser_state.msg_buff);
+            memcpy(&last_gps_time, parser_state.msg_buff, sizeof(struct sbp_gps_time_t));
             break;
 
         case SBP_VEL_NED_MSGTYPE:
-            last_vel_ned = *((struct sbp_vel_ned_t*)parser_state.msg_buff);
+            memcpy(&last_vel_ned, parser_state.msg_buff, sizeof(struct sbp_vel_ned_t));
             break;
 
         case SBP_POS_LLH_MSGTYPE:
-            last_pos_llh = *((struct sbp_pos_llh_t*)parser_state.msg_buff);
+            memcpy(&last_pos_llh, parser_state.msg_buff, sizeof(struct sbp_pos_llh_t));
             break;
 
         case SBP_DOPS_MSGTYPE:
-            last_dops = *((struct sbp_dops_t*)parser_state.msg_buff);
+            memcpy(&last_dops, parser_state.msg_buff, sizeof(struct sbp_dops_t));
+            break;
+
+        case SBP_EXT_EVENT_MSGTYPE:
+            memcpy(&last_event, parser_state.msg_buff, sizeof(struct sbp_ext_event_t));
+            logging_ext_event();
             break;
 
         default:
@@ -203,7 +208,7 @@ AP_GPS_SBP2::_sbp_process_message() {
     }
 
     // send all messages we receive to log, even if it's an unsupported message,
-    // so we can do annditional post-processing from Dataflash logs.
+    // so we can do additional post-processing from Dataflash logs.
     // The log mask will be used to adjust or suppress logging
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
 }
@@ -460,23 +465,70 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
 
     uint64_t time_us = AP_HAL::micros64();
 
-    struct log_SbpRAW1 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW1),
-        time_us         : time_us,
-        msg_type        : msg_type,
-        sender_id       : sender_id,
-        msg_len         : msg_len,
-    };
-    memcpy(pkt.data1, msg_buff, MIN(msg_len,64));
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    uint8_t pages = 0;
+    if (msg_len <= 48) {
+        pages = 1;
+    } else if (msg_len <= 152) {
+        pages = 2;
+    } else {
+        pages = 3;
+    }
 
-    if (msg_len > 64) {
-        struct log_SbpRAW2 pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW2),
+    if (pages > 0) {
+        struct log_SbpRAWH pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWH),
             time_us         : time_us,
             msg_type        : msg_type,
+            sender_id       : sender_id,
+            index           : 1,
+            pages           : pages,
+            msg_len         : msg_len,
         };
-        memcpy(pkt2.data2, &msg_buff[64], MIN(msg_len - 64,192));
+        memcpy(pkt.data, msg_buff, MIN(msg_len,48));
+        gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    }
+    if (pages > 1) {
+        struct log_SbpRAWM pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWM),
+            time_us         : time_us,
+            msg_type        : msg_type,
+            sender_id       : sender_id,
+            index           : 2,
+            pages           : pages,
+            msg_len         : msg_len,
+        };
+        memcpy(pkt2.data, &msg_buff[48], MIN(msg_len - 48,104));
         gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
     }
+    if (pages > 2) {
+        struct log_SbpRAWM pkt3 = {
+            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWM),
+            time_us         : time_us,
+            msg_type        : msg_type,
+            sender_id       : sender_id,
+            index           : 3,
+            pages           : pages,
+            msg_len         : msg_len,
+        };
+        memcpy(pkt3.data, &msg_buff[152], MIN(msg_len - 152,104));
+        gps._DataFlash->WriteBlock(&pkt3, sizeof(pkt3));
+    }
+};
+
+void
+AP_GPS_SBP2::logging_ext_event() {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+      return;
+    }
+
+    struct log_SbpEvent pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPEVENT),
+        time_us            : AP_HAL::micros64(),
+        wn                 : last_event.wn,
+        tow                : last_event.tow,
+        ns_residual        : last_event.ns_residual,
+        level              : last_event.flags.level,
+        quality            : last_event.flags.quality,
+    };
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 };
