@@ -76,6 +76,7 @@ void Tracker::init_tracker()
     }
 
     // GPS Initialization
+    gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init(serial_manager);
 
     ahrs.init();
