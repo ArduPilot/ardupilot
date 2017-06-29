@@ -5,6 +5,7 @@
  */
 void Rover::set_control_channels(void)
 {
+    // check change on RCMAP
     channel_steer    = RC_Channels::rc_channel(rcmap.roll()-1);
     channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
     channel_learn    = RC_Channels::rc_channel(g.learn_channel-1);
@@ -12,20 +13,12 @@ void Rover::set_control_channels(void)
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
     channel_throttle->set_angle(100);
-
-    SRV_Channels::set_angle(SRV_Channel::k_steering, SERVO_MAX);
-    SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
-
-    // left/right throttle as -1000 to 1000 values
-    SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
-    SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
+    // set rc out channels ranges
+    g2.motors.setup_motors();
 
     // For a rover safety is TRIM throttle
-    if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        if (have_skid_steering()) {
-            SRV_Channels::set_safety_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        }
+    if (!arming.is_armed()) {
+        g2.motors.set_safety_to_trim();
     }
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
     // take a proportion of speed. Default to 1000 to 2000 for systems without
@@ -50,17 +43,8 @@ void Rover::init_rc_out()
 
     // setup PWM values to send if the FMU firmware dies
     SRV_Channels::setup_failsafe_trim_all();
-
-    // output throttle trim when safety off if arming
-    // is setup for min on disarm.  MIN is from plane where MIN is effectively no throttle.
-    // For Rover's no throttle means TRIM as rovers can go backwards i.e. MIN throttle is
-    // full speed backward.
-    if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        if (have_skid_steering()) {
-            SRV_Channels::set_safety_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        }
-    }
+    // For a rover safety is TRIM throttle
+    g2.motors.set_safety_to_trim();
 }
 
 /*
@@ -100,7 +84,7 @@ void Rover::rudder_arm_disarm_check()
             // not at full right rudder
             rudder_arm_timer = 0;
         }
-    } else if (!motor_active() & !have_skid_steering()) {
+    } else if (!motor_active() & !g2.motors.have_skid_steering()) {
         // when armed and motor not active (not moving), full left rudder starts disarming counter
         // This is disabled for skid steering otherwise when tring to turn a skid steering rover around
         // the rover would disarm

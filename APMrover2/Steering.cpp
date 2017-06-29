@@ -116,7 +116,7 @@ void Rover::calc_throttle(float target_speed) {
     if (!auto_check_trigger() || in_stationary_loiter()) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
         // Stop rotation in case of loitering and skid steering
-        if (have_skid_steering()) {
+        if (g2.motors.have_skid_steering()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
         }
         return;
@@ -251,50 +251,6 @@ void Rover::calc_nav_steer() {
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steerController.get_steering_out_lat_accel(lateral_acceleration));
 }
 
-/*
-  run the skid steering mixer
- */
-void Rover::mix_skid_steering(void)
-{
-    float steering_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_steering) / 4500.0f;         // steering scaled -1 to +1
-    float throttle_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0f;    // throttle scaled -1 to +1
-
-    // apply constraints
-    steering_scaled = constrain_float(steering_scaled, -1.0f, 1.0f);
-    throttle_scaled = constrain_float(throttle_scaled, -1.0f, 1.0f);
-
-    // check for saturation and scale back throttle and steering proportionally
-    const float saturation_value = fabsf(steering_scaled) + fabsf(throttle_scaled);
-    if (saturation_value > 1.0f) {
-        steering_scaled = steering_scaled / saturation_value;
-        throttle_scaled = throttle_scaled / saturation_value;
-    }
-
-    // add in throttle
-    float motor_left = throttle_scaled;
-    float motor_right = throttle_scaled;
-
-    // deal with case of turning on the spot
-    if (is_zero(throttle_scaled)) {
-        // full possible range is not used to keep response equivalent to non-zero throttle case
-        motor_left += steering_scaled * 0.5f;
-        motor_right -= steering_scaled * 0.5f;
-    } else {
-        // add in steering
-        const float dir = is_positive(throttle_scaled) ? 1.0f : -1.0f;
-        if (is_negative(steering_scaled)) {
-            // moving left all steering to right wheel
-            motor_right -= dir * steering_scaled;
-        } else {
-            // turning right, all steering to left wheel
-            motor_left += dir * steering_scaled;
-        }
-    }
-
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  1000.0f * motor_left);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 1000.0f * motor_right);
-}
-
 /*****************************************
     Set the flight control servos based on the current calculated values
 *****************************************/
@@ -308,82 +264,13 @@ void Rover::set_servos(void) {
                                                                                  g.throttle_min,
                                                                                  g.throttle_max));
     }
-    // Check Throttle failsafe in non auto mode. Suppress all ouput
-    if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) && control_mode < AUTO) {
-        // suppress throttle if in failsafe
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-        // suppress steer if in failsafe and skid steer mode
-        if (have_skid_steering()) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
-        }
-    }
-    // Check if soft arm. Suppress all ouput
-    if (!hal.util->get_soft_armed()) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-        // suppress steer if in failsafe and skid steer mode
-        if (have_skid_steering()) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
-        }
-    }
+
     // Apply slew rate limit on non Manual modes
     if (control_mode != MANUAL && control_mode != LEARNING) {
         // limit throttle movement speed
         throttle_slew_limit();
     }
-    // Apply skid steering mixing
-    if (have_skid_steering()) {
-        mix_skid_steering();
-    }
 
-    if (!arming.is_armed()) {
-        // Some ESCs get noisy (beep error msgs) if PWM == 0.
-        // This little segment aims to avoid this.
-        switch (arming.arming_required()) {
-        case AP_Arming::NO:
-            // keep existing behavior: do nothing to radio_out
-            // (don't disarm throttle channel even if AP_Arming class is)
-            break;
-
-        case AP_Arming::YES_ZERO_PWM:
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-            if (have_skid_steering()) {
-                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-            }
-            break;
-
-        case AP_Arming::YES_MIN_PWM:
-        default:
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            if (have_skid_steering()) {
-                SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            }
-            break;
-        }
-    }
-
-    SRV_Channels::calc_pwm();
-
-#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
-    // send values to the PWM timers for output
-    // ----------------------------------------
-    hal.rcout->cork();
-    SRV_Channels::output_ch_all();
-    hal.rcout->push();
-#endif
-}
-
-/*
-  work out if skid steering is available
- */
-bool Rover::have_skid_steering(void)
-{
-    if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) &&
-        SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
-        return true;
-    }
-    return false;
+    // send output signals to motors
+    g2.motors.output();
 }
