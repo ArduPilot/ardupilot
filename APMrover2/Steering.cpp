@@ -256,19 +256,43 @@ void Rover::calc_nav_steer() {
  */
 void Rover::mix_skid_steering(void)
 {
-    const float steering_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_steering) / 4500.0f;
-    const float throttle_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0f;
-    float motor1 = throttle_scaled + 0.5f * steering_scaled;
-    float motor2 = throttle_scaled - 0.5f * steering_scaled;
-    // Check that we are doing on spot turn
-    if (fabsf(throttle_scaled) <= 0.01f) {
-        // Use full range for on spot turn
-        motor1 = steering_scaled;
-        motor2 = -steering_scaled;
+    float steering_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_steering) / 4500.0f;         // steering scaled -1 to +1
+    float throttle_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0f;    // throttle scaled -1 to +1
+
+    // apply constraints
+    steering_scaled = constrain_float(steering_scaled, -1.0f, 1.0f);
+    throttle_scaled = constrain_float(throttle_scaled, -1.0f, 1.0f);
+
+    // check for saturation and scale back throttle and steering proportionally
+    const float saturation_value = fabsf(steering_scaled) + fabsf(throttle_scaled);
+    if (saturation_value > 1.0f) {
+        steering_scaled = steering_scaled / saturation_value;
+        throttle_scaled = throttle_scaled / saturation_value;
     }
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  1000.0f * motor1);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 1000.0f * motor2);
+    // add in throttle
+    float motor_left = throttle_scaled;
+    float motor_right = throttle_scaled;
+
+    // deal with case of turning on the spot
+    if (is_zero(throttle_scaled)) {
+        // full possible range is not used to keep response equivalent to non-zero throttle case
+        motor_left += steering_scaled * 0.5f;
+        motor_right -= steering_scaled * 0.5f;
+    } else {
+        // add in steering
+        const float dir = is_positive(throttle_scaled) ? 1.0f : -1.0f;
+        if (is_negative(steering_scaled)) {
+            // moving left all steering to right wheel
+            motor_right -= dir * steering_scaled;
+        } else {
+            // turning right, all steering to left wheel
+            motor_left += dir * steering_scaled;
+        }
+    }
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  1000.0f * motor_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 1000.0f * motor_right);
 }
 
 /*****************************************
