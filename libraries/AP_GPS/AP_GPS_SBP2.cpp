@@ -198,12 +198,17 @@ AP_GPS_SBP2::_sbp_process_message() {
             last_dops = *((struct sbp_dops_t*)parser_state.msg_buff);
             break;
 
+        case SBP_EXT_EVENT_MSGTYPE:
+            last_event = *((struct sbp_ext_event_t*)parser_state.msg_buff);
+            logging_ext_event();
+            break;
+
         default:
             break;
     }
 
     // send all messages we receive to log, even if it's an unsupported message,
-    // so we can do annditional post-processing from Dataflash logs.
+    // so we can do additional post-processing from Dataflash logs.
     // The log mask will be used to adjust or suppress logging
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
 }
@@ -490,4 +495,22 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
         memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
         gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
     }
+};
+
+void
+AP_GPS_SBP2::logging_ext_event() {
+    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+      return;
+    }
+
+    struct log_SbpEvent pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPEVENT),
+        time_us            : AP_HAL::micros64(),
+        wn                 : last_event.wn,
+        tow                : last_event.tow,
+        ns_residual        : last_event.ns_residual,
+        level              : last_event.flags.level,
+        quality            : last_event.flags.quality,
+    };
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 };
