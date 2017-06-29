@@ -480,7 +480,6 @@ private:
     void Log_Arm_Disarm();
 
     void load_parameters(void);
-    void throttle_slew_limit(void);
     bool auto_check_trigger(void);
     bool use_pivot_steering(void);
     void calc_throttle(float target_speed);

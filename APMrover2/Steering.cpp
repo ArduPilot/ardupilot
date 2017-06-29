@@ -1,18 +1,5 @@
 #include "Rover.h"
 
-/*****************************************
-    Throttle slew limit
-*****************************************/
-void Rover::throttle_slew_limit(void) {
-    if (g.throttle_slewrate > 0) {
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, g.throttle_slewrate, G_Dt);
-        if (have_skid_steering()) {
-            // when skid steering also limit 2nd channel
-            SRV_Channels::limit_slew_rate(SRV_Channel::k_steering, g.throttle_slewrate, G_Dt);
-        }
-    }
-}
-
 /*
     check for triggering of start of auto mode
 */
@@ -268,7 +255,13 @@ void Rover::set_servos(void) {
     // Apply slew rate limit on non Manual modes
     if (control_mode != MANUAL && control_mode != LEARNING) {
         // limit throttle movement speed
-        throttle_slew_limit();
+        if (g.throttle_slewrate > 0) {
+            SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, g.throttle_slewrate, G_Dt);
+            if (g2.motors.have_skid_steering()) {
+                // when skid steering also limit 2nd channel
+                SRV_Channels::limit_slew_rate(SRV_Channel::k_steering, g.throttle_slewrate, G_Dt);
+            }
+        }
     }
 
     // send output signals to motors
