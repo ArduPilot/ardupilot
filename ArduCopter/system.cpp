@@ -205,7 +205,8 @@ void Copter::init_ardupilot()
     ahrs.set_beacon(&g2.beacon);
 
     // Do GPS init
-    gps.init(&DataFlash, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     init_compass();
 
@@ -314,8 +315,7 @@ void Copter::init_ardupilot()
     // enable CPU failsafe
     failsafe_enable();
 
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);
+    ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // enable output to motors
     arming.pre_arm_rc_checks(true);
@@ -491,10 +491,7 @@ void Copter::check_usb_mux(void)
 bool Copter::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!(mask & g.log_bitmask)) {
-        return false;
-    }
-    if (!DataFlash.should_log()) {
+    if (!DataFlash.should_log(mask)) {
         return false;
     }
     start_logging();

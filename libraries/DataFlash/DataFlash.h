@@ -49,8 +49,9 @@ class DataFlash_Class
 public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
-    DataFlash_Class(const char *firmware_string) :
-        _firmware_string(firmware_string)
+    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask) :
+        _firmware_string(firmware_string),
+        _log_bitmask(log_bitmask)
         {
             AP_Param::setup_object_defaults(this, var_info);
             if (_instance != nullptr) {
@@ -167,8 +168,8 @@ public:
 
     void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
 
-    // returns true of logging of a message should be attempted
-    bool should_log() const;
+    // returns true if logging of a message should be attempted
+    bool should_log(uint32_t mask) const;
 
     bool logging_started(void);
 
@@ -231,6 +232,7 @@ private:
     uint8_t _next_backend;
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
     const char *_firmware_string;
+    const AP_Int32 &_log_bitmask;
 
     void internal_error() const;
 

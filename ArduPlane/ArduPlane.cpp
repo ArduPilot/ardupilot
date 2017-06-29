@@ -356,8 +356,6 @@ void Plane::one_second_loop()
     }
 #endif
 
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-
     // update home position if soft armed and gps position has
     // changed. Update every 5s at most
     if (!hal.util->get_soft_armed() &&

@@ -76,7 +76,8 @@ void Tracker::init_tracker()
     }
 
     // GPS Initialization
-    gps.init(nullptr, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     ahrs.init();
     ahrs.set_fly_forward(false);
@@ -255,10 +256,7 @@ void Tracker::check_usb_mux(void)
  */
 bool Tracker::should_log(uint32_t mask)
 {
-    if (!(mask & g.log_bitmask)) {
-        return false;
-    }
-    if (!DataFlash.should_log()) {
+    if (!DataFlash.should_log(mask)) {
         return false;
     }
     return true;

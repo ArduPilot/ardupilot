@@ -82,4 +82,6 @@ protected:
     void make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);
 
     void _detection_message(char *buffer, uint8_t buflen) const;
+
+    bool should_df_log() const;
 };

@@ -54,6 +54,7 @@
 
 class ReplayVehicle {
 public:
+    ReplayVehicle() { unused = -1; }
     void setup();
     void load_parameters(void);
 
@@ -69,7 +70,8 @@ public:
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
-    DataFlash_Class dataflash{"Replay v0.1"};
+    AP_Int32 unused; // logging is magic for Replay; this is unused
+    DataFlash_Class dataflash{"Replay v0.1", unused};
 
 private:
     Parameters g;
