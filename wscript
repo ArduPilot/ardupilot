@@ -414,7 +414,7 @@ for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
 
 class LocalInstallContext(Build.InstallContext):
     """runs install using BLD/install as destdir, where BLD is the build variant directory"""
-    cmd = 'linstall'
+    cmd = 'localinstall'
 
     def __init__(self, **kw):
         super(LocalInstallContext, self).__init__(**kw)
@@ -428,7 +428,7 @@ class LocalInstallContext(Build.InstallContext):
         return r
 
 class RsyncContext(LocalInstallContext):
-    """runs linstall and then rsyncs BLD/install with the target system"""
+    """runs localinstall and then rsyncs BLD/install with the target system"""
     cmd = 'rsync'
 
     def __init__(self, **kw):
