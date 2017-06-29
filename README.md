@@ -32,7 +32,9 @@
 
 - Main developer wiki: <http://dev.ardupilot.org>
 
-- Developer email group: drones-discuss@googlegroups.com
+- Developer discussion: <http://discuss.ardupilot.org>
+
+- Developer email group: drones-discuss@googlegroups.com. Deprecated November 2016. Included for historical reference.
 
 ## Contributors ##
 
