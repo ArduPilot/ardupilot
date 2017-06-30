@@ -477,7 +477,6 @@ private:
     void Log_Write_WheelEncoder();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
-    void start_logging();
     void Log_Arm_Disarm();
 
     void load_parameters(void);

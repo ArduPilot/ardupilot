@@ -531,14 +531,6 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
     gps.Write_DataFlash_Log_Startup_messages();
 }
 
-// start a new log
-void Rover::start_logging()
-{
-    DataFlash.EnableWrites(false);
-    DataFlash.StartUnstartedLogging();
-    DataFlash.EnableWrites(true);
-}
-
 #else  // LOGGING_ENABLED
 
 // dummy functions
@@ -550,7 +542,6 @@ int8_t Rover::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 void Rover::Log_Write_Control_Tuning() {}
 void Rover::Log_Write_Rangefinder() {}
 void Rover::Log_Write_Attitude() {}
-void Rover::start_logging() {}
 void Rover::Log_Write_RC(void) {}
 void Rover::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Rover::Log_Write_Home_And_Origin() {}
