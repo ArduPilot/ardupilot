@@ -71,8 +71,8 @@ public:
 
 private:
 
-    AP_Int32 unused;
-    DataFlash_Class dataflash{"DF AllTypes 0.1", unused};
+    AP_Int32 log_bitmask;
+    DataFlash_Class dataflash{"DF AllTypes 0.1", log_bitmask};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
@@ -97,7 +97,6 @@ void DataFlashTest_AllTypes::flush_dataflash(DataFlash_Class &_dataflash)
 
 void DataFlashTest_AllTypes::Log_Write_TypeMessages()
 {
-    dataflash.StartUnstartedLogging();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
 
@@ -144,7 +143,6 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages()
 
 void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 {
-    dataflash.StartUnstartedLogging();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number for Log_Write %u\n", log_num);
 
@@ -186,8 +184,10 @@ void DataFlashTest_AllTypes::setup(void)
 {
     hal.console->printf("Dataflash All Types 1.0\n");
 
+    log_bitmask = (uint32_t)-1;
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
     dataflash.set_vehicle_armed(true);
+    dataflash.Log_Write_Message("DataFlash Test");
 
     // Test
     hal.scheduler->delay(20);
