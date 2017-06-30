@@ -926,17 +926,13 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         rtk_age_ms(1));
 }
 
-void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan)
+void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
-    if (drivers[0] != nullptr && drivers[0]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
-        drivers[0]->send_mavlink_gps_rtk(chan);
+    if (inst >= GPS_MAX_RECEIVERS) {
+        return;
     }
-}
-
-void AP_GPS::send_mavlink_gps2_rtk(mavlink_channel_t chan)
-{
-    if (drivers[1] != nullptr && drivers[1]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
-        drivers[1]->send_mavlink_gps_rtk(chan);
+    if (drivers[inst] != nullptr && drivers[inst]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
+        drivers[inst]->send_mavlink_gps_rtk(chan);
     }
 }
 
