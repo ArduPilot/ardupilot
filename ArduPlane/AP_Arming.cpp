@@ -23,18 +23,6 @@ enum HomeState AP_Arming_Plane::home_status() const
     return plane.home_is_set;
 }
 
-bool AP_Arming_Plane::arm(uint8_t method)
-{
-    // start logging here so we can check success or failure in
-    // arm_checks
-    if (plane.g.log_bitmask != NONE &&
-        !plane.DataFlash.logging_started()) {
-        plane.start_logging();
-    }
-
-    return AP_Arming::arm(method);
-}
-
 /*
   additional arming checks for plane
 
