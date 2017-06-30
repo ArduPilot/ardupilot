@@ -171,7 +171,7 @@ class Board:
             env.CXXFLAGS += [
                 '-Wno-error=cast-align',
             ]
-            
+
             env.DEFINES.update(
                 UAVCAN_CPP_VERSION = 'UAVCAN_CPP03',
                 UAVCAN_NO_ASSERTIONS = 1,
@@ -238,6 +238,8 @@ class sitl(Board):
             env.LIB += [
                 'winmm',
             ]
+
+        cfg.check_lttng(env)
 
 class linux(Board):
     def configure_env(self, cfg, env):

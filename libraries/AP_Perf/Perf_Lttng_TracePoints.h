@@ -13,11 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_LTTNG_UST
+
 #undef TRACEPOINT_PROVIDER
 #define TRACEPOINT_PROVIDER ardupilot
 
 #undef TRACEPOINT_INCLUDE
-#define TRACEPOINT_INCLUDE <AP_HAL_Linux/Perf_Lttng_TracePoints.h>
+#define TRACEPOINT_INCLUDE <AP_Perf/Perf_Lttng_TracePoints.h>
 
 #if !defined(_PERF_LTTNG_TRACEPOINT_H) || defined(TRACEPOINT_HEADER_MULTI_READ)
 #define _PERF_LTTNG_TRACEPOINT_H
@@ -62,3 +64,5 @@ TRACEPOINT_EVENT(
 #endif
 
 #include <lttng/tracepoint-event.h>
+
+#endif

@@ -14,11 +14,9 @@
  */
 #pragma once
 
+#ifdef HAVE_LTTNG_UST
 #include <inttypes.h>
 
-#include "AP_HAL_Linux.h"
-
-namespace Linux {
 
 class Perf_Lttng {
 public:
@@ -26,5 +24,4 @@ public:
     void end(const char *name);
     void count(const char *name, uint64_t val);
 };
-
-}
+#endif
