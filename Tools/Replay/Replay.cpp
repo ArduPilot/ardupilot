@@ -116,7 +116,6 @@ void ReplayVehicle::setup(void)
     // we pass a minimal log structure, as we will be outputting the
     // log structures we need manually, to prevent FMT duplicates
     dataflash.Init(min_log_structure, ARRAY_SIZE(min_log_structure));
-    dataflash.StartUnstartedLogging();
 
     ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
