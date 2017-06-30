@@ -46,8 +46,8 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     AP_HAL::Device::PeriodicHandle _periodic_handle;
-    AP_HAL::Util::perf_counter_t _perf_xfer_err;
-    AP_HAL::Util::perf_counter_t _perf_bad_data;
+    AP_Perf::perf_counter_t _perf_xfer_err;
+    AP_Perf::perf_counter_t _perf_bad_data;
 
     Vector3f _accum = Vector3f();
     uint32_t _accum_count = 0;
