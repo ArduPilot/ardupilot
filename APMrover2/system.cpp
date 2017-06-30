@@ -499,11 +499,7 @@ uint8_t Rover::check_digital_pin(uint8_t pin)
  */
 bool Rover::should_log(uint32_t mask)
 {
-    if (!DataFlash.should_log(mask)) {
-        return false;
-    }
-    start_logging();
-    return true;
+    return DataFlash.should_log(mask);
 }
 
 /*
