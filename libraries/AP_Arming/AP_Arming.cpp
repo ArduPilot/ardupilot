@@ -493,8 +493,16 @@ bool AP_Arming::arm_checks(uint8_t method)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        if (!DataFlash_Class::instance()->logging_started()) {
+        // allow logging to start by indicating (falsely) that the vehicle is armed:
+        DataFlash_Class *df = DataFlash_Class::instance();
+        df->set_vehicle_armed(true);
+        if (!df->logging_started()) {
+            // write something out to ensure logs are open
+            df->Log_Write_Message("Arming Check");
+        }
+        if (!df->logging_started()) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Arm: Logging not started");
+            df->set_vehicle_armed(false);
             return false;
         }
     }
