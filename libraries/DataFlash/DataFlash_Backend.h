@@ -35,7 +35,7 @@ public:
         return WritePrioritisedBlock(pBuffer, size, true);
     }
 
-    virtual bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) = 0;
+    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
 
     // high level interface
     virtual uint16_t find_last_log() = 0;
@@ -138,6 +138,7 @@ protected:
                           AP_HAL::BetterStream *port);
 
     virtual bool WritesOK() const;
+    virtual bool StartNewLogOK() const;
 
     /*
       read a block
@@ -157,10 +158,13 @@ protected:
     // must be called when a new log is being started:
     virtual void start_new_log_reset_variables();
 
+    virtual bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) = 0;
+
     bool _initialised;
 
 private:
 
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
+
 };
