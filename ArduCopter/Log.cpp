@@ -917,22 +917,6 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
 }
 
 
-void Copter::start_logging()
-{
-    if (g.log_bitmask == 0) {
-        return;
-    }
-    if (DataFlash.in_log_download()) {
-        return;
-    }
-
-    ap.logging_started = true;
-
-    // dataflash may have stopped logging - when we get_log_data,
-    // for example.  Always try to restart:
-    DataFlash.StartUnstartedLogging();
-}
-
 void Copter::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
@@ -989,7 +973,6 @@ void Copter::Log_Write_Heli() {}
 void Copter::Log_Write_Optflow() {}
 #endif
 
-void Copter::start_logging() {}
 void Copter::log_init(void) {}
 
 #endif // LOGGING_ENABLED
