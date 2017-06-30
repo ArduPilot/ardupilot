@@ -466,22 +466,6 @@ void Sub::Log_Write_Vehicle_Startup_Messages()
 }
 
 
-void Sub::start_logging()
-{
-    if (g.log_bitmask == 0) {
-        return;
-    }
-    if (DataFlash.in_log_download()) {
-        return;
-    }
-
-    ap.logging_started = true;
-
-    // dataflash may have stopped logging - when we get_log_data,
-    // for example.  Always try to restart:
-    DataFlash.StartUnstartedLogging();
-}
-
 void Sub::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
@@ -515,7 +499,6 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 void Sub::Log_Write_Optflow() {}
 #endif
 
-void Sub::start_logging() {}
 void Sub::log_init(void) {}
 
 #endif // LOGGING_ENABLED

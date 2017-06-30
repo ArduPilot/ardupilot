@@ -12,7 +12,6 @@ void Sub::enable_motor_output()
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
 bool Sub::init_arm_motors(bool arming_from_gcs)
 {
-    start_logging();
     static bool in_arm_motors = false;
 
     // exit immediately if already in this function
