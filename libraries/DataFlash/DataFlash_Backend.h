@@ -157,6 +157,8 @@ protected:
     // must be called when a new log is being started:
     virtual void start_new_log_reset_variables();
 
+    bool _initialised;
+
 private:
 
     uint32_t _last_periodic_1Hz;
