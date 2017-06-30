@@ -14,6 +14,8 @@ public:
         AP_Arming(ahrs_ref, baro, compass, battery) {
     }
 
+    bool pre_arm_rc_checks(const bool display_failure);
+
 protected:
 
     enum HomeState home_status() const override;
