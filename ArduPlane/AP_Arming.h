@@ -20,7 +20,6 @@ public:
             AP_Param::setup_object_defaults(this, var_info);
     }
     bool pre_arm_checks(bool report);
-    bool arm(uint8_t method) override;
 
     ArmingRudder rudder_arming() const { return (ArmingRudder)rudder_arming_value.get(); }
 
