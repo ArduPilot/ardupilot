@@ -491,9 +491,13 @@ bool AP_Arming::pre_arm_checks(bool report)
 
 bool AP_Arming::arm_checks(uint8_t method)
 {
+    // note that this will prepare DataFlash to start logging
+    // so should be the last check to be done before arming
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        if (!DataFlash_Class::instance()->logging_started()) {
+        DataFlash_Class *df = DataFlash_Class::instance();
+        df->PrepForArming();
+        if (!df->logging_started()) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Arm: Logging not started");
             return false;
         }
