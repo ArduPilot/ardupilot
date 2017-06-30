@@ -164,10 +164,10 @@ private:
     AP_HAL::Semaphore *semaphore;
     
     // performance counters
-    AP_HAL::Util::perf_counter_t  _perf_write;
-    AP_HAL::Util::perf_counter_t  _perf_fsync;
-    AP_HAL::Util::perf_counter_t  _perf_errors;
-    AP_HAL::Util::perf_counter_t  _perf_overruns;
+    AP_Perf::perf_counter_t  _perf_write;
+    AP_Perf::perf_counter_t  _perf_fsync;
+    AP_Perf::perf_counter_t  _perf_errors;
+    AP_Perf::perf_counter_t  _perf_overruns;
 };
 
 #endif // HAL_OS_POSIX_IO
