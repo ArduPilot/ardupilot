@@ -33,7 +33,7 @@ void NavEKF2_core::SelectFlowFusion()
     }
 
     // start performance timer
-    hal.util->perf_begin(_perf_FuseOptFlow);
+    _perf->perf_begin(_perf_FuseOptFlow);
     // Perform Data Checks
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
@@ -71,7 +71,7 @@ void NavEKF2_core::SelectFlowFusion()
     }
 
     // stop the performance timer
-    hal.util->perf_end(_perf_FuseOptFlow);
+    _perf->perf_end(_perf_FuseOptFlow);
 }
 
 /*
@@ -81,7 +81,7 @@ The filter can fuse motion compensated optiocal flow rates and range finder meas
 void NavEKF2_core::EstimateTerrainOffset()
 {
     // start performance timer
-    hal.util->perf_begin(_perf_TerrainOffset);
+    _perf->perf_begin(_perf_TerrainOffset);
 
     // constrain height above ground to be above range measured on ground
     float heightAboveGndEst = MAX((terrainState - stateStruct.position.z), rngOnGnd);
@@ -251,7 +251,7 @@ void NavEKF2_core::EstimateTerrainOffset()
     }
 
     // stop the performance timer
-    hal.util->perf_end(_perf_TerrainOffset);
+    _perf->perf_end(_perf_TerrainOffset);
 }
 
 /*
