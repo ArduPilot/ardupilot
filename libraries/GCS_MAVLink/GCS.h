@@ -21,6 +21,7 @@
 #include <AP_Camera/AP_Camera.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_Common/AP_FWVersion.h>
+#include <AP_Perf/AP_Perf.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -361,9 +362,9 @@ private:
     uint8_t         stream_slowdown;
 
     // perf counters
-    static AP_HAL::Util::perf_counter_t _perf_packet;
-    static AP_HAL::Util::perf_counter_t _perf_update;
-            
+    static AP_Perf::perf_counter_t _perf_packet;
+    static AP_Perf::perf_counter_t _perf_update;
+
     // deferred message handling.  We size the deferred_message
     // ringbuffer so we can defer every message type
     enum ap_message deferred_messages[MSG_LAST];
@@ -437,6 +438,8 @@ private:
     void load_signing_key(void);
     bool signing_enabled(void) const;
     static void save_signing_timestamp(bool force_save_now);
+
+    AP_Perf *_perf;
 };
 
 /// @class GCS
