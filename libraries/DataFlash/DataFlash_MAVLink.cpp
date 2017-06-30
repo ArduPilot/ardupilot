@@ -124,9 +124,6 @@ bool DataFlash_MAVLink::WritesOK() const
     if (!DataFlash_Backend::WritesOK()) {
         return false;
     }
-    if (!_initialised) {
-        return false;
-    }
     if (!_sending_to_client) {
         return false;
     }
