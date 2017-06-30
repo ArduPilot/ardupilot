@@ -357,7 +357,7 @@ void NavEKF3_core::SelectVelPosFusion()
 void NavEKF3_core::FuseVelPosNED()
 {
     // start performance timer
-    hal.util->perf_begin(_perf_FuseVelPosNED);
+    _perf->perf_begin(_perf_FuseVelPosNED);
 
     // health is set bad until test passed
     velHealth = false;
@@ -734,7 +734,7 @@ void NavEKF3_core::FuseVelPosNED()
     }
 
     // stop performance timer
-    hal.util->perf_end(_perf_FuseVelPosNED);
+    _perf->perf_end(_perf_FuseVelPosNED);
 }
 
 /********************************************************
@@ -1562,13 +1562,13 @@ void NavEKF3_core::SelectBodyOdomFusion()
     if (storedBodyOdm.recall(bodyOdmDataDelayed, imuDataDelayed.time_ms)) {
 
         // start performance timer
-        hal.util->perf_begin(_perf_FuseBodyOdom);
+        _perf->perf_begin(_perf_FuseBodyOdom);
 
         // Fuse data into the main filter
         FuseBodyVel();
 
         // stop the performance timer
-        hal.util->perf_end(_perf_FuseBodyOdom);
+        _perf->perf_end(_perf_FuseBodyOdom);
     }
 }
 
