@@ -491,11 +491,8 @@ void Copter::check_usb_mux(void)
 bool Copter::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!DataFlash.should_log(mask)) {
-        return false;
-    }
-    start_logging();
-    return true;
+    ap.logging_started = DataFlash.logging_started();
+    return DataFlash.should_log(mask);
 #else
     return false;
 #endif

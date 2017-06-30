@@ -544,11 +544,6 @@ bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
 //  has side-effect that logging is started
 bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 {
-    #if LOGGING_ENABLED == ENABLED
-    // start dataflash
-    copter.start_logging();
-    #endif
-
     // check accels and gyro are healthy
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_INS)) {
         //check if accelerometers have calibrated and require reboot
