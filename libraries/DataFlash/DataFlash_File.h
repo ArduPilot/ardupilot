@@ -43,7 +43,7 @@ public:
     void Prep() override;
 
     /* Write a block of data at current offset */
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) override;
+    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) override;
     uint32_t bufferspace_available() override;
 
     // high level interface
@@ -76,6 +76,7 @@ public:
 protected:
 
     bool WritesOK() const override;
+    bool StartNewLogOK() const override;
 
 private:
     int _write_fd;

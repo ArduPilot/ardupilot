@@ -260,6 +260,31 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
     return WritePrioritisedBlock(buffer, msg_len, is_critical);
 }
 
+bool DataFlash_Backend::StartNewLogOK() const
+{
+    if (logging_started()) {
+        return false;
+    }
+    if (_front._log_bitmask == 0) {
+        return false;
+    }
+    if (_front.in_log_download()) {
+        return false;
+    }
+    if (!DataFlash_Backend::WritesOK()) {
+        return false;
+    }
+    return true;
+}
+
+bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+{
+    if (StartNewLogOK()) {
+        start_new_log();
+    }
+    return _WritePrioritisedBlock(pBuffer, size, is_critical);
+}
+
 bool DataFlash_Backend::WritesOK() const
 {
     if (!_front.WritesEnabled()) {
