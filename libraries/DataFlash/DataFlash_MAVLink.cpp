@@ -133,7 +133,7 @@ bool DataFlash_MAVLink::WritesOK() const
 /* Write a block of data at current offset */
 
 // DM_write: 70734 events, 0 overruns, 167806us elapsed, 2us avg, min 1us max 34us 0.620us rms
-bool DataFlash_MAVLink::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+bool DataFlash_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
     if (!WritesOK()) {
         return false;

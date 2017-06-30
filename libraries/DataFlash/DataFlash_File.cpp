@@ -525,8 +525,17 @@ bool DataFlash_File::WritesOK() const
     return true;
 }
 
+
+bool DataFlash_File::StartNewLogOK() const
+{
+    if (_open_error) {
+        return false;
+    }
+    return DataFlash_Backend::StartNewLogOK();
+}
+
 /* Write a block of data at current offset */
-bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
     if (!WritesOK()) {
         return false;
@@ -870,6 +879,7 @@ uint16_t DataFlash_File::start_new_log(void)
     }
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
+        _open_error = true;
         return 0xFFFF;
     }
     _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
@@ -899,6 +909,7 @@ uint16_t DataFlash_File::start_new_log(void)
     int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
     free(fname);
     if (fd == -1) {
+        _open_error = true;
         return 0xFFFF;
     }
 
@@ -909,6 +920,7 @@ uint16_t DataFlash_File::start_new_log(void)
     close(fd);
 
     if (written < to_write) {
+        _open_error = true;
         return 0xFFFF;
     }
 
@@ -1172,11 +1184,6 @@ bool DataFlash_File::io_thread_alive() const
 
 bool DataFlash_File::logging_failed() const
 {
-    if (_write_fd == -1 &&
-        (hal.util->get_soft_armed() ||
-         _front.log_while_disarmed())) {
-        return true;
-    }
     if (_open_error) {
         return true;
     }

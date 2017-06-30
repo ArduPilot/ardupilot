@@ -36,7 +36,7 @@ public:
     void stop_logging() override;
 
     /* Write a block of data at current offset */
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size,
+    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size,
                                bool is_critical) override;
 
     // initialisation
