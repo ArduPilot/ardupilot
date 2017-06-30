@@ -189,10 +189,6 @@ void Sub::init_ardupilot()
     // init vehicle capabilties
     init_capabilities();
 
-    if (DataFlash.log_while_disarmed()) {
-        start_logging(); // create a new log if necessary
-    }
-
     // disable safety if requested
     BoardConfig.init_safety();    
     
@@ -295,11 +291,8 @@ bool Sub::optflow_position_ok()
 bool Sub::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!DataFlash.should_log(mask)) {
-        return false;
-    }
-    start_logging();
-    return true;
+    ap.logging_started = DataFlash.logging_started();
+    return DataFlash.should_log(mask);
 #else
     return false;
 #endif
