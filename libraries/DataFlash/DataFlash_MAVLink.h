@@ -131,8 +131,6 @@ private:
     uint8_t _target_system_id;
     uint8_t _target_component_id;
 
-    bool _initialised;
-
     // this controls the maximum number of blocks we will push from
     // the pending and send queues in any call to push_log_blocks.
     // push_log_blocks is called by periodic_tasks.  Each block is 200

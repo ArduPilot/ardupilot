@@ -83,7 +83,6 @@ private:
     uint16_t _read_fd_log_num;
     uint32_t _read_offset;
     uint32_t _write_offset;
-    volatile bool _initialised;
     volatile bool _open_error;
     const char *_log_directory;
 
