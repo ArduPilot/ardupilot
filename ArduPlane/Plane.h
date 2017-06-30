@@ -847,7 +847,6 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AOA_SSA();
     void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page);
-    void start_logging();
 
     void load_parameters(void);
     void adjust_altitude_target();
