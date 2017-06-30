@@ -515,7 +515,6 @@ private:
     void Log_Sensor_Health();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
-    void start_logging() ;
     void load_parameters(void);
     void userhook_init();
     void userhook_FastLoop();
