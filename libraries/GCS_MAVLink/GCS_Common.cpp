@@ -2225,7 +2225,7 @@ bool GCS_MAVLINK::try_send_gps_message(const enum ap_message id)
         break;
     case MSG_GPS_RTK:
         CHECK_PAYLOAD_SIZE(GPS_RTK);
-        gps->send_mavlink_gps_rtk(chan);
+        gps->send_mavlink_gps_rtk(chan, 0);
         ret = true;
         break;
     case MSG_GPS2_RAW:
@@ -2235,7 +2235,7 @@ bool GCS_MAVLINK::try_send_gps_message(const enum ap_message id)
         break;
     case MSG_GPS2_RTK:
         CHECK_PAYLOAD_SIZE(GPS2_RTK);
-        gps->send_mavlink_gps2_rtk(chan);
+        gps->send_mavlink_gps_rtk(chan, 1);
         ret = true;
         break;
     default:
