@@ -260,7 +260,6 @@ private:
     void Log_Write_Vehicle_Pos(int32_t lat,int32_t lng,int32_t alt, const Vector3f& vel);
     void Log_Write_Vehicle_Baro(float pressure, float altitude);
     void Log_Write_Vehicle_Startup_Messages();
-    void start_logging();
     void log_init(void);
     bool should_log(uint32_t mask);
 

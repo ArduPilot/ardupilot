@@ -84,23 +84,11 @@ void Tracker::Log_Write_Vehicle_Startup_Messages()
     gps.Write_DataFlash_Log_Startup_messages();
 }
 
-// start a new log
-void Tracker::start_logging()
-{
-    if (g.log_bitmask != 0) {
-        DataFlash.StartUnstartedLogging();
-    }
-}
-
 void Tracker::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
 
     gcs().reset_cli_timeout();
-
-    if (g.log_bitmask != 0) {
-        start_logging();
-    }
 }
 
 #else // LOGGING_ENABLED
@@ -108,7 +96,6 @@ void Tracker::log_init(void)
 void Tracker::Log_Write_Attitude(void) {}
 void Tracker::Log_Write_Baro(void) {}
 
-void Tracker::start_logging() {}
 void Tracker::log_init(void) {}
 void Tracker::Log_Write_Vehicle_Pos(int32_t lat, int32_t lng, int32_t alt, const Vector3f& vel) {}
 void Tracker::Log_Write_Vehicle_Baro(float pressure, float altitude) {}
