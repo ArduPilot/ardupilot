@@ -504,9 +504,6 @@ void Rover::log_init(void)
 
     gcs().reset_cli_timeout();
 
-    if (g.log_bitmask != 0) {
-        start_logging();
-    }
 }
 
 #if CLI_ENABLED == ENABLED
