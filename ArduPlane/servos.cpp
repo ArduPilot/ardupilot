@@ -357,25 +357,6 @@ void Plane::set_servos_manual_passthrough(void)
 }
 
 /*
-  old (deprecated) elevon support
- */
-void Plane::set_servos_old_elevons(void)
-{
-    /*Elevon mode*/
-    float ch1;
-    float ch2;
-    int16_t roll  = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-    int16_t pitch = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-    ch1 = pitch - (BOOL_TO_SIGN(g.reverse_elevons) * roll);
-    ch2 = pitch + (BOOL_TO_SIGN(g.reverse_elevons) * roll);
-    
-    // directly set the radio_out values for elevon mode
-    SRV_Channels::set_output_pwm_first(SRV_Channel::k_aileron, elevon.trim1 + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0f/ SERVO_MAX)));
-    SRV_Channels::set_output_pwm_first(SRV_Channel::k_elevator, elevon.trim2 + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0f/ SERVO_MAX)));
-}
-
-
-/*
   calculate any throttle limits based on the watt limiter
  */
 void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
@@ -430,17 +411,13 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
  */
 void Plane::set_servos_controlled(void)
 {
-    if (g.mix_mode != 0) {
-        set_servos_old_elevons();
-    } else {
-        // both types of secondary aileron are slaved to the roll servo out
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input,
-                                        SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
+    // both types of secondary aileron are slaved to the roll servo out
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input,
+                                    SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
 
-        // both types of secondary elevator are slaved to the pitch servo out
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input,
-                                            SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
-    }
+    // both types of secondary elevator are slaved to the pitch servo out
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input,
+                                    SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
 
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // allow landing to override servos if it would like to
