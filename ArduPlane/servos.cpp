@@ -348,12 +348,6 @@ void Plane::set_servos_manual_passthrough(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in_zero_dz());
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, channel_rudder->get_control_in_zero_dz());
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
-    
-    // this variant assumes you have the corresponding
-    // input channel setup in your transmitter for manual control
-    // of the 2nd aileron
-    SRV_Channels::copy_radio_in_out(SRV_Channel::k_aileron_with_input);
-    SRV_Channels::copy_radio_in_out(SRV_Channel::k_elevator_with_input);
 }
 
 /*
@@ -411,14 +405,6 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
  */
 void Plane::set_servos_controlled(void)
 {
-    // both types of secondary aileron are slaved to the roll servo out
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input,
-                                    SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
-
-    // both types of secondary elevator are slaved to the pitch servo out
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input,
-                                    SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
-
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // allow landing to override servos if it would like to
         landing.override_servos();
@@ -582,6 +568,10 @@ void Plane::servo_output_mixers(void)
     channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right);
     channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
 
+    // copy aileron to deprecated aileron_with_input and elevator to deprecated elevator_with_input
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input, SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input, SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
+    
     // implement differential spoilers
     dspoiler_update();
 }
