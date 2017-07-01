@@ -55,9 +55,9 @@ public:
         k_mount2_open           = 15,           ///< mount2 open (deploy) / close (retract)
         k_dspoilerLeft1         = 16,           ///< differential spoiler 1 (left wing)
         k_dspoilerRight1        = 17,           ///< differential spoiler 1 (right wing)
-        k_aileron_with_input    = 18,            ///< aileron, with rc input
+        k_aileron_with_input    = 18,            ///< aileron, with rc input, deprecated
         k_elevator              = 19,            ///< elevator
-        k_elevator_with_input   = 20,            ///< elevator, with rc input
+        k_elevator_with_input   = 20,            ///< elevator, with rc input, deprecated
         k_rudder                = 21,            ///< secondary rudder channel
         k_sprayer_pump          = 22,            ///< crop sprayer pump channel
         k_sprayer_spinner       = 23,            ///< crop sprayer spinner channel
