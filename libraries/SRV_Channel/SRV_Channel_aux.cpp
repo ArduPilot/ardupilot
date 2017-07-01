@@ -102,8 +102,10 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_elevator_with_input:
     case k_aileron:
     case k_elevator:
-    case k_dspoiler1:
-    case k_dspoiler2:
+    case k_dspoilerLeft1:
+    case k_dspoilerLeft2:
+    case k_dspoilerRight1:
+    case k_dspoilerRight2:
     case k_rudder:
     case k_steering:
     case k_flaperon_left:
