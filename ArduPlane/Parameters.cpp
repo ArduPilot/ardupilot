@@ -692,35 +692,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(auto_trim,              "TRIM_AUTO",      AUTO_TRIM),
 
-    // @Param: ELEVON_MIXING
-    // @DisplayName: Elevon mixing
-    // @Description: This enables an older form of elevon mixing which is now deprecated. Please see the ELEVON_OUTPUT option for setting up elevons. The ELEVON_MIXING option should be set to 0 for elevon planes except for backwards compatibility with older setups.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: User
-    GSCALAR(mix_mode,               "ELEVON_MIXING",  ELEVON_MIXING),
-
-    // @Param: ELEVON_REVERSE
-    // @DisplayName: Elevon reverse
-    // @Description: Reverse elevon mixing
-    // @Values: 0:Disabled,1:Enabled
-    // @User: User
-    GSCALAR(reverse_elevons,        "ELEVON_REVERSE", ELEVON_REVERSE),
-
-
-    // @Param: ELEVON_CH1_REV
-    // @DisplayName: Elevon reverse
-    // @Description: Reverse elevon channel 1
-    // @Values: -1:Disabled,1:Enabled
-    // @User: User
-    GSCALAR(reverse_ch1_elevon,     "ELEVON_CH1_REV", ELEVON_CH1_REVERSE),
-
-    // @Param: ELEVON_CH2_REV
-    // @DisplayName: Elevon reverse
-    // @Description: Reverse elevon channel 2
-    // @Values: -1:Disabled,1:Enabled
-    // @User: User
-    GSCALAR(reverse_ch2_elevon,     "ELEVON_CH2_REV", ELEVON_CH2_REVERSE),
-
     // @Param: VTAIL_OUTPUT
     // @DisplayName: VTail output
     // @Description: Enable VTail output in software. If enabled then the APM will provide software VTail mixing on the elevator and rudder channels. There are 8 different mixing modes available, which refer to the 8 ways the elevator can be mapped to the two VTail servos. Please also see the MIXING_GAIN parameter for the output gain of the mixer.
