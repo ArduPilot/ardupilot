@@ -1023,6 +1023,7 @@ private:
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
+    void dspoiler_update(void);
     void servo_output_mixers(void);
     void servos_output(void);
     void servos_auto_trim(void);
