@@ -826,8 +826,8 @@ void Plane::servos_auto_trim(void)
     g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_left,  pitch_I);
     g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_right, pitch_I);
 
-    g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_left,  pitch_I - roll_I);
-    g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_right, pitch_I + roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_left,  roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_right, -roll_I);
 
     g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerLeft1,  pitch_I - roll_I);
     g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerLeft2,  pitch_I - roll_I);
