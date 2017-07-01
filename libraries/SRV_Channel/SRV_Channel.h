@@ -288,9 +288,9 @@ public:
     // set output for all channels matching the given function type, allow radio_trim to center servo
     static void set_output_pwm_trimmed(SRV_Channel::Aux_servo_function_t function, int16_t value);
 
-    // set and save the trim for a function channel to radio_in on matching input channel
-    static void set_trim_to_radio_in_for(SRV_Channel::Aux_servo_function_t function);
-
+    // set and save the trim for a function channel to the output value
+    static void set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t function);
+    
     // set the trim for a function channel to min of the channel
     static void set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function);
 
