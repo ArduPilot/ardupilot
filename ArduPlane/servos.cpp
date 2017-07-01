@@ -271,6 +271,41 @@ void Plane::flaperon_update(int8_t flap_percent)
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, flaperon_right);
 }
 
+
+/*
+  setup differential spoiler output channels
+
+  Differential spoilers are a type of elevon that is split on each
+  wing to give yaw control, mixed from rudder
+ */
+void Plane::dspoiler_update(void)
+{
+    // just check we have a left dspoiler, and if so calculate all outputs
+    if (!SRV_Channels::function_assigned(SRV_Channel::k_dspoilerLeft1)) {
+        return;
+    }
+    float elevon_left = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_left);
+    float elevon_right = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_right);
+    float rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
+    float dspoiler1_left = elevon_left;
+    float dspoiler2_left = elevon_left;
+    float dspoiler1_right = elevon_right;
+    float dspoiler2_right = elevon_right;
+    if (rudder > 0) {
+        // apply rudder to right wing
+        dspoiler1_right = constrain_float(elevon_right + rudder, -4500, 4500);
+        dspoiler2_right = constrain_float(elevon_right - rudder, -4500, 4500);
+    } else {
+        // apply rudder to left wing
+        dspoiler1_left = constrain_float(elevon_left + rudder, -4500, 4500);
+        dspoiler2_left = constrain_float(elevon_left - rudder, -4500, 4500);
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft1, dspoiler1_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft2, dspoiler2_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight1, dspoiler1_right);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight2, dspoiler2_right);
+}
+
 /*
   setup servos for idle mode
   Idle mode is used during balloon launch to keep servos still, apart
@@ -333,27 +368,6 @@ void Plane::set_servos_old_elevons(void)
     int16_t pitch = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
     ch1 = pitch - (BOOL_TO_SIGN(g.reverse_elevons) * roll);
     ch2 = pitch + (BOOL_TO_SIGN(g.reverse_elevons) * roll);
-    
-    /* Differential Spoilers
-       If differential spoilers are setup, then we translate
-       rudder control into splitting of the two ailerons on
-       the side of the aircraft where we want to induce
-       additional drag.
-    */
-    if (SRV_Channels::function_assigned(SRV_Channel::k_dspoiler1) && SRV_Channels::function_assigned(SRV_Channel::k_dspoiler2)) {
-        float ch3 = ch1;
-        float ch4 = ch2;
-        int16_t rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
-        if (BOOL_TO_SIGN(g.reverse_elevons) * rudder < 0) {
-            ch1 += abs(rudder);
-            ch3 -= abs(rudder);
-        } else {
-            ch2 += abs(rudder);
-            ch4 -= abs(rudder);
-        }
-        SRV_Channels::set_output_scaled(SRV_Channel::k_dspoiler1, ch3);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_dspoiler2, ch4);
-    }
     
     // directly set the radio_out values for elevon mode
     SRV_Channels::set_output_pwm_first(SRV_Channel::k_aileron, elevon.trim1 + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0f/ SERVO_MAX)));
@@ -585,51 +599,14 @@ void Plane::servo_output_mixers(void)
         channel_output_mixer(g.vtail_output, SRV_Channel::k_elevator, SRV_Channel::k_rudder);
     } else if (g.elevon_output != MIXING_DISABLED) {
         channel_output_mixer(g.elevon_output, SRV_Channel::k_elevator, SRV_Channel::k_aileron);
-        // if (both) differential spoilers setup then apply rudder
-        //  control into splitting the two elevons on the side of
-        //  the aircraft where we want to induce additional drag:
-        uint16_t ch3, ch4;
-        
-        if (SRV_Channels::function_assigned(SRV_Channel::k_dspoiler1) &&
-            SRV_Channels::function_assigned(SRV_Channel::k_dspoiler2) &&
-            SRV_Channels::get_output_pwm(SRV_Channel::k_aileron, ch3) &&
-            SRV_Channels::get_output_pwm(SRV_Channel::k_elevator, ch4)) {
-            // convert rudder-servo output (-4500 to 4500) to PWM offset
-            //  value (-500 to 500) and multiply by DSPOILR_RUD_RATE/100
-            //  (rudder->servo_out * 500 / SERVO_MAX * dspoiler_rud_rate/100):
-            int16_t ruddVal = (int16_t)(int32_t(SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)) *
-                                        g.dspoiler_rud_rate / (SERVO_MAX/5));
-            if (ruddVal != 0) {   //if nonzero rudder then apply to spoilers
-                int16_t ch1 = ch3;          //elevon 1
-                int16_t ch2 = ch4;          //elevon 2
-                if (ruddVal > 0) {     //apply rudder to right or left side
-                    ch1 += ruddVal;
-                    ch3 -= ruddVal;
-                } else {
-                    ch2 += ruddVal;
-                    ch4 -= ruddVal;
-                }
-                // change elevon 1 & 2 positions; constrain min/max:
-                SRV_Channels::set_output_pwm_first(SRV_Channel::k_aileron, constrain_int16(ch1, 900, 2100));
-                SRV_Channels::set_output_pwm_first(SRV_Channel::k_elevator, constrain_int16(ch2, 900, 2100));
-                // constrain min/max for intermediate dspoiler positions:
-                ch3 = constrain_int16(ch3, 900, 2100);
-                ch4 = constrain_int16(ch4, 900, 2100);
-            }
-            // set positions of differential spoilers (convert PWM
-            //  900-2100 range to servo output (-4500 to 4500)
-            //  and use function that supports rev/min/max/trim):
-            SRV_Channels::set_output_scaled(SRV_Channel::k_dspoiler1,
-                                                (int16_t(ch3)-1500) * (int16_t)(SERVO_MAX/300) / (int16_t)2);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_dspoiler2,
-                                                (int16_t(ch4)-1500) * (int16_t)(SERVO_MAX/300) / (int16_t)2);
-        }
     }
-
 
     // allow for extra elevon and vtail channels
     channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right);
     channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
+
+    // implement differential spoilers
+    dspoiler_update();
 }
 
 /*
@@ -881,6 +858,14 @@ void Plane::servos_auto_trim(void)
 
     g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_left,  pitch_I);
     g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_right, pitch_I);
+
+    g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_left,  pitch_I - roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_right, pitch_I + roll_I);
+
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerLeft1,  pitch_I - roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerLeft2,  pitch_I - roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerRight1, pitch_I + roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerRight2, pitch_I + roll_I);
     
     auto_trim.last_trim_check = now;
 
