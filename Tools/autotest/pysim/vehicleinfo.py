@@ -138,11 +138,11 @@ class VehicleInfo(object):
             },
             "plane-elevon": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-elevons.parm",
+                "default_params_filename": ["default_params/plane.parm", "default_params/plane-elevons.parm"],
             },
             "plane-vtail": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-vtail.parm",
+                "default_params_filename": ["default_params/plane.parm", "default_params/plane-vtail.parm"],
             },
             "plane-tailsitter": {
                 "waf_target": "bin/arduplane",
@@ -151,6 +151,10 @@ class VehicleInfo(object):
             "plane": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/plane.parm",
+            },
+            "plane-dspoilers": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/plane.parm", "default_params/plane-dspoilers.parm"]
             },
             "gazebo-zephyr": {
                 "waf_target": "bin/arduplane",
