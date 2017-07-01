@@ -60,9 +60,9 @@ public:
         k_param_log_bitmask_old,  // unused
         k_param_pitch_trim_cd,
         k_param_mix_mode,
-        k_param_reverse_elevons,
-        k_param_reverse_ch1_elevon,
-        k_param_reverse_ch2_elevon,
+        k_param_reverse_elevons, // unused
+        k_param_reverse_ch1_elevon, // unused
+        k_param_reverse_ch2_elevon, // unused
         k_param_flap_1_percent,
         k_param_flap_1_speed,
         k_param_flap_2_percent,
@@ -457,14 +457,10 @@ public:
     // Misc
     //
     AP_Int8 auto_trim;
-    AP_Int8 mix_mode;
     AP_Int8 vtail_output;
     AP_Int8 elevon_output;
     AP_Int8 rudder_only;
     AP_Float mixing_gain;
-    AP_Int8 reverse_elevons;
-    AP_Int8 reverse_ch1_elevon;
-    AP_Int8 reverse_ch2_elevon;
     AP_Int16 mixing_offset;
     AP_Int16 dspoiler_rud_rate;
     AP_Int16 num_resets;

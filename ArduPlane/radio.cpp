@@ -187,15 +187,8 @@ void Plane::read_radio()
     elevon.ch2_temp = channel_pitch->read();
     uint16_t pwm_roll, pwm_pitch;
 
-    if (g.mix_mode == 0) {
-        pwm_roll = elevon.ch1_temp;
-        pwm_pitch = elevon.ch2_temp;
-    }else{
-        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) 
-         - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
-        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) 
-         + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
-    }
+    pwm_roll = elevon.ch1_temp;
+    pwm_pitch = elevon.ch2_temp;
 
     RC_Channels::set_pwm_all();
     
