@@ -200,7 +200,7 @@ AP_GPS_NOVA::process_message(void)
         state.location.lng = (int32_t) (bestposu.lng * (double)1e7);
         state.location.alt = (int32_t) (bestposu.hgt * 100);
 
-        state.num_sats = bestposu.svsused;
+        state.num_sats = bestposu.svstracked;
 
         state.horizontal_accuracy = (float) ((bestposu.latsdev + bestposu.lngsdev)/2);
         state.vertical_accuracy = (float) bestposu.hgtsdev;
