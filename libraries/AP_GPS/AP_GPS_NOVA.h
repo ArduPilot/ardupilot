@@ -114,26 +114,26 @@ private:
 
     struct PACKED bestpos
     {
-        uint32_t solstat;
-        uint32_t postype;
-        double lat;
-        double lng;
-        double hgt;
-        float undulation;
-        uint32_t datumid;
-        float latsdev;
-        float lngsdev;
-        float hgtsdev;
+        uint32_t solstat;      ///< Solution status
+        uint32_t postype;      ///< Position type
+        double lat;            ///< latitude (deg)
+        double lng;            ///< longitude (deg)
+        double hgt;            ///< height above mean sea level (m)
+        float undulation;      ///< relationship between the geoid and the ellipsoid (m)
+        uint32_t datumid;      ///< datum id number
+        float latsdev;         ///< latitude standard deviation (m)
+        float lngsdev;         ///< longitude standard deviation (m)
+        float hgtsdev;         ///< height standard deviation (m)
         // 4 bytes
-        uint8_t stnid[4];
-        float diffage;
-        float sol_age;
-        uint8_t svstracked;
-        uint8_t svsused;
-        uint8_t svsl1;
-        uint8_t svsmultfreq;
-        uint8_t resv;
-        uint8_t extsolstat;
+        uint8_t stnid[4];      ///< base station id
+        float diffage;         ///< differential position age (sec)
+        float sol_age;         ///< solution age (sec)
+        uint8_t svstracked;    ///< number of satellites tracked
+        uint8_t svsused;       ///< number of satellites used in solution
+        uint8_t svsl1;         ///< number of GPS plus GLONASS L1 satellites used in solution
+        uint8_t svsmultfreq;   ///< number of GPS plus GLONASS L2 satellites used in solution
+        uint8_t resv;          ///< reserved
+        uint8_t extsolstat;    ///< extended solution status - OEMV and greater only
         uint8_t galbeisigmask;
         uint8_t gpsglosigmask;
     };
