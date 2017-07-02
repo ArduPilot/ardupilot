@@ -70,6 +70,9 @@ void AP_BoardConfig::px4_setup_pwm()
         { 7, PWM_SERVO_MODE_3PWM1CAP, 2 },
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         { 8, PWM_SERVO_MODE_12PWM, 0 },
+#elif defined(CONFIG_ARCH_BOARD_F4BY)
+        { 8, PWM_SERVO_MODE_8PWM, 0 },
+        { 9, PWM_SERVO_MODE_12PWM, 0 },
 #endif
     };
     uint8_t mode_parm = (uint8_t)px4.pwm_count.get();
@@ -318,6 +321,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
     case PX4_BOARD_AUAV21:
     case PX4_BOARD_PH2SLIM:
     case PX4_BOARD_AEROFC:
+    case PX4_BOARD_F4BY:
         break;
     default:
         sensor_config_error("Unknown board type");
@@ -414,6 +418,8 @@ void AP_BoardConfig::px4_setup_peripherals(void)
     const char *fmu_mode = "mode_serial";
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     const char *fmu_mode = "mode_rcin";
+#elif defined(CONFIG_ARCH_BOARD_F4BY)
+    const char *fmu_mode = "mode_pwm";
 #else
     const char *fmu_mode = "mode_pwm4";
 #endif
@@ -537,6 +543,9 @@ void AP_BoardConfig::px4_autodetect(void)
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     px4.board_type.set_and_notify(PX4_BOARD_AEROFC);
     hal.console->printf("Detected Aero FC\n");
+#elif defined(CONFIG_ARCH_BOARD_F4BY)
+    px4.board_type.set_and_notify(PX4_BOARD_F4BY);
+    hal.console->printf("Detected F4BY\n");
 #endif
 
 }

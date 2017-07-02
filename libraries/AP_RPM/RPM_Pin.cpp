@@ -90,9 +90,11 @@ void AP_RPM_Pin::update(void)
         case 54:
             gpio = GPIO_GPIO4_INPUT;
             break;
+#if defined(GPIO_GPIO5_INPUT)
         case 55:
             gpio = GPIO_GPIO5_INPUT;
             break;
+#endif
         }
 #endif // GPIO_GPIO5_INPUT
         

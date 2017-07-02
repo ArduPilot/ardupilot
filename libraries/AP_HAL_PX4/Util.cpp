@@ -122,6 +122,8 @@ bool PX4Util::get_system_id(char buf[40])
     const char *board_type = "PX4v4";
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     const char *board_type = "AEROFCv1";
+#elif defined(CONFIG_ARCH_BOARD_F4BY)
+    const char *board_type = "F4BY";
 #else
     const char *board_type = "PX4v?";
 #endif
@@ -244,7 +246,7 @@ extern "C" {
 */
 void *PX4Util::dma_allocate(size_t size)
 {
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1) && !defined(CONFIG_ARCH_BOARD_F4BY)
     return fat_dma_alloc(size);
 #else
     return malloc(size);
@@ -252,7 +254,7 @@ void *PX4Util::dma_allocate(size_t size)
 }
 void PX4Util::dma_free(void *ptr, size_t size)
 {
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1) && !defined(CONFIG_ARCH_BOARD_F4BY)
     fat_dma_free(ptr, size);
 #else
     return free(ptr);

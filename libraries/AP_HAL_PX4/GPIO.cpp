@@ -29,7 +29,8 @@ PX4GPIO::PX4GPIO()
 
 void PX4GPIO::init()
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4) \
+	|| defined(CONFIG_ARCH_BOARD_F4BY)
     _led_fd = open(LED0_DEVICE_PATH, O_RDWR);
     if (_led_fd == -1) {
         AP_HAL::panic("Unable to open " LED0_DEVICE_PATH);
@@ -178,7 +179,8 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
 {
     switch (pin) {
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4) \
+	|| defined(CONFIG_ARCH_BOARD_F4BY)
         case HAL_GPIO_A_LED_PIN:    // Arming LED
             if (value == LOW) {
                 ioctl(_led_fd, LED_OFF, LED_RED);
