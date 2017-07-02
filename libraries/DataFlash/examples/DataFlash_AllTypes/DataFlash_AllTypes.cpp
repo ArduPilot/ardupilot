@@ -4,7 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
 #include <stdio.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -205,14 +205,11 @@ void DataFlashTest_AllTypes::loop(void)
     hal.scheduler->delay(1000);
 }
 
-class GCS_Dataflash_AllTypes : public GCS
-{
-    void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) override {
-        ::fprintf(stderr, "GCS: %s\n", text);
-    }
+const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+    AP_GROUPEND
 };
+GCS_Dummy _gcs;
 
-GCS_Dataflash_AllTypes _gcs;
 
 static DataFlashTest_AllTypes dataflashtest;
 
