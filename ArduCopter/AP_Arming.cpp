@@ -786,8 +786,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
 
-    // if we've gotten this far all is ok
-    return true;
+    return AP_Arming::arm_checks(arming_from_gcs);
 }
 
 enum HomeState AP_Arming_Copter::home_status() const
