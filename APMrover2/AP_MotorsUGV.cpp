@@ -101,8 +101,8 @@ void AP_MotorsUGV::output(bool armed)
     }
 
     // ensure steering and throttle are within limits
-    _steering = constrain_float(_steering, -4500, 4500);
-    _throttle = constrain_float(_throttle, -100, 100);
+    _steering = constrain_float(_steering, -4500.0f, 4500.0f);
+    _throttle = constrain_float(_throttle, -100.0f, 100.0f);
 
     // output for regular steering/throttle style frames
     output_regular(armed, _steering, _throttle);
