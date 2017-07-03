@@ -25,7 +25,7 @@ struct {
     float climb_rate_cms;
     bool use_yaw;
     bool use_yaw_rate;
-} static guided_angle_state = {0,0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false};
+} static guided_angle_state = {0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false};
 
 struct Guided_Limit {
     uint32_t timeout_ms;  // timeout (in seconds) from the time that guided is invoked
@@ -439,7 +439,7 @@ void Copter::guided_pos_control_run()
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
-    }else{
+    } else {
         if (guided_angle_state.use_yaw_rate) {
             // roll & pitch from waypoint controller, yaw rate from GCS
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), guided_angle_state.yaw_rate_cds, get_smoothing_gain());
@@ -498,7 +498,7 @@ void Copter::guided_vel_control_run()
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate, get_smoothing_gain());
-    }else{
+    } else {
         if (guided_angle_state.use_yaw_rate) {
             // roll & pitch from waypoint controller, yaw rate from GCS
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), guided_angle_state.yaw_rate_cds, get_smoothing_gain());
@@ -577,7 +577,7 @@ void Copter::guided_posvel_control_run()
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate, get_smoothing_gain());
-    }else{
+    } else {
         if (guided_angle_state.use_yaw_rate) {
             // roll & pitch from waypoint controller, yaw rate from GCS
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), guided_angle_state.yaw_rate_cds, get_smoothing_gain());
