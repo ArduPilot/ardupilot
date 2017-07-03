@@ -377,14 +377,14 @@ void Rover::nav_set_yaw_speed()
     // if we haven't received a MAV_CMD_NAV_SET_YAW_SPEED message within the last 3 seconds bring the rover to a halt
     if ((millis() - guided_control.msg_time_ms) > 3000) {
         gcs_send_text(MAV_SEVERITY_WARNING, "NAV_SET_YAW_SPEED not recvd last 3secs, stopping");
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
+        g2.motors.set_throttle(g.throttle_min.get());
+        g2.motors.set_steering(0);
         lateral_acceleration = 0.0f;
         return;
     }
 
     const int32_t steering = steerController.get_steering_out_angle_error(guided_control.turn_angle);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
+    g2.motors.set_steering(steering);
 
     // speed param in the message gives speed as a proportion of cruise speed.
     // 0.5 would set speed to the cruise speed
@@ -400,8 +400,8 @@ void Rover::nav_set_speed()
     // if we haven't received a MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED message within the last 3 seconds bring the rover to a halt
     if ((millis() - guided_control.msg_time_ms) > 3000) {
         gcs_send_text(MAV_SEVERITY_WARNING, "SET_VELOCITY not recvd last 3secs, stopping");
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
+        g2.motors.set_throttle(g.throttle_min.get());
+        g2.motors.set_steering(0);
         lateral_acceleration = 0.0f;
         prev_WP = current_loc;
         next_WP = current_loc;
@@ -415,7 +415,7 @@ void Rover::nav_set_speed()
     location_update(next_WP, (steer_value + ahrs.yaw_sensor) * 0.01f, 4.0f);  // put the next wp at 4m forward at steer direction
     nav_controller->update_waypoint(current_loc, next_WP);
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steer_value);
+    g2.motors.set_steering(steer_value);
     calc_throttle(guided_control.target_speed);
 
     Log_Write_GuidedTarget(guided_mode, Vector3f(steer_value, 0.0f, 0.0f), Vector3f(guided_control.target_speed, 0.0f, 0.0f));
@@ -459,7 +459,7 @@ void Rover::do_yaw(const AP_Mission::Mission_Command& cmd)
 
     // Calculate the steering to apply base on error calculated
     const int32_t steering = steerController.get_steering_out_angle_error(error_to_target_yaw);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
+    g2.motors.set_steering(steering);
     next_navigation_leg_cd = condition_value;
     calc_throttle(g.speed_cruise);
 
@@ -473,16 +473,16 @@ bool Rover::do_yaw_rotation()
 
     // check if we are within 5 degrees of the target heading
     if (error_to_target_yaw <= 500) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);  // stop the current rotation
+        g2.motors.set_steering(0);  // stop the current rotation
         condition_value = condition_start;  // reset the condition value to its previous value
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        g2.motors.set_throttle(0);
         next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
         do_auto_rotation = false;
         return true;
     } else {
         // Calculate the steering to apply base on error calculated
         const int32_t steering = steerController.get_steering_out_angle_error(error_to_target_yaw);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
+        g2.motors.set_steering(steering);
         calc_throttle(g.speed_cruise);
         do_auto_rotation = true;
         return false;

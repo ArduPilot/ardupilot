@@ -438,18 +438,18 @@ void Rover::update_current_mode(void)
         case Guided_WP:
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
-                if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != g.throttle_min.get()) {
+                if (fabsf(g2.motors.get_throttle()) > g.throttle_min.get()) {
                     gcs_send_mission_item_reached_message(0);
                 }
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
-                SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
+                g2.motors.set_throttle(g.throttle_min.get());
+                g2.motors.set_steering(0);
                 lateral_acceleration = 0;
             } else {
                 calc_lateral_acceleration();
                 calc_nav_steer();
                 calc_throttle(rover.guided_control.target_speed);
                 Log_Write_GuidedTarget(guided_mode, Vector3f(next_WP.lat, next_WP.lng, next_WP.alt),
-                                       Vector3f(rover.guided_control.target_speed, SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0.0f));
+                                       Vector3f(rover.guided_control.target_speed, g2.motors.get_throttle(), 0.0f));
             }
             break;
 
@@ -501,18 +501,18 @@ void Rover::update_current_mode(void)
           we set the exact value in set_servos(), but it helps for
           logging
          */
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, channel_steer->get_control_in());
+        g2.motors.set_throttle(channel_throttle->get_control_in());
+        g2.motors.set_steering(channel_steer->get_control_in());
 
         // mark us as in_reverse when using a negative throttle to
         // stop AHRS getting off
-        set_reverse(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0);
+        set_reverse(g2.motors.get_throttle() < 0);
         break;
 
     case HOLD:
         // hold position - stop motors and center steering
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
+        g2.motors.set_throttle(0);
+        g2.motors.set_steering(0);
         if (!in_auto_reverse) {
             set_reverse(false);
         }
@@ -543,7 +543,7 @@ void Rover::update_navigation()
     case RTL:
         // no loitering around the wp with the rover, goes direct to the wp position
         if (verify_RTL()) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
+            g2.motors.set_throttle(g.throttle_min.get());
             set_mode(HOLD);
         } else {
             calc_lateral_acceleration();
@@ -561,8 +561,8 @@ void Rover::update_navigation()
             // no loitering around the wp with the rover, goes direct to the wp position
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
-                SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
+                g2.motors.set_throttle(g.throttle_min.get());
+                g2.motors.set_steering(0);
                 lateral_acceleration = 0;
             } else {
                 calc_lateral_acceleration();

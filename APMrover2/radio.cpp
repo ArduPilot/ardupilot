@@ -13,12 +13,10 @@ void Rover::set_control_channels(void)
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
     channel_throttle->set_angle(100);
-    // set rc out channels ranges
-    g2.motors.setup_motors();
 
     // For a rover safety is TRIM throttle
     if (!arming.is_armed()) {
-        g2.motors.set_safety_to_trim();
+        g2.motors.setup_safety_output();
     }
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
     // take a proportion of speed. Default to 1000 to 2000 for systems without
@@ -43,8 +41,6 @@ void Rover::init_rc_out()
 
     // setup PWM values to send if the FMU firmware dies
     SRV_Channels::setup_failsafe_trim_all();
-    // For a rover safety is TRIM throttle
-    g2.motors.set_safety_to_trim();
 }
 
 /*
@@ -122,14 +118,14 @@ void Rover::read_radio()
     // check that RC value are valid
     control_failsafe(channel_throttle->get_radio_in());
     // copy RC scaled inputs to outputs
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, channel_steer->get_control_in());
+    g2.motors.set_throttle(channel_throttle->get_control_in());
+    g2.motors.set_steering(channel_steer->get_control_in());
 
     // Check if the throttle value is above 50% and we need to nudge
     // Make sure its above 50% in the direction we are travelling
-    if ((abs(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)) > 50) &&
-        (((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) && in_reverse) ||
-         ((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 0) && !in_reverse))) {
+    if ((fabs(g2.motors.get_throttle()) > 50) &&
+        (((g2.motors.get_throttle() < 0) && in_reverse) ||
+         ((g2.motors.get_throttle() > 0) && !in_reverse))) {
             throttle_nudge = (g.throttle_max - g.throttle_cruise) *
                 ((fabsf(channel_throttle->norm_input()) - 0.5f) / 0.5f);
     } else {
@@ -186,7 +182,6 @@ void Rover::control_failsafe(uint16_t pwm)
             failed = true;
         }
         failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);
-        g2.motors.failsafeThrottle(failed);
     }
 }
 

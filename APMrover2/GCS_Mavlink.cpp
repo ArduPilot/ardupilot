@@ -162,7 +162,7 @@ void Rover::send_servo_out(mavlink_channel_t chan)
         0,  // port 0
         10000 * channel_steer->norm_output(),
         0,
-        100 * SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
+        100 * g2.motors.get_throttle(),
         0,
         0,
         0,
@@ -179,7 +179,7 @@ void Rover::send_vfr_hud(mavlink_channel_t chan)
         gps.ground_speed(),
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
-        SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
+        g2.motors.get_throttle(),
         current_loc.alt / 100.0f,
         0);
 }
