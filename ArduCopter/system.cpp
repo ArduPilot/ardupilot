@@ -636,7 +636,7 @@ void Copter::allocate_motors(void)
 #if FRAME_CONFIG != HELI_FRAME
     attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
     ac_var_info = AC_AttitudeControl_Multi::var_info;
-#elif FRAME_CONFIG == HELI_FRAME
+#else
     attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors, MAIN_LOOP_SECONDS);
     ac_var_info = AC_AttitudeControl_Heli::var_info;
 #endif

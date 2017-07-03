@@ -466,7 +466,6 @@ private:
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
-    float last_accel_length;
     // filtered pilot's throttle input used to cancel landing if throttle held high
     LowPassFilterFloat rc_throttle_control_in_filter;
 

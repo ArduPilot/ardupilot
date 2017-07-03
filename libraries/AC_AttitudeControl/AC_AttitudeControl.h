@@ -104,7 +104,6 @@ public:
     // Ensure attitude controller have zero errors to relax rate controller output
     void relax_attitude_controllers();
 
-    void reset_attitude_controllers();
     // reset rate controller I terms
     void reset_rate_controller_I_terms();
 

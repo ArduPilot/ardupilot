@@ -79,7 +79,7 @@ enum aux_sw_func {
 #define MULTICOPTER_FRAME 1
 #define HELI_FRAME 2
 
-// Sub System
+// Thruster Compounding as Copter's Sub System
 #define NORMAL_FRAME 0
 #define FORWARD_COMPOUND_FRAME 1
 #define LATERAL_COMPOUND_FRAME 2

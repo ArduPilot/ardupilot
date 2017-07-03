@@ -124,22 +124,6 @@ void AC_AttitudeControl::relax_attitude_controllers()
     get_rate_yaw_pid().reset_I();
 }
 
-void AC_AttitudeControl::reset_attitude_controllers()
-{
-    // TODO add _ahrs.get_quaternion()
-    _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
-    _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
-    _attitude_target_euler_angle = Vector3f(0.0f, 0.0f, _ahrs.yaw);
-
-    // Set reference angular velocity used in angular velocity controller equal
-    // to the input angular velocity and reset the angular velocity integrators.
-    // This zeros the output of the angular velocity controller.
-    _rate_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
-    get_rate_roll_pid().reset_I();
-    get_rate_pitch_pid().reset_I();
-    get_rate_yaw_pid().reset_I();
-}
-
 void AC_AttitudeControl::reset_rate_controller_I_terms()
 {
     get_rate_roll_pid().reset_I();
