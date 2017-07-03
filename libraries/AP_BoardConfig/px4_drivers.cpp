@@ -267,7 +267,15 @@ bool AP_BoardConfig::px4_start_driver(main_fn_t main_function, const char *name,
 
     // wait for task to exit and gather status
     int status = -1;
-    if (waitpid(pid, &status, 0) != pid) {
+    int ret = waitpid(pid, &status, 0);
+    if (ret < 0)
+    {
+        /* Unfortunately, this main thread does not retain child status.
+         */
+        free(s);
+        return (errno == ECHILD);
+    }
+    if (ret != pid) {
         printf("waitpid failed for %s\n", name);
         free(s);
         return false;
