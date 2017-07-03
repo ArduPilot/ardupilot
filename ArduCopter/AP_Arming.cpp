@@ -767,8 +767,10 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
 
-    // if we've gotten this far all is ok
-    return true;
+    // superclass method should always be the last thing called; it
+    // has side-effects which would need to be cleaned up if one of
+    // our arm checks failed
+    return AP_Arming::arm_checks(arming_from_gcs);
 }
 
 enum HomeState AP_Arming_Copter::home_status() const
