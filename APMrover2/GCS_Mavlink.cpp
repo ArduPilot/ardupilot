@@ -162,7 +162,7 @@ void Rover::send_servo_out(mavlink_channel_t chan)
         0,  // port 0
         10000 * channel_steer->norm_output(),
         0,
-        100 * g2.motors.get_throttle(),
+        g2.motors.get_throttle(),
         0,
         0,
         0,

@@ -242,7 +242,7 @@ void Rover::calc_nav_steer() {
     Set the flight control servos based on the current calculated values
 *****************************************/
 void Rover::set_servos(void) {
-    float curr_throttle = g2.motors.get_throttle();
+    const float curr_throttle = g2.motors.get_throttle();
     if (in_reverse) {
         g2.motors.set_throttle(constrain_float(curr_throttle, -g.throttle_max, -g.throttle_min));
     } else {
