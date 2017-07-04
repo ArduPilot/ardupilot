@@ -513,9 +513,6 @@ void DataFlash_File::EraseAll()
 
 bool DataFlash_File::WritesOK() const
 {
-    if (!DataFlash_Backend::WritesOK()) {
-        return false;
-    }
     if (_write_fd == -1) {
         return false;
     }
@@ -537,10 +534,6 @@ bool DataFlash_File::StartNewLogOK() const
 /* Write a block of data at current offset */
 bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-    if (!WritesOK()) {
-        return false;
-    }
-
     if (! WriteBlockCheckStartupMessages()) {
         _dropped++;
         return false;
