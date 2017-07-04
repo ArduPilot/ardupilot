@@ -85,7 +85,7 @@ static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment:
             float coolant_temperature_degc = msg.coolant_temperature - 40.0;
             float battery_voltage_volts = msg.battery_voltage / 20.0;
             float intake_manifold_pressure_kpa = msg.intake_manifold_pressure * 2.0;
-            float intake_manifold_temperature_degc = msg.intake_manifold_pressure - 40.0;
+            float intake_manifold_temperature_degc = msg.intake_manifold_temperature - 40.0;
             float fuel_level_percent = msg.fuel_level / 2.5;
             float fuel_flow_grams_per_min = msg.fuel_flow / 86.251509;
 
