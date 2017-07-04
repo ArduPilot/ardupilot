@@ -243,10 +243,14 @@ void Rover::calc_nav_steer() {
 *****************************************/
 void Rover::set_servos(void) {
     // Apply slew rate limit on non Manual modes
-    if (control_mode != MANUAL && control_mode != LEARNING) {
-        g2.motors.use_slew_rate(true);
-    } else {
+    if (control_mode == MANUAL || control_mode == LEARNING) {
         g2.motors.use_slew_rate(false);
+        if (failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
+            g2.motors.set_throttle(0.0f);
+            g2.motors.set_steering(0.0f);
+        }
+    } else {
+        g2.motors.use_slew_rate(true);
     }
 
     // send output signals to motors
