@@ -242,13 +242,6 @@ void Rover::calc_nav_steer() {
     Set the flight control servos based on the current calculated values
 *****************************************/
 void Rover::set_servos(void) {
-    const float curr_throttle = g2.motors.get_throttle();
-    if (in_reverse) {
-        g2.motors.set_throttle(constrain_float(curr_throttle, -g.throttle_max, -g.throttle_min));
-    } else {
-        g2.motors.set_throttle(constrain_float(curr_throttle, g.throttle_min, g.throttle_max));
-    }
-
     // Apply slew rate limit on non Manual modes
     if (control_mode != MANUAL && control_mode != LEARNING) {
         g2.motors.slew_limit_throttle(g.throttle_slewrate, G_Dt);
