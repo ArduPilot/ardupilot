@@ -117,20 +117,7 @@ void Rover::read_radio()
     RC_Channels::set_pwm_all();
     // check that RC value are valid
     control_failsafe(channel_throttle->get_radio_in());
-    // copy RC scaled inputs to outputs
-    g2.motors.set_throttle(channel_throttle->get_control_in());
-    g2.motors.set_steering(channel_steer->get_control_in());
 
-    // Check if the throttle value is above 50% and we need to nudge
-    // Make sure its above 50% in the direction we are travelling
-    if ((fabs(g2.motors.get_throttle()) > 50) &&
-        (((g2.motors.get_throttle() < 0) && in_reverse) ||
-         ((g2.motors.get_throttle() > 0) && !in_reverse))) {
-            throttle_nudge = (g.throttle_max - g.throttle_cruise) *
-                ((fabsf(channel_throttle->norm_input()) - 0.5f) / 0.5f);
-    } else {
-        throttle_nudge = 0;
-    }
     // apply RC skid steer mixing
     if (g.skid_steer_in) {
         // convert the two radio_in values from skid steering values
@@ -162,6 +149,22 @@ void Rover::read_radio()
         channel_steer->set_pwm(steer);
         channel_throttle->set_pwm(thr);
     }
+
+    // copy RC scaled inputs to outputs
+    g2.motors.set_throttle(channel_throttle->get_control_in());
+    g2.motors.set_steering(channel_steer->get_control_in());
+
+    // Check if the throttle value is above 50% and we need to nudge
+    // Make sure its above 50% in the direction we are travelling
+    if ((fabs(g2.motors.get_throttle()) > 50) &&
+        (((g2.motors.get_throttle() < 0) && in_reverse) ||
+         ((g2.motors.get_throttle() > 0) && !in_reverse))) {
+        throttle_nudge = (g.throttle_max - g.throttle_cruise) *
+                         ((fabsf(channel_throttle->norm_input()) - 0.5f) / 0.5f);
+    } else {
+        throttle_nudge = 0;
+    }
+
     // check if we try to do RC arm/disarm
     rudder_arm_disarm_check();
 }
