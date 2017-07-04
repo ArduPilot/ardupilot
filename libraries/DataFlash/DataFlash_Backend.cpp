@@ -271,21 +271,24 @@ bool DataFlash_Backend::StartNewLogOK() const
     if (_front.in_log_download()) {
         return false;
     }
-    if (!DataFlash_Backend::WritesOK()) {
-        return false;
-    }
     return true;
 }
 
 bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
+    if (!ShouldLog()) {
+        return false;
+    }
     if (StartNewLogOK()) {
         start_new_log();
+    }
+    if (!WritesOK()) {
+        return false;
     }
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
 }
 
-bool DataFlash_Backend::WritesOK() const
+bool DataFlash_Backend::ShouldLog() const
 {
     if (!_front.WritesEnabled()) {
         return false;

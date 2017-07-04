@@ -138,7 +138,8 @@ protected:
                           print_mode_fn print_mode,
                           AP_HAL::BetterStream *port);
 
-    virtual bool WritesOK() const;
+    bool ShouldLog() const;
+    virtual bool WritesOK() const = 0;
     virtual bool StartNewLogOK() const;
 
     /*
