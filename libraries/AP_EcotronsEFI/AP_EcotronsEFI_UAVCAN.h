@@ -32,4 +32,7 @@ public:
 
     // UAVCAN callback, called from AP_UAVCAN.cpp
     void handle_efi_msg(const EFI_State& message_efi_state);
+
+private:
+    uint8_t _manager;
 };
