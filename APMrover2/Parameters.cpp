@@ -560,7 +560,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
 
 ParametersG2::ParametersG2(void)
-    : beacon(rover.serial_manager)
+    : beacon(rover.serial_manager),
+      motors(rover.ServoRelayEvents)
 #if ADVANCED_FAILSAFE == ENABLED
     , afs(rover.mission, rover.barometer, rover.gps, rover.rcmap)
 #endif
