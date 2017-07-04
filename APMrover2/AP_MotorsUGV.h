@@ -33,13 +33,16 @@ public:
     void set_throttle(float throttle) { _throttle = throttle; }
 
     // slew limit throttle for one iteration
-    void slew_limit_throttle(float slew_rate, float dt);
+    void slew_limit_throttle(float dt);
 
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
 
     // output to motors and steering servos
-    void output(bool armed);
+    void output(bool armed, float dt);
+
+    // Set when to use slew rate limiter
+    void use_slew_rate(bool value) { _useSlewLimit = value; }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -59,8 +62,12 @@ protected:
     AP_Int8 _pwm_type;  // PWM output type
     AP_Int8 _pwm_freq;  // PWM output freq
     AP_Int8 _disarm_disable_pwm;    // disable PWM output while disarmed
+    AP_Int8 _slew_rate;  // Slew rate percent
     AP_ServoRelayEvents &_relayEvents;
     // internal variables
-    float   _steering;  // requested steering as a value from -4500 to +4500
-    float   _throttle;  // requested throttle as a value from 0 to 100
+    float _steering;  // requested steering as a value from -4500 to +4500
+    float _throttle;  // requested throttle as a value from 0 to 100
+    float _last_throttle;
+
+    bool _useSlewLimit;
 };

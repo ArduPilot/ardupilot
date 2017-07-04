@@ -244,9 +244,11 @@ void Rover::calc_nav_steer() {
 void Rover::set_servos(void) {
     // Apply slew rate limit on non Manual modes
     if (control_mode != MANUAL && control_mode != LEARNING) {
-        g2.motors.slew_limit_throttle(g.throttle_slewrate, G_Dt);
+        g2.motors.use_slew_rate(true);
+    } else {
+        g2.motors.use_slew_rate(false);
     }
 
     // send output signals to motors
-    g2.motors.output(arming.is_armed() && hal.util->get_soft_armed());
+    g2.motors.output(arming.is_armed() && hal.util->get_soft_armed(), G_Dt);
 }

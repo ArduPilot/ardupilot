@@ -45,6 +45,15 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_DISARM", 3, AP_MotorsUGV, _disarm_disable_pwm, 0),
 
+    // @Param: THR_SLEWRATE
+    // @DisplayName: Throttle slew rate
+    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. A value of zero means no limit. A value of 100 means the throttle can change over its full range in one second. Note that for some NiMH powered rovers setting a lower value like 40 or 50 may be worthwhile as the sudden current demand on the battery of a big rise in throttle may cause a brownout.
+    // @Units: %/s
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SLEWRATE", 4, AP_MotorsUGV, _slew_rate, 100),
+
     AP_GROUPEND
 };
 
@@ -74,11 +83,15 @@ void AP_MotorsUGV::init()
 }
 
 // slew limit throttle for one iteration
-void AP_MotorsUGV::slew_limit_throttle(float slew_rate, float dt)
+void AP_MotorsUGV::slew_limit_throttle(float dt)
 {
-    SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, slew_rate, dt);
-    SRV_Channels::limit_slew_rate(SRV_Channel::k_throttleLeft, slew_rate, dt);
-    SRV_Channels::limit_slew_rate(SRV_Channel::k_throttleRight, slew_rate, dt);
+    if (_slew_rate) {
+        float temp = _slew_rate * dt * 0.01f * 100;  // TODO : get THROTTLE MIN and THROTTLE MAX
+        if (temp < 1) {
+            temp = 1;
+        }
+        _throttle = constrain_int16(_throttle, _last_throttle - temp, _last_throttle + temp);
+    }
 }
 
 /*
@@ -93,7 +106,7 @@ bool AP_MotorsUGV::have_skid_steering() const
     return false;
 }
 
-void AP_MotorsUGV::output(bool armed)
+void AP_MotorsUGV::output(bool armed, float dt)
 {
     // soft-armed overrides passed in armed status
     if (!hal.util->get_soft_armed()) {
@@ -103,6 +116,10 @@ void AP_MotorsUGV::output(bool armed)
     // ensure steering and throttle are within limits
     _steering = constrain_float(_steering, -4500.0f, 4500.0f);
     _throttle = constrain_float(_throttle, -100.0f, 100.0f);
+
+    if (_useSlewLimit) {
+        slew_limit_throttle(dt);
+    }
 
     // output for regular steering/throttle style frames
     output_regular(armed, _steering, _throttle);
@@ -115,6 +132,7 @@ void AP_MotorsUGV::output(bool armed)
     hal.rcout->cork();
     SRV_Channels::output_ch_all();
     hal.rcout->push();
+    _last_throttle = _throttle;
 }
 
 // output to regular steering and throttle channels
