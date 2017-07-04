@@ -66,10 +66,10 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     AP_GROUPEND
 };
 
-static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg)
+static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg, uint8_t mgr)
 {
-    if (hal.can_mgr != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr->get_UAVCAN();
+    if (hal.can_mgr[mgr] != nullptr) {
+        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
         if (ap_uavcan != nullptr) {
             EFI_State *state = ap_uavcan->find_efi_node(msg.getSrcNodeID().get());
 
@@ -119,6 +119,12 @@ static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment:
         
     }
 }
+static void ecu_status_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg)
+{   ecu_status_cb(msg, 0); }
+static void ecu_status_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg)
+{   ecu_status_cb(msg, 1); }
+static void (*ecu_status_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg)
+        = { ecu_status_cb0, ecu_status_cb1 };
 
 static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
 {
@@ -434,9 +440,9 @@ bool AP_UAVCAN::try_init(void)
 
                     uavcan::Subscriber<uavcan::equipment::ecu::Status> *ecu_status;
                     ecu_status = new uavcan::Subscriber<uavcan::equipment::ecu::Status>(*node);
-                    const int ecu_status_start_res = ecu_status->start(ecu_status_cb);
+                    const int ecu_status_start_res = ecu_status->start(ecu_status_cb_arr[_uavcan_i]);
                     if (ecu_status_start_res < 0) {
-                        debug_uavcan(1, "UAVCAN ECU Subscriber start failure!\n\r");
+                        debug_uavcan(1, "UAVCAN ECU Subscriber start problem!\n\r");
                         return false;
                     }
 
