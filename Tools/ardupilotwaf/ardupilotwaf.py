@@ -53,7 +53,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'StorageManager',
     'AP_Tuning',
     'AP_RPM',
-    'AP_EcotronsEFI',
+    'AP_EFI',
     'AP_RSSI',
     'AP_Mount',
     'AP_Module',
