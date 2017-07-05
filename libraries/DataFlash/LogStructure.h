@@ -887,6 +887,7 @@ struct PACKED log_EFI {
 struct PACKED log_EFI2 {
     LOG_PACKET_HEADER;
     uint64_t  time_us;
+    bool     health;
     float    ignition_timing0;           
     float    ignition_timing1;          
     float    ignition_timing2;           
