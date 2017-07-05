@@ -189,6 +189,25 @@ AP_GPS_ERB::_parse_gps(void)
             state.time_week_ms    = _buffer.stat.time;
             state.time_week       = _buffer.stat.week;
         }
+        if (   _buffer.ver.ver_high > 0
+           ||  _buffer.ver.ver_medium >= 2) {
+            state.rtk_baseline_coords_type = 1;
+            state.rtk_num_sats      = _buffer.stat.base_num_sats;
+            if (_buffer.stat.age_cs == 0xFFFF) {
+                state.rtk_age_ms    = 0xFFFFFFFF;
+            } else {
+                state.rtk_age_ms    = _buffer.stat.age_cs * 10;
+            }
+            state.rtk_baseline_x_mm = _buffer.stat.baseline_N_mm;
+            state.rtk_baseline_y_mm = _buffer.stat.baseline_E_mm;
+            state.rtk_baseline_z_mm = _buffer.stat.baseline_D_mm;
+            state.rtk_accuracy      = _buffer.stat.ar_ratio;
+
+            state.rtk_week_number   = _buffer.stat.week;
+            state.rtk_time_week_ms  = _buffer.stat.time;
+            state.rtk_iar_num_hypotheses = _buffer.stat.iar_num_hypotheses;
+            // state.num_leap_seconds = _buffer.stat.num_leap_seconds; // leap seconds (0x7F indicates invalid)
+        }
         break;
     case MSG_DOPS:
         Debug("Message DOPS");

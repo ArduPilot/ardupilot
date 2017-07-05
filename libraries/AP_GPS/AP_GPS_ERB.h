@@ -66,6 +66,17 @@ private:
         uint8_t fix_type;   ///< see erb_fix_type enum
         uint8_t fix_status;
         uint8_t satellites;
+        // Introduced in ERB version 0.2.0
+        uint8_t base_num_sats;       ///< Current number of satellites used for RTK calculation.
+        uint16_t age_cs;             ///< Age of the corrections in centiseconds (0 when no corrections, 0xFFFF indicates overflow)
+        int32_t baseline_N_mm;       ///< distance between base and rover along the north axis in millimeters
+        int32_t baseline_E_mm;       ///< distance between base and rover along the east axis in millimeters
+        int32_t baseline_D_mm;       ///< distance between base and rover along the down axis in millimeters
+        uint16_t ar_ratio;           ///< AR ratio multiplied by 10
+        uint16_t base_week_number;   ///< GPS Week Number of last baseline
+        uint32_t base_time_week_ms;  ///< GPS Time of Week of last baseline in milliseconds
+        int32_t iar_num_hypotheses;  ///< Current number of integer ambiguity hypotheses.
+        int8_t num_leap_seconds;     ///< leap seconds (0x7F indicates invalid)
     };
     struct PACKED erb_dops {
         uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
