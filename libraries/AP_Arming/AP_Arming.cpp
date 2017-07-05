@@ -489,7 +489,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  board_voltage_checks(report);
 }
 
-bool AP_Arming::arm_checks(uint8_t method)
+bool AP_Arming::arm_checks_logging(uint8_t method)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
@@ -505,6 +505,14 @@ bool AP_Arming::arm_checks(uint8_t method)
             df->set_vehicle_armed(false);
             return false;
         }
+    }
+    return true;
+}
+
+bool AP_Arming::arm_checks(uint8_t method)
+{
+    if (!arm_checks_logging(method)) {
+        return false;
     }
     return true;
 }

@@ -56,6 +56,11 @@ public:
     // change to have occurred, and thus should not be done as pre-arm
     // checks.  Those go here:
     bool arm_checks(uint8_t method);
+    // note that this function has the side effect of leaving
+    // DataFlash thinking that the vehicle is armed.  If a later
+    // arming check fails, DataFlash must be told the vehicle is not
+    // armed!
+    bool arm_checks_logging(uint8_t method);
 
     // get expected magnetic field strength
     uint16_t compass_magfield_expected() const;
