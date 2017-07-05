@@ -87,7 +87,8 @@ class VehicleInfo(object):
             "heli-dual": {
                 "make_target": "sitl-heli-dual",
                 "waf_target": "bin/arducopter-heli",
-                "default_params_filename": "default_params/copter-heli-dual.parm",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                                            "default_params/copter-heli-dual.parm"],
             },
             "heli-compound": {
                 "make_target": "sitl-heli-compound",
@@ -101,7 +102,8 @@ class VehicleInfo(object):
             "coaxcopter": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-coax.parm",
+                "default_params_filename": ["default_params/copter-single.parm",
+                                            "default_params/copter-coax.parm"],
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
@@ -185,11 +187,13 @@ class VehicleInfo(object):
             },
             "rover-skid": {
                 "waf_target": "bin/ardurover",
-                "default_params_filename": "default_params/rover-skid.parm",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/rover-skid.parm"],
             },
             "gazebo-rover": {
                 "waf_target": "bin/ardurover",
-                "default_params_filename": "default_params/rover-skid.parm",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/rover-skid.parm"],
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
