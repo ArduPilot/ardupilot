@@ -289,6 +289,7 @@ AP_GPS_SBP::_attempt_state_update()
 
         last_full_update_tow = last_vel_ned.tow;
         last_full_update_cpu_ms = now;
+        state.rtk_iar_num_hypotheses = last_iar_num_hypotheses;
 
         logging_log_full_update();
         ret = true;
