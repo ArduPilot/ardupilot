@@ -855,7 +855,7 @@ struct PACKED log_Beacon {
     float posz;
 };
 
-struct PACKED log_EcotronsEFI {
+struct PACKED log_EFI {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t  ecu_index; 
@@ -884,7 +884,7 @@ struct PACKED log_EcotronsEFI {
     */    
 };
 
-struct PACKED log_EcotronsEFI2 {
+struct PACKED log_EFI2 {
     LOG_PACKET_HEADER;
     uint64_t  time_us;
     float    ignition_timing0;           
@@ -1183,8 +1183,8 @@ Format characters in the format string for binary log messages
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }, \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf" }, \
-    { LOG_ECOTRONSEFI_MSG, sizeof(log_EcotronsEFI), "ECOT", ECOT_FMT, ECOT_LABELS }, \
-    { LOG_ECOTRONSEFI2_MSG, sizeof(log_EcotronsEFI2), "ECO2", ECOT2_FMT, ECOT2_LABELS } 
+    { log_EFI_MSG, sizeof(log_EFI), "ECOT", ECOT_FMT, ECOT_LABELS }, \
+    { log_EFI2_MSG, sizeof(log_EFI2), "ECO2", ECOT2_FMT, ECOT2_LABELS } 
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -1323,8 +1323,8 @@ enum LogMessages {
     LOG_VISUALODOM_MSG,
     LOG_AOA_SSA_MSG,
     LOG_BEACON_MSG,
-    LOG_ECOTRONSEFI_MSG,
-    LOG_ECOTRONSEFI2_MSG,
+    log_EFI_MSG,
+    log_EFI2_MSG,
 };
 
 enum LogOriginType {

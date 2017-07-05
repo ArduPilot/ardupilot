@@ -1928,12 +1928,12 @@ void DataFlash_Class::Log_Write_Beacon(AP_Beacon &beacon)
 }
 
 
-void DataFlash_Class::Log_Write_EcotronsEFI(AP_EcotronsEFI& efis)
+void DataFlash_Class::Log_Write_EFI(AP_EFI& efis)
 {
     EFI_State* first_efi_state = efis.get_state(0);
 
-    struct log_EcotronsEFI pkt_ecotronsefi = {
-        LOG_PACKET_HEADER_INIT(LOG_ECOTRONSEFI_MSG),
+    struct log_EFI pkt_efi = {
+        LOG_PACKET_HEADER_INIT(log_EFI_MSG),
         time_us                     : AP_HAL::micros64(),
         ecu_index                   : first_efi_state->ecu_index,
         rpm                         : first_efi_state->rpm,
@@ -1953,9 +1953,10 @@ void DataFlash_Class::Log_Write_EcotronsEFI(AP_EcotronsEFI& efis)
 
     static_assert(ENGINE_MAX_CYLINDERS == 4 && ENGINE_MAX_INJECTORS == 4, "Expected number of cylinders and injectors is 4, current numbers do not match!");
 
-    struct log_EcotronsEFI2 pkt_ecotronsefi2 = {
-        LOG_PACKET_HEADER_INIT(LOG_ECOTRONSEFI2_MSG),
+    struct log_EFI2 pkt_efi2 = {
+        LOG_PACKET_HEADER_INIT(log_EFI2_MSG),
         time_us                     : AP_HAL::micros64(),
+        health                      : AP_EFI::is_healthy(*first_efi_state),
         ignition_timing0            : first_efi_state->ignition_timing_crank_angle[0],
         ignition_timing1            : first_efi_state->ignition_timing_crank_angle[1],
         ignition_timing2            : first_efi_state->ignition_timing_crank_angle[2],
@@ -1966,6 +1967,6 @@ void DataFlash_Class::Log_Write_EcotronsEFI(AP_EcotronsEFI& efis)
         injection_timing3           : first_efi_state->injection_time_ms[3]
     };
 
-    WriteBlock(&pkt_ecotronsefi, sizeof(pkt_ecotronsefi));
-    WriteBlock(&pkt_ecotronsefi2, sizeof(pkt_ecotronsefi2));
+    WriteBlock(&pkt_efi, sizeof(pkt_efi));
+    WriteBlock(&pkt_efi2, sizeof(pkt_efi2));
 }
