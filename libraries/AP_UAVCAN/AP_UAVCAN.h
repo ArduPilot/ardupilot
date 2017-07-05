@@ -15,7 +15,7 @@
 #include <AP_GPS/GPS_Backend.h>
 #include <AP_Baro/AP_Baro_Backend.h>
 #include <AP_Compass/AP_Compass.h>
-#include <AP_EcotronsEFI/AP_EcotronsEFI.h>
+#include <AP_EFI/AP_EFI.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
@@ -97,9 +97,9 @@ public:
     void update_mag_state(uint8_t node);
 
 
-    uint8_t register_efi_listener(AP_EcotronsEFI_Backend* new_listener,
+    uint8_t register_efi_listener(AP_EFI_Backend* new_listener,
                                   uint8_t preferred_channel);
-    void remove_efi_listener(AP_EcotronsEFI_Backend* rem_listener);
+    void remove_efi_listener(AP_EFI_Backend* rem_listener);
     EFI_State *find_efi_node(uint8_t node);
     void update_efi_state(uint8_t node);
 
@@ -140,7 +140,7 @@ private:
     uint8_t _efi_node_taken[AP_UAVCAN_MAX_EFI_NODES];
     EFI_State _efi_node_state[AP_UAVCAN_MAX_EFI_NODES];
     uint8_t _efi_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
-    AP_EcotronsEFI_Backend* _efi_listeners[AP_UAVCAN_MAX_LISTENERS];
+    AP_EFI_Backend* _efi_listeners[AP_UAVCAN_MAX_LISTENERS];
 
 
 

@@ -1112,7 +1112,7 @@ void AP_UAVCAN::update_mag_state(uint8_t node)
 }
 
 //EFI
-uint8_t AP_UAVCAN::register_efi_listener(AP_EcotronsEFI_Backend* new_listener, uint8_t preferred_channel)
+uint8_t AP_UAVCAN::register_efi_listener(AP_EFI_Backend* new_listener, uint8_t preferred_channel)
 {
     uint8_t sel_place = 255, ret = 0;
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
@@ -1130,7 +1130,7 @@ uint8_t AP_UAVCAN::register_efi_listener(AP_EcotronsEFI_Backend* new_listener, u
                 _efi_node_taken[_efi_listener_to_node[sel_place]]++;
                 ret = preferred_channel;
 
-                debug_uavcan(2, "reg_EcotronsEFI place:%d, chan: %d\n\r", sel_place, preferred_channel);
+                debug_uavcan(2, "reg_EFI place:%d, chan: %d\n\r", sel_place, preferred_channel);
             }
         } else {
             for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
@@ -1150,7 +1150,7 @@ uint8_t AP_UAVCAN::register_efi_listener(AP_EcotronsEFI_Backend* new_listener, u
     return ret;
 }
 
-void AP_UAVCAN::remove_efi_listener(AP_EcotronsEFI_Backend* rem_listener)
+void AP_UAVCAN::remove_efi_listener(AP_EFI_Backend* rem_listener)
 {
     // Check for all listeners and compare pointers
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
