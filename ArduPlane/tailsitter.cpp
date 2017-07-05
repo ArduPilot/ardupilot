@@ -62,6 +62,7 @@ void QuadPlane::tailsitter_output(void)
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
 
+    const float servo_scale_magic = 4500.0f;
     static float orig_kP = -1.0f;
 
     if (tailsitter.tcomp_gain > 0) {
@@ -69,20 +70,22 @@ void QuadPlane::tailsitter_output(void)
             orig_kP = attitude_control->get_rate_pitch_pid().kP();
         }
         // boost throttle when pitch or yaw error is large
-        float pitch_error_cd = (plane.nav_pitch_cd - ahrs_view->pitch_sensor) * 0.5;
-        float pitch_error_norm = constrain_float(fabsf(pitch_error_cd), 0, 4500) / 4500.0;
-
-        float elevon_L = SRV_Channels::get_output_norm(SRV_Channel::k_elevon_left);
-        float elevon_R = SRV_Channels::get_output_norm(SRV_Channel::k_elevon_right);
+        float pitch_error_cd = (plane.nav_pitch_cd - ahrs_view->pitch_sensor) * 0.5f;
+        float pitch_error_norm = constrain_float(fabsf(pitch_error_cd), 0, servo_scale_magic) / servo_scale_magic;
 
         float yaw_error_cd = (wrap_360_cd(attitude_control->get_att_target_euler_cd().z) - ahrs_view->yaw_sensor) * 0.5;
-        float yaw_error_norm = constrain_float(fabsf(yaw_error_cd), 0, 4500) / 4500.0;
+        float yaw_error_norm = constrain_float(fabsf(yaw_error_cd), 0, servo_scale_magic) / servo_scale_magic;
 
-        // if elevons are near saturation, prioritize pitch over yaw by attenuating aileron control
-        float elevon_margin = 1.0f - 0.5f * fmaxf(fabsf(elevon_L), fabsf(elevon_R));
+        // prioritize pitch over yaw by attenuating aileron control when pitch demand is large
+        // Apparently get_output_norm will return zero if k_elevator is not mapped to a PWM channel???
+        float elev_d = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) / servo_scale_magic;
+        // use an exponential mapping to attenuate only for larger values of elev_d
+        float elevd2 = elev_d * elev_d;
+        float elevd4 = elevd2 * elevd2;
+        float ail_scale = 1.0f - (0.5f * elevd4);
 
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,
-                elevon_margin * SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
+                ail_scale * SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
 
         float norm_err_max = fmaxf(yaw_error_norm, pitch_error_norm);
         float thr_boost = 1.0f + norm_err_max * tailsitter.tcomp_gain;
@@ -106,12 +109,13 @@ void QuadPlane::tailsitter_output(void)
             hal.console->printf("target_yaw: %5.3f, yaw: %5.3f\n",
                     (double) attitude_control->get_att_target_euler_cd().z,
                     (double) ahrs_view->yaw_sensor);
-            DataFlash_Class::instance()->Log_Write("TCOM", "TimeUS,Perr,YErr,ThrB,ElvM,PkP,DesY,Yaw,Gscl", "Qffffffff",
+            DataFlash_Class::instance()->Log_Write("TCOM", "TimeUS,Perr,YErr,ThrB,ElvD,AilS,PkP,DesY,Yaw,Gscl", "Qfffffffff",
                                                    AP_HAL::micros64(),
                                                    (double) pitch_error_norm,
                                                    (double) yaw_error_norm,
                                                    (double) thr_boost,
-                                                   (double) elevon_margin,
+                                                   (double) elev_d,
+                                                   (double) ail_scale,
                                                    (double) pitch_kP,
                                                    (double) wrap_360_cd(attitude_control->get_att_target_euler_cd().z),
                                                    (double) ahrs_view->yaw_sensor,
