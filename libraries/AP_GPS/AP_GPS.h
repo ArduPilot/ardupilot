@@ -142,6 +142,10 @@ public:
         bool have_horizontal_accuracy:1;    ///< does GPS give horizontal position accuracy? Set to true only once available.
         bool have_vertical_accuracy:1;      ///< does GPS give vertical position accuracy? Set to true only once available.
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
+
+        // all the following fields must only all be filled by RTK capable backend drivers
+        uint32_t rtk_age_ms;               ///< GPS age of last baseline correction in milliseconds  (0 when no corrections, 0xFFFFFFFF indicates overflow)
+        uint8_t  rtk_num_sats;             ///< Current number of satellites used for RTK calculation
     };
 
     /// Startup initialisation.
@@ -303,6 +307,22 @@ public:
     }
     bool have_vertical_velocity(void) const {
         return have_vertical_velocity(primary_instance);
+    }
+
+    // return number of satellites used for RTK calculation
+    uint8_t rtk_num_sats(uint8_t instance) const {
+        return state[instance].rtk_num_sats;
+    }
+    uint8_t rtk_num_sats(void) const {
+        return rtk_num_sats(primary_instance);
+    }
+
+    // return age of last baseline correction in milliseconds
+    uint32_t rtk_age_ms(uint8_t instance) const {
+        return state[instance].rtk_age_ms;
+    }
+    uint32_t rtk_age_ms(void) const {
+        return rtk_age_ms(primary_instance);
     }
 
     // the expected lag (in seconds) in the position and velocity readings from the gps
