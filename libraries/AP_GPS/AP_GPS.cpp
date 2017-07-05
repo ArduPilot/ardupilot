@@ -897,8 +897,8 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         ground_speed(1)*100,  // cm/s
         ground_course(1)*100, // 1/100 degrees,
         num_sats(1),
-        0,
-        0);
+        rtk_num_sats(1),
+        rtk_age_ms(1));
 }
 
 void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan)
