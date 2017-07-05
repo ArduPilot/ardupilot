@@ -83,6 +83,16 @@ private:
         int32_t heading_2d; ///< Heading of motion 2-D [1e5 deg]
         uint32_t speed_accuracy; ///< Speed accuracy Estimate [cm/s]
     };
+    struct PACKED erb_rtk {
+        uint8_t base_num_sats;       ///< Current number of satellites used for RTK calculation
+        uint16_t age_cs;             ///< Age of the corrections in centiseconds (0 when no corrections, 0xFFFF indicates overflow)
+        int32_t baseline_N_mm;       ///< distance between base and rover along the north axis in millimeters
+        int32_t baseline_E_mm;       ///< distance between base and rover along the east axis in millimeters
+        int32_t baseline_D_mm;       ///< distance between base and rover along the down axis in millimeters
+        uint16_t ar_ratio;           ///< AR ratio multiplied by 10
+        uint16_t base_week_number;   ///< GPS Week Number of last baseline
+        uint32_t base_time_week_ms;  ///< GPS Time of Week of last baseline in milliseconds
+    };
 
     // Receive buffer
     union PACKED {
@@ -92,6 +102,7 @@ private:
         erb_stat stat;
         erb_dops dops;
         erb_vel vel;
+        erb_rtk rtk;
     } _buffer;
 
     enum erb_protocol_bytes {
@@ -102,6 +113,7 @@ private:
         MSG_STAT = 0x03,
         MSG_DOPS = 0x04,
         MSG_VEL = 0x05,
+        MSG_RTK = 0x07,
     };
 
     enum erb_fix_type {
