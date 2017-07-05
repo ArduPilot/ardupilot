@@ -98,13 +98,13 @@ void Copter::rpm_update(void)
 }
 
 /*
-  update Ecotrons EFIs
+  update EFIs
  */
-void Copter::ecotronsEFI_update(void)
+void Copter::efi_update(void)
 {
-    ecotrons_efi.update();
+    efi.update();
     if (should_log(MASK_LOG_RCIN)) {
-        DataFlash.Log_Write_EcotronsEFI(ecotrons_efi);
+        DataFlash.Log_Write_EFI(efi);
     }
 }
 

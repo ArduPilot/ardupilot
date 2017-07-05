@@ -93,7 +93,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
-#include <AP_EcotronsEFI/AP_EcotronsEFI.h>
+#include <AP_EFI/AP_EFI.h>
 
 // Configuration
 #include "defines.h"
@@ -216,8 +216,8 @@ private:
 
     AP_RPM rpm_sensor;
 
-    // Ecotrons EFI library
-    AP_EcotronsEFI ecotrons_efi;
+    // EFI library
+    AP_EFI efi;
 
     // Inertial Navigation EKF
     NavEKF2 EKF2{&ahrs, barometer, rangefinder};
@@ -712,9 +712,9 @@ private:
     void send_current_waypoint(mavlink_channel_t chan);
     void send_proximity(mavlink_channel_t chan, uint16_t count_max);
     void send_rpm(mavlink_channel_t chan);
-    void send_ecotronsEFI(mavlink_channel_t chan);
+    void send_efi(mavlink_channel_t chan);
     void rpm_update();
-    void ecotronsEFI_update();
+    void efi_update();
     void button_update();
     void init_proximity();
     void update_proximity();

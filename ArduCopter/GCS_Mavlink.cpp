@@ -275,15 +275,15 @@ void NOINLINE Copter::send_rpm(mavlink_channel_t chan)
 /*
   send ecotrons EFI packet
  */
-void NOINLINE Copter::send_ecotronsEFI(mavlink_channel_t chan)
+void NOINLINE Copter::send_efi(mavlink_channel_t chan)
 {
-#if ECOTRONSEFI_ENABLED == ENABLED
-    EFI_State* first_efi_state = ecotrons_efi.get_state(0);
+#if EFI_ENABLED == ENABLED
+    EFI_State* first_efi_state = efi.get_state(0);
     mavlink_msg_ecotrons_status_send(
         chan,
         first_efi_state->end_of_start,
         first_efi_state->crank_sensor_error,
-        AP_EcotronsEFI::is_healthy(*first_efi_state),
+        AP_EFI::is_healthy(*first_efi_state),
         first_efi_state->ecu_index,
         first_efi_state->rpm,
         first_efi_state->fuel_level_percent,
@@ -503,7 +503,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 
     case MSG_ECOTRONS_STATUS:
         CHECK_PAYLOAD_SIZE(ECOTRONS_STATUS);
-        copter.send_ecotronsEFI(chan);
+        copter.send_efi(chan);
         break;
 
     case MSG_TERRAIN:
