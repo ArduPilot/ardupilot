@@ -937,6 +937,10 @@ private:
     bool reached_loiter_target(void);
     bool print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...);
     uint16_t create_mixer(char *buf, uint16_t buf_size, const char *filename);
+    bool mix_one_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan);
+    bool mix_two_channels(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan1, uint8_t in_chan2, bool left_channel);
+    bool mix_passthrough(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan);
+    bool mix_trim_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan);
     bool setup_failsafe_mixing(void);
     void set_control_channels(void);
     void init_rc_in();
