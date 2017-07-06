@@ -22,8 +22,8 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Param: PWM_TYPE
     // @DisplayName: Output PWM type
-    // @Description: This selects the output PWM type, allowing for normal PWM continuous output, OneShot or brushed motor output
-    // @Values: 0:Normal,1:OneShot,2:OneShot125,3:Brushed
+    // @Description: This selects the output PWM type as regular PWM, OneShot, Brushed motor support using PWM (duty cycle) with separated direction signal, Brushed motor support with separate throttle and direction PWM (duty cyle)
+    // @Values: 0:Normal,1:OneShot,2:OneShot125,3:Brushed,4:BrushedPlus
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("PWM_TYPE", 1, AP_MotorsUGV, _pwm_type, PWM_TYPE_NORMAL),
@@ -57,7 +57,8 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     AP_GROUPEND
 };
 
-AP_MotorsUGV::AP_MotorsUGV()
+AP_MotorsUGV::AP_MotorsUGV(AP_ServoRelayEvents &relayEvents) :
+        _relayEvents(relayEvents)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -190,7 +191,14 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
             motor_left += dir * steering_scaled;
         }
     }
-
+    if (_pwm_type == PWM_TYPE_BRUSHED) {
+        const bool dirLeft = is_positive(motor_left);
+        const bool dirRight = is_positive(motor_right);
+        _relayEvents.do_set_relay(0, dirLeft);
+        _relayEvents.do_set_relay(1, dirRight);
+        motor_left = fabsf(motor_left);
+        motor_right = fabsf(motor_right);
+    }
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  1000.0f * motor_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 1000.0f * motor_right);
 }
@@ -217,6 +225,7 @@ void AP_MotorsUGV::setup_pwm_type()
         hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_ONESHOT);
         break;
     case PWM_TYPE_BRUSHED:
+    case PWM_TYPE_BRUSHEDPLUS:
         hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         /*
          * Group 0: channels 0 1
@@ -242,6 +251,10 @@ void AP_MotorsUGV::setup_safety_output()
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
         SRV_Channels::setup_failsafe_trim_all();
     }
+    if (_pwm_type == PWM_TYPE_BRUSHEDPLUS) {
+        SRV_Channels::setup_failsafe_trim_all();
+    }
+
     if (_disarm_disable_pwm) {
         // throttle channels output zero pwm (i.e. no signal)
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
