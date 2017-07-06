@@ -65,15 +65,8 @@ AP_MotorsUGV::AP_MotorsUGV(AP_ServoRelayEvents &relayEvents) :
 
 void AP_MotorsUGV::init()
 {
-    // k_steering are limited to -45;45 degree
-    SRV_Channels::set_angle(SRV_Channel::k_steering, SERVO_MAX);
-
-    // k_throttle are in power percent so -100 ... 100
-    SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
-
-    // skid steering left/right throttle as -1000 to 1000 values
-    SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
-    SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
+    // setup servo ouput
+    setup_servo_output();
 
     // setup pwm type
     setup_pwm_type();
@@ -213,6 +206,20 @@ void AP_MotorsUGV::slew_limit_throttle(float dt)
         }
         _throttle = constrain_int16(_throttle, _last_throttle - temp, _last_throttle + temp);
     }
+}
+
+// setup servo output
+void AP_MotorsUGV::setup_servo_output()
+{
+    // k_steering are limited to -45;45 degree
+    SRV_Channels::set_angle(SRV_Channel::k_steering, SERVO_MAX);
+
+    // k_throttle are in power percent so -100 ... 100
+    SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
+
+    // skid steering left/right throttle as -1000 to 1000 values
+    SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
+    SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
 }
 
 // setup pwm output type
