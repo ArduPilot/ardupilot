@@ -202,15 +202,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(throttle_cruise,        "CRUISE_THROTTLE",    50),
 
-    // @Param: THR_SLEWRATE
-    // @DisplayName: Throttle slew rate
-    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. A value of zero means no limit. A value of 100 means the throttle can change over its full range in one second. Note that for some NiMH powered rovers setting a lower value like 40 or 50 may be worthwhile as the sudden current demand on the battery of a big rise in throttle may cause a brownout.
-    // @Units: %/s
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     100),
-
     // @Param: SKID_STEER_IN
     // @DisplayName: Skid steering input
     // @Description: Set this to 1 for skid steering input rovers (tank track style in RC controller). When enabled, servo1 is used for the left track control, servo3 is used for right track control
@@ -551,12 +542,17 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_VisualOdom/AP_VisualOdom.cpp
     AP_SUBGROUPINFO(visual_odom, "VISO", 7, ParametersG2, AP_VisualOdom),
 
+    // @Group: MOT_
+    // @Path: MotorsUGV.cpp
+    AP_SUBGROUPINFO(motors, "MOT_", 8, ParametersG2, AP_MotorsUGV),
+
     AP_GROUPEND
 };
 
 
 ParametersG2::ParametersG2(void)
-    : beacon(rover.serial_manager)
+    : beacon(rover.serial_manager),
+      motors(rover.ServoRelayEvents)
 #if ADVANCED_FAILSAFE == ENABLED
     , afs(rover.mission, rover.barometer, rover.gps, rover.rcmap)
 #endif

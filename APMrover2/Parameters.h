@@ -127,7 +127,7 @@ public:
         k_param_throttle_min = 170,
         k_param_throttle_max,
         k_param_throttle_cruise,
-        k_param_throttle_slewrate,
+        k_param_throttle_slewrate_old,
         k_param_throttle_reduction,
         k_param_skid_steer_in,
         k_param_skid_steer_out_old,
@@ -248,7 +248,6 @@ public:
     AP_Int8     throttle_min;
     AP_Int8     throttle_max;
     AP_Int8     throttle_cruise;
-    AP_Int8     throttle_slewrate;
     AP_Int8     skid_steer_in;
 
     // failsafe control
@@ -322,6 +321,9 @@ public:
 
     // Visual Odometry camera
     AP_VisualOdom visual_odom;
+
+    // Motor library
+    AP_MotorsUGV motors;
 };
 
 extern const AP_Param::Info var_info[];

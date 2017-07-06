@@ -63,6 +63,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include "AP_MotorsUGV.h"
 
 #include "AP_Arming.h"
 #include "compat.h"
@@ -108,6 +109,7 @@ public:
     // HAL::Callbacks implementation.
     void setup(void) override;
     void loop(void) override;
+    bool get_reverse() const { return in_reverse; }
 
 private:
     AP_HAL::BetterStream* cliSerial;
@@ -478,14 +480,11 @@ private:
     void Log_Arm_Disarm();
 
     void load_parameters(void);
-    void throttle_slew_limit(void);
     bool auto_check_trigger(void);
     bool use_pivot_steering(void);
     void calc_throttle(float target_speed);
     void calc_lateral_acceleration();
     void calc_nav_steer();
-    bool have_skid_steering();
-    void mix_skid_steering();
     void set_servos(void);
     void set_auto_WP(const struct Location& loc);
     void set_guided_WP(const struct Location& loc);
