@@ -307,23 +307,10 @@ void Plane::trim_control_surfaces()
         return;
     }
 
-    // trim ailerons if not used as old elevons
-    if (g.elevon_output == MIXING_DISABLED) {
-        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_aileron);
-    }
-
-    // trim elevator if not used as old elevons or vtail
-    if (g.elevon_output == MIXING_DISABLED && g.vtail_output == MIXING_DISABLED) {
-        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevator);
-    }
-
-    // trim rudder if not used as old vtail
-    if (g.vtail_output == MIXING_DISABLED) {
-        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_rudder);
-    }
-
-    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_aileron_with_input);
-    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevator_with_input);
+    // trim main surfaces
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_aileron);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevator);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_rudder);
 
     // trim elevons
     SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevon_left);

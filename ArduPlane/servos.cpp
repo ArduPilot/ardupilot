@@ -558,20 +558,10 @@ void Plane::set_servos_flaps(void)
  */
 void Plane::servo_output_mixers(void)
 {
-    if (g.vtail_output != MIXING_DISABLED) {
-        channel_output_mixer(g.vtail_output, SRV_Channel::k_elevator, SRV_Channel::k_rudder);
-    } else if (g.elevon_output != MIXING_DISABLED) {
-        channel_output_mixer(g.elevon_output, SRV_Channel::k_elevator, SRV_Channel::k_aileron);
-    }
-
-    // allow for extra elevon and vtail channels
+    // mix elevons and vtail channels
     channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right);
     channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
 
-    // copy aileron to deprecated aileron_with_input and elevator to deprecated elevator_with_input
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input, SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input, SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
-    
     // implement differential spoilers
     dspoiler_update();
 }

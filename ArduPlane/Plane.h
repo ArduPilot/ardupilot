@@ -849,6 +849,7 @@ private:
     void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page);
 
     void load_parameters(void);
+    void convert_mixers(void);
     void adjust_altitude_target();
     void setup_glide_slope(void);
     int32_t get_RTL_altitude();
