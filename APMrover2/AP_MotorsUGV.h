@@ -24,6 +24,8 @@ public:
     // setup output in case of main CPU failure
     void setup_safety_output();
 
+    void setup_servo_output();
+
     // set steering as a value from -4500 to +4500
     float get_steering() const { return _steering; }
     void set_steering(float steering) { _steering = steering; }

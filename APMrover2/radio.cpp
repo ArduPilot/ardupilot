@@ -14,8 +14,10 @@ void Rover::set_control_channels(void)
     channel_steer->set_angle(SERVO_MAX);
     channel_throttle->set_angle(100);
 
-    // For a rover safety is TRIM throttle
+    // Allow to reconfigure ouput when not armed
     if (!arming.is_armed()) {
+        g2.motors.setup_servo_output();
+        // For a rover safety is TRIM throttle
         g2.motors.setup_safety_output();
     }
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
