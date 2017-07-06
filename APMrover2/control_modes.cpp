@@ -140,7 +140,7 @@ bool Rover::motor_active()
 {
     // Check if armed and output throttle servo is not neutral
     if (hal.util->get_soft_armed()) {
-        if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != 0) {
+        if (!is_zero(g2.motors.get_throttle())) {
             return true;
         }
     }

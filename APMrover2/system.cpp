@@ -180,6 +180,9 @@ void Rover::init_ardupilot()
     init_rc_in();        // sets up rc channels from radio
     init_rc_out();        // sets up the timer libs
 
+    // init motors including setting rc out channels ranges
+    g2.motors.init();
+
     relay.init();
 
 #if MOUNT == ENABLED

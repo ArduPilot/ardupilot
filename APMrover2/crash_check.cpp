@@ -23,7 +23,7 @@ void Rover::crash_check()
 
   if ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
       (fabsf(ahrs.get_gyro().z) >= CRASH_CHECK_VEL_MIN) ||  // Check turn speed
-      (fabsf(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)) < CRASH_CHECK_THROTTLE_MIN)) {
+      (fabsf(g2.motors.get_throttle()) < CRASH_CHECK_THROTTLE_MIN)) {
     crash_counter = 0;
     return;
   }
