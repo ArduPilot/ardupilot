@@ -104,7 +104,7 @@ void Rover::calc_throttle(float target_speed) {
         g2.motors.set_throttle(g.throttle_min.get());
         // Stop rotation in case of loitering and skid steering
         if (g2.motors.have_skid_steering()) {
-            g2.motors.set_steering(0);
+            g2.motors.set_steering(0.0f);
         }
         return;
     }
@@ -172,7 +172,7 @@ void Rover::calc_throttle(float target_speed) {
     if (guided_mode != Guided_Velocity) {
         if (use_pivot_steering()) {
             // In Guided Velocity, only the steering input is used to calculate the pivot turn.
-            g2.motors.set_throttle(0);
+            g2.motors.set_throttle(0.0f);
         }
     }
 }
@@ -223,7 +223,7 @@ void Rover::calc_lateral_acceleration() {
 void Rover::calc_nav_steer() {
     // check to see if the rover is loitering
     if (in_stationary_loiter()) {
-        g2.motors.set_steering(0);
+        g2.motors.set_steering(0.0f);
         return;
     }
 

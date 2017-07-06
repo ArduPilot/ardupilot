@@ -200,9 +200,9 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 void AP_MotorsUGV::slew_limit_throttle(float dt)
 {
     if (_use_slew_rate && (_slew_rate > 0)) {
-        float temp = _slew_rate * dt * 0.01f * 100;  // TODO : get THROTTLE MIN and THROTTLE MAX
-        if (temp < 1) {
-            temp = 1;
+        float temp = _slew_rate * dt * 0.01f * 100.0f;  // TODO : get THROTTLE MIN and THROTTLE MAX
+        if (temp < 1.0f) {
+            temp = 1.0f;
         }
         _throttle = constrain_int16(_throttle, _last_throttle - temp, _last_throttle + temp);
     }
