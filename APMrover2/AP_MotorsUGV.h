@@ -2,18 +2,20 @@
 
 #include "defines.h"
 #include "AP_Arming.h"
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 class AP_MotorsUGV {
 public:
 
     // Constructor
-    AP_MotorsUGV();
+    AP_MotorsUGV(AP_ServoRelayEvents &relayEvents);
 
     enum pwm_type {
         PWM_TYPE_NORMAL = 0,
         PWM_TYPE_ONESHOT = 1,
         PWM_TYPE_ONESHOT125 = 2,
-        PWM_TYPE_BRUSHED = 3
+        PWM_TYPE_BRUSHED = 3,
+        PWM_TYPE_BRUSHEDPLUS = 4,
      };
 
     // initialise motors
@@ -55,6 +57,9 @@ protected:
 
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
+
+    // external references
+    AP_ServoRelayEvents &_relayEvents;
 
     // parameters
     AP_Int8 _pwm_type;  // PWM output type
