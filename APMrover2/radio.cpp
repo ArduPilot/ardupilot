@@ -137,14 +137,14 @@ void Rover::read_radio()
         int16_t steer = channel_steer->get_radio_trim();
         int16_t thr   = channel_throttle->get_radio_trim();
         if (steering_scaled > 0.0f) {
-            steer += steering_scaled * (channel_steer->get_radio_max()-channel_steer->get_radio_trim());
+            steer += steering_scaled * (channel_steer->get_radio_max() - channel_steer->get_radio_trim());
         } else {
-            steer += steering_scaled * (channel_steer->get_radio_trim()-channel_steer->get_radio_min());
+            steer += steering_scaled * (channel_steer->get_radio_trim() - channel_steer->get_radio_min());
         }
         if (throttle_scaled > 0.0f) {
-            thr += throttle_scaled * (channel_throttle->get_radio_max()-channel_throttle->get_radio_trim());
+            thr += throttle_scaled * (channel_throttle->get_radio_max() - channel_throttle->get_radio_trim());
         } else {
-            thr += throttle_scaled * (channel_throttle->get_radio_trim()-channel_throttle->get_radio_min());
+            thr += throttle_scaled * (channel_throttle->get_radio_trim() - channel_throttle->get_radio_min());
         }
         channel_steer->set_pwm(steer);
         channel_throttle->set_pwm(thr);
