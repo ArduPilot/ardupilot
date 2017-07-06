@@ -439,6 +439,32 @@ void Plane::Log_Arm_Disarm() {
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
+
+struct PACKED log_AETR {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    int16_t aileron;
+    int16_t elevator;
+    int16_t throttle;
+    int16_t rudder;
+    int16_t flap;
+};
+
+void Plane::Log_Write_AETR()
+{
+    struct log_AETR pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_AETR_MSG)
+        ,time_us  : AP_HAL::micros64()
+        ,aileron  : SRV_Channels::get_output_scaled(SRV_Channel::k_aileron)
+        ,elevator : SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)
+        ,throttle : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)
+        ,rudder   : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)
+        ,flap     : SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto)
+        };
+
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 void Plane::Log_Write_GPS(uint8_t instance)
 {
     if (!ahrs.have_ekf_logging()) {
@@ -458,6 +484,7 @@ void Plane::Log_Write_RC(void)
     if (rssi.enabled()) {
         DataFlash.Log_Write_RSSI(rssi);
     }
+    Log_Write_AETR();
 }
 
 void Plane::Log_Write_Baro(void)
@@ -530,6 +557,8 @@ const struct LogStructure Plane::log_structure[] = {
       "PIQY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_PIQA_MSG, sizeof(log_PID), \
       "PIQA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+    { LOG_AETR_MSG, sizeof(log_AETR), \
+      "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap" }, \
 };
 
 #if CLI_ENABLED == ENABLED
