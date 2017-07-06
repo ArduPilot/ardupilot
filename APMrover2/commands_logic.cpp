@@ -378,7 +378,7 @@ void Rover::nav_set_yaw_speed()
     if ((millis() - guided_control.msg_time_ms) > 3000) {
         gcs_send_text(MAV_SEVERITY_WARNING, "NAV_SET_YAW_SPEED not recvd last 3secs, stopping");
         g2.motors.set_throttle(g.throttle_min.get());
-        g2.motors.set_steering(0);
+        g2.motors.set_steering(0.0f);
         lateral_acceleration = 0.0f;
         return;
     }
@@ -401,7 +401,7 @@ void Rover::nav_set_speed()
     if ((millis() - guided_control.msg_time_ms) > 3000) {
         gcs_send_text(MAV_SEVERITY_WARNING, "SET_VELOCITY not recvd last 3secs, stopping");
         g2.motors.set_throttle(g.throttle_min.get());
-        g2.motors.set_steering(0);
+        g2.motors.set_steering(0.0f);
         lateral_acceleration = 0.0f;
         prev_WP = current_loc;
         next_WP = current_loc;
@@ -473,9 +473,9 @@ bool Rover::do_yaw_rotation()
 
     // check if we are within 5 degrees of the target heading
     if (error_to_target_yaw <= 500) {
-        g2.motors.set_steering(0);  // stop the current rotation
+        g2.motors.set_steering(0.0f);  // stop the current rotation
         condition_value = condition_start;  // reset the condition value to its previous value
-        g2.motors.set_throttle(0);
+        g2.motors.set_throttle(0.0f);
         next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
         do_auto_rotation = false;
         return true;
