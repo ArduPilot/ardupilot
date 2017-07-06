@@ -517,10 +517,10 @@ void AP_Baro::update(void)
     }
 
     // consider a sensor as healthy if it has had an update in the
-    // last 0.5 seconds
+    // last 0.5 seconds and values are non-zero and have changed within the last 2 seconds
     uint32_t now = AP_HAL::millis();
     for (uint8_t i=0; i<_num_sensors; i++) {
-        sensors[i].healthy = (now - sensors[i].last_update_ms < 500) && !is_zero(sensors[i].pressure);
+        sensors[i].healthy = (now - sensors[i].last_update_ms < BARO_TIMEOUT_MS) && (now - sensors[i].last_change_ms < BARO_DATA_CHANGE_TIMEOUT_MS) && !is_zero(sensors[i].pressure);
     }
 
     for (uint8_t i=0; i<_num_sensors; i++) {

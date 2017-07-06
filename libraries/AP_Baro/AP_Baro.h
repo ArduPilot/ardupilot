@@ -12,6 +12,10 @@
 // multiple sensor instances
 #define BARO_MAX_DRIVERS 3
 
+// timeouts for health reporting
+#define BARO_TIMEOUT_MS                 500     // timeout in ms since last successful read
+#define BARO_DATA_CHANGE_TIMEOUT_MS     2000    // timeout in ms since last successful read that involved temperature of pressure changing
+
 class AP_Baro_Backend;
 
 class AP_Baro
@@ -169,6 +173,7 @@ private:
     struct sensor {
         baro_type_t type;                   // 0 for air pressure (default), 1 for water pressure
         uint32_t last_update_ms;        // last update time in ms
+        uint32_t last_change_ms;        // last update time in ms that included a change in reading from previous readings
         bool healthy:1;                 // true if sensor is healthy
         bool alt_ok:1;                  // true if calculated altitude is ok
         bool calibrated:1;              // true if calculated calibrated successfully
