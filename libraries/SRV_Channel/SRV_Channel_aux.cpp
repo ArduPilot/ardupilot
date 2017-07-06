@@ -571,6 +571,10 @@ float SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t function)
  */
 void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt)
 {
+    if (slew_rate <= 0) {
+        // nothing to do
+        return;
+    }
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &ch = channels[i];
         if (ch.function == function) {
