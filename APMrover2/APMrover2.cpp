@@ -442,8 +442,8 @@ void Rover::update_current_mode(void)
                     gcs_send_mission_item_reached_message(0);
                 }
                 g2.motors.set_throttle(g.throttle_min.get());
-                g2.motors.set_steering(0);
-                lateral_acceleration = 0;
+                g2.motors.set_steering(0.0f);
+                lateral_acceleration = 0.0f;
             } else {
                 calc_lateral_acceleration();
                 calc_nav_steer();
@@ -502,8 +502,8 @@ void Rover::update_current_mode(void)
 
     case HOLD:
         // hold position - stop motors and center steering
-        g2.motors.set_throttle(0);
-        g2.motors.set_steering(0);
+        g2.motors.set_throttle(0.0f);
+        g2.motors.set_steering(0.0f);
         if (!in_auto_reverse) {
             set_reverse(false);
         }
@@ -553,8 +553,8 @@ void Rover::update_navigation()
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
                 g2.motors.set_throttle(g.throttle_min.get());
-                g2.motors.set_steering(0);
-                lateral_acceleration = 0;
+                g2.motors.set_steering(0.0f);
+                lateral_acceleration = 0.0f;
             } else {
                 calc_lateral_acceleration();
                 calc_nav_steer();
