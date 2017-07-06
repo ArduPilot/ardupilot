@@ -15,7 +15,7 @@ public:
         PWM_TYPE_ONESHOT = 1,
         PWM_TYPE_ONESHOT125 = 2,
         PWM_TYPE_BRUSHED = 3,
-        PWM_TYPE_BRUSHEDPLUS = 4,
+        PWM_TYPE_BRUSHEDBIPOLAR = 4,
      };
 
     // initialise motors
