@@ -86,9 +86,9 @@ public:
         k_param_takeoff_heading_hold, // unused
         k_param_level_roll_limit,
         k_param_hil_servos,
-        k_param_vtail_output,
+        k_param_vtail_output, // unused
         k_param_nav_controller,
-        k_param_elevon_output,
+        k_param_elevon_output, // unused
         k_param_att_controller,
         k_param_mixing_gain,
         k_param_scheduler,
@@ -458,8 +458,6 @@ public:
     // Misc
     //
     AP_Int8 auto_trim;
-    AP_Int8 vtail_output;
-    AP_Int8 elevon_output;
     AP_Int8 rudder_only;
     AP_Float mixing_gain;
     AP_Int16 mixing_offset;
