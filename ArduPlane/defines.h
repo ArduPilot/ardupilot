@@ -146,6 +146,7 @@ enum log_messages {
     LOG_PIQP_MSG,
     LOG_PIQY_MSG,
     LOG_PIQA_MSG,
+    LOG_AETR_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
