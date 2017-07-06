@@ -166,6 +166,28 @@ public:
     // return true if function is for a multicopter motor
     static bool is_motor(SRV_Channel::Aux_servo_function_t function);
 
+    // return the function of a channel
+    SRV_Channel::Aux_servo_function_t get_function(void) const {
+        return (SRV_Channel::Aux_servo_function_t)function.get();
+    }
+
+    // set and save function for channel. Used in upgrade of parameters in plane
+    void function_set_and_save(SRV_Channel::Aux_servo_function_t f) {
+        function.set_and_save(int8_t(f));
+    }
+
+    // set and save function for reversed. Used in upgrade of parameters in plane
+    void reversed_set_and_save_ifchanged(bool r) {
+        reversed.set_and_save_ifchanged(r?1:0);
+    }
+    
+    // return true if the SERVOn_FUNCTION has been configured in
+    // either storage or a defaults file. This is used for upgrade of
+    // parameters in plane
+    bool function_configured(void) const {
+        return function.configured();
+    }
+    
 private:
     AP_Int16 servo_min;
     AP_Int16 servo_max;
