@@ -14,33 +14,40 @@
  */
 
 #include "AP_EFI_UAVCAN.h"
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 extern const AP_HAL::HAL &hal;
 
 #if HAL_WITH_UAVCAN
 
+
 AP_EFI_UAVCAN::AP_EFI_UAVCAN(EFI_State& _efi_state, uint8_t efi_source_node_id)
     : AP_EFI_Backend(_efi_state)
 {
-    if (hal.can_mgr != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            uint8_t listener_channel = ap_uavcan->register_efi_listener(this, efi_source_node_id);
-            hal.console->printf("AP_EFI_UAVCAN: EFI Listener registered to channel %d\n", listener_channel); 
+    if (AP_BoardConfig_CAN::get_can_num_ifaces() >= 1) {
+        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+            if (hal.can_mgr[i] != nullptr) {
+                AP_UAVCAN* uavcan = hal.can_mgr[i]->get_UAVCAN();
+
+                if (uavcan != nullptr) {
+                    uint8_t listener_channel = uavcan->register_efi_listener(this, efi_source_node_id);
+                    _manager = i;
+                    hal.console->printf("AP_EFI_UAVCAN: EFI Listener registered to channel %d\n", listener_channel);
+                } 
+            }
         }
     }
 }
 
 AP_EFI_UAVCAN::~AP_EFI_UAVCAN()
 {
-    if (hal.can_mgr != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr->get_UAVCAN();
+    if (hal.can_mgr[_manager] != nullptr) {
+        AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
         if (ap_uavcan != nullptr) {
             ap_uavcan->remove_efi_listener(this);
         }
     }
 }
-
 void AP_EFI_UAVCAN::update()
 {
     // TODO: should I be using semaphores here? Should it be blocking?
