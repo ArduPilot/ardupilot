@@ -71,6 +71,8 @@ public:
     bool logging_enabled() const override;
     bool logging_failed() const override;
 
+    bool logging_started(void) const override { return _write_fd != -1; }
+
     void vehicle_was_disarmed() override;
 
     virtual void PrepForArming() override;

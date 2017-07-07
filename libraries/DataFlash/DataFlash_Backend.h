@@ -51,7 +51,7 @@ public:
     virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
 
-    virtual bool logging_started(void) const { return log_write_started; }
+    virtual bool logging_started(void) const = 0;
 
     virtual void Init() { }
 
@@ -62,7 +62,6 @@ public:
     virtual void PrepForArming() { }
 
     virtual uint16_t start_new_log(void) = 0;
-    bool log_write_started;
 
     /* stop logging - close output files etc etc.
      *
