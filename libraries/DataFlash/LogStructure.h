@@ -858,44 +858,37 @@ struct PACKED log_Beacon {
 struct PACKED log_EFI {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint8_t  ecu_index; 
-    float    rpm;
-    float    fuel_level;
-    float    fuel_flow;                 
-    float    engine_load;                
-    float    throttle_position;          
-    bool     end_of_start;               
-    bool     crank_sensor_error;         
-    float    spark_dwell_time;           
-    float    barometric_pressure;        
-    float    intake_manifold_pressure;   
+    uint8_t  engine_load_percent;
+    uint32_t engine_speed_rpm;
+    float    spark_dwell_time_ms;
+    float    atmospheric_pressure_kpa;
+    float    intake_manifold_pressure_kpa;
     float    intake_manifold_temperature;
-    float    coolant_temperature;        
-    float    battery_voltage;            
-    /*
-    double    ignition_timing0;           
-    double    ignition_timing1;          
-    double    ignition_timing2;           
-    double    ignition_timing3;           
-    double    injection_timing0;          
-    double    injection_timing1;          
-    double    injection_timing2;          
-    double    injection_timing3;      
-    */    
+    float    coolant_temperature;
+    float    oil_pressure;
+    float    oil_temperature;
+    float    fuel_pressure;
+    float    fuel_consumption_rate_cm3pm;
+    float    estimated_consumed_fuel_volume_cm3;
+    uint8_t  throttle_position_percent;
+    uint8_t  ecu_index;
 };
 
 struct PACKED log_EFI2 {
     LOG_PACKET_HEADER;
     uint64_t  time_us;
     bool     health;
-    float    ignition_timing0;           
-    float    ignition_timing1;          
-    float    ignition_timing2;           
-    float    ignition_timing3;           
-    float    injection_timing0;          
-    float    injection_timing1;          
-    float    injection_timing2;          
-    float    injection_timing3; 
+    uint8_t  engine_state;
+    bool     general_error;
+    uint8_t  crankshaft_sensor_status;
+    uint8_t  temperature_status;
+    uint8_t  fuel_pressure_status;
+    uint8_t  oil_pressure_status;
+    uint8_t  detonation_status;
+    uint8_t  misfire_status;
+    uint8_t  debris_status;
+    uint8_t  spark_plug_usage;
+    uint8_t  ecu_index;
 };
 
 // #endif // SBP_HW_LOGGING
@@ -941,11 +934,12 @@ struct PACKED log_EFI2 {
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"
 
-#define ECOT_LABELS "TimeUS,LP,RPM,FL,FF,Load,TPS,EOS,CErr,SDT,BaroP,MP,MT,ECT,Volt"
-#define ECOT_FMT    "QBfffffBBffffff" 
+#define ECOT_LABELS "TimeUS,LP,RPM,SDT,ATM,IMP,IMT,ECT,OilP,OilT,FP,FCR,CFV,TPS,IDX"
+#define ECOT_FMT    "QBIffffffffffBB" 
 
-#define ECOT2_LABELS "TimeUS,IgnT0,IgnT1,IgnT2,IgnT3,IT0,IT1,IT2,IT3"
-#define ECOT2_FMT    "Qffffffff"
+#define ECOT2_LABELS "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DS,SPU,IDX"
+#define ECOT2_FMT    "QBBBBBBBBBBBB"
+
 /*
 Format characters in the format string for binary log messages
   b   : int8_t

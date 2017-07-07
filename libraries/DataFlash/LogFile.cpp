@@ -1934,37 +1934,38 @@ void DataFlash_Class::Log_Write_EFI(AP_EFI& efis)
 
     struct log_EFI pkt_efi = {
         LOG_PACKET_HEADER_INIT(log_EFI_MSG),
-        time_us                     : AP_HAL::micros64(),
-        ecu_index                   : first_efi_state->ecu_index,
-        rpm                         : first_efi_state->rpm,
-        fuel_level                  : first_efi_state->fuel_level_percent,
-        fuel_flow                   : first_efi_state->fuel_flow_rate,
-        engine_load                 : first_efi_state->engine_load_percent,
-        throttle_position           : first_efi_state->throttle_position_percent,
-        end_of_start                : first_efi_state->end_of_start,
-        crank_sensor_error          : first_efi_state->crank_sensor_error,
-        spark_dwell_time            : first_efi_state->spark_dwell_time_ms,
-        barometric_pressure         : first_efi_state->barometric_pressure,
-        intake_manifold_pressure    : first_efi_state->intake_manifold_pressure,
-        intake_manifold_temperature : first_efi_state->intake_manifold_temperature,
-        coolant_temperature         : first_efi_state->coolant_temperature,
-        battery_voltage             : first_efi_state->battery_voltage
+        time_us                                 : AP_HAL::micros64(),
+        engine_load_percent                     : first_efi_state->engine_load_percent,
+        engine_speed_rpm                        : first_efi_state->engine_speed_rpm,  
+        spark_dwell_time_ms                     : first_efi_state->spark_dwell_time_ms,
+        atmospheric_pressure_kpa                : first_efi_state->atmospheric_pressure_kpa,
+        intake_manifold_pressure_kpa            : first_efi_state->intake_manifold_pressure_kpa,
+        intake_manifold_temperature             : first_efi_state->intake_manifold_temperature,  
+        coolant_temperature                     : first_efi_state->coolant_temperature,
+        oil_pressure                            : first_efi_state->oil_pressure,             
+        oil_temperature                         : first_efi_state->oil_temperature,
+        fuel_pressure                           : first_efi_state->fuel_pressure,
+        fuel_consumption_rate_cm3pm             : first_efi_state->fuel_consumption_rate_cm3pm,                    
+        estimated_consumed_fuel_volume_cm3      : first_efi_state->estimated_consumed_fuel_volume_cm3, 
+        throttle_position_percent               : first_efi_state->throttle_position_percent,            
+        ecu_index                               : first_efi_state->ecu_index
     };
-
-    static_assert(ENGINE_MAX_CYLINDERS == 4 && ENGINE_MAX_INJECTORS == 4, "Expected number of cylinders and injectors is 4, current numbers do not match!");
 
     struct log_EFI2 pkt_efi2 = {
         LOG_PACKET_HEADER_INIT(log_EFI2_MSG),
         time_us                     : AP_HAL::micros64(),
         health                      : AP_EFI::is_healthy(*first_efi_state),
-        ignition_timing0            : first_efi_state->ignition_timing_crank_angle[0],
-        ignition_timing1            : first_efi_state->ignition_timing_crank_angle[1],
-        ignition_timing2            : first_efi_state->ignition_timing_crank_angle[2],
-        ignition_timing3            : first_efi_state->ignition_timing_crank_angle[3],
-        injection_timing0           : first_efi_state->injection_time_ms[0],
-        injection_timing1           : first_efi_state->injection_time_ms[1],
-        injection_timing2           : first_efi_state->injection_time_ms[2],
-        injection_timing3           : first_efi_state->injection_time_ms[3]
+        engine_state                : first_efi_state->engine_state,
+        general_error               : first_efi_state->general_error,
+        crankshaft_sensor_status    : first_efi_state->crankshaft_sensor_status,
+        temperature_status          : first_efi_state->temperature_status,
+        fuel_pressure_status        : first_efi_state->fuel_pressure_status,
+        oil_pressure_status         : first_efi_state->oil_pressure_status,
+        detonation_status           : first_efi_state->detonation_status,
+        misfire_status              : first_efi_state->misfire_status,
+        debris_status               : first_efi_state->debris_status,
+        spark_plug_usage            : first_efi_state->spark_plug_usage,
+        ecu_index                   : first_efi_state->ecu_index
     };
 
     WriteBlock(&pkt_efi, sizeof(pkt_efi));
