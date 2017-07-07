@@ -891,6 +891,17 @@ struct PACKED log_EFI2 {
     uint8_t  ecu_index;
 };
 
+struct PACKED log_EFI_CYL {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    ignition_timing_deg;
+    float    injection_time_ms;
+    float    cylinder_head_temperature;
+    float    exhaust_gas_temperature;
+    float    lambda_coefficient;
+    uint8_t  ecu_index;
+};
+
 // #endif // SBP_HW_LOGGING
 
 #define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
@@ -939,6 +950,9 @@ struct PACKED log_EFI2 {
 
 #define EFI2_LABELS "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DS,SPU,IDX"
 #define EFI2_FMT    "QBBBBBBBBBBBB"
+
+#define EFI_CYL_LABELS "TimeUS,IgnT,InjT,CHT,EGT,Lambda,IDX"
+#define EFI_CYL_FMT    "QfffffB"
 
 /*
 Format characters in the format string for binary log messages
@@ -1178,8 +1192,12 @@ Format characters in the format string for binary log messages
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }, \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf" }, \
-    { log_EFI_MSG, sizeof(log_EFI), "EFI", EFI_FMT, EFI_LABELS }, \
-    { log_EFI2_MSG, sizeof(log_EFI2), "EFI2", EFI2_FMT, EFI2_LABELS } 
+    { LOG_EFI_MSG, sizeof(log_EFI), "EFI", EFI_FMT, EFI_LABELS }, \
+    { LOG_EFI2_MSG, sizeof(log_EFI2), "EFI2", EFI2_FMT, EFI2_LABELS }, \
+    { LOG_EFI_CYL1_MSG, sizeof(log_EFI_CYL), "ECL1", EFI_CYL_FMT, EFI_CYL_LABELS }, \
+    { LOG_EFI_CYL2_MSG, sizeof(log_EFI_CYL), "ECL2", EFI_CYL_FMT, EFI_CYL_LABELS }, \
+    { LOG_EFI_CYL3_MSG, sizeof(log_EFI_CYL), "ECL3", EFI_CYL_FMT, EFI_CYL_LABELS }, \
+    { LOG_EFI_CYL4_MSG, sizeof(log_EFI_CYL), "ECL4", EFI_CYL_FMT, EFI_CYL_LABELS }
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -1318,8 +1336,13 @@ enum LogMessages {
     LOG_VISUALODOM_MSG,
     LOG_AOA_SSA_MSG,
     LOG_BEACON_MSG,
-    log_EFI_MSG,
-    log_EFI2_MSG,
+
+    LOG_EFI_MSG,
+    LOG_EFI2_MSG,
+    LOG_EFI_CYL1_MSG,
+    LOG_EFI_CYL2_MSG,
+    LOG_EFI_CYL3_MSG,
+    LOG_EFI_CYL4_MSG,
 };
 
 enum LogOriginType {

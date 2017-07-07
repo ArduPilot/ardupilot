@@ -1933,7 +1933,7 @@ void DataFlash_Class::Log_Write_EFI(AP_EFI& efis)
     EFI_State* first_efi_state = efis.get_state(0);
 
     struct log_EFI pkt_efi = {
-        LOG_PACKET_HEADER_INIT(log_EFI_MSG),
+        LOG_PACKET_HEADER_INIT(LOG_EFI_MSG),
         time_us                                 : AP_HAL::micros64(),
         engine_load_percent                     : first_efi_state->engine_load_percent,
         engine_speed_rpm                        : first_efi_state->engine_speed_rpm,  
@@ -1952,7 +1952,7 @@ void DataFlash_Class::Log_Write_EFI(AP_EFI& efis)
     };
 
     struct log_EFI2 pkt_efi2 = {
-        LOG_PACKET_HEADER_INIT(log_EFI2_MSG),
+        LOG_PACKET_HEADER_INIT(LOG_EFI2_MSG),
         time_us                     : AP_HAL::micros64(),
         health                      : AP_EFI::is_healthy(*first_efi_state),
         engine_state                : first_efi_state->engine_state,
@@ -1970,4 +1970,36 @@ void DataFlash_Class::Log_Write_EFI(AP_EFI& efis)
 
     WriteBlock(&pkt_efi, sizeof(pkt_efi));
     WriteBlock(&pkt_efi2, sizeof(pkt_efi2));
+
+    // Write data for a max of 4 cylinders
+    for (int i = 0; i < 4; i++) {
+        LogMessages msg_type;
+        switch (i) {
+            case 0:
+                msg_type = LOG_EFI_CYL1_MSG;
+                break;
+            case 1:
+                msg_type = LOG_EFI_CYL2_MSG;
+                break;
+            case 2:
+                msg_type = LOG_EFI_CYL3_MSG;
+                break;
+            case 3:
+                msg_type = LOG_EFI_CYL4_MSG;
+                break;
+        }
+        
+        struct log_EFI_CYL pkt_efi_cyl = {
+            LOG_PACKET_HEADER_INIT(msg_type),
+            time_us                     : AP_HAL::micros64(),
+            ignition_timing_deg         : first_efi_state->cylinder_status[i].ignition_timing_deg,
+            injection_time_ms           : first_efi_state->cylinder_status[i].injection_time_ms,
+            cylinder_head_temperature   : first_efi_state->cylinder_status[i].cylinder_head_temperature,
+            exhaust_gas_temperature     : first_efi_state->cylinder_status[i].exhaust_gas_temperature,
+            lambda_coefficient          : first_efi_state->cylinder_status[i].lambda_coefficient,
+            ecu_index                   : first_efi_state->ecu_index
+        };
+
+        WriteBlock(&pkt_efi_cyl, sizeof(pkt_efi_cyl));
+    }
 }
