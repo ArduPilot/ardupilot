@@ -100,16 +100,24 @@ bool Copter::ekf_over_threshold()
     }
 
     // use EKF to get variance
-    float posVar, hgtVar, tasVar;
-    Vector3f magVar;
+    float position_variance, vel_variance, height_variance, tas_variance;
+    Vector3f mag_variance;
     Vector2f offset;
-    float compass_variance;
-    float vel_variance;
-    ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
-    compass_variance = magVar.length();
+    ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance, offset);
 
-    // return true if compass and velocity variance over the threshold
-    return (compass_variance >= g.fs_ekf_thresh && vel_variance >= g.fs_ekf_thresh);
+    // return true if two of compass, velocity and position variances are over the threshold
+    uint8_t over_thresh_count = 0;
+    if (mag_variance.length() >= g.fs_ekf_thresh) {
+        over_thresh_count++;
+    }
+    if (vel_variance >= g.fs_ekf_thresh) {
+        over_thresh_count++;
+    }
+    if (position_variance >= g.fs_ekf_thresh) {
+        over_thresh_count++;
+    }
+
+    return (over_thresh_count >= 2);
 }
 
 
