@@ -62,6 +62,9 @@
 #define EKF_TARGET_DT_MS 10.0
 #define EKF_TARGET_DT    0.01
 
+// mag fusion final reset altitude (using NED frame so altitude is negative)
+#define EKF3_MAG_FINAL_RESET_ALT 2.5f
+
 class AP_AHRS;
 
 class NavEKF3_core
