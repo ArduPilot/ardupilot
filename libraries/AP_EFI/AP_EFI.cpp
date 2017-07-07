@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:UAVCAN,2:Serial
+    // @Values: 0:None,1:UAVCAN
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("_TYPE", 1, AP_EFI, _type[0], 1),
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: EFI #2 communication type
     // @Description: What method of communication is used for EFI #2
-    // @Values: 0:None,1:UAVCAN,2:Serial
+    // @Values: 0:None,1:UAVCAN
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("2_TYPE", 3, AP_EFI, _type[1], 0),

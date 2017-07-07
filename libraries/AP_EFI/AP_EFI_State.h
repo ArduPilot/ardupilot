@@ -17,12 +17,7 @@
 
 #define EFI_MAX_INSTANCES 2
 #define EFI_MAX_BACKENDS 2
-
-// Careful when changing these. Ecotrons sends back 4 
-// cylinders and injectors worth of data, and the 
-// mavlink message also expects 4 cylinders.
-#define ENGINE_MAX_CYLINDERS 4
-#define ENGINE_MAX_INJECTORS 4
+#define ENGINE_MAX_CYLINDERS 16
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -30,60 +25,196 @@
 // Time in milliseconds before we declare the EFI to be "unhealthy"
 #define HEALTHY_LAST_RECEIVED_MS 3000
 
-// This file was created to solve circular dependancy problems when using EFI_State
+/***************
+ *
+ * Status enums
+ *
+ ***************/
+
+enum Engine_State {
+    ENGINE_STATE_STOPPED  = 0,
+    ENGINE_STATE_STARTING = 1,
+    ENGINE_STATE_RUNNING  = 2,
+    ENGINE_STATE_FAULT    = 3
+};
+
+enum Crankshaft_Sensor_Status {
+    CRANKSHAFT_SENSOR_STATUS_NOT_SUPPORTED = 0,
+    CRANKSHAFT_SENSOR_OK                   = 1,
+    CRANKSHAFT_SENSOR_ERROR                = 2
+};
+
+enum Temperature_Status {
+    TEMPERATURE_STATUS_NOT_SUPPORTED       = 0,
+    TEMPERATURE_OK                         = 1,
+    TEMPERATURE_BELOW_NOMINAL              = 2,
+    TEMPERATURE_ABOVE_NOMINAL              = 3,
+    TEMPERATURE_OVERHEATING                = 4,
+    TEMPERATURE_EGT_ABOVE_NOMINAL          = 5
+};
+
+enum Fuel_Pressure_Status {
+    FUEL_PRESSURE_STATUS_NOT_SUPPORTED = 0,
+    FUEL_PRESSURE_OK                   = 1,
+    FUEL_PRESSURE_BELOW_NOMINAL        = 2,
+    FUEL_PRESSURE_ABOVE_NOMINAL        = 3
+};
+
+enum Oil_Pressure_Status {
+    OIL_PRESSURE_STATUS_NOT_SUPPORTED = 0,
+    OIL_PRESSURE_OK                   = 1,
+    OIL_PRESSURE_BELOW_NOMINAL        = 2,
+    OIL_PRESSURE_ABOVE_NOMINAL        = 3
+};
+
+enum Detonation_Status {
+    DETONATION_STATUS_NOT_SUPPORTED = 0,
+    DETONATION_NOT_OBSERVED         = 1,
+    DETONATION_OBSERVED             = 2
+};
+
+enum Misfire_Status {
+    MISFIRE_STATUS_NOT_SUPPORTED = 0,
+    MISFIRE_NOT_OBSERVED         = 1,
+    MISFIRE_OBSERVED             = 2
+};
+
+enum Debris_Status {
+    DEBRIS_STATUS_NOT_SUPPORTED = 0,
+    DEBRIS_NOT_DETECTED         = 1,
+    DEBRIS_DETECTED             = 2
+};
+
+enum Spark_Plug_Usage {
+    SPARK_PLUG_SINGLE        = 0,
+    SPARK_PLUG_FIRST_ACTIVE  = 1,
+    SPARK_PLUG_SECOND_ACTIVE = 2,
+    SPARK_PLUG_BOTH_ACTIVE   = 3
+};
+
+
+/***************
+ * Status structs.
+ * EFIs may not provide all data in the message, therefore, the following guidelines should be followed.
+ * All integer fields are required unless stated otherwise.
+ * All floating point fields are optional unless stated otherwise; unknown/unapplicable fields will be NaN.
+ ***************/
+
+// TODO: not sure what to do with this yet - maybe different library?
+struct Fuel_Tank_Status {
+    
+    // The estimated/measured amount of fuel, all fields are required.
+    uint8_t available_fuel_volume_percent: 7; // 0% to 100%
+    float   available_fuel_volume_cm3;        // centimeter^3
+
+    // Estimate of the current fuel consumption rate ((centimeter^3)/minute)
+    // The flow can be negative if the fuel is being transferred between the tanks or during refueling.
+    // This field is required.
+    float fuel_consumption_rate_cm3pm;
+
+    // Fuel temperature (kelvin), optional field, to be set to NaN if not provided.
+    float fuel_temperature;
+
+    // ID of the current fuel tank.
+    uint8_t fuel_tank_id;
+};
+
+// Per-cylinder status struct
+struct Cylinder_Status {
+    // Cylinder ignition timing (angular degrees of the crankshaft)
+    float ignition_timing_deg;
+
+    // Fuel injection time (millisecond)
+    float injection_time_ms;
+
+    // Cylinder head temperature (CHT) (kelvin)
+    float cylinder_head_temperature;
+
+    // Exhaust gas temperature (EGT) (kelvin)
+    // If this cylinder is not equipped with an EGT sensor - will be NaN
+    // If there is a single shared EGT sensor, will be the same value for all cylinders
+    float exhaust_gas_temperature;
+
+    // Estimated lambda coefficient (dimensionless ratio)
+    // Useful for monitoring and tuning purposes.
+    float lambda_coefficient;
+};
 
 // Stores the current state read by the EFI system
-// This mimics the Status message broadcast by the EFI through UAVCAN, and
-// is very similar to the message format from RS232
+// All backends are required to fill in this state structure
 struct EFI_State {
-    // ECU Index provided by ecotrons
-    uint8_t ecu_index;
-
-    // Declaration of health of sensor by backend
+    // When this structure was last updated (milliseconds)
     uint32_t last_updated_ms;
 
-    // Revolutions per minute of the engine
-    float rpm;
+    // Current overall engine state
+    Engine_State engine_state                         : 2;
+ 
+    // If there is an error that does not fit other error types
+    bool general_error                                : 1;
 
-    // Total amount of fuel left (0 - 100%)
-    float fuel_level_percent;
+    // Error/status fields 
+    Crankshaft_Sensor_Status crankshaft_sensor_status : 2;
+    Temperature_Status temperature_status             : 3;
+    Fuel_Pressure_Status fuel_pressure_status         : 2;
+    Oil_Pressure_Status oil_pressure_status           : 2;
+    Detonation_Status detonation_status               : 2;
+    Misfire_Status misfire_status                     : 2;
+    Debris_Status debris_status                       : 2;
 
-    // Fuel consumption rate in g/min
-    float fuel_flow_rate;
+    // Engine load (percent)
+    uint8_t engine_load_percent                       : 7;
+    
+    // Engine speed (revolutions per minute)
+    uint32_t engine_speed_rpm                         : 17;
 
-    // Current load on the engine (0 - 100%)
-    float engine_load_percent;
-
-    // Throttle position from the throttle position sensor (TPS) (0 - 100%)
-    float throttle_position_percent;
-
-    // Has the engine exited the "starting" state?
-    bool end_of_start;
-
-    // Is there an error with the crank sensor?
-    bool crank_sensor_error;
-
-    // Time taken to charge the spark-plug coil (ms)
+    // Spark dwell time (milliseconds)
     float spark_dwell_time_ms;
 
-    // External pressure around the engine (kPa)
-    float barometric_pressure;
+    // Atmospheric (barometric) pressure (kilopascal)
+    float atmospheric_pressure_kpa;
 
-    // Pressure at the engine's intake manifold (kPa)
-    float intake_manifold_pressure;
+    // Engine intake manifold pressure (kilopascal)
+    float intake_manifold_pressure_kpa;
 
-    // Temperature at the engine's intake manifold (degC)
+    // Engine intake manifold temperature (kelvin)
     float intake_manifold_temperature;
 
-    // Engine coolant temperature, approximately engine temp (degC)
+    // Engine coolant temperature (kelvin)
     float coolant_temperature;
+    
+    // Oil pressure (kilopascal)
+    float oil_pressure;
 
-    // ECU Battery voltage (V)
-    float battery_voltage;
+    // Oil temperature (kelvin)
+    float oil_temperature;
 
-    // Ignition timing for each cylinder (crank angle, degrees)
-    float ignition_timing_crank_angle[ENGINE_MAX_CYLINDERS];
+    // Fuel pressure (kilopascal)
+    float fuel_pressure;
 
-    // Injection time for each injector (ms)
-    float injection_time_ms[ENGINE_MAX_INJECTORS];
+    // Instant fuel consumption estimate, which 
+    // should be low-pass filtered in order to prevent aliasing effects.
+    // (centimeter^3)/minute.
+    float fuel_consumption_rate_cm3pm;
+
+    // Estimate of the consumed fuel since the start of the engine (centimeter^3)
+    // This variable is reset when the engine is stopped.
+    float estimated_consumed_fuel_volume_cm3;
+
+    // Throttle position (percent)
+    uint8_t throttle_position_percent                 : 7;
+
+    // The index of the publishing ECU.
+    uint8_t ecu_index                                 : 6;
+
+    // Spark plug activity report.
+    // Can be used during pre-flight tests of the spark subsystem.
+    // Use case is that usually on double spark plug engines, the 
+    // engine switch has the positions OFF-LEFT-RIGHT-BOTH-START.
+    // Gives pilots the possibility to test both spark plugs on 
+    // ground before takeoff.
+    Spark_Plug_Usage spark_plug_usage;
+
+    // Status for each cylinder in the engine
+    Cylinder_Status cylinder_status[ENGINE_MAX_CYLINDERS];
+
 };

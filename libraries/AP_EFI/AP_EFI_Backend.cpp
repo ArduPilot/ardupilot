@@ -29,29 +29,35 @@ void AP_EFI_Backend::copy_to_frontend() {
 
 void AP_EFI_Backend::copy_state(const EFI_State& src, EFI_State& dst) 
 {
-    // Copy POD vars
-    dst.ecu_index = src.ecu_index;  
+
     dst.last_updated_ms = src.last_updated_ms;
-    dst.rpm = src.rpm;  
-    dst.fuel_level_percent = src.fuel_level_percent;  
-    dst.fuel_flow_rate = src.fuel_flow_rate;  
-    dst.engine_load_percent = src.engine_load_percent;  
-    dst.throttle_position_percent = src.throttle_position_percent;  
-    dst.end_of_start = src.end_of_start;  
-    dst.crank_sensor_error = src.crank_sensor_error;  
-    dst.spark_dwell_time_ms = src.spark_dwell_time_ms;  
-    dst.barometric_pressure = src.barometric_pressure;  
-    dst.intake_manifold_pressure = src.intake_manifold_pressure;
+    dst.engine_state = src.engine_state;
+    dst.general_error = src.general_error;
+    dst.crankshaft_sensor_status = src.crankshaft_sensor_status;
+    dst.temperature_status = src.temperature_status;
+    dst.fuel_pressure_status = src.fuel_pressure_status;
+    dst.oil_pressure_status = src.oil_pressure_status;
+    dst.detonation_status = src.detonation_status;
+    dst.misfire_status = src.misfire_status;
+    dst.debris_status  = src.debris_status;
+    dst.engine_load_percent = src.engine_load_percent;
+    dst.engine_speed_rpm = src.engine_speed_rpm;
+    dst.spark_dwell_time_ms = src.spark_dwell_time_ms;
+    dst.atmospheric_pressure_kpa = src.atmospheric_pressure_kpa;
+    dst.intake_manifold_pressure_kpa = src.intake_manifold_pressure_kpa;
     dst.intake_manifold_temperature = src.intake_manifold_temperature;
     dst.coolant_temperature = src.coolant_temperature;
-    dst.battery_voltage = src.battery_voltage;
+    dst.oil_pressure = src.oil_pressure;
+    dst.oil_temperature = src.oil_temperature;
+    dst.fuel_pressure = src.fuel_pressure;
+    dst.fuel_consumption_rate_cm3pm = src.fuel_consumption_rate_cm3pm;
+    dst.estimated_consumed_fuel_volume_cm3 = src.estimated_consumed_fuel_volume_cm3;
+    dst.throttle_position_percent = src.throttle_position_percent;
+    dst.ecu_index = src.ecu_index;
+    dst.spark_plug_usage = src.spark_plug_usage;
 
-    // Copy arrays
     for (int i = 0; i < ENGINE_MAX_CYLINDERS; i++) {
-        dst.ignition_timing_crank_angle[i] = src.ignition_timing_crank_angle[i]; 
+        dst.cylinder_status[i] = src.cylinder_status[i];
     }
 
-    for (int i = 0; i < ENGINE_MAX_INJECTORS; i++) {
-        dst.injection_time_ms[i] = src.injection_time_ms[i];
-    }
 } 
