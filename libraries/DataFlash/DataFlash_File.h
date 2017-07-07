@@ -73,6 +73,8 @@ public:
 
     void vehicle_was_disarmed() override;
 
+    virtual void PrepForArming() override;
+
 protected:
 
     bool WritesOK() const override;
