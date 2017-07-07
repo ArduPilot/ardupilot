@@ -205,11 +205,11 @@ static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment:
         
     }
 }
-static void ecu_status_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg)
+static void ecu_status_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::ice::reciprocating::Status>& msg)
 {   ecu_status_cb(msg, 0); }
-static void ecu_status_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg)
+static void ecu_status_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::ice::reciprocating::Status>& msg)
 {   ecu_status_cb(msg, 1); }
-static void (*ecu_status_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg)
+static void (*ecu_status_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::ice::reciprocating::Status>& msg)
         = { ecu_status_cb0, ecu_status_cb1 };
 
 static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
@@ -524,7 +524,7 @@ bool AP_UAVCAN::try_init(void)
                         debug_uavcan(1, "UAVCAN: node start problem\n\r");
                     }
 
-                    uavcan::Subscriber<uavcan::equipment::ecu::Status> *ecu_status;
+                    uavcan::Subscriber<uavcan::equipment::ice::reciprocating::Status> *ecu_status;
                     ecu_status = new uavcan::Subscriber<uavcan::equipment::ice::reciprocating::Status>(*node);
                     const int ecu_status_start_res = ecu_status->start(ecu_status_cb_arr[_uavcan_i]);
                     if (ecu_status_start_res < 0) {
