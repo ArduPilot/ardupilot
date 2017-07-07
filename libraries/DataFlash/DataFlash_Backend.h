@@ -59,6 +59,8 @@ public:
 
     virtual uint32_t bufferspace_available() = 0;
 
+    virtual void PrepForArming() { }
+
     virtual uint16_t start_new_log(void) = 0;
     bool log_write_started;
 
