@@ -934,11 +934,11 @@ struct PACKED log_EFI2 {
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"
 
-#define ECOT_LABELS "TimeUS,LP,RPM,SDT,ATM,IMP,IMT,ECT,OilP,OilT,FP,FCR,CFV,TPS,IDX"
-#define ECOT_FMT    "QBIffffffffffBB" 
+#define EFI_LABELS "TimeUS,LP,RPM,SDT,ATM,IMP,IMT,ECT,OilP,OilT,FP,FCR,CFV,TPS,IDX"
+#define EFI_FMT    "QBIffffffffffBB" 
 
-#define ECOT2_LABELS "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DS,SPU,IDX"
-#define ECOT2_FMT    "QBBBBBBBBBBBB"
+#define EFI2_LABELS "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DS,SPU,IDX"
+#define EFI2_FMT    "QBBBBBBBBBBBB"
 
 /*
 Format characters in the format string for binary log messages
@@ -1178,8 +1178,8 @@ Format characters in the format string for binary log messages
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }, \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf" }, \
-    { log_EFI_MSG, sizeof(log_EFI), "ECOT", ECOT_FMT, ECOT_LABELS }, \
-    { log_EFI2_MSG, sizeof(log_EFI2), "ECO2", ECOT2_FMT, ECOT2_LABELS } 
+    { log_EFI_MSG, sizeof(log_EFI), "EFI", EFI_FMT, EFI_LABELS }, \
+    { log_EFI2_MSG, sizeof(log_EFI2), "EFI2", EFI2_FMT, EFI2_LABELS } 
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
