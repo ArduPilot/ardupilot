@@ -19,12 +19,14 @@ WIND = "0,180,0.2"  # speed,direction,variance
 
 homeloc = None
 
+def wait_ready_to_arm(mavproxy):
+    # wait for EKF and GPS checks to pass
+    mavproxy.expect('IMU0 is using GPS')
 
 def takeoff(mavproxy, mav):
     """Takeoff get to 30m altitude."""
 
-    # wait for EKF and GPS checks to pass
-    wait_seconds(mav, 30)
+    wait_ready_to_arm(mavproxy)
 
     mavproxy.send('arm throttle\n')
     mavproxy.expect('ARMED')
@@ -433,6 +435,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
         return False
     if not wait_groundspeed(mav, 0, 0.5, timeout=60):
         return False
+    mavproxy.expect("Auto disarmed")
     print("Mission OK")
     return True
 

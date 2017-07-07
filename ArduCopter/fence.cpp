@@ -18,7 +18,7 @@ void Copter::fence_check()
     new_breaches = fence.check_fence(current_loc.alt/100.0f);
 
     // return immediately if motors are not armed
-    if(!motors.armed()) {
+    if(!motors->armed()) {
         return;
     }
 

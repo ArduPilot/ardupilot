@@ -15,7 +15,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "AP_AHRS.h"
+#include "AP_AHRS_View.h"
 #include <AP_HAL/AP_HAL.h>
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -24,7 +26,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: GPS_GAIN
     // @DisplayName: AHRS GPS gain
-    // @Description: This controls how how much to use the GPS to correct the attitude. This should never be set to zero for a plane as it would result in the plane losing control in turns. For a plane please use the default value of 1.0.
+    // @Description: This controls how much to use the GPS to correct the attitude. This should never be set to zero for a plane as it would result in the plane losing control in turns. For a plane please use the default value of 1.0.
     // @Range: 0.0 1.0
     // @Increment: .01
     // @User: Advanced
@@ -67,7 +69,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_X
     // @DisplayName: AHRS Trim Roll
     // @Description: Compensates for the roll angle difference between the control board and the frame. Positive values make the vehicle roll right.
-    // @Units: Radians
+    // @Units: rad
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Standard
@@ -75,7 +77,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_Y
     // @DisplayName: AHRS Trim Pitch
     // @Description: Compensates for the pitch angle difference between the control board and the frame. Positive values make the vehicle pitch up/back.
-    // @Units: Radians
+    // @Units: rad
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Standard
@@ -83,7 +85,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: TRIM_Z
     // @DisplayName: AHRS Trim Yaw
     // @Description: Not Used
-    // @Units: Radians
+    // @Units: rad
     // @Range: -0.1745 +0.1745
     // @Increment: 0.01
     // @User: Advanced
@@ -128,6 +130,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     AP_GROUPEND
 };
+
+// return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
+Vector3f AP_AHRS::get_gyro_latest(void) const
+{
+    uint8_t primary_gyro = get_primary_gyro_index();
+    return get_ins().get_gyro(primary_gyro) + get_gyro_drift();
+}
 
 // return airspeed estimate if available
 bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
@@ -229,6 +238,55 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     return Vector2f(0.0f, 0.0f);
 }
 
+/*
+  calculate sin and cos of roll/pitch/yaw from a body_to_ned rotation matrix
+ */
+void AP_AHRS::calc_trig(const Matrix3f &rot,
+                        float &cr, float &cp, float &cy,
+                        float &sr, float &sp, float &sy) const
+{
+    Vector2f yaw_vector;
+
+    yaw_vector.x = rot.a.x;
+    yaw_vector.y = rot.b.x;
+    if (fabsf(yaw_vector.x) > 0 ||
+        fabsf(yaw_vector.y) > 0) {
+        yaw_vector.normalize();
+    }
+    sy = constrain_float(yaw_vector.y, -1.0, 1.0);
+    cy = constrain_float(yaw_vector.x, -1.0, 1.0);
+
+    // sanity checks
+    if (yaw_vector.is_inf() || yaw_vector.is_nan()) {
+        sy = 0.0f;
+        cy = 1.0f;
+    }
+    
+    float cx2 = rot.c.x * rot.c.x;
+    if (cx2 >= 1.0f) {
+        cp = 0;
+        cr = 1.0f;
+    } else {
+        cp = safe_sqrt(1 - cx2);
+        cr = rot.c.z / cp;
+    }
+    cp = constrain_float(cp, 0, 1.0);
+    cr = constrain_float(cr, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing
+
+    sp = -rot.c.x;
+
+    if (!is_zero(cp)) {
+        sr = rot.c.y / cp;
+    }
+
+    if (is_zero(cp) || isinf(cr) || isnan(cr) || isinf(sr) || isnan(sr)) {
+        float r, p, y;
+        rot.to_euler(&r, &p, &y);
+        cr = cosf(r);
+        sr = sinf(r);
+    }
+}
+
 // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
 //      should be called after _dcm_matrix is updated
 void AP_AHRS::update_trig(void)
@@ -239,51 +297,9 @@ void AP_AHRS::update_trig(void)
         _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
     }
 
-    Vector2f yaw_vector;
-    const Matrix3f &temp = get_rotation_body_to_ned();
-
-    // sin_yaw, cos_yaw
-    yaw_vector.x = temp.a.x;
-    yaw_vector.y = temp.b.x;
-    yaw_vector.normalize();
-    _sin_yaw = constrain_float(yaw_vector.y, -1.0, 1.0);
-    _cos_yaw = constrain_float(yaw_vector.x, -1.0, 1.0);
-
-    // cos_roll, cos_pitch
-    float cx2 = temp.c.x * temp.c.x;
-    if (cx2 >= 1.0f) {
-        _cos_pitch = 0;
-        _cos_roll = 1.0f;
-    } else {
-        _cos_pitch = safe_sqrt(1 - cx2);
-        _cos_roll = temp.c.z / _cos_pitch;
-    }
-    _cos_pitch = constrain_float(_cos_pitch, 0, 1.0);
-    _cos_roll = constrain_float(_cos_roll, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing
-
-    // sin_roll, sin_pitch
-    _sin_pitch = -temp.c.x;
-    if (is_zero(_cos_pitch)) {
-        _sin_roll = sinf(roll);
-    } else {
-        _sin_roll = temp.c.y / _cos_pitch;
-    }
-
-    // sanity checks
-    if (yaw_vector.is_inf() || yaw_vector.is_nan()) {
-        yaw_vector.x = 0.0f;
-        yaw_vector.y = 0.0f;
-        _sin_yaw = 0.0f;
-        _cos_yaw = 1.0f;
-    }
-
-    if (isinf(_cos_roll) || isnan(_cos_roll)) {
-        _cos_roll = cosf(roll);
-    }
-
-    if (isinf(_sin_roll) || isnan(_sin_roll)) {
-        _sin_roll = sinf(roll);
-    }
+    calc_trig(get_rotation_body_to_ned(),
+              _cos_roll, _cos_pitch, _cos_yaw,
+              _sin_roll, _sin_pitch, _sin_yaw);
 }
 
 /*
@@ -296,4 +312,90 @@ void AP_AHRS::update_cd_values(void)
     yaw_sensor   = degrees(yaw) * 100;
     if (yaw_sensor < 0)
         yaw_sensor += 36000;
+}
+
+/*
+  create a rotated view of AP_AHRS
+ */
+AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation)
+{
+    if (_view != nullptr) {
+        // can only have one
+        return nullptr;
+    }
+    _view = new AP_AHRS_View(*this, rotation);
+    return _view;
+}
+
+/*
+ * Update AOA and SSA estimation based on airspeed, velocity vector and wind vector
+ *
+ * Based on:
+ * "On estimation of wind velocity, angle-of-attack and sideslip angle of small UAVs using standard sensors" by
+ * Tor A. Johansen, Andrea Cristofaro, Kim Sorensen, Jakob M. Hansen, Thor I. Fossen
+ *
+ * "Multi-Stage Fusion Algorithm for Estimation of Aerodynamic Angles in Mini Aerial Vehicle" by
+ * C.Ramprasadh and Hemendra Arya
+ *
+ * "ANGLE OF ATTACK AND SIDESLIP ESTIMATION USING AN INERTIAL REFERENCE PLATFORM" by
+ * JOSEPH E. ZEIS, JR., CAPTAIN, USAF
+ */
+void AP_AHRS::update_AOA_SSA(void)
+{
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    uint32_t now = AP_HAL::millis();
+    if (now - _last_AOA_update_ms < 50) {
+        // don't update at more than 20Hz
+        return;
+    }
+    _last_AOA_update_ms = now;
+    
+    Vector3f aoa_velocity, aoa_wind;
+
+    // get velocity and wind
+    if (get_velocity_NED(aoa_velocity) == false) {
+        return;
+    }
+
+    aoa_wind = wind_estimate();
+
+    // Rotate vectors to the body frame and calculate velocity and wind
+    const Matrix3f &rot = get_rotation_body_to_ned();
+    aoa_velocity = rot.mul_transpose(aoa_velocity);
+    aoa_wind = rot.mul_transpose(aoa_wind);
+
+    // calculate relative velocity in body coordinates
+    aoa_velocity = aoa_velocity - aoa_wind;
+    float vel_len = aoa_velocity.length();
+
+    // do not calculate if speed is too low
+    if (vel_len < 2.0) {
+        _AOA = 0;
+        _SSA = 0;
+        return;
+    }
+
+    // Calculate AOA and SSA
+    if (aoa_velocity.x > 0) {
+        _AOA = degrees(atanf(aoa_velocity.z / aoa_velocity.x));
+    } else {
+        _AOA = 0;
+    }
+
+    _SSA = degrees(safe_asin(aoa_velocity.y / vel_len));
+#endif
+}
+
+// return current AOA
+float AP_AHRS::getAOA(void)
+{
+    update_AOA_SSA();
+    return _AOA;
+}
+
+// return calculated SSA
+float AP_AHRS::getSSA(void)
+{
+    update_AOA_SSA();
+    return _SSA;
 }

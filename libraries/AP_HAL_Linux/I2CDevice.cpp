@@ -154,6 +154,11 @@ I2CDevice::~I2CDevice()
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+    if (_split_transfers && send_len > 0 && recv_len > 0) {
+        return transfer(send, send_len, nullptr, 0) &&
+            transfer(nullptr, 0, recv, recv_len);
+    }
+
     struct i2c_msg msgs[2] = { };
     unsigned nmsgs = 0;
 

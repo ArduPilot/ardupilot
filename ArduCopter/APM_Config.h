@@ -3,19 +3,6 @@
 // If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer
 // valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
-//#define FRAME_CONFIG QUAD_FRAME
-/*  options:
- *  QUAD_FRAME
- *  TRI_FRAME
- *  HEXA_FRAME
- *  Y6_FRAME
- *  OCTA_FRAME
- *  OCTA_QUAD_FRAME
- *  HELI_FRAME
- *  SINGLE_FRAME
- *  COAX_FRAME
- */
-
 // uncomment the lines below to disable features (flash sizes listed are for APM2 boards and will underestimate savings on Pixhawk and other boards)
 //#define LOGGING_ENABLED       DISABLED            // disable dataflash logging to save 11K of flash space
 //#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
@@ -31,6 +18,7 @@
 //#define CLI_ENABLED           DISABLED            // disable the CLI (command-line-interface) to save 21K of flash space
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 //#define OPTFLOW               DISABLED            // disable optical flow sensor to save 5K of flash space
+//#define VISUAL_ODOMETRY_ENABLED DISABLED          // disable visual odometry to save 2K of flash space
 //#define FRSKY_TELEM_ENABLED   DISABLED            // disable FRSky telemetry
 //#define ADSB_ENABLED          DISABLED            // disable ADSB support
 //#define PRECISION_LANDING     DISABLED            // disable precision landing using companion computer or IRLock sensor

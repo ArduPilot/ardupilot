@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
-#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsHeli_Single.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Servo 1 Position
     // @Description: Angular location of swash servo #1
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV1_POS", 1, AP_MotorsHeli_Single, _servo1_pos, AP_MOTORS_HELI_SINGLE_SERVO1_POS),
@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Servo 2 Position
     // @Description: Angular location of swash servo #2
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV2_POS", 2, AP_MotorsHeli_Single, _servo2_pos, AP_MOTORS_HELI_SINGLE_SERVO2_POS),
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Servo 3 Position
     // @Description: Angular location of swash servo #3
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeli_Single, _servo3_pos, AP_MOTORS_HELI_SINGLE_SERVO3_POS),
@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: GYR_GAIN
     // @DisplayName: External Gyro Gain
-    // @Description: PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
+    // @Description: PWM in microseconds sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 1
@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: Swashplate Phase Angle Compensation
     // @Description: Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     // @Range: -90 90
-    // @Units: Degrees
+    // @Units: deg
     // @User: Advanced
     // @Increment: 1
     AP_GROUPINFO("PHANG", 7, AP_MotorsHeli_Single, _phase_angle, 0),
@@ -100,7 +100,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
   
     // @Param: TAIL_SPEED
     // @DisplayName: Direct Drive VarPitch Tail ESC speed
-    // @Description: Direct Drive VarPitch Tail ESC speed.  Only used when TailType is DirectDrive VarPitch
+    // @Description: Direct Drive VarPitch Tail ESC speed in PWM microseconds.  Only used when TailType is DirectDrive VarPitch
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 1
@@ -109,28 +109,12 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: GYR_GAIN_ACRO
     // @DisplayName: External Gyro Gain for ACRO
-    // @Description: PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro. A value of zero means to use H_GYR_GAIN
+    // @Description: PWM in microseconds sent to external gyro on ch7 when tail type is Servo w/ ExtGyro. A value of zero means to use H_GYR_GAIN
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
-
-    // @Group: SV1_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_swash_servo_1, "SV1_", 12, AP_MotorsHeli_Single, RC_Channel),
-
-    // @Group: SV2_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_swash_servo_2, "SV2_", 13, AP_MotorsHeli_Single, RC_Channel),
-
-    // @Group: SV3_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_swash_servo_3, "SV3_", 14, AP_MotorsHeli_Single, RC_Channel),
-
-    // @Group: SV4_
-    // @Path: ../RC_Channel/RC_Channel.cpp
-    AP_SUBGROUPINFO(_yaw_servo, "SV4_", 15, AP_MotorsHeli_Single, RC_Channel),
 
     // @Param: RSC_PWM_MIN
     // @DisplayName: RSC PWM output miniumum
@@ -186,18 +170,31 @@ void AP_MotorsHeli_Single::enable()
 }
 
 // init_outputs - initialise Servo/PWM ranges and endpoints
-void AP_MotorsHeli_Single::init_outputs()
+bool AP_MotorsHeli_Single::init_outputs()
 {
+    if (!_flags.initialised_ok) {
+        _swash_servo_1 = SRV_Channels::get_channel_for(SRV_Channel::k_motor1, CH_1);
+        _swash_servo_2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
+        _swash_servo_3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
+        _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
+        _servo_aux = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, CH_7);
+        if (!_swash_servo_1 || !_swash_servo_2 || !_swash_servo_3 || !_yaw_servo || !_servo_aux) {
+            return false;
+        }
+    }
+
     // reset swash servo range and endpoints
     reset_swash_servo (_swash_servo_1);
     reset_swash_servo (_swash_servo_2);
     reset_swash_servo (_swash_servo_3);
 
-    _yaw_servo.set_angle(4500);
+    _yaw_servo->set_angle(4500);
 
     // set main rotor servo range
     // tail rotor servo use range as set in vehicle code for rc7
     _main_rotor.init_servo();
+
+    return true;
 }
 
 // output_test - spin a motor at the pwm value specified
@@ -357,10 +354,10 @@ void AP_MotorsHeli_Single::update_motor_control(RotorControlState state)
 
     if (state == ROTOR_CONTROL_STOP){
         // set engine run enable aux output to not run position to kill engine when disarmed
-        RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_engine_run_enable);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     } else {
         // else if armed, set engine run enable output to run position
-        RC_Channel_aux::set_radio_to_max(RC_Channel_aux::k_engine_run_enable);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
     }
 
     // Check if both rotors are run-up, tail rotor controller always returns true if not enabled
@@ -452,8 +449,6 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     }
     float servo3_out = ((_rollFactor[CH_3] * roll_out) + (_pitchFactor[CH_3] * pitch_out))*0.45f + _collectiveFactor[CH_3] * coll_out_scaled;
 
-    hal.rcout->cork();
-
     // rescale from -1..1, so we can use the pwm calc that includes trim
     servo1_out = 2*servo1_out - 1;
     servo2_out = 2*servo2_out - 1;
@@ -466,8 +461,6 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
 
     // update the yaw rate using the tail rotor/servo
     move_yaw(yaw_out + yaw_offset);
-
-    hal.rcout->push();
 }
 
 // move_yaw

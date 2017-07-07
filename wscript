@@ -82,6 +82,15 @@ Don't update git submodules. Useful for building with submodules at specific
 revisions.
 ''')
 
+    g.add_option('--rsync-dest',
+        dest='rsync_dest',
+        action='store',
+        default='',
+        help='''
+Destination for the rsync Waf command. It can be passed during configuration in
+order to save typing.
+''')
+
     g.add_option('--enable-benchmarks',
         action='store_true',
         default=False,
@@ -153,6 +162,7 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
+    cfg.load('uavcangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -189,6 +199,11 @@ def configure(cfg):
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/',
     ])
+
+    cfg.find_program('rsync', mandatory=False)
+    if cfg.options.rsync_dest:
+        cfg.msg('Setting rsync destination to', cfg.options.rsync_dest)
+        cfg.env.RSYNC_DEST = cfg.options.rsync_dest
 
     # TODO: Investigate if code could be changed to not depend on the
     # source absolute path.
@@ -242,6 +257,17 @@ def _build_dynamic_sources(bld):
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
         ],
     )
+
+    if bld.get_board().with_uavcan:
+        bld(
+            features='uavcangen',
+            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/uavcan/**/*.uavcan'),
+            output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
+            name='uavcan',
+            export_includes=[
+                bld.bldnode.make_node('modules/uavcan/libuavcan/include/dsdlc_generated').abspath(),
+            ]
+        )
 
     def write_version_header(tsk):
         bld = tsk.generator.bld
@@ -340,9 +366,12 @@ def build(bld):
     bld.load('ardupilotwaf')
 
     bld.env.AP_LIBRARIES_OBJECTS_KW.update(
-        use='mavlink',
+        use=['mavlink'],
         cxxflags=['-include', 'ap_config.h'],
     )
+    
+    if bld.get_board().with_uavcan:
+        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
 
     _build_cmd_tweaks(bld)
 
@@ -371,7 +400,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in ('antennatracker', 'copter', 'plane', 'rover'):
+for name in ('antennatracker', 'copter', 'plane', 'rover', 'sub'):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,
@@ -382,3 +411,47 @@ for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
         program_group_list=program_group,
         doc='builds all programs of %s group' % program_group,
     )
+
+class LocalInstallContext(Build.InstallContext):
+    """runs install using BLD/install as destdir, where BLD is the build variant directory"""
+    cmd = 'localinstall'
+
+    def __init__(self, **kw):
+        super(LocalInstallContext, self).__init__(**kw)
+        self.local_destdir = os.path.join(self.variant_dir, 'install')
+
+    def execute(self):
+        old_destdir = self.options.destdir
+        self.options.destdir = self.local_destdir
+        r = super(LocalInstallContext, self).execute()
+        self.options.destdir = old_destdir
+        return r
+
+class RsyncContext(LocalInstallContext):
+    """runs localinstall and then rsyncs BLD/install with the target system"""
+    cmd = 'rsync'
+
+    def __init__(self, **kw):
+        super(RsyncContext, self).__init__(**kw)
+        self.add_pre_fun(RsyncContext.create_rsync_taskgen)
+
+    def create_rsync_taskgen(self):
+        if 'RSYNC' not in self.env:
+            self.fatal('rsync program seems not to be installed, can\'t continue')
+
+        self.add_group()
+
+        tg = self(
+            name='rsync',
+            rule='${RSYNC} -a ${RSYNC_SRC}/ ${RSYNC_DEST}',
+            always=True,
+        )
+
+        tg.env.RSYNC_SRC = self.local_destdir
+        if self.options.rsync_dest:
+            self.env.RSYNC_DEST = self.options.rsync_dest
+
+        if 'RSYNC_DEST' not in tg.env:
+            self.fatal('Destination for rsync not defined. Either pass --rsync-dest here or during configuration.')
+
+        tg.post()

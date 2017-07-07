@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: SLEW_YAW
     // @DisplayName: Yaw target slew rate
     // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
-    // @Units: Centi-Degrees/Sec
+    // @Units: cdeg/s
     // @Range: 500 18000
     // @Increment: 100
     // @User: Advanced
@@ -21,7 +21,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: ACCEL_Y_MAX
     // @DisplayName: Acceleration Max for Yaw
     // @Description: Maximum acceleration in yaw axis
-    // @Units: Centi-Degrees/Sec/Sec
+    // @Units: cdeg/s/s
     // @Range: 0 72000
     // @Values: 0:Disabled, 18000:Slow, 36000:Medium, 54000:Fast
     // @Increment: 1000
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: ACCEL_R_MAX
     // @DisplayName: Acceleration Max for Roll
     // @Description: Maximum acceleration in roll axis
-    // @Units: Centi-Degrees/Sec/Sec
+    // @Units: cdeg/s/s
     // @Range: 0 180000
     // @Increment: 1000
     // @Values: 0:Disabled, 72000:Slow, 108000:Medium, 162000:Fast
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: ACCEL_P_MAX
     // @DisplayName: Acceleration Max for Pitch
     // @Description: Maximum acceleration in pitch axis
-    // @Units: Centi-Degrees/Sec/Sec
+    // @Units: cdeg/s/s
     // @Range: 0 180000
     // @Increment: 1000
     // @Values: 0:Disabled, 72000:Slow, 108000:Medium, 162000:Fast
@@ -376,6 +376,32 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
     attitude_controller_run_quat();
 }
 
+// Command an angular step (i.e change) in body frame angle
+// Used to command a step in angle without exciting the orthogonal axis during autotune
+void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd)
+{
+    // Convert from centidegrees on public interface to radians
+    float roll_step_rads = radians(roll_angle_step_bf_cd*0.01f);
+    float pitch_step_rads = radians(pitch_angle_step_bf_cd*0.01f);
+    float yaw_step_rads = radians(yaw_angle_step_bf_cd*0.01f);
+
+    // rotate attitude target by desired step
+    Quaternion attitude_target_update_quat;
+    attitude_target_update_quat.from_axis_angle(Vector3f(roll_step_rads, pitch_step_rads, yaw_step_rads));
+    _attitude_target_quat = _attitude_target_quat * attitude_target_update_quat;
+    _attitude_target_quat.normalize();
+
+    // calculate the attitude target euler angles
+    _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
+
+    // Set rate feedforward requests to zero
+    _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
+    _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+
+    // Call quaternion attitude controller
+    attitude_controller_run_quat();
+}
+
 // Calculates the body frame angular velocities to follow the target attitude
 void AC_AttitudeControl::attitude_controller_run_quat()
 {
@@ -590,10 +616,9 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(Vector3f attit
 }
 
 // Run the roll angular velocity PID controller and return the output
-float AC_AttitudeControl::rate_target_to_motor_roll(float rate_target_rads)
+float AC_AttitudeControl::rate_target_to_motor_roll(float rate_actual_rads, float rate_target_rads)
 {
-    float current_rate_rads = _ahrs.get_gyro().x;
-    float rate_error_rads = rate_target_rads - current_rate_rads;
+    float rate_error_rads = rate_target_rads - rate_actual_rads;
 
     // pass error to PID controller
     get_rate_roll_pid().set_input_filter_d(rate_error_rads);
@@ -607,17 +632,16 @@ float AC_AttitudeControl::rate_target_to_motor_roll(float rate_target_rads)
     }
 
     // Compute output in range -1 ~ +1
-    float output = get_rate_roll_pid().get_p() + integrator + get_rate_roll_pid().get_d();
+    float output = get_rate_roll_pid().get_p() + integrator + get_rate_roll_pid().get_d() + get_rate_roll_pid().get_ff(rate_target_rads);
 
     // Constrain output
     return constrain_float(output, -1.0f, 1.0f);
 }
 
 // Run the pitch angular velocity PID controller and return the output
-float AC_AttitudeControl::rate_target_to_motor_pitch(float rate_target_rads)
+float AC_AttitudeControl::rate_target_to_motor_pitch(float rate_actual_rads, float rate_target_rads)
 {
-    float current_rate_rads = _ahrs.get_gyro().y;
-    float rate_error_rads = rate_target_rads - current_rate_rads;
+    float rate_error_rads = rate_target_rads - rate_actual_rads;
 
     // pass error to PID controller
     get_rate_pitch_pid().set_input_filter_d(rate_error_rads);
@@ -631,17 +655,16 @@ float AC_AttitudeControl::rate_target_to_motor_pitch(float rate_target_rads)
     }
 
     // Compute output in range -1 ~ +1
-    float output = get_rate_pitch_pid().get_p() + integrator + get_rate_pitch_pid().get_d();
+    float output = get_rate_pitch_pid().get_p() + integrator + get_rate_pitch_pid().get_d() + get_rate_pitch_pid().get_ff(rate_target_rads);
 
     // Constrain output
     return constrain_float(output, -1.0f, 1.0f);
 }
 
 // Run the yaw angular velocity PID controller and return the output
-float AC_AttitudeControl::rate_target_to_motor_yaw(float rate_target_rads)
+float AC_AttitudeControl::rate_target_to_motor_yaw(float rate_actual_rads, float rate_target_rads)
 {
-    float current_rate_rads = _ahrs.get_gyro().z;
-    float rate_error_rads = rate_target_rads - current_rate_rads;
+    float rate_error_rads = rate_target_rads - rate_actual_rads;
 
     // pass error to PID controller
     get_rate_yaw_pid().set_input_filter_all(rate_error_rads);
@@ -655,7 +678,7 @@ float AC_AttitudeControl::rate_target_to_motor_yaw(float rate_target_rads)
     }
 
     // Compute output in range -1 ~ +1
-    float output = get_rate_yaw_pid().get_p() + integrator + get_rate_yaw_pid().get_d();
+    float output = get_rate_yaw_pid().get_p() + integrator + get_rate_yaw_pid().get_d() + get_rate_yaw_pid().get_ff(rate_target_rads);
 
     // Constrain output
     return constrain_float(output, -1.0f, 1.0f);

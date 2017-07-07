@@ -20,7 +20,7 @@ public:
 
 private:
     void reset();
-    bool _update(void);
+    void _update(void);
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
 

@@ -209,6 +209,7 @@ SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
 {
     set_device_bus(_bus.bus);
     set_device_address(_desc.subdev);
+    _speed = _desc.highspeed;
     
     if (_desc.cs_pin != SPI_CS_KERNEL) {
         _cs = hal.gpio->channel(_desc.cs_pin);
@@ -451,6 +452,15 @@ SPIDeviceManager::get_device(const char *name)
     _buses.push_back(b.leak());
 
     return dev;
+}
+
+uint8_t SPIDeviceManager::get_count() {
+   return _n_device_desc;
+}
+
+const char* SPIDeviceManager::get_device_name(uint8_t idx)
+{
+    return _device[idx].name;
 }
 
 /* Create a new device increasing the bus reference */

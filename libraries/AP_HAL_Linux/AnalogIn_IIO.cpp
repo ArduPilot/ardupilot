@@ -71,7 +71,10 @@ float AnalogSource_IIO::read_latest()
     }
 
     memset(sbuf, 0, sizeof(sbuf));
-    pread(_pin_fd, sbuf, sizeof(sbuf) - 1, 0);
+    if (pread(_pin_fd, sbuf, sizeof(sbuf) - 1, 0) < 0) {
+        _latest = 0;
+        return 0;
+    }
     _latest = atoi(sbuf) * _voltage_scaling;
     _sum_value += _latest;
     _sum_count++;

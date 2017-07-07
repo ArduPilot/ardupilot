@@ -13,7 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
- *  ArduCopter Version 3.0
+ *  ArduCopter (also known as APM, APM:Copter or just Copter)
+ *  Wiki:           copter.ardupilot.org
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
  *  Lead Tester:    Marco Robustini 
@@ -95,6 +96,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(read_rangefinder,      20,    100),
     SCHED_TASK(update_proximity,     100,     50),
     SCHED_TASK(update_beacon,        400,     50),
+    SCHED_TASK(update_visual_odom,   400,     50),
     SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(update_throttle_hover,100,     90),
@@ -107,6 +109,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if FRAME_CONFIG == HELI_FRAME
     SCHED_TASK(check_dynamic_flight,  50,     75),
 #endif
+    SCHED_TASK(fourhundred_hz_logging,400,    50),
     SCHED_TASK(update_notify,         50,     90),
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK(ekf_check,             10,     75),
@@ -177,16 +180,6 @@ void Copter::setup()
 }
 
 /*
-  if the compass is enabled then try to accumulate a reading
- */
-void Copter::compass_accumulate(void)
-{
-    if (g.compass_enabled) {
-        compass.accumulate();
-    }
-}
-
-/*
   try to accumulate a baro reading
  */
 void Copter::barometer_accumulate(void)
@@ -199,7 +192,7 @@ void Copter::perf_update(void)
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
     if (scheduler.debug()) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu\n",
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
                           (unsigned)perf_info_get_num_long_running(),
                           (unsigned)perf_info_get_num_loops(),
                           (unsigned long)perf_info_get_max_time(),
@@ -254,20 +247,22 @@ void Copter::loop()
 // Main loop - 400hz
 void Copter::fast_loop()
 {
+    // update INS immediately to get current gyro data populated
+    ins.update();
+    
+    // run low level rate controllers that only require IMU data
+    attitude_control->rate_controller_run();
 
-    // IMU DCM Algorithm
+    // send outputs to the motors library immediately
+    motors_output();
+
+    // run EKF state estimator (expensive)
     // --------------------
     read_AHRS();
 
-    // run low level rate controllers that only require IMU data
-    attitude_control.rate_controller_run();
-    
 #if FRAME_CONFIG == HELI_FRAME
     update_heli_control_dynamics();
 #endif //HELI_FRAME
-
-    // send outputs to the motors library
-    motors_output();
 
     // Inertial Nav
     // --------------------
@@ -361,12 +356,21 @@ void Copter::update_batt_compass(void)
 
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot
-        compass.set_throttle(motors.get_throttle());
+        compass.set_throttle(motors->get_throttle());
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
             DataFlash.Log_Write_Compass(compass);
         }
+    }
+}
+
+// Full rate logging of attitude, rate and pid loops
+// should be run at 400hz
+void Copter::fourhundred_hz_logging()
+{
+    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
+        Log_Write_Attitude();
     }
 }
 
@@ -377,13 +381,7 @@ void Copter::ten_hz_logging_loop()
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
-        if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
-        }
+        Log_Write_EKF_POS();
     }
     if (should_log(MASK_LOG_MOTBATT)) {
         Log_Write_MotBatt();
@@ -404,7 +402,7 @@ void Copter::ten_hz_logging_loop()
         DataFlash.Log_Write_Vibration(ins);
     }
     if (should_log(MASK_LOG_CTUN)) {
-        attitude_control.control_monitor_log();
+        attitude_control->control_monitor_log();
         Log_Write_Proximity();
         Log_Write_Beacon();
     }
@@ -418,19 +416,12 @@ void Copter::twentyfive_hz_logging()
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     // HIL for a copter needs very fast update of the servo values
-    gcs_send_message(MSG_RADIO_OUT);
+    gcs_send_message(MSG_SERVO_OUTPUT_RAW);
 #endif
 
 #if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
-        Log_Write_Attitude();
-        DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
-        if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
-        }
+        Log_Write_EKF_POS();
     }
 
     // log IMU data if we're not already logging at the higher rate
@@ -481,33 +472,27 @@ void Copter::one_hz_loop()
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
 
-    update_arming_checks();
+    arming.update();
 
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         // make it possible to change ahrs orientation at runtime during initial config
         ahrs.set_orientation();
 
         update_using_interlock();
 
-#if FRAME_CONFIG != HELI_FRAME
-        // check the user hasn't updated the frame orientation
-        motors.set_frame_orientation(g.frame_orientation);
+        // check the user hasn't updated the frame class or type
+        motors->set_frame_class_and_type((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
 
+#if FRAME_CONFIG != HELI_FRAME
         // set all throttle channel settings
-        motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+        motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif
     }
 
     // update assigned functions and enable auxiliary servos
-    RC_Channel_aux::enable_aux_servos();
+    SRV_Channels::enable_aux_servos();
 
     check_usb_mux();
-
-    // update position controller alt limits
-    update_poscon_alt_max();
-
-    // enable/disable raw gyro/accel logging
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
 
     // log terrain data
     terrain_logging();
@@ -629,7 +614,8 @@ void Copter::read_AHRS(void)
     gcs_check_input();
 #endif
 
-    ahrs.update();
+    // we tell AHRS to skip INS update as we have already done it in fast_loop()
+    ahrs.update(true);
 }
 
 // read baro and rangefinder altitude at 10hz

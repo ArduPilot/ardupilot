@@ -11,50 +11,22 @@ set -x
 export BUILDROOT="/tmp/all.build"
 rm -rf $BUILDROOT
 
-echo "Testing ArduPlane build"
-pushd ArduPlane
-for b in sitl linux; do
-    pwd
-    make clean
-    make $b -j4
-done
-popd
+BOARDS="sitl linux"
 
-echo "Testing ArduCopter build"
-pushd ArduCopter
-for b in sitl linux; do
-    pwd
-    make clean
-    make $b -j4
+for b in $BOARDS; do
+    echo "Testing $b build"
+    ./waf configure --board $b
+    ./waf clean
+    ./waf
 done
-popd
 
-echo "Testing APMRover build"
-pushd APMrover2
-for b in sitl linux; do
-    pwd
-    make clean
-    make $b -j4
-done
-popd
-
-echo "Testing AntennaTracker build"
-pushd AntennaTracker
-for b in sitl; do
-    pwd
-    make clean
-    make $b -j4
-done
-popd
-
+echo "Building Replay"
 pushd Tools/Replay
 make clean
 make
 popd
 
-test -n "$PX4_ROOT" && test -d "$PX4_ROOT" && {
-    ./Tools/scripts/build_all_px4.sh
-}
+./Tools/scripts/build_all_px4.sh
 
 test -n "$VRBRAIN_ROOT" && test -d "$VRBRAIN_ROOT" && {
     ./Tools/scripts/build_all_vrbrain.sh

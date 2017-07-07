@@ -135,7 +135,7 @@ import sys
 
 class cmake_configure_task(Task.Task):
     vars = ['CMAKE_BLD_DIR']
-    run_str = '${CMAKE} ${CMAKE_SRC_DIR} ${CMAKE_VARS} ${CMAKE_GENERATOR_OPTION}'
+    run_str = '${CMAKE} ${CMAKE_FLAGS} ${CMAKE_SRC_DIR} ${CMAKE_VARS} ${CMAKE_GENERATOR_OPTION}'
     color = 'BLUE'
 
     def exec_command(self, cmd, **kw):
@@ -151,6 +151,7 @@ class cmake_configure_task(Task.Task):
             u(self.env.get_flat('CMAKE_SRC_DIR'))
             u(self.env.get_flat('CMAKE_BLD_DIR'))
             u(self.env.get_flat('CMAKE_VARS'))
+            u(self.env.get_flat('CMAKE_FLAGS'))
             self.uid_ = m.digest()
 
         return self.uid_
@@ -219,12 +220,13 @@ class CMakeConfig(object):
     CMake configuration. This object shouldn't be instantiated directly. Use
     bld.cmake().
     '''
-    def __init__(self, bld, name, srcnode, bldnode, cmake_vars):
+    def __init__(self, bld, name, srcnode, bldnode, cmake_vars, cmake_flags):
         self.bld = bld
         self.name = name
         self.srcnode = srcnode
         self.bldnode = bldnode
         self.vars = cmake_vars
+        self.flags = cmake_flags
 
         self._config_task = None
         self.last_build_task = None
@@ -241,6 +243,8 @@ class CMakeConfig(object):
             m.update(s.encode('utf-8'))
         u(self.srcnode.abspath())
         u(self.bldnode.abspath())
+        for v in self.flags:
+            u(v)
         keys = self.vars_keys()
         for k in keys:
             u(k)
@@ -263,6 +267,7 @@ class CMakeConfig(object):
 
         keys = self.vars_keys()
         env.CMAKE_VARS = ["-D%s='%s'" % (k, self.vars[k]) for k in keys]
+        env.CMAKE_FLAGS = self.flags
 
         self._config_task.set_outputs(
             self.bldnode.find_or_declare('CMakeCache.txt'),
@@ -285,7 +290,7 @@ def get_cmake(name):
     return _cmake_instances[name]
 
 @conf
-def cmake(bld, name, cmake_src=None, cmake_bld=None, cmake_vars={}):
+def cmake(bld, name, cmake_src=None, cmake_bld=None, cmake_vars={}, cmake_flags=''):
     '''
     This function has two signatures:
      - bld.cmake(name, cmake_src, cmake_bld, cmake_vars):
@@ -307,7 +312,7 @@ def cmake(bld, name, cmake_src=None, cmake_bld=None, cmake_vars={}):
     elif not isinstance(cmake_bld, Node.Node):
         cmake_bld = bld.bldnode.make_node(cmake_bld)
 
-    c = CMakeConfig(bld, name, cmake_src, cmake_bld, cmake_vars)
+    c = CMakeConfig(bld, name, cmake_src, cmake_bld, cmake_vars, cmake_flags)
     _cmake_instances[name] = c
     return c
 

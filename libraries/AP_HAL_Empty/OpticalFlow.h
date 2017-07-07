@@ -16,6 +16,8 @@
 
 class Empty::OpticalFlow : public AP_HAL::OpticalFlow {
 public:
-    void init(AP_HAL::OpticalFlow::Gyro_Cb) { }
+    void init() { }
     bool read(Data_Frame& frame) { return false; }
+    void push_gyro(float gyro_x, float gyro_y, float dt) { };
+    void push_gyro_bias(float gyro_bias_x, float gyro_bias_y) { }
 };

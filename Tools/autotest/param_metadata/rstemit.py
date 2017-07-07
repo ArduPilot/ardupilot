@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import re
-from param import known_param_fields
+from param import known_param_fields, known_units
 from emit import Emit
 import cgi
 
@@ -241,6 +241,11 @@ Complete Parameter List
                     elif field == "Range":
                         (param_min, param_max) = (param.__dict__[field]).split(' ')
                         row.append("%s - %s" % (param_min, param_max,))
+                    elif field == 'Units':
+                        abreviated_units = param.__dict__[field]
+                        if abreviated_units != '':
+                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abreviated unit into a full textual one
+                            row.append(cgi.escape(units))
                     else:
                         row.append(cgi.escape(param.__dict__[field]))
             if len(row):

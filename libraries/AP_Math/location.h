@@ -60,6 +60,12 @@ void        location_offset(struct Location &loc, float ofs_north, float ofs_eas
 Vector2f    location_diff(const struct Location &loc1, const struct Location &loc2);
 
 /*
+  return the distance in meters in North/East/Down plane as a N/E/D vector
+  from loc1 to loc2
+ */
+Vector3f    location_3d_diff_NED(const struct Location &loc1, const struct Location &loc2);
+
+/*
  * check if lat and lng match. Ignore altitude and options
  */
 bool        locations_are_same(const struct Location &loc1, const struct Location &loc2);

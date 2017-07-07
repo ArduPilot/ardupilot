@@ -2,6 +2,9 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+
 #include "AP_HAL_PX4.h"
 #include "AP_HAL_PX4_Namespace.h"
 #include "HAL_PX4_Class.h"
@@ -10,14 +13,16 @@
 #include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
+#include "RCOutput_Tap.h"
 #include "AnalogIn.h"
 #include "Util.h"
 #include "GPIO.h"
 #include "I2CDevice.h"
 #include "SPIDevice.h"
 
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#if HAL_WITH_UAVCAN
+#include "CAN.h"
+#endif
 
 #include <stdlib.h>
 #include <systemlib/systemlib.h>
@@ -35,7 +40,11 @@ using namespace PX4;
 static PX4Scheduler schedulerInstance;
 static PX4Storage storageDriver;
 static PX4RCInput rcinDriver;
+#if defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+static RCOutput_Tap rcoutDriver;
+#else
 static PX4RCOutput rcoutDriver;
+#endif
 static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
 static PX4GPIO gpioDriver;
@@ -57,6 +66,15 @@ static PX4::SPIDeviceManager spi_mgr_instance;
 #define UARTD_DEFAULT_DEVICE "/dev/ttyS2"
 #define UARTE_DEFAULT_DEVICE "/dev/ttyS6" // frsky telem
 #define UARTF_DEFAULT_DEVICE "/dev/ttyS0" // wifi
+#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+#define UARTA_DEFAULT_DEVICE "/dev/ttyS1" // Aero
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS2" // GPS
+#define UARTC_DEFAULT_DEVICE "/dev/ttyS4" // Telem
+// ttyS0: ESC
+// ttyS3: RC
+#define UARTD_DEFAULT_DEVICE "/dev/null"
+#define UARTE_DEFAULT_DEVICE "/dev/null"
+#define UARTF_DEFAULT_DEVICE "/dev/null"
 #else
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
@@ -92,7 +110,8 @@ HAL_PX4::HAL_PX4() :
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
         &utilInstance, /* util */
-        nullptr)    /* no onboard optical flow */
+        nullptr,    /* no onboard optical flow */
+        nullptr)   /* CAN */
 {}
 
 bool _px4_thread_should_exit = false;        /**< Daemon exit flag */

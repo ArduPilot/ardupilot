@@ -3,6 +3,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 // maximum number of battery monitors
 #define AP_BATT_MONITOR_MAX_INSTANCES       2
@@ -11,23 +12,29 @@
 #define AP_BATT_PRIMARY_INSTANCE            0
 
 #define AP_BATT_CAPACITY_DEFAULT            3300
-#define AP_BATT_LOW_VOLT_TIMEOUT_MS         10000   // low voltage of 10 seconds will cause battery_exhausted to return true
+#define AP_BATT_LOW_VOLT_TIMEOUT_DEFAULT    10   // low voltage of 10 seconds will cause battery_exhausted to return true
 #define AP_BATT_MAX_WATT_DEFAULT            0
+#define AP_BATT_SERIAL_NUMBER_DEFAULT       -1
+
+#define AP_BATT_MONITOR_TIMEOUT             5000
+
+#define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
+#define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
 
 // declare backend class
 class AP_BattMonitor_Backend;
 class AP_BattMonitor_Analog;
 class AP_BattMonitor_SMBus;
-class AP_BattMonitor_SMBus_I2C;
-class AP_BattMonitor_SMBus_PX4;
+class AP_BattMonitor_SMBus_Solo;
+class AP_BattMonitor_SMBus_Maxell;
 
 class AP_BattMonitor
 {
     friend class AP_BattMonitor_Backend;
     friend class AP_BattMonitor_Analog;
     friend class AP_BattMonitor_SMBus;
-    friend class AP_BattMonitor_SMBus_I2C;
-    friend class AP_BattMonitor_SMBus_PX4;
+    friend class AP_BattMonitor_SMBus_Solo;
+    friend class AP_BattMonitor_SMBus_Maxell;
 
 public:
 
@@ -39,8 +46,19 @@ public:
         BattMonitor_TYPE_NONE                       = 0,
         BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY        = 3,
         BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT = 4,
-        BattMonitor_TYPE_SMBUS                      = 5,
-        BattMonitor_TYPE_BEBOP                      = 6
+        BattMonitor_TYPE_SOLO                       = 5,
+        BattMonitor_TYPE_BEBOP                      = 6,
+        BattMonitor_TYPE_MAXELL                     = 7
+    };
+
+    // low voltage sources (used for BATT_LOW_TYPE parameter)
+    enum BattMonitor_LowVoltage_Source {
+        BattMonitor_LowVoltageSource_Raw            = 0,
+        BattMonitor_LowVoltageSource_SagCompensated = 1
+    };
+
+    struct cells {
+        uint16_t cells[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
     };
 
     // The BattMonitor_State structure is filled in by the backend driver
@@ -53,6 +71,11 @@ public:
         float       current_total_mah;  // total current draw since start-up
         uint32_t    last_time_micros;   // time when voltage and current was last read
         uint32_t    low_voltage_start_ms;  // time when voltage dropped below the minimum
+        cells       cell_voltages;      // battery cell voltages in millivolts, 10 cells matches the MAVLink spec
+        float       temperature;        // battery temperature in celsius
+        uint32_t    temperature_time;   // timestamp of the last recieved temperature message
+        float       voltage_resting_estimate; // voltage with sag removed based on current and resistance estimate
+        float       resistance;         // resistance calculated by comparing resting voltage vs in flight voltage
     };
 
     // Return the number of battery monitor instances
@@ -80,6 +103,11 @@ public:
     /// voltage - returns battery voltage in millivolts
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
+
+    /// get voltage with sag removed (based on battery current draw and resistance)
+    /// this will always be greater than or equal to the raw voltage
+    float voltage_resting_estimate(uint8_t instance) const;
+    float voltage_resting_estimate() const { return voltage_resting_estimate(AP_BATT_PRIMARY_INSTANCE); }
 
     /// current_amps - returns the instantaneous current draw in amperes
     float current_amps(uint8_t instance) const;
@@ -115,6 +143,20 @@ public:
     bool overpower_detected() const;
     bool overpower_detected(uint8_t instance) const;
 
+    // cell voltages
+    bool has_cell_voltages() { return has_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
+    bool has_cell_voltages(const uint8_t instance) const;
+    const cells & get_cell_voltages() const { return get_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
+    const cells & get_cell_voltages(const uint8_t instance) const;
+
+    // temperature
+    bool get_temperature(float &temperature) const { return get_temperature(temperature, AP_BATT_PRIMARY_INSTANCE); };
+    bool get_temperature(float &temperature, const uint8_t instance) const;
+
+    // get battery resistance estimate in ohms
+    float get_resistance() const { return get_resistance(AP_BATT_PRIMARY_INSTANCE); }
+    float get_resistance(uint8_t instance) const { return state[instance].resistance; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -128,6 +170,9 @@ protected:
     AP_Float    _curr_amp_offset[AP_BATT_MONITOR_MAX_INSTANCES];    /// offset voltage that is subtracted from current pin before conversion to amps
     AP_Int32    _pack_capacity[AP_BATT_MONITOR_MAX_INSTANCES];      /// battery pack capacity less reserve in mAh
     AP_Int16    _watt_max[AP_BATT_MONITOR_MAX_INSTANCES];           /// max battery power allowed. Reduce max throttle to reduce current to satisfy this limit
+    AP_Int32    _serial_numbers[AP_BATT_MONITOR_MAX_INSTANCES];     /// battery serial number, automatically filled in on SMBus batteries
+    AP_Int8     _low_voltage_timeout;                               /// timeout in seconds before a low voltage event will be triggered
+    AP_Int8     _low_voltage_source;                                /// voltage type used for detection of low voltage event
 
 private:
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];

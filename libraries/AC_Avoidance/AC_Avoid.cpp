@@ -5,14 +5,15 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Avoidance control enable/disable
     // @Description: Enabled/disable stopping at fence
-    // @Values: 0:None,1:StopAtFence,2:UseProximitySensor,3:All
-    // @Bitmask: 0:StopAtFence,1:UseProximitySensor
+    // @Values: 0:None,1:StopAtFence,2:UseProximitySensor,3:StopAtFence and UseProximitySensor,4:StopAtBeaconFence,7:All
+    // @Bitmask: 0:StopAtFence,1:UseProximitySensor,2:StopAtBeaconFence
     // @User: Standard
-    AP_GROUPINFO("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_ALL),
+    AP_GROUPINFO("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_DEFAULT),
 
-    // @Param: ANGLE MAX
+    // @Param: ANGLE_MAX
     // @DisplayName: Avoidance max lean angle in non-GPS flight modes
     // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
+    // @Units: cdeg
     // @Range: 0 4500
     // @User: Standard
     AP_GROUPINFO("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000),
@@ -20,20 +21,29 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
     // @Description: Distance from object at which obstacle avoidance will begin in non-GPS modes
-    // @Units: meters
+    // @Units: m
     // @Range: 3 30
     // @User: Standard
     AP_GROUPINFO("DIST_MAX", 3,  AC_Avoid, _dist_max, AC_AVOID_NONGPS_DIST_MAX_DEFAULT),
+
+    // @Param: MARGIN
+    // @DisplayName: Avoidance distance margin in GPS modes
+    // @Description: Vehicle will attempt to stay at least this distance (in meters) from objects while in GPS modes
+    // @Units: m
+    // @Range: 1 10
+    // @User: Standard
+    AP_GROUPINFO("MARGIN", 4, AC_Avoid, _margin, 2.0f),
 
     AP_GROUPEND
 };
 
 /// Constructor
-AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity)
+AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon)
     : _ahrs(ahrs),
       _inav(inav),
       _fence(fence),
-      _proximity(proximity)
+      _proximity(proximity),
+      _beacon(beacon)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -53,6 +63,10 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel
         adjust_velocity_polygon_fence(kP, accel_cmss_limited, desired_vel);
     }
 
+    if ((_enabled & AC_AVOID_STOP_AT_BEACON_FENCE) > 0) {
+        adjust_velocity_beacon_fence(kP, accel_cmss_limited, desired_vel);
+    }
+
     if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0 && _proximity_enabled) {
         adjust_velocity_proximity(kP, accel_cmss_limited, desired_vel);
     }
@@ -65,6 +79,67 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel
     adjust_velocity(kP, accel_cmss, des_vel_xy);
     desired_vel.x = des_vel_xy.x;
     desired_vel.y = des_vel_xy.y;
+}
+
+// adjust vertical climb rate so vehicle does not break the vertical fence
+void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms)
+{
+    // exit immediately if disabled
+    if (_enabled == AC_AVOID_DISABLED) {
+        return;
+    }
+
+    // do not adjust climb_rate if level or descending
+    if (climb_rate_cms <= 0.0f) {
+        return;
+    }
+
+    // limit acceleration
+    float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
+
+    bool limit_alt = false;
+    float alt_diff_cm = 0.0f;   // distance from altitude limit to vehicle in cm (positive means vehicle is below limit)
+
+    // calculate distance below fence
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && (_fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
+        // calculate distance from vehicle to safe altitude
+        float veh_alt = get_alt_above_home();
+        alt_diff_cm = _fence.get_safe_alt_max() * 100.0f - veh_alt;
+        limit_alt = true;
+    }
+
+    // calculate distance to optical flow altitude limit
+    float ekf_alt_limit_cm;
+    if (_inav.get_hgt_ctrl_limit(ekf_alt_limit_cm)) {
+        float ekf_alt_diff_cm = ekf_alt_limit_cm - _inav.get_altitude();
+        if (!limit_alt || ekf_alt_diff_cm < alt_diff_cm) {
+            alt_diff_cm = ekf_alt_diff_cm;
+        }
+        limit_alt = true;
+    }
+
+    // get distance from proximity sensor (in meters, convert to cm)
+    float proximity_alt_diff_m;
+    if (_proximity.get_upward_distance(proximity_alt_diff_m)) {
+        float proximity_alt_diff_cm = (proximity_alt_diff_m - _margin) * 100.0f;
+        if (!limit_alt || proximity_alt_diff_cm < alt_diff_cm) {
+            alt_diff_cm = proximity_alt_diff_cm;
+        }
+        limit_alt = true;
+    }
+
+    // limit climb rate
+    if (limit_alt) {
+        // do not allow climbing if we've breached the safe altitude
+        if (alt_diff_cm <= 0.0f) {
+            climb_rate_cms = MIN(climb_rate_cms, 0.0f);
+            return;
+        }
+
+        // limit climb rate
+        const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_diff_cm);
+        climb_rate_cms = MIN(max_speed, climb_rate_cms);
+    }
 }
 
 // adjust roll-pitch to push vehicle away from objects
@@ -137,17 +212,17 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     // get the fence radius in cm
     const float fence_radius = _fence.get_radius() * 100.0f;
     // get the margin to the fence in cm
-    const float margin = get_margin();
+    const float margin_cm = _fence.get_margin() * 100.0f;
 
     if (!is_zero(speed) && position_xy.length() <= fence_radius) {
         // Currently inside circular fence
         Vector2f stopping_point = position_xy + desired_vel*(get_stopping_distance(kP, accel_cmss, speed)/speed);
         float stopping_point_length = stopping_point.length();
-        if (stopping_point_length > fence_radius - margin) {
+        if (stopping_point_length > fence_radius - margin_cm) {
             // Unsafe desired velocity - will not be able to stop before fence breach
             // Project stopping point radially onto fence boundary
             // Adjusted velocity will point towards this projected point at a safe speed
-            Vector2f target = stopping_point * ((fence_radius - margin) / stopping_point_length);
+            Vector2f target = stopping_point * ((fence_radius - margin_cm) / stopping_point_length);
             Vector2f target_direction = target - position_xy;
             float distance_to_target = target_direction.length();
             float max_speed = get_max_speed(kP, accel_cmss, distance_to_target);
@@ -182,7 +257,33 @@ void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2
     Vector2f* boundary = _fence.get_polygon_points(num_points);
 
     // adjust velocity using polygon
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, true);
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, true, _fence.get_margin());
+}
+
+/*
+ * Adjusts the desired velocity for the beacon fence.
+ */
+void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel)
+{
+    // exit if the beacon is not present
+    if (_beacon == nullptr) {
+        return;
+    }
+
+    // exit immediately if no desired velocity
+    if (desired_vel.is_zero()) {
+        return;
+    }
+
+    // get boundary from beacons
+    uint16_t num_points;
+    const Vector2f* boundary = _beacon->get_boundary_points(num_points);
+    if (boundary == nullptr || num_points == 0) {
+        return;
+    }
+
+    // adjust velocity using beacon
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, true, _fence.get_margin());
 }
 
 /*
@@ -203,13 +304,13 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &d
     // get boundary from proximity sensor
     uint16_t num_points;
     const Vector2f *boundary = _proximity.get_boundary_points(num_points);
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, false);
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, false, _margin);
 }
 
 /*
  * Adjusts the desired velocity for the polygon fence.
  */
-void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame)
+void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin)
 {
     // exit if there are no points
     if (boundary == nullptr || num_points == 0) {
@@ -237,6 +338,9 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         safe_vel.y = desired_vel.y * _ahrs.cos_yaw() - desired_vel.x * _ahrs.sin_yaw(); // forward
     }
 
+    // calc margin in cm
+    float margin_cm = MAX(margin * 100.0f, 0);
+
     uint16_t i, j;
     for (i = 1, j = num_points-1; i < num_points; j = i++) {
         // end points of current edge
@@ -250,7 +354,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
             // We are strictly inside the given edge.
             // Adjust velocity to not violate this edge.
             limit_direction /= limit_distance;
-            limit_velocity(kP, accel_cmss, safe_vel, limit_direction, MAX(limit_distance - get_margin(),0.0f));
+            limit_velocity(kP, accel_cmss, safe_vel, limit_direction, MAX(limit_distance - margin_cm,0.0f));
         } else {
             // We are exactly on the edge - treat this as a fence breach.
             // i.e. do not adjust velocity.
@@ -289,12 +393,21 @@ void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel,
 /*
  * Gets the current xy-position, relative to home (not relative to EKF origin)
  */
-Vector2f AC_Avoid::get_position()
+Vector2f AC_Avoid::get_position() const
 {
     const Vector3f position_xyz = _inav.get_position();
     const Vector2f position_xy(position_xyz.x,position_xyz.y);
     const Vector2f diff = location_diff(_inav.get_origin(),_ahrs.get_home()) * 100.0f;
     return position_xy - diff;
+}
+
+/*
+ * Gets the altitude above home in cm
+ */
+float AC_Avoid::get_alt_above_home() const
+{
+    // vehicle's alt above ekf origin + ekf origin's alt above sea level - home's alt above sea level
+    return _inav.get_altitude() + _inav.get_origin().alt - _ahrs.get_home().alt;
 }
 
 /*

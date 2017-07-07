@@ -29,16 +29,18 @@
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
 
+// define default compass calibration fitness and consistency checks
+#define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
+#define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(90.0f)
+#define AP_COMPASS_MAX_XY_ANG_DIFF radians(60.0f)
+#define AP_COMPASS_MAX_XY_LENGTH_DIFF 200.0f
+
 /**
    maximum number of compass instances available on this platform. If more
    than 1 then redundant sensors may be available
  */
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3
-
-#define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(50.0f)
-#define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
-#define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
 
 class Compass
 {
@@ -259,6 +261,9 @@ public:
     uint32_t last_update_usec(void) const { return _state[get_primary()].last_update_usec; }
     uint32_t last_update_usec(uint8_t i) const { return _state[i].last_update_usec; }
 
+    uint32_t last_update_ms(void) const { return _state[get_primary()].last_update_ms; }
+    uint32_t last_update_ms(uint8_t i) const { return _state[i].last_update_ms; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // HIL variables
@@ -279,7 +284,12 @@ public:
     enum LearnType get_learn_type(void) const {
         return (enum LearnType)_learn.get();
     }
-    
+
+    // return maximum allowed compass offsets
+    uint16_t get_offsets_max(void) const {
+        return (uint16_t)_offset_max.get();
+    }
+
 private:
     /// Register a new compas driver, allocating an instance number
     ///
@@ -379,6 +389,8 @@ private:
         // board specific orientation
         enum Rotation rotation;
     } _state[COMPASS_MAX_INSTANCES];
+
+    AP_Int16 _offset_max;
 
     CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];
 

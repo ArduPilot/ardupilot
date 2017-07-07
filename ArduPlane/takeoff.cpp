@@ -17,7 +17,6 @@ bool Plane::auto_takeoff_check(void)
 
     // Reset states if process has been interrupted
     if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timer interrupted AUTO");
 	    takeoff_state.launchTimerStarted = false;
 	    takeoff_state.last_tkoff_arm_time = 0;
         takeoff_state.last_check_ms = now;
@@ -58,12 +57,14 @@ bool Plane::auto_takeoff_check(void)
         goto no_launch;
     }
 
-    // Check aircraft attitude for bad launch
-    if (ahrs.pitch_sensor <= -3000 ||
-        ahrs.pitch_sensor >= 4500 ||
-        labs(ahrs.roll_sensor) > 3000) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad launch AUTO");
-        goto no_launch;
+    if (!quadplane.is_tailsitter()) {
+        // Check aircraft attitude for bad launch
+        if (ahrs.pitch_sensor <= -3000 ||
+            ahrs.pitch_sensor >= 4500 ||
+            (!fly_inverted() && labs(ahrs.roll_sensor) > 3000)) {
+            gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad launch AUTO");
+            goto no_launch;
+        }
     }
 
     // Check ground speed and time delay
@@ -142,6 +143,20 @@ void Plane::takeoff_calc_pitch(void)
         nav_pitch_cd = ((gps.ground_speed()*100) / (float)aparm.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
         nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
     }
+
+    if (aparm.stall_prevention != 0) {
+        if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF) {
+            // during takeoff we want to prioritise roll control over
+            // pitch. Apply a reduction in pitch demand if our roll is
+            // significantly off. The aim of this change is to
+            // increase the robustness of hand launches, particularly
+            // in cross-winds. If we start to roll over then we reduce
+            // pitch demand until the roll recovers
+            float roll_error_rad = radians(constrain_float(labs(nav_roll_cd - ahrs.roll_sensor) * 0.01, 0, 90));
+            float reduction = sq(cosf(roll_error_rad));
+            nav_pitch_cd *= reduction;
+        }
+    }
 }
 
 /*
@@ -149,7 +164,7 @@ void Plane::takeoff_calc_pitch(void)
  */
 int16_t Plane::get_takeoff_pitch_min_cd(void)
 {
-    if (flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+    if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF) {
         return auto_state.takeoff_pitch_cd;
     }
 

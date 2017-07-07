@@ -41,7 +41,7 @@ private:
      * Device periodic callback to read data from the sensor.
      */
     bool init();
-    bool _update();
+    void _update();
     bool _load_trim_values();
     int16_t _compensate_xy(int16_t xy, uint32_t rhall, int32_t txy1, int32_t txy2);
     int16_t _compensate_z(int16_t z, uint32_t rhall);
@@ -66,4 +66,7 @@ private:
         int8_t xy2;
         uint16_t xyz1;
     } _dig;
+
+    uint32_t _last_read_ms;
+    AP_HAL::Util::perf_counter_t _perf_err;
 };

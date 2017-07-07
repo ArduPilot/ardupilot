@@ -16,10 +16,11 @@
  *   AP_BoardConfig - board specific configuration
  */
 
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_BoardConfig.h"
+#include <stdio.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <sys/types.h>
@@ -38,6 +39,11 @@
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
 #define BOARD_PWM_COUNT_DEFAULT 6
 #define BOARD_SER1_RTSCTS_DEFAULT 2
+#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+#define BOARD_PWM_COUNT_DEFAULT 0
+#define BOARD_SER1_RTSCTS_DEFAULT 0
+# undef BOARD_SAFETY_ENABLE_DEFAULT
+# define BOARD_SAFETY_ENABLE_DEFAULT 0
 #else // V2
 #define BOARD_PWM_COUNT_DEFAULT 4
 #define BOARD_SER1_RTSCTS_DEFAULT 2
@@ -92,7 +98,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, px4.ser2_rtscts, 2),
 #endif
-    
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: SAFETYENABLE
     // @DisplayName: Enable use of safety arming switch
@@ -116,18 +122,9 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: SERIAL_NUM
     // @DisplayName: User-defined serial number
     // @Description: User-defined serial number of this vehicle, it can be any arbitrary number you want and has no effect on the autopilot
-    // @Range: -32767 32768
+    // @Range: -32768 32767
     // @User: Standard
     AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
-
-#if HAL_WITH_UAVCAN
-    // @Param: CAN_ENABLE
-    // @DisplayName:  Enable use of UAVCAN devices
-    // @Description: Enabling this option on a Pixhawk enables UAVCAN devices. Note that this uses about 25k of memory
-    // @Values: 0:Disabled,1:Enabled,2:Dynamic ID/Update
-    // @User: Advanced
-    AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, px4.can_enable, 0),
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Param: SAFETY_MASK
@@ -145,7 +142,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @DisplayName: Target IMU temperature
     // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. A value of -1 disables heating.
     // @Range: -1 80
-    // @Units: degreesC
+    // @Units: degC
     // @User: Advanced
     AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, _imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif
@@ -154,12 +151,24 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Board type
     // @Description: This allows selection of a PX4 or VRBRAIN board type. If set to zero then the board type is auto-detected (PX4)
-    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Pixhawk2,4:Pixracer,5:PixhawkMini,6:Pixhawk2Slim,7:VRBrain 5.1,8:VRBrain 5.2,9:VR Micro Brain 5.1,10:VR Micro Brain 5.2,11:VRBrain Core 1.0,12:VRBrain 5.4
+    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Pixhawk2,4:Pixracer,5:PixhawkMini,6:Pixhawk2Slim,7:VRBrain 5.1,8:VRBrain 5.2,9:VR Micro Brain 5.1,10:VR Micro Brain 5.2,11:VRBrain Core 1.0,12:VRBrain 5.4,13:Intel Aero FC,20:AUAV2.1
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, px4.board_type, BOARD_TYPE_DEFAULT),
 #endif
-    
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if HAL_PX4_HAVE_PX4IO
+    // @Param: IO_ENABLE
+    // @DisplayName: Enable IO co-processor
+    // @Description: This allows for the IO co-processor on FMUv1 and FMUv2 to be disabled
+    // @Values: 0:Disabled,1:Enabled
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("IO_ENABLE", 10, AP_BoardConfig, px4.io_enable, 1),
+#endif
+#endif
+
     AP_GROUPEND
 };
 
@@ -168,7 +177,7 @@ void AP_BoardConfig::init()
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     px4_setup();
 #endif
-    
+
 #if HAL_HAVE_IMU_HEATER
     // let the HAL know the target temperature. We pass a pointer as
     // we want the user to be able to change the parameter without
@@ -184,4 +193,32 @@ void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
     px4.ignore_safety_channels.set_default(mask);
     px4_setup_safety_mask();
 #endif
+}
+
+void AP_BoardConfig::init_safety()
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    px4_init_safety();
+#endif
+}
+
+/*
+  notify user of a fatal startup error related to available sensors. 
+*/
+bool AP_BoardConfig::_in_sensor_config_error;
+
+void AP_BoardConfig::sensor_config_error(const char *reason)
+{
+    _in_sensor_config_error = true;
+    /*
+      to give the user the opportunity to connect to USB we keep
+      repeating the error.  The mavlink delay callback is initialised
+      before this, so the user can change parameters (and in
+      particular BRD_TYPE if needed)
+    */
+    while (true) {
+        printf("Sensor failure: %s\n", reason);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
+        hal.scheduler->delay(3000);
+    }
 }

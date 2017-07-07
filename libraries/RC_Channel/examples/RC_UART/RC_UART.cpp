@@ -3,7 +3,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <RC_Channel/RC_Channel.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -24,18 +23,12 @@ private:
     uint8_t enable_mask;
     const uint32_t baudrate = 115200;
     uint32_t counter;
-
-    RC_Channel rc_1{0};
-    RC_Channel rc_2{1};
-    RC_Channel rc_3{2};
-    RC_Channel rc_4{3};
-    RC_Channel *rc = &rc_1;
 };
 
 void RC_UART::setup()
 {
     hal.scheduler->delay(1000);
-    hal.console->println("RC_UART starting");
+    hal.console->printf("RC_UART starting\n");
     hal.UART->begin(baudrate, 512, 512);
     hal.rcout->set_freq(0xFF, RC_SPEED);
 }
@@ -94,11 +87,10 @@ void RC_UART::loop()
             if (enable_mask == 0) {
                 hal.rcout->force_safety_off();
             }
-            rc[i].enable_out();
+            hal.rcout->enable_ch(i);
             enable_mask |= 1U<<i;
         }
-        rc[i].set_radio_out(u.period[i]);
-        rc[i].output();
+        hal.rcout->write(i, u.period[i]);
     }
 
     // report periods to console for debug

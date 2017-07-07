@@ -4,6 +4,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS.h>
+#include <stdio.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -69,7 +71,8 @@ public:
 
 private:
 
-    DataFlash_Class dataflash{"DF AllTypes 0.1"};
+    AP_Int32 unused;
+    DataFlash_Class dataflash{"DF AllTypes 0.1", unused};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
@@ -94,7 +97,7 @@ void DataFlashTest_AllTypes::flush_dataflash(DataFlash_Class &_dataflash)
 
 void DataFlashTest_AllTypes::Log_Write_TypeMessages()
 {
-    dataflash.StartNewLog();
+    dataflash.StartUnstartedLogging();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
 
@@ -141,7 +144,7 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages()
 
 void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 {
-    dataflash.StartNewLog();
+    dataflash.StartUnstartedLogging();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number for Log_Write %u\n", log_num);
 
@@ -153,7 +156,7 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
                         19812,   // uint16_t
                         -98234729,   // int32_t
                         74627293,    // uint32_t
-                        35.87654,  // float
+                        35.87654f,  // float
                         (double)67.7393274658293,   // double
                         "ABCD", // char[4]
                         // char[16]:
@@ -181,18 +184,14 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 
 void DataFlashTest_AllTypes::setup(void)
 {
-    hal.console->println("Dataflash All Types 1.0");
+    hal.console->printf("Dataflash All Types 1.0\n");
 
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
+    dataflash.set_vehicle_armed(true);
 
     // Test
     hal.scheduler->delay(20);
     dataflash.ShowDeviceInfo(hal.console);
-
-    if (dataflash.NeedPrep()) {
-        hal.console->println("Preparing dataflash...");
-        dataflash.Prep();
-    }
 
     Log_Write_TypeMessages();
     Log_Write_TypeMessages_Log_Write();
@@ -205,6 +204,15 @@ void DataFlashTest_AllTypes::loop(void)
     hal.console->printf("all done\n");
     hal.scheduler->delay(1000);
 }
+
+class GCS_Dataflash_AllTypes : public GCS
+{
+    void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) override {
+        ::fprintf(stderr, "GCS: %s\n", text);
+    }
+};
+
+GCS_Dataflash_AllTypes _gcs;
 
 static DataFlashTest_AllTypes dataflashtest;
 

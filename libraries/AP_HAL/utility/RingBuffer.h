@@ -104,6 +104,12 @@ public:
         delete buffer;
     }
 
+    // Discards the buffer content, emptying it.
+    void clear(void)
+    {
+        buffer->clear();
+    }
+
     // return number of objects available to be read
     uint32_t available(void) const {
         return buffer->available() / sizeof(T);
@@ -227,6 +233,12 @@ public:
         head = (head+1) % size;
         count--;
         return true;
+    }
+
+    // Discards the buffer content, emptying it.
+    void clear(void)
+    {
+        head = count = 0;
     }
 
     /*

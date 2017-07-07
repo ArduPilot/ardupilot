@@ -18,7 +18,6 @@
 #include "AP_RangeFinder_PulsedLightLRF.h"
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 #include "AP_RangeFinder_MaxsonarSerialLV.h"
-#include "AP_RangeFinder_PX4.h"
 #include "AP_RangeFinder_PX4_PWM.h"
 #include "AP_RangeFinder_BBB_PRU.h"
 #include "AP_RangeFinder_LightWareI2C.h"
@@ -27,6 +26,8 @@
 #include "AP_RangeFinder_MAVLink.h"
 #include "AP_RangeFinder_LeddarOne.h"
 #include "AP_RangeFinder_uLanding.h"
+#include "AP_RangeFinder_trone.h"
+#include "AP_RangeFinder_VL53L0X.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
@@ -36,7 +37,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3-I2C,16:VL53L0X
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, RangeFinder, _type[0], 0),
 
@@ -50,7 +51,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _SCALING
     // @DisplayName: Rangefinder scaling
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
+    // @Units: m/V
     // @Increment: 0.001
     // @User: Standard
     AP_GROUPINFO("_SCALING", 2, RangeFinder, _scaling[0], 3.0f),
@@ -58,7 +59,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM and I2C Lidars
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.001
     // @User: Standard
     AP_GROUPINFO("_OFFSET",  3, RangeFinder, _offset[0], 0.0f),
@@ -73,7 +74,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_MIN_CM",  5, RangeFinder, _min_distance_cm[0], 20),
@@ -81,7 +82,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_MAX_CM",  6, RangeFinder, _max_distance_cm[0], 700),
@@ -96,7 +97,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _SETTLE
     // @DisplayName: Rangefinder settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
+    // @Units: ms
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_SETTLE", 8, RangeFinder, _settle_time_ms[0], 0),
@@ -111,7 +112,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _PWRRNG
     // @DisplayName: Powersave range
     // @Description: This parameter sets the estimated terrain distance in meters above which the sensor will be put into a power saving mode (if available). A value of zero means power saving is not enabled
-    // @Units: meters
+    // @Units: m
     // @Range: 0 32767
     // @User: Standard
     AP_GROUPINFO("_PWRRNG", 10, RangeFinder, _powersave_range, 0),
@@ -119,8 +120,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _GNDCLEAR
     // @DisplayName: Distance (in cm) from the range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
-    // @Range: 0 127
+    // @Units: cm
+    // @Range: 5 127
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, _ground_clearance_cm[0], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
@@ -152,11 +153,18 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_POS", 49, RangeFinder, _pos_offset[0], 0.0f),
 
+    // @Param: _ORIENT
+    // @DisplayName: Rangefinder orientation
+    // @Description: Orientation of rangefinder
+    // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
+    // @User: Advanced
+    AP_GROUPINFO("_ORIENT", 53, RangeFinder, _orientation[0], ROTATION_PITCH_270),
+
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3-I2C,16:VL53L0X
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    12, RangeFinder, _type[1], 0),
 
@@ -170,7 +178,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_SCALING
     // @DisplayName: Rangefinder scaling
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
+    // @Units: m/V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("2_SCALING", 14, RangeFinder, _scaling[1], 3.0f),
@@ -178,7 +186,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("2_OFFSET",  15, RangeFinder, _offset[1], 0.0f),
@@ -193,7 +201,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_MIN_CM",  17, RangeFinder, _min_distance_cm[1], 20),
@@ -201,7 +209,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_MAX_CM",  18, RangeFinder, _max_distance_cm[1], 700),
@@ -216,7 +224,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_SETTLE
     // @DisplayName: Sonar settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
+    // @Units: ms
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("2_SETTLE", 20, RangeFinder, _settle_time_ms[1], 0),
@@ -231,7 +239,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_GNDCLEAR
     // @DisplayName: Distance (in cm) from the second range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
+    // @Units: cm
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
@@ -264,6 +272,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("2_POS", 50, RangeFinder, _pos_offset[1], 0.0f),
 
+    // @Param: 2_ORIENT
+    // @DisplayName: Rangefinder 2 orientation
+    // @Description: Orientation of 2nd rangefinder
+    // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
+    // @User: Advanced
+    AP_GROUPINFO("2_ORIENT", 54, RangeFinder, _orientation[1], ROTATION_PITCH_270),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -271,7 +285,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_TYPE
     // @DisplayName: Third Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3-I2C,16:VL53L0X
     // @User: Advanced
     AP_GROUPINFO("3_TYPE",    25, RangeFinder, _type[2], 0),
 
@@ -285,7 +299,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_SCALING
     // @DisplayName: Rangefinder scaling
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
+    // @Units: m/V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("3_SCALING", 27, RangeFinder, _scaling[2], 3.0f),
@@ -293,7 +307,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("3_OFFSET",  28, RangeFinder, _offset[2], 0.0f),
@@ -308,7 +322,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_MIN_CM",  30, RangeFinder, _min_distance_cm[2], 20),
@@ -316,7 +330,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_MAX_CM",  31, RangeFinder, _max_distance_cm[2], 700),
@@ -331,7 +345,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_SETTLE
     // @DisplayName: Sonar settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
+    // @Units: ms
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("3_SETTLE", 33, RangeFinder, _settle_time_ms[2], 0),
@@ -346,7 +360,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_GNDCLEAR
     // @DisplayName: Distance (in cm) from the third range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the third range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
+    // @Units: cm
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
@@ -379,6 +393,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("3_POS", 51, RangeFinder, _pos_offset[2], 0.0f),
 
+    // @Param: 3_ORIENT
+    // @DisplayName: Rangefinder 3 orientation
+    // @Description: Orientation of 3rd rangefinder
+    // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
+    // @User: Advanced
+    AP_GROUPINFO("3_ORIENT", 55, RangeFinder, _orientation[2], ROTATION_PITCH_270),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -386,7 +406,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_TYPE
     // @DisplayName: Fourth Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3-I2C,16:VL53L0X
     // @User: Advanced
     AP_GROUPINFO("4_TYPE",    37, RangeFinder, _type[3], 0),
 
@@ -400,7 +420,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_SCALING
     // @DisplayName: Rangefinder scaling
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
-    // @Units: meters/Volt
+    // @Units: m/V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("4_SCALING", 39, RangeFinder, _scaling[3], 3.0f),
@@ -408,7 +428,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("4_OFFSET",  40, RangeFinder, _offset[3], 0.0f),
@@ -423,7 +443,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("4_MIN_CM",  42, RangeFinder, _min_distance_cm[3], 20),
@@ -431,7 +451,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: centimeters
+	// @Units: cm
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("4_MAX_CM",  43, RangeFinder, _max_distance_cm[3], 700),
@@ -446,7 +466,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_SETTLE
     // @DisplayName: Sonar settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
-    // @Units: milliseconds
+    // @Units: ms
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("4_SETTLE", 45, RangeFinder, _settle_time_ms[3], 0),
@@ -461,7 +481,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_GNDCLEAR
     // @DisplayName: Distance (in cm) from the fourth range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the fourth range finder should return when the vehicle is on the ground.
-    // @Units: centimeters
+    // @Units: cm
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
@@ -493,18 +513,29 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("4_POS", 52, RangeFinder, _pos_offset[3], 0.0f),
+
+    // @Param: 4_ORIENT
+    // @DisplayName: Rangefinder 4 orientation
+    // @Description: Orientation of 4th range finder
+    // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
+    // @User: Advanced
+    AP_GROUPINFO("4_ORIENT", 56, RangeFinder, _orientation[3], ROTATION_PITCH_270),
 #endif
     
     AP_GROUPEND
 };
 
-RangeFinder::RangeFinder(AP_SerialManager &_serial_manager) :
-    primary_instance(0),
+RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default) :
     num_instances(0),
     estimated_terrain_height(0),
     serial_manager(_serial_manager)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // set orientation defaults
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        _orientation[i].set_default(orientation_default);
+    }
 
     // init state and drivers
     memset(state,0,sizeof(state));
@@ -558,13 +589,6 @@ void RangeFinder::update(void)
             update_pre_arm_check(i);
         }
     }
-
-    // work out primary instance - first sensor returning good data
-    for (int8_t i=num_instances-1; i>=0; i--) {
-        if (drivers[i] != nullptr && (state[i].status == RangeFinder_Good)) {
-            primary_instance = i;
-        }
-    }
 }
 
 bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
@@ -585,11 +609,12 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
  */
 void RangeFinder::detect_instance(uint8_t instance)
 {
-    uint8_t type = _type[instance];
+    enum RangeFinder_Type type = (enum RangeFinder_Type)_type[instance].get();
     switch (type) {
     case RangeFinder_TYPE_PLI2C:
-        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, *this, instance, state[instance]))) {
-            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, *this, instance, state[instance]));
+    case RangeFinder_TYPE_PLI2CV3:
+        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, *this, instance, state[instance], type))) {
+            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, *this, instance, state[instance], type));
         }
         break;
     case RangeFinder_TYPE_MBI2C:
@@ -601,13 +626,19 @@ void RangeFinder::detect_instance(uint8_t instance)
                 hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, _address[instance])));
         }
         break;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    case RangeFinder_TYPE_PX4:
-        if (AP_RangeFinder_PX4::detect(*this, instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PX4(*this, instance, state[instance]);
+    case RangeFinder_TYPE_TRONE:
+        if (!_add_backend(AP_RangeFinder_trone::detect(0, *this, instance, state[instance]))) {
+            _add_backend(AP_RangeFinder_trone::detect(1, *this, instance, state[instance]));
         }
         break;
+    case RangeFinder_TYPE_VL53L0X:
+        if (!_add_backend(AP_RangeFinder_VL53L0X::detect(*this, instance, state[instance],
+                                                         hal.i2c_mgr->get_device(1, 0x29)))) {
+            _add_backend(AP_RangeFinder_VL53L0X::detect(*this, instance, state[instance],
+                                                        hal.i2c_mgr->get_device(0, 0x29)));
+        }
+        break;
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     case RangeFinder_TYPE_PX4_PWM:
         if (AP_RangeFinder_PX4_PWM::detect(*this, instance)) {
             state[instance].instance = instance;
@@ -689,13 +720,87 @@ RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
     return state[instance].status;
 }
 
-void RangeFinder::handle_msg(mavlink_message_t *msg) {
-  uint8_t i;
-  for (i=0; i<num_instances; i++) {
-      if ((drivers[i] != nullptr) && (_type[i] != RangeFinder_TYPE_NONE)) {
+RangeFinder::RangeFinder_Status RangeFinder::status_orient(enum Rotation orientation) const
+{
+    uint8_t i;
+    if (find_instance(orientation, i)) {
+        return status(i);
+    }
+    return RangeFinder_NotConnected;
+}
+
+void RangeFinder::handle_msg(mavlink_message_t *msg)
+{
+    uint8_t i;
+    for (i=0; i<num_instances; i++) {
+        if ((drivers[i] != nullptr) && (_type[i] != RangeFinder_TYPE_NONE)) {
           drivers[i]->handle_msg(msg);
-      }
-  }
+        }
+    }
+}
+
+// return true if we have a range finder with the specified orientation
+bool RangeFinder::has_orientation(enum Rotation orientation) const
+{
+    uint8_t i;
+    return find_instance(orientation, i);
+}
+
+// find first range finder instance with the specified orientation
+bool RangeFinder::find_instance(enum Rotation orientation, uint8_t &instance) const
+{
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (_orientation[i] == orientation) {
+            instance = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+uint16_t RangeFinder::distance_cm_orient(enum Rotation orientation) const
+{
+    uint8_t i;
+    if (find_instance(orientation, i)) {
+        return distance_cm(i);
+    }
+    return 0;
+}
+
+uint16_t RangeFinder::voltage_mv_orient(enum Rotation orientation) const
+{
+    uint8_t i;
+    if (find_instance(orientation, i)) {
+        return voltage_mv(i);
+    }
+    return 0;
+}
+
+int16_t RangeFinder::max_distance_cm_orient(enum Rotation orientation) const
+{
+    uint8_t i;
+    if (find_instance(orientation, i)) {
+        return max_distance_cm(i);
+    }
+    return 0;
+}
+
+int16_t RangeFinder::min_distance_cm_orient(enum Rotation orientation) const
+{
+    uint8_t i;
+    if (find_instance(orientation, i)) {
+        return min_distance_cm(i);
+    }
+    return 0;
+}
+
+int16_t RangeFinder::ground_clearance_cm_orient(enum Rotation orientation) const
+{
+    uint8_t i;
+    if (find_instance(orientation, i)) {
+        return ground_clearance_cm(i);
+    }
+    return 0;
 }
 
 // true if sensor is returning data
@@ -706,6 +811,24 @@ bool RangeFinder::has_data(uint8_t instance) const
         return RangeFinder_NotConnected;
     }
     return ((state[instance].status != RangeFinder_NotConnected) && (state[instance].status != RangeFinder_NoData));
+}
+
+bool RangeFinder::has_data_orient(enum Rotation orientation) const
+{
+    uint8_t i;
+    if (find_instance(orientation, i)) {
+        return has_data(i);
+    }
+    return false;
+}
+
+uint8_t RangeFinder::range_valid_count_orient(enum Rotation orientation) const
+{
+    uint8_t i;
+    if (find_instance(orientation, i)) {
+        return range_valid_count(i);
+    }
+    return 0;
 }
 
 /*
@@ -748,4 +871,34 @@ void RangeFinder::update_pre_arm_check(uint8_t instance)
          ((int16_t)state[instance].pre_arm_distance_min > (MIN(_ground_clearance_cm[instance],min_distance_cm(instance)) - 10))) {
         state[instance].pre_arm_check = true;
     }
+}
+
+const Vector3f &RangeFinder::get_pos_offset_orient(enum Rotation orientation) const
+{
+    uint8_t i=0;
+    if (find_instance(orientation, i)) {
+        return get_pos_offset(i);
+    }
+    return pos_offset_zero;
+}
+
+MAV_DISTANCE_SENSOR RangeFinder::get_sensor_type(uint8_t instance) const {
+    // sanity check instance
+    if (instance >= RANGEFINDER_MAX_INSTANCES) {
+        return MAV_DISTANCE_SENSOR_UNKNOWN;
+    }
+
+    if (drivers[instance] == nullptr || _type[instance] == RangeFinder_TYPE_NONE) {
+        return MAV_DISTANCE_SENSOR_UNKNOWN;
+    }
+    return drivers[instance]->get_sensor_type();
+}
+
+MAV_DISTANCE_SENSOR RangeFinder::get_sensor_type_orient(enum Rotation orientation) const
+{
+    uint8_t i;
+    if (find_instance(orientation, i)) {
+        return get_sensor_type(i);
+    }
+    return MAV_DISTANCE_SENSOR_UNKNOWN;
 }

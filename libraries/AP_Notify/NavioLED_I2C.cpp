@@ -32,7 +32,7 @@ bool NavioLED_I2C::hw_init()
         return false;
     }
 
-    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&NavioLED_I2C::_timer, bool));
+    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&NavioLED_I2C::_timer, void));
 
     return true;
 }
@@ -47,10 +47,10 @@ bool NavioLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     return true;
 }
 
-bool NavioLED_I2C::_timer(void)
+void NavioLED_I2C::_timer(void)
 {
     if (!_need_update) {
-        return true;
+        return;
     }
     _need_update = false;
     
@@ -73,6 +73,4 @@ bool NavioLED_I2C::_timer(void)
 			     0x00, 0x00, red_channel_lsb, red_channel_msb};
 
     _dev->transfer(transaction, sizeof(transaction), nullptr, 0);
-    
-    return true;
 }

@@ -21,18 +21,13 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Copter class
  */
 Copter::Copter(void) :
-    DataFlash{FIRMWARE_STRING},
+    DataFlash{FIRMWARE_STRING, g.log_bitmask},
     flight_modes(&g.flight_mode1),
     mission(ahrs, 
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
     control_mode(STABILIZE),
-#if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-    motors(g.rc_7, MAIN_LOOP_RATE),
-#else
-    motors(MAIN_LOOP_RATE),
-#endif
     scaleLongDown(1),
     wp_bearing(0),
     home_bearing(0),
@@ -49,7 +44,6 @@ Copter::Copter(void) :
     super_simple_cos_yaw(1.0),
     super_simple_sin_yaw(0.0f),
     initial_armed_bearing(0),
-    desired_climb_rate(0),
     loiter_time_max(0),
     loiter_time(0),
 #if FRSKY_TELEM_ENABLED == ENABLED
@@ -70,12 +64,6 @@ Copter::Copter(void) :
     condition_start(0),
     G_Dt(MAIN_LOOP_SECONDS),
     inertial_nav(ahrs),
-    attitude_control(ahrs, aparm, motors, MAIN_LOOP_SECONDS),
-    pos_control(ahrs, inertial_nav, motors, attitude_control,
-                g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
-                g.p_pos_xy, g.pi_vel_xy),
-    wp_nav(inertial_nav, ahrs, pos_control, attitude_control),
-    circle_nav(inertial_nav, ahrs, pos_control),
     pmTest1(0),
     fast_loopTimer(0),
     mainLoop_count(0),
@@ -91,7 +79,9 @@ Copter::Copter(void) :
 #if AC_FENCE == ENABLED
     fence(ahrs, inertial_nav),
 #endif
-    avoid(ahrs, inertial_nav, fence, g2.proximity),
+#if AC_AVOID_ENABLED == ENABLED
+    avoid(ahrs, inertial_nav, fence, g2.proximity, &g2.beacon),
+#endif
 #if AC_RALLY == ENABLED
     rally(ahrs),
 #endif

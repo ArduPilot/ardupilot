@@ -19,7 +19,8 @@ public:
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
                                             enum Rotation rotation_a = ROTATION_NONE,
-                                            enum Rotation rotation_g = ROTATION_NONE);
+                                            enum Rotation rotation_g = ROTATION_NONE,
+                                            enum Rotation rotation_gH = ROTATION_NONE);
 
 private:
     AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
@@ -27,7 +28,8 @@ private:
                               AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
                               int drdy_pin_num_a, int drdy_pin_num_b,
                               enum Rotation rotation_a,
-                              enum Rotation rotation_g);
+                              enum Rotation rotation_g,
+                              enum Rotation rotation_gH);
 
     struct PACKED sensor_raw_data {
         int16_t x;
@@ -52,7 +54,7 @@ private:
     bool _accel_data_ready();
     bool _gyro_data_ready();
 
-    bool _poll_data();
+    void _poll_data();
 
     bool _init_sensor();
     bool _hardware_init();
@@ -97,10 +99,14 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
+    // gyro whoami
+    uint8_t whoami_g;
+    
     /*
       for boards that have a separate LSM303D and L3GD20 there can be
       different rotations for each
      */
     enum Rotation _rotation_a;
-    enum Rotation _rotation_g;
+    enum Rotation _rotation_g;  // for L3GD20
+    enum Rotation _rotation_gH; // for L3GD20H
 };

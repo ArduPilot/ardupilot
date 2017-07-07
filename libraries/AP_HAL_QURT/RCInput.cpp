@@ -64,7 +64,11 @@ void RCInput::read_callback(char *buf, size_t size)
 
 bool RCInput::new_input() 
 {
-    return new_rc_input;
+    bool ret = new_rc_input;
+    if (ret) {
+        new_rc_input = false;
+    }
+    return ret;
 }
 
 uint8_t RCInput::num_channels() 
@@ -74,7 +78,6 @@ uint8_t RCInput::num_channels()
 
 uint16_t RCInput::read(uint8_t ch) 
 {
-    new_rc_input = false;
     if (_override[ch]) {
         return _override[ch];
     }

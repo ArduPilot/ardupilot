@@ -7,6 +7,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Module/AP_Module.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // sensor declaration
@@ -25,7 +28,7 @@ void setup(void)
     baro.init();
     ahrs.init();
 
-    gps.init(nullptr, serial_manager);
+    gps.init(serial_manager);
 }
 
 void loop(void)

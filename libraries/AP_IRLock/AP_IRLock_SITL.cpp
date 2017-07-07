@@ -23,7 +23,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_IRLock_SITL.h"
-
+#include <SITL/SITL.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -36,12 +36,13 @@ AP_IRLock_SITL::AP_IRLock_SITL() :
     sock(true)
 {}
 
-void AP_IRLock_SITL::init()
+void AP_IRLock_SITL::init(int8_t bus)
 {
+    SITL::SITL *sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     // try to bind to a specific port so that if we restart ArduPilot
     // Gazebo keeps sending us packets. Not strictly necessary but
     // useful for debugging
-    sock.bind("127.0.0.1", 9005);
+    sock.bind("127.0.0.1", sitl->irlock_port);
 
     sock.reuseaddress();
     sock.set_blocking(false);
@@ -62,19 +63,18 @@ bool AP_IRLock_SITL::update()
     // receive packet from Gazebo IRLock plugin
     irlock_packet pkt;
     const int wait_ms = 0;
-    size_t s = sock.recv(&pkt, sizeof(irlock_packet), wait_ms);
+    ssize_t s = sock.recv(&pkt, sizeof(irlock_packet), wait_ms);
 
     bool new_data = false;
-    
-    // fprintf(stderr, "sitl %d %d\n", i, _num_targets);
-    if (s == sizeof(irlock_packet) && pkt.timestamp/1000 > _last_timestamp) {
+
+    if (s == sizeof(irlock_packet) && pkt.timestamp > _last_timestamp) {
         // fprintf(stderr, "     posx %f posy %f sizex %f sizey %f\n", pkt.pos_x, pkt.pos_y, pkt.size_x, pkt.size_y);
-        _target_info.timestamp = pkt.timestamp / 1000;
+        _target_info.timestamp = pkt.timestamp;
         _target_info.pos_x = pkt.pos_x;
         _target_info.pos_y = pkt.pos_y;
         _target_info.size_x = pkt.size_x;
         _target_info.size_y = pkt.size_y;
-        _last_timestamp = pkt.timestamp/1000;
+        _last_timestamp = pkt.timestamp;
         _last_update_ms = _last_timestamp;
         new_data = true;
     }

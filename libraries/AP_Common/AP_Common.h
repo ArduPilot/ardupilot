@@ -97,7 +97,7 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 ///
 /// Data structures and types used throughout the libraries and applications. 0 = default
 /// bit 0: Altitude is stored               0: Absolute,	1: Relative
-/// bit 1: Chnage Alt between WP            0: Gradually,	1: ASAP
+/// bit 1: Change Alt between WP            0: Gradually,	1: ASAP
 /// bit 2: Direction of loiter command      0: Clockwise	1: Counter-Clockwise
 /// bit 3: Req.to hit WP.alt to continue    0: No,          1: Yes
 /// bit 4: Relative to Home					0: No,          1: Yes
@@ -125,7 +125,7 @@ struct PACKED Location {
     // allowing an accurate angle in centi-degrees. This keeps the
     // storage cost per mission item at 15 bytes, and allows mission
     // altitudes of up to +/- 83km
-    int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100)
+    int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100) see LOCATION_ALT_MAX_M
     int32_t lat;                                        ///< param 3 - Latitude * 10**7
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };

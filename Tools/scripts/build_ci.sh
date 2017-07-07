@@ -68,7 +68,7 @@ for t in $CI_BUILD_TARGET; do
     # only do make-based builds for GCC when target is PX4 or when launched by a scheduled job
     if [[ "$cxx_compiler" != "clang++" && ( $t == "px4"* || -n ${CI_CRON_JOB+1} ) ]]; then
         echo "Starting make based build for target ${t}..."
-        for v in "ArduPlane" "ArduCopter" "APMrover2" "AntennaTracker"; do
+        for v in "ArduPlane" "ArduCopter" "APMrover2" "ArduSub" "AntennaTracker"; do
             echo "Building $v for ${t}..."
 
             pushd $v

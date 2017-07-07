@@ -36,12 +36,14 @@
 #define HAL_BOARD_SUBTYPE_LINUX_AERO       1015
 #define HAL_BOARD_SUBTYPE_LINUX_DARK       1016
 #define HAL_BOARD_SUBTYPE_LINUX_URUS       1017
+#define HAL_BOARD_SUBTYPE_LINUX_BLUE       1018
 
 /* HAL PX4 sub-types, starting at 2000 */
 #define HAL_BOARD_SUBTYPE_PX4_V1           2000
 #define HAL_BOARD_SUBTYPE_PX4_V2           2001
 #define HAL_BOARD_SUBTYPE_PX4_V4           2002
 #define HAL_BOARD_SUBTYPE_PX4_V3           2003
+#define HAL_BOARD_SUBTYPE_PX4_AEROFC_V1    2004
 
 /* HAL VRBRAIN sub-types, starting at 4000 */
 #define HAL_BOARD_SUBTYPE_VRBRAIN_V45      4000
@@ -69,6 +71,7 @@
 #define HAL_INS_QURT        16
 #define HAL_INS_BBBMINI     17
 #define HAL_INS_AERO        18
+#define HAL_INS_MPU6500     19
 
 /* Barometer driver types */
 #define HAL_BARO_BMP085      1
@@ -81,6 +84,8 @@
 #define HAL_BARO_MS5637_I2C  8
 #define HAL_BARO_QFLIGHT     9
 #define HAL_BARO_QURT       10
+#define HAL_BARO_BMP280_I2C 11
+#define HAL_BARO_BMP280_SPI 12
 
 /* Compass driver types */
 #define HAL_COMPASS_HMC5843             1
@@ -106,8 +111,6 @@
 /* CPU classes, used to select if CPU intensive algorithms should be used
  * Note that these are only approximate, not exact CPU speeds. */
 
-/* DEPRECATED: 16Mhz: AVR2560 or similar */
-#define HAL_CPU_CLASS_16   1
 /* 150Mhz: PX4 or similar. Assumes:
  *  - hardware floating point
  *  - tens of kilobytes of memory available */
@@ -173,3 +176,9 @@
 #define HAL_WITH_UAVCAN 0
 #endif
 
+// this is used as a general mechanism to make a 'small' build by
+// dropping little used features. We use this to allow us to keep
+// FMUv2 going for as long as possible
+#ifndef HAL_MINIMIZE_FEATURES
+#define HAL_MINIMIZE_FEATURES       0
+#endif

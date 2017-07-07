@@ -186,7 +186,12 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
 void DataFlash_File::periodic_1Hz(const uint32_t now)
 {
     if (!io_thread_alive()) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
+        if (io_thread_warning_decimation_counter == 0) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
+        }
+        if (io_thread_warning_decimation_counter++ > 57) {
+            io_thread_warning_decimation_counter = 0;
+        }
         // If you try to close the file here then it will almost
         // certainly block.  Since this is the main thread, this is
         // likely to cause a crash.
@@ -209,7 +214,7 @@ uint32_t DataFlash_File::bufferspace_available()
 }
 
 // return true for CardInserted() if we successfully initialized
-bool DataFlash_File::CardInserted(void)
+bool DataFlash_File::CardInserted(void) const
 {
     return _initialised && !_open_error;
 }
@@ -392,6 +397,9 @@ void DataFlash_File::Prep_MinSpace()
 #endif
 
 void DataFlash_File::Prep() {
+    if (!NeedPrep()) {
+        return;
+    }
     if (hal.util->get_soft_armed()) {
         // do not want to do any filesystem operations while we are e.g. flying
         return;
@@ -417,15 +425,49 @@ bool DataFlash_File::NeedPrep()
 
 /*
   construct a log file name given a log number. 
+  The number in the log filename will *not* be zero-padded.
+  Note: Caller must free.
+ */
+char *DataFlash_File::_log_file_name_short(const uint16_t log_num) const
+{
+    char *buf = nullptr;
+    if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == -1) {
+        return nullptr;
+    }
+    return buf;
+}
+
+/*
+  construct a log file name given a log number.
+  The number in the log filename will be zero-padded.
+  Note: Caller must free.
+ */
+char *DataFlash_File::_log_file_name_long(const uint16_t log_num) const
+{
+    char *buf = nullptr;
+    if (asprintf(&buf, "%s/%08u.BIN", _log_directory, (unsigned)log_num) == -1) {
+        return nullptr;
+    }
+    return buf;
+}
+
+/*
+  return a log filename appropriate for the supplied log_num if a
+  filename exists with the short (not-zero-padded name) then it is the
+  appropirate name, otherwise the long (zero-padded) version is.
   Note: Caller must free.
  */
 char *DataFlash_File::_log_file_name(const uint16_t log_num) const
 {
-    char *buf = nullptr;
-    if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == 0) {
+    char *filename = _log_file_name_short(log_num);
+    if (filename == nullptr) {
         return nullptr;
     }
-    return buf;
+    if (file_exists(filename)) {
+        return filename;
+    }
+    free(filename);
+    return _log_file_name_long(log_num);
 }
 
 /*
@@ -435,7 +477,7 @@ char *DataFlash_File::_log_file_name(const uint16_t log_num) const
 char *DataFlash_File::_lastlog_file_name(void) const
 {
     char *buf = nullptr;
-    if (asprintf(&buf, "%s/LASTLOG.TXT", _log_directory) == 0) {
+    if (asprintf(&buf, "%s/LASTLOG.TXT", _log_directory) == -1) {
         return nullptr;
     }
     return buf;
@@ -470,10 +512,27 @@ void DataFlash_File::EraseAll()
     }
 }
 
+bool DataFlash_File::WritesOK() const
+{
+    if (!DataFlash_Backend::WritesOK()) {
+        return false;
+    }
+    if (_write_fd == -1) {
+        return false;
+    }
+    if (!_initialised) {
+        return false;
+    }
+    if (_open_error) {
+        return false;
+    }
+    return true;
+}
+
 /* Write a block of data at current offset */
 bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-    if (_write_fd == -1 || !_initialised || _open_error || !_writes_enabled) {
+    if (!WritesOK()) {
         return false;
     }
 
@@ -1005,7 +1064,7 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
         }
     }
 #endif
-    port->println();    
+    port->printf("\n");
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX

@@ -22,6 +22,8 @@ void Plane::loiter_angle_reset(void)
 {
     loiter.sum_cd = 0;
     loiter.total_cd = 0;
+    loiter.reached_target_alt = false;
+    loiter.unable_to_acheive_target_alt = false;
 }
 
 /*
@@ -30,21 +32,38 @@ void Plane::loiter_angle_reset(void)
  */
 void Plane::loiter_angle_update(void)
 {
-    int32_t target_bearing_cd = nav_controller->target_bearing_cd();
+    static const int32_t lap_check_interval_cd = 3*36000;
+
+    const int32_t target_bearing_cd = nav_controller->target_bearing_cd();
     int32_t loiter_delta_cd;
+
     if (loiter.sum_cd == 0 && !reached_loiter_target()) {
         // we don't start summing until we are doing the real loiter
         loiter_delta_cd = 0;
     } else if (loiter.sum_cd == 0) {
         // use 1 cd for initial delta
         loiter_delta_cd = 1;
+        loiter.start_lap_alt_cm = current_loc.alt;
+        loiter.next_sum_lap_cd = lap_check_interval_cd;
     } else {
         loiter_delta_cd = target_bearing_cd - loiter.old_target_bearing_cd;
     }
+
     loiter.old_target_bearing_cd = target_bearing_cd;
     loiter_delta_cd = wrap_180_cd(loiter_delta_cd);
-
     loiter.sum_cd += loiter_delta_cd * loiter.direction;
+
+    if (labs(current_loc.alt - next_WP_loc.alt) < 500) {
+        loiter.reached_target_alt = true;
+        loiter.unable_to_acheive_target_alt = false;
+        loiter.next_sum_lap_cd = loiter.sum_cd + lap_check_interval_cd;
+
+    } else if (!loiter.reached_target_alt && labs(loiter.sum_cd) >= loiter.next_sum_lap_cd) {
+        // check every few laps for scenario where up/downdrafts inhibit you from loitering up/down for too long
+        loiter.unable_to_acheive_target_alt = labs(current_loc.alt - loiter.start_lap_alt_cm) < 500;
+        loiter.start_lap_alt_cm = current_loc.alt;
+        loiter.next_sum_lap_cd += lap_check_interval_cd;
+    }
 }
 
 //****************************************************************
@@ -93,9 +112,9 @@ void Plane::calc_airspeed_errors()
                               channel_throttle->get_control_in()) +
                              ((int32_t)aparm.airspeed_min * 100);
 
-    } else if (control_mode == AUTO && landing.in_progress) {
+    } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
-        target_airspeed_cm = landing.get_target_airspeed_cm(flight_stage);
+        target_airspeed_cm = landing.get_target_airspeed_cm();
 
     } else {
         // Normal airspeed target
@@ -143,11 +162,11 @@ void Plane::update_loiter(uint16_t radius)
 {
     if (radius <= 1) {
         // if radius is <=1 then use the general loiter radius. if it's small, use default
-        radius = (abs(g.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(g.loiter_radius);
+        radius = (abs(aparm.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(aparm.loiter_radius);
         if (next_WP_loc.flags.loiter_ccw == 1) {
             loiter.direction = -1;
         } else {
-            loiter.direction = (g.loiter_radius < 0) ? -1 : 1;
+            loiter.direction = (aparm.loiter_radius < 0) ? -1 : 1;
         }
     }
 
@@ -229,28 +248,37 @@ void Plane::update_cruise()
  */
 void Plane::update_fbwb_speed_height(void)
 {
-    static float last_elevator_input;
-    float elevator_input;
-    elevator_input = channel_pitch->get_control_in() / 4500.0f;
-    
-    if (g.flybywire_elev_reverse) {
-        elevator_input = -elevator_input;
-    }
-    
-    change_target_altitude(g.flybywire_climb_rate * elevator_input * perf.delta_us_fast_loop * 0.0001f);
-    
-    if (is_zero(elevator_input) && !is_zero(last_elevator_input)) {
-        // the user has just released the elevator, lock in
-        // the current altitude
-        set_target_altitude_current();
-    }
+    uint32_t now = micros();
+    if (now - target_altitude.last_elev_check_us >= 100000) {
+        // we don't run this on every loop as it would give too small granularity on quadplanes at 300Hz, and
+        // give below 1cm altitude change, which would result in no climb or descent
+        float dt = (now - target_altitude.last_elev_check_us) * 1.0e-6;
+        dt = constrain_float(dt, 0.1, 0.15);
 
+        target_altitude.last_elev_check_us = now;
+        
+        float elevator_input = channel_pitch->get_control_in() / 4500.0f;
+    
+        if (g.flybywire_elev_reverse) {
+            elevator_input = -elevator_input;
+        }
+
+        int32_t alt_change_cm = g.flybywire_climb_rate * elevator_input * dt * 100;
+        change_target_altitude(alt_change_cm);
+        
+        if (is_zero(elevator_input) && !is_zero(target_altitude.last_elevator_input)) {
+            // the user has just released the elevator, lock in
+            // the current altitude
+            set_target_altitude_current();
+        }
+        
+        target_altitude.last_elevator_input = elevator_input;
+    }
+    
     // check for FBWB altitude limit
     check_minimum_altitude();
 
     altitude_error_cm = calc_altitude_error_cm();
-    
-    last_elevator_input = elevator_input;
     
     calc_throttle();
     calc_nav_pitch();

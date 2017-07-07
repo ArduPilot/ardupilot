@@ -24,10 +24,10 @@ void RCInput_Raspilot::init()
     _dev = hal.spi->get_device("raspio");
 
     // start the timer process to read samples
-    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&RCInput_Raspilot::_poll_data, bool));
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&RCInput_Raspilot::_poll_data, void));
 }
 
-bool RCInput_Raspilot::_poll_data(void)
+void RCInput_Raspilot::_poll_data(void)
 {
     struct IOPacket _dma_packet_tx, _dma_packet_rx;
     uint16_t count = LINUX_RC_INPUT_NUM_CHANNELS;
@@ -52,8 +52,6 @@ bool RCInput_Raspilot::_poll_data(void)
     if ( rc_ok && (rx_crc == crc_packet(&_dma_packet_rx)) ) {
       _update_periods(&_dma_packet_rx.regs[6], (uint8_t)num_values);
     }
-
-    return true;
 }
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE

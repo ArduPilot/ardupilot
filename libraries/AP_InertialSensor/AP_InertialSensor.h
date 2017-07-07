@@ -133,6 +133,10 @@ public:
     bool accel_calibrated_ok_all() const;
     bool use_accel(uint8_t instance) const;
 
+    // get observed sensor rates, including any internal sampling multiplier
+    uint16_t get_gyro_rate_hz(uint8_t instance) const { return uint16_t(_gyro_raw_sample_rates[instance] * _gyro_over_sampling[instance]); }
+    uint16_t get_accel_rate_hz(uint8_t instance) const { return uint16_t(_accel_raw_sample_rates[instance] * _accel_over_sampling[instance]); }
+    
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
     const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(_primary_accel); }
@@ -197,11 +201,8 @@ public:
     // get the accel filter rate in Hz
     uint8_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
-    // pass in a pointer to DataFlash for raw data logging
-    void set_dataflash(DataFlash_Class *dataflash) { _dataflash = dataflash; }
-
-    // enable/disable raw gyro/accel logging
-    void set_raw_logging(bool enable) { _log_raw_data = enable; }
+    // indicate which bit in LOG_BITMASK indicates raw logging enabled
+    void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
 
     // calculate vibration levels and check for accelerometer clipping (called by a backends)
     void calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt);
@@ -256,6 +257,10 @@ public:
     void acal_update();
 
     bool accel_cal_requires_reboot() const { return _accel_cal_requires_reboot; }
+
+    // return time in microseconds of last update() call
+    uint32_t get_last_update_usec(void) const { return _last_update_usec; }
+    
 private:
 
     // load backend drivers
@@ -338,9 +343,24 @@ private:
     float _accel_max_abs_offsets[INS_MAX_INSTANCES];
 
     // accelerometer and gyro raw sample rate in units of Hz
-    uint16_t _accel_raw_sample_rates[INS_MAX_INSTANCES];
-    uint16_t _gyro_raw_sample_rates[INS_MAX_INSTANCES];
+    float  _accel_raw_sample_rates[INS_MAX_INSTANCES];
+    float  _gyro_raw_sample_rates[INS_MAX_INSTANCES];
 
+    // how many sensors samples per notify to the backend
+    uint8_t _accel_over_sampling[INS_MAX_INSTANCES];
+    uint8_t _gyro_over_sampling[INS_MAX_INSTANCES];
+
+    // last sample time in microseconds. Use for deltaT calculations
+    // on non-FIFO sensors
+    uint64_t _accel_last_sample_us[INS_MAX_INSTANCES];
+    uint64_t _gyro_last_sample_us[INS_MAX_INSTANCES];
+
+    // sample times for checking real sensor rate for FIFO sensors
+    uint16_t _sample_accel_count[INS_MAX_INSTANCES];
+    uint32_t _sample_accel_start_us[INS_MAX_INSTANCES];
+    uint16_t _sample_gyro_count[INS_MAX_INSTANCES];
+    uint32_t _sample_gyro_start_us[INS_MAX_INSTANCES];
+    
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];
 
@@ -370,6 +390,9 @@ private:
     uint8_t _primary_gyro;
     uint8_t _primary_accel;
 
+    // bitmask bit which indicates if we should log raw accel and gyro data
+    uint32_t _log_raw_bit;
+
     // has wait_for_sample() found a sample?
     bool _have_sample:1;
 
@@ -378,9 +401,6 @@ private:
 
     // are gyros or accels currently being calibrated
     bool _calibrating:1;
-
-    // should we log raw accel/gyro data?
-    bool _log_raw_data:1;
 
     bool _backends_detected:1;
 
@@ -395,6 +415,9 @@ private:
 
     // time between samples in microseconds
     uint32_t _sample_period_usec;
+
+    // last time update() completed
+    uint32_t _last_update_usec;
 
     // health of gyros and accels
     bool _gyro_healthy[INS_MAX_INSTANCES];

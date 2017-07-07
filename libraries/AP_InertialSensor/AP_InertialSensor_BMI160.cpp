@@ -152,7 +152,7 @@ void AP_InertialSensor_BMI160::start()
 {
     bool r;
 
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
@@ -185,7 +185,7 @@ void AP_InertialSensor_BMI160::start()
 
     /* Call _poll_data() at 1kHz */
     _dev->register_periodic_callback(1000,
-        FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI160::_poll_data, bool));
+        FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI160::_poll_data, void));
 }
 
 bool AP_InertialSensor_BMI160::update()
@@ -417,10 +417,9 @@ read_fifo_end:
     }
 }
 
-bool AP_InertialSensor_BMI160::_poll_data()
+void AP_InertialSensor_BMI160::_poll_data()
 {
     _read_fifo();
-    return true;
 }
 
 bool AP_InertialSensor_BMI160::_hardware_init()
@@ -429,7 +428,7 @@ bool AP_InertialSensor_BMI160::_hardware_init()
 
     hal.scheduler->delay(BMI160_POWERUP_DELAY_MSEC);
 
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 

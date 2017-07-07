@@ -2,6 +2,11 @@
 /.waf*
 /Tools/autotest/aircraft/Rascal/reset.xml
 /Tools/autotest/ch7_mission.txt
+/Tools/autotest/param_metadata/Parameters.html
+/Tools/autotest/param_metadata/Parameters.rst
+/Tools/autotest/param_metadata/Parameters.wiki
+/Tools/autotest/param_metadata/Parameters.md
+/Tools/autotest/param_metadata/apm.pdef.xml
 /Tools/autotest/jsb_sim/fgout.xml
 /Tools/autotest/jsb_sim/rascal_test.xml
 /Tools/autotest/jsbsim_fgout_0.xml
@@ -56,6 +61,7 @@ Build.APMrover2/*
 Build.AntennaTracker/*
 Build.ArduCopter/*
 Build.ArduPlane/*
+Build.ArduSub/*
 CMakeCache.txt
 CMakeFiles
 LASTLOG.TXT

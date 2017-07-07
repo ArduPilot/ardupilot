@@ -9,7 +9,7 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
-ADCSource::ADCSource(SITL_State *sitlState, uint8_t pin) :
+ADCSource::ADCSource(SITL_State *sitlState, int16_t pin) :
     _sitlState(sitlState),
     _pin(pin)
 {}

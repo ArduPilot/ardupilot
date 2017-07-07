@@ -106,7 +106,7 @@ void Scheduler::init()
         const struct sched_table *t = &sched_table[i];
 
         t->thread->set_rate(t->rate);
-        t->thread->set_stack_size(256 * 1024);
+        t->thread->set_stack_size(1024 * 1024);
         t->thread->start(t->name, t->policy, t->prio);
     }
 
@@ -278,7 +278,7 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
 
 void Scheduler::suspend_timer_procs()
 {
-    if (!_timer_semaphore.take(0)) {
+    if (!_timer_semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         printf("Failed to take timer semaphore\n");
     }
 }
@@ -297,7 +297,7 @@ void Scheduler::_timer_task()
     }
     _in_timer_proc = true;
 
-    if (!_timer_semaphore.take(0)) {
+    if (!_timer_semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         printf("Failed to take timer semaphore in %s\n", __PRETTY_FUNCTION__);
     }
     // now call the timer based drivers
@@ -350,7 +350,7 @@ void Scheduler::_timer_task()
 
 void Scheduler::_run_io(void)
 {
-    if (!_io_semaphore.take(0)) {
+    if (!_io_semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 

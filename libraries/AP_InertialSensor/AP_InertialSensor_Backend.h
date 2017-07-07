@@ -70,6 +70,9 @@ public:
      */
     int16_t get_id() const { return _id; }
 
+    // notify of a fifo reset
+    void notify_fifo_reset(void);
+    
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -103,10 +106,12 @@ protected:
     // rotate gyro vector, offset and publish
     void _publish_gyro(uint8_t instance, const Vector3f &gyro);
 
-    // this should be called every time a new gyro raw sample is available -
-    // be it published or not
-    // the sample is raw in the sense that it's not filtered yet, but it must
-    // be rotated and corrected (_rotate_and_correct_gyro)
+    // this should be called every time a new gyro raw sample is
+    // available - be it published or not the sample is raw in the
+    // sense that it's not filtered yet, but it must be rotated and
+    // corrected (_rotate_and_correct_gyro)
+    // The sample_us value must be provided for non-FIFO based
+    // sensors, and should be set to zero for FIFO based sensors
     void _notify_new_gyro_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0);
 
     // rotate accel vector, scale, offset and publish
@@ -116,8 +121,19 @@ protected:
     // be it published or not
     // the sample is raw in the sense that it's not filtered yet, but it must
     // be rotated and corrected (_rotate_and_correct_accel)
+    // The sample_us value must be provided for non-FIFO based
+    // sensors, and should be set to zero for FIFO based sensors
     void _notify_new_accel_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0, bool fsync_set=false);
 
+    // set the amount of oversamping a accel is doing
+    void _set_accel_oversampling(uint8_t instance, uint8_t n);
+
+    // set the amount of oversamping a gyro is doing
+    void _set_gyro_oversampling(uint8_t instance, uint8_t n);
+    
+    // update the sensor rate for FIFO sensors
+    void _update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz);
+    
     // set accelerometer max absolute offset for calibration
     void _set_accel_max_abs_offset(uint8_t instance, float offset);
 
@@ -158,10 +174,9 @@ protected:
     // return the requested sample rate in Hz
     uint16_t get_sample_rate_hz(void) const;
 
-    // access to frontend dataflash
-    DataFlash_Class *get_dataflash(void) const {
-        return _imu._log_raw_data? _imu._dataflash : nullptr;
-    }
+    // access to frontend dataflash.  If raw-imu logging is not
+    // enabled, nullptr is returned
+    DataFlash_Class *get_dataflash() const;
 
     // common gyro update function for all backends
     void update_gyro(uint8_t instance);
@@ -191,6 +206,12 @@ protected:
     bool enable_fast_sampling(uint8_t instance) {
         return (_imu._fast_sampling_mask & (1U<<instance)) != 0;
     }
+
+    /*
+      notify of a FIFO reset so we don't use bad data to update observed sensor rate
+    */
+    void notify_accel_fifo_reset(uint8_t instance);
+    void notify_gyro_fifo_reset(uint8_t instance);
     
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor

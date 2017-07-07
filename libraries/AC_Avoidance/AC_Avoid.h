@@ -8,6 +8,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude controller library for sqrt controller
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
 #include <AP_Proximity/AP_Proximity.h>
+#include <AP_Beacon/AP_Beacon.h>
 
 #define AC_AVOID_ACCEL_CMSS_MAX         100.0f  // maximum acceleration/deceleration in cm/s/s used to avoid hitting fence
 
@@ -15,7 +16,8 @@
 #define AC_AVOID_DISABLED               0       // avoidance disabled
 #define AC_AVOID_STOP_AT_FENCE          1       // stop at fence
 #define AC_AVOID_USE_PROXIMITY_SENSOR   2       // stop based on proximity sensor output
-#define AC_AVOID_ALL                    3       // use fence and promiximity sensor
+#define AC_AVOID_STOP_AT_BEACON_FENCE   4       // stop based on beacon perimeter
+#define AC_AVOID_DEFAULT                (AC_AVOID_STOP_AT_FENCE | AC_AVOID_USE_PROXIMITY_SENSOR)
 
 // definitions for non-GPS avoidance
 #define AC_AVOID_NONGPS_DIST_MAX_DEFAULT    10.0f   // objects over 10m away are ignored (default value for DIST_MAX parameter)
@@ -29,7 +31,7 @@ class AC_Avoid {
 public:
 
     /// Constructor
-    AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity);
+    AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
 
     /*
      * Adjusts the desired velocity so that the vehicle can stop
@@ -38,6 +40,9 @@ public:
      */
     void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel);
     void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel);
+
+    // adjust vertical climb rate so vehicle does not break the vertical fence
+    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms);
 
     // adjust roll-pitch to push vehicle away from objects
     // roll and pitch value are in centi-degrees
@@ -63,6 +68,11 @@ private:
     void adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2f &desired_vel);
 
     /*
+     * Adjusts the desired velocity for the beacon fence.
+     */
+    void adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel);
+
+    /*
      * Adjusts the desired velocity based on output from the proximity sensor
      */
     void adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &desired_vel);
@@ -70,8 +80,9 @@ private:
     /*
      * Adjusts the desired velocity given an array of boundary points
      *   earth_frame should be true if boundary is in earth-frame, false for body-frame
+     *   margin is the distance (in meters) that the vehicle should stop short of the polygon
      */
-    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame);
+    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin);
 
     /*
      * Limits the component of desired_vel in the direction of the unit vector
@@ -83,9 +94,10 @@ private:
     void limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance) const;
 
     /*
-     * Gets the current position, relative to home (not relative to EKF origin)
+     * Gets the current position or altitude, relative to home (not relative to EKF origin) in cm
      */
-    Vector2f get_position();
+    Vector2f get_position() const;
+    float get_alt_above_home() const;
 
     /*
      * Computes the speed such that the stopping distance
@@ -97,11 +109,6 @@ private:
      * Computes distance required to stop, given current speed.
      */
     float get_stopping_distance(float kP, float accel_cmss, float speed) const;
-
-    /*
-     * Gets the fence margin in cm
-     */
-    float get_margin() const { return _fence.get_margin() * 100.0f; }
 
     /*
      * methods for avoidance in non-GPS flight modes
@@ -118,11 +125,13 @@ private:
     const AP_InertialNav& _inav;
     const AC_Fence& _fence;
     const AP_Proximity& _proximity;
+    const AP_Beacon* _beacon;
 
     // parameters
     AP_Int8 _enabled;
     AP_Int16 _angle_max;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
     AP_Float _dist_max;         // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
+    AP_Float _margin;           // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
 };

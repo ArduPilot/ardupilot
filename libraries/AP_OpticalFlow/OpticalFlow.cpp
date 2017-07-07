@@ -61,7 +61,7 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @Param: _BUS_ID
     // @DisplayName: ID on the bus
     // @Description: This is used to select between multiple possible bus IDs for some sensor types. For PX4Flow you can choose 0 to 7 for the 8 possible addresses on the I2C bus.
-    // @Range: 0 255
+    // @Range: 0 127
     // @User: Advanced
     AP_GROUPINFO("_BUS_ID", 5,  OpticalFlow, _bus_id,   0),
     
@@ -95,8 +95,7 @@ void OpticalFlow::init(void)
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
         backend = new AP_OpticalFlow_SITL(*this);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
         backend = new AP_OpticalFlow_Onboard(*this);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         backend = AP_OpticalFlow_PX4Flow::detect(*this);

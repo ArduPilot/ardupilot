@@ -13,6 +13,7 @@ FLTMODE2 9.0000
 FLTMODE3 6.0000
 FLTMODE4 3.0000
 FLTMODE5 5.0000
+FRAME_CLASS 6
 # we need small INS_ACC offsets so INS is recognised as being calibrated
 INS_ACCOFFS_X   0.001
 INS_ACCOFFS_Y   0.001

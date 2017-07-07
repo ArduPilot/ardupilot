@@ -116,8 +116,10 @@ void RCOutput::cork(void)
 
 void RCOutput::push(void)
 {
-    need_write = true;
-    corked = false;
+    if (corked) {
+        need_write = true;
+        corked = false;
+    }
 }
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE

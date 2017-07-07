@@ -14,7 +14,7 @@
 */
 /*
   driver for all supported Invensense IMUs, including MPU6000, MPU9250
-  and ICM-20608
+  ICM-20608 and ICM-20602
  */
 
 #include <assert.h>
@@ -118,6 +118,7 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_I2C_SLV2_ADDR                    0x2B
 #define MPUREG_I2C_SLV3_ADDR                    0x2E
 #define MPUREG_INT_PIN_CFG                      0x37
+#       define BIT_BYPASS_EN                        0x02
 #       define BIT_INT_RD_CLEAR                     0x10    // clear the interrupt when any read occurs
 #       define BIT_LATCH_INT_EN                     0x20    // latch data ready pin
 #define MPUREG_I2C_SLV4_CTRL                    0x34
@@ -217,6 +218,8 @@ extern const AP_HAL::HAL& hal;
 // WHOAMI values
 #define MPU_WHOAMI_6000			0x68
 #define MPU_WHOAMI_20608		0xaf
+#define MPU_WHOAMI_20602		0x12
+#define MPU_WHOAMI_6500			0x70
 #define MPU_WHOAMI_MPU9250      0x71
 #define MPU_WHOAMI_MPU9255      0x73
 
@@ -329,6 +332,8 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensense::probe(AP_InertialSensor
     }
     if (sensor->_mpu_type == Invensense_MPU9250) {
         sensor->_id = HAL_INS_MPU9250_SPI;
+    } else if (sensor->_mpu_type == Invensense_MPU6500) {
+        sensor->_id = HAL_INS_MPU6500;
     } else {
         sensor->_id = HAL_INS_MPU60XX_SPI;
     }
@@ -362,6 +367,9 @@ void AP_InertialSensor_Invensense::_fifo_reset()
     hal.scheduler->delay_microseconds(1);
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
     _last_stat_user_ctrl = user_ctrl | BIT_USER_CTRL_FIFO_EN;
+
+    notify_accel_fifo_reset(_accel_instance);
+    notify_gyro_fifo_reset(_gyro_instance);
 }
 
 bool AP_InertialSensor_Invensense::_has_auxiliary_bus()
@@ -371,7 +379,7 @@ bool AP_InertialSensor_Invensense::_has_auxiliary_bus()
 
 void AP_InertialSensor_Invensense::start()
 {
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
@@ -393,12 +401,38 @@ void AP_InertialSensor_Invensense::start()
         adev = DEVTYPE_ACC_MPU9250;
         break;
     case Invensense_MPU6000:
+    case Invensense_MPU6500:
     case Invensense_ICM20608:
+    case Invensense_ICM20602:
     default:
         gdev = DEVTYPE_GYR_MPU6000;
         adev = DEVTYPE_ACC_MPU6000;
         break;
     }
+
+    /*
+      setup temperature sensitivity and offset. This varies
+      considerably between parts
+     */
+    switch (_mpu_type) {
+    case Invensense_MPU9250:
+        temp_zero = 21;
+        temp_sensitivity = 1.0/340;
+        break;
+
+    case Invensense_MPU6000:
+    case Invensense_MPU6500:
+        temp_zero = 36.53;
+        temp_sensitivity = 1.0/340;
+        break;
+
+    case Invensense_ICM20608:
+    case Invensense_ICM20602:
+        temp_zero = 25;
+        temp_sensitivity = 1.0/326.8; 
+        break;
+    }
+
     _gyro_instance = _imu.register_gyro(1000, _dev->get_bus_id_devtype(gdev));
     _accel_instance = _imu.register_accel(1000, _dev->get_bus_id_devtype(adev));
 
@@ -433,7 +467,8 @@ void AP_InertialSensor_Invensense::start()
     }
     hal.scheduler->delay(1);
 
-	if (_mpu_type == Invensense_ICM20608) {
+	if (_mpu_type == Invensense_ICM20608 ||
+        _mpu_type == Invensense_ICM20602) {
         // this avoids a sensor bug, see description above
 		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
 	}
@@ -444,7 +479,7 @@ void AP_InertialSensor_Invensense::start()
 
     // clear interrupt on any read, and hold the data ready pin high
     // until we clear the interrupt
-    _register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
+    _register_write(MPUREG_INT_PIN_CFG, _register_read(MPUREG_INT_PIN_CFG) | BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
 
     // now that we have initialised, we set the bus speed to high
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
@@ -462,7 +497,7 @@ void AP_InertialSensor_Invensense::start()
     }
 
     // start the timer process to read samples
-    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, bool));
+    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
 }
 
 
@@ -518,10 +553,9 @@ bool AP_InertialSensor_Invensense::_data_ready()
 /*
  * Timer process to poll for new data from the Invensense. Called from bus thread with semaphore held
  */
-bool AP_InertialSensor_Invensense::_poll_data()
+void AP_InertialSensor_Invensense::_poll_data()
 {
     _read_fifo();
-    return true;
 }
 
 bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_samples)
@@ -546,7 +580,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
             _fifo_reset();
             return false;
         }
-        float temp = t2/340.0f + 36.53f;
+        float temp = t2 * temp_sensitivity + temp_zero;
         
         gyro = Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
@@ -556,7 +590,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
 
-        _notify_new_accel_raw_sample(_accel_instance, accel, AP_HAL::micros64(), fsync_set);
+        _notify_new_accel_raw_sample(_accel_instance, accel, 0, fsync_set);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
         _temp_filtered = _temp_filter.apply(temp);
@@ -622,7 +656,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
             _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
             
-            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, AP_HAL::micros64(), false);
+            _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
             
             _accum.accel.zero();
@@ -636,7 +670,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
     }
 
     if (ret) {
-        float temp = (static_cast<float>(tsum)/n_samples)/340.0f + 36.53f;
+        float temp = (static_cast<float>(tsum)/n_samples)*temp_sensitivity + temp_zero;
         _temp_filtered = _temp_filter.apply(temp);
     }
     
@@ -776,6 +810,19 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
         _fast_sampling = (_mpu_type != Invensense_MPU6000 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
         if (_fast_sampling) {
             hal.console->printf("MPU[%u]: enabled fast sampling\n", _accel_instance);
+
+            // for logging purposes set the oversamping rate
+            _set_accel_oversampling(_accel_instance, MPU_FIFO_DOWNSAMPLE_COUNT/2);
+            _set_gyro_oversampling(_gyro_instance, MPU_FIFO_DOWNSAMPLE_COUNT);
+
+            /* set divider for internal sample rate to 0x1F when fast
+             sampling enabled. This reduces the impact of the slave
+             sensor on the sample rate. It ends up with around 75Hz
+             slave rate, and reduces the impact on the gyro and accel
+             sample rate, ending up with around 7760Hz gyro rate and
+             3880Hz accel rate
+             */
+            _register_write(MPUREG_I2C_SLV4_CTRL, 0x1F);
         }
     }
     
@@ -809,12 +856,19 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
     switch (whoami) {
     case MPU_WHOAMI_6000:
         _mpu_type = Invensense_MPU6000;
+        return true;
+    case MPU_WHOAMI_6500:
+        _mpu_type = Invensense_MPU6500;
+        return true;
     case MPU_WHOAMI_MPU9250:
     case MPU_WHOAMI_MPU9255:
         _mpu_type = Invensense_MPU9250;
         return true;
     case MPU_WHOAMI_20608:
         _mpu_type = Invensense_ICM20608;
+        return true;
+    case MPU_WHOAMI_20602:
+        _mpu_type = Invensense_ICM20602;
         return true;
     }
     // not a value WHOAMI result
@@ -824,7 +878,7 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
 
 bool AP_InertialSensor_Invensense::_hardware_init(void)
 {
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
@@ -865,6 +919,12 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
             _register_write(MPUREG_USER_CTRL, _last_stat_user_ctrl);
         }
 
+        /* bus-dependent initialization */
+        if ((_dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C) && (_mpu_type == Invensense_MPU9250)) {
+            /* Enable I2C bypass to access internal AK8963 */
+            _register_write(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN);
+        }
+
         // Wake up device and select GyroZ clock. Note that the
         // Invensense starts up in sleep mode, and it can take some time
         // for it to come out of sleep
@@ -886,11 +946,12 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
     _dev->get_semaphore()->give();
 
     if (tries == 5) {
-        hal.console->println("Failed to boot Invensense 5 times");
+        hal.console->printf("Failed to boot Invensense 5 times\n");
         return false;
     }
 
-	if (_mpu_type == Invensense_ICM20608) {
+	if (_mpu_type == Invensense_ICM20608 ||
+        _mpu_type == Invensense_ICM20602) {
         // this avoids a sensor bug, see description above
 		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
 	}
@@ -937,7 +998,7 @@ int AP_Invensense_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
     assert(buf);
 
     if (_registered) {
-        hal.console->println("Error: can't passthrough when slave is already configured");
+        hal.console->printf("Error: can't passthrough when slave is already configured\n");
         return -1;
     }
 
@@ -963,7 +1024,7 @@ int AP_Invensense_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
 int AP_Invensense_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 {
     if (_registered) {
-        hal.console->println("Error: can't passthrough when slave is already configured");
+        hal.console->printf("Error: can't passthrough when slave is already configured\n");
         return -1;
     }
 
@@ -986,7 +1047,7 @@ int AP_Invensense_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 int AP_Invensense_AuxiliaryBusSlave::read(uint8_t *buf)
 {
     if (!_registered) {
-        hal.console->println("Error: can't read before configuring slave");
+        hal.console->printf("Error: can't read before configuring slave\n");
         return -1;
     }
 

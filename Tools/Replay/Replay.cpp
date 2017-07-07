@@ -14,6 +14,7 @@
  */
 
 #include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS.h>
 #include "Parameters.h"
 #include "VehicleType.h"
 #include "MsgHandler.h"
@@ -115,7 +116,7 @@ void ReplayVehicle::setup(void)
     // we pass a minimal log structure, as we will be outputting the
     // log structures we need manually, to prevent FMT duplicates
     dataflash.Init(min_log_structure, ARRAY_SIZE(min_log_structure));
-    dataflash.StartNewLog();
+    dataflash.StartUnstartedLogging();
 
     ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
@@ -796,7 +797,6 @@ void Replay::loop()
 
     if (!logreader.update(type)) {
         ::printf("End of log at %.1f seconds\n", AP_HAL::millis()*0.001f);
-        fclose(plotf);
         flush_and_exit();
     }
 
@@ -927,5 +927,13 @@ bool Replay::check_user_param(const char *name)
     }
     return false;
 }
+
+class GCS_Replay : public GCS
+{
+    void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) override {
+        ::fprintf(stderr, "GCS: %s\n", text);
+    }
+};
+GCS_Replay _gcs;
 
 AP_HAL_MAIN_CALLBACKS(&replay);

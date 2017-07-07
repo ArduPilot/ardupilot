@@ -27,10 +27,13 @@
 
 #include <AP_Mount/AP_Mount.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup () {
-    hal.console->println("Unit test for AP_Mount. This sketch"
+    hal.console->printf("%s\n", "Unit test for AP_Mount. This sketch"
                 "has no functionality, it only tests build.");
 }
 void loop () {}

@@ -7,15 +7,6 @@
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Common for implementation details
 static const struct Menu::command test_menu_commands[] = {
-    {"pwm",                 MENU_FUNC(test_radio_pwm)},
-    {"radio",               MENU_FUNC(test_radio)},
-    {"passthru",            MENU_FUNC(test_passthru)},
-    {"failsafe",            MENU_FUNC(test_failsafe)},
-    {"relay",               MENU_FUNC(test_relay)},
-    {"waypoints",           MENU_FUNC(test_wp)},
-    {"xbee",                MENU_FUNC(test_xbee)},
-    {"modeswitch",          MENU_FUNC(test_modeswitch)},
-
     // Tests below here are for hardware sensors only present
     // when real sensors are attached or they are emulated
     {"gps",                 MENU_FUNC(test_gps)},
@@ -43,251 +34,6 @@ int8_t Plane::test_mode(uint8_t argc, const Menu::arg *argv)
 void Plane::print_hit_enter()
 {
     cliSerial->printf("Hit Enter to exit.\n\n");
-}
-
-int8_t Plane::test_radio_pwm(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    hal.scheduler->delay(1000);
-
-    while(1) {
-        hal.scheduler->delay(20);
-
-        // Filters radio input - adjust filters in the radio.cpp file
-        // ----------------------------------------------------------
-        read_radio();
-
-        cliSerial->printf("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
-                        (int)channel_roll->get_radio_in(),
-                        (int)channel_pitch->get_radio_in(),
-                        (int)channel_throttle->get_radio_in(),
-                        (int)channel_rudder->get_radio_in(),
-                        (int)g.rc_5.get_radio_in(),
-                        (int)g.rc_6.get_radio_in(),
-                        (int)g.rc_7.get_radio_in(),
-                        (int)g.rc_8.get_radio_in());
-
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-
-
-int8_t Plane::test_passthru(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    hal.scheduler->delay(1000);
-
-    while(1) {
-        hal.scheduler->delay(20);
-
-        // New radio frame? (we could use also if((millis()- timer) > 20)
-        if (hal.rcin->new_input()) {
-            cliSerial->print("CH:");
-            for(int16_t i = 0; i < 8; i++) {
-                cliSerial->print(hal.rcin->read(i));        // Print channel values
-                print_comma();
-                servo_write(i, hal.rcin->read(i)); // Copy input to Servos
-            }
-            cliSerial->println();
-        }
-        if (cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-    return 0;
-}
-
-int8_t Plane::test_radio(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    hal.scheduler->delay(1000);
-
-    // read the radio to set trims
-    // ---------------------------
-    trim_radio();
-
-    while(1) {
-        hal.scheduler->delay(20);
-        read_radio();
-
-        channel_roll->calc_pwm();
-        channel_pitch->calc_pwm();
-        channel_throttle->calc_pwm();
-        channel_rudder->calc_pwm();
-
-        // write out the servo PWM values
-        // ------------------------------
-        set_servos();
-
-        cliSerial->printf("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
-                        (int)channel_roll->get_control_in(),
-                        (int)channel_pitch->get_control_in(),
-                        (int)channel_throttle->get_control_in(),
-                        (int)channel_rudder->get_control_in(),
-                        (int)g.rc_5.get_control_in(),
-                        (int)g.rc_6.get_control_in(),
-                        (int)g.rc_7.get_control_in(),
-                        (int)g.rc_8.get_control_in() );
-
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-
-int8_t Plane::test_failsafe(uint8_t argc, const Menu::arg *argv)
-{
-    uint8_t fail_test = 0;
-    print_hit_enter();
-    for(int16_t i = 0; i < 50; i++) {
-        hal.scheduler->delay(20);
-        read_radio();
-    }
-
-    // read the radio to set trims
-    // ---------------------------
-    trim_radio();
-
-    oldSwitchPosition = readSwitch();
-
-    cliSerial->println("Unplug battery, throttle in neutral, turn off radio.");
-    while(channel_throttle->get_control_in() > 0) {
-        hal.scheduler->delay(20);
-        read_radio();
-    }
-
-    while(1) {
-        hal.scheduler->delay(20);
-        read_radio();
-
-        if(channel_throttle->get_control_in() > 0) {
-            cliSerial->printf("THROTTLE CHANGED %d \n", (int)channel_throttle->get_control_in());
-            fail_test++;
-        }
-
-        if(oldSwitchPosition != readSwitch()) {
-            cliSerial->print("CONTROL MODE CHANGED: ");
-            print_flight_mode(cliSerial, readSwitch());
-            cliSerial->println();
-            fail_test++;
-        }
-
-        if(rc_failsafe_active()) {
-            cliSerial->printf("THROTTLE FAILSAFE ACTIVATED: %d, ", (int)channel_throttle->get_radio_in());
-            print_flight_mode(cliSerial, readSwitch());
-            cliSerial->println();
-            fail_test++;
-        }
-
-        if(fail_test > 0) {
-            return (0);
-        }
-        if(cliSerial->available() > 0) {
-            cliSerial->println("LOS caused no change in APM.");
-            return (0);
-        }
-    }
-}
-
-int8_t Plane::test_relay(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    hal.scheduler->delay(1000);
-
-    while(1) {
-        cliSerial->println("Relay on");
-        relay.on(0);
-        hal.scheduler->delay(3000);
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-
-        cliSerial->println("Relay off");
-        relay.off(0);
-        hal.scheduler->delay(3000);
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-
-int8_t Plane::test_wp(uint8_t argc, const Menu::arg *argv)
-{
-    hal.scheduler->delay(1000);
-
-    // save the alitude above home option
-    if (g.RTL_altitude_cm < 0) {
-        cliSerial->println("Hold current altitude");
-    }else{
-        cliSerial->printf("Hold altitude of %dm\n", (int)g.RTL_altitude_cm/100);
-    }
-
-    cliSerial->printf("%d waypoints\n", (int)mission.num_commands());
-    cliSerial->printf("Hit radius: %d\n", (int)g.waypoint_radius);
-    cliSerial->printf("Loiter radius: %d\n\n", (int)g.loiter_radius);
-
-    for(uint8_t i = 0; i <= mission.num_commands(); i++) {
-        AP_Mission::Mission_Command temp_cmd;
-        if (mission.read_cmd_from_storage(i,temp_cmd)) {
-            test_wp_print(temp_cmd);
-        }
-    }
-
-    return (0);
-}
-
-void Plane::test_wp_print(const AP_Mission::Mission_Command& cmd)
-{
-    cliSerial->printf("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n",
-                    (int)cmd.index,
-                    (int)cmd.id,
-                    (int)cmd.content.location.options,
-                    (int)cmd.p1,
-                    (long)cmd.content.location.alt,
-                    (long)cmd.content.location.lat,
-                    (long)cmd.content.location.lng);
-}
-
-int8_t Plane::test_xbee(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    hal.scheduler->delay(1000);
-    cliSerial->println("Begin XBee X-CTU Range and RSSI Test:");
-
-    while(1) {
-
-        if (hal.uartC->available())
-            hal.uartC->write(hal.uartC->read());
-
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-
-
-int8_t Plane::test_modeswitch(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    hal.scheduler->delay(1000);
-
-    cliSerial->print("Control CH ");
-
-    cliSerial->println(FLIGHT_MODE_CHANNEL, BASE_DEC);
-
-    while(1) {
-        hal.scheduler->delay(20);
-        uint8_t switchPosition = readSwitch();
-        if (oldSwitchPosition != switchPosition) {
-            cliSerial->printf("Position %d\n",  (int)switchPosition);
-            oldSwitchPosition = switchPosition;
-        }
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
 }
 
 /*
@@ -333,7 +79,7 @@ int8_t Plane::test_gps(uint8_t argc, const Menu::arg *argv)
                                 (long)loc.alt/100,
                                 (int)gps.num_sats());
         } else {
-            cliSerial->print(".");
+            cliSerial->printf(".");
         }
         if(cliSerial->available() > 0) {
             return (0);
@@ -343,7 +89,7 @@ int8_t Plane::test_gps(uint8_t argc, const Menu::arg *argv)
 
 int8_t Plane::test_ins(uint8_t argc, const Menu::arg *argv)
 {
-    //cliSerial->print("Calibrating.");
+    //cliSerial->printf("Calibrating.");
     ahrs.init();
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
@@ -394,13 +140,13 @@ int8_t Plane::test_ins(uint8_t argc, const Menu::arg *argv)
 int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
 {
     if (!g.compass_enabled) {
-        cliSerial->print("Compass: ");
+        cliSerial->printf("Compass: ");
         print_enabled(false);
         return (0);
     }
 
     if (!compass.init()) {
-        cliSerial->println("Compass initialisation failed!");
+        cliSerial->printf("Compass initialisation failed!\n");
         return 0;
     }
     ahrs.init();
@@ -445,7 +191,7 @@ int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
                                         (double)mag.x, (double)mag.y, (double)mag.z,
                                         (double)mag_ofs.x, (double)mag_ofs.y, (double)mag_ofs.z);
                 } else {
-                    cliSerial->println("compass not healthy");
+                    cliSerial->printf("compass not healthy\n");
                 }
                 counter=0;
             }
@@ -457,7 +203,7 @@ int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
 
     // save offsets. This allows you to get sane offset values using
     // the CLI before you go flying.
-    cliSerial->println("saving offsets");
+    cliSerial->printf("saving offsets\n");
     compass.save_offsets();
     return (0);
 }
@@ -468,13 +214,13 @@ int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
 int8_t Plane::test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
     if (!airspeed.enabled()) {
-        cliSerial->print("airspeed: ");
+        cliSerial->printf("airspeed: ");
         print_enabled(false);
         return (0);
     }else{
         print_hit_enter();
         zero_airspeed(false);
-        cliSerial->print("airspeed: ");
+        cliSerial->printf("airspeed: ");
         print_enabled(true);
 
         while(1) {
@@ -492,7 +238,7 @@ int8_t Plane::test_airspeed(uint8_t argc, const Menu::arg *argv)
 
 int8_t Plane::test_pressure(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->println("Uncalibrated relative airpressure");
+    cliSerial->printf("Uncalibrated relative airpressure\n");
     print_hit_enter();
 
     init_barometer(true);
@@ -502,7 +248,7 @@ int8_t Plane::test_pressure(uint8_t argc, const Menu::arg *argv)
         barometer.update();
 
         if (!barometer.healthy()) {
-            cliSerial->println("not healthy");
+            cliSerial->printf("not healthy\n");
         } else {
             cliSerial->printf("Alt: %0.2fm, Raw: %f Temperature: %.1f\n",
                                 (double)barometer.get_altitude(),
@@ -519,11 +265,11 @@ int8_t Plane::test_pressure(uint8_t argc, const Menu::arg *argv)
 void Plane::print_enabled(bool b)
 {
     if (b) {
-        cliSerial->print("en");
+        cliSerial->printf("en");
     } else {
-        cliSerial->print("dis");
+        cliSerial->printf("dis");
     }
-    cliSerial->println("abled");
+    cliSerial->printf("abled\n");
 }
 
 #endif // CLI_ENABLED

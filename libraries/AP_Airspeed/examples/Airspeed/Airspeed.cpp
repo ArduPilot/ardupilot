@@ -23,6 +23,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 float temperature;
@@ -44,7 +47,7 @@ void set_object_value(const void *object_pointer,
 
 void setup()
 {
-    hal.console->println("ArduPilot Airspeed library test");
+    hal.console->printf("ArduPilot Airspeed library test\n");
 
     set_object_value(&airspeed, airspeed.var_info, "PIN", 65);
     set_object_value(&airspeed, airspeed.var_info, "ENABLE", 1);
@@ -65,7 +68,7 @@ void loop(void)
         airspeed.get_temperature(temperature);
 
         hal.console->printf("airspeed %5.2f temperature %6.2f healthy = %u\n",
-                            airspeed.get_airspeed(), temperature, airspeed.healthy());
+                            (double)airspeed.get_airspeed(), (double)temperature, airspeed.healthy());
     }
     hal.scheduler->delay(1);
 }

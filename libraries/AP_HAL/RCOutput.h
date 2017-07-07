@@ -109,17 +109,28 @@ public:
     virtual void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {}
 
     /*
+      returns the pwm value scaled to [-1;1] regrading to set_esc_scaling ranges range without constraints.
+     */
+    virtual float    scale_esc_to_unity(uint16_t pwm) { return 0; }
+
+    /*
       enable SBUS out at the given rate
      */
     virtual bool     enable_sbus_out(uint16_t rate_gz) { return false; }
-    
+
+    /*
+     * Optional method to control the update of the motors. Derived classes
+     * can implement it if their HAL layer requires.
+     */
+    virtual void timer_tick(void) { }
+
     /*
       output modes. Allows for support of oneshot
      */
     enum output_mode {
         MODE_PWM_NORMAL,
         MODE_PWM_ONESHOT,
-        MODE_PWM_BRUSHED16KHZ
+        MODE_PWM_BRUSHED
     };
     virtual void    set_output_mode(enum output_mode mode) {}
 };

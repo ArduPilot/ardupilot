@@ -45,12 +45,12 @@ void NavEKF2_core::controlFilterModes()
  */
 uint8_t NavEKF2_core::effective_magCal(void) const
 {
-    // if we are on the 2nd core and _magCal is 3 then treat it as
-    // 2. This is a workaround for a mag fusion problem
-    if (frontend->_magCal ==3 && imu_index == 1) {
+    // force use of simple magnetic heading fusion for specified cores
+    if (frontend->_magMask & core_index) {
         return 2;
+    } else {
+        return frontend->_magCal;
     }
-    return frontend->_magCal;
 }
 
 // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
@@ -238,8 +238,7 @@ void NavEKF2_core::setAidingMode()
                 maxLossTime_ms = frontend->posRetryTimeUseVel_ms;
             }
             posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
-                   (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms) &&
-                   (imuSampleTime_ms - lastVelPassTime_ms > maxLossTime_ms);
+                   (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
         }
 
         if (attAidLossCritical) {
@@ -404,12 +403,13 @@ bool NavEKF2_core::assume_zero_sideslip(void) const
 }
 
 // set the LLH location of the filters NED origin
-bool NavEKF2_core::setOriginLLH(struct Location &loc)
+bool NavEKF2_core::setOriginLLH(const Location &loc)
 {
     if (PV_AidingMode == AID_ABSOLUTE) {
         return false;
     }
     EKF_origin = loc;
+    ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
@@ -421,6 +421,7 @@ void NavEKF2_core::setOrigin()
 {
     // assume origin at current GPS location (no averaging)
     EKF_origin = _ahrs->get_gps().location();
+    ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;

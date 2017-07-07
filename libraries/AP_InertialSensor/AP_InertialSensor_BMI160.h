@@ -98,7 +98,7 @@ private:
     /**
      * Device periodic callback to read data from the sensors.
      */
-    bool _poll_data();
+    void _poll_data();
 
     /**
      * Read samples from fifo.

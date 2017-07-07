@@ -16,7 +16,7 @@
 #pragma once
 
 #include <AP_Gripper/AP_Gripper_Backend.h>
-#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 class AP_Gripper_Servo : public AP_Gripper_Backend {
 public:

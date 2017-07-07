@@ -6,6 +6,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Menu/AP_Menu.h>
 
+void setup();
+void loop();
+void drive(uint16_t hz_speed);
+
 #define MENU_FUNC(func) FUNCTOR_BIND(&commands, &Menu_Commands::func, int8_t, uint8_t, const Menu::arg *)
 
 #define ESC_HZ     490
@@ -72,7 +76,7 @@ const struct Menu::command rcoutput_menu_commands[] = {
 MENU(menu, "Menu: ", rcoutput_menu_commands);
 
 void setup(void) {
-    hal.console->println("Starting AP_HAL::RCOutput test");
+    hal.console->printf("Starting AP_HAL::RCOutput test\n");
 
     for (uint8_t i = 0; i < 14; i++) {
         hal.rcout->enable_ch(i);

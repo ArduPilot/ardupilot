@@ -163,7 +163,7 @@ void NavEKF2_core::realignYawGPS()
 
             // calculate new filter quaternion states from Euler angles
             stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
-            // reset the velocity and posiiton states as they will be inaccurate due to bad yaw
+            // reset the velocity and position states as they will be inaccurate due to bad yaw
             ResetVelocity();
             ResetPosition();
 
@@ -433,6 +433,7 @@ void NavEKF2_core::FuseMagnetometer()
 
         // if the magnetometer is unhealthy, do not proceed further
         if (!magHealth) {
+            hal.util->perf_end(_perf_test[2]);
             return;
         }
 
@@ -706,6 +707,9 @@ void NavEKF2_core::FuseMagnetometer()
         } else if (obsIndex == 2) {
             faultStatus.bad_zmag = true;
         }
+        CovarianceInit();
+        hal.util->perf_end(_perf_test[5]);
+        return;
     }
 
     hal.util->perf_end(_perf_test[5]);
@@ -717,10 +721,10 @@ void NavEKF2_core::FuseMagnetometer()
  * Fuse magnetic heading measurement using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
- * This fusion method only modifies the orientation, does not require use of the magnetic field states and is computatonally cheaper.
+ * This fusion method only modifies the orientation, does not require use of the magnetic field states and is computationally cheaper.
  * It is suitable for use when the external magnetic field environment is disturbed (eg close to metal structures, on ground).
- * It is not as robust to magneometer failures.
- * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degreees latitude of the the magnetic poles)
+ * It is not as robust to magnetometer failures.
+ * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degrees latitude of the the magnetic poles)
 */
 void NavEKF2_core::fuseEulerYaw()
 {
@@ -1002,7 +1006,7 @@ void NavEKF2_core::FuseDeclination(float declErr)
     float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
     // Calculate the innovation
-    float innovation = atanf(t4) - magDecAng;
+    float innovation = atan2f(magE , magN) - magDecAng;
 
     // limit the innovation to protect against data errors
     if (innovation > 0.5f) {

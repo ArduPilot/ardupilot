@@ -30,7 +30,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control) :
+AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
     _inav(inav),
     _ahrs(ahrs),
     _pos_control(pos_control),

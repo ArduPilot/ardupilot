@@ -19,11 +19,12 @@ void Copter::read_control_switch()
 
     // calculate position of flight mode switch
     int8_t switch_position;
-    if      (g.rc_5.get_radio_in() < 1231) switch_position = 0;
-    else if (g.rc_5.get_radio_in() < 1361) switch_position = 1;
-    else if (g.rc_5.get_radio_in() < 1491) switch_position = 2;
-    else if (g.rc_5.get_radio_in() < 1621) switch_position = 3;
-    else if (g.rc_5.get_radio_in() < 1750) switch_position = 4;
+    uint16_t rc5_in = RC_Channels::rc_channel(CH_5)->get_radio_in();
+    if      (rc5_in < 1231) switch_position = 0;
+    else if (rc5_in < 1361) switch_position = 1;
+    else if (rc5_in < 1491) switch_position = 2;
+    else if (rc5_in < 1621) switch_position = 3;
+    else if (rc5_in < 1750) switch_position = 4;
     else switch_position = 5;
 
     // store time that switch last moved
@@ -107,17 +108,18 @@ void Copter::reset_control_switch()
 }
 
 // read_3pos_switch
-uint8_t Copter::read_3pos_switch(int16_t radio_in)
+uint8_t Copter::read_3pos_switch(uint8_t chan)
 {
+    uint16_t radio_in = RC_Channels::rc_channel(chan)->get_radio_in();
     if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;      // switch is in low position
     if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;    // switch is in high position
     return AUX_SWITCH_MIDDLE;                                       // switch is in middle position
 }
 
 // can't take reference to a bitfield member, thus a #define:
-#define read_aux_switch(rc, flag, option)                           \
+#define read_aux_switch(chan, flag, option)                           \
     do {                                                            \
-        switch_position = read_3pos_switch(rc.get_radio_in());      \
+        switch_position = read_3pos_switch(chan); \
         if (flag != switch_position) {                              \
             flag = switch_position;                                 \
             do_aux_switch_function(option, flag);                   \
@@ -134,14 +136,14 @@ void Copter::read_aux_switches()
         return;
     }
 
-    read_aux_switch(g.rc_7, aux_con.CH7_flag, g.ch7_option);
-    read_aux_switch(g.rc_8, aux_con.CH8_flag, g.ch8_option);
-    read_aux_switch(g.rc_9, aux_con.CH9_flag, g.ch9_option);
-    read_aux_switch(g.rc_10, aux_con.CH10_flag, g.ch10_option);
-    read_aux_switch(g.rc_11, aux_con.CH11_flag, g.ch11_option);
+    read_aux_switch(CH_7, aux_con.CH7_flag, g.ch7_option);
+    read_aux_switch(CH_8, aux_con.CH8_flag, g.ch8_option);
+    read_aux_switch(CH_9, aux_con.CH9_flag, g.ch9_option);
+    read_aux_switch(CH_10, aux_con.CH10_flag, g.ch10_option);
+    read_aux_switch(CH_11, aux_con.CH11_flag, g.ch11_option);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    read_aux_switch(g.rc_12, aux_con.CH12_flag, g.ch12_option);
+    read_aux_switch(CH_12, aux_con.CH12_flag, g.ch12_option);
 #endif
 }
 
@@ -151,14 +153,14 @@ void Copter::read_aux_switches()
 void Copter::init_aux_switches()
 {
     // set the CH7 ~ CH12 flags
-    aux_con.CH7_flag = read_3pos_switch(g.rc_7.get_radio_in());
-    aux_con.CH8_flag = read_3pos_switch(g.rc_8.get_radio_in());
-    aux_con.CH10_flag = read_3pos_switch(g.rc_10.get_radio_in());
-    aux_con.CH11_flag = read_3pos_switch(g.rc_11.get_radio_in());
+    aux_con.CH7_flag = read_3pos_switch(CH_7);
+    aux_con.CH8_flag = read_3pos_switch(CH_8);
+    aux_con.CH10_flag = read_3pos_switch(CH_10);
+    aux_con.CH11_flag = read_3pos_switch(CH_11);
 
     // ch9, ch12 only supported on some boards
-    aux_con.CH9_flag = read_3pos_switch(g.rc_9.get_radio_in());
-    aux_con.CH12_flag = read_3pos_switch(g.rc_12.get_radio_in());
+    aux_con.CH9_flag = read_3pos_switch(CH_9);
+    aux_con.CH12_flag = read_3pos_switch(CH_12);
 
     // initialise functions assigned to switches
     init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
@@ -189,7 +191,6 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_MISSION_RESET:
         case AUXSW_ATTCON_FEEDFWD:
         case AUXSW_ATTCON_ACCEL_LIM:
-        case AUXSW_LANDING_GEAR:
         case AUXSW_MOTOR_ESTOP:
         case AUXSW_MOTOR_INTERLOCK:
         case AUXSW_AVOID_ADSB:
@@ -245,7 +246,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             if (ch_flag == AUX_SWITCH_HIGH) {
 
                 // do not allow saving new waypoints while we're in auto or disarmed
-                if (control_mode == AUTO || !motors.armed()) {
+                if (control_mode == AUTO || !motors->armed()) {
                     return;
                 }
 
@@ -305,7 +306,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_RANGEFINDER:
             // enable or disable the rangefinder
 #if RANGEFINDER_ENABLED == ENABLED
-            if ((ch_flag == AUX_SWITCH_HIGH) && (rangefinder.num_sensors() >= 1)) {
+            if ((ch_flag == AUX_SWITCH_HIGH) && rangefinder.has_orientation(ROTATION_PITCH_270)) {
                 rangefinder_state.enabled = true;
             } else {
                 rangefinder_state.enabled = false;
@@ -362,7 +363,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 #if SPRAYER == ENABLED
             sprayer.run(ch_flag == AUX_SWITCH_HIGH);
             // if we are disarmed the pilot must want to test the pump
-            sprayer.test_pump((ch_flag == AUX_SWITCH_HIGH) && !motors.armed());
+            sprayer.test_pump((ch_flag == AUX_SWITCH_HIGH) && !motors->armed());
 #endif
             break;
 
@@ -450,12 +451,12 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
         case AUXSW_ATTCON_FEEDFWD:
             // enable or disable feed forward
-            attitude_control.bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
+            attitude_control->bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
             break;
 
         case AUXSW_ATTCON_ACCEL_LIM:
             // enable or disable accel limiting by restoring defaults
-            attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
+            attitude_control->accel_limiting(ch_flag == AUX_SWITCH_HIGH);
             break;
 
         case AUXSW_RETRACT_MOUNT:
@@ -490,13 +491,10 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
        case AUXSW_LANDING_GEAR:
             switch (ch_flag) {
                 case AUX_SWITCH_LOW:
-                    landinggear.set_cmd_mode(LandingGear_Deploy);
-                    break;
-                case AUX_SWITCH_MIDDLE:
-                    landinggear.set_cmd_mode(LandingGear_Auto);
+                    landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
                     break;
                 case AUX_SWITCH_HIGH:
-                    landinggear.set_cmd_mode(LandingGear_Retract);
+                    landinggear.set_position(AP_LandingGear::LandingGear_Retract);
                     break;
             }
             break;
@@ -572,7 +570,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_AVOID_PROXIMITY:
-#if PROXIMITY_ENABLED == ENABLED
+#if PROXIMITY_ENABLED == ENABLED && AC_AVOID_ENABLED == ENABLED
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH:
                     avoid.proximity_avoidance_enable(true);
@@ -584,6 +582,17 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     break;
             }
 #endif
+            break;
+        case AUXSW_ARMDISARM:
+            // arm or disarm the vehicle
+            switch (ch_flag) {
+            case AUX_SWITCH_HIGH:
+                init_arm_motors(false);
+                break;
+            case AUX_SWITCH_LOW:
+                init_disarm_motors();
+                break;
+            }
             break;
     }
 }

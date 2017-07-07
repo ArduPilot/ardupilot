@@ -436,4 +436,3 @@ template bool Vector3<double>::operator ==(const Vector3<double> &v) const;
 template bool Vector3<double>::operator !=(const Vector3<double> &v) const;
 template bool Vector3<double>::is_nan(void) const;
 template bool Vector3<double>::is_inf(void) const;
-template float Vector3<double>::angle(const Vector3<double> &v) const;

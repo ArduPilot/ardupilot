@@ -48,6 +48,12 @@ bool AC_PrecLand_Companion::have_los_meas()
     return _have_los_meas;
 }
 
+// return distance to target
+float AC_PrecLand_Companion::distance_to_target()
+{
+    return _distance_to_target;
+}
+
 void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg)
 {
     // parse mavlink message
@@ -56,11 +62,11 @@ void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg)
 
     _timestamp_us = packet.time_usec;
     _distance_to_target = packet.distance;
-    
+
     // compute unit vector towards target
     _los_meas_body = Vector3f(-tanf(packet.angle_y), tanf(packet.angle_x), 1.0f);
     _los_meas_body /= _los_meas_body.length();
-    
+
     _los_meas_time_ms = AP_HAL::millis();
     _have_los_meas = true;
 }

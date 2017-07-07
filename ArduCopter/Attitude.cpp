@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw
+// get_smoothing_gain - returns smoothing gain to be passed into attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw
 //      result is a number from 2 to 12 with 2 being very sluggish and 12 being very crisp
 float Copter::get_smoothing_gain()
 {
@@ -107,7 +107,7 @@ void Copter::update_throttle_hover()
 {
 #if FRAME_CONFIG != HELI_FRAME
     // if not armed or landed exit
-    if (!motors.armed() || ap.land_complete) {
+    if (!motors->armed() || ap.land_complete) {
         return;
     }
 
@@ -117,17 +117,17 @@ void Copter::update_throttle_hover()
     }
 
     // do not update while climbing or descending
-    if (!is_zero(pos_control.get_desired_velocity().z)) {
+    if (!is_zero(pos_control->get_desired_velocity().z)) {
         return;
     }
 
     // get throttle output
-    float throttle = motors.get_throttle();
+    float throttle = motors->get_throttle();
 
     // calc average throttle if we are in a level hover
     if (throttle > 0.0f && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
         // Can we set the time constant automatically
-        motors.update_throttle_hover(0.01f);
+        motors->update_throttle_hover(0.01f);
     }
 #endif
 }
@@ -136,7 +136,7 @@ void Copter::update_throttle_hover()
 void Copter::set_throttle_takeoff()
 {
     // tell position controller to reset alt target and reset I terms
-    pos_control.init_takeoff();
+    pos_control->init_takeoff();
 }
 
 // transform pilot's manual throttle input to make hover throttle mid stick
@@ -146,7 +146,7 @@ void Copter::set_throttle_takeoff()
 float Copter::get_pilot_desired_throttle(int16_t throttle_control, float thr_mid)
 {
     if (thr_mid <= 0.0f) {
-        thr_mid = motors.get_throttle_hover();
+        thr_mid = motors->get_throttle_hover();
     }
 
     int16_t mid_stick = channel_throttle->get_control_mid();
@@ -209,16 +209,13 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
         desired_rate = 0.0f;
     }
 
-    // desired climb rate for logging
-    desired_climb_rate = desired_rate;
-
     return desired_rate;
 }
 
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
 float Copter::get_non_takeoff_throttle()
 {
-    return MAX(0,motors.get_throttle_hover()/2.0f);
+    return MAX(0,motors->get_throttle_hover()/2.0f);
 }
 
 // get_surface_tracking_climb_rate - hold copter at the desired distance above the ground
@@ -240,7 +237,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
     last_call_ms = now;
 
     // adjust rangefinder target alt if motors have not hit their limits
-    if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
+    if ((target_rate<0 && !motors->limit.throttle_lower) || (target_rate>0 && !motors->limit.throttle_upper)) {
         target_rangefinder_alt += target_rate * dt;
     }
 
@@ -282,37 +279,24 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 #endif
 }
 
+// get target climb rate reduced to avoid obstacles and altitude fence
+float Copter::get_avoidance_adjusted_climbrate(float target_rate)
+{
+#if AC_AVOID_ENABLED == ENABLED
+    avoid.adjust_velocity_z(pos_control->get_pos_z_kP(), pos_control->get_accel_z(), target_rate);
+    return target_rate;
+#else
+    return target_rate;
+#endif
+}
+
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
 void Copter::set_accel_throttle_I_from_pilot_throttle()
 {
     // get last throttle input sent to attitude controller
-    float pilot_throttle = constrain_float(attitude_control.get_throttle_in(), 0.0f, 1.0f);
+    float pilot_throttle = constrain_float(attitude_control->get_throttle_in(), 0.0f, 1.0f);
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    g.pid_accel_z.set_integrator((pilot_throttle-motors.get_throttle_hover()) * 1000.0f);
-}
-
-// updates position controller's maximum altitude using fence and EKF limits
-void Copter::update_poscon_alt_max()
-{
-    float alt_limit_cm = 0.0f;  // interpreted as no limit if left as zero
-
-#if AC_FENCE == ENABLED
-    // set fence altitude limit in position controller
-    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        alt_limit_cm = pv_alt_above_origin(fence.get_safe_alt()*100.0f);
-    }
-#endif
-
-    // get alt limit from EKF (limited during optical flow flight)
-    float ekf_limit_cm = 0.0f;
-    if (inertial_nav.get_hgt_ctrl_limit(ekf_limit_cm)) {
-        if ((alt_limit_cm <= 0.0f) || (ekf_limit_cm < alt_limit_cm)) {
-            alt_limit_cm = ekf_limit_cm;
-        }
-    }
-
-    // pass limit to pos controller
-    pos_control.set_alt_max(alt_limit_cm);
+    g.pid_accel_z.set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0f);
 }
 
 // rotate vector from vehicle's perspective to North-East frame

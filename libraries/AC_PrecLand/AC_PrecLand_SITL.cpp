@@ -28,7 +28,7 @@ void AC_PrecLand_SITL::update()
 
     // get new sensor data; we always point home
     Vector3f home;
-    if (! _frontend._ahrs.get_relative_position_NED(home)) {
+    if (! _frontend._ahrs.get_relative_position_NED_home(home)) {
         _state.healthy = false;
         return;
     }

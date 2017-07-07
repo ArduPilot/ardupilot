@@ -45,7 +45,7 @@ public:
 private:
     void measure();
     void collect();
-    bool timer();
+    void timer();
     bool read_prom(void);
     uint16_t crc4_prom(void);
     int32_t read_adc();

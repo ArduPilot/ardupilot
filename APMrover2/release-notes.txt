@@ -1,3 +1,18 @@
+Release 3.1.2, 15 March 2017
+============================
+Minor bugfix release.
+
+- Crashing detection is off by default
+- DISARMing of a rover via the transmitter stick works again
+- If a user was driving in reverse in Manual and went into an AUTO
+mode the rover would do the mission in reverse.  This is fixed.
+
+
+Release 3.1.1, 31 January 2017
+==============================
+Minor bugfix release for a crash bug in the SRXL driver
+
+
 Release 3.1.0, 22 December 2016
 ===============================
 The ArduPilot development team is proud to announce the release of

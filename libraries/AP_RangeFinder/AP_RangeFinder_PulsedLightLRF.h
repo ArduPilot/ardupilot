@@ -20,7 +20,8 @@ class AP_RangeFinder_PulsedLightLRF : public AP_RangeFinder_Backend
 public:
     // static detection function
     static AP_RangeFinder_Backend *detect(uint8_t bus, RangeFinder &ranger, uint8_t instance,
-                                          RangeFinder::RangeFinder_State &_state);
+                                          RangeFinder::RangeFinder_State &_state,
+                                          RangeFinder::RangeFinder_Type rftype);
 
     // update state
     void update(void) override {}
@@ -29,11 +30,12 @@ public:
 private:
     // constructor
     AP_RangeFinder_PulsedLightLRF(uint8_t bus, RangeFinder &ranger, uint8_t instance,
-                                  RangeFinder::RangeFinder_State &_state);
+                                  RangeFinder::RangeFinder_State &_state,
+                                  RangeFinder::RangeFinder_Type rftype);
 
     // start a reading
     bool init(void);
-    bool timer(void);
+    void timer(void);
     bool lidar_transfer(const uint8_t *send, unsigned send_len, uint8_t *recv, unsigned recv_len);
     
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
@@ -43,6 +45,7 @@ private:
     uint8_t check_reg_counter;
     bool v2_hardware;
     uint16_t last_distance_cm;
+    RangeFinder::RangeFinder_Type rftype;
     
     enum { PHASE_MEASURE, PHASE_COLLECT } phase;
 };

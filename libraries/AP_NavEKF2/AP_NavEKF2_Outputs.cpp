@@ -104,7 +104,7 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow navigation
     if (frontend->_fusionModeGPS == 3) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-        height = MAX(float(frontend->_rng.max_distance_cm()) * 0.007f - 1.0f, 1.0f);
+        height = MAX(float(frontend->_rng.max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
         if (frontend->_altSource != 1) {
             height -= terrainState;
@@ -279,18 +279,27 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
     return false;
 }
 
-// Write the last calculated D position of the body frame origin relative to the reference point (m).
+// Write the last calculated D position of the body frame origin relative to the EKF origin (m).
 // Return true if the estimate is valid
 bool NavEKF2_core::getPosD(float &posD) const
 {
     // The EKF always has a height estimate regardless of mode of operation
-    // correct for the IMU offset (EKF calculations are at the IMU)
-    posD = outputDataNew.position.z + posOffsetNED.z;
+    // Correct for the IMU offset (EKF calculations are at the IMU)
+    // Correct for
+    if (frontend->_originHgtMode & (1<<2)) {
+        // Any sensor height drift corrections relative to the WGS-84 reference are applied to the origin.
+        posD = outputDataNew.position.z + posOffsetNED.z;
+    } else {
+        // The origin height is static and corrections are applied to the local vertical position
+        // so that height returned by getLLH() = height returned by getOriginLLH - posD
+        posD = outputDataNew.position.z + posOffsetNED.z + 0.01f * (float)EKF_origin.alt - (float)ekfGpsRefHgt;
+    }
 
     // Return the current height solution status
     return filterStatus.flags.vert_pos;
 
 }
+
 // return the estimated height of body frame origin above ground level
 bool NavEKF2_core::getHAGL(float &HAGL) const
 {
@@ -308,7 +317,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
 {
     if(validOrigin) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-        loc.alt = EKF_origin.alt - outputDataNew.position.z*100;
+        loc.alt =  100 * (int32_t)(ekfGpsRefHgt - (double)outputDataNew.position.z);
         loc.flags.relative_alt = 0;
         loc.flags.terrain_alt = 0;
 
@@ -370,6 +379,10 @@ bool NavEKF2_core::getOriginLLH(struct Location &loc) const
 {
     if (validOrigin) {
         loc = EKF_origin;
+        // report internally corrected reference height if enabled
+        if (frontend->_originHgtMode & (1<<2)) {
+            loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);
+        }
     }
     return validOrigin;
 }
@@ -506,6 +519,7 @@ void  NavEKF2_core::getFilterGpsStatus(nav_gps_status &faults) const
     // set individual flags
     faults.flags.bad_sAcc           = gpsCheckStatus.bad_sAcc; // reported speed accuracy is insufficient
     faults.flags.bad_hAcc           = gpsCheckStatus.bad_hAcc; // reported horizontal position accuracy is insufficient
+    faults.flags.bad_vAcc           = gpsCheckStatus.bad_vAcc; // reported vertical position accuracy is insufficient
     faults.flags.bad_yaw            = gpsCheckStatus.bad_yaw; // EKF heading accuracy is too large for GPS use
     faults.flags.bad_sats           = gpsCheckStatus.bad_sats; // reported number of satellites is insufficient
     faults.flags.bad_horiz_drift    = gpsCheckStatus.bad_horiz_drift; // GPS horizontal drift is too large to start using GPS (check assumes vehicle is static)

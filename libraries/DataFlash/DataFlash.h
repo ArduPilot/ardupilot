@@ -20,6 +20,7 @@
 #include <DataFlash/LogStructure.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Rally/AP_Rally.h>
+#include <AP_Beacon/AP_Beacon.h>
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -48,8 +49,9 @@ class DataFlash_Class
 public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
-    DataFlash_Class(const char *firmware_string) :
-        _firmware_string(firmware_string)
+    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask) :
+        _firmware_string(firmware_string),
+        _log_bitmask(log_bitmask)
         {
             AP_Param::setup_object_defaults(this, var_info);
             if (_instance != nullptr) {
@@ -73,10 +75,6 @@ public:
     bool NeedErase(void);
     void EraseAll();
 
-    // possibly expensive calls to start log system:
-    bool NeedPrep();
-    void Prep();
-
     // get a pointer to structures
     const struct LogStructure *get_structures(uint8_t &num_types) {
         num_types = _num_types;
@@ -91,7 +89,6 @@ public:
     // high level interface
     uint16_t find_last_log() const;
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
-    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs(void);
     void LogReadProcess(uint16_t log_num,
@@ -104,8 +101,11 @@ public:
 
     void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
 
-    void StartNewLog(void);
-    void EnableWrites(bool enable);
+    /* poke backends to start if they're not already started */
+    void StartUnstartedLogging(void);
+
+    void EnableWrites(bool enable) { _writes_enabled = enable; }
+    bool WritesEnabled() const { return _writes_enabled; }
 
     void StopLogging();
 
@@ -128,12 +128,14 @@ public:
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
     void Log_Write_Message(const char *message);
+    void Log_Write_MessageF(const char *fmt, ...);
     void Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);    
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
+    void Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets);
     void Log_Write_Current(const AP_BattMonitor &battery);
     void Log_Write_Compass(const Compass &compass, uint64_t time_us=0);
     void Log_Write_Mode(uint8_t mode, uint8_t reason = 0);
@@ -148,6 +150,9 @@ public:
                         const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control);
     void Log_Write_Rally(const AP_Rally &rally);
+    void Log_Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
+    void Log_Write_AOA_SSA(AP_AHRS &ahrs);
+    void Log_Write_Beacon(AP_Beacon &beacon);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 
@@ -163,6 +168,9 @@ public:
 
     void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
 
+    // returns true if logging of a message should be attempted
+    bool should_log(uint32_t mask) const;
+
     bool logging_started(void);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -170,10 +178,7 @@ public:
     void flush(void);
 #endif
 
-    // for DataFlash_MAVLink:
-    void remote_log_block_status_msg(mavlink_channel_t chan,
-                                     mavlink_message_t* msg);
-    // end for DataFlash_MAVLink:
+    void handle_mavlink_msg(class GCS_MAVLINK &, mavlink_message_t* msg);
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
@@ -206,6 +211,10 @@ public:
     bool logging_failed() const;
 
     void set_vehicle_armed(bool armed_state);
+    bool vehicle_is_armed() const { return _armed; }
+
+    void handle_log_send(class GCS_MAVLINK &);
+    bool in_log_download() const { return _in_log_download; }
 
 protected:
 
@@ -223,6 +232,7 @@ private:
     uint8_t _next_backend;
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
     const char *_firmware_string;
+    const AP_Int32 &_log_bitmask;
 
     void internal_error() const;
 
@@ -266,7 +276,65 @@ private:
     void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
     void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
-    
+
+    void backend_starting_new_log(const DataFlash_Backend *backend);
+
 private:
     static DataFlash_Class *_instance;
+
+    void validate_structures(const struct LogStructure *logstructures, const uint8_t num_types);
+    void dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum);
+    void dump_structures(const struct LogStructure *logstructures, const uint8_t num_types);
+
+    void Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
+
+    // possibly expensive calls to start log system:
+    void Prep();
+
+    bool _writes_enabled;
+
+    /* support for retrieving logs via mavlink: */
+    uint8_t  _log_listing:1; // sending log list
+    uint8_t  _log_sending:1; // sending log data
+
+    // bolean replicating old vehicle in_log_download flag:
+    bool _in_log_download:1;
+
+    // next log list entry to send
+    uint16_t _log_next_list_entry;
+
+    // last log list entry to send
+    uint16_t _log_last_list_entry;
+
+    // number of log files
+    uint16_t _log_num_logs;
+
+    // log number for data send
+    uint16_t _log_num_data;
+
+    // offset in log
+    uint32_t _log_data_offset;
+
+    // size of log file
+    uint32_t _log_data_size;
+
+    // number of bytes left to send
+    uint32_t _log_data_remaining;
+
+    // start page of log data
+    uint16_t _log_data_page;
+
+    bool should_handle_log_message();
+    void handle_log_message(class GCS_MAVLINK &, mavlink_message_t *msg);
+
+    void handle_log_request_list(class GCS_MAVLINK &, mavlink_message_t *msg);
+    void handle_log_request_data(class GCS_MAVLINK &, mavlink_message_t *msg);
+    void handle_log_request_erase(class GCS_MAVLINK &, mavlink_message_t *msg);
+    void handle_log_request_end(class GCS_MAVLINK &, mavlink_message_t *msg);
+    void handle_log_send_listing(class GCS_MAVLINK &);
+    bool handle_log_send_data(class GCS_MAVLINK &);
+
+    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
+    /* end support for retrieving logs via mavlink: */
+
 };

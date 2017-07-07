@@ -90,17 +90,17 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
 
             if (have_sa) {
                 state.speed_accuracy = packet.speed_accuracy;
-                state.have_speed_accuracy = 1;
+                state.have_speed_accuracy = true;
             }
 
             if (have_ha) {
                 state.horizontal_accuracy = packet.horiz_accuracy;
-                state.have_horizontal_accuracy = 1;
+                state.have_horizontal_accuracy = true;
             }
 
             if (have_va) {
                 state.vertical_accuracy = packet.vert_accuracy;
-                state.have_vertical_accuracy = 1;
+                state.have_vertical_accuracy = true;
             }
 
             state.num_sats = packet.satellites_visible;
@@ -123,8 +123,8 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
             loc.alt = packet.alt;
             state.location = loc;
             state.location.options = 0;
-            state.hdop = MAX(packet.eph, 9999);
-            state.vdop = MAX(packet.epv, 9999);
+            state.hdop = MIN(packet.eph, GPS_UNKNOWN_DOP);
+            state.vdop = MIN(packet.epv, GPS_UNKNOWN_DOP);
             if (packet.vel < 65535) {
                 state.ground_speed = packet.vel / 100.0f;
             }
@@ -133,7 +133,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
             if (packet.cog < 36000) {
                 state.ground_course = packet.cog / 100.0f;
             }
-            state.have_speed_accuracy = 0;
+            state.have_speed_accuracy = false;
             state.have_horizontal_accuracy = 0;
             state.have_vertical_accuracy = 0;
             if (packet.satellites_visible < 255) {

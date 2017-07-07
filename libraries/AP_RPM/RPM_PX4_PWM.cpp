@@ -46,7 +46,7 @@ extern "C" {
 AP_RPM_PX4_PWM::AP_RPM_PX4_PWM(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state) :
 	AP_RPM_Backend(_ap_rpm, instance, _state)
 {
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if HAL_PX4_HAVE_PWM_INPUT
     if (AP_BoardConfig::px4_start_driver(pwm_input_main, "pwm_input", "start")) {
         hal.console->printf("started pwm_input driver\n");
     }

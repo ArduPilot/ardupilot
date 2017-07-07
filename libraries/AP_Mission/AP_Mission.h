@@ -294,6 +294,7 @@ public:
     mission_state state() const { return _flags.state; }
 
     /// num_commands - returns total number of commands in the mission
+    ///                 this number includes offset 0, the home location
     uint16_t num_commands() const { return _cmd_total; }
 
     /// num_commands_max - returns maximum number of commands that can be stored

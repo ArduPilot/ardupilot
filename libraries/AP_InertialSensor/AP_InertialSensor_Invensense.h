@@ -58,8 +58,10 @@ public:
 
     enum Invensense_Type {
         Invensense_MPU6000=0,
+        Invensense_MPU6500,
         Invensense_MPU9250,
         Invensense_ICM20608,
+        Invensense_ICM20602,
     };
     
 private:
@@ -83,7 +85,7 @@ private:
     bool _data_ready();
 
     /* Poll for new data (non-blocking) */
-    bool _poll_data();
+    void _poll_data();
 
     /* Read and write functions taking the differences between buses into
      * account */
@@ -104,6 +106,9 @@ private:
 
     uint16_t _error_count;
 
+    float temp_sensitivity = 1.0/340; // degC/LSB
+    float temp_zero = 36.53; // degC
+    
     float _temp_filtered;
     float _accel_scale;
     LowPassFilter2pFloat _temp_filter;

@@ -6,4 +6,4 @@
 
 #include "HAL_SITL_Class.h"
 
-#endif // CONFIG_HAL_BOARD
+#endif  // CONFIG_HAL_BOARD
