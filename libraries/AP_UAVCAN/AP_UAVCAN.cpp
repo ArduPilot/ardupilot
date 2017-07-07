@@ -26,6 +26,8 @@
 #include <uavcan/equipment/actuator/Status.hpp>
 #include <uavcan/equipment/esc/RawCommand.hpp>
 #include <uavcan/equipment/ecu/Status.hpp>
+#include <uavcan/equipment/ice/reciprocating/Status.hpp>
+#include <uavcan/equipment/ice/reciprocating/CylinderStatus.hpp>
 
 extern const AP_HAL::HAL& hal;
 
@@ -66,52 +68,136 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     AP_GROUPEND
 };
 
-static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::ecu::Status>& msg, uint8_t mgr)
+static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::ice::reciprocating::Status>& msg, uint8_t mgr)
 {
+    namespace ICE = uavcan::equipment::ice::reciprocating;
     if (hal.can_mgr[mgr] != nullptr) {
         AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
         if (ap_uavcan != nullptr) {
+            
             EFI_State *state = ap_uavcan->find_efi_node(msg.getSrcNodeID().get());
 
-            // Conversion as described in 1120.Status.uavcan
-            uint8_t ecu_index = msg.ecu_index;
-            bool end_of_start = msg.end_of_start;
-            bool crank_sensor_error = msg.crank_sensor_error;
-            uint8_t engine_load_percent = msg.engine_load_percents;
-            float spark_dwell_time_ms = msg.spark_dwell_time / 10.0;
-            float engine_speed_rpm = msg.engine_speed / 8.0;
-            float barometric_pressure_kpa = msg.barometric_pressure / 2.0;
-            float throttle_position_percent = msg.throttle_position / 2.5;
-            float coolant_temperature_degc = msg.coolant_temperature - 40.0;
-            float battery_voltage_volts = msg.battery_voltage / 20.0;
-            float intake_manifold_pressure_kpa = msg.intake_manifold_pressure * 2.0;
-            float intake_manifold_temperature_degc = msg.intake_manifold_temperature - 40.0;
-            float fuel_level_percent = msg.fuel_level / 2.5;
-            float fuel_flow_grams_per_min = msg.fuel_flow / 86.251509;
+            // Fill in state structure
 
-            for (int i = 0; i < 4; i++) {
-                state->ignition_timing_crank_angle[i] = (msg.ignition_timing[i] / 128.0) - 200.0;
+            // Base state and any general errors
+            state->engine_state = static_cast<Engine_State>(msg.state);
+            state->general_error = msg.flags && ICE::Status::FLAG_GENERAL_ERROR;
+
+            // Crank sensor
+            if (msg.flags && ICE::Status::FLAG_CRANKSHAFT_SENSOR_ERROR_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_CRANKSHAFT_SENSOR_ERROR) {
+                    state->crankshaft_sensor_status = Crankshaft_Sensor_Status::CRANKSHAFT_SENSOR_ERROR;
+                } else {
+                    state->crankshaft_sensor_status = Crankshaft_Sensor_Status::CRANKSHAFT_SENSOR_OK;
+                }
+            } else {
+                state->crankshaft_sensor_status = Crankshaft_Sensor_Status::CRANKSHAFT_SENSOR_STATUS_NOT_SUPPORTED;
             }
 
-            for (int i = 0; i < 4; i++) {
-                state->injection_time_ms[i] = msg.inject_time[i] / 1000.0;
+            // Temperature
+            if (msg.flags && ICE::Status::FLAG_TEMPERATURE_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_TEMPERATURE_BELOW_NOMINAL) {
+                    state->temperature_status = Temperature_Status::TEMPERATURE_BELOW_NOMINAL;
+                } else if (msg.flags && ICE::Status::FLAG_TEMPERATURE_ABOVE_NOMINAL) {
+                    state->temperature_status = Temperature_Status::TEMPERATURE_ABOVE_NOMINAL;
+                } else if (msg.flags && ICE::Status::FLAG_TEMPERATURE_OVERHEATING) {
+                    state->temperature_status = Temperature_Status::TEMPERATURE_OVERHEATING;
+                } else if (msg.flags && ICE::Status::FLAG_TEMPERATURE_EGT_ABOVE_NOMINAL) {
+                    state->temperature_status = Temperature_Status::TEMPERATURE_EGT_ABOVE_NOMINAL;
+                } else {
+                    state->temperature_status = Temperature_Status::TEMPERATURE_OK;
+                }
+            } else {
+                state->temperature_status = Temperature_Status::TEMPERATURE_STATUS_NOT_SUPPORTED;
             }
 
-            // Copy remaining data to state struct
-            state->ecu_index = ecu_index;
-            state->end_of_start = end_of_start;
-            state->crank_sensor_error = crank_sensor_error;
-            state->engine_load_percent = engine_load_percent;
-            state->spark_dwell_time_ms = spark_dwell_time_ms;
-            state->rpm = engine_speed_rpm;
-            state->barometric_pressure = barometric_pressure_kpa;
-            state->throttle_position_percent = throttle_position_percent;
-            state->coolant_temperature = coolant_temperature_degc;
-            state->battery_voltage = battery_voltage_volts;
-            state->intake_manifold_pressure = intake_manifold_pressure_kpa;
-            state->intake_manifold_temperature = intake_manifold_temperature_degc;
-            state->fuel_level_percent = fuel_level_percent;
-            state->fuel_flow_rate = fuel_flow_grams_per_min;
+            // Fuel Pressure
+            if (msg.flags && ICE::Status::FLAG_FUEL_PRESSURE_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_FUEL_PRESSURE_BELOW_NOMINAL) {
+                    state->fuel_pressure_status = Fuel_Pressure_Status::FUEL_PRESSURE_BELOW_NOMINAL;
+                } else if (msg.flags && ICE::Status::FLAG_FUEL_PRESSURE_ABOVE_NOMINAL) {
+                    state->fuel_pressure_status = Fuel_Pressure_Status::FUEL_PRESSURE_ABOVE_NOMINAL;
+                } else {
+                    state->fuel_pressure_status = Fuel_Pressure_Status::FUEL_PRESSURE_OK;
+                }
+            } else {
+                state->fuel_pressure_status = Fuel_Pressure_Status::FUEL_PRESSURE_STATUS_NOT_SUPPORTED;
+            }
+
+            // Oil Pressure
+            if (msg.flags && ICE::Status::FLAG_OIL_PRESSURE_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_OIL_PRESSURE_BELOW_NOMINAL) {
+                    state->oil_pressure_status = Oil_Pressure_Status::OIL_PRESSURE_BELOW_NOMINAL;
+                } else if (msg.flags && ICE::Status::FLAG_OIL_PRESSURE_ABOVE_NOMINAL) {
+                    state->oil_pressure_status = Oil_Pressure_Status::OIL_PRESSURE_ABOVE_NOMINAL;
+                } else {
+                    state->oil_pressure_status = Oil_Pressure_Status::OIL_PRESSURE_OK;
+                }
+            } else {
+                state->oil_pressure_status = Oil_Pressure_Status::OIL_PRESSURE_STATUS_NOT_SUPPORTED;
+            }
+
+            // Detonation
+            if (msg.flags && ICE::Status::FLAG_DETONATION_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_DETONATION_OBSERVED) {
+                    state->detonation_status = Detonation_Status::DETONATION_OBSERVED;
+                } else {
+                    state->detonation_status = Detonation_Status::DETONATION_NOT_OBSERVED;
+                }
+            } else {
+                state->detonation_status = Detonation_Status::DETONATION_STATUS_NOT_SUPPORTED;
+            }
+
+            // Misfire
+            if (msg.flags && ICE::Status::FLAG_MISFIRE_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_MISFIRE_OBSERVED) {
+                    state->misfire_status = Misfire_Status::MISFIRE_OBSERVED;
+                } else {
+                    state->misfire_status = Misfire_Status::MISFIRE_NOT_OBSERVED;
+                }
+            } else {
+                state->misfire_status = Misfire_Status::MISFIRE_STATUS_NOT_SUPPORTED;
+            }
+
+            // Debris
+            if (msg.flags && ICE::Status::FLAG_DETONATION_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_DETONATION_OBSERVED) {
+                    state->detonation_status = Detonation_Status::DETONATION_OBSERVED;
+                } else {
+                    state->detonation_status = Detonation_Status::DETONATION_NOT_OBSERVED;
+                }
+            } else {
+                state->detonation_status = Detonation_Status::DETONATION_STATUS_NOT_SUPPORTED;
+            }
+
+            state->engine_load_percent = msg.engine_load_percent;
+            state->engine_speed_rpm = msg.engine_speed_rpm;
+            state->spark_dwell_time_ms = msg.spark_dwell_time_ms;
+            state->atmospheric_pressure_kpa = msg.atmospheric_pressure_kpa;
+            state->intake_manifold_pressure_kpa = msg.intake_manifold_pressure_kpa;
+            state->intake_manifold_temperature = msg.intake_manifold_temperature;
+            state->coolant_temperature = msg.coolant_temperature;
+            state->oil_pressure = msg.oil_pressure;
+            state->oil_temperature = msg.oil_temperature;
+            state->fuel_pressure = msg.fuel_pressure;
+            state->fuel_consumption_rate_cm3pm = msg.fuel_consumption_rate_cm3pm;
+            state->estimated_consumed_fuel_volume_cm3 = msg.estimated_consumed_fuel_volume_cm3;
+            state->throttle_position_percent = msg.throttle_position_percent;
+            state->ecu_index = msg.ecu_index;
+            state->spark_plug_usage = static_cast<Spark_Plug_Usage>(msg.spark_plug_usage);
+
+            // Update cylinder status
+            uint8_t number_of_cylinders = msg.cylinder_status.size();
+            for (int i = 0; i < number_of_cylinders; i++) {
+                state->cylinder_status[i].ignition_timing_deg = msg.cylinder_status[i].ignition_timing_deg;
+                state->cylinder_status[i].injection_time_ms = msg.cylinder_status[i].injection_time_ms;
+                state->cylinder_status[i].cylinder_head_temperature = msg.cylinder_status[i].cylinder_head_temperature;
+                state->cylinder_status[i].exhaust_gas_temperature = msg.cylinder_status[i].exhaust_gas_temperature;
+                state->cylinder_status[i].lambda_coefficient = msg.cylinder_status[i].lambda_coefficient;
+            }
+
+
+            state->last_updated_ms = AP_HAL::millis();
             
             // Update listeners
             ap_uavcan->update_efi_state(msg.getSrcNodeID().get());
@@ -439,7 +525,7 @@ bool AP_UAVCAN::try_init(void)
                     }
 
                     uavcan::Subscriber<uavcan::equipment::ecu::Status> *ecu_status;
-                    ecu_status = new uavcan::Subscriber<uavcan::equipment::ecu::Status>(*node);
+                    ecu_status = new uavcan::Subscriber<uavcan::equipment::ice::reciprocating::Status>(*node);
                     const int ecu_status_start_res = ecu_status->start(ecu_status_cb_arr[_uavcan_i]);
                     if (ecu_status_start_res < 0) {
                         debug_uavcan(1, "UAVCAN ECU Subscriber start problem!\n\r");
