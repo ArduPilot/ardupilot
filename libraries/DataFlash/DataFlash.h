@@ -101,6 +101,8 @@ public:
 
     void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
 
+    void PrepForArming();
+
     void EnableWrites(bool enable) { _writes_enabled = enable; }
     bool WritesEnabled() const { return _writes_enabled; }
 

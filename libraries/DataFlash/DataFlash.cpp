@@ -321,6 +321,11 @@ bool DataFlash_Class::should_log(const uint32_t mask) const
         }                                         \
     } while (0)
 
+void DataFlash_Class::PrepForArming()
+{
+    FOR_EACH_BACKEND(PrepForArming());
+}
+
 void DataFlash_Class::setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer)
 {
     _vehicle_messages = writer;

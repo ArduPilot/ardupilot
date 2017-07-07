@@ -835,6 +835,13 @@ void DataFlash_File::stop_logging(void)
     }
 }
 
+void DataFlash_File::PrepForArming()
+{
+    if (logging_started()) {
+        return;
+    }
+    start_new_log();
+}
 
 /*
   start writing to a new log file
