@@ -92,7 +92,7 @@ def dive_mission(mavproxy, mav, filename):
     print("Mission OK")
     return True
 
-def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False):
     """Dive ArduSub in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -121,7 +121,7 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
 
-    sitl = util.start_SITL(binary, model='vectored', home=home, speedup=10, valgrind=valgrind, gdb=gdb)
+    sitl = util.start_SITL(binary, model='vectored', home=home, speedup=10, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
     mavproxy = util.start_MAVProxy_SITL('ArduSub', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)

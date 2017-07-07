@@ -440,7 +440,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     return True
 
 
-def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False):
     """Fly ArduPlane in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -455,7 +455,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         options += ' --map'
 
     sitl = util.start_SITL(binary, model='plane-elevrev', home=HOME_LOCATION, speedup=10,
-                          valgrind=valgrind, gdb=gdb,
+                          valgrind=valgrind, gdb=gdb, gdbserver=gdbserver,
                           defaults_file=os.path.join(testdir, 'default_params/plane-jsbsim.parm'))
     mavproxy = util.start_MAVProxy_SITL('ArduPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')

@@ -187,7 +187,9 @@ def valgrind_log_filepath(binary, model):
     return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(binary), model,))
 
 
-def start_SITL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None, unhide_parameters=False):
+def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
+    synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None,
+               unhide_parameters=False, gdbserver=False):
     """Launch a SITL instance."""
     cmd = []
     if valgrind and os.path.exists('/usr/bin/valgrind'):
@@ -197,7 +199,13 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=Tr
         f.write("r\n")
         f.close()
         cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
-    
+    if gdbserver:
+        f = open("/tmp/x.gdb", "w")
+        f.write("target extended-remote localhost:3333\nc\n")
+        f.close()
+        cmd.extend(['gdbserver', 'localhost:3333'])
+        run_cmd('screen -d -m -S ardupilot-gdb bash -c "gdb -x /tmp/x.gdb"')
+
     cmd.append(binary)
     if wipe:
         cmd.append('-w')
