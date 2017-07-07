@@ -278,7 +278,8 @@ void NOINLINE Copter::send_rpm(mavlink_channel_t chan)
 void NOINLINE Copter::send_efi(mavlink_channel_t chan)
 {
 #if EFI_ENABLED == ENABLED
-    EFI_State* first_efi_state = efi.get_state(0);
+    // EFI_State* first_efi_state = efi.get_state(0);
+    /*
     mavlink_msg_ecotrons_status_send(
         chan,
         first_efi_state->end_of_start,
@@ -298,7 +299,7 @@ void NOINLINE Copter::send_efi(mavlink_channel_t chan)
         first_efi_state->battery_voltage,
         first_efi_state->ignition_timing_crank_angle,
         first_efi_state->injection_time_ms);
-
+    */
 #endif
 }
 
