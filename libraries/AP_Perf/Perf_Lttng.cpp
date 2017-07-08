@@ -19,11 +19,8 @@
 
 #include <string.h>
 
-#include "AP_HAL_Linux.h"
 #include "Perf_Lttng_TracePoints.h"
 #include "Perf_Lttng.h"
-
-using namespace Linux;
 
 void Perf_Lttng::begin(const char *name)
 {
@@ -39,15 +36,5 @@ void Perf_Lttng::count(const char *name, uint64_t val)
 {
     tracepoint(ardupilot, count, name, val);
 }
-
-#else
-
-#include "Perf_Lttng.h"
-
-using namespace Linux;
-
-void Perf_Lttng::begin(const char *name) { }
-void Perf_Lttng::end(const char *name) { }
-void Perf_Lttng::count(const char *name, uint64_t val) { }
 
 #endif
