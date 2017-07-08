@@ -17,6 +17,9 @@ public:
     GCS_MAVLINK_Plane &chan(const uint8_t ofs) override {
         return _chan[ofs];
     };
+    const GCS_MAVLINK_Plane &chan(const uint8_t ofs) const override {
+        return _chan[ofs];
+    };
 
     void send_airspeed_calibration(const Vector3f &vg);
 
