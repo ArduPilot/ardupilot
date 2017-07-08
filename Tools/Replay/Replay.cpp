@@ -14,7 +14,7 @@
  */
 
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
 #include "Parameters.h"
 #include "VehicleType.h"
 #include "MsgHandler.h"
@@ -928,12 +928,9 @@ bool Replay::check_user_param(const char *name)
     return false;
 }
 
-class GCS_Replay : public GCS
-{
-    void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) override {
-        ::fprintf(stderr, "GCS: %s\n", text);
-    }
+const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+    AP_GROUPEND
 };
-GCS_Replay _gcs;
+GCS_Dummy _gcs;
 
 AP_HAL_MAIN_CALLBACKS(&replay);

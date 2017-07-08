@@ -24,8 +24,7 @@ Rover::Rover(void) :
     channel_steer(nullptr),
     channel_throttle(nullptr),
     channel_learn(nullptr),
-    DataFlash{FIRMWARE_STRING},
-    in_log_download(false),
+    DataFlash{FIRMWARE_STRING, g.log_bitmask},
     modes(&g.mode1),
     L1_controller(ahrs, nullptr),
     nav_controller(&L1_controller),
@@ -34,7 +33,6 @@ Rover::Rover(void) :
             FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
             FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
             FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)),
-    num_gcs(MAVLINK_COMM_NUM_BUFFERS),
     ServoRelayEvents(relay),
 #if CAMERA == ENABLED
     camera(&relay),

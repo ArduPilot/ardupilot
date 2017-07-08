@@ -5,6 +5,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+#include "AP_Compass_SITL.h"
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
 #include "AP_Compass_BMM150.h"
@@ -19,6 +20,7 @@
 #include "AP_Compass_AK09916.h"
 #include "AP_Compass_QMC5883L.h"
 #if HAL_WITH_UAVCAN
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include "AP_Compass_UAVCAN.h"
 #endif
 #include "AP_Compass_MMC3416.h"
@@ -513,7 +515,22 @@ void Compass::_detect_backends(void)
           return; \
         } \
     } while (0)
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    ADD_BACKEND(new AP_Compass_SITL(*this), nullptr, false);
+    return;
+#endif
     
+#if HAL_WITH_UAVCAN
+    bool added;
+    do {
+        added = _add_backend(AP_Compass_UAVCAN::probe(*this), "UAVCAN", true);
+        if (_backend_count == COMPASS_MAX_BACKEND || _compass_count == COMPASS_MAX_INSTANCES) {
+            return;
+        }
+    } while (added);
+#endif
+
 #if HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
     ADD_BACKEND(AP_Compass_HIL::detect(*this), nullptr, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
@@ -711,18 +728,6 @@ void Compass::_detect_backends(void)
                  AP_Compass_LSM9DS1::name, false);
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
-#endif
-
-#if HAL_WITH_UAVCAN
-    if ((AP_BoardConfig::get_can_enable() != 0) && (hal.can_mgr != nullptr))
-    {
-        if((_backend_count < COMPASS_MAX_BACKEND) && (_compass_count < COMPASS_MAX_INSTANCES))
-        {
-            printf("Creating AP_Compass_UAVCAN\n\r");
-            _backends[_backend_count] = new AP_Compass_UAVCAN(*this);
-            _backend_count++;
-        }
-    }
 #endif
 
     if (_backend_count == 0 ||

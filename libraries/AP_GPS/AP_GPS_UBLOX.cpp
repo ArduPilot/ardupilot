@@ -59,7 +59,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _ublox_port(255),
     _have_version(false),
     _unconfigured_messages(CONFIG_ALL),
-    _hardware_generation(0),
+    _hardware_generation(UBLOX_UNKNOWN_HARDWARE_GENERATION),
     _new_position(0),
     _new_speed(0),
     _disable_counter(0),
@@ -79,7 +79,7 @@ void
 AP_GPS_UBLOX::_request_next_config(void)
 {
     // don't request config if we shouldn't configure the GPS
-    if (gps._auto_config == 0) {
+    if (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
         return;
     }
 
@@ -104,7 +104,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_POLL_SVINFO:
         // not required once we know what generation we are on
-        if(_hardware_generation == 0) {
+        if(_hardware_generation == UBLOX_UNKNOWN_HARDWARE_GENERATION) {
             if (!_send_message(CLASS_NAV, MSG_NAV_SVINFO, 0, 0)) {
                 _next_message--;
             }
@@ -483,7 +483,7 @@ AP_GPS_UBLOX::read(void)
 // Private Methods /////////////////////////////////////////////////////////////
 void AP_GPS_UBLOX::log_mon_hw(void)
 {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
         return;
     }
     struct log_Ubx1 pkt = {
@@ -501,12 +501,12 @@ void AP_GPS_UBLOX::log_mon_hw(void)
         pkt.aPower     = _buffer.mon_hw_68.aPower;
         pkt.agcCnt     = _buffer.mon_hw_68.agcCnt;
     }
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 }
 
 void AP_GPS_UBLOX::log_mon_hw2(void)
 {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
         return;
     }
 
@@ -519,15 +519,16 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
         ofsQ      : _buffer.mon_hw2.ofsQ,
         magQ      : _buffer.mon_hw2.magQ,
     };
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 }
 
 #if UBLOX_RXM_RAW_LOGGING
 void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
         return;
     }
+
     uint64_t now = AP_HAL::micros64();
     for (uint8_t i=0; i<raw.numSV; i++) {
         struct log_GPS_RAW pkt = {
@@ -544,15 +545,16 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
             cno        : raw.svinfo[i].cno,
             lli        : raw.svinfo[i].lli
         };
-        gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+        DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
     }
 }
 
 void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
 {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
         return;
     }
+
     uint64_t now = AP_HAL::micros64();
 
     struct log_GPS_RAWH header = {
@@ -564,7 +566,7 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
         numMeas    : raw.numMeas,
         recStat    : raw.recStat
     };
-    gps._DataFlash->WriteBlock(&header, sizeof(header));
+    DataFlash_Class::instance()->WriteBlock(&header, sizeof(header));
 
     for (uint8_t i=0; i<raw.numMeas; i++) {
         struct log_GPS_RAWS pkt = {
@@ -583,7 +585,7 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
             doStdev    : raw.svinfo[i].doStdev,
             trkStat    : raw.svinfo[i].trkStat
         };
-        gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+        DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
     }
 }
 #endif // UBLOX_RXM_RAW_LOGGING
@@ -1307,19 +1309,27 @@ AP_GPS_UBLOX::broadcast_configuration_failure_reason(void) const {
 /*
   return velocity lag in seconds
  */
-float AP_GPS_UBLOX::get_lag(void) const
+bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
 {
     switch (_hardware_generation) {
+    case UBLOX_UNKNOWN_HARDWARE_GENERATION:
+        lag_sec = 0.22f;
+        // always bail out in this case, it's used to indicate we have yet to receive a valid
+        // hardware generation, however the user may have inhibited us detecting the generation
+        // so if we aren't allowed to do configuration, we will accept this as the default delay
+        return gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_ENABLE;
     case UBLOX_5:
     case UBLOX_6:
     default:
-        return 0.22f;
+        lag_sec = 0.22f;
+        break;
     case UBLOX_7:
     case UBLOX_M8:
         // based on flight logs the 7 and 8 series seem to produce about 120ms lag
-        return 0.12f;
+        lag_sec = 0.12f;
         break;
     };
+    return true;
 }
 
 void AP_GPS_UBLOX::Write_DataFlash_Log_Startup_messages() const
@@ -1327,7 +1337,7 @@ void AP_GPS_UBLOX::Write_DataFlash_Log_Startup_messages() const
     AP_GPS_Backend::Write_DataFlash_Log_Startup_messages();
 
     if (_have_version) {
-        gps._DataFlash->Log_Write_MessageF("u-blox %d HW: %s SW: %s",
+        DataFlash_Class::instance()->Log_Write_MessageF("u-blox %d HW: %s SW: %s",
                                            state.instance+1,
                                            _version.hwVersion,
                                            _version.swVersion);

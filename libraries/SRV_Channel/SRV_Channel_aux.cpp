@@ -102,12 +102,14 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_elevator_with_input:
     case k_aileron:
     case k_elevator:
-    case k_dspoiler1:
-    case k_dspoiler2:
+    case k_dspoilerLeft1:
+    case k_dspoilerLeft2:
+    case k_dspoilerRight1:
+    case k_dspoilerRight2:
     case k_rudder:
     case k_steering:
-    case k_flaperon1:
-    case k_flaperon2:
+    case k_flaperon_left:
+    case k_flaperon_right:
     case k_tiltMotorLeft:
     case k_tiltMotorRight:
     case k_elevon_left:
@@ -209,22 +211,18 @@ SRV_Channels::set_output_pwm_trimmed(SRV_Channel::Aux_servo_function_t function,
 }
 
 /*
-  set and save the trim value to radio_in for all channels matching
+  set and save the trim value to current output for all channels matching
   the given function type
  */
 void
-SRV_Channels::set_trim_to_radio_in_for(SRV_Channel::Aux_servo_function_t function)
+SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t function)
 {
     if (!function_assigned(function)) {
         return;
     }
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function.get() == function) {
-            RC_Channel *rc = RC_Channels::rc_channel(channels[i].ch_num);
-            if (rc && rc->get_radio_in() != 0) {
-                rc->set_radio_trim(rc->get_radio_in());
-                rc->save_radio_trim();
-            }
+            channels[i].servo_trim.set_and_save_ifchanged(channels[i].output_pwm);
         }
     }
 }

@@ -82,6 +82,7 @@
 
 #include <AP_Arming/AP_Arming.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
@@ -172,6 +173,11 @@ private:
     // board specific config
     AP_BoardConfig BoardConfig;
 
+    // board specific config for CAN bus
+#if HAL_WITH_UAVCAN
+    AP_BoardConfig_CAN BoardConfig_CAN;
+#endif
+
     // primary input channels
     RC_Channel *channel_roll;
     RC_Channel *channel_pitch;
@@ -182,9 +188,6 @@ private:
     AP_Notify notify;
 
     DataFlash_Class DataFlash;
-
-    // has a log download started?
-    bool in_log_download;
 
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
@@ -1026,6 +1029,7 @@ private:
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
+    void dspoiler_update(void);
     void servo_output_mixers(void);
     void servos_output(void);
     void servos_auto_trim(void);

@@ -960,7 +960,7 @@ def setup_rc(mavproxy):
     mavproxy.send('rc 3 1000\n')
 
 
-def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params_file=None):
+def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None):
     """Fly ArduCopter in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -977,13 +977,13 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    if params_file is None:
+    if params is None:
         params = vinfo.options["ArduCopter"]["frames"][frame]["default_params_filename"]
-        if not isinstance(params, list):
-            params = [params]
-        for x in params:
-            mavproxy.send("param load %s\n" % os.path.join(testdir, x))
-    mavproxy.expect('Loaded [0-9]+ parameters')
+    if not isinstance(params, list):
+        params = [params]
+    for x in params:
+        mavproxy.send("param load %s\n" % os.path.join(testdir, x))
+        mavproxy.expect('Loaded [0-9]+ parameters')
     mavproxy.send("param set LOG_REPLAY 1\n")
     mavproxy.send("param set LOG_DISARMED 1\n")
     time.sleep(3)
@@ -1317,18 +1317,26 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     return True
 
 
-def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None):
     """Fly ArduCopter in SITL for AVC2013 mission."""
     global homeloc
 
+    if frame is None:
+        frame = 'heli'
+
     home = "%f,%f,%u,%u" % (AVCHOME.lat, AVCHOME.lng, AVCHOME.alt, AVCHOME.heading)
-    sitl = util.start_SITL(binary, wipe=True, model='heli', home=home, speedup=speedup_default)
+    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=speedup_default)
     mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550')
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send("param load %s/default_params/copter-heli.parm\n" % testdir)
-    mavproxy.expect('Loaded [0-9]+ parameters')
+    if params is None:
+        params = vinfo.options["ArduCopter"]["frames"][frame]["default_params_filename"]
+    if not isinstance(params, list):
+        params = [params]
+    for x in params:
+        mavproxy.send("param load %s\n" % os.path.join(testdir, x))
+        mavproxy.expect('Loaded [0-9]+ parameters')
     mavproxy.send("param set LOG_REPLAY 1\n")
     mavproxy.send("param set LOG_DISARMED 1\n")
     time.sleep(3)

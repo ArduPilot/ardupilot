@@ -22,10 +22,11 @@
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_gps_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig::get_can_debug()) { hal.console->printf(fmt, ##args); }} while (0)
+#define debug_gps_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { printf(fmt, ##args); }} while (0)
 
 AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
@@ -37,14 +38,19 @@ AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UA
 // For each instance we need to deregister from AP_UAVCAN class
 AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
 {
-    if (hal.can_mgr != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr->get_UAVCAN();
+    if (hal.can_mgr[_manager] != nullptr) {
+        AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
         if (ap_uavcan != nullptr) {
             ap_uavcan->remove_gps_listener(this);
 
             debug_gps_uavcan(2, "AP_GPS_UAVCAN destructed\n\r");
         }
     }
+}
+
+void AP_GPS_UAVCAN::set_uavcan_manager(uint8_t mgr)
+{
+    _manager = mgr;
 }
 
 // Consume new data and mark it received

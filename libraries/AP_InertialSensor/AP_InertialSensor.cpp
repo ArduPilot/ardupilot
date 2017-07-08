@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 #define DEFAULT_GYRO_FILTER  20
-#define DEFAULT_ACCEL_FILTER 10
+#define DEFAULT_ACCEL_FILTER 20
 #define DEFAULT_STILL_THRESH 2.5f
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 #define DEFAULT_GYRO_FILTER  4
@@ -441,9 +441,9 @@ AP_InertialSensor::AP_InertialSensor() :
     _board_orientation(ROTATION_NONE),
     _primary_gyro(0),
     _primary_accel(0),
+    _log_raw_bit(-1),
     _hil_mode(false),
     _calibrating(false),
-    _log_raw_data(false),
     _backends_detected(false),
     _dataflash(nullptr),
     _accel_cal_requires_reboot(false),

@@ -8,6 +8,7 @@ from pymavlink import mavutil
 
 from common import *
 from pysim import util
+from pysim import vehicleinfo
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -29,6 +30,14 @@ def arm_rover(mavproxy, mav):
     mavproxy.expect('ARMED')
 
     print("ROVER ARMED")
+    return True
+
+
+def disarm_rover(mavproxy, mav):
+    mavproxy.send('disarm\n')
+    mavproxy.expect('DISARMED')
+
+    print("ROVER DISARMED")
     return True
 
 
@@ -89,14 +98,18 @@ def drive_mission(mavproxy, mav, filename):
     print("Mission OK")
     return True
 
+vinfo = vehicleinfo.VehicleInfo()
 
-def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None):
     """Drive APMrover2 in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the mission in real time
     """
     global homeloc
+
+    if frame is None:
+        frame = 'rover'
 
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
@@ -105,15 +118,20 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         options += ' --map'
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sitl = util.start_SITL(binary, wipe=True, model='rover', home=home, speedup=10)
+    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=10)
     mavproxy = util.start_MAVProxy_SITL('APMrover2', options=options)
 
     print("WAITING FOR PARAMETERS")
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send("param load %s/default_params/rover.parm\n" % testdir)
-    mavproxy.expect('Loaded [0-9]+ parameters')
+    if params is None:
+        params = vinfo.options["APMrover2"]["frames"][frame]["default_params_filename"]
+    if not isinstance(params, list):
+        params = [params]
+    for x in params:
+        mavproxy.send("param load %s\n" % os.path.join(testdir, x))
+        mavproxy.expect('Loaded [0-9]+ parameters')
     mavproxy.send("param set LOG_REPLAY 1\n")
     mavproxy.send("param set LOG_DISARMED 1\n")
     time.sleep(3)
@@ -171,6 +189,9 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
             failed = True
         if not drive_mission(mavproxy, mav, os.path.join(testdir, "rover1.txt")):
             print("Failed mission")
+            failed = True
+        if not disarm_rover(mavproxy, mav):
+            print("Failed to DISARM")
             failed = True
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/APMrover2-log.bin")):
             print("Failed log download")

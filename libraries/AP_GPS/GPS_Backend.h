@@ -53,8 +53,8 @@ public:
     virtual void handle_msg(const mavlink_message_t *msg) { return ; }
     virtual void handle_gnss_msg(const AP_GPS::GPS_State &msg) { return ; }
 
-    // driver specific lag
-    virtual float get_lag(void) const { return 0.2f; }
+    // driver specific lag, returns true if the driver is confident in the provided lag
+    virtual bool get_lag(float &lag) const { lag = 0.2f; return true; }
 
     virtual const char *name() const = 0;
 
@@ -82,4 +82,6 @@ protected:
     void make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);
 
     void _detection_message(char *buffer, uint8_t buflen) const;
+
+    bool should_df_log() const;
 };

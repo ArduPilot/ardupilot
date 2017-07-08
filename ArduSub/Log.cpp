@@ -471,7 +471,7 @@ void Sub::start_logging()
     if (g.log_bitmask == 0) {
         return;
     }
-    if (in_log_download) {
+    if (DataFlash.in_log_download()) {
         return;
     }
 
@@ -486,9 +486,7 @@ void Sub::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
 
-    for (uint8_t i=0; i<num_gcs; i++) {
-        gcs_chan[i].reset_cli_timeout();
-    }
+    gcs().reset_cli_timeout();
 }
 
 #else // LOGGING_ENABLED

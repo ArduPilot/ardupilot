@@ -1,5 +1,17 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5.0-rc9 03-July-2017
+Changes from 3.5-rc8
+1) AutoTune improvement when using position hold (twitches in body-frame instead of earth-frame)
+2) GPS fixes:
+    a) RTK GPS fix when large RTK correction messages are sent
+    b) auto-detection for NMEA disabled (NMEA users must explicitly set GPS_TYPE to 5)
+3) EKF bug fixes:
+    a) fix bug preventing use of optical flow for terrain height estimation
+    b) fix bug affecting accuracy of optical flow estimated height during climb/descent
+    c) fix range beacon fusion bugs
+4) return accel filter (INS_ACCEL_FILT) to 20hz (some users were seeing oscillations at 10hz)
+------------------------------------------------------------------
 Copter 3.5.0-rc8 15-Jun-2017
 Changes from 3.5-rc7
 1) Solo on Master:

@@ -83,6 +83,7 @@
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_ADSB/AP_ADSB.h>
@@ -98,6 +99,7 @@
 #include "config.h"
 
 #include "GCS_Mavlink.h"
+#include "GCS_Copter.h"
 #include "AP_Rally.h"           // Rally point library
 #include "AP_Arming.h"
 
@@ -135,6 +137,7 @@
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Copter;
+    friend class GCS_Copter;
     friend class AP_Rally_Copter;
     friend class Parameters;
     friend class ParametersG2;
@@ -181,9 +184,6 @@ private:
 
     // used to detect MAVLink acks from GCS to stop compassmot
     uint8_t command_ack_counter;
-
-    // has a log download started?
-    bool in_log_download;
 
     // primary input control channels
     RC_Channel *channel_roll;
@@ -247,11 +247,8 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-
-    GCS_MAVLINK_Copter gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
-    GCS _gcs; // avoid using this; use gcs()
-    GCS &gcs() { return _gcs; }
+    GCS_Copter _gcs; // avoid using this; use gcs()
+    GCS_Copter &gcs() { return _gcs; }
 
     // User variables
 #ifdef USERHOOK_VARIABLES
@@ -319,6 +316,11 @@ private:
 
     // board specific config
     AP_BoardConfig BoardConfig;
+
+#if HAL_WITH_UAVCAN
+    // board specific config for CAN bus
+    AP_BoardConfig_CAN BoardConfig_CAN;
+#endif
 
     // receiver RSSI
     uint8_t receiver_rssi;
@@ -653,6 +655,7 @@ private:
     void update_mount();
     void update_trigger(void);
     void update_batt_compass(void);
+    void fourhundred_hz_logging();
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
     void three_hz_loop();
@@ -729,6 +732,7 @@ private:
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
     void Log_Write_Attitude();
+    void Log_Write_EKF_POS();
     void Log_Write_MotBatt();
     void Log_Write_Event(uint8_t id);
     void Log_Write_Data(uint8_t id, int32_t value);

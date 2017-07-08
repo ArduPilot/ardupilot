@@ -47,6 +47,8 @@ Plane::Plane(const char *home_str, const char *frame_str) :
         elevons = true;
     } else if (strstr(frame_str, "-vtail")) {
         vtail = true;
+    } else if (strstr(frame_str, "-dspoilers")) {
+        dspoilers = true;
     }
     if (strstr(frame_str, "-elevrev")) {
         reverse_elevator_rudder = true;
@@ -250,7 +252,19 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         // this matches VTAIL_OUTPUT==2
         elevator = (ch2-ch1)/2.0f;
         rudder   = (ch2+ch1)/2.0f;
+    } else if (dspoilers) {
+        // fake a differential spoiler plane. Use outputs 1, 2, 4 and 5
+        float dspoiler1_left = filtered_servo_angle(input, 0);
+        float dspoiler1_right = filtered_servo_angle(input, 1);
+        float dspoiler2_left = filtered_servo_angle(input, 3);
+        float dspoiler2_right = filtered_servo_angle(input, 4);
+        float elevon_left  = (dspoiler1_left + dspoiler2_left)/2;
+        float elevon_right = (dspoiler1_right + dspoiler2_right)/2;
+        aileron  = (elevon_right-elevon_left)/2;
+        elevator = (elevon_left+elevon_right)/2;
+        rudder = fabsf(dspoiler1_right - dspoiler2_right)/2 - fabsf(dspoiler1_left - dspoiler2_left)/2;
     }
+    //printf("Aileron: %.1f elevator: %.1f rudder: %.1f\n", aileron, elevator, rudder);
 
     if (reverse_thrust) {
         throttle = filtered_servo_angle(input, 2);

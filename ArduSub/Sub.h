@@ -69,6 +69,7 @@
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
@@ -80,6 +81,7 @@
 #include "GCS_Mavlink.h"
 #include "Parameters.h"
 #include "AP_Arming_Sub.h"
+#include "GCS_Sub.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if OPTFLOW == ENABLED
@@ -121,6 +123,7 @@
 class Sub : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Sub;
+    friend class GCS_Sub;
     friend class Parameters;
     friend class ParametersG2;
     friend class AP_Arming_Sub;
@@ -144,9 +147,6 @@ private:
 
     // AP_Notify instance
     AP_Notify notify;
-
-    // has a log download started?
-    bool in_log_download;
 
     // primary input control channels
     RC_Channel *channel_roll;
@@ -209,11 +209,9 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 
-    GCS_MAVLINK_Sub gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
-    GCS _gcs; // avoid using this; use gcs()
-    GCS &gcs() { return _gcs; }
+    GCS_Sub _gcs; // avoid using this; use gcs()
+    GCS_Sub &gcs() { return _gcs; }
 
     // User variables
 #ifdef USERHOOK_VARIABLES
@@ -253,6 +251,11 @@ private:
 
     // board specific config
     AP_BoardConfig BoardConfig;
+
+#if HAL_WITH_UAVCAN
+    // board specific config for CAN bus
+    AP_BoardConfig_CAN BoardConfig_CAN;
+#endif
 
     // Failsafe
     struct {

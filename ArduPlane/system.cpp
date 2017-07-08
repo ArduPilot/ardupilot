@@ -100,6 +100,8 @@ void Plane::init_ardupilot()
     }
 #endif
 
+    ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
+
     set_control_channels();
     
 #if HAVE_PX4_MIXER
@@ -138,6 +140,9 @@ void Plane::init_ardupilot()
 
     // setup any board specific drivers
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
 
     relay.init();
 
@@ -209,7 +214,8 @@ void Plane::init_ardupilot()
     ahrs.set_airspeed(&airspeed);
 
     // GPS Initialization
-    gps.init(&DataFlash, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     init_rc_in();               // sets up rc channels from radio
 
@@ -311,9 +317,6 @@ void Plane::startup_ground(void)
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
     serial_manager.set_blocking_writes_all(false);
-
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);
 
     gcs_send_text(MAV_SEVERITY_INFO,"Ground start complete");
 }
@@ -835,13 +838,7 @@ void Plane::print_comma(void)
 bool Plane::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!(mask & g.log_bitmask)) {
-        return false;
-    }
-    if (!DataFlash.should_log()) {
-        return false;
-    }
-    if (in_log_download) {
+    if (!DataFlash.should_log(mask)) {
         return false;
     }
     start_logging();

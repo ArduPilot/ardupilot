@@ -109,6 +109,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if FRAME_CONFIG == HELI_FRAME
     SCHED_TASK(check_dynamic_flight,  50,     75),
 #endif
+    SCHED_TASK(fourhundred_hz_logging,400,    50),
     SCHED_TASK(update_notify,         50,     90),
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK(ekf_check,             10,     75),
@@ -364,6 +365,15 @@ void Copter::update_batt_compass(void)
     }
 }
 
+// Full rate logging of attitude, rate and pid loops
+// should be run at 400hz
+void Copter::fourhundred_hz_logging()
+{
+    if (should_log(MASK_LOG_ATTITUDE_FAST)) {
+        Log_Write_Attitude();
+    }
+}
+
 // ten_hz_logging_loop
 // should be run at 10hz
 void Copter::ten_hz_logging_loop()
@@ -371,13 +381,7 @@ void Copter::ten_hz_logging_loop()
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        DataFlash.Log_Write_Rate(ahrs, *motors, *attitude_control, *pos_control);
-        if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
-        }
+        Log_Write_EKF_POS();
     }
     if (should_log(MASK_LOG_MOTBATT)) {
         Log_Write_MotBatt();
@@ -417,14 +421,7 @@ void Copter::twentyfive_hz_logging()
 
 #if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
-        Log_Write_Attitude();
-        DataFlash.Log_Write_Rate(ahrs, *motors, *attitude_control, *pos_control);
-        if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
-        }
+        Log_Write_EKF_POS();
     }
 
     // log IMU data if we're not already logging at the higher rate
@@ -496,9 +493,6 @@ void Copter::one_hz_loop()
     SRV_Channels::enable_aux_servos();
 
     check_usb_mux();
-
-    // enable/disable raw gyro/accel logging
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
 
     // log terrain data
     terrain_logging();

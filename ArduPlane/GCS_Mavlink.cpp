@@ -199,7 +199,7 @@ void Plane::send_nav_controller_output(mavlink_channel_t chan)
         nav_pitch_cd * 0.01f,
         nav_controller->nav_bearing_cd() * 0.01f,
         nav_controller->target_bearing_cd() * 0.01f,
-        auto_state.wp_distance,
+        MIN(auto_state.wp_distance, UINT16_MAX),
         altitude_error_cm * 0.01f,
         airspeed_error * 100,
         nav_controller->crosstrack_error());
@@ -800,7 +800,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
     plane.gcs_out_of_time = false;
 
     if (!plane.in_mavlink_delay) {
-        handle_log_send(plane.DataFlash);
+        plane.DataFlash.handle_log_send(*this);
     }
 
     send_queued_parameters();
@@ -1902,23 +1902,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         handle_radio_status(msg, plane.DataFlash, plane.should_log(MASK_LOG_PM));
         break;
     }
-
-    case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-        plane.in_log_download = true;
-        /* no break */
-    case MAVLINK_MSG_ID_LOG_ERASE:
-        /* no break */
-    case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
-        if (!plane.in_mavlink_delay) {
-            handle_log_message(msg, plane.DataFlash);
-        }
-        break;
-    case MAVLINK_MSG_ID_LOG_REQUEST_END:
-        plane.in_log_download = false;
-        if (!plane.in_mavlink_delay) {
-            handle_log_message(msg, plane.DataFlash);
-        }
-        break;
 
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, plane.gps);

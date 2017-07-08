@@ -261,6 +261,9 @@ public:
     uint32_t last_update_usec(void) const { return _state[get_primary()].last_update_usec; }
     uint32_t last_update_usec(uint8_t i) const { return _state[i].last_update_usec; }
 
+    uint32_t last_update_ms(void) const { return _state[get_primary()].last_update_ms; }
+    uint32_t last_update_ms(uint8_t i) const { return _state[i].last_update_ms; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // HIL variables
@@ -286,7 +289,7 @@ public:
     uint16_t get_offsets_max(void) const {
         return (uint16_t)_offset_max.get();
     }
-    
+
 private:
     /// Register a new compas driver, allocating an instance number
     ///
@@ -388,7 +391,7 @@ private:
     } _state[COMPASS_MAX_INSTANCES];
 
     AP_Int16 _offset_max;
-    
+
     CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];
 
     // if we want HIL only

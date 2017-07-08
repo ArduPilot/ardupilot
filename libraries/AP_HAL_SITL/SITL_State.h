@@ -70,7 +70,7 @@ public:
         "tcp:2",
         "tcp:3",
         "GPS2",
-        "tcp:4",
+        "tcp:5",
     };
     
 private:
@@ -83,7 +83,6 @@ private:
     void _setup_adc(void);
 
     void set_height_agl(void);
-    void _update_compass(void);
     void _update_rangefinder(float range_value);
     void _set_signal_handlers(void) const;
 
@@ -131,7 +130,6 @@ private:
     void _simulator_output(bool synthetic_clock_mode);
     uint16_t _airspeed_sensor(float airspeed);
     uint16_t _ground_sonar();
-    Vector3f _rand_vec3f(void);
     void _fdm_input_step(void);
 
     void wait_clock(uint64_t wait_time_usec);

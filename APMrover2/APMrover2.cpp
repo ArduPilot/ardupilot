@@ -43,6 +43,7 @@ Rover rover;
   time they are expected to take (in microseconds)
 */
 const AP_Scheduler::Task Rover::scheduler_tasks[] = {
+    //         Function name,          Hz,     us,
     SCHED_TASK(read_radio,             50,   1000),
     SCHED_TASK(ahrs_update,            50,   6400),
     SCHED_TASK(read_sonars,            50,   2000),
@@ -104,8 +105,6 @@ void Rover::setup()
     AP_Param::setup_sketch_defaults();
 
     in_auto_reverse = false;
-
-    rssi.init();
 
     init_ardupilot();
 
@@ -350,8 +349,6 @@ void Rover::one_second_loop(void)
         }
         counter = 0;
     }
-
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
 
     // update home position if not soft armed and gps position has
     // changed. Update every 1s at most
