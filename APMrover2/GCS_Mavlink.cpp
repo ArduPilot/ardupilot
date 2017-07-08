@@ -1627,7 +1627,6 @@ void Rover::gcs_update(void)
 void Rover::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
     gcs().send_statustext(severity, 0xFF, str);
-    notify.send_text(str);
 }
 
 /*
@@ -1643,7 +1642,6 @@ void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
     hal.util->vsnprintf(&str[0], sizeof(str), fmt, arg_list);
     va_end(arg_list);
     gcs().send_statustext(severity, 0xFF, str);
-    notify.send_text(str);
 }
 
 
