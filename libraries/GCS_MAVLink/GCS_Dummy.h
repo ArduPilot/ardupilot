@@ -11,6 +11,11 @@ class GCS_MAVLINK_Dummy : public GCS_MAVLINK
     bool try_send_message(enum ap_message id) { return true; }
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override {}
+
+protected:
+
+    AP_Mission *get_mission() override { return nullptr; }
+
 };
 
 /*

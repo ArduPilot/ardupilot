@@ -21,6 +21,7 @@ public:
 protected:
 
     uint32_t telem_delay() const override { return 0; }
+    AP_Mission *get_mission() override { return nullptr; }
 
 private:
 
