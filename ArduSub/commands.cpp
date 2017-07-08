@@ -91,7 +91,7 @@ bool Sub::set_home(const Location& loc, bool lock)
     Log_Write_Home_And_Origin();
 
     // send new home location to GCS
-    GCS_MAVLINK::send_home_all(loc);
+    gcs().send_home(loc);
 
     // return success
     return true;
