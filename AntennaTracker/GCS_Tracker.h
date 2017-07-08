@@ -14,6 +14,7 @@ public:
 
     // return GCS link at offset ofs
     GCS_MAVLINK_Tracker &chan(const uint8_t ofs) override { return _chan[ofs]; };
+    const GCS_MAVLINK_Tracker &chan(const uint8_t ofs) const override { return _chan[ofs]; };
 
     void setup_uarts(AP_SerialManager &serial_manager) override;
 
