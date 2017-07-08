@@ -1573,8 +1573,8 @@ void Rover::mavlink_delay_cb()
     const uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs_send_message(MSG_HEARTBEAT);
-        gcs_send_message(MSG_EXTENDED_STATUS1);
+        gcs().send_message(MSG_HEARTBEAT);
+        gcs().send_message(MSG_EXTENDED_STATUS1);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
@@ -1590,14 +1590,6 @@ void Rover::mavlink_delay_cb()
 
     DataFlash.EnableWrites(true);
     in_mavlink_delay = false;
-}
-
-/*
- *  send a message on both GCS links
- */
-void Rover::gcs_send_message(enum ap_message id)
-{
-    gcs().send_message(id);
 }
 
 /*
@@ -1629,7 +1621,7 @@ void Rover::gcs_update(void)
  */
 void Rover::gcs_retry_deferred(void)
 {
-    gcs_send_message(MSG_RETRY_DEFERRED);
+    gcs().send_message(MSG_RETRY_DEFERRED);
     gcs().service_statustext();
 }
 
