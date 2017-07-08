@@ -8,12 +8,12 @@
 
 void Sub::gcs_send_heartbeat(void)
 {
-    gcs_send_message(MSG_HEARTBEAT);
+    gcs().send_message(MSG_HEARTBEAT);
 }
 
 void Sub::gcs_send_deferred(void)
 {
-    gcs_send_message(MSG_RETRY_DEFERRED);
+    gcs().send_message(MSG_RETRY_DEFERRED);
     gcs().service_statustext();
 }
 
@@ -1815,7 +1815,7 @@ void Sub::mavlink_delay_cb()
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs_send_heartbeat();
-        gcs_send_message(MSG_EXTENDED_STATUS1);
+        gcs().send_message(MSG_EXTENDED_STATUS1);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
@@ -1831,14 +1831,6 @@ void Sub::mavlink_delay_cb()
 
     DataFlash.EnableWrites(true);
     in_mavlink_delay = false;
-}
-
-/*
- *  send a message on both GCS links
- */
-void Sub::gcs_send_message(enum ap_message id)
-{
-    gcs().send_message(id);
 }
 
 /*
