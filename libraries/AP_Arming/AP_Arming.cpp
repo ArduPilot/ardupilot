@@ -349,6 +349,14 @@ bool AP_Arming::gps_checks(bool report)
             }
             return false;
         }
+
+        //GPS update rate acceptable
+        if (!gps.is_healthy()) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: GPS is not healthy");
+            }
+            return false;
+        }
     }
 
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
