@@ -256,10 +256,6 @@ void AP_MotorsUGV::setup_safety_output()
         // set trim to min to set duty cycle range (0 - 100%) to servo range
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
-        SRV_Channels::setup_failsafe_trim_all();
-    }
-    if (_pwm_type == PWM_TYPE_BRUSHEDBIPOLAR) {
-        SRV_Channels::setup_failsafe_trim_all();
     }
 
     if (_disarm_disable_pwm) {
@@ -273,4 +269,9 @@ void AP_MotorsUGV::setup_safety_output()
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
     }
+
+    // stop sending pwm if main CPU fails
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
 }
