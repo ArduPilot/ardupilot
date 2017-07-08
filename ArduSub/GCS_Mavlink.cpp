@@ -932,50 +932,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST: { // MAV ID: 38
-        handle_mission_write_partial_list(sub.mission, msg);
-        break;
-    }
-
-    // GCS has sent us a mission item, store to EEPROM
-    case MAVLINK_MSG_ID_MISSION_ITEM:
-    case MAVLINK_MSG_ID_MISSION_ITEM_INT: {         // MAV ID: 39
-        if (handle_mission_item(msg, sub.mission)) {
-            sub.DataFlash.Log_Write_EntireMission(sub.mission);
-        }
-        break;
-    }
-
-    // read an individual command from EEPROM and send it to the GCS
-    case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
-    case MAVLINK_MSG_ID_MISSION_REQUEST: {   // MAV ID: 40, 51
-        handle_mission_request(sub.mission, msg);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_MISSION_SET_CURRENT: {  // MAV ID: 41
-        handle_mission_set_current(sub.mission, msg);
-        break;
-    }
-
-    // GCS request the full list of commands, we return just the number and leave the GCS to then request each command individually
-    case MAVLINK_MSG_ID_MISSION_REQUEST_LIST: {     // MAV ID: 43
-        handle_mission_request_list(sub.mission, msg);
-        break;
-    }
-
-    // GCS provides the full number of commands it wishes to upload
-    //  individual commands will then be sent from the GCS using the MAVLINK_MSG_ID_MISSION_ITEM message
-    case MAVLINK_MSG_ID_MISSION_COUNT: {        // MAV ID: 44
-        handle_mission_count(sub.mission, msg);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_MISSION_CLEAR_ALL: {    // MAV ID: 45
-        handle_mission_clear_all(sub.mission, msg);
-        break;
-    }
-
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM: {  // MAV ID: 66
         handle_request_data_stream(msg, false);
         break;
@@ -1847,4 +1803,9 @@ void Sub::gcs_data_stream_send(void)
 void Sub::gcs_check_input(void)
 {
     gcs().update();
+}
+
+AP_Mission *GCS_MAVLINK_Sub::get_mission()
+{
+    return &sub.mission;
 }
