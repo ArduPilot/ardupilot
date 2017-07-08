@@ -1118,28 +1118,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-    case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
-        {
-            handle_mission_request_list(rover.mission, msg);
-            break;
-        }
-
-
-    // XXX read a WP from EEPROM and send it to the GCS
-    case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
-    case MAVLINK_MSG_ID_MISSION_REQUEST:
-    {
-        handle_mission_request(rover.mission, msg);
-        break;
-    }
-
-
-    case MAVLINK_MSG_ID_MISSION_ACK:
-        {
-            // not used
-            break;
-        }
-
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
         {
             // mark the firmware version in the tlog
@@ -1151,47 +1129,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             handle_param_request_list(msg);
             break;
         }
-
-    case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:
-        {
-            handle_mission_clear_all(rover.mission, msg);
-            break;
-        }
-
-    case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
-        {
-            handle_mission_set_current(rover.mission, msg);
-            break;
-        }
-
-    case MAVLINK_MSG_ID_MISSION_COUNT:
-        {
-            handle_mission_count(rover.mission, msg);
-            break;
-        }
-
-    case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
-    {
-        handle_mission_write_partial_list(rover.mission, msg);
-        break;
-    }
-
-    // GCS has sent us a mission item, store to EEPROM
-    case MAVLINK_MSG_ID_MISSION_ITEM:
-    {
-        if (handle_mission_item(msg, rover.mission)) {
-            rover.DataFlash.Log_Write_EntireMission(rover.mission);
-        }
-        break;
-    }
-
-    case MAVLINK_MSG_ID_MISSION_ITEM_INT:
-    {
-        if (handle_mission_item(msg, rover.mission)) {
-            rover.DataFlash.Log_Write_EntireMission(rover.mission);
-        }
-        break;
-    }
 
     case MAVLINK_MSG_ID_PARAM_SET:
     {
@@ -1629,4 +1566,9 @@ bool GCS_MAVLINK_Rover::accept_packet(const mavlink_status_t &status, mavlink_me
         return true;
     }
     return (msg.sysid == rover.g.sysid_my_gcs);
+}
+
+AP_Mission *GCS_MAVLINK_Rover::get_mission()
+{
+    return &rover.mission;
 }
