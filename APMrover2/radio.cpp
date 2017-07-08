@@ -40,9 +40,6 @@ void Rover::init_rc_in()
 void Rover::init_rc_out()
 {
     SRV_Channels::output_trim_all();
-
-    // setup PWM values to send if the FMU firmware dies
-    SRV_Channels::setup_failsafe_trim_all();
 }
 
 /*
