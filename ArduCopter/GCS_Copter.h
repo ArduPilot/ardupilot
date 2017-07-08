@@ -16,6 +16,9 @@ public:
     GCS_MAVLINK_Copter &chan(const uint8_t ofs) override {
         return _chan[ofs];
     };
+    const GCS_MAVLINK_Copter &chan(const uint8_t ofs) const override {
+        return _chan[ofs];
+    };
 
 private:
 
