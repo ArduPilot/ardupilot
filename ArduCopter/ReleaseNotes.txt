@@ -1,5 +1,10 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5.0-rc10 08-July-2017
+Changes from 3.5-rc9
+1) Intel Aero build and default parameter updates
+2) EKF final yaw reset lowered from 5m to 2.5m to speed up bad compass detection after takeoff
+------------------------------------------------------------------
 Copter 3.5.0-rc9 03-July-2017
 Changes from 3.5-rc8
 1) AutoTune improvement when using position hold (twitches in body-frame instead of earth-frame)
