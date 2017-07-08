@@ -439,7 +439,7 @@ void Rover::update_current_mode(void)
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
                 if (fabsf(g2.motors.get_throttle()) > g.throttle_min.get()) {
-                    gcs_send_mission_item_reached_message(0);
+                    gcs().send_mission_item_reached_message(0);
                 }
                 g2.motors.set_throttle(g.throttle_min.get());
                 g2.motors.set_steering(0.0f);
