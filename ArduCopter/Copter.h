@@ -718,7 +718,6 @@ private:
     void init_visual_odom();
     void update_visual_odom();
     void send_pid_tuning(mavlink_channel_t chan);
-    void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
     void do_erase_logs(void);
