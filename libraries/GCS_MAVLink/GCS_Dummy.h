@@ -28,7 +28,8 @@ class GCS_Dummy : public GCS
 {
     GCS_MAVLINK_Dummy dummy_backend;
     uint8_t num_gcs() const override { return 1; }
-    GCS_MAVLINK &chan(const uint8_t ofs) override { return dummy_backend; }
+    GCS_MAVLINK_Dummy &chan(const uint8_t ofs) override { return dummy_backend; }
+    const GCS_MAVLINK_Dummy &chan(const uint8_t ofs) const override { return dummy_backend; };
     bool cli_enabled() const override { return false; }
     AP_HAL::BetterStream*  cliSerial() { return nullptr; }
 
