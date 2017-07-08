@@ -1834,14 +1834,6 @@ void Sub::mavlink_delay_cb()
 }
 
 /*
- *  send a mission item reached message and load the index before the send attempt in case it may get delayed
- */
-void Sub::gcs_send_mission_item_reached_message(uint16_t mission_index)
-{
-    gcs().send_mission_item_reached_message(mission_index);
-}
-
-/*
  *  send data streams in the given rate range on both links
  */
 void Sub::gcs_data_stream_send(void)
