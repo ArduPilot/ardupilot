@@ -73,15 +73,8 @@ public:
     bool CardInserted(void);
 
     // erase handling
-    bool NeedErase(void);
     void EraseAll();
 
-    // get a pointer to structures
-    const struct LogStructure *get_structures(uint8_t &num_types) {
-        num_types = _num_types;
-        return _structures;
-    }
-    
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
     /* Write an *important* block of data at current offset */
@@ -90,7 +83,6 @@ public:
     // high level interface
     uint16_t find_last_log() const;
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
-    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs(void);
     void LogReadProcess(uint16_t log_num,
                                 uint16_t start_page, uint16_t end_page, 
@@ -338,6 +330,9 @@ private:
     bool handle_log_send_data(class GCS_MAVLINK &);
 
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
+
+    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
+
     /* end support for retrieving logs via mavlink: */
 
 };
