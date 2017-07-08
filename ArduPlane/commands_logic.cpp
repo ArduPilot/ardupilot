@@ -1004,7 +1004,7 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 
         // send message to GCS
         if (cmd_complete) {
-            gcs_send_mission_item_reached_message(cmd.index);
+            gcs().send_mission_item_reached_message(cmd.index);
         }
 
         return cmd_complete;
