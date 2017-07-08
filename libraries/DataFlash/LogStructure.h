@@ -79,6 +79,7 @@ struct PACKED log_GPA {
     uint16_t sacc;
     uint8_t  have_vv;
     uint32_t sample_ms;
+    uint16_t delta_ms;
 };
 
 struct PACKED log_Message {
@@ -909,8 +910,8 @@ struct PACKED log_SRTL {
 #define ESC_LABELS "TimeUS,RPM,Volt,Curr,Temp"
 #define ESC_FMT   "Qcccc"
 
-#define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS"
-#define GPA_FMT   "QCCCCBI"
+#define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS,Delta"
+#define GPA_FMT   "QCCCCBIH"
 
 // see "struct GPS_State" and "Log_Write_GPS":
 #define GPS_LABELS "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U"
