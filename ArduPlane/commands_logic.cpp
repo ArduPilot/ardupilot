@@ -973,7 +973,7 @@ void Plane::log_picture()
 {
 #if CAMERA == ENABLED
     if (!camera.using_feedback_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        gcs().send_message(MSG_CAMERA_FEEDBACK);
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
