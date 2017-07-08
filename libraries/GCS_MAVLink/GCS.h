@@ -169,7 +169,6 @@ public:
     void send_local_position(const AP_AHRS &ahrs) const;
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
-    static void send_home_all(const Location &home);
     void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
@@ -433,10 +432,12 @@ public:
     virtual void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text);
     void service_statustext(void);
     virtual GCS_MAVLINK &chan(const uint8_t ofs) = 0;
+    virtual const GCS_MAVLINK &chan(const uint8_t ofs) const = 0;
     virtual uint8_t num_gcs() const = 0;
     void reset_cli_timeout();
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
+    void send_home(const Location &home) const;
     void data_stream_send();
     void update();
     virtual void setup_uarts(AP_SerialManager &serial_manager);
