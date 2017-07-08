@@ -131,10 +131,15 @@ void Rover::read_radio()
           motor2 = throttle - 0.5*steering
         */          
 
-        const float motor1 = channel_steer->norm_input();
-        const float motor2 = channel_throttle->norm_input();
-        const float steering_scaled = motor1 - motor2;
-        const float throttle_scaled = 0.5f * (motor1 + motor2);
+        const float left_input = channel_steer->norm_input();
+        const float right_input = channel_throttle->norm_input();
+        const float throttle_scaled = 0.5f * (left_input + right_input);
+        float steering_scaled = constrain_float(left_input - right_input,-1.0f,1.0f);
+
+        // flip the steering direction if requesting the vehicle reverse (to be consistent with separate steering-throttle frames)
+        if (is_negative(throttle_scaled)) {
+            steering_scaled = -steering_scaled;
+        }
 
         int16_t steer = channel_steer->get_radio_trim();
         int16_t thr   = channel_throttle->get_radio_trim();
