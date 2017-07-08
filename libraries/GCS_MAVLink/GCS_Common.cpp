@@ -1201,6 +1201,11 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
 
     // try and send immediately if possible
     service_statustext();
+
+    AP_Notify *notify = AP_Notify::instance();
+    if (notify) {
+        notify->send_text(text);
+    }
 }
 
 /*
