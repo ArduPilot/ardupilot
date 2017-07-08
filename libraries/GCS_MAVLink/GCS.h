@@ -227,7 +227,8 @@ protected:
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
     virtual bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) { return true; }
-    
+    virtual AP_Mission *get_mission() = 0;
+
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
     uint16_t        waypoint_request_i; // request index
@@ -248,7 +249,7 @@ protected:
     void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);
-    void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg);
+    virtual void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_count(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_write_partial_list(AP_Mission &mission, mavlink_message_t *msg);
     bool handle_mission_item(mavlink_message_t *msg, AP_Mission &mission);
@@ -391,6 +392,7 @@ private:
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
+    void handle_common_mission_message(mavlink_message_t *msg);
 
     void lock_channel(mavlink_channel_t chan, bool lock);
 
