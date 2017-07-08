@@ -32,6 +32,8 @@
 #include "DiscoLED.h"
 #include <stdio.h>
 
+AP_Notify *AP_Notify::_instance;
+
 #define CONFIG_NOTIFY_DEVICES_COUNT 5
 
 // table of user settable parameters
@@ -79,6 +81,10 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
 AP_Notify::AP_Notify()
 {
 	AP_Param::setup_object_defaults(this, var_info);
+    if (_instance != nullptr) {
+        AP_HAL::panic("AP_Notify must be singleton");
+    }
+    _instance = this;
 }
 
 // static flags, to allow for direct class update from device drivers
