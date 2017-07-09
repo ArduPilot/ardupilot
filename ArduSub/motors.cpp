@@ -42,7 +42,7 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
+    gcs().send_text(MAV_SEVERITY_INFO, "Arming motors");
 #endif
 
     initial_armed_bearing = ahrs.yaw_sensor;
@@ -96,7 +96,7 @@ void Sub::init_disarm_motors()
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
+    gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
     // save compass offsets learned by the EKF if enabled
