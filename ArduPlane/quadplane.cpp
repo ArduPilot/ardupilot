@@ -488,7 +488,7 @@ bool QuadPlane::setup(void)
     
     if (hal.util->available_memory() <
         4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav)) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Not enough memory for quadplane");
+        gcs().send_text(MAV_SEVERITY_INFO, "Not enough memory for quadplane");
         goto failed;
     }
 
@@ -609,14 +609,14 @@ bool QuadPlane::setup(void)
     
     setup_defaults();
     
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane initialised");
+    gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialised");
     initialised = true;
     return true;
     
 failed:
     initialised = false;
     enable.set(0);
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane setup failed");
+    gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane setup failed");
     return false;
 }
 
@@ -627,7 +627,7 @@ void QuadPlane::setup_defaults_table(const struct defaults_struct *table, uint8_
 {
     for (uint8_t i=0; i<count; i++) {
         if (!AP_Param::set_default_by_name(table[i].name, table[i].value)) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "QuadPlane setup failure for %s",
+            gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane setup failure for %s",
                                              table[i].name);
             AP_HAL::panic("quadplane bad default %s", table[i].name);
         }
@@ -662,7 +662,7 @@ void QuadPlane::run_esc_calibration(void)
         return;
     }
     if (!AP_Notify::flags.esc_calibration) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Starting ESC calibration");        
+        gcs().send_text(MAV_SEVERITY_INFO, "Starting ESC calibration");
     }
     AP_Notify::flags.esc_calibration = true;
     switch (esc_calibration) {
@@ -747,7 +747,7 @@ void QuadPlane::run_z_controller(void)
     if (now - last_pidz_active_ms > 2000) {
         // set alt target to current height on transition. This
         // starts the Z controller off with the right values
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)inertial_nav.get_altitude());
+        gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)inertial_nav.get_altitude());
         pos_control->set_alt_target(inertial_nav.get_altitude());
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
@@ -792,7 +792,7 @@ void QuadPlane::check_yaw_reset(void)
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
         attitude_control->shift_ef_yaw_target(degrees(yaw_angle_change_rad) * 100);
         ekfYawReset_ms = new_ekfYawReset_ms;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF yaw reset %.2f", (double)degrees(yaw_angle_change_rad));
+        gcs().send_text(MAV_SEVERITY_INFO, "EKF yaw reset %.2f", (double)degrees(yaw_angle_change_rad));
     }
 }
 
@@ -1156,7 +1156,7 @@ bool QuadPlane::assistance_needed(float aspeed)
     bool ret = (AP_HAL::millis() - angle_error_start_ms) >= 1000U;
     if (ret && !in_angle_assist) {
         in_angle_assist = true;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Angle assist r=%d p=%d",
+        gcs().send_text(MAV_SEVERITY_INFO, "Angle assist r=%d p=%d",
                                          (int)(ahrs.roll_sensor/100),
                                          (int)(ahrs.pitch_sensor/100));
     }
@@ -1195,7 +1195,7 @@ void QuadPlane::update_transition(void)
          plane.is_flying())) {
         // the quad should provide some assistance to the plane
         if (transition_state != TRANSITION_AIRSPEED_WAIT) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition started airspeed %.1f", (double)aspeed);
+            gcs().send_text(MAV_SEVERITY_INFO, "Transition started airspeed %.1f", (double)aspeed);
         }
         transition_state = TRANSITION_AIRSPEED_WAIT;
         transition_start_ms = millis();
@@ -1207,7 +1207,7 @@ void QuadPlane::update_transition(void)
     if (is_tailsitter()) {
         if (transition_state == TRANSITION_ANGLE_WAIT &&
             tailsitter_transition_complete()) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition done");
+            gcs().send_text(MAV_SEVERITY_INFO, "Transition done");
             transition_state = TRANSITION_DONE;
         }
     }
@@ -1240,14 +1240,14 @@ void QuadPlane::update_transition(void)
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         // we hold in hover until the required airspeed is reached
         if (transition_start_ms == 0) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed wait");
+            gcs().send_text(MAV_SEVERITY_INFO, "Transition airspeed wait");
             transition_start_ms = millis();
         }
 
         if (have_airspeed && aspeed > plane.aparm.airspeed_min && !assisted_flight) {
             transition_start_ms = millis();
             transition_state = TRANSITION_TIMER;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", (double)aspeed);
+            gcs().send_text(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", (double)aspeed);
         }
         assisted_flight = true;
         hold_hover(assist_climb_rate_cms());
@@ -1272,7 +1272,7 @@ void QuadPlane::update_transition(void)
         // transition time, but continue to stabilize
         if (millis() - transition_start_ms > (unsigned)transition_time_ms) {
             transition_state = TRANSITION_DONE;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Transition done");
+            gcs().send_text(MAV_SEVERITY_INFO, "Transition done");
         }
         float trans_time_ms = (float)transition_time_ms.get();
         float transition_scale = (trans_time_ms - (millis() - transition_start_ms)) / trans_time_ms;
@@ -1511,7 +1511,7 @@ bool QuadPlane::init_mode(void)
         return false;
     }
     if (!initialised) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "QuadPlane mode refused");        
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "QuadPlane mode refused");
         return false;
     }
 
