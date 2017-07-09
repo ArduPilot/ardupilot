@@ -375,18 +375,18 @@ void AP_Camera::setup_feedback_callback(void)
         int fd = open("/dev/px4fmu", 0);
         if (fd != -1) {
             if (ioctl(fd, PWM_SERVO_SET_MODE, PWM_SERVO_MODE_3PWM1CAP) != 0) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: unable to setup 3PWM1CAP\n");
+                gcs().send_text(MAV_SEVERITY_WARNING, "Camera: unable to setup 3PWM1CAP\n");
                 close(fd);
                 goto failed;
             }   
             if (up_input_capture_set(3, _feedback_polarity==1?Rising:Falling, 0, capture_callback, this) != 0) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: unable to setup timer capture\n");
+                gcs().send_text(MAV_SEVERITY_WARNING, "Camera: unable to setup timer capture\n");
                 close(fd);
                 goto failed;
             }
             close(fd);
             _timer_installed = true;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Camera: setup fast trigger capture\n");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Camera: setup fast trigger capture\n");
         }
     }
 failed:
