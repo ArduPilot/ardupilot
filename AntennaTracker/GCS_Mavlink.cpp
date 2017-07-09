@@ -868,7 +868,7 @@ void Tracker::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
+        gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
     DataFlash.EnableWrites(true);
     tracker.in_mavlink_delay = false;
@@ -896,26 +896,6 @@ void Tracker::gcs_data_stream_send(void)
 void Tracker::gcs_update(void)
 {
     gcs().update();
-}
-
-void Tracker::gcs_send_text(MAV_SEVERITY severity, const char *str)
-{
-    gcs().send_statustext(severity, 0xFF, str);
-}
-
-/*
- *  send a low priority formatted message to the GCS
- *  only one fits in the queue, so if you send more than one before the
- *  last one gets into the serial buffer then the old one will be lost
- */
-void Tracker::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
-{
-    char str[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
-    va_end(arg_list);
-    gcs().send_statustext(severity, 0xFF, str);
 }
 
 /**
