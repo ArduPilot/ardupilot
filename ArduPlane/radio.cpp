@@ -266,7 +266,7 @@ void Plane::control_failsafe(uint16_t pwm)
             // throttle has dropped below the mark
             failsafe.ch3_counter++;
             if (failsafe.ch3_counter == 10) {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Throttle failsafe on %u", (unsigned)pwm);
+                gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe on %u", (unsigned)pwm);
                 failsafe.ch3_failsafe = true;
                 AP_Notify::flags.failsafe_radio = true;
             }
@@ -282,7 +282,7 @@ void Plane::control_failsafe(uint16_t pwm)
                 failsafe.ch3_counter = 3;
             }
             if (failsafe.ch3_counter == 1) {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Throttle failsafe off %u", (unsigned)pwm);
+                gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe off %u", (unsigned)pwm);
             } else if(failsafe.ch3_counter == 0) {
                 failsafe.ch3_failsafe = false;
                 AP_Notify::flags.failsafe_radio = false;
