@@ -319,13 +319,13 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
     if (gps._raw_data) {
         if (!(RxState & SBF_DISK_MOUNTED)){
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
         }
         else if (RxState & SBF_DISK_FULL) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
         }
         else if (!(RxState & SBF_DISK_ACTIVITY)) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
         }
     }
 }

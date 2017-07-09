@@ -929,7 +929,7 @@ void AP_GPS::broadcast_first_configuration_failure_reason(void) const
 {
     uint8_t unconfigured = first_unconfigured_gps();
     if (drivers[unconfigured] == nullptr) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
+        gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
     } else {
         drivers[unconfigured]->broadcast_configuration_failure_reason();
     }
