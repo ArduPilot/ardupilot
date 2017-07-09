@@ -119,14 +119,14 @@ void NavEKF3_core::controlMagYawReset()
 
             // send initial alignment status to console
             if (!yawAlignComplete) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete\n",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete\n",(unsigned)imu_index);
             }
 
             // send in-flight yaw alignment status to console
             if (finalResetRequest) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u in-flight yaw alignment complete\n",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u in-flight yaw alignment complete\n",(unsigned)imu_index);
             } else if (interimResetRequest) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 IMU%u ground mag anomaly, yaw re-aligned\n",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u ground mag anomaly, yaw re-aligned\n",(unsigned)imu_index);
             }
 
             // update the yaw reset completed status
@@ -191,7 +191,7 @@ void NavEKF3_core::realignYawGPS()
             initialiseQuatCovariances(angleErrVarVec);
 
             // send yaw alignment information to console
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
 
 
             // record the yaw reset event
