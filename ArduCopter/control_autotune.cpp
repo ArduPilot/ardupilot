@@ -298,21 +298,21 @@ const char *Copter::autotune_level_issue_string() const
 void Copter::autotune_send_step_string()
 {
     if (autotune_state.pilot_override) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: Paused: Pilot Override Active");
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Paused: Pilot Override Active");
         return;
     }
     switch (autotune_state.step) {
     case AUTOTUNE_STEP_WAITING_FOR_LEVEL:
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: WFL (%s) (%f > %f)", autotune_level_issue_string(), (double)(autotune_level_problem.current*0.01f), (double)(autotune_level_problem.maximum*0.01f));
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: WFL (%s) (%f > %f)", autotune_level_issue_string(), (double)(autotune_level_problem.current*0.01f), (double)(autotune_level_problem.maximum*0.01f));
         return;
     case AUTOTUNE_STEP_UPDATE_GAINS:
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: UPDATING_GAINS");
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: UPDATING_GAINS");
         return;
     case AUTOTUNE_STEP_TWITCHING:
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: TWITCHING");
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: TWITCHING");
         return;
     }
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: unknown step");
+    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: unknown step");
 }
 
 const char *Copter::autotune_type_string() const
@@ -367,26 +367,26 @@ void Copter::autotune_do_gcs_announcements()
         break;
     }
 
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: (%c) %s", axis, autotune_type_string());
+    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: (%c) %s", axis, autotune_type_string());
     autotune_send_step_string();
     if (!is_zero(lean_angle)) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: lean=%f target=%f", (double)lean_angle, (double)autotune_target_angle);
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: lean=%f target=%f", (double)lean_angle, (double)autotune_target_angle);
     }
     if (!is_zero(rotation_rate)) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: rotation=%f target=%f", (double)(rotation_rate*0.01f), (double)(autotune_target_rate*0.01f));
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: rotation=%f target=%f", (double)(rotation_rate*0.01f), (double)(autotune_target_rate*0.01f));
     }
     switch (autotune_state.tune_type) {
     case AUTOTUNE_TYPE_RD_UP:
     case AUTOTUNE_TYPE_RD_DOWN:
     case AUTOTUNE_TYPE_RP_UP:
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", (double)tune_rp, (double)tune_rd);
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", (double)tune_rp, (double)tune_rd);
         break;
     case AUTOTUNE_TYPE_SP_DOWN:
     case AUTOTUNE_TYPE_SP_UP:
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: p=%f accel=%f", (double)tune_sp, (double)tune_accel);
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f accel=%f", (double)tune_sp, (double)tune_accel);
         break;
     }
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: success %u/%u", autotune_counter, AUTOTUNE_SUCCESS_COUNT);
+    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: success %u/%u", autotune_counter, AUTOTUNE_SUCCESS_COUNT);
 
     autotune_announce_time = now;
 }
@@ -575,7 +575,7 @@ void Copter::autotune_attitude_control()
 
         // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
         if (millis() - autotune_step_start_time >= AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "AutoTune: Twitch");
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Twitch");
             // initiate variables for next step
             autotune_state.step = AUTOTUNE_STEP_TWITCHING;
             autotune_step_start_time = millis();
