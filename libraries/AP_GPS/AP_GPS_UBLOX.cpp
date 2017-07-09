@@ -814,7 +814,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             _have_version = true;
             strncpy(_version.hwVersion, _buffer.mon_ver.hwVersion, sizeof(_version.hwVersion));
             strncpy(_version.swVersion, _buffer.mon_ver.swVersion, sizeof(_version.swVersion));
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, 
+            gcs().send_text(MAV_SEVERITY_INFO, 
                                              "u-blox %d HW: %s SW: %s",
                                              state.instance + 1,
                                              _version.hwVersion,
@@ -976,7 +976,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                     state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;
             case 4:
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
+                gcs().send_text(MAV_SEVERITY_INFO,
                                 "Unexpected state %d", _buffer.pvt.flags);
                 state.status = AP_GPS::GPS_OK_FIX_3D;
                 break;
@@ -1195,7 +1195,7 @@ AP_GPS_UBLOX::_save_cfg()
     _send_message(CLASS_CFG, MSG_CFG_CFG, &save_cfg, sizeof(save_cfg));
     _last_cfg_sent_time = AP_HAL::millis();
     _num_cfg_save_tries++;
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO,
+    gcs().send_text(MAV_SEVERITY_INFO,
                                      "GPS: u-blox %d saving config",
                                      state.instance + 1);
 }
@@ -1299,7 +1299,7 @@ void
 AP_GPS_UBLOX::broadcast_configuration_failure_reason(void) const {
     for (uint8_t i = 0; i < ARRAY_SIZE(reasons); i++) {
         if (_unconfigured_messages & (1 << i)) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: u-blox %s configuration 0x%02x",
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: u-blox %s configuration 0x%02x",
                 state.instance +1, reasons[i], _unconfigured_messages);
             break;
         }
