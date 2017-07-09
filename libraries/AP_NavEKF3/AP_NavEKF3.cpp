@@ -664,7 +664,7 @@ bool NavEKF3::InitialiseFilter(void)
 
         // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF3: not enough memory");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: not enough memory");
             _enable.set(0);
             return false;
         }
@@ -673,7 +673,7 @@ bool NavEKF3::InitialiseFilter(void)
         core = new NavEKF3_core[num_cores];
         if (core == nullptr) {
             _enable.set(0);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF3: allocation failed");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: allocation failed");
             return false;
         }
 
