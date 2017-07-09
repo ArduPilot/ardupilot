@@ -497,7 +497,6 @@ private:
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void do_erase_logs(void);
     void Log_Write_Current();
     void Log_Write_Optflow();
@@ -666,7 +665,6 @@ private:
     bool ekf_position_ok();
     bool optflow_position_ok();
     bool should_log(uint32_t mask);
-    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);

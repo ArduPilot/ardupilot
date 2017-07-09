@@ -14,13 +14,13 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 
     // target alt must be negative (underwater)
     if (target_loc.alt > 0.0f) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "BAD NAV ALT %0.2f", (double)target_loc.alt);
+        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT %0.2f", (double)target_loc.alt);
         return true;
     }
 
     // only tested/supported alt frame so far is ALT_FRAME_ABOVE_HOME, where Home alt is always water's surface ie zero depth
     if (target_loc.get_alt_frame() != Location_Class::ALT_FRAME_ABOVE_HOME) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "BAD NAV ALT_FRAME %d", (int8_t)target_loc.get_alt_frame());
+        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT_FRAME %d", (int8_t)target_loc.get_alt_frame());
         return true;
     }
 
@@ -248,7 +248,7 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 
     default:
         // error message
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
+        gcs().send_text(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
@@ -528,7 +528,7 @@ void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         // absolute delay to utc time
         nav_delay_time_max = hal.util->get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
 }
 
 #if GRIPPER_ENABLED == ENABLED
@@ -585,7 +585,7 @@ bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     } else {
         return false;
@@ -700,7 +700,7 @@ bool Sub::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     } else {
         return false;
