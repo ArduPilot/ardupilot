@@ -458,7 +458,7 @@ void Rover::update_current_mode(void)
             break;
 
         default:
-            gcs_send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
             break;
         }
         break;
@@ -566,7 +566,7 @@ void Rover::update_navigation()
             break;
 
         default:
-            gcs_send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
             break;
         }
         break;

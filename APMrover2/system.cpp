@@ -228,10 +228,10 @@ void Rover::startup_ground(void)
 {
     set_mode(INITIALISING);
 
-    gcs_send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
+    gcs().send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
 
     #if(GROUND_START_DELAY > 0)
-        gcs_send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
+        gcs().send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
         delay(GROUND_START_DELAY * 1000);
     #endif
 
@@ -258,7 +258,7 @@ void Rover::startup_ground(void)
     // so set serial ports non-blocking once we are ready to drive
     serial_manager.set_blocking_writes_all(false);
 
-    gcs_send_text(MAV_SEVERITY_INFO, "Ready to drive");
+    gcs().send_text(MAV_SEVERITY_INFO, "Ready to drive");
 }
 
 /*
@@ -369,12 +369,12 @@ bool Rover::mavlink_set_mode(uint8_t mode)
 
 void Rover::startup_INS_ground(void)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Warming up ADC");
+    gcs().send_text(MAV_SEVERITY_INFO, "Warming up ADC");
     mavlink_delay(500);
 
     // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
     // -----------------------
-    gcs_send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
+    gcs().send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
     mavlink_delay(1000);
 
     ahrs.init();

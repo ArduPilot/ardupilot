@@ -36,7 +36,7 @@ void Rover::crash_check()
     // log an error in the dataflash
     Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
     // send message to gcs
-    gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash: Going to HOLD");
+    gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash: Going to HOLD");
     // change mode to hold and disarm
     set_mode(HOLD);
     if (g.fs_crash_check == FS_CRASH_HOLD_AND_DISARM) {

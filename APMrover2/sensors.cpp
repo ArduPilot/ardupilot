@@ -39,13 +39,13 @@ void Rover::compass_accumulate(void)
 
 void Rover::init_barometer(bool full_calibration)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
+    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     if (full_calibration) {
         barometer.calibrate();
     } else {
         barometer.update_calibration();
     }
-    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
+    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 
 void Rover::init_sonar(void)
@@ -148,7 +148,7 @@ void Rover::read_sonars(void)
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar1 obstacle %u cm",
+                gcs().send_text(MAV_SEVERITY_INFO, "Sonar1 obstacle %u cm",
                         static_cast<uint32_t>(obstacle.sonar1_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
@@ -159,7 +159,7 @@ void Rover::read_sonars(void)
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar2 obstacle %u cm",
+                gcs().send_text(MAV_SEVERITY_INFO, "Sonar2 obstacle %u cm",
                         static_cast<uint32_t>(obstacle.sonar2_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
@@ -175,7 +175,7 @@ void Rover::read_sonars(void)
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar obstacle %u cm",
+                gcs().send_text(MAV_SEVERITY_INFO, "Sonar obstacle %u cm",
                         static_cast<uint32_t>(obstacle.sonar1_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
@@ -188,7 +188,7 @@ void Rover::read_sonars(void)
     // no object detected - reset after the turn time
     if (obstacle.detected_count >= g.sonar_debounce &&
         AP_HAL::millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Obstacle passed");
+        gcs().send_text(MAV_SEVERITY_INFO, "Obstacle passed");
         obstacle.detected_count = 0;
         obstacle.turn_angle = 0;
     }
