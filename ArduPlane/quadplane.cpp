@@ -1545,24 +1545,24 @@ bool QuadPlane::init_mode(void)
 bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state)
 {
     if (!available()) {
-        plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "VTOL not available");
+        gcs().send_text(MAV_SEVERITY_NOTICE, "VTOL not available");
         return false;
     }
     if (plane.control_mode != AUTO) {
-        plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "VTOL transition only in AUTO");
+        gcs().send_text(MAV_SEVERITY_NOTICE, "VTOL transition only in AUTO");
         return false;
     }
     switch (state) {
     case MAV_VTOL_STATE_MC:
         if (!plane.auto_state.vtol_mode) {
-            plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Entered VTOL mode");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Entered VTOL mode");
         }
         plane.auto_state.vtol_mode = true;
         return true;
         
     case MAV_VTOL_STATE_FW:
         if (plane.auto_state.vtol_mode) {
-            plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Exited VTOL mode");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Exited VTOL mode");
         }
         plane.auto_state.vtol_mode = false;
 
@@ -1572,7 +1572,7 @@ bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state)
         break;
     }
 
-    plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Invalid VTOL mode");
+    gcs().send_text(MAV_SEVERITY_NOTICE, "Invalid VTOL mode");
     return false;
 }
 
@@ -1740,7 +1740,7 @@ void QuadPlane::vtol_position_controller(void)
             plane.auto_state.wp_distance < 5) {
             poscontrol.state = QPOS_POSITION2;
             wp_nav->init_loiter_target();
-            plane.gcs_send_text_fmt(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
+            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
                                     (double)ahrs.groundspeed(), (double)plane.auto_state.wp_distance);
         }
         break;
@@ -2085,7 +2085,7 @@ void QuadPlane::check_land_complete(void)
     // change in altitude for last 4s. We are landed.
     plane.disarm_motors();
     poscontrol.state = QPOS_LAND_COMPLETE;
-    plane.gcs_send_text(MAV_SEVERITY_INFO,"Land complete");
+    gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
     // reload target airspeed which could have been modified by the mission
     plane.aparm.airspeed_cruise_cm.load();
 }
@@ -2101,7 +2101,7 @@ bool QuadPlane::verify_vtol_land(void)
     if (poscontrol.state == QPOS_POSITION2 &&
         plane.auto_state.wp_distance < 2) {
         poscontrol.state = QPOS_LAND_DESCEND;
-        plane.gcs_send_text(MAV_SEVERITY_INFO,"Land descend started");
+        gcs().send_text(MAV_SEVERITY_INFO,"Land descend started");
         plane.set_next_WP(plane.next_WP_loc);
     }
 
@@ -2119,7 +2119,7 @@ bool QuadPlane::verify_vtol_land(void)
         if (land_icengine_cut != 0) {
             plane.g2.ice_control.engine_control(0, 0, 0);
         }
-        plane.gcs_send_text(MAV_SEVERITY_INFO,"Land final started");
+        gcs().send_text(MAV_SEVERITY_INFO,"Land final started");
     }
 
     check_land_complete();

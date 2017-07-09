@@ -78,7 +78,7 @@ uint8_t QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
                                             uint16_t throttle_value, float timeout_sec, uint8_t motor_count)
 {
     if (motors->armed()) {
-        plane.gcs_send_text(MAV_SEVERITY_INFO, "Must be disarmed for motor test");
+        gcs().send_text(MAV_SEVERITY_INFO, "Must be disarmed for motor test");
         return MAV_RESULT_FAILED;
     }
     // if test has not started try to start it
