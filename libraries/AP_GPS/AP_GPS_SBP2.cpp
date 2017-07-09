@@ -51,7 +51,7 @@ do {                                            \
 #if SBP_INFOREPORTING
  # define Info(fmt, args ...)                                               \
 do {                                                                        \
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, fmt "\n", ## args); \
+    gcs().send_text(MAV_SEVERITY_INFO, fmt "\n", ## args); \
 } while(0) 
 #else
  # define Info(fmt, args ...)
