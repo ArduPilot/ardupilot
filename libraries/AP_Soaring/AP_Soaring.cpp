@@ -182,10 +182,10 @@ bool SoaringController::check_cruise_criteria()
     float alt = _vario.alt;
 
     if (soar_active && (AP_HAL::micros64() - _thermal_start_time_us) > ((unsigned)min_thermal_s * 1e6) && thermalability < McCready(alt)) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Thermal weak, recommend quitting: W %f R %f th %f alt %f Mc %f\n", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (double)alt, (double)McCready(alt));
+        gcs().send_text(MAV_SEVERITY_INFO, "Thermal weak, recommend quitting: W %f R %f th %f alt %f Mc %f\n", (double)_ekf.X[0], (double)_ekf.X[1], (double)thermalability, (double)alt, (double)McCready(alt));
         return true;
     } else if (soar_active && (alt>alt_max || alt<alt_min)) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ALERT, "Out of allowable altitude range, beginning cruise. Alt = %f\n", (double)alt);
+        gcs().send_text(MAV_SEVERITY_ALERT, "Out of allowable altitude range, beginning cruise. Alt = %f\n", (double)alt);
         return true;
     }
 
@@ -272,10 +272,10 @@ void SoaringController::update_thermalling()
         // Print32_t filter info for debugging
         int32_t i;
         for (i = 0; i < 4; i++) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "%e ", (double)_ekf.P[i][i]);
+            gcs().send_text(MAV_SEVERITY_INFO, "%e ", (double)_ekf.P[i][i]);
         }
         for (i = 0; i < 4; i++) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "%e ", (double)_ekf.X[i]);
+            gcs().send_text(MAV_SEVERITY_INFO, "%e ", (double)_ekf.X[i]);
         }
 #endif
 
