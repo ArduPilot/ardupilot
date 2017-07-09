@@ -183,10 +183,9 @@ public:
     static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
 
     /*
-    send a statustext message to active MAVLink connections, or a specific
-    one. This function is static so it can be called from any library.
+    send a statustext message to specific MAVLINK Connection
+    This function is static so it can be called from any library.
     */
-    static void send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...);
     static void send_statustext_chan(MAV_SEVERITY severity, uint8_t dest_chan, const char *fmt, ...);
 
     // send a PARAM_VALUE message to all active MAVLink connections.
