@@ -222,7 +222,7 @@ void AP_ADSB::update(void)
         }
         out_state.cfg.ICAO_id_param_prev = out_state.cfg.ICAO_id_param;
         set_callsign("PING", true);
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", out_state.cfg.ICAO_id, out_state.cfg.callsign);
+        gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", out_state.cfg.ICAO_id, out_state.cfg.callsign);
         out_state.last_config_ms = 0; // send now
     }
 
@@ -232,7 +232,7 @@ void AP_ADSB::update(void)
         // haven't gotten a heartbeat health status packet in a while, assume hardware failure
         // TODO: reset out_state.chan
         out_state.chan = -1;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
+        gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
     } else if (out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
         mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
         if (now - out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
@@ -560,7 +560,7 @@ void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavl
     mavlink_msg_uavionix_adsb_transceiver_health_report_decode(msg, &packet);
 
     if (out_state.chan != chan) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
+        gcs().send_text(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
     }
 
     out_state.chan_last_ms = AP_HAL::millis();
