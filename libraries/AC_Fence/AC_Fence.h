@@ -112,7 +112,7 @@ public:
     bool boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points) const;
 
     /// handler for polygon fence messages with GCS
-    void handle_msg(mavlink_channel_t chan, mavlink_message_t* msg);
+    void handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg);
 
     static const struct AP_Param::GroupInfo var_info[];
 
