@@ -156,7 +156,7 @@ bool AP_Arming_Copter::fence_checks(bool display_failure)
     const char *fail_msg = nullptr;
     if (!copter.fence.pre_arm_check(fail_msg)) {
         if (display_failure && fail_msg != nullptr) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: %s", fail_msg);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s", fail_msg);
         }
         return false;
     }
@@ -421,7 +421,7 @@ bool AP_Arming_Copter::pre_arm_gps_checks(bool display_failure)
         if (display_failure) {
             const char *reason = ahrs.prearm_failure_reason();
             if (reason) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
             } else {
                 if (!mode_requires_gps && fence_requires_gps) {
                     // clarify to user why they need GPS in non-GPS flight mode
@@ -545,7 +545,7 @@ bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
         // display error if something is within 60cm
         if (distance <= 0.6f) {
             if (display_failure) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Proximity %d deg, %4.2fm", (int)angle_deg, (double)distance);
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Proximity %d deg, %4.2fm", (int)angle_deg, (double)distance);
             }
             return false;
         }
@@ -699,7 +699,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     const char *fail_msg = nullptr;
     if (!copter.fence.pre_arm_check(fail_msg)) {
         if (display_failure && fail_msg != nullptr) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Arm: %s", fail_msg);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Arm: %s", fail_msg);
         }
         return false;
     }
