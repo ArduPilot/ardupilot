@@ -29,7 +29,7 @@ void Copter::rtl_restart_without_terrain()
     if (rtl_path.terrain_used) {
         rtl_build_path(false);
         rtl_climb_start();
-        gcs_send_text(MAV_SEVERITY_CRITICAL,"Restarting RTL - Terrain data missing");
+        gcs().send_text(MAV_SEVERITY_CRITICAL,"Restarting RTL - Terrain data missing");
     }
 }
 

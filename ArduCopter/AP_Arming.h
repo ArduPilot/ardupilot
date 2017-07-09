@@ -49,8 +49,6 @@ protected:
 
 private:
 
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
-
     const AP_InertialNav_NavEKF &_inav;
     const AP_InertialSensor &_ins;
     const AP_AHRS_NavEKF &_ahrs_navekf;
