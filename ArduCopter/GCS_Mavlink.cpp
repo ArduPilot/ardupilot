@@ -861,7 +861,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
         send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
 #endif
-        GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "Frame: %s", copter.get_frame_string());
+        send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
         handle_param_request_list(msg);
         break;
     }
@@ -1402,7 +1402,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
             #endif
 
-            GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY_INFO, chan, "Frame: %s", copter.get_frame_string());
+            send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
 
             // send system ID if we can
             char sysid[40];
@@ -1799,7 +1799,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     // send or receive fence points with GCS
     case MAVLINK_MSG_ID_FENCE_POINT:            // MAV ID: 160
     case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
-        copter.fence.handle_msg(chan, msg);
+        copter.fence.handle_msg(*this, msg);
         break;
 #endif // AC_FENCE == ENABLED
 
