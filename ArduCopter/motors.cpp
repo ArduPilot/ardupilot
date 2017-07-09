@@ -160,7 +160,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
+    gcs().send_text(MAV_SEVERITY_INFO, "Arming motors");
 #endif
 
     // Remember Orientation
@@ -228,7 +228,7 @@ void Copter::init_disarm_motors()
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
+    gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
     // save compass offsets learned by the EKF if enabled
@@ -331,7 +331,7 @@ void Copter::lost_vehicle_check()
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;
-                gcs_send_text(MAV_SEVERITY_NOTICE,"Locate Copter alarm");
+                gcs().send_text(MAV_SEVERITY_NOTICE,"Locate Copter alarm");
             }
         } else {
             soundalarm_counter++;
