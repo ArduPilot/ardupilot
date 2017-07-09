@@ -378,7 +378,7 @@ void Plane::one_second_loop()
 void Plane::log_perf_info()
 {
     if (scheduler.debug() != 0) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "PERF: %u/%u Dt=%u/%u Log=%u",
+        gcs().send_text(MAV_SEVERITY_INFO, "PERF: %u/%u Dt=%u/%u Log=%u",
                           (unsigned)perf.num_long,
                           (unsigned)perf.mainLoop_count,
                           (unsigned)perf.G_Dt_max,
@@ -702,7 +702,7 @@ void Plane::update_flight_mode(void)
             if (tdrag_mode && !auto_state.fbwa_tdrag_takeoff_mode) {
                 if (auto_state.highest_airspeed < g.takeoff_tdrag_speed1) {
                     auto_state.fbwa_tdrag_takeoff_mode = true;
-                    gcs_send_text(MAV_SEVERITY_WARNING, "FBWA tdrag mode");
+                    gcs().send_text(MAV_SEVERITY_WARNING, "FBWA tdrag mode");
                 }
             }
         }
@@ -888,7 +888,7 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
     landing.handle_flight_stage_change(fs == AP_Vehicle::FixedWing::FLIGHT_LAND);
 
     if (fs == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
                           auto_state.takeoff_altitude_rel_cm/100);
     }
 
@@ -960,7 +960,7 @@ void Plane::update_flight_stage(void)
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
                 } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) {
-                    plane.gcs_send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
+                    gcs().send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
                 } else {
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
@@ -1032,7 +1032,7 @@ void Plane::disarm_if_autoland_complete()
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= landing.get_disarm_delay()*1000UL) {
             if (disarm_motors()) {
-                gcs_send_text(MAV_SEVERITY_INFO,"Auto disarmed");
+                gcs().send_text(MAV_SEVERITY_INFO,"Auto disarmed");
             }
         }
     }

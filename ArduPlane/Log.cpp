@@ -148,9 +148,9 @@ int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv)
 
 void Plane::do_erase_logs(void)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Erasing logs");
+    gcs().send_text(MAV_SEVERITY_INFO, "Erasing logs");
     DataFlash.EraseAll();
-    gcs_send_text(MAV_SEVERITY_INFO, "Log erase complete");
+    gcs().send_text(MAV_SEVERITY_INFO, "Log erase complete");
 }
 
 
