@@ -656,7 +656,7 @@ bool NavEKF2::InitialiseFilter(void)
         }
 
         if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
             _enable.set(0);
             return false;
         }
@@ -664,7 +664,7 @@ bool NavEKF2::InitialiseFilter(void)
         core = new NavEKF2_core[num_cores];
         if (core == nullptr) {
             _enable.set(0);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
             return false;
         }
 
