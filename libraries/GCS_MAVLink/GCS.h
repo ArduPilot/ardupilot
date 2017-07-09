@@ -89,7 +89,7 @@ public:
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
-    void        send_text(MAV_SEVERITY severity, const char *str);
+    void        send_text(MAV_SEVERITY severity, const char *fmt, ...);
     virtual void        data_stream_send(void) = 0;
     void        queued_param_send();
     void        queued_waypoint_send();
@@ -181,12 +181,6 @@ public:
 
     // return a bitmap of streaming channels
     static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
-
-    /*
-    send a statustext message to specific MAVLINK Connection
-    This function is static so it can be called from any library.
-    */
-    static void send_statustext_chan(MAV_SEVERITY severity, uint8_t dest_chan, const char *fmt, ...);
 
     // send a PARAM_VALUE message to all active MAVLink connections.
     static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
