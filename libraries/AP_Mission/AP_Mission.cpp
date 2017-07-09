@@ -1647,10 +1647,10 @@ bool AP_Mission::jump_to_landing_sequence(void)
             resume();
         }
 
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Landing sequence start");
+        gcs().send_text(MAV_SEVERITY_INFO, "Landing sequence start");
         return true;
     }
 
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
+    gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
     return false;
 }
