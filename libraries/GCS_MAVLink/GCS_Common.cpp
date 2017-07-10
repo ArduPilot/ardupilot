@@ -1778,6 +1778,8 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         /* fall through */
     case MAVLINK_MSG_ID_MISSION_REQUEST:
         /* fall through */
+    case MAVLINK_MSG_ID_MISSION_ACK:
+        /* fall through */
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
         handle_common_mission_message(msg);
         break;
@@ -1848,6 +1850,10 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
         handle_mission_clear_all(*_mission, msg);
         break;
     }
+
+    case MAVLINK_MSG_ID_MISSION_ACK:
+        /* not used */
+        break;
     }
 }
 
