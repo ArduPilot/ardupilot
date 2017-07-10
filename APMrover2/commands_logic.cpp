@@ -11,7 +11,7 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
     }
 
     // exit immediately if not in AUTO mode
-    if (control_mode != AUTO) {
+    if (control_mode != &mode_auto) {
         return false;
     }
 
@@ -130,9 +130,9 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 void Rover::exit_mission()
 {
-    if (control_mode == AUTO) {
+    if (control_mode == &mode_auto) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "No commands. Can't set AUTO. Setting HOLD");
-        set_mode(HOLD);
+        set_mode(mode_hold);
     }
 }
 
@@ -140,7 +140,7 @@ void Rover::exit_mission()
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 bool Rover::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
-    if (control_mode == AUTO) {
+    if (control_mode == &mode_auto) {
         const bool cmd_complete = verify_command(cmd);
 
         // send message to GCS
@@ -216,7 +216,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 void Rover::do_RTL(void)
 {
     prev_WP = current_loc;
-    control_mode = RTL;
+    control_mode = &mode_rtl;
     next_WP = home;
 }
 
@@ -379,7 +379,6 @@ void Rover::nav_set_yaw_speed()
         gcs().send_text(MAV_SEVERITY_WARNING, "NAV_SET_YAW_SPEED not recvd last 3secs, stopping");
         g2.motors.set_throttle(g.throttle_min.get());
         g2.motors.set_steering(0.0f);
-        lateral_acceleration = 0.0f;
         return;
     }
 
@@ -390,9 +389,9 @@ void Rover::nav_set_yaw_speed()
     // 0.5 would set speed to the cruise speed
     // 1 is double the cruise speed.
     const float target_speed = g.speed_cruise * guided_control.target_speed * 2.0f;
-    calc_throttle(target_speed);
+    rover.control_mode->calc_throttle(target_speed);
 
-    Log_Write_GuidedTarget(guided_mode, Vector3f(steering, 0.0f, 0.0f), Vector3f(target_speed, 0.0f, 0.0f));
+    Log_Write_GuidedTarget(rover.mode_guided.guided_mode, Vector3f(steering, 0.0f, 0.0f), Vector3f(target_speed, 0.0f, 0.0f));
 }
 
 void Rover::nav_set_speed()
@@ -402,7 +401,6 @@ void Rover::nav_set_speed()
         gcs().send_text(MAV_SEVERITY_WARNING, "SET_VELOCITY not recvd last 3secs, stopping");
         g2.motors.set_throttle(g.throttle_min.get());
         g2.motors.set_steering(0.0f);
-        lateral_acceleration = 0.0f;
         prev_WP = current_loc;
         next_WP = current_loc;
         set_guided_WP(current_loc);  // exit Guided_Velocity to prevent spam
@@ -416,9 +414,9 @@ void Rover::nav_set_speed()
     nav_controller->update_waypoint(current_loc, next_WP);
 
     g2.motors.set_steering(steer_value);
-    calc_throttle(guided_control.target_speed);
+    rover.control_mode->calc_throttle(guided_control.target_speed);
 
-    Log_Write_GuidedTarget(guided_mode, Vector3f(steer_value, 0.0f, 0.0f), Vector3f(guided_control.target_speed, 0.0f, 0.0f));
+    Log_Write_GuidedTarget(rover.mode_guided.guided_mode, Vector3f(steer_value, 0.0f, 0.0f), Vector3f(guided_control.target_speed, 0.0f, 0.0f));
 }
 
 /********************************************************************************/
@@ -461,7 +459,7 @@ void Rover::do_yaw(const AP_Mission::Mission_Command& cmd)
     const int32_t steering = steerController.get_steering_out_angle_error(error_to_target_yaw);
     g2.motors.set_steering(steering);
     next_navigation_leg_cd = condition_value;
-    calc_throttle(g.speed_cruise);
+    control_mode->calc_throttle(g.speed_cruise);
 
     do_auto_rotation = true;
 }
@@ -483,7 +481,7 @@ bool Rover::do_yaw_rotation()
         // Calculate the steering to apply base on error calculated
         const int32_t steering = steerController.get_steering_out_angle_error(error_to_target_yaw);
         g2.motors.set_steering(steering);
-        calc_throttle(g.speed_cruise);
+        control_mode->calc_throttle(g.speed_cruise);
         do_auto_rotation = true;
         return false;
     }
