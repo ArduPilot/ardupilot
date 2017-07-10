@@ -275,3 +275,52 @@ void AP_MotorsUGV::setup_safety_output()
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
 }
+
+bool AP_MotorsUGV::output_test(motor_test_order motor_seq)
+{
+    // check if the motor_seq is valid
+    if (motor_seq > THROTTLE_RIGHT) {
+        return false;
+    }
+    _throttle = constrain_float(_throttle, -100.0f, 100.0f);
+
+    switch (motor_seq) {
+        case THROTTLE: {
+            if (!SRV_Channels::function_assigned(SRV_Channel::k_throttle)) {
+                return false;
+            }
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, _throttle);
+            break;
+        }
+        case STEERING: {
+            if (!SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+                return false;
+            }
+            SRV_Channels::set_output_scaled(SRV_Channel::k_steering, _throttle);
+            break;
+        }
+        case THROTTLE_LEFT: {
+            if (!SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft)) {
+                return false;
+            }
+            const float motorLeft = brushed_scaler((_throttle * 0.01f), _throttleLeft_servo);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 1000.0f * motorLeft);
+            break;
+        }
+        case THROTTLE_RIGHT: {
+            if (!SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
+                return false;
+            }
+            const float motorRight = brushed_scaler((_throttle * 0.01f), _throttleRight_servo);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 1000.0f * motorRight);
+            break;
+        }
+        default:
+            return false;
+    }
+    SRV_Channels::calc_pwm();
+    hal.rcout->cork();
+    SRV_Channels::output_ch_all();
+    hal.rcout->push();
+    return true;
+}
