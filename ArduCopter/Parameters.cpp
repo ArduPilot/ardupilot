@@ -1012,6 +1012,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(visual_odom, "VISO", 18, ParametersG2, AP_VisualOdom),
 #endif
 
+    // ID 19 reserved for TCAL (PR pending)
+    // ID 20 reserved for TX_TYPE (PR pending)
+    
     AP_GROUPEND
 };
 
