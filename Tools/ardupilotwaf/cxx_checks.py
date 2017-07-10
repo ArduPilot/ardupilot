@@ -182,7 +182,7 @@ def check_package(cfg, env, libname):
         fragment='''int main() { return 0; }''',
         msg='Testing link with %s' % libname,
         mandatory=False,
-        lib='dl'
+        lib=libname
     )
 
     if ret:
@@ -192,6 +192,8 @@ def check_package(cfg, env, libname):
         env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
 
     cfg.env.revert()
+
+    return ret
 
 @conf
 def check_lttng(cfg, env):
@@ -203,8 +205,12 @@ def check_lttng(cfg, env):
         cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
         return False
 
-    check_package(cfg, env, 'lttng-ust')
-    return True
+    ret = check_package(cfg, env, 'lttng-ust')
+    if ret:
+        cfg.define('HAVE_LTTNG_UST', 1)
+        return True
+
+    return False
 
 @conf
 def check_libiio(cfg, env):
