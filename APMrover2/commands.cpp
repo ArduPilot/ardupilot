@@ -42,7 +42,7 @@ void Rover::set_guided_WP(const struct Location& loc)
     wp_totalDistance = get_distance(current_loc, next_WP);
     wp_distance      = wp_totalDistance;
 
-    rover.rtl_complete = false;
+    rover.nav_wp_complete = false;
 }
 
 void Rover::set_guided_velocity(float target_steer_speed, float target_speed)
@@ -56,7 +56,7 @@ void Rover::set_guided_velocity(float target_steer_speed, float target_speed)
     wp_totalDistance = 0;
     wp_distance      = 0.0f;
 
-    rover.rtl_complete = false;
+    rover.nav_wp_complete = false;
 }
 
 // checks if we should update ahrs home position from the EKF's position

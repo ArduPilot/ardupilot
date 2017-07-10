@@ -24,7 +24,7 @@ void ModeGuided::update()
             break;
 
         case Guided_WP:
-            if (rover.rtl_complete || rover.verify_RTL()) {
+            if (rover.nav_wp_complete || rover.verify_nav_wp()) {
                 // we have reached destination so stop where we are
                 if (fabsf(g2.motors.get_throttle()) > g.throttle_min.get()) {
                     rover.gcs().send_mission_item_reached_message(0);
@@ -60,7 +60,7 @@ void ModeGuided::update_navigation()
 
         case Guided_WP:
             // no loitering around the wp with the rover, goes direct to the wp position
-            if (rover.rtl_complete || rover.verify_RTL()) {
+            if (rover.nav_wp_complete || rover.verify_nav_wp()) {
                 // we have reached destination so stop where we are
                 g2.motors.set_throttle(g.throttle_min.get());
                 g2.motors.set_steering(0.0f);

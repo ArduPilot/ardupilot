@@ -169,7 +169,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
         return verify_nav_wp(cmd);
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        return verify_RTL();
+        return verify_nav_wp();
 
     case MAV_CMD_NAV_LOITER_UNLIM:
         return verify_loiter_unlimited(cmd);
@@ -333,11 +333,11 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
-bool Rover::verify_RTL()
+bool Rover::verify_nav_wp()
 {
     if (wp_distance <= g.waypoint_radius) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
-        rtl_complete = true;
+        nav_wp_complete = true;
         return true;
     }
 
@@ -345,7 +345,7 @@ bool Rover::verify_RTL()
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached destination. Distance away %dm",
                 static_cast<int32_t>(fabsf(get_distance(current_loc, next_WP))));
-        rtl_complete = true;
+        nav_wp_complete = true;
         return true;
     }
 

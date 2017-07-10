@@ -19,7 +19,7 @@ void Mode::exit()
     if (!rover.in_auto_reverse) {
         rover.set_reverse(false);
     }
-    rover.rtl_complete = false;
+    rover.nav_wp_complete = false;
 }
 
 bool Mode::enter()

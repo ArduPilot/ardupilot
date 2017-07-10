@@ -261,8 +261,8 @@ private:
 
     // true if we have a position estimate from AHRS
     bool have_position;
-
-    bool rtl_complete;
+    // true when we reach the waypoint
+    bool nav_wp_complete;
 
     // angle of our next navigation waypoint
     int32_t next_navigation_leg_cd;
@@ -495,7 +495,7 @@ private:
     void restart_nav();
     void exit_mission();
     void do_RTL(void);
-    bool verify_RTL();
+    bool verify_nav_wp();
     bool verify_wait_delay();
     bool verify_within_distance();
     bool verify_yaw();
