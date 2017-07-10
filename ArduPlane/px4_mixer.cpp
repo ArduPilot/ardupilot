@@ -209,8 +209,14 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
 {
     char *buf0 = buf;
     uint16_t buf_size0 = buf_size;
+    uint16_t manual_mask = uint16_t(g2.manual_rc_mask.get());
 
     for (uint8_t i=0; i<8; i++) {
+        if ((1U<<i) & manual_mask) {
+            // handle MANUAL_RCMASK channels
+            mix_passthrough(buf, buf_size, i, i);
+            continue;
+        }
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(i);
         switch (function) {
         case SRV_Channel::k_aileron:
