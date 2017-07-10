@@ -654,6 +654,9 @@ void QuadPlane::run_esc_calibration(void)
 // init quadplane stabilize mode 
 void QuadPlane::init_stabilize(void)
 {
+    // initialise smoothing gain
+    attitude_control->set_smoothing_gain(smoothing_gain_manual);
+
     throttle_wait = false;
 }
 
@@ -662,14 +665,13 @@ void QuadPlane::init_stabilize(void)
   ask the multicopter attitude control to match the roll and pitch rates being demanded by the
   fixed wing controller if not in a pure VTOL mode
  */
-void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds, float smooth_gain)
+void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
     if (in_vtol_mode() || is_tailsitter()) {
         // use euler angle attitude control
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
-                                                                      yaw_rate_cds,
-                                                                      smooth_gain);
+                                                                      yaw_rate_cds);
     } else {
         // use the fixed wing desired rates
         float roll_rate = plane.rollController.get_pid_info().desired;
@@ -682,7 +684,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds, float smoot
 void QuadPlane::hold_stabilize(float throttle_in)
 {    
     // call attitude controller
-    multicopter_attitude_rate_update(get_desired_yaw_rate_cds(), smoothing_gain);
+    multicopter_attitude_rate_update(get_desired_yaw_rate_cds());
 
     if (throttle_in <= 0) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -744,6 +746,9 @@ void QuadPlane::run_z_controller(void)
 // init quadplane hover mode 
 void QuadPlane::init_hover(void)
 {
+    // initialise smoothing gain
+    attitude_control->set_smoothing_gain(smoothing_gain_manual);
+
     // initialize vertical speeds and leash lengths
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
     pos_control->set_accel_z(pilot_accel_z);
@@ -782,7 +787,7 @@ void QuadPlane::hold_hover(float target_climb_rate)
     pos_control->set_accel_z(pilot_accel_z);
 
     // call attitude controller
-    multicopter_attitude_rate_update(get_desired_yaw_rate_cds(), smoothing_gain);
+    multicopter_attitude_rate_update(get_desired_yaw_rate_cds());
 
     // call position controller
     pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, plane.G_Dt, false);
@@ -818,6 +823,9 @@ void QuadPlane::init_loiter(void)
     }
     
     wp_nav->init_loiter_target(stopping_point);
+
+    // initialise smoothing gain
+    attitude_control->set_smoothing_gain(smoothing_gain_auto);
 
     // initialize vertical speed and acceleration
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
@@ -974,8 +982,7 @@ void QuadPlane::control_loiter()
     // call attitude controller with conservative smoothing gain of 4.0f
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                   plane.nav_pitch_cd,
-                                                                  get_desired_yaw_rate_cds(),
-                                                                  4.0f);
+                                                                  get_desired_yaw_rate_cds());
 
     if (plane.control_mode == QLAND) {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
@@ -1321,8 +1328,7 @@ void QuadPlane::update_transition(void)
         plane.nav_roll_cd = 0;
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd, 
                                                                       plane.nav_pitch_cd,
-                                                                      0,
-                                                                      smoothing_gain);
+                                                                      0);
         attitude_control->set_throttle_out(motors->get_throttle_hover(), true, 0);
         run_rate_controller();
         motors_output();
@@ -1739,8 +1745,7 @@ void QuadPlane::vtol_position_controller(void)
 
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
-                                                                      get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
-                                                                      smoothing_gain);
+                                                                      get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
 
     case QPOS_POSITION1: {
@@ -1821,8 +1826,7 @@ void QuadPlane::vtol_position_controller(void)
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
-                                                                             desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
-                                                                             smoothing_gain);
+                                                                             desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         if (plane.auto_state.wp_proportion >= 1 ||
             plane.auto_state.wp_distance < 5) {
             poscontrol.state = QPOS_POSITION2;
@@ -1854,8 +1858,7 @@ void QuadPlane::vtol_position_controller(void)
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                              plane.nav_pitch_cd,
-                                                                             get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
-                                                                             smoothing_gain);
+                                                                             get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
 
     case QPOS_LAND_COMPLETE:
@@ -1926,7 +1929,10 @@ void QuadPlane::setup_target_position(void)
     Vector2f diff2d;
 
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-    
+
+    // initialise multicopter attitude controller smoothing gain
+    attitude_control->set_smoothing_gain(smoothing_gain_auto);
+
     diff2d = location_diff(origin, loc);
     poscontrol.target.x = diff2d.x * 100;
     poscontrol.target.y = diff2d.y * 100;
@@ -1964,8 +1970,7 @@ void QuadPlane::takeoff_controller(void)
     
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                          plane.nav_pitch_cd,
-                                                                         get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds(),
-                                                                         smoothing_gain);
+                                                                         get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
     
     // nav roll and pitch are controller by position controller
     plane.nav_roll_cd = pos_control->get_roll();
@@ -1992,7 +1997,7 @@ void QuadPlane::waypoint_controller(void)
     attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(),
                                                        wp_nav->get_pitch(),
                                                        wp_nav->get_yaw(),
-                                                       true, 4.0f);
+                                                       true);
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = wp_nav->get_roll();
     plane.nav_pitch_cd = wp_nav->get_pitch();
@@ -2064,6 +2069,9 @@ void QuadPlane::init_qrtl(void)
     poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
     poscontrol.state = QPOS_POSITION1;
     poscontrol.speed_scale = 0;
+
+    // initialise multicopter attitude controller smoothing gain
+    attitude_control->set_smoothing_gain(smoothing_gain_auto);
 }
 
 /*
@@ -2081,6 +2089,9 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
 
     // set target to current position
     wp_nav->init_loiter_target();
+
+    // initialise multicopter attitude controller smoothing gain
+    attitude_control->set_smoothing_gain(smoothing_gain_auto);
 
     // initialize vertical speed and acceleration
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
