@@ -30,6 +30,7 @@
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
+#include "mRoLED_I2C.h"
 #include <stdio.h>
 
 #define CONFIG_NOTIFY_DEVICES_COUNT 5
@@ -115,6 +116,7 @@ void AP_Notify::init(bool enable_external_leds)
         _devices[1] = new ToshibaLED_I2C();
         _devices[2] = new ToneAlarm_PX4();
         _devices[3] = new Display();
+        _devices[4] = new mRoLED_I2C();
     #endif
 
 // Notify devices for VRBRAIN boards
