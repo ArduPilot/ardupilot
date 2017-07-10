@@ -32,14 +32,14 @@ void Rover::init_rc_in()
     // set rc dead zones
     channel_steer->set_default_dead_zone(30);
     channel_throttle->set_default_dead_zone(30);
-
-    // set auxiliary ranges
-    update_aux();
 }
 
 void Rover::init_rc_out()
 {
     SRV_Channels::output_trim_all();
+
+    // set auxiliary ranges
+    update_aux();
 }
 
 /*
