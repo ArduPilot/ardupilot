@@ -1801,13 +1801,6 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
 
     // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
-    {
-        if (handle_mission_item(msg, *_mission)) {
-            DataFlash_Class::instance()->Log_Write_EntireMission(*_mission);
-        }
-        break;
-    }
-
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
     {
         if (handle_mission_item(msg, *_mission)) {
