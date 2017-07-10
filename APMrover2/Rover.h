@@ -534,18 +534,6 @@ private:
     void read_battery(void);
     void read_receiver_rssi(void);
     void read_rangefinders(void);
-    void report_batt_monitor();
-    void report_radio();
-    void report_gains();
-    void report_throttle();
-    void report_compass();
-    void report_modes();
-    void print_radio_values();
-    void print_switch(uint8_t p, uint8_t m);
-    void print_done();
-    void print_blanks(int num);
-    void print_divider(void);
-    int8_t radio_input_switch(void);
     void zero_eeprom(void);
     void print_enabled(bool b);
     void init_ardupilot();
@@ -594,7 +582,6 @@ private:
     bool do_yaw_rotation();
     void nav_set_speed();
     bool in_stationary_loiter(void);
-    void set_loiter_active(const AP_Mission::Mission_Command& cmd);
     void crash_check();
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
