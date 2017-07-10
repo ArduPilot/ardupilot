@@ -466,8 +466,8 @@ void AP_GPS::detect_instance(uint8_t instance)
         break;
     }
 
-    // record the time when we started detection. This is used to try
-    // to avoid initialising a uBlox as a NMEA GPS
+    // record the time when we started detection. This is used as a flag to
+    // indicate that the detected GPS baud rate should be broadcast
     if (dstate->detect_started_ms == 0) {
         dstate->detect_started_ms = now;
     }
@@ -538,13 +538,9 @@ void AP_GPS::detect_instance(uint8_t instance)
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
-        } else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
-            // prevent false detection of NMEA mode in
-            // a MTK or UBLOX which has booted in NMEA mode
-            if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
-                AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
-                new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
-            }
+        } else if (_type[instance] == GPS_TYPE_NMEA &&
+                   AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
+            new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
         }
     }
 
@@ -812,7 +808,7 @@ void AP_GPS::lock_port(uint8_t instance, bool lock)
 }
 
 // Inject a packet of raw binary to a GPS
-void AP_GPS::inject_data(uint8_t *data, uint8_t len)
+void AP_GPS::inject_data(uint8_t *data, uint16_t len)
 {
     //Support broadcasting to all GPSes.
     if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
@@ -824,7 +820,7 @@ void AP_GPS::inject_data(uint8_t *data, uint8_t len)
     }
 }
 
-void AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint8_t len)
+void AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint16_t len)
 {
     if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
         drivers[instance]->inject_data(data, len);
@@ -1450,7 +1446,7 @@ void AP_GPS::calc_blended_state(void)
         if (_blend_weights[i] > 0.0f) {
             temp_time_1 += (double)timing[i].last_fix_time_ms * (double) _blend_weights[i];
             temp_time_2 += (double)timing[i].last_message_time_ms * (double)_blend_weights[i];
-            _blended_lag_sec += get_lag(i) * _blended_lag_sec;
+            _blended_lag_sec += get_lag(i) * _blend_weights[i];
         }
     }
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = (uint32_t)temp_time_1;

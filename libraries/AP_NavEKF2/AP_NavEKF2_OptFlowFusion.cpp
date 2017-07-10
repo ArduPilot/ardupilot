@@ -145,9 +145,8 @@ void NavEKF2_core::EstimateTerrainOffset()
             // calculate the innovation consistency test ratio
             auxRngTestRatio = sq(innovRng) / (sq(MAX(0.01f * (float)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
 
-            // Check the innovation for consistency and don't fuse if > 5Sigma
-            if ((sq(innovRng)*SK_RNG) < 25.0f)
-            {
+            // Check the innovation test ratio and don't fuse if too large
+            if (auxRngTestRatio < 1.0f) {
                 // correct the state
                 terrainState -= K_RNG * innovRng;
 
@@ -185,10 +184,10 @@ void NavEKF2_core::EstimateTerrainOffset()
 
             // divide velocity by range, subtract body rates and apply scale factor to
             // get predicted sensed angular optical rates relative to X and Y sensor axes
-            losPred =   relVelSensor.length()/flowRngPred;
+            losPred =   norm(relVelSensor.x, relVelSensor.y)/flowRngPred;
 
             // calculate innovations
-            auxFlowObsInnov = losPred - sqrtf(sq(flowRadXYcomp[0]) + sq(flowRadXYcomp[1]));
+            auxFlowObsInnov = losPred - norm(ofDataDelayed.flowRadXYcomp.x, ofDataDelayed.flowRadXYcomp.y);
 
             // calculate observation jacobian
             float t3 = sq(q0);
@@ -234,7 +233,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar);
 
             // don't fuse if optical flow data is outside valid range
-            if (MAX(flowRadXY[0],flowRadXY[1]) < frontend->_maxFlowRate) {
+            if (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) < frontend->_maxFlowRate) {
 
                 // correct the state
                 terrainState -= K_OPT * auxFlowObsInnov;

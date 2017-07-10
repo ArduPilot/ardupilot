@@ -62,6 +62,9 @@
 #define EKF_TARGET_DT_MS 10.0
 #define EKF_TARGET_DT    0.01
 
+// mag fusion final reset altitude (using NED frame so altitude is negative)
+#define EKF3_MAG_FINAL_RESET_ALT 2.5f
+
 class AP_AHRS;
 
 class NavEKF3_core
@@ -995,8 +998,6 @@ private:
     bool fuseOptFlowData;           // this boolean causes the last optical flow measurement to be fused
     float auxFlowObsInnov;          // optical flow rate innovation from 1-state terrain offset estimator
     float auxFlowObsInnovVar;       // innovation variance for optical flow observations from 1-state terrain offset estimator
-    Vector2 flowRadXYcomp;          // motion compensated optical flow angular rates(rad/sec)
-    Vector2 flowRadXY;              // raw (non motion compensated) optical flow angular rates (rad/sec)
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
@@ -1095,11 +1096,11 @@ private:
 
     float bcnPosDownOffsetMax;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     float bcnPosOffsetMaxVar;           // Variance of the bcnPosDownOffsetMax state (m)
-    float OffsetMaxInnovFilt;           // Filtered magnitude of the range innovations using bcnPosOffsetHigh
+    float maxOffsetStateChangeFilt;     // Filtered magnitude of the change in bcnPosOffsetHigh
 
     float bcnPosDownOffsetMin;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     float bcnPosOffsetMinVar;           // Variance of the bcnPosDownOffsetMin state (m)
-    float OffsetMinInnovFilt;           // Filtered magnitude of the range innovations using bcnPosOffsetLow
+    float minOffsetStateChangeFilt;     // Filtered magnitude of the change in bcnPosOffsetLow
 
     Vector3f bcnPosOffsetNED;           // NED position of the beacon origin in earth frame (m)
     bool bcnOriginEstInit;              // True when the beacon origin has been initialised

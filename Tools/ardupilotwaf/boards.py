@@ -460,6 +460,12 @@ class px4(Board):
         # be searched for in sources and installed in ROMFS as rc.board. This
         # init script is used to change the init behavior among different boards.
         self.board_rc = False
+
+        # Path relative to the ROMFS directory where to find a file with default
+        # parameters. If set this file will be copied to /etc/defaults.parm
+        # inside the ROMFS
+        self.param_defaults = None
+
         self.ROMFS_EXCLUDE = []
 
     def configure(self, cfg):
@@ -504,6 +510,7 @@ class px4(Board):
         env.PX4_BOARD_NAME = self.board_name
         env.PX4_BOARD_RC = self.board_rc
         env.PX4_PX4IO_NAME = self.px4io_name
+        env.PX4_PARAM_DEFAULTS = self.param_defaults
 
         env.AP_PROGRAM_AS_STLIB = True
 
@@ -561,3 +568,4 @@ class aerofc_v1(px4):
         self.board_name = 'aerofc-v1'
         self.romfs_exclude(['oreoled.bin'])
         self.board_rc = True
+        self.param_defaults = '../../../Tools/Frame_params/intel-aero-rtf.param'
