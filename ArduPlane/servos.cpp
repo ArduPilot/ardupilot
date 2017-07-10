@@ -757,8 +757,13 @@ void Plane::servos_output(void)
     // run vtail and elevon mixers
     servo_output_mixers();
 
-    SRV_Channels::calc_pwm();
+    // support MANUAL_RCMASK
+    if (g2.manual_rc_mask.get() != 0) {
+        SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
+    }
     
+    SRV_Channels::calc_pwm();
+
     SRV_Channels::output_ch_all();
     
     hal.rcout->push();
