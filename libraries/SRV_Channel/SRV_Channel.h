@@ -328,9 +328,12 @@ public:
     // set output to trim value
     static void set_output_to_trim(SRV_Channel::Aux_servo_function_t function);
 
-    // copy radio_in to radio_out
+    // copy radio_in to servo out
     static void copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool do_input_output=false);
 
+    // copy radio_in to servo_out by channel mask
+    static void copy_radio_in_out_mask(uint16_t mask);
+    
     // setup failsafe for an auxiliary channel function, by pwm
     static void set_failsafe_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t pwm);
 
