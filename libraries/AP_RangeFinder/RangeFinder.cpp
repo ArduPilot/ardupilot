@@ -159,6 +159,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ORIENT", 53, RangeFinder, _orientation[0], ROTATION_PITCH_270),
 
+    // @Param: _BUS
+    // @DisplayName: Sensor Bus
+    // @Description: sensor bus for I2C sensors.
+    // @Values: 0:InternalI2C,1:ExternalI2C
+    // @User: Advanced
+    AP_GROUPINFO("_BUS",  57, RangeFinder, _bus[0], 1),
+
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
@@ -277,6 +284,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("2_ORIENT", 54, RangeFinder, _orientation[1], ROTATION_PITCH_270),
+    
+    // @Param: 2_BUS
+    // @DisplayName: Sensor Bus
+    // @Description: sensor bus for I2C sensors.
+    // @Values: 0:InternalI2C,1:ExternalI2C
+    // @User: Advanced
+    AP_GROUPINFO("_BUS",  58, RangeFinder, _bus[1], 1),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -398,6 +412,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("3_ORIENT", 55, RangeFinder, _orientation[2], ROTATION_PITCH_270),
+
+    // @Param: 3_BUS
+    // @DisplayName: Sensor Bus
+    // @Description: sensor bus for I2C sensors.
+    // @Values: 0:InternalI2C,1:ExternalI2C
+    // @User: Advanced
+    AP_GROUPINFO("_BUS",  59, RangeFinder, _bus[2], 1),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -519,6 +540,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("4_ORIENT", 56, RangeFinder, _orientation[3], ROTATION_PITCH_270),
+    
+    // @Param: 4_BUS
+    // @DisplayName: Sensor Bus
+    // @Description: sensor bus for I2C sensors.
+    // @Values: 0:InternalI2C,1:ExternalI2C
+    // @User: Advanced
+    AP_GROUPINFO("_BUS",  60, RangeFinder, _bus[3], 1),
 #endif
     
     AP_GROUPEND
@@ -622,7 +650,7 @@ void RangeFinder::detect_instance(uint8_t instance)
     case RangeFinder_TYPE_LWI2C:
         if (_address[instance]) {
             _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
-                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, _address[instance])));
+                hal.i2c_mgr->get_device(_bus[instance], _address[instance])));
         }
         break;
     case RangeFinder_TYPE_TRONE:
