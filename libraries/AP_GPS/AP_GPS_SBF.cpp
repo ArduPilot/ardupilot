@@ -65,7 +65,8 @@ AP_GPS_SBF::read(void)
 
         if (now > _init_blob_time) {
             port->write((const uint8_t*)init_str, strlen(init_str));
-            _init_blob_time = now + 1000;
+            // if this is too low a race condition on start occurs and the GPS isn't detected
+            _init_blob_time = now + 2000;
         }
     }
 
