@@ -18,7 +18,7 @@ void Rover::set_auto_WP(const struct Location& loc)
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs_send_text(MAV_SEVERITY_NOTICE, "Resetting previous WP");
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Resetting previous WP");
         prev_WP = current_loc;
     }
 
@@ -139,7 +139,7 @@ bool Rover::set_home(const Location& loc, bool lock)
     GCS_MAVLINK::send_home_all(loc);
 
     // send text of home position to ground stations
-    rover.gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
+    gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
             static_cast<double>(loc.lat * 1.0e-7f),
             static_cast<double>(loc.lng * 1.0e-7f),
             static_cast<double>(loc.alt * 0.01f));

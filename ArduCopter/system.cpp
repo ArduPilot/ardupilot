@@ -120,13 +120,24 @@ void Copter::init_ardupilot()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs_chan[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+
+
+#if CLI_ENABLED == ENABLED
+    // specify callback function for CLI menu system
+    if (g.cli_enabled) {
+        gcs().set_run_cli_func(FUNCTOR_BIND_MEMBER(&Copter::run_cli, void, AP_HAL::UARTDriver *));
+    }
+#endif
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
     
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
 
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
@@ -151,9 +162,7 @@ void Copter::init_ardupilot()
     check_usb_mux();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-    }
+    gcs().setup_uarts(serial_manager);
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
@@ -205,7 +214,8 @@ void Copter::init_ardupilot()
     ahrs.set_beacon(&g2.beacon);
 
     // Do GPS init
-    gps.init(&DataFlash, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     init_compass();
 
@@ -245,23 +255,14 @@ void Copter::init_ardupilot()
 #endif
 
 #if CLI_ENABLED == ENABLED
-    if (g.cli_enabled) {
-        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        cliSerial->printf("%s\n", msg);
-        if (gcs_chan[1].initialised && (gcs_chan[1].get_uart() != nullptr)) {
-            gcs_chan[1].get_uart()->printf("%s\n", msg);
-        }
-        if (num_gcs > 2 && gcs_chan[2].initialised && (gcs_chan[2].get_uart() != nullptr)) {
-            gcs_chan[2].get_uart()->printf("%s\n", msg);
-        }
-    }
+    gcs().handle_interactive_setup();
 #endif // CLI_ENABLED
 
 #if HIL_MODE != HIL_MODE_DISABLED
     while (barometer.get_last_update() == 0) {
         // the barometer begins updating when we get the first
         // HIL_STATE message
-        gcs_send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
         delay(1000);
     }
 
@@ -314,8 +315,7 @@ void Copter::init_ardupilot()
     // enable CPU failsafe
     failsafe_enable();
 
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);
+    ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // enable output to motors
     arming.pre_arm_rc_checks(true);
@@ -491,13 +491,7 @@ void Copter::check_usb_mux(void)
 bool Copter::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!(mask & g.log_bitmask)) {
-        return false;
-    }
-    if (!DataFlash.should_log()) {
-        return false;
-    }
-    if (in_log_download) {
+    if (!DataFlash.should_log(mask)) {
         return false;
     }
     start_logging();

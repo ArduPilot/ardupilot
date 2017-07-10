@@ -307,9 +307,15 @@ void DataFlash_Class::StartUnstartedLogging(void)
     }
 }
 
-bool DataFlash_Class::should_log() const
+bool DataFlash_Class::should_log(const uint32_t mask) const
 {
+    if (!(mask & _log_bitmask)) {
+        return false;
+    }
     if (!vehicle_is_armed() && !log_while_disarmed()) {
+        return false;
+    }
+    if (in_log_download()) {
         return false;
     }
     if (_next_backend == 0) {
@@ -460,11 +466,20 @@ bool DataFlash_Class::logging_started(void) {
     return false;
 }
 
-void DataFlash_Class::handle_mavlink_msg(mavlink_channel_t chan, mavlink_message_t* msg)
+void DataFlash_Class::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
 {
     switch (msg->msgid) {
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        FOR_EACH_BACKEND(remote_log_block_status_msg(chan, msg));
+        FOR_EACH_BACKEND(remote_log_block_status_msg(link.get_chan(), msg));
+        break;
+    case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
+        /* fall through */
+    case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
+        /* fall through */
+    case MAVLINK_MSG_ID_LOG_ERASE:
+        /* fall through */
+    case MAVLINK_MSG_ID_LOG_REQUEST_END:
+        handle_log_message(link, msg);
         break;
     }
 }

@@ -68,15 +68,25 @@ list some basic and more used commands as example.
 * **Upload or install**
 
     Build commands have a `--upload` option in order to upload the binary built
-    to a connected board. This option is supported by Pixhawk. The command below
-    uses the `--targets` option that is explained in the next item.
+    to a connected board. This option is supported by Pixhawk and Linux-based boards
+    The command below uses the `--targets` option that is explained in the next item.
 
     ```sh
     ./waf --targets bin/arducopter --upload
     ```
 
-    Currently Linux boards don't support the upload option, but there's an
-    install command, which will install to a certain directory. This can be
+    On Linux you need to first configure the IP of the board you are going to upload
+    to. This is done on configure phase with:
+
+    ```sh
+    ./waf configure --board <board> --rsync-dest <destination>
+    ```
+
+    What this does is to install to a temporary location and calling
+    `sync <temp_install_location>/ <destination>`
+
+    On Linux boards there's also an install command, which will install to a certain
+    directory, just like the temporary install above does. This can be
     used by distributors to create .deb, .rpm or other package types:
 
     ```sh

@@ -18,41 +18,48 @@
 #include "AP_BoardConfig.h"
 
 #if HAL_WITH_UAVCAN
+#include "AP_BoardConfig_CAN.h"
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 // table of user settable CAN bus parameters
-const AP_Param::GroupInfo AP_BoardConfig::CAN_var_info::var_info[] = {
-    // @Param: ENABLE
-    // @DisplayName:  Enable use of CAN buses
+const AP_Param::GroupInfo AP_BoardConfig_CAN::CAN_if_var_info::var_info[] = {
+    // @Param: DRIVER
+    // @DisplayName: Index of virtual driver to be used with physical CAN interface
     // @Description: Enabling this option enables use of CAN buses.
-    // @Values: 0:Disabled,1:Enabled first channel,2:Enabled both channels
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_BoardConfig::CAN_var_info, _can_enable, 0, AP_PARAM_FLAG_ENABLE),
+    // @Values: 0:Disabled,1:First driver,2:Second driver
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO_FLAGS("DRIVER", 1, AP_BoardConfig_CAN::CAN_if_var_info, _driver_number, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: BITRATE
-    // @DisplayName:  Bitrate of CAN interface
+    // @DisplayName: Bitrate of CAN interface
     // @Description: Bit rate can be set up to from 10000 to 1000000
     // @Range: 10000 1000000
     // @User: Advanced
-    AP_GROUPINFO("BITRATE", 2, AP_BoardConfig::CAN_var_info, _can_bitrate, 1000000),
+    AP_GROUPINFO("BITRATE", 2, AP_BoardConfig_CAN::CAN_if_var_info, _can_bitrate, 1000000),
 
     // @Param: DEBUG
-    // @DisplayName:  Level of debug for CAN devices
+    // @DisplayName: Level of debug for CAN devices
     // @Description: Enabling this option will provide debug messages
     // @Values: 0:Disabled,1:Major messages,2:All messages
     // @User: Advanced
-    AP_GROUPINFO("DEBUG", 3, AP_BoardConfig::CAN_var_info, _can_debug, 2),
+    AP_GROUPINFO("DEBUG", 3, AP_BoardConfig_CAN::CAN_if_var_info, _can_debug, 2),
 
-    // @Param: UC_EN
-    // @DisplayName:  Enable use of UAVCAN devices
-    // @Description: Enabling this option starts UAVCAN protocol.
-    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo AP_BoardConfig_CAN::CAN_driver_var_info::var_info[] = {
+    // @Param: PROTOCOL
+    // @DisplayName: Enable use of specific protocol over virtual driver
+    // @Description: Enabling this option starts selected protocol that will use this virtual driver
+    // @Values: 0:Disabled,1:UAVCAN
     // @User: Advanced
-    AP_GROUPINFO("UC_EN", 4, AP_BoardConfig::CAN_var_info, _uavcan_enable, 1),
+    // @RebootRequired: True
+    AP_GROUPINFO("PROTOCOL", 1, AP_BoardConfig_CAN::CAN_driver_var_info, _protocol, UAVCAN_PROTOCOL_ENABLE),
 
     // @Group: UC_
     // @Path: ../AP_UAVCAN/AP_UAVCAN.cpp
-    AP_SUBGROUPPTR(_uavcan, "UC_", 5, AP_BoardConfig::CAN_var_info, AP_UAVCAN),
+    AP_SUBGROUPPTR(_uavcan, "UC_", 2, AP_BoardConfig_CAN::CAN_driver_var_info, AP_UAVCAN),
 
     AP_GROUPEND
 };

@@ -210,6 +210,7 @@ void Scheduler::_run_io_procs(bool called_from_isr)
     UARTDriver::from(hal.uartC)->_timer_tick();
     UARTDriver::from(hal.uartD)->_timer_tick();
     UARTDriver::from(hal.uartE)->_timer_tick();
+    UARTDriver::from(hal.uartF)->_timer_tick();
 }
 
 /*

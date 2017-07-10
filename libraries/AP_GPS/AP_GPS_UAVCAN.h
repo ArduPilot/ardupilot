@@ -30,6 +30,7 @@ public:
     ~AP_GPS_UAVCAN() override;
 
     bool read() override;
+    void set_uavcan_manager(uint8_t mgr);
 
     // This method is called from UAVCAN thread
     void handle_gnss_msg(const AP_GPS::GPS_State &msg) override;
@@ -38,6 +39,7 @@ public:
 
 private:
     bool _new_data;
+    uint8_t _manager;
 
     AP_GPS::GPS_State _interm_state;
     AP_HAL::Semaphore *_sem_gnss;

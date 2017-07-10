@@ -37,7 +37,7 @@ bool AP_Arming_Sub::rc_check(bool report)
     }
 
     if (report && !ret) {
-        sub.gcs_send_text(MAV_SEVERITY_CRITICAL, message_fail);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, message_fail);
     }
 
     return ret;

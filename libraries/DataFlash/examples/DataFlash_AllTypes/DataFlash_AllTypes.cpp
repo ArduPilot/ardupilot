@@ -4,6 +4,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
+#include <stdio.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -69,7 +71,8 @@ public:
 
 private:
 
-    DataFlash_Class dataflash{"DF AllTypes 0.1"};
+    AP_Int32 unused;
+    DataFlash_Class dataflash{"DF AllTypes 0.1", unused};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
@@ -201,6 +204,12 @@ void DataFlashTest_AllTypes::loop(void)
     hal.console->printf("all done\n");
     hal.scheduler->delay(1000);
 }
+
+const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+    AP_GROUPEND
+};
+GCS_Dummy _gcs;
+
 
 static DataFlashTest_AllTypes dataflashtest;
 

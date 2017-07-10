@@ -95,6 +95,7 @@ protected:
     bool reverse_thrust;
     bool elevons;
     bool vtail;
+    bool dspoilers;
     bool reverse_elevator_rudder;
     bool ice_engine;
     bool tailsitter;

@@ -61,7 +61,9 @@
 #include <APM_Control/APM_Control.h>
 #include <AP_L1_Control/AP_L1_Control.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include "AP_MotorsUGV.h"
 
 #include "AP_Arming.h"
 #include "compat.h"
@@ -85,6 +87,7 @@
 #endif
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
+#include "GCS_Rover.h"
 
 #include <AP_Declination/AP_Declination.h>          // ArduPilot Mega Declination Helper Library
 
@@ -101,6 +104,7 @@ public:
 #if ADVANCED_FAILSAFE == ENABLED
     friend class AP_AdvancedFailsafe_Rover;
 #endif
+    friend class GCS_Rover;
 
     Rover(void);
 
@@ -129,14 +133,17 @@ private:
     // board specific config
     AP_BoardConfig BoardConfig;
 
+#if HAL_WITH_UAVCAN
+    // board specific config for CAN bus
+    AP_BoardConfig_CAN BoardConfig_CAN;
+#endif
+
     // primary control channels
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
     RC_Channel *channel_learn;
 
     DataFlash_Class DataFlash;
-
-    bool in_log_download;
 
     // sensor drivers
     AP_GPS gps;
@@ -185,10 +192,8 @@ private:
 
     // GCS handling
     AP_SerialManager serial_manager;
-    const uint8_t num_gcs;
-    GCS_MAVLINK_Rover gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
-    GCS _gcs;  // avoid using this; use gcs()
-    GCS &gcs() { return _gcs; }
+    GCS_Rover _gcs;  // avoid using this; use gcs()
+    GCS_Rover &gcs() { return _gcs; }
 
     // relay support
     AP_Relay relay;
@@ -208,6 +213,9 @@ private:
     // current_loc uses the baro/gps solution for altitude rather than gps only.
     AP_Mount camera_mount;
 #endif
+
+    // true if initialisation has completed
+    bool initialised;
 
     // if USB is connected
     bool usb_connected;
@@ -281,7 +289,6 @@ private:
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
-    int16_t throttle_last;
     int16_t throttle;
 
     // CH7 control
@@ -367,6 +374,9 @@ private:
     // set if the users asks for auto reverse
     bool in_auto_reverse;
 
+    // true if pivoting (set by use_pivot_steering)
+    bool pivot_steering_active;
+
     static const AP_Scheduler::Task scheduler_tasks[];
 
     // use this to prevent recursion during sensor init
@@ -445,7 +455,6 @@ private:
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_update(void);
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void gcs_retry_deferred(void);
 
     void do_erase_logs(void);
@@ -469,14 +478,11 @@ private:
     void Log_Arm_Disarm();
 
     void load_parameters(void);
-    void throttle_slew_limit(int16_t last_throttle);
     bool auto_check_trigger(void);
     bool use_pivot_steering(void);
     void calc_throttle(float target_speed);
     void calc_lateral_acceleration();
     void calc_nav_steer();
-    bool have_skid_steering();
-    void mix_skid_steering();
     void set_servos(void);
     void set_auto_WP(const struct Location& loc);
     void set_guided_WP(const struct Location& loc);
@@ -551,7 +557,6 @@ private:
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
     void print_hit_enter();
-    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void notify_mode(enum mode new_mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);

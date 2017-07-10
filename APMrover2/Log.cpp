@@ -248,10 +248,10 @@ void Rover::Log_Write_Control_Tuning()
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
         time_us         : AP_HAL::micros64(),
-        steer_out       : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_steering),
+        steer_out       : (int16_t)g2.motors.get_steering(),
         roll            : (int16_t)ahrs.roll_sensor,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        throttle_out    : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
+        throttle_out    : (int16_t)g2.motors.get_throttle(),
         accel_y         : accel.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -473,9 +473,7 @@ void Rover::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
 
-    for (uint8_t i=0; i < num_gcs; i++) {
-        gcs_chan[i].reset_cli_timeout();
-    }
+    gcs().reset_cli_timeout();
 
     if (g.log_bitmask != 0) {
         start_logging();

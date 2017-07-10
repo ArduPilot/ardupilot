@@ -4,11 +4,6 @@
 // mission storage
 static const StorageAccess wp_storage(StorageManager::StorageMission);
 
-static void mavlink_snoop_static(const mavlink_message_t* msg)
-{
-    tracker.mavlink_snoop(msg);
-}
-
 static void mavlink_delay_cb_static()
 {
     tracker.mavlink_delay_cb();
@@ -34,13 +29,16 @@ void Tracker::init_tracker()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs_chan[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
     
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
 
     // initialise notify
     notify.init(false);
@@ -57,10 +55,7 @@ void Tracker::init_tracker()
     check_usb_mux();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-        gcs_chan[i].set_snoop(mavlink_snoop_static);
-    }
+    gcs().setup_uarts(serial_manager);
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
@@ -76,7 +71,8 @@ void Tracker::init_tracker()
     }
 
     // GPS Initialization
-    gps.init(nullptr, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     ahrs.init();
     ahrs.set_fly_forward(false);
@@ -102,7 +98,7 @@ void Tracker::init_tracker()
         current_loc.lat = g.start_latitude * 1.0e7f;
         current_loc.lng = g.start_longitude * 1.0e7f;
     } else {
-        gcs_send_text(MAV_SEVERITY_NOTICE, "Ignoring invalid START_LATITUDE or START_LONGITUDE parameter");
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Ignoring invalid START_LATITUDE or START_LONGITUDE parameter");
     }
 
     // see if EEPROM has a default location as well
@@ -112,7 +108,7 @@ void Tracker::init_tracker()
 
     init_capabilities();
 
-    gcs_send_text(MAV_SEVERITY_INFO,"Ready to track");
+    gcs().send_text(MAV_SEVERITY_INFO,"Ready to track");
     hal.scheduler->delay(1000); // Why????
 
     set_mode(AUTO); // tracking
@@ -255,10 +251,7 @@ void Tracker::check_usb_mux(void)
  */
 bool Tracker::should_log(uint32_t mask)
 {
-    if (!(mask & g.log_bitmask)) {
-        return false;
-    }
-    if (!DataFlash.should_log()) {
+    if (!DataFlash.should_log(mask)) {
         return false;
     }
     return true;

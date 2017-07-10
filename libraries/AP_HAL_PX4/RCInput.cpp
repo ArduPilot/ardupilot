@@ -118,6 +118,10 @@ void PX4RCInput::_timer_tick(void)
     if (orb_check(_rc_sub, &rc_updated) == 0 && rc_updated) {
         pthread_mutex_lock(&rcin_mutex);
         orb_copy(ORB_ID(input_rc), _rc_sub, &_rcin);
+        if (_rcin.rssi != 0 || _rssi != -1) {
+            // always zero means not supported
+            _rssi = _rcin.rssi;
+        }
         pthread_mutex_unlock(&rcin_mutex);
     }
     // note, we rely on the vehicle code checking new_input()

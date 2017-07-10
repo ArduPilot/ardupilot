@@ -43,6 +43,7 @@ Rover rover;
   time they are expected to take (in microseconds)
 */
 const AP_Scheduler::Task Rover::scheduler_tasks[] = {
+    //         Function name,          Hz,     us,
     SCHED_TASK(read_radio,             50,   1000),
     SCHED_TASK(ahrs_update,            50,   6400),
     SCHED_TASK(read_sonars,            50,   2000),
@@ -104,8 +105,6 @@ void Rover::setup()
     AP_Param::setup_sketch_defaults();
 
     in_auto_reverse = false;
-
-    rssi.init();
 
     init_ardupilot();
 
@@ -351,8 +350,6 @@ void Rover::one_second_loop(void)
         counter = 0;
     }
 
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-
     // update home position if not soft armed and gps position has
     // changed. Update every 1s at most
     if (!hal.util->get_soft_armed() &&
@@ -441,18 +438,18 @@ void Rover::update_current_mode(void)
         case Guided_WP:
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
-                if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != g.throttle_min.get()) {
+                if (fabsf(g2.motors.get_throttle()) > g.throttle_min.get()) {
                     gcs_send_mission_item_reached_message(0);
                 }
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
-                SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
-                lateral_acceleration = 0;
+                g2.motors.set_throttle(g.throttle_min.get());
+                g2.motors.set_steering(0.0f);
+                lateral_acceleration = 0.0f;
             } else {
                 calc_lateral_acceleration();
                 calc_nav_steer();
                 calc_throttle(rover.guided_control.target_speed);
                 Log_Write_GuidedTarget(guided_mode, Vector3f(next_WP.lat, next_WP.lng, next_WP.alt),
-                                       Vector3f(rover.guided_control.target_speed, SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 0.0f));
+                                       Vector3f(rover.guided_control.target_speed, g2.motors.get_throttle(), 0.0f));
             }
             break;
 
@@ -461,7 +458,7 @@ void Rover::update_current_mode(void)
             break;
 
         default:
-            gcs_send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
             break;
         }
         break;
@@ -498,24 +495,15 @@ void Rover::update_current_mode(void)
 
     case LEARNING:
     case MANUAL:
-        /*
-          in both MANUAL and LEARNING we pass through the
-          controls. Setting servo_out here actually doesn't matter, as
-          we set the exact value in set_servos(), but it helps for
-          logging
-         */
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, channel_steer->get_control_in());
-
         // mark us as in_reverse when using a negative throttle to
         // stop AHRS getting off
-        set_reverse(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0);
+        set_reverse(is_negative(g2.motors.get_throttle()));
         break;
 
     case HOLD:
         // hold position - stop motors and center steering
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
+        g2.motors.set_throttle(0.0f);
+        g2.motors.set_steering(0.0f);
         if (!in_auto_reverse) {
             set_reverse(false);
         }
@@ -546,7 +534,7 @@ void Rover::update_navigation()
     case RTL:
         // no loitering around the wp with the rover, goes direct to the wp position
         if (verify_RTL()) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
+            g2.motors.set_throttle(g.throttle_min.get());
             set_mode(HOLD);
         } else {
             calc_lateral_acceleration();
@@ -564,9 +552,9 @@ void Rover::update_navigation()
             // no loitering around the wp with the rover, goes direct to the wp position
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, g.throttle_min.get());
-                SRV_Channels::set_output_scaled(SRV_Channel::k_steering, 0);
-                lateral_acceleration = 0;
+                g2.motors.set_throttle(g.throttle_min.get());
+                g2.motors.set_steering(0.0f);
+                lateral_acceleration = 0.0f;
             } else {
                 calc_lateral_acceleration();
                 calc_nav_steer();
@@ -578,7 +566,7 @@ void Rover::update_navigation()
             break;
 
         default:
-            gcs_send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
             break;
         }
         break;

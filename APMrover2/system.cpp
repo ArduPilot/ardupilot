@@ -100,13 +100,23 @@ void Rover::init_ardupilot()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs_chan[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
+    // specify callback function for CLI menu system
+#if CLI_ENABLED == ENABLED
+    if (gcs().cli_enabled()) {
+        gcs().set_run_cli_func(FUNCTOR_BIND_MEMBER(&Rover::run_cli, void, AP_HAL::UARTDriver *));
+    }
+#endif
+
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
 
     // initialise notify system
     notify.init(false);
@@ -115,9 +125,9 @@ void Rover::init_ardupilot()
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
-    set_control_channels();
-
     battery.init();
+
+    rssi.init();
 
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
@@ -132,9 +142,7 @@ void Rover::init_ardupilot()
     check_usb_mux();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-    }
+    gcs().setup_uarts(serial_manager);
 
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
@@ -161,12 +169,19 @@ void Rover::init_ardupilot()
     init_barometer(true);
 
     // Do GPS init
-    gps.init(&DataFlash, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
+    ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
+
+    set_control_channels();
     init_rc_in();        // sets up rc channels from radio
     init_rc_out();        // sets up the timer libs
+
+    // init motors including setting rc out channels ranges
+    g2.motors.init();
 
     relay.init();
 
@@ -186,22 +201,7 @@ void Rover::init_ardupilot()
 
 
 #if CLI_ENABLED == ENABLED
-    // If the switch is in 'menu' mode, run the main menu.
-    //
-    // Since we can't be sure that the setup or test mode won't leave
-    // the system in an odd state, we don't let the user exit the top
-    // menu; they must reset in order to fly.
-    //
-    if (g.cli_enabled == 1) {
-        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        cliSerial->printf("%s\n", msg);
-        if (gcs_chan[1].initialised && (gcs_chan[1].get_uart() != nullptr)) {
-            gcs_chan[1].get_uart()->printf("%s\n", msg);
-        }
-        if (num_gcs > 2 && gcs_chan[2].initialised && (gcs_chan[2].get_uart() != nullptr)) {
-            gcs_chan[2].get_uart()->printf("%s\n", msg);
-        }
-    }
+    gcs().handle_interactive_setup();
 #endif
 
     init_capabilities();
@@ -216,6 +216,9 @@ void Rover::init_ardupilot()
 
     // disable safety if requested
     BoardConfig.init_safety();
+
+    // flag that initialisation has completed
+    initialised = true;
 }
 
 //*********************************************************************************
@@ -225,10 +228,10 @@ void Rover::startup_ground(void)
 {
     set_mode(INITIALISING);
 
-    gcs_send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
+    gcs().send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
 
     #if(GROUND_START_DELAY > 0)
-        gcs_send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
+        gcs().send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
         delay(GROUND_START_DELAY * 1000);
     #endif
 
@@ -255,10 +258,7 @@ void Rover::startup_ground(void)
     // so set serial ports non-blocking once we are ready to drive
     serial_manager.set_blocking_writes_all(false);
 
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);
-
-    gcs_send_text(MAV_SEVERITY_INFO, "Ready to drive");
+    gcs().send_text(MAV_SEVERITY_INFO, "Ready to drive");
 }
 
 /*
@@ -293,7 +293,6 @@ void Rover::set_mode(enum mode mode)
     }
 
     control_mode = mode;
-    throttle_last = 0;
     throttle = 500;
     if (!in_auto_reverse) {
         set_reverse(false);
@@ -368,59 +367,18 @@ bool Rover::mavlink_set_mode(uint8_t mode)
     return false;
 }
 
-/*
-  called to set/unset a failsafe event.
- */
-void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
-{
-    uint8_t old_bits = failsafe.bits;
-    if (on) {
-        failsafe.bits |= failsafe_type;
-    } else {
-        failsafe.bits &= ~failsafe_type;
-    }
-    if (old_bits == 0 && failsafe.bits != 0) {
-        // a failsafe event has started
-        failsafe.start_time = millis();
-    }
-    if (failsafe.triggered != 0 && failsafe.bits == 0) {
-        // a failsafe event has ended
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Failsafe ended");
-    }
-
-    failsafe.triggered &= failsafe.bits;
-
-    if (failsafe.triggered == 0 &&
-        failsafe.bits != 0 &&
-        millis() - failsafe.start_time > g.fs_timeout*1000 &&
-        control_mode != RTL &&
-        control_mode != HOLD) {
-        failsafe.triggered = failsafe.bits;
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Failsafe trigger 0x%x", static_cast<uint32_t>(failsafe.triggered));
-        switch (g.fs_action) {
-        case 0:
-            break;
-        case 1:
-            set_mode(RTL);
-            break;
-        case 2:
-            set_mode(HOLD);
-            break;
-        }
-    }
-}
-
 void Rover::startup_INS_ground(void)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Warming up ADC");
+    gcs().send_text(MAV_SEVERITY_INFO, "Warming up ADC");
     mavlink_delay(500);
 
     // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
     // -----------------------
-    gcs_send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
+    gcs().send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
     mavlink_delay(1000);
 
     ahrs.init();
+    // say to EKF that rover only move by goind forward
     ahrs.set_fly_forward(true);
     ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 
@@ -540,13 +498,7 @@ uint8_t Rover::check_digital_pin(uint8_t pin)
  */
 bool Rover::should_log(uint32_t mask)
 {
-    if (!(mask & g.log_bitmask)) {
-        return false;
-    }
-    if (!DataFlash.should_log()) {
-        return false;
-    }
-    if (in_log_download) {
+    if (!DataFlash.should_log(mask)) {
         return false;
     }
     start_logging();

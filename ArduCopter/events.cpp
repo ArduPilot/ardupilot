@@ -66,7 +66,7 @@ void Copter::failsafe_battery_event(void)
     set_failsafe_battery(true);
 
     // warn the ground station and log to dataflash
-    gcs_send_text(MAV_SEVERITY_WARNING,"Low battery");
+    gcs().send_text(MAV_SEVERITY_WARNING,"Low battery");
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }
@@ -172,7 +172,7 @@ void Copter::failsafe_terrain_set_status(bool data_ok)
 void Copter::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
-    gcs_send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
+    gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {

@@ -61,6 +61,9 @@
 #define EKF_TARGET_DT_MS 12
 #define EKF_TARGET_DT    0.012f
 
+// mag fusion final reset altitude (using NED frame so altitude is negative)
+#define EKF3_MAG_FINAL_RESET_ALT 2.5f
+
 class AP_AHRS;
 
 class NavEKF3_core
@@ -1091,11 +1094,11 @@ private:
 
     float bcnPosDownOffsetMax;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     float bcnPosOffsetMaxVar;           // Variance of the bcnPosDownOffsetMax state (m)
-    float OffsetMaxInnovFilt;           // Filtered magnitude of the range innovations using bcnPosOffsetHigh
+    float maxOffsetStateChangeFilt;     // Filtered magnitude of the change in bcnPosOffsetHigh
 
     float bcnPosDownOffsetMin;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
     float bcnPosOffsetMinVar;           // Variance of the bcnPosDownOffsetMin state (m)
-    float OffsetMinInnovFilt;           // Filtered magnitude of the range innovations using bcnPosOffsetLow
+    float minOffsetStateChangeFilt;     // Filtered magnitude of the change in bcnPosOffsetLow
 
     Vector3f bcnPosOffsetNED;           // NED position of the beacon origin in earth frame (m)
     bool bcnOriginEstInit;              // True when the beacon origin has been initialised

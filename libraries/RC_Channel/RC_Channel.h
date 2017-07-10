@@ -95,6 +95,8 @@ public:
     void       set_radio_trim(int16_t val) { radio_trim.set(val);}
     void       save_radio_trim() { radio_trim.save();}
 
+    void       set_and_save_trim() { radio_trim.set_and_save_ifchanged(radio_in);}
+    
     bool min_max_configured() const
     {
         return radio_min.configured() && radio_max.configured();
