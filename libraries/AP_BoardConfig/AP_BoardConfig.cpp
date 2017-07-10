@@ -169,6 +169,8 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif
 #endif
 
+    // ID number 11 reserved for AP_Radio (pending PR)
+    
     AP_GROUPEND
 };
 
