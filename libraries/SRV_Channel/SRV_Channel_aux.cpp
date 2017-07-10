@@ -256,6 +256,24 @@ SRV_Channels::copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool
 }
 
 /*
+  copy radio_in to radio_out for a channel mask
+ */
+void
+SRV_Channels::copy_radio_in_out_mask(uint16_t mask)
+{
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        if ((1U<<i) & mask) {
+            RC_Channel *rc = RC_Channels::rc_channel(channels[i].ch_num);
+            if (rc == nullptr) {
+                continue;
+            }
+            channels[i].set_output_pwm(rc->get_radio_in());
+        }
+    }
+
+}
+
+/*
   setup failsafe value for an auxiliary function type to a LimitValue
  */
 void
