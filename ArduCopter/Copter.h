@@ -478,6 +478,9 @@ private:
     // heading when in yaw_look_ahead_bearing
     float yaw_look_ahead_bearing;
 
+    // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
+    float auto_yaw_rate_cds;
+
     // Delay Mission Scripting Command
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
@@ -812,7 +815,9 @@ private:
     void set_auto_yaw_mode(uint8_t yaw_mode);
     void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle);
     void set_auto_yaw_roi(const Location &roi_location);
+    void set_auto_yaw_rate(float turn_rate_cds);
     float get_auto_heading(void);
+    float get_auto_yaw_rate_cds();
     bool autotune_init(bool ignore_checks);
     void autotune_stop();
     bool autotune_start(bool ignore_checks);

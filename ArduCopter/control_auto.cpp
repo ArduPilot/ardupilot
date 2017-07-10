@@ -644,6 +644,11 @@ void Copter::set_auto_yaw_mode(uint8_t yaw_mode)
     case AUTO_YAW_RESETTOARMEDYAW:
         // initial_armed_bearing will be set during arming so no init required
         break;
+
+    case AUTO_YAW_RATE:
+        // initialise target yaw rate to zero
+        auto_yaw_rate_cds = 0.0f;
+        break;
     }
 }
 
@@ -717,6 +722,13 @@ void Copter::set_auto_yaw_roi(const Location &roi_location)
     }
 }
 
+// set auto yaw rate in centi-degrees per second
+void Copter::set_auto_yaw_rate(float turn_rate_cds)
+{
+    set_auto_yaw_mode(AUTO_YAW_RATE);
+    auto_yaw_rate_cds = turn_rate_cds;
+}
+
 // get_auto_heading - returns target heading depending upon auto_yaw_mode
 // 100hz update rate
 float Copter::get_auto_heading(void)
@@ -745,6 +757,17 @@ float Copter::get_auto_heading(void)
         // we don't use wp_bearing because we don't want the copter to turn too much during flight
         return wp_nav->get_yaw();
     }
+}
+
+// returns yaw rate held in auto_yaw_rate and normally set by SET_POSITION_TARGET mavlink messages (positive it clockwise, negative is counter clockwise)
+float Copter::get_auto_yaw_rate_cds(void)
+{
+    if (auto_yaw_mode == AUTO_YAW_RATE) {
+        return auto_yaw_rate_cds;
+    }
+
+    // return zero turn rate (this should never happen)
+    return 0.0f;
 }
 
 // auto_payload_place_start - initialises controller to implement a placing
