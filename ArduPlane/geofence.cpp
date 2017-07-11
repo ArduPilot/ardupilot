@@ -137,7 +137,7 @@ void Plane::geofence_load(void)
     geofence_state->fence_triggered = false;
 
     gcs().send_text(MAV_SEVERITY_INFO,"Geofence loaded");
-    gcs_send_message(MSG_FENCE_STATUS);
+    gcs().send_message(MSG_FENCE_STATUS);
     return;
 
 failed:
@@ -339,7 +339,7 @@ void Plane::geofence_check(bool altitude_check_only)
             hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
             hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
  #endif
-            gcs_send_message(MSG_FENCE_STATUS);
+            gcs().send_message(MSG_FENCE_STATUS);
         }
         // we're inside, all is good with the world
         return;
@@ -365,7 +365,7 @@ void Plane::geofence_check(bool altitude_check_only)
  #endif
 
     gcs().send_text(MAV_SEVERITY_NOTICE,"Geofence triggered");
-    gcs_send_message(MSG_FENCE_STATUS);
+    gcs().send_message(MSG_FENCE_STATUS);
 
     // see what action the user wants
     switch (g.fence_action) {

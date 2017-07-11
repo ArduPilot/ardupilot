@@ -197,7 +197,7 @@ void Plane::update_loiter(uint16_t radius)
             loiter.start_time_ms = millis();
             if (control_mode == GUIDED || control_mode == AVOID_ADSB) {
                 // starting a loiter in GUIDED means we just reached the target point
-                gcs_send_mission_item_reached_message(0);
+                gcs().send_mission_item_reached_message(0);
             }
             if (quadplane.guided_mode_enabled()) {
                 quadplane.guided_start();

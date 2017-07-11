@@ -14,6 +14,8 @@ protected:
         return 0;
     };
 
+    AP_Mission *get_mission() override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;

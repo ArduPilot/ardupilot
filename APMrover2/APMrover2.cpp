@@ -208,7 +208,7 @@ void Rover::update_trigger(void)
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
     if (camera.check_trigger_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        gcs().send_message(MSG_CAMERA_FEEDBACK);
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
@@ -308,7 +308,7 @@ void Rover::one_second_loop(void)
         Log_Write_Current();
     }
     // send a heartbeat
-    gcs_send_message(MSG_HEARTBEAT);
+    gcs().send_message(MSG_HEARTBEAT);
 
     // allow orientation change at runtime to aid config
     ahrs.set_orientation();
@@ -439,7 +439,7 @@ void Rover::update_current_mode(void)
             if (rtl_complete || verify_RTL()) {
                 // we have reached destination so stop where we are
                 if (fabsf(g2.motors.get_throttle()) > g.throttle_min.get()) {
-                    gcs_send_mission_item_reached_message(0);
+                    gcs().send_mission_item_reached_message(0);
                 }
                 g2.motors.set_throttle(g.throttle_min.get());
                 g2.motors.set_steering(0.0f);

@@ -16,6 +16,8 @@ protected:
     // as currently Tracker may brick XBees
     uint32_t telem_delay() const override { return 0; }
 
+    AP_Mission *get_mission() override { return nullptr; };
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
