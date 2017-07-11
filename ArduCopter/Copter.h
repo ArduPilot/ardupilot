@@ -813,7 +813,7 @@ private:
     void auto_loiter_run();
     uint8_t get_default_auto_yaw_mode(bool rtl);
     void set_auto_yaw_mode(uint8_t yaw_mode);
-    void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle);
+    void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle);
     void set_auto_yaw_roi(const Location &roi_location);
     void set_auto_yaw_rate(float turn_rate_cds);
     float get_auto_heading(void);
