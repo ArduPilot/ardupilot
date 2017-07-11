@@ -653,13 +653,13 @@ void Copter::set_auto_yaw_mode(uint8_t yaw_mode)
 }
 
 // set_auto_yaw_look_at_heading - sets the yaw look at heading for auto mode
-void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle)
+void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle)
 {
     // get current yaw target
     int32_t curr_yaw_target = attitude_control->get_att_target_euler_cd().z;
 
     // get final angle, 1 = Relative, 0 = Absolute
-    if (relative_angle == 0) {
+    if (!relative_angle) {
         // absolute angle
         yaw_look_at_heading = wrap_360_cd(angle_deg * 100);
     } else {
