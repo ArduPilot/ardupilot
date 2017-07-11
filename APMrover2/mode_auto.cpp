@@ -3,6 +3,10 @@
 
 bool ModeAuto::_enter()
 {
+    if (mission.num_commands() == 0) {
+        gcs().send_text(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
+        return false;
+    }
     auto_triggered = false;
     rover.restart_nav();
     rover.loiter_start_time = 0;

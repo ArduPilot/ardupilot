@@ -288,11 +288,11 @@ bool Rover::set_mode(Mode &new_mode)
     }
 
     Mode &old_mode = *control_mode;
+    control_mode = &new_mode;
     if (!new_mode.enter()) {
+        control_mode = &old_mode;
         return false;
     }
-
-    control_mode = &new_mode;
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode->mode_number());
