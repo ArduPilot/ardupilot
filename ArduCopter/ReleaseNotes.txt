@@ -1,5 +1,12 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5.0-rc11 11-July-2017
+Changes from 3.5-rc10
+1) GPS fixes:
+    a) Re-enable auto detection of NMEA GPS (revert change from -rc9)
+    b) Fix SBF GPS race condition on startup that could cause GPS to not be detected
+2) SF40c driver fix to ignore zero distances
+------------------------------------------------------------------
 Copter 3.5.0-rc10 08-July-2017
 Changes from 3.5-rc9
 1) Intel Aero build and default parameter updates
