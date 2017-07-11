@@ -160,7 +160,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
     if(_enable_geofence_fs) {
         if (geofence_breached || check_altlimit()) {
             if (!_terminate) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Fence TERMINATE");
+                gcs().send_text(MAV_SEVERITY_INFO, "Fence TERMINATE");
                 _terminate.set_and_notify(1);
             }
         }
@@ -174,7 +174,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
         (mode == AFS_MANUAL || mode == AFS_STABILIZED || !_rc_term_manual_only) &&
         _rc_fail_time_seconds > 0 &&
             (AP_HAL::millis() - last_valid_rc_ms) > (_rc_fail_time_seconds * 1000.0f)) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RC failure terminate");
+        gcs().send_text(MAV_SEVERITY_INFO, "RC failure terminate");
         _terminate.set_and_notify(1);
     }
     
@@ -195,7 +195,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
         // we startup in preflight mode. This mode ends when
         // we first enter auto.
         if (mode == AFS_AUTO) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Starting AFS_AUTO");
+            gcs().send_text(MAV_SEVERITY_INFO, "Starting AFS_AUTO");
             _state = STATE_AUTO;
         }
         break;
@@ -203,7 +203,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
     case STATE_AUTO:
         // this is the normal mode. 
         if (!gcs_link_ok) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "State DATA_LINK_LOSS");
+            gcs().send_text(MAV_SEVERITY_ERROR, "State DATA_LINK_LOSS");
             _state = STATE_DATA_LINK_LOSS;
             if (_wp_comms_hold) {
                 _saved_wp = mission.get_current_nav_cmd().index;
@@ -217,7 +217,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
             break;
         }
         if (!gps_lock_ok) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "State GPS_LOSS");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "State GPS_LOSS");
             _state = STATE_GPS_LOSS;
             if (_wp_gps_loss) {
                 _saved_wp = mission.get_current_nav_cmd().index;
@@ -238,13 +238,13 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
             // leads to termination if AFS_DUAL_LOSS is 1
             if(_enable_dual_loss) {
                 if (!_terminate) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Dual loss TERMINATE");
+                    gcs().send_text(MAV_SEVERITY_INFO, "Dual loss TERMINATE");
                     _terminate.set_and_notify(1);
                 }
             }
         } else if (gcs_link_ok) {
             _state = STATE_AUTO;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GCS OK");
+            gcs().send_text(MAV_SEVERITY_INFO, "GCS OK");
             // we only return to the mission if we have not exceeded AFS_MAX_COM_LOSS
             if (_saved_wp != 0 && 
                 (_max_comms_loss <= 0 || 
@@ -260,11 +260,11 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
             // losing GCS link when GPS lock lost
             // leads to termination if AFS_DUAL_LOSS is 1
             if (!_terminate && _enable_dual_loss) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Dual loss TERMINATE");
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Dual loss TERMINATE");
                 _terminate.set_and_notify(1);
             }
         } else if (gps_lock_ok) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS OK");
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS OK");
             _state = STATE_AUTO;
             // we only return to the mission if we have not exceeded AFS_MAX_GPS_LOSS
             if (_saved_wp != 0 &&

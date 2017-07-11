@@ -1649,7 +1649,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         // send or receive fence points with GCS
     case MAVLINK_MSG_ID_FENCE_POINT:            // MAV ID: 160
     case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
-        sub.fence.handle_msg(chan, msg);
+        sub.fence.handle_msg(*this, msg);
         break;
 #endif // AC_FENCE == ENABLED
 

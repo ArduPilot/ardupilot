@@ -77,11 +77,11 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
                 lastInitFailReport_ms = AP_HAL::millis();
                 // provide an escalating series of messages
                 if (AP_HAL::millis() > 30000) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "EKF3 waiting for GPS config data");
+                    gcs().send_text(MAV_SEVERITY_ERROR, "EKF3 waiting for GPS config data");
                 } else if (AP_HAL::millis() > 15000) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 waiting for GPS config data");
+                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 waiting for GPS config data");
                 } else  {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 waiting for GPS config data");
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 waiting for GPS config data");
                 }
             }
             return false;
@@ -139,7 +139,7 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u buffers, IMU=%u , OBS=%u , dt=%6.4f",(unsigned)imu_index,(unsigned)imu_buffer_length,(unsigned)obs_buffer_length,(double)dtEkfAvg);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u buffers, IMU=%u , OBS=%u , dt=%6.4f",(unsigned)imu_index,(unsigned)imu_buffer_length,(unsigned)obs_buffer_length,(double)dtEkfAvg);
     return true;
 }
     
@@ -462,7 +462,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
 
     // set to true now that states have be initialised
     statesInitialised = true;
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
 
     return true;
 }

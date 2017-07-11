@@ -527,10 +527,14 @@ void GCS_MAVLINK::handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) 
 }
 
 
-void
-GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *str)
+void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
 {
-    GCS_MAVLINK::send_statustext_chan(severity, chan, str);
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
+    va_end(arg_list);
+    gcs().send_statustext(severity, (1<<chan), text);
 }
 
 void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio)
@@ -1140,34 +1144,6 @@ void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
         ahrs.get_error_rp(),
         ahrs.get_error_yaw());
 }
-
-/*
-  send a statustext message to all active MAVLink connections
- */
-void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...)
-{
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)text, sizeof(text)-1, fmt, arg_list);
-    va_end(arg_list);
-    text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = 0;
-    gcs().send_statustext(severity, mavlink_active | chan_is_streaming, text);
-}
-
-/*
-    send a statustext message to specific MAVLink channel, zero indexed
-*/
-void GCS_MAVLINK::send_statustext_chan(MAV_SEVERITY severity, uint8_t dest_chan, const char *fmt, ...)
-{
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
-    va_end(arg_list);
-    gcs().send_statustext(severity, (1<<dest_chan), text);
-}
-
 
 /*
     send a statustext text string to specific MAVLink bitmask
