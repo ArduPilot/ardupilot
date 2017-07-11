@@ -177,7 +177,7 @@ void Copter::guided_angle_control_start()
 // guided_set_destination - sets guided mode's target destination
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool Copter::guided_set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds)
+bool Copter::guided_set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
@@ -195,7 +195,7 @@ bool Copter::guided_set_destination(const Vector3f& destination, bool use_yaw, f
 #endif
 
     // set yaw state
-    guided_set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds);
+    guided_set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     // no need to check return status because terrain data is not used
     wp_nav->set_wp_destination(destination, false);
@@ -208,7 +208,7 @@ bool Copter::guided_set_destination(const Vector3f& destination, bool use_yaw, f
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
 // or if the fence is enabled and guided waypoint is outside the fence
-bool Copter::guided_set_destination(const Location_Class& dest_loc, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds)
+bool Copter::guided_set_destination(const Location_Class& dest_loc, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
@@ -233,7 +233,7 @@ bool Copter::guided_set_destination(const Location_Class& dest_loc, bool use_yaw
     }
 
     // set yaw state
-    guided_set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds);
+    guided_set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     // log target
     Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
@@ -241,7 +241,7 @@ bool Copter::guided_set_destination(const Location_Class& dest_loc, bool use_yaw
 }
 
 // guided_set_velocity - sets guided mode's target velocity
-void Copter::guided_set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds)
+void Copter::guided_set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
     // check we are in velocity control mode
     if (guided_mode != Guided_Velocity) {
@@ -249,7 +249,7 @@ void Copter::guided_set_velocity(const Vector3f& velocity, bool use_yaw, float y
     }
 
     // set yaw state
-    guided_set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds);
+    guided_set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     // record velocity target
     guided_vel_target_cms = velocity;
@@ -260,14 +260,15 @@ void Copter::guided_set_velocity(const Vector3f& velocity, bool use_yaw, float y
 }
 
 // set guided mode posvel target
-void Copter::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds) {
+void Copter::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+{
     // check we are in velocity control mode
     if (guided_mode != Guided_PosVel) {
         guided_posvel_control_start();
     }
 
     // set yaw state
-    guided_set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds);
+    guided_set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     posvel_update_time_ms = millis();
     guided_pos_target_cm = destination;
@@ -684,10 +685,10 @@ void Copter::guided_set_desired_velocity_with_accel_and_fence_limits(const Vecto
 }
 
 // helper function to set yaw state and targets
-void Copter::guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds)
+void Copter::guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
 {
     if (use_yaw) {
-        set_auto_yaw_look_at_heading(yaw_cd, 0.0f, 0, 0);
+        set_auto_yaw_look_at_heading(yaw_cd / 100.0f, 0.0f, 0, relative_angle);
     } else if (use_yaw_rate) {
         set_auto_yaw_rate(yaw_rate_cds);
     }
