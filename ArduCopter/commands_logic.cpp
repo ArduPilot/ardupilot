@@ -1014,7 +1014,7 @@ void Copter::do_yaw(const AP_Mission::Mission_Command& cmd)
 		cmd.content.yaw.angle_deg,
 		cmd.content.yaw.turn_rate_dps,
 		cmd.content.yaw.direction,
-		cmd.content.yaw.relative_angle);
+		cmd.content.yaw.relative_angle > 0);
 }
 
 
