@@ -165,7 +165,7 @@ void Tracker::set_home(struct Location temp)
 {
     set_home_eeprom(temp);
     current_loc = temp;
-    GCS_MAVLINK::send_home_all(temp);
+    gcs().send_home(temp);
 }
 
 void Tracker::arm_servos()

@@ -14,6 +14,8 @@ public:
 
     // return GCS link at offset ofs
     GCS_MAVLINK_Rover &chan(const uint8_t ofs) override { return _chan[ofs]; };
+    // return GCS link at offset ofs
+    const GCS_MAVLINK_Rover &chan(const uint8_t ofs) const override { return _chan[ofs]; };
 
 private:
 
