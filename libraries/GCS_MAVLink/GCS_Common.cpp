@@ -1685,6 +1685,22 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
         );
 }
 
+void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
+{
+    DataFlash_Class *df = DataFlash_Class::instance();
+    if (df == nullptr) {
+        return;
+    }
+    // ignore any statustext messages not from our GCS:
+    if (msg->sysid != sysid_my_gcs()) {
+        return;
+    }
+    mavlink_statustext_t packet;
+    mavlink_msg_statustext_decode(msg, &packet);
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+4] = { 'G','C','S',':'};
+    memcpy(&text[4], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
+    df->Log_Write_Message(text);
+}
 
 /*
   handle messages which don't require vehicle specific data
@@ -1739,7 +1755,12 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
         handle_common_mission_message(msg);
         break;
+
+    case MAVLINK_MSG_ID_STATUSTEXT:
+        handle_statustext(msg);
+        break;
     }
+
 }
 
 void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
