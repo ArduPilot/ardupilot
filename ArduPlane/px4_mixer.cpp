@@ -61,8 +61,8 @@ bool Plane::mix_one_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan, ui
         return false;
     }
 
-    int32_t out_min = limit*(outch->get_trim() - outch->get_output_min()) / (1500 - PX4_LIM_RC_MIN);
-    int32_t out_max = limit*(outch->get_output_max() - outch->get_trim()) / (PX4_LIM_RC_MAX - 1500);
+    int32_t out_min = limit*(outch_trim - outch->get_output_min()) / (1500 - PX4_LIM_RC_MIN);
+    int32_t out_max = limit*(outch->get_output_max() - outch_trim) / (PX4_LIM_RC_MAX - 1500);
     int32_t out_trim = limit*(outch_trim - 1500) / ((PX4_LIM_RC_MAX - PX4_LIM_RC_MIN) / 2);
     int32_t in_mul = inch->get_reverse() == outch->get_reversed()?1:-1;
 
