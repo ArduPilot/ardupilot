@@ -10,6 +10,7 @@ bool ModeAuto::_enter()
     auto_triggered = false;
     rover.restart_nav();
     rover.loiter_start_time = 0;
+    g2.motors.slew_limit_throttle(true);
     return true;
 }
 

@@ -4,6 +4,7 @@
 bool ModeRTL::_enter()
 {
     rover.do_RTL();
+    g2.motors.slew_limit_throttle(true);
     return true;
 }
 

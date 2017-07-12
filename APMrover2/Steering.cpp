@@ -54,13 +54,10 @@ bool Rover::in_stationary_loiter()
 void Rover::set_servos(void) {
     // Apply slew rate limit on non Manual modes
     if (control_mode == &mode_manual || control_mode == &mode_learning) {
-        g2.motors.slew_limit_throttle(false);
         if (failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
             g2.motors.set_throttle(0.0f);
             g2.motors.set_steering(0.0f);
         }
-    } else {
-        g2.motors.slew_limit_throttle(true);
     }
 
     // send output signals to motors
