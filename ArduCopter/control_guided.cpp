@@ -485,7 +485,7 @@ void Copter::guided_vel_control_run()
     uint32_t tnow = millis();
     if (tnow - vel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
         if (!pos_control->get_desired_velocity().is_zero()) {
-            guided_set_desired_velocity_with_accel_and_fence_limits(Vector3f(0.0f,0.0f,0.0f));
+            guided_set_desired_velocity_with_accel_and_fence_limits(Vector3f(0.0f, 0.0f, 0.0f));
         }
         if (auto_yaw_mode == AUTO_YAW_RATE) {
             set_auto_yaw_rate(0.0f);

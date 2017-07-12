@@ -658,7 +658,7 @@ void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, 
     // get current yaw target
     int32_t curr_yaw_target = attitude_control->get_att_target_euler_cd().z;
 
-    // get final angle, 1 = Relative, 0 = Absolute
+    // calculate final angle as relative to vehicle heading or absolute
     if (!relative_angle) {
         // absolute angle
         yaw_look_at_heading = wrap_360_cd(angle_deg * 100);
