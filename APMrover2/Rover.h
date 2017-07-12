@@ -76,6 +76,7 @@
 #include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_WheelEncoder/AP_WheelEncoder.h>
 
 // Configuration
 #include "config.h"
@@ -469,6 +470,7 @@ private:
     void Log_Write_Baro(void);
     void Log_Write_Home_And_Origin();
     void Log_Write_Vehicle_Startup_Messages();
+    void Log_Write_WheelEncoder();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
     void start_logging();
@@ -524,6 +526,7 @@ private:
     void update_beacon();
     void init_visual_odom();
     void update_visual_odom();
+    void update_wheel_encoder();
     void read_battery(void);
     void read_receiver_rssi(void);
     void read_sonars(void);

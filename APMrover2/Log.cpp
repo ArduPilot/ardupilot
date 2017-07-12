@@ -446,6 +446,33 @@ void Rover::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_targ
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+// wheel encoder packet
+struct PACKED log_WheelEncoder {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float distance_0;
+    uint8_t quality_0;
+    float distance_1;
+    uint8_t quality_1;
+};
+
+// log wheel encoder information
+void Rover::Log_Write_WheelEncoder()
+{
+    // return immediately if no wheel encoders are enabled
+    if (!g2.wheel_encoder.enabled(0) && !g2.wheel_encoder.enabled(1)) {
+        return;
+    }
+    struct log_WheelEncoder pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_WHEELENCODER_MSG),
+        time_us     : AP_HAL::micros64(),
+        distance_0  : g2.wheel_encoder.get_distance(0),
+        quality_0   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(0),0.0f,100.0f),
+        distance_1  : g2.wheel_encoder.get_distance(1),
+        quality_1   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(1),0.0f,100.0f)
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
 
 const LogStructure Rover::log_structure[] = {
     LOG_COMMON_STRUCTURES,
@@ -467,6 +494,8 @@ const LogStructure Rover::log_structure[] = {
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
     { LOG_ERROR_MSG, sizeof(log_Error),
       "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
+    { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder),
+      "WENC",  "Qfbfb",       "TimeUS,Dist0,Qual0,Dist1,Qual1" },
 };
 
 void Rover::log_init(void)
@@ -532,5 +561,6 @@ void Rover::Log_Write_Baro(void) {}
 void Rover::Log_Arm_Disarm() {}
 void Rover::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 void Rover::Log_Write_Steering() {}
+void Rover::Log_Write_WheelEncoder() {}
 
 #endif  // LOGGING_ENABLED

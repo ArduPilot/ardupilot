@@ -92,6 +92,12 @@ void Rover::update_visual_odom()
     }
 }
 
+// update wheel encoders
+void Rover::update_wheel_encoder()
+{
+    g2.wheel_encoder.update();
+}
+
 // read_battery - reads battery voltage and current and invokes failsafe
 // should be called at 10hz
 void Rover::read_battery(void)
