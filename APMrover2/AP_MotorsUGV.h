@@ -66,6 +66,9 @@ protected:
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle);
 
+    // scale motor ouput to duty cycle and switch servo for direction
+    float brushed_scaler(float motor_value, uint8_t servo_num);
+
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
 
@@ -83,4 +86,7 @@ protected:
     float   _throttle;  // requested throttle as a value from 0 to 100
     float   _last_throttle;
     bool    _use_slew_rate; // true if we should slew limit the throttle for one interation
+
+    static const uint8_t _throttleLeft_servo = 0;  // servo number for k_throttleLeft
+    static const uint8_t _throttleRight_servo = 1;  // servo number for k_throttleRight
 };

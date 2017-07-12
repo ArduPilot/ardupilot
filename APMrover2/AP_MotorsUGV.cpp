@@ -185,15 +185,18 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
         }
     }
     if (_pwm_type == PWM_TYPE_BRUSHED) {
-        const bool dirLeft = is_positive(motor_left);
-        const bool dirRight = is_positive(motor_right);
-        _relayEvents.do_set_relay(0, dirLeft);
-        _relayEvents.do_set_relay(1, dirRight);
-        motor_left = fabsf(motor_left);
-        motor_right = fabsf(motor_right);
+        motor_left = brushed_scaler(motor_left, _throttleLeft_servo);
+        motor_right = brushed_scaler(motor_right, _throttleRight_servo);
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  1000.0f * motor_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 1000.0f * motor_right);
+}
+
+// scale motor ouput to duty cycle and switch servo for direction
+float AP_MotorsUGV::brushed_scaler(float motor_value, uint8_t servo_num) {
+    const bool dir = is_negative(motor_value);
+    _relayEvents.do_set_relay(servo_num, dir);
+    return fabsf(motor_value);
 }
 
 // slew limit throttle for one iteration
