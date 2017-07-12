@@ -279,6 +279,11 @@ void Rover::send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
+uint8_t GCS_MAVLINK_Rover::sysid_my_gcs() const
+{
+    return rover.g.sysid_my_gcs;
+}
+
 uint32_t GCS_MAVLINK_Rover::telem_delay() const
 {
     return static_cast<uint32_t>(rover.g.telem_delay);
@@ -733,20 +738,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             handle_request_data_stream(msg, true);
             break;
         }
-
-    case MAVLINK_MSG_ID_STATUSTEXT:
-    {
-        // ignore any statustext messages not from our GCS:
-        if (msg->sysid != rover.g.sysid_my_gcs) {
-            break;
-        }
-        mavlink_statustext_t packet;
-        mavlink_msg_statustext_decode(msg, &packet);
-        char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+4] = { 'G', 'C', 'S', ':'};
-        memcpy(&text[4], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
-        rover.DataFlash.Log_Write_Message(text);
-        break;
-    }
 
     case MAVLINK_MSG_ID_COMMAND_INT: {
         // decode packet
