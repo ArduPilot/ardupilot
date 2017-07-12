@@ -12,6 +12,10 @@ public:
 
     void update() override;
 
+protected:
+
+    void update_healthy_flag(uint8_t instance) override { _frontend.sensors[instance].healthy = true; }
+
 private:
     uint8_t instance;
     SITL::SITL *sitl;
