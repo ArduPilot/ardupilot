@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_HAL/SensorHub.h>
+
 #define HAL_BOARD_NAME "SITL"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_OS_POSIX_IO 1

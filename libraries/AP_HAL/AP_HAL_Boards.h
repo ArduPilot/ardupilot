@@ -127,6 +127,9 @@
  * - HAL_OS_SOCKETS  : has posix-like sockets */
 
 /* DEFINITIONS FOR BOARDS */
+#ifndef HAL_SENSORHUB_ENABLED
+#define HAL_SENSORHUB_ENABLED SENSORHUB_DISABLE
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <AP_HAL/board/sitl.h>

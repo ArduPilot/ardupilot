@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_HAL/SensorHub.h>
+
 #define HAL_BOARD_NAME "PX4"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_150
 #define HAL_OS_POSIX_IO 1

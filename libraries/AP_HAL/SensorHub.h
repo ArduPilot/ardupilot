@@ -1,0 +1,6 @@
+#pragma once
+
+#define SENSORHUB_DISABLE 0
+#define SENSORHUB_ENABLE  1
+#define SENSORHUB_SOURCE  0
+#define SENSORHUB_SINK    1
