@@ -36,8 +36,6 @@ void Rover::init_rc_in()
 
 void Rover::init_rc_out()
 {
-    SRV_Channels::output_trim_all();
-
     // set auxiliary ranges
     update_aux();
 }
