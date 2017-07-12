@@ -181,6 +181,9 @@ void Rover::init_ardupilot()
     g2.motors.init();        // init motors including setting servo out channels ranges
     init_rc_out();           // enable output
 
+    // init wheel encoders
+    g2.wheel_encoder.init();
+
     relay.init();
 
 #if MOUNT == ENABLED
