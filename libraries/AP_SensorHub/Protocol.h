@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AP_SensorHub_Debug.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_GPS/AP_GPS.h>
