@@ -51,7 +51,6 @@ bool Plane::mix_one_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan, ui
     const float limit = 10000;
     const RC_Channel *inch = RC_Channels::rc_channel(in_chan);
     const SRV_Channel *outch = SRV_Channels::srv_channel(out_chan);
-    const float scale_out = limit*(outch->get_output_max() - outch->get_output_min()) / (PX4_LIM_RC_MAX - PX4_LIM_RC_MIN);
 
     bool is_throttle = in_chan==rcmap.throttle()-1;
     int16_t outch_trim = is_throttle?1500:outch->get_trim();
@@ -62,9 +61,9 @@ bool Plane::mix_one_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan, ui
         return false;
     }
 
-    int32_t out_min = scale_out*(1500 - outch->get_output_min()) / (1500 - PX4_LIM_RC_MIN);
-    int32_t out_max = scale_out*(outch->get_output_max() - 1500) / (PX4_LIM_RC_MAX - 1500);
-    int32_t out_trim = scale_out*(outch_trim - 1500) / ((PX4_LIM_RC_MAX - PX4_LIM_RC_MIN) / 2);
+    int32_t out_min = limit*(outch->get_trim() - outch->get_output_min()) / (1500 - PX4_LIM_RC_MIN);
+    int32_t out_max = limit*(outch->get_output_max() - outch->get_trim()) / (PX4_LIM_RC_MAX - 1500);
+    int32_t out_trim = limit*(outch_trim - 1500) / ((PX4_LIM_RC_MAX - PX4_LIM_RC_MIN) / 2);
     int32_t in_mul = inch->get_reverse() == outch->get_reversed()?1:-1;
 
     // note that RC trim is taken care of in rc_config
@@ -97,7 +96,6 @@ bool Plane::mix_two_channels(char *&buf, uint16_t &buf_size, uint8_t out_chan, u
     const RC_Channel *inch1 = RC_Channels::rc_channel(in_chan1);
     const RC_Channel *inch2 = RC_Channels::rc_channel(in_chan2);
     const SRV_Channel *outch = SRV_Channels::srv_channel(out_chan);
-    const float scale_out = limit*(outch->get_output_max() - outch->get_output_min()) / (PX4_LIM_RC_MAX - PX4_LIM_RC_MIN);
     int16_t outch_trim = outch->get_trim();
 
     outch_trim = constrain_int16(outch_trim, outch->get_output_min()+1, outch->get_output_max()-1);
@@ -106,9 +104,9 @@ bool Plane::mix_two_channels(char *&buf, uint16_t &buf_size, uint8_t out_chan, u
         return false;
     }
 
-    int32_t out_min = scale_out*(1500 - outch->get_output_min()) / (1500 - PX4_LIM_RC_MIN);
-    int32_t out_max = scale_out*(outch->get_output_max() - 1500) / (PX4_LIM_RC_MAX - 1500);
-    int32_t out_trim = scale_out*(outch_trim - 1500) / ((PX4_LIM_RC_MAX - PX4_LIM_RC_MIN) / 2);
+    int32_t out_min = limit*(outch->get_trim() - outch->get_output_min()) / (1500 - PX4_LIM_RC_MIN);
+    int32_t out_max = limit*(outch->get_output_max() - outch->get_trim()) / (PX4_LIM_RC_MAX - 1500);
+    int32_t out_trim = limit*(outch_trim - 1500) / ((PX4_LIM_RC_MAX - PX4_LIM_RC_MIN) / 2);
     int32_t in_mul1 = inch1->get_reverse() == outch->get_reversed()?1:-1;
     int32_t in_mul2 = inch2->get_reverse() == outch->get_reversed()?1:-1;
     float in_gain = g.mixing_gain;
