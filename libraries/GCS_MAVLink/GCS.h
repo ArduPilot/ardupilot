@@ -212,10 +212,6 @@ public:
     // return current packet overhead for a channel
     static uint8_t packet_overhead_chan(mavlink_channel_t chan);
 
-    // FIXME: move this to be private/protected once possible
-    bool telemetry_delayed(mavlink_channel_t chan);
-    virtual uint32_t telem_delay() const = 0;
-
 protected:
 
     // overridable method to check for packet acceptance. Allows for
@@ -268,6 +264,9 @@ protected:
 
     void handle_timesync(mavlink_message_t *msg);
     void handle_statustext(mavlink_message_t *msg);
+
+    bool telemetry_delayed() const;
+    virtual uint32_t telem_delay() const = 0;
 
 private:
 
