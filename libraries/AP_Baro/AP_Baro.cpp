@@ -39,6 +39,10 @@
 #include "AP_Baro_UAVCAN.h"
 #endif
 
+#if HAL_SENSORHUB_ENABLED
+#include "AP_Baro_SensorHub.h"
+#endif
+
 #define C_TO_KELVIN 273.15f
 // Gas Constant is from Aerodynamics for Engineering Students, Third Edition, E.L.Houghton and N.B.Carruthers
 #define ISA_GAS_CONSTANT 287.26f
@@ -167,7 +171,7 @@ void AP_Baro::calibrate(bool save)
             update();
             if (AP_HAL::millis() - tstart > 500) {
                 AP_HAL::panic("PANIC: AP_Baro::read unsuccessful "
-                        "for more than 500ms in AP_Baro::calibrate [2]\r\n");
+                              "for more than 500ms in AP_Baro::calibrate [2]\r\n");
             }
             hal.scheduler->delay(10);
         } while (!healthy());
@@ -390,11 +394,18 @@ void AP_Baro::init(void)
         return;
     }
 
+#if HAL_SENSORHUB_ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || HAL_BARO_DEFAULT == HAL_BARO_SENSORHUB
+        ADD_BACKEND(new AP_Baro_SensorHub(*this));
+        return;
+#endif
+#else
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     ADD_BACKEND(new AP_Baro_SITL(*this));
     return;
 #endif
-    
+#endif
+
 #if HAL_WITH_UAVCAN
     bool added;
     do {
