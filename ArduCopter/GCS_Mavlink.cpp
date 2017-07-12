@@ -333,6 +333,11 @@ void Copter::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
+uint8_t GCS_MAVLINK_Copter::sysid_my_gcs() const
+{
+    return copter.g.sysid_my_gcs;
+}
+
 uint32_t GCS_MAVLINK_Copter::telem_delay() const
 {
     return (uint32_t)(copter.g.telem_delay);
@@ -883,20 +888,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:    // MAV ID: 66
     {
         handle_request_data_stream(msg, false);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_STATUSTEXT:
-    {
-        // ignore any statustext messages not from our GCS:
-        if (msg->sysid != copter.g.sysid_my_gcs) {
-            break;
-        }
-        mavlink_statustext_t packet;
-        mavlink_msg_statustext_decode(msg, &packet);
-        char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+4] = { 'G','C','S',':'};
-        memcpy(&text[4], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
-        copter.DataFlash.Log_Write_Message(text);
         break;
     }
 
