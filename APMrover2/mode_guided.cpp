@@ -9,6 +9,7 @@ bool ModeGuided::_enter()
     */
     lateral_acceleration = 0.0f;
     rover.set_guided_WP(rover.current_loc);
+    g2.motors.slew_limit_throttle(true);
     return true;
 }
 
