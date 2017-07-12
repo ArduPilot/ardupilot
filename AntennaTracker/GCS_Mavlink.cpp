@@ -492,6 +492,11 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
     target_set = true;
 }
 
+uint8_t GCS_MAVLINK_Tracker::sysid_my_gcs() const
+{
+    return tracker.g.sysid_my_gcs;
+}
+
 void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
