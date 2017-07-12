@@ -9,6 +9,9 @@ AP_Compass_Backend::AP_Compass_Backend(Compass &compass) :
     _compass(compass)
 {
     _sem = hal.util->new_semaphore();    
+#if HAL_SENSORHUB_ENABLED
+    _shub = AP_SensorHub::get_instance();
+#endif
 }
 
 void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
@@ -36,6 +39,17 @@ void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint32_t time_us
     state.last_update_ms = AP_HAL::millis();
 
     _compass._calibrator[instance].new_sample(mag);
+
+#if HAL_SENSORHUB_ENABLED
+    if (_shub && _shub->isSource()) {
+        CompassMessage msg;
+        msg.setInstance(instance);
+        msg.setField(mag);
+        auto packet = msg.encode();
+        _shub->write(packet);
+    }
+#endif
+
 }
 
 void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)

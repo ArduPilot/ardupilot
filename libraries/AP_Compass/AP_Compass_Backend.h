@@ -21,6 +21,10 @@
 
 #include "AP_Compass.h"
 
+#if HAL_SENSORHUB_ENABLED
+#include <AP_SensorHub/AP_SensorHub.h>
+#endif
+
 class Compass;  // forward declaration
 class AP_Compass_Backend
 {
@@ -64,6 +68,11 @@ public:
 		DEVTYPE_QMC5883L = 0x0D,
     };
 
+#if HAL_SENSORHUB_ENABLED
+    virtual void setSensorHub(AP_SensorHub *shub) {
+        _shub = shub;
+    }
+#endif
 
 protected:
 
@@ -107,6 +116,9 @@ protected:
     // semaphore for access to shared frontend data
     AP_HAL::Semaphore *_sem;
 
+#if HAL_SENSORHUB_ENABLED
+    AP_SensorHub *_shub;
+#endif
 private:
     void apply_corrections(Vector3f &mag, uint8_t i);
 };
