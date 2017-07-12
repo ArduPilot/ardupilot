@@ -103,6 +103,8 @@ public:
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
+    virtual uint8_t sysid_my_gcs() const = 0;
+
     static const struct AP_Param::GroupInfo        var_info[];
 
     // set to true if this GCS link is active
@@ -265,7 +267,8 @@ protected:
     void handle_device_op_write(mavlink_message_t *msg);
 
     void handle_timesync(mavlink_message_t *msg);
-    
+    void handle_statustext(mavlink_message_t *msg);
+
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
