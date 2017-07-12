@@ -324,6 +324,9 @@ public:
 
     // Motor library
     AP_MotorsUGV motors;
+
+    // wheel encoders
+    AP_WheelEncoder wheel_encoder;
 };
 
 extern const AP_Param::Info var_info[];
