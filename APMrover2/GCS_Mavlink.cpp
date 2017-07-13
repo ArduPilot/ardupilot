@@ -202,8 +202,8 @@ void Rover::send_hwstatus(mavlink_channel_t chan)
 
 void Rover::send_rangefinder(mavlink_channel_t chan)
 {
-    if (!sonar.has_data(0) && !sonar.has_data(1)) {
-        // no sonar to report
+    if (!rangefinder.has_data(0) && !rangefinder.has_data(1)) {
+        // no rangefinder to report
         return;
     }
 
@@ -211,25 +211,25 @@ void Rover::send_rangefinder(mavlink_channel_t chan)
     float voltage = 0.0f;
 
     /*
-      report smaller distance of two sonars
+      report smaller distance of two rangefinders
      */
-    if (sonar.has_data(0) && sonar.has_data(1)) {
-        if (sonar.distance_cm(0) <= sonar.distance_cm(1)) {
-            distance_cm = sonar.distance_cm(0);
-            voltage = sonar.voltage_mv(0);
+    if (rangefinder.has_data(0) && rangefinder.has_data(1)) {
+        if (rangefinder.distance_cm(0) <= rangefinder.distance_cm(1)) {
+            distance_cm = rangefinder.distance_cm(0);
+            voltage = rangefinder.voltage_mv(0);
         } else {
-            distance_cm = sonar.distance_cm(1);
-            voltage = sonar.voltage_mv(1);
+            distance_cm = rangefinder.distance_cm(1);
+            voltage = rangefinder.voltage_mv(1);
         }
     } else {
-        // only sonar 0 or sonar 1 has data
-        if (sonar.has_data(0)) {
-            distance_cm = sonar.distance_cm(0);
-            voltage = sonar.voltage_mv(0) * 0.001f;
+        // only rangefinder 0 or rangefinder 1 has data
+        if (rangefinder.has_data(0)) {
+            distance_cm = rangefinder.distance_cm(0);
+            voltage = rangefinder.voltage_mv(0) * 0.001f;
         }
-        if (sonar.has_data(1)) {
-            distance_cm = sonar.distance_cm(1);
-            voltage = sonar.voltage_mv(1) * 0.001f;
+        if (rangefinder.has_data(1)) {
+            distance_cm = rangefinder.distance_cm(1);
+            voltage = rangefinder.voltage_mv(1) * 0.001f;
         }
     }
 
@@ -426,7 +426,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         rover.send_rangefinder(chan);
-        send_distance_sensor(rover.sonar);
+        send_distance_sensor(rover.rangefinder);
         break;
 
     case MSG_MOUNT_STATUS:
@@ -1454,7 +1454,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         break;
 
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
-        rover.sonar.handle_msg(msg);
+        rover.rangefinder.handle_msg(msg);
         break;
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:

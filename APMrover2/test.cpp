@@ -17,7 +17,7 @@ static const struct Menu::command test_menu_commands[] = {
     // when real sensors are attached or they are emulated
     {"gps",             MENU_FUNC(test_gps)},
     {"ins",             MENU_FUNC(test_ins)},
-    {"sonartest",       MENU_FUNC(test_sonar)},
+    {"rngfndtest",      MENU_FUNC(test_rangefinder)},
     {"compass",         MENU_FUNC(test_mag)},
     {"logging",         MENU_FUNC(test_logging)},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -359,67 +359,67 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // real sensors that have not been simulated yet go here
 
-int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_rangefinder(uint8_t argc, const Menu::arg *argv)
 {
-    init_sonar();
+    init_rangefinder();
     delay(20);
-    sonar.update();
+    rangefinder.update();
 
-    if (sonar.status(0) == RangeFinder::RangeFinder_NotConnected && sonar.status(1) == RangeFinder::RangeFinder_NotConnected) {
-        cliSerial->printf("WARNING: Sonar is not enabled\n");
+    if (rangefinder.status(0) == RangeFinder::RangeFinder_NotConnected && rangefinder.status(1) == RangeFinder::RangeFinder_NotConnected) {
+        cliSerial->printf("WARNING: Rangefinder is not enabled\n");
     }
 
     print_hit_enter();
 
-    float sonar_dist_cm_min = 0.0f;
-    float sonar_dist_cm_max = 0.0f;
+    float rangefinder_dist_cm_min = 0.0f;
+    float rangefinder_dist_cm_max = 0.0f;
     float voltage_min = 0.0f, voltage_max = 0.0f;
-    float sonar2_dist_cm_min = 0.0f;
-    float sonar2_dist_cm_max = 0.0f;
+    float rangefinder2_dist_cm_min = 0.0f;
+    float rangefinder2_dist_cm_max = 0.0f;
     float voltage2_min = 0.0f, voltage2_max = 0.0f;
     uint32_t last_print = 0;
 
     while (true) {
         delay(20);
-        sonar.update();
+        rangefinder.update();
         uint32_t now = millis();
 
-        float dist_cm = sonar.distance_cm(0);
-        float voltage = sonar.voltage_mv(0);
-        if (is_zero(sonar_dist_cm_min)) {
-            sonar_dist_cm_min = dist_cm;
+        float dist_cm = rangefinder.distance_cm(0);
+        float voltage = rangefinder.voltage_mv(0);
+        if (is_zero(rangefinder_dist_cm_min)) {
+            rangefinder_dist_cm_min = dist_cm;
             voltage_min = voltage;
         }
-        sonar_dist_cm_max = MAX(sonar_dist_cm_max, dist_cm);
-        sonar_dist_cm_min = MIN(sonar_dist_cm_min, dist_cm);
+        rangefinder_dist_cm_max = MAX(rangefinder_dist_cm_max, dist_cm);
+        rangefinder_dist_cm_min = MIN(rangefinder_dist_cm_min, dist_cm);
         voltage_min = MIN(voltage_min, voltage);
         voltage_max = MAX(voltage_max, voltage);
 
-        dist_cm = sonar.distance_cm(1);
-        voltage = sonar.voltage_mv(1);
-        if (is_zero(sonar2_dist_cm_min)) {
-            sonar2_dist_cm_min = dist_cm;
+        dist_cm = rangefinder.distance_cm(1);
+        voltage = rangefinder.voltage_mv(1);
+        if (is_zero(rangefinder2_dist_cm_min)) {
+            rangefinder2_dist_cm_min = dist_cm;
             voltage2_min = voltage;
         }
-        sonar2_dist_cm_max = MAX(sonar2_dist_cm_max, dist_cm);
-        sonar2_dist_cm_min = MIN(sonar2_dist_cm_min, dist_cm);
+        rangefinder2_dist_cm_max = MAX(rangefinder2_dist_cm_max, dist_cm);
+        rangefinder2_dist_cm_min = MIN(rangefinder2_dist_cm_min, dist_cm);
         voltage2_min = MIN(voltage2_min, voltage);
         voltage2_max = MAX(voltage2_max, voltage);
 
         if (now - last_print >= 200) {
-            cliSerial->printf("sonar1 dist=%.1f:%.1fcm volt1=%.2f:%.2f   sonar2 dist=%.1f:%.1fcm volt2=%.2f:%.2f\n",
-                    static_cast<double>(sonar_dist_cm_min),
-                    static_cast<double>(sonar_dist_cm_max),
+            cliSerial->printf("rangefinder1 dist=%.1f:%.1fcm volt1=%.2f:%.2f   rangefinder2 dist=%.1f:%.1fcm volt2=%.2f:%.2f\n",
+                    static_cast<double>(rangefinder_dist_cm_min),
+                    static_cast<double>(rangefinder_dist_cm_max),
                     static_cast<double>(voltage_min),
                     static_cast<double>(voltage_max),
-                    static_cast<double>(sonar2_dist_cm_min),
-                    static_cast<double>(sonar2_dist_cm_max),
+                    static_cast<double>(rangefinder2_dist_cm_min),
+                    static_cast<double>(rangefinder2_dist_cm_max),
                     static_cast<double>(voltage2_min),
                     static_cast<double>(voltage2_max));
             voltage_min = voltage_max = 0.0f;
             voltage2_min = voltage2_max = 0.0f;
-            sonar_dist_cm_min = sonar_dist_cm_max = 0.0f;
-            sonar2_dist_cm_min = sonar2_dist_cm_max = 0.0f;
+            rangefinder_dist_cm_min = rangefinder_dist_cm_max = 0.0f;
+            rangefinder2_dist_cm_min = rangefinder2_dist_cm_max = 0.0f;
             last_print = now;
         }
         if (cliSerial->available() > 0) {
