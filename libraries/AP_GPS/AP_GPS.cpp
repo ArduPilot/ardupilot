@@ -35,6 +35,9 @@
 #include "AP_GPS_SIRF.h"
 #include "AP_GPS_UBLOX.h"
 #include "AP_GPS_MAV.h"
+#if HAL_SENSORHUB_ENABLED
+#include "AP_GPS_SensorHub.h"
+#endif
 #include "GPS_Backend.h"
 
 #if HAL_WITH_UAVCAN
@@ -415,6 +418,14 @@ void AP_GPS::detect_instance(uint8_t instance)
         new_gps = new AP_GPS_MAV(*this, state[instance], nullptr);
         goto found_gps;
         break;
+
+#if HAL_SENSORHUB_ENABLED
+    case GPS_TYPE_SENSORHUB:
+        dstate->auto_detected_baud = false;
+        new_gps = new AP_GPS_SensorHub(*this, state[instance], nullptr);
+        goto found_gps;
+        break;
+#endif
 
 #if HAL_WITH_UAVCAN
     // user has to explicitly set the UAVCAN type, do not use AUTO
