@@ -132,6 +132,10 @@
 #include <SITL/SITL.h>
 #endif
 
+#if HAL_SENSORHUB_ENABLED
+#include <AP_SensorHub/AP_SensorHub.h>
+#endif
+
 
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
@@ -193,6 +197,7 @@ private:
     DataFlash_Class DataFlash;
 
     AP_GPS gps;
+    AP_SerialManager::SerialProtocol gps_serial_protocol;
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
@@ -220,6 +225,11 @@ private:
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
+
+    AP_Baro baro_sitl;
+    Compass compass_sitl;
+    AP_InertialSensor ins_sitl;
+    AP_GPS gps_sitl;
 #endif
 
     // Mission library
@@ -641,7 +651,11 @@ private:
 
     // set when we are upgrading parameters from 3.4
     bool upgrading_frame_params;
-    
+
+#if HAL_SENSORHUB_ENABLED
+    AP_SensorHub *shub;
+#endif
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -1159,6 +1173,10 @@ private:
     void init_capabilities(void);
     void dataflash_periodic(void);
     void accel_cal_update(void);
+
+#if HAL_SENSORHUB_ENABLED
+    void setup_shub();
+#endif
 
 public:
     void mavlink_delay_cb();

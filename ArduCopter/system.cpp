@@ -119,6 +119,10 @@ void Copter::init_ardupilot()
     // initialise serial ports
     serial_manager.init();
 
+#if HAL_SENSORHUB_ENABLED
+    setup_shub();
+#endif
+
     // setup first port early to allow BoardConfig to report errors
     gcs_chan[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
@@ -209,7 +213,8 @@ void Copter::init_ardupilot()
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init(serial_manager);
+
+    gps.init(serial_manager, gps_serial_protocol);
 
     init_compass();
 
@@ -333,6 +338,10 @@ void Copter::init_ardupilot()
 
     // flag that initialisation has completed
     ap.initialised = true;
+
+#if HAL_SENSORHUB_ENABLED
+    shub->start();
+#endif
 }
 
 
@@ -722,3 +731,14 @@ void Copter::allocate_motors(void)
     // upgrade parameters. This must be done after allocating the objects
     convert_pid_parameters();
 }
+
+#if HAL_SENSORHUB_ENABLED
+void Copter::setup_shub()
+{
+#if SENSORHUB_MODE == SENSORHUB_SINK
+    gps_serial_protocol = AP_SerialManager::SerialProtocol_SENSORHUB;
+#endif
+
+    shub->init(serial_manager);
+}
+#endif
