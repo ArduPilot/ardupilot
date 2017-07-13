@@ -17,6 +17,8 @@ protected:
     uint32_t telem_delay() const override { return 0; }
 
     AP_Mission *get_mission() override { return nullptr; };
+    AP_Rally *get_rally() const override { return nullptr; };
+
     uint8_t sysid_my_gcs() const override;
 
 private:
