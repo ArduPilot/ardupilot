@@ -24,6 +24,9 @@
 #include "AP_Compass_UAVCAN.h"
 #endif
 #include "AP_Compass_MMC3416.h"
+#if HAL_SENSORHUB_ENABLED
+#include "AP_Compass_SensorHub.h"
+#endif
 #include "AP_Compass.h"
 
 extern AP_HAL::HAL& hal;
@@ -516,11 +519,18 @@ void Compass::_detect_backends(void)
         } \
     } while (0)
 
+#if HAL_SENSORHUB_ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    ADD_BACKEND(new AP_Compass_SensorHub(*this), nullptr, false);
+    return;
+#endif
+#else
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     ADD_BACKEND(new AP_Compass_SITL(*this), nullptr, false);
     return;
 #endif
-    
+#endif
+
 #if HAL_WITH_UAVCAN
     bool added;
     do {
@@ -719,6 +729,8 @@ void Compass::_detect_backends(void)
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AERO
     ADD_BACKEND(AP_Compass_BMM150::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_BMM150_I2C_BUS, HAL_COMPASS_BMM150_I2C_ADDR)),
                  AP_Compass_BMM150::name, false);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_SENSORHUB
+    ADD_BACKEND(new AP_Compass_SensorHub(*this), nullptr, false);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
                  AP_Compass_HMC5843::name, false);
