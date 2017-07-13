@@ -470,6 +470,7 @@ private:
     void Log_Write_Baro(void);
     void Log_Write_Home_And_Origin();
     void Log_Write_Vehicle_Startup_Messages();
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_WheelEncoder();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
@@ -591,7 +592,6 @@ private:
     void nav_set_speed();
     bool in_stationary_loiter(void);
     void set_loiter_active(const AP_Mission::Mission_Command& cmd);
-    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void crash_check();
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
