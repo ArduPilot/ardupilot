@@ -262,11 +262,10 @@ public:
 
     // return time in microseconds of last update() call
     uint32_t get_last_update_usec(void) const { return _last_update_usec; }
-    
-private:
 
     // load backend drivers
     bool _add_backend(AP_InertialSensor_Backend *backend);
+private:
     void _start_backends();
     AP_InertialSensor_Backend *_find_backend(int16_t backend_id, uint8_t instance);
 
