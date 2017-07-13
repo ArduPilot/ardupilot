@@ -56,7 +56,7 @@ enum GuidedMode {
 #define LOG_NTUN_MSG            0x02
 #define LOG_PERFORMANCE_MSG     0x03
 #define LOG_STARTUP_MSG         0x06
-#define LOG_SONAR_MSG           0x07
+#define LOG_RANGEFINDER_MSG     0x07
 #define LOG_ARM_DISARM_MSG      0x08
 #define LOG_STEERING_MSG        0x0D
 #define LOG_GUIDEDTARGET_MSG    0x0E
@@ -77,7 +77,7 @@ enum GuidedMode {
 #define MASK_LOG_IMU            (1<<7)
 #define MASK_LOG_CMD            (1<<8)
 #define MASK_LOG_CURRENT        (1<<9)
-#define MASK_LOG_SONAR          (1<<10)
+#define MASK_LOG_RANGEFINDER    (1<<10)
 #define MASK_LOG_COMPASS        (1<<11)
 #define MASK_LOG_CAMERA         (1<<12)
 #define MASK_LOG_STEERING       (1<<13)

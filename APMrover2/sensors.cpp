@@ -48,9 +48,9 @@ void Rover::init_barometer(bool full_calibration)
     gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 
-void Rover::init_sonar(void)
+void Rover::init_rangefinder(void)
 {
-    sonar.init();
+    rangefinder.init();
 }
 
 // init beacons used for non-gps position estimates
@@ -133,67 +133,67 @@ void Rover::accel_cal_update() {
     }
 }
 
-// read the sonars
-void Rover::read_sonars(void)
+// read the rangefinders
+void Rover::read_rangefinders(void)
 {
-    sonar.update();
+    rangefinder.update();
 
-    if (sonar.status(0) == RangeFinder::RangeFinder_NotConnected) {
-        // this makes it possible to disable sonar at runtime
+    if (rangefinder.status(0) == RangeFinder::RangeFinder_NotConnected) {
+        // this makes it possible to disable rangefinder at runtime
         return;
     }
 
-    if (sonar.has_data(1)) {
-        // we have two sonars
-        obstacle.sonar1_distance_cm = sonar.distance_cm(0);
-        obstacle.sonar2_distance_cm = sonar.distance_cm(1);
-        if (obstacle.sonar1_distance_cm < static_cast<uint16_t>(g.sonar_trigger_cm) &&
-            obstacle.sonar1_distance_cm < static_cast<uint16_t>(obstacle.sonar2_distance_cm))  {
+    if (rangefinder.has_data(1)) {
+        // we have two rangefinders
+        obstacle.rangefinder1_distance_cm = rangefinder.distance_cm(0);
+        obstacle.rangefinder2_distance_cm = rangefinder.distance_cm(1);
+        if (obstacle.rangefinder1_distance_cm < static_cast<uint16_t>(g.rangefinder_trigger_cm) &&
+            obstacle.rangefinder1_distance_cm < static_cast<uint16_t>(obstacle.rangefinder2_distance_cm))  {
             // we have an object on the left
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
-            if (obstacle.detected_count == g.sonar_debounce) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Sonar1 obstacle %u cm",
-                        static_cast<uint32_t>(obstacle.sonar1_distance_cm));
+            if (obstacle.detected_count == g.rangefinder_debounce) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder1 obstacle %u cm",
+                        static_cast<uint32_t>(obstacle.rangefinder1_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
-            obstacle.turn_angle = g.sonar_turn_angle;
-        } else if (obstacle.sonar2_distance_cm < static_cast<uint16_t>(g.sonar_trigger_cm)) {
+            obstacle.turn_angle = g.rangefinder_turn_angle;
+        } else if (obstacle.rangefinder2_distance_cm < static_cast<uint16_t>(g.rangefinder_trigger_cm)) {
             // we have an object on the right
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
-            if (obstacle.detected_count == g.sonar_debounce) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Sonar2 obstacle %u cm",
-                        static_cast<uint32_t>(obstacle.sonar2_distance_cm));
+            if (obstacle.detected_count == g.rangefinder_debounce) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder2 obstacle %u cm",
+                        static_cast<uint32_t>(obstacle.rangefinder2_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
-            obstacle.turn_angle = -g.sonar_turn_angle;
+            obstacle.turn_angle = -g.rangefinder_turn_angle;
         }
     } else {
-        // we have a single sonar
-        obstacle.sonar1_distance_cm = sonar.distance_cm(0);
-        obstacle.sonar2_distance_cm = 0;
-        if (obstacle.sonar1_distance_cm < static_cast<uint16_t>(g.sonar_trigger_cm))  {
+        // we have a single rangefinder
+        obstacle.rangefinder1_distance_cm = rangefinder.distance_cm(0);
+        obstacle.rangefinder2_distance_cm = 0;
+        if (obstacle.rangefinder1_distance_cm < static_cast<uint16_t>(g.rangefinder_trigger_cm))  {
             // obstacle detected in front
             if (obstacle.detected_count < 127) {
                 obstacle.detected_count++;
             }
-            if (obstacle.detected_count == g.sonar_debounce) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Sonar obstacle %u cm",
-                        static_cast<uint32_t>(obstacle.sonar1_distance_cm));
+            if (obstacle.detected_count == g.rangefinder_debounce) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder obstacle %u cm",
+                        static_cast<uint32_t>(obstacle.rangefinder1_distance_cm));
             }
             obstacle.detected_time_ms = AP_HAL::millis();
-            obstacle.turn_angle = g.sonar_turn_angle;
+            obstacle.turn_angle = g.rangefinder_turn_angle;
         }
     }
 
-    Log_Write_Sonar();
+    Log_Write_Rangefinder();
 
     // no object detected - reset after the turn time
-    if (obstacle.detected_count >= g.sonar_debounce &&
-        AP_HAL::millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) {
+    if (obstacle.detected_count >= g.rangefinder_debounce &&
+        AP_HAL::millis() > obstacle.detected_time_ms + g.rangefinder_turn_time*1000) {
         gcs().send_text(MAV_SEVERITY_INFO, "Obstacle passed");
         obstacle.detected_count = 0;
         obstacle.turn_angle = 0;
@@ -296,12 +296,12 @@ void Rover::update_sensor_status_flags(void)
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
 
-    if (sonar.num_sensors() > 0) {
+    if (rangefinder.num_sensors() > 0) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (g.sonar_trigger_cm > 0) {
+        if (g.rangefinder_trigger_cm > 0) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
-        if (sonar.has_data(0)) {
+        if (rangefinder.has_data(0)) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }

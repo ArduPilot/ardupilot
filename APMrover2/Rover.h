@@ -151,7 +151,7 @@ private:
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
-    RangeFinder sonar { serial_manager, ROTATION_NONE };
+    RangeFinder rangefinder { serial_manager, ROTATION_NONE };
     AP_Button button;
 
     // flight modes convenience array
@@ -159,9 +159,9 @@ private:
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2{&ahrs, barometer, sonar};
-    NavEKF3 EKF3{&ahrs, barometer, sonar};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, sonar, EKF2, EKF3};
+    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
+    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder, EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs {ins, barometer, gps};
 #endif
@@ -277,8 +277,8 @@ private:
         // have we detected an obstacle?
         uint8_t detected_count;
         float turn_angle;
-        uint16_t sonar1_distance_cm;
-        uint16_t sonar2_distance_cm;
+        uint16_t rangefinder1_distance_cm;
+        uint16_t rangefinder2_distance_cm;
 
         // time when we last detected an obstacle, in milliseconds
         uint32_t detected_time_ms;
@@ -461,7 +461,7 @@ private:
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
     void Log_Write_Nav_Tuning();
-    void Log_Write_Sonar();
+    void Log_Write_Rangefinder();
     void Log_Write_Beacon();
     void Log_Write_Current();
     void Log_Write_Attitude();
@@ -522,7 +522,7 @@ private:
     void trim_control_surfaces();
     void trim_radio();
     void init_barometer(bool full_calibration);
-    void init_sonar(void);
+    void init_rangefinder(void);
     void init_beacon();
     void update_beacon();
     void init_visual_odom();
@@ -530,7 +530,7 @@ private:
     void update_wheel_encoder();
     void read_battery(void);
     void read_receiver_rssi(void);
-    void read_sonars(void);
+    void read_rangefinders(void);
     void report_batt_monitor();
     void report_radio();
     void report_gains();
@@ -623,7 +623,7 @@ public:
     int8_t test_gps(uint8_t argc, const Menu::arg *argv);
     int8_t test_ins(uint8_t argc, const Menu::arg *argv);
     int8_t test_mag(uint8_t argc, const Menu::arg *argv);
-    int8_t test_sonar(uint8_t argc, const Menu::arg *argv);
+    int8_t test_rangefinder(uint8_t argc, const Menu::arg *argv);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     int8_t test_shell(uint8_t argc, const Menu::arg *argv);
 #endif
