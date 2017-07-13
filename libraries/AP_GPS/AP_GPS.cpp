@@ -272,13 +272,13 @@ AP_GPS::AP_GPS()
 }
 
 /// Startup initialisation.
-void AP_GPS::init(const AP_SerialManager& serial_manager)
+void AP_GPS::init(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol)
 {
     primary_instance = 0;
 
     // search for serial ports with gps protocol
-    _port[0] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 0);
-    _port[1] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 1);
+    _port[0] = serial_manager.find_serial(protocol, 0);
+    _port[1] = serial_manager.find_serial(protocol, 1);
     _last_instance_swap_ms = 0;
 
     // Initialise class variables used to do GPS blending

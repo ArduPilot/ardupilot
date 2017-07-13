@@ -150,7 +150,7 @@ public:
     };
 
     /// Startup initialisation.
-    void init(const AP_SerialManager& serial_manager);
+    void init(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol=AP_SerialManager::SerialProtocol_GPS);
 
     /// Update GPS state based on possible bytes received from the module.
     /// This routine must be called periodically (typically at 10Hz or
@@ -376,6 +376,8 @@ public:
 
     // indicate which bit in LOG_BITMASK indicates gps logging enabled
     void set_log_gps_bit(uint32_t bit) { _log_gps_bit = bit; }
+
+    AP_GPS_Backend *get_driver(uint8_t i) { return drivers[i]; }
 
 protected:
 
