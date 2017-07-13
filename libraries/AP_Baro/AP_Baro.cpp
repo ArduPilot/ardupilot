@@ -377,16 +377,20 @@ bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
        } \
     } while (0)
 
-/*
-  initialise the barometer object, loading backend drivers
- */
-void AP_Baro::init(void)
-{
+void AP_Baro::ground_temp_init() {
     // ensure that there isn't a previous ground temperature saved
     if (!is_zero(_user_ground_temperature)) {
         _user_ground_temperature.set_and_save(0.0f);
         _user_ground_temperature.notify();
     }
+}
+
+/*
+  initialise the barometer object, loading backend drivers
+ */
+void AP_Baro::init(void)
+{
+    ground_temp_init();
 
     if (_hil_mode) {
         drivers[0] = new AP_Baro_HIL(*this);

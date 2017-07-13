@@ -30,7 +30,7 @@ public:
 
     // initialise the barometer object, loading backend drivers
     void init(void);
-
+    void ground_temp_init(void);
     // update the barometer object, asking backends to push data to
     // the frontend
     void update(void);
