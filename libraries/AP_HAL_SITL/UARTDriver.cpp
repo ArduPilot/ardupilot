@@ -73,8 +73,15 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         /* 2nd gps */
         _connected = true;
         _fd = _sitlState->gps2_pipe();
-    } else {
-        /* parse type:args:flags string for path. 
+    }
+#if HAL_SENSORHUB_ENABLED
+    else if (strcmp(path, "SHUB") == 0) {
+        _connected = true;
+        _fd = _sitlState->shub_pipe();
+    }
+#endif
+    else {
+        /* parse type:args:flags string for path.
            For example:
              tcp:5760:wait    // tcp listen on port 5760
              tcp:0:wait       // tcp listen on use base_port + 0

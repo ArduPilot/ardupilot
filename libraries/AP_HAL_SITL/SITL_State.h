@@ -24,6 +24,11 @@
 #include <SITL/SIM_ADSB.h>
 #include <AP_HAL/utility/Socket.h>
 
+#if HAL_SENSORHUB_ENABLED
+#include <AP_SensorHub/AP_SensorHub.h>
+#include <AP_SensorHub/AP_SensorHub_IO_FileDescriptor.h>
+#endif
+
 class HAL_SITL;
 
 class HALSITL::SITL_State {
@@ -41,6 +46,9 @@ public:
 
     int gps_pipe(void);
     int gps2_pipe(void);
+#if HAL_SENSORHUB_ENABLED
+    int shub_pipe(void);
+#endif
     ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
@@ -70,9 +78,13 @@ public:
         "tcp:2",
         "tcp:3",
         "GPS2",
-        "tcp:5",
+#if HAL_SENSORHUB_ENABLED
+        "SHUB",
+#else
+        "tcp:5"
+#endif
     };
-    
+
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
@@ -118,7 +130,11 @@ private:
     void _nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen, uint8_t instance);
     uint32_t CRC32Value(uint32_t icrc);
     uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
-
+#if HAL_SENSORHUB_ENABLED
+    void _shub_init(void);
+    void _shub_write(const uint8_t *p, uint16_t size, uint8_t instance);
+    void _shub_update(void);
+#endif
     void _update_gps(double latitude, double longitude, float altitude,
                      double speedN, double speedE, double speedD, bool have_lock);
     void _update_airspeed(float airspeed);
@@ -149,6 +165,13 @@ private:
     Compass *_compass;
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain *_terrain;
+#endif
+
+#if HAL_SENSORHUB_ENABLED
+    AP_SensorHub *_shub;
+    AP_SensorHub_IO_FileDescriptor *_shub_io;
+    AP_GPS *_gps;
+    AP_SerialManager *_serial_manager;
 #endif
 
     SocketAPM _sitl_rc_in{true};
