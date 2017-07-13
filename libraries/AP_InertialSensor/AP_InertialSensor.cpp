@@ -629,14 +629,16 @@ AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, 
 }
 
 void
-AP_InertialSensor::init(uint16_t sample_rate)
+AP_InertialSensor::init(uint16_t sample_rate, bool start_backends)
 {
     // remember the sample rate
     _sample_rate = sample_rate;
     _loop_delta_t = 1.0f / sample_rate;
 
-    if (_gyro_count == 0 && _accel_count == 0) {
-        _start_backends();
+    if (start_backends) {
+        if (_gyro_count == 0 && _accel_count == 0) {
+            _start_backends();
+        }
     }
 
     // initialise accel scale if need be. This is needed as we can't

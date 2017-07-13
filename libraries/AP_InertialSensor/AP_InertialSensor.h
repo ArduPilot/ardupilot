@@ -62,7 +62,7 @@ public:
     ///
     /// @param style	The initialisation startup style.
     ///
-    void init(uint16_t sample_rate_hz);
+    void init(uint16_t sample_rate_hz, bool start_backends=true);
 
     /// Register a new gyro/accel driver, allocating an instance
     /// number
