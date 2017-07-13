@@ -17,6 +17,7 @@ protected:
     bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) override;
 
     AP_Mission *get_mission() override;
+    AP_Rally *get_rally() const override { return nullptr; };
 
     uint8_t sysid_my_gcs() const override;
 
