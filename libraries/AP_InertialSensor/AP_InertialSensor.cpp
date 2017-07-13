@@ -21,6 +21,10 @@
 #include "AP_InertialSensor_SITL.h"
 #include "AP_InertialSensor_qflight.h"
 
+#if HAL_SENSORHUB_ENABLED
+#include "AP_InertialSensor_SensorHub.h"
+#endif
+
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
 #ifdef INS_TIMING_DEBUG
@@ -507,31 +511,37 @@ AP_InertialSensor *AP_InertialSensor::get_instance()
 uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
                                          uint32_t id)
 {
-    if (_gyro_count == INS_MAX_INSTANCES) {
+    set_gyro_instance(raw_sample_rate_hz, id, _gyro_count);
+    return _gyro_count++;
+}
+
+bool AP_InertialSensor::set_gyro_instance(uint16_t raw_sample_rate_hz, uint32_t id, uint8_t instance)
+{
+    if (instance == INS_MAX_INSTANCES) {
         AP_HAL::panic("Too many gyros");
     }
 
-    _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
-    _gyro_over_sampling[_gyro_count] = 1;
+    _gyro_raw_sample_rates[instance] = raw_sample_rate_hz;
+    _gyro_over_sampling[instance] = 1;
 
-    bool saved = _gyro_id[_gyro_count].load();
+    bool saved = _gyro_id[instance].load();
 
-    if (saved && (uint32_t)_gyro_id[_gyro_count] != id) {
+    if (saved && (uint32_t)_gyro_id[instance] != id) {
         // inconsistent gyro id - mark it as needing calibration
-        _gyro_cal_ok[_gyro_count] = false;
+        _gyro_cal_ok[instance] = false;
     }
 
-    _gyro_id[_gyro_count].set((int32_t) id);
+    _gyro_id[instance].set((int32_t) id);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!saved) {
         // assume this is the same sensor and save its ID to allow seamless
         // transition from when we didn't have the IDs.
-        _gyro_id[_gyro_count].save();
+        _gyro_id[instance].save();
     }
 #endif
 
-    return _gyro_count++;
+    return true;
 }
 
 /*
@@ -540,35 +550,41 @@ uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
 uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz,
                                           uint32_t id)
 {
-    if (_accel_count == INS_MAX_INSTANCES) {
+    set_accel_instance(raw_sample_rate_hz, id, _accel_count);
+    return _accel_count++;
+}
+
+bool AP_InertialSensor::set_accel_instance(uint16_t raw_sample_rate_hz, uint32_t id, uint8_t instance)
+{
+    if (instance == INS_MAX_INSTANCES) {
         AP_HAL::panic("Too many accels");
     }
 
-    _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
-    _accel_over_sampling[_accel_count] = 1;
+    _accel_raw_sample_rates[instance] = raw_sample_rate_hz;
+    _accel_over_sampling[instance] = 1;
 
-    bool saved = _accel_id[_accel_count].load();
+    bool saved = _accel_id[instance].load();
 
     if (!saved) {
         // inconsistent accel id
-        _accel_id_ok[_accel_count] = false;
-    } else if ((uint32_t)_accel_id[_accel_count] != id) {
+        _accel_id_ok[instance] = false;
+    } else if ((uint32_t)_accel_id[instance] != id) {
         // inconsistent accel id
-        _accel_id_ok[_accel_count] = false;
+        _accel_id_ok[instance] = false;
     } else {
-        _accel_id_ok[_accel_count] = true;
+        _accel_id_ok[instance] = true;
     }
 
-    _accel_id[_accel_count].set((int32_t) id);
+    _accel_id[instance].set((int32_t) id);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        // assume this is the same sensor and save its ID to allow seamless
-        // transition from when we didn't have the IDs.
-        _accel_id_ok[_accel_count] = true;
-        _accel_id[_accel_count].save();
+    // assume this is the same sensor and save its ID to allow seamless
+    // transition from when we didn't have the IDs.
+    _accel_id_ok[instance] = true;
+    _accel_id[instance].save();
 #endif
 
-    return _accel_count++;
+    return true;
 }
 
 /*
@@ -673,8 +689,21 @@ AP_InertialSensor::detect_backends(void)
         _add_backend(AP_InertialSensor_HIL::detect(*this));
         return;
     }
+
+#if HAL_SENSORHUB_ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    _add_backend(AP_InertialSensor_SensorHub::detect(*this));
+    return;
+#endif
+#else
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     _add_backend(AP_InertialSensor_SITL::detect(*this));
+    return;
+#endif
+#endif
+
+#if HAL_INS_DEFAULT == HAL_INS_SENSORHUB
+    _add_backend(AP_InertialSensor_SensorHub::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_HIL
     _add_backend(AP_InertialSensor_HIL::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI && defined(HAL_INS_DEFAULT_ROTATION)
@@ -1323,6 +1352,23 @@ void AP_InertialSensor::wait_for_sample(void)
     }
 
 check_sample:
+#if HAL_SENSORHUB_ENABLED && (HAL_INS_DEFAULT == HAL_INS_SENSORHUB || CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+    // NOTE: Here we do not wait. Maybe should be like this for all cases.
+    bool gyro_available = false;
+    bool accel_available = false;
+    for (uint8_t i=0; i<_backend_count; i++) {
+        _backends[i]->accumulate();
+    }
+
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        gyro_available |= _new_gyro_data[i];
+        accel_available |= _new_accel_data[i];
+    }
+
+    _have_sample = gyro_available && accel_available;
+    return;
+#endif // HAL_SENSORHUB_ENABLED
+
     if (!_hil_mode) {
         // we also wait for at least one backend to have a sample of both
         // accel and gyro. This normally completes immediately.

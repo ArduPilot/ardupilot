@@ -68,6 +68,8 @@ public:
     /// number
     uint8_t register_gyro(uint16_t raw_sample_rate_hz, uint32_t id);
     uint8_t register_accel(uint16_t raw_sample_rate_hz, uint32_t id);
+    bool set_gyro_instance(uint16_t raw_sample_rate_hz, uint32_t id, uint8_t instance);
+    bool set_accel_instance(uint16_t raw_sample_rate_hz, uint32_t id, uint8_t instance);
 
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
