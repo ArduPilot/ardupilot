@@ -43,7 +43,7 @@ Rover::Rover(void) :
     control_mode(INITIALISING),
     throttle(500),
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry(ahrs, battery, sonar),
+    frsky_telemetry(ahrs, battery, rangefinder),
 #endif
     do_auto_rotation(false),
     home(ahrs.get_home()),
