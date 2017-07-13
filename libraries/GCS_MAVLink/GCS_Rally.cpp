@@ -29,12 +29,12 @@ void GCS_MAVLINK::handle_rally_point(mavlink_message_t *msg)
 
     if (packet.idx >= r->get_rally_total() ||
         packet.idx >= r->get_rally_max()) {
-        send_text(MAV_SEVERITY_NOTICE,"Bad rally point message ID");
+        send_text(MAV_SEVERITY_WARNING,"Bad rally point message ID");
         return;
     }
 
     if (packet.count != r->get_rally_total()) {
-        send_text(MAV_SEVERITY_NOTICE,"Bad rally point message count");
+        send_text(MAV_SEVERITY_WARNING,"Bad rally point message count");
         return;
     }
 
@@ -67,13 +67,13 @@ void GCS_MAVLINK::handle_rally_fetch_point(mavlink_message_t *msg)
     mavlink_msg_rally_fetch_point_decode(msg, &packet);
 
     if (packet.idx > r->get_rally_total()) {
-        send_text(MAV_SEVERITY_NOTICE, "Bad rally point index");
+        send_text(MAV_SEVERITY_WARNING, "Bad rally point index");
         return;
     }
 
     RallyLocation rally_point;
     if (!r->get_rally_point_with_index(packet.idx, rally_point)) {
-        send_text(MAV_SEVERITY_NOTICE, "Failed to set rally point");
+        send_text(MAV_SEVERITY_WARNING, "Failed to set rally point");
         return;
     }
 
