@@ -28,6 +28,10 @@
 
 #include "AP_InertialSensor.h"
 
+#if HAL_SENSORHUB_ENABLED
+#include <AP_SensorHub/AP_SensorHub.h>
+#endif
+
 class AuxiliaryBus;
 class DataFlash_Class;
 
@@ -93,6 +97,13 @@ public:
         DEVTYPE_GYR_MPU9250  = 0x24
     };
         
+
+#if HAL_SENSORHUB_ENABLED
+    virtual void setSensorHub(AP_SensorHub *shub) {
+        _shub = shub;
+    }
+#endif
+
 protected:
     // access to frontend
     AP_InertialSensor &_imu;
@@ -112,7 +123,10 @@ protected:
     // corrected (_rotate_and_correct_gyro)
     // The sample_us value must be provided for non-FIFO based
     // sensors, and should be set to zero for FIFO based sensors
-    void _notify_new_gyro_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0);
+    void _notify_new_gyro_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0) {
+        _notify_new_gyro_raw_sample(instance, accel, sample_us, 0);
+    }
+    void _notify_new_gyro_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us, float dt);
 
     // rotate accel vector, scale, offset and publish
     void _publish_accel(uint8_t instance, const Vector3f &accel);
@@ -123,7 +137,10 @@ protected:
     // be rotated and corrected (_rotate_and_correct_accel)
     // The sample_us value must be provided for non-FIFO based
     // sensors, and should be set to zero for FIFO based sensors
-    void _notify_new_accel_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0, bool fsync_set=false);
+    void _notify_new_accel_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0, bool fsync_set=false) {
+        _notify_new_accel_raw_sample(instance, accel, sample_us, fsync_set, 0);
+    }
+    void _notify_new_accel_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us, bool fsync_set, float dt);
 
     // set the amount of oversamping a accel is doing
     void _set_accel_oversampling(uint8_t instance, uint8_t n);
@@ -216,4 +233,8 @@ protected:
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available
+
+#if HAL_SENSORHUB_ENABLED
+    AP_SensorHub *_shub;
+#endif
 };
