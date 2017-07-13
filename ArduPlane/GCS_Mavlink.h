@@ -21,6 +21,8 @@ protected:
     AP_Mission *get_mission() override;
     void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg) override;
 
+    AP_Rally *get_rally() const override;
+
     uint8_t sysid_my_gcs() const override;
 
 private:
