@@ -347,6 +347,7 @@ void AC_WPNav::init_brake_target(float accel_cmss)
     Vector3f stopping_point;
 
     // initialise position controller
+    _pos_control.set_desired_accel_xy(0.0f,0.0f);
     _pos_control.init_xy_controller();
 
     // initialise pos controller speed and acceleration
@@ -391,8 +392,12 @@ void AC_WPNav::wp_and_spline_init()
     }
 
     // initialise position controller
+    _pos_control.set_desired_accel_xy(0.0f,0.0f);
     _pos_control.init_xy_controller();
     _pos_control.clear_desired_velocity_ff_z();
+
+    // initialise feed forward velocity to zero
+    _pos_control.set_desired_velocity_xy(0,0);
 
     // initialise position controller speed and acceleration
     _pos_control.set_speed_xy(_wp_speed_cms);
@@ -547,7 +552,6 @@ void AC_WPNav::shift_wp_origin_to_current_pos()
 
     // move pos controller target and disable feed forward
     _pos_control.set_pos_target(curr_pos);
-    _pos_control.freeze_ff_xy();
     _pos_control.freeze_ff_z();
 }
 
@@ -763,7 +767,6 @@ bool AC_WPNav::update_wpnav()
         // TODO: why always consider Z axis discontinuous?
         if (_flags.new_wp_destination) {
             _flags.new_wp_destination = false;
-            _pos_control.freeze_ff_xy();
         }
         _pos_control.freeze_ff_z();
 
@@ -1055,7 +1058,6 @@ bool AC_WPNav::update_spline()
         // TODO: why always consider Z axis discontinuous?
         if (_flags.new_wp_destination) {
             _flags.new_wp_destination = false;
-            _pos_control.freeze_ff_xy();
         }
         _pos_control.freeze_ff_z();
 
