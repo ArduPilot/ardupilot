@@ -630,6 +630,20 @@ void AP_GPS::update_instance(uint8_t instance)
             timing[instance].last_fix_time_ms = tnow;
         }
     }
+
+    // TODO: This might not be the right place, but GPS does not work on a timer
+    // like other sensors.
+#if HAL_SENSORHUB_ENABLED
+    auto shub = drivers[instance] ? drivers[instance]->getSensorHub() : nullptr;
+    if (shub && shub->isSource()) {
+        GPSMessage msg;
+        msg.setInstance(instance);
+        msg.setState(state[instance]);
+        auto packet = msg.encode();
+        shub->write(packet);
+    }
+#endif
+
 }
 
 /*

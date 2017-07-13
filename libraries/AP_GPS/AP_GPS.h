@@ -23,6 +23,10 @@
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 
+#if HAL_SENSORHUB_ENABLED
+class AP_SensorHead;
+#endif
+
 /**
    maximum number of GPS instances available on this platform. If more
    than 1 then redundant sensors may be available
@@ -84,7 +88,8 @@ public:
         GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
         GPS_TYPE_MAV = 14,
-        GPS_TYPE_NOVA = 15
+        GPS_TYPE_NOVA = 15,
+        GPS_TYPE_SENSORHUB = 16,
     };
 
     /// GPS status codes

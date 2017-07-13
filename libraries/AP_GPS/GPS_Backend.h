@@ -21,6 +21,10 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_GPS.h"
 
+#if HAL_SENSORHUB_ENABLED
+#include <AP_SensorHub/AP_SensorHub.h>
+#endif
+
 class AP_GPS_Backend
 {
 public:
@@ -61,6 +65,19 @@ public:
     void broadcast_gps_type() const;
     virtual void Write_DataFlash_Log_Startup_messages() const;
 
+#if HAL_SENSORHUB_ENABLED
+    virtual void setSensorHub(AP_SensorHub *shub)
+    {
+        _shub = shub;
+    }
+
+    virtual AP_SensorHub *getSensorHub()
+    {
+        return _shub;
+    }
+#endif
+
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
@@ -84,4 +101,8 @@ protected:
     void _detection_message(char *buffer, uint8_t buflen) const;
 
     bool should_df_log() const;
+
+#if HAL_SENSORHUB_ENABLED
+    AP_SensorHub *_shub;
+#endif
 };

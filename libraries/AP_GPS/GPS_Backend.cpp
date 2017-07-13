@@ -36,6 +36,9 @@ AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::
     state.have_speed_accuracy = false;
     state.have_horizontal_accuracy = false;
     state.have_vertical_accuracy = false;
+#if HAL_SENSORHUB_ENABLED
+    _shub = AP_SensorHub::get_instance();
+#endif
 }
 
 int32_t AP_GPS_Backend::swap_int32(int32_t v) const
