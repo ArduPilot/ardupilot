@@ -290,24 +290,6 @@ class linux(Board):
             # Avoid infinite recursion
             bld.options.upload = False
 
-class sensorhub_x86(linux):
-    def configure_env(self, cfg, env):
-        super(sensorhub_x86, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_SENSORHUB_SINK',
-        )
-
-class sensorhub_arm(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
-    def configure_env(self, cfg, env):
-        super(sensorhub_arm, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_SENSORHUB_SINK',
-        )
-
 class minlure(linux):
     def configure_env(self, cfg, env):
         super(minlure, self).configure_env(cfg, env)
