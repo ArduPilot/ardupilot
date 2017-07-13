@@ -28,6 +28,9 @@ extern const AP_HAL::HAL& hal;
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V4
 #define SERIAL5_PROTOCOL SerialProtocol_MAVLink
 #define SERIAL5_BAUD 921600
+#elif HAL_SENSORHUB_ENABLED
+#define SERIAL5_PROTOCOL SerialProtocol_SENSORHUB
+#define SERIAL5_BAUD AP_SERIALMANAGER_SENSORHUB_BAUD/1000
 #else
 #define SERIAL5_PROTOCOL SerialProtocol_None
 #define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
@@ -212,6 +215,15 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_ULANDING_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ULANDING_BUFSIZE_TX);
                     break;
+#if HAL_SENSORHUB_ENABLED
+                case SerialProtocol_SENSORHUB:
+                    state[i].baud = AP_SERIALMANAGER_SENSORHUB_BAUD / 1000;
+                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                         AP_SERIALMANAGER_SENSORHUB_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_SENSORHUB_BUFSIZE_TX);
+                    break;
+#endif
+
             }
         }
     }

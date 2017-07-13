@@ -69,6 +69,13 @@
 #define AP_SERIALMANAGER_ULANDING_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_ULANDING_BUFSIZE_TX     128
 
+#if HAL_SENSORHUB_ENABLED
+#define AP_SERIALMANAGER_SENSORHUB_BAUD 1152000 // TODO: To be changed when on
+                                               // real hardware.
+#define AP_SERIALMANAGER_SENSORHUB_BUFSIZE_RX 512 // NOTE: Refer to
+                                                  // Packet::MAX_PACKET_LEN
+#define AP_SERIALMANAGER_SENSORHUB_BUFSIZE_TX 512
+#endif
 
 class AP_SerialManager {
 
@@ -89,7 +96,10 @@ public:
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
         SerialProtocol_Lidar360 = 11,                // Lightware SF40C or TeraRanger Tower
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
-        SerialProtocol_Beacon = 13
+        SerialProtocol_Beacon = 13,
+#if HAL_SENSORHUB_ENABLED
+        SerialProtocol_SENSORHUB = 14,
+#endif
     };
 
     // Constructor
