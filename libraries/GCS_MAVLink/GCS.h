@@ -218,6 +218,7 @@ protected:
     // enforcement of GCS sysid
     virtual bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) { return true; }
     virtual AP_Mission *get_mission() = 0;
+    virtual AP_Rally *get_rally() const = 0;
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
@@ -247,6 +248,10 @@ protected:
     void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
+
+    void handle_common_rally_message(mavlink_message_t *msg);
+    void handle_rally_fetch_point(mavlink_message_t *msg);
+    void handle_rally_point(mavlink_message_t *msg);
 
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);

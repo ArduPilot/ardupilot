@@ -1759,6 +1759,12 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_STATUSTEXT:
         handle_statustext(msg);
         break;
+
+    case MAVLINK_MSG_ID_RALLY_POINT:
+        /* fall through */
+    case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
+        handle_common_rally_message(msg);
+        break;
     }
 
 }
