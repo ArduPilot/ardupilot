@@ -867,6 +867,8 @@ private:
     void circle_run();
     bool drift_init(bool ignore_checks);
     void drift_run();
+    bool dfc_init(bool ignore_checks); // dfc controller
+    void dfc_run(); //dfc controller
     float get_throttle_assist(float velz, float pilot_throttle_scaled);
     bool flip_init(bool ignore_checks);
     void flip_run();

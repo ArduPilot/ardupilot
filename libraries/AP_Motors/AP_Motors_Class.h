@@ -52,7 +52,11 @@ public:
         MOTOR_FRAME_TYPE_VTAIL = 4,
         MOTOR_FRAME_TYPE_ATAIL = 5,
         MOTOR_FRAME_TYPE_Y6B = 10,
-        MOTOR_FRAME_TYPE_Y6F = 11 // for FireFlyY6
+        MOTOR_FRAME_TYPE_Y6F = 11, // for FireFlyY6
+        MOTOR_FRAME_TYPE_DFC_15 = 12, // for direct force control  = 15 deg motor tilt
+        MOTOR_FRAME_TYPE_DFC_30 = 13, // for direct force control  = 30 deg motor tilt
+        MOTOR_FRAME_TYPE_DFC_45 = 14, // for direct force control  = 45 deg motor tilt
+        MOTOR_FRAME_TYPE_DFC_60 = 15 // for direct force control  = 60 deg motor tilt
     };
 
     // Constructor
@@ -80,6 +84,8 @@ public:
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
     void                set_forward(float forward_in) { _forward_in = forward_in; }; // range -1 ~ +1
     void                set_lateral(float lateral_in) { _lateral_in = lateral_in; };     // range -1 ~ +1
+    void                set_FX(float fx_in){ _x_control_input = fx_in; }; // range -1 to 1   
+    void 		set_FY(float fy_in){ _y_control_input = fy_in; }; // range -1 to 1  
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
     float               get_roll() const { return _roll_in; }
@@ -90,6 +96,8 @@ public:
     float               get_forward() const { return _forward_in; }
     float               get_lateral() const { return _lateral_in; }
     virtual float       get_throttle_hover() const = 0;
+    float               get_FX() const { return _x_control_input; } 
+    float 		get_FY() const { return _y_control_input; } 
 
     // spool up states
     enum spool_up_down_desired {
@@ -209,6 +217,8 @@ protected:
     float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     spool_up_down_desired _spool_desired;           // desired spool state
+    float               _x_control_input;           // desired x accel from DFC controller , +/- 1   
+    float 		_y_control_input;           // desired y accel from DFC controller , +/- 1   
 
     // battery voltage, current and air pressure compensation variables
     float               _batt_voltage;          // latest battery voltage reading

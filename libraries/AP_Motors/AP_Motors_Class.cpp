@@ -32,6 +32,8 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _roll_in(0.0f),
     _pitch_in(0.0f),
     _yaw_in(0.0f),
+    _x_control_input(0.0f),
+    _y_control_input(0.0f),
     _throttle_in(0.0f),
     _throttle_avg_max(0.0f),
     _throttle_filter(),

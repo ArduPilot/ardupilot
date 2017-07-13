@@ -163,13 +163,17 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
     float   unused_range;               // amount of yaw we can fit in the current channel
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+    float   fx_thrust;                  // FX input value, same procedure above
+    float fy_thrust;                    // FY input value, same procedure above
 
     // apply voltage and air pressure compensation
     roll_thrust = _roll_in * get_compensation_gain();
     pitch_thrust = _pitch_in * get_compensation_gain();
     yaw_thrust = _yaw_in * get_compensation_gain();
     throttle_thrust = get_throttle() * get_compensation_gain();
-
+    fx_thrust  = _x_control_input * get_compensation_gain();
+    fy_thrust  = _y_control_input * get_compensation_gain();
+    
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {
         throttle_thrust = 0.0f;
@@ -201,7 +205,9 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // calculate the amount of yaw input that each motor can accept
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            _thrust_rpyt_out[i] = roll_thrust * _roll_factor[i] + pitch_thrust * _pitch_factor[i];
+            _thrust_rpyt_out[i] = roll_thrust * _roll_factor[i] + pitch_thrust * _pitch_factor[i]
+                                    + fx_thrust * _fx_factor[i] + fy_thrust * _fy_factor[i];
+				  
             if (!is_zero(_yaw_factor[i])){
                 if (yaw_thrust * _yaw_factor[i] > 0.0f) {
                     unused_range = fabsf((1.0f - (throttle_thrust_best_rpy + _thrust_rpyt_out[i]))/_yaw_factor[i]);
@@ -323,12 +329,40 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         _roll_factor[motor_num] = roll_fac;
         _pitch_factor[motor_num] = pitch_fac;
         _yaw_factor[motor_num] = yaw_fac;
+        _fx_factor[motor_num] = 0;
+        _fy_factor[motor_num] = 0;
 
         // set order that motor appears in test
         _test_order[motor_num] = testing_order;
 
         // call parent class method
         add_motor_num(motor_num);
+    }
+}
+
+void AP_MotorsMatrix::add_dfc_motor(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float fx_fac, float fy_fac, uint8_t testing_order)
+{
+    // ensure valid motor number is provided
+    if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
+
+        // increment number of motors if this motor is being newly motor_enabled
+        if( !motor_enabled[motor_num] ) {
+            motor_enabled[motor_num] = true;
+        }
+
+        // set roll, pitch, fx, fy, thottle factors and opposite motor (for stability patch)
+        _roll_factor[motor_num] = roll_fac;
+        _pitch_factor[motor_num] = pitch_fac;
+        _yaw_factor[motor_num] = yaw_fac;
+        _fx_factor[motor_num] = fx_fac;
+        _fy_factor[motor_num] = fy_fac;
+
+        // set order that motor appears in test
+        _test_order[motor_num] = testing_order;
+
+        // call parent class method
+        add_motor_num(motor_num);
+
     }
 }
 
@@ -359,6 +393,8 @@ void AP_MotorsMatrix::remove_motor(int8_t motor_num)
         _roll_factor[motor_num] = 0;
         _pitch_factor[motor_num] = 0;
         _yaw_factor[motor_num] = 0;
+        _fx_factor[motor_num] = 0;
+        _fy_factor[motor_num] = 0;
     }
 }
 
@@ -370,6 +406,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
     }
 
     bool success = false;
+    bool dfc_skip_normalization = false; // DFC factors are normalizd already
 
     switch (frame_class) {
 
@@ -471,7 +508,55 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor(AP_MOTORS_MOT_5,  30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
                     add_motor(AP_MOTORS_MOT_6,-150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
                     success = true;
+                    break;   
+                 case MOTOR_FRAME_TYPE_DFC_15: //Georgia Tech UAV Research Facility - Direct Force Control
+                    //WOOT DFC 15 deg motor tilt - please see documentation for more info on Direct Force control
+                    //                                   //  roll        pitch         yaw           fx         fy     test order
+                    add_dfc_motor(AP_MOTORS_MOT_1,       -0.459512,     0.007798,   -0.123126,  0.258819,   0.000000,       2);
+                    add_dfc_motor(AP_MOTORS_MOT_2,        0.459512,     0.007798,    0.123126,  0.258819,   0.000000,       5);
+                    add_dfc_motor(AP_MOTORS_MOT_3,        0.236509,     0.394050,   -0.123126, -0.129410,  -0.224144,       6);
+                    add_dfc_motor(AP_MOTORS_MOT_4,       -0.223003,    -0.401848,    0.123126, -0.129410,  -0.224144,       3);
+                    add_dfc_motor(AP_MOTORS_MOT_5,       -0.236509,     0.394050,    0.123126, -0.129410,   0.224144,       1);
+                    add_dfc_motor(AP_MOTORS_MOT_6,        0.223003,    -0.401848,   -0.123126, -0.129410,   0.224144,       4);
+                    success = true;
+                    dfc_skip_normalization = true;
                     break;
+                 case MOTOR_FRAME_TYPE_DFC_30: //Georgia Tech UAV Research Facility - Direct Force Control
+                    //WOOT DFC 30 deg motor tilt - please see documentation for more info on Direct Force control
+                    //                                   //  roll        pitch         yaw           fx         fy     test order
+                    add_dfc_motor(AP_MOTORS_MOT_1,       -0.411987,     0.013506,   -0.237861,  0.500000,   0.000000,       2);
+                    add_dfc_motor(AP_MOTORS_MOT_2,        0.411987,     0.013506,    0.237861,  0.500000,   0.000000,       5);
+                    add_dfc_motor(AP_MOTORS_MOT_3,        0.217690,     0.350038,   -0.237861, -0.250000,  -0.433013,       6);
+                    add_dfc_motor(AP_MOTORS_MOT_4,       -0.194297,    -0.363544,    0.237861, -0.250000,  -0.433013,       3);
+                    add_dfc_motor(AP_MOTORS_MOT_5,       -0.217690,     0.350038,    0.237861, -0.250000,   0.433013,       1);
+                    add_dfc_motor(AP_MOTORS_MOT_6,        0.194297,    -0.363544,   -0.237861, -0.250000,   0.433013,       4);
+                    success = true;
+                    dfc_skip_normalization = true;
+                    break;
+                case MOTOR_FRAME_TYPE_DFC_45: //Georgia Tech UAV Research Facility - Direct Force Control
+                    //WOOT DFC 45 deg motor tilt - please see documentation for more info on Direct Force control
+                    //                                   //  roll        pitch         yaw           fx         fy     test order
+                    add_dfc_motor(AP_MOTORS_MOT_1,       -0.336386,     0.015596,   -0.336386,  0.707107,   0.000000,       2);
+                    add_dfc_motor(AP_MOTORS_MOT_2,        0.336386,     0.015596,    0.336386,  0.707107,   0.000000,       5);
+                    add_dfc_motor(AP_MOTORS_MOT_3,        0.181699,     0.283521,   -0.336386, -0.353553,  -0.612372,       6);
+                    add_dfc_motor(AP_MOTORS_MOT_4,       -0.154687,    -0.299117,    0.336386, -0.353553,  -0.612372,       3);
+                    add_dfc_motor(AP_MOTORS_MOT_5,       -0.181699,     0.283521,    0.336386, -0.353553,   0.612372,       1);
+                    add_dfc_motor(AP_MOTORS_MOT_6,        0.154687,    -0.299117,   -0.336386, -0.353553,   0.612372,       4);
+                    success = true;
+                    dfc_skip_normalization = true;
+                    break;
+                case MOTOR_FRAME_TYPE_DFC_60: //Georgia Tech UAV Research Facility - Direct Force Control
+                    //WOOT DFC 60 deg motor tilt - please see documentation for more info on Direct Force control
+                    //                                   //  roll        pitch         yaw           fx         fy     test order
+                    add_dfc_motor(AP_MOTORS_MOT_1,       -0.237861,     0.013506,   -0.411987,  0.866025,   0.000000,       2);
+                    add_dfc_motor(AP_MOTORS_MOT_2,        0.237861,     0.013506,    0.411987,  0.866025,   0.000000,       5);
+                    add_dfc_motor(AP_MOTORS_MOT_3,        0.130627,     0.199240,   -0.411987, -0.433013,  -0.750000,       6);
+                    add_dfc_motor(AP_MOTORS_MOT_4,       -0.107234,    -0.212747,    0.411987, -0.433013,  -0.750000,       3);
+                    add_dfc_motor(AP_MOTORS_MOT_5,       -0.130627,     0.199240,    0.411987, -0.433013,   0.750000,       1);
+                    add_dfc_motor(AP_MOTORS_MOT_6,        0.107234,    -0.212747,   -0.411987, -0.433013,   0.750000,       4);
+                    success = true;
+                    dfc_skip_normalization = true;
+                    break;		    
                 default:
                     // hexa frame class does not support this frame type
                     break;
@@ -524,6 +609,62 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor_raw(AP_MOTORS_MOT_8, -1.0f, -0.333f, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
                     success = true;
                     break;
+                 case MOTOR_FRAME_TYPE_DFC_15: //Georgia Tech UAV Research Facility - Direct Force Control
+                    //WOOT DFC 15 deg motor tilt - please see documentation for more info on Direct Force control
+                    //                                   //  roll        pitch         yaw           	  fx         	  fy     	test order
+                    add_dfc_motor(AP_MOTORS_MOT_1, 	-0.402294, 	 0.948164, 	 0.275972, 	-0.099046, 	 0.239118, 	1);
+                    add_dfc_motor(AP_MOTORS_MOT_2, 	 0.402294, 	-0.948164, 	 0.275972, 	 0.099046, 	-0.239118, 	5);
+                    add_dfc_motor(AP_MOTORS_MOT_3, 	-0.948164, 	 0.402294, 	-0.275972,	 0.239118, 	-0.099046, 	2);
+                    add_dfc_motor(AP_MOTORS_MOT_4, 	-0.402294, 	-0.948164, 	-0.275972, 	 0.099046, 	 0.239118, 	4);
+                    add_dfc_motor(AP_MOTORS_MOT_5, 	 0.402294, 	 0.948164, 	-0.275972, 	-0.099046, 	-0.239118, 	8);
+                    add_dfc_motor(AP_MOTORS_MOT_6, 	 0.948164, 	-0.402294, 	-0.275972, 	-0.239118, 	 0.099046, 	6);
+                    add_dfc_motor(AP_MOTORS_MOT_7, 	 0.948164, 	 0.402294, 	 0.275972, 	 0.239118, 	 0.099046, 	7);
+                    add_dfc_motor(AP_MOTORS_MOT_8, 	-0.948164, 	-0.402294, 	 0.275972, 	-0.239118, 	-0.099046, 	3);
+                    success = true;
+                    dfc_skip_normalization = true;
+                    break;
+                case MOTOR_FRAME_TYPE_DFC_30: //Georgia Tech UAV Research Facility - Direct Force Control
+                    //WOOT DFC 30 deg motor tilt - please see documentation for more info on Direct Force control
+                    //                                   //  roll        pitch         		yaw           fx           fy	         test order
+                   add_dfc_motor(AP_MOTORS_MOT_1, 	-0.367498, 	 0.847279, 	 0.533136, 	-0.191342, 	 0.461940, 	1);
+                   add_dfc_motor(AP_MOTORS_MOT_2, 	 0.367498, 	-0.847279, 	 0.533136, 	 0.191342, 	-0.461940, 	5);
+                   add_dfc_motor(AP_MOTORS_MOT_3, 	-0.847279, 	 0.367498, 	-0.533136, 	 0.461940, 	-0.191342, 	2);
+                   add_dfc_motor(AP_MOTORS_MOT_4, 	-0.367498, 	-0.847279, 	-0.533136, 	 0.191342, 	 0.461940, 	4);
+                   add_dfc_motor(AP_MOTORS_MOT_5, 	 0.367498, 	 0.847279, 	-0.533136, 	-0.191342, 	-0.461940, 	8);
+                   add_dfc_motor(AP_MOTORS_MOT_6, 	 0.847279, 	-0.367498, 	-0.533136, 	-0.461940, 	 0.191342, 	6);
+                   add_dfc_motor(AP_MOTORS_MOT_7, 	 0.847279, 	 0.367498, 	 0.533136, 	 0.461940, 	 0.191342, 	7);
+                   add_dfc_motor(AP_MOTORS_MOT_8, 	-0.847279, 	-0.367498, 	 0.533136, 	-0.461940, 	-0.191342, 	3);
+                   success = true;
+                   dfc_skip_normalization = true;
+                   break;
+                case MOTOR_FRAME_TYPE_DFC_45: //Georgia Tech UAV Research Facility - Direct Force Control
+                    //WOOT DFC 45 deg motor tilt - please see documentation for more info on Direct Force control
+                    //                                   //  roll        pitch         		yaw           fx            fy		  test order
+                   add_dfc_motor(AP_MOTORS_MOT_1, 	-0.304837, 	 0.689822, 	 0.753969, 	-0.270598, 	 0.653281, 	1);
+                   add_dfc_motor(AP_MOTORS_MOT_2, 	 0.304837, 	-0.689822, 	 0.753969, 	 0.270598, 	-0.653281, 	5);
+                   add_dfc_motor(AP_MOTORS_MOT_3, 	-0.689822, 	 0.304837, 	-0.753969, 	 0.653281, 	-0.270598, 	2);
+                   add_dfc_motor(AP_MOTORS_MOT_4, 	-0.304837, 	-0.689822, 	-0.753969, 	 0.270598, 	 0.653281, 	4);
+                   add_dfc_motor(AP_MOTORS_MOT_5, 	 0.304837, 	 0.689822, 	-0.753969, 	-0.270598, 	-0.653281, 	8);
+                   add_dfc_motor(AP_MOTORS_MOT_6, 	 0.689822, 	-0.304837, 	-0.753969, 	-0.653281, 	 0.270598, 	6);
+                   add_dfc_motor(AP_MOTORS_MOT_7, 	 0.689822, 	 0.304837, 	 0.753969, 	 0.653281, 	 0.270598, 	7);
+                   add_dfc_motor(AP_MOTORS_MOT_8, 	-0.689822, 	-0.304837, 	 0.753969, 	-0.653281, 	-0.270598, 	3);                 
+                   success = true;
+                   dfc_skip_normalization = true;
+                   break;
+                case MOTOR_FRAME_TYPE_DFC_60: //Georgia Tech UAV Research Facility - Direct Force Control
+                    //WOOT DFC 60 deg motor tilt - please see documentation for more info on Direct Force control
+                    //                                   //  roll        pitch         		yaw           fx            fy    	 test order
+                  add_dfc_motor(AP_MOTORS_MOT_1, 	-0.218144,	 0.486705,	 0.923420, 	-0.331414,	 0.800103, 	1);
+                  add_dfc_motor(AP_MOTORS_MOT_2,	 0.218144, 	-0.486705,	 0.923420,	 0.331414, 	-0.800103, 	5);
+                  add_dfc_motor(AP_MOTORS_MOT_3, 	-0.486705,	 0.218144, 	-0.923420,	 0.800103, 	-0.331414, 	2);
+                  add_dfc_motor(AP_MOTORS_MOT_4, 	-0.218144, 	-0.486705, 	-0.923420,	 0.331414,	 0.800103, 	4);
+                  add_dfc_motor(AP_MOTORS_MOT_5,	 0.218144,	 0.486705, 	-0.923420, 	-0.331414, 	-0.800103, 	8);
+                  add_dfc_motor(AP_MOTORS_MOT_6,	 0.486705, 	-0.218144, 	-0.923420, 	-0.800103,	 0.331414, 	6);
+                  add_dfc_motor(AP_MOTORS_MOT_7,	 0.486705,	 0.218144,	 0.923420,	 0.800103,	 0.331414, 	7);
+                  add_dfc_motor(AP_MOTORS_MOT_8, 	-0.486705, 	-0.218144,	 0.923420, 	-0.800103, 	-0.331414, 	3);                  
+                  success = true;
+                  dfc_skip_normalization = true;
+                  break;		    
                 default:
                     // octa frame class does not support this frame type
                     break;
@@ -660,8 +801,11 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             break;
         } // switch frame_class
 
-    // normalise factors to magnitude 0.5
+     // normalise factors to magnitude 0.5
+    if(!dfc_skip_normalization){ 
+      //dfc factors come prefactored
     normalise_rpy_factors();
+    }
 
     _flags.initialised_ok = success;
 }

@@ -51,6 +51,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 
         case CIRCLE:
             success = circle_init(ignore_checks);
+            break;    
+
+        case DFC:
+            success = dfc_init(ignore_checks);
             break;
 
         case LOITER:
@@ -190,6 +194,10 @@ void Copter::update_flight_mode()
             circle_run();
             break;
 
+        case DFC:
+            dfc_run();
+            break;
+
         case LOITER:
             loiter_run();
             break;
@@ -325,6 +333,7 @@ bool Copter::mode_has_manual_throttle(control_mode_t mode)
     switch (mode) {
         case ACRO:
         case STABILIZE:
+	case DFC:
             return true;
         default:
             return false;
@@ -376,6 +385,9 @@ void Copter::notify_flight_mode(control_mode_t mode)
             break;
         case AUTO:
             notify.set_flight_mode_str("AUTO");
+            break;
+        case DFC:
+            notify.set_flight_mode_str("DFC");
             break;
         case GUIDED:
             notify.set_flight_mode_str("GUID");
@@ -442,6 +454,9 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case AUTO:
         port->printf("AUTO");
+        break;
+    case DFC:
+        port->printf("DFC");
         break;
     case GUIDED:
         port->printf("GUIDED");
