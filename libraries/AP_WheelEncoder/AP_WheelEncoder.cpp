@@ -115,8 +115,8 @@ AP_WheelEncoder::AP_WheelEncoder(void) :
     AP_Param::setup_object_defaults(this, var_info);
 
     // init state and drivers
-    memset(state,0,sizeof(state));
-    memset(drivers,0,sizeof(drivers));
+    memset(state, 0, sizeof(state));
+    memset(drivers, 0, sizeof(drivers));
 }
 
 // initialise the AP_WheelEncoder class.
