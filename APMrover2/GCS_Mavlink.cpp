@@ -1091,6 +1091,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 
 
         default:
+            result = handle_command_long_message(packet);
                 break;
             }
 
