@@ -520,7 +520,7 @@ void AP_Baro::update(void)
         if (sensors[i].healthy) {
             // update altitude calculation
             float ground_pressure = sensors[i].ground_pressure;
-            if (is_zero(ground_pressure) || isnan(ground_pressure) || isinf(ground_pressure)) {
+            if (!is_positive(ground_pressure) || isnan(ground_pressure) || isinf(ground_pressure)) {
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
             float altitude = sensors[i].altitude;
