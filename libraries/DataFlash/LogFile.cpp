@@ -1925,3 +1925,48 @@ void DataFlash_Class::Log_Write_Beacon(AP_Beacon &beacon)
     };
     WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
 }
+
+// Write proximity sensor distances
+void DataFlash_Class::Log_Write_Proximity(AP_Proximity &proximity)
+{
+    // exit immediately if not enabled
+    if (proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+        return;
+    }
+
+    float sector_distance[8] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    proximity.get_horizontal_distance(0.0f, sector_distance[0]);
+    proximity.get_horizontal_distance(45.0f, sector_distance[1]);
+    proximity.get_horizontal_distance(90.0f, sector_distance[2]);
+    proximity.get_horizontal_distance(135.0f, sector_distance[3]);
+    proximity.get_horizontal_distance(180.0f, sector_distance[4]);
+    proximity.get_horizontal_distance(225.0f, sector_distance[5]);
+    proximity.get_horizontal_distance(270.0f, sector_distance[6]);
+    proximity.get_horizontal_distance(315.0f, sector_distance[7]);
+
+    float dist_up;
+    if (!proximity.get_upward_distance(dist_up)) {
+        dist_up = 0.0f;
+    }
+
+    float close_ang = 0.0f, close_dist = 0.0f;
+    proximity.get_closest_object(close_ang, close_dist);
+
+    struct log_Proximity pkt_proximity = {
+            LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
+            time_us         : AP_HAL::micros64(),
+            health          : (uint8_t)proximity.get_status(),
+            dist0           : sector_distance[0],
+            dist45          : sector_distance[1],
+            dist90          : sector_distance[2],
+            dist135         : sector_distance[3],
+            dist180         : sector_distance[4],
+            dist225         : sector_distance[5],
+            dist270         : sector_distance[6],
+            dist315         : sector_distance[7],
+            distup          : dist_up,
+            closest_angle   : close_ang,
+            closest_dist    : close_dist
+    };
+    WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
+}
