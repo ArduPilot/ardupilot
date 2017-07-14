@@ -46,7 +46,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
     SCHED_TASK(read_radio,             50,   1000),
     SCHED_TASK(ahrs_update,            50,   6400),
-    SCHED_TASK(read_sonars,            50,   2000),
+    SCHED_TASK(read_rangefinders,      50,   2000),
     SCHED_TASK(update_current_mode,    50,   1500),
     SCHED_TASK(set_servos,             50,   1500),
     SCHED_TASK(update_GPS_50Hz,        50,   2500),

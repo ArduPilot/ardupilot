@@ -156,8 +156,8 @@ void Rover::init_ardupilot()
     // initialise compass
     init_compass();
 
-    // initialise sonar
-    init_sonar();
+    // initialise rangefinder
+    init_rangefinder();
 
     // init beacons used for non-gps position estimation
     init_beacon();
