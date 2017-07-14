@@ -269,25 +269,17 @@ void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder) cons
             rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
 }
 
-void GCS_MAVLINK::send_proximity(const AP_Proximity &proximity, uint16_t count_max) const
+bool GCS_MAVLINK::send_proximity(const AP_Proximity &proximity) const
 {
     // return immediately if no proximity sensor is present
     if (proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
-        return;
+        return false;
     }
-
-    // return immediately if no tx buffer room to send messages
-    if (count_max == 0) {
-        return;
-    }
-
-    bool send_upwards = true;
-
     // send horizontal distances
     AP_Proximity::Proximity_Distance_Array dist_array;
-    const uint8_t horiz_count = MIN(count_max, PROXIMITY_MAX_DIRECTION);  // send at most PROXIMITY_MAX_DIRECTION horizontal distances
     if (proximity.get_horizontal_distances(dist_array)) {
-        for (uint8_t i = 0; i < horiz_count; i++) {
+        for (uint8_t i = 0; i < PROXIMITY_MAX_DIRECTION; i++) {
+            CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
             mavlink_msg_distance_sensor_send(
                     chan,
                     AP_HAL::millis(),                               // time since system boot
@@ -299,13 +291,12 @@ void GCS_MAVLINK::send_proximity(const AP_Proximity &proximity, uint16_t count_m
                     dist_array.orientation[i],                      // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
                     0);                                             // Measurement covariance in centimeters, 0 for unknown / invalid readings
         }
-        // check if we still have room to send upwards distance
-        send_upwards = (count_max > 8);
     }
 
     // send upward distance
     float dist_up;
-    if (send_upwards && proximity.get_upward_distance(dist_up)) {
+    if (proximity.get_upward_distance(dist_up)) {
+        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
         mavlink_msg_distance_sensor_send(
                 chan,
                 AP_HAL::millis(),                                         // time since system boot
@@ -317,6 +308,7 @@ void GCS_MAVLINK::send_proximity(const AP_Proximity &proximity, uint16_t count_m
                 MAV_SENSOR_ROTATION_PITCH_90,                             // direction upwards
                 0);                                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
     }
+    return true;
 }
 
 // report AHRS2 state
