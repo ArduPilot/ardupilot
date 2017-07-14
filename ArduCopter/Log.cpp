@@ -769,10 +769,6 @@ void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocit
 void Copter::Log_Write_Proximity()
 {
 #if PROXIMITY_ENABLED == ENABLED
-    // exit immediately if not enabled
-    if (g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
-        return;
-    }
     DataFlash.Log_Write_Proximity(g2.proximity);
 #endif
 }
