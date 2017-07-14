@@ -273,6 +273,8 @@ protected:
     bool telemetry_delayed() const;
     virtual uint32_t telem_delay() const = 0;
 
+    MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
+
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
