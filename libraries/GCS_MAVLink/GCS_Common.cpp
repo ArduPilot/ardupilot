@@ -1833,6 +1833,18 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     }
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
+{
+    MAV_RESULT result = MAV_RESULT_FAILED;
+
+    switch (packet.command) {
+    default:
+        result = MAV_RESULT_UNSUPPORTED;
+    }
+
+    return result;
+}
+
 GCS &gcs()
 {
     return *GCS::instance();
