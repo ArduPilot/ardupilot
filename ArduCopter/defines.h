@@ -90,7 +90,7 @@ enum control_mode_t {
     ACRO =          1,  // manual body-frame angular rate with manual throttle
     ALT_HOLD =      2,  // manual airframe angle with automatic throttle
     AUTO =          3,  // fully automatic waypoint control using mission commands
-    DFC           = 4,  // direct force control mode - essential three force commands(body-x,body-y and body-z)
+    GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
     LOITER =        5,  // automatic horizontal acceleration with automatic throttle
     RTL =           6,  // automatic return to launching point
     CIRCLE =        7,  // automatic circular flight with automatic throttle
@@ -104,7 +104,7 @@ enum control_mode_t {
     THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
     AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
     GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
-    GUIDED =        21,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+    DFC =          21,  // direct force control mode - essential three force commands(body-x,body-y and body-z)
 };
 
 enum mode_reason_t {
