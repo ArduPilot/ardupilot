@@ -60,6 +60,8 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ICEngine',
     'AP_Frsky_Telem',
     'AP_FlashStorage',
+    'AP_Relay',
+    'AP_ServoRelayEvents',
 ]
 
 def get_legacy_defines(sketch_name):
