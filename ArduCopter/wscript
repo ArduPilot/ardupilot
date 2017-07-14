@@ -24,8 +24,6 @@ def build(bld):
             'AP_Motors',
             'AP_Parachute',
             'AP_RCMapper',
-            'AP_Relay',
-            'AP_ServoRelayEvents',
             'AP_Avoidance',
             'AP_AdvancedFailsafe',
             'AP_Proximity',
