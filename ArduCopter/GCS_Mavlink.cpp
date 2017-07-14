@@ -1482,7 +1482,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
 
         default:
-            result = MAV_RESULT_UNSUPPORTED;
+            result = handle_command_long_message(packet);
             break;
         }
 
