@@ -1397,7 +1397,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         }
 
         default:
-            result = MAV_RESULT_UNSUPPORTED;
+            result = handle_command_long_message(packet);
             break;
         }
 
