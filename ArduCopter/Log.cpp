@@ -765,68 +765,11 @@ void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocit
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// proximity sensor logging
-struct PACKED log_Proximity {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t health;
-    float dist0;
-    float dist45;
-    float dist90;
-    float dist135;
-    float dist180;
-    float dist225;
-    float dist270;
-    float dist315;
-    float distup;
-    float closest_angle;
-    float closest_dist;
-};
-
 // Write proximity sensor distances
 void Copter::Log_Write_Proximity()
 {
 #if PROXIMITY_ENABLED == ENABLED
-    // exit immediately if not enabled
-    if (g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
-        return;
-    }
-
-    float sector_distance[8] = {0,0,0,0,0,0,0,0};
-    g2.proximity.get_horizontal_distance(0, sector_distance[0]);
-    g2.proximity.get_horizontal_distance(45, sector_distance[1]);
-    g2.proximity.get_horizontal_distance(90, sector_distance[2]);
-    g2.proximity.get_horizontal_distance(135, sector_distance[3]);
-    g2.proximity.get_horizontal_distance(180, sector_distance[4]);
-    g2.proximity.get_horizontal_distance(225, sector_distance[5]);
-    g2.proximity.get_horizontal_distance(270, sector_distance[6]);
-    g2.proximity.get_horizontal_distance(315, sector_distance[7]);
-
-    float dist_up;
-    if (!g2.proximity.get_upward_distance(dist_up)) {
-        dist_up = 0.0f;
-    }
-
-    float close_ang = 0.0f, close_dist = 0.0f;
-    g2.proximity.get_closest_object(close_ang, close_dist);
-
-    struct log_Proximity pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
-        time_us         : AP_HAL::micros64(),
-        health          : (uint8_t)g2.proximity.get_status(),
-        dist0           : sector_distance[0],
-        dist45          : sector_distance[1],
-        dist90          : sector_distance[2],
-        dist135         : sector_distance[3],
-        dist180         : sector_distance[4],
-        dist225         : sector_distance[5],
-        dist270         : sector_distance[6],
-        dist315         : sector_distance[7],
-        distup          : dist_up,
-        closest_angle   : close_ang,
-        closest_dist    : close_dist
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.Log_Write_Proximity(g2.proximity);
 #endif
 }
 
@@ -882,8 +825,6 @@ const struct LogStructure Copter::log_structure[] = {
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
     { LOG_THROW_MSG, sizeof(log_Throw),
       "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk" },
-    { LOG_PROXIMITY_MSG, sizeof(log_Proximity),
-      "PRX",   "QBfffffffffff","TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis" },
 };
 
 #if CLI_ENABLED == ENABLED
