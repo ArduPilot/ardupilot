@@ -83,6 +83,7 @@ public:
     AP_Float arspd_noise;  // in m/s
     AP_Float arspd_fail;   // pitot tube failure
     AP_Float gps_noise; // amplitude of the gps altitude error
+    AP_Int16 gps_lock_time; // delay in seconds before GPS gets lock
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Float mag_error;   // in degrees

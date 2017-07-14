@@ -103,6 +103,7 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("TEMP_FLIGHT",  2, SITL,  temp_flight, 35),
     AP_GROUPINFO("TEMP_TCONST",  3, SITL,  temp_tconst, 30),
     AP_GROUPINFO("TEMP_BFACTOR", 4, SITL,  temp_baro_factor, 0),
+    AP_GROUPINFO("GPS_LOCKTIME", 5, SITL,  gps_lock_time, 0),
     AP_GROUPEND
 };
     
