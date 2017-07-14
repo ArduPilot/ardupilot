@@ -1540,6 +1540,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break;
             
         default:
+            result = handle_command_long_message(packet);
             break;
         }
 
