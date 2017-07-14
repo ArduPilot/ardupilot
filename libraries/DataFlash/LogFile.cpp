@@ -1934,15 +1934,8 @@ void DataFlash_Class::Log_Write_Proximity(AP_Proximity &proximity)
         return;
     }
 
-    float sector_distance[8] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-    proximity.get_horizontal_distance(0.0f, sector_distance[0]);
-    proximity.get_horizontal_distance(45.0f, sector_distance[1]);
-    proximity.get_horizontal_distance(90.0f, sector_distance[2]);
-    proximity.get_horizontal_distance(135.0f, sector_distance[3]);
-    proximity.get_horizontal_distance(180.0f, sector_distance[4]);
-    proximity.get_horizontal_distance(225.0f, sector_distance[5]);
-    proximity.get_horizontal_distance(270.0f, sector_distance[6]);
-    proximity.get_horizontal_distance(315.0f, sector_distance[7]);
+    AP_Proximity::Proximity_Distance_Array dist_array {};
+    proximity.get_horizontal_distances(dist_array);
 
     float dist_up;
     if (!proximity.get_upward_distance(dist_up)) {
@@ -1956,14 +1949,14 @@ void DataFlash_Class::Log_Write_Proximity(AP_Proximity &proximity)
             LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
             time_us         : AP_HAL::micros64(),
             health          : (uint8_t)proximity.get_status(),
-            dist0           : sector_distance[0],
-            dist45          : sector_distance[1],
-            dist90          : sector_distance[2],
-            dist135         : sector_distance[3],
-            dist180         : sector_distance[4],
-            dist225         : sector_distance[5],
-            dist270         : sector_distance[6],
-            dist315         : sector_distance[7],
+            dist0           : dist_array.distance[0],
+            dist45          : dist_array.distance[1],
+            dist90          : dist_array.distance[2],
+            dist135         : dist_array.distance[3],
+            dist180         : dist_array.distance[4],
+            dist225         : dist_array.distance[5],
+            dist270         : dist_array.distance[6],
+            dist315         : dist_array.distance[7],
             distup          : dist_up,
             closest_angle   : close_ang,
             closest_dist    : close_dist
