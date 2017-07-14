@@ -1838,6 +1838,18 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
+
+    case MAV_CMD_DO_SET_SERVO:
+        /* fall through */
+    case MAV_CMD_DO_REPEAT_SERVO:
+        /* fall through */
+    case MAV_CMD_DO_SET_RELAY:
+        /* fall through */
+    case MAV_CMD_DO_REPEAT_RELAY:
+        /* fall through */
+        result = handle_servorelay_message(packet);
+        break;
+
     default:
         result = MAV_RESULT_UNSUPPORTED;
     }

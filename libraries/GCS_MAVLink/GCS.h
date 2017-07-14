@@ -16,6 +16,7 @@
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -219,6 +220,7 @@ protected:
     virtual bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) { return true; }
     virtual AP_Mission *get_mission() = 0;
     virtual AP_Rally *get_rally() const = 0;
+    virtual AP_ServoRelayEvents *get_servorelayevents() const = 0;
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
@@ -280,6 +282,8 @@ private:
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
 
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
+
+    MAV_RESULT handle_servorelay_message(mavlink_command_long_t &packet);
 
     /// The stream we are communicating over
     AP_HAL::UARTDriver *_port;
