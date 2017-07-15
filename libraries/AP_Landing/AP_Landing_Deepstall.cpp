@@ -128,6 +128,14 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @Path: ../PID/PID.cpp
     AP_SUBGROUPINFO(ds_PID, "", 14, AP_Landing_Deepstall, PID),
 
+    // @Param: ABORTALT
+    // @DisplayName: Deepstall minimum abort altitude
+    // @Description: The minimum altitude which the aircraft must be above to abort a deepstall landing
+    // @Range: 0 50
+    // @Units meters
+    // @User: Advanced
+    AP_GROUPINFO("ABORTALT", 15, AP_Landing_Deepstall, min_abort_alt, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -336,8 +344,15 @@ bool AP_Landing_Deepstall::override_servos(void)
 
 bool AP_Landing_Deepstall::request_go_around(void)
 {
-    landing.flags.commanded_go_around = true;
-    return true;
+    float current_altitude_d;
+    landing.ahrs.get_relative_position_D_home(current_altitude_d);
+
+    if (is_zero(min_abort_alt) || -current_altitude_d > min_abort_alt) {
+        landing.flags.commanded_go_around = true;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool AP_Landing_Deepstall::is_throttle_suppressed(void) const
