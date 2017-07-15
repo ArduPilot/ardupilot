@@ -1046,7 +1046,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             // param4 : timeout (in seconds)
             result = rover.mavlink_motor_test_start(chan, static_cast<uint8_t>(packet.param1),
                                                     static_cast<uint8_t>(packet.param2),
-                                                    static_cast<uint16_t>(packet.param3),
+                                                    static_cast<int16_t>(packet.param3),
                                                     packet.param4);
             break;
 
