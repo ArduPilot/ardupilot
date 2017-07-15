@@ -454,17 +454,17 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 
 bool AP_Arming::board_voltage_checks(bool report)
 {
+#if HAL_HAVE_BOARD_VOLTAGE
     // check board voltage
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
-        if(!is_zero(hal.analogin->board_voltage()) &&
-           ((hal.analogin->board_voltage() < AP_ARMING_BOARD_VOLTAGE_MIN) || (hal.analogin->board_voltage() > AP_ARMING_BOARD_VOLTAGE_MAX))) {
+        if(((hal.analogin->board_voltage() < AP_ARMING_BOARD_VOLTAGE_MIN) || (hal.analogin->board_voltage() > AP_ARMING_BOARD_VOLTAGE_MAX))) {
             if (report) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check board voltage");
             }
             return false;
         }
     }
-
+#endif
     return true;
 }
 
