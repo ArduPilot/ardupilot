@@ -18,6 +18,13 @@ public:
         PWM_TYPE_BRUSHEDBIPOLAR = 4,
      };
 
+    enum motor_test_order {
+        THROTTLE = 0,
+        STEERING = 1,
+        THROTTLE_LEFT = 2,
+        THROTTLE_RIGHT = 3,
+    };
+
     // initialise motors
     void init();
 
@@ -43,6 +50,8 @@ public:
     // set when to use slew rate limiter
     void slew_limit_throttle(bool value) { _use_slew_rate = value; }
 
+    bool output_test(motor_test_order motor_seq);
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -56,6 +65,9 @@ protected:
 
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle);
+
+    // scale motor ouput to duty cycle and switch servo for direction
+    float brushed_scaler(float motor_value, uint8_t servo_num);
 
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
@@ -74,4 +86,7 @@ protected:
     float   _throttle;  // requested throttle as a value from 0 to 100
     float   _last_throttle;
     bool    _use_slew_rate; // true if we should slew limit the throttle for one interation
+
+    static const uint8_t _throttleLeft_servo = 0;  // servo number for k_throttleLeft
+    static const uint8_t _throttleRight_servo = 1;  // servo number for k_throttleRight
 };
