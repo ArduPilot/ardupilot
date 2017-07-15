@@ -567,10 +567,8 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-#if 0
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
-#endif
-    case AP_BoardConfig::PX4_BOARD_PIXRACER:{
+    case AP_BoardConfig::PX4_BOARD_PIXRACER: 
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:{
         bool both_i2c_external = (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2);
         // external i2c bus
         ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
@@ -665,6 +663,10 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
                                                               false, ROTATION_PITCH_180),
                     AP_Compass_HMC5843::name, false);
+        ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
+                    AP_Compass_AK8963::name, false);
+
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                     AP_Compass_AK8963::name, false);
         break;
