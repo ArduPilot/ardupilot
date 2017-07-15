@@ -367,7 +367,7 @@ bool AP_Arming::gps_checks(bool report)
     }
 
     // check GPSs are within 50m of each other and that blending is healthy
-    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
+    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
         float distance_m;
         if (!gps.all_consistent(distance_m)) {
             if (report) {
