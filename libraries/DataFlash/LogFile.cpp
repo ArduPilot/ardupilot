@@ -667,7 +667,6 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
     }
     float home, origin;
     ahrs.get_relative_position_D_home(home);
-    ahrs.get_relative_position_D_origin(origin);
     struct log_POS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_POS_MSG),
         time_us        : AP_HAL::micros64(),
@@ -675,7 +674,7 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
         lng            : loc.lng,
         alt            : loc.alt*1.0e-2f,
         rel_home_alt   : -home,
-        rel_origin_alt : -origin
+        rel_origin_alt : ahrs.get_relative_position_D_origin(origin) ? -origin : nanf("ARDUPILOT")
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
