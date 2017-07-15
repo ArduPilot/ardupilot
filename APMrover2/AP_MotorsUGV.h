@@ -18,6 +18,13 @@ public:
         PWM_TYPE_BRUSHEDBIPOLAR = 4,
      };
 
+    enum motor_test_order {
+        THROTTLE = 0,
+        STEERING = 1,
+        THROTTLE_LEFT = 2,
+        THROTTLE_RIGHT = 3,
+    };
+
     // initialise motors
     void init();
 
@@ -42,6 +49,8 @@ public:
 
     // set when to use slew rate limiter
     void slew_limit_throttle(bool value) { _use_slew_rate = value; }
+
+    bool output_test(motor_test_order motor_seq);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
