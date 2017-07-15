@@ -13,7 +13,7 @@ static uint32_t motor_test_start_ms = 0;        // system time the motor test be
 static uint32_t motor_test_timeout_ms = 0;      // test will timeout this many milliseconds after the motor_test_start_ms
 static uint8_t motor_test_seq = 0;              // motor sequence number of motor being tested
 static uint8_t motor_test_throttle_type = 0;    // motor throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through)
-static uint16_t motor_test_throttle_value = 0;  // throttle to be sent to motor, value depends upon it's type
+static int16_t motor_test_throttle_value = 0;   // throttle to be sent to motor, value depends upon it's type
 
 // motor_test_output - checks for timeout and sends updates to motors objects
 void Rover::motor_test_output()
@@ -60,7 +60,7 @@ void Rover::motor_test_output()
 
 // mavlink_motor_test_check - perform checks before motor tests can begin
 // return true if tests can continue, false if not
-bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value)
+bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value)
 {
     GCS_MAVLINK_Rover &gcs_chan = gcs().chan(chan-MAVLINK_COMM_0);
 
@@ -110,7 +110,7 @@ bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint
 
 // mavlink_motor_test_start - start motor test - spin a single motor at a specified pwm
 // returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
-uint8_t Rover::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec)
+uint8_t Rover::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec)
 {
     // if test has not started try to start it
     if (!motor_test) {
