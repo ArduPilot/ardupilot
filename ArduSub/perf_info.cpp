@@ -10,8 +10,8 @@
 #define PERF_INFO_OVERTIME_THRESHOLD_MICROS 3000
 
 static uint16_t perf_info_loop_count;
-static uint32_t perf_info_max_time;
-static uint32_t perf_info_min_time;
+static uint32_t perf_info_max_time; // in microseconds
+static uint32_t perf_info_min_time; // in microseconds
 static uint16_t perf_info_long_running;
 static uint32_t perf_info_log_dropped;
 static bool perf_ignore_loop = false;
