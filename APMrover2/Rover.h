@@ -358,7 +358,7 @@ private:
     // Performance monitoring
     // Timer used to accrue data and trigger recording of the performance monitoring log message
     int32_t perf_mon_timer;
-    // The maximum main loop execution time recorded in the current performance monitoring interval
+    // The maximum main loop execution time, in microseconds, recorded in the current performance monitoring interval
     uint32_t G_Dt_max;
 
     // System Timers
