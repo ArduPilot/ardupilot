@@ -126,7 +126,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 
     // @Group: DS_
     // @Path: ../PID/PID.cpp
-    AP_SUBGROUPINFO(ds_PID, "", 13, AP_Landing_Deepstall, PID),
+    AP_SUBGROUPINFO(ds_PID, "", 14, AP_Landing_Deepstall, PID),
 
     AP_GROUPEND
 };
@@ -504,13 +504,13 @@ float AP_Landing_Deepstall::update_steering()
     Location current_loc;
     if (!landing.ahrs.get_position(current_loc)) {
         // panic if no position source is available
-        // continue the  but target just holding the wings held level as deepstall should be a minimal energy
-        // configuration on the aircraft, and if a position isn't available aborting would be worse
+        // continue the stall but target just holding the wings held level as deepstall should be a minimal
+        // energy configuration on the aircraft, and if a position isn't available aborting would be worse
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Deepstall: No position available. Attempting to hold level");
         memcpy(&current_loc, &landing_point, sizeof(Location));
     }
     uint32_t time = AP_HAL::millis();
-    float dt = constrain_float(time - last_time, (uint32_t)10UL, (uint32_t)200UL) / 1000.0;
+    float dt = constrain_float(time - last_time, (uint32_t)10UL, (uint32_t)200UL) * 1e-3;
     last_time = time;
 
 
