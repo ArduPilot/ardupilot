@@ -182,17 +182,9 @@ bool AP_Arming_Copter::ins_checks(bool display_failure)
 
 bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
 {
-#if HAL_HAVE_BOARD_VOLTAGE
-    // check board voltage
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
-        if (hal.analogin->board_voltage() < BOARD_VOLTAGE_MIN || hal.analogin->board_voltage() > BOARD_VOLTAGE_MAX) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check Board Voltage");
-            }
-            return false;
-        }
+    if (!AP_Arming::board_voltage_checks(display_failure)) {
+        return false;
     }
-#endif
 
     Parameters &g = copter.g;
 
