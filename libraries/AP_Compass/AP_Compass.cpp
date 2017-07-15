@@ -632,14 +632,11 @@ void Compass::_detect_backends(void)
 		break;
 
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
-//        ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
-//                                               false, ROTATION_PITCH_180),
-//                     AP_Compass_HMC5843::name, false);
         ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                      AP_Compass_AK8963::name, false);
-//		ADD_BACKEND(AP_Compass_LIS3MDL::probe(*this, hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME),
-//                                               false, ROTATION_PITCH_180),
-//                     AP_Compass_LIS3MDL::name, false);
+        ADD_BACKEND(AP_Compass_LIS3MDL::probe(*this, hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME),
+                                              false, ROTATION_PITCH_180),
+                     AP_Compass_LIS3MDL::name, false);
         break;
 
     case AP_BoardConfig::PX4_BOARD_PHMINI:
