@@ -1736,6 +1736,8 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
 
+    case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
+        /* fall through */
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
         /* fall through */
     case MAVLINK_MSG_ID_MISSION_COUNT:
