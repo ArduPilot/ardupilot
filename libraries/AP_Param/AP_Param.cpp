@@ -165,6 +165,11 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             // great idx 0 as 63 for duplicates. See group_id()
             idx = 63;
         }
+        if (used_mask & (1ULL<<idx)) {
+            Debug("Duplicate group idx %u for %s", idx, group_info[i].name);
+            return false;
+        }
+        used_mask |= (1ULL<<idx);
         if (type == AP_PARAM_GROUP) {
             // a nested group
             if (group_shift + _group_level_shift >= _group_bits) {
@@ -180,11 +185,6 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             }
             continue;
         }
-        if (used_mask & (1ULL<<idx)) {
-            Debug("Duplicate group idx %u for %s", idx, group_info[i].name);
-            return false;
-        }
-        used_mask |= (1ULL<<idx);
         uint8_t size = type_size((enum ap_var_type)type);
         if (size == 0) {
             Debug("invalid type in %s", group_info[i].name);
