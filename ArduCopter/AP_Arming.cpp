@@ -63,7 +63,7 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
     if (copter.ap.pre_arm_check) {
         // run gps checks because results may change and affect LED colour
         // no need to display failures because arm_checks will do that if the pilot tries to arm
-        pre_arm_gps_checks(false);
+        gps_checks(false);
         return true;
     }
 
@@ -136,15 +136,6 @@ bool AP_Arming_Copter::compass_checks(bool display_failure)
     }
 
     return ret;
-}
-
-bool AP_Arming_Copter::gps_checks(bool display_failure)
-{
-    // check GPS
-    if (!pre_arm_gps_checks(display_failure)) {
-        return false;
-    }
-    return true;
 }
 
 bool AP_Arming_Copter::fence_checks(bool display_failure)
@@ -380,7 +371,7 @@ void AP_Arming_Copter::pre_arm_rc_checks(const bool display_failure)
 }
 
 // performs pre_arm gps related checks and returns true if passed
-bool AP_Arming_Copter::pre_arm_gps_checks(bool display_failure)
+bool AP_Arming_Copter::gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
@@ -631,7 +622,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     }
 
     // always check gps
-    if (!pre_arm_gps_checks(display_failure)) {
+    if (!gps_checks(display_failure)) {
         return false;
     }
 
