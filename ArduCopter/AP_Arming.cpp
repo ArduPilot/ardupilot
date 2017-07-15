@@ -96,15 +96,13 @@ bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
 
 bool AP_Arming_Copter::barometer_checks(bool display_failure)
 {
+    if (!AP_Arming::barometer_checks(display_failure)) {
+        return false;
+    }
+
+    bool ret = true;
     // check Baro
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_BARO)) {
-        // barometer health check
-        if (!barometer.all_healthy()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Barometer not healthy");
-            }
-            return false;
-        }
         // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
         // that may differ from the baro height due to baro drift.
@@ -115,11 +113,11 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
                 if (display_failure) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Altitude disparity");
                 }
-                return false;
+                ret = false;
             }
         }
     }
-    return true;
+    return ret;
 }
 
 bool AP_Arming_Copter::compass_checks(bool display_failure)
