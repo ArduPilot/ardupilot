@@ -6,9 +6,8 @@
  */
 
 // motor test definitions
-static const int16_t MOTOR_TEST_PWM_MIN = 1000;     // min pwm value accepted by the test
-static const int16_t MOTOR_TEST_PWM_MAX = 2000;     // max pwm value accepted by the test
-static const int16_t MOTOR_TEST_TIMEOUT_MS_MAX = 30000;   // max timeout is 30 seconds
+static const int16_t MOTOR_TEST_PWM_MAX = 2200; // max pwm value accepted by the test
+static const int16_t MOTOR_TEST_TIMEOUT_MS_MAX = 30000; // max timeout is 30 seconds
 
 static uint32_t motor_test_start_ms = 0;        // system time the motor test began
 static uint32_t motor_test_timeout_ms = 0;      // test will timeout this many milliseconds after the motor_test_start_ms
@@ -29,29 +28,30 @@ void Rover::motor_test_output()
         // stop motor test
         motor_test_stop();
     } else {
-        // calculate pwm based on throttle type
+        bool test_result = false;
+        // calculate  based on throttle type
         switch (motor_test_throttle_type) {
             case MOTOR_TEST_THROTTLE_PERCENT:
-                // sanity check motor_test_throttle value
-                if (motor_test_throttle_value <= 100) {
-                    g2.motors.set_throttle(motor_test_throttle_value);
-                }
+                test_result = g2.motors.output_test_pct((AP_MotorsUGV::motor_test_order)motor_test_seq, motor_test_throttle_value);
                 break;
 
             case MOTOR_TEST_THROTTLE_PWM:
-                channel_throttle->set_pwm(motor_test_throttle_value);
-                g2.motors.set_throttle(channel_throttle->get_control_in());
+                test_result = g2.motors.output_test_pwm((AP_MotorsUGV::motor_test_order)motor_test_seq, motor_test_throttle_value);
                 break;
 
             case MOTOR_TEST_THROTTLE_PILOT:
-                g2.motors.set_throttle(channel_throttle->get_control_in());
+                if ((AP_MotorsUGV::motor_test_order)motor_test_seq == AP_MotorsUGV::STEERING) {
+                    test_result = g2.motors.output_test_pct((AP_MotorsUGV::motor_test_order)motor_test_seq, channel_steer->get_control_in());
+                } else {
+                    test_result = g2.motors.output_test_pct((AP_MotorsUGV::motor_test_order)motor_test_seq, channel_throttle->get_control_in());
+                }
                 break;
 
             default:
-                motor_test_stop();
+                // do nothing
                 return;
         }
-        const bool test_result = g2.motors.output_test((AP_MotorsUGV::motor_test_order)motor_test_seq);
+        // stop motor test on failure
         if (!test_result) {
             motor_test_stop();
         }
@@ -60,7 +60,7 @@ void Rover::motor_test_output()
 
 // mavlink_motor_test_check - perform checks before motor tests can begin
 // return true if tests can continue, false if not
-bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
+bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value)
 {
     GCS_MAVLINK_Rover &gcs_chan = gcs().chan(chan-MAVLINK_COMM_0);
 
@@ -82,6 +82,28 @@ bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
         return false;
     }
 
+    // check motor_seq
+    if (motor_seq > AP_MotorsUGV::THROTTLE_RIGHT) {
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Motor Test: invalid motor (%d)", (int)motor_seq);
+        return false;
+    }
+
+    // check throttle type
+    if (throttle_type > MOTOR_TEST_THROTTLE_PILOT) {
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Motor Test: invalid throttle type: %d", (int)throttle_type);
+        return false;
+    }
+
+    // check throttle value
+    if (throttle_type == MOTOR_TEST_THROTTLE_PWM && throttle_value > MOTOR_TEST_PWM_MAX) {
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Motor Test: pwm (%d) too high", (int)throttle_value);
+        return false;
+    }
+    if (throttle_type == MOTOR_TEST_THROTTLE_PERCENT && throttle_value > 100) {
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Motor Test: percentage (%d) too high", (int)throttle_value);
+        return false;
+    }
+
     // if we got this far the check was successful and the motor test can continue
     return true;
 }
@@ -96,7 +118,7 @@ uint8_t Rover::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_se
            The RC calibrated check can be skipped if direct pwm is
            supplied
         */
-        if (!mavlink_motor_test_check(chan, throttle_type != 1)) {
+        if (!mavlink_motor_test_check(chan, throttle_type != 1, motor_seq, throttle_type, throttle_value)) {
             return MAV_RESULT_FAILED;
         } else {
             // start test
