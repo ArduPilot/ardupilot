@@ -93,6 +93,9 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #ifdef PX4_SPIDEV_HMC
     SPIDesc("hmc5843",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_HMC, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
 #endif
+#ifdef PX4_SPIDEV_LIS
+	SPIDesc("lis3mdl",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_LIS, SPIDEV_MODE3, 1*MHZ, 1*MHZ),
+#endif
 
 #ifdef PX4_SPI_BUS_EXT
 #ifdef PX4_SPIDEV_EXT0
