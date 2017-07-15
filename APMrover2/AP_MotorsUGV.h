@@ -50,7 +50,12 @@ public:
     // set when to use slew rate limiter
     void slew_limit_throttle(bool value) { _use_slew_rate = value; }
 
-    bool output_test(motor_test_order motor_seq);
+    // test steering or throttle output as a percentage of the total (range -100 to +100)
+    // used in response to DO_MOTOR_TEST mavlink command
+    bool output_test_pct(motor_test_order motor_seq, float pct);
+
+    // test steering or throttle output using a pwm value
+    bool output_test_pwm(motor_test_order motor_seq, float pwm);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
