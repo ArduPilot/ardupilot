@@ -735,7 +735,7 @@ private:
         // Timer used to accrue data and trigger recording of the performanc monitoring log message
         uint32_t start_ms;
 
-        // The maximum and minimum main loop execution time recorded in the current performance monitoring interval
+        // The maximum and minimum main loop execution time, in microseconds, recorded in the current performance monitoring interval
         uint32_t G_Dt_max;
         uint32_t G_Dt_min;
 
