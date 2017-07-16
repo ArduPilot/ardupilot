@@ -1002,10 +1002,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
         switch(packet.command) {
 
-        case MAV_CMD_START_RX_PAIR:
-            result = handle_rc_bind(packet);
-            break;
-
         case MAV_CMD_NAV_TAKEOFF: {
             // param3 : horizontal navigation by pilot acceptable
             // param4 : yaw angle   (not supported)
