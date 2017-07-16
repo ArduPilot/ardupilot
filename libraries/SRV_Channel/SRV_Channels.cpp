@@ -25,6 +25,7 @@
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
+SRV_Channels *SRV_Channels::instance;
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
 Bitmask SRV_Channels::function_mask{SRV_Channel::k_nr_aux_servo_functions};
@@ -102,6 +103,14 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FRAME("_AUTO_TRIM",  17, SRV_Channels, auto_trim, 0, AP_PARAM_FRAME_PLANE),
 
+    // @Param: _DEF_RATE
+    // @DisplayName: Default output rate
+    // @Description: This sets the default output rate in Hz for all outputs. 
+    // @Range: 25 400
+    // @User: Advanced
+    // @Units: Hz
+    AP_GROUPINFO("_DEF_RATE",  18, SRV_Channels, default_rate, 50),
+    
     AP_GROUPEND
 };
 
@@ -110,6 +119,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
  */
 SRV_Channels::SRV_Channels(void)
 {
+    instance = this;
     channels = obj_channels;
     
     // set defaults from the parameter table
