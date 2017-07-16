@@ -1088,10 +1088,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-        case MAV_CMD_START_RX_PAIR:
-            result = handle_rc_bind(packet);
-            break;
-
         case MAV_CMD_NAV_LOITER_UNLIM:
             plane.set_mode(LOITER, MODE_REASON_GCS_COMMAND);
             result = MAV_RESULT_ACCEPTED;
