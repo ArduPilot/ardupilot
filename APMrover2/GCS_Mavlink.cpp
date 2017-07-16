@@ -798,9 +798,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             // do command
 
             switch (packet.command) {
-            case MAV_CMD_START_RX_PAIR:
-                result = handle_rc_bind(packet);
-                break;
 
             case MAV_CMD_NAV_RETURN_TO_LAUNCH:
                 rover.set_mode(RTL);
