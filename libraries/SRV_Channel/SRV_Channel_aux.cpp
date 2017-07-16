@@ -151,6 +151,8 @@ void SRV_Channels::update_aux_servo_function(void)
 /// Should be called after the the servo functions have been initialized
 void SRV_Channels::enable_aux_servos()
 {
+    hal.rcout->set_default_rate(uint16_t(instance->default_rate.get()));
+    
     update_aux_servo_function();
 
     // enable all channels that are set to a valid function. This
