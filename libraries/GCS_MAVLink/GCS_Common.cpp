@@ -1646,7 +1646,7 @@ uint8_t GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packe
 /*
   handle a R/C bind request (for spektrum)
  */
-uint8_t GCS_MAVLINK::handle_rc_bind(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_rc_bind(const mavlink_command_long_t &packet)
 {
     // initiate bind procedure. We accept the DSM type from either
     // param1 or param2 due to a past mixup with what parameter is the
@@ -1840,6 +1840,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
+
+    case MAV_CMD_START_RX_PAIR:
+        result = handle_rc_bind(packet);
+        break;
 
     case MAV_CMD_DO_SET_SERVO:
         /* fall through */
