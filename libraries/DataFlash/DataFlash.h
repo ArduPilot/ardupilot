@@ -323,6 +323,8 @@ private:
     // start page of log data
     uint16_t _log_data_page;
 
+    int8_t _log_sending_chan = -1;
+
     bool should_handle_log_message();
     void handle_log_message(class GCS_MAVLINK &, mavlink_message_t *msg);
 
