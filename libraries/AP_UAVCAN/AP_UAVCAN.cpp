@@ -25,6 +25,9 @@
 #include <uavcan/equipment/actuator/Command.hpp>
 #include <uavcan/equipment/actuator/Status.hpp>
 #include <uavcan/equipment/esc/RawCommand.hpp>
+#include <uavcan/equipment/ecu/Status.hpp>
+#include <uavcan/equipment/ice/reciprocating/Status.hpp>
+#include <uavcan/equipment/ice/reciprocating/CylinderStatus.hpp>
 
 extern const AP_HAL::HAL& hal;
 
@@ -64,6 +67,150 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
 
     AP_GROUPEND
 };
+
+static void ecu_status_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::ice::reciprocating::Status>& msg, uint8_t mgr)
+{
+    namespace ICE = uavcan::equipment::ice::reciprocating;
+    if (hal.can_mgr[mgr] != nullptr) {
+        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+        if (ap_uavcan != nullptr) {
+            
+            EFI_State *state = ap_uavcan->find_efi_node(msg.getSrcNodeID().get());
+
+            // Fill in state structure
+
+            // Base state and any general errors
+            state->engine_state = static_cast<Engine_State>(msg.state);
+            state->general_error = msg.flags && ICE::Status::FLAG_GENERAL_ERROR;
+
+            // Crank sensor
+            if (msg.flags && ICE::Status::FLAG_CRANKSHAFT_SENSOR_ERROR_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_CRANKSHAFT_SENSOR_ERROR) {
+                    state->crankshaft_sensor_status = Crankshaft_Sensor_Status::CRANKSHAFT_SENSOR_ERROR;
+                } else {
+                    state->crankshaft_sensor_status = Crankshaft_Sensor_Status::CRANKSHAFT_SENSOR_OK;
+                }
+            } else {
+                state->crankshaft_sensor_status = Crankshaft_Sensor_Status::CRANKSHAFT_SENSOR_STATUS_NOT_SUPPORTED;
+            }
+
+            // Temperature
+            if (msg.flags && ICE::Status::FLAG_TEMPERATURE_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_TEMPERATURE_BELOW_NOMINAL) {
+                    state->temperature_status = Temperature_Status::TEMPERATURE_BELOW_NOMINAL;
+                } else if (msg.flags && ICE::Status::FLAG_TEMPERATURE_ABOVE_NOMINAL) {
+                    state->temperature_status = Temperature_Status::TEMPERATURE_ABOVE_NOMINAL;
+                } else if (msg.flags && ICE::Status::FLAG_TEMPERATURE_OVERHEATING) {
+                    state->temperature_status = Temperature_Status::TEMPERATURE_OVERHEATING;
+                } else if (msg.flags && ICE::Status::FLAG_TEMPERATURE_EGT_ABOVE_NOMINAL) {
+                    state->temperature_status = Temperature_Status::TEMPERATURE_EGT_ABOVE_NOMINAL;
+                } else {
+                    state->temperature_status = Temperature_Status::TEMPERATURE_OK;
+                }
+            } else {
+                state->temperature_status = Temperature_Status::TEMPERATURE_STATUS_NOT_SUPPORTED;
+            }
+
+            // Fuel Pressure
+            if (msg.flags && ICE::Status::FLAG_FUEL_PRESSURE_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_FUEL_PRESSURE_BELOW_NOMINAL) {
+                    state->fuel_pressure_status = Fuel_Pressure_Status::FUEL_PRESSURE_BELOW_NOMINAL;
+                } else if (msg.flags && ICE::Status::FLAG_FUEL_PRESSURE_ABOVE_NOMINAL) {
+                    state->fuel_pressure_status = Fuel_Pressure_Status::FUEL_PRESSURE_ABOVE_NOMINAL;
+                } else {
+                    state->fuel_pressure_status = Fuel_Pressure_Status::FUEL_PRESSURE_OK;
+                }
+            } else {
+                state->fuel_pressure_status = Fuel_Pressure_Status::FUEL_PRESSURE_STATUS_NOT_SUPPORTED;
+            }
+
+            // Oil Pressure
+            if (msg.flags && ICE::Status::FLAG_OIL_PRESSURE_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_OIL_PRESSURE_BELOW_NOMINAL) {
+                    state->oil_pressure_status = Oil_Pressure_Status::OIL_PRESSURE_BELOW_NOMINAL;
+                } else if (msg.flags && ICE::Status::FLAG_OIL_PRESSURE_ABOVE_NOMINAL) {
+                    state->oil_pressure_status = Oil_Pressure_Status::OIL_PRESSURE_ABOVE_NOMINAL;
+                } else {
+                    state->oil_pressure_status = Oil_Pressure_Status::OIL_PRESSURE_OK;
+                }
+            } else {
+                state->oil_pressure_status = Oil_Pressure_Status::OIL_PRESSURE_STATUS_NOT_SUPPORTED;
+            }
+
+            // Detonation
+            if (msg.flags && ICE::Status::FLAG_DETONATION_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_DETONATION_OBSERVED) {
+                    state->detonation_status = Detonation_Status::DETONATION_OBSERVED;
+                } else {
+                    state->detonation_status = Detonation_Status::DETONATION_NOT_OBSERVED;
+                }
+            } else {
+                state->detonation_status = Detonation_Status::DETONATION_STATUS_NOT_SUPPORTED;
+            }
+
+            // Misfire
+            if (msg.flags && ICE::Status::FLAG_MISFIRE_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_MISFIRE_OBSERVED) {
+                    state->misfire_status = Misfire_Status::MISFIRE_OBSERVED;
+                } else {
+                    state->misfire_status = Misfire_Status::MISFIRE_NOT_OBSERVED;
+                }
+            } else {
+                state->misfire_status = Misfire_Status::MISFIRE_STATUS_NOT_SUPPORTED;
+            }
+
+            // Debris
+            if (msg.flags && ICE::Status::FLAG_DETONATION_SUPPORTED) {
+                if (msg.flags && ICE::Status::FLAG_DETONATION_OBSERVED) {
+                    state->detonation_status = Detonation_Status::DETONATION_OBSERVED;
+                } else {
+                    state->detonation_status = Detonation_Status::DETONATION_NOT_OBSERVED;
+                }
+            } else {
+                state->detonation_status = Detonation_Status::DETONATION_STATUS_NOT_SUPPORTED;
+            }
+
+            state->engine_load_percent = msg.engine_load_percent;
+            state->engine_speed_rpm = msg.engine_speed_rpm;
+            state->spark_dwell_time_ms = msg.spark_dwell_time_ms;
+            state->atmospheric_pressure_kpa = msg.atmospheric_pressure_kpa;
+            state->intake_manifold_pressure_kpa = msg.intake_manifold_pressure_kpa;
+            state->intake_manifold_temperature = msg.intake_manifold_temperature;
+            state->coolant_temperature = msg.coolant_temperature;
+            state->oil_pressure = msg.oil_pressure;
+            state->oil_temperature = msg.oil_temperature;
+            state->fuel_pressure = msg.fuel_pressure;
+            state->fuel_consumption_rate_cm3pm = msg.fuel_consumption_rate_cm3pm;
+            state->estimated_consumed_fuel_volume_cm3 = msg.estimated_consumed_fuel_volume_cm3;
+            state->throttle_position_percent = msg.throttle_position_percent;
+            state->ecu_index = msg.ecu_index;
+            state->spark_plug_usage = static_cast<Spark_Plug_Usage>(msg.spark_plug_usage);
+
+            // Update cylinder status
+            uint8_t number_of_cylinders = msg.cylinder_status.size();
+            for (int i = 0; i < number_of_cylinders; i++) {
+                state->cylinder_status[i].ignition_timing_deg = msg.cylinder_status[i].ignition_timing_deg;
+                state->cylinder_status[i].injection_time_ms = msg.cylinder_status[i].injection_time_ms;
+                state->cylinder_status[i].cylinder_head_temperature = msg.cylinder_status[i].cylinder_head_temperature;
+                state->cylinder_status[i].exhaust_gas_temperature = msg.cylinder_status[i].exhaust_gas_temperature;
+                state->cylinder_status[i].lambda_coefficient = msg.cylinder_status[i].lambda_coefficient;
+            }
+
+
+            state->last_updated_ms = AP_HAL::millis();
+            
+            // Update listeners
+            ap_uavcan->update_efi_state(msg.getSrcNodeID().get());
+        } 
+        
+    }
+}
+static void ecu_status_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::ice::reciprocating::Status>& msg)
+{   ecu_status_cb(msg, 0); }
+static void ecu_status_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::ice::reciprocating::Status>& msg)
+{   ecu_status_cb(msg, 1); }
+static void (*ecu_status_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::ice::reciprocating::Status>& msg)
+        = { ecu_status_cb0, ecu_status_cb1 };
 
 static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
 {
@@ -303,6 +450,11 @@ AP_UAVCAN::AP_UAVCAN() :
         _mag_node_taken[i] = 0;
     }
 
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
+        _efi_nodes[i] = 255;
+        _efi_node_taken[i] = 0;
+    }
+
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
         _gps_listener_to_node[i] = UINT8_MAX;
         _gps_listeners[i] = nullptr;
@@ -312,6 +464,9 @@ AP_UAVCAN::AP_UAVCAN() :
 
         _mag_listener_to_node[i] = UINT8_MAX;
         _mag_listeners[i] = nullptr;
+
+        _efi_listener_to_node[i] = 255;
+        _efi_listeners[i] = nullptr;
     }
 
     _rc_out_sem = hal.util->new_semaphore();
@@ -369,9 +524,16 @@ bool AP_UAVCAN::try_init(void)
                         debug_uavcan(1, "UAVCAN: node start problem\n\r");
                     }
 
+                    uavcan::Subscriber<uavcan::equipment::ice::reciprocating::Status> *ecu_status;
+                    ecu_status = new uavcan::Subscriber<uavcan::equipment::ice::reciprocating::Status>(*node);
+                    const int ecu_status_start_res = ecu_status->start(ecu_status_cb_arr[_uavcan_i]);
+                    if (ecu_status_start_res < 0) {
+                        debug_uavcan(1, "UAVCAN ECU Subscriber start problem!\n\r");
+                        return false;
+                    }
+
                     uavcan::Subscriber<uavcan::equipment::gnss::Fix> *gnss_fix;
                     gnss_fix = new uavcan::Subscriber<uavcan::equipment::gnss::Fix>(*node);
-
                     const int gnss_fix_start_res = gnss_fix->start(gnss_fix_cb_arr[_uavcan_i]);
                     if (gnss_fix_start_res < 0) {
                         debug_uavcan(1, "UAVCAN GNSS subscriber start problem\n\r");
@@ -1034,5 +1196,97 @@ void AP_UAVCAN::update_mag_state(uint8_t node)
         }
     }
 }
+
+//EFI
+uint8_t AP_UAVCAN::register_efi_listener(AP_EFI_Backend* new_listener, uint8_t preferred_channel)
+{
+    uint8_t sel_place = 255, ret = 0;
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
+        if (_efi_listeners[i] == nullptr) {
+            sel_place = i;
+            break;
+        }
+    }
+
+    if (sel_place != 255) {
+        if (preferred_channel != 0) {
+            if (preferred_channel < AP_UAVCAN_MAX_EFI_NODES) {
+                _efi_listeners[sel_place] = new_listener;
+                _efi_listener_to_node[sel_place] = preferred_channel - 1;
+                _efi_node_taken[_efi_listener_to_node[sel_place]]++;
+                ret = preferred_channel;
+
+                debug_uavcan(2, "reg_EFI place:%d, chan: %d\n\r", sel_place, preferred_channel);
+            }
+        } else {
+            for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
+                if (_efi_node_taken[i] == 0) {
+                    _efi_listeners[sel_place] = new_listener;
+                    _efi_listener_to_node[sel_place] = i;
+                    _efi_node_taken[i]++;
+                    ret = i + 1;
+
+                    debug_uavcan(2, "reg_EFI place:%d, chan: %d\n\r", sel_place, i);
+                    break;
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
+void AP_UAVCAN::remove_efi_listener(AP_EFI_Backend* rem_listener)
+{
+    // Check for all listeners and compare pointers
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
+        if (_efi_listeners[i] == rem_listener) {
+            _efi_listeners[i] = nullptr;
+
+            // Also decrement usage counter and reset listening node
+            if (_efi_node_taken[_efi_listener_to_node[i]] > 0) {
+                _efi_node_taken[_efi_listener_to_node[i]]--;
+            }
+            _efi_listener_to_node[i] = 255;
+        }
+    }
+}
+
+EFI_State *AP_UAVCAN::find_efi_node(uint8_t node)
+{
+    // Check if such node is already defined
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
+        if (_efi_nodes[i] == node) {
+            return &_efi_node_state[i];
+        }
+    }
+
+    // If not - try to find free space for it
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
+        if (_efi_nodes[i] == 255) {
+            _efi_nodes[i] = node;
+            return &_efi_node_state[i];
+        }
+    }
+
+    // If no space is left - return nullptr
+    return nullptr;
+}
+
+void AP_UAVCAN::update_efi_state(uint8_t node)
+{
+    // Go through all listeners of specified node and call their's update methods
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_EFI_NODES; i++) {
+        if (_efi_nodes[i] == node) {
+            for (uint8_t j = 0; j < AP_UAVCAN_MAX_LISTENERS; j++) {
+                if (_efi_listener_to_node[j] == i) {
+                    _efi_listeners[j]->handle_efi_msg(_efi_node_state[i]);
+                }
+            }
+        }
+    }
+}
+
+
 
 #endif // HAL_WITH_UAVCAN

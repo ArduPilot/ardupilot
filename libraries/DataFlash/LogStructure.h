@@ -855,6 +855,53 @@ struct PACKED log_Beacon {
     float posz;
 };
 
+struct PACKED log_EFI {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t  engine_load_percent;
+    uint32_t engine_speed_rpm;
+    float    spark_dwell_time_ms;
+    float    atmospheric_pressure_kpa;
+    float    intake_manifold_pressure_kpa;
+    float    intake_manifold_temperature;
+    float    coolant_temperature;
+    float    oil_pressure;
+    float    oil_temperature;
+    float    fuel_pressure;
+    float    fuel_consumption_rate_cm3pm;
+    float    estimated_consumed_fuel_volume_cm3;
+    uint8_t  throttle_position_percent;
+    uint8_t  ecu_index;
+};
+
+struct PACKED log_EFI2 {
+    LOG_PACKET_HEADER;
+    uint64_t  time_us;
+    bool     health;
+    uint8_t  engine_state;
+    bool     general_error;
+    uint8_t  crankshaft_sensor_status;
+    uint8_t  temperature_status;
+    uint8_t  fuel_pressure_status;
+    uint8_t  oil_pressure_status;
+    uint8_t  detonation_status;
+    uint8_t  misfire_status;
+    uint8_t  debris_status;
+    uint8_t  spark_plug_usage;
+    uint8_t  ecu_index;
+};
+
+struct PACKED log_EFI_CYL {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    ignition_timing_deg;
+    float    injection_time_ms;
+    float    cylinder_head_temperature;
+    float    exhaust_gas_temperature;
+    float    lambda_coefficient;
+    uint8_t  ecu_index;
+};
+
 // #endif // SBP_HW_LOGGING
 
 #define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
@@ -897,6 +944,15 @@ struct PACKED log_Beacon {
 
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"
+
+#define EFI_LABELS "TimeUS,LP,RPM,SDT,ATM,IMP,IMT,ECT,OilP,OilT,FP,FCR,CFV,TPS,IDX"
+#define EFI_FMT    "QBIffffffffffBB" 
+
+#define EFI2_LABELS "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DS,SPU,IDX"
+#define EFI2_FMT    "QBBBBBBBBBBBB"
+
+#define EFI_CYL_LABELS "TimeUS,IgnT,InjT,CHT,EGT,Lambda,IDX"
+#define EFI_CYL_FMT    "QfffffB"
 
 /*
 Format characters in the format string for binary log messages
@@ -1135,7 +1191,13 @@ Format characters in the format string for binary log messages
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt" }, \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
-      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf" }
+      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf" }, \
+    { LOG_EFI_MSG, sizeof(log_EFI), "EFI", EFI_FMT, EFI_LABELS }, \
+    { LOG_EFI2_MSG, sizeof(log_EFI2), "EFI2", EFI2_FMT, EFI2_LABELS }, \
+    { LOG_EFI_CYL1_MSG, sizeof(log_EFI_CYL), "ECL1", EFI_CYL_FMT, EFI_CYL_LABELS }, \
+    { LOG_EFI_CYL2_MSG, sizeof(log_EFI_CYL), "ECL2", EFI_CYL_FMT, EFI_CYL_LABELS }, \
+    { LOG_EFI_CYL3_MSG, sizeof(log_EFI_CYL), "ECL3", EFI_CYL_FMT, EFI_CYL_LABELS }, \
+    { LOG_EFI_CYL4_MSG, sizeof(log_EFI_CYL), "ECL4", EFI_CYL_FMT, EFI_CYL_LABELS }
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
@@ -1274,6 +1336,13 @@ enum LogMessages {
     LOG_VISUALODOM_MSG,
     LOG_AOA_SSA_MSG,
     LOG_BEACON_MSG,
+
+    LOG_EFI_MSG,
+    LOG_EFI2_MSG,
+    LOG_EFI_CYL1_MSG,
+    LOG_EFI_CYL2_MSG,
+    LOG_EFI_CYL3_MSG,
+    LOG_EFI_CYL4_MSG,
 };
 
 enum LogOriginType {

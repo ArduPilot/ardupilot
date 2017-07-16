@@ -97,6 +97,17 @@ void Copter::rpm_update(void)
     }
 }
 
+/*
+  update EFIs
+ */
+void Copter::efi_update(void)
+{
+    efi.update();
+    if (should_log(MASK_LOG_RCIN)) {
+        DataFlash.Log_Write_EFI(efi);
+    }
+}
+
 // initialise compass
 void Copter::init_compass()
 {
