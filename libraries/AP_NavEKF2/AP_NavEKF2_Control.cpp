@@ -421,6 +421,10 @@ void NavEKF2_core::setOrigin()
 {
     // assume origin at current GPS location (no averaging)
     EKF_origin = _ahrs->get_gps().location();
+    // if flying, correct for height change from takeoff so that the origin is at field elevation
+    if (inFlight) {
+        EKF_origin.alt += (int32_t)(100.0f * stateStruct.position.z);
+    }
     ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
