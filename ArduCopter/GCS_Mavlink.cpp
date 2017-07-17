@@ -291,7 +291,7 @@ uint32_t GCS_MAVLINK_Copter::telem_delay() const
     return (uint32_t)(copter.g.telem_delay);
 }
 
-// try to send a message, return false if it won't fit in the serial tx buffer
+// try to send a message, return false if it wasn't sent
 bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
