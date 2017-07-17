@@ -284,6 +284,12 @@ protected:
     MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
     MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
 
+    // vehicle-overridable message send function
+    virtual bool try_send_message(enum ap_message id);
+
+    // message sending functions:
+    bool try_send_compass_message(enum ap_message id);
+
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
@@ -398,9 +404,6 @@ private:
     
     // a vehicle can optionally snoop on messages for other systems
     static void (*msg_snoop)(const mavlink_message_t* msg);
-
-    // vehicle specific message send function
-    virtual bool try_send_message(enum ap_message id) = 0;
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;

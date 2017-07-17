@@ -2031,6 +2031,59 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
     return result;
 }
 
+bool GCS_MAVLINK::try_send_compass_message(const enum ap_message id)
+{
+    Compass *compass = get_compass();
+    if (compass == nullptr) {
+        return true;
+    }
+    bool ret = true;
+    switch (id) {
+    case MSG_MAG_CAL_PROGRESS:
+        compass->send_mag_cal_progress(chan);
+        ret = true;;
+        break;
+    case MSG_MAG_CAL_REPORT:
+        compass->send_mag_cal_report(chan);
+        ret = true;
+        break;
+    default:
+        ret = true;
+        break;
+    }
+    return ret;
+}
+
+bool GCS_MAVLINK::try_send_message(const enum ap_message id)
+{
+    if (telemetry_delayed()) {
+        return false;
+    }
+
+    bool ret = true;
+
+    switch(id) {
+
+    case MSG_MAG_CAL_PROGRESS:
+        /* fall through */
+    case MSG_MAG_CAL_REPORT:
+        ret = try_send_compass_message(id);
+        break;
+
+    default:
+        // try_send_message must always at some stage return true for
+        // a message, or we will attempt to infinitely retry the
+        // message as part of send_message.
+        // This message will be sent out at the same rate as the
+        // unknown message, so should be safe.
+        gcs().send_text(MAV_SEVERITY_DEBUG, "Sending unknown message (%u)", id);
+        ret = true;
+        break;
+    }
+
+    return ret;
+}
+
 GCS &gcs()
 {
     return *GCS::instance();
