@@ -1029,12 +1029,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        case MAV_CMD_DO_START_MAG_CAL:
-        case MAV_CMD_DO_ACCEPT_MAG_CAL:
-        case MAV_CMD_DO_CANCEL_MAG_CAL:
-            result = rover.compass.handle_mag_cal_command(packet);
-            break;
-
         case MAV_CMD_NAV_SET_YAW_SPEED:
         {
             // param1 : yaw angle to adjust direction by in centidegress
@@ -1536,6 +1530,11 @@ bool GCS_MAVLINK_Rover::accept_packet(const mavlink_status_t &status, mavlink_me
 AP_ServoRelayEvents *GCS_MAVLINK_Rover::get_servorelayevents() const
 {
     return &rover.ServoRelayEvents;
+}
+
+Compass *GCS_MAVLINK_Rover::get_compass() const
+{
+    return &rover.compass;
 }
 
 AP_Mission *GCS_MAVLINK_Rover::get_mission()
