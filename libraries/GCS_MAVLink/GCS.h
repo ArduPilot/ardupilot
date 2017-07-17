@@ -220,6 +220,7 @@ protected:
     virtual bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) { return true; }
     virtual AP_Mission *get_mission() = 0;
     virtual AP_Rally *get_rally() const = 0;
+    virtual Compass *get_compass() const = 0;
     virtual AP_ServoRelayEvents *get_servorelayevents() const = 0;
 
     bool            waypoint_receiving; // currently receiving
@@ -275,6 +276,7 @@ protected:
     bool telemetry_delayed() const;
     virtual uint32_t telem_delay() const = 0;
 
+    MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
 
 private:
