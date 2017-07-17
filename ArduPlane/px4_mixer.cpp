@@ -49,7 +49,6 @@ bool Plane::print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...)
 bool Plane::mix_one_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan)
 {
     const float limit = 10000;
-    const RC_Channel *inch = RC_Channels::rc_channel(in_chan);
     const SRV_Channel *outch = SRV_Channels::srv_channel(out_chan);
 
     bool is_throttle = in_chan==rcmap.throttle()-1;
@@ -64,22 +63,18 @@ bool Plane::mix_one_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan, ui
     int32_t out_min = limit*(outch_trim - outch->get_output_min()) / (1500 - PX4_LIM_RC_MIN);
     int32_t out_max = limit*(outch->get_output_max() - outch_trim) / (PX4_LIM_RC_MAX - 1500);
     int32_t out_trim = limit*(outch_trim - 1500) / ((PX4_LIM_RC_MAX - PX4_LIM_RC_MIN) / 2);
-    int32_t in_mul = inch->get_reverse() == outch->get_reversed()?1:-1;
+    int32_t reverse = outch->get_reversed()?-1:1;
 
-    // note that RC trim is taken care of in rc_config
-    float scale_low =  limit*(1500 - PX4_LIM_RC_MIN)/(1500 - inch->get_radio_min());
-    float scale_high = limit*(PX4_LIM_RC_MAX - 1500)/(inch->get_radio_max() - 1500);
-    
     if (!print_buffer(buf, buf_size, "O: %d %d %d %d %d\n",
-                      int(out_min),
-                      int(out_max),
+                      int(out_min*reverse),
+                      int(out_max*reverse),
                       int(out_trim),
                       int(-limit), int(limit))) {
         return false;
     }
     if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n",
                       in_chan,
-                      int(in_mul*scale_low), int(in_mul*scale_high),
+                      int(limit), int(limit),
                       0,
                       int(-limit), int(limit))) {
         return false;
@@ -93,8 +88,6 @@ bool Plane::mix_one_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan, ui
 bool Plane::mix_two_channels(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan1, uint8_t in_chan2, bool left_channel)
 {
     const float limit = 10000;
-    const RC_Channel *inch1 = RC_Channels::rc_channel(in_chan1);
-    const RC_Channel *inch2 = RC_Channels::rc_channel(in_chan2);
     const SRV_Channel *outch = SRV_Channels::srv_channel(out_chan);
     int16_t outch_trim = outch->get_trim();
 
@@ -107,39 +100,29 @@ bool Plane::mix_two_channels(char *&buf, uint16_t &buf_size, uint8_t out_chan, u
     int32_t out_min = limit*(outch->get_trim() - outch->get_output_min()) / (1500 - PX4_LIM_RC_MIN);
     int32_t out_max = limit*(outch->get_output_max() - outch->get_trim()) / (PX4_LIM_RC_MAX - 1500);
     int32_t out_trim = limit*(outch_trim - 1500) / ((PX4_LIM_RC_MAX - PX4_LIM_RC_MIN) / 2);
-    int32_t in_mul1 = inch1->get_reverse() == outch->get_reversed()?1:-1;
-    int32_t in_mul2 = inch2->get_reverse() == outch->get_reversed()?1:-1;
+    int32_t in_mul2 = left_channel?-1:1;
     float in_gain = g.mixing_gain;
+    int32_t reverse = outch->get_reversed()?-1:1;
 
-    if (left_channel) {
-        in_mul2 = -in_mul2;
-    }
-
-    // note that RC trim is taken care of in rc_config
-    float scale_low1 =  limit*(1500 - PX4_LIM_RC_MIN)/(1500 - inch1->get_radio_min());
-    float scale_high1 = limit*(PX4_LIM_RC_MAX - 1500)/(inch1->get_radio_max() - 1500);
-    float scale_low2 =  limit*(1500 - PX4_LIM_RC_MIN)/(1500 - inch2->get_radio_min());
-    float scale_high2 = limit*(PX4_LIM_RC_MAX - 1500)/(inch2->get_radio_max() - 1500);
-    
     if (!print_buffer(buf, buf_size, "O: %d %d %d %d %d\n",
-                      int(out_min),
-                      int(out_max),
+                      int(out_min*reverse),
+                      int(out_max*reverse),
                       int(out_trim),
                       int(-limit*2), int(limit*2))) {
         return false;
     }
     if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n",
                       in_chan1,
-                      int(in_mul1*in_gain*scale_low1), int(in_mul1*in_gain*scale_high1),
+                      int(limit*in_gain), int(limit*in_gain),
                       0,
-                      int(-limit*2), int(limit*2))) {
+                      int(-limit), int(limit))) {
         return false;
     }
     if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n",
                       in_chan2,
-                      int(in_mul2*in_gain*scale_low2), int(in_mul2*in_gain*scale_high2),
+                      int(limit*in_gain*in_mul2), int(limit*in_gain*in_mul2),
                       0,
-                      int(-limit*2), int(limit*2))) {
+                      int(-limit), int(limit))) {
         return false;
     }
     return true;
@@ -350,19 +333,23 @@ bool Plane::setup_failsafe_mixing(void)
         config.channel = i;
         // use high rc limits to allow for correct pass-thru channels
         // without limits
-        config.rc_min = PX4_LIM_RC_MIN;
-        config.rc_max = PX4_LIM_RC_MAX;
+        config.rc_min = ch->get_radio_min();
+        config.rc_max = ch->get_radio_max();
         if (rcmap.throttle()-1 == i) {
-            // throttle uses a trim of 1500, so we don't get division
+            // throttle uses a trim between min and max, so we don't get division
             // by small numbers near RC3_MIN
-            config.rc_trim = 1500;
+            config.rc_trim = (config.rc_min + config.rc_max)/2;
         } else {
             config.rc_trim = constrain_int16(ch->get_radio_trim(), config.rc_min+1, config.rc_max-1);
         }
         config.rc_dz = 0; // zero for the purposes of manual takeover
 
-        // undo the reversal of channel2 in px4io
-        config.rc_reverse = i==1?true:false;
+        config.rc_reverse = ch->get_reverse();
+
+        if (i == 1) {
+            // undo the reversal of channel2 in px4io
+            config.rc_reverse = !config.rc_reverse;
+        }
 
         if (i+1 == g.override_channel.get()) {
             /*
