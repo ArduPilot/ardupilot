@@ -1440,12 +1440,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             plane.autotune_enable(!is_zero(packet.param1));
             break;
 
-        case MAV_CMD_DO_START_MAG_CAL:
-        case MAV_CMD_DO_ACCEPT_MAG_CAL:
-        case MAV_CMD_DO_CANCEL_MAG_CAL:
-            result = plane.compass.handle_mag_cal_command(packet);
-            break;
-
 #if PARACHUTE == ENABLED
         case MAV_CMD_DO_PARACHUTE:
             // configure or release parachute
@@ -2017,6 +2011,11 @@ bool GCS_MAVLINK_Plane::accept_packet(const mavlink_status_t &status, mavlink_me
         return true;
     }
     return (msg.sysid == plane.g.sysid_my_gcs);
+}
+
+Compass *GCS_MAVLINK_Plane::get_compass() const
+{
+    return &plane.compass;
 }
 
 AP_Mission *GCS_MAVLINK_Plane::get_mission()
