@@ -1835,6 +1835,28 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     }
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet)
+{
+    Compass *compass = get_compass();
+    if (compass == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    uint8_t compassNumber = -1;
+    if (is_equal(packet.param1, 2.0f)) {
+        compassNumber = 0;
+    } else if (is_equal(packet.param1, 5.0f)) {
+        compassNumber = 1;
+    } else if (is_equal(packet.param1, 6.0f)) {
+        compassNumber = 2;
+    }
+    if (compassNumber == (uint8_t) -1) {
+        return MAV_RESULT_FAILED;
+    }
+    compass->set_and_save_offsets(compassNumber, packet.param2, packet.param3, packet.param4);
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
 {
     Compass *compass = get_compass();
@@ -1860,6 +1882,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
     case MAV_CMD_START_RX_PAIR:
         result = handle_rc_bind(packet);
         break;
+
+    case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS: {
+        result = handle_command_preflight_set_sensor_offsets(packet);
+        break;
+    }
 
     case MAV_CMD_DO_SET_SERVO:
         /* fall through */
