@@ -14,6 +14,7 @@ protected:
         return 0;
     };
 
+    Compass *get_compass() const override;
     AP_Mission *get_mission() override;
     AP_Rally *get_rally() const override;
     AP_ServoRelayEvents *get_servorelayevents() const override;
