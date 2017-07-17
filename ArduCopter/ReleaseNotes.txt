@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.5.0-rc11 12-July-2017
+Copter 3.5.0 17-July-2017 / 3.5.0-rc11 12-July-2017
 Changes from 3.5-rc10
 1) GPS fixes:
     a) Re-enable auto detection of NMEA GPS (revert change from -rc9)
