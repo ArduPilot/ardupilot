@@ -1347,13 +1347,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        case MAV_CMD_DO_START_MAG_CAL:
-        case MAV_CMD_DO_ACCEPT_MAG_CAL:
-        case MAV_CMD_DO_CANCEL_MAG_CAL:
-            result = sub.compass.handle_mag_cal_command(packet);
-
-            break;
-
         case MAV_CMD_DO_SEND_BANNER: {
             result = MAV_RESULT_ACCEPTED;
 
@@ -1722,6 +1715,11 @@ void Sub::gcs_data_stream_send(void)
 void Sub::gcs_check_input(void)
 {
     gcs().update();
+}
+
+Compass *GCS_MAVLINK_Sub::get_compass() const
+{
+    return &sub.compass;
 }
 
 AP_Mission *GCS_MAVLINK_Sub::get_mission()
