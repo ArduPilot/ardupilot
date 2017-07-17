@@ -21,6 +21,7 @@ protected:
     AP_Mission *get_mission() override;
     void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg) override;
 
+    Compass *get_compass() const override;
     AP_ServoRelayEvents *get_servorelayevents() const override;
     AP_Rally *get_rally() const override;
 
