@@ -22,6 +22,10 @@ public:
     // get distance upwards in meters. returns true on success
     bool get_upward_distance(float &distance) const;
 
+    // get distance downward in meters. returns true on success
+    bool get_downward_distance(float &distance) const;
+
+
 private:
 
     // horizontal distance support
@@ -32,4 +36,8 @@ private:
     // upward distance support
     uint32_t _last_upward_update_ms;    // system time of last update distance
     float _distance_upward;             // upward distance in meters
+
+    // downward distance support
+    uint32_t _last_downward_update_ms;    // system time of last update distance
+    float _distance_downward;             // downward distance in meters
 };

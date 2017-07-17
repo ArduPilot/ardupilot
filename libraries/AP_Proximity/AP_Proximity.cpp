@@ -420,7 +420,35 @@ bool AP_Proximity::get_upward_distance(uint8_t instance, float &distance) const
     return drivers[instance]->get_upward_distance(distance);
 }
 
+bool AP_Proximity::get_downward_distance(uint8_t instance, float &distance) const
+{
+    if ((drivers[instance] == nullptr) || (_type[instance] == Proximity_Type_None)) {
+        return false;
+    }
+    // get downward distance from backend
+    return drivers[instance]->get_downward_distance(distance);
+}
+
+
+
+
 bool AP_Proximity::get_upward_distance(float &distance) const
 {
-    return get_upward_distance(primary_instance, distance);
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (get_orientation(i) == ROTATION_PITCH_90) {
+            return get_upward_distance(i, distance);
+        }
+    }
+    return false;
+}
+
+
+bool AP_Proximity::get_downward_distance(float &distance) const
+{
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (get_orientation(i) == ROTATION_PITCH_270) {
+            return get_downward_distance(i, distance);
+        }
+    }
+    return false;
 }

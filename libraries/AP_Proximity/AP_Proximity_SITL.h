@@ -22,12 +22,15 @@ public:
 
     // get distance upwards in meters. returns true on success
     bool get_upward_distance(float &distance) const;
+    // get distance downward in meters. returns true on success
+    bool get_downward_distance(float &distance) const;
 
 private:
     SITL::SITL *sitl;
     Vector2l *fence;
     AP_Int8 *fence_count;
     AP_Float *fence_alt_max;
+    AP_Float *fence_alt_min;
     uint32_t last_load_ms;
     AC_PolyFence_loader fence_loader;
     Location current_loc;

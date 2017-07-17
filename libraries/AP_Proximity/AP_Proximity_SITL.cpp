@@ -42,6 +42,10 @@ AP_Proximity_SITL::AP_Proximity_SITL(AP_Proximity &_frontend,
     if (fence_alt_max == nullptr || ptype != AP_PARAM_FLOAT) {
         AP_HAL::panic("Proximity_SITL: Failed to find FENCE_ALT_MAX");
     }
+    fence_alt_min = (AP_Float *)AP_Param::find("FENCE_ALT_MIN", &ptype);
+    if (fence_alt_min == nullptr || ptype != AP_PARAM_FLOAT) {
+        AP_HAL::panic("Proximity_SITL: Failed to find FENCE_ALT_MIN");
+    }
 }
 
 // update the state of the sensor
@@ -134,6 +138,13 @@ bool AP_Proximity_SITL::get_upward_distance(float &distance) const
 {
     // return distance to fence altitude
     distance = MAX(0.0f, fence_alt_max->get() - sitl->height_agl);
+    return true;
+}
+
+bool AP_Proximity_SITL::get_downward_distance(float &distance) const
+{
+    // return distance to fence altitude
+    distance = MAX(0.0f, sitl->height_agl - fence_alt_min->get());
     return true;
 }
 

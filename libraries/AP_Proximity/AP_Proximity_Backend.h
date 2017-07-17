@@ -41,6 +41,8 @@ public:
 
     // get distance upwards in meters. returns true on success
     virtual bool get_upward_distance(float &distance) const { return false; }
+    // get distance downward in meters. returns true on success
+    virtual bool get_downward_distance(float &distance) const { return false; }
 
     // handle mavlink DISTANCE_SENSOR messages
     virtual void handle_msg(mavlink_message_t *msg) {}
