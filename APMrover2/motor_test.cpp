@@ -40,7 +40,7 @@ void Rover::motor_test_output()
                 break;
 
             case MOTOR_TEST_THROTTLE_PILOT:
-                if ((AP_MotorsUGV::motor_test_order)motor_test_seq == AP_MotorsUGV::STEERING) {
+                if ((AP_MotorsUGV::motor_test_order)motor_test_seq == AP_MotorsUGV::MOTOR_TEST_STEERING) {
                     test_result = g2.motors.output_test_pct((AP_MotorsUGV::motor_test_order)motor_test_seq, channel_steer->get_control_in());
                 } else {
                     test_result = g2.motors.output_test_pct((AP_MotorsUGV::motor_test_order)motor_test_seq, channel_throttle->get_control_in());
@@ -83,7 +83,7 @@ bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint
     }
 
     // check motor_seq
-    if (motor_seq > AP_MotorsUGV::THROTTLE_RIGHT) {
+    if (motor_seq > AP_MotorsUGV::MOTOR_TEST_THROTTLE_RIGHT) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Motor Test: invalid motor (%d)", (int)motor_seq);
         return false;
     }
