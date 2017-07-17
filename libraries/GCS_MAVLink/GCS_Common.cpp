@@ -1835,11 +1835,27 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     }
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
+{
+    Compass *compass = get_compass();
+    if (compass == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    return compass->handle_mag_cal_command(packet);
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
+
+    case MAV_CMD_DO_START_MAG_CAL:
+    case MAV_CMD_DO_ACCEPT_MAG_CAL:
+    case MAV_CMD_DO_CANCEL_MAG_CAL: {
+        result = handle_command_mag_cal(packet);
+        break;
+    }
 
     case MAV_CMD_START_RX_PAIR:
         result = handle_rc_bind(packet);
