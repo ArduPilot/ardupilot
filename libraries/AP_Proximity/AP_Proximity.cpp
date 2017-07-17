@@ -438,7 +438,12 @@ bool AP_Proximity::get_upward_distance(uint8_t instance, float &distance) const
 
 bool AP_Proximity::get_upward_distance(float &distance) const
 {
-    return get_upward_distance(primary_instance, distance);
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (get_orientation(i) == MAV_SENSOR_ROTATION_PITCH_90) {
+            return get_upward_distance(i, distance);
+        }
+    }
+    return false;
 }
 
 AP_Proximity::Type AP_Proximity::get_type(uint8_t instance) const
