@@ -520,17 +520,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
         break;
 
-    case MSG_RETRY_DEFERRED:
-        break; // just here to prevent a warning
-
-    case MSG_MAG_CAL_PROGRESS:
-        copter.compass.send_mag_cal_progress(chan);
-        break;
-
-    case MSG_MAG_CAL_REPORT:
-        copter.compass.send_mag_cal_report(chan);
-        break;
-
     case MSG_ADSB_VEHICLE:
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         copter.adsb.send_adsb_vehicle(chan);
@@ -538,8 +527,9 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_BATTERY_STATUS:
         send_battery_status(copter.battery);
         break;
+    default:
+        return GCS_MAVLINK::try_send_message(id);
     }
-
     return true;
 }
 
