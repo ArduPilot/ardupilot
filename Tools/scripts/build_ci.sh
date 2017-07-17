@@ -3,9 +3,9 @@
 # This helps when doing large merges
 # Andrew Tridgell, November 2011
 
-set -ex
-
 . ~/.profile
+
+set -ex
 
 # CXX and CC are exported by default by travis
 c_compiler=${CC:-gcc}
