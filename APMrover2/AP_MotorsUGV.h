@@ -19,10 +19,10 @@ public:
      };
 
     enum motor_test_order {
-        THROTTLE = 0,
-        STEERING = 1,
-        THROTTLE_LEFT = 2,
-        THROTTLE_RIGHT = 3,
+        MOTOR_TEST_THROTTLE = 1,
+        MOTOR_TEST_STEERING = 2,
+        MOTOR_TEST_THROTTLE_LEFT = 3,
+        MOTOR_TEST_THROTTLE_RIGHT = 4,
     };
 
     // initialise motors
