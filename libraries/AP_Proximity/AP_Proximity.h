@@ -131,7 +131,9 @@ public:
 
     // get distance upwards in meters. returns true on success
     bool get_upward_distance(uint8_t instance, float &distance) const;
+    bool get_downward_distance(uint8_t instance, float &distance) const;
     bool get_upward_distance(float &distance) const;
+    bool get_downward_distance(float &distance) const;
 
     Type get_type(uint8_t instance) const;
 
