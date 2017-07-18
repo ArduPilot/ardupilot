@@ -271,9 +271,6 @@ private:
     // ground speed error in m/s
     float groundspeed_error;
 
-    // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
-    int16_t     throttle_nudge;
-
     // receiver RSSI
     uint8_t receiver_rssi;
 
