@@ -82,6 +82,9 @@ protected:
     // calculate desired lateral acceleration
     void calc_lateral_acceleration(const struct Location &last_wp, const struct Location &next_WP);
 
+    // calculate pilot input to nudge throttle up or down
+    int16_t calc_throttle_nudge();
+
     // references to avoid code churn:
     class Parameters &g;
     class ParametersG2 &g2;

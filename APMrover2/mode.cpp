@@ -31,7 +31,6 @@ bool Mode::enter()
 
 void Mode::calc_throttle(float target_speed)
 {
-    const int16_t &throttle_nudge = rover.throttle_nudge;
     int16_t &throttle = rover.throttle;
     const int32_t next_navigation_leg_cd = rover.next_navigation_leg_cd;
     const AP_AHRS &ahrs = rover.ahrs;
@@ -40,7 +39,7 @@ void Mode::calc_throttle(float target_speed)
     const float ground_speed = rover.ground_speed;
 
     const float throttle_base = (fabsf(target_speed) / g.speed_cruise) * g.throttle_cruise;
-    const int throttle_target = throttle_base + throttle_nudge;
+    const int throttle_target = throttle_base + calc_throttle_nudge();
 
     /*
         reduce target speed in proportion to turning rate, up to the
@@ -110,6 +109,24 @@ void Mode::calc_throttle(float target_speed)
 void Mode::calc_lateral_acceleration()
 {
     calc_lateral_acceleration(rover.current_loc, rover.next_WP);
+}
+
+// calculate pilot input to nudge throttle up or down
+int16_t Mode::calc_throttle_nudge()
+{
+    // get pilot throttle input (-100 to +100)
+    int16_t pilot_throttle = rover.channel_throttle->get_control_in();
+    int16_t throttle_nudge = 0;
+
+    // Check if the throttle value is above 50% and we need to nudge
+    // Make sure its above 50% in the direction we are travelling
+    if ((fabsf(pilot_throttle) > 50.0f) &&
+        (((pilot_throttle < 0) && rover.in_reverse) ||
+         ((pilot_throttle > 0) && !rover.in_reverse))) {
+        throttle_nudge = (rover.g.throttle_max - rover.g.throttle_cruise) * ((fabsf(rover.channel_throttle->norm_input()) - 0.5f) / 0.5f);
+    }
+
+    return throttle_nudge;
 }
 
 /*
