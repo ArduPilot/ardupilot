@@ -3,9 +3,9 @@
 # This helps when doing large merges
 # Andrew Tridgell, November 2011
 
-set -ex
-
 . ~/.profile
+
+set -ex
 
 # CXX and CC are exported by default by travis
 c_compiler=${CC:-gcc}
@@ -18,10 +18,6 @@ export GIT_VERSION="ci_test"
 export NUTTX_GIT_VERSION="ci_test"
 export PX4_GIT_VERSION="ci_test"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
-
-if [[ "$cxx_compiler" == "clang++" ]]; then
-  export CCACHE_CPP2="true"
-fi
 
 # If CI_BUILD_TARGET is not set, build 3 different ones
 if [ -z "$CI_BUILD_TARGET" ]; then
