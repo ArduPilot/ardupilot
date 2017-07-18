@@ -503,9 +503,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_system_time(sub.gps);
         break;
 
-    case MSG_SERVO_OUT:
-        break;
-
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
         send_radio_in(0);
@@ -639,14 +636,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         sub.ahrs.send_ekf_status_report(chan);
         break;
 
-    case MSG_FENCE_STATUS:
-    case MSG_WIND:
-    case MSG_POSITION_TARGET_GLOBAL_INT:
-    case MSG_AOA_SSA:
-    case MSG_LANDING:
-        // unused
-        break;
-
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         sub.send_pid_tuning(chan);
@@ -662,22 +651,11 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
         break;
 
-    case MSG_RETRY_DEFERRED:
-        break; // just here to prevent a warning
-
-    case MSG_MAG_CAL_PROGRESS:
-        sub.compass.send_mag_cal_progress(chan);
-        break;
-
-    case MSG_MAG_CAL_REPORT:
-        sub.compass.send_mag_cal_report(chan);
-        break;
-
-    case MSG_ADSB_VEHICLE:
-        break; // Do nothing for Sub, here to prevent warning
     case MSG_BATTERY_STATUS:
         send_battery_status(sub.battery);
         break;
+    default:
+        return GCS_MAVLINK::try_send_message(id);
     }
 
     return true;
