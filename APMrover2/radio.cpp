@@ -152,10 +152,6 @@ void Rover::read_radio()
         channel_throttle->set_pwm(thr);
     }
 
-    // copy RC scaled inputs to outputs
-    g2.motors.set_throttle(channel_throttle->get_control_in());
-    g2.motors.set_steering(channel_steer->get_control_in());
-
     // check if we try to do RC arm/disarm
     rudder_arm_disarm_check();
 }
