@@ -294,14 +294,6 @@ void Plane::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void Plane::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage()*1000,
-        0);
-}
-
 void Plane::send_wind(mavlink_channel_t chan)
 {
     Vector3f wind = ahrs.wind_estimate();
@@ -562,11 +554,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.send_simstate(chan);
         CHECK_PAYLOAD_SIZE2(AHRS2);
         send_ahrs2(plane.ahrs);
-        break;
-
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        plane.send_hwstatus(chan);
         break;
 
     case MSG_RANGEFINDER:
