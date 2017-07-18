@@ -182,14 +182,6 @@ void NOINLINE Copter::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void NOINLINE Copter::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage()*1000,
-        0);
-}
-
 void NOINLINE Copter::send_vfr_hud(mavlink_channel_t chan)
 {
     mavlink_msg_vfr_hud_send(
@@ -443,11 +435,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
         CHECK_PAYLOAD_SIZE(AHRS2);
         send_ahrs2(copter.ahrs);
-        break;
-
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        copter.send_hwstatus(chan);
         break;
 
     case MSG_MOUNT_STATUS:
