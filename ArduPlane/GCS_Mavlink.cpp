@@ -645,13 +645,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_RETRY_DEFERRED:
-        break; // just here to prevent a warning
-
-    case MSG_LIMITS_STATUS:
-        // unused
-        break;
-
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         plane.send_pid_tuning(chan);
@@ -672,14 +665,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
         break;
 
-    case MSG_MAG_CAL_PROGRESS:
-        plane.compass.send_mag_cal_progress(chan);
-        break;
-
-    case MSG_MAG_CAL_REPORT:
-        plane.compass.send_mag_cal_report(chan);
-        break;
-
     case MSG_ADSB_VEHICLE:
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         plane.adsb.send_adsb_vehicle(chan);
@@ -694,6 +679,8 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_LANDING:
         plane.landing.send_landing_message(chan);
         break;
+    default:
+        return GCS_MAVLINK::try_send_message(id);
     }
     return true;
 }
