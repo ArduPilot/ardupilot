@@ -234,42 +234,9 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         tracker.send_hwstatus(chan);
         break;
-    case MSG_MAG_CAL_PROGRESS:
-        tracker.compass.send_mag_cal_progress(chan);
-        break;
 
-    case MSG_MAG_CAL_REPORT:
-        tracker.compass.send_mag_cal_report(chan);
-        break;
-
-    case MSG_SERVO_OUT:
-    case MSG_EXTENDED_STATUS1:
-    case MSG_EXTENDED_STATUS2:
-    case MSG_RETRY_DEFERRED:
-    case MSG_ADSB_VEHICLE:
-    case MSG_CURRENT_WAYPOINT:
-    case MSG_VFR_HUD:
-    case MSG_SYSTEM_TIME:
-    case MSG_LIMITS_STATUS:
-    case MSG_FENCE_STATUS:
-    case MSG_WIND:
-    case MSG_RANGEFINDER:
-    case MSG_TERRAIN:
-    case MSG_BATTERY2:
-    case MSG_BATTERY_STATUS:
-    case MSG_CAMERA_FEEDBACK:
-    case MSG_MOUNT_STATUS:
-    case MSG_OPTICAL_FLOW:
-    case MSG_GIMBAL_REPORT:
-    case MSG_EKF_STATUS_REPORT:
-    case MSG_PID_TUNING:
-    case MSG_VIBRATION:
-    case MSG_RPM:
-    case MSG_MISSION_ITEM_REACHED:
-    case MSG_POSITION_TARGET_GLOBAL_INT:
-    case MSG_AOA_SSA:
-    case MSG_LANDING:
-        break; // just here to prevent a warning
+    default:
+        return GCS_MAVLINK::try_send_message(id);
     }
     return true;
 }
