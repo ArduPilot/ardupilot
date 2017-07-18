@@ -2054,6 +2054,38 @@ bool GCS_MAVLINK::try_send_compass_message(const enum ap_message id)
     return ret;
 }
 
+bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
+{
+    AP_Mission *mission = get_mission();
+    if (mission == nullptr) {
+        return true;
+    }
+
+    bool ret = true;
+    switch (id) {
+    case MSG_CURRENT_WAYPOINT:
+        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
+        mavlink_msg_mission_current_send(chan, mission->get_current_nav_index());
+        ret = true;
+        break;
+    case MSG_MISSION_ITEM_REACHED:
+        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
+        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
+        ret = true;
+        break;
+    case MSG_NEXT_WAYPOINT:
+        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
+        queued_waypoint_send();
+        ret = true;
+        break;
+    default:
+        ret = true;
+        break;
+    }
+    return ret;
+}
+
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -2063,6 +2095,14 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     bool ret = true;
 
     switch(id) {
+
+    case MSG_CURRENT_WAYPOINT:
+        /* fall through */
+    case MSG_MISSION_ITEM_REACHED:
+        /* fall through */
+    case MSG_NEXT_WAYPOINT:
+        ret = try_send_mission_message(id);
+        break;
 
     case MSG_MAG_CAL_PROGRESS:
         /* fall through */
