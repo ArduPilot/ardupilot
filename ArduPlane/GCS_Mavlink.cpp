@@ -414,11 +414,6 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-void Plane::send_current_waypoint(mavlink_channel_t chan)
-{
-    mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
-}
-
 uint8_t GCS_MAVLINK_Plane::sysid_my_gcs() const
 {
     return plane.g.sysid_my_gcs;
@@ -545,19 +540,9 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_sensor_offsets(plane.ins, plane.compass, plane.barometer);
         break;
 
-    case MSG_CURRENT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
-        plane.send_current_waypoint(chan);
-        break;
-
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
         queued_param_send();
-        break;
-
-    case MSG_NEXT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        queued_waypoint_send();
         break;
 
     case MSG_FENCE_STATUS:
@@ -658,11 +643,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_RPM:
         CHECK_PAYLOAD_SIZE(RPM);
         plane.send_rpm(chan);
-        break;
-
-    case MSG_MISSION_ITEM_REACHED:
-        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
-        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
         break;
 
     case MSG_ADSB_VEHICLE:
