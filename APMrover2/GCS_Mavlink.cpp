@@ -435,14 +435,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 #endif  // MOUNT == ENABLED
         break;
 
-    case MSG_RAW_IMU2:
-    case MSG_LIMITS_STATUS:
-    case MSG_FENCE_STATUS:
-    case MSG_WIND:
-    case MSG_AOA_SSA:
-        // unused
-        break;
-
     case MSG_VIBRATION:
         CHECK_PAYLOAD_SIZE(VIBRATION);
         send_vibration(rover.ins);
@@ -477,26 +469,12 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
         break;
 
-    case MSG_MAG_CAL_PROGRESS:
-        rover.compass.send_mag_cal_progress(chan);
-        break;
-
-    case MSG_MAG_CAL_REPORT:
-        rover.compass.send_mag_cal_report(chan);
-        break;
-
     case MSG_BATTERY_STATUS:
         send_battery_status(rover.battery);
         break;
 
-    case MSG_RETRY_DEFERRED:
-    case MSG_ADSB_VEHICLE:
-    case MSG_TERRAIN:
-    case MSG_OPTICAL_FLOW:
-    case MSG_GIMBAL_REPORT:
-    case MSG_POSITION_TARGET_GLOBAL_INT:
-    case MSG_LANDING:
-        break;  // just here to prevent a warning
+    default:
+        return GCS_MAVLINK::try_send_message(id);
     }
     return true;
 }
