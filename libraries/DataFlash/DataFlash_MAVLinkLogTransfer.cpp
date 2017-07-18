@@ -108,7 +108,7 @@ void DataFlash_Class::handle_log_request_data(GCS_MAVLINK &link, mavlink_message
         // some GCS (e.g. MAVProxy) attempt to stream request_data
         // messages when they're filling gaps in the downloaded logs.
         // This channel check avoids complaining to them, at the cost
-        // of silently dropping any repeated attempts to stat logging
+        // of silently dropping any repeated attempts to start logging
         if (_log_sending_chan != link.get_chan()) {
             link.send_text(MAV_SEVERITY_INFO, "Log download in progress");
         }
