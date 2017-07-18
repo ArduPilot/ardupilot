@@ -490,10 +490,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_STATUSTEXT:
-        // depreciated, use GCS_MAVLINK::send_statustext*
-        return false;
-
     case MSG_FENCE_STATUS:
 #if AC_FENCE == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
