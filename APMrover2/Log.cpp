@@ -329,13 +329,13 @@ void Rover::Log_Write_Rangefinder()
     struct log_Rangefinder pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RANGEFINDER_MSG),
         time_us               : AP_HAL::micros64(),
-        lateral_accel   : control_mode->lateral_acceleration,
+        lateral_accel         : control_mode->lateral_acceleration,
         rangefinder1_distance : rangefinder.distance_cm(0),
         rangefinder2_distance : rangefinder.distance_cm(1),
         detected_count        : obstacle.detected_count,
         turn_angle            : static_cast<int8_t>(obstacle.turn_angle),
         turn_time             : turn_time,
-        ground_speed          : static_cast<uint16_t>(fabsf(ground_speed * 100)),
+        ground_speed          : static_cast<uint16_t>(fabsf(ground_speed * 100.0f)),
         throttle              : int8_t(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
