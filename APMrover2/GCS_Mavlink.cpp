@@ -374,11 +374,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
         break;
 
-    case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        queued_param_send();
-        break;
-
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs(rover.ahrs);
