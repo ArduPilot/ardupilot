@@ -399,6 +399,11 @@ void AP_GPS::detect_instance(uint8_t instance)
     struct detect_state *dstate = &detect_state[instance];
     uint32_t now = AP_HAL::millis();
 
+    state[instance].instance = instance;
+    state[instance].status = NO_GPS;
+    state[instance].hdop = GPS_UNKNOWN_DOP;
+    state[instance].vdop = GPS_UNKNOWN_DOP;
+    
     switch (_type[instance]) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
     case GPS_TYPE_QURT:
@@ -455,11 +460,6 @@ void AP_GPS::detect_instance(uint8_t instance)
         // UART not available
         return;
     }
-
-    state[instance].instance = instance;
-    state[instance].status = NO_GPS;
-    state[instance].hdop = GPS_UNKNOWN_DOP;
-    state[instance].vdop = GPS_UNKNOWN_DOP;
 
     // all remaining drivers automatically cycle through baud rates to detect
     // the correct baud rate, and should have the selected baud broadcast
