@@ -67,7 +67,7 @@ void DataFlash_Class::handle_log_message(GCS_MAVLINK &link, mavlink_message_t *m
 void DataFlash_Class::handle_log_request_list(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
     if (_log_sending_chan >= 0) {
-        link.send_text(MAV_SEVERITY_INFO, "Download in progress");
+        link.send_text(MAV_SEVERITY_INFO, "Log download in progress");
         return;
     }
 
@@ -110,7 +110,7 @@ void DataFlash_Class::handle_log_request_data(GCS_MAVLINK &link, mavlink_message
         // This channel check avoids complaining to them, at the cost
         // of silently dropping any repeated attempts to stat logging
         if (_log_sending_chan != link.get_chan()) {
-            link.send_text(MAV_SEVERITY_INFO, "Download in progress");
+            link.send_text(MAV_SEVERITY_INFO, "Log download in progress");
         }
         return;
     }
