@@ -2085,6 +2085,13 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
     return ret;
 }
 
+void GCS_MAVLINK::send_hwstatus()
+{
+    mavlink_msg_hwstatus_send(
+        chan,
+        hal.analogin->board_voltage()*1000,
+        0);
+}
 
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
@@ -2095,6 +2102,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     bool ret = true;
 
     switch(id) {
+
+    case MSG_HWSTATUS:
+        CHECK_PAYLOAD_SIZE(HWSTATUS);
+        send_hwstatus();
+        ret = true;
+        break;
 
     case MSG_CURRENT_WAYPOINT:
         /* fall through */
