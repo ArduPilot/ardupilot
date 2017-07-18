@@ -210,11 +210,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
         break;
 
-    case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        queued_param_send();
-        break;
-
     case MSG_NEXT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         tracker.send_waypoint_request(chan);
