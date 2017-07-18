@@ -560,10 +560,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         queued_waypoint_send();
         break;
 
-    case MSG_STATUSTEXT:
-        // depreciated, use GCS_MAVLINK::send_statustext*
-        return false;
-
     case MSG_FENCE_STATUS:
 #if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
