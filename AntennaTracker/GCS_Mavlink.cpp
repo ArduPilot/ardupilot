@@ -197,11 +197,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
         break;
 
-    case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        queued_param_send();
-        break;
-
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs(tracker.ahrs);
