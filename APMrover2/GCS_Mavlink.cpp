@@ -264,11 +264,6 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-void Rover::send_current_waypoint(mavlink_channel_t chan)
-{
-    mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
-}
-
 void Rover::send_wheel_encoder(mavlink_channel_t chan)
 {
     // send wheel encoder data using rpm message
@@ -387,19 +382,9 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
         break;
 
-    case MSG_CURRENT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
-        rover.send_current_waypoint(chan);
-        break;
-
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
         queued_param_send();
-        break;
-
-    case MSG_NEXT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        queued_waypoint_send();
         break;
 
     case MSG_AHRS:
@@ -462,11 +447,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         rover.send_pid_tuning(chan);
-        break;
-
-    case MSG_MISSION_ITEM_REACHED:
-        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
-        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
         break;
 
     case MSG_BATTERY_STATUS:
