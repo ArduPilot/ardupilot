@@ -293,14 +293,6 @@ void NOINLINE Sub::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void NOINLINE Sub::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage()*1000,
-        0);
-}
-
 void NOINLINE Sub::send_radio_out(mavlink_channel_t chan)
 {
     mavlink_msg_servo_output_raw_send(
@@ -583,11 +575,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 #endif
         CHECK_PAYLOAD_SIZE(AHRS2);
         send_ahrs2(sub.ahrs);
-        break;
-
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        sub.send_hwstatus(chan);
         break;
 
     case MSG_MOUNT_STATUS:
