@@ -521,11 +521,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_sensor_offsets(sub.ins, sub.compass, sub.barometer);
         break;
 
-    case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        queued_param_send();
-        break;
-
     case MSG_RANGEFINDER:
 #if RANGEFINDER_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
