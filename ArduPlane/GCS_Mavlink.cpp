@@ -532,11 +532,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_sensor_offsets(plane.ins, plane.compass, plane.barometer);
         break;
 
-    case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        queued_param_send();
-        break;
-
     case MSG_FENCE_STATUS:
 #if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
