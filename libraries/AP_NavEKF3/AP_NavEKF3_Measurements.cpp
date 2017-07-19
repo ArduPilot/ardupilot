@@ -871,7 +871,20 @@ void NavEKF3_core::readRngBcnData()
 
 void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type)
 {
-//TODO
+    // limit update rate to maximum allowed by sensor buffers and fusion process
+    // don't try to write to buffer until the filter has been initialised
+    if (((timeStamp_ms - yawMeasTime_ms) < frontend->sensorIntervalMin_ms) || !statesInitialised) {
+        return;
+    }
+
+    yawAngDataNew.yawAng = yawAngle;
+    yawAngDataNew.yawAngErr = yawAngleErr;
+    yawAngDataNew.type = type;
+    yawAngDataNew.time_ms = timeStamp_ms;
+
+    storedYawAng.push(yawAngDataNew);
+
+    yawMeasTime_ms = timeStamp_ms;
 }
 
 
