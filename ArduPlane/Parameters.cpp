@@ -687,39 +687,10 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TRIM_AUTO
     // @DisplayName: Automatic trim adjustment
-    // @Description: Set RC trim PWM levels to current levels when switching away from manual mode. When this option is enabled and you change from MANUAL to any other mode then the APM will take the current position of the control sticks as the trim values for aileron, elevator and rudder. It will use those to set RC1_TRIM, RC2_TRIM and RC4_TRIM. This option is disabled by default as if a pilot is not aware of this option and changes from MANUAL to another mode while control inputs are not centered then the trim could be changed to a dangerously bad value. You can enable this option to assist with trimming your plane, by enabling it before takeoff then switching briefly to MANUAL in flight, and seeing how the plane reacts. You can then switch back to FBWA, trim the surfaces then again test MANUAL mode. Each time you switch from MANUAL the APM will take your control inputs as the new trim. After you have good trim on your aircraft you can disable TRIM_AUTO for future flights.
+    // @Description: Set RC trim PWM levels to current levels when switching away from manual mode. When this option is enabled and you change from MANUAL to any other mode then the APM will take the current position of the control sticks as the trim values for aileron, elevator and rudder. It will use those to set the SERVOn_TRIM values and the RCn_TRIM values. This option is disabled by default as if a pilot is not aware of this option and changes from MANUAL to another mode while control inputs are not centered then the trim could be changed to a dangerously bad value. You can enable this option to assist with trimming your plane, by enabling it before takeoff then switching briefly to MANUAL in flight, and seeing how the plane reacts. You can then switch back to FBWA, trim the surfaces then again test MANUAL mode. Each time you switch from MANUAL the APM will take your control inputs as the new trim. After you have good trim on your aircraft you can disable TRIM_AUTO for future flights. You should also see the newer and much safer SERVO_AUTO_TRIM parameter.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     GSCALAR(auto_trim,              "TRIM_AUTO",      AUTO_TRIM),
-
-    // @Param: ELEVON_MIXING
-    // @DisplayName: Elevon mixing
-    // @Description: This enables an older form of elevon mixing which is now deprecated. Please see the ELEVON_OUTPUT option for setting up elevons. The ELEVON_MIXING option should be set to 0 for elevon planes except for backwards compatibility with older setups.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: User
-    GSCALAR(mix_mode,               "ELEVON_MIXING",  ELEVON_MIXING),
-
-    // @Param: ELEVON_REVERSE
-    // @DisplayName: Elevon reverse
-    // @Description: Reverse elevon mixing
-    // @Values: 0:Disabled,1:Enabled
-    // @User: User
-    GSCALAR(reverse_elevons,        "ELEVON_REVERSE", ELEVON_REVERSE),
-
-
-    // @Param: ELEVON_CH1_REV
-    // @DisplayName: Elevon reverse
-    // @Description: Reverse elevon channel 1
-    // @Values: -1:Disabled,1:Enabled
-    // @User: User
-    GSCALAR(reverse_ch1_elevon,     "ELEVON_CH1_REV", ELEVON_CH1_REVERSE),
-
-    // @Param: ELEVON_CH2_REV
-    // @DisplayName: Elevon reverse
-    // @Description: Reverse elevon channel 2
-    // @Values: -1:Disabled,1:Enabled
-    // @User: User
-    GSCALAR(reverse_ch2_elevon,     "ELEVON_CH2_REV", ELEVON_CH2_REVERSE),
 
     // @Param: VTAIL_OUTPUT
     // @DisplayName: VTail output
@@ -843,16 +814,9 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FLAP_IN_CHANNEL
     // @DisplayName: Flap input channel
-    // @Description: An RC input channel to use for flaps control. If this is set to a RC channel number then that channel will be used for manual flaps control. When enabled, the percentage of flaps is taken as the percentage travel from the TRIM value of the channel to the MIN value of the channel. A value above the TRIM values will give inverse flaps (spoilers). This option needs to be enabled in conjunction with a FUNCTION setting on an output channel to one of the flap functions. When a FLAP_IN_CHANNEL is combined with auto-flaps the higher of the two flap percentages is taken. You must also enable a FLAPERON_OUTPUT flaperon mixer setting if using flaperons.
+    // @Description: An RC input channel to use for flaps control. If this is set to a RC channel number then that channel will be used for manual flaps control. When enabled, the percentage of flaps is taken as the percentage travel from the TRIM value of the channel to the MIN value of the channel. A value above the TRIM values will give inverse flaps (spoilers). This option needs to be enabled in conjunction with a FUNCTION setting on an output channel to one of the flap functions. When a FLAP_IN_CHANNEL is combined with auto-flaps the higher of the two flap percentages is taken.
     // @User: User
     GSCALAR(flapin_channel,         "FLAP_IN_CHANNEL",  0),
-
-    // @Param: FLAPERON_OUTPUT
-    // @DisplayName: Flaperon output
-    // @Description: Enable flaperon output in software. If enabled then the APM will provide software flaperon mixing on the FLAPERON1 and FLAPERON2 output channels specified using the FUNCTION on two auxiliary channels. There are 8 different mixing modes available, which refer to the 8 ways the flap and aileron outputs can be mapped to the two flaperon servos. Please also see the MIXING_GAIN parameter for the output gain of the mixer. FLAPERON_OUTPUT cannot be combined with ELEVON_OUTPUT or ELEVON_MIXING.
-    // @Values: 0:Disabled,1:UpUp,2:UpDown,3:DownUp,4:DownDown,5:UpUpSwap,6:UpDownSwap,7:DownUpSwap,8:DownDownSwap
-    // @User: User
-    GSCALAR(flaperon_output,        "FLAPERON_OUTPUT",  0),
 
     // @Param: FLAP_1_PERCNT
     // @DisplayName: Flap 1 percentage
@@ -1123,6 +1087,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @Group: BRD_
     // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
     GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
+
+#if HAL_WITH_UAVCAN
+    // @Group: CAN_
+    // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig_CAN.cpp
+    GOBJECT(BoardConfig_CAN,        "CAN_",       AP_BoardConfig_CAN),
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // @Group: SIM_

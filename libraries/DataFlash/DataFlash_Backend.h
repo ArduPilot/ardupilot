@@ -37,7 +37,7 @@ public:
         return WritePrioritisedBlock(pBuffer, size, true);
     }
 
-    virtual bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) = 0;
+    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
 
     // high level interface
     virtual uint16_t find_last_log() = 0;
@@ -53,7 +53,7 @@ public:
     virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
 
-    virtual bool logging_started(void) const { return log_write_started; }
+    virtual bool logging_started(void) const = 0;
 
     virtual void Init() { }
 
@@ -61,8 +61,9 @@ public:
 
     virtual uint32_t bufferspace_available() = 0;
 
+    virtual void PrepForArming() { }
+
     virtual uint16_t start_new_log(void) = 0;
-    bool log_write_started;
 
     /* stop logging - close output files etc etc.
      *
@@ -141,7 +142,9 @@ protected:
                           print_mode_fn print_mode,
                           AP_HAL::BetterStream *port);
 
-    virtual bool WritesOK() const;
+    bool ShouldLog() const;
+    virtual bool WritesOK() const = 0;
+    virtual bool StartNewLogOK() const;
 
     /*
       read a block
@@ -161,8 +164,13 @@ protected:
     // must be called when a new log is being started:
     virtual void start_new_log_reset_variables();
 
+    virtual bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) = 0;
+
+    bool _initialised;
+
 private:
 
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
+
 };

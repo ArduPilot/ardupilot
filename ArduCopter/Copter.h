@@ -83,6 +83,7 @@
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_ADSB/AP_ADSB.h>
@@ -98,6 +99,7 @@
 #include "config.h"
 
 #include "GCS_Mavlink.h"
+#include "GCS_Copter.h"
 #include "AP_Rally.h"           // Rally point library
 #include "AP_Arming.h"
 
@@ -135,6 +137,7 @@
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Copter;
+    friend class GCS_Copter;
     friend class AP_Rally_Copter;
     friend class Parameters;
     friend class ParametersG2;
@@ -244,11 +247,8 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
-
-    GCS_MAVLINK_Copter gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
-    GCS _gcs; // avoid using this; use gcs()
-    GCS &gcs() { return _gcs; }
+    GCS_Copter _gcs; // avoid using this; use gcs()
+    GCS_Copter &gcs() { return _gcs; }
 
     // User variables
 #ifdef USERHOOK_VARIABLES
@@ -316,6 +316,11 @@ private:
 
     // board specific config
     AP_BoardConfig BoardConfig;
+
+#if HAL_WITH_UAVCAN
+    // board specific config for CAN bus
+    AP_BoardConfig_CAN BoardConfig_CAN;
+#endif
 
     // receiver RSSI
     uint8_t receiver_rssi;
@@ -485,6 +490,9 @@ private:
 
     // heading when in yaw_look_ahead_bearing
     float yaw_look_ahead_bearing;
+
+    // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
+    float auto_yaw_rate_cds;
 
     // Delay Mission Scripting Command
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
@@ -713,11 +721,8 @@ private:
     void init_visual_odom();
     void update_visual_odom();
     void send_pid_tuning(mavlink_channel_t chan);
-    void gcs_send_message(enum ap_message id);
-    void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void do_erase_logs(void);
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
@@ -750,7 +755,6 @@ private:
     void Log_Write_Beacon();
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
-    void start_logging() ;
     void load_parameters(void);
     void convert_pid_parameters(void);
     void userhook_init();
@@ -815,9 +819,11 @@ private:
     void auto_loiter_run();
     uint8_t get_default_auto_yaw_mode(bool rtl);
     void set_auto_yaw_mode(uint8_t yaw_mode);
-    void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle);
+    void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle);
     void set_auto_yaw_roi(const Location &roi_location);
+    void set_auto_yaw_rate(float turn_rate_cds);
     float get_auto_heading(void);
+    float get_auto_yaw_rate_cds();
     bool autotune_init(bool ignore_checks);
     void autotune_stop();
     bool autotune_start(bool ignore_checks);
@@ -869,10 +875,10 @@ private:
     void guided_vel_control_start();
     void guided_posvel_control_start();
     void guided_angle_control_start();
-    bool guided_set_destination(const Vector3f& destination);
-    bool guided_set_destination(const Location_Class& dest_loc);
-    void guided_set_velocity(const Vector3f& velocity);
-    void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
+    bool guided_set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    bool guided_set_destination(const Location_Class& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    void guided_set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void guided_run();
     void guided_takeoff_run();
@@ -887,6 +893,7 @@ private:
     bool guided_limit_check();
     bool guided_nogps_init(bool ignore_checks);
     void guided_nogps_run();
+    void guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
     bool land_init(bool ignore_checks);
     void land_run();
     void land_gps_run();
@@ -1101,7 +1108,6 @@ private:
     void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     void print_hit_enter();
     void tuning();
-    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);

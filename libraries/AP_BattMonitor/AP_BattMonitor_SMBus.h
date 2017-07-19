@@ -23,9 +23,10 @@ public:
     // virtual destructor to reduce compiler warnings
     virtual ~AP_BattMonitor_SMBus() {}
 
-    // all smart batteries provide current and individual cell voltages
+    bool has_cell_voltages() const override { return _has_cell_voltages; }
+
+    // all smart batteries are expected to provide current
     bool has_current() const override { return true; }
-    bool has_cell_voltages() const override { return true; }
 
 protected:
 
@@ -61,6 +62,8 @@ protected:
 
     int32_t _serial_number = -1;    // battery serial number
     uint16_t _full_charge_capacity; // full charge capacity, used to stash the value before setting the parameter
+
+    bool _has_cell_voltages;        // smbus backends flag this as true once they have recieved a valid cell voltage report
 
 };
 

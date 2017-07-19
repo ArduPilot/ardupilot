@@ -18,6 +18,7 @@ enum autopilot_yaw_mode {
     AUTO_YAW_LOOK_AT_HEADING =  3,  // point towards a particular angle (not pilot input accepted)
     AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
     AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
+    AUTO_YAW_RATE =             6,  // turn at a specified rate (held in auto_yaw_rate)
 };
 
 // Ch6... Ch12 aux switch control
@@ -456,17 +457,6 @@ enum DevOptions {
 #define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
 // Baro specific error codes
 #define ERROR_CODE_BARO_GLITCH              2
-
-// Arming Check Enable/Disable bits
-#define ARMING_CHECK_NONE                   0x00
-#define ARMING_CHECK_ALL                    0x01
-#define ARMING_CHECK_BARO                   0x02
-#define ARMING_CHECK_COMPASS                0x04
-#define ARMING_CHECK_GPS                    0x08
-#define ARMING_CHECK_INS                    0x10
-#define ARMING_CHECK_PARAMETERS             0x20
-#define ARMING_CHECK_RC                     0x40
-#define ARMING_CHECK_VOLTAGE                0x80
 
 // Radio failsafe definitions (FS_THR parameter)
 #define FS_THR_DISABLED                    0

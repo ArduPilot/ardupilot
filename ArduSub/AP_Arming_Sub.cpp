@@ -37,7 +37,7 @@ bool AP_Arming_Sub::rc_check(bool report)
     }
 
     if (report && !ret) {
-        sub.gcs_send_text(MAV_SEVERITY_CRITICAL, message_fail);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, message_fail);
     }
 
     return ret;
@@ -66,9 +66,9 @@ bool AP_Arming_Sub::ins_checks(bool report)
             if (report) {
                 const char *reason = ahrs.prearm_failure_reason();
                 if (reason) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
                 } else {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: AHRS not healthy");
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: AHRS not healthy");
                 }
             }
             return false;

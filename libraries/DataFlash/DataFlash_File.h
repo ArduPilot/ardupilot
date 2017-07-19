@@ -43,7 +43,7 @@ public:
     void Prep() override;
 
     /* Write a block of data at current offset */
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) override;
+    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) override;
     uint32_t bufferspace_available() override;
 
     // high level interface
@@ -71,11 +71,16 @@ public:
     bool logging_enabled() const override;
     bool logging_failed() const override;
 
+    bool logging_started(void) const override { return _write_fd != -1; }
+
     void vehicle_was_disarmed() override;
+
+    virtual void PrepForArming() override;
 
 protected:
 
     bool WritesOK() const override;
+    bool StartNewLogOK() const override;
 
 private:
     int _write_fd;
@@ -83,7 +88,6 @@ private:
     uint16_t _read_fd_log_num;
     uint32_t _read_offset;
     uint32_t _write_offset;
-    volatile bool _initialised;
     volatile bool _open_error;
     const char *_log_directory;
 

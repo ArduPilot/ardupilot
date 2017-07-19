@@ -215,7 +215,7 @@ void NavEKF2_core::readMagData()
                 // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
                 if (_ahrs->get_compass()->use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
                     magSelectIndex = tempIndex;
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
                     // reset the timeout flag and timer
                     magTimeout = false;
                     lastHealthyMagTime_ms = imuSampleTime_ms;

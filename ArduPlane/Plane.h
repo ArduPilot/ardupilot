@@ -82,6 +82,7 @@
 
 #include <AP_Arming/AP_Arming.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
@@ -171,6 +172,11 @@ private:
 
     // board specific config
     AP_BoardConfig BoardConfig;
+
+    // board specific config for CAN bus
+#if HAL_WITH_UAVCAN
+    AP_BoardConfig_CAN BoardConfig_CAN;
+#endif
 
     // primary input channels
     RC_Channel *channel_roll;
@@ -729,7 +735,7 @@ private:
         // Timer used to accrue data and trigger recording of the performanc monitoring log message
         uint32_t start_ms;
 
-        // The maximum and minimum main loop execution time recorded in the current performance monitoring interval
+        // The maximum and minimum main loop execution time, in microseconds, recorded in the current performance monitoring interval
         uint32_t G_Dt_max;
         uint32_t G_Dt_min;
 
@@ -815,12 +821,8 @@ private:
 
     void send_aoa_ssa(mavlink_channel_t chan);
 
-    bool telemetry_delayed(mavlink_channel_t chan);
-    void gcs_send_message(enum ap_message id);
-    void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_update(void);
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void gcs_send_airspeed_calibration(const Vector3f &vg);
     void gcs_retry_deferred(void);
 
@@ -845,7 +847,6 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AOA_SSA();
     void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page);
-    void start_logging();
 
     void load_parameters(void);
     void adjust_altitude_target();
@@ -1023,6 +1024,7 @@ private:
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
+    void dspoiler_update(void);
     void servo_output_mixers(void);
     void servos_output(void);
     void servos_auto_trim(void);
@@ -1033,7 +1035,6 @@ private:
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
     bool in_preLaunch_flight_stage(void);
-    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void handle_auto_mode(void);
     void calc_throttle();
     void calc_nav_roll();

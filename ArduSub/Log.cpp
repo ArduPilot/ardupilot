@@ -8,9 +8,9 @@
 
 void Sub::do_erase_logs(void)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Erasing logs");
+    gcs().send_text(MAV_SEVERITY_INFO, "Erasing logs");
     DataFlash.EraseAll();
-    gcs_send_text(MAV_SEVERITY_INFO, "Log erase complete");
+    gcs().send_text(MAV_SEVERITY_INFO, "Log erase complete");
 }
 
 // Write a Current data packet
@@ -466,29 +466,11 @@ void Sub::Log_Write_Vehicle_Startup_Messages()
 }
 
 
-void Sub::start_logging()
-{
-    if (g.log_bitmask == 0) {
-        return;
-    }
-    if (DataFlash.in_log_download()) {
-        return;
-    }
-
-    ap.logging_started = true;
-
-    // dataflash may have stopped logging - when we get_log_data,
-    // for example.  Always try to restart:
-    DataFlash.StartUnstartedLogging();
-}
-
 void Sub::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
 
-    for (uint8_t i=0; i<num_gcs; i++) {
-        gcs_chan[i].reset_cli_timeout();
-    }
+    gcs().reset_cli_timeout();
 }
 
 #else // LOGGING_ENABLED
@@ -517,7 +499,6 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 void Sub::Log_Write_Optflow() {}
 #endif
 
-void Sub::start_logging() {}
 void Sub::log_init(void) {}
 
 #endif // LOGGING_ENABLED

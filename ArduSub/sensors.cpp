@@ -2,9 +2,9 @@
 
 void Sub::init_barometer(bool save)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
+    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     barometer.calibrate(save);
-    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
+    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 
 // return barometric altitude in centimeters

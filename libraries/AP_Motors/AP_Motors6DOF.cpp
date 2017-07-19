@@ -89,6 +89,34 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FV_CPLNG_K", 9, AP_Motors6DOF, _forwardVerticalCouplingFactor, 1.0),
 
+    // @Param: 9_DIRECTION
+    // @DisplayName: Motor normal or reverse
+    // @Description: Used to change motor rotation directions without changing wires
+    // @Values: 1:normal,-1:reverse
+    // @User: Standard
+    AP_GROUPINFO("9_DIRECTION", 10, AP_Motors6DOF, _motor_reverse[8], 1),
+
+    // @Param: 10_DIRECTION
+    // @DisplayName: Motor normal or reverse
+    // @Description: Used to change motor rotation directions without changing wires
+    // @Values: 1:normal,-1:reverse
+    // @User: Standard
+    AP_GROUPINFO("10_DIRECTION", 11, AP_Motors6DOF, _motor_reverse[9], 1),
+
+    // @Param: 11_DIRECTION
+    // @DisplayName: Motor normal or reverse
+    // @Description: Used to change motor rotation directions without changing wires
+    // @Values: 1:normal,-1:reverse
+    // @User: Standard
+    AP_GROUPINFO("11_DIRECTION", 12, AP_Motors6DOF, _motor_reverse[10], 1),
+
+    // @Param: 12_DIRECTION
+    // @DisplayName: Motor normal or reverse
+    // @Description: Used to change motor rotation directions without changing wires
+    // @Values: 1:normal,-1:reverse
+    // @User: Standard
+    AP_GROUPINFO("12_DIRECTION", 13, AP_Motors6DOF, _motor_reverse[11], 1),
+
     AP_GROUPEND
 };
 
@@ -366,7 +394,7 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
     if (forward_coupling_limit < 0) {
         forward_coupling_limit = 0;
     }
-    int8_t forward_coupling_direction[] = {-1,-1,1,1,0,0,0,0};
+    int8_t forward_coupling_direction[] = {-1,-1,1,1,0,0,0,0,0,0,0,0};
 
     // calculate linear command for each motor
     // linear factors should be 0.0 or 1.0 for now

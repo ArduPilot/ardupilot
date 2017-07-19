@@ -36,7 +36,7 @@ public:
     void stop_logging() override;
 
     /* Write a block of data at current offset */
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size,
+    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size,
                                bool is_critical) override;
 
     // initialisation
@@ -130,8 +130,6 @@ private:
     mavlink_channel_t _chan;
     uint8_t _target_system_id;
     uint8_t _target_component_id;
-
-    bool _initialised;
 
     // this controls the maximum number of blocks we will push from
     // the pending and send queues in any call to push_log_blocks.

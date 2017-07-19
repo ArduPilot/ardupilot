@@ -17,6 +17,7 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_Perf/AP_Perf.h>
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -47,7 +48,6 @@ enum ap_message {
     MSG_SERVO_OUT,
     MSG_NEXT_WAYPOINT,
     MSG_NEXT_PARAM,
-    MSG_STATUSTEXT,
     MSG_LIMITS_STATUS,
     MSG_FENCE_STATUS,
     MSG_AHRS,
@@ -90,7 +90,7 @@ public:
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
-    void        send_text(MAV_SEVERITY severity, const char *str);
+    void        send_text(MAV_SEVERITY severity, const char *fmt, ...);
     virtual void        data_stream_send(void) = 0;
     void        queued_param_send();
     void        queued_waypoint_send();
@@ -103,6 +103,8 @@ public:
 
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
+
+    virtual uint8_t sysid_my_gcs() const = 0;
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -170,7 +172,6 @@ public:
     void send_local_position(const AP_AHRS &ahrs) const;
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
-    static void send_home_all(const Location &home);
     void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
@@ -182,13 +183,6 @@ public:
 
     // return a bitmap of streaming channels
     static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
-
-    /*
-    send a statustext message to active MAVLink connections, or a specific
-    one. This function is static so it can be called from any library.
-    */
-    static void send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...);
-    static void send_statustext_chan(MAV_SEVERITY severity, uint8_t dest_chan, const char *fmt, ...);
 
     // send a PARAM_VALUE message to all active MAVLink connections.
     static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
@@ -219,16 +213,16 @@ public:
     // return current packet overhead for a channel
     static uint8_t packet_overhead_chan(mavlink_channel_t chan);
 
-    // FIXME: move this to be private/protected once possible
-    bool telemetry_delayed(mavlink_channel_t chan);
-    virtual uint32_t telem_delay() const = 0;
-
 protected:
 
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
     virtual bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) { return true; }
-    
+    virtual AP_Mission *get_mission() = 0;
+    virtual AP_Rally *get_rally() const = 0;
+    virtual Compass *get_compass() const = 0;
+    virtual AP_ServoRelayEvents *get_servorelayevents() const = 0;
+
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
     uint16_t        waypoint_request_i; // request index
@@ -249,7 +243,7 @@ protected:
     void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);
-    void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg);
+    virtual void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_count(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_write_partial_list(AP_Mission &mission, mavlink_message_t *msg);
     bool handle_mission_item(mavlink_message_t *msg, AP_Mission &mission);
@@ -257,6 +251,10 @@ protected:
     void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
+
+    void handle_common_rally_message(mavlink_message_t *msg);
+    void handle_rally_fetch_point(mavlink_message_t *msg);
+    void handle_rally_point(mavlink_message_t *msg);
 
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
@@ -267,18 +265,28 @@ protected:
     void handle_common_message(mavlink_message_t *msg);
     void handle_setup_signing(const mavlink_message_t *msg);
     uint8_t handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
-    uint8_t handle_rc_bind(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
 
     void handle_device_op_read(mavlink_message_t *msg);
     void handle_device_op_write(mavlink_message_t *msg);
 
     void handle_timesync(mavlink_message_t *msg);
-    
+    void handle_statustext(mavlink_message_t *msg);
+
+    bool telemetry_delayed() const;
+    virtual uint32_t telem_delay() const = 0;
+
+    MAV_RESULT handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
+
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
 
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
+
+    MAV_RESULT handle_servorelay_message(mavlink_command_long_t &packet);
 
     /// The stream we are communicating over
     AP_HAL::UARTDriver *_port;
@@ -392,6 +400,7 @@ private:
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
+    void handle_common_mission_message(mavlink_message_t *msg);
 
     void lock_channel(mavlink_channel_t chan, bool lock);
 
@@ -432,8 +441,24 @@ public:
         return _singleton;
     }
 
+    void send_text(MAV_SEVERITY severity, const char *fmt, ...);
     virtual void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text);
     void service_statustext(void);
+    virtual GCS_MAVLINK &chan(const uint8_t ofs) = 0;
+    virtual const GCS_MAVLINK &chan(const uint8_t ofs) const = 0;
+    virtual uint8_t num_gcs() const = 0;
+    void reset_cli_timeout();
+    void send_message(enum ap_message id);
+    void send_mission_item_reached_message(uint16_t mission_index);
+    void send_home(const Location &home) const;
+    void data_stream_send();
+    void update();
+    virtual void setup_uarts(AP_SerialManager &serial_manager);
+    void handle_interactive_setup();
+
+    FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
+    run_cli_fn _run_cli;
+    void set_run_cli_func(run_cli_fn run_cli) { _run_cli = run_cli; }
 
     /*
       set a dataflash pointer for logging
@@ -459,6 +484,9 @@ public:
 private:
 
     static GCS *_singleton;
+
+    virtual bool cli_enabled() const = 0;
+    virtual AP_HAL::BetterStream*  cliSerial() = 0;
 
     struct statustext_t {
         uint8_t                 bitmask;

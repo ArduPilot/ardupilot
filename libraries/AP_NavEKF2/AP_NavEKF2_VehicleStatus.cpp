@@ -86,7 +86,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
         // capable of giving a vertical velocity
         if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             frontend->_fusionModeGPS.set(1);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EK2: Changed EK2_GPS_TYPE to 1");
+            gcs().send_text(MAV_SEVERITY_WARNING, "EK2: Changed EK2_GPS_TYPE to 1");
         }
     } else {
         gpsVertVelFail = false;

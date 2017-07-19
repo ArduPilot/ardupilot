@@ -16,13 +16,12 @@ def build(bld):
             'AP_Navigation',
             'AP_RCMapper',
             'AP_RSSI',
-            'AP_Relay',
-            'AP_ServoRelayEvents',
             'PID',
             'AP_Stats',
             'AP_Beacon',
             'AP_VisualOdom',
             'AP_AdvancedFailsafe',
+            'AP_WheelEncoder',
         ],
     )
 

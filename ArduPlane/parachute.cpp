@@ -23,7 +23,7 @@ void Plane::parachute_release()
     }
     
     // send message to gcs and dataflash
-    gcs_send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released");
+    gcs().send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released");
 
     // release parachute
     parachute.release();
@@ -44,7 +44,7 @@ bool Plane::parachute_manual_release()
     if (parachute.alt_min() > 0 && relative_ground_altitude(false) < parachute.alt_min() &&
             auto_state.last_flying_ms > 0) {
         // Allow manual ground tests by only checking if flying too low if we've taken off
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Parachute: Too low");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Parachute: Too low");
         return false;
     }
 

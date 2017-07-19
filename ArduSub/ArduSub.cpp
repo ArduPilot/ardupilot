@@ -107,7 +107,7 @@ void Sub::perf_update(void)
         Log_Write_Performance();
     }
     if (scheduler.debug()) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
+        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
                           (unsigned)perf_info_get_num_long_running(),
                           (unsigned)perf_info_get_num_loops(),
                           (unsigned long)perf_info_get_max_time(),
@@ -240,7 +240,7 @@ void Sub::update_trigger(void)
 {
     camera.trigger_pic_cleanup();
     if (camera.check_trigger_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        gcs().send_message(MSG_CAMERA_FEEDBACK);
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }

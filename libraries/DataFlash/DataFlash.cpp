@@ -50,7 +50,7 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
 
 void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_types)
 {
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Preparing log system");
+    gcs().send_text(MAV_SEVERITY_INFO, "Preparing log system");
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     validate_structures(structures, num_types);
     dump_structures(structures, num_types);
@@ -111,7 +111,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
 
     EnableWrites(true);
 
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Prepared log system");
+    gcs().send_text(MAV_SEVERITY_INFO, "Prepared log system");
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -296,17 +296,6 @@ void DataFlash_Class::backend_starting_new_log(const DataFlash_Backend *backend)
     }
 }
 
-// start any backend which hasn't started; this is only called from
-// the vehicle code
-void DataFlash_Class::StartUnstartedLogging(void)
-{
-    for (uint8_t i=0; i<_next_backend; i++) {
-        if (!backends[i]->logging_started()) {
-            backends[i]->start_new_log();
-        }
-    }
-}
-
 bool DataFlash_Class::should_log(const uint32_t mask) const
 {
     if (!(mask & _log_bitmask)) {
@@ -331,6 +320,11 @@ bool DataFlash_Class::should_log(const uint32_t mask) const
             backends[i]->methodcall;              \
         }                                         \
     } while (0)
+
+void DataFlash_Class::PrepForArming()
+{
+    FOR_EACH_BACKEND(PrepForArming());
+}
 
 void DataFlash_Class::setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer)
 {

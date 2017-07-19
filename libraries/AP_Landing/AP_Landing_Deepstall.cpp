@@ -126,7 +126,15 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 
     // @Group: DS_
     // @Path: ../PID/PID.cpp
-    AP_SUBGROUPINFO(ds_PID, "", 13, AP_Landing_Deepstall, PID),
+    AP_SUBGROUPINFO(ds_PID, "", 14, AP_Landing_Deepstall, PID),
+
+    // @Param: ABORTALT
+    // @DisplayName: Deepstall minimum abort altitude
+    // @Description: The minimum altitude which the aircraft must be above to abort a deepstall landing
+    // @Range: 0 50
+    // @Units meters
+    // @User: Advanced
+    AP_GROUPINFO("ABORTALT", 15, AP_Landing_Deepstall, min_abort_alt, 0.0f),
 
     AP_GROUPEND
 };
@@ -287,7 +295,7 @@ bool AP_Landing_Deepstall::override_servos(void)
 
     if (elevator == nullptr) {
         // deepstalls are impossible without these channels, abort the process
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,
+        gcs().send_text(MAV_SEVERITY_CRITICAL,
                                          "Deepstall: Unable to find the elevator channels");
         request_go_around();
         return false;
@@ -336,8 +344,15 @@ bool AP_Landing_Deepstall::override_servos(void)
 
 bool AP_Landing_Deepstall::request_go_around(void)
 {
-    landing.flags.commanded_go_around = true;
-    return true;
+    float current_altitude_d;
+    landing.ahrs.get_relative_position_D_home(current_altitude_d);
+
+    if (is_zero(min_abort_alt) || -current_altitude_d > min_abort_alt) {
+        landing.flags.commanded_go_around = true;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool AP_Landing_Deepstall::is_throttle_suppressed(void) const
@@ -419,17 +434,17 @@ void AP_Landing_Deepstall::build_approach_path(void)
 
 #ifdef DEBUG_PRINTS
     // TODO: Send this information via a MAVLink packet
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Arc: %3.8f %3.8f",
+    gcs().send_text(MAV_SEVERITY_INFO, "Arc: %3.8f %3.8f",
                                      (double)(arc.lat / 1e7),(double)( arc.lng / 1e7));
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Loiter en: %3.8f %3.8f",
+    gcs().send_text(MAV_SEVERITY_INFO, "Loiter en: %3.8f %3.8f",
                                      (double)(arc_entry.lat / 1e7), (double)(arc_entry.lng / 1e7));
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Loiter ex: %3.8f %3.8f",
+    gcs().send_text(MAV_SEVERITY_INFO, "Loiter ex: %3.8f %3.8f",
                                      (double)(arc_exit.lat / 1e7), (double)(arc_exit.lng / 1e7));
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Extended: %3.8f %3.8f",
+    gcs().send_text(MAV_SEVERITY_INFO, "Extended: %3.8f %3.8f",
                                      (double)(extended_approach.lat / 1e7), (double)(extended_approach.lng / 1e7));
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Extended by: %f (%f)", (double)approach_extension_m,
+    gcs().send_text(MAV_SEVERITY_INFO, "Extended by: %f (%f)", (double)approach_extension_m,
                                      (double)expected_travel_distance);
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Target Heading: %3.1f", (double)target_heading_deg);
+    gcs().send_text(MAV_SEVERITY_INFO, "Target Heading: %3.1f", (double)target_heading_deg);
 #endif // DEBUG_PRINTS
 
 }
@@ -476,7 +491,7 @@ float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const f
 
     if(print) {
         // allow printing the travel distances on the final entry as its used for tuning
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Deepstall: Entry: %0.1f (m) Travel: %0.1f (m)",
+        gcs().send_text(MAV_SEVERITY_INFO, "Deepstall: Entry: %0.1f (m) Travel: %0.1f (m)",
                                          (double)stall_distance, (double)predicted_travel_distance);
     }
 
@@ -504,13 +519,13 @@ float AP_Landing_Deepstall::update_steering()
     Location current_loc;
     if (!landing.ahrs.get_position(current_loc)) {
         // panic if no position source is available
-        // continue the  but target just holding the wings held level as deepstall should be a minimal energy
-        // configuration on the aircraft, and if a position isn't available aborting would be worse
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Deepstall: No position available. Attempting to hold level");
+        // continue the stall but target just holding the wings held level as deepstall should be a minimal
+        // energy configuration on the aircraft, and if a position isn't available aborting would be worse
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Deepstall: No position available. Attempting to hold level");
         memcpy(&current_loc, &landing_point, sizeof(Location));
     }
     uint32_t time = AP_HAL::millis();
-    float dt = constrain_float(time - last_time, (uint32_t)10UL, (uint32_t)200UL) / 1000.0;
+    float dt = constrain_float(time - last_time, (uint32_t)10UL, (uint32_t)200UL) * 1e-3;
     last_time = time;
 
 
@@ -536,7 +551,7 @@ float AP_Landing_Deepstall::update_steering()
                                           -yaw_rate_limit_rps, yaw_rate_limit_rps) - yaw_rate);
 
 #ifdef DEBUG_PRINTS
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "x: %f e: %f r: %f d: %f",
+    gcs().send_text(MAV_SEVERITY_INFO, "x: %f e: %f r: %f d: %f",
                                     (double)crosstrack_error,
                                     (double)error,
                                     (double)degrees(yaw_rate),

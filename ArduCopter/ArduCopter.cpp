@@ -192,7 +192,7 @@ void Copter::perf_update(void)
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
     if (scheduler.debug()) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
+        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
                           (unsigned)perf_info_get_num_long_running(),
                           (unsigned)perf_info_get_num_loops(),
                           (unsigned long)perf_info_get_max_time(),
@@ -339,7 +339,7 @@ void Copter::update_trigger(void)
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
     if (camera.check_trigger_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
+        gcs().send_message(MSG_CAMERA_FEEDBACK);
         if (should_log(MASK_LOG_CAMERA)) {
             DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
         }
@@ -416,7 +416,7 @@ void Copter::twentyfive_hz_logging()
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     // HIL for a copter needs very fast update of the servo values
-    gcs_send_message(MSG_SERVO_OUTPUT_RAW);
+    gcs().send_message(MSG_SERVO_OUTPUT_RAW);
 #endif
 
 #if HIL_MODE == HIL_MODE_DISABLED

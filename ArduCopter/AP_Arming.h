@@ -22,7 +22,6 @@ public:
 protected:
 
     bool pre_arm_checks(bool display_failure) override;
-    bool pre_arm_gps_checks(bool display_failure);
     bool pre_arm_ekf_attitude_check();
     bool pre_arm_terrain_check(bool display_failure);
     bool pre_arm_proximity_check(bool display_failure);
@@ -48,8 +47,6 @@ protected:
     enum HomeState home_status() const override;
 
 private:
-
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
 
     const AP_InertialNav_NavEKF &_inav;
     const AP_InertialSensor &_ins;

@@ -140,6 +140,9 @@ void Plane::init_ardupilot()
 
     // setup any board specific drivers
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
 
     relay.init();
 
@@ -276,10 +279,10 @@ void Plane::startup_ground(void)
     set_mode(INITIALISING, MODE_REASON_UNKNOWN);
 
 #if (GROUND_START_DELAY > 0)
-    gcs_send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
+    gcs().send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
     delay(GROUND_START_DELAY * 1000);
 #else
-    gcs_send_text(MAV_SEVERITY_INFO,"Ground start");
+    gcs().send_text(MAV_SEVERITY_INFO,"Ground start");
 #endif
 
     //INS ground start
@@ -315,7 +318,7 @@ void Plane::startup_ground(void)
     // ready to fly
     serial_manager.set_blocking_writes_all(false);
 
-    gcs_send_text(MAV_SEVERITY_INFO,"Ground start complete");
+    gcs().send_text(MAV_SEVERITY_INFO,"Ground start complete");
 }
 
 enum FlightMode Plane::get_previous_mode() {
@@ -633,14 +636,14 @@ void Plane::startup_INS_ground(void)
         while (barometer.get_last_update() == 0) {
             // the barometer begins updating when we get the first
             // HIL_STATE message
-            gcs_send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
             hal.scheduler->delay(1000);
         }
     }
 #endif
 
     if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
-        gcs_send_text(MAV_SEVERITY_ALERT, "Beginning INS calibration. Do not move plane");
+        gcs().send_text(MAV_SEVERITY_ALERT, "Beginning INS calibration. Do not move plane");
         hal.scheduler->delay(100);
     }
 
@@ -661,7 +664,7 @@ void Plane::startup_INS_ground(void)
         // --------------------------
         zero_airspeed(true);
     } else {
-        gcs_send_text(MAV_SEVERITY_WARNING,"No airspeed");
+        gcs().send_text(MAV_SEVERITY_WARNING,"No airspeed");
     }
 }
 
@@ -835,11 +838,7 @@ void Plane::print_comma(void)
 bool Plane::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!DataFlash.should_log(mask)) {
-        return false;
-    }
-    start_logging();
-    return true;
+    return DataFlash.should_log(mask);
 #else
     return false;
 #endif

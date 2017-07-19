@@ -58,7 +58,7 @@ void Tracker::send_heartbeat(mavlink_channel_t chan)
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
-    gcs_chan[chan-MAVLINK_COMM_0].send_heartbeat(MAV_TYPE_ANTENNA_TRACKER,
+    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(MAV_TYPE_ANTENNA_TRACKER,
                                             base_mode,
                                             custom_mode,
                                             system_status);
@@ -111,7 +111,7 @@ void Tracker::send_hwstatus(mavlink_channel_t chan)
 
 void Tracker::send_waypoint_request(mavlink_channel_t chan)
 {
-    gcs_chan[chan-MAVLINK_COMM_0].queued_waypoint_send();
+    gcs().chan(chan-MAVLINK_COMM_0).queued_waypoint_send();
 }
 
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
@@ -219,10 +219,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         tracker.send_waypoint_request(chan);
         break;
-
-    case MSG_STATUSTEXT:
-        // depreciated, use GCS_MAVLINK::send_statustext*
-        return false;
 
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
@@ -485,33 +481,16 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
 
     // send data stream request to target on all channels
     //  Note: this doesn't check success for all sends meaning it's not guaranteed the vehicle's positions will be sent at 1hz
-    for (uint8_t i=0; i < num_gcs; i++) {
-        if (gcs_chan[i].initialised) {
-            // request position
-            if (HAVE_PAYLOAD_SPACE((mavlink_channel_t)i, DATA_STREAM)) {
-                mavlink_msg_request_data_stream_send(
-                    (mavlink_channel_t)i,
-                    msg->sysid,
-                    msg->compid,
-                    MAV_DATA_STREAM_POSITION,
-                    g.mavlink_update_rate,
-                    1); // start streaming
-            }
-            // request air pressure
-            if (HAVE_PAYLOAD_SPACE((mavlink_channel_t)i, DATA_STREAM)) {
-                mavlink_msg_request_data_stream_send(
-                    (mavlink_channel_t)i,
-                    msg->sysid,
-                    msg->compid,
-                    MAV_DATA_STREAM_RAW_SENSORS,
-                    g.mavlink_update_rate,
-                    1); // start streaming
-            }
-        }
-    }
+    gcs().request_datastream_position(msg->sysid, msg->compid);
+    gcs().request_datastream_airpressure(msg->sysid, msg->compid);
 
     // flag target has been set
     target_set = true;
+}
+
+uint8_t GCS_MAVLINK_Tracker::sysid_my_gcs() const
+{
+    return tracker.g.sysid_my_gcs;
 }
 
 void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
@@ -674,12 +653,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 break;
             }
 
-            case MAV_CMD_DO_START_MAG_CAL:
-            case MAV_CMD_DO_ACCEPT_MAG_CAL:
-            case MAV_CMD_DO_CANCEL_MAG_CAL:
-                result = tracker.compass.handle_mag_cal_command(packet);
-                break;
-
             case MAV_CMD_ACCELCAL_VEHICLE_POS:
                 result = MAV_RESULT_FAILED;
 
@@ -689,6 +662,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 break;
 
             default:
+                result = handle_command_long_message(packet);
                 break;
         }
         mavlink_msg_command_ack_send(
@@ -869,7 +843,9 @@ mission_failed:
 void Tracker::mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs_chan[0].initialised) return;
+    if (!gcs().chan(0).initialised) {
+        return;
+    }
 
     tracker.in_mavlink_delay = true;
     DataFlash.EnableWrites(false);
@@ -877,8 +853,8 @@ void Tracker::mavlink_delay_cb()
     uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs_send_message(MSG_HEARTBEAT);
-        gcs_send_message(MSG_EXTENDED_STATUS1);
+        gcs().send_message(MSG_HEARTBEAT);
+        gcs().send_message(MSG_EXTENDED_STATUS1);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
@@ -888,22 +864,10 @@ void Tracker::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
+        gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
     DataFlash.EnableWrites(true);
     tracker.in_mavlink_delay = false;
-}
-
-/*
- *  send a message on both GCS links
- */
-void Tracker::gcs_send_message(enum ap_message id)
-{
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs_chan[i].initialised) {
-            gcs_chan[i].send_message(id);
-        }
-    }
 }
 
 /*
@@ -911,11 +875,7 @@ void Tracker::gcs_send_message(enum ap_message id)
  */
 void Tracker::gcs_data_stream_send(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs_chan[i].initialised) {
-            gcs_chan[i].data_stream_send();
-        }
-    }
+    gcs().data_stream_send();
 }
 
 /*
@@ -923,33 +883,7 @@ void Tracker::gcs_data_stream_send(void)
  */
 void Tracker::gcs_update(void)
 {
-    for (uint8_t i=0; i<num_gcs; i++) {
-        if (gcs_chan[i].initialised) {
-            gcs_chan[i].update(nullptr);
-        }
-    }
-}
-
-void Tracker::gcs_send_text(MAV_SEVERITY severity, const char *str)
-{
-    gcs().send_statustext(severity, 0xFF, str);
-    notify.send_text(str);
-}
-
-/*
- *  send a low priority formatted message to the GCS
- *  only one fits in the queue, so if you send more than one before the
- *  last one gets into the serial buffer then the old one will be lost
- */
-void Tracker::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
-{
-    char str[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)str, sizeof(str), fmt, arg_list);
-    va_end(arg_list);
-    gcs().send_statustext(severity, 0xFF, str);
-    notify.send_text(str);
+    gcs().update();
 }
 
 /**
@@ -957,6 +891,11 @@ void Tracker::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
  */
 void Tracker::gcs_retry_deferred(void)
 {
-    gcs_send_message(MSG_RETRY_DEFERRED);
+    gcs().send_message(MSG_RETRY_DEFERRED);
     gcs().service_statustext();
+}
+
+Compass *GCS_MAVLINK_Tracker::get_compass() const
+{
+    return &tracker.compass;
 }

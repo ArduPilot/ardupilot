@@ -148,9 +148,9 @@ int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv)
 
 void Plane::do_erase_logs(void)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Erasing logs");
+    gcs().send_text(MAV_SEVERITY_INFO, "Erasing logs");
     DataFlash.EraseAll();
-    gcs_send_text(MAV_SEVERITY_INFO, "Log erase complete");
+    gcs().send_text(MAV_SEVERITY_INFO, "Log erase complete");
 }
 
 
@@ -558,12 +558,6 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     gps.Write_DataFlash_Log_Startup_messages();
 }
 
-// start a new log
-void Plane::start_logging() 
-{
-    DataFlash.StartUnstartedLogging();
-}
-
 /*
   initialise logging subsystem
  */
@@ -611,7 +605,6 @@ void Plane::Log_Write_Home_And_Origin() {}
 void Plane::Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page) {}
  #endif // CLI_ENABLED
 
-void Plane::start_logging() {}
 void Plane::log_init(void) {}
 
 #endif // LOGGING_ENABLED

@@ -22,6 +22,7 @@ public:
         //
         k_param_format_version = 0,
         k_param_software_type,
+        k_param_BoardConfig_CAN,
 
         // Misc
         //
@@ -126,7 +127,7 @@ public:
         k_param_throttle_min = 170,
         k_param_throttle_max,
         k_param_throttle_cruise,
-        k_param_throttle_slewrate,
+        k_param_throttle_slewrate_old,
         k_param_throttle_reduction,
         k_param_skid_steer_in,
         k_param_skid_steer_out_old,
@@ -142,12 +143,12 @@ public:
         // obstacle control
         k_param_sonar_enabled = 190,  // deprecated, can be removed
         k_param_sonar_old,            // unused
-        k_param_sonar_trigger_cm,
-        k_param_sonar_turn_angle,
-        k_param_sonar_turn_time,
+        k_param_rangefinder_trigger_cm,
+        k_param_rangefinder_turn_angle,
+        k_param_rangefinder_turn_time,
         k_param_sonar2_old,           // unused
-        k_param_sonar_debounce,
-        k_param_sonar,                // sonar object
+        k_param_rangefinder_debounce,
+        k_param_rangefinder,          // rangefinder object
 
         //
         // 210: driving modes
@@ -247,7 +248,6 @@ public:
     AP_Int8     throttle_min;
     AP_Int8     throttle_max;
     AP_Int8     throttle_cruise;
-    AP_Int8     throttle_slewrate;
     AP_Int8     skid_steer_in;
 
     // failsafe control
@@ -259,10 +259,10 @@ public:
     AP_Int8     fs_crash_check;
 
     // obstacle control
-    AP_Int16    sonar_trigger_cm;
-    AP_Float    sonar_turn_angle;
-    AP_Float    sonar_turn_time;
-    AP_Int8     sonar_debounce;
+    AP_Int16    rangefinder_trigger_cm;
+    AP_Float    rangefinder_turn_angle;
+    AP_Float    rangefinder_turn_time;
+    AP_Int8     rangefinder_debounce;
 
 
     // driving modes
@@ -321,6 +321,12 @@ public:
 
     // Visual Odometry camera
     AP_VisualOdom visual_odom;
+
+    // Motor library
+    AP_MotorsUGV motors;
+
+    // wheel encoders
+    AP_WheelEncoder wheel_encoder;
 };
 
 extern const AP_Param::Info var_info[];

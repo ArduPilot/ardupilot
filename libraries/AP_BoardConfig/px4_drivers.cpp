@@ -29,11 +29,6 @@
 #include <nuttx/arch.h>
 #include <spawn.h>
 
-#if HAL_WITH_UAVCAN
-#include <AP_HAL_PX4/CAN.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
-#endif
-
 extern const AP_HAL::HAL& hal;
 
 AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
@@ -42,9 +37,6 @@ AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
    declare driver main entry points
  */
 extern "C" {
-#if HAL_WITH_UAVCAN
-    int uavcan_main(int, char **);
-#endif
     int fmu_main(int, char **);
     int px4io_main(int, char **);
     int adc_main(int, char **);
@@ -186,49 +178,6 @@ void AP_BoardConfig::px4_setup_sbus(void)
         }
         if (!hal.rcout->enable_sbus_out(rate)) {
             hal.console->printf("Failed to enable SBUS out\n");
-        }
-    }
-#endif
-}
-
-/*
-  setup CANBUS drivers
- */
-void AP_BoardConfig::px4_setup_canbus(void)
-{
-#if HAL_WITH_UAVCAN
-    if (_var_info_can._can_enable >= 1) {
-        if(hal.can_mgr == nullptr)
-        {
-            const_cast <AP_HAL::HAL&> (hal).can_mgr = new PX4::PX4CANManager;
-        }
-
-        if(hal.can_mgr != nullptr)
-        {
-            if(_var_info_can._uavcan_enable > 0)
-            {
-                _var_info_can._uavcan = new AP_UAVCAN;
-                if(_var_info_can._uavcan != nullptr)
-                {
-                    AP_Param::load_object_from_eeprom(_var_info_can._uavcan, AP_UAVCAN::var_info);
-
-                    hal.can_mgr->set_UAVCAN(_var_info_can._uavcan);
-
-                    bool initret = hal.can_mgr->begin(_var_info_can._can_bitrate, _var_info_can._can_enable);
-                    if (!initret) {
-                        hal.console->printf("Failed to initialize can_mgr\n\r");
-                    } else {
-                        hal.console->printf("can_mgr initialized well\n\r");
-
-                        // start UAVCAN working thread
-                        hal.scheduler->create_uavcan_thread();
-                    }
-                } else
-                {
-                    _var_info_can._uavcan_enable.set(0);
-                    hal.console->printf("AP_UAVCAN failed to allocate\n\r");
-                }
-            }
         }
     }
 #endif
@@ -552,7 +501,6 @@ void AP_BoardConfig::px4_setup()
     px4_setup_uart();
     px4_setup_sbus();
     px4_setup_drivers();
-    px4_setup_canbus();
 }
 
 #endif // HAL_BOARD_PX4

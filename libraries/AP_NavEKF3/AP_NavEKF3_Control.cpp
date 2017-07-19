@@ -305,7 +305,7 @@ void NavEKF3_core::setAidingMode()
         switch (PV_AidingMode) {
         case AID_NONE:
             // We have ceased aiding
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 IMU%u stopped aiding",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u stopped aiding",(unsigned)imu_index);
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
             posTimeout = true;
             velTimeout = true;
@@ -327,7 +327,7 @@ void NavEKF3_core::setAidingMode()
 
         case AID_RELATIVE:
             // We are doing relative position navigation where velocity errors are constrained, but position drift will occur
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u started relative aiding",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u started relative aiding",(unsigned)imu_index);
             if (readyToUseOptFlow()) {
                 // Reset time stamps
                 flowValidMeaTime_ms = imuSampleTime_ms;
@@ -346,14 +346,14 @@ void NavEKF3_core::setAidingMode()
                 // We are commencing aiding using GPS - this is the preferred method
                 posResetSource = GPS;
                 velResetSource = GPS;
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
             } else if (readyToUseRangeBeacon()) {
                 // We are commencing aiding using range beacons
                 posResetSource = RNGBCN;
                 velResetSource = DEFAULT;
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u is using range beacons",(unsigned)imu_index);
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffsetNED.z);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u is using range beacons",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffsetNED.z);
             }
 
             // clear timeout flags as a precaution to avoid triggering any additional transitions
@@ -389,7 +389,7 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
         Vector3f angleErrVarVec = calcRotVecVariances();
         if ((angleErrVarVec.x + angleErrVarVec.y) < sq(0.05235f)) {
             tiltAlignComplete = true;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete\n",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete\n",(unsigned)imu_index);
         }
     }
 
@@ -477,11 +477,15 @@ void NavEKF3_core::setOrigin()
 {
     // assume origin at current GPS location (no averaging)
     EKF_origin = _ahrs->get_gps().location();
+    // if flying, correct for height change from takeoff so that the origin is at field elevation
+    if (inFlight) {
+        EKF_origin.alt += (int32_t)(100.0f * stateStruct.position.z);
+    }
     ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u Origin set to GPS",(unsigned)imu_index);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u Origin set to GPS",(unsigned)imu_index);
 }
 
 // record a yaw reset event

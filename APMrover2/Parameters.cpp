@@ -25,9 +25,9 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
-    // @Description: Bitmap of what log types to enable in dataflash. This values is made up of the sum of each of the log types you want to be saved on dataflash. On a PX4 or Pixhawk the large storage size of a microSD card means it is usually best just to enable all log types by setting this to 65535. On APM2 the smaller 4 MByte dataflash means you need to be more selective in your logging or you may run out of log space while flying (in which case it will wrap and overwrite the start of the log). The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Sonar=16384, Arming=32768, FullLogs=65535
+    // @Description: Bitmap of what log types to enable in dataflash. This values is made up of the sum of each of the log types you want to be saved on dataflash. On a PX4 or Pixhawk the large storage size of a microSD card means it is usually best just to enable all log types by setting this to 65535. On APM2 the smaller 4 MByte dataflash means you need to be more selective in your logging or you may run out of log space while flying (in which case it will wrap and overwrite the start of the log). The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Rangefinder=16384, Arming=32768, FullLogs=65535
     // @Values: 0:Disabled,5190:APM2-Default,65535:PX4/Pixhawk-Default
-    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:MODE,7:IMU,8:CMD,9:CURRENT,10:COMPASS,11:TECS,12:CAMERA,13:RC,14:SONAR,15:ARM/DISARM,19:IMU_RAW
+    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:MODE,7:IMU,8:CMD,9:CURRENT,10:COMPASS,11:TECS,12:CAMERA,13:RC,14:RANGEFINDER,15:ARM/DISARM,19:IMU_RAW
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 
@@ -202,15 +202,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(throttle_cruise,        "CRUISE_THROTTLE",    50),
 
-    // @Param: THR_SLEWRATE
-    // @DisplayName: Throttle slew rate
-    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. A value of zero means no limit. A value of 100 means the throttle can change over its full range in one second. Note that for some NiMH powered rovers setting a lower value like 40 or 50 may be worthwhile as the sudden current demand on the battery of a big rise in throttle may cause a brownout.
-    // @Units: %/s
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(throttle_slewrate,      "THR_SLEWRATE",     100),
-
     // @Param: SKID_STEER_IN
     // @DisplayName: Skid steering input
     // @Description: Set this to 1 for skid steering input rovers (tank track style in RC controller). When enabled, servo1 is used for the left track control, servo3 is used for right track control
@@ -242,7 +233,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level on the throttle channel below which throttle failsafe triggers.
-    // @Range: 925 1100
+    // @Range: 910 1100
     // @Increment: 1
     // @User: Standard
     GSCALAR(fs_throttle_value,      "FS_THR_VALUE",     910),
@@ -268,7 +259,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
-    GSCALAR(sonar_trigger_cm,   "RNGFND_TRIGGR_CM",    100),
+    GSCALAR(rangefinder_trigger_cm,   "RNGFND_TRIGGR_CM",    100),
 
     // @Param: RNGFND_TURN_ANGL
     // @DisplayName: Rangefinder trigger angle
@@ -277,7 +268,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Range: -45 45
     // @Increment: 1
     // @User: Standard
-    GSCALAR(sonar_turn_angle,   "RNGFND_TURN_ANGL",    45),
+    GSCALAR(rangefinder_turn_angle,   "RNGFND_TURN_ANGL",    45),
 
     // @Param: RNGFND_TURN_TIME
     // @DisplayName: Rangefinder turn time
@@ -286,15 +277,15 @@ const AP_Param::Info Rover::var_info[] = {
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
-    GSCALAR(sonar_turn_time,    "RNGFND_TURN_TIME",     1.0f),
+    GSCALAR(rangefinder_turn_time,    "RNGFND_TURN_TIME",     1.0f),
 
     // @Param: RNGFND_DEBOUNCE
     // @DisplayName: Rangefinder debounce count
-    // @Description: The number of 50Hz rangefinder hits needed to trigger an obstacle avoidance event. If you get a lot of false sonar events then raise this number, but if you make it too large then it will cause lag in detecting obstacles, which could cause you go hit the obstacle.
+    // @Description: The number of 50Hz rangefinder hits needed to trigger an obstacle avoidance event. If you get a lot of false rangefinder events then raise this number, but if you make it too large then it will cause lag in detecting obstacles, which could cause you go hit the obstacle.
     // @Range: 1 100
     // @Increment: 1
     // @User: Standard
-    GSCALAR(sonar_debounce,   "RNGFND_DEBOUNCE",    2),
+    GSCALAR(rangefinder_debounce,   "RNGFND_DEBOUNCE",    2),
 
     // @Param: LEARN_CH
     // @DisplayName: Learning channel
@@ -402,19 +393,19 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs_chan[0], gcs0,        "SR0_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[0], gcs0,        "SR0_",     GCS_MAVLINK),
 
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs_chan[1],  gcs1,       "SR1_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs_chan[2],  gcs2,       "SR2_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[2],  gcs2,       "SR2_",     GCS_MAVLINK),
 
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs_chan[3],  gcs3,       "SR3_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[3],  gcs3,       "SR3_",     GCS_MAVLINK),
 
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
@@ -426,7 +417,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
-    GOBJECT(sonar,                 "RNGFND", RangeFinder),
+    GOBJECT(rangefinder,                 "RNGFND", RangeFinder),
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
@@ -469,6 +460,12 @@ const AP_Param::Info Rover::var_info[] = {
     // @Group: BRD_
     // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
     GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
+
+#if HAL_WITH_UAVCAN
+    // @Group: CAN_
+    // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig_CAN.cpp
+    GOBJECT(BoardConfig_CAN,        "CAN_",       AP_BoardConfig_CAN),
+#endif
 
     // GPS driver
     // @Group: GPS_
@@ -545,15 +542,25 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_VisualOdom/AP_VisualOdom.cpp
     AP_SUBGROUPINFO(visual_odom, "VISO", 7, ParametersG2, AP_VisualOdom),
 
+    // @Group: MOT_
+    // @Path: AP_MotorsUGV.cpp
+    AP_SUBGROUPINFO(motors, "MOT_", 8, ParametersG2, AP_MotorsUGV),
+
+    // @Group: WENC_
+    // @Path: ../libraries/AP_WheelEncoder/AP_WheelEncoder.cpp
+    AP_SUBGROUPINFO(wheel_encoder, "WENC_", 9, ParametersG2, AP_WheelEncoder),
+
     AP_GROUPEND
 };
 
 
 ParametersG2::ParametersG2(void)
-    : beacon(rover.serial_manager)
+    :
 #if ADVANCED_FAILSAFE == ENABLED
-    , afs(rover.mission, rover.barometer, rover.gps, rover.rcmap)
+    afs(rover.mission, rover.barometer, rover.gps, rover.rcmap),
 #endif
+    beacon(rover.serial_manager),
+    motors(rover.ServoRelayEvents)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

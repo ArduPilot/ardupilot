@@ -38,6 +38,7 @@
 #include "GPS_Backend.h"
 
 #if HAL_WITH_UAVCAN
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include "AP_GPS_UAVCAN.h"
 #endif
@@ -280,6 +281,11 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
     // Initialise class variables used to do GPS blending
     _omega_lpf = 1.0f / constrain_float(_blend_tc, 5.0f, 30.0f);
 
+    // prep the state instance fields
+    for (uint8_t i = 0; i < GPS_MAX_INSTANCES; i++) {
+        state[i].instance = i;
+    }
+
     // sanity check update rate
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (_rate_ms[i] <= 0 || _rate_ms[i] > GPS_MAX_RATE_MS) {
@@ -398,6 +404,10 @@ void AP_GPS::detect_instance(uint8_t instance)
     struct detect_state *dstate = &detect_state[instance];
     uint32_t now = AP_HAL::millis();
 
+    state[instance].status = NO_GPS;
+    state[instance].hdop = GPS_UNKNOWN_DOP;
+    state[instance].vdop = GPS_UNKNOWN_DOP;
+    
     switch (_type[instance]) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
     case GPS_TYPE_QURT:
@@ -417,23 +427,29 @@ void AP_GPS::detect_instance(uint8_t instance)
 
 #if HAL_WITH_UAVCAN
     // user has to explicitly set the UAVCAN type, do not use AUTO
-    // do not try to detect the UAVCAN type, assume it's there
     case GPS_TYPE_UAVCAN:
         dstate->auto_detected_baud = false; // specified, not detected
-        if (AP_BoardConfig::get_can_enable() >= 1) {
-            new_gps = new AP_GPS_UAVCAN(*this, state[instance], nullptr);
+        if (AP_BoardConfig_CAN::get_can_num_ifaces() >= 1) {
+            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+                if (hal.can_mgr[i] != nullptr) {
+                    AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
 
-            // register new listener at first empty node
-            if (hal.can_mgr != nullptr) {
-                AP_UAVCAN *ap_uavcan = hal.can_mgr->get_UAVCAN();
-                if (ap_uavcan != nullptr) {
-                    ap_uavcan->register_gps_listener(new_gps, 0);
+                    if (uavcan != nullptr) {
+                        uint8_t gps_node = uavcan->find_gps_without_listener();
 
-                    if (AP_BoardConfig::get_can_debug() >= 2) {
-                        hal.console->printf("AP_GPS_UAVCAN registered\n\r");
+                        if (gps_node != UINT8_MAX) {
+                            new_gps = new AP_GPS_UAVCAN(*this, state[instance], nullptr);
+                            ((AP_GPS_UAVCAN*) new_gps)->set_uavcan_manager(i);
+                            if (uavcan->register_gps_listener_to_node(new_gps, gps_node)) {
+                                if (AP_BoardConfig_CAN::get_can_debug() >= 2) {
+                                    printf("AP_GPS_UAVCAN registered\n\r");
+                                }
+                                goto found_gps;
+                            } else {
+                                delete new_gps;
+                            }
+                        }
                     }
-
-                    goto found_gps;
                 }
             }
         }
@@ -448,11 +464,6 @@ void AP_GPS::detect_instance(uint8_t instance)
         // UART not available
         return;
     }
-
-    state[instance].instance = instance;
-    state[instance].status = NO_GPS;
-    state[instance].hdop = GPS_UNKNOWN_DOP;
-    state[instance].vdop = GPS_UNKNOWN_DOP;
 
     // all remaining drivers automatically cycle through baud rates to detect
     // the correct baud rate, and should have the selected baud broadcast
@@ -611,7 +622,6 @@ void AP_GPS::update_instance(uint8_t instance)
             delete drivers[instance];
             drivers[instance] = nullptr;
             memset(&state[instance], 0, sizeof(state[instance]));
-            state[instance].instance = instance;
             state[instance].status = NO_GPS;
             state[instance].hdop = GPS_UNKNOWN_DOP;
             state[instance].vdop = GPS_UNKNOWN_DOP;
@@ -890,8 +900,8 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         ground_speed(1)*100,  // cm/s
         ground_course(1)*100, // 1/100 degrees,
         num_sats(1),
-        0,
-        0);
+        rtk_num_sats(1),
+        rtk_age_ms(1));
 }
 
 void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan)
@@ -922,7 +932,7 @@ void AP_GPS::broadcast_first_configuration_failure_reason(void) const
 {
     uint8_t unconfigured = first_unconfigured_gps();
     if (drivers[unconfigured] == nullptr) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
+        gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
     } else {
         drivers[unconfigured]->broadcast_configuration_failure_reason();
     }

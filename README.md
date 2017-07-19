@@ -32,7 +32,9 @@
 
 - Main developer wiki: <http://dev.ardupilot.org>
 
-- Developer email group: drones-discuss@googlegroups.com
+- Developer discussion: <http://discuss.ardupilot.org>
+
+- Developer email group: drones-discuss@googlegroups.com. Deprecated November 2016. Included for historical reference.
 
 ## Contributors ##
 
@@ -86,6 +88,7 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Subsystem***: DataFlash
   - ***Subsystem***: Tools
 - [Michael du Breuil](https://github.com/WickedShell)
+  - ***Subsystem***: SMBus Batteries
   - ***Subsystem***: GPS
 - [Francisco Ferreira](https://github.com/oxinarf)
   - ***Bug Master***

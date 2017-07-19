@@ -46,42 +46,42 @@ private:
         uint16_t length;
     };
     struct PACKED erb_ver {
-        uint32_t time;
+        uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
         uint8_t ver_high;
         uint8_t ver_medium;
         uint8_t ver_low;
     };
     struct PACKED erb_pos {
-        uint32_t time;
+        uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
         double longitude;
         double latitude;
-        double altitude_ellipsoid;
-        double altitude_msl;
-        uint32_t horizontal_accuracy;
-        uint32_t vertical_accuracy;
+        double altitude_ellipsoid;    ///< Height above ellipsoid [m]
+        double altitude_msl;          ///< Height above mean sea level [m]
+        uint32_t horizontal_accuracy; ///< Horizontal accuracy estimate [mm]
+        uint32_t vertical_accuracy;   ///< Vertical accuracy estimate [mm]
     };
     struct PACKED erb_stat {
-        uint32_t time;
+        uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
         uint16_t week;
-        uint8_t fix_type;
+        uint8_t fix_type;   ///< see erb_fix_type enum
         uint8_t fix_status;
         uint8_t satellites;
     };
     struct PACKED erb_dops {
-        uint32_t time;
-        uint16_t gDOP;
-        uint16_t pDOP;
-        uint16_t vDOP;
-        uint16_t hDOP;
+        uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
+        uint16_t gDOP;      ///< Geometric DOP
+        uint16_t pDOP;      ///< Position DOP
+        uint16_t vDOP;      ///< Vertical DOP
+        uint16_t hDOP;      ///< Horizontal DOP
     };
     struct PACKED erb_vel {
-        uint32_t time;
-        int32_t vel_north;
-        int32_t vel_east;
-        int32_t vel_down;
-        uint32_t speed_2d;
-        int32_t heading_2d;
-        uint32_t speed_accuracy;
+        uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
+        int32_t vel_north;  ///< North velocity component [cm/s]
+        int32_t vel_east;   ///< East velocity component [cm/s]
+        int32_t vel_down;   ///< Down velocity component [cm/s]
+        uint32_t speed_2d;  ///< Ground speed (2-D) [cm/s]
+        int32_t heading_2d; ///< Heading of motion 2-D [1e5 deg]
+        uint32_t speed_accuracy; ///< Speed accuracy Estimate [cm/s]
     };
 
     // Receive buffer

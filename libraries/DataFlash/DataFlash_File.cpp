@@ -53,7 +53,6 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     _read_fd_log_num(0),
     _read_offset(0),
     _write_offset(0),
-    _initialised(false),
     _open_error(false),
     _log_directory(log_directory),
     _cached_oldest_log(0),
@@ -187,7 +186,7 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
 {
     if (!io_thread_alive()) {
         if (io_thread_warning_decimation_counter == 0) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
         }
         if (io_thread_warning_decimation_counter++ > 57) {
             io_thread_warning_decimation_counter = 0;
@@ -514,13 +513,7 @@ void DataFlash_File::EraseAll()
 
 bool DataFlash_File::WritesOK() const
 {
-    if (!DataFlash_Backend::WritesOK()) {
-        return false;
-    }
     if (_write_fd == -1) {
-        return false;
-    }
-    if (!_initialised) {
         return false;
     }
     if (_open_error) {
@@ -529,13 +522,18 @@ bool DataFlash_File::WritesOK() const
     return true;
 }
 
-/* Write a block of data at current offset */
-bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+
+bool DataFlash_File::StartNewLogOK() const
 {
-    if (!WritesOK()) {
+    if (_open_error) {
         return false;
     }
+    return DataFlash_Backend::StartNewLogOK();
+}
 
+/* Write a block of data at current offset */
+bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+{
     if (! WriteBlockCheckStartupMessages()) {
         _dropped++;
         return false;
@@ -832,11 +830,17 @@ void DataFlash_File::stop_logging(void)
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
-        log_write_started = false;
         ::close(fd);
     }
 }
 
+void DataFlash_File::PrepForArming()
+{
+    if (logging_started()) {
+        return;
+    }
+    start_new_log();
+}
 
 /*
   start writing to a new log file
@@ -874,6 +878,7 @@ uint16_t DataFlash_File::start_new_log(void)
     }
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
+        _open_error = true;
         return 0xFFFF;
     }
     _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
@@ -893,7 +898,6 @@ uint16_t DataFlash_File::start_new_log(void)
     free(fname);
     _write_offset = 0;
     _writebuf.clear();
-    log_write_started = true;
 
     // now update lastlog.txt with the new log number
     fname = _lastlog_file_name();
@@ -903,6 +907,7 @@ uint16_t DataFlash_File::start_new_log(void)
     int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
     free(fname);
     if (fd == -1) {
+        _open_error = true;
         return 0xFFFF;
     }
 
@@ -913,6 +918,7 @@ uint16_t DataFlash_File::start_new_log(void)
     close(fd);
 
     if (written < to_write) {
+        _open_error = true;
         return 0xFFFF;
     }
 
@@ -1176,11 +1182,6 @@ bool DataFlash_File::io_thread_alive() const
 
 bool DataFlash_File::logging_failed() const
 {
-    if (_write_fd == -1 &&
-        (hal.util->get_soft_armed() ||
-         _front.log_while_disarmed())) {
-        return true;
-    }
     if (_open_error) {
         return true;
     }
