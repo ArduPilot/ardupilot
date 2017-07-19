@@ -54,30 +54,11 @@ void ModeGuided::update()
 
 void ModeGuided::update_navigation()
 {
-    switch (guided_mode) {
-        case Guided_Angle:
-            rover.nav_set_yaw_speed();
-            break;
-
-        case Guided_WP:
-            // no loitering around the wp with the rover, goes direct to the wp position
-            if (rover.rtl_complete || rover.verify_RTL()) {
-                // we have reached destination so stop where we are
-                g2.motors.set_throttle(g.throttle_min.get());
-                g2.motors.set_steering(0.0f);
-                lateral_acceleration = 0.0f;
-            } else {
-                calc_lateral_acceleration();
-                calc_nav_steer();
-            }
-            break;
-
-        case Guided_Velocity:
-            rover.nav_set_speed();
-            break;
-
-        default:
-            gcs().send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
-            break;
+    // no loitering around the wp with the rover, goes direct to the wp position
+    if (guided_mode == Guided_WP && (rover.rtl_complete || rover.verify_RTL())) {
+        // we have reached destination so stop where we are
+        g2.motors.set_throttle(g.throttle_min.get());
+        g2.motors.set_steering(0.0f);
+        lateral_acceleration = 0.0f;
     }
 }
