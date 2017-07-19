@@ -13,8 +13,7 @@ void Sub::gcs_send_heartbeat(void)
 
 void Sub::gcs_send_deferred(void)
 {
-    gcs().send_message(MSG_RETRY_DEFERRED);
-    gcs().service_statustext();
+    gcs().retry_deferred();
 }
 
 /*
