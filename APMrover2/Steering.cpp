@@ -51,15 +51,8 @@ bool Rover::in_stationary_loiter()
 /*****************************************
     Set the flight control servos based on the current calculated values
 *****************************************/
-void Rover::set_servos(void) {
-    // Apply slew rate limit on non Manual modes
-    if (control_mode == &mode_manual || control_mode == &mode_learning) {
-        if (failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
-            g2.motors.set_throttle(0.0f);
-            g2.motors.set_steering(0.0f);
-        }
-    }
-
+void Rover::set_servos(void)
+{
     // send output signals to motors
     if (motor_test) {
         g2.motors.slew_limit_throttle(false);
