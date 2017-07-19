@@ -191,7 +191,10 @@ public:
 
     // send queued parameters if needed
     void send_queued_parameters(void);
-    
+
+    // push send_message() messages and queued statustext messages etc:
+    void retry_deferred();
+
     /*
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
@@ -411,6 +414,8 @@ private:
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
     void handle_common_mission_message(mavlink_message_t *msg);
 
+    void push_deferred_messages();
+
     void lock_channel(mavlink_channel_t chan, bool lock);
 
     mavlink_signing_t signing;
@@ -458,6 +463,8 @@ public:
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_home(const Location &home) const;
+    // push send_message() messages and queued statustext messages etc:
+    void retry_deferred();
     void data_stream_send();
     void update();
     virtual void setup_uarts(AP_SerialManager &serial_manager);

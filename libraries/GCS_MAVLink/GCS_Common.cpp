@@ -755,16 +755,8 @@ mission_ack:
     return mission_is_complete;
 }
 
-// send a message using mavlink, handling message queueing
-void GCS_MAVLINK::send_message(enum ap_message id)
+void GCS_MAVLINK::push_deferred_messages()
 {
-    uint8_t i, nextid;
-
-    if (id == MSG_HEARTBEAT) {
-        save_signing_timestamp(false);
-    }
-    
-    // see if we can send the deferred messages, if any:
     while (num_deferred_messages != 0) {
         if (!try_send_message(deferred_messages[next_deferred_message])) {
             break;
@@ -775,11 +767,24 @@ void GCS_MAVLINK::send_message(enum ap_message id)
         }
         num_deferred_messages--;
     }
+}
 
-    // MSG_RETRY_DEFERRED is a "marker" message only used to push the queue
-    if (id == MSG_RETRY_DEFERRED) {
-        return;
+void GCS_MAVLINK::retry_deferred()
+{
+    push_deferred_messages();
+}
+
+// send a message using mavlink, handling message queueing
+void GCS_MAVLINK::send_message(enum ap_message id)
+{
+    uint8_t i, nextid;
+
+    if (id == MSG_HEARTBEAT) {
+        save_signing_timestamp(false);
     }
+
+    // see if we can send the deferred messages, if any:
+    push_deferred_messages();
 
     // if there are no deferred messages, attempt to send straight away:
     if (num_deferred_messages == 0) {
@@ -1282,6 +1287,16 @@ void GCS::send_message(enum ap_message id)
             chan(i).send_message(id);
         }
     }
+}
+
+void GCS::retry_deferred()
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        if (chan(i).initialised) {
+            chan(i).retry_deferred();
+        }
+    }
+    service_statustext();
 }
 
 void GCS::data_stream_send()
