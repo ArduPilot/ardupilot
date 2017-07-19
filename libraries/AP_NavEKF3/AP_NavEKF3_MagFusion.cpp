@@ -233,7 +233,7 @@ void NavEKF3_core::alignYawAngle()
     initialiseQuatCovariances(angleErrVarVec);
 
     // send yaw alignment information to console
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned",(unsigned)imu_index);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned",(unsigned)imu_index);
 
 
     // record the yaw reset event
