@@ -489,7 +489,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  board_voltage_checks(report);
 }
 
-bool AP_Arming::arm_checks(uint8_t method)
+bool AP_Arming::arm_checks_logging(uint8_t method)
 {
     // note that this will prepare DataFlash to start logging
     // so should be the last check to be done before arming
@@ -501,6 +501,14 @@ bool AP_Arming::arm_checks(uint8_t method)
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Arm: Logging not started");
             return false;
         }
+    }
+    return true;
+}
+
+bool AP_Arming::arm_checks(uint8_t method)
+{
+    if (!arm_checks_logging(method)) {
+        return false;
     }
     return true;
 }
