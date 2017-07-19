@@ -65,7 +65,7 @@ public:
     bool enabled(uint8_t instance) const;
 
     // get the position of the wheel associated with the wheel encoder
-    Vector2f get_position(uint8_t instance) const;
+    Vector3f get_position(uint8_t instance) const;
 
     // get the total distance traveled in meters
     float get_distance(uint8_t instance) const;
@@ -88,8 +88,7 @@ protected:
     // parameters for each instance
     AP_Int8  _type[WHEELENCODER_MAX_INSTANCES];
     AP_Float _scaling[WHEELENCODER_MAX_INSTANCES];
-    AP_Float _pos_x[WHEELENCODER_MAX_INSTANCES];
-    AP_Float _pos_y[WHEELENCODER_MAX_INSTANCES];
+    AP_Vector3f _pos_offset[WHEELENCODER_MAX_INSTANCES];
     AP_Int8  _pina[WHEELENCODER_MAX_INSTANCES];
     AP_Int8  _pinb[WHEELENCODER_MAX_INSTANCES];
 
