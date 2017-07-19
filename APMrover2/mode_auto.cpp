@@ -43,9 +43,6 @@ void ModeAuto::update()
 void ModeAuto::update_navigation()
 {
     mission.update();
-    if (rover.do_auto_rotation) {
-        rover.do_yaw_rotation();
-    }
 }
 
 /*
