@@ -40,12 +40,6 @@ enum mode {
     INITIALISING = 16
 };
 
-enum GuidedMode {
-    Guided_WP,
-    Guided_Angle,
-    Guided_Velocity
-};
-
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)

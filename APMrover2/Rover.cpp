@@ -40,7 +40,7 @@ Rover::Rover(void) :
 #if MOUNT == ENABLED
     camera_mount(ahrs, current_loc),
 #endif
-    control_mode(INITIALISING),
+    control_mode(&mode_initializing),
     throttle(500),
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry(ahrs, battery, rangefinder),

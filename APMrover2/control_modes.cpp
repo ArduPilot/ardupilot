@@ -2,6 +2,40 @@
 
 static const int16_t CH_7_PWM_TRIGGER = 1800;
 
+Mode *Rover::control_mode_from_num(const enum mode num)
+{
+    Mode *ret = nullptr;
+    switch (num) {
+    case MANUAL:
+        ret = &mode_manual;
+        break;
+    case LEARNING:
+        ret = &mode_learning;
+        break;
+    case STEERING:
+        ret = &mode_steering;
+        break;
+    case HOLD:
+        ret = &mode_hold;
+        break;
+    case AUTO:
+        ret = &mode_auto;
+        break;
+    case RTL:
+        ret = &mode_rtl;
+        break;
+    case GUIDED:
+       ret = &mode_guided;
+        break;
+    case INITIALISING:
+        ret = &mode_initializing;
+        break;
+    default:
+        break;
+    }
+    return ret;
+}
+
 void Rover::read_control_switch()
 {
     static bool switch_debouncer;
@@ -36,7 +70,10 @@ void Rover::read_control_switch()
             return;
         }
 
-        set_mode((enum mode)modes[switchPosition].get());
+        Mode *new_mode = control_mode_from_num((enum mode)modes[switchPosition].get());
+        if (new_mode != nullptr) {
+            set_mode(*new_mode);
+        }
 
         oldSwitchPosition = switchPosition;
         prev_WP = current_loc;
@@ -92,8 +129,7 @@ void Rover::read_trim_switch()
             if (ch7_flag) {
                 ch7_flag = false;
 
-                switch (control_mode) {
-                case MANUAL:
+                if (control_mode == &mode_manual) {
                     hal.console->printf("Erasing waypoints\n");
                     // if SW7 is ON in MANUAL = Erase the Flight Plan
                     mission.clear();
@@ -101,10 +137,7 @@ void Rover::read_trim_switch()
                         // if roll is full right store the current location as home
                         set_home_to_current_location(false);
                     }
-                    break;
-
-                case LEARNING:
-                case STEERING: {
+                } else if (control_mode == &mode_learning || control_mode == &mode_steering) {
                     // if SW7 is ON in LEARNING = record the Wp
 
                     // create new mission command
@@ -120,14 +153,9 @@ void Rover::read_trim_switch()
                     if (mission.add_cmd(cmd)) {
                         hal.console->printf("Learning waypoint %u", static_cast<uint32_t>(mission.num_commands()));
                     }
-                    break;
-                }
-                case AUTO:
+                } else if (control_mode == &mode_auto) {
                     // if SW7 is ON in AUTO = set to RTL
-                    set_mode(RTL);
-                    break;
-
-                default:
+                    set_mode(mode_rtl);
                     break;
                 }
             }
