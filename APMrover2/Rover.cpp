@@ -47,6 +47,7 @@ Rover::Rover(void) :
 #endif
     do_auto_rotation(false),
     home(ahrs.get_home()),
+    inertial_nav(ahrs),
     G_Dt(0.02f)
 {
 }

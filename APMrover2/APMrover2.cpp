@@ -172,6 +172,8 @@ void Rover::ahrs_update()
     ahrs.set_fly_forward(!in_reverse);
 
     ahrs.update();
+    // inertial altitude estimates
+    inertial_nav.update(G_Dt);
 
     // update home from EKF if necessary
     update_home_from_EKF();

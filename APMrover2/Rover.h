@@ -64,6 +64,7 @@
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include "AP_MotorsUGV.h"
+#include <AP_InertialNav/AP_InertialNav.h>          // ArduPilot Mega inertial navigation library
 
 #include "mode.h"
 
@@ -225,6 +226,9 @@ private:
     // current_loc uses the baro/gps solution for altitude rather than gps only.
     AP_Mount camera_mount;
 #endif
+
+    // Inertial Navigation
+    AP_InertialNav_NavEKF inertial_nav;
 
     // true if initialisation has completed
     bool initialised;

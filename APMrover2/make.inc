@@ -48,3 +48,4 @@ LIBRARIES += AP_VisualOdom
 LIBRARIES += AP_WheelEncoder
 LIBRARIES += AP_AdvancedFailsafe
 LIBRARIES += AC_Fence
+LIBRARIES += AP_InertialNav
