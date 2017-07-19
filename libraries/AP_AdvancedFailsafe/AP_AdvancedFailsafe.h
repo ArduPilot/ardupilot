@@ -71,12 +71,12 @@ public:
 
     // return true if we are terminating (deliberately crashing the vehicle)
     bool should_crash_vehicle(void);
-    
-    // for holding parameters
-    static const struct AP_Param::GroupInfo var_info[];
 
     // called to set all outputs to termination state
     virtual void terminate_vehicle(void) = 0;
+
+    // for holding parameters
+    static const struct AP_Param::GroupInfo var_info[];
         
 protected:
     // setup failsafe values for if FMU firmware stops running
