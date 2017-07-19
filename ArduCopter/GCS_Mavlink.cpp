@@ -10,8 +10,7 @@ void Copter::gcs_send_heartbeat(void)
 
 void Copter::gcs_send_deferred(void)
 {
-    gcs().send_message(MSG_RETRY_DEFERRED);
-    gcs().service_statustext();
+    gcs().retry_deferred();
 }
 
 /*
