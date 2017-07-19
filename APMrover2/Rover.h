@@ -65,6 +65,8 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include "AP_MotorsUGV.h"
 
+#include "mode.h"
+
 #include "AP_Arming.h"
 #include "compat.h"
 
@@ -106,6 +108,13 @@ public:
     friend class AP_AdvancedFailsafe_Rover;
 #endif
     friend class GCS_Rover;
+    friend class Mode;
+    friend class ModeAuto;
+    friend class ModeGuided;
+    friend class ModeHold;
+    friend class ModeSteering;
+    friend class ModeManual;
+    friend class ModeRTL;
 
     Rover(void);
 
@@ -221,10 +230,9 @@ private:
     // if USB is connected
     bool usb_connected;
 
-    // Radio
     // This is the state of the flight control system
-    // There are multiple states defined such as MANUAL, FBW-A, AUTO
-    enum mode control_mode;
+    // There are multiple states defined such as MANUAL, AUTO, ...
+    Mode *control_mode;
 
     // Used to maintain the state of the previous control switch position
     // This is set to -1 when we need to re-read the switch
@@ -284,9 +292,6 @@ private:
         uint32_t detected_time_ms;
     } obstacle;
 
-    // this is set to true when auto has been triggered to start
-    bool auto_triggered;
-
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
@@ -309,10 +314,6 @@ private:
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
-
-    // Navigation control variables
-    // The instantaneous desired lateral acceleration in m/s/s
-    float lateral_acceleration;
 
     // Waypoint distances
     // Distance between rover and next waypoint.  Meters
@@ -399,12 +400,6 @@ private:
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
 
-    // true if we are in an auto-throttle mode, which means
-    // we need to run the speed controller
-    bool auto_throttle_mode;
-
-    // Guided control
-    GuidedMode guided_mode;             // controls which controller is run (waypoint or velocity)
     // Store parameters from Guided msg
     struct {
       float turn_angle;          // target heading in centi-degrees
@@ -421,6 +416,15 @@ private:
 
     // True when we are doing motor test
     bool motor_test;
+
+    ModeInitializing mode_initializing;
+    ModeHold mode_hold;
+    ModeManual mode_manual;
+    ModeGuided mode_guided;
+    ModeAuto mode_auto;
+    ModeLearning mode_learning;
+    ModeSteering mode_steering;
+    ModeRTL mode_rtl;
 
 private:
     // private member functions
@@ -458,6 +462,10 @@ private:
     void gcs_update(void);
     void gcs_retry_deferred(void);
 
+    Mode *control_mode_from_num(enum mode num);
+    bool set_mode(Mode &mode);
+    bool mavlink_set_mode(uint8_t mode);
+
     void do_erase_logs(void);
     void Log_Write_Performance();
     void Log_Write_Steering();
@@ -480,11 +488,7 @@ private:
     void Log_Arm_Disarm();
 
     void load_parameters(void);
-    bool auto_check_trigger(void);
     bool use_pivot_steering(void);
-    void calc_throttle(float target_speed);
-    void calc_lateral_acceleration();
-    void calc_nav_steer();
     void set_servos(void);
     void set_auto_WP(const struct Location& loc);
     void set_guided_WP(const struct Location& loc);
@@ -538,8 +542,7 @@ private:
     void init_ardupilot();
     void startup_ground(void);
     void set_reverse(bool reverse);
-    void set_mode(enum mode mode);
-    bool mavlink_set_mode(uint8_t mode);
+
     void failsafe_trigger(uint8_t failsafe_type, bool on);
     void startup_INS_ground(void);
     void update_notify();

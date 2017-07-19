@@ -53,7 +53,7 @@ void Rover::rudder_arm_disarm_check()
     }
 
     // if not in a manual throttle mode then disallow rudder arming/disarming
-    if (auto_throttle_mode) {
+    if (control_mode->auto_throttle()) {
         rudder_arm_timer = 0;
         return;
     }

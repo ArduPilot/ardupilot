@@ -121,7 +121,7 @@ void Rover::init_ardupilot()
     // initialise notify system
     notify.init(false);
     AP_Notify::flags.failsafe_battery = false;
-    notify_mode(control_mode);
+    notify_mode((enum mode)control_mode->mode_number());
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
@@ -209,7 +209,12 @@ void Rover::init_ardupilot()
 
     startup_ground();
 
-    set_mode((enum mode)g.initial_mode.get());
+    Mode *initial_mode = control_mode_from_num((enum mode)g.initial_mode.get());
+    if (initial_mode == nullptr) {
+        initial_mode = &mode_initializing;
+    }
+    set_mode(*initial_mode);
+
 
     // set the correct flight mode
     // ---------------------------
@@ -227,7 +232,7 @@ void Rover::init_ardupilot()
 //*********************************************************************************
 void Rover::startup_ground(void)
 {
-    set_mode(INITIALISING);
+    set_mode(mode_initializing);
 
     gcs().send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
 
@@ -278,75 +283,32 @@ void Rover::set_reverse(bool reverse)
     in_reverse = reverse;
 }
 
-void Rover::set_mode(enum mode mode)
+bool Rover::set_mode(Mode &new_mode)
 {
-    if (control_mode == mode) {
+    if (control_mode == &new_mode) {
         // don't switch modes if we are already in the correct mode.
-        return;
+        return true;
     }
 
-    // If we are changing out of AUTO mode reset the loiter timer and stop current mission
-    if (control_mode == AUTO) {
-        loiter_start_time = 0;
-        if (mission.state() == AP_Mission::MISSION_RUNNING) {
-            mission.stop();
-        }
+    Mode &old_mode = *control_mode;
+    if (!new_mode.enter()) {
+        return false;
     }
 
-    control_mode = mode;
-    throttle = 500;
-    if (!in_auto_reverse) {
-        set_reverse(false);
-    }
-    g.pidSpeedThrottle.reset_I();
+    control_mode = &new_mode;
 
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.update_control_mode(control_mode);
+    frsky_telemetry.update_control_mode(control_mode->mode_number());
 #endif
 
-    if (control_mode != AUTO) {
-        auto_triggered = false;
-    }
-
-    switch (control_mode) {
-    case MANUAL:
-    case HOLD:
-    case LEARNING:
-    case STEERING:
-        auto_throttle_mode = false;
-        break;
-
-    case AUTO:
-        auto_throttle_mode = true;
-        rtl_complete = false;
-        restart_nav();
-        break;
-
-    case RTL:
-        auto_throttle_mode = true;
-        do_RTL();
-        break;
-
-    case GUIDED:
-        auto_throttle_mode = true;
-        /*
-           when entering guided mode we set the target as the current
-           location. This matches the behaviour of the copter code.
-           */
-        set_guided_WP(current_loc);
-        break;
-
-    default:
-        auto_throttle_mode = true;
-        do_RTL();
-        break;
-    }
+    old_mode.exit();
 
     if (should_log(MASK_LOG_MODE)) {
-        DataFlash.Log_Write_Mode(control_mode);
+        DataFlash.Log_Write_Mode(control_mode->mode_number());
     }
 
-    notify_mode(control_mode);
+    notify_mode((enum mode)control_mode->mode_number());
+    return true;
 }
 
 /*
@@ -354,18 +316,11 @@ void Rover::set_mode(enum mode mode)
  */
 bool Rover::mavlink_set_mode(uint8_t mode)
 {
-    switch (mode) {
-    case MANUAL:
-    case HOLD:
-    case LEARNING:
-    case STEERING:
-    case GUIDED:
-    case AUTO:
-    case RTL:
-        set_mode((enum mode)mode);
-        return true;
+    Mode *new_mode = control_mode_from_num((enum mode)mode);
+    if (new_mode == nullptr) {
+        return false;
     }
-    return false;
+    return set_mode(*new_mode);
 }
 
 void Rover::startup_INS_ground(void)
@@ -532,7 +487,7 @@ bool Rover::disarm_motors(void)
     if (!arming.disarm()) {
         return false;
     }
-    if (control_mode != AUTO) {
+    if (control_mode != &mode_auto) {
         // reset the mission on disarm if we are not in auto
         mission.reset();
     }
