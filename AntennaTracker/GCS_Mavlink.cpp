@@ -820,8 +820,7 @@ void Tracker::gcs_update(void)
  */
 void Tracker::gcs_retry_deferred(void)
 {
-    gcs().send_message(MSG_RETRY_DEFERRED);
-    gcs().service_statustext();
+    gcs().retry_deferred();
 }
 
 AP_GPS *GCS_MAVLINK_Tracker::get_gps() const
