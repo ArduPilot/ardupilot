@@ -27,12 +27,19 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, AP_WheelEncoder, _type[0], 0),
 
-    // @Param: _SCALING
-    // @DisplayName: WheelEncoder scaling
-    // @Description: Scaling factor between sensor reading and measured distance in millimeters
+    // @Param: _CPR
+    // @DisplayName: WheelEncoder counts per revolution
+    // @Description: WheelEncoder counts per full revolution of the wheel
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_CPR",     1, AP_WheelEncoder, _counts_per_revolution[0], WHEELENCODER_CPR_DEFAULT),
+
+    // @Param: _RADIUS
+    // @DisplayName: Wheel radius in meters
+    // @Description: Wheel radius in meters
     // @Increment: 0.001
     // @User: Standard
-    AP_GROUPINFO("_SCALING", 1, AP_WheelEncoder, _scaling[0], WHEELENCODER_SCALING_DEFAULT),
+    AP_GROUPINFO("_RADIUS",  2, AP_WheelEncoder, _wheel_radius[0], WHEELENCODER_RADIUS_DEFAULT),
 
     // @Param: _POS_X
     // @DisplayName: Wheel's X position offset
@@ -78,12 +85,19 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("2_TYPE",   6, AP_WheelEncoder, _type[1], 0),
 
-    // @Param: 2_SCALING
-    // @DisplayName: WheelEncoder scaling
-    // @Description: Scaling factor between sensor reading and measured distance in millimeters
+    // @Param: 2_CPR
+    // @DisplayName: WheelEncoder 2 counts per revolution
+    // @Description: WheelEncoder 2 counts per full revolution of the wheel
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("2_CPR",     7, AP_WheelEncoder, _counts_per_revolution[1], WHEELENCODER_CPR_DEFAULT),
+
+    // @Param: 2_RADIUS
+    // @DisplayName: Wheel2's radius in meters
+    // @Description: Wheel2's radius in meters
     // @Increment: 0.001
     // @User: Standard
-    AP_GROUPINFO("2_SCALING",7, AP_WheelEncoder, _scaling[1], WHEELENCODER_SCALING_DEFAULT),
+    AP_GROUPINFO("2_RADIUS", 8, AP_WheelEncoder, _wheel_radius[1], WHEELENCODER_RADIUS_DEFAULT),
 
     // @Param: 2_POS_X
     // @DisplayName: Wheel2's X position offset
@@ -170,7 +184,7 @@ void AP_WheelEncoder::update(void)
         }
     }
 }
-    
+
 // check if an instance is healthy
 bool AP_WheelEncoder::healthy(uint8_t instance) const
 {
@@ -193,14 +207,24 @@ bool AP_WheelEncoder::enabled(uint8_t instance) const
     return true;
 }
 
-// get the total distance travelled in meters
-Vector2f AP_WheelEncoder::get_position(uint8_t instance) const
+// get the counts per revolution of the encoder
+uint16_t AP_WheelEncoder::get_counts_per_revolution(uint8_t instance) const
 {
     // for invalid instances return zero vector
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
-        return Vector2f(0.0f, 0.0f);
+        return 0;
     }
-    return Vector2f(_pos_x[instance],_pos_y[instance]);
+    return (uint16_t)_counts_per_revolution[instance];
+}
+
+// get the wheel radius in meters
+float AP_WheelEncoder::get_wheel_radius(uint8_t instance) const
+{
+    // for invalid instances return zero vector
+    if (instance >= WHEELENCODER_MAX_INSTANCES) {
+        return 0.0f;
+    }
+    return _wheel_radius[instance];
 }
 
 // get the total distance travelled in meters
@@ -220,7 +244,11 @@ float AP_WheelEncoder::get_distance(uint8_t instance) const
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
         return 0.0f;
     }
-    return _scaling[instance] * state[instance].distance_count * 0.001f;
+    // protect against divide by zero
+    if (_counts_per_revolution[instance] == 0) {
+        return 0.0f;
+    }
+    return M_2PI * _wheel_radius[instance] * state[instance].distance_count / _counts_per_revolution[instance];
 }
 
 // get the total number of sensor reading from the encoder
