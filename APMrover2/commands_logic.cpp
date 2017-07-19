@@ -215,9 +215,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 
 void Rover::do_RTL(void)
 {
-    prev_WP = current_loc;
-    control_mode = &mode_rtl;
-    next_WP = home;
+    set_mode(mode_rtl);
 }
 
 void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
