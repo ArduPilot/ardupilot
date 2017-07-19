@@ -65,6 +65,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include "AP_MotorsUGV.h"
 #include <AP_InertialNav/AP_InertialNav.h>          // ArduPilot Mega inertial navigation library
+#include <AC_Fence/AC_Fence.h>                      // Arducopter Fence library
 
 #include "mode.h"
 
@@ -177,7 +178,7 @@ private:
 #endif
 
     // Arming/Disarming management class
-    AP_Arming_Rover arming {ahrs, barometer, compass, battery};
+    AP_Arming_Rover arming {ahrs, barometer, compass, battery, &g2.fence};
 
     AP_L1_Control L1_controller;
 
@@ -226,9 +227,6 @@ private:
     // current_loc uses the baro/gps solution for altitude rather than gps only.
     AP_Mount camera_mount;
 #endif
-
-    // Inertial Navigation
-    AP_InertialNav_NavEKF inertial_nav;
 
     // true if initialisation has completed
     bool initialised;
@@ -354,6 +352,9 @@ private:
     // The location of the current/active waypoint.  Used for track following
     struct Location next_WP;
 
+    // Inertial Navigation
+    AP_InertialNav_NavEKF inertial_nav;
+
     // IMU variables
     // The main loop execution time.  Seconds
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
@@ -468,6 +469,7 @@ private:
     void send_rangefinder(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
+    void send_fence_status(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);
@@ -595,6 +597,8 @@ private:
     void nav_set_speed();
     bool in_stationary_loiter(void);
     void crash_check();
+    void fence_check();
+    void fence_send_mavlink_status(mavlink_channel_t chan);
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
@@ -640,6 +644,7 @@ public:
     bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value);
     uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec);
     void motor_test_stop();
+    void ten_hz_loop(void);
 };
 
 #define MENU_FUNC(func) FUNCTOR_BIND(&rover, &Rover::func, int8_t, uint8_t, const Menu::arg *)

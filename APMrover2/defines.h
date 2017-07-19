@@ -94,8 +94,11 @@ enum mode {
 #define MAVLINK_SET_ATT_TYPE_MASK_THROTTLE_IGNORE      (1<<6)
 #define MAVLINK_SET_ATT_TYPE_MASK_ATTITUDE_IGNORE      (1<<7)
 
+// general error codes
+#define ERROR_CODE_ERROR_RESOLVED           0
 // Error message sub systems and error codes
-#define ERROR_SUBSYSTEM_CRASH_CHECK  12
+#define ERROR_SUBSYSTEM_CRASH_CHECK    12
+#define ERROR_SUBSYSTEM_FAILSAFE_FENCE 9
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH 1
 

@@ -264,6 +264,13 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
+#if AC_FENCE == ENABLED
+void Rover::send_fence_status(mavlink_channel_t chan)
+{
+    fence_send_mavlink_status(chan);
+}
+#endif
+
 void Rover::send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
@@ -437,10 +444,16 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU2:
     case MSG_LIMITS_STATUS:
-    case MSG_FENCE_STATUS:
     case MSG_WIND:
     case MSG_AOA_SSA:
         // unused
+        break;
+
+    case MSG_FENCE_STATUS:
+#if AC_FENCE == ENABLED
+        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
+        rover.send_fence_status(chan);
+#endif
         break;
 
     case MSG_VIBRATION:
@@ -638,6 +651,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         send_message(MSG_CURRENT_WAYPOINT);
         send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
+        send_message(MSG_FENCE_STATUS);
     }
 
     if (rover.gcs_out_of_time) {
@@ -966,6 +980,26 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             } else {
                 result = MAV_RESULT_UNSUPPORTED;
             }
+            break;
+
+        case MAV_CMD_DO_FENCE_ENABLE:
+#if AC_FENCE == ENABLED
+            result = MAV_RESULT_ACCEPTED;
+            switch ((uint16_t)packet.param1) {
+                case 0:
+                    rover.g2.fence.enable(false);
+                    break;
+                case 1:
+                    rover.g2.fence.enable(true);
+                    break;
+                default:
+                    result = MAV_RESULT_FAILED;
+                    break;
+            }
+#else
+            // if fence code is not included return failure
+            result = MAV_RESULT_FAILED;
+#endif
             break;
 
         case MAV_CMD_GET_HOME_POSITION:
@@ -1397,6 +1431,14 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, rover.gps);
         break;
+
+#if AC_FENCE == ENABLED
+    // send or receive fence points with GCS
+    case MAVLINK_MSG_ID_FENCE_POINT:  // MAV ID: 160
+    case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
+        rover.g2.fence.handle_msg(*this, msg);
+        break;
+#endif // AC_FENCE == ENABLED
 
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
         rover.rangefinder.handle_msg(msg);

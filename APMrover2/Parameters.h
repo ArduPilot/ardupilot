@@ -327,6 +327,11 @@ public:
 
     // wheel encoders
     AP_WheelEncoder wheel_encoder;
+
+    // AC_Fence libraryfence
+#if AC_FENCE == ENABLED
+    AC_Fence fence;
+#endif
 };
 
 extern const AP_Param::Info var_info[];
