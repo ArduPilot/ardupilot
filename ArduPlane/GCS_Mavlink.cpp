@@ -1864,8 +1864,7 @@ void Plane::gcs_send_airspeed_calibration(const Vector3f &vg)
  */
 void Plane::gcs_retry_deferred(void)
 {
-    gcs().send_message(MSG_RETRY_DEFERRED);
-    gcs().service_statustext();
+    gcs().retry_deferred();
 }
 
 /*
