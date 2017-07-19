@@ -26,7 +26,7 @@
 /*
   NuttX on STM32 doesn't produce the exact SPI bus frequency
   requested. This is a table mapping requested to achieved SPI
-  frequency:
+  frequency for a 168 MHz processor :
 
   2  -> 1.3 MHz
   4  -> 2.6 MHz
@@ -42,6 +42,25 @@
   20 -> 10
   21 -> 20
   28 -> 20
+
+For a 180 MHz processor :
+
+ 2  -> 1.4 MHz
+ 4  -> 2.8 MHz
+ 6  -> 5.6 MHz
+ 8  -> 5.6 MHz
+ 10 -> 5.6 MHz
+ 11 -> 5.6 MHz
+ 12 -> 11.25 MHz
+ 13 -> 11.25 MHz
+ 14 -> 11.25 MHz
+ 16 -> 11.25 MHz
+ 18 -> 11.25 MHz
+ 20 -> 11.25 MHz
+ 22 -> 11.25 MHz
+ 24 -> 22.5 MHz
+ 28 -> 22.5 MHz
+
  */
 
 namespace PX4 {
@@ -92,6 +111,9 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #endif
 #ifdef PX4_SPIDEV_HMC
     SPIDesc("hmc5843",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_HMC, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
+#endif
+#ifdef PX4_SPIDEV_LIS
+	SPIDesc("lis3mdl",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_LIS, SPIDEV_MODE3, 500*KHZ, 500*KHZ),
 #endif
 
 #ifdef PX4_SPI_BUS_EXT

@@ -11,7 +11,7 @@ set -x
 git submodule init
 git submodule update --recursive
 
-builds="px4-v1 px4-v2 px4-v3 px4-v4"
+builds="px4-v1 px4-v2 px4-v3 px4-v4 px4-v4pro"
 
 for b in $builds; do
     echo "Testing $b build"
