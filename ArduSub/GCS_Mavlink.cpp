@@ -757,7 +757,6 @@ GCS_MAVLINK_Sub::data_stream_send(void)
     }
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-        send_message(MSG_SERVO_OUT);
     }
 
     if (sub.gcs_out_of_time) {
