@@ -1130,6 +1130,7 @@ private:
     wheel_odm_elements wheelOdmDataDelayed;   // Body  frame odometry data at the fusion time horizon
 
     // yaw sensor fusion
+    uint32_t yawMeasTime_ms;
     obs_ring_buffer_t<yaw_elements> storedYawAng;
     yaw_elements yawAngDataNew;
     yaw_elements yawAngDataDelayed;
