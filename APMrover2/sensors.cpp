@@ -239,29 +239,13 @@ void Rover::update_sensor_status_flags(void)
                                                          ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
                                                          ~MAV_SYS_STATUS_LOGGING);
-
-    switch (control_mode) {
-    case MANUAL:
-    case HOLD:
-        break;
-
-    case LEARNING:
-    case STEERING:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL;    // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION;  // attitude stabilisation
-        break;
-
-    case AUTO:
-    case RTL:
-    case GUIDED:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL;    // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION;  // attitude stabilisation
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION;            // yaw position
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;     // X/Y position control
-        break;
-
-    case INITIALISING:
-        break;
+    if (control_mode->attitude_stabilized()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // 3D angular rate control
+    }
+    if (control_mode->is_autopilot_mode()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION; // yaw position
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL; // X/Y position control
     }
 
     if (rover.DataFlash.logging_enabled()) {
