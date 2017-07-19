@@ -10,11 +10,6 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
-    // exit immediately if not in AUTO mode
-    if (control_mode != &mode_auto) {
-        return false;
-    }
-
     gcs().send_text(MAV_SEVERITY_INFO, "Executing command ID #%i", cmd.id);
 
     // remember the course of our next navigation leg
@@ -130,27 +125,22 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 void Rover::exit_mission()
 {
-    if (control_mode == &mode_auto) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "No commands. Can't set AUTO. Setting HOLD");
-        set_mode(mode_hold);
-    }
+    gcs().send_text(MAV_SEVERITY_NOTICE, "No commands. Can't set AUTO. Setting HOLD");
+    set_mode(mode_hold);
 }
 
 // verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 bool Rover::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
-    if (control_mode == &mode_auto) {
-        const bool cmd_complete = verify_command(cmd);
+    const bool cmd_complete = verify_command(cmd);
 
-        // send message to GCS
-        if (cmd_complete) {
-            gcs().send_mission_item_reached_message(cmd.index);
-        }
-
-        return cmd_complete;
+    // send message to GCS
+    if (cmd_complete) {
+        gcs().send_mission_item_reached_message(cmd.index);
     }
-    return false;
+
+    return cmd_complete;
 }
 
 /*******************************************************************************
