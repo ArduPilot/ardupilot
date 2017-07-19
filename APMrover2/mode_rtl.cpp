@@ -3,7 +3,8 @@
 
 bool ModeRTL::_enter()
 {
-    rover.do_RTL();
+    rover.prev_WP = rover.current_loc;
+    rover.next_WP = rover.home;
     g2.motors.slew_limit_throttle(true);
     return true;
 }
