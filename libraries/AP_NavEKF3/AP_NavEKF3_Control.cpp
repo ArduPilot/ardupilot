@@ -395,6 +395,7 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
     if (!yawAlignComplete && tiltAlignComplete && use_compass()) {
             magYawResetRequest = true;
     }
+
 }
 
 // return true if we should use the airspeed sensor
