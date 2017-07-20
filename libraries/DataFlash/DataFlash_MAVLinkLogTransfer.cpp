@@ -66,6 +66,11 @@ void DataFlash_Class::handle_log_message(GCS_MAVLINK &link, mavlink_message_t *m
  */
 void DataFlash_Class::handle_log_request_list(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
+    if (_log_sending_chan >= 0) {
+        link.send_text(MAV_SEVERITY_INFO, "Log download in progress");
+        return;
+    }
+
     mavlink_log_request_list_t packet;
     mavlink_msg_log_request_list_decode(msg, &packet);
 
@@ -89,6 +94,7 @@ void DataFlash_Class::handle_log_request_list(GCS_MAVLINK &link, mavlink_message
     }
 
     _log_listing = true;
+    _log_sending_chan = link.get_chan();
     handle_log_send_listing(link);
 }
 
@@ -98,6 +104,17 @@ void DataFlash_Class::handle_log_request_list(GCS_MAVLINK &link, mavlink_message
  */
 void DataFlash_Class::handle_log_request_data(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
+    if (_log_sending_chan >= 0) {
+        // some GCS (e.g. MAVProxy) attempt to stream request_data
+        // messages when they're filling gaps in the downloaded logs.
+        // This channel check avoids complaining to them, at the cost
+        // of silently dropping any repeated attempts to start logging
+        if (_log_sending_chan != link.get_chan()) {
+            link.send_text(MAV_SEVERITY_INFO, "Log download in progress");
+        }
+        return;
+    }
+
     mavlink_log_request_data_t packet;
     mavlink_msg_log_request_data_decode(msg, &packet);
 
@@ -131,6 +148,7 @@ void DataFlash_Class::handle_log_request_data(GCS_MAVLINK &link, mavlink_message
         _log_data_remaining = packet.count;
     }
     _log_sending = true;
+    _log_sending_chan = link.get_chan();
 
     handle_log_send(link);
 }
@@ -155,6 +173,7 @@ void DataFlash_Class::handle_log_request_end(GCS_MAVLINK &link, mavlink_message_
     mavlink_msg_log_request_end_decode(msg, &packet);
     _in_log_download = false;
     _log_sending = false;
+    _log_sending_chan = -1;
 }
 
 /**
@@ -162,6 +181,9 @@ void DataFlash_Class::handle_log_request_end(GCS_MAVLINK &link, mavlink_message_
  */
 void DataFlash_Class::handle_log_send(GCS_MAVLINK &link)
 {
+    if (_log_sending_chan != link.get_chan()) {
+        return;
+    }
     if (_log_listing) {
         handle_log_send_listing(link);
     }
@@ -217,6 +239,7 @@ void DataFlash_Class::handle_log_send_listing(GCS_MAVLINK &link)
     mavlink_msg_log_entry_send(link.get_chan(), _log_next_list_entry, _log_num_logs, _log_last_list_entry, time_utc, size);
     if (_log_next_list_entry == _log_last_list_entry) {
         _log_listing = false;
+        _log_sending_chan = -1;
     } else {
         _log_next_list_entry++;
     }
@@ -264,6 +287,7 @@ bool DataFlash_Class::handle_log_send_data(GCS_MAVLINK &link)
     _log_data_remaining -= len;
     if (ret < 90 || _log_data_remaining == 0) {
         _log_sending = false;
+        _log_sending_chan = -1;
     }
     return true;
 }
