@@ -411,6 +411,11 @@ private:
     // last visual odometry update time
     uint32_t visual_odom_last_update_ms;
 
+    // last wheel encoder update times
+    float wheel_encoder_last_angle_rad[WHEELENCODER_MAX_INSTANCES];     // distance in radians at time of last update to EKF
+    uint32_t wheel_encoder_last_update_ms[WHEELENCODER_MAX_INSTANCES];  // system time of last ping from each encoder
+    uint32_t wheel_encoder_last_ekf_update_ms;                          // system time of last encoder data push to EKF
+
     // True when we are doing motor test
     bool motor_test;
 
