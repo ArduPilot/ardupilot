@@ -133,7 +133,8 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
 void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
     // This is a simple hack to get wheel encoder data into the EKF and verify the interface sign conventions and units
-    // autopilot needs to be close to level with road surface.
+    // It uses the exisiting body frame velocity fusion.
+    // TODO implement a dedicated wheel odometry observaton model
 
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
@@ -141,17 +142,17 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
         return;
     }
 
-    bodyOdmDataNew.body_offset = &posOffset;
-    bodyOdmDataNew.vel.x = delAng * (1.0f/delTime) * radius;
-    bodyOdmDataNew.vel.y = 0.0f; // assume no lateral slippage
-    bodyOdmDataNew.vel.z = 0.0f; // assume the autopilot remains level wrt ground
-    bodyOdmDataNew.time_ms = timeStamp_ms;
-    bodyOdmDataNew.angRate.zero();
-    bodyOdmDataNew.velErr = 0.05f;
+    wheelOdmDataNew.hub_offset = &posOffset;
+    wheelOdmDataNew.delAng = delAng;
+    wheelOdmDataNew.radius = radius;
+    wheelOdmDataNew.delTime = delTime;
+    wheelOdmDataNew.time_ms = timeStamp_ms - (uint32_t)(500.0f * delTime);
 
-    storedBodyOdm.push(bodyOdmDataNew);
+    // becasue we are currently converting to an equivalent velocity measurement before fusing
+    // the measurement time is moved back to the middle of the sampling period
+    wheelOdmDataNew.time_ms -= (uint32_t)(500.0f * delTime);
 
-    usingWheelSensors = true; // activates processing that corrrects data for the vehicle pitch when it is fused
+    storedWheelOdm.push(wheelOdmDataNew);
 
 }
 
