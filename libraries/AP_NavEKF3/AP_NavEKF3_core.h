@@ -224,6 +224,17 @@ public:
     void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
 
     /*
+     * Write odometry data from a wheel encoder. The axis of rotation is assumed to be parallel to the vehicle body axis
+     *
+     * delAng is the measured change in angular position from the previous measurement where a positive rotation is produced by forward motion of the vehicle (rad)
+     * delTime is the time interval for the measurement of delAng (sec)
+     * timeStamp_ms is the time when the rotation was last measured (msec)
+     * posOffset is the XYZ body frame position of the wheel hub (m)
+     * radius is the effective rolling radius of the wheel (m)
+    */
+    void writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius);
+
+    /*
      * Return data for debugging body frame odometry fusion:
      *
      * velInnov are the XYZ body frame velocity innovations (m/s)
@@ -479,7 +490,7 @@ private:
         const Vector3f *body_offset;// pointer to XYZ position of the optical flow sensor in body frame (m)
     };
 
-    struct bfodm_elements {
+    struct vel_odm_elements {
         Vector3f        vel;        // XYZ velocity measured in body frame (m/s)
         float           velErr;     // velocity measurement error 1-std (m/s)
         const Vector3f *body_offset;// pointer to XYZ position of the velocity sensor in body frame (m)
@@ -1047,9 +1058,9 @@ private:
     uint32_t terrainHgtStableSet_ms;        // system time at which terrainHgtStable was set
 
     // body frame odometry fusion
-    obs_ring_buffer_t<bfodm_elements> storedBodyOdm;    // body velocity data buffer
-    bfodm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
-    bfodm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
+    obs_ring_buffer_t<vel_odm_elements> storedBodyOdm;    // body velocity data buffer
+    vel_odm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
+    vel_odm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
     uint8_t bodyOdmStoreIndex;          // Body  frame odometry  data storage index
     uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innovation consistency checks (msec)
     Vector3 bodyVelTestRatio;           // Innovation test ratios for body velocity XYZ measurements

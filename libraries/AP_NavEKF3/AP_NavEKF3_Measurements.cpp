@@ -130,6 +130,29 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
 
 }
 
+void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
+{
+    // This is a simple hack to get wheel encoder data into the EKF and verify the interface sign conventions and units
+    // autopilot needs to close to level with road surface.
+
+    // limit update rate to maximum allowed by sensor buffers and fusion process
+    // don't try to write to buffer until the filter has been initialised
+    if (((timeStamp_ms - bodyOdmMeasTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
+        return;
+    }
+
+    bodyOdmDataNew.body_offset = &posOffset;
+    bodyOdmDataNew.vel.x = delAng * (1.0f/delTime) * radius;
+    bodyOdmDataNew.vel.y = 0.0f; // assume no lateral slippage
+    bodyOdmDataNew.vel.z = 0.0f; // assume the autopilot remains level wrt ground
+    bodyOdmDataNew.time_ms = timeStamp_ms;
+    bodyOdmDataNew.angRate.zero();
+    bodyOdmDataNew.velErr = 0.05f;
+
+    storedBodyOdm.push(bodyOdmDataNew);
+
+}
+
 // write the raw optical flow measurements
 // this needs to be called externally.
 void NavEKF3_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset)

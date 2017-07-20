@@ -213,6 +213,17 @@ public:
     void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
 
     /*
+     * Write odometry data from a wheel encoder. The axis of rotation is assumed to be parallel to the vehicle body axis
+     *
+     * delAng is the measured change in angular position from the previous measurement where a positive rotation is produced by forward motion of the vehicle (rad)
+     * delTime is the time interval for the measurement of delAng (sec)
+     * timeStamp_ms is the time when the rotation was last measured (msec)
+     * posOffset is the XYZ body frame position of the wheel hub (m)
+     * radius is the effective rolling radius of the wheel (m)
+    */
+    void writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius);
+
+    /*
      * Return data for debugging body frame odometry fusion:
      *
      * velInnov are the XYZ body frame velocity innovations (m/s)
