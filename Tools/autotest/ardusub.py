@@ -125,7 +125,7 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
 
     sitl = util.start_SITL(binary, model='vectored', home=home, speedup=speedup, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
     mavproxy = util.start_MAVProxy_SITL('ArduSub', options=options)
-    mavproxy.expect('Telemetry log: (\S+)')
+    mavproxy.expect('Telemetry log: (\S+)\r\n')
     logfile = mavproxy.match.group(1)
     progress("LOGFILE %s" % logfile)
 
