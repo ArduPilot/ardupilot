@@ -32,7 +32,7 @@ def dive_manual(mavproxy, mav):
     mavproxy.send('rc 5 1600\n')
     mavproxy.send('rc 6 1550\n')
 
-    if not wait_distance(mav, 50, accuracy=7, timeout=100):
+    if not wait_distance(mav, 50, accuracy=7, timeout=200):
         return False
     
     mavproxy.send('rc 4 1550\n')
