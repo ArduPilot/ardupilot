@@ -456,7 +456,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
                           valgrind=valgrind, gdb=gdb, gdbserver=gdbserver,
                           defaults_file=os.path.join(testdir, 'default_params/plane-jsbsim.parm'))
     mavproxy = util.start_MAVProxy_SITL('ArduPlane', options=options)
-    mavproxy.expect('Telemetry log: (\S+)')
+    mavproxy.expect('Telemetry log: (\S+)\r\n')
     logfile = mavproxy.match.group(1)
     progress("LOGFILE %s" % logfile)
 
