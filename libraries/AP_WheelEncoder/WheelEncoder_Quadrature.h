@@ -53,6 +53,7 @@ private:
         int32_t  distance_count;    // distance measured by cumulative steps forward or backwards
         uint32_t total_count;       // total number of successful readings from sensor (used for sensor quality calcs)
         uint32_t error_count;       // total number of errors reading from sensor (used for sensor quality calcs)
+        uint32_t last_reading_ms;   // system time of last update from encoder
     };
     static struct IrqState irq_state[WHEELENCODER_MAX_INSTANCES];
 
