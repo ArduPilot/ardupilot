@@ -133,7 +133,7 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
 void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
     // This is a simple hack to get wheel encoder data into the EKF and verify the interface sign conventions and units
-    // autopilot needs to close to level with road surface.
+    // autopilot needs to be close to level with road surface.
 
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
@@ -150,6 +150,8 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     bodyOdmDataNew.velErr = 0.05f;
 
     storedBodyOdm.push(bodyOdmDataNew);
+
+    usingWheelSensors = true; // activates processing that corrrects data for the vehicle pitch when it is fused
 
 }
 

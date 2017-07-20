@@ -1564,6 +1564,18 @@ void NavEKF3_core::SelectBodyOdomFusion()
         // start performance timer
         hal.util->perf_begin(_perf_FuseBodyOdom);
 
+        // If wheel encoders are being used, correct the data for the vehicle tilt
+        // using a flat terrain assumption. Wheel encoder data cannot observe any
+        // movement perpendicular to the ground.
+        if (usingWheelSensors) {
+            // rotate the velocity into nav frame
+            Vector3f velNED = prevTnb.mul_transpose(bodyOdmDataDelayed.vel);
+            // zero the vertical component
+            velNED.z = 0.0f;
+            // rotate back into body frame
+            bodyOdmDataDelayed.vel = prevTnb * velNED;
+        }
+
         // Fuse data into the main filter
         FuseBodyVel();
 

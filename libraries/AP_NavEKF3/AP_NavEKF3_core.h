@@ -1070,6 +1070,7 @@ private:
     uint32_t bodyOdmMeasTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
     bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
     bool bodyVelFusionActive;           // true when body frame velocity fusion is active
+    bool usingWheelSensors;             // true when wheel odometry sensors are being used
 
 
     // Range Beacon Sensor Fusion

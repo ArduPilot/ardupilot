@@ -374,6 +374,7 @@ void NavEKF3_core::InitialiseVariables()
     bodyOdmMeasTime_ms = 0;
     bodyVelFusionDelayed = false;
     bodyVelFusionActive = false;
+    usingWheelSensors = false;
 
     // zero data buffers
     storedIMU.reset();
