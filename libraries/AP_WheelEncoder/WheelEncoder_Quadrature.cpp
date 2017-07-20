@@ -77,7 +77,7 @@ void AP_WheelEncoder_Quadrature::update(void)
     _state.distance_count = irq_state[instance].distance_count;
     _state.total_count = irq_state[instance].total_count;
     _state.error_count = irq_state[instance].error_count;
-    _state.last_reading_ms = AP_HAL::millis();
+    _state.last_reading_ms = irq_state[instance].last_reading_ms;
 
     // restore interrupts
     irqrestore(istate);
@@ -190,6 +190,9 @@ void AP_WheelEncoder_Quadrature::irq_handler(uint8_t instance, bool pin_a)
 
     // update distance and error counts
     update_phase_and_error_count(pin_a_high, pin_b_high, irq_state[instance].phase, irq_state[instance].distance_count, irq_state[instance].total_count, irq_state[instance].error_count);
+
+    // record update time
+    irq_state[instance].last_reading_ms = AP_HAL::millis();
 }
 
 #endif // CONFIG_HAL_BOARD
