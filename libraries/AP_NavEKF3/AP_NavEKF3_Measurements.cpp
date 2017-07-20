@@ -122,9 +122,7 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
 
     // simple model of accuracy
     // TODO move this calculation outside of EKF into the sensor driver
-    const float minVelErr = 0.5f;
-    const float maxVelErr = 10.0f;
-    bodyOdmDataNew.velErr = minVelErr + (maxVelErr - minVelErr) * (1.0f - 0.01f * quality);
+    bodyOdmDataNew.velErr = frontend->_visOdmVelErrMin + (frontend->_visOdmVelErrMax - frontend->_visOdmVelErrMin) * (1.0f - 0.01f * quality);
 
     storedBodyOdm.push(bodyOdmDataNew);
 

@@ -1595,7 +1595,7 @@ void NavEKF3_core::SelectBodyOdomFusion()
             usingWheelSensors = true;
             bodyOdmDataDelayed.vel = prevTnb * velNED;
             bodyOdmDataDelayed.body_offset = wheelOdmDataNew.hub_offset;
-            bodyOdmDataDelayed.velErr = 0.1f;
+            bodyOdmDataDelayed.velErr = frontend->_wencOdmVelErr;
 
             // Fuse data into the main filter
             FuseBodyVel();
