@@ -74,7 +74,10 @@ public:
     // get the position of the wheel associated with the wheel encoder
     Vector3f get_position(uint8_t instance) const;
 
-    // get the total distance traveled in meters
+    // get total delta angle (in radians) measured by the wheel encoder
+    float get_delta_angle(uint8_t instance) const;
+
+    // get the total distance traveled in meters or radians
     float get_distance(uint8_t instance) const;
 
     // get the total number of sensor reading from the encoder

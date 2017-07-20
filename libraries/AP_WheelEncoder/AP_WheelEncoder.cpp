@@ -237,8 +237,8 @@ Vector3f AP_WheelEncoder::get_position(uint8_t instance) const
     return _pos_offset[instance];
 }
 
-// get the total distance traveled in meters
-float AP_WheelEncoder::get_distance(uint8_t instance) const
+// get total delta angle (in radians) measured by the wheel encoder
+float AP_WheelEncoder::get_delta_angle(uint8_t instance) const
 {
     // for invalid instances return zero
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
@@ -248,7 +248,14 @@ float AP_WheelEncoder::get_distance(uint8_t instance) const
     if (_counts_per_revolution[instance] == 0) {
         return 0.0f;
     }
-    return M_2PI * _wheel_radius[instance] * state[instance].distance_count / _counts_per_revolution[instance];
+    return M_2PI * state[instance].distance_count / _counts_per_revolution[instance];
+}
+
+// get the total distance traveled in meters
+float AP_WheelEncoder::get_distance(uint8_t instance) const
+{
+    // for invalid instances return zero
+    return get_delta_angle(instance) * _wheel_radius[instance];
 }
 
 // get the total number of sensor reading from the encoder
