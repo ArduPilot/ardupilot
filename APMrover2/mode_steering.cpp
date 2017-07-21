@@ -1,14 +1,11 @@
 #include "mode.h"
 #include "Rover.h"
 
-void ModeSteering::update() {
-    /*
-        in steering mode we control lateral acceleration
-        directly. We first calculate the maximum lateral
-        acceleration at full steering lock for this speed. That is
-        V^2/R where R is the radius of turn. We get the radius of
-        turn from half the STEER2SRV_P.
-    */
+void ModeSteering::update()
+{
+    // in steering mode we control lateral acceleration directly. We first calculate the maximum lateral
+    // acceleration at full steering lock for this speed. That is V^2/R where R is the radius of turn.
+    // We get the radius of turn from half the STEER2SRV_P.
     const float ground_speed = rover.ground_speed;
     float max_g_force = ground_speed * ground_speed / rover.steerController.get_turn_radius();
 
