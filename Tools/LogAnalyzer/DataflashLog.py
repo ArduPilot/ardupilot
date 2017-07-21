@@ -226,7 +226,7 @@ class Channel(object):
         index = bisect.bisect_left(self.listData, (lineNumber,-99999))
         while index<len(self.listData):
             line  = self.listData[index][0]
-            #print "Looking forwards for nearest value to line number %d, starting at line %d" % (lineNumber,line) # TEMP
+            #print("Looking forwards for nearest value to line number %d, starting at line %d" % (lineNumber,line)) # TEMP
             if line >= lineNumber:
                 return (self.listData[index][1],line)
             index += 1
@@ -236,7 +236,7 @@ class Channel(object):
         index = bisect.bisect_left(self.listData, (lineNumber,-99999)) - 1
         while index>=0:
             line  = self.listData[index][0]
-            #print "Looking backwards for nearest value to line number %d, starting at line %d" % (lineNumber,line) # TEMP
+            #print("Looking backwards for nearest value to line number %d, starting at line %d" % (lineNumber,line)) # TEMP
             if line <= lineNumber:
                 return (self.listData[index][1],line)
             index -= 1
@@ -264,8 +264,8 @@ class Channel(object):
     def getIndexOf(self, lineNumber):
         '''returns the index within this channel's listData of the given lineNumber, or raises an Exception if not found'''
         index = bisect.bisect_left(self.listData, (lineNumber,-99999))
-        #print "INDEX of line %d: %d" % (lineNumber,index)
-        #print "self.listData[index][0]: %d" % self.listData[index][0]
+        #print("INDEX of line %d: %d" % (lineNumber,index))
+        #print("self.listData[index][0]: %d" % self.listData[index][0])
         if (self.listData[index][0] == lineNumber):
             return index
         else:
@@ -375,8 +375,8 @@ class DataflashLogHelper:
                 chunkTimeSeconds = (DataflashLogHelper.getTimeAtLine(logdata,endLine)-DataflashLogHelper.getTimeAtLine(logdata,startLine)+1) / 1000.0
                 if chunkTimeSeconds > minLengthSeconds:
                     chunks.append((startLine,endLine))
-                    #print "LOITER chunk: %d to %d, %d lines" % (startLine,endLine,endLine-startLine+1)
-                    #print "  (time %d to %d, %d seconds)" % (DataflashLogHelper.getTimeAtLine(logdata,startLine), DataflashLogHelper.getTimeAtLine(logdata,endLine), chunkTimeSeconds)
+                    #print("LOITER chunk: %d to %d, %d lines" % (startLine,endLine,endLine-startLine+1))
+                    #print("  (time %d to %d, %d seconds)" % (DataflashLogHelper.getTimeAtLine(logdata,startLine), DataflashLogHelper.getTimeAtLine(logdata,endLine), chunkTimeSeconds))
         chunks.sort(chunkSizeCompare)
         return chunks
 
@@ -610,7 +610,7 @@ class DataflashLog(object):
             lineNumber = lineNumber + 1
             numBytes += len(line) + 1
             try:
-                #print "Reading line: %d" % lineNumber
+                #print("Reading line: %d" % lineNumber)
                 line = line.strip('\n\r')
                 tokens = line.split(', ')
                 # first handle the log header lines

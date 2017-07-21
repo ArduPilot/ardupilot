@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from LogAnalyzer import Test,TestResult
 import DataflashLog
 
@@ -52,7 +54,7 @@ class TestThrust(Test):
                     start = i
             elif start != None:
                 if (i-start) > minSampleLength:
-                    #print "Found high throttle chunk from line %d to %d (%d samples)" % (data[start][0],data[i][0],i-start+1)
+                    #print("Found high throttle chunk from line %d to %d (%d samples)" % (data[start][0],data[i][0],i-start+1))
                     highThrottleSegments.append((start,i))
                 start = None
 
