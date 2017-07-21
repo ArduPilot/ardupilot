@@ -97,10 +97,10 @@ AC_Fence::AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav) :
     }
 }
 
-void AC_Fence::enable(bool true_false)
+void AC_Fence::enable(bool value)
 {
-    _enabled = true_false;
-    if (!true_false) {
+    _enabled = value;
+    if (!value) {
         clear_breach(AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON);
     }
 }
