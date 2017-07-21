@@ -295,7 +295,7 @@ bool AP_Arming::compass_checks(bool report)
         //check if compass is calibrating
         if (_compass.is_calibrating()) {
             if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Arm: Compass calibration running");
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Compass calibration running");
             }
             return false;
         }
