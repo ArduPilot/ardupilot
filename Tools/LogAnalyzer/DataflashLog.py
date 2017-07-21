@@ -571,7 +571,10 @@ class DataflashLog(object):
         elif e.NAME == "MSG":
             if not self.vehicleType:
                 tokens = e.Message.split(' ')
-                self.set_vehicleType_from_MSG_vehicle(tokens[0]);
+                try:
+                    self.set_vehicleType_from_MSG_vehicle(tokens[0]);
+                except ValueError:
+                    pass
                 self.backPatchModeChanges()
                 self.firmwareVersion = tokens[1]
                 if len(tokens) == 3:
@@ -629,7 +632,10 @@ class DataflashLog(object):
                     elif tokens2[0] in knownHardwareTypes:
                         self.hardwareType = line      # not sure if we can parse this more usefully, for now only need to report it back verbatim
                     elif (len(tokens2) == 2 or len(tokens2) == 3) and tokens2[1][0].lower() == "v":  # e.g. ArduCopter V3.1 (5c6503e2)
-                        self.set_vehicleType_from_MSG_vehicle(tokens2[0])
+                        try:
+                            self.set_vehicleType_from_MSG_vehicle(tokens2[0])
+                        except ValueError:
+                            pass
                         self.firmwareVersion = tokens2[1]
                         if len(tokens2) == 3:
                             self.firmwareHash    = tokens2[2][1:-1]
