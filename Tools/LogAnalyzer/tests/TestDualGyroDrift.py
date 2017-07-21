@@ -70,15 +70,15 @@ class TestDualGyroDrift(Test):
 
 		# #pylab.plot(range(0,(nSamples*sliceLength1),sliceLength1), imu1ZAverages, 'b')
 
-		# print("Gyro averages1X: " + `imu1XAverages`)
-		# print("Gyro averages1Y: " + `imu1YAverages`)
-		# print("Gyro averages1Z: " + `imu1ZAverages` + "\n")
-		# print("Gyro averages2X: " + `imu2XAverages`)
-		# print("Gyro averages2Y: " + `imu2YAverages`)
-		# print("Gyro averages2Z: " + `imu2ZAverages` + "\n")
-		# print("Gyro averages diff X: " + `imuXDiffAverages`)
-		# print("Gyro averages diff Y: " + `imuYDiffAverages`)
-		# print("Gyro averages diff Z: " + `imuZDiffAverages`)
+		# print("Gyro averages1X: " + repr(imu1XAverages))
+		# print("Gyro averages1Y: " + repr(imu1YAverages))
+		# print("Gyro averages1Z: " + repr(imu1ZAverages) + "\n")
+		# print("Gyro averages2X: " + repr(imu2XAverages))
+		# print("Gyro averages2Y: " + repr(imu2YAverages))
+		# print("Gyro averages2Z: " + repr(imu2ZAverages) + "\n")
+		# print("Gyro averages diff X: " + repr(imuXDiffAverages))
+		# print("Gyro averages diff Y: " + repr(imuYDiffAverages))
+		# print("Gyro averages diff Z: " + repr(imuZDiffAverages))
 
 		# # lowpass filter using numpy
 		# # cutoff = 100

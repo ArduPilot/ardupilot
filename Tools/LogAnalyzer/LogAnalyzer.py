@@ -157,8 +157,8 @@ class TestSuite(object):
         xml.write("<loganalysis>\n")
         xml.write("<header>\n")
         xml.write("  <logfile>"   + escape(self.logfile) + "</logfile>\n")
-        xml.write("  <sizekb>"    + escape(`self.logdata.filesizeKB`) + "</sizekb>\n")
-        xml.write("  <sizelines>" + escape(`self.logdata.lineCount`) + "</sizelines>\n")
+        xml.write("  <sizekb>"    + escape(repr(self.logdata.filesizeKB)) + "</sizekb>\n")
+        xml.write("  <sizelines>" + escape(repr(self.logdata.lineCount)) + "</sizelines>\n")
         xml.write("  <duration>"  + escape(str(datetime.timedelta(seconds=self.logdata.durationSecs))) + "</duration>\n")
         xml.write("  <vehicletype>" + escape(self.logdata.vehicleTypeString) + "</vehicletype>\n")
         if self.logdata.vehicleType == VehicleType.Copter and self.logdata.getCopterType():
@@ -166,14 +166,14 @@ class TestSuite(object):
         xml.write("  <firmwareversion>" + escape(self.logdata.firmwareVersion) + "</firmwareversion>\n")
         xml.write("  <firmwarehash>" + escape(self.logdata.firmwareHash) + "</firmwarehash>\n")
         xml.write("  <hardwaretype>" + escape(self.logdata.hardwareType) + "</hardwaretype>\n")
-        xml.write("  <freemem>" + escape(`self.logdata.freeRAM`) + "</freemem>\n")
-        xml.write("  <skippedlines>" + escape(`self.logdata.skippedLines`) + "</skippedlines>\n")
+        xml.write("  <freemem>" + escape(repr(self.logdata.freeRAM)) + "</freemem>\n")
+        xml.write("  <skippedlines>" + escape(repr(self.logdata.skippedLines)) + "</skippedlines>\n")
         xml.write("</header>\n")
 
         # output parameters
         xml.write("<params>\n")
         for param, value in self.logdata.parameters.items():
-            xml.write("  <param name=\"%s\" value=\"%s\" />\n" % (param,escape(`value`)))
+            xml.write("  <param name=\"%s\" value=\"%s\" />\n" % (param,escape(repr(value))))
         xml.write("</params>\n")
 
         # output test results
