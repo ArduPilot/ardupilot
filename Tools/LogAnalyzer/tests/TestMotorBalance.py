@@ -25,8 +25,8 @@ class TestBalanceTwist(Test):
 
         for i in range(8):
             for prefix in "Chan", "Ch", "C":
-                if prefix+`(i+1)` in logdata.channels["RCOU"]:
-                    ch.append(map(lambda x: x[1], logdata.channels["RCOU"][prefix+`(i+1)`].listData))
+                if prefix+repr((i+1)) in logdata.channels["RCOU"]:
+                    ch.append(map(lambda x: x[1], logdata.channels["RCOU"][prefix+repr((i+1))].listData))
 
         ch = zip(*ch)
         num_channels = 0

@@ -25,7 +25,7 @@ class Format(object):
         self.labels  = labels.split(',')
 
     def __str__(self):
-        return "%8s %s" % (self.name, `self.labels`)
+        return "%8s %s" % (self.name, repr(self.labels))
 
     @staticmethod
     def trycastToFormatType(value,valueType):
