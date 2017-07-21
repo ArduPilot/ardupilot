@@ -269,6 +269,14 @@ void Rover::send_current_waypoint(mavlink_channel_t chan)
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
+void Rover::send_wheel_encoder(mavlink_channel_t chan)
+{
+    // send wheel encoder data using rpm message
+    if (g2.wheel_encoder.enabled(0) || g2.wheel_encoder.enabled(1)) {
+        mavlink_msg_rpm_send(chan, wheel_encoder_rpm[0], wheel_encoder_rpm[1]);
+    }
+}
+
 uint8_t GCS_MAVLINK_Rover::sysid_my_gcs() const
 {
     return rover.g.sysid_my_gcs;
@@ -415,6 +423,11 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         send_distance_sensor(rover.rangefinder);
         break;
 
+    case MSG_RPM:
+        CHECK_PAYLOAD_SIZE(RPM);
+        rover.send_wheel_encoder(chan);
+        break;
+
     case MSG_MOUNT_STATUS:
 #if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
@@ -481,7 +494,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_TERRAIN:
     case MSG_OPTICAL_FLOW:
     case MSG_GIMBAL_REPORT:
-    case MSG_RPM:
     case MSG_POSITION_TARGET_GLOBAL_INT:
     case MSG_LANDING:
         break;  // just here to prevent a warning
@@ -691,6 +703,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_EKF_STATUS_REPORT);
         send_message(MSG_VIBRATION);
+        send_message(MSG_RPM);
     }
 }
 
