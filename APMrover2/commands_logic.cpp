@@ -428,7 +428,7 @@ void Rover::nav_set_speed()
 void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
     condition_start = millis();
-    condition_value = static_cast<int32_t>(cmd.content.delay.seconds * 1000);  // convert seconds to milliseconds
+    condition_value = static_cast<int32_t>(cmd.content.delay.seconds * 1000.0f);  // convert seconds to milliseconds
 }
 
 void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
@@ -443,10 +443,10 @@ void Rover::do_yaw(const AP_Mission::Mission_Command& cmd)
     // get final angle, 1 = Relative, 0 = Absolute
     if (cmd.content.yaw.relative_angle == 0) {
         // absolute angle
-        condition_value = cmd.content.yaw.angle_deg * 100;
+        condition_value = static_cast<int32_t>(cmd.content.yaw.angle_deg * 100.0f);
     } else {
         // relative angle
-        condition_value = cmd.content.yaw.angle_deg * 100;
+        condition_value = static_cast<int32_t>(cmd.content.yaw.angle_deg * 100.0f);
         if (cmd.content.yaw.direction < 0) {
             condition_value = -condition_value;
         }

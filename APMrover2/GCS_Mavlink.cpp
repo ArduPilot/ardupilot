@@ -985,6 +985,38 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        case MAV_CMD_CONDITION_YAW:
+            // param1 : target angle [0-360]
+            // param2 : speed during change [deg per second]
+            // param3 : direction (-1:ccw, +1:cw)
+            // param4 : relative offset (1) or absolute angle (0)
+            if (is_positive(packet.param1) &&
+                (packet.param1 <= 360.0f) &&
+                (is_zero(packet.param4) || is_equal(packet.param4, 1.0f))) {
+                AP_Mission::Mission_Command temp_cmd;
+                AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, temp_cmd);
+                rover.do_yaw(temp_cmd);
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+            break;
+
+        case MAV_CMD_DO_CHANGE_SPEED:
+            // param1 : unused
+            // param2 : new speed in m/s
+            // param3 : new throttle in percent
+            // param4 : unused
+            if (is_positive(packet.param2) || is_positive(packet.param3)) {
+                AP_Mission::Mission_Command temp_cmd;
+                AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, temp_cmd);
+                rover.do_change_speed(temp_cmd);
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+            break;
+
         case MAV_CMD_DO_SET_HOME:
         {
             // param1 : use current (1=use current location, 0=use specified location)
