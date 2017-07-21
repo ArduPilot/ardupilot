@@ -1416,12 +1416,15 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 }
                 hal.rcout->push();
 
+                result = MAV_RESULT_ACCEPTED;
+                // send ack before we reboot
+                mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
+
                 AP_Notify::flags.firmware_update = 1;
                 sub.update_notify();
                 hal.scheduler->delay(200);
                 // when packet.param1 == 3 we reboot to hold in bootloader
                 hal.scheduler->reboot(is_equal(packet.param1,3.0f));
-                result = MAV_RESULT_ACCEPTED;
             }
             break;
 
