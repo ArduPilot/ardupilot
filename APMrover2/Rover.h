@@ -415,6 +415,7 @@ private:
     float wheel_encoder_last_angle_rad[WHEELENCODER_MAX_INSTANCES];     // distance in radians at time of last update to EKF
     uint32_t wheel_encoder_last_update_ms[WHEELENCODER_MAX_INSTANCES];  // system time of last ping from each encoder
     uint32_t wheel_encoder_last_ekf_update_ms;                          // system time of last encoder data push to EKF
+    float wheel_encoder_rpm[WHEELENCODER_MAX_INSTANCES];                // for reporting to GCS
 
     // True when we are doing motor test
     bool motor_test;
@@ -460,6 +461,7 @@ private:
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
+    void send_wheel_encoder(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);
