@@ -294,6 +294,11 @@ void AP_BoardConfig::px4_setup_px4io(void)
         // at power on
         printf("Loading /etc/px4io/px4io.bin\n");
         px4_tone_alarm("MBABGP");
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+        // we need to close uartC to prevent conflict between bootloader and
+        // uartC reada
+        hal.uartC->end();
+#endif
         if (px4_start_driver(px4io_main, "px4io", "update /etc/px4io/px4io.bin")) {
             printf("upgraded PX4IO firmware OK\n");
             px4_tone_alarm("MSPAA");
@@ -316,6 +321,11 @@ void AP_BoardConfig::px4_setup_px4io(void)
         printf("PX4IO CRC OK\n");
     } else {
         printf("PX4IO CRC failure\n");
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+        // we need to close uartC to prevent conflict between bootloader and
+        // uartC reada
+        hal.uartC->end();
+#endif
         px4_tone_alarm("MBABGP");
         if (px4_start_driver(px4io_main, "px4io", "safety_on")) {
             printf("PX4IO disarm OK\n");
