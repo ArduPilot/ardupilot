@@ -175,6 +175,9 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
                         3432345232233432   // uint64_t
         );
 
+    // emit a message which contains NaNs:
+    dataflash.Log_Write("NANS", "f,d,bf,bd", "fdfd",  dataflash.quiet_nanf(), dataflash.quiet_nan(), NAN, NAN);
+
     flush_dataflash(dataflash);
 
     dataflash.StopLogging();
