@@ -1797,7 +1797,8 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
             }
 #endif
         }
-
+        // send ack before we reboot
+        mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED);
         // force safety on 
         hal.rcout->force_safety_on();
         hal.rcout->force_safety_no_wait();
@@ -1806,7 +1807,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
         // when packet.param1 == 3 we reboot to hold in bootloader
         bool hold_in_bootloader = is_equal(packet.param1,3.0f);
         hal.scheduler->reboot(hold_in_bootloader);
-        return MAV_RESULT_ACCEPTED;
+        return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_UNSUPPORTED;
 }
