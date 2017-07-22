@@ -391,6 +391,7 @@ private:
     
     // this static arrangement is to avoid having static objects in AP_Param tables
     static SRV_Channel *channels;
+    static SRV_Channels *instance;
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
     static struct srv_function {
@@ -402,6 +403,7 @@ private:
     } functions[SRV_Channel::k_nr_aux_servo_functions];
 
     AP_Int8 auto_trim;
+    AP_Int16 default_rate;
 
     // return true if passthrough is disabled
     static bool passthrough_disabled(void) {
