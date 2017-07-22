@@ -210,6 +210,9 @@ public:
     void handle_log_send(class GCS_MAVLINK &);
     bool in_log_download() const { return _in_log_download; }
 
+    float quiet_nanf() const { return nanf("0x4152"); } // "AR"
+    double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
+
 protected:
 
     const struct LogStructure *_structures;
