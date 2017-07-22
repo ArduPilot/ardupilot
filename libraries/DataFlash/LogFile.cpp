@@ -594,7 +594,7 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
         lng            : loc.lng,
         alt            : loc.alt*1.0e-2f,
         rel_home_alt   : -home,
-        rel_origin_alt : ahrs.get_relative_position_D_origin(origin) ? -origin : nanf("ARDUPILOT")
+        rel_origin_alt : ahrs.get_relative_position_D_origin(origin) ? -origin : quiet_nanf(),
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
