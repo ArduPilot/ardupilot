@@ -25,9 +25,9 @@ class TestGPSGlitch(Test):
 			for i in range(len(logdata.channels["ERR"]["Subsys"].listData)):
 				subSys = logdata.channels["ERR"]["Subsys"].listData[i][1]
 				eCode  = logdata.channels["ERR"]["ECode"].listData[i][1]
-			 	if subSys == 11 and (eCode == 2):
+				if subSys == 11 and (eCode == 2):
 			 		gpsGlitchCount += 1
- 		if gpsGlitchCount:
+		if gpsGlitchCount:
 			self.result.status = TestResult.StatusType.FAIL
 			self.result.statusMessage = "GPS glitch errors found (%d)" % gpsGlitchCount
 
