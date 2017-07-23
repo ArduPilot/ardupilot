@@ -418,16 +418,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
                 break;
 
-            case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            {
-                if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
-                    // when packet.param1 == 3 we reboot to hold in bootloader
-                    hal.scheduler->reboot(is_equal(packet.param1,3.0f));
-                    result = MAV_RESULT_ACCEPTED;
-                }
-                break;
-            }
-
             case MAV_CMD_ACCELCAL_VEHICLE_POS:
                 result = MAV_RESULT_FAILED;
 
