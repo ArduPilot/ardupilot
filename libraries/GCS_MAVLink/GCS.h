@@ -309,7 +309,9 @@ protected:
     void handle_common_message(mavlink_message_t *msg);
     void handle_set_gps_global_origin(const mavlink_message_t *msg);
     void handle_setup_signing(const mavlink_message_t *msg);
-    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
+    virtual bool should_disable_overrides_on_reboot() const { return true; }
+    virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
+    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet);
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
@@ -556,6 +558,8 @@ private:
     struct Location global_position_current_loc;
 
     void send_global_position_int();
+
+    void zero_rc_outputs();
 };
 
 /// @class GCS
