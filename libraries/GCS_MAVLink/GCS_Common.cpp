@@ -1769,6 +1769,18 @@ void GCS_MAVLINK::send_vfr_hud()
         vfr_hud_climbrate());
 }
 
+void GCS_MAVLINK::zero_rc_outputs()
+{
+    // Send an invalid signal to the motors to prevent spinning due to neutral (1500) pwm pulse being cut short
+    // For that matter, send an invalid signal to all channels to prevent undesired/unexpected behavior
+    SRV_Channels::cork();
+    for (int i=0; i<NUM_RC_CHANNELS; i++) {
+        // Set to 1 because 0 is interpreted as flag to ignore update
+        hal.rcout->write(i, 1);
+    }
+    SRV_Channels::push();
+}
+
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 
@@ -1777,10 +1789,10 @@ void GCS_MAVLINK::send_vfr_hud()
   motors. That can be dangerous when a preflight reboot is done with
   the pilot close to the aircraft and can also damage the aircraft
  */
-MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides)
+MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet)
 {
     if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
-        if (disable_overrides) {
+        if (should_disable_overrides_on_reboot()) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
             // disable overrides while rebooting
             int px4io_fd = open("/dev/px4io", 0);
@@ -1797,8 +1809,17 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
             }
 #endif
         }
+        if (should_zero_rc_outputs_on_reboot()) {
+            reboot_zero_rc_outputs();
+        }
         // send ack before we reboot
         mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED);
+        // Notify might want to blink some LEDs:
+        AP_Notify *notify = AP_Notify::instance();
+        if (notify) {
+            AP_Notify::flags.firmware_update = 1;
+            notify->update();
+        }
         // force safety on 
         hal.rcout->force_safety_on();
         hal.rcout->force_safety_no_wait();
@@ -2663,6 +2684,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
 
     case MAV_CMD_DO_SEND_BANNER:
         result = handle_command_do_send_banner(packet);
+        break;
+
+    case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
+        result = handle_preflight_reboot(packet);
         break;
 
     case MAV_CMD_DO_START_MAG_CAL:
