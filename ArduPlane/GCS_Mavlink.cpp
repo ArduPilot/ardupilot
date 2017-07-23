@@ -753,6 +753,11 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
+bool GCS_MAVLINK_Plane::should_disable_overrides_on_reboot() const
+{
+    return (plane.quadplane.enable != 0);
+}
+
 void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
@@ -991,10 +996,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             } else {
                 result = MAV_RESULT_UNSUPPORTED;
             }
-            break;
-
-        case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            result = handle_preflight_reboot(packet, plane.quadplane.enable != 0);
             break;
 
         case MAV_CMD_DO_LAND_START:
