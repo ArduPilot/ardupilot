@@ -68,7 +68,7 @@ list some basic and more used commands as example.
 * **Upload or install**
 
     Build commands have a `--upload` option in order to upload the binary built
-    to a connected board. This option is supported by Pixhawk and Linux-based boards
+    to a connected board. This option is supported by Pixhawk and Linux-based boards.
     The command below uses the `--targets` option that is explained in the next item.
 
     ```sh
@@ -83,7 +83,13 @@ list some basic and more used commands as example.
     ```
 
     What this does is to install to a temporary location and calling
-    `sync <temp_install_location>/ <destination>`
+    `rsync <temp_install_location>/ <destination>`. Example (board and destination
+    IP will change according to the board used):
+
+    ```sh
+    ./waf configure --board navio2 --rsync-dest root@192.168.1.2:/
+    ./waf --target bin/arducopter --upload
+    ```
 
     On Linux boards there's also an install command, which will install to a certain
     directory, just like the temporary install above does. This can be
