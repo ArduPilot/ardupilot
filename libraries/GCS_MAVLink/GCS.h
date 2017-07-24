@@ -14,6 +14,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Avoidance/AP_Avoidance.h>
+#include <AP_Proximity/AP_Proximity.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
@@ -155,6 +156,7 @@ public:
     bool send_distance_sensor(const RangeFinder &rangefinder) const;
     void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
     void send_rangefinder_downward(const RangeFinder &rangefinder) const;
+    bool send_proximity(const AP_Proximity &proximity) const;
     void send_ahrs2(AP_AHRS &ahrs);
     bool send_gps_raw(AP_GPS &gps);
     void send_system_time(AP_GPS &gps);
