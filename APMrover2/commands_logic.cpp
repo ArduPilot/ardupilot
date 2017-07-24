@@ -126,7 +126,7 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 void Rover::exit_mission()
 {
     gcs().send_text(MAV_SEVERITY_NOTICE, "No commands. Can't set AUTO. Setting HOLD");
-    set_mode(mode_hold);
+    set_mode(mode_hold, MODE_REASON_MISSION_END);
 }
 
 // verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
@@ -205,7 +205,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 
 void Rover::do_RTL(void)
 {
-    set_mode(mode_rtl);
+    set_mode(mode_rtl, MODE_REASON_MISSION_COMMAND);
 }
 
 void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
