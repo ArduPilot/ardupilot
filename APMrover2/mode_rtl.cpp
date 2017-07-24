@@ -23,6 +23,6 @@ void ModeRTL::update_navigation()
 {
     // no loitering around the wp with the rover, goes direct to the wp position
     if (rover.verify_RTL()) {
-        rover.set_mode(rover.mode_hold);
+        rover.set_mode(rover.mode_hold, MODE_REASON_MISSION_END);
     }
 }
