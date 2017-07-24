@@ -28,7 +28,7 @@ private:
     uint8_t store_index;
     uint32_t last_store_time;
     static const uint8_t buffer_length = 50;
-    VectorN<readings_baro,buffer_length> buffer;
+    VectorN<readings_baro, buffer_length> buffer;
 
     // adjust for simulated board temperature
     void temperature_adjustment(float &p, float &T);
@@ -40,4 +40,4 @@ private:
     float _recent_press;
 
 };
-#endif // CONFIG_HAL_BOARD
+#endif  // CONFIG_HAL_BOARD
