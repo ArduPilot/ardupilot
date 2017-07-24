@@ -505,7 +505,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  battery_checks(report)
         &  logging_checks(report)
         &  manual_transmitter_checks(report)
-        &  board_voltage_checks(report);
+        &  board_voltage_checks(report)
+        &  position_checks(report);
 }
 
 bool AP_Arming::arm_checks(uint8_t method)
