@@ -136,7 +136,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
 
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - bodyOdmMeasTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
+    if (((timeStamp_ms - wheelOdmMeasTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
         return;
     }
 
@@ -145,6 +145,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     wheelOdmDataNew.radius = radius;
     wheelOdmDataNew.delTime = delTime;
     wheelOdmDataNew.time_ms = timeStamp_ms - (uint32_t)(500.0f * delTime);
+    wheelOdmMeasTime_ms = timeStamp_ms;
 
     // becasue we are currently converting to an equivalent velocity measurement before fusing
     // the measurement time is moved back to the middle of the sampling period

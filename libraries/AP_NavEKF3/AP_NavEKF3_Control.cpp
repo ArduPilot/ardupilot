@@ -418,9 +418,16 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
 // return true if the filter is ready to start using body frame odometry measurements
 bool NavEKF3_core::readyToUseBodyOdm(void) const
 {
-    // We need stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use these measurements
-    return (imuSampleTime_ms - bodyOdmMeasTime_ms < 200)
-            && bodyOdmDataNew.velErr < 1.0f
+
+    // Check for fresh visual odometry data that meets the accuracy required for alignment
+    bool visoDataGood = (imuSampleTime_ms - bodyOdmMeasTime_ms < 200) && (bodyOdmDataNew.velErr < 1.0f);
+
+    // Check for fresh wheel encoder data
+    bool wencDataGood = (imuSampleTime_ms - wheelOdmMeasTime_ms < 200);
+
+    // We require stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use odometry measurements
+    // becasue they are in a body frame of reference
+    return (visoDataGood || wencDataGood)
             && tiltAlignComplete
             && delAngBiasLearned;
 }
