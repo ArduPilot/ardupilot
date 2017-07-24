@@ -213,7 +213,7 @@ void Rover::init_ardupilot()
     if (initial_mode == nullptr) {
         initial_mode = &mode_initializing;
     }
-    set_mode(*initial_mode);
+    set_mode(*initial_mode, MODE_REASON_INITIALISED);
 
 
     // set the correct flight mode
@@ -232,7 +232,7 @@ void Rover::init_ardupilot()
 //*********************************************************************************
 void Rover::startup_ground(void)
 {
-    set_mode(mode_initializing);
+    set_mode(mode_initializing, MODE_REASON_INITIALISED);
 
     gcs().send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
 
@@ -283,7 +283,7 @@ void Rover::set_reverse(bool reverse)
     in_reverse = reverse;
 }
 
-bool Rover::set_mode(Mode &new_mode)
+bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 {
     if (control_mode == &new_mode) {
         // don't switch modes if we are already in the correct mode.
@@ -292,6 +292,9 @@ bool Rover::set_mode(Mode &new_mode)
 
     Mode &old_mode = *control_mode;
     if (!new_mode.enter()) {
+        // Log error that we failed to enter desired flight mode
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE, new_mode.mode_number());
+        gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
         return false;
     }
 
@@ -304,7 +307,8 @@ bool Rover::set_mode(Mode &new_mode)
     old_mode.exit();
 
     if (should_log(MASK_LOG_MODE)) {
-        DataFlash.Log_Write_Mode(control_mode->mode_number());
+        control_mode_reason = reason;
+        DataFlash.Log_Write_Mode(control_mode->mode_number(), reason);
     }
 
     notify_mode((enum mode)control_mode->mode_number());
@@ -320,7 +324,7 @@ bool Rover::mavlink_set_mode(uint8_t mode)
     if (new_mode == nullptr) {
         return false;
     }
-    return set_mode(*new_mode);
+    return set_mode(*new_mode, MODE_REASON_GCS_COMMAND);
 }
 
 void Rover::startup_INS_ground(void)

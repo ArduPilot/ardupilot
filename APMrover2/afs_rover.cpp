@@ -21,7 +21,7 @@ void AP_AdvancedFailsafe_Rover::terminate_vehicle(void)
     rover.disarm_motors();
 
     // Set to HOLD mode
-    rover.set_mode(rover.mode_hold);
+    rover.set_mode(rover.mode_hold, MODE_REASON_CRASH_FAILSAFE);
 }
 
 /*

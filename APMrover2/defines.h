@@ -95,7 +95,9 @@ enum mode {
 #define MAVLINK_SET_ATT_TYPE_MASK_ATTITUDE_IGNORE      (1<<7)
 
 // Error message sub systems and error codes
-#define ERROR_SUBSYSTEM_CRASH_CHECK  12
+#define ERROR_SUBSYSTEM_FAILSAFE_FENCE  9
+#define ERROR_SUBSYSTEM_FLIGHT_MODE     10
+#define ERROR_SUBSYSTEM_CRASH_CHECK     12
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH 1
 
@@ -106,3 +108,13 @@ enum fs_crash_action {
 };
 
 #define DISTANCE_HOME_MAX 0.5f  // Distance max to home location before changing it when disarm
+
+enum mode_reason_t {
+    MODE_REASON_INITIALISED = 0,
+    MODE_REASON_TX_COMMAND,
+    MODE_REASON_GCS_COMMAND,
+    MODE_REASON_FAILSAFE,
+    MODE_REASON_MISSION_END,
+    MODE_REASON_CRASH_FAILSAFE,
+    MODE_REASON_MISSION_COMMAND
+};

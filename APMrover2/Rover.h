@@ -233,6 +233,7 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, AUTO, ...
     Mode *control_mode;
+    mode_reason_t control_mode_reason = MODE_REASON_INITIALISED;
 
     // Used to maintain the state of the previous control switch position
     // This is set to -1 when we need to re-read the switch
@@ -467,7 +468,7 @@ private:
     void gcs_retry_deferred(void);
 
     Mode *control_mode_from_num(enum mode num);
-    bool set_mode(Mode &mode);
+    bool set_mode(Mode &mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
 
     void do_erase_logs(void);
