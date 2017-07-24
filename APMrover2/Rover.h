@@ -190,7 +190,9 @@ private:
     AP_Mission mission;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
+#if OPTFLOW == ENABLED
     OpticalFlow optflow{ahrs};
+#endif
 #endif
 
     // RSSI
