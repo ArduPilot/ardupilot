@@ -57,3 +57,52 @@ bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
     }
     return true;
 }
+
+// performs pre_arm gps related checks and returns true if passed
+bool AP_Arming_Rover::position_checks(bool report) {
+    // always check if inertial nav has started and is ready
+    if (!ahrs.healthy()) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Waiting for Nav Checks");
+        }
+        return false;
+    }
+
+    // check if flight mode requires GPS
+    const bool mode_requires_gps = rover.control_mode->is_autopilot_mode();
+
+    // check if fence requires GPS
+    bool fence_requires_gps = false;
+#if AC_FENCE == ENABLED
+    // if circular or polygon fence is enabled we need GPS
+    fence_requires_gps = (rover.g2.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
+#endif
+
+    // return true if GPS is not required
+    if (!mode_requires_gps && !fence_requires_gps) {
+        AP_Notify::flags.pre_arm_gps_check = true;
+        return true;
+    }
+
+    // ensure GPS is ok
+    if (!rover.position_ok()) {
+        if (report) {
+            const char *reason = ahrs.prearm_failure_reason();
+            if (reason) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
+            } else {
+                if (!mode_requires_gps && fence_requires_gps) {
+                    // clarify to user why they need GPS in non-GPS flight mode
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Fence enabled, need 3D Fix");
+                } else {
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Need 3D Fix");
+                }
+            }
+        }
+        AP_Notify::flags.pre_arm_gps_check = false;
+        return false;
+    }
+    // if we got here all must be ok
+    AP_Notify::flags.pre_arm_gps_check = true;
+    return true;
+}

@@ -19,5 +19,6 @@ public:
 protected:
 
     enum HomeState home_status() const override;
+    bool position_checks(bool report) override;
 };
 

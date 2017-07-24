@@ -497,3 +497,70 @@ bool Rover::disarm_motors(void)
 
     return true;
 }
+
+// position_ok - returns true if the horizontal absolute position is ok and home position is set
+bool Rover::position_ok()
+{
+    // return false if ekf failsafe has triggered // TODO : update with the addition of EKF failsafe
+    /*if (failsafe.ekf) {
+        return false;
+    }*/
+
+    // check ekf position estimate
+    return (ekf_position_ok() || optflow_position_ok());
+}
+
+// ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
+bool Rover::ekf_position_ok()
+{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow navigation with dcm position
+        return false;
+    }
+
+    // with EKF use filter status and ekf check
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+
+    // if disarmed we accept a predicted horizontal position
+    if (!arming.is_armed()) {
+        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+    } else {
+        // once armed we require a good absolute position and EKF must not be in const_pos_mode
+        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+    }
+}
+
+// optflow_position_ok - returns true if optical flow based position estimate is ok
+bool Rover::optflow_position_ok()
+{
+#if OPTFLOW != ENABLED && VISUAL_ODOMETRY_ENABLED != ENABLED
+    return false;
+#else
+    // return immediately if EKF not used
+    if (!ahrs.have_inertial_nav()) {
+        return false;
+    }
+
+    // return immediately if neither optflow nor visual odometry is enabled
+#if OPTFLOW == ENABLED
+    if (!optflow.enabled()) {
+        return false;
+    }
+#endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    if (!g2.visual_odom.enabled()) {
+        return false;
+    }
+#endif
+
+    // get filter status from EKF
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+
+    // if disarmed we accept a predicted horizontal relative position
+    if (!arming.is_armed()) {
+        return (filt_status.flags.pred_horiz_pos_rel);
+    } else {
+        return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
+    }
+#endif
+}

@@ -594,6 +594,9 @@ private:
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
+    bool position_ok();
+    bool ekf_position_ok();
+    bool optflow_position_ok();
 
 public:
     bool print_log_menu(void);
