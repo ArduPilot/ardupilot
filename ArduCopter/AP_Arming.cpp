@@ -61,9 +61,9 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 
     // exit immediately if we've already successfully performed the pre-arm check
     if (copter.ap.pre_arm_check) {
-        // run gps checks because results may change and affect LED colour
+        // run position checks because results may change and affect LED colour
         // no need to display failures because arm_checks will do that if the pilot tries to arm
-        gps_checks(false);
+        position_checks(false);
         return true;
     }
 
@@ -77,7 +77,7 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
     return barometer_checks(display_failure)
         & rc_calibration_checks(display_failure)
         & compass_checks(display_failure)
-        & gps_checks(display_failure)
+        & position_checks(display_failure)
         & fence_checks(display_failure)
         & ins_checks(display_failure)
         & board_voltage_checks(display_failure)
@@ -356,11 +356,11 @@ void AP_Arming_Copter::pre_arm_rc_checks(const bool display_failure)
 }
 
 // performs pre_arm gps related checks and returns true if passed
-bool AP_Arming_Copter::gps_checks(bool display_failure)
+bool AP_Arming_Copter::position_checks(bool report)
 {
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
-        if (display_failure) {
+        if (report) {
             gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Nav Checks");
         }
         return false;
@@ -384,7 +384,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // ensure GPS is ok
     if (!copter.position_ok()) {
-        if (display_failure) {
+        if (report) {
             const char *reason = ahrs.prearm_failure_reason();
             if (reason) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
@@ -405,7 +405,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     nav_filter_status filt_status;
     if (_ahrs_navekf.get_filter_status(filt_status)) {
         if (filt_status.flags.gps_glitching) {
-            if (display_failure) {
+            if (report) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: GPS glitching");
             }
             return false;
@@ -418,7 +418,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     Vector2f offset;
     _ahrs_navekf.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
     if (mag_variance.length() >= copter.g.fs_ekf_thresh) {
-        if (display_failure) {
+        if (report) {
             gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: EKF compass variance");
         }
         return false;
@@ -426,7 +426,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // check home and EKF origin are not too far
     if (copter.far_from_EKF_origin(ahrs.get_home())) {
-        if (display_failure) {
+        if (report) {
             gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: EKF-home variance");
         }
         AP_Notify::flags.pre_arm_gps_check = false;
@@ -441,7 +441,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (copter.gps.get_hdop() > copter.g.gps_hdop_good) {
-        if (display_failure) {
+        if (report) {
             gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: High GPS HDOP");
         }
         AP_Notify::flags.pre_arm_gps_check = false;
@@ -449,7 +449,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     }
 
     // call parent gps checks
-    if (!AP_Arming::gps_checks(display_failure)) {
+    if (!AP_Arming::gps_checks(report)) {
         return false;
     }
 
@@ -612,8 +612,8 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
 
-    // always check gps
-    if (!gps_checks(display_failure)) {
+    // always check position
+    if (!position_checks(display_failure)) {
         return false;
     }
 
