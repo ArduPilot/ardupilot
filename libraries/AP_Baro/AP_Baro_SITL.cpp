@@ -23,14 +23,14 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
 // adjust for board temperature
 void AP_Baro_SITL::temperature_adjustment(float &p, float &T)
 {
-    float tsec = AP_HAL::millis() * 0.001;
+    const float tsec = AP_HAL::millis() * 0.001f;
     const float T0 = sitl->temp_start;
     const float T1 = sitl->temp_flight;
     const float tconst = sitl->temp_tconst;
     const float baro_factor = sitl->temp_baro_factor;
-    const float Tzero = 30; // start baro adjustment at 30C
-    T = T1 - (T1 - T0)*expf(-tsec / tconst);
-    if (baro_factor > 0) {
+    const float Tzero = 30.0f;  // start baro adjustment at 30C
+    T = T1 - (T1 - T0) * expf(-tsec / tconst);
+    if (is_positive(baro_factor)) {
         // this produces a pressure change with temperature that
         // closely matches what has been observed with a ICM-20789
         // barometer. A typical factor is 1.2.
@@ -42,7 +42,7 @@ void AP_Baro_SITL::_timer()
 {
 
     // 100Hz
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if ((now - _last_sample_time) < 10) {
         return;
     }
@@ -55,29 +55,29 @@ void AP_Baro_SITL::_timer()
         return;
     }
 
-    sim_alt += sitl->baro_drift * now / 1000;
+    sim_alt += sitl->baro_drift * now / 1000.0f;
     sim_alt += sitl->baro_noise * rand_float();
 
     // add baro glitch
     sim_alt += sitl->baro_glitch;
 
     // add delay
-    uint32_t best_time_delta = 200; // initialise large time representing buffer entry closest to current time - delay.
-    uint8_t best_index = 0; // initialise number representing the index of the entry in buffer closest to delay.
+    uint32_t best_time_delta = 200;  // initialise large time representing buffer entry closest to current time - delay.
+    uint8_t best_index = 0;  // initialise number representing the index of the entry in buffer closest to delay.
 
     // storing data from sensor to buffer
-    if (now - last_store_time >= 10) { // store data every 10 ms.
+    if (now - last_store_time >= 10) {  // store data every 10 ms.
         last_store_time = now;
-        if (store_index > buffer_length-1) { // reset buffer index if index greater than size of buffer
+        if (store_index > buffer_length-1) {  // reset buffer index if index greater than size of buffer
             store_index = 0;
         }
-        buffer[store_index].data = sim_alt; // add data to current index
-        buffer[store_index].time = last_store_time; // add time_stamp to current index
-        store_index = store_index + 1; // increment index
+        buffer[store_index].data = sim_alt;  // add data to current index
+        buffer[store_index].time = last_store_time;  // add time_stamp to current index
+        store_index = store_index + 1;  // increment index
     }
 
     // return delayed measurement
-    uint32_t delayed_time = now - sitl->baro_delay; // get time corresponding to delay
+    const uint32_t delayed_time = now - sitl->baro_delay;  // get time corresponding to delay
 
     // find data corresponding to delayed time in buffer
     for (uint8_t i=0; i<=buffer_length-1; i++) {
@@ -90,16 +90,16 @@ void AP_Baro_SITL::_timer()
             best_time_delta = time_delta;
         }
     }
-    if (best_time_delta < 200) { // only output stored state if < 200 msec retrieval error
+    if (best_time_delta < 200) {  // only output stored state if < 200 msec retrieval error
         sim_alt = buffer[best_index].data;
     }
 
     float sigma, delta, theta;
-    const float p0 = 101325;
+    const float p0 = 101325.0f;
 
-    AP_Baro::SimpleAtmosphere(sim_alt*0.001f, sigma, delta, theta);
+    AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
     float p = p0 * delta;
-    float T = 303.16f * theta - 273.16f; // Assume 30 degrees at sea level - converted to degrees Kelvin
+    float T = 303.16f * theta - 273.16f;  // Assume 30 degrees at sea level - converted to degrees Kelvin
 
     temperature_adjustment(p, T);
 
@@ -123,4 +123,4 @@ void AP_Baro_SITL::update(void)
     }
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif  // CONFIG_HAL_BOARD
