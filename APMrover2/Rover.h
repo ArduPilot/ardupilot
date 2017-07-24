@@ -188,7 +188,9 @@ private:
             FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)};
 
 #if AP_AHRS_NAVEKF_AVAILABLE
+#if OPTFLOW == ENABLED
     OpticalFlow optflow{ahrs};
+#endif
 #endif
 
     // RSSI
