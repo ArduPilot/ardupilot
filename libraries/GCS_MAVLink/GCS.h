@@ -75,7 +75,7 @@ enum ap_message {
     MSG_BATTERY_STATUS,
     MSG_AOA_SSA,
     MSG_LANDING,
-    MSG_LAST
+    MSG_LAST // MSG_LAST must be the last entry in this enum
 };
 
 ///
@@ -356,7 +356,8 @@ private:
     static AP_HAL::Util::perf_counter_t _perf_packet;
     static AP_HAL::Util::perf_counter_t _perf_update;
             
-    // deferred message handling
+    // deferred message handling.  We size the deferred_message
+    // ringbuffer so we can defer every message type
     enum ap_message deferred_messages[MSG_LAST];
     uint8_t next_deferred_message;
     uint8_t num_deferred_messages;
