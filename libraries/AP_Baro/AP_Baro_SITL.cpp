@@ -15,7 +15,7 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
 {
     sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     if (sitl != nullptr) {
-        instance = _frontend.register_sensor();
+        _instance = _frontend.register_sensor();
         hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Baro_SITL::_timer, void));
     }
 }
@@ -117,7 +117,7 @@ void AP_Baro_SITL::update(void)
             return;
         }
 
-        _copy_to_frontend(instance, _recent_press, _recent_temp);
+        _copy_to_frontend(_instance, _recent_press, _recent_temp);
         _has_sample = false;
         _sem->give();
     }

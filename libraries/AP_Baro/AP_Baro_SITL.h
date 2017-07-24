@@ -17,7 +17,7 @@ protected:
     void update_healthy_flag(uint8_t instance) override { _frontend.sensors[instance].healthy = true; }
 
 private:
-    uint8_t instance;
+    uint8_t _instance;
     SITL::SITL *sitl;
 
     // barometer delay buffer variables
