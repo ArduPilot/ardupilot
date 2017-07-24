@@ -97,6 +97,8 @@ protected:
 
     virtual bool gps_checks(bool report);
 
+    virtual bool position_checks(bool report) { return true; }
+
     bool battery_checks(bool report);
 
     bool hardware_safety_check(bool report);
