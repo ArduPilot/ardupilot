@@ -7,8 +7,8 @@ class AP_Arming_Copter : public AP_Arming
 public:
     AP_Arming_Copter(const AP_AHRS_NavEKF &ahrs_ref, const AP_Baro &baro, Compass &compass,
                      const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav,
-                     const AP_InertialSensor &ins) :
-        AP_Arming(ahrs_ref, baro, compass, battery),
+                     const AP_InertialSensor &ins, const AC_Fence *fence) :
+        AP_Arming(ahrs_ref, baro, compass, battery, fence),
         _inav(inav),
         _ins(ins),
         _ahrs_navekf(ahrs_ref)
@@ -33,7 +33,6 @@ protected:
     bool gps_checks(bool display_failure) override;
 
     // NOTE! the following check functions *DO NOT* call into AP_Arming!
-    bool fence_checks(bool display_failure);
     bool board_voltage_checks(bool display_failure);
     bool parameter_checks(bool display_failure);
     bool motor_checks(bool display_failure);
