@@ -72,6 +72,9 @@ public:
     // return true if we are terminating (deliberately crashing the vehicle)
     bool should_crash_vehicle(void);
 
+    // enables or disables a GCS based termination, returns true if AFS is in the desired termination state
+    bool gcs_terminate(bool should_terminate);
+
     // called to set all outputs to termination state
     virtual void terminate_vehicle(void) = 0;
 
