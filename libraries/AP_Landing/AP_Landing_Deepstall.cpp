@@ -141,12 +141,13 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 
 
 // if DEBUG_PRINTS is defined statustexts will be sent to the GCS for debug purposes
-//#define DEBUG_PRINTS
+// #define DEBUG_PRINTS
 
 void AP_Landing_Deepstall::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
     stage = DEEPSTALL_STAGE_FLY_TO_LANDING;
     ds_PID.reset_I();
+    hold_level = false; // come out of yaw lock
 
     // load the landing point in, the rest of path building is deferred for a better wind estimate
     memcpy(&landing_point, &cmd.content.location, sizeof(Location));
@@ -207,7 +208,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         // compensation on windy days. This is limited to a single full circle though, as on
         // a no wind day you could be in this loop forever otherwise.
         if (loiter_sum_cd < 36000) {
-            build_approach_path();
+            build_approach_path(false);
         }
         if (!verify_breakout(current_loc, arc_entry, height)) {
             int32_t target_bearing = landing.nav_controller->target_bearing_cd();
@@ -331,7 +332,8 @@ bool AP_Landing_Deepstall::override_servos(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, output*4500);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input, output*4500);
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, output*4500);
-
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0); // this will normally be managed as part of landing,
+                                                                     // but termination needs to set throttle control here
     } else {
         // allow the normal servo control of the channel
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input,
@@ -404,13 +406,33 @@ const DataFlash_Class::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
     return ds_PID.get_pid_info();
 }
 
-void AP_Landing_Deepstall::build_approach_path(void)
+// termination handling, expected to set the servo outputs
+bool AP_Landing_Deepstall::terminate(void) {
+    // if we were not in a deepstall, mark us as being in one
+    if(!landing.flags.in_progress || stage != DEEPSTALL_STAGE_LAND) {
+        stall_entry_time = AP_HAL::millis();
+        ds_PID.reset_I();
+        landing.flags.in_progress = true;
+        stage = DEEPSTALL_STAGE_LAND;
+
+        if(landing.ahrs.get_position(landing_point)) {
+            build_approach_path(true);
+        } else {
+            hold_level = true;
+        }
+    }
+
+    // set the servo ouptuts, this can fail, so this is the important return value for the AFS
+    return override_servos();
+}
+
+void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
 {
     float loiter_radius = landing.nav_controller->loiter_radius(landing.aparm.loiter_radius);
 
     Vector3f wind = landing.ahrs.wind_estimate();
     // TODO: Support a user defined approach heading
-    target_heading_deg = (degrees(atan2f(-wind.y, -wind.x)));
+    target_heading_deg = use_current_heading ? landing.ahrs.yaw_sensor * 1e-2 : (degrees(atan2f(-wind.y, -wind.x)));
 
     memcpy(&extended_approach, &landing_point, sizeof(Location));
     memcpy(&arc_exit, &landing_point, sizeof(Location));
@@ -517,38 +539,40 @@ bool AP_Landing_Deepstall::verify_breakout(const Location &current_loc, const Lo
 float AP_Landing_Deepstall::update_steering()
 {
     Location current_loc;
-    if (!landing.ahrs.get_position(current_loc)) {
+    if ((!landing.ahrs.get_position(current_loc) || !landing.ahrs.healthy()) && !hold_level) {
         // panic if no position source is available
         // continue the stall but target just holding the wings held level as deepstall should be a minimal
         // energy configuration on the aircraft, and if a position isn't available aborting would be worse
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Deepstall: No position available. Attempting to hold level");
-        memcpy(&current_loc, &landing_point, sizeof(Location));
-    }
-    uint32_t time = AP_HAL::millis();
-    float dt = constrain_float(time - last_time, (uint32_t)10UL, (uint32_t)200UL) * 1e-3;
-    last_time = time;
-
-
-    Vector2f ab = location_diff(arc_exit, extended_approach);
-    ab.normalize();
-    Vector2f a_air = location_diff(arc_exit, current_loc);
-
-    crosstrack_error = a_air % ab;
-    float sine_nu1 = constrain_float(crosstrack_error / MAX(L1_period, 0.1f), -0.7071f, 0.7107f);
-    float nu1 = asinf(sine_nu1);
-
-    if (L1_i > 0) {
-        L1_xtrack_i += nu1 * L1_i / dt;
-        L1_xtrack_i = constrain_float(L1_xtrack_i, -0.5f, 0.5f);
-        nu1 += L1_xtrack_i;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Deepstall: Invalid data from AHRS. Holding level");
+        hold_level = true;
     }
 
-    float desired_change = wrap_PI(radians(target_heading_deg) + nu1 - landing.ahrs.yaw);
+    float desired_change = 0.0f;
+
+    if (!hold_level) {
+        uint32_t time = AP_HAL::millis();
+        float dt = constrain_float(time - last_time, (uint32_t)10UL, (uint32_t)200UL) * 1e-3;
+        last_time = time;
+
+        Vector2f ab = location_diff(arc_exit, extended_approach);
+        ab.normalize();
+        Vector2f a_air = location_diff(arc_exit, current_loc);
+
+        crosstrack_error = a_air % ab;
+        float sine_nu1 = constrain_float(crosstrack_error / MAX(L1_period, 0.1f), -0.7071f, 0.7107f);
+        float nu1 = asinf(sine_nu1);
+
+        if (L1_i > 0) {
+            L1_xtrack_i += nu1 * L1_i / dt;
+            L1_xtrack_i = constrain_float(L1_xtrack_i, -0.5f, 0.5f);
+            nu1 += L1_xtrack_i;
+        }
+        desired_change = wrap_PI(radians(target_heading_deg) + nu1 - landing.ahrs.yaw) / time_constant;
+    }
 
     float yaw_rate = landing.ahrs.get_gyro().z;
     float yaw_rate_limit_rps = radians(yaw_rate_limit);
-    float error = wrap_PI(constrain_float(desired_change / time_constant,
-                                          -yaw_rate_limit_rps, yaw_rate_limit_rps) - yaw_rate);
+    float error = wrap_PI(constrain_float(desired_change, -yaw_rate_limit_rps, yaw_rate_limit_rps) - yaw_rate);
 
 #ifdef DEBUG_PRINTS
     gcs().send_text(MAV_SEVERITY_INFO, "x: %f e: %f r: %f d: %f",

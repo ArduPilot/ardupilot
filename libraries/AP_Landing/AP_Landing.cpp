@@ -621,3 +621,17 @@ bool AP_Landing::is_flying_forward(void) const
         return true;
     }
 }
+
+/*
+ * attempt to terminate flight with an immediate landing
+ * returns true if the landing library can and is terminating the landing
+ */
+bool AP_Landing::terminate(void) {
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return deepstall.terminate();
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
+    }
+}
