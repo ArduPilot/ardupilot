@@ -1298,14 +1298,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
-    case MAVLINK_MSG_ID_GPS_INPUT:
-    case MAVLINK_MSG_ID_HIL_GPS:
-        {
-            rover.gps.handle_msg(msg);
-            break;
-        }
-
 #if HIL_MODE != HIL_MODE_DISABLED
     case MAVLINK_MSG_ID_HIL_STATE:
         {
@@ -1501,6 +1493,11 @@ bool GCS_MAVLINK_Rover::accept_packet(const mavlink_status_t &status, mavlink_me
         return true;
     }
     return (msg.sysid == rover.g.sysid_my_gcs);
+}
+
+AP_GPS *GCS_MAVLINK_Rover::get_gps() const
+{
+    return &rover.gps;
 }
 
 AP_ServoRelayEvents *GCS_MAVLINK_Rover::get_servorelayevents() const
