@@ -19,6 +19,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Camera/AP_Camera.h>
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 
 // check if a message will fit in the payload space available
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -228,6 +229,7 @@ protected:
     virtual class AP_Camera *get_camera() const = 0;
     virtual AP_ServoRelayEvents *get_servorelayevents() const = 0;
     virtual AP_GPS *get_gps() const = 0;
+    virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
@@ -271,6 +273,7 @@ protected:
     void handle_setup_signing(const mavlink_message_t *msg);
     uint8_t handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
     void handle_device_op_read(mavlink_message_t *msg);
     void handle_device_op_write(mavlink_message_t *msg);
