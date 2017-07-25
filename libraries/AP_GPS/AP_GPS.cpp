@@ -737,6 +737,15 @@ void AP_GPS::update(void)
 
 }
 
+void AP_GPS::handle_gps_inject(const mavlink_message_t *msg)
+{
+    mavlink_gps_inject_data_t packet;
+    mavlink_msg_gps_inject_data_decode(msg, &packet);
+    //TODO: check target
+
+    inject_data(packet.data, packet.len);
+}
+
 /*
   pass along a mavlink message (for MAV type)
  */
@@ -745,6 +754,10 @@ void AP_GPS::handle_msg(const mavlink_message_t *msg)
     if (msg->msgid == MAVLINK_MSG_ID_GPS_RTCM_DATA) {
         // pass data to de-fragmenter
         handle_gps_rtcm_data(msg);
+        return;
+    }
+    if (msg->msgid == MAVLINK_MSG_ID_GPS_INJECT_DATA) {
+        handle_gps_inject(msg);
         return;
     }
     uint8_t i;

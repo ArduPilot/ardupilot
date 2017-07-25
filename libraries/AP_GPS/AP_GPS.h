@@ -346,10 +346,6 @@ public:
     // lock out a GPS port, allowing another application to use the port
     void lock_port(uint8_t instance, bool locked);
 
-    //Inject a packet of raw binary to a GPS
-    void inject_data(uint8_t *data, uint16_t len);
-    void inject_data(uint8_t instance, uint8_t *data, uint16_t len);
-
     //MAVLink Status Sending
     void send_mavlink_gps_raw(mavlink_channel_t chan);
     void send_mavlink_gps2_raw(mavlink_channel_t chan);
@@ -494,6 +490,12 @@ private:
 
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t *msg);
+    void handle_gps_inject(const mavlink_message_t *msg);
+
+    //Inject a packet of raw binary to a GPS
+    void inject_data(uint8_t *data, uint16_t len);
+    void inject_data(uint8_t instance, uint8_t *data, uint16_t len);
+
 
     // GPS blending and switching
     Vector2f _NE_pos_offset_m[GPS_MAX_RECEIVERS]; // Filtered North,East position offset from GPS instance to blended solution in _output_state.location (m)
