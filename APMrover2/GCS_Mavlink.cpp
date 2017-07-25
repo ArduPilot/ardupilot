@@ -1415,6 +1415,15 @@ AP_ServoRelayEvents *GCS_MAVLINK_Rover::get_servorelayevents() const
     return &rover.ServoRelayEvents;
 }
 
+AP_AdvancedFailsafe *GCS_MAVLINK_Rover::get_advanced_failsafe() const
+{
+#if ADVANCED_FAILSAFE == ENABLED
+    return &rover.g2.afs;
+#else
+    return nullptr;
+#endif
+}
+
 Compass *GCS_MAVLINK_Rover::get_compass() const
 {
     return &rover.compass;
