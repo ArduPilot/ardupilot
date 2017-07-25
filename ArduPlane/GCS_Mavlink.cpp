@@ -1604,14 +1604,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
-    case MAVLINK_MSG_ID_GPS_INPUT:
-    case MAVLINK_MSG_ID_HIL_GPS:
-    {
-        plane.gps.handle_msg(msg);
-        break;
-    }
-
     case MAVLINK_MSG_ID_HIL_STATE:
     {
 #if HIL_SUPPORT
@@ -2009,6 +2001,11 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_
     if (plane.control_mode == AUTO && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
+}
+
+AP_GPS *GCS_MAVLINK_Plane::get_gps() const
+{
+    return &plane.gps;
 }
 
 AP_ServoRelayEvents *GCS_MAVLINK_Plane::get_servorelayevents() const
