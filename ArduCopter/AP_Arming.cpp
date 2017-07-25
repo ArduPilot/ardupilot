@@ -435,6 +435,17 @@ bool AP_Arming_Copter::pre_arm_gps_checks(bool display_failure)
         return false;
     }
 
+    // check for GPS glitch (as reported by EKF)
+    nav_filter_status filt_status;
+    if (_ahrs_navekf.get_filter_status(filt_status)) {
+        if (filt_status.flags.gps_glitching) {
+            if (display_failure) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: GPS glitching");
+            }
+            return false;
+        }
+    }
+
     // check EKF compass variance is below failsafe threshold
     float vel_variance, pos_variance, hgt_variance, tas_variance;
     Vector3f mag_variance;
