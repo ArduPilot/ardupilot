@@ -54,7 +54,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("TRIM",  3, SRV_Channel, servo_trim, 1500),
-    
+
     // @Param: REVERSED
     // @DisplayName: Servo reverse
     // @Description: Reverse servo operation. Set to 0 for normal operation. Set to 1 to reverse this output channel.
@@ -68,7 +68,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values: 0:Disabled,1:RCPassThru,2:Flap,3:Flap_auto,4:Aileron,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release,12:mount2_pan,13:mount2_tilt,14:mount2_roll,15:mount2_open,16:DifferentialSpoilerLeft1,17:DifferentialSpoilerRight1,86:DifferentialSpoilerLeft2,87:DifferentialSpoilerRight2,19:Elevator,21:Rudder,24:FlaperonLeft,25:FlaperonRight,26:GroundSteering,27:Parachute,28:EPM,29:LandingGear,30:EngineRunEnable,31:HeliRSC,32:HeliTailRSC,33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7,40:Motor8,41:MotorTilt,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,67:Ignition,68:Choke,69:Starter,70:Throttle,71:TrackerYaw,72:TrackerPitch,73:ThrottleLeft,74:ThrottleRight,75:tiltMotorLeft,76:tiltMotorRight,77:ElevonLeft,78:ElevonRight,79:VTailLeft,80:VTailRight,81:BoostThrottle,82:Motor9,83:Motor10,84:Motor11,85:Motor12
     // @User: Standard
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
-    
+
     AP_GROUPEND
 };
 
@@ -79,7 +79,6 @@ SRV_Channel::SRV_Channel(void)
     // start with all pwm at zero
     have_pwm_mask = ~uint16_t(0);
 }
-
 
 // convert a 0..range_max to a pwm
 uint16_t SRV_Channel::pwm_from_range(int16_t scaled_value) const
