@@ -96,11 +96,8 @@ bool AP_Compass_QMC5883L::init()
 
     _dev->set_retries(10);
 
-    uint8_t whoami;
-    if (!_dev->read_registers(QMC5883L_REG_ID, &whoami,1)||
-    		whoami != QMC5883_ID_VAL){
-        // not an QMC5883L
-        goto fail;
+    if(!_check_whoami()){
+    	 goto fail;
     }
 
     if (!_dev->write_register(0x0B, 0x01)||
@@ -142,6 +139,20 @@ bool AP_Compass_QMC5883L::init()
  fail:
     _dev->get_semaphore()->give();
     return false;
+}
+bool AP_Compass_QMC5883L::_check_whoami()
+{
+    uint8_t whoami;
+    //After power on 0x21 == 0x03
+    if (!_dev->read_registers(0x21, &whoami,1)||
+      		whoami != 0x03){
+    	return false;
+    }
+    if (!_dev->read_registers(QMC5883L_REG_ID, &whoami,1)||
+    		whoami != QMC5883_ID_VAL){
+    	return false;
+    }
+    return true;
 }
 
 void AP_Compass_QMC5883L::timer()
