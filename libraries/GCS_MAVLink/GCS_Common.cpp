@@ -755,17 +755,6 @@ mission_ack:
     return mission_is_complete;
 }
 
-void 
-GCS_MAVLINK::handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps)
-{
-    mavlink_gps_inject_data_t packet;
-    mavlink_msg_gps_inject_data_decode(msg, &packet);
-    //TODO: check target
-
-    gps.inject_data(packet.data, packet.len);
-
-}
-
 // send a message using mavlink, handling message queueing
 void GCS_MAVLINK::send_message(enum ap_message id)
 {
@@ -1816,6 +1805,8 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_GPS_INPUT:
         /* fall through */
     case MAVLINK_MSG_ID_HIL_GPS:
+        /* fall through */
+    case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         handle_common_gps_message(msg);
         break;
 

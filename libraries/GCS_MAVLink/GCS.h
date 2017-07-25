@@ -263,8 +263,6 @@ protected:
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
 
-    void handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps);
-
     void handle_common_message(mavlink_message_t *msg);
     void handle_setup_signing(const mavlink_message_t *msg);
     uint8_t handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
