@@ -180,7 +180,7 @@ void RGBLed::update_colours(void)
     // gps failsafe pattern : flashing yellow and blue
     // ekf_bad pattern : flashing yellow and red
     if (AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_battery ||
-            AP_Notify::flags.ekf_bad || AP_Notify::flags.leak_detected) {
+            AP_Notify::flags.ekf_bad || AP_Notify::flags.gps_glitching || AP_Notify::flags.leak_detected) {
         switch(step) {
             case 0:
             case 1:
@@ -206,6 +206,11 @@ void RGBLed::update_colours(void)
                     // red on if ekf bad
                     _red_des = brightness;
                     _blue_des = _led_off;
+                    _green_des = _led_off;
+                } else if (AP_Notify::flags.gps_glitching) {
+                    // blue on gps glitch
+                    _red_des = _led_off;
+                    _blue_des = brightness;
                     _green_des = _led_off;
                 }else{
                     // all off for radio or battery failsafe
