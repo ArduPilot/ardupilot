@@ -24,6 +24,8 @@ protected:
     AP_Camera *get_camera() const override;
     AP_ServoRelayEvents *get_servorelayevents() const override;
     AP_GPS *get_gps() const override;
+    MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
+    AP_AdvancedFailsafe *get_advanced_failsafe() const override;
 
     uint8_t sysid_my_gcs() const override;
 

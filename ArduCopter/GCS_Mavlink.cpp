@@ -969,13 +969,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-        case MAV_CMD_DO_FLIGHTTERMINATION:
-            if (packet.param1 > 0.5f) {
-                copter.init_disarm_motors();
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
         case MAV_CMD_DO_SET_ROI:
             // param1 : regional of interest mode (not supported)
             // param2 : mission index/ target id (not supported)
@@ -1767,6 +1760,34 @@ AP_Camera *GCS_MAVLINK_Copter::get_camera() const
 AP_ServoRelayEvents *GCS_MAVLINK_Copter::get_servorelayevents() const
 {
     return &copter.ServoRelayEvents;
+}
+
+AP_AdvancedFailsafe *GCS_MAVLINK_Copter::get_advanced_failsafe() const
+{
+#if ADVANCED_FAILSAFE == ENABLED
+    return &copter.g2.afs;
+#else
+    return nullptr;
+#endif
+}
+
+MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_long_t &packet) {
+    MAV_RESULT result = MAV_RESULT_FAILED;
+
+#if ADVANCED_FAILSAFE == ENABLED
+    if (GCS_MAVLINK::handle_flight_termination(packet) != MAV_RESULT_ACCEPTED) {
+#endif
+        if (packet.param1 > 0.5f) {
+            copter.init_disarm_motors();
+            result = MAV_RESULT_ACCEPTED;
+        }
+#if ADVANCED_FAILSAFE == ENABLED
+    } else {
+        result = MAV_RESULT_ACCEPTED;
+    }
+#endif
+
+    return result;
 }
 
 AP_Rally *GCS_MAVLINK_Copter::get_rally() const
