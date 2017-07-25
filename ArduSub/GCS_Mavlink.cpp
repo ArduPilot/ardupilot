@@ -1713,6 +1713,11 @@ AP_Mission *GCS_MAVLINK_Sub::get_mission()
     return &sub.mission;
 }
 
+AP_GPS *GCS_MAVLINK_Sub::get_gps() const
+{
+    return &sub.gps;
+}
+
 AP_ServoRelayEvents *GCS_MAVLINK_Sub::get_servorelayevents() const
 {
     return &sub.ServoRelayEvents;
