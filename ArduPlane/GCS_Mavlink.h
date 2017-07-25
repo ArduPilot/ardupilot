@@ -24,6 +24,7 @@ protected:
     Compass *get_compass() const override;
     AP_ServoRelayEvents *get_servorelayevents() const override;
     AP_Rally *get_rally() const override;
+    AP_GPS *get_gps() const override;
 
     uint8_t sysid_my_gcs() const override;
 
