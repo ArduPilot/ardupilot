@@ -122,6 +122,10 @@ public:
     // Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
     uint8_t setInhibitGPS(void);
 
+    // Set the argument to true to prevent the EKF using the GPS vertical velocity
+    // This can be used for situations where GPS velocity errors are causing problems with height accuracy
+    void setGpsVertVelUse(const bool varIn) { inhibitGpsVertVelUse = varIn; };
+
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
@@ -325,7 +329,7 @@ private:
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
-    
+
     // EKF Mavlink Tuneable Parameters
     AP_Int8  _enable;               // zero to disable EKF2
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
@@ -438,6 +442,8 @@ private:
     } pos_down_reset_data;
 
     bool runCoreSelection; // true when the primary core has stabilised and the core selection logic can be started
+
+    bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
 
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
