@@ -1624,15 +1624,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
-    case MAVLINK_MSG_ID_GPS_INPUT:
-    case MAVLINK_MSG_ID_HIL_GPS:
-    {
-      result = MAV_RESULT_ACCEPTED;
-      copter.gps.handle_msg(msg);
-      break;
-    }
-
 #if HIL_MODE != HIL_MODE_DISABLED
     case MAVLINK_MSG_ID_HIL_STATE:          // MAV ID: 90
     {
@@ -1872,6 +1863,11 @@ AP_Mission *GCS_MAVLINK_Copter::get_mission()
 Compass *GCS_MAVLINK_Copter::get_compass() const
 {
     return &copter.compass;
+}
+
+AP_GPS *GCS_MAVLINK_Copter::get_gps() const
+{
+    return &copter.gps;
 }
 
 AP_ServoRelayEvents *GCS_MAVLINK_Copter::get_servorelayevents() const
