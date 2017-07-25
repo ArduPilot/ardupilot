@@ -82,4 +82,5 @@ private:
     enum AP_HAL::Util::safety_state _safety_state_request = AP_HAL::Util::SAFETY_NONE;
     uint32_t _safety_state_request_last_ms = 0;
     void force_safety_pending_requests(void);
+    uint16_t _default_rate_hz = 50;
 };
