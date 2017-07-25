@@ -1556,11 +1556,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         handle_serial_control(msg, sub.gps);
         break;
 
-    case MAVLINK_MSG_ID_GPS_INJECT_DATA:
-        handle_gps_inject(msg, sub.gps);
-        result = MAV_RESULT_ACCEPTED;
-        break;
-
 #if AC_FENCE == ENABLED
         // send or receive fence points with GCS
     case MAVLINK_MSG_ID_FENCE_POINT:            // MAV ID: 160
