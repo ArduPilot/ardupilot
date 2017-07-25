@@ -223,6 +223,7 @@ protected:
     virtual AP_Rally *get_rally() const = 0;
     virtual Compass *get_compass() const = 0;
     virtual AP_ServoRelayEvents *get_servorelayevents() const = 0;
+    virtual AP_GPS *get_gps() const = 0;
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
@@ -253,6 +254,7 @@ protected:
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
 
+    void handle_common_gps_message(mavlink_message_t *msg);
     void handle_common_rally_message(mavlink_message_t *msg);
     void handle_rally_fetch_point(mavlink_message_t *msg);
     void handle_rally_point(mavlink_message_t *msg);

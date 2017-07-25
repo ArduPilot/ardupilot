@@ -1744,6 +1744,17 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
     df->Log_Write_Message(text);
 }
 
+
+void GCS_MAVLINK::handle_common_gps_message(mavlink_message_t *msg)
+{
+    AP_GPS *gps = get_gps();
+    if (gps == nullptr) {
+        return;
+    }
+
+    gps->handle_msg(msg);
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -1798,6 +1809,14 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         /* fall through */
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
         handle_common_mission_message(msg);
+        break;
+
+    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
+        /* fall through */
+    case MAVLINK_MSG_ID_GPS_INPUT:
+        /* fall through */
+    case MAVLINK_MSG_ID_HIL_GPS:
+        handle_common_gps_message(msg);
         break;
 
     case MAVLINK_MSG_ID_STATUSTEXT:
