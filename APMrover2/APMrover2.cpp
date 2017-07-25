@@ -53,6 +53,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_GPS_10Hz,        10,   2500),
     SCHED_TASK(update_alt,             10,   3400),
     SCHED_TASK(update_beacon,          50,     50),
+    SCHED_TASK(update_proximity,       50,     50),
     SCHED_TASK(update_visual_odom,     50,     50),
     SCHED_TASK(update_wheel_encoder,   20,     50),
     SCHED_TASK(navigate,               10,   1600),
@@ -266,6 +267,7 @@ void Rover::update_logging1(void)
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
         Log_Write_Beacon();
+        Log_Write_Proximity();
     }
 
     if (should_log(MASK_LOG_NTUN)) {

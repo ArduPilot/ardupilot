@@ -25,6 +25,7 @@ def build(bld):
             'AC_Fence',
             'AP_InertialNav',
             'AC_Fence',
+            'AP_Proximity',
         ],
     )
 

@@ -236,7 +236,13 @@
   #define VISUAL_ODOMETRY_ENABLED ENABLED
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
 // Enable/disable Fence
 #ifndef AC_FENCE
   #define AC_FENCE ENABLED
+#endif
+
+// Proximity sensor
+#ifndef PROXIMITY_ENABLED
+  #define PROXIMITY_ENABLED ENABLED
 #endif

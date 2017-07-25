@@ -42,6 +42,7 @@
 #include <PID/PID.h>                                // PID library
 #include <RC_Channel/RC_Channel.h>                  // RC Channel Library
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
+#include <AP_Proximity/AP_Proximity.h>              // Proximity array library
 #include <Filter/Filter.h>                          // Filter library
 #include <Filter/Butter.h>                          // Filter library - butterworth filter
 #include <AP_Buffer/AP_Buffer.h>                    // FIFO buffer library
@@ -487,6 +488,7 @@ private:
     void Log_Write_Control_Tuning();
     void Log_Write_Nav_Tuning();
     void Log_Write_Rangefinder();
+    void Log_Write_Proximity();
     void Log_Write_Beacon();
     void Log_Write_Current();
     void Log_Write_Attitude();
@@ -543,6 +545,8 @@ private:
     void trim_radio();
     void init_barometer(bool full_calibration);
     void init_rangefinder(void);
+    void init_proximity();
+    void update_proximity();
     void init_beacon();
     void update_beacon();
     void init_visual_odom();
