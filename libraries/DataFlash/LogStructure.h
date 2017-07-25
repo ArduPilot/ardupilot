@@ -855,6 +855,19 @@ struct PACKED log_Beacon {
     float posz;
 };
 
+#if HAL_SENSORHUB_ENABLED
+struct PACKED log_SHUB_RW {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint64_t process_time;
+    uint32_t packet_loss;
+    uint8_t msg_id;
+    uint8_t status;
+    uint8_t port;
+    uint8_t rw; // NOTE: 0 - read, 1 - write
+};
+#endif
+
 // #endif // SBP_HW_LOGGING
 
 #define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
@@ -1149,7 +1162,16 @@ Format characters in the format string for binary log messages
       "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality" }
 // #endif
 
+#define LOG_SENSORHUB_STRUCTURES \
+    { LOG_SHUB_RW_MSG, sizeof(log_SHUB_RW), \
+      "SHRW", "QQEBBBB", "TimeUS,processTime,packetLoss,msgId,status,port,rw" }
+
+
+#if HAL_SENSORHUB_ENABLED
+#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES, LOG_SBP_STRUCTURES, LOG_SENSORHUB_STRUCTURES
+#else
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES, LOG_SBP_STRUCTURES
+#endif
 
 // message types 0 to 128 reversed for vehicle specific use
 
@@ -1274,6 +1296,10 @@ enum LogMessages {
     LOG_VISUALODOM_MSG,
     LOG_AOA_SSA_MSG,
     LOG_BEACON_MSG,
+
+#if HAL_SENSORHUB_ENABLED
+    LOG_SHUB_RW_MSG,
+#endif
 };
 
 enum LogOriginType {
