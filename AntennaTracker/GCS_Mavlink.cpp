@@ -817,12 +817,6 @@ mission_failed:
         handle_gps_inject(msg, tracker.gps);
         break;
 
-    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
-    case MAVLINK_MSG_ID_GPS_INPUT:
-    case MAVLINK_MSG_ID_HIL_GPS:
-        tracker.gps.handle_msg(msg);
-        break;
-
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         send_autopilot_version(FIRMWARE_VERSION);
         break;
@@ -893,6 +887,11 @@ void Tracker::gcs_retry_deferred(void)
 {
     gcs().send_message(MSG_RETRY_DEFERRED);
     gcs().service_statustext();
+}
+
+AP_GPS *GCS_MAVLINK_Tracker::get_gps() const
+{
+    return &tracker.gps;
 }
 
 Compass *GCS_MAVLINK_Tracker::get_compass() const
