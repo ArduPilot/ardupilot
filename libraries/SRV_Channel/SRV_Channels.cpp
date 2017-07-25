@@ -103,13 +103,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FRAME("_AUTO_TRIM",  17, SRV_Channels, auto_trim, 0, AP_PARAM_FRAME_PLANE),
 
-    // @Param: _DEF_RATE
-    // @DisplayName: Default output rate
-    // @Description: This sets the default output rate in Hz for all outputs. 
+    // @Param: _RATE
+    // @DisplayName: Servo default output rate
+    // @Description: This sets the default output rate in Hz for all outputs.
     // @Range: 25 400
     // @User: Advanced
     // @Units: Hz
-    AP_GROUPINFO("_DEF_RATE",  18, SRV_Channels, default_rate, 50),
+    AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
     
     AP_GROUPEND
 };
