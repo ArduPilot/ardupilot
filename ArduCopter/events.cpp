@@ -184,6 +184,26 @@ void Copter::failsafe_terrain_on_event()
     }
 }
 
+// check for gps glitch failsafe
+void Copter::gpsglitch_check()
+{
+    // get filter status
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+    bool gps_glitching = filt_status.flags.gps_glitching;
+
+    // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
+    if (ap.gps_glitching != gps_glitching) {
+        ap.gps_glitching = gps_glitching;
+        if (gps_glitching) {
+            Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_GPS_GLITCH);
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch");
+        } else {
+            Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
+        }
+    }
+}
+
 // set_mode_RTL_or_land_with_pause - sets mode to RTL if possible or LAND with 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
 void Copter::set_mode_RTL_or_land_with_pause(mode_reason_t reason)
