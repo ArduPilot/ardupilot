@@ -25,6 +25,8 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 
+#define TERMINATE 42
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -358,13 +360,40 @@ bool AP_AdvancedFailsafe::should_crash_vehicle(void)
         setup_IO_failsafe();
     }
 
-    // should we crash the plane? Only possible with
-    // FS_TERM_ACTTION set to 42
-    if (!_terminate || _terminate_action != 42) {
-        // not terminating
+    // determine if the vehicle should be crashed
+    // only possible if FS_TERM_ACTION is 42 and _terminate is non zero
+    // _terminate may be set via parameters, or a mavlink command
+    if (_terminate_action == TERMINATE && _terminate) {
+        // we are crashing
+        return true;
+    }
+
+    // continue flying
+    return false;
+}
+
+// update GCS based termination
+// returns true if AFS is in the desired termination state
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate) {
+    if (!_enable) {
+        gcs().send_text(MAV_SEVERITY_INFO, "AFS not enabled, can't terminate the vehicle");
         return false;
     }
 
-    // we are crashing
-    return true;
+    _terminate.set_and_notify(should_terminate ? 1 : 0);
+
+    // evaluate if we will crash or not, as AFS must be enabled, and TERM_ACTION has to be correct
+    bool is_terminating = should_crash_vehicle();
+
+    if(should_terminate == is_terminating) {
+        if (is_terminating) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Terminating due to GCS request");
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO, "Aborting termination due to GCS request");
+        }
+        return true;
+    } else if (should_terminate && _terminate_action != TERMINATE) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Unable to terminate, termination is not configured");
+    }
+    return false;
 }
