@@ -597,9 +597,20 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_LIS3MDL_I2C_ADDR),
                                                               true, ROTATION_YAW_90),
                     AP_Compass_LIS3MDL::name, true);
+
         ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_LIS3MDL_I2C_ADDR),
                                                               both_i2c_external, both_i2c_external?ROTATION_YAW_90:ROTATION_NONE),
                     AP_Compass_LIS3MDL::name, both_i2c_external);
+
+        // external lis3mdl in mRo Neo-M8N GPS module
+        ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_LIS3MDL_I2C_ADDR),
+                                                              true, ROTATION_YAW_90),
+                    AP_Compass_LIS3MDL::name, true);
+
+        // external lis3mdl in mRo Neo-M8N GPS module (alternate I2C address)
+        ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_LIS3MDL_I2C_ADDR2),
+                                                              true, ROTATION_YAW_90),
+                    AP_Compass_LIS3MDL::name, true);
         
         // AK09916
         ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_AK09916_I2C_ADDR),
