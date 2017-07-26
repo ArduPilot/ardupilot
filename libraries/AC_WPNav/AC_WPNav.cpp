@@ -470,6 +470,22 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
     return set_wp_origin_and_destination(origin, destination, terrain_alt);
 }
 
+/// set_wp_destination waypoint using position vector (distance from origin in m)
+bool AC_WPNav::set_wp_destination_NED_origin(const Vector3f& destination)
+{
+    Location_Class orig;
+    Vector3f dest = destination;
+
+    if (_ahrs.get_origin(orig)){
+        dest[0] *= 100.0f;
+        dest[1] *= 100.0f;
+        dest[2] *= -100.0f;
+        Vector3f pos_delta = location_3d_diff_NED(orig, _ahrs.get_home());
+        return set_wp_destination(dest + pos_delta, false);
+    }
+    return false;
+}
+
 /// set_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
 ///     terrain_alt should be true if origin.z and destination.z are desired altitudes above terrain (false if these are alt-above-ekf-origin)
 ///     returns false on failure (likely caused by missing terrain data)
