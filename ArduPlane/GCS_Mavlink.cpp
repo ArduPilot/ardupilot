@@ -601,7 +601,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_CAMERA_FEEDBACK:
 #if CAMERA == ENABLED
         CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
-        plane.camera.send_feedback(chan, plane.gps, plane.ahrs, plane.current_loc);
+        plane.camera.send_feedback(chan);
 #endif
         break;
 
@@ -1132,14 +1132,12 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_DIGICAM_CONTROL:
-            if (plane.camera.control(packet.param1,
-                                     packet.param2,
-                                     packet.param3,
-                                     packet.param4,
-                                     packet.param5,
-                                     packet.param6)) {
-                plane.log_picture();
-            }
+            plane.camera.control(packet.param1,
+                                 packet.param2,
+                                 packet.param3,
+                                 packet.param4,
+                                 packet.param5,
+                                 packet.param6);
             result = MAV_RESULT_ACCEPTED;
             break;
 
@@ -1678,7 +1676,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
     {
         plane.camera.control_msg(msg);
-        plane.log_picture();
         break;
     }
 #endif // CAMERA == ENABLED
