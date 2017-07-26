@@ -71,7 +71,7 @@ Copter::Copter(void) :
     auto_trim_counter(0),
     ServoRelayEvents(relay),
 #if CAMERA == ENABLED
-    camera(&relay),
+    camera(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs),
 #endif
 #if MOUNT == ENABLED
     camera_mount(ahrs, current_loc),
