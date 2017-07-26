@@ -1967,3 +1967,19 @@ void DataFlash_Class::Log_Write_Proximity(AP_Proximity &proximity)
     };
     WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
 }
+
+void DataFlash_Class::Log_Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& breadcrumb)
+{
+    struct log_SRTL pkt_srtl = {
+        LOG_PACKET_HEADER_INIT(LOG_SRTL_MSG),
+        time_us         : AP_HAL::micros64(),
+        active          : active,
+        num_points      : num_points,
+        max_points      : max_points,
+        action          : action,
+        N               : breadcrumb.x,
+        E               : breadcrumb.y,
+        D               : breadcrumb.z
+    };
+    WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
+}
