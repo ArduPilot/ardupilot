@@ -53,10 +53,9 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ACCTHRESH",    3,     AP_Arming,  accel_error_threshold,  AP_ARMING_ACCEL_ERROR_THRESHOLD),
 
-#if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     // @Param: MIN_VOLT
     // @DisplayName: Minimum arming voltage on the first battery
-    // @Description: The minimum voltage on the first battery to arm, 0 disables the check.  This parameter is relevant for ArduPlane only.
+    // @Description: The minimum voltage on the first battery to arm, 0 disables the check
     // @Units: V
     // @Increment: 0.1 
     // @User: Standard
@@ -64,12 +63,11 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: MIN_VOLT2
     // @DisplayName: Minimum arming voltage on the second battery
-    // @Description: The minimum voltage on the first battery to arm, 0 disables the check. This parameter is relevant for ArduPlane only.
+    // @Description: The minimum voltage on the first battery to arm, 0 disables the check
     // @Units: V
     // @Increment: 0.1 
     // @User: Standard
     AP_GROUPINFO("MIN_VOLT2",     5,     AP_Arming,  _min_voltage[1],  0),
-#endif
 
     AP_GROUPEND
 };
