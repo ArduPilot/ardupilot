@@ -155,6 +155,18 @@ public:
     void Log_Write_Beacon(AP_Beacon &beacon);
     void Log_Write_Proximity(AP_Proximity &proximity);
 
+    enum SRTL_Type {
+        SRTL_POINT_ADD,
+        SRTL_POINT_PRUNE,
+        SRTL_POINT_SIMPLIFY,
+        SRTL_POINT_GOTO,
+        SRTL_DESCEND,
+        SRTL_LAND,
+        SRTL_DEACTIVATED
+    };
+
+    void Log_Write_SRTL(enum SRTL_Type, Vector3f);
+
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 
     // This structure provides information on the internal member data of a PID for logging purposes

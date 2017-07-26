@@ -1963,3 +1963,16 @@ void DataFlash_Class::Log_Write_Proximity(AP_Proximity &proximity)
     };
     WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
 }
+
+void DataFlash_Class::Log_Write_SRTL(enum SRTL_Type type, Vector3f breadcrumb)
+{
+    struct log_SRTL pkt_srtl = {
+        LOG_PACKET_HEADER_INIT(LOG_SRTL_MSG),
+        time_us         : AP_HAL::micros64(),
+        type            : type,
+        N               : breadcrumb[0],
+        E               : breadcrumb[1],
+        D               : breadcrumb[2]
+    };
+    WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
+}
