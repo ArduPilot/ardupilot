@@ -52,6 +52,9 @@ public:
     
     /// release_initiated - true if the parachute release sequence has been initiated (may wait before actual release)
     bool release_initiated() const { return _release_initiated; }
+
+    /// release_in_progress - true if the parachute release sequence is in progress
+    bool release_in_progress() const { return _release_in_progress; }
     
     /// update - shuts off the trigger should be called at about 10hz
     void update();
