@@ -217,14 +217,12 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     GCS_MAVLINK::send_to_components(&msg);
 }
 
-bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
+void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
-    bool ret = false;
-    
     // take picture
     if (is_equal(shooting_cmd,1.0f)) {
         trigger_pic(false);
-        ret = true;
+        log_picture();
     }
 
     mavlink_message_t msg;
@@ -244,13 +242,12 @@ bool AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 
     // send to all components
     GCS_MAVLINK::send_to_components(&msg);
-    return ret;
 }
 
 /*
   Send camera feedback to the GCS
  */
-void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS &ahrs, const Location &current_loc)
+void AP_Camera::send_feedback(mavlink_channel_t chan)
 {
     float altitude, altitude_rel;
     if (current_loc.flags.relative_alt) {
@@ -271,42 +268,44 @@ void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS
 }
 
 
-/*  update location, for triggering by GPS distance moved
-    This function returns true if a picture should be taken
-    The caller is responsible for taking the picture based on the return value of this function.
-    The caller is also responsible for logging the details about the photo
+/*  update; triggers by distance moved
 */
-bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
+void AP_Camera::update()
 {
-    if (is_zero(_trigg_dist)) {
-        return false;
-    }
-    if (_last_location.lat == 0 && _last_location.lng == 0) {
-        _last_location = loc;
-        return false;
-    }
-    if (_last_location.lat == loc.lat && _last_location.lng == loc.lng) {
-        // we haven't moved - this can happen as update_location() may
-        // be called without a new GPS fix
-        return false;
+    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+        return;
     }
 
-    if (get_distance(loc, _last_location) < _trigg_dist) {
-        return false;
+    if (is_zero(_trigg_dist)) {
+        return;
+    }
+    if (_last_location.lat == 0 && _last_location.lng == 0) {
+        _last_location = current_loc;
+        return;
+    }
+    if (_last_location.lat == current_loc.lat && _last_location.lng == current_loc.lng) {
+        // we haven't moved - this can happen as update() may
+        // be called without a new GPS fix
+        return;
+    }
+
+    if (get_distance(current_loc, _last_location) < _trigg_dist) {
+        return;
     }
 
     if (_max_roll > 0 && labs(ahrs.roll_sensor/100) > _max_roll) {
-        return false;
+        return;
     }
 
     uint32_t tnow = AP_HAL::millis();
     if (tnow - _last_photo_time < (unsigned) _min_interval) {
-        return false;
-    }  else {
-        _last_location = loc;
-        _last_photo_time = tnow;
-        return true;
+        return;
     }
+
+    take_picture();
+
+    _last_location = current_loc;
+    _last_photo_time = tnow;
 }
 
 /*
@@ -397,4 +396,47 @@ failed:
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Camera::feedback_pin_timer, void));
     }
     _timer_installed = true;
+}
+
+// log_picture - log picture taken and send feedback to GCS
+void AP_Camera::log_picture()
+{
+    DataFlash_Class *df = DataFlash_Class::instance();
+    if (df == nullptr) {
+        return;
+    }
+    if (!using_feedback_pin()) {
+        gcs().send_message(MSG_CAMERA_FEEDBACK);
+        if (df->should_log(log_camera_bit)) {
+            df->Log_Write_Camera(ahrs, gps, current_loc);
+        }
+    } else {
+        if (df->should_log(log_camera_bit)) {
+            df->Log_Write_Trigger(ahrs, gps, current_loc);
+        }
+    }
+}
+
+// take_picture - take a picture
+void AP_Camera::take_picture()
+{
+    trigger_pic(true);
+    log_picture();
+}
+
+/*
+  update camera trigger - 50Hz
+ */
+void AP_Camera::update_trigger()
+{
+    trigger_pic_cleanup();
+    if (check_trigger_pin()) {
+        gcs().send_message(MSG_CAMERA_FEEDBACK);
+        DataFlash_Class *df = DataFlash_Class::instance();
+        if (df != nullptr) {
+            if (df->should_log(log_camera_bit)) {
+                df->Log_Write_Camera(ahrs, gps, current_loc);
+            }
+        }
+    }
 }
