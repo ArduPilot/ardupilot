@@ -927,23 +927,12 @@ void Plane::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 void Plane::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
 #if CAMERA == ENABLED
-    if (camera.control(cmd.content.digicam_control.session,
-                       cmd.content.digicam_control.zoom_pos,
-                       cmd.content.digicam_control.zoom_step,
-                       cmd.content.digicam_control.focus_lock,
-                       cmd.content.digicam_control.shooting_cmd,
-                       cmd.content.digicam_control.cmd_id)) {
-        log_picture();
-    }
-#endif
-}
-
-// do_take_picture - take a picture with the camera library
-void Plane::do_take_picture()
-{
-#if CAMERA == ENABLED
-    camera.trigger_pic(true);
-    log_picture();
+    camera.control(cmd.content.digicam_control.session,
+                   cmd.content.digicam_control.zoom_pos,
+                   cmd.content.digicam_control.zoom_step,
+                   cmd.content.digicam_control.focus_lock,
+                   cmd.content.digicam_control.shooting_cmd,
+                   cmd.content.digicam_control.cmd_id);
 #endif
 }
 
@@ -967,23 +956,6 @@ void Plane::do_parachute(const AP_Mission::Mission_Command& cmd)
     }
 }
 #endif
-
-// log_picture - log picture taken and send feedback to GCS
-void Plane::log_picture()
-{
-#if CAMERA == ENABLED
-    if (!camera.using_feedback_pin()) {
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    } else {
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
-        }      
-    }
-#endif
-}
 
 // start_command_callback - callback function called from ap-mission when it begins a new mission command
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
