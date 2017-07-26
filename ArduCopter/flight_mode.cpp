@@ -270,6 +270,12 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
 #endif  // MOUNT == ENABLED
     }
 
+#if USE_WAYBACK == ENABLED
+    if (old_control_mode == RTL) {
+        wayback.start(); // restart recording
+    }
+#endif
+
     // smooth throttle transition when switching from manual to automatic flight modes
     if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && motors->armed() && !ap.land_complete) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle

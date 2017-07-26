@@ -215,6 +215,10 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     // Start the arming delay
     ap.in_arming_delay = true;
 
+#if USE_WAYBACK == ENABLED
+    wayback.start();
+#endif
+
     // return success
     return true;
 }

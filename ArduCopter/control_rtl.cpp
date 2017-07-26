@@ -13,6 +13,9 @@ bool Copter::rtl_init(bool ignore_checks)
     if (position_ok() || ignore_checks) {
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
+#if USE_WAYBACK == ENABLED
+        wayback.stop();
+#endif
         rtl_build_path(!failsafe.terrain);
         rtl_climb_start();
         return true;
@@ -117,6 +120,10 @@ void Copter::rtl_return_start()
     rtl_state = RTL_ReturnHome;
     rtl_state_complete = false;
 
+#if USE_WAYBACK == ENABLED
+    // somwhere here we should read 1st point and set it as local targets if wayback.get_point() returns true
+#endif
+
     if (!wp_nav->set_wp_destination(rtl_path.return_target)) {
         // failure must be caused by missing terrain data, restart RTL
         rtl_restart_without_terrain();
@@ -173,6 +180,11 @@ void Copter::rtl_climb_return_run()
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(),true, get_smoothing_gain());
     }
+
+
+#if USE_WAYBACK == ENABLED
+    // somwhere here we should read NEXT point and set it as local targets until wayback.get_point() returns false
+#endif
 
     // check if we've completed this stage of RTL
     rtl_state_complete = wp_nav->reached_wp_destination();
