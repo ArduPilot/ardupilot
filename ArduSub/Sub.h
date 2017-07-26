@@ -689,8 +689,6 @@ private:
 #if CAMERA == ENABLED
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-    void do_take_picture();
-    void log_picture();
     void update_trigger();
 #endif
 
