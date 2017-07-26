@@ -508,10 +508,6 @@ private:
     bool verify_wait_delay();
     bool verify_within_distance();
     bool verify_yaw();
-#if CAMERA == ENABLED
-    void do_take_picture();
-    void log_picture();
-#endif
     void update_commands(void);
     void delay(uint32_t ms);
     void mavlink_delay(uint32_t ms);
