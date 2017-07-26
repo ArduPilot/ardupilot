@@ -223,13 +223,7 @@ void Plane::update_mount(void)
 void Plane::update_trigger(void)
 {
 #if CAMERA == ENABLED
-    camera.trigger_pic_cleanup();
-    if (camera.check_trigger_pin()) {
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    }    
+    camera.update_trigger();
 #endif
 }
 
@@ -514,10 +508,8 @@ void Plane::update_GPS_10Hz(void)
         geofence_check(false);
 
 #if CAMERA == ENABLED
-        if (camera.update_location(current_loc, plane.ahrs ) == true) {
-            do_take_picture();
-        }
-#endif        
+        camera.update();
+#endif
 
         // update wind estimate
         ahrs.estimate_wind();
