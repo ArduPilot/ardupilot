@@ -128,8 +128,7 @@ AP_Camera::relay_pic()
 
 /// single entry point to take pictures
 ///  set send_mavlink_msg to true to send DO_DIGICAM_CONTROL message to all components
-void
-AP_Camera::trigger_pic(bool send_mavlink_msg)
+void AP_Camera::trigger_pic()
 {
     setup_feedback_callback();
 
@@ -144,19 +143,7 @@ AP_Camera::trigger_pic(bool send_mavlink_msg)
         break;
     }
 
-    if (send_mavlink_msg) {
-        // create command long mavlink message
-        mavlink_command_long_t cmd_msg;
-        memset(&cmd_msg, 0, sizeof(cmd_msg));
-        cmd_msg.command = MAV_CMD_DO_DIGICAM_CONTROL;
-        cmd_msg.param5 = 1;
-        // create message
-        mavlink_message_t msg;
-        mavlink_msg_command_long_encode(0, 0, &msg, &cmd_msg);
-
-        // forward to all components
-        GCS_MAVLINK::send_to_components(&msg);
-    }
+    log_picture();
 }
 
 /// de-activate the trigger after some delay, but without using a delay() function
@@ -221,8 +208,7 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 {
     // take picture
     if (is_equal(shooting_cmd,1.0f)) {
-        trigger_pic(false);
-        log_picture();
+        trigger_pic();
     }
 
     mavlink_message_t msg;
@@ -420,8 +406,20 @@ void AP_Camera::log_picture()
 // take_picture - take a picture
 void AP_Camera::take_picture()
 {
-    trigger_pic(true);
-    log_picture();
+    // take a local picture:
+    trigger_pic();
+
+    // tell all of our components to take a picture:
+    mavlink_command_long_t cmd_msg;
+    memset(&cmd_msg, 0, sizeof(cmd_msg));
+    cmd_msg.command = MAV_CMD_DO_DIGICAM_CONTROL;
+    cmd_msg.param5 = 1;
+    // create message
+    mavlink_message_t msg;
+    mavlink_msg_command_long_encode(0, 0, &msg, &cmd_msg);
+
+    // forward to all components
+    GCS_MAVLINK::send_to_components(&msg);
 }
 
 /*
