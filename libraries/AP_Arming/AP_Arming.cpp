@@ -398,7 +398,7 @@ bool AP_Arming::battery_checks(bool report)
             return false;
         }
 
-        for (int i = 0; i < _battery.num_instances(); i++) {
+        for (uint8_t i = 0; i < _battery.num_instances(); i++) {
             if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
                 if (report) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d voltage %.1f below minimum %.1f",
