@@ -136,9 +136,11 @@ void SRV_Channels::update_aux_servo_function(void)
     
     // set auxiliary ranges
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        channels[i].aux_servo_function_setup();
-        function_mask.set((uint8_t)channels[i].function.get());
-        functions[channels[i].function.get()].channel_mask |= 1U<<i;
+        if ((uint8_t)channels[i].function.get() < SRV_Channel::k_nr_aux_servo_functions) {
+            channels[i].aux_servo_function_setup();
+            function_mask.set((uint8_t)channels[i].function.get());
+            functions[channels[i].function.get()].channel_mask |= 1U<<i;
+        }
     }
     initialised = true;
 }
@@ -153,9 +155,8 @@ void SRV_Channels::enable_aux_servos()
     // includes k_none servos, which allows those to get their initial
     // trim value on startup
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)channels[i].function.get();
         // see if it is a valid function
-        if (function < SRV_Channel::k_nr_aux_servo_functions) {
+        if ((uint8_t)channels[i].function.get() < SRV_Channel::k_nr_aux_servo_functions) {
             hal.rcout->enable_ch(channels[i].ch_num);
         }
     }
