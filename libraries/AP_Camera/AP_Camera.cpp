@@ -171,7 +171,7 @@ AP_Camera::trigger_pic_cleanup()
 
 /// decode deprecated MavLink message that controls camera.
 void
-AP_Camera::control_msg(mavlink_message_t* msg)
+AP_Camera::control_msg(const mavlink_message_t* msg)
 {
     __mavlink_digicam_control_t packet;
     mavlink_msg_digicam_control_decode(msg, &packet);
