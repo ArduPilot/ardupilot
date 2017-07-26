@@ -93,6 +93,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AC_SafeRTL/AC_SafeRTL.h>
 
 // Configuration
 #include "defines.h"
@@ -394,6 +395,9 @@ private:
     RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
     bool rtl_state_complete; // set to true if the current state is completed
 
+    // SafeRTL
+    SafeRTLState safe_rtl_state; // records state of SafeRTL
+
     struct {
         // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
         Location_Class origin_point;
@@ -596,6 +600,9 @@ private:
 
     // avoidance of adsb enabled vehicles (normally manned vheicles)
     AP_Avoidance_Copter avoidance_adsb{ahrs, adsb};
+
+    // Safe RTL library
+    SafeRTL_Path safe_rtl_path;
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
@@ -941,7 +948,14 @@ private:
     void rtl_land_run();
     void rtl_build_path(bool terrain_following_allowed);
     void rtl_compute_return_target(bool terrain_following_allowed);
+    bool safe_rtl_init(bool ignore_checks);
+    void safe_rtl_run();
+    void safe_rtl_wait_cleanup_run();
+    void safe_rtl_path_follow_run();
+    void safe_rtl_pre_land_position_run();
+    void safe_rtl_land();
     void safe_rtl_drop_breadcrumb();
+    void safe_rtl_background_cleanup();
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);

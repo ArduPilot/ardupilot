@@ -37,6 +37,7 @@ Copter::Copter(void) :
     guided_mode(Guided_TakeOff),
     rtl_state(RTL_InitialClimb),
     rtl_state_complete(false),
+    safe_rtl_state(SafeRTL_PathFollow),
     circle_pilot_yaw_override(false),
     simple_cos_yaw(1.0f),
     simple_sin_yaw(0.0f),
@@ -101,6 +102,7 @@ Copter::Copter(void) :
     // ToDo: Input Manager is only used by Heli for 3.3, but will be used by all frames for 3.4
     input_manager(MAIN_LOOP_RATE),
 #endif
+    safe_rtl_path(true),
     in_mavlink_delay(false),
     gcs_out_of_time(false),
     param_loader(var_info)
