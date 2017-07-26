@@ -109,6 +109,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             success = guided_nogps_init(ignore_checks);
             break;
 
+        case SAFE_RTL:
+            success = safe_rtl_init(ignore_checks);
+            break;
+
         default:
             success = false;
             break;
@@ -246,6 +250,11 @@ void Copter::update_flight_mode()
             guided_nogps_run();
             break;
 
+
+        case SAFE_RTL:
+            safe_rtl_run();
+            break;
+
         default:
             break;
     }
@@ -279,6 +288,11 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
     // cancel any takeoffs in progress
     takeoff_stop();
 
+    // call safe_rtl cleanup
+    if (old_control_mode == SAFE_RTL) {
+        safe_rtl_exit();
+    }
+
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
     if (old_control_mode == ACRO) {
@@ -307,6 +321,7 @@ bool Copter::mode_requires_GPS(control_mode_t mode)
         case GUIDED:
         case LOITER:
         case RTL:
+        case SAFE_RTL:
         case CIRCLE:
         case DRIFT:
         case POSHOLD:
