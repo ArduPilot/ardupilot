@@ -181,10 +181,28 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
 
     // check battery voltage
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
-        if (copter.failsafe.battery || (!copter.ap.usb_connected && copter.battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah))) {
+        if (copter.failsafe.battery) {
+            if (display_failure) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Battery failsafe");
+            }
+            return false;
+        }
+
+        // all following checks are skipped if USB is connected
+        if (copter.ap.usb_connected) {
+            return true;
+        }
+
+        // check if battery is exhausted
+        if (copter.battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check Battery");
             }
+            return false;
+        }
+
+        // call parent battery checks
+        if (!AP_Arming::battery_checks(display_failure)) {
             return false;
         }
     }
