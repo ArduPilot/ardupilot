@@ -885,6 +885,18 @@ struct PACKED log_Proximity {
     float closest_dist;
 };
 
+struct PACKED log_SRTL {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t active;
+    uint16_t num_points;
+    uint16_t max_points;
+    uint8_t action;
+    float N;
+    float E;
+    float D;
+};
+
 // #endif // SBP_HW_LOGGING
 
 #define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
@@ -1014,7 +1026,9 @@ Format characters in the format string for binary log messages
     { LOG_BEACON_MSG, sizeof(log_Beacon), \
       "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ" }, \
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
-      "PRX", "QBfffffffffff", "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis" }
+      "PRX", "QBfffffffffff", "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis" }, \
+    { LOG_SRTL_MSG, sizeof(log_SRTL), \
+      "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -1310,7 +1324,7 @@ enum LogMessages {
     LOG_BEACON_MSG,
     LOG_PROXIMITY_MSG,
     LOG_DF_FILE_STATS,
-
+    LOG_SRTL_MSG,
 };
 
 enum LogOriginType {
