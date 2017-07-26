@@ -19,6 +19,7 @@ protected:
     Compass *get_compass() const override;
     AP_Mission *get_mission() override;
     AP_Rally *get_rally() const override { return nullptr; };
+    AP_Camera *get_camera() const override;
     AP_ServoRelayEvents *get_servorelayevents() const override;
     AP_GPS *get_gps() const override;
 
