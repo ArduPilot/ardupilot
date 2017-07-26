@@ -338,13 +338,7 @@ void Copter::update_mount()
 void Copter::update_trigger(void)
 {
 #if CAMERA == ENABLED
-    camera.trigger_pic_cleanup();
-    if (camera.check_trigger_pin()) {
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    }    
+    camera.update_trigger();
 #endif
 }
 
@@ -533,15 +527,9 @@ void Copter::update_GPS(void)
         // set system time if necessary
         set_system_time_from_GPS();
 
-        // checks to initialise home and take location based pictures
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-
 #if CAMERA == ENABLED
-            if (camera.update_location(current_loc, copter.ahrs) == true) {
-                do_take_picture();
-            }
+        camera.update();
 #endif
-        }
     }
 }
 
