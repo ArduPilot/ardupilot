@@ -18,12 +18,15 @@ void Plane::parachute_check()
 */
 void Plane::parachute_release()
 {
-    if (parachute.released()) {
+    if (parachute.release_in_progress()) {
         return;
     }
-    
     // send message to gcs and dataflash
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released");
+    if (parachute.released()) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released again");
+    } else {
+        gcs().send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released");
+    }
 
     // release parachute
     parachute.release();
