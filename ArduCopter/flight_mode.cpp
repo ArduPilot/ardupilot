@@ -109,6 +109,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             success = guided_nogps_init(ignore_checks);
             break;
 
+        case SAFE_RTL:
+            success = safe_rtl_init(ignore_checks);
+            break;
+
         default:
             success = false;
             break;
@@ -246,6 +250,11 @@ void Copter::update_flight_mode()
             guided_nogps_run();
             break;
 
+
+        case SAFE_RTL:
+            safe_rtl_run();
+            break;
+
         default:
             break;
     }
@@ -307,6 +316,7 @@ bool Copter::mode_requires_GPS(control_mode_t mode)
         case GUIDED:
         case LOITER:
         case RTL:
+        case SAFE_RTL:
         case CIRCLE:
         case DRIFT:
         case POSHOLD:
