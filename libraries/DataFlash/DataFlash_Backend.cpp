@@ -9,6 +9,7 @@ DataFlash_Backend::DataFlash_Backend(DataFlash_Class &front,
     _front(front),
     _startup_messagewriter(writer)
 {
+    _perf = AP_Perf::get_instance();
     writer->set_dataflash_backend(this);
 }
 

@@ -198,7 +198,7 @@ void NavEKF2_core::realignYawGPS()
 void NavEKF2_core::SelectMagFusion()
 {
     // start performance timer
-    hal.util->perf_begin(_perf_FuseMagnetometer);
+    _perf->perf_begin(_perf_FuseMagnetometer);
 
     // clear the flag that lets other processes know that the expensive magnetometer fusion operation has been perfomred on that time step
     // used for load levelling
@@ -240,9 +240,9 @@ void NavEKF2_core::SelectMagFusion()
             }
             // fuse the three magnetometer componenents sequentially
             for (mag_state.obsIndex = 0; mag_state.obsIndex <= 2; mag_state.obsIndex++) {
-                hal.util->perf_begin(_perf_test[0]);
+                _perf->perf_begin(_perf_test[0]);
                 FuseMagnetometer();
-                hal.util->perf_end(_perf_test[0]);
+                _perf->perf_end(_perf_test[0]);
                 // don't continue fusion if unhealthy
                 if (!magHealth) {
                     break;
@@ -281,7 +281,7 @@ void NavEKF2_core::SelectMagFusion()
     }
 
     // stop performance timer
-    hal.util->perf_end(_perf_FuseMagnetometer);
+    _perf->perf_end(_perf_FuseMagnetometer);
 }
 
 /*
@@ -291,8 +291,8 @@ void NavEKF2_core::SelectMagFusion()
 */
 void NavEKF2_core::FuseMagnetometer()
 {
-    hal.util->perf_begin(_perf_test[1]);
-    
+    _perf->perf_begin(_perf_test[1]);
+
     // declarations
     ftype &q0 = mag_state.q0;
     ftype &q1 = mag_state.q1;
@@ -314,8 +314,8 @@ void NavEKF2_core::FuseMagnetometer()
     Vector6 SK_MY;
     Vector6 SK_MZ;
 
-    hal.util->perf_end(_perf_test[1]);
-    
+    _perf->perf_end(_perf_test[1]);
+
     // perform sequential fusion of magnetometer measurements.
     // this assumes that the errors in the different components are
     // uncorrelated which is not true, however in the absence of covariance
@@ -326,7 +326,7 @@ void NavEKF2_core::FuseMagnetometer()
     if (obsIndex == 0)
     {
 
-        hal.util->perf_begin(_perf_test[2]);
+        _perf->perf_begin(_perf_test[2]);
 
         // copy required states to local variable names
         q0       = stateStruct.quat[0];
@@ -386,7 +386,7 @@ void NavEKF2_core::FuseMagnetometer()
             obsIndex = 1;
             faultStatus.bad_xmag = true;
 
-            hal.util->perf_end(_perf_test[2]);
+            _perf->perf_end(_perf_test[2]);
 
             return;
         }
@@ -402,7 +402,7 @@ void NavEKF2_core::FuseMagnetometer()
             obsIndex = 2;
             faultStatus.bad_ymag = true;
 
-            hal.util->perf_end(_perf_test[2]);
+            _perf->perf_end(_perf_test[2]);
 
             return;
         }
@@ -418,7 +418,7 @@ void NavEKF2_core::FuseMagnetometer()
             obsIndex = 3;
             faultStatus.bad_zmag = true;
 
-            hal.util->perf_end(_perf_test[2]);
+            _perf->perf_end(_perf_test[2]);
 
             return;
         }
@@ -433,7 +433,7 @@ void NavEKF2_core::FuseMagnetometer()
 
         // if the magnetometer is unhealthy, do not proceed further
         if (!magHealth) {
-            hal.util->perf_end(_perf_test[2]);
+            _perf->perf_end(_perf_test[2]);
             return;
         }
 
@@ -498,13 +498,13 @@ void NavEKF2_core::FuseMagnetometer()
         magFusePerformed = true;
         magFuseRequired = true;
 
-        hal.util->perf_end(_perf_test[2]);
+        _perf->perf_end(_perf_test[2]);
 
     }
     else if (obsIndex == 1) // we are now fusing the Y measurement
     {
 
-        hal.util->perf_begin(_perf_test[3]);
+        _perf->perf_begin(_perf_test[3]);
 
         // calculate observation jacobians
         for (uint8_t i = 0; i<=stateIndexLim; i++) H_MAG[i] = 0.0f;
@@ -563,13 +563,13 @@ void NavEKF2_core::FuseMagnetometer()
         magFusePerformed = true;
         magFuseRequired = true;
 
-        hal.util->perf_end(_perf_test[3]);
+        _perf->perf_end(_perf_test[3]);
 
     }
     else if (obsIndex == 2) // we are now fusing the Z measurement
     {
 
-        hal.util->perf_begin(_perf_test[4]);
+        _perf->perf_begin(_perf_test[4]);
 
         // calculate observation jacobians
         for (uint8_t i = 0; i<=stateIndexLim; i++) H_MAG[i] = 0.0f;
@@ -628,11 +628,11 @@ void NavEKF2_core::FuseMagnetometer()
         magFusePerformed = true;
         magFuseRequired = false;
 
-        hal.util->perf_end(_perf_test[4]);
+        _perf->perf_end(_perf_test[4]);
 
     }
 
-    hal.util->perf_begin(_perf_test[5]);
+    _perf->perf_begin(_perf_test[5]);
 
     // correct the covariance P = (I - K*H)*P
     // take advantage of the empty columns in KH to reduce the
@@ -708,11 +708,11 @@ void NavEKF2_core::FuseMagnetometer()
             faultStatus.bad_zmag = true;
         }
         CovarianceInit();
-        hal.util->perf_end(_perf_test[5]);
+        _perf->perf_end(_perf_test[5]);
         return;
     }
 
-    hal.util->perf_end(_perf_test[5]);
+    _perf->perf_end(_perf_test[5]);
 
 }
 

@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 void NavEKF2_core::FuseAirspeed()
 {
     // start performance timer
-    hal.util->perf_begin(_perf_FuseAirspeed);
+    _perf->perf_begin(_perf_FuseAirspeed);
 
     // declarations
     float vn;
@@ -185,7 +185,7 @@ void NavEKF2_core::FuseAirspeed()
     ConstrainVariances();
 
     // stop performance timer
-    hal.util->perf_end(_perf_FuseAirspeed);
+    _perf->perf_end(_perf_FuseAirspeed);
 }
 
 // select fusion of true airspeed measurements
@@ -253,7 +253,7 @@ void NavEKF2_core::SelectBetaFusion()
 void NavEKF2_core::FuseSideslip()
 {
     // start performance timer
-    hal.util->perf_begin(_perf_FuseSideslip);
+    _perf->perf_begin(_perf_FuseSideslip);
 
     // declarations
     float q0;
@@ -432,7 +432,7 @@ void NavEKF2_core::FuseSideslip()
     ConstrainVariances();
 
     // stop the performance timer
-    hal.util->perf_end(_perf_FuseSideslip);
+    _perf->perf_end(_perf_FuseSideslip);
 }
 
 /********************************************************

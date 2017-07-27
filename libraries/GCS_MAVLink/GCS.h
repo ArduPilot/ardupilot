@@ -17,6 +17,7 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <AP_Perf/AP_Perf.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 // check if a message will fit in the payload space available
@@ -341,9 +342,9 @@ private:
     uint32_t _cli_timeout;
 
     // perf counters
-    static AP_HAL::Util::perf_counter_t _perf_packet;
-    static AP_HAL::Util::perf_counter_t _perf_update;
-            
+    static AP_Perf::perf_counter_t _perf_packet;
+    static AP_Perf::perf_counter_t _perf_update;
+
     // deferred message handling
     enum ap_message deferred_messages[MSG_RETRY_DEFERRED];
     uint8_t next_deferred_message;
@@ -417,6 +418,8 @@ private:
     void load_signing_key(void);
     bool signing_enabled(void) const;
     static void save_signing_timestamp(bool force_save_now);
+
+    AP_Perf *_perf;
 };
 
 /// @class GCS

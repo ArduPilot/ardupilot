@@ -2,6 +2,8 @@
 
 #include "DataFlash.h"
 
+#include <AP_Perf/AP_Perf.h>
+
 class DFMessageWriter_DFLogStart;
 
 class DataFlash_Backend
@@ -122,6 +124,8 @@ public:
     virtual void vehicle_was_disarmed() { };
 
 protected:
+    AP_Perf *_perf;
+
     uint32_t dropped;
     uint8_t internal_errors; // uint8_t - wishful thinking?
 
