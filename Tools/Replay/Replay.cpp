@@ -932,4 +932,7 @@ const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
 };
 GCS_Dummy _gcs;
 
+// avoid linking against AP_AdvancedFailsafe
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate) { return false; }
+
 AP_HAL_MAIN_CALLBACKS(&replay);
