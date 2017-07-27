@@ -104,4 +104,8 @@ protected:
 
     virtual enum HomeState home_status() const = 0;
 
+private:
+
+    bool ins_accels_consistent(const AP_InertialSensor &ins);
+
 };
