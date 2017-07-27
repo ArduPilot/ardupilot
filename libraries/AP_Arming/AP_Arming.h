@@ -107,4 +107,8 @@ protected:
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4], const bool check_min_max = true) const;
 
+private:
+
+    bool ins_accels_consistent(const AP_InertialSensor &ins);
+
 };

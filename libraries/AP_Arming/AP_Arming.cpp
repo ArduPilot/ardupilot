@@ -169,6 +169,45 @@ bool AP_Arming::logging_checks(bool report)
     return true;
 }
 
+bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
+{
+    if (ins.get_accel_count() <= 1) {
+        return true;
+    }
+
+    const Vector3f &prime_accel_vec = ins.get_accel();
+    for(uint8_t i=0; i<ins.get_accel_count(); i++) {
+        if (!ins.use_accel(i)) {
+            continue;
+        }
+        // get next accel vector
+        const Vector3f &accel_vec = ins.get_accel(i);
+        Vector3f vec_diff = accel_vec - prime_accel_vec;
+        // allow for user-defined difference, typically 0.75 m/s/s. Has to pass in last 10 seconds
+        float threshold = accel_error_threshold;
+        if (i >= 2) {
+            /*
+              we allow for a higher threshold for IMU3 as it
+              runs at a different temperature to IMU1/IMU2,
+              and is not used for accel data in the EKF
+            */
+            threshold *= 3;
+        }
+
+        // EKF is less sensitive to Z-axis error
+        vec_diff.z *= 0.5f;
+
+        if (vec_diff.length() <= threshold) {
+            last_accel_pass_ms[i] = AP_HAL::millis();
+        }
+        if (AP_HAL::millis() - last_accel_pass_ms[i] > 10000) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool AP_Arming::ins_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -208,39 +247,11 @@ bool AP_Arming::ins_checks(bool report)
         }
 
         // check all accelerometers point in roughly same direction
-        if (ins.get_accel_count() > 1) {
-            const Vector3f &prime_accel_vec = ins.get_accel();
-            for(uint8_t i=0; i<ins.get_accel_count(); i++) {
-                if (!ins.use_accel(i)) {
-                    continue;
-                }
-                // get next accel vector
-                const Vector3f &accel_vec = ins.get_accel(i);
-                Vector3f vec_diff = accel_vec - prime_accel_vec;
-                // allow for user-defined difference, typically 0.75 m/s/s. Has to pass in last 10 seconds
-                float threshold = accel_error_threshold;
-                if (i >= 2) {
-                    /*
-                      we allow for a higher threshold for IMU3 as it
-                      runs at a different temperature to IMU1/IMU2,
-                      and is not used for accel data in the EKF
-                     */
-                    threshold *= 3;
-                }
-
-                // EKF is less sensitive to Z-axis error
-                vec_diff.z *= 0.5f;
-
-                if (vec_diff.length() <= threshold) {
-                    last_accel_pass_ms[i] = AP_HAL::millis();
-                }
-                if (AP_HAL::millis() - last_accel_pass_ms[i] > 10000) {
-                    if (report) {
-                        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Accels inconsistent");
-                    }
-                    return false;
-                }
+        if (!ins_accels_consistent(ins)) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Accels inconsistent");
             }
+            return false;
         }
 
         // check all gyros are giving consistent readings
