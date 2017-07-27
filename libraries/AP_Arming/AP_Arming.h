@@ -104,6 +104,9 @@ protected:
 
     virtual enum HomeState home_status() const = 0;
 
+    bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
+    bool check(bool success, bool report, AP_Arming::ArmingChecks check, const char *failmsg, ...) const;
+
 private:
 
     bool ins_accels_consistent(const AP_InertialSensor &ins);
