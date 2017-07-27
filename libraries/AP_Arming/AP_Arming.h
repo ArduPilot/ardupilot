@@ -110,5 +110,6 @@ protected:
 private:
 
     bool ins_accels_consistent(const AP_InertialSensor &ins);
+    bool ins_gyros_consistent(const AP_InertialSensor &ins);
 
 };
