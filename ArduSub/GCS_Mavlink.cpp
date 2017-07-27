@@ -1546,12 +1546,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_GPS_INPUT: {
-        result = MAV_RESULT_ACCEPTED;
-        sub.gps.handle_msg(msg);
-        break;
-    }
-
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, sub.gps);
         break;
