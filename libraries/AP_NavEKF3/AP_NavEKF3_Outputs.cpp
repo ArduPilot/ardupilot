@@ -74,7 +74,7 @@ uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velIn
     velInnovVar.x = varInnovBodyVel[0];
     velInnovVar.y = varInnovBodyVel[1];
     velInnovVar.z = varInnovBodyVel[2];
-    return bodyOdmDataDelayed.time_ms;
+    return MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
 }
 
 // return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
