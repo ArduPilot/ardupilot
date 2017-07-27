@@ -479,7 +479,7 @@ private:
         const Vector3f *body_offset;// pointer to XYZ position of the optical flow sensor in body frame (m)
     };
 
-    struct bfodm_elements {
+    struct vel_odm_elements {
         Vector3f        vel;        // XYZ velocity measured in body frame (m/s)
         float           velErr;     // velocity measurement error 1-std (m/s)
         const Vector3f *body_offset;// pointer to XYZ position of the velocity sensor in body frame (m)
@@ -1047,10 +1047,9 @@ private:
     uint32_t terrainHgtStableSet_ms;        // system time at which terrainHgtStable was set
 
     // body frame odometry fusion
-    obs_ring_buffer_t<bfodm_elements> storedBodyOdm;    // body velocity data buffer
-    bfodm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
-    bfodm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
-    uint8_t bodyOdmStoreIndex;          // Body  frame odometry  data storage index
+    obs_ring_buffer_t<vel_odm_elements> storedBodyOdm;    // body velocity data buffer
+    vel_odm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
+    vel_odm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
     uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innovation consistency checks (msec)
     Vector3 bodyVelTestRatio;           // Innovation test ratios for body velocity XYZ measurements
     Vector3 varInnovBodyVel;            // Body velocity XYZ innovation variances (rad/sec)^2
