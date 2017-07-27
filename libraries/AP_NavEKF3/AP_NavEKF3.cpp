@@ -548,6 +548,25 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("OGN_HGT_MASK", 50, NavEKF3, _originHgtMode, 0),
 
+    // @Param: VIS_VERR_MIN
+    // @DisplayName: Visual odometry minimum velocity error
+    // @Description: This is the 1-STD odometry velocity observation error that will be assumed when maximum quality is reported by the sensor. When quality is between max and min, the error will be calculated using linear interpolation between VIS_VERR_MIN and VIS_VERR_MAX.
+    // @Range: 0.05 0.5
+    // @Increment: 0.05
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("VIS_VERR_MIN", 51, NavEKF3, _visOdmVelErrMin, 0.1f),
+
+    // @Param: VIS_VERR_MAX
+    // @DisplayName: Visual odometry maximum velocity error
+    // @Description: This is the 1-STD odometry velocity observation error that will be assumed when minimum quality is reported by the sensor. When quality is between max and min, the error will be calculated using linear interpolation between VIS_VERR_MIN and VIS_VERR_MAX.
+    // @Range: 0.5 5.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("VIS_VERR_MAX", 52, NavEKF3, _visOdmVelErrMax, 0.9f),
+
+    // @Param: WENC_VERR
     AP_GROUPEND
 };
 
