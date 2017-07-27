@@ -208,6 +208,33 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
     return true;
 }
 
+bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
+{
+    if (ins.get_gyro_count() <= 1) {
+        return true;
+    }
+
+    const Vector3f &prime_gyro_vec = ins.get_gyro();
+    for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
+        if (!ins.use_gyro(i)) {
+            continue;
+        }
+        // get next gyro vector
+        const Vector3f &gyro_vec = ins.get_gyro(i);
+        Vector3f vec_diff = gyro_vec - prime_gyro_vec;
+        // allow for up to 5 degrees/s difference. Pass if it has
+        // been OK in last 10 seconds
+        if (vec_diff.length() <= radians(5)) {
+            last_gyro_pass_ms[i] = AP_HAL::millis();
+        }
+        if (AP_HAL::millis() - last_gyro_pass_ms[i] > 10000) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool AP_Arming::ins_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -255,27 +282,11 @@ bool AP_Arming::ins_checks(bool report)
         }
 
         // check all gyros are giving consistent readings
-        if (ins.get_gyro_count() > 1) {
-            const Vector3f &prime_gyro_vec = ins.get_gyro();
-            for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
-                if (!ins.use_gyro(i)) {
-                    continue;
-                }
-                // get next gyro vector
-                const Vector3f &gyro_vec = ins.get_gyro(i);
-                Vector3f vec_diff = gyro_vec - prime_gyro_vec;
-                // allow for up to 5 degrees/s difference. Pass if it has
-                // been OK in last 10 seconds
-                if (vec_diff.length() <= radians(5)) {
-                    last_gyro_pass_ms[i] = AP_HAL::millis();
-                }
-                if (AP_HAL::millis() - last_gyro_pass_ms[i] > 10000) {
-                    if (report) {
-                        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Gyros inconsistent");
-                    }
-                    return false;
-                }
+        if (!ins_gyros_consistent(ins)) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Gyros inconsistent");
             }
+            return false;
         }
     }
 
