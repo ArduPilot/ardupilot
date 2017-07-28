@@ -46,6 +46,7 @@ private:
 					   bool force_external,
                        enum Rotation rotation);
 
+    void _dump_registers();
     bool _check_whoami();
     void timer();
     bool init();
