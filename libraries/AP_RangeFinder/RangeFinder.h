@@ -51,7 +51,7 @@ public:
         RangeFinder_TYPE_ULANDING= 11,
         RangeFinder_TYPE_LEDDARONE = 12,
         RangeFinder_TYPE_MBSER  = 13,
-        RangeFinder_TYPE_TRONE  = 14,
+        RangeFinder_TYPE_TRI2C  = 14,
         RangeFinder_TYPE_PLI2CV3= 15,
         RangeFinder_TYPE_VL53L0X = 16
     };
