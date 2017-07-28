@@ -186,7 +186,7 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
 {
     if (!io_thread_alive()) {
         if (io_thread_warning_decimation_counter == 0) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat (%s)", last_io_operation);
         }
         if (io_thread_warning_decimation_counter++ > 57) {
             io_thread_warning_decimation_counter = 0;
@@ -1113,12 +1113,15 @@ void DataFlash_File::_io_timer(void)
     }
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
+        last_io_operation = "disk_space_avail";
         if (disk_space_avail() < _free_space_min_avail) {
             hal.console->printf("Out of space for logging\n");
             stop_logging();
             _open_error = true; // prevent logging starting again
+            last_io_operation = "";
             return;
         }
+        last_io_operation = "";
     }
 
     hal.util->perf_begin(_perf_write);
@@ -1141,10 +1144,14 @@ void DataFlash_File::_io_timer(void)
         }
     }
 
+    last_io_operation = "write";
     ssize_t nwritten = ::write(_write_fd, head, nbytes);
+    last_io_operation = "";
     if (nwritten <= 0) {
         hal.util->perf_count(_perf_errors);
+        last_io_operation = "close";
         close(_write_fd);
+        last_io_operation = "";
         _write_fd = -1;
         _initialised = false;
     } else {
@@ -1157,7 +1164,9 @@ void DataFlash_File::_io_timer(void)
           write.
          */
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && CONFIG_HAL_BOARD != HAL_BOARD_QURT
+        last_io_operation = "fsync";
         ::fsync(_write_fd);
+        last_io_operation = "";
 #endif
     }
     hal.util->perf_end(_perf_write);
