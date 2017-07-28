@@ -1744,6 +1744,64 @@ void GCS_MAVLINK::handle_common_gps_message(mavlink_message_t *msg)
     gps->handle_msg(msg);
 }
 
+
+void GCS_MAVLINK::handle_common_camera_message(const mavlink_message_t *msg)
+{
+    AP_Camera *camera = get_camera();
+    if (camera == nullptr) {
+        return;
+    }
+
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:      // MAV ID: 202
+        //deprecated.  Use MAV_CMD_DO_DIGICAM_CONFIGURE
+        break;
+    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
+        //deprecated.  Use MAV_CMD_DO_DIGICAM_CONTROL
+        camera->control_msg(msg);
+        break;
+    default:
+        break;
+    }
+}
+MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &packet)
+{
+    AP_Camera *camera = get_camera();
+    if (camera == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    MAV_RESULT result = MAV_RESULT_FAILED;
+    switch (packet.command) {
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        camera->configure(packet.param1,
+                          packet.param2,
+                          packet.param3,
+                          packet.param4,
+                          packet.param5,
+                          packet.param6,
+                          packet.param7);
+        result = MAV_RESULT_ACCEPTED;
+        break;
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+        camera->control(packet.param1,
+                        packet.param2,
+                        packet.param3,
+                        packet.param4,
+                        packet.param5,
+                        packet.param6);
+        result = MAV_RESULT_ACCEPTED;
+        break;
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        camera->set_trigger_distance(packet.param1);
+        result = MAV_RESULT_ACCEPTED;
+        break;
+    default:
+        result = MAV_RESULT_UNSUPPORTED;
+    }
+    return result;
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -1777,6 +1835,13 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         DataFlash_Class::instance()->handle_mavlink_msg(*this, msg);
         break;
 
+
+    case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:
+        /* fall through */
+    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
+        /* fall through */
+        handle_common_camera_message(msg);
+        break;
 
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
         /* fall through */
@@ -1933,6 +1998,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
 
     case MAV_CMD_START_RX_PAIR:
         result = handle_rc_bind(packet);
+        break;
+
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        /* fall through */
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+        /* fall through */
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        result = handle_command_camera(packet);
         break;
 
     case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS: {

@@ -298,7 +298,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_CAMERA_TRIGGER:
 #if CAMERA == ENABLED
             if (ch_flag == AUX_SWITCH_HIGH) {
-                do_take_picture();
+                camera.take_picture();
             }
 #endif
             break;

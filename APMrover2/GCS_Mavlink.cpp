@@ -456,7 +456,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_CAMERA_FEEDBACK:
 #if CAMERA == ENABLED
         CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
-        rover.camera.send_feedback(chan, rover.gps, rover.ahrs, rover.current_loc);
+        rover.camera.send_feedback(chan);
 #endif
         break;
 
@@ -823,37 +823,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
                 break;
 #endif
-
-#if CAMERA == ENABLED
-        case MAV_CMD_DO_DIGICAM_CONFIGURE:
-            rover.camera.configure(packet.param1,
-                                   packet.param2,
-                                   packet.param3,
-                                   packet.param4,
-                                   packet.param5,
-                                   packet.param6,
-                                   packet.param7);
-
-            result = MAV_RESULT_ACCEPTED;
-            break;
-
-        case MAV_CMD_DO_DIGICAM_CONTROL:
-            if (rover.camera.control(packet.param1,
-                                     packet.param2,
-                                     packet.param3,
-                                     packet.param4,
-                                     packet.param5,
-                                     packet.param6)) {
-                rover.log_picture();
-            }
-            result = MAV_RESULT_ACCEPTED;
-            break;
-
-        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-            rover.camera.set_trigger_distance(packet.param1);
-            result = MAV_RESULT_ACCEPTED;
-            break;
-#endif // CAMERA == ENABLED
 
             case MAV_CMD_DO_MOUNT_CONTROL:
 #if MOUNT == ENABLED
@@ -1355,22 +1324,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         }
 #endif  // HIL_MODE
 
-#if CAMERA == ENABLED
-    // deprecated. Use MAV_CMD_DO_DIGICAM_CONFIGURE
-    case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:
-    {
-        break;
-    }
-
-    // deprecated. Use MAV_CMD_DO_DIGICAM_CONFIGURE
-    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
-    {
-        rover.camera.control_msg(msg);
-        rover.log_picture();
-        break;
-    }
-#endif  // CAMERA == ENABLED
-
 #if MOUNT == ENABLED
     // deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
     case MAVLINK_MSG_ID_MOUNT_CONFIGURE:
@@ -1507,6 +1460,15 @@ bool GCS_MAVLINK_Rover::accept_packet(const mavlink_status_t &status, mavlink_me
 AP_GPS *GCS_MAVLINK_Rover::get_gps() const
 {
     return &rover.gps;
+}
+
+AP_Camera *GCS_MAVLINK_Rover::get_camera() const
+{
+#if CAMERA == ENABLED
+    return &rover.camera;
+#else
+    return nullptr;
+#endif
 }
 
 AP_ServoRelayEvents *GCS_MAVLINK_Rover::get_servorelayevents() const

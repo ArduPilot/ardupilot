@@ -578,7 +578,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_CAMERA_FEEDBACK:
 #if CAMERA == ENABLED
         CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
-        sub.camera.send_feedback(chan, sub.gps, sub.ahrs, sub.current_loc);
+        sub.camera.send_feedback(chan);
 #endif
         break;
 
@@ -1133,35 +1133,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_ACCEPTED;
             break;
 
-#if CAMERA == ENABLED
-        case MAV_CMD_DO_DIGICAM_CONFIGURE:
-            sub.camera.configure(packet.param1,
-                                 packet.param2,
-                                 packet.param3,
-                                 packet.param4,
-                                 packet.param5,
-                                 packet.param6,
-                                 packet.param7);
-
-            result = MAV_RESULT_ACCEPTED;
-            break;
-
-        case MAV_CMD_DO_DIGICAM_CONTROL:
-            if (sub.camera.control(packet.param1,
-                                   packet.param2,
-                                   packet.param3,
-                                   packet.param4,
-                                   packet.param5,
-                                   packet.param6)) {
-                sub.log_picture();
-            }
-            result = MAV_RESULT_ACCEPTED;
-            break;
-        case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-            sub.camera.set_trigger_distance(packet.param1);
-            result = MAV_RESULT_ACCEPTED;
-            break;
-#endif // CAMERA == ENABLED
         case MAV_CMD_DO_MOUNT_CONTROL:
 #if MOUNT == ENABLED
             sub.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
@@ -1558,18 +1529,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
 #endif // AC_FENCE == ENABLED
 
-#if CAMERA == ENABLED
-        //deprecated.  Use MAV_CMD_DO_DIGICAM_CONFIGURE
-    case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:      // MAV ID: 202
-        break;
-
-        //deprecated.  Use MAV_CMD_DO_DIGICAM_CONTROL
-    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
-        sub.camera.control_msg(msg);
-        sub.log_picture();
-        break;
-#endif // CAMERA == ENABLED
-
 #if MOUNT == ENABLED
         //deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
     case MAVLINK_MSG_ID_MOUNT_CONFIGURE:        // MAV ID: 204
@@ -1705,6 +1664,15 @@ AP_Mission *GCS_MAVLINK_Sub::get_mission()
 AP_GPS *GCS_MAVLINK_Sub::get_gps() const
 {
     return &sub.gps;
+}
+
+AP_Camera *GCS_MAVLINK_Sub::get_camera() const
+{
+#if CAMERA == ENABLED
+    return &sub.camera;
+#else
+    return nullptr;
+#endif
 }
 
 AP_ServoRelayEvents *GCS_MAVLINK_Sub::get_servorelayevents() const

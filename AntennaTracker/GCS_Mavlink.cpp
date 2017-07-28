@@ -894,3 +894,9 @@ Compass *GCS_MAVLINK_Tracker::get_compass() const
 {
     return &tracker.compass;
 }
+
+/* dummy methods to avoid having to link against AP_Camera */
+void AP_Camera::control_msg(mavlink_message_t const*) {}
+void AP_Camera::configure(float, float, float, float, float, float, float) {}
+void AP_Camera::control(float, float, float, float, float, float) {}
+/* end dummy methods to avoid having to link against AP_Camera */
