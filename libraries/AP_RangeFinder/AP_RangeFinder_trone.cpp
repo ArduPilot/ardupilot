@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  driver for trone rangefinder
+  driver for TeraRanger I2C rangefinders
  */
 #include "AP_RangeFinder_trone.h"
 
@@ -24,30 +24,30 @@
 extern const AP_HAL::HAL& hal;
 
 // registers
-#define TRONE_MEASURE 0x00
-#define TRONE_WHOAMI  0x01
-#define TRONE_WHOAMI_VALUE 0xA1
+#define TR_MEASURE 0x00
+#define TR_WHOAMI  0x01
+#define TR_WHOAMI_VALUE 0xA1
 
 /*
    The constructor also initializes the rangefinder. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_trone::AP_RangeFinder_trone(uint8_t bus, RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state)
+AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(uint8_t bus, RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state)
     : AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_LASER)
     , dev(hal.i2c_mgr->get_device(bus, _ranger._address[_state.instance]))
 {
 }
 
 /*
-   detect if a trone rangefinder is connected. We'll detect by
+   detect if a TeraRanger rangefinder is connected. We'll detect by
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_trone::detect(uint8_t bus, RangeFinder &_ranger, uint8_t instance,
+AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(uint8_t bus, RangeFinder &_ranger, uint8_t instance,
                                                      RangeFinder::RangeFinder_State &_state)
 {
-    AP_RangeFinder_trone *sensor = new AP_RangeFinder_trone(bus, _ranger, instance, _state);
+    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(bus, _ranger, instance, _state);
     if (!sensor) {
         return nullptr;
     }
@@ -63,7 +63,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_trone::detect(uint8_t bus, RangeFinder &_
 /*
   initialise sensor
  */
-bool AP_RangeFinder_trone::init(void)
+bool AP_RangeFinder_TeraRangerI2C::init(void)
 {
     if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
@@ -73,8 +73,8 @@ bool AP_RangeFinder_trone::init(void)
 
     // check WHOAMI
     uint8_t whoami;
-    if (!dev->read_registers(TRONE_WHOAMI, &whoami, 1) ||
-        whoami != TRONE_WHOAMI_VALUE) {
+    if (!dev->read_registers(TR_WHOAMI, &whoami, 1) ||
+        whoami != TR_WHOAMI_VALUE) {
         return false;
     }
     
@@ -97,20 +97,20 @@ bool AP_RangeFinder_trone::init(void)
     dev->set_retries(1);
 
     dev->register_periodic_callback(50000,
-                                    FUNCTOR_BIND_MEMBER(&AP_RangeFinder_trone::timer, void));
+                                    FUNCTOR_BIND_MEMBER(&AP_RangeFinder_TeraRangerI2C::timer, void));
 
     return true;
 }
 
 // measure() - ask sensor to make a range reading
-bool AP_RangeFinder_trone::measure()
+bool AP_RangeFinder_TeraRangerI2C::measure()
 {
-    uint8_t cmd = TRONE_MEASURE;
+    uint8_t cmd = TR_MEASURE;
     return dev->transfer(&cmd, 1, nullptr, 0);
 }
 
 // collect - return last value measured by sensor
-bool AP_RangeFinder_trone::collect(uint16_t &distance_cm)
+bool AP_RangeFinder_TeraRangerI2C::collect(uint16_t &distance_cm)
 {
     uint8_t d[3];
 
@@ -132,7 +132,7 @@ bool AP_RangeFinder_trone::collect(uint16_t &distance_cm)
 /*
   timer called at 20Hz
 */
-void AP_RangeFinder_trone::timer(void)
+void AP_RangeFinder_TeraRangerI2C::timer(void)
 {
     // take a reading
     uint16_t distance_cm;
@@ -150,7 +150,7 @@ void AP_RangeFinder_trone::timer(void)
 /*
    update the state of the sensor
 */
-void AP_RangeFinder_trone::update(void)
+void AP_RangeFinder_TeraRangerI2C::update(void)
 {
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         if (accum.count > 0) {

@@ -4,7 +4,7 @@
 #include "RangeFinder_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
-class AP_RangeFinder_trone : public AP_RangeFinder_Backend
+class AP_RangeFinder_TeraRangerI2C : public AP_RangeFinder_Backend
 {
 public:
     // static detection function
@@ -16,7 +16,7 @@ public:
 
 private:
     // constructor
-    AP_RangeFinder_trone(uint8_t bus, RangeFinder &ranger, uint8_t instance,
+    AP_RangeFinder_TeraRangerI2C(uint8_t bus, RangeFinder &ranger, uint8_t instance,
                          RangeFinder::RangeFinder_State &_state);
 
     bool measure(void);
