@@ -109,11 +109,6 @@ void Tracker::send_hwstatus(mavlink_channel_t chan)
         0);
 }
 
-void Tracker::send_waypoint_request(mavlink_channel_t chan)
-{
-    gcs().chan(chan-MAVLINK_COMM_0).queued_waypoint_send();
-}
-
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
 {
 	float alt_diff = (g.alt_source == ALT_SOURCE_BARO) ? nav_status.alt_difference_baro : nav_status.alt_difference_gps;
@@ -213,11 +208,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
         queued_param_send();
-        break;
-
-    case MSG_NEXT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        tracker.send_waypoint_request(chan);
         break;
 
     case MSG_AHRS:
