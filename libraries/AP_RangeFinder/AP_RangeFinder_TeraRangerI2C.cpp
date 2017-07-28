@@ -23,8 +23,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define TRONE_I2C_ADDR 0x30
-
 // registers
 #define TR_MEASURE 0x00
 #define TR_WHOAMI  0x01
@@ -35,9 +33,10 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(uint8_t bus, RangeFinder::RangeFinder_State &_state)
+AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFinder_State &_state,
+                                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
     : AP_RangeFinder_Backend(_state)
-    , dev(hal.i2c_mgr->get_device(bus, TRONE_I2C_ADDR))
+    , dev(std::move(i2c_dev))
 {
 }
 
@@ -46,10 +45,10 @@ AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(uint8_t bus, RangeFin
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(uint8_t bus,
-                                                             RangeFinder::RangeFinder_State &_state)
+AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(RangeFinder::RangeFinder_State &_state,
+                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
 {
-    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(bus, _state);
+    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(_state, std::move(i2c_dev));
     if (!sensor) {
         return nullptr;
     }
