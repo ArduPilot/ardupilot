@@ -26,7 +26,7 @@
 #include "AP_RangeFinder_MAVLink.h"
 #include "AP_RangeFinder_LeddarOne.h"
 #include "AP_RangeFinder_uLanding.h"
-#include "AP_RangeFinder_trone.h"
+#include "AP_RangeFinder_TeraRangerI2C.h"
 #include "AP_RangeFinder_VL53L0X.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 

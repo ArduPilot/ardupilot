@@ -15,7 +15,7 @@
 /*
   driver for TeraRanger I2C rangefinders
  */
-#include "AP_RangeFinder_trone.h"
+#include "AP_RangeFinder_TeraRangerI2C.h"
 
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
