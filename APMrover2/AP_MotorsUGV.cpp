@@ -54,6 +54,14 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SLEWRATE", 4, AP_MotorsUGV, _slew_rate, 100),
 
+    // @Param: RELAY_MAP
+    // @DisplayName: Relay map bitmask to associate a relay to an output.
+    // @Description: Map bitmask of which relay to associate with an ouput to allow direction handling of brushed controler like H-Bridge. Output order is Throttle, Steering, ThrottleLeft, ThrottleRight. Zero means disable.  You can select whatever mapping you prefer by adding together the values of each output. Default is 8448 (0x2100 in hexa), which mean no relay for Throttle and Steering, relay 1 for ThrottleLeft and relay 2 for ThrottleRight.
+    // @Values: 0:Disable, 1:Throttle-relay1, 2:Throttle-relay2, 3:Throttle-relay3, 4:Throttle-relay4, 16:Steering-relay1, 32:Steering-relay2, 48:Steering-relay3, 64:Steering-relay4, 256:ThrottleLeft-relay1, 512:ThrottleLeft-relay2, 768:ThrottleLeft-relay3, 1024:ThrottleLeft-relay4, 4096:ThrottleRight-relay1, 8192:ThrottleRight-relay2, 12288:ThrottleRight-relay3, 16384:ThrottleRight-relay4,
+    // @Bitmask: 0:None,1:Throttle,2:Steering,3:ThrottleLeft,4:ThrottleRight
+    // @User: Advanced
+    AP_GROUPINFO("RELAY_MAP", 5, AP_MotorsUGV, _relay_map, 0x2100),
+
     AP_GROUPEND
 };
 
@@ -205,11 +213,16 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
     if (_pwm_type == PWM_TYPE_BRUSHED) {
         switch (function) {
             case SRV_Channel::k_throttle:
+                _relayEvents.do_set_relay(((int16_t)_relay_map & 0x000F) - 1, is_negative(throttle));
+                break;
+            case SRV_Channel::k_steering:
+                _relayEvents.do_set_relay((((int16_t)_relay_map & 0x00F0) >> 4) - 1, is_negative(throttle));
+                break;
             case SRV_Channel::k_throttleLeft:
-                _relayEvents.do_set_relay(0, is_negative(throttle));
+                _relayEvents.do_set_relay((((int16_t)_relay_map & 0x0F00) >> 8) - 1, is_negative(throttle));
                 break;
             case SRV_Channel::k_throttleRight:
-                _relayEvents.do_set_relay(1, is_negative(throttle));
+                _relayEvents.do_set_relay((((int16_t)_relay_map & 0xF000) >> 12) - 1, is_negative(throttle));
                 break;
             default:
                 // do nothing
