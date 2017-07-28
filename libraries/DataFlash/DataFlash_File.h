@@ -172,6 +172,8 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_fsync;
     AP_HAL::Util::perf_counter_t  _perf_errors;
     AP_HAL::Util::perf_counter_t  _perf_overruns;
+
+    const char *last_io_operation = "";
 };
 
 #endif // HAL_OS_POSIX_IO
