@@ -23,8 +23,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define TRONE_I2C_ADDR 0x30
-
 // registers
 #define TRONE_MEASURE 0x00
 #define TRONE_WHOAMI  0x01
@@ -37,7 +35,7 @@ extern const AP_HAL::HAL& hal;
 */
 AP_RangeFinder_trone::AP_RangeFinder_trone(uint8_t bus, RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state)
     : AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_LASER)
-    , dev(hal.i2c_mgr->get_device(bus, TRONE_I2C_ADDR))
+    , dev(hal.i2c_mgr->get_device(bus, _ranger._address[_state.instance]))
 {
 }
 
