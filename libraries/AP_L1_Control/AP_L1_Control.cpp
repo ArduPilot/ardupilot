@@ -158,8 +158,14 @@ float AP_L1_Control::loiter_radius(const float radius) const
         return radius * eas2tas_sq;
     } else {
         float sea_level_radius = sq(nominal_velocity_sea_level) / lateral_accel_sea_level;
-        // select the requested radius, or the required altitude scale, whichever is safer
-        return MAX(sea_level_radius * eas2tas_sq, radius);
+        if (sea_level_radius > radius) {
+            // If we've told the plane that its sea level radius is unachievable fallback to
+            // straight altitude scaling
+            return radius * eas2tas_sq;
+        } else {
+            // select the requested radius, or the required altitude scale, whichever is safer
+            return MAX(sea_level_radius * eas2tas_sq, radius);
+        }
     }
 }
 
