@@ -147,7 +147,7 @@ void Sub::loop()
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
     uint32_t time_available = (timer + MAIN_LOOP_MICROS) - micros();
-    scheduler.run(time_available);
+    scheduler.run(time_available > MAIN_LOOP_MICROS ? 0u : time_available);
 }
 
 
