@@ -146,8 +146,9 @@ void Sub::loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    uint32_t time_available = (timer + MAIN_LOOP_MICROS) - micros();
-    scheduler.run(time_available > MAIN_LOOP_MICROS ? 0u : time_available);
+    const uint32_t loop_us = scheduler.get_loop_period_us();
+    const uint32_t time_available = (timer + loop_us) - micros();
+    scheduler.run(time_available > loop_us ? 0u : time_available);
 }
 
 
