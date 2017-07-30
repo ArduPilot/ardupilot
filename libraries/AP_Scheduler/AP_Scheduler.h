@@ -83,13 +83,17 @@ public:
     // return load average, as a number between 0 and 1. 1 means
     // 100% load. Calculated from how much spare time we have at the
     // end of a run()
-    float load_average(uint32_t tick_time_usec) const;
+    float load_average() const;
 
     // get the configured main loop rate
     uint16_t get_loop_rate_hz(void) const {
         return _loop_rate_hz;
     }
-    
+    // get the time-allowed-per-loop:
+    uint32_t get_loop_period_us() const {
+        return 1000000UL / _loop_rate_hz;
+    }
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // current running task, or -1 if none. Used to debug stuck tasks
