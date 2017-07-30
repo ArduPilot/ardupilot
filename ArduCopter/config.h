@@ -51,7 +51,6 @@
 // run at 400Hz on all systems
 # define MAIN_LOOP_RATE    400
 # define MAIN_LOOP_SECONDS 0.0025f
-# define MAIN_LOOP_MICROS  2500
 
 #ifndef ARMING_DELAY_SEC
     # define ARMING_DELAY_SEC 2.0f
