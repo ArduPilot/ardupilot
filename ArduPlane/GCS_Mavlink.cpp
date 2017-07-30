@@ -155,7 +155,7 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
         control_sensors_present,
         control_sensors_enabled,
         control_sensors_health,
-        (uint16_t)(scheduler.load_average(20000) * 1000),
+        (uint16_t)(scheduler.load_average() * 1000),
         battery.voltage() * 1000, // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
