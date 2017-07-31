@@ -16,6 +16,7 @@ def build(bld):
             'AC_PrecLand',
             'AC_Sprayer',
             'AC_WPNav',
+            'AC_SafeRTL',
             'AP_Camera',
             'AP_IRLock',
             'AP_InertialNav',
