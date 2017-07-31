@@ -101,14 +101,6 @@ void Tracker::send_location(mavlink_channel_t chan)
         ahrs.yaw_sensor);
 }
 
-void Tracker::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        0,
-        0);
-}
-
 void Tracker::send_waypoint_request(mavlink_channel_t chan)
 {
     gcs().chan(chan-MAVLINK_COMM_0).queued_waypoint_send();
@@ -218,11 +210,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         tracker.send_simstate(chan);
-        break;
-
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        tracker.send_hwstatus(chan);
         break;
 
     default:
