@@ -170,7 +170,7 @@ bool AP_Compass_AK8963::init()
     /* timer needs to be called every 10ms so set the freq_div to 10 */
     if (!_bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void))) {
         // fallback to timer
-        _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update_timer, void), 10);
+        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update_timer, void));
     }
 
     return true;
@@ -272,7 +272,7 @@ void AP_Compass_AK8963::_update_timer()
 {
     uint32_t now = AP_HAL::micros();
 
-    if (!_timesliced && now - _last_update_timestamp < 10000) {
+    if (now - _last_update_timestamp < 10000) {
         return;
     }
 
@@ -281,9 +281,8 @@ void AP_Compass_AK8963::_update_timer()
     }
 
     _update();
-    
     _last_update_timestamp = now;
-    
+
     _bus->get_semaphore()->give();
 }
 
