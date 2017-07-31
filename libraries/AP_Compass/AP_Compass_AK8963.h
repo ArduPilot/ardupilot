@@ -64,7 +64,6 @@ private:
 
     uint8_t _compass_instance;
     bool _initialized;
-    bool _timesliced;
     enum Rotation _rotation;
 };
 
