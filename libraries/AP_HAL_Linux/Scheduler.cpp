@@ -184,19 +184,13 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
         }
     }
 
-    if (_num_timer_procs < LINUX_SCHEDULER_MAX_TIMER_PROCS) {
-        _timer_proc[_num_timer_procs] = proc;
-        _num_timer_procs++;
-    } else {
+    if (_num_timer_procs >= LINUX_SCHEDULER_MAX_TIMER_PROCS) {
         hal.console->printf("Out of timer processes\n");
+        return;
     }
-}
 
-bool Scheduler::register_timer_process(AP_HAL::MemberProc proc,
-                                       uint8_t freq_div)
-{
-    register_timer_process(proc);
-    return false;
+    _timer_proc[_num_timer_procs] = proc;
+    _num_timer_procs++;
 }
 
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
