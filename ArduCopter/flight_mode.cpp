@@ -309,7 +309,7 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
 
     if(old_control_mode == SAFE_RTL){
         // allow new breadcrumbs again.
-        safe_rtl_path.accepting_new_points = true;
+        safe_rtl_path.accepting_new_points(true);
     }
 }
 

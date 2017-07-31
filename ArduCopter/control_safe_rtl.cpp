@@ -17,7 +17,7 @@ bool Copter::safe_rtl_init(bool ignore_checks)
 
         // if we're within 4m of the landing point, just skip right to pre-land-positioning
         // otherwise, begin a normal safertl procedure from the start
-        if (HYPOT(current_pos, safe_rtl_path.get(0)) <= 4.0f) {
+        if (HYPOT(current_pos, safe_rtl_path.get_point(0)) <= 4.0f) {
             current_pos[2] -= 2.0f; // go to the point two meters above the landing spot, then start landing.
             safe_rtl_state = SafeRTL_PreLandPosition;
         } else {
@@ -32,7 +32,7 @@ bool Copter::safe_rtl_init(bool ignore_checks)
         set_auto_yaw_mode(get_default_auto_yaw_mode(true));
 
         // tell library to stop accepting new breadcrumbs
-        safe_rtl_path.accepting_new_points = false;
+        safe_rtl_path.accepting_new_points(false);
         return true;
     } else {
         return false;

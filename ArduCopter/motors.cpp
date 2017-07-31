@@ -217,7 +217,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
     // Reset SafeRTL. If activated, SafeRTL will ultimately try to land where we are now.
     Vector3f current_pos;
-    if(position_ok() && ahrs.get_relative_position_NED_origin(current_pos)){
+    if (position_ok() && ahrs.get_relative_position_NED_origin(current_pos)){
         safe_rtl_path.reset_path(current_pos);
     } else {
         safe_rtl_path.deactivate();
