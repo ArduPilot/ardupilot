@@ -125,6 +125,11 @@
 #include "afs_copter.h"
 #endif
 
+
+#if USE_WAYBACK == ENABLED
+#include "/AP_WayBack/AP_WayBack.h"
+#endif
+
 // Local modules
 #include "Parameters.h"
 #include "avoidance_adsb.h"
@@ -570,6 +575,10 @@ private:
     // Parachute release
 #if PARACHUTE == ENABLED
     AP_Parachute parachute;
+#endif
+
+#if USE_WAYBACK == ENABLED
+    AP_WayBack wayback;
 #endif
 
     // Landing Gear Controller
