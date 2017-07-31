@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.5.1-rc1 24-July-2017
+Copter 3.5.1 31-July-2017 / 3.5.1-rc1 24-July-2017
 Changes from 3.5.0
 1) fix to RC input corruption when using Spektrum DSMx with Pixracer 
 ------------------------------------------------------------------
