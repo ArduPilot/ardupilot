@@ -22,6 +22,9 @@ def build(bld):
             'AP_VisualOdom',
             'AP_AdvancedFailsafe',
             'AP_WheelEncoder',
+            'AC_Fence',
+            'AP_InertialNav',
+            'AC_Fence',
         ],
     )
 
