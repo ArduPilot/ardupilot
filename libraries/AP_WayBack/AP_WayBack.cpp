@@ -122,7 +122,7 @@ void AP_WayBack::stop()
     simplify(last_reduce, num_points); // reduce all remaining points
 
     // remove last loops
-    uint16_t p1=points_count-1; // last good poin
+    uint16_t p1=points_count-1; // last good point
     
     while(last_loop_check > p1){
         uint16_t p0 = move_back(p1,1); // points can be not removed so we use relative coordinates
@@ -352,7 +352,7 @@ again:
                 new_points +=  MIN_SIMPLIFY_POINTS; // force reduce on next point
             
                 if(p1<2) p1=2; // but not earlier than 2
-    
+            
                 was_reduce = true; // points was removed
             } else {
                 if(p1 >= hi_loop_border)  in_loop_reduce=false;
@@ -363,7 +363,9 @@ again:
         }
     }
     // do it only if was any reductions
-    if(was_reduce) squizze();      // remove bad points
+    if(was_reduce) {
+        squizze();      // remove bad points
+    }
 
 }
 
