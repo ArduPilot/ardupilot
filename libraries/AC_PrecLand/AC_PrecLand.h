@@ -43,7 +43,7 @@ public:
     };
 
     // constructor
-    AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav);
+    AC_PrecLand(const AP_AHRS_NavEKF& ahrs, const AP_InertialNav& inav);
 
     // perform any required initialisation of landing controllers
     void init();
@@ -101,7 +101,7 @@ private:
     void run_output_prediction();
 
     // references to inertial nav and ahrs libraries
-    const AP_AHRS&              _ahrs;
+    const AP_AHRS_NavEKF&       _ahrs;
     const AP_InertialNav&       _inav;
 
     // parameters

@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_PrecLand::AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav) :
+AC_PrecLand::AC_PrecLand(const AP_AHRS_NavEKF& ahrs, const AP_InertialNav& inav) :
     _ahrs(ahrs),
     _inav(inav),
     _last_update_ms(0),
@@ -162,7 +162,9 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     _ahrs.getCorrectedDeltaVelocityNED(inertial_data_newest.correctedVehicleDeltaVelocityNED, inertial_data_newest.dt);
     inertial_data_newest.Tbn = _ahrs.get_rotation_body_to_ned();
     inertial_data_newest.inertialNavVelocity = _inav.get_velocity()*0.01f;
-    inertial_data_newest.inertialNavVelocityValid = _inav.get_filter_status().flags.horiz_vel;
+    nav_filter_status filt_status;
+    _ahrs.get_filter_status(filt_status);
+    inertial_data_newest.inertialNavVelocityValid = filt_status.flags.horiz_vel;
     _inertial_history.push_back(inertial_data_newest);
 
     // update estimator of target position

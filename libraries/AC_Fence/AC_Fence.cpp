@@ -132,7 +132,9 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     }
 
     // if we have horizontal limits enabled, check inertial nav position is ok
-    if ((_enabled_fences & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON))>0 && !_inav.get_filter_status().flags.horiz_pos_abs && !_inav.get_filter_status().flags.pred_horiz_pos_abs) {
+    nav_filter_status filt_status;
+    _ahrs.get_filter_status(filt_status);
+    if ((_enabled_fences & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON))>0 && !filt_status.flags.horiz_pos_abs && !filt_status.flags.pred_horiz_pos_abs) {
         fail_msg = "fence requires position";
         return false;
     }
