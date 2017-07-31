@@ -78,7 +78,7 @@ void reset()
 bool check_path(const std::vector<Vector3f>& correct)
 {
     for (uint32_t i = 0; i < correct.size(); i++) {
-        if (!is_equal(p->get(i)[0],correct[i][0]) || !is_equal(p->get(i)[1],correct[i][1])|| !is_equal(p->get(i)[2],correct[i][2])) {
+        if (!is_equal(p->get_point(i)[0],correct[i][0]) || !is_equal(p->get_point(i)[1],correct[i][1])|| !is_equal(p->get_point(i)[2],correct[i][2])) {
             return false;
         }
     }
