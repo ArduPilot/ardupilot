@@ -83,6 +83,8 @@ void Scheduler::init()
         SCHED_THREAD(io, IO),
     };
 
+    _main_ctx = pthread_self();
+
 #if !APM_BUILD_TYPE(APM_BUILD_Replay)
     // we don't run Replay in real-time...
     mlockall(MCL_CURRENT|MCL_FUTURE);
@@ -148,6 +150,12 @@ void Scheduler::delay(uint16_t ms)
     if (_stopped_clock_usec) {
         return;
     }
+
+    if (!in_main_thread()) {
+        fprintf(stderr, "Scheduler::delay() called outside main thread\n");
+        return;
+    }
+
     uint64_t start = AP_HAL::millis64();
 
     while ((AP_HAL::millis64() - start) < ms) {
@@ -343,6 +351,11 @@ void Scheduler::_io_task()
 bool Scheduler::in_timerprocess()
 {
     return _in_timer_proc;
+}
+
+bool Scheduler::in_main_thread()
+{
+    return pthread_equal(pthread_self(), _main_ctx);
 }
 
 void Scheduler::_wait_all_threads()

@@ -36,6 +36,7 @@ public:
     void     resume_timer_procs();
 
     bool     in_timerprocess();
+    bool     in_main_thread();
 
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
 
@@ -101,6 +102,7 @@ private:
 
     uint64_t _stopped_clock_usec;
     uint64_t _last_stack_debug_msec;
+    pthread_t _main_ctx;
 
     Semaphore _timer_semaphore;
     Semaphore _io_semaphore;
