@@ -85,7 +85,6 @@ void Plane::read_airspeed(void)
         if (should_log(MASK_LOG_IMU)) {
             Log_Write_Airspeed();
         }
-        calc_airspeed_errors();
 
         // supply a new temperature to the barometer from the digital
         // airspeed sensor if we can
@@ -95,6 +94,11 @@ void Plane::read_airspeed(void)
         }
     }
 
+    // we calculate airspeed errors (and thus target_airspeed_cm) even
+    // when airspeed is disabled as TECS may be using synthetic
+    // airspeed for a quadplane transition
+    calc_airspeed_errors();
+    
     // update smoothed airspeed estimate
     float aspeed;
     if (ahrs.airspeed_estimate(&aspeed)) {
