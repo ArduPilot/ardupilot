@@ -37,7 +37,7 @@ class AC_Fence
 public:
 
     /// Constructor
-    AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav);
+    AC_Fence(const AP_AHRS_NavEKF& ahrs, const AP_InertialNav& inav);
 
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
     void enable(bool value);
@@ -128,7 +128,7 @@ private:
     bool load_polygon_from_eeprom(bool force_reload = false);
 
     // pointers to other objects we depend upon
-    const AP_AHRS& _ahrs;
+    const AP_AHRS_NavEKF& _ahrs;
     const AP_InertialNav& _inav;
 
     // parameters

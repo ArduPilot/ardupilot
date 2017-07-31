@@ -79,15 +79,6 @@ const Vector3f &AP_InertialNav_NavEKF::get_position(void) const
 }
 
 /**
- * get_location - updates the provided location with the latest calculated location
- *  returns true on success (i.e. the EKF knows it's latest position), false on failure
- */
-bool AP_InertialNav_NavEKF::get_location(struct Location &loc) const
-{
-    return _ahrs_ekf.get_location(loc);
-}
-
-/**
  * get_latitude - returns the latitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
  */
 int32_t AP_InertialNav_NavEKF::get_latitude() const
