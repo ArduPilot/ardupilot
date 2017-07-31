@@ -27,6 +27,7 @@ def build(bld):
             'AP_Avoidance',
             'AP_AdvancedFailsafe',
             'AP_Proximity',
+            'AP_SafeRTL',
             'AP_Stats',
             'AP_Gripper',
             'AP_Beacon',
