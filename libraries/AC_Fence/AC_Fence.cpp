@@ -278,7 +278,8 @@ bool AC_Fence::check_destination_within_fence(const Location_Class& loc)
         // check ekf has a good location
         Location temp_loc;
         if (_ahrs.get_location(temp_loc)) {
-            const struct Location &ekf_origin = _inav.get_origin();
+            struct Location ekf_origin;
+            _ahrs.get_origin(ekf_origin);
             Vector2f position = location_diff(ekf_origin, loc) * 100.0f;
             if (_poly_loader.boundary_breached(position, _boundary_num_points, _boundary, true)) {
                 return false;
@@ -435,7 +436,8 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
     if (!_ahrs.get_location(temp_loc)) {
         return false;
     }
-    const struct Location &ekf_origin = _inav.get_origin();
+    struct Location ekf_origin;
+    _ahrs.get_origin(ekf_origin);
 
     // sanity check total
     _total = constrain_int16(_total, 0, _poly_loader.max_points());

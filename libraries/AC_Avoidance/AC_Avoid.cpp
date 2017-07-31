@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
 };
 
 /// Constructor
-AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon)
+AC_Avoid::AC_Avoid(const AP_AHRS_NavEKF& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon)
     : _ahrs(ahrs),
       _inav(inav),
       _fence(fence),
@@ -397,7 +397,9 @@ Vector2f AC_Avoid::get_position() const
 {
     const Vector3f position_xyz = _inav.get_position();
     const Vector2f position_xy(position_xyz.x,position_xyz.y);
-    const Vector2f diff = location_diff(_inav.get_origin(),_ahrs.get_home()) * 100.0f;
+    Location origin;
+    _ahrs.get_origin(origin);
+    const Vector2f diff = location_diff(origin,_ahrs.get_home()) * 100.0f;
     return position_xy - diff;
 }
 
@@ -407,7 +409,9 @@ Vector2f AC_Avoid::get_position() const
 float AC_Avoid::get_alt_above_home() const
 {
     // vehicle's alt above ekf origin + ekf origin's alt above sea level - home's alt above sea level
-    return _inav.get_altitude() + _inav.get_origin().alt - _ahrs.get_home().alt;
+    Location origin;
+    _ahrs.get_origin(origin);
+    return _inav.get_altitude() + origin.alt - _ahrs.get_home().alt;
 }
 
 /*

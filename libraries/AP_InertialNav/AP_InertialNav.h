@@ -40,13 +40,6 @@ public:
      */
     virtual nav_filter_status get_filter_status() const = 0;
 
-    /**
-     * get_origin - returns the inertial navigation origin in lat/lon/alt
-     *
-     * @return origin Location
-     */
-    virtual struct Location get_origin() const = 0;
-
     //
     // XY Axis specific methods
     //
