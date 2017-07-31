@@ -47,3 +47,6 @@ LIBRARIES += AP_Beacon
 LIBRARIES += AP_VisualOdom
 LIBRARIES += AP_WheelEncoder
 LIBRARIES += AP_AdvancedFailsafe
+LIBRARIES += AP_InertialNav
+LIBRARIES += AC_Fence
+LIBRARIES += AP_Proximity

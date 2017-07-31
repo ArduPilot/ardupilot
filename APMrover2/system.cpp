@@ -159,6 +159,9 @@ void Rover::init_ardupilot()
     // initialise rangefinder
     init_rangefinder();
 
+    // init proximity sensor
+    init_proximity();
+
     // init beacons used for non-gps position estimation
     init_beacon();
 
@@ -283,7 +286,7 @@ void Rover::set_reverse(bool reverse)
     in_reverse = reverse;
 }
 
-bool Rover::set_mode(Mode &new_mode)
+bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 {
     if (control_mode == &new_mode) {
         // don't switch modes if we are already in the correct mode.
@@ -292,10 +295,20 @@ bool Rover::set_mode(Mode &new_mode)
 
     Mode &old_mode = *control_mode;
     if (!new_mode.enter()) {
+        // Log error that we failed to enter desired flight mode
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE, new_mode.mode_number());
+        gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
         return false;
     }
 
     control_mode = &new_mode;
+
+#if AC_FENCE == ENABLED
+    // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
+    // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
+    // but it should be harmless to disable the fence temporarily in these situations as well
+    g2.fence.manual_recovery_start();
+#endif
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode->mode_number());
@@ -304,7 +317,8 @@ bool Rover::set_mode(Mode &new_mode)
     old_mode.exit();
 
     if (should_log(MASK_LOG_MODE)) {
-        DataFlash.Log_Write_Mode(control_mode->mode_number());
+        control_mode_reason = reason;
+        DataFlash.Log_Write_Mode(control_mode->mode_number(), reason);
     }
 
     notify_mode((enum mode)control_mode->mode_number());
@@ -320,7 +334,7 @@ bool Rover::mavlink_set_mode(uint8_t mode)
     if (new_mode == nullptr) {
         return false;
     }
-    return set_mode(*new_mode);
+    return set_mode(*new_mode, MODE_REASON_GCS_COMMAND);
 }
 
 void Rover::startup_INS_ground(void)
@@ -496,4 +510,71 @@ bool Rover::disarm_motors(void)
     change_arm_state();
 
     return true;
+}
+
+// position_ok - returns true if the horizontal absolute position is ok and home position is set
+bool Rover::position_ok()
+{
+    // return false if ekf failsafe has triggered // TODO : update with the addition of EKF failsafe
+    /*if (failsafe.ekf) {
+        return false;
+    }*/
+
+    // check ekf position estimate
+    return (ekf_position_ok() || optflow_position_ok());
+}
+
+// ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
+bool Rover::ekf_position_ok()
+{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow navigation with dcm position
+        return false;
+    }
+
+    // with EKF use filter status and ekf check
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+
+    // if disarmed we accept a predicted horizontal position
+    if (!arming.is_armed()) {
+        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+    } else {
+        // once armed we require a good absolute position and EKF must not be in const_pos_mode
+        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+    }
+}
+
+// optflow_position_ok - returns true if optical flow based position estimate is ok
+bool Rover::optflow_position_ok()
+{
+#if OPTFLOW != ENABLED && VISUAL_ODOMETRY_ENABLED != ENABLED
+    return false;
+#else
+    // return immediately if EKF not used
+    if (!ahrs.have_inertial_nav()) {
+        return false;
+    }
+
+    // return immediately if neither optflow nor visual odometry is enabled
+#if OPTFLOW == ENABLED
+    if (!optflow.enabled()) {
+        return false;
+    }
+#endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    if (!g2.visual_odom.enabled()) {
+        return false;
+    }
+#endif
+
+    // get filter status from EKF
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+
+    // if disarmed we accept a predicted horizontal relative position
+    if (!arming.is_armed()) {
+        return (filt_status.flags.pred_horiz_pos_rel);
+    } else {
+        return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
+    }
+#endif
 }

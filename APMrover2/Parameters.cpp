@@ -550,6 +550,18 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_WheelEncoder/AP_WheelEncoder.cpp
     AP_SUBGROUPINFO(wheel_encoder, "WENC", 9, ParametersG2, AP_WheelEncoder),
 
+#if AC_FENCE == ENABLED
+    // @Group: FENCE_
+    // @Path: ../libraries/AC_Fence/AC_Fence.cpp
+    AP_SUBGROUPINFO(fence, "FENCE_", 10, ParametersG2, AC_Fence),
+#endif
+
+#if PROXIMITY_ENABLED == ENABLED
+    // @Group: PRX
+    // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
+    AP_SUBGROUPINFO(proximity, "PRX", 11, ParametersG2, AP_Proximity),
+#endif
+
     AP_GROUPEND
 };
 
@@ -560,7 +572,13 @@ ParametersG2::ParametersG2(void)
     afs(rover.mission, rover.barometer, rover.gps, rover.rcmap),
 #endif
     beacon(rover.serial_manager),
-    motors(rover.ServoRelayEvents)
+    motors(rover.ServoRelayEvents),
+#if AC_FENCE == ENABLED
+    fence(rover.ahrs, rover.inertial_nav),
+#endif
+#if PROXIMITY_ENABLED == ENABLED
+    proximity(rover.serial_manager)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

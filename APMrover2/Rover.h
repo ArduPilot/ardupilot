@@ -42,6 +42,7 @@
 #include <PID/PID.h>                                // PID library
 #include <RC_Channel/RC_Channel.h>                  // RC Channel Library
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
+#include <AP_Proximity/AP_Proximity.h>              // Proximity array library
 #include <Filter/Filter.h>                          // Filter library
 #include <Filter/Butter.h>                          // Filter library - butterworth filter
 #include <AP_Buffer/AP_Buffer.h>                    // FIFO buffer library
@@ -64,6 +65,8 @@
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include "AP_MotorsUGV.h"
+#include <AP_InertialNav/AP_InertialNav.h>          // ArduPilot Mega inertial navigation library
+#include <AC_Fence/AC_Fence.h>                      // Arducopter Fence library
 
 #include "mode.h"
 
@@ -176,7 +179,7 @@ private:
 #endif
 
     // Arming/Disarming management class
-    AP_Arming_Rover arming {ahrs, barometer, compass, battery};
+    AP_Arming_Rover arming {ahrs, barometer, compass, battery, &g2.fence};
 
     AP_L1_Control L1_controller;
 
@@ -190,7 +193,9 @@ private:
     AP_Mission mission;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
+#if OPTFLOW == ENABLED
     OpticalFlow optflow{ahrs};
+#endif
 #endif
 
     // RSSI
@@ -348,6 +353,9 @@ private:
     // The location of the current/active waypoint.  Used for track following
     struct Location next_WP;
 
+    // Inertial Navigation
+    AP_InertialNav_NavEKF inertial_nav;
+
     // IMU variables
     // The main loop execution time.  Seconds
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
@@ -429,6 +437,8 @@ private:
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
 
+    mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
+
 private:
     // private member functions
     void ahrs_update();
@@ -462,12 +472,13 @@ private:
     void send_rangefinder(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
+    void send_fence_status(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);
 
     Mode *control_mode_from_num(enum mode num);
-    bool set_mode(Mode &mode);
+    bool set_mode(Mode &mode, mode_reason_t reason=MODE_REASON_UNKNOWN);
     bool mavlink_set_mode(uint8_t mode);
 
     void do_erase_logs(void);
@@ -477,6 +488,7 @@ private:
     void Log_Write_Control_Tuning();
     void Log_Write_Nav_Tuning();
     void Log_Write_Rangefinder();
+    void Log_Write_Proximity();
     void Log_Write_Beacon();
     void Log_Write_Current();
     void Log_Write_Attitude();
@@ -529,6 +541,8 @@ private:
     void trim_radio();
     void init_barometer(bool full_calibration);
     void init_rangefinder(void);
+    void init_proximity();
+    void update_proximity();
     void init_beacon();
     void update_beacon();
     void init_visual_odom();
@@ -585,9 +599,14 @@ private:
     void nav_set_speed();
     bool in_stationary_loiter(void);
     void crash_check();
+    void fence_check();
+    void fence_send_mavlink_status(mavlink_channel_t chan);
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
+    bool position_ok();
+    bool ekf_position_ok();
+    bool optflow_position_ok();
 
 public:
     bool print_log_menu(void);
@@ -627,6 +646,7 @@ public:
     bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value);
     uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec);
     void motor_test_stop();
+    void ten_hz_loop(void);
 };
 
 #define MENU_FUNC(func) FUNCTOR_BIND(&rover, &Rover::func, int8_t, uint8_t, const Menu::arg *)

@@ -53,6 +53,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_GPS_10Hz,        10,   2500),
     SCHED_TASK(update_alt,             10,   3400),
     SCHED_TASK(update_beacon,          50,     50),
+    SCHED_TASK(update_proximity,       50,     50),
     SCHED_TASK(update_visual_odom,     50,     50),
     SCHED_TASK(update_wheel_encoder,   20,     50),
     SCHED_TASK(navigate,               10,   1600),
@@ -71,7 +72,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(check_usb_mux,           3,   1000),
     SCHED_TASK(mount_update,           50,    600),
     SCHED_TASK(update_trigger,         50,    600),
-    SCHED_TASK(gcs_failsafe_check,     10,    600),
+    SCHED_TASK(ten_hz_loop,            10,    600),
     SCHED_TASK(compass_accumulate,     50,    900),
     SCHED_TASK(update_notify,          50,    300),
     SCHED_TASK(one_second_loop,         1,   3000),
@@ -172,6 +173,8 @@ void Rover::ahrs_update()
     ahrs.set_fly_forward(!in_reverse);
 
     ahrs.update();
+    // inertial altitude estimates
+    inertial_nav.update(G_Dt);
 
     // update home from EKF if necessary
     update_home_from_EKF();
@@ -258,6 +261,7 @@ void Rover::update_logging1(void)
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
         Log_Write_Beacon();
+        Log_Write_Proximity();
     }
 
     if (should_log(MASK_LOG_NTUN)) {
@@ -358,6 +362,15 @@ void Rover::one_second_loop(void)
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
     update_sensor_status_flags();
+}
+
+void Rover::ten_hz_loop(void)
+{
+    gcs_failsafe_check();
+#if AC_FENCE == ENABLED
+    // check if we have breached a fence
+    fence_check();
+#endif  // AC_FENCE_ENABLED
 }
 
 void Rover::dataflash_periodic(void)

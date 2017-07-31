@@ -112,6 +112,18 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_reverse(cmd);
         break;
 
+    case MAV_CMD_DO_FENCE_ENABLE:
+#if AC_FENCE == ENABLED
+        if (cmd.p1 == 0) {  //disable
+            g2.fence.enable(false);
+            gcs().send_text(MAV_SEVERITY_INFO, "Fence Disabled");
+        } else {  //enable fence
+            g2.fence.enable(true);
+            gcs().send_text(MAV_SEVERITY_INFO, "Fence Enabled");
+        }
+#endif  //AC_FENCE == ENABLED
+        break;
+
     default:
         // return false for unhandled commands
         return false;
@@ -126,7 +138,7 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 void Rover::exit_mission()
 {
     gcs().send_text(MAV_SEVERITY_NOTICE, "No commands. Can't set AUTO. Setting HOLD");
-    set_mode(mode_hold);
+    set_mode(mode_hold, MODE_REASON_MISSION_END);
 }
 
 // verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
@@ -189,6 +201,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_REVERSE:
+    case MAV_CMD_DO_FENCE_ENABLE:
         return true;
 
     default:
