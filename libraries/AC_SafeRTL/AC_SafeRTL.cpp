@@ -26,32 +26,25 @@
 */
 
 SafeRTL_Path::SafeRTL_Path(bool log) :
-    accepting_new_points(true),
+    _logging_enabled(log),
     _active(true),
-    _last_index(0),
-    _simplification_complete(false),
-    _simplification_clean_until(0),
-    _pruning_complete(false),
-    _pruning_current_i(0),
-    _pruning_min_j(0),
-    _pruning_clean_until(0),
-    _logging_enabled(log)
+    _accepting_new_points(true)
 {
     _simplification_bitmask = std::bitset<SAFERTL_MAX_PATH_LEN>().set(); //initialize to 0b1111...
     path[0] = {0.0f, 0.0f, 0.0f};
 }
 
-void SafeRTL_Path::append_if_far_enough(Vector3f p)
+void SafeRTL_Path::append_if_far_enough(const Vector3f &pos)
 {
-    if (!accepting_new_points) {
+    if (!_accepting_new_points) {
         return;
     }
-    if (HYPOT(p, path[_last_index]) > SAFERTL_POSITION_DELTA) {
+    if (HYPOT(pos, path[_last_index]) > SAFERTL_POSITION_DELTA) {
         // add the breadcrumb
-        path[++_last_index] = p;
+        path[++_last_index] = pos;
 
         if (_logging_enabled) {
-            DataFlash_Class::instance()->Log_Write_SRTL(DataFlash_Class::SRTL_POINT_ADD, p);
+            DataFlash_Class::instance()->Log_Write_SRTL(DataFlash_Class::SRTL_POINT_ADD, pos);
         }
 
         // if cleanup algorithms are finished (And therefore not runnning), reset them
@@ -159,7 +152,7 @@ bool SafeRTL_Path::pop_point(Vector3f& point)
     return false;
 }
 
-void SafeRTL_Path::reset_path(Vector3f start)
+void SafeRTL_Path::reset_path(const Vector3f& start)
 {
     _last_index = 0;
     path[_last_index] = start;

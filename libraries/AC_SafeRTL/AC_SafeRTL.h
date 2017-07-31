@@ -21,24 +21,40 @@
 #define HYPOT(a,b) (a-b).length()
 
 class SafeRTL_Path {
-    // points are stored in meters from EKF origin in NED
-    Vector3f path[SAFERTL_MAX_PATH_LEN];
-    uint8_t _last_index;
+
 public:
-    bool accepting_new_points; // false means that any call to append_if_far_enough() will fail. This should be unset when entering SafeRTL mode, and set when exiting.
+
+    // constructor
     SafeRTL_Path(bool log);
-    void append_if_far_enough(Vector3f p);
+
+    // add NED position (normally vehicle's current position) to the path
+    void append_if_far_enough(const Vector3f &pos);
+
+    // turn on/off accepting new points in calls to append_if_far_enough
+    void accepting_new_points(bool value) { _accepting_new_points = value; }
+
+    // perform clean-up regularly from main loop
     bool routine_cleanup();
+
+    // perform thoroguh clean-up.  This should be run just before initiating the RTL. Returns a pointer to the cleaned-up path or nullptr if clean-up is not complete
     Vector3f* thorough_cleanup();
-    Vector3f get(int index) const { return path[index]; }
+
+    // get a point on the path
+    const Vector3f& get_point(uint8_t index) const { return path[index]; }
+
+    // get next point on the path to home
     bool pop_point(Vector3f& point);
-    void reset_path(Vector3f start);
+
+    // clear return path and set home locatione
+    void reset_path(const Vector3f& start);
+
     bool cleanup_ready() const { return _pruning_complete && _simplification_complete; }
     bool is_active() const { return _active; }
     void deactivate() { _active = false; } // If the copter loses GPS during it's flight, this method should be called to deactivate SafeRTL until disarmed and re-armed.
     // the two cleanup steps. These should be run regularly, maybe even by a different thread
     void rdp();
     void detect_loops();
+
 private:
     // misc cleanup helper methods:
     void _reset_rdp();
@@ -71,6 +87,11 @@ private:
     std::bitset<SAFERTL_MAX_PATH_LEN> _simplification_bitmask;
     // everything before _simplification_clean_until has been calculated already to be un-simplify-able. This avoids recalculating a known result.
     uint8_t _simplification_clean_until;
+
+    // points are stored in meters from EKF origin in NED
+    Vector3f path[SAFERTL_MAX_PATH_LEN];
+    uint8_t _last_index;
+    bool _accepting_new_points; // false means that any call to append_if_far_enough() will fail. This should be unset when entering SafeRTL mode, and set when exiting.
 
     // Pruning state
     bool _pruning_complete;
