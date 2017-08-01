@@ -1049,15 +1049,8 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             }
 
             // convert thrust to ground speed
-            packet.thrust = constrain_float(packet.thrust, 0.0f, 1.0f);
-            float target_speed = 0.0f;
-            if (is_equal(packet.thrust, 0.5f)) {
-                target_speed = 0.0f;
-            } else if (packet.thrust > 0.5f) {
-                target_speed = (packet.thrust - 0.5f) * 2.0f * rover.g.speed_cruise;
-            } else {
-                target_speed = (0.5f - packet.thrust) * 2.0f * rover.g.speed_cruise;
-            }
+            packet.thrust = constrain_float(packet.thrust, -1.0f, 1.0f);
+            float target_speed = rover.g.speed_cruise * packet.thrust;
 
             // if the body_yaw_rate field is ignored, use the commanded yaw position
             // otherwise use the commanded yaw rate
