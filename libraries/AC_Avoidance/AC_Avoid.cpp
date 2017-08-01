@@ -110,7 +110,9 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 
     // calculate distance to optical flow altitude limit
     float ekf_alt_limit_cm;
-    if (_inav.get_hgt_ctrl_limit(ekf_alt_limit_cm)) {
+    if (_ahrs.get_hgt_ctrl_limit(ekf_alt_limit_cm)) {
+        // convert height from m to cm
+        ekf_alt_limit_cm *= 100.0f;
         float ekf_alt_diff_cm = ekf_alt_limit_cm - _inav.get_altitude();
         if (!limit_alt || ekf_alt_diff_cm < alt_diff_cm) {
             alt_diff_cm = ekf_alt_diff_cm;

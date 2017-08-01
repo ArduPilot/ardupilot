@@ -77,22 +77,6 @@ float AP_InertialNav_NavEKF::get_altitude() const
     return _relpos_cm.z;
 }
 
-/**
- * get_hgt_ctrl_limit - get maximum height to be observed by the control loops in cm and a validity flag
- * this is used to limit height during optical flow navigation
- * it will return invalid when no limiting is required
- * @return
- */
-bool AP_InertialNav_NavEKF::get_hgt_ctrl_limit(float& limit) const
-{
-    // true when estimate is valid
-    if (_ahrs_ekf.get_hgt_ctrl_limit(limit)) {
-        // convert height from m to cm
-        limit *= 100.0f;
-        return true;
-    }
-    return false;
-}
 
 /**
  * get_velocity_z - returns the current climbrate.
