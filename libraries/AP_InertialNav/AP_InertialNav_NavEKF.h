@@ -32,17 +32,6 @@ public:
     const Vector3f&    get_position() const;
 
     /**
-     * get_latitude - returns the latitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     */
-    int32_t     get_latitude() const;
-
-    /**
-     * get_longitude - returns the longitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
-     * @return
-     */
-    int32_t     get_longitude() const;
-
-    /**
      * get_velocity - returns the current velocity in cm/s
      *
      * @return velocity vector:
@@ -97,7 +86,6 @@ private:
     Vector3f _relpos_cm;   // NEU
     Vector3f _velocity_cm; // NEU
     float _pos_z_rate;
-    struct Location _abspos;
     bool _haveabspos;
     AP_AHRS_NavEKF &_ahrs_ekf;
 };

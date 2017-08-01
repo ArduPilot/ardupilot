@@ -27,9 +27,6 @@ void AP_InertialNav_NavEKF::update(float dt)
         _relpos_cm.z = - posD * 100; // convert from m in NED to cm in NEU
     }
 
-    // get the absolute WGS-84 position
-    _haveabspos = _ahrs_ekf.get_position(_abspos);
-
     // get the velocity relative to the local earth frame
     Vector3f velNED;
     if (_ahrs_ekf.get_velocity_NED(velNED)) {
@@ -53,23 +50,6 @@ void AP_InertialNav_NavEKF::update(float dt)
 const Vector3f &AP_InertialNav_NavEKF::get_position(void) const 
 {
     return _relpos_cm;
-}
-
-/**
- * get_latitude - returns the latitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
- */
-int32_t AP_InertialNav_NavEKF::get_latitude() const
-{
-    return _abspos.lat;
-}
-
-/**
- * get_longitude - returns the longitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
- * @return
- */
-int32_t AP_InertialNav_NavEKF::get_longitude() const
-{
-    return _abspos.lng;
 }
 
 /**
