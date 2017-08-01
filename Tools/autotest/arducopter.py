@@ -307,8 +307,13 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
             # switch back to stabilize
             mavproxy.send('switch 2\n')  # land mode
             wait_mode(mav, 'LAND')
+            print("Waiting for disarm")
+            mav.motors_disarmed_wait()
             mavproxy.send('switch 6\n')  # stabilize mode
             wait_mode(mav, 'STABILIZE')
+            if not arm_motors(mavproxy, mav):
+                print("Failed to re-arm")
+                return False
             print("Reached failsafe home OK")
             return True
     print("Failed to land on failsafe RTL - timed out after %u seconds" % timeout)
