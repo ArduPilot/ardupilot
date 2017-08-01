@@ -47,6 +47,7 @@ public:
     // get bitmask of enabled checks
     uint16_t get_enabled_checks();
 
+
     // pre_arm_checks() is virtual so it can be modified in a vehicle specific subclass
     virtual bool pre_arm_checks(bool report);
 
@@ -106,6 +107,13 @@ protected:
 
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4], const bool check_min_max = true) const;
+
+    // returns true if a particular check is enabled
+    bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
+    // returns a mavlink severity which should be used if a specific check fails
+    MAV_SEVERITY check_severity(const enum AP_Arming::ArmingChecks check) const;
+    // handle the case where a check fails
+    void check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const;
 
 private:
 
