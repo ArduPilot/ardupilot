@@ -14,9 +14,17 @@
  */
 
 #include "AP_ParticleSensor.h"
+#include "AP_ParticleSensor_SDS021.h"
+
+#include <AP_HAL/AP_HAL.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 void AP_ParticleSensor::init()
 {
+    AP_HAL::UARTDriver *port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SDS021, 0);
+    if (port != nullptr) {
+        backend = new AP_ParticleSensor_SDS021(*port);
+    }
 }
 
 void AP_ParticleSensor::update()
