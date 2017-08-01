@@ -33,6 +33,13 @@ void SITL_State::_update_airspeed(float airspeed)
     // Add noise
     airspeed = airspeed + (_sitl->arspd_noise * rand_float());
 
+    if (!is_zero(_sitl->arspd_fail_pressure)) {
+        // compute a realistic pressure report given some level of trapper air pressure in the tube abd our current altitude
+        // algorithim taken from https://en.wikipedia.org/wiki/Calibrated_airspeed#Calculation_from_impact_pressure
+        float tube_pressure = abs(_sitl->arspd_fail_pressure - _barometer->get_pressure() + _sitl->arspd_fail_pitot_pressure);
+        airspeed = 340.29409348 * sqrt(5 * (pow((tube_pressure / 101325.01576 + 1), 2.0/7.0) - 1.0));
+    }
+
     const float airspeed_pressure = (airspeed * airspeed) / airspeed_ratio;
     float airspeed_raw = airspeed_pressure + airspeed_offset;
     if (airspeed_raw / 4 > 0xFFFF) {
