@@ -269,9 +269,6 @@ private:
     // angle of our next navigation waypoint
     int32_t next_navigation_leg_cd;
 
-    // ground speed error in m/s
-    float groundspeed_error;
-
     // receiver RSSI
     uint8_t receiver_rssi;
 

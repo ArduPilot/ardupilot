@@ -134,9 +134,9 @@ void Rover::send_nav_controller_output(mavlink_channel_t chan)
         ahrs.groundspeed() * ins.get_gyro().z,  // use nav_pitch to hold actual Y accel
         nav_controller->nav_bearing_cd() * 0.01f,
         nav_controller->target_bearing_cd() * 0.01f,
-        MIN(wp_distance, UINT16_MAX),
+        MIN(control_mode->get_distance_to_destination(), UINT16_MAX),
         0,
-        groundspeed_error,
+        control_mode->speed_error(),
         nav_controller->crosstrack_error());
 }
 
