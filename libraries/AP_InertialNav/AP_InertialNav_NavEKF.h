@@ -42,11 +42,6 @@ public:
     const Vector3f&    get_velocity() const;
 
     /**
-     * get_pos_z_derivative - returns the derivative of the z position in cm/s
-    */
-    float    get_pos_z_derivative() const;
-
-    /**
      * get_velocity_xy - returns the current horizontal velocity in cm/s
      *
      * @returns the current horizontal velocity in cm/s
@@ -85,7 +80,6 @@ public:
 private:
     Vector3f _relpos_cm;   // NEU
     Vector3f _velocity_cm; // NEU
-    float _pos_z_rate;
     bool _haveabspos;
     AP_AHRS_NavEKF &_ahrs_ekf;
 };
