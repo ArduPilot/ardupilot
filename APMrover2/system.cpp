@@ -132,6 +132,10 @@ void Rover::init_ardupilot()
     camera_mount.init();
 #endif
 
+#if PARTICLE_SENSOR == ENABLED
+    particlesensor.init();
+#endif
+
     /*
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.

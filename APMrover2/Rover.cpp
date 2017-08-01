@@ -308,6 +308,10 @@ void Rover::update_GPS(void)
         camera.update();
 #endif
     }
+
+#if PARTICLE_SENSOR == ENABLED
+    particlesensor.update();
+#endif
 }
 
 void Rover::update_current_mode(void)

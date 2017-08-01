@@ -44,6 +44,7 @@
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>          // Optical Flow library
 #include <AP_Param/AP_Param.h>
+#include <AP_ParticleSensor/AP_ParticleSensor.h>    // Particle Sensor library
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
@@ -191,6 +192,10 @@ private:
     // Camera
 #if CAMERA == ENABLED
     AP_Camera camera{MASK_LOG_CAMERA, current_loc};
+#endif
+
+#if PARTICLE_SENSOR == ENABLED
+    AP_ParticleSensor particlesensor;
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff

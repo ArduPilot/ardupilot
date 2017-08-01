@@ -142,3 +142,6 @@
  #define OSD_ENABLED DISABLED
 #endif
 
+#ifndef PARTICLE_SENSOR
+  #define PARTICLE_SENSOR ENABLED
+#endif
