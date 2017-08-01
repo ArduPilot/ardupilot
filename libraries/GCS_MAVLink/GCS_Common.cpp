@@ -606,15 +606,18 @@ void GCS_MAVLINK::handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) 
 }
 
 
-void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
+void GCS_MAVLINK::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
 {
     char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+    hal.util->vsnprintf((char *)text, sizeof(text)-1, fmt, arg_list);
+    gcs().send_statustext(severity, (1<<chan), text);
+}
+void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
+{
     va_list arg_list;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
+    send_textv(severity, fmt, arg_list);
     va_end(arg_list);
-    text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = 0;
-    gcs().send_statustext(severity, (1<<chan), text);
 }
 
 void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio)
