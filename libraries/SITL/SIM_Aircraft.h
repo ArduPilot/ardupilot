@@ -113,6 +113,8 @@ public:
 
     virtual float gross_mass() const { return mass; }
 
+    const Location &get_location() const { return location; }
+
 protected:
     SITL *sitl;
     Location home;
