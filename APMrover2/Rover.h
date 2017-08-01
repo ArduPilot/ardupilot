@@ -395,14 +395,6 @@ private:
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
 
-    // Store parameters from Guided msg
-    struct {
-      float turn_angle;          // target heading in centi-degrees
-      float target_speed;        // target speed in m/s
-      float target_steer_speed;  // target steer speed in degree/s
-      uint32_t msg_time_ms;      // time of last guided message
-    } guided_control;
-
     // Store the time the last GPS message was received.
     uint32_t last_gps_msg_ms{0};
 
@@ -488,11 +480,9 @@ private:
     void Log_Arm_Disarm();
 
     void load_parameters(void);
-    bool use_pivot_steering(void);
+    bool use_pivot_steering(float yaw_error_cd);
     void set_servos(void);
     void set_auto_WP(const struct Location& loc);
-    void set_guided_WP(const struct Location& loc);
-    void set_guided_velocity(float target_steer_speed, float target_speed);
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
@@ -576,9 +566,7 @@ private:
     bool motor_active();
     void update_home();
     void accel_cal_update(void);
-    void nav_set_yaw_speed();
     bool do_yaw_rotation();
-    void nav_set_speed();
     bool in_stationary_loiter(void);
     void crash_check();
 #if ADVANCED_FAILSAFE == ENABLED
