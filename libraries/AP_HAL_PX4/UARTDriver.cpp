@@ -275,9 +275,12 @@ size_t PX4UARTDriver::write(uint8_t c)
         }
         hal.scheduler->delay(1);
     }
-	_write_sem.take(10);
-	size_t res = _writebuf.write(&c, 1);
-	_write_sem.give();
+
+	size_t res = 0;
+	if(_write_sem.take(0)) {
+		res = _writebuf.write(&c, 1);
+		_write_sem.give();
+	}
     return res; 
 }
 
@@ -305,10 +308,13 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
         }
         return ret;
     }
-	_write_sem.take(10);
-	size_t ret = _writebuf.write(buffer, size);
-	_write_sem.give();
-    return ret;
+
+	size_t res = 0;
+	if(_write_sem.take(0)) {
+		res = _writebuf.write(buffer, size);
+		_write_sem.give();
+	}
+    return res; 
 }
 
 /*
@@ -428,21 +434,22 @@ void PX4UARTDriver::_timer_tick(void)
     if (n > 0) {
         ByteBuffer::IoVec vec[2];
         perf_begin(_perf_uart);
-		_write_sem.take(10);
-        const auto n_vec = _writebuf.peekiovec(vec, n);
-        for (int i = 0; i < n_vec; i++) {
-            ret = _write_fd(vec[i].data, (uint16_t)vec[i].len);
-            if (ret < 0) {
-                break;
-            }
-            _writebuf.advance(ret);
+		if(_write_sem.take(0)) {
+			const auto n_vec = _writebuf.peekiovec(vec, n);
+			for (int i = 0; i < n_vec; i++) {
+				ret = _write_fd(vec[i].data, (uint16_t)vec[i].len);
+				if (ret < 0) {
+					break;
+				}
+				_writebuf.advance(ret);
 
-            /* We wrote less than we asked for, stop */
-            if ((unsigned)ret != vec[i].len) {
-                break;
-            }
-        }
-		_write_sem.give();
+				/* We wrote less than we asked for, stop */
+				if ((unsigned)ret != vec[i].len) {
+					break;
+				}
+			}
+			_write_sem.give();
+		}
         perf_end(_perf_uart);
     }
 
