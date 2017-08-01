@@ -1052,12 +1052,11 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             packet.thrust = constrain_float(packet.thrust, -1.0f, 1.0f);
             float target_speed = rover.g.speed_cruise * packet.thrust;
 
-            // if the body_yaw_rate field is ignored, use the commanded yaw position
-            // otherwise use the commanded yaw rate
+            // if the body_yaw_rate field is ignored, convert quaternion to heading
             if ((packet.type_mask & MAVLINK_SET_ATT_TYPE_MASK_YAW_RATE_IGNORE) != 0) {
                 // convert quaternion to heading
-                // int32_t target_heading_cd = static_cast<int32_t>(degrees(Quaternion(packet.q[0], packet.q[1], packet.q[2], packet.q[3]).get_euler_yaw()) * 100);
-                // TODO : handle that
+                float target_heading_cd = degrees(Quaternion(packet.q[0], packet.q[1], packet.q[2], packet.q[3]).get_euler_yaw()) * 100.0f;
+                rover.mode_guided.set_desired_heading_and_speed(target_heading_cd, target_speed);
             } else {
                 // use body_yaw_rate field
                 rover.mode_guided.set_desired_turn_rate_and_speed((RAD_TO_DEG * packet.body_yaw_rate) * 100.0f, target_speed);
