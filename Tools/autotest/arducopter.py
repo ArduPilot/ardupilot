@@ -460,9 +460,17 @@ def fly_fence_test(mavproxy, mav, timeout=180):
             # switch mode to stabilize
             mavproxy.send('switch 2\n')  # land mode
             wait_mode(mav, 'LAND')
+            print("Waiting for disarm")
+            mav.motors_disarmed_wait()
+            print("Reached home OK")
             mavproxy.send('switch 6\n')  # stabilize mode
             wait_mode(mav, 'STABILIZE')
-            print("Reached home OK")
+            mavproxy.send('arm uncheck all\n') # remove if we ever clear battery failsafe flag on disarm
+            if not arm_motors(mavproxy, mav):
+                print("Failed to re-arm")
+                mavproxy.send('arm check all\n') # remove if we ever clear battery failsafe flag on disarm
+                return False
+            mavproxy.send('arm check all\n') # remove if we ever clear battery failsafe flag on disarm
             return True
 
     # disable fence, enable avoidance
