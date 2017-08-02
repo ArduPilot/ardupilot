@@ -361,9 +361,9 @@ private:
     uint8_t         stream_slowdown;
 
     // perf counters
-    static AP_HAL::Util::perf_counter_t _perf_packet;
-    static AP_HAL::Util::perf_counter_t _perf_update;
-            
+    AP_HAL::Util::perf_counter_t _perf_packet;
+    AP_HAL::Util::perf_counter_t _perf_update;
+
     // deferred message handling.  We size the deferred_message
     // ringbuffer so we can defer every message type
     enum ap_message deferred_messages[MSG_LAST];

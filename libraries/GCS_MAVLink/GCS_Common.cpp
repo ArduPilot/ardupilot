@@ -23,6 +23,7 @@
 #include "AP_Common/AP_FWVersion.h"
 #include "GCS.h"
 
+#include <stdio.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <drivers/drv_pwm_output.h>
 #include <sys/types.h>
@@ -36,9 +37,6 @@ uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
 uint8_t GCS_MAVLINK::chan_is_streaming = 0;
 uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
-
-AP_HAL::Util::perf_counter_t GCS_MAVLINK::_perf_packet;
-AP_HAL::Util::perf_counter_t GCS_MAVLINK::_perf_update;
 
 GCS *GCS::_singleton = nullptr;
 
@@ -61,12 +59,13 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
     initialised = true;
     _queued_parameter = nullptr;
 
-    if (!_perf_packet) {
-        _perf_packet = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "GCS_Packet");
-    }
-    if (!_perf_update) {
-        _perf_update = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "GCS_Update");
-    }
+    char perf_name[16];
+
+    snprintf(perf_name, sizeof(perf_name), "GCS_Packet_%u", chan);
+    _perf_packet = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, perf_name);
+
+    snprintf(perf_name, sizeof(perf_name), "GCS_Update_%u", chan);
+    _perf_update = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, perf_name);
 }
 
 
