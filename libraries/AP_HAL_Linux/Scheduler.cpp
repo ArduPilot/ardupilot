@@ -72,6 +72,12 @@ void Scheduler::init_realtime()
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     // we don't run Replay in real-time...
     return;
+#elif APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+    // we opportunistically run examples/tools in realtime
+    if (geteuid() != 0) {
+        printf("WARNING: not running as root. Will not use realtime scheduling\n");
+        return;
+    }
 #endif
 
     mlockall(MCL_CURRENT|MCL_FUTURE);
