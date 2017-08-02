@@ -1,11 +1,13 @@
-// g++ stress_RingBuffer.cpp ../../utility/RingBuffer.cpp -I../../utility -pthread -o stress_ring && ./stress_ring
+#include <AP_HAL/AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
 #include <thread>
 
-#include "RingBuffer.h"
+#include <AP_HAL/utility/RingBuffer.h>
 
 using namespace std;
 
@@ -90,3 +92,17 @@ int main(int argc, char const **argv) {
     cout << "Aborting: Good bye **failure** World!\n";
     return EXIT_FAILURE;
 }
+
+#else
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+static void loop() { }
+static void setup()
+{
+    printf("Board not currently supported\n");
+}
+
+AP_HAL_MAIN();
+
+#endif
