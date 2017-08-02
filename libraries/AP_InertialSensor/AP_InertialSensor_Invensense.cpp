@@ -1120,3 +1120,9 @@ int AP_Invensense_AuxiliaryBus::_configure_periodic_read(AuxiliaryBusSlave *slav
 
     return 0;
 }
+
+AP_HAL::Device::PeriodicHandle AP_Invensense_AuxiliaryBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    auto &backend = AP_InertialSensor_Invensense::from(_ins_backend);
+    return backend._dev->register_periodic_callback(period_usec, cb);
+}
