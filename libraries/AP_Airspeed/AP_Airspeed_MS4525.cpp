@@ -49,6 +49,7 @@ bool AP_Airspeed_MS4525::init()
     } addresses[] = {
         { 1, MS4525D0_I2C_ADDR },
         { 0, MS4525D0_I2C_ADDR },
+        { 2, MS4525D0_I2C_ADDR },
     };
     bool found = false;
     for (uint8_t i=0; i<ARRAY_SIZE(addresses); i++) {
