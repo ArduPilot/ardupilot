@@ -324,9 +324,6 @@ private:
     // For example in a delay command the condition_start records that start time for the delay
     int32_t condition_start;
 
-    // Use for stopping navigation in auto mode and do rotation on spot.
-    bool do_auto_rotation;
-
     // 3D Location vectors
     // Location structure defined in AP_Common
     // The home location used for RTL.  The location is set when we first get stable GPS lock
@@ -493,7 +490,7 @@ private:
     bool verify_RTL();
     bool verify_wait_delay();
     bool verify_within_distance();
-    bool verify_yaw();
+    bool verify_nav_set_yaw_speed();
     void update_commands(void);
     void delay(uint32_t ms);
     void mavlink_delay(uint32_t ms);
@@ -550,7 +547,7 @@ private:
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
-    void do_yaw(const AP_Mission::Mission_Command& cmd);
+    void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
 #if CAMERA == ENABLED
@@ -566,7 +563,6 @@ private:
     bool motor_active();
     void update_home();
     void accel_cal_update(void);
-    bool do_yaw_rotation();
     bool in_stationary_loiter(void);
     void crash_check();
 #if ADVANCED_FAILSAFE == ENABLED
