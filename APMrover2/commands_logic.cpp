@@ -443,7 +443,7 @@ bool Rover::verify_wait_delay()
 
 bool Rover::verify_within_distance()
 {
-    if (wp_distance < condition_value) {
+    if (mode_auto.get_distance_to_destination() < condition_value) {
         condition_value = 0;
         return true;
     }
