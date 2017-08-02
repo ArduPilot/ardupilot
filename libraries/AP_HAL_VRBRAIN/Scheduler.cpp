@@ -138,7 +138,7 @@ void VRBRAINScheduler::delay_microseconds_boost(uint16_t usec)
 
 void VRBRAINScheduler::delay(uint16_t ms)
 {
-    if (in_timerprocess()) {
+    if (!in_main_thread()) {
         ::printf("ERROR: delay() from timer process\n");
         return;
     }
@@ -373,6 +373,11 @@ void *VRBRAINScheduler::_storage_thread(void *arg)
 bool VRBRAINScheduler::in_timerprocess()
 {
     return getpid() != _main_task_pid;
+}
+
+bool VRBRAINScheduler::in_main_thread()
+{
+    return getpid() == _main_task_pid;
 }
 
 void VRBRAINScheduler::system_initialized() {
