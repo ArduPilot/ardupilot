@@ -7,6 +7,7 @@ void Sub::read_inertia()
     inertial_nav.update(G_Dt);
 
     // pull position from interial nav library
+    ahrs.get_origin(ekf_origin);
     Location loc;
     ahrs.get_position(loc);
     current_loc.lng = loc.lng;
