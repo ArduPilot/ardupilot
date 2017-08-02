@@ -23,6 +23,7 @@ import ardusub
 import quadplane
 import balancebot
 
+import examples
 from pysim import util
 from pymavlink import mavutil
 from pymavlink.generator import mavtemplate
@@ -131,7 +132,7 @@ def build_devrelease():
 
 def build_examples():
     """Build examples."""
-    for target in 'px4-v2', 'navio':
+    for target in 'fmuv2', 'px4-v2', 'navio', 'linux':
         print("Running build.examples for %s" % target)
         try:
             util.build_examples(target)
@@ -390,8 +391,11 @@ def run_step(step):
     if step == 'build.DevRelease':
         return build_devrelease()
 
-    if step == 'build.Examples':
+    if step == 'build.examples':
         return build_examples()
+
+    if step == 'run.examples':
+        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
 
     if step == 'build.Parameters':
         return build_parameters()
@@ -665,11 +669,12 @@ if __name__ == "__main__":
         'build.All',
         'build.Binaries',
         # 'build.DevRelease',
-        'build.Examples',
         'build.Parameters',
 
         'build.unit_tests',
         'run.unit_tests',
+        'build.examples',
+        'run.examples',
 
         'build.ArduPlane',
         'defaults.ArduPlane',
