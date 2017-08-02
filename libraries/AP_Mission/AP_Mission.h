@@ -173,7 +173,14 @@ public:
         bool cold_start; // use cold start procedure
         uint16_t height_delay_cm; // height delay for start
     };
-    
+
+    // NAV_SET_YAW_SPEED support
+    struct PACKED Set_Yaw_Speed {
+        float angle_deg;        // target angle in degrees (0=north, 90=east)
+        float speed;            // speed in meters/second
+        uint8_t relative_angle; // 0 = absolute angle, 1 = relative angle
+    };
+
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -228,12 +235,15 @@ public:
 
         // DO_ENGINE_CONTROL
         Do_Engine_Control do_engine_control;
-        
-        // location
-        Location location;      // Waypoint location
 
         // navigation delay
         Navigation_Delay_Command nav_delay;
+
+        // navigation delay
+        Set_Yaw_Speed set_yaw_speed;
+
+        // location
+        Location location;      // Waypoint location
 
         // raw bytes, for reading/writing to eeprom. Note that only 10 bytes are available
         // if a 16 bit command ID is used
