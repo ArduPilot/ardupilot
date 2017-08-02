@@ -59,6 +59,7 @@ public:
     void     reboot(bool hold_in_bootloader);
 
     bool     in_timerprocess();
+    bool     in_main_thread();
     void     system_initialized();
     void     hal_initialized() { _hal_initialized = true; }
 
