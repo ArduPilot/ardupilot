@@ -277,7 +277,7 @@ size_t PX4UARTDriver::write(uint8_t c)
     }
 
 	size_t res = 0;
-	if(_write_sem.take(0)) {
+	if(_write_sem.take_nonblocking()) {
 		res = _writebuf.write(&c, 1);
 		_write_sem.give();
 	}
@@ -310,7 +310,7 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
     }
 
 	size_t res = 0;
-	if(_write_sem.take(0)) {
+	if(_write_sem.take_nonblocking()) {
 		res = _writebuf.write(buffer, size);
 		_write_sem.give();
 	}
@@ -434,7 +434,7 @@ void PX4UARTDriver::_timer_tick(void)
     if (n > 0) {
         ByteBuffer::IoVec vec[2];
         perf_begin(_perf_uart);
-		if(_write_sem.take(0)) {
+		if(_write_sem.take_nonblocking()) {
 			const auto n_vec = _writebuf.peekiovec(vec, n);
 			for (int i = 0; i < n_vec; i++) {
 				ret = _write_fd(vec[i].data, (uint16_t)vec[i].len);
