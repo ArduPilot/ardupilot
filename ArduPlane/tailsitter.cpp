@@ -62,58 +62,125 @@ void QuadPlane::tailsitter_output(void)
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
 
-    const float servo_scale_magic = 4500.0f;
-    static float orig_kP = -1.0f;
+    // scale factor required for normalizing roll/pitch/yaw servo values
+    const float angle_servo_max = SERVO_MAX;
+    const float throttle_servo_max = 100.0f;
+
+    static float orig_pkP = -1.0f;
+    static float orig_rkP = -1.0f;
+    static float orig_ykP = -1.0f;
 
     if (tailsitter.tcomp_gain > 0) {
-        if (orig_kP < 0.0f) {
-            orig_kP = attitude_control->get_rate_pitch_pid().kP();
+        if (orig_pkP < 0.0f) {
+            orig_pkP = attitude_control->get_rate_pitch_pid().kP();
         }
-        // boost throttle when pitch or yaw error is large
+        if (orig_rkP < 0.0f) {
+            orig_rkP = attitude_control->get_rate_roll_pid().kP();
+        }
+        if (orig_ykP < 0.0f) {
+            orig_ykP = attitude_control->get_rate_yaw_pid().kP();
+        }
+
         float pitch_error_cd = (plane.nav_pitch_cd - ahrs_view->pitch_sensor) * 0.5f;
-        float pitch_error_norm = constrain_float(fabsf(pitch_error_cd), 0, servo_scale_magic) / servo_scale_magic;
+        float pitch_error_norm = constrain_float(fabsf(pitch_error_cd), 0, angle_servo_max) / angle_servo_max;
 
         float yaw_error_cd = (wrap_360_cd(attitude_control->get_att_target_euler_cd().z) - ahrs_view->yaw_sensor) * 0.5;
-        float yaw_error_norm = constrain_float(fabsf(yaw_error_cd), 0, servo_scale_magic) / servo_scale_magic;
+        float yaw_error_norm = constrain_float(fabsf(yaw_error_cd), 0, angle_servo_max) / angle_servo_max;
 
-        // prioritize pitch over yaw by attenuating aileron control when pitch demand is large
-        // Apparently get_output_norm will return zero if k_elevator is not mapped to a PWM channel???
-        float elev_d = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) / servo_scale_magic;
-        // use an exponential mapping to attenuate only for larger values of elev_d
-        float elevd2 = elev_d * elev_d;
-        float elevd4 = elevd2 * elevd2;
-        float ail_scale = 1.0f - (0.5f * elevd4);
+        float roll_error_cd = (plane.nav_roll_cd - ahrs_view->roll_sensor) * 0.5f;
+        float roll_error_norm = constrain_float(fabsf(roll_error_cd), 0, angle_servo_max) / angle_servo_max;
 
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,
-                ail_scale * SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
+        float norm_err_max = 0.0f;
+        float thr_boost = 0.0f;
+        float elev_d = 0.0f;
+        float ail_scale = 0.0f;
 
-        float norm_err_max = fmaxf(yaw_error_norm, pitch_error_norm);
-        float thr_boost = 1.0f + norm_err_max * tailsitter.tcomp_gain;
+        // assume that k_throttle will not be assigned for twin_engine tailsitters
+        bool twin_engine = !SRV_Channels::function_assigned(SRV_Channel::k_throttle);
 
-        int16_t thr_scaledL = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft);
-        int16_t thr_scaledR = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight);
+        // allow throttle boost only if throttle stick is above 10%
+        bool enable_boost = plane.channel_throttle->get_control_in() > 10;
 
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, thr_boost * thr_scaledL);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, thr_boost * thr_scaledR);
+        float avg_thr_norm = 0;
+        if (twin_engine) {
+            // boost throttle when pitch or yaw error is large (roll is controlled with diff. throttle)
+            norm_err_max = fmaxf(yaw_error_norm, pitch_error_norm);
+            thr_boost = 1.0f + norm_err_max * tailsitter.tcomp_gain;
 
-        // reduce pitch PID gains in proportion to throttle level
-        float avg_thr_norm = (thr_scaledL + thr_scaledR) / 200.0f;
-        float gain_scale = fminf(1.0f, 0.5f / avg_thr_norm);
-        float pitch_kP = gain_scale * orig_kP;
+            // prioritize pitch over yaw by attenuating aileron control when pitch demand is large
+            // Apparently get_output_norm will return zero if k_elevator is not mapped to a PWM channel???
+            elev_d = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) / angle_servo_max;
+
+            // use an exponential mapping to attenuate only for larger values of elev_d
+            float elevd2 = elev_d * elev_d;
+            float elevd4 = elevd2 * elevd2;
+            ail_scale = 1.0f - (0.5f * elevd4);
+
+            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,
+                    ail_scale * SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
+
+            int16_t thr_scaledL = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft);
+            int16_t thr_scaledR = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight);
+
+            // boost throttle only if throttle stick is above 10%
+            if (enable_boost) {
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, thr_boost * thr_scaledL);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, thr_boost * thr_scaledR);
+                avg_thr_norm = thr_boost * (thr_scaledL + thr_scaledR) / (2 * throttle_servo_max);
+            } else {
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, thr_scaledL);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, thr_scaledR);
+                avg_thr_norm = (thr_scaledL + thr_scaledR) / (2 * throttle_servo_max);
+            }
+
+
+        } else {
+            // boost throttle when roll error is large (rudder sometimes has insufficient authority at low throttle)
+            norm_err_max = roll_error_norm;
+
+            int16_t thr_scaled = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+
+            if (enable_boost && norm_err_max > 0.1f) {
+                // scaling throttle doesn't work in QHOVER, because it's canceled by the altitude controller
+                // instead, just add 0.5 (approx. hover throttle) to the scaled error
+                thr_boost = 0.5f + norm_err_max * tailsitter.tcomp_gain;
+                avg_thr_norm = thr_boost;
+
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, avg_thr_norm * throttle_servo_max);
+            } else {
+                avg_thr_norm = thr_scaled / throttle_servo_max;
+            }
+        }
+
+        // reduce PID gains in proportion to throttle level
+        float pitch_kP = orig_pkP;
+        float roll_kP = orig_rkP;
+        float yaw_kP = orig_rkP;
+
+        float gain_scale = 1.0;
+        if (true && avg_thr_norm > 0.5f) { //motors->get_throttle_hover()) {
+            gain_scale = 0.5f / avg_thr_norm;
+            pitch_kP *= gain_scale;
+            roll_kP *= gain_scale;
+            yaw_kP *= gain_scale;
+        }
         attitude_control->get_rate_pitch_pid().kP(pitch_kP);
+        attitude_control->get_rate_roll_pid().kP(roll_kP);
+        attitude_control->get_rate_yaw_pid().kP(yaw_kP);
 
         // temporary debug logging
         static int dec_count=0;
-        if (dec_count++ >= 3) {
+        if ((dec_count++ >= 3) && (thr_boost > 1.05f)) {
             dec_count = 0;
-            hal.console->printf("target_yaw: %5.3f, yaw: %5.3f\n",
-                    (double) attitude_control->get_att_target_euler_cd().z,
-                    (double) ahrs_view->yaw_sensor);
-            DataFlash_Class::instance()->Log_Write("TCOM", "TimeUS,Perr,YErr,ThrB,ElvD,AilS,PkP,DesY,Yaw,Gscl", "Qfffffffff",
+//            hal.console->printf("roll_error_norm: %5.3f, thr_boosted: %5.3f, thr_scaled: %5.3f\n",
+//                    (double) roll_error_norm,
+//                    (double) thr_boosted,
+//                    (double) thr_scaled);
+            DataFlash_Class::instance()->Log_Write("TCOM", "TimeUS,Perr,YErr,ThrA,ElvD,AilS,PkP,DesY,Yaw,Gscl", "Qfffffffff",
                                                    AP_HAL::micros64(),
                                                    (double) pitch_error_norm,
                                                    (double) yaw_error_norm,
-                                                   (double) thr_boost,
+                                                   (double) avg_thr_norm,
                                                    (double) elev_d,
                                                    (double) ail_scale,
                                                    (double) pitch_kP,
