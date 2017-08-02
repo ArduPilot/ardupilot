@@ -385,7 +385,6 @@ private:
     // Loiter control
     uint16_t loiter_duration;       // How long we should loiter at the nav_waypoint (time in seconds)
     uint32_t loiter_start_time;     // How long have we been loitering - The start time in millis
-    bool active_loiter;             // TRUE if we actively return to the loitering waypoint if we drift off
     float distance_past_wp;         // record the distance we have gone past the wp
     bool previously_reached_wp;     // set to true if we have EVER reached the waypoint
 
@@ -479,12 +478,10 @@ private:
     void load_parameters(void);
     bool use_pivot_steering(float yaw_error_cd);
     void set_servos(void);
-    void set_auto_WP(const struct Location& loc);
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
     void set_system_time_from_GPS();
-    void restart_nav();
     void exit_mission();
     void do_RTL(void);
     bool verify_RTL();
@@ -539,7 +536,7 @@ private:
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    void do_nav_wp(const AP_Mission::Mission_Command& cmd);
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_at_dest);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
@@ -563,7 +560,6 @@ private:
     bool motor_active();
     void update_home();
     void accel_cal_update(void);
-    bool in_stationary_loiter(void);
     void crash_check();
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
