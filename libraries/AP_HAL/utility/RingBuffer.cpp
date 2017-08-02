@@ -66,7 +66,9 @@ uint32_t ByteBuffer::space(void) const
         ret = size;
     }
 
-    ret += _head - tail - 1;
+	if(_head != tail) {
+		ret += _head - tail - 1;
+	}
 
     return ret;
 }
