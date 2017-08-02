@@ -70,7 +70,7 @@ void Scheduler::delay_microseconds(uint16_t usec)
 
 void Scheduler::delay(uint16_t ms)
 {
-    if (in_timerprocess()) {
+    if (!in_main_thread()) {
         ::printf("ERROR: delay() from timer process\n");
         return;
     }
@@ -264,6 +264,11 @@ void *Scheduler::_io_thread(void *arg)
 bool Scheduler::in_timerprocess() 
 {
     return getpid() != _main_task_pid;
+}
+
+bool Scheduler::in_main_thread()
+{
+    return getpid() == _main_task_pid;
 }
 
 void Scheduler::system_initialized() {
