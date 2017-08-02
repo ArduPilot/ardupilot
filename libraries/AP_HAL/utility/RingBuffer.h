@@ -88,7 +88,7 @@ private:
     uint32_t size;
 
     std::atomic<uint32_t> head{0}; // where to read data
-    std::atomic<uint32_t> tail{0}; // where to write data
+    std::atomic<uint32_t> written{0}; // how much data was written
 };
 
 /*
