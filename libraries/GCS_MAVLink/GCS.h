@@ -426,6 +426,8 @@ private:
     ///
     uint16_t                    packet_drops;
 
+    bool _in_update;
+
     // waypoints
     uint16_t        waypoint_dest_sysid; // where to send requests
     uint16_t        waypoint_dest_compid; // "
