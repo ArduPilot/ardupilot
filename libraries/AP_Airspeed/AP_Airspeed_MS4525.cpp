@@ -47,6 +47,7 @@ bool AP_Airspeed_MS4525::init()
         uint8_t bus;
         uint8_t addr;
     } addresses[] = {
+        { 2, MS4525D0_I2C_ADDR },
         { 1, MS4525D0_I2C_ADDR },
         { 0, MS4525D0_I2C_ADDR },
     };
