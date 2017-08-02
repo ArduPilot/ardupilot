@@ -111,10 +111,6 @@ void Scheduler::resume_timer_procs() {
     }
 }
 
-bool Scheduler::in_timerprocess() {
-    return _in_timer_proc || _in_io_proc;
-}
-
 void Scheduler::system_initialized() {
     if (_initialized) {
         AP_HAL::panic(

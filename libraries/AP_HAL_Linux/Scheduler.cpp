@@ -348,11 +348,6 @@ void Scheduler::_io_task()
     _run_io();
 }
 
-bool Scheduler::in_timerprocess()
-{
-    return _in_timer_proc;
-}
-
 bool Scheduler::in_main_thread()
 {
     return pthread_equal(pthread_self(), _main_ctx);
