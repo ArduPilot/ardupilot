@@ -33,21 +33,23 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(uint8_t bus, RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state)
+AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder &_ranger, uint8_t instance, 
+                                                           RangeFinder::RangeFinder_State &_state, 
+                                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
     : AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_LASER)
-    , dev(hal.i2c_mgr->get_device(bus, _ranger._address[_state.instance]))
-{
-}
+    , dev(std::move(i2c_dev)) {}
 
 /*
    detect if a TeraRanger rangefinder is connected. We'll detect by
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(uint8_t bus, RangeFinder &_ranger, uint8_t instance,
-                                                     RangeFinder::RangeFinder_State &_state)
+AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(RangeFinder &_ranger, uint8_t instance, 
+                                                             RangeFinder::RangeFinder_State &_state, 
+                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
 {
-    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(bus, _ranger, instance, _state);
+    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(_ranger, instance, 
+                                                                            _state, std::move(i2c_dev));
     if (!sensor) {
         return nullptr;
     }
