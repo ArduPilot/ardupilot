@@ -51,7 +51,6 @@ private:
     bool _calibrate();
 
     void _update();
-    void _update_timer();
 
     AP_AK8963_BusDriver *_bus;
 
@@ -60,7 +59,6 @@ private:
     float _mag_y_accum;
     float _mag_z_accum;
     uint32_t _accum_count;
-    uint32_t _last_update_timestamp;
 
     uint8_t _compass_instance;
     bool _initialized;
