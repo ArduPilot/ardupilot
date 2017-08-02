@@ -32,7 +32,6 @@ public:
     void     reboot(bool hold_in_bootloader);
 
     bool     in_main_thread();
-    bool     in_timerprocess();
     void     system_initialized();
     void     hal_initialized();
     

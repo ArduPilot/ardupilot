@@ -443,11 +443,6 @@ void *PX4Scheduler::_uavcan_thread(void *arg)
 }
 #endif
 
-bool PX4Scheduler::in_timerprocess()
-{
-    return getpid() != _main_task_pid;
-}
-
 bool PX4Scheduler::in_main_thread()
 {
     return getpid() == _main_task_pid;

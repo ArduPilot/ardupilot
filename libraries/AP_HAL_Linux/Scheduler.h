@@ -35,7 +35,6 @@ public:
     void     suspend_timer_procs();
     void     resume_timer_procs();
 
-    bool     in_timerprocess();
     bool     in_main_thread();
 
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);

@@ -370,11 +370,6 @@ void *VRBRAINScheduler::_storage_thread(void *arg)
     return nullptr;
 }
 
-bool VRBRAINScheduler::in_timerprocess()
-{
-    return getpid() != _main_task_pid;
-}
-
 bool VRBRAINScheduler::in_main_thread()
 {
     return getpid() == _main_task_pid;
