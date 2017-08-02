@@ -1,31 +1,4 @@
 #include "Rover.h"
-/*
- *  set_auto_WP - sets the target location the vehicle should drive to in Auto mode
- */
-void Rover::set_auto_WP(const struct Location& loc)
-{
-    // copy the current WP into the OldWP slot
-    // ---------------------------------------
-    prev_WP = next_WP;
-
-    // Load the next_WP slot
-    // ---------------------
-    next_WP = loc;
-
-    // are we already past the waypoint? This happens when we jump
-    // waypoints, and it can cause us to skip a waypoint. If we are
-    // past the waypoint when we start on a leg, then use the current
-    // location as the previous waypoint, to prevent immediately
-    // considering the waypoint complete
-    if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Resetting previous WP");
-        prev_WP = current_loc;
-    }
-
-    // this is handy for the groundstation
-    wp_totalDistance = get_distance(current_loc, next_WP);
-    wp_distance      = wp_totalDistance;
-}
 
 // checks if we should update ahrs home position from the EKF's position
 void Rover::update_home_from_EKF()
@@ -132,13 +105,6 @@ void Rover::set_system_time_from_GPS()
 
         system_time_set = true;
     }
-}
-
-void Rover::restart_nav()
-{
-    g.pidSpeedThrottle.reset_I();
-    prev_WP = current_loc;
-    mission.start_or_resume();
 }
 
 /*
