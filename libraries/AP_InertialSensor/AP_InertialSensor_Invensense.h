@@ -173,6 +173,7 @@ class AP_Invensense_AuxiliaryBus : public AuxiliaryBus
 
 public:
     AP_HAL::Semaphore *get_semaphore() override;
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb) override;
 
 protected:
     AP_Invensense_AuxiliaryBus(AP_InertialSensor_Invensense &backend, uint32_t devid);
