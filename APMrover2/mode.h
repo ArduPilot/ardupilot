@@ -176,24 +176,38 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-    void update_navigation() override;
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
     bool failsafe_throttle_suppress() const override { return false; }
 
-    enum GuidedMode {
-        Guided_WP,
-        Guided_Angle,
-        Guided_Velocity
-    };
+    // return distance (in meters) to destination
+    float get_distance_to_destination() const override;
 
-    // Guided
-    GuidedMode guided_mode;  // stores which GUIDED mode the vehicle is in
+    // set desired location, heading and speed
+    void set_desired_location(const struct Location& destination) override;
+    void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
+
+    // set desired heading-delta, turn-rate and speed
+    void set_desired_heading_delta_and_speed(float yaw_delta_cd, float target_speed);
+    void set_desired_turn_rate_and_speed(float turn_rate_cds, float target_speed);
 
 protected:
 
+    enum GuidedMode {
+        Guided_WP,
+        Guided_HeadingAndSpeed,
+        Guided_TurnRateAndSpeed
+    };
+
     bool _enter() override;
+
+    GuidedMode _guided_mode;    // stores which GUIDED mode the vehicle is in
+
+    // attitude control
+    bool have_attitude_target;  // true if we have a valid attitude target
+    uint32_t _des_att_time_ms;  // system time last call to set_desired_attitude was made (used for timeout)
+    float _desired_yaw_rate_cds;// target turn rate centi-degrees per second
 };
 
 
