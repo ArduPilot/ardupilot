@@ -389,12 +389,9 @@ void Rover::update_GPS_10Hz(void)
 
         // set system time if necessary
         set_system_time_from_GPS();
-
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
 #if CAMERA == ENABLED
-            camera.update();
+        camera.update();
 #endif
-        }
     }
 }
 
