@@ -2,6 +2,7 @@
 #include "Rover.h"
 
 Mode::Mode() :
+    ahrs(rover.ahrs),
     g(rover.g),
     g2(rover.g2),
     channel_steer(rover.channel_steer),
@@ -15,12 +16,10 @@ void Mode::exit()
     _exit();
 
     lateral_acceleration = 0.0f;
-    rover.throttle = 500;
     rover.g.pidSpeedThrottle.reset_I();
     if (!rover.in_auto_reverse) {
         rover.set_reverse(false);
     }
-    rover.rtl_complete = false;
 }
 
 bool Mode::enter()
@@ -29,51 +28,42 @@ bool Mode::enter()
     return _enter();
 }
 
+// set desired location
+void Mode::set_desired_location(const struct Location& destination)
+{
+    // record targets
+    _origin = rover.current_loc;
+    _destination = destination;
+    _desired_speed = g.speed_cruise;
+
+    // initialise distance
+    _distance_to_destination = get_distance(rover.current_loc, _destination);
+    _reached_destination = false;
+}
+
+// set desired heading and speed
+void Mode::set_desired_heading_and_speed(float yaw_angle_cd, float target_speed)
+{
+    // handle initialisation
+    _reached_destination = false;
+
+    // record targets
+    _desired_yaw_cd = yaw_angle_cd;
+    _desired_speed = target_speed;
+}
+
 void Mode::calc_throttle(float target_speed)
 {
-    int16_t &throttle = rover.throttle;
-    const int32_t next_navigation_leg_cd = rover.next_navigation_leg_cd;
-    const AP_AHRS &ahrs = rover.ahrs;
-    const float wp_distance = rover.wp_distance;
-    float &groundspeed_error = rover.groundspeed_error;
-    const float ground_speed = rover.ground_speed;
+    // get ground speed from vehicle
+    const float &groundspeed = rover.ground_speed;
+
+    // calculate ground speed and ground speed error
+    _speed_error = fabsf(target_speed) - groundspeed;
 
     const float throttle_base = (fabsf(target_speed) / g.speed_cruise) * g.throttle_cruise;
-    const int throttle_target = throttle_base + calc_throttle_nudge();
+    const float throttle_target = throttle_base + calc_throttle_nudge();
 
-    /*
-        reduce target speed in proportion to turning rate, up to the
-        SPEED_TURN_GAIN percentage.
-    */
-    float steer_rate = fabsf(lateral_acceleration / (g.turn_max_g * GRAVITY_MSS));
-    steer_rate = constrain_float(steer_rate, 0.0f, 1.0f);
-
-    // use g.speed_turn_gain for a 90 degree turn, and in proportion
-    // for other turn angles
-    const int32_t turn_angle = wrap_180_cd(next_navigation_leg_cd - ahrs.yaw_sensor);
-    const float speed_turn_ratio = constrain_float(fabsf(turn_angle / 9000.0f), 0.0f, 1.0f);
-    const float speed_turn_reduction = (100 - g.speed_turn_gain) * speed_turn_ratio * 0.01f;
-
-    float reduction = 1.0f - steer_rate * speed_turn_reduction;
-
-    if (is_autopilot_mode() && rover.mode_guided.guided_mode != ModeGuided::Guided_Velocity && wp_distance <= g.speed_turn_dist) {
-        // in auto-modes we reduce speed when approaching waypoints
-        const float reduction2 = 1.0f - speed_turn_reduction;
-        if (reduction2 < reduction) {
-            reduction = reduction2;
-        }
-    }
-
-    // reduce the target speed by the reduction factor
-    target_speed *= reduction;
-
-    groundspeed_error = fabsf(target_speed) - ground_speed;
-
-    throttle = throttle_target + (g.pidSpeedThrottle.get_pid(groundspeed_error * 100.0f) / 100.0f);
-
-    // also reduce the throttle by the reduction factor. This gives a
-    // much faster response in turns
-    throttle *= reduction;
+    float throttle = throttle_target + (g.pidSpeedThrottle.get_pid(_speed_error * 100.0f) / 100.0f);
 
     if (rover.in_reverse) {
         g2.motors.set_throttle(constrain_int16(-throttle, -g.throttle_max, -g.throttle_min));
@@ -81,7 +71,7 @@ void Mode::calc_throttle(float target_speed)
         g2.motors.set_throttle(constrain_int16(throttle, g.throttle_min, g.throttle_max));
     }
 
-    if (!rover.in_reverse && g.braking_percent != 0 && groundspeed_error < -g.braking_speederr) {
+    if (!rover.in_reverse && g.braking_percent != 0 && _speed_error < -g.braking_speederr) {
         // the user has asked to use reverse throttle to brake. Apply
         // it in proportion to the ground speed error, but only when
         // our ground speed error is more than BRAKING_SPEEDERR.
@@ -89,7 +79,7 @@ void Mode::calc_throttle(float target_speed)
         // We use a linear gain, with 0 gain at a ground speed error
         // of braking_speederr, and 100% gain when groundspeed_error
         // is 2*braking_speederr
-        const float brake_gain = constrain_float(((-groundspeed_error)-g.braking_speederr)/g.braking_speederr, 0.0f, 1.0f);
+        const float brake_gain = constrain_float(((-_speed_error)-g.braking_speederr)/g.braking_speederr, 0.0f, 1.0f);
         const int16_t braking_throttle = g.throttle_max * (g.braking_percent * 0.01f) * brake_gain;
         g2.motors.set_throttle(constrain_int16(-braking_throttle, -g.throttle_max, -g.throttle_min));
 
@@ -97,19 +87,8 @@ void Mode::calc_throttle(float target_speed)
         // go negative
         rover.set_reverse(true);
     }
-
-    if (rover.mode_guided.guided_mode != ModeGuided::Guided_Velocity) {
-        if (rover.use_pivot_steering()) {
-            // In Guided Velocity, only the steering input is used to calculate the pivot turn.
-            g2.motors.set_throttle(0.0f);
-        }
-    }
 }
 
-void Mode::calc_lateral_acceleration()
-{
-    calc_lateral_acceleration(rover.current_loc, rover.next_WP);
-}
 
 // calculate pilot input to nudge throttle up or down
 int16_t Mode::calc_throttle_nudge()
@@ -129,21 +108,59 @@ int16_t Mode::calc_throttle_nudge()
     return throttle_nudge;
 }
 
-/*
- * Calculate desired turn angles (in medium freq loop)
- */
-void Mode::calc_lateral_acceleration(const struct Location &last_WP, const struct Location &next_WP)
+// calculated a reduced speed(in m/s) based on yaw error and lateral acceleration and/or distance to a waypoint
+// should be called after calc_lateral_acceleration and before calc_throttle
+// relies on these internal members being updated: lateral_acceleration, _yaw_error_cd, _distance_to_destination
+float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
+{
+    // this method makes use the following internal variables
+    const float yaw_error_cd = _yaw_error_cd;
+    const float target_lateral_accel_G = lateral_acceleration;
+    const float distance_to_waypoint = _distance_to_destination;
+
+    // calculate the yaw_error_ratio which is the error (capped at 90degrees) expressed as a ratio (from 0 ~ 1)
+    float yaw_error_ratio = constrain_float(fabsf(yaw_error_cd / 9000.0f), 0.0f, 1.0f);
+
+    // apply speed_turn_gain parameter (expressed as a percentage) to yaw_error_ratio
+    yaw_error_ratio *= (100 - g.speed_turn_gain) * 0.01f;
+
+    // calculate absolute lateral acceleration expressed as a ratio (from 0 ~ 1) of the vehicle's maximum lateral acceleration
+    float lateral_accel_ratio = constrain_float(fabsf(target_lateral_accel_G / (g.turn_max_g * GRAVITY_MSS)), 0.0f, 1.0f);
+
+    // calculate a lateral acceleration based speed scaling
+    float lateral_accel_speed_scaling = 1.0f - lateral_accel_ratio * yaw_error_ratio;
+
+    // calculate a pivot steering based speed scaling (default to no reduction)
+    float pivot_speed_scaling = 1.0f;
+    if (rover.use_pivot_steering(yaw_error_cd)) {
+        pivot_speed_scaling = 0.0f;
+    }
+
+    // calculate a waypoint distance based scaling (default to no reduction)
+    float distance_speed_scaling = 1.0f;
+    if (is_positive(distance_to_waypoint)) {
+        distance_speed_scaling = 1.0f - yaw_error_ratio;
+    }
+
+    // return minimum speed
+    return desired_speed * MIN(MIN(lateral_accel_speed_scaling, distance_speed_scaling), pivot_speed_scaling);
+}
+
+// calculate the lateral acceleration target to cause the vehicle to drive along the path from origin to destination
+// this function update lateral_acceleration and _yaw_error_cd members
+void Mode::calc_lateral_acceleration(const struct Location &origin, const struct Location &destination)
 {
     // Calculate the required turn of the wheels
     // negative error = left turn
     // positive error = right turn
-    rover.nav_controller->update_waypoint(last_WP, next_WP);
+    rover.nav_controller->update_waypoint(origin, destination);
     lateral_acceleration = rover.nav_controller->lateral_acceleration();
-    if (rover.use_pivot_steering()) {
-        const int16_t bearing_error = wrap_180_cd(rover.nav_controller->target_bearing_cd() - rover.ahrs.yaw_sensor) / 100;
-        if (bearing_error > 0) {
+    _yaw_error_cd = wrap_180_cd(rover.nav_controller->target_bearing_cd() - ahrs.yaw_sensor);
+    if (rover.use_pivot_steering(_yaw_error_cd)) {
+        if (is_positive(_yaw_error_cd)) {
             lateral_acceleration = g.turn_max_g * GRAVITY_MSS;
-        } else {
+        }
+        if (is_negative(_yaw_error_cd)) {
             lateral_acceleration = -g.turn_max_g * GRAVITY_MSS;
         }
     }
@@ -154,7 +171,7 @@ void Mode::calc_lateral_acceleration(const struct Location &last_WP, const struc
 */
 void Mode::calc_nav_steer()
 {
-    // add in obstacle avoidance
+    // add obstacle avoidance response to lateral acceleration target
     if (!rover.in_reverse) {
         lateral_acceleration += (rover.obstacle.turn_angle / 45.0f) * g.turn_max_g;
     }

@@ -27,13 +27,6 @@ public:
     // convert user input to targets, implement high level control for this mode
     virtual void update() = 0;
 
-    // calculates the amount of throttle that should be output based
-    // on things like proximity to corners and current speed
-    virtual void calc_throttle(float target_speed);
-
-    // called to determine where the vehicle should go next, and how it should get there
-    virtual void update_navigation() { }  // most modes don't navigate
-
     //
     // attributes of the mode
     //
@@ -61,6 +54,22 @@ public:
     // true if heading is controlled
     virtual bool attitude_stabilized() const { return true; }
 
+    //
+    // navigation methods
+    //
+
+    // return distance (in meters) to destination
+    virtual float get_distance_to_destination() const { return 0.0f; }
+
+    // set desired location and speed
+    virtual void set_desired_location(const struct Location& destination);
+    // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
+    virtual bool reached_destination() { return true; }
+    virtual void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed);
+
+    // get speed error in m/s, returns zero for modes that do not control speed
+    float speed_error() { return _speed_error; }
+
     // Navigation control variables
     // The instantaneous desired lateral acceleration in m/s/s
     float lateral_acceleration;
@@ -76,21 +85,38 @@ protected:
     // calculate steering angle given a desired lateral acceleration
     virtual void calc_nav_steer();
 
-    // calculate desired lateral acceleration using current location and target held in next_WP
-    virtual void calc_lateral_acceleration();
-
     // calculate desired lateral acceleration
-    void calc_lateral_acceleration(const struct Location &last_wp, const struct Location &next_WP);
+    void calc_lateral_acceleration(const struct Location &origin, const struct Location &destination);
+
+    // calculates the amount of throttle that should be output based
+    // on things like proximity to corners and current speed
+    virtual void calc_throttle(float target_speed);
 
     // calculate pilot input to nudge throttle up or down
     int16_t calc_throttle_nudge();
 
+    // calculated a reduced speed(in m/s) based on yaw error and lateral acceleration and/or distance to a waypoint
+    // should be called after calc_lateral_acceleration and before calc_throttle
+    // relies on these internal members being updated: lateral_acceleration, _yaw_error_cd, _distance_to_destination
+    float calc_reduced_speed_for_turn_or_distance(float desired_speed);
+
     // references to avoid code churn:
+    class AP_AHRS &ahrs;
     class Parameters &g;
     class ParametersG2 &g2;
     class RC_Channel *&channel_steer;  // TODO : Pointer reference ?
     class RC_Channel *&channel_throttle;
     class AP_Mission &mission;
+
+    // private members for waypoint navigation
+    Location _origin;           // origin Location (vehicle will travel from the origin to the destination)
+    Location _destination;      // destination Location when in Guided_WP
+    float _distance_to_destination; // distance from vehicle to final destination in meters
+    bool _reached_destination;  // true once the vehicle has reached the destination
+    float _desired_yaw_cd;      // desired yaw in centi-degrees
+    float _yaw_error_cd;        // error between desired yaw and actual yaw in centi-degrees
+    float _desired_speed;       // desired speed in m/s
+    float _speed_error;         // ground speed error in m/s
 };
 
 
