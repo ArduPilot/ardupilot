@@ -18,10 +18,6 @@ void Rover::navigate()
     // waypoint distance from rover
     // ----------------------------
     wp_distance = get_distance(current_loc, next_WP);
-
-    // control mode specific updates to nav_bearing
-    // --------------------------------------------
-    update_navigation();
 }
 
 

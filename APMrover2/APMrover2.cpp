@@ -408,9 +408,4 @@ void Rover::update_current_mode(void)
     control_mode->update();
 }
 
-void Rover::update_navigation()
-{
-    control_mode->update_navigation();
-}
-
 AP_HAL_MAIN_CALLBACKS(&rover);
