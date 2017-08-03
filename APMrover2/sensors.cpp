@@ -104,10 +104,10 @@ void Rover::update_wheel_encoder()
     g2.wheel_encoder.update();
 
     // initialise on first iteration
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (wheel_encoder_last_ekf_update_ms == 0) {
         wheel_encoder_last_ekf_update_ms = now;
-        for (uint8_t i = 0; i<g2.wheel_encoder.num_sensors(); i++) {
+        for (uint8_t i = 0; i < g2.wheel_encoder.num_sensors(); i++) {
             wheel_encoder_last_angle_rad[i] = g2.wheel_encoder.get_delta_angle(i);
             wheel_encoder_last_update_ms[i] = g2.wheel_encoder.get_last_reading_ms(i);
         }
@@ -119,18 +119,17 @@ void Rover::update_wheel_encoder()
     // send delta time (time between this wheel encoder time and previous wheel encoder time)
     // in case where wheel hasn't moved, count = 0 (cap the delta time at 50ms - or system time)
     //     use system clock of last update instead of time of last ping
-    float system_dt = (now - wheel_encoder_last_ekf_update_ms) / 1000.0f;
-    for (uint8_t i = 0; i<g2.wheel_encoder.num_sensors(); i++) {
-
+    const float system_dt = (now - wheel_encoder_last_ekf_update_ms) / 1000.0f;
+    for (uint8_t i = 0; i < g2.wheel_encoder.num_sensors(); i++) {
         // calculate angular change (in radians)
-        float curr_angle_rad = g2.wheel_encoder.get_delta_angle(i);
-        float delta_angle = curr_angle_rad - wheel_encoder_last_angle_rad[i];
+        const float curr_angle_rad = g2.wheel_encoder.get_delta_angle(i);
+        const float delta_angle = curr_angle_rad - wheel_encoder_last_angle_rad[i];
         wheel_encoder_last_angle_rad[i] = curr_angle_rad;
 
         // calculate delta time
         float delta_time;
-        uint32_t latest_sensor_update_ms = g2.wheel_encoder.get_last_reading_ms(i);
-        uint32_t sensor_diff_ms = latest_sensor_update_ms - wheel_encoder_last_update_ms[i];
+        const uint32_t latest_sensor_update_ms = g2.wheel_encoder.get_last_reading_ms(i);
+        const uint32_t sensor_diff_ms = latest_sensor_update_ms - wheel_encoder_last_update_ms[i];
 
         // if we have not received any sensor updates, or time difference is too high then use time since last update to the ekf
         // check for old or insane sensor update times
@@ -155,7 +154,6 @@ void Rover::update_wheel_encoder()
         } else {
             wheel_encoder_rpm[i] = 0.0f;
         }
-
     }
 
     // record system time update for next iteration
