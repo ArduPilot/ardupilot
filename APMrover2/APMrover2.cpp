@@ -179,6 +179,8 @@ void Rover::ahrs_update()
     Vector3f velocity;
     if (ahrs.get_velocity_NED(velocity)) {
         ground_speed = norm(velocity.x, velocity.y);
+    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        ground_speed = ahrs.groundspeed();
     }
 
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
@@ -391,10 +393,6 @@ void Rover::update_GPS_10Hz(void)
         set_system_time_from_GPS();
 
         if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-
-            // get ground speed estimate from AHRS
-            ground_speed = ahrs.groundspeed();
-
 #if CAMERA == ENABLED
             camera.update();
 #endif
