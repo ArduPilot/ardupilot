@@ -21,16 +21,19 @@ void ModeSteering::update()
     lateral_acceleration = max_g_force * (channel_steer->get_control_in() / 4500.0f);
 
     // reverse target lateral acceleration if backing up
+    bool reversed = false;
     if (is_negative(target_speed)) {
+        reversed = true;
         lateral_acceleration = -lateral_acceleration;
+        target_speed = fabsf(target_speed);
     }
 
-    // mark us as in_reverse when using a negative throttle to stop AHRS getting off
-    rover.set_reverse(is_negative(target_speed));
+    // mark us as in_reverse when using a negative throttle
+    rover.set_reverse(reversed);
 
     // run steering controller
-    calc_nav_steer();
+    calc_nav_steer(reversed);
 
     // run speed to throttle output controller
-    calc_throttle(target_speed);
+    calc_throttle(target_speed, reversed);
 }
