@@ -182,14 +182,6 @@ void Rover::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void Rover::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage() * 1000,
-        0);
-}
-
 void Rover::send_rangefinder(mavlink_channel_t chan)
 {
     if (!rangefinder.has_data(0) && !rangefinder.has_data(1)) {
@@ -262,11 +254,6 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
             return;
         }
     }
-}
-
-void Rover::send_current_waypoint(mavlink_channel_t chan)
-{
-    mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
 void Rover::send_wheel_encoder(mavlink_channel_t chan)
@@ -387,21 +374,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
         break;
 
-    case MSG_CURRENT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
-        rover.send_current_waypoint(chan);
-        break;
-
-    case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        queued_param_send();
-        break;
-
-    case MSG_NEXT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        queued_waypoint_send();
-        break;
-
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs(rover.ahrs);
@@ -410,11 +382,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         rover.send_simstate(chan);
-        break;
-
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        rover.send_hwstatus(chan);
         break;
 
     case MSG_RANGEFINDER:
@@ -433,14 +400,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
         rover.camera_mount.status_msg(chan);
 #endif  // MOUNT == ENABLED
-        break;
-
-    case MSG_RAW_IMU2:
-    case MSG_LIMITS_STATUS:
-    case MSG_FENCE_STATUS:
-    case MSG_WIND:
-    case MSG_AOA_SSA:
-        // unused
         break;
 
     case MSG_VIBRATION:
@@ -472,31 +431,12 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_pid_tuning(chan);
         break;
 
-    case MSG_MISSION_ITEM_REACHED:
-        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
-        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
-        break;
-
-    case MSG_MAG_CAL_PROGRESS:
-        rover.compass.send_mag_cal_progress(chan);
-        break;
-
-    case MSG_MAG_CAL_REPORT:
-        rover.compass.send_mag_cal_report(chan);
-        break;
-
     case MSG_BATTERY_STATUS:
         send_battery_status(rover.battery);
         break;
 
-    case MSG_RETRY_DEFERRED:
-    case MSG_ADSB_VEHICLE:
-    case MSG_TERRAIN:
-    case MSG_OPTICAL_FLOW:
-    case MSG_GIMBAL_REPORT:
-    case MSG_POSITION_TARGET_GLOBAL_INT:
-    case MSG_LANDING:
-        break;  // just here to prevent a warning
+    default:
+        return GCS_MAVLINK::try_send_message(id);
     }
     return true;
 }

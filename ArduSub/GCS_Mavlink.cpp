@@ -293,14 +293,6 @@ void NOINLINE Sub::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void NOINLINE Sub::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage()*1000,
-        0);
-}
-
 void NOINLINE Sub::send_radio_out(mavlink_channel_t chan)
 {
     mavlink_msg_servo_output_raw_send(
@@ -335,11 +327,6 @@ void NOINLINE Sub::send_vfr_hud(mavlink_channel_t chan)
         (int16_t)(motors.get_throttle() * 100),
         current_loc.alt / 100.0f,
         climb_rate / 100.0f);
-}
-
-void NOINLINE Sub::send_current_waypoint(mavlink_channel_t chan)
-{
-    mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
 /*
@@ -503,9 +490,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_system_time(sub.gps);
         break;
 
-    case MSG_SERVO_OUT:
-        break;
-
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
         send_radio_in(0);
@@ -535,21 +519,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
         send_sensor_offsets(sub.ins, sub.compass, sub.barometer);
-        break;
-
-    case MSG_CURRENT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
-        sub.send_current_waypoint(chan);
-        break;
-
-    case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        queued_param_send();
-        break;
-
-    case MSG_NEXT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        queued_waypoint_send();
         break;
 
     case MSG_RANGEFINDER:
@@ -603,11 +572,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_ahrs2(sub.ahrs);
         break;
 
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        sub.send_hwstatus(chan);
-        break;
-
     case MSG_MOUNT_STATUS:
 #if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
@@ -639,14 +603,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         sub.ahrs.send_ekf_status_report(chan);
         break;
 
-    case MSG_FENCE_STATUS:
-    case MSG_WIND:
-    case MSG_POSITION_TARGET_GLOBAL_INT:
-    case MSG_AOA_SSA:
-    case MSG_LANDING:
-        // unused
-        break;
-
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         sub.send_pid_tuning(chan);
@@ -657,27 +613,11 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_vibration(sub.ins);
         break;
 
-    case MSG_MISSION_ITEM_REACHED:
-        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
-        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
-        break;
-
-    case MSG_RETRY_DEFERRED:
-        break; // just here to prevent a warning
-
-    case MSG_MAG_CAL_PROGRESS:
-        sub.compass.send_mag_cal_progress(chan);
-        break;
-
-    case MSG_MAG_CAL_REPORT:
-        sub.compass.send_mag_cal_report(chan);
-        break;
-
-    case MSG_ADSB_VEHICLE:
-        break; // Do nothing for Sub, here to prevent warning
     case MSG_BATTERY_STATUS:
         send_battery_status(sub.battery);
         break;
+    default:
+        return GCS_MAVLINK::try_send_message(id);
     }
 
     return true;
@@ -817,7 +757,6 @@ GCS_MAVLINK_Sub::data_stream_send(void)
     }
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-        send_message(MSG_SERVO_OUT);
     }
 
     if (sub.gcs_out_of_time) {

@@ -182,14 +182,6 @@ void NOINLINE Copter::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void NOINLINE Copter::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage()*1000,
-        0);
-}
-
 void NOINLINE Copter::send_vfr_hud(mavlink_channel_t chan)
 {
     mavlink_msg_vfr_hud_send(
@@ -200,11 +192,6 @@ void NOINLINE Copter::send_vfr_hud(mavlink_channel_t chan)
         (int16_t)(motors->get_throttle() * 100),
         current_loc.alt / 100.0f,
         climb_rate / 100.0f);
-}
-
-void NOINLINE Copter::send_current_waypoint(mavlink_channel_t chan)
-{
-    mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
 /*
@@ -291,7 +278,7 @@ uint32_t GCS_MAVLINK_Copter::telem_delay() const
     return (uint32_t)(copter.g.telem_delay);
 }
 
-// try to send a message, return false if it won't fit in the serial tx buffer
+// try to send a message, return false if it wasn't sent
 bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -393,21 +380,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         send_sensor_offsets(copter.ins, copter.compass, copter.barometer);
         break;
 
-    case MSG_CURRENT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
-        copter.send_current_waypoint(chan);
-        break;
-
-    case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        queued_param_send();
-        break;
-
-    case MSG_NEXT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        queued_waypoint_send();
-        break;
-
     case MSG_RANGEFINDER:
 #if RANGEFINDER_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
@@ -460,11 +432,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         send_ahrs2(copter.ahrs);
         break;
 
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        copter.send_hwstatus(chan);
-        break;
-
     case MSG_MOUNT_STATUS:
 #if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);    
@@ -515,22 +482,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         send_vibration(copter.ins);
         break;
 
-    case MSG_MISSION_ITEM_REACHED:
-        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
-        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
-        break;
-
-    case MSG_RETRY_DEFERRED:
-        break; // just here to prevent a warning
-
-    case MSG_MAG_CAL_PROGRESS:
-        copter.compass.send_mag_cal_progress(chan);
-        break;
-
-    case MSG_MAG_CAL_REPORT:
-        copter.compass.send_mag_cal_report(chan);
-        break;
-
     case MSG_ADSB_VEHICLE:
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         copter.adsb.send_adsb_vehicle(chan);
@@ -538,8 +489,9 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_BATTERY_STATUS:
         send_battery_status(copter.battery);
         break;
+    default:
+        return GCS_MAVLINK::try_send_message(id);
     }
-
     return true;
 }
 
@@ -687,7 +639,6 @@ GCS_MAVLINK_Copter::data_stream_send(void)
     if (copter.gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-        send_message(MSG_SERVO_OUT);
     }
 
     if (copter.gcs_out_of_time) return;

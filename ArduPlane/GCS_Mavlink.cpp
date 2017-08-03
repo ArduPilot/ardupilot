@@ -294,14 +294,6 @@ void Plane::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void Plane::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage()*1000,
-        0);
-}
-
 void Plane::send_wind(mavlink_channel_t chan)
 {
     Vector3f wind = ahrs.wind_estimate();
@@ -412,11 +404,6 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
             return;
         }
     }
-}
-
-void Plane::send_current_waypoint(mavlink_channel_t chan)
-{
-    mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
 uint8_t GCS_MAVLINK_Plane::sysid_my_gcs() const
@@ -545,21 +532,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_sensor_offsets(plane.ins, plane.compass, plane.barometer);
         break;
 
-    case MSG_CURRENT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
-        plane.send_current_waypoint(chan);
-        break;
-
-    case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        queued_param_send();
-        break;
-
-    case MSG_NEXT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        queued_waypoint_send();
-        break;
-
     case MSG_FENCE_STATUS:
 #if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
@@ -577,11 +549,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.send_simstate(chan);
         CHECK_PAYLOAD_SIZE2(AHRS2);
         send_ahrs2(plane.ahrs);
-        break;
-
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        plane.send_hwstatus(chan);
         break;
 
     case MSG_RANGEFINDER:
@@ -645,13 +612,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_RETRY_DEFERRED:
-        break; // just here to prevent a warning
-
-    case MSG_LIMITS_STATUS:
-        // unused
-        break;
-
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         plane.send_pid_tuning(chan);
@@ -665,19 +625,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_RPM:
         CHECK_PAYLOAD_SIZE(RPM);
         plane.send_rpm(chan);
-        break;
-
-    case MSG_MISSION_ITEM_REACHED:
-        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
-        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
-        break;
-
-    case MSG_MAG_CAL_PROGRESS:
-        plane.compass.send_mag_cal_progress(chan);
-        break;
-
-    case MSG_MAG_CAL_REPORT:
-        plane.compass.send_mag_cal_report(chan);
         break;
 
     case MSG_ADSB_VEHICLE:
@@ -694,6 +641,8 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_LANDING:
         plane.landing.send_landing_message(chan);
         break;
+    default:
+        return GCS_MAVLINK::try_send_message(id);
     }
     return true;
 }
