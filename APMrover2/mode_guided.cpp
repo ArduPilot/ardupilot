@@ -133,7 +133,7 @@ void ModeGuided::set_desired_heading_delta_and_speed(float yaw_delta_cd, float t
         _guided_mode = ModeGuided::Guided_HeadingAndSpeed;
         _desired_yaw_cd = ahrs.yaw_sensor;
     }
-    set_desired_heading_and_speed(wrap_180_cd(_desired_yaw_cd+yaw_delta_cd), target_speed);
+    set_desired_heading_and_speed(wrap_180_cd(_desired_yaw_cd + yaw_delta_cd), target_speed);
 }
 
 // set desired velocity

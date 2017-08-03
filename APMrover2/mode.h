@@ -106,7 +106,7 @@ protected:
     class AP_AHRS &ahrs;
     class Parameters &g;
     class ParametersG2 &g2;
-    class RC_Channel *&channel_steer;  // TODO : Pointer reference ?
+    class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
     class AP_Mission &mission;
 
