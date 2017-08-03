@@ -11,16 +11,15 @@ bool ModeRTL::_enter()
     // set destination
     set_desired_location(rover.home);
 
+    // RTL never reverses
+    rover.set_reverse(false);
+
     g2.motors.slew_limit_throttle(true);
     return true;
 }
 
 void ModeRTL::update()
 {
-    if (!rover.in_auto_reverse) {
-        rover.set_reverse(false);
-    }
-
     if (!_reached_destination) {
         // calculate distance to home
         _distance_to_destination = get_distance(rover.current_loc, _destination);

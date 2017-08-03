@@ -9,16 +9,16 @@ bool ModeGuided::_enter()
     */
     lateral_acceleration = 0.0f;
     set_desired_location(rover.current_loc);
+
+    // guided mode never travels in reverse
+    rover.set_reverse(false);
+
     g2.motors.slew_limit_throttle(true);
     return true;
 }
 
 void ModeGuided::update()
 {
-    if (!rover.in_auto_reverse) {
-        rover.set_reverse(false);
-    }
-
     switch (_guided_mode) {
         case Guided_WP:
         {

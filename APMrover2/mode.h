@@ -83,14 +83,14 @@ protected:
     virtual void _exit() { return; }
 
     // calculate steering angle given a desired lateral acceleration
-    virtual void calc_nav_steer();
+    void calc_nav_steer(bool reversed = false);
 
     // calculate desired lateral acceleration
-    void calc_lateral_acceleration(const struct Location &origin, const struct Location &destination);
+    void calc_lateral_acceleration(const struct Location &origin, const struct Location &destination, bool reversed = false);
 
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
-    virtual void calc_throttle(float target_speed);
+    virtual void calc_throttle(float target_speed, bool reversed = false);
 
     // calculate pilot input to nudge throttle up or down
     int16_t calc_throttle_nudge();
@@ -128,7 +128,7 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-    void calc_throttle(float target_speed) override;
+    void calc_throttle(float target_speed, bool reversed = false);
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
@@ -145,6 +145,9 @@ public:
     // heading and speed control
     void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
     bool reached_heading();
+
+    // execute the mission in reverse (i.e. backing up)
+    void set_reversed(bool value);
 
 protected:
 
@@ -165,6 +168,7 @@ private:
 
     bool _reached_heading;      // true when vehicle has reached desired heading in TurnToHeading sub mode
     bool _stay_active_at_dest;  // true when we should actively maintain position even after reaching the destination
+    bool _reversed;             // execute the mission by backing up
 };
 
 
