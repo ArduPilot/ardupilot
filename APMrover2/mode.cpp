@@ -34,7 +34,7 @@ void Mode::set_desired_location(const struct Location& destination)
     _desired_speed = g.speed_cruise;
 
     // initialise distance
-    _distance_to_destination = get_distance(rover.current_loc, _destination);
+    _distance_to_destination = get_distance(_origin, _destination);
     _reached_destination = false;
 }
 
