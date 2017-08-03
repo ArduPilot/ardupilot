@@ -1,5 +1,15 @@
 #include "Rover.h"
 
+// update mission including starting or stopping commands. called by scheduler at 10Hz
+void Rover::update_mission(void)
+{
+    if (control_mode == &mode_auto) {
+        if (home_is_set != HOME_UNSET && mission.num_commands() > 1) {
+            mission.update();
+        }
+    }
+}
+
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
