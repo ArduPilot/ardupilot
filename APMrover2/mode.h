@@ -262,11 +262,13 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-    void update_navigation() override;
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
     bool failsafe_throttle_suppress() const override { return false; }
+
+    float get_distance_to_destination() const override { return _distance_to_destination; }
+    bool reached_destination() override { return _reached_destination; }
 
 protected:
 
