@@ -288,7 +288,6 @@ private:
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
-    int16_t throttle;
 
     // CH7 control
     // Used to track the CH7 toggle state.
