@@ -17,6 +17,9 @@ bool ModeAuto::_enter()
     auto_triggered = false;
     g2.motors.slew_limit_throttle(true);
 
+    // initialise reversed to be false
+    set_reversed(false);
+
     // restart mission processing
     mission.start_or_resume();
     return true;
@@ -24,9 +27,7 @@ bool ModeAuto::_enter()
 
 void ModeAuto::_exit()
 {
-    // If we are changing out of AUTO mode reset the loiter timer
-    rover.loiter_start_time = 0;
-    // ... and stop running the mission
+    // stop running the mission
     if (mission.state() == AP_Mission::MISSION_RUNNING) {
         mission.stop();
     }
@@ -34,10 +35,6 @@ void ModeAuto::_exit()
 
 void ModeAuto::update()
 {
-    if (!rover.in_auto_reverse) {
-        rover.set_reverse(false);
-    }
-
     switch (_submode) {
         case Auto_WP:
         {
@@ -53,9 +50,9 @@ void ModeAuto::update()
             bool active_at_destination = _reached_destination && _stay_active_at_dest && (_distance_to_destination > rover.g.waypoint_radius);
             if (!_reached_destination || active_at_destination) {
                 // continue driving towards destination
-                calc_lateral_acceleration(active_at_destination ? rover.current_loc : _origin, _destination);
-                calc_nav_steer();
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed));
+                calc_lateral_acceleration(active_at_destination ? rover.current_loc : _origin, _destination, _reversed);
+                calc_nav_steer(_reversed);
+                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), _reversed);
             } else {
                 // we have reached the destination so stop
                 g2.motors.set_throttle(g.throttle_min.get());
@@ -123,6 +120,15 @@ bool ModeAuto::reached_heading()
     return true;
 }
 
+// execute the mission in reverse (i.e. backing up)
+void ModeAuto::set_reversed(bool value)
+{
+    if (_reversed != value) {
+        _reversed = value;
+        rover.set_reverse(_reversed);
+    }
+}
+
 /*
     check for triggering of start of auto mode
 */
@@ -168,10 +174,9 @@ bool ModeAuto::check_trigger(void)
     return false;
 }
 
-void ModeAuto::calc_throttle(float target_speed)
+void ModeAuto::calc_throttle(float target_speed, bool reversed)
 {
-    // If not autostarting OR we are loitering at a waypoint
-    // then set the throttle to minimum
+    // If not autostarting set the throttle to minimum
     if (!check_trigger()) {
         g2.motors.set_throttle(g.throttle_min.get());
         // Stop rotation in case of loitering and skid steering
@@ -180,5 +185,5 @@ void ModeAuto::calc_throttle(float target_speed)
         }
         return;
     }
-    Mode::calc_throttle(target_speed);
+    Mode::calc_throttle(target_speed, reversed);
 }
