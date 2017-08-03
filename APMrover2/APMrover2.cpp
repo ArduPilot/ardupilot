@@ -55,7 +55,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_beacon,          50,     50),
     SCHED_TASK(update_visual_odom,     50,     50),
     SCHED_TASK(update_wheel_encoder,   20,     50),
-    SCHED_TASK(navigate,               10,   1600),
     SCHED_TASK(update_compass,         10,   2000),
     SCHED_TASK(update_mission,         10,   1000),
     SCHED_TASK(update_logging1,        10,   1000),
