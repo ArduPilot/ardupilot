@@ -276,10 +276,6 @@ void Rover::set_reverse(bool reverse)
     if (in_reverse == reverse) {
         return;
     }
-    g.pidSpeedThrottle.reset_I();
-    steerController.reset_I();
-    nav_controller->set_reverse(reverse);
-    steerController.set_reverse(reverse);
     in_reverse = reverse;
 }
 
