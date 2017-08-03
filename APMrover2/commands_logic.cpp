@@ -295,21 +295,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Rover::verify_RTL()
 {
-    if (wp_distance <= g.waypoint_radius) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
-        rtl_complete = true;
-        return true;
-    }
-
-    // have we gone past the waypoint?
-    if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached destination. Distance away %dm",
-                static_cast<int32_t>(fabsf(get_distance(current_loc, next_WP))));
-        rtl_complete = true;
-        return true;
-    }
-
-    return false;
+    return mode_rtl.reached_destination();
 }
 
 bool Rover::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
