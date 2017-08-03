@@ -129,7 +129,7 @@ void Rover::read_radio()
         const float left_input = channel_steer->norm_input();
         const float right_input = channel_throttle->norm_input();
         const float throttle_scaled = 0.5f * (left_input + right_input);
-        float steering_scaled = constrain_float(left_input - right_input,-1.0f,1.0f);
+        float steering_scaled = constrain_float(left_input - right_input, -1.0f, 1.0f);
 
         // flip the steering direction if requesting the vehicle reverse (to be consistent with separate steering-throttle frames)
         if (is_negative(throttle_scaled)) {

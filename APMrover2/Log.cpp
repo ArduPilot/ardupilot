@@ -467,9 +467,9 @@ void Rover::Log_Write_WheelEncoder()
         LOG_PACKET_HEADER_INIT(LOG_WHEELENCODER_MSG),
         time_us     : AP_HAL::micros64(),
         distance_0  : g2.wheel_encoder.get_distance(0),
-        quality_0   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(0),0.0f,100.0f),
+        quality_0   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(0), 0.0f, 100.0f),
         distance_1  : g2.wheel_encoder.get_distance(1),
-        quality_1   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(1),0.0f,100.0f)
+        quality_1   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(1), 0.0f, 100.0f)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -503,7 +503,6 @@ void Rover::log_init(void)
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
 
     gcs().reset_cli_timeout();
-
 }
 
 #if CLI_ENABLED == ENABLED
