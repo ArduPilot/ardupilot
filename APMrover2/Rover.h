@@ -351,9 +351,6 @@ private:
     // set if we are driving backwards
     bool in_reverse;
 
-    // set if the users asks for auto reverse
-    bool in_auto_reverse;
-
     // true if pivoting (set by use_pivot_steering)
     bool pivot_steering_active;
 

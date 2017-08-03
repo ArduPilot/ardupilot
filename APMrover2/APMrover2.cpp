@@ -104,8 +104,6 @@ void Rover::setup()
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
-    in_auto_reverse = false;
-
     init_ardupilot();
 
     // initialise the main loop scheduler
