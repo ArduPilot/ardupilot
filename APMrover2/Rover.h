@@ -484,7 +484,6 @@ private:
     void update_events(void);
     void button_update(void);
     void stats_update();
-    void navigate();
     void set_control_channels(void);
     void init_rc_in();
     void init_rc_out();
