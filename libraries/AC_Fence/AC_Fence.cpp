@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 };
 
 /// Default constructor.
-AC_Fence::AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav) :
+AC_Fence::AC_Fence(const AP_AHRS_NavEKF& ahrs, const AP_InertialNav& inav) :
     _ahrs(ahrs),
     _inav(inav),
     _alt_max_backup(0),
@@ -132,7 +132,9 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     }
 
     // if we have horizontal limits enabled, check inertial nav position is ok
-    if ((_enabled_fences & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON))>0 && !_inav.get_filter_status().flags.horiz_pos_abs && !_inav.get_filter_status().flags.pred_horiz_pos_abs) {
+    nav_filter_status filt_status;
+    _ahrs.get_filter_status(filt_status);
+    if ((_enabled_fences & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON))>0 && !filt_status.flags.horiz_pos_abs && !filt_status.flags.pred_horiz_pos_abs) {
         fail_msg = "fence requires position";
         return false;
     }
@@ -277,8 +279,9 @@ bool AC_Fence::check_destination_within_fence(const Location_Class& loc)
     if ((get_enabled_fences() & AC_FENCE_TYPE_POLYGON) && _boundary_num_points > 0) {
         // check ekf has a good location
         Location temp_loc;
-        if (_inav.get_location(temp_loc)) {
-            const struct Location &ekf_origin = _inav.get_origin();
+        if (_ahrs.get_location(temp_loc)) {
+            struct Location ekf_origin;
+            _ahrs.get_origin(ekf_origin);
             Vector2f position = location_diff(ekf_origin, loc) * 100.0f;
             if (_poly_loader.boundary_breached(position, _boundary_num_points, _boundary, true)) {
                 return false;
@@ -432,10 +435,11 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
 
     // get current location from EKF
     Location temp_loc;
-    if (!_inav.get_location(temp_loc)) {
+    if (!_ahrs.get_location(temp_loc)) {
         return false;
     }
-    const struct Location &ekf_origin = _inav.get_origin();
+    struct Location ekf_origin;
+    _ahrs.get_origin(ekf_origin);
 
     // sanity check total
     _total = constrain_int16(_total, 0, _poly_loader.max_points());
