@@ -308,12 +308,6 @@ private:
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
 
-    // Waypoint distances
-    // Distance between rover and next waypoint.  Meters
-    float wp_distance;
-    // Distance between previous and next waypoint.  Meters
-    int32_t wp_totalDistance;
-
     // Conditional command
     // A value used in condition commands (eg delay, change alt, etc.)
     // For example in a change altitude command, it is the altitude to change to.
@@ -335,11 +329,6 @@ private:
 
     // true if the compass's initial location has been set
     bool compass_init_location;
-
-    // The location of the previous waypoint.  Used for track following and altitude ramp calculations
-    struct Location prev_WP;
-    // The location of the current/active waypoint.  Used for track following
-    struct Location next_WP;
 
     // IMU variables
     // The main loop execution time.  Seconds

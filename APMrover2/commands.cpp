@@ -56,9 +56,6 @@ bool Rover::set_home(const Location& loc, bool lock)
                 DataFlash.Log_Write_Mission_Cmd(mission, temp_cmd);
             }
         }
-
-        // initialise navigation to home
-        next_WP = prev_WP = home;
     }
 
     // lock home position
