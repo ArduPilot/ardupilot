@@ -129,18 +129,32 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
     void calc_throttle(float target_speed) override;
-    void update_navigation() override;
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
     bool failsafe_throttle_suppress() const override { return false; }
 
+    // return distance (in meters) to destination
+    float get_distance_to_destination() const override { return _distance_to_destination; }
+
+    // set desired location, heading and speed
+    // set stay_active_at_dest if the vehicle should attempt to maintain it's position at the destination (mostly for boats)
+    void set_desired_location(const struct Location& destination, bool stay_active_at_dest);
+    bool reached_destination() override;
+
+    // heading and speed control
+    void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
+    bool reached_heading();
+
 protected:
 
     bool _enter() override;
     void _exit() override;
-    void calc_nav_steer() override;
-    void calc_lateral_acceleration() override;
+
+    enum AutoSubMode {
+        Auto_WP,                // drive to a given location
+        Auto_HeadingAndSpeed    // turn to a given heading
+    } _submode;
 
 private:
 
@@ -148,6 +162,9 @@ private:
 
     // this is set to true when auto has been triggered to start
     bool auto_triggered;
+
+    bool _reached_heading;      // true when vehicle has reached desired heading in TurnToHeading sub mode
+    bool _stay_active_at_dest;  // true when we should actively maintain position even after reaching the destination
 };
 
 
