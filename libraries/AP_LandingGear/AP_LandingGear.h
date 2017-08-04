@@ -21,12 +21,22 @@ public:
         LandingGear_Deploy_And_Keep_Deployed,
     };
 
+    // Gear command modes
+    enum LandingGearStartupBehaviour {
+        LandingGear_Startup_WaitForPilotInput = 0,
+        LandingGear_Startup_Retract = 1,
+        LandingGear_Startup_Deploy = 2,
+    };
+
     /// Constructor
     AP_LandingGear()
     {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
     }
+
+    /// initialise state of landing gear
+    void init();
 
     /// returns true if the landing gear is deployed
     bool deployed() const { return _deployed; }
@@ -41,6 +51,7 @@ private:
     // Parameters
     AP_Int16    _servo_retract_pwm;     // PWM value to move servo to when gear is retracted
     AP_Int16    _servo_deploy_pwm;      // PWM value to move servo to when gear is deployed
+    AP_Int8     _startup_behaviour;     // start-up behaviour (see LandingGearStartupBehaviour)
 
     // internal variables
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
