@@ -2127,6 +2127,11 @@ bool GCS_MAVLINK::try_send_gps_message(const enum ap_message id)
         send_system_time(*gps);
         ret = true;
         break;
+    case MSG_GPS_RAW:
+        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
+        send_gps_raw(*gps);
+        ret = true;
+        break;
     default:
         ret = true;
         break;
@@ -2202,6 +2207,8 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         ret = try_send_camera_message(id);
         break;
 
+    case MSG_GPS_RAW:
+        /* fall through */
     case MSG_SYSTEM_TIME:
         ret = try_send_gps_message(id);
         break;
