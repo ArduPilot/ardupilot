@@ -2113,6 +2113,27 @@ void GCS_MAVLINK::send_hwstatus()
         0);
 }
 
+bool GCS_MAVLINK::try_send_camera_message(const enum ap_message id)
+{
+    AP_Camera *camera = get_camera();
+    if (camera == nullptr) {
+        return true;
+    }
+
+    bool ret = true;
+    switch(id) {
+    case MSG_CAMERA_FEEDBACK:
+        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
+        camera->send_feedback(chan);
+        ret = true;
+        break;
+    default:
+        ret = true;
+        break;
+    }
+    return ret;
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -2154,6 +2175,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_meminfo();
         ret = true;
         break;
+
+    case MSG_CAMERA_FEEDBACK:
+        ret = try_send_camera_message(id);
+        break;
+
 
     default:
         // try_send_message must always at some stage return true for
