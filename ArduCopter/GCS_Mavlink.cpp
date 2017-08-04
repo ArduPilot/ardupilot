@@ -398,13 +398,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_CAMERA_FEEDBACK:
-#if CAMERA == ENABLED
-        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
-        copter.camera.send_feedback(chan);
-#endif
-        break;
-
     case MSG_FENCE_STATUS:
 #if AC_FENCE == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
