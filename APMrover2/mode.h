@@ -61,10 +61,12 @@ public:
     // return distance (in meters) to destination
     virtual float get_distance_to_destination() const { return 0.0f; }
 
-    // set desired location and speed
+    // set desired location and speed (used in RTL, Guided, Auto)
     virtual void set_desired_location(const struct Location& destination);
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() { return true; }
+
+    // set desired heading and speed - supported in Auto and Guided modes
     virtual void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed);
 
     // get speed error in m/s, returns zero for modes that do not control speed
