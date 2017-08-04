@@ -293,6 +293,7 @@ protected:
     // message sending functions:
     bool try_send_compass_message(enum ap_message id);
     bool try_send_mission_message(enum ap_message id);
+    bool try_send_camera_message(enum ap_message id);
     void send_hwstatus();
 
 private:
