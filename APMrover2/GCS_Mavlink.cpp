@@ -334,11 +334,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         send_gps_raw(rover.gps);
         break;
 
-    case MSG_SYSTEM_TIME:
-        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        send_system_time(rover.gps);
-        break;
-
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         rover.send_servo_out(chan);
