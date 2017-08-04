@@ -82,13 +82,13 @@ public:
      * Committer must inform how many bytes were actually written in 'len'.
      */
     bool commit(uint32_t len);
-
 private:
     uint8_t *buf;
     uint32_t size;
 
     std::atomic<uint32_t> head{0}; // where to read data
     std::atomic<uint32_t> written{0}; // how much data was written
+	std::atomic<uint32_t> tail{0};
 };
 
 /*

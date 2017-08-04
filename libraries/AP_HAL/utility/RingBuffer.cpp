@@ -19,7 +19,7 @@ ByteBuffer::~ByteBuffer(void)
  */
 bool ByteBuffer::set_size(uint32_t _size)
 {
-    head = written = 0;
+    head = written =  tail = 0;
     if (_size != size) {
         free(buf);
         buf = (uint8_t*)malloc(_size);
@@ -36,14 +36,12 @@ bool ByteBuffer::set_size(uint32_t _size)
 
 uint32_t ByteBuffer::available(void) const
 {
-    /* use a copy on stack to avoid race conditions of @tail being updated by
-     * the writer thread */
 	return written;
 }
 
 void ByteBuffer::clear(void)
 {
-    head = written = 0;
+    head = written = tail = 0;
 }
 
 uint32_t ByteBuffer::space(void) const
@@ -108,27 +106,25 @@ uint8_t ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
 	if(empty()) {
 		return 0;
 	}
+	
+	uint32_t written_ = written;
 
-    uint32_t n = available();
-
-    if (len > n) {
-        len = n;
+    if (len > written_) {
+        len = written_;
     }
 
-    auto b = readptr(n);
-    if (n > len) {
-        n = len;
-    }
+    uint32_t head_to_end = size - head;
+	uint32_t continious_read = head_to_end > written_ ? written_ : head_to_end;
 
-    iovec[0].data = const_cast<uint8_t *>(b);
-    iovec[0].len = n;
+    iovec[0].data = buf + head;
+    iovec[0].len = len > continious_read ? continious_read : len;
 
-    if (len <= n) {
+    if (len <= iovec[0].len) {
         return 1;
     }
 
     iovec[1].data = buf;
-    iovec[1].len = len - n;
+    iovec[1].len = len - iovec[0].len;
 
     return 2;
 }
@@ -152,7 +148,8 @@ uint32_t ByteBuffer::peekbytes(uint8_t *data, uint32_t len)
 
 uint8_t ByteBuffer::reserve(ByteBuffer::IoVec iovec[2], uint32_t len)
 {
-    uint32_t n = space();
+	uint32_t written_ = written;
+	uint32_t n = size - written_;
 
     if (len > n) {
         len = n;
@@ -164,14 +161,20 @@ uint8_t ByteBuffer::reserve(ByteBuffer::IoVec iovec[2], uint32_t len)
 
 	//local head copy to protect against race condition
 	uint32_t head_ = head;
-	uint32_t tail = (head + written) % size;
-    iovec[0].data = buf + tail;
-    if (head_ == 0 || head_ > tail) {
+
+	uint32_t offs = 1;
+	if(written_ == 0 && tail == 0) {
+		offs = 0;
+	}
+
+    uint32_t tail_to_end_space = size - tail - 1;
+
+    iovec[0].data = buf + ((tail + offs) % size);
+    if (head_ == 0 || head_ > (tail+1) || tail_to_end_space > len) {
         iovec[0].len = len;
         return 1;
     }
 
-    uint32_t tail_to_end_space = size - tail;
     iovec[0].len = tail_to_end_space;
 
     iovec[1].data = buf;
@@ -189,7 +192,12 @@ bool ByteBuffer::commit(uint32_t len)
         return false; //Someone broke the agreement
     }
 
+	uint32_t offs = 0;
+	if(head == tail) {
+		offs = -1;
+	}
     written += len;
+	tail = (tail + len + offs) % size;
     return true;
 }
 
@@ -222,7 +230,7 @@ bool ByteBuffer::read_byte(uint8_t *data)
 const uint8_t *ByteBuffer::readptr(uint32_t &available_bytes)
 {
     uint32_t _written = written;
-    available_bytes = (head + _written) >= size ? size - head : (uint32_t) written;
+    available_bytes = (head + _written) >= size ? size - head : (uint32_t) _written;
 
     return available_bytes ? &buf[head] : nullptr;
 }
