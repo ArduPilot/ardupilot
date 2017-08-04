@@ -538,13 +538,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_CAMERA_FEEDBACK:
-#if CAMERA == ENABLED
-        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
-        sub.camera.send_feedback(chan);
-#endif
-        break;
-
     case MSG_LIMITS_STATUS:
 #if AC_FENCE == ENABLED
         CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
