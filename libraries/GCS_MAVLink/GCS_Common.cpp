@@ -2113,6 +2113,28 @@ void GCS_MAVLINK::send_hwstatus()
         0);
 }
 
+bool GCS_MAVLINK::try_send_gps_message(const enum ap_message id)
+{
+    AP_GPS *gps = get_gps();
+    if (gps == nullptr) {
+        return true;
+    }
+
+    bool ret = true;
+    switch(id) {
+    case MSG_SYSTEM_TIME:
+        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
+        send_system_time(*gps);
+        ret = true;
+        break;
+    default:
+        ret = true;
+        break;
+    }
+    return ret;
+}
+
+
 bool GCS_MAVLINK::try_send_camera_message(const enum ap_message id)
 {
     AP_Camera *camera = get_camera();
@@ -2180,6 +2202,9 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         ret = try_send_camera_message(id);
         break;
 
+    case MSG_SYSTEM_TIME:
+        ret = try_send_gps_message(id);
+        break;
 
     default:
         // try_send_message must always at some stage return true for
