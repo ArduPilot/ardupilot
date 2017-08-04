@@ -4,8 +4,8 @@
 // Run landing gear controller at 10Hz
 void Copter::landinggear_update()
 {
-    // exit immediately if no landing gear switch is enabled
-    if (!check_if_auxsw_mode_used(AUXSW_LANDING_GEAR)) {
+    // exit immediately if no landing gear output has been enabled
+    if (!SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
         return;
     }
 
