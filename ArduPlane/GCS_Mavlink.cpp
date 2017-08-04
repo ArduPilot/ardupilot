@@ -479,11 +479,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_gps_raw(plane.gps);
         break;
 
-    case MSG_SYSTEM_TIME:
-        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        send_system_time(plane.gps);
-        break;
-
     case MSG_SERVO_OUT:
 #if HIL_SUPPORT
         if (plane.g.hil_mode == 1) {
