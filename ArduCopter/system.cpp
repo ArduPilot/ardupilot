@@ -241,6 +241,9 @@ void Copter::init_ardupilot()
     init_precland();
 #endif
 
+    // initialise landing gear position
+    landinggear.init();
+
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif
