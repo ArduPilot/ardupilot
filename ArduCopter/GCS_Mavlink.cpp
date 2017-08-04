@@ -339,11 +339,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_GPS_RAW:
         return send_gps_raw(copter.gps);
 
-    case MSG_SYSTEM_TIME:
-        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        send_system_time(copter.gps);
-        break;
-
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_radio_in(copter.receiver_rssi);
