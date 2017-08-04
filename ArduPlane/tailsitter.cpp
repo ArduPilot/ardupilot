@@ -98,8 +98,11 @@ void QuadPlane::tailsitter_output(void)
         // assume that k_throttle will not be assigned for twin_engine tailsitters
         bool twin_engine = !SRV_Channels::function_assigned(SRV_Channel::k_throttle);
 
-        // allow throttle boost only if throttle stick is above 10%
-        bool enable_boost = plane.channel_throttle->get_control_in() > 10;
+        // assume that k_tiltMotorLeft will be assigned for tilt-vectored dual-motor vehicles
+        bool vectored_thrust = SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft);
+
+        // allow throttle boost only if not tilt-vectored and throttle stick is above 10%
+        bool enable_boost = !vectored_thrust && plane.channel_throttle->get_control_in() > 10;
 
         float avg_thr_norm = 0;
         if (twin_engine) {
