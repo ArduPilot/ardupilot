@@ -2149,6 +2149,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         ret = try_send_compass_message(id);
         break;
 
+    case MSG_EXTENDED_STATUS2:
+        CHECK_PAYLOAD_SIZE(MEMINFO);
+        send_meminfo();
+        ret = true;
+        break;
+
     default:
         // try_send_message must always at some stage return true for
         // a message, or we will attempt to infinitely retry the
