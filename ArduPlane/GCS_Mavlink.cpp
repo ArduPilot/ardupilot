@@ -445,11 +445,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_power_status();
         break;
 
-    case MSG_EXTENDED_STATUS2:
-        CHECK_PAYLOAD_SIZE(MEMINFO);
-        send_meminfo();
-        break;
-
     case MSG_ATTITUDE:
         CHECK_PAYLOAD_SIZE(ATTITUDE);
         plane.send_attitude(chan);
