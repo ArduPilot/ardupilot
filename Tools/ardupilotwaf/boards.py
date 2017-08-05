@@ -238,6 +238,10 @@ class sitl(Board):
             env.LIB += [
                 'winmm',
             ]
+            env.AP_LIBRARIES += [
+                'AP_Proximity',
+                'AC_Fence',
+            ]
 
 class linux(Board):
     def configure_env(self, cfg, env):
