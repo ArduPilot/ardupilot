@@ -196,10 +196,10 @@ void Copter::gpsglitch_check()
         ap.gps_glitching = gps_glitching;
         if (gps_glitching) {
             Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_GPS_GLITCH);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch");
         } else {
             Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_ERROR_RESOLVED);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
         }
     }
 }
