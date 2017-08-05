@@ -72,6 +72,7 @@ enum aux_sw_func {
     AUXSW_PRECISION_LOITER =    39,  // enable precision loiter
     AUXSW_AVOID_PROXIMITY =     40,  // enable object avoidance using proximity sensors (ie. horizontal lidar)
     AUXSW_ARMDISARM =           41,  // arm or disarm vehicle
+    AUXSW_SAFE_RTL =            42, // change to SafeRTL flight mode
     AUXSW_SWITCH_MAX,
 };
 
