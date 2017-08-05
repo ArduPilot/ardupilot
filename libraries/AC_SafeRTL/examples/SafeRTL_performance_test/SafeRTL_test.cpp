@@ -28,15 +28,15 @@ void loop()
 
     hal.console->printf("--------------------\n");
 
-    // test append_if_far_enough()
+    // test reset_path() and update()
     reset();
     correct = check_path(test_path_after_adding);
     hal.console->printf("append: %s\n", correct ? "success" : "fail");
 
-    // test rdp()
+    // test detect_simplifications()
     reference_time = AP_HAL::micros();
     for (int i = 0; i < 1000; i++) {
-        p->rdp();
+        p->detect_simplifications();
     }
     run_time = AP_HAL::micros() - reference_time;
     p->thorough_cleanup();
@@ -58,7 +58,7 @@ void loop()
     reset();
     reference_time = AP_HAL::micros();
     while (!(p->cleanup_ready())) {
-        p->rdp();
+        p->detect_simplifications();
         p->detect_loops();
     }
     run_time = AP_HAL::micros() - reference_time;
@@ -69,9 +69,10 @@ void loop()
 
 void reset()
 {
-    p->reset_path(Vector3f{0.0f, 0.0f, 0.0f});
+    GCS_Copter * none = nullptr;
+    p->reset_path(true, Vector3f{0.0f, 0.0f, 0.0f}, none);
     for (Vector3f v : test_path_before) {
-        p->append_if_far_enough(v);
+        p->update(true, v, none);
     }
 }
 

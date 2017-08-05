@@ -4,6 +4,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AC_SafeRTL/AC_SafeRTL.h>
+#include "../../../../ArduCopter/GCS_Copter.h"
 
 // vectors defined below:
 // test_path_before
