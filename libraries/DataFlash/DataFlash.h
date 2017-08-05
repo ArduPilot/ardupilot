@@ -162,7 +162,8 @@ public:
         SRTL_POINT_GOTO,
         SRTL_DESCEND,
         SRTL_LAND,
-        SRTL_DEACTIVATED
+        SRTL_DEACTIVATED_BAD_POSITION,
+        SRTL_DEACTIVATED_CLEANUP_FAILED
     };
 
     void Log_Write_SRTL(enum SRTL_Type, Vector3f);
