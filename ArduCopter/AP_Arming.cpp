@@ -202,7 +202,7 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
         if (copter.failsafe.battery) {
             if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Battery failsafe");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Battery failsafe");
             }
             return false;
         }
@@ -458,7 +458,7 @@ bool AP_Arming_Copter::pre_arm_gps_checks(bool display_failure)
     if (_ahrs_navekf.get_filter_status(filt_status)) {
         if (filt_status.flags.gps_glitching) {
             if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: GPS glitching");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: GPS glitching");
             }
             return false;
         }
