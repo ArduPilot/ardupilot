@@ -1,5 +1,16 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5.2-rc1 05-Aug-2017
+Changes from 3.5.1
+1) GPS glitch arming check and notification (flashing blue-yellow LED, message on HUD)
+2) Arming check for minimum voltage (see ARMING_VOLT_MIN parameter)
+3) Landing Gear startup behaviour now configurable (see LGR_STARTUP parameter)
+4) Solo LED fix when using "boat" mode
+5) Bug fixes:
+    a) resolve barometer floating point exception when ground pressure set to be negative
+    b) resolve freeze if SERVOx_FUNCTION is set above 80
+    c) Intel Aero I2C bus fixes
+------------------------------------------------------------------
 Copter 3.5.1 31-July-2017 / 3.5.1-rc1 24-July-2017
 Changes from 3.5.0
 1) fix to RC input corruption when using Spektrum DSMx with Pixracer 
