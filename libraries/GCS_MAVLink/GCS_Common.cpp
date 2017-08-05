@@ -755,6 +755,25 @@ mission_ack:
     return mission_is_complete;
 }
 
+void GCS_MAVLINK::push_deferred_messages()
+{
+    while (num_deferred_messages != 0) {
+        if (!try_send_message(deferred_messages[next_deferred_message])) {
+            break;
+        }
+        next_deferred_message++;
+        if (next_deferred_message == ARRAY_SIZE(deferred_messages)) {
+            next_deferred_message = 0;
+        }
+        num_deferred_messages--;
+    }
+}
+
+void GCS_MAVLINK::retry_deferred()
+{
+    push_deferred_messages();
+}
+
 // send a message using mavlink, handling message queueing
 void GCS_MAVLINK::send_message(enum ap_message id)
 {
@@ -763,49 +782,40 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     if (id == MSG_HEARTBEAT) {
         save_signing_timestamp(false);
     }
-    
-    // see if we can send the deferred messages, if any
-    while (num_deferred_messages != 0) {
-        if (!try_send_message(deferred_messages[next_deferred_message])) {
-            break;
+
+    // see if we can send the deferred messages, if any:
+    push_deferred_messages();
+
+    // if there are no deferred messages, attempt to send straight away:
+    if (num_deferred_messages == 0) {
+        if (try_send_message(id)) {
+            // yay, we sent it!
+            return;
         }
-        next_deferred_message++;
-        if (next_deferred_message == MSG_RETRY_DEFERRED) {
-            next_deferred_message = 0;
-        }
-        num_deferred_messages--;
     }
 
-    if (id == MSG_RETRY_DEFERRED) {
+    // we failed to send the message this time around, so try to defer:
+    if (num_deferred_messages == ARRAY_SIZE(deferred_messages)) {
+        // the defer buffer is full, discard this attempt to send.
+        // Note that the message *may* already be in the defer buffer
         return;
     }
 
-    // this message id might already be deferred
+    // check if this message is deferred:
     for (i=0, nextid = next_deferred_message; i < num_deferred_messages; i++) {
         if (deferred_messages[nextid] == id) {
-            // it's already deferred, discard
+            // it's already deferred
             return;
         }
         nextid++;
-        if (nextid == MSG_RETRY_DEFERRED) {
+        if (nextid == ARRAY_SIZE(deferred_messages)) {
             nextid = 0;
         }
     }
 
-    if (num_deferred_messages != 0 ||
-        !try_send_message(id)) {
-        // can't send it now, so defer it
-        if (num_deferred_messages == MSG_RETRY_DEFERRED) {
-            // the defer buffer is full, discard
-            return;
-        }
-        nextid = next_deferred_message + num_deferred_messages;
-        if (nextid >= MSG_RETRY_DEFERRED) {
-            nextid -= MSG_RETRY_DEFERRED;
-        }
-        deferred_messages[nextid] = id;
-        num_deferred_messages++;
-    }
+    // not already deferred, defer it
+    deferred_messages[nextid] = id;
+    num_deferred_messages++;
 }
 
 void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
@@ -1277,6 +1287,16 @@ void GCS::send_message(enum ap_message id)
             chan(i).send_message(id);
         }
     }
+}
+
+void GCS::retry_deferred()
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        if (chan(i).initialised) {
+            chan(i).retry_deferred();
+        }
+    }
+    service_statustext();
 }
 
 void GCS::data_stream_send()
