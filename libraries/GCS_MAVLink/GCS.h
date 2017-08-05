@@ -159,7 +159,7 @@ public:
     void send_rangefinder_downward(const RangeFinder &rangefinder) const;
     bool send_proximity(const AP_Proximity &proximity) const;
     void send_ahrs2(AP_AHRS &ahrs);
-    bool send_gps_raw(AP_GPS &gps);
+    void send_gps_raw(AP_GPS &gps);
     void send_system_time(AP_GPS &gps);
     void send_radio_in(uint8_t receiver_rssi);
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);

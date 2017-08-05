@@ -925,12 +925,12 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
   send raw GPS position information (GPS_RAW_INT, GPS2_RAW, GPS_RTK and GPS2_RTK).
   returns true if messages fit into transmit buffer, false otherwise.
  */
-bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
+void GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
 {
     if (HAVE_PAYLOAD_SPACE(chan, GPS_RAW_INT)) {
         gps.send_mavlink_gps_raw(chan);
     } else {
-        return false;
+        return;
     }
 
     if (gps.highest_supported_status(0) > AP_GPS::GPS_OK_FIX_3D) {
@@ -954,7 +954,7 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
     }
 
     //TODO: Should check what else managed to get through...
-    return true;
+    return;
 
 }
 
