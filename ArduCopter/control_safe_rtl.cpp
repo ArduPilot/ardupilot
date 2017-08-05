@@ -129,30 +129,6 @@ void Copter::safe_rtl_pre_land_position_run()
 }
 
 /**
-*   This method should be run a couple times per second.
-*/
-void Copter::safe_rtl_drop_breadcrumb()
-{
-    if (!safe_rtl_path.is_active()) {
-        return;
-    }
-    // it's important to do the cleanup before adding the point, because appending a point will reset the cleanup methods,
-    // so there will not be anything to clean up immediately after adding a point.
-    // The cleanup usually returns immediately. If it decides to actually perform the cleanup, it takes about 100us.
-    if (!safe_rtl_path.routine_cleanup()) { // TODO give up on SafeRTL if the position has been bad for X seconds.
-        safe_rtl_path.deactivate();
-        DataFlash.Log_Write_SRTL(DataFlash_Class::SRTL_DEACTIVATED, {0.0f, 0.0f, 0.0f});
-        gcs().send_text(MAV_SEVERITY_WARNING,"SafeRTL Unavailable: Path Cleanup Failed");
-        return;
-    }
-
-    Vector3f current_pos {};
-    if (position_ok() && ahrs.get_relative_position_NED_origin(current_pos)) { // meters from origin, NED
-        safe_rtl_path.append_if_far_enough(current_pos);
-    }
-}
-
-/**
 *   This method might take longer than 1ms. It should be run as often as possible,
 *   ideally not in the main loop.
 */
@@ -162,6 +138,6 @@ void Copter::safe_rtl_background_cleanup()
         return;
     }
 
-    safe_rtl_path.rdp();
+    safe_rtl_path.detect_simplifications();
     safe_rtl_path.detect_loops();
 }
