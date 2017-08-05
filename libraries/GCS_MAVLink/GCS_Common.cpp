@@ -2128,7 +2128,7 @@ bool GCS_MAVLINK::try_send_gps_message(const enum ap_message id)
         ret = true;
         break;
     case MSG_GPS_RAW:
-        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
+        // payload size checks are inside send_gps_raw
         send_gps_raw(*gps);
         ret = true;
         break;
