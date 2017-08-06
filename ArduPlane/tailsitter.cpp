@@ -125,7 +125,6 @@ void QuadPlane::tailsitter_output(void)
             int16_t thr_scaledL = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft);
             int16_t thr_scaledR = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight);
 
-            // boost throttle only if throttle stick is above 10%
             if (enable_boost) {
                 SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, thr_boost * thr_scaledL);
                 SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, thr_boost * thr_scaledR);
