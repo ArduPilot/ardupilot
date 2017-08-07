@@ -411,6 +411,18 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         }
     }
 
+    if (output_ready && pwm_type == AP_HAL::RCOutput::MODE_PWM_BRUSHED) {
+        int8_t pwm_dir2 = 1;
+        int8_t pwm_dir0 = 1;
+        if (_vehicle == APMrover2) {
+            pwm_dir2 = (hal.gpio->read(1) ? -1 : 1);
+            pwm_dir0 = (hal.gpio->read(2) ? -1 : 1);
+        }
+        // duty cyle to 1000 - 2000 us
+        input.servos[2] = static_cast<uint16_t>(1500 + (input.servos[2] * pwm_dir2 * 0.01 * 500));
+        input.servos[0] = static_cast<uint16_t>(1500 + (input.servos[0] * pwm_dir0 * 0.01 * 500));
+    }
+
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
     uint8_t engine_fail = _sitl?_sitl->engine_fail.get():0;
     bool motors_on = false;

@@ -31,6 +31,7 @@ class HALSITL::SITL_State {
     friend class HALSITL::Scheduler;
     friend class HALSITL::Util;
     friend class HALSITL::GPIO;
+    friend class HALSITL::RCOutput;
 public:
     void init(int argc, char * const argv[]);
 
@@ -46,6 +47,7 @@ public:
     ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
+    uint8_t pwm_type = AP_HAL::RCOutput::MODE_PWM_NORMAL;
     bool output_ready = false;
     bool new_rc_input;
     void loop_hook(void);
