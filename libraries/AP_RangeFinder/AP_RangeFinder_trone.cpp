@@ -35,8 +35,8 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_trone::AP_RangeFinder_trone(uint8_t bus, RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state)
-    : AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_LASER)
+AP_RangeFinder_trone::AP_RangeFinder_trone(uint8_t bus, RangeFinder::RangeFinder_State &_state)
+    : AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_LASER)
     , dev(hal.i2c_mgr->get_device(bus, TRONE_I2C_ADDR))
 {
 }
@@ -46,10 +46,10 @@ AP_RangeFinder_trone::AP_RangeFinder_trone(uint8_t bus, RangeFinder &_ranger, ui
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_trone::detect(uint8_t bus, RangeFinder &_ranger, uint8_t instance,
+AP_RangeFinder_Backend *AP_RangeFinder_trone::detect(uint8_t bus,
                                                      RangeFinder::RangeFinder_State &_state)
 {
-    AP_RangeFinder_trone *sensor = new AP_RangeFinder_trone(bus, _ranger, instance, _state);
+    AP_RangeFinder_trone *sensor = new AP_RangeFinder_trone(bus, _state);
     if (!sensor) {
         return nullptr;
     }

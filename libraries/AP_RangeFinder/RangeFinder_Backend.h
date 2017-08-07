@@ -22,7 +22,8 @@ class AP_RangeFinder_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_RangeFinder_Backend(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state, MAV_DISTANCE_SENSOR _sensor_type);
+	AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state,
+                           MAV_DISTANCE_SENSOR _sensor_type);
 
     // we declare a virtual destructor so that RangeFinder drivers can
     // override with a custom destructor if need be
@@ -30,11 +31,6 @@ public:
 
     // update the state structure
     virtual void update() = 0;
-
-    // return true if we are beyond the power saving range
-    bool out_of_range(void) const {
-        return ranger._powersave_range > 0 && ranger.estimated_terrain_height > ranger._powersave_range;
-    }
 
     MAV_DISTANCE_SENSOR get_sensor_type() const {
         return sensor_type;
@@ -50,7 +46,6 @@ protected:
     // set status and update valid_count
     void set_status(RangeFinder::RangeFinder_Status status);
 
-    RangeFinder &ranger;
     RangeFinder::RangeFinder_State &state;
     MAV_DISTANCE_SENSOR sensor_type;
 

@@ -44,10 +44,10 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus, RangeFinder &_ranger, uint8_t instance,
+AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus,
                                                              RangeFinder::RangeFinder_State &_state,
                                                              RangeFinder::RangeFinder_Type _rftype)
-    : AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_LASER)
+    : AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_LASER)
     , _dev(hal.i2c_mgr->get_device(bus, LL40LS_ADDR))
     , rftype(_rftype)
 {
@@ -57,12 +57,12 @@ AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus, RangeF
    detect if a PulsedLight rangefinder is connected. We'll detect by
    look for the version registers
 */
-AP_RangeFinder_Backend *AP_RangeFinder_PulsedLightLRF::detect(uint8_t bus, RangeFinder &_ranger, uint8_t instance,
+AP_RangeFinder_Backend *AP_RangeFinder_PulsedLightLRF::detect(uint8_t bus,
                                                               RangeFinder::RangeFinder_State &_state,
                                                               RangeFinder::RangeFinder_Type rftype)
 {
     AP_RangeFinder_PulsedLightLRF *sensor
-        = new AP_RangeFinder_PulsedLightLRF(bus, _ranger, instance, _state, rftype);
+        = new AP_RangeFinder_PulsedLightLRF(bus, _state, rftype);
     if (!sensor ||
         !sensor->init()) {
         delete sensor;

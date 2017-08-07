@@ -17,16 +17,14 @@ class AP_RangeFinder_MaxsonarI2CXL : public AP_RangeFinder_Backend
 {
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(RangeFinder &ranger, uint8_t instance,
-                                          RangeFinder::RangeFinder_State &_state);
+    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state);
 
     // update state
     void update(void);
 
 private:
     // constructor
-    AP_RangeFinder_MaxsonarI2CXL(RangeFinder &ranger, uint8_t instance,
-                                 RangeFinder::RangeFinder_State &_state);
+    AP_RangeFinder_MaxsonarI2CXL(RangeFinder::RangeFinder_State &_state);
 
     bool _init(void);
     void _timer(void);

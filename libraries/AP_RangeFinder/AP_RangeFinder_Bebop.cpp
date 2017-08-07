@@ -62,9 +62,8 @@ static const uint16_t waveform_mode1[32] = {
     1675, 1540, 1492, 1374, 1292
 };
 
-AP_RangeFinder_Bebop::AP_RangeFinder_Bebop(RangeFinder &_ranger,
-        uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_ULTRASOUND),
+AP_RangeFinder_Bebop::AP_RangeFinder_Bebop(RangeFinder::RangeFinder_State &_state) :
+    AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_ULTRASOUND),
     _thread(new Linux::Thread(FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Bebop::_loop, void)))
 {
     _init();
@@ -88,7 +87,7 @@ AP_RangeFinder_Bebop::~AP_RangeFinder_Bebop()
     _iio = nullptr;
 }
 
-bool AP_RangeFinder_Bebop::detect(RangeFinder &_ranger, uint8_t instance)
+bool AP_RangeFinder_Bebop::detect()
 {
     return true;
 }
