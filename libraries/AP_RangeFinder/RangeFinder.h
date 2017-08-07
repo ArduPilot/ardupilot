@@ -32,6 +32,7 @@ class RangeFinder
 {
 public:
     friend class AP_RangeFinder_Backend;
+    friend class AP_RangeFinder_analog; // bodgy detect function
 
     RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default);
 
@@ -81,25 +82,26 @@ public:
         bool                   pre_arm_check;   // true if sensor has passed pre-arm checks
         uint16_t               pre_arm_distance_min;    // min distance captured during pre-arm checks
         uint16_t               pre_arm_distance_max;    // max distance captured during pre-arm checks
+
+        AP_Int8  type;
+        AP_Int8  pin;
+        AP_Int8  ratiometric;
+        AP_Int8  stop_pin;
+        AP_Int16 settle_time_ms;
+        AP_Float scaling;
+        AP_Float offset;
+        AP_Int8  function;
+        AP_Int16 min_distance_cm;
+        AP_Int16 max_distance_cm;
+        AP_Int8  ground_clearance_cm;
+        AP_Int8  address;
+        AP_Vector3f pos_offset; // position offset in body frame
+        AP_Int8  orientation;
     };
 
-    // parameters for each instance
-    AP_Int8  _type[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _pin[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _ratiometric[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _stop_pin[RANGEFINDER_MAX_INSTANCES];
-    AP_Int16 _settle_time_ms[RANGEFINDER_MAX_INSTANCES];
-    AP_Float _scaling[RANGEFINDER_MAX_INSTANCES];
-    AP_Float _offset[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _function[RANGEFINDER_MAX_INSTANCES];
-    AP_Int16 _min_distance_cm[RANGEFINDER_MAX_INSTANCES];
-    AP_Int16 _max_distance_cm[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _ground_clearance_cm[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _address[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _powersave_range;
-    AP_Vector3f _pos_offset[RANGEFINDER_MAX_INSTANCES]; // position offset in body frame
-    AP_Int8  _orientation[RANGEFINDER_MAX_INSTANCES];
 
+    // parameters for each instance
     static const struct AP_Param::GroupInfo var_info[];
     
     // Return the number of range finder instances
@@ -127,7 +129,7 @@ public:
 
     // get orientation of a given range finder
     enum Rotation get_orientation(uint8_t instance) const {
-        return (instance<num_instances? (enum Rotation)_orientation[instance].get() : ROTATION_NONE);
+        return (instance<num_instances? (enum Rotation)_RangeFinder_STATE(instance).orientation.get() : ROTATION_NONE);
     }
 
     uint16_t distance_cm(uint8_t instance) const {
@@ -141,17 +143,17 @@ public:
     uint16_t voltage_mv_orient(enum Rotation orientation) const;
 
     int16_t max_distance_cm(uint8_t instance) const {
-        return _max_distance_cm[instance];
+        return _RangeFinder_STATE(instance).max_distance_cm;
     }
     int16_t max_distance_cm_orient(enum Rotation orientation) const;
 
     int16_t min_distance_cm(uint8_t instance) const {
-        return _min_distance_cm[instance];
+        return _RangeFinder_STATE(instance).min_distance_cm;
     }
     int16_t min_distance_cm_orient(enum Rotation orientation) const;
 
     int16_t ground_clearance_cm(uint8_t instance) const {
-        return _ground_clearance_cm[instance];
+        return _RangeFinder_STATE(instance).ground_clearance_cm;
     }
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
 
@@ -162,6 +164,9 @@ public:
     // query status
     RangeFinder_Status status(uint8_t instance) const;
     RangeFinder_Status status_orient(enum Rotation orientation) const;
+
+    // query type
+    RangeFinder_Type type(uint8_t instance) const { return (RangeFinder_Type)_RangeFinder_STATE(instance).type.get(); }
 
     // true if sensor is returning data
     bool has_data(uint8_t instance) const;
@@ -190,7 +195,7 @@ public:
 
     // return a 3D vector defining the position offset of the sensor in metres relative to the body frame origin
     const Vector3f &get_pos_offset(uint8_t instance) const {
-        return _pos_offset[instance];
+        return _RangeFinder_STATE(instance).pos_offset;
     }
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
 

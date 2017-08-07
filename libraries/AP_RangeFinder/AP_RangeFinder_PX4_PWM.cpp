@@ -109,7 +109,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
     struct pwm_input_s pwm;
     float sum_cm = 0;
     uint16_t count = 0;
-    const float scaling = ranger._scaling[state.instance];
+    const float scaling = state.scaling;
     uint32_t now = AP_HAL::millis();
 
     while (::read(_fd, &pwm, sizeof(pwm)) == sizeof(pwm)) {
@@ -120,7 +120,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
         _last_pulse_time_ms = now;
 
         // setup for scaling in meters per millisecond
-        float distance_cm = pwm.pulse_width * 0.1f * scaling + ranger._offset[state.instance];
+        float distance_cm = pwm.pulse_width * 0.1f * scaling + state.offset;
 
         float distance_delta_cm = fabsf(distance_cm - _last_sample_distance_cm);
         _last_sample_distance_cm = distance_cm;
@@ -143,8 +143,8 @@ void AP_RangeFinder_PX4_PWM::update(void)
 
     // if we haven't received a pulse for 1 second then we may need to
     // reset the timer
-    int8_t stop_pin = ranger._stop_pin[state.instance];
-    uint16_t settle_time_ms = (uint16_t)ranger._settle_time_ms[state.instance];
+    int8_t stop_pin = state.stop_pin;
+    uint16_t settle_time_ms = (uint16_t)state.settle_time_ms;
 
     if (stop_pin != -1 && out_of_range()) {
         // we are above the power saving range. Disable the sensor
