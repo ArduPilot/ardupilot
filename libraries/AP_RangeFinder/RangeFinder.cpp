@@ -582,7 +582,7 @@ void RangeFinder::update(void)
                 continue;
             }
             drivers[i]->update();
-            update_pre_arm_check(i);
+            drivers[i]->update_pre_arm_check();
         }
     }
 }
@@ -841,32 +841,6 @@ bool RangeFinder::pre_arm_check() const
         }
     }
     return true;
-}
-
-/*
-  set pre-arm checks to passed if the range finder has been exercised through a reasonable range of movement
-      max distance sensed is at least 50cm > min distance sensed
-      max distance < 200cm
-      min distance sensed is within 10cm of ground clearance or sensor's minimum distance
- */
-void RangeFinder::update_pre_arm_check(uint8_t instance)
-{
-    // return immediately if already passed or no sensor data
-    if (state[instance].pre_arm_check || state[instance].status == RangeFinder_NotConnected || state[instance].status == RangeFinder_NoData) {
-        return;
-    }
-
-    // update min, max captured distances
-    state[instance].pre_arm_distance_min = MIN(state[instance].distance_cm, state[instance].pre_arm_distance_min);
-    state[instance].pre_arm_distance_max = MAX(state[instance].distance_cm, state[instance].pre_arm_distance_max);
-
-    // Check that the range finder has been exercised through a realistic range of movement
-    if (((state[instance].pre_arm_distance_max - state[instance].pre_arm_distance_min) > RANGEFINDER_PREARM_REQUIRED_CHANGE_CM) &&
-         (state[instance].pre_arm_distance_max < RANGEFINDER_PREARM_ALT_MAX_CM) &&
-         ((int16_t)state[instance].pre_arm_distance_min < (MAX(state[instance].ground_clearance_cm,min_distance_cm(instance)) + 10)) &&
-         ((int16_t)state[instance].pre_arm_distance_min > (MIN(state[instance].ground_clearance_cm,min_distance_cm(instance)) - 10))) {
-        state[instance].pre_arm_check = true;
-    }
 }
 
 const Vector3f &RangeFinder::get_pos_offset_orient(enum Rotation orientation) const
