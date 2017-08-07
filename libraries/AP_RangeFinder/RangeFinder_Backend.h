@@ -38,6 +38,8 @@ public:
 
     virtual void handle_msg(mavlink_message_t *msg) { return; }
 
+    void update_pre_arm_check();
+
 protected:
 
     // update status based on distance measurement
