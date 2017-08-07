@@ -8,7 +8,7 @@ class AP_RangeFinder_trone : public AP_RangeFinder_Backend
 {
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(uint8_t bus, RangeFinder &ranger, uint8_t instance,
+    static AP_RangeFinder_Backend *detect(uint8_t bus,
                                           RangeFinder::RangeFinder_State &_state);
 
     // update state
@@ -16,8 +16,7 @@ public:
 
 private:
     // constructor
-    AP_RangeFinder_trone(uint8_t bus, RangeFinder &ranger, uint8_t instance,
-                         RangeFinder::RangeFinder_State &_state);
+    AP_RangeFinder_trone(uint8_t bus, RangeFinder::RangeFinder_State &_state);
 
     bool measure(void);
     bool collect(uint16_t &distance_cm);

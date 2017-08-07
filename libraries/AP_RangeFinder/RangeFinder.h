@@ -32,7 +32,6 @@ class RangeFinder
 {
 public:
     friend class AP_RangeFinder_Backend;
-    friend class AP_RangeFinder_analog; // bodgy detect function
 
     RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default);
 

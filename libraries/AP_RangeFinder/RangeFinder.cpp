@@ -609,91 +609,91 @@ void RangeFinder::detect_instance(uint8_t instance)
     switch (_type) {
     case RangeFinder_TYPE_PLI2C:
     case RangeFinder_TYPE_PLI2CV3:
-        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, *this, instance, state[instance], _type))) {
-            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, *this, instance, state[instance], _type));
+        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, state[instance], _type))) {
+            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, state[instance], _type));
         }
         break;
     case RangeFinder_TYPE_MBI2C:
-        _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance]));
+        _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance]));
         break;
     case RangeFinder_TYPE_LWI2C:
         if (state[instance].address) {
-            _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
+            _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance],
                 hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, state[instance].address)));
         }
         break;
     case RangeFinder_TYPE_TRONE:
-        if (!_add_backend(AP_RangeFinder_trone::detect(0, *this, instance, state[instance]))) {
-            _add_backend(AP_RangeFinder_trone::detect(1, *this, instance, state[instance]));
+        if (!_add_backend(AP_RangeFinder_trone::detect(0, state[instance]))) {
+            _add_backend(AP_RangeFinder_trone::detect(1, state[instance]));
         }
         break;
     case RangeFinder_TYPE_VL53L0X:
-        if (!_add_backend(AP_RangeFinder_VL53L0X::detect(*this, instance, state[instance],
+        if (!_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
                                                          hal.i2c_mgr->get_device(1, 0x29)))) {
-            _add_backend(AP_RangeFinder_VL53L0X::detect(*this, instance, state[instance],
+            _add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
                                                         hal.i2c_mgr->get_device(0, 0x29)));
         }
         break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     case RangeFinder_TYPE_PX4_PWM:
-        if (AP_RangeFinder_PX4_PWM::detect(*this, instance)) {
+        if (AP_RangeFinder_PX4_PWM::detect()) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_PX4_PWM(*this, instance, state[instance]);
+            drivers[instance] = new AP_RangeFinder_PX4_PWM(state[instance], _powersave_range, estimated_terrain_height);
         }
         break;
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     case RangeFinder_TYPE_BBB_PRU:
-        if (AP_RangeFinder_BBB_PRU::detect(*this, instance)) {
+        if (AP_RangeFinder_BBB_PRU::detect()) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_BBB_PRU(*this, instance, state[instance]);
+            drivers[instance] = new AP_RangeFinder_BBB_PRU(state[instance]);
         }
         break;
 #endif
     case RangeFinder_TYPE_LWSER:
-        if (AP_RangeFinder_LightWareSerial::detect(*this, instance, serial_manager)) {
+        if (AP_RangeFinder_LightWareSerial::detect(serial_manager)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager);
+            drivers[instance] = new AP_RangeFinder_LightWareSerial(state[instance], serial_manager);
         }
         break;
     case RangeFinder_TYPE_LEDDARONE:
-        if (AP_RangeFinder_LeddarOne::detect(*this, instance, serial_manager)) {
+        if (AP_RangeFinder_LeddarOne::detect(serial_manager)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LeddarOne(*this, instance, state[instance], serial_manager);
+            drivers[instance] = new AP_RangeFinder_LeddarOne(state[instance], serial_manager);
         }
         break;
     case RangeFinder_TYPE_ULANDING:
-        if (AP_RangeFinder_uLanding::detect(*this, instance, serial_manager)) {
+        if (AP_RangeFinder_uLanding::detect(serial_manager)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_uLanding(*this, instance, state[instance], serial_manager);
+            drivers[instance] = new AP_RangeFinder_uLanding(state[instance], serial_manager);
         }
         break;
 #if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
     case RangeFinder_TYPE_BEBOP:
-        if (AP_RangeFinder_Bebop::detect(*this, instance)) {
+        if (AP_RangeFinder_Bebop::detect()) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_Bebop(*this, instance, state[instance]);
+            drivers[instance] = new AP_RangeFinder_Bebop(state[instance]);
         }
         break;
 #endif
     case RangeFinder_TYPE_MAVLink:
-        if (AP_RangeFinder_MAVLink::detect(*this, instance)) {
+        if (AP_RangeFinder_MAVLink::detect()) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MAVLink(*this, instance, state[instance]);
+            drivers[instance] = new AP_RangeFinder_MAVLink(state[instance]);
         }
         break;
     case RangeFinder_TYPE_MBSER:
-        if (AP_RangeFinder_MaxsonarSerialLV::detect(*this, instance, serial_manager)) {
+        if (AP_RangeFinder_MaxsonarSerialLV::detect(serial_manager)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MaxsonarSerialLV(*this, instance, state[instance], serial_manager);
+            drivers[instance] = new AP_RangeFinder_MaxsonarSerialLV(state[instance], serial_manager);
         }
         break;
     case RangeFinder_TYPE_ANALOG:
         // note that analog will always come back as present if the pin is valid
-        if (AP_RangeFinder_analog::detect(*this, instance)) {
+        if (AP_RangeFinder_analog::detect(state[instance])) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_analog(*this, instance, state[instance]);
+            drivers[instance] = new AP_RangeFinder_analog(state[instance]);
         }
         break;
     default:

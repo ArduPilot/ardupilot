@@ -43,13 +43,10 @@ extern "C" {
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-	AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_UNKNOWN),
-    _last_timestamp(0),
-    _last_pulse_time_ms(0),
-    _disable_time_ms(0),
-    _good_sample_count(0),
-    _last_sample_distance_cm(0)
+AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder::RangeFinder_State &_state, AP_Int16 &powersave_range, float &_estimated_terrain_height) :
+	AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_UNKNOWN),
+    _powersave_range(powersave_range),
+    estimated_terrain_height(_estimated_terrain_height)
 {
     _fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
     if (_fd == -1) {
@@ -83,7 +80,7 @@ AP_RangeFinder_PX4_PWM::~AP_RangeFinder_PX4_PWM()
 /* 
    see if the PX4 driver is available
 */
-bool AP_RangeFinder_PX4_PWM::detect(RangeFinder &_ranger, uint8_t instance)
+bool AP_RangeFinder_PX4_PWM::detect()
 {
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1) && \
     !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
