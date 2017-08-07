@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "RingBuffer.h"
 
@@ -193,7 +194,9 @@ bool ByteBuffer::commit(uint32_t len)
     }
 
 	uint32_t offs = 0;
-	if(head == tail) {
+	//special case that should pretty much only occur right after
+	//construction
+	if(written == 0 && head == tail) {
 		offs = -1;
 	}
     written += len;
