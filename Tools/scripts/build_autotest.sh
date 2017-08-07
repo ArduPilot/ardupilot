@@ -133,9 +133,6 @@ echo $githash > "buildlogs/history/$hdate/githash.txt"
 
 killall -9 JSBSim || /bin/true
 
-# setup for libiio on Parrot boards
-export PKG_CONFIG_PATH=$HOME/APM/ParrotLib/lib
-
 # raise core limit
 ulimit -c 10000000
 
