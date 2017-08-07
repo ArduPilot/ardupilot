@@ -304,7 +304,9 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
         if (out_chan == nullptr) {
             return;
         }
-        bool relay_high = out_chan->get_reversed() ? !is_negative(throttle) : is_negative(throttle);
+        const int8_t reverse_multiplier = out_chan->get_reversed() ? -1 : 1;
+        bool relay_high = is_negative(reverse_multiplier * throttle);
+
         switch (function) {
             case SRV_Channel::k_throttle:
                 _relayEvents.do_set_relay(0, relay_high);
@@ -322,8 +324,8 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
                 // do nothing
                 break;
         }
-        // brushed-with-relay motors should receive positive values
-        throttle = fabsf(throttle);
+        // invert the ouput to always have positive value calculated by calc_pwm
+        throttle = reverse_multiplier * fabsf(throttle);
     }
 
     // output to servo channel
