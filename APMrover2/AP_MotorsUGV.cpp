@@ -208,6 +208,10 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 
     // set relay if necessary
     if (_pwm_type == PWM_TYPE_BRUSHED) {
+        // invert the direction in case of reversed ouput
+        const SRV_Channel *outch = SRV_Channels::get_channel_for(function);
+        const int8_t reverse_multiplier = outch == nullptr ? 1 : outch->get_reversed() ? -1 : 1;
+        throttle = reverse_multiplier * throttle;
         switch (function) {
             case SRV_Channel::k_throttle:
                 _relayEvents.do_set_relay(((int16_t)_relay_map & 0x000F) - 1, is_negative(throttle));
@@ -225,7 +229,8 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
                 // do nothing
                 break;
         }
-        throttle = fabsf(throttle);
+        // invert the ouput to always have positive value calculated by calc_pwm
+        throttle = reverse_multiplier * fabsf(throttle);
     }
 
     // output to servo channel
