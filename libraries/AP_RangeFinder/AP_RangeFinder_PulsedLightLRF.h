@@ -19,7 +19,7 @@ class AP_RangeFinder_PulsedLightLRF : public AP_RangeFinder_Backend
 
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(uint8_t bus, RangeFinder &ranger, uint8_t instance,
+    static AP_RangeFinder_Backend *detect(uint8_t bus,
                                           RangeFinder::RangeFinder_State &_state,
                                           RangeFinder::RangeFinder_Type rftype);
 
@@ -29,7 +29,7 @@ public:
 
 private:
     // constructor
-    AP_RangeFinder_PulsedLightLRF(uint8_t bus, RangeFinder &ranger, uint8_t instance,
+    AP_RangeFinder_PulsedLightLRF(uint8_t bus,
                                   RangeFinder::RangeFinder_State &_state,
                                   RangeFinder::RangeFinder_Type rftype);
 

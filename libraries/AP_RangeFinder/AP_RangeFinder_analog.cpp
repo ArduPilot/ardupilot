@@ -31,8 +31,8 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_UNKNOWN)
+AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_state) :
+    AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_UNKNOWN)
 {
     source = hal.analogin->channel(_state.pin);
     if (source == nullptr) {
@@ -50,9 +50,9 @@ AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder &_ranger, uint8_t insta
    can do is check if the pin number is valid. If it is, then assume
    that the device is connected
 */
-bool AP_RangeFinder_analog::detect(RangeFinder &_ranger, uint8_t instance)
+bool AP_RangeFinder_analog::detect(RangeFinder::RangeFinder_State &_state)
 {
-    if (_ranger.state[instance].pin != -1) {
+    if (_state.pin != -1) {
         return true;
     }
     return false;

@@ -25,10 +25,9 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_uLanding::AP_RangeFinder_uLanding(RangeFinder &_ranger, uint8_t instance,
-                                                             RangeFinder::RangeFinder_State &_state,
-                                                             AP_SerialManager &serial_manager) :
-    AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_RADAR)
+AP_RangeFinder_uLanding::AP_RangeFinder_uLanding(RangeFinder::RangeFinder_State &_state,
+                                                 AP_SerialManager &serial_manager) :
+    AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_RADAR)
 {
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Aerotenna_uLanding, 0);
     if (uart != nullptr) {
@@ -41,7 +40,7 @@ AP_RangeFinder_uLanding::AP_RangeFinder_uLanding(RangeFinder &_ranger, uint8_t i
    trying to take a reading on Serial. If we get a result the sensor is
    there.
 */
-bool AP_RangeFinder_uLanding::detect(RangeFinder &_ranger, uint8_t instance, AP_SerialManager &serial_manager)
+bool AP_RangeFinder_uLanding::detect(AP_SerialManager &serial_manager)
 {
     return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Aerotenna_uLanding, 0) != nullptr;
 }

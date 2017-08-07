@@ -88,11 +88,10 @@ struct adc_capture {
 
 class AP_RangeFinder_Bebop : public AP_RangeFinder_Backend {
 public:
-    AP_RangeFinder_Bebop(RangeFinder &ranger,
-            uint8_t instance, RangeFinder::RangeFinder_State &_state);
+    AP_RangeFinder_Bebop(RangeFinder::RangeFinder_State &_state);
 
     ~AP_RangeFinder_Bebop(void);
-    static bool detect(RangeFinder &ranger, uint8_t instance);
+    static bool detect();
     void update(void);
 
 private:

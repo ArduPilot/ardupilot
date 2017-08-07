@@ -8,11 +8,11 @@ class AP_RangeFinder_uLanding : public AP_RangeFinder_Backend
 
 public:
     // constructor
-	AP_RangeFinder_uLanding(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state,
-                                   AP_SerialManager &serial_manager);
+	AP_RangeFinder_uLanding(RangeFinder::RangeFinder_State &_state,
+                            AP_SerialManager &serial_manager);
 
     // static detection function
-    static bool detect(RangeFinder &ranger, uint8_t instance, AP_SerialManager &serial_manager);
+    static bool detect(AP_SerialManager &serial_manager);
 
     // update state
     void update(void);
