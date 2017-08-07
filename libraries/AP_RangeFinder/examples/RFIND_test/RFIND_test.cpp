@@ -36,7 +36,7 @@ void loop()
     sonar.update();
 
     hal.console->printf("All: device_0 type %d status %d distance_cm %d, device_1 type %d status %d distance_cm %d\n",
-    (int)sonar._type[0], (int)sonar.status(0), sonar.distance_cm(0), (int)sonar._type[1], (int)sonar.status(1), sonar.distance_cm(1));
+                        (int)sonar.type(0), (int)sonar.status(0), sonar.distance_cm(0), (int)sonar.type(1), (int)sonar.status(1), sonar.distance_cm(1));
 
 }
 AP_HAL_MAIN();

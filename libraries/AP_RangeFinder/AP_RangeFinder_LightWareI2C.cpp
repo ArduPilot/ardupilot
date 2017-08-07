@@ -72,7 +72,7 @@ bool AP_RangeFinder_LightWareI2C::get_reading(uint16_t &reading_cm)
 {
     be16_t val;
 
-    if (ranger._address[state.instance] == 0) {
+    if (state.address == 0) {
         return false;
     }
 

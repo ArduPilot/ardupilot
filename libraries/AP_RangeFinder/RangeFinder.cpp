@@ -39,14 +39,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Description: What type of rangefinder device that is connected
     // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3-I2C,16:VL53L0X
     // @User: Standard
-    AP_GROUPINFO("_TYPE",    0, RangeFinder, _type[0], 0),
+    AP_GROUPINFO("_TYPE",    0, RangeFinder, state[0].type, 0),
 
     // @Param: _PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
     // @User: Standard
-    AP_GROUPINFO("_PIN",     1, RangeFinder, _pin[0], -1),
+    AP_GROUPINFO("_PIN",     1, RangeFinder, state[0].pin, -1),
 
     // @Param: _SCALING
     // @DisplayName: Rangefinder scaling
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: m/V
     // @Increment: 0.001
     // @User: Standard
-    AP_GROUPINFO("_SCALING", 2, RangeFinder, _scaling[0], 3.0f),
+    AP_GROUPINFO("_SCALING", 2, RangeFinder, state[0].scaling, 3.0f),
 
     // @Param: _OFFSET
     // @DisplayName: rangefinder offset
@@ -62,14 +62,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: V
     // @Increment: 0.001
     // @User: Standard
-    AP_GROUPINFO("_OFFSET",  3, RangeFinder, _offset[0], 0.0f),
+    AP_GROUPINFO("_OFFSET",  3, RangeFinder, state[0].offset, 0.0f),
 
     // @Param: _FUNCTION
     // @DisplayName: Rangefinder function
     // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
     // @Values: 0:Linear,1:Inverted,2:Hyperbolic
     // @User: Standard
-    AP_GROUPINFO("_FUNCTION", 4, RangeFinder, _function[0], 0),
+    AP_GROUPINFO("_FUNCTION", 4, RangeFinder, state[0].function, 0),
 
     // @Param: _MIN_CM
     // @DisplayName: Rangefinder minimum distance
@@ -77,7 +77,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_MIN_CM",  5, RangeFinder, _min_distance_cm[0], 20),
+    AP_GROUPINFO("_MIN_CM",  5, RangeFinder, state[0].min_distance_cm, 20),
 
     // @Param: _MAX_CM
     // @DisplayName: Rangefinder maximum distance
@@ -85,14 +85,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_MAX_CM",  6, RangeFinder, _max_distance_cm[0], 700),
+    AP_GROUPINFO("_MAX_CM",  6, RangeFinder, state[0].max_distance_cm, 700),
 
     // @Param: _STOP_PIN
     // @DisplayName: Rangefinder stop pin
     // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
     // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     // @User: Standard
-    AP_GROUPINFO("_STOP_PIN", 7, RangeFinder, _stop_pin[0], -1),
+    AP_GROUPINFO("_STOP_PIN", 7, RangeFinder, state[0].stop_pin, -1),
 
     // @Param: _SETTLE
     // @DisplayName: Rangefinder settle time
@@ -100,14 +100,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: ms
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_SETTLE", 8, RangeFinder, _settle_time_ms[0], 0),
+    AP_GROUPINFO("_SETTLE", 8, RangeFinder, state[0].settle_time_ms, 0),
 
     // @Param: _RMETRIC
     // @DisplayName: Ratiometric
     // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     // @User: Standard
-    AP_GROUPINFO("_RMETRIC", 9, RangeFinder, _ratiometric[0], 1),
+    AP_GROUPINFO("_RMETRIC", 9, RangeFinder, state[0].ratiometric, 1),
 
     // @Param: _PWRRNG
     // @DisplayName: Powersave range
@@ -124,7 +124,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 5 127
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, _ground_clearance_cm[0], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
+    AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, state[0].ground_clearance_cm, RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: _ADDR
     // @DisplayName: Bus address of sensor
@@ -132,7 +132,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_ADDR", 23, RangeFinder, _address[0], 0),
+    AP_GROUPINFO("_ADDR", 23, RangeFinder, state[0].address, 0),
 
     // @Param: _POS_X
     // @DisplayName:  X position offset
@@ -151,14 +151,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Description: Z position of the first rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("_POS", 49, RangeFinder, _pos_offset[0], 0.0f),
+    AP_GROUPINFO("_POS", 49, RangeFinder, state[0].pos_offset, 0.0f),
 
     // @Param: _ORIENT
     // @DisplayName: Rangefinder orientation
     // @Description: Orientation of rangefinder
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
-    AP_GROUPINFO("_ORIENT", 53, RangeFinder, _orientation[0], ROTATION_PITCH_270),
+    AP_GROUPINFO("_ORIENT", 53, RangeFinder, state[0].orientation, ROTATION_PITCH_270),
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
@@ -166,14 +166,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Description: What type of rangefinder device that is connected
     // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3-I2C,16:VL53L0X
     // @User: Advanced
-    AP_GROUPINFO("2_TYPE",    12, RangeFinder, _type[1], 0),
+    AP_GROUPINFO("2_TYPE",    12, RangeFinder, state[1].type, 0),
 
     // @Param: 2_PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
     // @User: Advanced
-    AP_GROUPINFO("2_PIN",     13, RangeFinder, _pin[1], -1),
+    AP_GROUPINFO("2_PIN",     13, RangeFinder, state[1].pin, -1),
 
     // @Param: 2_SCALING
     // @DisplayName: Rangefinder scaling
@@ -181,7 +181,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: m/V
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("2_SCALING", 14, RangeFinder, _scaling[1], 3.0f),
+    AP_GROUPINFO("2_SCALING", 14, RangeFinder, state[1].scaling, 3.0f),
 
     // @Param: 2_OFFSET
     // @DisplayName: rangefinder offset
@@ -189,14 +189,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: V
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("2_OFFSET",  15, RangeFinder, _offset[1], 0.0f),
+    AP_GROUPINFO("2_OFFSET",  15, RangeFinder, state[1].offset, 0.0f),
 
     // @Param: 2_FUNCTION
     // @DisplayName: Rangefinder function
     // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
     // @Values: 0:Linear,1:Inverted,2:Hyperbolic
     // @User: Advanced
-    AP_GROUPINFO("2_FUNCTION",  16, RangeFinder, _function[1], 0),
+    AP_GROUPINFO("2_FUNCTION",  16, RangeFinder, state[1].function, 0),
 
     // @Param: 2_MIN_CM
     // @DisplayName: Rangefinder minimum distance
@@ -204,7 +204,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("2_MIN_CM",  17, RangeFinder, _min_distance_cm[1], 20),
+    AP_GROUPINFO("2_MIN_CM",  17, RangeFinder, state[1].min_distance_cm, 20),
 
     // @Param: 2_MAX_CM
     // @DisplayName: Rangefinder maximum distance
@@ -212,14 +212,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("2_MAX_CM",  18, RangeFinder, _max_distance_cm[1], 700),
+    AP_GROUPINFO("2_MAX_CM",  18, RangeFinder, state[1].max_distance_cm, 700),
 
     // @Param: 2_STOP_PIN
     // @DisplayName: Rangefinder stop pin
     // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
     // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     // @User: Advanced
-    AP_GROUPINFO("2_STOP_PIN", 19, RangeFinder, _stop_pin[1], -1),
+    AP_GROUPINFO("2_STOP_PIN", 19, RangeFinder, state[1].stop_pin, -1),
 
     // @Param: 2_SETTLE
     // @DisplayName: Sonar settle time
@@ -227,14 +227,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: ms
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("2_SETTLE", 20, RangeFinder, _settle_time_ms[1], 0),
+    AP_GROUPINFO("2_SETTLE", 20, RangeFinder, state[1].settle_time_ms, 0),
 
     // @Param: 2_RMETRIC
     // @DisplayName: Ratiometric
     // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     // @User: Advanced
-    AP_GROUPINFO("2_RMETRIC", 21, RangeFinder, _ratiometric[1], 1),
+    AP_GROUPINFO("2_RMETRIC", 21, RangeFinder, state[1].ratiometric, 1),
 
     // @Param: 2_GNDCLEAR
     // @DisplayName: Distance (in cm) from the second range finder to the ground
@@ -243,7 +243,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("2_GNDCLEAR", 22, RangeFinder, _ground_clearance_cm[1], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
+    AP_GROUPINFO("2_GNDCLEAR", 22, RangeFinder, state[1].ground_clearance_cm, RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: 2_ADDR
     // @DisplayName: Bus address of second rangefinder
@@ -251,7 +251,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("2_ADDR", 24, RangeFinder, _address[1], 0),
+    AP_GROUPINFO("2_ADDR", 24, RangeFinder, state[1].address, 0),
 
     // @Param: 2_POS_X
     // @DisplayName:  X position offset
@@ -270,14 +270,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Description: Z position of the second rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("2_POS", 50, RangeFinder, _pos_offset[1], 0.0f),
+    AP_GROUPINFO("2_POS", 50, RangeFinder, state[1].pos_offset, 0.0f),
 
     // @Param: 2_ORIENT
     // @DisplayName: Rangefinder 2 orientation
     // @Description: Orientation of 2nd rangefinder
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
-    AP_GROUPINFO("2_ORIENT", 54, RangeFinder, _orientation[1], ROTATION_PITCH_270),
+    AP_GROUPINFO("2_ORIENT", 54, RangeFinder, state[1].orientation, ROTATION_PITCH_270),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -287,14 +287,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Description: What type of rangefinder device that is connected
     // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3-I2C,16:VL53L0X
     // @User: Advanced
-    AP_GROUPINFO("3_TYPE",    25, RangeFinder, _type[2], 0),
+    AP_GROUPINFO("3_TYPE",    25, RangeFinder, state[2].type, 0),
 
     // @Param: 3_PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
     // @User: Advanced
-    AP_GROUPINFO("3_PIN",     26, RangeFinder, _pin[2], -1),
+    AP_GROUPINFO("3_PIN",     26, RangeFinder, state[2].pin, -1),
 
     // @Param: 3_SCALING
     // @DisplayName: Rangefinder scaling
@@ -302,7 +302,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: m/V
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("3_SCALING", 27, RangeFinder, _scaling[2], 3.0f),
+    AP_GROUPINFO("3_SCALING", 27, RangeFinder, state[2].scaling, 3.0f),
 
     // @Param: 3_OFFSET
     // @DisplayName: rangefinder offset
@@ -310,14 +310,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: V
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("3_OFFSET",  28, RangeFinder, _offset[2], 0.0f),
+    AP_GROUPINFO("3_OFFSET",  28, RangeFinder, state[2].offset, 0.0f),
 
     // @Param: 3_FUNCTION
     // @DisplayName: Rangefinder function
     // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
     // @Values: 0:Linear,1:Inverted,2:Hyperbolic
     // @User: Advanced
-    AP_GROUPINFO("3_FUNCTION",  29, RangeFinder, _function[2], 0),
+    AP_GROUPINFO("3_FUNCTION",  29, RangeFinder, state[2].function, 0),
 
     // @Param: 3_MIN_CM
     // @DisplayName: Rangefinder minimum distance
@@ -325,7 +325,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("3_MIN_CM",  30, RangeFinder, _min_distance_cm[2], 20),
+    AP_GROUPINFO("3_MIN_CM",  30, RangeFinder, state[2].min_distance_cm, 20),
 
     // @Param: 3_MAX_CM
     // @DisplayName: Rangefinder maximum distance
@@ -333,14 +333,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("3_MAX_CM",  31, RangeFinder, _max_distance_cm[2], 700),
+    AP_GROUPINFO("3_MAX_CM",  31, RangeFinder, state[2].max_distance_cm, 700),
 
     // @Param: 3_STOP_PIN
     // @DisplayName: Rangefinder stop pin
     // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
     // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     // @User: Advanced
-    AP_GROUPINFO("3_STOP_PIN", 32, RangeFinder, _stop_pin[2], -1),
+    AP_GROUPINFO("3_STOP_PIN", 32, RangeFinder, state[2].stop_pin, -1),
 
     // @Param: 3_SETTLE
     // @DisplayName: Sonar settle time
@@ -348,14 +348,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: ms
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("3_SETTLE", 33, RangeFinder, _settle_time_ms[2], 0),
+    AP_GROUPINFO("3_SETTLE", 33, RangeFinder, state[2].settle_time_ms, 0),
 
     // @Param: 3_RMETRIC
     // @DisplayName: Ratiometric
     // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     // @User: Advanced
-    AP_GROUPINFO("3_RMETRIC", 34, RangeFinder, _ratiometric[2], 1),
+    AP_GROUPINFO("3_RMETRIC", 34, RangeFinder, state[2].ratiometric, 1),
 
     // @Param: 3_GNDCLEAR
     // @DisplayName: Distance (in cm) from the third range finder to the ground
@@ -364,7 +364,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("3_GNDCLEAR", 35, RangeFinder, _ground_clearance_cm[2], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
+    AP_GROUPINFO("3_GNDCLEAR", 35, RangeFinder, state[2].ground_clearance_cm, RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: 3_ADDR
     // @DisplayName: Bus address of third rangefinder
@@ -372,7 +372,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("3_ADDR", 36, RangeFinder, _address[2], 0),
+    AP_GROUPINFO("3_ADDR", 36, RangeFinder, state[2].address, 0),
 
     // @Param: 3_POS_X
     // @DisplayName:  X position offset
@@ -391,14 +391,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Description: Z position of the third rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("3_POS", 51, RangeFinder, _pos_offset[2], 0.0f),
+    AP_GROUPINFO("3_POS", 51, RangeFinder, state[2].pos_offset, 0.0f),
 
     // @Param: 3_ORIENT
     // @DisplayName: Rangefinder 3 orientation
     // @Description: Orientation of 3rd rangefinder
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
-    AP_GROUPINFO("3_ORIENT", 55, RangeFinder, _orientation[2], ROTATION_PITCH_270),
+    AP_GROUPINFO("3_ORIENT", 55, RangeFinder, state[2].orientation, ROTATION_PITCH_270),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -408,14 +408,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Description: What type of rangefinder device that is connected
     // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TrOneI2C,15:LidarLiteV3-I2C,16:VL53L0X
     // @User: Advanced
-    AP_GROUPINFO("4_TYPE",    37, RangeFinder, _type[3], 0),
+    AP_GROUPINFO("4_TYPE",    37, RangeFinder, state[3].type, 0),
 
     // @Param: 4_PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
     // @User: Advanced
-    AP_GROUPINFO("4_PIN",     38, RangeFinder, _pin[3], -1),
+    AP_GROUPINFO("4_PIN",     38, RangeFinder, state[3].pin, -1),
 
     // @Param: 4_SCALING
     // @DisplayName: Rangefinder scaling
@@ -423,7 +423,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: m/V
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("4_SCALING", 39, RangeFinder, _scaling[3], 3.0f),
+    AP_GROUPINFO("4_SCALING", 39, RangeFinder, state[3].scaling, 3.0f),
 
     // @Param: 4_OFFSET
     // @DisplayName: rangefinder offset
@@ -431,14 +431,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: V
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("4_OFFSET",  40, RangeFinder, _offset[3], 0.0f),
+    AP_GROUPINFO("4_OFFSET",  40, RangeFinder, state[3].offset, 0.0f),
 
     // @Param: 4_FUNCTION
     // @DisplayName: Rangefinder function
     // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
     // @Values: 0:Linear,1:Inverted,2:Hyperbolic
     // @User: Advanced
-    AP_GROUPINFO("4_FUNCTION",  41, RangeFinder, _function[3], 0),
+    AP_GROUPINFO("4_FUNCTION",  41, RangeFinder, state[3].function, 0),
 
     // @Param: 4_MIN_CM
     // @DisplayName: Rangefinder minimum distance
@@ -446,7 +446,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("4_MIN_CM",  42, RangeFinder, _min_distance_cm[3], 20),
+    AP_GROUPINFO("4_MIN_CM",  42, RangeFinder, state[3].min_distance_cm, 20),
 
     // @Param: 4_MAX_CM
     // @DisplayName: Rangefinder maximum distance
@@ -454,14 +454,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("4_MAX_CM",  43, RangeFinder, _max_distance_cm[3], 700),
+    AP_GROUPINFO("4_MAX_CM",  43, RangeFinder, state[3].max_distance_cm, 700),
 
     // @Param: 4_STOP_PIN
     // @DisplayName: Rangefinder stop pin
     // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
     // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     // @User: Advanced
-    AP_GROUPINFO("4_STOP_PIN", 44, RangeFinder, _stop_pin[3], -1),
+    AP_GROUPINFO("4_STOP_PIN", 44, RangeFinder, state[3].stop_pin, -1),
 
     // @Param: 4_SETTLE
     // @DisplayName: Sonar settle time
@@ -469,14 +469,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Units: ms
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("4_SETTLE", 45, RangeFinder, _settle_time_ms[3], 0),
+    AP_GROUPINFO("4_SETTLE", 45, RangeFinder, state[3].settle_time_ms, 0),
 
     // @Param: 4_RMETRIC
     // @DisplayName: Ratiometric
     // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     // @User: Advanced
-    AP_GROUPINFO("4_RMETRIC", 46, RangeFinder, _ratiometric[3], 1),
+    AP_GROUPINFO("4_RMETRIC", 46, RangeFinder, state[3].ratiometric, 1),
 
     // @Param: 4_GNDCLEAR
     // @DisplayName: Distance (in cm) from the fourth range finder to the ground
@@ -485,7 +485,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("4_GNDCLEAR", 47, RangeFinder, _ground_clearance_cm[3], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
+    AP_GROUPINFO("4_GNDCLEAR", 47, RangeFinder, state[3].ground_clearance_cm, RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
     // @Param: 4_ADDR
     // @DisplayName: Bus address of fourth rangefinder
@@ -493,7 +493,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("4_ADDR", 48, RangeFinder, _address[3], 0),
+    AP_GROUPINFO("4_ADDR", 48, RangeFinder, state[3].address, 0),
 
     // @Param: 4_POS_X
     // @DisplayName:  X position offset
@@ -512,14 +512,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Description: Z position of the fourth rangefinder in body frame. Use the zero range datum point if supplied.
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("4_POS", 52, RangeFinder, _pos_offset[3], 0.0f),
+    AP_GROUPINFO("4_POS", 52, RangeFinder, state[3].pos_offset, 0.0f),
 
     // @Param: 4_ORIENT
     // @DisplayName: Rangefinder 4 orientation
     // @Description: Orientation of 4th range finder
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
-    AP_GROUPINFO("4_ORIENT", 56, RangeFinder, _orientation[3], ROTATION_PITCH_270),
+    AP_GROUPINFO("4_ORIENT", 56, RangeFinder, state[3].orientation, ROTATION_PITCH_270),
 #endif
     
     AP_GROUPEND
@@ -534,12 +534,8 @@ RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orient
 
     // set orientation defaults
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
-        _orientation[i].set_default(orientation_default);
+        state[i].orientation.set_default(orientation_default);
     }
-
-    // init state and drivers
-    memset(state,0,sizeof(state));
-    memset(drivers,0,sizeof(drivers));
 }
 
 /*
@@ -579,7 +575,7 @@ void RangeFinder::update(void)
 {
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != nullptr) {
-            if (_type[i] == RangeFinder_TYPE_NONE) {
+            if (state[i].type == RangeFinder_TYPE_NONE) {
                 // allow user to disable a rangefinder at runtime
                 state[i].status = RangeFinder_NotConnected;
                 state[i].range_valid_count = 0;
@@ -609,21 +605,21 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
  */
 void RangeFinder::detect_instance(uint8_t instance)
 {
-    enum RangeFinder_Type type = (enum RangeFinder_Type)_type[instance].get();
-    switch (type) {
+    enum RangeFinder_Type _type = (enum RangeFinder_Type)state[instance].type.get();
+    switch (_type) {
     case RangeFinder_TYPE_PLI2C:
     case RangeFinder_TYPE_PLI2CV3:
-        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, *this, instance, state[instance], type))) {
-            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, *this, instance, state[instance], type));
+        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, *this, instance, state[instance], _type))) {
+            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, *this, instance, state[instance], _type));
         }
         break;
     case RangeFinder_TYPE_MBI2C:
         _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(*this, instance, state[instance]));
         break;
     case RangeFinder_TYPE_LWI2C:
-        if (_address[instance]) {
+        if (state[instance].address) {
             _add_backend(AP_RangeFinder_LightWareI2C::detect(*this, instance, state[instance],
-                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, _address[instance])));
+                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, state[instance].address)));
         }
         break;
     case RangeFinder_TYPE_TRONE:
@@ -713,7 +709,7 @@ RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
         return RangeFinder_NotConnected;
     }
 
-    if (drivers[instance] == nullptr || _type[instance] == RangeFinder_TYPE_NONE) {
+    if (drivers[instance] == nullptr || state[instance].type == RangeFinder_TYPE_NONE) {
         return RangeFinder_NotConnected;
     }
 
@@ -733,7 +729,7 @@ void RangeFinder::handle_msg(mavlink_message_t *msg)
 {
     uint8_t i;
     for (i=0; i<num_instances; i++) {
-        if ((drivers[i] != nullptr) && (_type[i] != RangeFinder_TYPE_NONE)) {
+        if ((drivers[i] != nullptr) && (state[i].type != RangeFinder_TYPE_NONE)) {
           drivers[i]->handle_msg(msg);
         }
     }
@@ -750,7 +746,7 @@ bool RangeFinder::has_orientation(enum Rotation orientation) const
 bool RangeFinder::find_instance(enum Rotation orientation, uint8_t &instance) const
 {
     for (uint8_t i=0; i<num_instances; i++) {
-        if (_orientation[i] == orientation) {
+        if (state[i].orientation == orientation) {
             instance = i;
             return true;
         }
@@ -840,7 +836,7 @@ bool RangeFinder::pre_arm_check() const
 {
     for (uint8_t i=0; i<num_instances; i++) {
         // if driver is valid but pre_arm_check is false, return false
-        if ((drivers[i] != nullptr) && (_type[i] != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
+        if ((drivers[i] != nullptr) && (state[i].type != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
             return false;
         }
     }
@@ -867,8 +863,8 @@ void RangeFinder::update_pre_arm_check(uint8_t instance)
     // Check that the range finder has been exercised through a realistic range of movement
     if (((state[instance].pre_arm_distance_max - state[instance].pre_arm_distance_min) > RANGEFINDER_PREARM_REQUIRED_CHANGE_CM) &&
          (state[instance].pre_arm_distance_max < RANGEFINDER_PREARM_ALT_MAX_CM) &&
-         ((int16_t)state[instance].pre_arm_distance_min < (MAX(_ground_clearance_cm[instance],min_distance_cm(instance)) + 10)) &&
-         ((int16_t)state[instance].pre_arm_distance_min > (MIN(_ground_clearance_cm[instance],min_distance_cm(instance)) - 10))) {
+         ((int16_t)state[instance].pre_arm_distance_min < (MAX(state[instance].ground_clearance_cm,min_distance_cm(instance)) + 10)) &&
+         ((int16_t)state[instance].pre_arm_distance_min > (MIN(state[instance].ground_clearance_cm,min_distance_cm(instance)) - 10))) {
         state[instance].pre_arm_check = true;
     }
 }
@@ -888,7 +884,7 @@ MAV_DISTANCE_SENSOR RangeFinder::get_sensor_type(uint8_t instance) const {
         return MAV_DISTANCE_SENSOR_UNKNOWN;
     }
 
-    if (drivers[instance] == nullptr || _type[instance] == RangeFinder_TYPE_NONE) {
+    if (drivers[instance] == nullptr || state[instance].type == RangeFinder_TYPE_NONE) {
         return MAV_DISTANCE_SENSOR_UNKNOWN;
     }
     return drivers[instance]->get_sensor_type();
