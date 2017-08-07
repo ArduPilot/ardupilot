@@ -323,7 +323,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
      * to change */
     uint8_t i;
 
-    if (last_update_usec == 0) {
+    if (last_update_usec == 0 || !output_ready) {
         for (i=0; i<SITL_NUM_CHANNELS; i++) {
             pwm_output[i] = 1000;
         }
