@@ -300,18 +300,25 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 
     // set relay if necessary
     if (_pwm_type == PWM_TYPE_BRUSHED) {
+        // find the output channel, if not found return
+        const SRV_Channel *out_chan = SRV_Channels::get_channel_for(function);
+        if (out_chan == nullptr) {
+            return;
+        }
+        bool relay_high = out_chan->get_reversed() ? !is_negative(throttle) : is_negative(throttle);
         switch (function) {
             case SRV_Channel::k_throttle:
             case SRV_Channel::k_throttleLeft:
-                _relayEvents.do_set_relay(0, is_negative(throttle));
+                _relayEvents.do_set_relay(0, relay_high);
                 break;
             case SRV_Channel::k_throttleRight:
-                _relayEvents.do_set_relay(1, is_negative(throttle));
+                _relayEvents.do_set_relay(1, relay_high);
                 break;
             default:
                 // do nothing
                 break;
         }
+        // brushed-with-relay motors should receive positive values
         throttle = fabsf(throttle);
     }
 
