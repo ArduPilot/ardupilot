@@ -78,12 +78,12 @@ public:
     uint8_t reserve(IoVec vec[2], uint32_t len);
 
 
-private:
     /*
      * "Releases" the memory previously reserved by 'reserve()' to be read.
      * Committer must inform how many bytes were actually written in 'len'.
      */
     bool commit(uint32_t len);
+private:
     uint8_t *buf;
     uint32_t size;
 
