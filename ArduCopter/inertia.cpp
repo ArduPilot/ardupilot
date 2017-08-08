@@ -23,6 +23,11 @@ void Copter::read_inertia()
     }
     current_pos = current_pos * 100.0f;  // m to cm
     current_pos.z = -current_pos.z;  // NED to NEU
+    if (!ahrs.get_velocity_NED(current_vel)) {
+        return;
+    }
+    current_vel = current_vel * 100.0f;  // m to cm
+    current_vel.z = -current_vel.z;  // NED to NEU
 
     // exit immediately if we do not have an altitude estimate
     nav_filter_status filt_status;

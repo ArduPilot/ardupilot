@@ -141,7 +141,6 @@ void Copter::poshold_run()
     float controller_to_pilot_roll_mix; // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float vel_fw, vel_right;            // vehicle's current velocity in body-frame forward and right directions
-    const Vector3f& vel = inertial_nav.get_velocity();
 
     // initialize vertical speeds and acceleration
     pos_control->set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
@@ -215,8 +214,8 @@ void Copter::poshold_run()
 
         // convert inertial nav earth-frame velocities to body-frame
         // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
-        vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
-        vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
+        vel_fw = current_vel.x*ahrs.cos_yaw() + current_vel.y*ahrs.sin_yaw();
+        vel_right = -current_vel.x*ahrs.sin_yaw() + current_vel.y*ahrs.cos_yaw();
         
         // If not in LOITER, retrieve latest wind compensation lean angles related to current yaw
         if (poshold.roll_mode != POSHOLD_LOITER || poshold.pitch_mode != POSHOLD_LOITER)

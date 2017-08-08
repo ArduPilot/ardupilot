@@ -468,6 +468,7 @@ private:
     Location_Class current_loc;
     Location ekf_origin;
     Vector3f current_pos;
+    Vector3f current_vel;
 
     // Navigation Yaw control
     // auto flight mode's yaw mode

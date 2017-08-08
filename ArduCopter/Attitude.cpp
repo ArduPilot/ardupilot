@@ -88,11 +88,10 @@ float Copter::get_roi_yaw()
 
 float Copter::get_look_ahead_yaw()
 {
-    const Vector3f& vel = inertial_nav.get_velocity();
-    float speed = norm(vel.x,vel.y);
+    const float speed = norm(current_vel.x,current_vel.y);
     // Commanded Yaw to automatically look ahead.
     if (position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
-        yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
+        yaw_look_ahead_bearing = degrees(atan2f(current_vel.y,current_vel.x))*100.0f;
     }
     return yaw_look_ahead_bearing;
 }
