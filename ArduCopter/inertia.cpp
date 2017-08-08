@@ -36,7 +36,11 @@ void Copter::read_inertia()
     // without home return alt above the EKF origin
     if (ap.home_state == HOME_UNSET) {
         // with inertial nav we can update the altitude and climb rate at 50hz
-        current_loc.alt = inertial_nav.get_altitude();
+        // get the D position relative to the local earth frame origin
+        float posD;
+        if (ahrs.get_relative_position_D_origin(posD)) {
+            current_loc.alt = -posD * 100;  // convert from m in NED to cm in NEU
+        }
     } else {
         // with inertial nav we can update the altitude and climb rate at 50hz
         current_loc.alt = pv_alt_above_home(inertial_nav.get_altitude());
