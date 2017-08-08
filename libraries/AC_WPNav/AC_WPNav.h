@@ -4,7 +4,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Location.h>
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude control library
 #include <AP_Terrain/AP_Terrain.h>
@@ -56,7 +55,7 @@ public:
     };
 
     /// Constructor
-    AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
+    AC_WPNav(AP_AHRS_NavEKF& ahrs, const AP_AHRS_View& ahrs_view, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
     /// provide pointer to terrain database
     void set_terrain(AP_Terrain* terrain_ptr) { _terrain = terrain_ptr; }
@@ -317,8 +316,8 @@ protected:
     void set_yaw_cd(float heading_cd);
 
     // references and pointers to external libraries
-    const AP_InertialNav&   _inav;
-    const AP_AHRS_View&     _ahrs;
+    AP_AHRS_NavEKF&         _ahrs;
+    const AP_AHRS_View&     _ahrs_view;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
     AP_Terrain              *_terrain = nullptr;
