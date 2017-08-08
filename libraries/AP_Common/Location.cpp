@@ -5,7 +5,6 @@
 #include "Location.h"
 
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_AHRS/AP_AHRS_NavEKF.h>
 #include <AP_Terrain/AP_Terrain.h>
 
 extern const AP_HAL::HAL& hal;
