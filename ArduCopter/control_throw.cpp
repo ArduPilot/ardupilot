@@ -68,7 +68,7 @@ void Copter::throw_run()
 
         // set the initial velocity of the height controller demand to the measured velocity if it is going up
         // if it is going down, set it to zero to enforce a very hard stop
-        pos_control->set_desired_velocity_z(fmaxf(inertial_nav.get_velocity_z(),0.0f));
+        pos_control->set_desired_velocity_z(fmaxf(current_vel.z, 0.0f));
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         set_auto_armed(true);
