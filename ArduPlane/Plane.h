@@ -195,7 +195,7 @@ private:
     int32_t pitch_limit_min_cd;
 
     // Sensors
-    AP_GPS gps;
+    AP_GPS gps = AP_GPS::create();
 
     // flight modes convenience array
     AP_Int8 *flight_modes = &g.flight_mode1;

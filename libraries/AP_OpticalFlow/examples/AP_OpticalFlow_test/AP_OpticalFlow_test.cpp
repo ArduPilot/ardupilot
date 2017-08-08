@@ -21,7 +21,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 class DummyVehicle {
 public:
-    AP_GPS gps;
+    AP_GPS gps = AP_GPS::create();
     AP_Baro barometer = AP_Baro::create();
     Compass compass = Compass::create();
     AP_InertialSensor ins = AP_InertialSensor::create();

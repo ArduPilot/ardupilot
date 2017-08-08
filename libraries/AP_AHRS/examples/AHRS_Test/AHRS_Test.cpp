@@ -17,7 +17,7 @@ static AP_InertialSensor ins = AP_InertialSensor::create();
 
 static Compass compass = Compass::create();
 
-AP_GPS gps;
+static AP_GPS gps = AP_GPS::create();
 static AP_Baro barometer = AP_Baro::create();
 AP_SerialManager serial_manager;
 

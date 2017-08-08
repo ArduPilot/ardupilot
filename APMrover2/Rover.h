@@ -151,7 +151,7 @@ private:
     DataFlash_Class DataFlash;
 
     // sensor drivers
-    AP_GPS gps;
+    AP_GPS gps = AP_GPS::create();
     AP_Baro barometer = AP_Baro::create();
     Compass compass = Compass::create();
     AP_InertialSensor ins = AP_InertialSensor::create();

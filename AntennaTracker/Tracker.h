@@ -104,7 +104,7 @@ private:
 
     DataFlash_Class DataFlash;
 
-    AP_GPS gps;
+    AP_GPS gps = AP_GPS::create();
 
     AP_Baro barometer = AP_Baro::create();
 
