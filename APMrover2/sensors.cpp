@@ -1,5 +1,7 @@
 #include "Rover.h"
 
+#include <AP_RangeFinder/RangeFinder_Backend.h>
+
 // initialise compass
 void Rover::init_compass()
 {
@@ -200,15 +202,18 @@ void Rover::read_rangefinders(void)
 {
     rangefinder.update();
 
-    if (rangefinder.status(0) == RangeFinder::RangeFinder_NotConnected) {
+    AP_RangeFinder_Backend *s0 = rangefinder.get_backend(0);
+    AP_RangeFinder_Backend *s1 = rangefinder.get_backend(1);
+
+    if (s0 == nullptr || s0->status() == RangeFinder::RangeFinder_NotConnected) {
         // this makes it possible to disable rangefinder at runtime
         return;
     }
 
-    if (rangefinder.has_data(1)) {
+    if (s1 != nullptr && s1->has_data()) {
         // we have two rangefinders
-        obstacle.rangefinder1_distance_cm = rangefinder.distance_cm(0);
-        obstacle.rangefinder2_distance_cm = rangefinder.distance_cm(1);
+        obstacle.rangefinder1_distance_cm = s0->distance_cm();
+        obstacle.rangefinder2_distance_cm = s1->distance_cm();
         if (obstacle.rangefinder1_distance_cm < static_cast<uint16_t>(g.rangefinder_trigger_cm) &&
             obstacle.rangefinder1_distance_cm < static_cast<uint16_t>(obstacle.rangefinder2_distance_cm))  {
             // we have an object on the left
@@ -235,7 +240,7 @@ void Rover::read_rangefinders(void)
         }
     } else {
         // we have a single rangefinder
-        obstacle.rangefinder1_distance_cm = rangefinder.distance_cm(0);
+        obstacle.rangefinder1_distance_cm = s0->distance_cm();
         obstacle.rangefinder2_distance_cm = 0;
         if (obstacle.rangefinder1_distance_cm < static_cast<uint16_t>(g.rangefinder_trigger_cm))  {
             // obstacle detected in front
@@ -347,7 +352,8 @@ void Rover::update_sensor_status_flags(void)
         if (g.rangefinder_trigger_cm > 0) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
-        if (rangefinder.has_data(0)) {
+        AP_RangeFinder_Backend *s = rangefinder.get_backend(0);
+        if (s != nullptr && s->has_data()) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }

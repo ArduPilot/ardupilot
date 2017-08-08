@@ -3,6 +3,8 @@
 
 #include "GCS_Mavlink.h"
 
+#include <AP_RangeFinder/RangeFinder_Backend.h>
+
 void Rover::send_heartbeat(mavlink_channel_t chan)
 {
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
@@ -184,35 +186,26 @@ void Rover::send_simstate(mavlink_channel_t chan)
 
 void Rover::send_rangefinder(mavlink_channel_t chan)
 {
-    if (!rangefinder.has_data(0) && !rangefinder.has_data(1)) {
-        // no rangefinder to report
-        return;
+    float distance_cm;
+    float voltage;
+    bool got_one = false;
+
+    // report smaller distance of all rangefinders
+    for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {
+        AP_RangeFinder_Backend *s = rangefinder.get_backend(i);
+        if (s == nullptr) {
+            continue;
+        }
+        if (!got_one ||
+            s->distance_cm() < distance_cm) {
+            distance_cm = s->distance_cm();
+            voltage = s->voltage_mv();
+            got_one = true;
+        }
     }
-
-    float distance_cm = 0.0f;
-    float voltage = 0.0f;
-
-    /*
-      report smaller distance of two rangefinders
-     */
-    if (rangefinder.has_data(0) && rangefinder.has_data(1)) {
-        if (rangefinder.distance_cm(0) <= rangefinder.distance_cm(1)) {
-            distance_cm = rangefinder.distance_cm(0);
-            voltage = rangefinder.voltage_mv(0);
-        } else {
-            distance_cm = rangefinder.distance_cm(1);
-            voltage = rangefinder.voltage_mv(1);
-        }
-    } else {
-        // only rangefinder 0 or rangefinder 1 has data
-        if (rangefinder.has_data(0)) {
-            distance_cm = rangefinder.distance_cm(0);
-            voltage = rangefinder.voltage_mv(0) * 0.001f;
-        }
-        if (rangefinder.has_data(1)) {
-            distance_cm = rangefinder.distance_cm(1);
-            voltage = rangefinder.voltage_mv(1) * 0.001f;
-        }
+    if (!got_one) {
+        // no relevant data found
+        return;
     }
 
     mavlink_msg_rangefinder_send(

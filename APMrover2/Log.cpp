@@ -1,6 +1,8 @@
 #include "Rover.h"
 #include "version.h"
 
+#include <AP_RangeFinder/RangeFinder_Backend.h>
+
 #if LOGGING_ENABLED == ENABLED
 
 struct PACKED log_Performance {
@@ -178,12 +180,14 @@ void Rover::Log_Write_Rangefinder()
     if (!is_zero(obstacle.turn_angle)) {
         turn_time = AP_HAL::millis() - obstacle.detected_time_ms;
     }
+    AP_RangeFinder_Backend *s0 = rangefinder.get_backend(0);
+    AP_RangeFinder_Backend *s1 = rangefinder.get_backend(1);
     struct log_Rangefinder pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RANGEFINDER_MSG),
         time_us               : AP_HAL::micros64(),
         lateral_accel         : control_mode->lateral_acceleration,
-        rangefinder1_distance : rangefinder.distance_cm(0),
-        rangefinder2_distance : rangefinder.distance_cm(1),
+        rangefinder1_distance : s0 ? s0->distance_cm() : (uint16_t)0,
+        rangefinder2_distance : s1 ? s1->distance_cm() : (uint16_t)0,
         detected_count        : obstacle.detected_count,
         turn_angle            : static_cast<int8_t>(obstacle.turn_angle),
         turn_time             : turn_time,
