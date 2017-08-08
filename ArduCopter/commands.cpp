@@ -28,7 +28,7 @@ void Copter::update_home_from_EKF()
 void Copter::set_home_to_current_location_inflight() {
     // get current location from EKF
     Location temp_loc;
-    if (inertial_nav.get_location(temp_loc)) {
+    if (ahrs.get_location(temp_loc)) {
         const struct Location &ekf_origin = inertial_nav.get_origin();
         temp_loc.alt = ekf_origin.alt;
         set_home(temp_loc, false);
@@ -39,7 +39,7 @@ void Copter::set_home_to_current_location_inflight() {
 bool Copter::set_home_to_current_location(bool lock) {
     // get current location from EKF
     Location temp_loc;
-    if (inertial_nav.get_location(temp_loc)) {
+    if (ahrs.get_location(temp_loc)) {
         return set_home(temp_loc, lock);
     }
     return false;
