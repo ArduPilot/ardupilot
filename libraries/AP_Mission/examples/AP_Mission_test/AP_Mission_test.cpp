@@ -16,7 +16,7 @@ public:
 private:
     AP_InertialSensor ins = AP_InertialSensor::create();
     AP_Baro baro = AP_Baro::create();
-    AP_GPS  gps;
+    AP_GPS  gps = AP_GPS::create();
     Compass compass = Compass::create();
     AP_AHRS_DCM ahrs{ins, baro, gps};
 

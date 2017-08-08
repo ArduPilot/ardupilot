@@ -41,8 +41,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 AP_BoardLED board_led;
 
 // This example uses GPS system. Create it.
-AP_GPS gps;
-
+static AP_GPS gps = AP_GPS::create();
 // Serial manager is needed for UART comunications
 AP_SerialManager serial_manager;
 
