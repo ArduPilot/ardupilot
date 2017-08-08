@@ -1705,7 +1705,9 @@ void QuadPlane::vtol_position_controller(void)
         
         pos_control->update_vel_controller_xyz(ekfNavVelGainScaler);
 
-        const Vector3f& curr_pos = inertial_nav.get_position();
+        Vector2f curr_pos;
+        ahrs.get_relative_position_NE_origin(curr_pos);
+        curr_pos = curr_pos * 100.0f;  // m to cm
         pos_control->set_xy_target(curr_pos.x, curr_pos.y);
 
         pos_control->freeze_ff_xy();
