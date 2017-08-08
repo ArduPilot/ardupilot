@@ -97,11 +97,9 @@ void Sub::guided_posvel_control_start()
     pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
     pos_control.set_jerk_xy_to_default();
 
-    const Vector3f& curr_vel = inertial_nav.get_velocity();
-
     // set target position and velocity to current position and velocity
     pos_control.set_xy_target(current_pos.x, current_pos.y);
-    pos_control.set_desired_velocity_xy(curr_vel.x, curr_vel.y);
+    pos_control.set_desired_velocity_xy(current_vel.x, current_vel.y);
 
     // set vertical speed and acceleration
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
