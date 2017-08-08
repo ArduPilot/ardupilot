@@ -14,7 +14,7 @@ public:
     void loop();
 
 private:
-    AP_InertialSensor ins;
+    AP_InertialSensor ins = AP_InertialSensor::create();
     AP_Baro baro = AP_Baro::create();
     AP_GPS  gps;
     Compass compass = Compass::create();

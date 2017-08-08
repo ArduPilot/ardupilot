@@ -8,7 +8,7 @@
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
-AP_InertialSensor ins;
+static AP_InertialSensor ins = AP_InertialSensor::create();
 
 static void display_offsets_and_scaling();
 static void run_test();

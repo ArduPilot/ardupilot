@@ -110,7 +110,7 @@ private:
 
     Compass compass = Compass::create();
 
-    AP_InertialSensor ins;
+    AP_InertialSensor ins = AP_InertialSensor::create();
 
     RangeFinder rng {serial_manager, ROTATION_NONE};
 

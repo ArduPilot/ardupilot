@@ -16,7 +16,7 @@ public:
 
 private:
 
-    AP_InertialSensor ins;
+    AP_InertialSensor ins = AP_InertialSensor::create();
     AP_Scheduler scheduler;
 
     uint32_t ins_counter;

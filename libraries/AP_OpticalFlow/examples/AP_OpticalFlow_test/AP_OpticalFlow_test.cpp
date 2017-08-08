@@ -24,7 +24,7 @@ public:
     AP_GPS gps;
     AP_Baro barometer = AP_Baro::create();
     Compass compass = Compass::create();
-    AP_InertialSensor ins;
+    AP_InertialSensor ins = AP_InertialSensor::create();
     AP_SerialManager serial_manager;
     RangeFinder sonar {serial_manager, ROTATION_PITCH_270};
     AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF2, EKF3,
