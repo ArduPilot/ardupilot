@@ -109,6 +109,8 @@ protected:
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
     class AP_Mission &mission;
+    class AR_AttitudeControl &attitude_control;
+
 
     // private members for waypoint navigation
     Location _origin;           // origin Location (vehicle will travel from the origin to the destination)

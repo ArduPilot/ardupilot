@@ -341,10 +341,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(turn_max_g,             "TURN_MAX_G",      2.0f),
 
-    // @Group: STEER2SRV_
-    // @Path: ../libraries/APM_Control/AP_SteerController.cpp
-    GOBJECT(steerController,        "STEER2SRV_",   AP_SteerController),
-
     // @Group: SPEED2THR_
     // @Path: ../libraries/PID/PID.cpp
     GGROUP(pidSpeedThrottle,        "SPEED2THR_", PID),
@@ -532,6 +528,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_WheelEncoder/AP_WheelEncoder.cpp
     AP_SUBGROUPINFO(wheel_encoder, "WENC", 9, ParametersG2, AP_WheelEncoder),
 
+    // @Group: ATC
+    // @Path: ../libraries/APM_Control/AR_AttitudeControl.cpp
+    AP_SUBGROUPINFO(attitude_control, "ATC", 10, ParametersG2, AR_AttitudeControl),
+
     AP_GROUPEND
 };
 
@@ -542,7 +542,8 @@ ParametersG2::ParametersG2(void)
     afs(rover.mission, rover.barometer, rover.gps, rover.rcmap),
 #endif
     beacon(rover.serial_manager),
-    motors(rover.ServoRelayEvents)
+    motors(rover.ServoRelayEvents),
+    attitude_control(rover.ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
