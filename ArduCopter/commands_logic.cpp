@@ -771,15 +771,15 @@ bool Copter::verify_payload_place()
         // no break
     case PayloadPlaceStateType_Descending_Start:
         nav_payload_place.descend_start_timestamp = now;
-        nav_payload_place.descend_start_altitude = inertial_nav.get_altitude();
+        nav_payload_place.descend_start_altitude = current_pos.z;
         nav_payload_place.descend_throttle_level = 0;
         nav_payload_place.state = PayloadPlaceStateType_Descending;
         // no break
     case PayloadPlaceStateType_Descending:
         // make sure we don't descend too far:
-        debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()), nav_payload_place.descend_max);
+        debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - current_pos.z), nav_payload_place.descend_max);
         if (!is_zero(nav_payload_place.descend_max) &&
-            nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()  > nav_payload_place.descend_max) {
+            nav_payload_place.descend_start_altitude - current_pos.z  > nav_payload_place.descend_max) {
             nav_payload_place.state = PayloadPlaceStateType_Ascending;
             gcs().send_text(MAV_SEVERITY_WARNING, "Reached maximum descent");
             return false; // we'll do any cleanups required next time through the loop

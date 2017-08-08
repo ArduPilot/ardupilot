@@ -61,9 +61,9 @@ void Copter::throw_run()
         // initialise the demanded height to 3m above the throw height
         // we want to rapidly clear surrounding obstacles
         if (g2.throw_type == ThrowType_Drop) {
-            pos_control->set_alt_target(inertial_nav.get_altitude() - 100);
+            pos_control->set_alt_target(current_pos.z - 100.0f);
         } else {
-            pos_control->set_alt_target(inertial_nav.get_altitude() + 300);
+            pos_control->set_alt_target(current_pos.z + 300.0f);
         }
 
         // set the initial velocity of the height controller demand to the measured velocity if it is going up
