@@ -47,8 +47,6 @@ class AP_GPS_Backend;
 /// GPS driver main class
 class AP_GPS
 {
-public:
-
     friend class AP_GPS_ERB;
     friend class AP_GPS_GSOF;
     friend class AP_GPS_MAV;
@@ -65,8 +63,14 @@ public:
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
 
-    // constructor
-	AP_GPS();
+public:
+    static AP_GPS create() { return AP_GPS{}; }
+
+    constexpr AP_GPS(AP_GPS &&other) = default;
+
+    /* Do not allow copies */
+    AP_GPS(const AP_GPS &other) = delete;
+    AP_GPS &operator=(const AP_GPS&) = delete;
 
     // GPS driver types
     enum GPS_Type {
@@ -426,6 +430,8 @@ protected:
     uint32_t _log_gps_bit = -1;
 
 private:
+    AP_GPS();
+
     // returns the desired gps update rate in milliseconds
     // this does not provide any guarantee that the GPS is updating at the requested
     // rate it is simply a helper for use in the backends for determining what rate
