@@ -68,7 +68,7 @@ void Copter::FlightMode_THROW::run()
 
         // set the initial velocity of the height controller demand to the measured velocity if it is going up
         // if it is going down, set it to zero to enforce a very hard stop
-        pos_control->set_desired_velocity_z(fmaxf(inertial_nav.get_velocity_z(),0.0f));
+        pos_control->set_desired_velocity_z(fmaxf(_copter.current_vel.z, 0.0f));
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         _copter.set_auto_armed(true);
@@ -221,9 +221,9 @@ bool Copter::FlightMode_THROW::throw_detected()
     // check for upwards or downwards trajectory (airdrop) of 50cm/s
     bool changing_height;
     if (g2.throw_type == ThrowType_Drop) {
-        changing_height = current_vel.z < -THROW_VERTICAL_SPEED;
+        changing_height = _copter.current_vel.z < -THROW_VERTICAL_SPEED;
     } else {
-        changing_height = current_vel.z > THROW_VERTICAL_SPEED;
+        changing_height = _copter.current_vel.z > THROW_VERTICAL_SPEED;
     }
 
     // Check the vertical acceleraton is greater than 0.25g
@@ -238,11 +238,11 @@ bool Copter::FlightMode_THROW::throw_detected()
     // Record time and vertical velocity when we detect the possible throw
     if (possible_throw_detected && ((AP_HAL::millis() - free_fall_start_ms) > 500)) {
         free_fall_start_ms = AP_HAL::millis();
-        free_fall_start_velz = current_vel.z;
+        free_fall_start_velz = _copter.current_vel.z;
     }
 
     // Once a possible throw condition has been detected, we check for 2.5 m/s of downwards velocity change in less than 0.5 seconds to confirm
-    bool throw_condition_confirmed = ((AP_HAL::millis() - free_fall_start_ms < 500) && ((current_vel.z - free_fall_start_velz) < -250.0f));
+    bool throw_condition_confirmed = ((AP_HAL::millis() - free_fall_start_ms < 500) && ((_copter.current_vel.z - free_fall_start_velz) < -250.0f));
 
     // start motors and enter the control mode if we are in continuous freefall
     if (throw_condition_confirmed) {

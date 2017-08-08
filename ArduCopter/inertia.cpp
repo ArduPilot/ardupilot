@@ -53,5 +53,5 @@ void Copter::read_inertia()
 
     // set flags and get velocity
     current_loc.flags.relative_alt = true;
-    climb_rate = inertial_nav.get_velocity_z();
+    climb_rate = current_vel.z;
 }

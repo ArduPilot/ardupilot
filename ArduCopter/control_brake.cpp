@@ -22,7 +22,7 @@ bool Copter::FlightMode_BRAKE::init(bool ignore_checks)
         // initialise position and desired velocity
         if (!pos_control->is_active_z()) {
             pos_control->set_alt_target_to_current_alt();
-            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+            pos_control->set_desired_velocity_z(_copter.current_vel.z);
         }
 
         _timeout_ms = 0;
