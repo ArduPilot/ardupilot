@@ -512,7 +512,7 @@ private:
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence fence = AC_Fence::create(ahrs, inertial_nav);
+    AC_Fence fence = AC_Fence::create(ahrs);
 #endif
 
 #if AC_AVOID_ENABLED == ENABLED
@@ -529,7 +529,7 @@ private:
 
     // Crop Sprayer
 #if SPRAYER == ENABLED
-    AC_Sprayer sprayer = AC_Sprayer::create(&inertial_nav);
+    AC_Sprayer sprayer = AC_Sprayer::create(&ahrs);
 #endif
 
     // Parachute release
@@ -547,7 +547,7 @@ private:
 
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
-    AC_PrecLand precland = AC_PrecLand::create(ahrs, inertial_nav);
+    AC_PrecLand precland = AC_PrecLand::create(ahrs);
 #endif
 
     // Pilot Input Management Library
