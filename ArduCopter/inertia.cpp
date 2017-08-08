@@ -3,9 +3,6 @@
 // read_inertia - read inertia in from accelerometers
 void Copter::read_inertia()
 {
-    // inertial altitude estimates
-    inertial_nav.update(G_Dt);
-
     // pull position
     if (!ahrs.get_origin(ekf_origin)) {
         return;
