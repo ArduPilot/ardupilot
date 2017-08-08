@@ -39,6 +39,8 @@
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <PID/PID.h>                                // PID library
+#include <AC_PID/AC_P.h>
+#include <AC_PID/AC_PID.h>
 #include <RC_Channel/RC_Channel.h>                  // RC Channel Library
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
 #include <Filter/Filter.h>                          // Filter library
@@ -57,8 +59,8 @@
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
 #include <AP_Navigation/AP_Navigation.h>
-#include <APM_Control/APM_Control.h>
 #include <AP_L1_Control/AP_L1_Control.h>
+#include <APM_Control/AR_AttitudeControl.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
@@ -179,9 +181,6 @@ private:
 
     // selected navigation controller
     AP_Navigation *nav_controller;
-
-    // steering controller
-    AP_SteerController steerController;
 
     // Mission library
     AP_Mission mission;

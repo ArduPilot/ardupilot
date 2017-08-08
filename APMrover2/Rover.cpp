@@ -28,7 +28,6 @@ Rover::Rover(void) :
     modes(&g.mode1),
     L1_controller(ahrs, nullptr),
     nav_controller(&L1_controller),
-    steerController(ahrs),
     mission(ahrs,
             FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
             FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),

@@ -195,7 +195,7 @@ public:
         k_param_compass,
         k_param_rcmap,
         k_param_L1_controller,
-        k_param_steerController,
+        k_param_steerController_old,    // unused
         k_param_barometer,
         k_param_notify,
         k_param_button,
@@ -323,6 +323,9 @@ public:
 
     // wheel encoders
     AP_WheelEncoder wheel_encoder;
+
+    // steering and throttle controller
+    AR_AttitudeControl attitude_control;
 };
 
 extern const AP_Param::Info var_info[];
