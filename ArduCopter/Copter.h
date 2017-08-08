@@ -198,7 +198,7 @@ private:
     AP_Int8 *flight_modes;
 
     AP_Baro barometer = AP_Baro::create();
-    Compass compass;
+    Compass compass = Compass::create();
     AP_InertialSensor ins;
 
     RangeFinder rangefinder {serial_manager, ROTATION_PITCH_270};
