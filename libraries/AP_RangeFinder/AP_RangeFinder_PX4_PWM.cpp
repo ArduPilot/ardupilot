@@ -117,10 +117,10 @@ void AP_RangeFinder_PX4_PWM::update(void)
         _last_pulse_time_ms = now;
 
         // setup for scaling in meters per millisecond
-        float distance_cm = pwm.pulse_width * 0.1f * scaling + state.offset;
+        float _distance_cm = pwm.pulse_width * 0.1f * scaling + state.offset;
 
-        float distance_delta_cm = fabsf(distance_cm - _last_sample_distance_cm);
-        _last_sample_distance_cm = distance_cm;
+        float distance_delta_cm = fabsf(_distance_cm - _last_sample_distance_cm);
+        _last_sample_distance_cm = _distance_cm;
 
         if (distance_delta_cm > 100) {
             // varying by more than 1m in a single sample, which means
@@ -131,7 +131,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
 
         if (_good_sample_count > 1) {
             count++;
-            sum_cm += distance_cm;
+            sum_cm += _distance_cm;
             _last_timestamp = pwm.timestamp;
         } else {
             _good_sample_count++;
