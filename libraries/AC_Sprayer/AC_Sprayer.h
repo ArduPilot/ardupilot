@@ -19,7 +19,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
+#include <AP_AHRS/AP_AHRS.h>
 
 #define AC_SPRAYER_DEFAULT_PUMP_RATE        10.0f   ///< default quantity of spray per meter travelled
 #define AC_SPRAYER_DEFAULT_PUMP_MIN         0       ///< default minimum pump speed expressed as a percentage from 0 to 100
@@ -35,7 +35,7 @@ class AC_Sprayer {
 public:
 
     /// Constructor
-    AC_Sprayer(const AP_InertialNav* inav);
+    AC_Sprayer(AP_AHRS_NavEKF* ahrs);
 
     /// run - allow or disallow spraying to occur
     void run(bool true_false);
@@ -60,7 +60,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    const AP_InertialNav* const _inav;      ///< pointers to other objects we depend upon
+    AP_AHRS_NavEKF* const _ahrs;      ///< pointers to other objects we depend upon
 
     // parameters
     AP_Int8         _enabled;               ///< top level enable/disable control
