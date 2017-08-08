@@ -13,8 +13,7 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-// INS and Baro declaration
-AP_InertialSensor ins;
+static AP_InertialSensor ins = AP_InertialSensor::create();
 
 static Compass compass = Compass::create();
 

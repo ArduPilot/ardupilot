@@ -168,7 +168,7 @@ private:
     TSYS01 celsius;
     AP_Baro barometer = AP_Baro::create();
     Compass compass = Compass::create();
-    AP_InertialSensor ins;
+    AP_InertialSensor ins = AP_InertialSensor::create();
 
     RangeFinder rangefinder {serial_manager, ROTATION_PITCH_270};
     struct {

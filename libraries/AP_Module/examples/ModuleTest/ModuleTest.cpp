@@ -13,7 +13,7 @@ void loop();
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // sensor declaration
-AP_InertialSensor ins;
+static AP_InertialSensor ins = AP_InertialSensor::create();
 AP_GPS gps;
 static AP_Baro baro = AP_Baro::create();
 AP_SerialManager serial_manager;
