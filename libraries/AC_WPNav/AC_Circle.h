@@ -3,7 +3,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 
 // loiter maximum velocities and accelerations
@@ -16,7 +15,7 @@ class AC_Circle
 public:
 
     /// Constructor
-    AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
+    AC_Circle(const AP_AHRS_NavEKF& ahrs, const AP_AHRS_View& ahrs_view, AC_PosControl& pos_control);
 
     /// init - initialise circle controller setting center specifically
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
@@ -78,9 +77,9 @@ private:
         uint8_t panorama    : 1;    // true if we are doing a panorama
     } _flags;
 
-    // references to inertial nav and ahrs libraries
-    const AP_InertialNav&       _inav;
-    const AP_AHRS_View&         _ahrs;
+    // references to ahrs libraries
+    const AP_AHRS_NavEKF&       _ahrs;
+    const AP_AHRS_View&         _ahrs_view;
     AC_PosControl&              _pos_control;
 
     // parameters
