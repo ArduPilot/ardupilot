@@ -321,6 +321,9 @@ GCS_MAVLINK_Tracker::data_stream_send(void)
         send_message(MSG_EXTENDED_STATUS2);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_GPS_RAW);
+        send_message(MSG_GPS_RTK);
+        send_message(MSG_GPS2_RAW);
+        send_message(MSG_GPS2_RTK);
     }
 
     if (stream_trigger(STREAM_POSITION)) {
