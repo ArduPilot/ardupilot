@@ -108,7 +108,7 @@ private:
 
     AP_Baro barometer = AP_Baro::create();
 
-    Compass compass;
+    Compass compass = Compass::create();
 
     AP_InertialSensor ins;
 

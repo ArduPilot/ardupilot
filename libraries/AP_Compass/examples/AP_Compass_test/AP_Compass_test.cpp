@@ -9,7 +9,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static Compass compass;
+static Compass compass = Compass::create();
 
 uint32_t timer;
 

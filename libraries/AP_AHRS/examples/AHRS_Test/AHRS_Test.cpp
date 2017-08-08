@@ -16,7 +16,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 // INS and Baro declaration
 AP_InertialSensor ins;
 
-Compass compass;
+static Compass compass = Compass::create();
 
 AP_GPS gps;
 static AP_Baro barometer = AP_Baro::create();
