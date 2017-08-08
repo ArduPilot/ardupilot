@@ -868,7 +868,10 @@ void QuadPlane::init_loiter(void)
       user to setup for a more or less agressive stop when entering
       QLOITER
      */
-    Vector3f stopping_point = inertial_nav.get_position();
+    Vector3f stopping_point;
+    ahrs.get_relative_position_NED_origin(stopping_point);
+    stopping_point = stopping_point * 100.0f;  // m to cm
+    stopping_point.z = stopping_point.z * -1.0f;  // NED to NEU
     Vector3f vel = inertial_nav.get_velocity();
     if (!vel.is_zero()) {
         vel.z = 0;
@@ -1851,7 +1854,9 @@ void QuadPlane::vtol_position_controller(void)
         
         pos_control->update_vel_controller_xy(ekfNavVelGainScaler);
 
-        const Vector3f& curr_pos = inertial_nav.get_position();
+        Vector2f curr_pos;
+        ahrs.get_relative_position_NE_origin(curr_pos);
+        curr_pos = curr_pos * 100.0f;  // m to cm
         pos_control->set_xy_target(curr_pos.x, curr_pos.y);
 
         pos_control->freeze_ff_xy();
