@@ -44,9 +44,13 @@ class Compass
 {
 friend class AP_Compass_Backend;
 public:
-    /// Constructor
-    ///
-    Compass();
+    static Compass create() { return Compass{}; }
+
+    constexpr Compass(Compass &&other) = default;
+
+    /* Do not allow copies */
+    Compass(const Compass &other) = delete;
+    Compass &operator=(const Compass&) = delete;
 
     /// Initialize the compass device.
     ///
@@ -289,6 +293,8 @@ public:
     }
 
 private:
+    Compass();
+
     /// Register a new compas driver, allocating an instance number
     ///
     /// @return number of compass instances
