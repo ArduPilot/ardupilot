@@ -14,7 +14,6 @@ public:
         g2(copter.g2),
         wp_nav(_copter.wp_nav),
         pos_control(_copter.pos_control),
-        inertial_nav(_copter.inertial_nav),
         ahrs(_copter.ahrs),
         attitude_control(_copter.attitude_control),
         motors(_copter.motors),
@@ -63,7 +62,6 @@ protected:
     ParametersG2 &g2;
     AC_WPNav *&wp_nav;
     AC_PosControl *&pos_control;
-    AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
     AC_AttitudeControl_t *&attitude_control;
     MOTOR_CLASS *&motors;

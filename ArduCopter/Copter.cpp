@@ -53,7 +53,6 @@ Copter::Copter(void)
     condition_value(0),
     condition_start(0),
     G_Dt(MAIN_LOOP_SECONDS),
-    inertial_nav(ahrs),
     pmTest1(0),
     fast_loopTimer(0),
     mainLoop_count(0),
