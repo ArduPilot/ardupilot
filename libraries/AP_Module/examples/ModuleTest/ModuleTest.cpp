@@ -15,7 +15,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 // sensor declaration
 AP_InertialSensor ins;
 AP_GPS gps;
-AP_Baro baro;
+static AP_Baro baro = AP_Baro::create();
 AP_SerialManager serial_manager;
 
 // choose which AHRS system to use
