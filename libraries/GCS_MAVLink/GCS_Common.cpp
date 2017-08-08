@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_RangeFinder/RangeFinder_Backend.h>
 
 #include "ap_version.h"
 #include "GCS.h"
@@ -214,54 +215,60 @@ bool GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery) const
     return true;
 }
 
-void GCS_MAVLINK::send_distance_sensor(const RangeFinder &rangefinder, const uint8_t instance) const
+void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor) const
 {
-    if (rangefinder.status(instance) != RangeFinder::RangeFinder_NotConnected &&
-        rangefinder.status(instance) != RangeFinder::RangeFinder_NoData) {
-        mavlink_msg_distance_sensor_send(
-                chan,
-                AP_HAL::millis(),                       // time since system boot TODO: take time of measurement
-                rangefinder.min_distance_cm(instance),  // minimum distance the sensor can measure in centimeters
-                rangefinder.max_distance_cm(instance),  // maximum distance the sensor can measure in centimeters
-                rangefinder.distance_cm(instance),      // current distance reading
-                rangefinder.get_sensor_type(instance),  // type from MAV_DISTANCE_SENSOR enum
-                instance,                               // onboard ID of the sensor == instance
-                rangefinder.get_orientation(instance),  // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
-                0);                                     // Measurement covariance in centimeters, 0 for unknown / invalid readings
+    if (sensor == nullptr) {
+        // should not happen
+        return;
     }
+    if (!sensor->has_data()) {
+        return;
+    }
+
+    mavlink_msg_distance_sensor_send(
+        chan,
+        AP_HAL::millis(),           // time since system boot TODO: take time of measurement
+        sensor->min_distance_cm(),  // minimum distance the sensor can measure in centimeters
+        sensor->max_distance_cm(),  // maximum distance the sensor can measure in centimeters
+        sensor->distance_cm(),      // current distance reading
+        sensor->get_sensor_type(),  // type from MAV_DISTANCE_SENSOR enum
+        sensor->instance(),         // onboard ID of the sensor == instance
+        sensor->orientation(),      // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
+        0);                         // Measurement covariance in centimeters, 0 for unknown / invalid readings
 }
 
 bool GCS_MAVLINK::send_distance_sensor(const RangeFinder &rangefinder) const
 {
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
         CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-        send_distance_sensor(rangefinder, i);
+        AP_RangeFinder_Backend *sensor = rangefinder.get_backend(i);
+        if (sensor == nullptr) {
+            continue;
+        }
+        send_distance_sensor(sensor);
     }
     return true;
 }
 
 void GCS_MAVLINK::send_distance_sensor_downward(const RangeFinder &rangefinder) const
 {
-    // exit immediately if rangefinder is disabled or not downward looking
-    if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
+    AP_RangeFinder_Backend *s = rangefinder.find_instance(ROTATION_PITCH_270);
+    if (s == nullptr) {
         return;
     }
-    uint8_t instance;
-    rangefinder.find_instance(ROTATION_PITCH_270, instance);
-    send_distance_sensor(rangefinder, instance);
+    send_distance_sensor(s);
 }
 
 void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder) const
 {
-    // exit immediately if rangefinder is disabled or not downward looking
-    if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
-        // no sonar to report
+    AP_RangeFinder_Backend *s = rangefinder.find_instance(ROTATION_PITCH_270);
+    if (s == nullptr) {
         return;
     }
     mavlink_msg_rangefinder_send(
             chan,
-            rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f,
-            rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
+            s->distance_cm() * 0.01f,
+            s->voltage_mv() * 0.001f);
 }
 
 bool GCS_MAVLINK::send_proximity(const AP_Proximity &proximity) const
