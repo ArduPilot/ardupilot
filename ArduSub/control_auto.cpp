@@ -654,7 +654,7 @@ bool Sub::auto_terrain_recover_start()
 
     // Reset vertical position and velocity targets
     pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    pos_control.set_desired_velocity_z(current_vel.z);
 
     gcs().send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
     return true;
