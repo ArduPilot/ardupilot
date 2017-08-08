@@ -120,8 +120,7 @@ void Sub::guided_angle_control_start()
     pos_control.set_accel_z(wp_nav.get_accel_z());
 
     // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(current_vel.z);
+    pos_control.init_vel_controller_z(current_vel.z);
 
     // initialise targets
     guided_angle_state.update_time_ms = millis();

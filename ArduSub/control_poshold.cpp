@@ -19,8 +19,7 @@ bool Sub::poshold_init()
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(current_vel.z);
+    pos_control.init_vel_controller_z(current_vel.z);
 
     // set target to current position
     // only init here as we can switch to PosHold in flight with a velocity <> 0 that will be used as _last_vel in PosControl and never updated again as we inhibit Reset_I

@@ -21,8 +21,7 @@ bool Sub::althold_init()
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(current_vel.z);
+    pos_control.init_vel_controller_z(current_vel.z);
 
     last_pilot_heading = ahrs.yaw_sensor;
 
