@@ -58,7 +58,7 @@ public:
     void setup();
     void load_parameters(void);
 
-    AP_InertialSensor ins;
+    AP_InertialSensor ins = AP_InertialSensor::create();
     AP_Baro barometer = AP_Baro::create();
     AP_GPS gps;
     Compass compass = Compass::create();
