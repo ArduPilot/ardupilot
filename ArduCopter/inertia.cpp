@@ -48,7 +48,7 @@ void Copter::read_inertia()
         }
     } else {
         // with inertial nav we can update the altitude and climb rate at 50hz
-        current_loc.alt = pv_alt_above_home(inertial_nav.get_altitude());
+        current_loc.alt = pv_alt_above_home(current_pos.z);
     }
 
     // set flags and get velocity
