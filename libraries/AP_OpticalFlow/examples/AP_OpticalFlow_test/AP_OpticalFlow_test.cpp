@@ -23,7 +23,7 @@ class DummyVehicle {
 public:
     AP_GPS gps;
     AP_Baro barometer = AP_Baro::create();
-    Compass compass;
+    Compass compass = Compass::create();
     AP_InertialSensor ins;
     AP_SerialManager serial_manager;
     RangeFinder sonar {serial_manager, ROTATION_PITCH_270};

@@ -17,7 +17,7 @@ private:
     AP_InertialSensor ins;
     AP_Baro baro = AP_Baro::create();
     AP_GPS  gps;
-    Compass compass;
+    Compass compass = Compass::create();
     AP_AHRS_DCM ahrs{ins, baro, gps};
 
     // global constants that control how many verify calls must be made for a command before it completes

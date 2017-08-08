@@ -201,7 +201,7 @@ private:
     AP_Int8 *flight_modes = &g.flight_mode1;
 
     AP_Baro barometer = AP_Baro::create();
-    Compass compass;
+    Compass compass = Compass::create();
 
     AP_InertialSensor ins;
 

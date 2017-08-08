@@ -61,7 +61,7 @@ public:
     AP_InertialSensor ins;
     AP_Baro barometer = AP_Baro::create();
     AP_GPS gps;
-    Compass compass;
+    Compass compass = Compass::create();
     AP_SerialManager serial_manager;
     RangeFinder rng {serial_manager, ROTATION_PITCH_270};
     NavEKF2 EKF2{&ahrs, barometer, rng};

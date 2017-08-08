@@ -153,7 +153,7 @@ private:
     // sensor drivers
     AP_GPS gps;
     AP_Baro barometer = AP_Baro::create();
-    Compass compass;
+    Compass compass = Compass::create();
     AP_InertialSensor ins;
     RangeFinder rangefinder { serial_manager, ROTATION_NONE };
     AP_Button button;
