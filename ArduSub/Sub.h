@@ -161,7 +161,7 @@ private:
     // Dataflash
     DataFlash_Class DataFlash;
 
-    AP_GPS gps;
+    AP_GPS gps = AP_GPS::create();
 
     AP_LeakDetector leak_detector;
 
