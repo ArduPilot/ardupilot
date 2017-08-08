@@ -64,12 +64,9 @@ void Copter::FlightMode_DRIFT::run()
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
-    // Grab inertial velocity
-    const Vector3f& vel = inertial_nav.get_velocity();
-
     // rotate roll, pitch input from north facing to vehicle's perspective
-    float roll_vel =  vel.y * ahrs.cos_yaw() - vel.x * ahrs.sin_yaw(); // body roll vel
-    float pitch_vel = vel.y * ahrs.sin_yaw() + vel.x * ahrs.cos_yaw(); // body pitch vel
+    float roll_vel =  _copter.current_vel.y * ahrs.cos_yaw() - _copter.current_vel.x * ahrs.sin_yaw(); // body roll vel
+    float pitch_vel = _copter.current_vel.y * ahrs.sin_yaw() + _copter.current_vel.x * ahrs.cos_yaw(); // body pitch vel
 
     // gain sceduling for Yaw
     float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
@@ -104,7 +101,7 @@ void Copter::FlightMode_DRIFT::run()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // output pilot's throttle with angle boost
-    attitude_control->set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true, g.throttle_filt);
+    attitude_control->set_throttle_out(get_throttle_assist(_copter.current_vel.z, pilot_throttle_scaled), true, g.throttle_filt);
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and z-axis velocity
