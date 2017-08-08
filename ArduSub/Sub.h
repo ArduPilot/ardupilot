@@ -166,7 +166,7 @@ private:
     AP_LeakDetector leak_detector;
 
     TSYS01 celsius;
-    AP_Baro barometer;
+    AP_Baro barometer = AP_Baro::create();
     Compass compass;
     AP_InertialSensor ins;
 

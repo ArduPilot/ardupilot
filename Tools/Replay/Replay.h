@@ -59,7 +59,7 @@ public:
     void load_parameters(void);
 
     AP_InertialSensor ins;
-    AP_Baro barometer;
+    AP_Baro barometer = AP_Baro::create();
     AP_GPS gps;
     Compass compass;
     AP_SerialManager serial_manager;

@@ -19,7 +19,7 @@ AP_InertialSensor ins;
 Compass compass;
 
 AP_GPS gps;
-AP_Baro barometer;
+static AP_Baro barometer = AP_Baro::create();
 AP_SerialManager serial_manager;
 
 class DummyVehicle {
