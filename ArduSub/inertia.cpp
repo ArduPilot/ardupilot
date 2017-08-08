@@ -14,7 +14,11 @@ void Sub::read_inertia()
     }
 
     // exit immediately if we do not have an altitude estimate
-    if (!inertial_nav.get_filter_status().flags.vert_pos) {
+    nav_filter_status filt_status;
+    if (!ahrs.get_filter_status(filt_status)) {
+        return;
+    }
+    if (!filt_status.flags.vert_pos) {
         return;
     }
 
