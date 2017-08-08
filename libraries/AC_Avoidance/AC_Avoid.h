@@ -4,7 +4,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>     // AHRS library
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude controller library for sqrt controller
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
 #include <AP_Proximity/AP_Proximity.h>
@@ -29,12 +28,11 @@
  */
 class AC_Avoid {
 public:
-    static AC_Avoid create(const AP_AHRS& ahrs,
-                           const AP_InertialNav& inav,
+    static AC_Avoid create(const AP_AHRS_NavEKF& ahrs,
                            const AC_Fence& fence,
                            const AP_Proximity& proximity,
                            const AP_Beacon* beacon = nullptr) {
-        return AC_Avoid{ahrs, inav, fence, proximity, beacon};
+        return AC_Avoid{ahrs, fence, proximity, beacon};
     }
 
     constexpr AC_Avoid(AC_Avoid &&other) = default;
@@ -66,7 +64,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
+    AC_Avoid(const AP_AHRS_NavEKF& ahrs, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
 
     /*
      * Adjusts the desired velocity for the circular fence.
@@ -132,8 +130,7 @@ private:
     void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
 
     // external references
-    const AP_AHRS& _ahrs;
-    const AP_InertialNav& _inav;
+    const AP_AHRS_NavEKF& _ahrs;
     const AC_Fence& _fence;
     const AP_Proximity& _proximity;
     const AP_Beacon* _beacon;
