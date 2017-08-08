@@ -46,3 +46,5 @@ LIBRARIES += AP_Beacon
 LIBRARIES += AP_VisualOdom
 LIBRARIES += AP_WheelEncoder
 LIBRARIES += AP_AdvancedFailsafe
+LIBRARIES += AR_AttitudeControl
+LIBRARIES += AC_PID
