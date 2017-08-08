@@ -231,7 +231,7 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor) con
         sensor->min_distance_cm(),  // minimum distance the sensor can measure in centimeters
         sensor->max_distance_cm(),  // maximum distance the sensor can measure in centimeters
         sensor->distance_cm(),      // current distance reading
-        sensor->get_sensor_type(),  // type from MAV_DISTANCE_SENSOR enum
+        sensor->get_mav_distance_sensor_type(),  // from MAV_DISTANCE_SENSOR enum
         sensor->instance(),                               // onboard ID of the sensor == instance
         sensor->orientation(),  // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
         0);                                     // Measurement covariance in centimeters, 0 for unknown / invalid readings
