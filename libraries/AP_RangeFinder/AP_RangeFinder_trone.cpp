@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_trone::AP_RangeFinder_trone(uint8_t bus, RangeFinder::RangeFinder_State &_state)
-    : AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_LASER)
+    : AP_RangeFinder_Backend(_state)
     , dev(hal.i2c_mgr->get_device(bus, TRONE_I2C_ADDR))
 {
 }

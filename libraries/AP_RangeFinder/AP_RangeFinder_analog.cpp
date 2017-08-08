@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_UNKNOWN)
+    AP_RangeFinder_Backend(_state)
 {
     source = hal.analogin->channel(_state.pin);
     if (source == nullptr) {

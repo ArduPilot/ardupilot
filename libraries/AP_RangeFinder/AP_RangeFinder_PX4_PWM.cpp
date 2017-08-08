@@ -44,7 +44,7 @@ extern "C" {
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder::RangeFinder_State &_state, AP_Int16 &powersave_range, float &_estimated_terrain_height) :
-	AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_UNKNOWN),
+	AP_RangeFinder_Backend(_state),
     _powersave_range(powersave_range),
     estimated_terrain_height(_estimated_terrain_height)
 {
