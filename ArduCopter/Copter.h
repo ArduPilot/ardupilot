@@ -466,6 +466,7 @@ private:
     // 3D Location vectors
     // Current location of the copter (altitude is relative to home)
     Location_Class current_loc;
+    Location ekf_origin;
 
     // Navigation Yaw control
     // auto flight mode's yaw mode
