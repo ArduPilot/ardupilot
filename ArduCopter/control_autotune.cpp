@@ -1544,7 +1544,7 @@ void Copter::autotune_get_poshold_attitude(float &roll_cd, float &pitch_cd, floa
 
     if (!autotune_state.have_position) {
         autotune_state.have_position = true;
-        autotune_state.start_position = inertial_nav.get_position();
+        autotune_state.start_position = current_pos;
     }
 
     // don't go past 10 degrees, as autotune result would deteriorate too much
@@ -1556,8 +1556,8 @@ void Copter::autotune_get_poshold_attitude(float &roll_cd, float &pitch_cd, floa
     // we only start adjusting yaw if we are more than 5m from the
     // target position. That corresponds to a lean angle of 2.5 degrees
     const float yaw_dist_limit_cm = 500;
-    
-    Vector3f pdiff = inertial_nav.get_position() - autotune_state.start_position;
+
+    Vector3f pdiff = current_pos - autotune_state.start_position;
     pdiff.z = 0;
     float dist_cm = pdiff.length();
     if (dist_cm < 10) {

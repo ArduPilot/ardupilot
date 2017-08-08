@@ -17,6 +17,13 @@ void Copter::read_inertia()
     current_loc.lng = loc.lng;
     current_loc.lat = loc.lat;
 
+    // Get XYZ position and velocity in NEU and cm
+    if (!ahrs.get_relative_position_NED_origin(current_pos)) {
+        return;
+    }
+    current_pos = current_pos * 100.0f;  // m to cm
+    current_pos.z = -current_pos.z;  // NED to NEU
+
     // exit immediately if we do not have an altitude estimate
     nav_filter_status filt_status;
     if (!ahrs.get_filter_status(filt_status)) {
