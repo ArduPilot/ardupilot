@@ -7,11 +7,15 @@ void Sub::read_inertia()
     inertial_nav.update(G_Dt);
 
     // pull position from interial nav library
-    current_loc.lng = inertial_nav.get_longitude();
-    current_loc.lat = inertial_nav.get_latitude();
     if (!ahrs.get_origin(ekf_origin)) {
         return;
     }
+    Location loc{};
+    if (!ahrs.get_position(loc)) {
+        return;
+    }
+    current_loc.lng = loc.lng;
+    current_loc.lat = loc.lat;
 
     // exit immediately if we do not have an altitude estimate
     nav_filter_status filt_status;
