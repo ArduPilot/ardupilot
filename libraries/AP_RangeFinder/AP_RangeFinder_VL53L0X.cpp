@@ -217,7 +217,7 @@ const AP_RangeFinder_VL53L0X::RegData AP_RangeFinder_VL53L0X::tuning_data[] =
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_VL53L0X::AP_RangeFinder_VL53L0X(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
-    : AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_LASER)
+    : AP_RangeFinder_Backend(_state)
     , dev(std::move(_dev)) {}
 
 

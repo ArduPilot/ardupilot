@@ -14,6 +14,12 @@ public:
     // update state
     void update(void);
 
+protected:
+
+    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_LASER;
+    }
+
 private:
     // constructor
     AP_RangeFinder_trone(uint8_t bus, RangeFinder::RangeFinder_State &_state);

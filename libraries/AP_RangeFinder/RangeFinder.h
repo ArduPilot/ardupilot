@@ -133,7 +133,7 @@ public:
     int16_t max_distance_cm_orient(enum Rotation orientation) const;
     int16_t min_distance_cm_orient(enum Rotation orientation) const;
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
-    MAV_DISTANCE_SENSOR get_sensor_type_orient(enum Rotation orientation) const;
+    MAV_DISTANCE_SENSOR get_mav_distance_sensor_type_orient(enum Rotation orientation) const;
     RangeFinder_Status status_orient(enum Rotation orientation) const;
     bool has_data_orient(enum Rotation orientation) const;
     uint8_t range_valid_count_orient(enum Rotation orientation) const;

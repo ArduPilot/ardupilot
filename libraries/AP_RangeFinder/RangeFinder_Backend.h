@@ -22,8 +22,7 @@ class AP_RangeFinder_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state,
-                           MAV_DISTANCE_SENSOR _sensor_type);
+	AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state);
 
     // we declare a virtual destructor so that RangeFinder drivers can
     // override with a custom destructor if need be
@@ -43,11 +42,11 @@ public:
     int16_t max_distance_cm() const { return state.max_distance_cm; }
     int16_t min_distance_cm() const { return state.min_distance_cm; }
     int16_t ground_clearance_cm() const { return state.ground_clearance_cm; }
-    MAV_DISTANCE_SENSOR get_sensor_type() const {
+    MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const {
         if (state.type == RangeFinder::RangeFinder_TYPE_NONE) {
             return MAV_DISTANCE_SENSOR_UNKNOWN;
         }
-        return sensor_type;
+        return _get_mav_distance_sensor_type();
     }
     RangeFinder::RangeFinder_Status status() const {
         if (state.type == RangeFinder::RangeFinder_TYPE_NONE) {
@@ -80,8 +79,9 @@ protected:
     void set_status(RangeFinder::RangeFinder_Status status);
 
     RangeFinder::RangeFinder_State &state;
-    MAV_DISTANCE_SENSOR sensor_type;
 
     // semaphore for access to shared frontend data
     AP_HAL::Semaphore *_sem;    
+
+    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const = 0;
 };
