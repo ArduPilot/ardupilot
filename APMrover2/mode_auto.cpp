@@ -66,11 +66,12 @@ void ModeAuto::update()
         {
             if (!_reached_heading) {
                 // run steering and throttle controllers
-                const float yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
-                g2.motors.set_steering(rover.steerController.get_steering_out_angle_error(yaw_error_cd));
+                const float yaw_error = wrap_PI(radians((_desired_yaw_cd - ahrs.yaw_sensor) * 0.01f));
+                const float steering_out = attitude_control.get_steering_out_angle_error(yaw_error, g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right);
+                g2.motors.set_steering(steering_out * 4500.0f);
                 calc_throttle(_desired_speed);
                 // check if we have reached target
-                _reached_heading = (fabsf(yaw_error_cd) < 500);
+                _reached_heading = (fabsf(yaw_error) < radians(5));
             } else {
                 g2.motors.set_throttle(g.throttle_min.get());
                 g2.motors.set_steering(0.0f);

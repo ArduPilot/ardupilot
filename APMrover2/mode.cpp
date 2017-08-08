@@ -7,7 +7,8 @@ Mode::Mode() :
     g2(rover.g2),
     channel_steer(rover.channel_steer),
     channel_throttle(rover.channel_throttle),
-    mission(rover.mission)
+    mission(rover.mission),
+    attitude_control(rover.g2.attitude_control)
 { }
 
 void Mode::exit()
@@ -177,9 +178,7 @@ void Mode::calc_nav_steer(bool reversed)
     // constrain to max G force
     lateral_acceleration = constrain_float(lateral_acceleration, -g.turn_max_g * GRAVITY_MSS, g.turn_max_g * GRAVITY_MSS);
 
-    // set controller reversal
-    rover.steerController.set_reverse(reversed);
-
     // send final steering command to motor library
-    g2.motors.set_steering(rover.steerController.get_steering_out_lat_accel(lateral_acceleration));
+    float steering_out = attitude_control.get_steering_out_lat_accel(lateral_acceleration, g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right);
+    g2.motors.set_steering(steering_out * 4500.0f);
 }
