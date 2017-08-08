@@ -6,7 +6,6 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_Fence/AC_PolyFence_loader.h>
 #include <AP_Common/Location.h>
 
@@ -35,8 +34,8 @@
 class AC_Fence
 {
 public:
-    static AC_Fence create(const AP_AHRS &ahrs, const AP_InertialNav &inav) {
-        return AC_Fence{ahrs, inav};
+    static AC_Fence create(const AP_AHRS_NavEKF &ahrs) {
+        return AC_Fence{ahrs};
     }
 
     constexpr AC_Fence(AC_Fence &&other) = default;
@@ -123,7 +122,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AC_Fence(const AP_AHRS &ahrs, const AP_InertialNav &inav);
+    AC_Fence(const AP_AHRS_NavEKF &ahrs);
 
     /// record_breach - update breach bitmask, time and count
     void record_breach(uint8_t fence_type);
@@ -135,8 +134,7 @@ private:
     bool load_polygon_from_eeprom(bool force_reload = false);
 
     // pointers to other objects we depend upon
-    const AP_AHRS& _ahrs;
-    const AP_InertialNav& _inav;
+    const AP_AHRS_NavEKF& _ahrs;
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control
