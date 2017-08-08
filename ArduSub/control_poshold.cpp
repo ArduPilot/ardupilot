@@ -120,7 +120,7 @@ void Sub::poshold_run()
     // call z axis position controller
     if (ap.at_bottom) {
         pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
-        pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+        pos_control.set_alt_target(current_pos.z + 10.0f); // set target to 10 cm above bottom
     } else {
         pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
     }
