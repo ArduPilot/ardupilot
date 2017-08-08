@@ -353,6 +353,7 @@ private:
     // Current location of the Sub (altitude is relative to home)
     Location_Class current_loc;
     Location ekf_origin;
+    Vector3f current_pos;
 
     // Navigation Yaw control
     // auto flight mode's yaw mode

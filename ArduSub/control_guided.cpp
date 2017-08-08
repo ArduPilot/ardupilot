@@ -97,11 +97,10 @@ void Sub::guided_posvel_control_start()
     pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
     pos_control.set_jerk_xy_to_default();
 
-    const Vector3f& curr_pos = inertial_nav.get_position();
     const Vector3f& curr_vel = inertial_nav.get_velocity();
 
     // set target position and velocity to current position and velocity
-    pos_control.set_xy_target(curr_pos.x, curr_pos.y);
+    pos_control.set_xy_target(current_pos.x, current_pos.y);
     pos_control.set_desired_velocity_xy(curr_vel.x, curr_vel.y);
 
     // set vertical speed and acceleration
@@ -397,7 +396,7 @@ void Sub::guided_posvel_control_run()
     // if motors not enabled set throttle to zero and exit immediately
     if (!motors.armed()) {
         // set target position and velocity to current position and velocity
-        pos_control.set_pos_target(inertial_nav.get_position());
+        pos_control.set_pos_target(current_pos);
         pos_control.set_desired_velocity(Vector3f(0,0,0));
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
@@ -544,7 +543,7 @@ void Sub::guided_limit_init_time_and_pos()
     guided_limit.start_time = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos = inertial_nav.get_position();
+    guided_limit.start_pos = current_pos;
 }
 
 // guided_limit_check - returns true if guided mode has breached a limit
@@ -556,22 +555,19 @@ bool Sub::guided_limit_check()
         return true;
     }
 
-    // get current location
-    const Vector3f& curr_pos = inertial_nav.get_position();
-
     // check if we have gone below min alt
-    if (!is_zero(guided_limit.alt_min_cm) && (curr_pos.z < guided_limit.alt_min_cm)) {
+    if (!is_zero(guided_limit.alt_min_cm) && (current_pos.z < guided_limit.alt_min_cm)) {
         return true;
     }
 
     // check if we have gone above max alt
-    if (!is_zero(guided_limit.alt_max_cm) && (curr_pos.z > guided_limit.alt_max_cm)) {
+    if (!is_zero(guided_limit.alt_max_cm) && (current_pos.z > guided_limit.alt_max_cm)) {
         return true;
     }
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos, curr_pos);
+        const float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos, current_pos);
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }

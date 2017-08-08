@@ -1378,7 +1378,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
                     packet.coordinate_frame == MAV_FRAME_BODY_NED ||
                     packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-                pos_vector += sub.inertial_nav.get_position();
+                pos_vector += sub.current_pos;
             } else {
                 // convert from alt-above-home to alt-above-ekf-origin
                 pos_vector.z = sub.pv_alt_above_origin(pos_vector.z);
