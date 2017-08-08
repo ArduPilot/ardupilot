@@ -30,9 +30,9 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
-    _inav(inav),
+AC_Circle::AC_Circle(const AP_AHRS_NavEKF& ahrs, const AP_AHRS_View& ahrs_view, AC_PosControl& pos_control) :
     _ahrs(ahrs),
+    _ahrs_view(ahrs_view),
     _pos_control(pos_control),
     _yaw(0.0f),
     _angle(0.0f),
@@ -82,8 +82,8 @@ void AC_Circle::init()
     const Vector3f& stopping_point = _pos_control.get_pos_target();
 
     // set circle center to circle_radius ahead of stopping point
-    _center.x = stopping_point.x + _radius * _ahrs.cos_yaw();
-    _center.y = stopping_point.y + _radius * _ahrs.sin_yaw();
+    _center.x = stopping_point.x + _radius * _ahrs_view.cos_yaw();
+    _center.y = stopping_point.y + _radius * _ahrs_view.sin_yaw();
     _center.z = stopping_point.z;
 
     // calculate velocities
@@ -178,7 +178,9 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
     }
 
     // get current position
-    const Vector3f &curr_pos = _inav.get_position();
+    Vector2f curr_pos;
+    _ahrs.get_relative_position_NE_origin(curr_pos);
+    curr_pos = curr_pos * 100.0f;  // m to cm
 
     // calc vector from current location to circle center
     Vector2f vec;   // vector from circle center to current location
@@ -188,8 +190,8 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
     if (is_zero(dist)) {
-        result.x = _center.x - _radius * _ahrs.cos_yaw();
-        result.y = _center.y - _radius * _ahrs.sin_yaw();
+        result.x = _center.x - _radius * _ahrs_view.cos_yaw();
+        result.y = _center.y - _radius * _ahrs_view.sin_yaw();
         result.z = _center.z;
         return;
     }
@@ -237,18 +239,20 @@ void AC_Circle::init_start_angle(bool use_heading)
 
     // if the radius is zero we are doing panorama so init angle to the current heading
     if (_radius <= 0) {
-        _angle = _ahrs.yaw;
+        _angle = _ahrs_view.yaw;
         return;
     }
 
     // if use_heading is true
     if (use_heading) {
-        _angle = wrap_PI(_ahrs.yaw-M_PI);
+        _angle = wrap_PI(_ahrs_view.yaw-M_PI);
     } else {
         // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
-        const Vector3f &curr_pos = _inav.get_position();
+        Vector2f curr_pos;
+        _ahrs.get_relative_position_NE_origin(curr_pos);
+        curr_pos = curr_pos * 100.0f;  // m to cm
         if (is_equal(curr_pos.x,_center.x) && is_equal(curr_pos.y,_center.y)) {
-            _angle = wrap_PI(_ahrs.yaw-M_PI);
+            _angle = wrap_PI(_ahrs_view.yaw-M_PI);
         } else {
             // get bearing from circle center to vehicle in radians
             float bearing_rad = atan2f(curr_pos.y-_center.y,curr_pos.x-_center.x);
