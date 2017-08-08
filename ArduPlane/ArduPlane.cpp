@@ -187,9 +187,6 @@ void Plane::ahrs_update()
     // frame yaw rate
     steer_state.locked_course_err += ahrs.get_yaw_rate_earth() * G_Dt;
     steer_state.locked_course_err = wrap_PI(steer_state.locked_course_err);
-
-    // update inertial_nav for quadplane
-    quadplane.inertial_nav.update(G_Dt);
 }
 
 /*

@@ -20,7 +20,6 @@ def build(bld):
             'AP_RCMapper',
             'AP_SpdHgtControl',
             'AP_TECS',
-            'AP_InertialNav',
             'AC_WPNav',
             'AC_AttitudeControl',
             'AP_Motors',
