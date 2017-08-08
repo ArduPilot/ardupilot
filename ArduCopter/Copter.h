@@ -513,7 +513,7 @@ private:
 #endif
 
 #if AC_AVOID_ENABLED == ENABLED
-    AC_Avoid avoid = AC_Avoid::create(ahrs, inertial_nav, fence, g2.proximity, &g2.beacon);
+    AC_Avoid avoid = AC_Avoid::create(ahrs, fence, g2.proximity, &g2.beacon);
 #endif
 
     // Rally library

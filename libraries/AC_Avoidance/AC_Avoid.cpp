@@ -38,9 +38,8 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
 };
 
 /// Constructor
-AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon)
+AC_Avoid::AC_Avoid(const AP_AHRS_NavEKF& ahrs, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon)
     : _ahrs(ahrs),
-      _inav(inav),
       _fence(fence),
       _proximity(proximity),
       _beacon(beacon)
@@ -110,8 +109,13 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 
     // calculate distance to optical flow altitude limit
     float ekf_alt_limit_cm;
-    if (_inav.get_hgt_ctrl_limit(ekf_alt_limit_cm)) {
-        float ekf_alt_diff_cm = ekf_alt_limit_cm - _inav.get_altitude();
+    if (_ahrs.get_hgt_ctrl_limit(ekf_alt_limit_cm)) {
+        // convert height from m to cm
+        ekf_alt_limit_cm *= 100.0f;
+        float curr_alt{};
+        _ahrs.get_relative_position_D_origin(curr_alt);
+        curr_alt = curr_alt * -100.0f;
+        const float ekf_alt_diff_cm = ekf_alt_limit_cm - curr_alt;
         if (!limit_alt || ekf_alt_diff_cm < alt_diff_cm) {
             alt_diff_cm = ekf_alt_diff_cm;
         }
@@ -318,11 +322,12 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     }
 
     // do not adjust velocity if vehicle is outside the polygon fence
-    Vector3f position;
+    Vector2f position_xy;
     if (earth_frame) {
-        position = _inav.get_position();
+        _ahrs.get_relative_position_NE_origin(position_xy);
+        position_xy = position_xy * 100.0f;  // m to cm
     }
-    Vector2f position_xy(position.x, position.y);
+
     if (_fence.boundary_breached(position_xy, num_points, boundary)) {
         return;
     }
@@ -395,10 +400,9 @@ void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel,
  */
 Vector2f AC_Avoid::get_position() const
 {
-    const Vector3f position_xyz = _inav.get_position();
-    const Vector2f position_xy(position_xyz.x,position_xyz.y);
-    const Vector2f diff = location_diff(_inav.get_origin(),_ahrs.get_home()) * 100.0f;
-    return position_xy - diff;
+    Vector2f position_xy;
+    _ahrs.get_relative_position_NE_home(position_xy);
+    return position_xy * 100.0f;
 }
 
 /*
@@ -406,8 +410,9 @@ Vector2f AC_Avoid::get_position() const
  */
 float AC_Avoid::get_alt_above_home() const
 {
-    // vehicle's alt above ekf origin + ekf origin's alt above sea level - home's alt above sea level
-    return _inav.get_altitude() + _inav.get_origin().alt - _ahrs.get_home().alt;
+    float alt;
+    _ahrs.get_relative_position_D_home(alt);
+    return (alt * -100.0f);
 }
 
 /*
