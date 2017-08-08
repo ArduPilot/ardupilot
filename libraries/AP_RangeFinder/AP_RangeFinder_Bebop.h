@@ -94,6 +94,12 @@ public:
     static bool detect();
     void update(void);
 
+protected:
+
+    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const {
+        return MAV_DISTANCE_SENSOR_LASER;
+    }
+
 private:
     void _init(void);
     int _launch(void);

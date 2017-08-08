@@ -24,9 +24,8 @@ extern const AP_HAL::HAL& hal;
   base class constructor. 
   This incorporates initialisation as well.
 */
-AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state, MAV_DISTANCE_SENSOR _sensor_type) :
-        state(_state),
-        sensor_type(_sensor_type)
+AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state) :
+        state(_state)
 {
     _sem = hal.util->new_semaphore();    
 }

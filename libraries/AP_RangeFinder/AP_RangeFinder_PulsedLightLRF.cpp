@@ -47,7 +47,7 @@ extern const AP_HAL::HAL& hal;
 AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus,
                                                              RangeFinder::RangeFinder_State &_state,
                                                              RangeFinder::RangeFinder_Type _rftype)
-    : AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_LASER)
+    : AP_RangeFinder_Backend(_state)
     , _dev(hal.i2c_mgr->get_device(bus, LL40LS_ADDR))
     , rftype(_rftype)
 {

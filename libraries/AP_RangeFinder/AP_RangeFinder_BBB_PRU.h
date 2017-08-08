@@ -29,6 +29,12 @@ public:
     // update state
     void update(void);
 
+protected:
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_ULTRASOUND;
+    }
+
 private:
 
 };

@@ -31,7 +31,7 @@ extern const AP_HAL::HAL& hal;
 */
 AP_RangeFinder_MaxsonarSerialLV::AP_RangeFinder_MaxsonarSerialLV(RangeFinder::RangeFinder_State &_state,
                                                                  AP_SerialManager &serial_manager) :
-    AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_ULTRASOUND)
+    AP_RangeFinder_Backend(_state)
 {
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, 0);
     if (uart != nullptr) {
