@@ -45,12 +45,12 @@ void AP_RangeFinder_Backend::update_status()
 }
 
 // set status and update valid count
-void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status status)
+void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status _status)
 {
-    state.status = status;
+    state.status = _status;
 
     // update valid count
-    if (status == RangeFinder::RangeFinder_Good) {
+    if (_status == RangeFinder::RangeFinder_Good) {
         if (state.range_valid_count < 10) {
             state.range_valid_count++;
         }
