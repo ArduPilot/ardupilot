@@ -749,7 +749,10 @@ void QuadPlane::run_z_controller(void)
         // starts the Z controller off with the right values
         gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)inertial_nav.get_altitude());
         pos_control->set_alt_target(inertial_nav.get_altitude());
-        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+        Vector3f vel;
+
+        ahrs.get_velocity_NED(vel);
+        pos_control->set_desired_velocity_z(vel.z * -100.0f);  // NED m/s to NEU cm/s
 
         // initialize vertical speeds and leash lengths
         pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
@@ -777,7 +780,9 @@ void QuadPlane::init_hover(void)
 
     // initialise position and desired velocity
     pos_control->set_alt_target(inertial_nav.get_altitude());
-    pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+    pos_control->set_desired_velocity_z(vel.z * -100.0f);  // NED m/s to NEU cm/s
 
     init_throttle_wait();
 }
@@ -841,7 +846,9 @@ void QuadPlane::init_loiter(void)
 
     // initialise position and desired velocity
     pos_control->set_alt_target(inertial_nav.get_altitude());
-    pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+    pos_control->set_desired_velocity_z(vel.z * -100.0f);  // NED m/s to NEU cm/s
 
     init_throttle_wait();
 }
@@ -1416,7 +1423,9 @@ void QuadPlane::check_throttle_suppression(void)
     }
 
     // if our vertical velocity is greater than 1m/s then allow motors to run
-    if (fabsf(inertial_nav.get_velocity_z()) > 100) {
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+    if (fabsf(vel.z) > 1.0f) {
         return;
     }
 
@@ -1984,8 +1993,9 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
 
     // initialise position and desired velocity
     pos_control->set_alt_target(inertial_nav.get_altitude());
-    pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-    
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+    pos_control->set_desired_velocity_z(vel.z * -100.0f);  // NED m/s to NEU cm/s
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
     return true;
@@ -2136,6 +2146,8 @@ void QuadPlane::Log_Write_QControl_Tuning()
 {
     const Vector3f &desired_velocity = pos_control->get_desired_velocity();
     const Vector3f &accel_target = pos_control->get_accel_target();
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
     struct log_QControl_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_QTUN_MSG),
         time_us             : AP_HAL::micros64(),
@@ -2144,7 +2156,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         desired_alt         : pos_control->get_alt_target() / 100.0f,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         desired_climb_rate  : (int16_t)pos_control->get_vel_target_z(),
-        climb_rate          : (int16_t)inertial_nav.get_velocity_z(),
+        climb_rate          : (int16_t)(vel.z * -100.0f),  // NED m/s to NEU cm/s
         dvx                 : desired_velocity.x*0.01f,
         dvy                 : desired_velocity.y*0.01f,
         dax                 : accel_target.x*0.01f,
