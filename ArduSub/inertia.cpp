@@ -3,9 +3,6 @@
 // read_inertia - read inertia in from accelerometers
 void Sub::read_inertia()
 {
-    // inertial altitude estimates
-    inertial_nav.update(G_Dt);
-
     // pull position from interial nav library
     if (!ahrs.get_origin(ekf_origin)) {
         return;
