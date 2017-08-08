@@ -1982,7 +1982,8 @@ void QuadPlane::vtol_position_controller(void)
 void QuadPlane::setup_target_position(void)
 {
     const Location &loc = plane.next_WP_loc;
-    Location origin = inertial_nav.get_origin();
+    Location origin{};
+    ahrs.get_origin(origin);
     Vector2f diff2d;
 
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
@@ -2179,7 +2180,8 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
 
     throttle_wait = false;
     landing_detect.lower_limit_start_ms = 0;
-    Location origin = inertial_nav.get_origin();
+    struct Location origin {};
+    ahrs.get_origin(origin);
     Vector2f diff2d;
     Vector3f target;
     diff2d = location_diff(origin, plane.next_WP_loc);
