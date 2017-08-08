@@ -429,11 +429,11 @@ private:
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence fence = AC_Fence::create(ahrs, inertial_nav);
+    AC_Fence fence = AC_Fence::create(ahrs);
 #endif
 
 #if AVOIDANCE_ENABLED == ENABLED
-    AC_Avoid avoid = AC_Avoid::create(ahrs, inertial_nav, fence, g2.proximity, &g2.beacon);
+    AC_Avoid avoid = AC_Avoid::create(ahrs, fence, g2.proximity, &g2.beacon);
 #endif
 
     // Rally library
