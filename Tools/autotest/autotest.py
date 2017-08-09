@@ -28,7 +28,7 @@ def get_default_params(atype, binary):
     # use rover simulator so SITL is not starved of input
     from pymavlink import mavutil
     HOME = mavutil.location(40.071374969556928, -105.22978898137808, 1583.702759, 246)
-    if binary.find("plane") != -1 or binary.find("rover") != -1:
+    if "plane" in binary or "rover" in binary:
         frame = "rover"
     else:
         frame = "+"
@@ -158,19 +158,19 @@ def skip_step(step):
     return False
 
 def binary_path(step, debug=False):
-    if step.find("ArduCopter") != -1:
+    if "ArduCopter" in step:
         binary_name = "arducopter"
-    elif step.find("ArduPlane") != -1:
+    elif "ArduPlane" in step:
         binary_name = "arduplane"
-    elif step.find("APMrover2") != -1:
+    elif "APMrover2" in step:
         binary_name = "ardurover"
-    elif step.find("AntennaTracker") != -1:
+    elif "AntennaTracker" in step:
         binary_name = "antennatracker"
-    elif step.find("CopterAVC") != -1:
+    elif "CopterAVC" in step:
         binary_name = "arducopter-heli"
-    elif step.find("QuadPlane") != -1:
+    elif "QuadPlane" in step:
         binary_name = "arduplane"
-    elif step.find("ArduSub") != -1:
+    elif "ArduSub" in step:
         binary_name = "ardusub"
     else:
         # cope with builds that don't have a specific binary
