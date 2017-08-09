@@ -6,6 +6,9 @@
 #define ENABLED                 1
 #define DISABLED                0
 
+// Forced autotest rebuild
+#define AUTOTEST_BUILD_FORCED   1
+
 // this avoids a very common config error
 #define ENABLE ENABLED
 #define DISABLE DISABLED
