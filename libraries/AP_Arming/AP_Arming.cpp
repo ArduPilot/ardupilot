@@ -600,21 +600,26 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
             }
             ret = false;
         }
+        bool fail = true;
         if (i == 2) {
             // skip checking trim for throttle as older code did not check it
-            continue;
+            fail = false;
         }
         if (channel->get_radio_trim() < channel->get_radio_min()) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: %s radio trim below min", channel_name);
             }
-            ret = false;
+            if (fail) {
+                ret = false;
+            }
         }
         if (channel->get_radio_trim() > channel->get_radio_max()) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: %s radio trim above max", channel_name);
             }
-            ret = false;
+            if (fail) {
+                ret = false;
+            }
         }
     }
     return ret;
