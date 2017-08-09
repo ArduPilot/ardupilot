@@ -167,21 +167,21 @@ def skip_step(step):
 
     return False
 
+__bin_names = {
+    "ArduCopter" : "arducopter",
+    "ArduPlane" : "arduplane",
+    "APMrover2" : "ardurover",
+    "AntennaTracker" : "antennatracker",
+    "CopterAVC" : "arducopter-heli",
+    "QuadPlane" : "arduplane",
+    "ArduSub" : "ardusub"
+}
+
 def binary_path(step, debug=False):
-    if "ArduCopter" in step:
-        binary_name = "arducopter"
-    elif "ArduPlane" in step:
-        binary_name = "arduplane"
-    elif "APMrover2" in step:
-        binary_name = "ardurover"
-    elif "AntennaTracker" in step:
-        binary_name = "antennatracker"
-    elif "CopterAVC" in step:
-        binary_name = "arducopter-heli"
-    elif "QuadPlane" in step:
-        binary_name = "arduplane"
-    elif "ArduSub" in step:
-        binary_name = "ardusub"
+    vehicle = step.split(".")[1]
+
+    if vehicle in __bin_names:
+        binary_name = __bin_names[vehicle]
     else:
         # cope with builds that don't have a specific binary
         return None
