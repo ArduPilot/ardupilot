@@ -600,12 +600,27 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
     return true;
 }
 
+typedef struct {
+    uint8_t type; // type narrowed from uint32_t
+    AP_RangeFinder_Backend *(*detect)(RangeFinder::RangeFinder_State &);
+}  detect_function_for_type_t;
+
+static const detect_function_for_type_t detect_functions[] = {
+};
+
 /*
   detect if an instance of a rangefinder is connected. 
  */
 void RangeFinder::detect_instance(uint8_t instance)
 {
     enum RangeFinder_Type _type = (enum RangeFinder_Type)state[instance].type.get();
+    for (uint8_t i=0;i<ARRAY_SIZE(detect_functions);i++) {
+        if (detect_functions[i].type != _type) {
+            continue;
+        }
+        _add_backend(detect_functions[i].detect(state[instance]));
+    }
+
     switch (_type) {
     case RangeFinder_TYPE_PLI2C:
     case RangeFinder_TYPE_PLI2CV3:
