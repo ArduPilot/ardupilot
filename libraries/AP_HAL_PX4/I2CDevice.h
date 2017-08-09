@@ -24,6 +24,7 @@
 #include "Semaphores.h"
 #include "I2CWrapper.h"
 #include "Device.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 namespace PX4 {
 
@@ -91,6 +92,19 @@ public:
     }
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) override;
+
+    uint32_t bus_detect_mask() const override {
+#if   defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+        return 0x3;
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+        return 0x3;
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+        return 0x3;
+#else
+#error "Unrecognised board"
+#endif
+    }
+
 };
 
 }
