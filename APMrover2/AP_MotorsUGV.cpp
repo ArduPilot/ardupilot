@@ -100,6 +100,9 @@ void AP_MotorsUGV::output(bool armed, float dt)
 
     slew_limit_throttle(dt);
 
+    // clear and set limits based on input (limit flags may be set again by output_regular or output_skid_steering methods)
+    set_limits_from_input(armed, _steering, _throttle);
+
     // output for regular steering/throttle style frames
     output_regular(armed, _steering, _throttle);
 
@@ -137,6 +140,10 @@ void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
 // output to skid steering channels
 void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float throttle)
 {
+    if (!have_skid_steering()) {
+        return;
+    }
+
     // handle simpler disarmed case
     if (!armed) {
         if (_disarm_disable_pwm) {
@@ -162,6 +169,17 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     if (saturation_value > 1.0f) {
         steering_scaled = steering_scaled / saturation_value;
         throttle_scaled = throttle_scaled / saturation_value;
+        // set limits
+        if (is_negative(steering)) {
+            limit.steer_left = true;
+        } else {
+            limit.steer_right = true;
+        }
+        if (is_negative(throttle)) {
+            limit.throttle_lower = true;
+        } else {
+            limit.throttle_upper = true;
+        }
     }
 
     // add in throttle
@@ -243,6 +261,16 @@ void AP_MotorsUGV::slew_limit_throttle(float dt)
         }
         _throttle = constrain_int16(_throttle, _last_throttle - temp, _last_throttle + temp);
     }
+}
+
+// set limits based on steering and throttle input
+void AP_MotorsUGV::set_limits_from_input(bool armed, float steering, float throttle)
+{
+    // set limits based on inputs
+    limit.steer_left = !armed || (steering <= -4500.0f);
+    limit.steer_right = !armed || (steering >= 4500.0f);
+    limit.throttle_lower = !armed || (throttle <= -100.0f);
+    limit.throttle_upper = !armed || (throttle >= 100.0f);
 }
 
 // setup servo output

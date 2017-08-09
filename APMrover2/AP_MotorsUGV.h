@@ -57,6 +57,14 @@ public:
     // test steering or throttle output using a pwm value
     bool output_test_pwm(motor_test_order motor_seq, float pwm);
 
+    // structure for holding motor limit flags
+    struct AP_MotorsUGV_limit {
+        uint8_t steer_left      : 1; // we have reached the steering controller's left most limit
+        uint8_t steer_right     : 1; // we have reached the steering controller's right most limit
+        uint8_t throttle_lower  : 1; // we have reached throttle's lower limit
+        uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
+    } limit;
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -76,6 +84,9 @@ protected:
 
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
+
+    // set limits based on steering and throttle input
+    void set_limits_from_input(bool armed, float steering, float throttle);
 
     // external references
     AP_ServoRelayEvents &_relayEvents;
