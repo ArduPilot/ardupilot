@@ -16,6 +16,7 @@
 #include "GPIO.h"
 #include "SITL_State.h"
 #include "Util.h"
+#include "I2CDevice.h"
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
