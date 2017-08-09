@@ -104,7 +104,7 @@ void AP_MotorsUGV::output(bool armed, float dt)
     output_regular(armed, _steering, _throttle);
 
     // output for skid steering style frames
-    output_skid_steering(armed,  _steering, _throttle);
+    output_skid_steering(armed, _steering, _throttle);
 
     // send values to the PWM timers for output
     SRV_Channels::calc_pwm();
