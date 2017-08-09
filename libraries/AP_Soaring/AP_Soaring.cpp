@@ -257,7 +257,7 @@ void SoaringController::get_altitude_wrt_home(float *alt)
 }
 void SoaringController::update_thermalling()
 {
-    struct Location current_loc;
+    struct Location current_loc {};
     _ahrs.get_position(current_loc);
 
     if (_vario.new_data) {
