@@ -413,20 +413,22 @@ def run_tests(steps):
 
     passed = True
     failed = []
-    for step in steps:
+
+    for step in filter(lambda s: not skip_step(s), steps):
         util.pexpect_close_all()
-        if skip_step(step):
-            continue
 
         t1 = time.time()
         print(">>>> RUNNING STEP: %s at %s" % (step, time.asctime()))
         try:
-            if not run_step(step):
+            if run_step(step):
+                results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
+                print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+                check_logs(step)
+            else:
                 print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
                 passed = False
                 failed.append(step)
                 results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
-                continue
         except Exception as msg:
             passed = False
             failed.append(step)
@@ -434,10 +436,6 @@ def run_tests(steps):
             traceback.print_exc(file=sys.stdout)
             results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
             check_logs(step)
-            continue
-        results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
-        print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
-        check_logs(step)
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
 
