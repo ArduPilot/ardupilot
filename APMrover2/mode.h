@@ -92,10 +92,16 @@ protected:
 
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
-    virtual void calc_throttle(float target_speed, bool reversed = false);
+    virtual void calc_throttle(float target_speed, bool nudge_allowed = true);
 
-    // calculate pilot input to nudge throttle up or down
-    int16_t calc_throttle_nudge();
+    // estimate maximum vehicle speed (in m/s)
+    float calc_speed_max(float cruise_speed, float cruise_throttle);
+
+    // calculate pilot input to nudge speed up or down
+    //  target_speed should be in meters/sec
+    //  cruise_speed is vehicle's cruising speed, cruise_throttle is the throttle (from -1 to +1) that achieves the cruising speed
+    //  return value is a new speed (in m/s) which up to the projected maximum speed based on the cruise speed and cruise throttle
+    float calc_speed_nudge(float target_speed, float cruise_speed, float cruise_throttle);
 
     // calculated a reduced speed(in m/s) based on yaw error and lateral acceleration and/or distance to a waypoint
     // should be called after calc_lateral_acceleration and before calc_throttle
@@ -132,7 +138,7 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-    void calc_throttle(float target_speed, bool reversed = false);
+    void calc_throttle(float target_speed, bool nudge_allowed = true);
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }

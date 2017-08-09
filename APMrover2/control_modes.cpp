@@ -76,9 +76,6 @@ void Rover::read_control_switch()
         }
 
         oldSwitchPosition = switchPosition;
-
-        // reset speed integrator
-        g.pidSpeedThrottle.reset_I();
     }
 
     switch_debouncer = false;

@@ -43,8 +43,8 @@ public:
         k_param_battery_curr_pin,
 
         // braking
-        k_param_braking_percent = 30,
-        k_param_braking_speederr,
+        k_param_braking_percent_old = 30,   // unused
+        k_param_braking_speederr_old,       // unused
 
         // misc2
         k_param_log_bitmask = 40,
@@ -180,7 +180,7 @@ public:
         // 240: PID Controllers
         k_param_pidNavSteer = 230,
         k_param_pidServoSteer,  // unused
-        k_param_pidSpeedThrottle,
+        k_param_pidSpeedThrottle_old,   // unused
 
         // high RC channels
         k_param_rc_9_old = 235,
@@ -214,10 +214,6 @@ public:
     AP_Int16    num_resets;
     AP_Int8     reset_switch_chan;
     AP_Int8     initial_mode;
-
-    // braking
-    AP_Int8     braking_percent;
-    AP_Float    braking_speederr;
 
     // Telemetry control
     //
@@ -276,15 +272,7 @@ public:
     //
     AP_Float    waypoint_radius;
 
-    // PID controllers
-    //
-    PID         pidSpeedThrottle;
-
-    Parameters() :
-        // PID controller    initial P        initial I        initial D        initial imax
-        //-----------------------------------------------------------------------------------
-        pidSpeedThrottle    (0.7f,            0.2f,            0.2f,            4000)
-        {}
+    Parameters() {}
 };
 
 /*

@@ -32,7 +32,7 @@ void ModeRTL::update()
         // continue driving towards destination
         calc_lateral_acceleration(_origin, _destination);
         calc_nav_steer();
-        calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed));
+        calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true);
     } else {
         // we've reached destination so stop
         g2.motors.set_throttle(g.throttle_min.get());

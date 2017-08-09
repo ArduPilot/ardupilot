@@ -123,24 +123,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(speed_turn_gain,    "SPEED_TURN_GAIN",  50),
 
-    // @Param: BRAKING_PERCENT
-    // @DisplayName: Percentage braking to apply
-    // @Description: The maximum reverse throttle braking percentage to apply when cornering
-    // @Units: %
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(braking_percent,    "BRAKING_PERCENT",  0),
-
-    // @Param: BRAKING_SPEEDERR
-    // @DisplayName: Speed error at which to apply braking
-    // @Description: The amount of overspeed error at which to start applying braking
-    // @Units: m/s
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(braking_speederr,   "BRAKING_SPEEDERR",  3),
-
     // @Param: PIVOT_TURN_ANGLE
     // @DisplayName: Pivot turn angle
     // @Description: Navigation angle threshold in degrees to switch to pivot steering when SKID_STEER_OUT is 1. This allows you to setup a skid steering rover to turn on the spot in auto mode when the angle it needs to turn it greater than this angle. An angle of zero means to disable pivot turning. Note that you will probably also want to set a low value for WP_RADIUS to get neat turns.
@@ -340,10 +322,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(turn_max_g,             "TURN_MAX_G",      2.0f),
-
-    // @Group: SPEED2THR_
-    // @Path: ../libraries/PID/PID.cpp
-    GGROUP(pidSpeedThrottle,        "SPEED2THR_", PID),
 
     // variables not in the g class which contain EEPROM saved variables
 
