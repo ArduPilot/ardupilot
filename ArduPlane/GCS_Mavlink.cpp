@@ -1919,6 +1919,11 @@ AP_ServoRelayEvents *GCS_MAVLINK_Plane::get_servorelayevents() const
     return &plane.ServoRelayEvents;
 }
 
+AP_AdvancedFailsafe *GCS_MAVLINK_Plane::get_advanced_failsafe() const
+{
+    return &plane.afs;
+}
+
 AP_Rally *GCS_MAVLINK_Plane::get_rally() const
 {
     return &plane.rally;
