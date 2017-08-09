@@ -1,34 +1,33 @@
 #pragma once
 
 #include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
-#include <AP_HAL/I2CDevice.h>
+#include "AP_RangeFinder_I2C.h"
 
-class AP_RangeFinder_LightWareI2C : public AP_RangeFinder_Backend
+class AP_RangeFinder_LightWareI2C : public AP_RangeFinder_I2C
 {
+    using AP_RangeFinder_I2C::AP_RangeFinder_I2C;
 
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
-                                          AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state);
 
     // update state
     void update(void);
 
 protected:
 
+    uint8_t addr() const override;
+    bool probe() override;
+
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return MAV_DISTANCE_SENSOR_LASER;
     }
 
 private:
-    // constructor
-    AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     void init();
     void timer();
 
     // get a reading
     bool get_reading(uint16_t &reading_cm);
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };

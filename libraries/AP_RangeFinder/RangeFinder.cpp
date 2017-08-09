@@ -606,6 +606,7 @@ typedef struct {
 }  detect_function_for_type_t;
 
 static const detect_function_for_type_t detect_functions[] = {
+    { RangeFinder::RangeFinder_TYPE_LWI2C, AP_RangeFinder_LightWareI2C::detect },
 };
 
 /*
@@ -630,12 +631,6 @@ void RangeFinder::detect_instance(uint8_t instance)
         break;
     case RangeFinder_TYPE_MBI2C:
         _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance]));
-        break;
-    case RangeFinder_TYPE_LWI2C:
-        if (state[instance].address) {
-            _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance],
-                hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, state[instance].address)));
-        }
         break;
     case RangeFinder_TYPE_TRI2C:
         if (state[instance].address) {

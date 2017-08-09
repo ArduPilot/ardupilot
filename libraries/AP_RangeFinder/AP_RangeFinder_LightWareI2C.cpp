@@ -21,43 +21,48 @@
 
 extern const AP_HAL::HAL& hal;
 
-/*
-   The constructor also initializes the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
-AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_RangeFinder_Backend(_state)
-    , _dev(std::move(dev)) {}
+uint8_t AP_RangeFinder_LightWareI2C::addr() const
+{
+    if (state.address) {
+        return state.address;
+    }
+    return 0x54; // FIXME: what's the correct default address?
+}
 
 /*
    detect if a Lightware rangefinder is connected. We'll detect by
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder::RangeFinder_State &_state)
 {
     AP_RangeFinder_LightWareI2C *sensor
-        = new AP_RangeFinder_LightWareI2C(_state, std::move(dev));
+        = new AP_RangeFinder_LightWareI2C(_state);
 
     if (!sensor) {
+        return nullptr;
+    }
+    if (!sensor->probe_buses()) {
         delete sensor;
         return nullptr;
     }
-
-    if (sensor->_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        uint16_t reading_cm;
-        if (!sensor->get_reading(reading_cm)) {
-            sensor->_dev->get_semaphore()->give();
-            delete sensor;
-            return nullptr;
-        }
-        sensor->_dev->get_semaphore()->give();
-    }
-
-    sensor->init();
-
     return sensor;
+}
+
+
+bool AP_RangeFinder_LightWareI2C::probe()
+{
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
+    uint16_t reading_cm;
+    if (!get_reading(reading_cm)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
+    _dev->get_semaphore()->give();
+    init();
+    return true;
 }
 
 void AP_RangeFinder_LightWareI2C::init()
