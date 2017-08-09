@@ -155,7 +155,7 @@ void Rover::Log_Write_Attitude()
 
     // log steering rate controller
     DataFlash.Log_Write_PID(LOG_PIDS_MSG, g2.attitude_control.get_steering_rate_pid().get_pid_info());
-    DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pidSpeedThrottle.get_pid_info());
+    DataFlash.Log_Write_PID(LOG_PIDA_MSG, g2.attitude_control.get_throttle_speed_pid().get_pid_info());
 }
 
 struct PACKED log_Rangefinder {

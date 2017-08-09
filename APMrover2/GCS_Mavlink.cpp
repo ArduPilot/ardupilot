@@ -242,7 +242,7 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
         }
     }
     if (g.gcs_pid_mask & 2) {
-        pid_info = &g.pidSpeedThrottle.get_pid_info();
+        pid_info = &g2.attitude_control.get_throttle_speed_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info->desired,
                                     0,

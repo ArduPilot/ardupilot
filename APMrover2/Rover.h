@@ -38,7 +38,6 @@
 #include <AP_Mission/AP_Mission.h>                  // Mission command library
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Terrain/AP_Terrain.h>
-#include <PID/PID.h>                                // PID library
 #include <AC_PID/AC_P.h>
 #include <AC_PID/AC_PID.h>
 #include <RC_Channel/RC_Channel.h>                  // RC Channel Library
