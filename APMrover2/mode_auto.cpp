@@ -9,8 +9,7 @@ bool ModeAuto::_enter()
         return false;
     }
 
-    // init controllers and location target
-    g.pidSpeedThrottle.reset_I();
+    // init location target
     set_desired_location(rover.current_loc, false);
 
     // other initialisation
@@ -52,7 +51,7 @@ void ModeAuto::update()
                 // continue driving towards destination
                 calc_lateral_acceleration(active_at_destination ? rover.current_loc : _origin, _destination, _reversed);
                 calc_nav_steer(_reversed);
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), _reversed);
+                calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true);
             } else {
                 // we have reached the destination so stop
                 g2.motors.set_throttle(g.throttle_min.get());
@@ -69,7 +68,7 @@ void ModeAuto::update()
                 const float yaw_error = wrap_PI(radians((_desired_yaw_cd - ahrs.yaw_sensor) * 0.01f));
                 const float steering_out = attitude_control.get_steering_out_angle_error(yaw_error, g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right);
                 g2.motors.set_steering(steering_out * 4500.0f);
-                calc_throttle(_desired_speed);
+                calc_throttle(_desired_speed, true);
                 // check if we have reached target
                 _reached_heading = (fabsf(yaw_error) < radians(5));
             } else {
@@ -175,7 +174,7 @@ bool ModeAuto::check_trigger(void)
     return false;
 }
 
-void ModeAuto::calc_throttle(float target_speed, bool reversed)
+void ModeAuto::calc_throttle(float target_speed, bool nudge_allowed)
 {
     // If not autostarting set the throttle to minimum
     if (!check_trigger()) {
@@ -186,5 +185,5 @@ void ModeAuto::calc_throttle(float target_speed, bool reversed)
         }
         return;
     }
-    Mode::calc_throttle(target_speed, reversed);
+    Mode::calc_throttle(target_speed, nudge_allowed);
 }

@@ -17,7 +17,6 @@ void Mode::exit()
     _exit();
 
     lateral_acceleration = 0.0f;
-    rover.g.pidSpeedThrottle.reset_I();
 }
 
 bool Mode::enter()
@@ -50,56 +49,75 @@ void Mode::set_desired_heading_and_speed(float yaw_angle_cd, float target_speed)
     _desired_speed = target_speed;
 }
 
-void Mode::calc_throttle(float target_speed, bool reversed)
+void Mode::calc_throttle(float target_speed, bool nudge_allowed)
 {
-    // get ground speed from vehicle
-    const float &groundspeed = rover.ground_speed;
-
-    // calculate ground speed and ground speed error
-    _speed_error = fabsf(target_speed) - groundspeed;
-
-    const float throttle_base = (fabsf(target_speed) / g.speed_cruise) * g.throttle_cruise;
-    const float throttle_target = throttle_base + calc_throttle_nudge();
-
-    float throttle = throttle_target + (g.pidSpeedThrottle.get_pid(_speed_error * 100.0f) / 100.0f);
-
-    if (reversed) {
-        g2.motors.set_throttle(constrain_int16(-throttle, -g.throttle_max, -g.throttle_min));
-    } else {
-        g2.motors.set_throttle(constrain_int16(throttle, g.throttle_min, g.throttle_max));
+    // add in speed nudging
+    if (nudge_allowed) {
+        target_speed = calc_speed_nudge(target_speed, g.speed_cruise, g.throttle_cruise / 100.0f);
     }
 
-    if (!reversed && g.braking_percent != 0 && _speed_error < -g.braking_speederr) {
-        // the user has asked to use reverse throttle to brake. Apply
-        // it in proportion to the ground speed error, but only when
-        // our ground speed error is more than BRAKING_SPEEDERR.
-        //
-        // We use a linear gain, with 0 gain at a ground speed error
-        // of braking_speederr, and 100% gain when groundspeed_error
-        // is 2*braking_speederr
-        const float brake_gain = constrain_float(((-_speed_error)-g.braking_speederr)/g.braking_speederr, 0.0f, 1.0f);
-        const int16_t braking_throttle = g.throttle_max * (g.braking_percent * 0.01f) * brake_gain;
-        g2.motors.set_throttle(constrain_int16(-braking_throttle, -g.throttle_max, -g.throttle_min));
+    // call throttle controller and convert output to -100 to +100 range
+    float throttle_out = 100.0f * attitude_control.get_throttle_out_speed(target_speed, g2.motors.have_skid_steering(), g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise / 100.0f);
+
+    // apply limits on throttle
+    if (is_negative(throttle_out)) {
+        g2.motors.set_throttle(constrain_float(throttle_out, -g.throttle_max, -g.throttle_min));
+    } else {
+        g2.motors.set_throttle(constrain_float(throttle_out, g.throttle_min, g.throttle_max));
     }
 }
 
-
-// calculate pilot input to nudge throttle up or down
-int16_t Mode::calc_throttle_nudge()
+// estimate maximum vehicle speed (in m/s)
+float Mode::calc_speed_max(float cruise_speed, float cruise_throttle)
 {
-    // get pilot throttle input (-100 to +100)
-    int16_t pilot_throttle = rover.channel_throttle->get_control_in();
-    int16_t throttle_nudge = 0;
+    float speed_max;
 
-    // Check if the throttle value is above 50% and we need to nudge
-    // Make sure its above 50% in the direction we are travelling
-    if ((fabsf(pilot_throttle) > 50.0f) &&
-        (((pilot_throttle < 0) && rover.in_reverse) ||
-         ((pilot_throttle > 0) && !rover.in_reverse))) {
-        throttle_nudge = (rover.g.throttle_max - rover.g.throttle_cruise) * ((fabsf(rover.channel_throttle->norm_input()) - 0.5f) / 0.5f);
+    // sanity checks
+    if (cruise_throttle > 1.0f || cruise_throttle < 0.05f) {
+        speed_max = cruise_speed;
+    } else {
+        // project vehicle's maximum speed
+        speed_max = (1.0f / cruise_throttle) * cruise_speed;
     }
 
-    return throttle_nudge;
+    // constrain to 30m/s (108km/h) and return
+    return constrain_float(speed_max, 0.0f, 30.0f);
+}
+
+// calculate pilot input to nudge speed up or down
+//  target_speed should be in meters/sec
+//  cruise_speed is vehicle's cruising speed, cruise_throttle is the throttle (from -1 to +1) that achieves the cruising speed
+//  return value is a new speed (in m/s) which up to the projected maximum speed based on the cruise speed and cruise throttle
+float Mode::calc_speed_nudge(float target_speed, float cruise_speed, float cruise_throttle)
+{
+    // return immediately if pilot is not attempting to nudge speed
+    // pilot can nudge up speed if throttle (in range -100 to +100) is above 50% of center in direction of travel
+    const int16_t pilot_throttle = constrain_int16(rover.channel_throttle->get_control_in(), -100, 100);
+    if ((pilot_throttle <= 50 && is_positive(target_speed)) ||
+        (pilot_throttle >= -50 && is_negative(target_speed))) {
+        return target_speed;
+    }
+
+    // sanity checks
+    if (cruise_throttle > 1.0f || cruise_throttle < 0.05f) {
+        return target_speed;
+    }
+
+    // project vehicle's maximum speed
+    const float vehicle_speed_max = calc_speed_max(cruise_speed, cruise_throttle);
+
+    // return unadjusted target if already over vehicle's projected maximum speed
+    if (target_speed >= vehicle_speed_max) {
+        return target_speed;
+    }
+
+    const float speed_increase_max = vehicle_speed_max - fabsf(target_speed);
+    float speed_nudge = ((fabsf(pilot_throttle) - 50.0f) / 50.0f) * speed_increase_max;
+    if (pilot_throttle < 0) {
+        speed_nudge = -speed_nudge;
+    }
+
+    return target_speed + speed_nudge;
 }
 
 // calculated a reduced speed(in m/s) based on yaw error and lateral acceleration and/or distance to a waypoint
