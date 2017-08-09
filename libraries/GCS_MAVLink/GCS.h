@@ -45,6 +45,9 @@ enum ap_message {
     MSG_RAW_IMU2,
     MSG_RAW_IMU3,
     MSG_GPS_RAW,
+    MSG_GPS_RTK,
+    MSG_GPS2_RAW,
+    MSG_GPS2_RTK,
     MSG_SYSTEM_TIME,
     MSG_SERVO_OUT,
     MSG_NEXT_WAYPOINT,
@@ -159,7 +162,7 @@ public:
     void send_rangefinder_downward(const RangeFinder &rangefinder) const;
     bool send_proximity(const AP_Proximity &proximity) const;
     void send_ahrs2(AP_AHRS &ahrs);
-    bool send_gps_raw(AP_GPS &gps);
+    void send_gps_raw(AP_GPS &gps);
     void send_system_time(AP_GPS &gps);
     void send_radio_in(uint8_t receiver_rssi);
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
@@ -293,6 +296,8 @@ protected:
     // message sending functions:
     bool try_send_compass_message(enum ap_message id);
     bool try_send_mission_message(enum ap_message id);
+    bool try_send_camera_message(enum ap_message id);
+    bool try_send_gps_message(enum ap_message id);
     void send_hwstatus();
 
 private:

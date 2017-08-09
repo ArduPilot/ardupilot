@@ -922,44 +922,6 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
 
 
 /*
-  send raw GPS position information (GPS_RAW_INT, GPS2_RAW, GPS_RTK and GPS2_RTK).
-  returns true if messages fit into transmit buffer, false otherwise.
- */
-bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
-{
-    if (HAVE_PAYLOAD_SPACE(chan, GPS_RAW_INT)) {
-        gps.send_mavlink_gps_raw(chan);
-    } else {
-        return false;
-    }
-
-    if (gps.highest_supported_status(0) > AP_GPS::GPS_OK_FIX_3D) {
-        if (HAVE_PAYLOAD_SPACE(chan, GPS_RTK)) {
-            gps.send_mavlink_gps_rtk(chan);
-        }
-
-    }
-
-    if (gps.num_sensors() > 1 && gps.status(1) > AP_GPS::NO_GPS) {
-
-        if (HAVE_PAYLOAD_SPACE(chan, GPS2_RAW)) {
-            gps.send_mavlink_gps2_raw(chan);
-        }
-
-        if (gps.highest_supported_status(1) > AP_GPS::GPS_OK_FIX_3D) {
-            if (HAVE_PAYLOAD_SPACE(chan, GPS2_RTK)) {
-                gps.send_mavlink_gps2_rtk(chan);
-            }
-        }
-    }
-
-    //TODO: Should check what else managed to get through...
-    return true;
-
-}
-
-
-/*
   send the SYSTEM_TIME message
  */
 void GCS_MAVLINK::send_system_time(AP_GPS &gps)
@@ -2113,6 +2075,69 @@ void GCS_MAVLINK::send_hwstatus()
         0);
 }
 
+bool GCS_MAVLINK::try_send_gps_message(const enum ap_message id)
+{
+    AP_GPS *gps = get_gps();
+    if (gps == nullptr) {
+        return true;
+    }
+
+    bool ret = true;
+    switch(id) {
+    case MSG_SYSTEM_TIME:
+        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
+        send_system_time(*gps);
+        ret = true;
+        break;
+    case MSG_GPS_RAW:
+        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
+        gps->send_mavlink_gps_raw(chan);
+        ret = true;
+        break;
+    case MSG_GPS_RTK:
+        CHECK_PAYLOAD_SIZE(GPS_RTK);
+        gps->send_mavlink_gps_rtk(chan);
+        ret = true;
+        break;
+    case MSG_GPS2_RAW:
+        CHECK_PAYLOAD_SIZE(GPS2_RAW);
+        gps->send_mavlink_gps2_raw(chan);
+        ret = true;
+        break;
+    case MSG_GPS2_RTK:
+        CHECK_PAYLOAD_SIZE(GPS2_RTK);
+        gps->send_mavlink_gps2_rtk(chan);
+        ret = true;
+        break;
+    default:
+        ret = true;
+        break;
+    }
+    return ret;
+}
+
+
+bool GCS_MAVLINK::try_send_camera_message(const enum ap_message id)
+{
+    AP_Camera *camera = get_camera();
+    if (camera == nullptr) {
+        return true;
+    }
+
+    bool ret = true;
+    switch(id) {
+    case MSG_CAMERA_FEEDBACK:
+        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
+        camera->send_feedback(chan);
+        ret = true;
+        break;
+    default:
+        ret = true;
+        break;
+    }
+    return ret;
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -2147,6 +2172,28 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         /* fall through */
     case MSG_MAG_CAL_REPORT:
         ret = try_send_compass_message(id);
+        break;
+
+    case MSG_EXTENDED_STATUS2:
+        CHECK_PAYLOAD_SIZE(MEMINFO);
+        send_meminfo();
+        ret = true;
+        break;
+
+    case MSG_CAMERA_FEEDBACK:
+        try_send_camera_message(id);
+        break;
+
+    case MSG_GPS_RAW:
+        /* fall through */
+    case MSG_GPS_RTK:
+        /* fall through */
+    case MSG_GPS2_RAW:
+        /* fall through */
+    case MSG_GPS2_RTK:
+        /* fall through */
+    case MSG_SYSTEM_TIME:
+        try_send_gps_message(id);
         break;
 
     default:

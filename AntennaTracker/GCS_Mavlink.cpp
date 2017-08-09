@@ -167,11 +167,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         tracker.send_nav_controller_output(chan);
         break;
 
-    case MSG_GPS_RAW:
-        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        send_gps_raw(tracker.gps);
-        break;
-
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_radio_in(0);
@@ -326,6 +321,9 @@ GCS_MAVLINK_Tracker::data_stream_send(void)
         send_message(MSG_EXTENDED_STATUS2);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_GPS_RAW);
+        send_message(MSG_GPS_RTK);
+        send_message(MSG_GPS2_RAW);
+        send_message(MSG_GPS2_RTK);
     }
 
     if (stream_trigger(STREAM_POSITION)) {
@@ -837,4 +835,5 @@ Compass *GCS_MAVLINK_Tracker::get_compass() const
 void AP_Camera::control_msg(mavlink_message_t const*) {}
 void AP_Camera::configure(float, float, float, float, float, float, float) {}
 void AP_Camera::control(float, float, float, float, float, float) {}
+void AP_Camera::send_feedback(mavlink_channel_t chan) {}
 /* end dummy methods to avoid having to link against AP_Camera */
