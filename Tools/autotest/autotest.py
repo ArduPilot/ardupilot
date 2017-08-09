@@ -150,12 +150,12 @@ def alarm_handler(signum, frame):
         pass
     sys.exit(1)
 
-def skip_step(step):
+def should_run_step(step):
     """See if a step should be skipped."""
     for skip in skipsteps:
         if fnmatch.fnmatch(step.lower(), skip.lower()):
-            return True
-    return False
+            return False
+    return True
 
 def binary_path(step, debug=False):
     if step.find("ArduCopter") != -1:
@@ -415,18 +415,19 @@ def run_tests(steps):
     failed = []
     for step in steps:
         util.pexpect_close_all()
-        if skip_step(step):
-            continue
 
         t1 = time.time()
         print(">>>> RUNNING STEP: %s at %s" % (step, time.asctime()))
         try:
-            if not run_step(step):
+            if run_step(step):
+                results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
+                print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+                check_logs(step)
+            else:
                 print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
                 passed = False
                 failed.append(step)
                 results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
-                continue
         except Exception as msg:
             passed = False
             failed.append(step)
@@ -434,10 +435,6 @@ def run_tests(steps):
             traceback.print_exc(file=sys.stdout)
             results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
             check_logs(step)
-            continue
-        results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
-        print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
-        check_logs(step)
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
 
@@ -533,6 +530,9 @@ if __name__ == "__main__":
                 print("No steps matched {}".format(a))
             matched.extend(matches)
         steps = matched
+
+    # skip steps according to --skip option:
+    steps = [ s for s in steps if should_run_step(s) ]
 
     results = TestResults()
 
