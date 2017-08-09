@@ -78,6 +78,7 @@ class I2CDeviceManager {
 public:
     /* Get a device handle */
     virtual OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) = 0;
+    virtual uint32_t bus_detect_mask() const = 0;
 };
 
 }
