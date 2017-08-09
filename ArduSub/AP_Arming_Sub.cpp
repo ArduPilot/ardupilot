@@ -12,19 +12,19 @@ bool AP_Arming_Sub::rc_calibration_checks(bool display_failure)
     return rc_checks_copter_sub(display_failure, channels, false /* check_min_max */);
 }
 
-bool AP_Arming_Sub::pre_arm_checks(bool report)
+bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
 {
     if (armed) {
         return true;
     }
 
-    return AP_Arming::pre_arm_checks(report);
+    return AP_Arming::pre_arm_checks(display_failure);
 }
 
-bool AP_Arming_Sub::ins_checks(bool report)
+bool AP_Arming_Sub::ins_checks(bool display_failure)
 {
     // call parent class checks
-    if (!AP_Arming::ins_checks(report)) {
+    if (!AP_Arming::ins_checks(display_failure)) {
         return false;
     }
 
@@ -32,14 +32,11 @@ bool AP_Arming_Sub::ins_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
         if (!ahrs.healthy()) {
-            if (report) {
-                const char *reason = ahrs.prearm_failure_reason();
-                if (reason) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
-                } else {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: AHRS not healthy");
-                }
+            const char *reason = ahrs.prearm_failure_reason();
+            if (reason == nullptr) {
+                reason = "AHRS not healthy";
             }
+            check_failed(ARMING_CHECK_INS, display_failure, "%s", reason);
             return false;
         }
     }
