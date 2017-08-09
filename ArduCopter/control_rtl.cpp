@@ -334,7 +334,7 @@ void Copter::rtl_descent_run()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
 
     // check if we've reached within 20cm of final altitude
-    rtl_state_complete = abs(rtl_path.descent_target.alt - current_loc.alt) < 20;
+    rtl_state_complete = labs(rtl_path.descent_target.alt - current_loc.alt) < 20;
 }
 
 // rtl_loiterathome_start - initialise controllers to loiter over home
