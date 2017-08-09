@@ -29,6 +29,7 @@ def get_default_params(atype, binary):
 
     # use rover simulator so SITL is not starved of input
     HOME = mavutil.location(40.071374969556928, -105.22978898137808, 1583.702759, 246)
+
     if "plane" in binary or "rover" in binary:
         frame = "rover"
     else:
@@ -38,6 +39,7 @@ def get_default_params(atype, binary):
     sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=10, unhide_parameters=True)
     mavproxy = util.start_MAVProxy_SITL(atype)
     print("Dumping defaults")
+
     idx = mavproxy.expect(['Please Run Setup', 'Saved [0-9]+ parameters to (\S+)'])
     if idx == 0:
         # we need to restart it after eeprom erase
@@ -46,21 +48,25 @@ def get_default_params(atype, binary):
         sitl = util.start_SITL(binary, model=frame, home=home, speedup=10)
         mavproxy = util.start_MAVProxy_SITL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
+
     parmfile = mavproxy.match.group(1)
     dest = util.reltopdir('../buildlogs/%s-defaults.parm' % atype)
     shutil.copy(parmfile, dest)
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
     print("Saved defaults for %s to %s" % (atype, dest))
+
     return True
 
 
 def build_all():
     """Run the build_all.sh script."""
     print("Running build_all.sh")
+
     if util.run_cmd(util.reltopdir('Tools/scripts/build_all.sh'), directory=util.reltopdir('.')) != 0:
         print("Failed build_all.sh")
         return False
+
     return True
 
 
@@ -72,9 +78,11 @@ def build_binaries():
     copy = util.reltopdir('./build_binaries.sh')
     shutil.copyfile(orig, copy)
     shutil.copymode(orig, copy)
+
     if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
         print("Failed build_binaries.sh")
         return False
+
     return True
 
 
@@ -86,9 +94,11 @@ def build_devrelease():
     copy = util.reltopdir('./build_devrelease.sh')
     shutil.copyfile(orig, copy)
     shutil.copymode(orig, copy)
+
     if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
         print("Failed build_devrelease.sh")
         return False
+
     return True
 
 
@@ -109,6 +119,7 @@ def build_examples():
 def build_parameters():
     """Run the param_parse.py script."""
     print("Running param_parse.py")
+
     if util.run_cmd(util.reltopdir('Tools/autotest/param_metadata/param_parse.py'), directory=util.reltopdir('.')) != 0:
         print("Failed param_parse.py")
         return False
@@ -125,6 +136,7 @@ def convert_gpx():
         util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
         util.run_cmd('zip %s.kmz %s.kml' % (m, m), checkfail=False)
         util.run_cmd("mavflightview.py --imagefile=%s.png %s" % (m, m))
+
     return True
 
 
@@ -146,6 +158,7 @@ def alarm_handler(signum, frame):
         os.killpg(0, signal.SIGKILL)
     except Exception:
         pass
+
     sys.exit(1)
 
 def skip_step(step):
@@ -153,6 +166,7 @@ def skip_step(step):
     for skip in skipsteps:
         if fnmatch.fnmatch(step.lower(), skip.lower()):
             return True
+
     return False
 
 def binary_path(step, debug=False):
@@ -307,11 +321,13 @@ class TestResults(object):
 def write_webresults(results_to_write):
     """Write webpage results."""
     t = mavtemplate.MAVTemplate()
+
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
         html = util.loadfile(h)
         f = open(util.reltopdir("../buildlogs/%s" % os.path.basename(h)), mode='w')
         t.write(f, html, results_to_write)
         f.close()
+
     for f in glob.glob(util.reltopdir('Tools/autotest/web/*.png')):
         shutil.copy(f, util.reltopdir('../buildlogs/%s' % os.path.basename(f)))
 
@@ -324,6 +340,7 @@ def write_fullresults():
     results.addglob('DataFlash Log', '*-log.bin')
     results.addglob("MAVLink log", '*.tlog')
     results.addglob("GPX track", '*.gpx')
+
     results.addfile('ArduPlane build log', 'ArduPlane.txt')
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
@@ -331,6 +348,7 @@ def write_fullresults():
     results.addglob("ArduPlane log", 'ArduPlane-*.BIN')
     results.addglob("ArduPlane core", 'ArduPlane.core')
     results.addglob("ArduPlane ELF", 'ArduPlane.elf')
+
     results.addfile('ArduCopter build log', 'ArduCopter.txt')
     results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
     results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
@@ -338,8 +356,10 @@ def write_fullresults():
     results.addglob("ArduCopter log", 'ArduCopter-*.BIN')
     results.addglob("ArduCopter core", 'ArduCopter.core')
     results.addglob("ArduCopter elf", 'ArduCopter.elf')
+
     results.addglob("CopterAVC log", 'CopterAVC-*.BIN')
     results.addglob("CopterAVC core", 'CopterAVC.core')
+
     results.addfile('APMrover2 build log', 'APMrover2.txt')
     results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
     results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
@@ -347,10 +367,12 @@ def write_fullresults():
     results.addglob("APMrover2 log", 'APMrover2-*.BIN')
     results.addglob("APMrover2 core", 'APMrover2.core')
     results.addglob("APMrover2 ELF", 'APMrover2.elf')
+
     results.addfile('AntennaTracker build log', 'AntennaTracker.txt')
     results.addfile('AntennaTracker code size', 'AntennaTracker.sizes.txt')
     results.addfile('AntennaTracker stack sizes', 'AntennaTracker.framesizes.txt')
     results.addglob("AntennaTracker ELF", 'AntennaTracker.elf')
+
     results.addfile('ArduSub build log', 'ArduSub.txt')
     results.addfile('ArduSub code size', 'ArduSub.sizes.txt')
     results.addfile('ArduSub stack sizes', 'ArduSub.framesizes.txt')
@@ -358,6 +380,7 @@ def write_fullresults():
     results.addglob("ArduSub log", 'ArduSub-*.BIN')
     results.addglob("ArduSub core", 'ArduSub.core')
     results.addglob("ArduSub ELF", 'ArduSub.elf')
+
     results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
     results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
@@ -376,6 +399,7 @@ def check_logs(step):
         vehicle = step[6:]
     else:
         return
+
     logs = glob.glob("logs/*.BIN")
     for log in logs:
         bname = os.path.basename(log)
@@ -419,6 +443,7 @@ def run_tests(steps):
             traceback.print_exc(file=sys.stdout)
             results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
             check_logs(step)
+
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
 
