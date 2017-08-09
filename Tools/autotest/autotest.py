@@ -70,8 +70,8 @@ def build_binaries():
     # copy the script as it changes git branch, which can change the script while running
     orig = util.reltopdir('Tools/scripts/build_binaries.sh')
     copy = util.reltopdir('./build_binaries.sh')
-    shutil.copyfile(orig, copy)
-    shutil.copymode(orig, copy)
+    shutil.copy2(orig, copy)
+
     if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
         print("Failed build_binaries.sh")
         return False
@@ -84,8 +84,8 @@ def build_devrelease():
     # copy the script as it changes git branch, which can change the script while running
     orig = util.reltopdir('Tools/scripts/build_devrelease.sh')
     copy = util.reltopdir('./build_devrelease.sh')
-    shutil.copyfile(orig, copy)
-    shutil.copymode(orig, copy)
+    shutil.copy2(orig, copy)
+
     if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
         print("Failed build_devrelease.sh")
         return False
