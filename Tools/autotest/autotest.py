@@ -190,48 +190,55 @@ def binary_path(step, debug=False):
 
     return binary
 
+__step_table = {
+    "prerequisites": test_prerequisites,
 
-def run_step(step):
+    'build.ArduPlane': lambda opts: util.build_SITL('bin/arduplane', j=opts.j, debug=opts.debug),
+
+    'build.APMrover2': lambda opts: util.build_SITL('bin/ardurover', j=opts.j, debug=opts.debug),
+
+    'build.ArduCopter': lambda opts: util.build_SITL('bin/arducopter', j=opts.j, debug=opts.debug),
+
+    'build.AntennaTracker': lambda opts: util.build_SITL('bin/antennatracker', j=opts.j, debug=opts.debug),
+
+    'build.Helicopter': lambda opts: util.build_SITL('bin/arducopter-heli', j=opts.j, debug=opts.debug),
+
+    'build.ArduSub': lambda opts: util.build_SITL('bin/ardusub', j=opts.j, debug=opts.debug),
+
+    'build.All': lambda opts: build_all(),
+
+    'build.Binaries': lambda opts: build_binaries(),
+
+    'build.DevRelease': lambda opts: build_devrelease(),
+
+    'build.Examples': lambda opts: build_examples(),
+
+    'build.Parameters': lambda opts: build_parameters(),
+
+    'fly.ArduCopter': arducopter.fly_ArduCopter,
+
+    'fly.CopterAVC': arducopter.fly_CopterAVC,
+
+    'fly.ArduPlane': arduplane.fly_ArduPlane,
+
+    'fly.QuadPlane': quadplane.fly_QuadPlane,
+
+    'drive.APMrover2': apmrover2.drive_APMrover2,
+
+    'dive.ArduSub': ardusub.dive_ArduSub,
+
+    'convertgpx': convert_gpx
+}
+
+def run_step(step, opts):
     """Run one step."""
 
     # remove old logs
     util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
 
-    if step == "prerequisites":
-        return test_prerequisites()
-
-    if step == 'build.All':
-        return build_all()
-
-    if step == 'build.Binaries':
-        return build_binaries()
-
-    if step == 'build.DevRelease':
-        return build_devrelease()
-
-    if step == 'build.Examples':
-        return build_examples()
-
-    if step == 'build.Parameters':
-        return build_parameters()
-
-    if step == 'build.ArduPlane':
-        return util.build_SITL('bin/arduplane', j=opts.j, debug=opts.debug)
-
-    if step == 'build.APMrover2':
-        return util.build_SITL('bin/ardurover', j=opts.j, debug=opts.debug)
-
-    if step == 'build.ArduCopter':
-        return util.build_SITL('bin/arducopter', j=opts.j, debug=opts.debug)
-
-    if step == 'build.AntennaTracker':
-        return util.build_SITL('bin/antennatracker', j=opts.j, debug=opts.debug)
-
-    if step == 'build.Helicopter':
-        return util.build_SITL('bin/arducopter-heli', j=opts.j, debug=opts.debug)
-    
-    if step == 'build.ArduSub':
-        return util.build_SITL('bin/ardusub', j=opts.j, debug=opts.debug)
+    if step.startswith("build") and  step in __step_table:
+        build_fun = __step_table[step]
+        return build_fun(opts)
 
     binary = binary_path(step, debug=opts.debug)
 
@@ -239,26 +246,15 @@ def run_step(step):
         vehicle = step[8:]
         return get_default_params(vehicle, binary)
 
-    if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+    if (step.startswith("fly") or step.startswith("drive") or step.startswith("dive")) \
+        and step in __step_table:
+        ride_fun = __step_table[step]
+        if "copter" in step.lower() or "rover" in step.lower():
+            return ride_fun(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return ride_fun(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
 
-    if step == 'fly.CopterAVC':
-        return arducopter.fly_CopterAVC(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
-
-    if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
-
-    if step == 'fly.QuadPlane':
-        return quadplane.fly_QuadPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
-
-    if step == 'drive.APMrover2':
-        return apmrover2.drive_APMrover2(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
-    
-    if step == 'dive.ArduSub':
-        return ardusub.dive_ArduSub(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
-
-    if step == 'convertgpx':
-        return convert_gpx()
+    if step in __step_table:
+        return __step_table[step]()
 
     raise RuntimeError("Unknown step %s" % step)
 
@@ -399,7 +395,7 @@ def check_logs(step):
         os.rename(corefile, newname)
         util.run_cmd('/bin/cp A*/A*.elf ../buildlogs', directory=util.reltopdir('.'))
 
-def run_tests(steps):
+def run_tests(steps, opts):
     """Run a list of steps."""
     global results
 
@@ -526,7 +522,7 @@ if __name__ == "__main__":
     results = TestResults()
 
     try:
-        if not run_tests(matched):
+        if not run_tests(matched, opts):
             sys.exit(1)
     except KeyboardInterrupt:
         util.pexpect_close_all()
