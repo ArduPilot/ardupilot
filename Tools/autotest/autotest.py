@@ -21,12 +21,13 @@ import arduplane
 import quadplane
 import ardusub
 from pysim import util
+from pymavlink import mavutil
+from pymavlink.generator import mavtemplate
 
 def get_default_params(atype, binary):
     """Get default parameters."""
 
     # use rover simulator so SITL is not starved of input
-    from pymavlink import mavutil
     HOME = mavutil.location(40.071374969556928, -105.22978898137808, 1583.702759, 246)
     if "plane" in binary or "rover" in binary:
         frame = "rover"
@@ -66,7 +67,6 @@ def build_all():
 def build_binaries():
     """Run the build_binaries.sh script."""
     print("Running build_binaries.sh")
-    import shutil
     # copy the script as it changes git branch, which can change the script while running
     orig = util.reltopdir('Tools/scripts/build_binaries.sh')
     copy = util.reltopdir('./build_binaries.sh')
@@ -81,7 +81,6 @@ def build_binaries():
 def build_devrelease():
     """Run the build_devrelease.sh script."""
     print("Running build_devrelease.sh")
-    import shutil
     # copy the script as it changes git branch, which can change the script while running
     orig = util.reltopdir('Tools/scripts/build_devrelease.sh')
     copy = util.reltopdir('./build_devrelease.sh')
@@ -118,7 +117,6 @@ def build_parameters():
 
 def convert_gpx():
     """Convert any tlog files to GPX and KML."""
-    import glob
     mavlog = glob.glob(util.reltopdir("../buildlogs/*.tlog"))
     for m in mavlog:
         util.run_cmd(util.reltopdir("modules/mavlink/pymavlink/tools/mavtogpx.py") + " --nofixcheck " + m)
@@ -309,20 +307,17 @@ class TestResults(object):
 
     def addglob(self, name, pattern):
         """Add a set of files."""
-        import glob
         for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
             self.addfile(name, os.path.basename(f))
 
     def addglobimage(self, name, pattern):
         """Add a set of images."""
-        import glob
         for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
             self.addimage(name, os.path.basename(f))
 
 
 def write_webresults(results_to_write):
     """Write webpage results."""
-    from pymavlink.generator import mavtemplate
     t = mavtemplate.MAVTemplate()
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
         html = util.loadfile(h)
