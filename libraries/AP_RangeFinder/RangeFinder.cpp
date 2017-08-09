@@ -607,7 +607,8 @@ typedef struct {
 
 static const detect_function_for_type_t detect_functions[] = {
     { RangeFinder::RangeFinder_TYPE_LWI2C, AP_RangeFinder_LightWareI2C::detect },
-    { RangeFinder::RangeFinder_TYPE_VL53L0X, AP_RangeFinder_VL53L0X::detect }
+    { RangeFinder::RangeFinder_TYPE_VL53L0X, AP_RangeFinder_VL53L0X::detect },
+    { RangeFinder::RangeFinder_TYPE_TRI2C, AP_RangeFinder_TeraRangerI2C::detect },
 };
 
 /*
@@ -632,15 +633,6 @@ void RangeFinder::detect_instance(uint8_t instance)
         break;
     case RangeFinder_TYPE_MBI2C:
         _add_backend(AP_RangeFinder_MaxsonarI2CXL::detect(state[instance]));
-        break;
-    case RangeFinder_TYPE_TRI2C:
-        if (state[instance].address) {
-            if (!_add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance],
-                                                                   hal.i2c_mgr->get_device(1, state[instance].address)))) {
-                _add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance],
-                                                                  hal.i2c_mgr->get_device(0, state[instance].address)));
-            }
-        }
         break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     case RangeFinder_TYPE_PX4_PWM:
