@@ -218,17 +218,9 @@ def run_step(step):
 
     binary = binary_path(step, debug=opts.debug)
 
-    if step == 'defaults.ArduPlane':
-        return get_default_params('ArduPlane', binary)
-
-    if step == 'defaults.ArduCopter':
-        return get_default_params('ArduCopter', binary)
-
-    if step == 'defaults.APMrover2':
-        return get_default_params('APMrover2', binary)
-    
-    if step == 'defaults.ArduSub':
-        return get_default_params('ArduSub', binary)
+    if step.startswith("default"):
+        vehicle = step[8:]
+        return get_default_params(vehicle, binary)
 
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
