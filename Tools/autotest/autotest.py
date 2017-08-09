@@ -28,7 +28,7 @@ def get_default_params(atype, binary):
     # use rover simulator so SITL is not starved of input
     from pymavlink import mavutil
     HOME = mavutil.location(40.071374969556928, -105.22978898137808, 1583.702759, 246)
-    if binary.find("plane") != -1 or binary.find("rover") != -1:
+    if "plane" in binary or "rover" in binary:
         frame = "rover"
     else:
         frame = "+"
@@ -157,21 +157,21 @@ def should_run_step(step):
             return False
     return True
 
+__bin_names = {
+    "ArduCopter" : "arducopter",
+    "ArduPlane" : "arduplane",
+    "APMrover2" : "ardurover",
+    "AntennaTracker" : "antennatracker",
+    "CopterAVC" : "arducopter-heli",
+    "QuadPlane" : "arduplane",
+    "ArduSub" : "ardusub"
+}
+
 def binary_path(step, debug=False):
-    if step.find("ArduCopter") != -1:
-        binary_name = "arducopter"
-    elif step.find("ArduPlane") != -1:
-        binary_name = "arduplane"
-    elif step.find("APMrover2") != -1:
-        binary_name = "ardurover"
-    elif step.find("AntennaTracker") != -1:
-        binary_name = "antennatracker"
-    elif step.find("CopterAVC") != -1:
-        binary_name = "arducopter-heli"
-    elif step.find("QuadPlane") != -1:
-        binary_name = "arduplane"
-    elif step.find("ArduSub") != -1:
-        binary_name = "ardusub"
+    vehicle = step.split(".")[1]
+
+    if vehicle in __bin_names:
+        binary_name = __bin_names[vehicle]
     else:
         # cope with builds that don't have a specific binary
         return None
