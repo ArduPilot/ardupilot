@@ -27,26 +27,41 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, AP_WheelEncoder, _type[0], 0),
 
-    // @Param: _SCALING
-    // @DisplayName: WheelEncoder scaling
-    // @Description: Scaling factor between sensor reading and measured distance in millimeters
+    // @Param: _CPR
+    // @DisplayName: WheelEncoder counts per revolution
+    // @Description: WheelEncoder counts per full revolution of the wheel
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_CPR",     1, AP_WheelEncoder, _counts_per_revolution[0], WHEELENCODER_CPR_DEFAULT),
+
+    // @Param: _RADIUS
+    // @DisplayName: Wheel radius in meters
+    // @Description: Wheel radius in meters
     // @Increment: 0.001
     // @User: Standard
-    AP_GROUPINFO("_SCALING", 1, AP_WheelEncoder, _scaling[0], WHEELENCODER_SCALING_DEFAULT),
+    AP_GROUPINFO("_RADIUS",  2, AP_WheelEncoder, _wheel_radius[0], WHEELENCODER_RADIUS_DEFAULT),
 
     // @Param: _POS_X
-    // @DisplayName: WheelEncoder X position
-    // @Description: X position of the first wheel encoder in body frame. Positive X is forward of the origin
+    // @DisplayName: Wheel's X position offset
+    // @Description: X position of the center of the wheel in body frame. Positive X is forward of the origin.
     // @Units: m
-    // @User: Standard
-    AP_GROUPINFO("_POS_X",   2, AP_WheelEncoder, _pos_x[0], 0.0f),
+    // @Increment: 0.01
+    // @User: Advanced
 
     // @Param: _POS_Y
-    // @DisplayName: WheelEncoder Y position
-    // @Description: Y position of the first wheel encoder accelerometer in body frame. Positive Y is to the right of the origin
+    // @DisplayName: Wheel's Y position offset
+    // @Description: Y position of the center of the wheel in body frame. Positive Y is to the right of the origin.
     // @Units: m
-    // @User: Standard
-    AP_GROUPINFO("_POS_Y",   3, AP_WheelEncoder, _pos_y[0], 0.0f),
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: _POS_Z
+    // @DisplayName: Wheel's Z position offset
+    // @Description: Z position of the center of the wheel in body frame. Positive Z is down from the origin.
+    // @Units: m
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("_POS",     3, AP_WheelEncoder, _pos_offset[0], 0.0f),
 
     // @Param: _PINA
     // @DisplayName: Input Pin A
@@ -70,26 +85,41 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("2_TYPE",   6, AP_WheelEncoder, _type[1], 0),
 
-    // @Param: 2_SCALING
-    // @DisplayName: WheelEncoder scaling
-    // @Description: Scaling factor between sensor reading and measured distance in millimeters
+    // @Param: 2_CPR
+    // @DisplayName: WheelEncoder 2 counts per revolution
+    // @Description: WheelEncoder 2 counts per full revolution of the wheel
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("2_CPR",     7, AP_WheelEncoder, _counts_per_revolution[1], WHEELENCODER_CPR_DEFAULT),
+
+    // @Param: 2_RADIUS
+    // @DisplayName: Wheel2's radius in meters
+    // @Description: Wheel2's radius in meters
     // @Increment: 0.001
     // @User: Standard
-    AP_GROUPINFO("2_SCALING",7, AP_WheelEncoder, _scaling[1], WHEELENCODER_SCALING_DEFAULT),
+    AP_GROUPINFO("2_RADIUS", 8, AP_WheelEncoder, _wheel_radius[1], WHEELENCODER_RADIUS_DEFAULT),
 
     // @Param: 2_POS_X
-    // @DisplayName: WheelEncoder X position
-    // @Description: X position of the first wheel encoder in body frame. Positive X is forward of the origin
+    // @DisplayName: Wheel2's X position offset
+    // @Description: X position of the center of the second wheel in body frame. Positive X is forward of the origin.
     // @Units: m
-    // @User: Standard
-    AP_GROUPINFO("2_POS_X",  8, AP_WheelEncoder, _pos_x[1], 0.0f),
+    // @Increment: 0.01
+    // @User: Advanced
 
-    // @Param: _POS_Y
-    // @DisplayName: WheelEncoder Y position
-    // @Description: Y position of the first wheel encoder accelerometer in body frame. Positive Y is to the right of the origin
+    // @Param: 2_POS_Y
+    // @DisplayName: Wheel2's Y position offset
+    // @Description: Y position of the center of the second wheel in body frame. Positive Y is to the right of the origin.
     // @Units: m
-    // @User: Standard
-    AP_GROUPINFO("2_POS_Y",  9, AP_WheelEncoder, _pos_y[1], 0.0f),
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: 2_POS_Z
+    // @DisplayName: Wheel2's Z position offset
+    // @Description: Z position of the center of the second wheel in body frame. Positive Z is down from the origin.
+    // @Units: m
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("2_POS",    9, AP_WheelEncoder, _pos_offset[1], 0.0f),
 
     // @Param: 2_PINA
     // @DisplayName: Second Encoder Input Pin A
@@ -154,7 +184,7 @@ void AP_WheelEncoder::update(void)
         }
     }
 }
-    
+
 // check if an instance is healthy
 bool AP_WheelEncoder::healthy(uint8_t instance) const
 {
@@ -177,25 +207,55 @@ bool AP_WheelEncoder::enabled(uint8_t instance) const
     return true;
 }
 
-// get the total distance travelled in meters
-Vector2f AP_WheelEncoder::get_position(uint8_t instance) const
+// get the counts per revolution of the encoder
+uint16_t AP_WheelEncoder::get_counts_per_revolution(uint8_t instance) const
 {
     // for invalid instances return zero vector
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
-        return Vector2f(0.0f, 0.0f);
+        return 0;
     }
-    return Vector2f(_pos_x[instance],_pos_y[instance]);
+    return (uint16_t)_counts_per_revolution[instance];
 }
 
+// get the wheel radius in meters
+float AP_WheelEncoder::get_wheel_radius(uint8_t instance) const
+{
+    // for invalid instances return zero vector
+    if (instance >= WHEELENCODER_MAX_INSTANCES) {
+        return 0.0f;
+    }
+    return _wheel_radius[instance];
+}
 
-// get the total distance traveled in meters
-float AP_WheelEncoder::get_distance(uint8_t instance) const
+// get the total distance travelled in meters
+Vector3f AP_WheelEncoder::get_position(uint8_t instance) const
+{
+    // for invalid instances return zero vector
+    if (instance >= WHEELENCODER_MAX_INSTANCES) {
+        return Vector3f();
+    }
+    return _pos_offset[instance];
+}
+
+// get total delta angle (in radians) measured by the wheel encoder
+float AP_WheelEncoder::get_delta_angle(uint8_t instance) const
 {
     // for invalid instances return zero
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
         return 0.0f;
     }
-    return _scaling[instance] * state[instance].distance_count * 0.001f;
+    // protect against divide by zero
+    if (_counts_per_revolution[instance] == 0) {
+        return 0.0f;
+    }
+    return M_2PI * state[instance].distance_count / _counts_per_revolution[instance];
+}
+
+// get the total distance traveled in meters
+float AP_WheelEncoder::get_distance(uint8_t instance) const
+{
+    // for invalid instances return zero
+    return get_delta_angle(instance) * _wheel_radius[instance];
 }
 
 // get the total number of sensor reading from the encoder

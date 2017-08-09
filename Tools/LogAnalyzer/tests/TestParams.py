@@ -17,17 +17,17 @@ class TestParams(Test):
         value = logdata.parameters[paramName]
         if value != expectedValue:
             self.result.status = TestResult.StatusType.FAIL
-            self.result.statusMessage = self.result.statusMessage + "%s set to %s, expecting %s\n" % (paramName, `value`, `expectedValue`)
+            self.result.statusMessage = self.result.statusMessage + "%s set to %s, expecting %s\n" % (paramName, repr(value), repr(expectedValue))
     def __checkParamIsLessThan(self, paramName, maxValue, logdata):
         value = logdata.parameters[paramName]
         if value >= maxValue:
             self.result.status = TestResult.StatusType.FAIL
-            self.result.statusMessage = self.result.statusMessage + "%s set to %s, expecting less than %s\n" % (paramName, `value`, `maxValue`)
+            self.result.statusMessage = self.result.statusMessage + "%s set to %s, expecting less than %s\n" % (paramName, repr(value), repr(maxValue))
     def __checkParamIsMoreThan(self, paramName, minValue, logdata):
         value = logdata.parameters[paramName]
         if value <= minValue:
             self.result.status = TestResult.StatusType.FAIL
-            self.result.statusMessage = self.result.statusMessage + "%s set to %s, expecting less than %s\n" % (paramName, `value`, `minValue`)
+            self.result.statusMessage = self.result.statusMessage + "%s set to %s, expecting less than %s\n" % (paramName, repr(value), repr(minValue))
 
 
     def run(self, logdata, verbose):

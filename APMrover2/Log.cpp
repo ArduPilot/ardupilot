@@ -275,7 +275,7 @@ void Rover::Log_Write_Nav_Tuning()
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
         time_us             : AP_HAL::micros64(),
         yaw                 : static_cast<uint16_t>(ahrs.yaw_sensor),
-        wp_distance         : wp_distance,
+        wp_distance         : control_mode->get_distance_to_destination(),
         target_bearing_cd   : static_cast<uint16_t>(fabsf(nav_controller->target_bearing_cd())),
         nav_bearing_cd      : static_cast<uint16_t>(fabsf(nav_controller->nav_bearing_cd())),
         throttle            : int8_t(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)),
@@ -467,9 +467,9 @@ void Rover::Log_Write_WheelEncoder()
         LOG_PACKET_HEADER_INIT(LOG_WHEELENCODER_MSG),
         time_us     : AP_HAL::micros64(),
         distance_0  : g2.wheel_encoder.get_distance(0),
-        quality_0   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(0),0.0f,100.0f),
+        quality_0   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(0), 0.0f, 100.0f),
         distance_1  : g2.wheel_encoder.get_distance(1),
-        quality_1   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(1),0.0f,100.0f)
+        quality_1   : (uint8_t)constrain_float(g2.wheel_encoder.get_signal_quality(1), 0.0f, 100.0f)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -503,7 +503,6 @@ void Rover::log_init(void)
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
 
     gcs().reset_cli_timeout();
-
 }
 
 #if CLI_ENABLED == ENABLED
@@ -526,7 +525,7 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-    DataFlash.Log_Write_Mode(control_mode->mode_number());
+    DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
     Log_Write_Home_And_Origin();
     gps.Write_DataFlash_Log_Startup_messages();
 }

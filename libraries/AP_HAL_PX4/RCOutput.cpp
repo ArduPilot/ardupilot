@@ -641,4 +641,18 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
 }
 
 
+// set default output update rate
+void PX4RCOutput::set_default_rate(uint16_t rate_hz)
+{
+    if (rate_hz != _default_rate_hz) {
+        // set servo update rate for first 8 pwm channels
+        ioctl(_pwm_fd, PWM_SERVO_SET_DEFAULT_UPDATE_RATE, rate_hz);
+        if (_alt_fd != -1) {
+            // set servo update rate for auxiliary channels
+            ioctl(_alt_fd, PWM_SERVO_SET_DEFAULT_UPDATE_RATE, rate_hz);
+        }
+        _default_rate_hz = rate_hz;
+    }
+}
+
 #endif // CONFIG_HAL_BOARD

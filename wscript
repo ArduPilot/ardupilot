@@ -108,6 +108,10 @@ order to save typing.
         default=False,
         help="Disable compilation and test execution")
 
+    g.add_option('--disable-header-checks', action='store_true',
+        default=False,
+        help="Disable checking of headers")
+
     g.add_option('--static',
         action='store_true',
         default=False,
@@ -204,6 +208,12 @@ def configure(cfg):
     if cfg.options.rsync_dest:
         cfg.msg('Setting rsync destination to', cfg.options.rsync_dest)
         cfg.env.RSYNC_DEST = cfg.options.rsync_dest
+
+    if cfg.options.disable_header_checks:
+        cfg.msg('Disabling header checks', cfg.options.disable_header_checks)
+        cfg.env.DISABLE_HEADER_CHECKS = True
+    else:
+        cfg.env.DISABLE_HEADER_CHECKS = False
 
     # TODO: Investigate if code could be changed to not depend on the
     # source absolute path.

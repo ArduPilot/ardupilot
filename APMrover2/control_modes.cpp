@@ -72,11 +72,10 @@ void Rover::read_control_switch()
 
         Mode *new_mode = control_mode_from_num((enum mode)modes[switchPosition].get());
         if (new_mode != nullptr) {
-            set_mode(*new_mode);
+            set_mode(*new_mode, MODE_REASON_TX_COMMAND);
         }
 
         oldSwitchPosition = switchPosition;
-        prev_WP = current_loc;
 
         // reset speed integrator
         g.pidSpeedThrottle.reset_I();
@@ -155,7 +154,7 @@ void Rover::read_trim_switch()
                     }
                 } else if (control_mode == &mode_auto) {
                     // if SW7 is ON in AUTO = set to RTL
-                    set_mode(mode_rtl);
+                    set_mode(mode_rtl, MODE_REASON_TX_COMMAND);
                     break;
                 }
             }

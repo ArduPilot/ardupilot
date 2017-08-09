@@ -17,18 +17,18 @@ protected:
     void update_healthy_flag(uint8_t instance) override { _frontend.sensors[instance].healthy = true; }
 
 private:
-    uint8_t instance;
-    SITL::SITL *sitl;
+    uint8_t _instance;
+    SITL::SITL *_sitl;
 
     // barometer delay buffer variables
     struct readings_baro {
         uint32_t time;
         float data;
     };
-    uint8_t store_index;
-    uint32_t last_store_time;
-    static const uint8_t buffer_length = 50;
-    VectorN<readings_baro,buffer_length> buffer;
+    uint8_t _store_index;
+    uint32_t _last_store_time;
+    static const uint8_t _buffer_length = 50;
+    VectorN<readings_baro, _buffer_length> _buffer;
 
     // adjust for simulated board temperature
     void temperature_adjustment(float &p, float &T);
@@ -40,4 +40,4 @@ private:
     float _recent_press;
 
 };
-#endif // CONFIG_HAL_BOARD
+#endif  // CONFIG_HAL_BOARD

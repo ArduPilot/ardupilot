@@ -173,7 +173,7 @@ void PX4Scheduler::delay_microseconds_boost(uint16_t usec)
 
 void PX4Scheduler::delay(uint16_t ms)
 {
-    if (in_timerprocess()) {
+    if (!in_main_thread()) {
         ::printf("ERROR: delay() from timer process\n");
         return;
     }
@@ -443,9 +443,9 @@ void *PX4Scheduler::_uavcan_thread(void *arg)
 }
 #endif
 
-bool PX4Scheduler::in_timerprocess()
+bool PX4Scheduler::in_main_thread()
 {
-    return getpid() != _main_task_pid;
+    return getpid() == _main_task_pid;
 }
 
 void PX4Scheduler::system_initialized()

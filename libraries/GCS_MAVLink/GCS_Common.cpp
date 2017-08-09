@@ -228,7 +228,7 @@ void GCS_MAVLINK::send_distance_sensor(const RangeFinder &rangefinder, const uin
                 AP_HAL::millis(),                       // time since system boot TODO: take time of measurement
                 rangefinder.min_distance_cm(instance),  // minimum distance the sensor can measure in centimeters
                 rangefinder.max_distance_cm(instance),  // maximum distance the sensor can measure in centimeters
-                rangefinder.distance_cm(instance),      // current distance reading (in cm?)
+                rangefinder.distance_cm(instance),      // current distance reading
                 rangefinder.get_sensor_type(instance),  // type from MAV_DISTANCE_SENSOR enum
                 instance,                               // onboard ID of the sensor == instance
                 rangefinder.get_orientation(instance),  // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
@@ -267,6 +267,48 @@ void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder) cons
             chan,
             rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f,
             rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
+}
+
+bool GCS_MAVLINK::send_proximity(const AP_Proximity &proximity) const
+{
+    // return immediately if no proximity sensor is present
+    if (proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+        return false;
+    }
+    // send horizontal distances
+    AP_Proximity::Proximity_Distance_Array dist_array;
+    if (proximity.get_horizontal_distances(dist_array)) {
+        for (uint8_t i = 0; i < PROXIMITY_MAX_DIRECTION; i++) {
+            CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+            mavlink_msg_distance_sensor_send(
+                    chan,
+                    AP_HAL::millis(),                               // time since system boot
+                    (uint16_t)(proximity.distance_min() * 100.0f),  // minimum distance the sensor can measure in centimeters
+                    (uint16_t)(proximity.distance_max() * 100.0f),  // maximum distance the sensor can measure in centimeters
+                    (uint16_t)(dist_array.distance[i] * 100.0f),    // current distance reading
+                    MAV_DISTANCE_SENSOR_LASER,                      // type from MAV_DISTANCE_SENSOR enum
+                    PROXIMITY_SENSOR_ID_START + i,                  // onboard ID of the sensor
+                    dist_array.orientation[i],                      // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
+                    0);                                             // Measurement covariance in centimeters, 0 for unknown / invalid readings
+        }
+    }
+
+    // send upward distance
+    float dist_up;
+    if (proximity.get_upward_distance(dist_up)) {
+        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+        mavlink_msg_distance_sensor_send(
+                chan,
+                AP_HAL::millis(),                                         // time since system boot
+                (uint16_t)(proximity.distance_min() * 100.0f),            // minimum distance the sensor can measure in centimeters
+                (uint16_t)(proximity.distance_max() * 100.0f),            // maximum distance the sensor can measure in centimeters
+                (uint16_t)(dist_up * 100.0f),                             // current distance reading
+                MAV_DISTANCE_SENSOR_LASER,                                // type from MAV_DISTANCE_SENSOR enum
+                PROXIMITY_SENSOR_ID_START + PROXIMITY_MAX_DIRECTION + 1,  // onboard ID of the sensor
+                MAV_SENSOR_ROTATION_PITCH_90,                             // direction upwards
+                0);                                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
+    }
+    return true;
 }
 
 // report AHRS2 state
@@ -713,15 +755,23 @@ mission_ack:
     return mission_is_complete;
 }
 
-void 
-GCS_MAVLINK::handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps)
+void GCS_MAVLINK::push_deferred_messages()
 {
-    mavlink_gps_inject_data_t packet;
-    mavlink_msg_gps_inject_data_decode(msg, &packet);
-    //TODO: check target
+    while (num_deferred_messages != 0) {
+        if (!try_send_message(deferred_messages[next_deferred_message])) {
+            break;
+        }
+        next_deferred_message++;
+        if (next_deferred_message == ARRAY_SIZE(deferred_messages)) {
+            next_deferred_message = 0;
+        }
+        num_deferred_messages--;
+    }
+}
 
-    gps.inject_data(packet.data, packet.len);
-
+void GCS_MAVLINK::retry_deferred()
+{
+    push_deferred_messages();
 }
 
 // send a message using mavlink, handling message queueing
@@ -732,49 +782,40 @@ void GCS_MAVLINK::send_message(enum ap_message id)
     if (id == MSG_HEARTBEAT) {
         save_signing_timestamp(false);
     }
-    
-    // see if we can send the deferred messages, if any
-    while (num_deferred_messages != 0) {
-        if (!try_send_message(deferred_messages[next_deferred_message])) {
-            break;
+
+    // see if we can send the deferred messages, if any:
+    push_deferred_messages();
+
+    // if there are no deferred messages, attempt to send straight away:
+    if (num_deferred_messages == 0) {
+        if (try_send_message(id)) {
+            // yay, we sent it!
+            return;
         }
-        next_deferred_message++;
-        if (next_deferred_message == MSG_RETRY_DEFERRED) {
-            next_deferred_message = 0;
-        }
-        num_deferred_messages--;
     }
 
-    if (id == MSG_RETRY_DEFERRED) {
+    // we failed to send the message this time around, so try to defer:
+    if (num_deferred_messages == ARRAY_SIZE(deferred_messages)) {
+        // the defer buffer is full, discard this attempt to send.
+        // Note that the message *may* already be in the defer buffer
         return;
     }
 
-    // this message id might already be deferred
+    // check if this message is deferred:
     for (i=0, nextid = next_deferred_message; i < num_deferred_messages; i++) {
         if (deferred_messages[nextid] == id) {
-            // it's already deferred, discard
+            // it's already deferred
             return;
         }
         nextid++;
-        if (nextid == MSG_RETRY_DEFERRED) {
+        if (nextid == ARRAY_SIZE(deferred_messages)) {
             nextid = 0;
         }
     }
 
-    if (num_deferred_messages != 0 ||
-        !try_send_message(id)) {
-        // can't send it now, so defer it
-        if (num_deferred_messages == MSG_RETRY_DEFERRED) {
-            // the defer buffer is full, discard
-            return;
-        }
-        nextid = next_deferred_message + num_deferred_messages;
-        if (nextid >= MSG_RETRY_DEFERRED) {
-            nextid -= MSG_RETRY_DEFERRED;
-        }
-        deferred_messages[nextid] = id;
-        num_deferred_messages++;
-    }
+    // not already deferred, defer it
+    deferred_messages[nextid] = id;
+    num_deferred_messages++;
 }
 
 void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
@@ -1248,6 +1289,16 @@ void GCS::send_message(enum ap_message id)
     }
 }
 
+void GCS::retry_deferred()
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        if (chan(i).initialised) {
+            chan(i).retry_deferred();
+        }
+    }
+    service_statustext();
+}
+
 void GCS::data_stream_send()
 {
     for (uint8_t i=0; i<num_gcs(); i++) {
@@ -1702,6 +1753,75 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
     df->Log_Write_Message(text);
 }
 
+
+void GCS_MAVLINK::handle_common_gps_message(mavlink_message_t *msg)
+{
+    AP_GPS *gps = get_gps();
+    if (gps == nullptr) {
+        return;
+    }
+
+    gps->handle_msg(msg);
+}
+
+
+void GCS_MAVLINK::handle_common_camera_message(const mavlink_message_t *msg)
+{
+    AP_Camera *camera = get_camera();
+    if (camera == nullptr) {
+        return;
+    }
+
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:      // MAV ID: 202
+        //deprecated.  Use MAV_CMD_DO_DIGICAM_CONFIGURE
+        break;
+    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
+        //deprecated.  Use MAV_CMD_DO_DIGICAM_CONTROL
+        camera->control_msg(msg);
+        break;
+    default:
+        break;
+    }
+}
+MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &packet)
+{
+    AP_Camera *camera = get_camera();
+    if (camera == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    MAV_RESULT result = MAV_RESULT_FAILED;
+    switch (packet.command) {
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        camera->configure(packet.param1,
+                          packet.param2,
+                          packet.param3,
+                          packet.param4,
+                          packet.param5,
+                          packet.param6,
+                          packet.param7);
+        result = MAV_RESULT_ACCEPTED;
+        break;
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+        camera->control(packet.param1,
+                        packet.param2,
+                        packet.param3,
+                        packet.param4,
+                        packet.param5,
+                        packet.param6);
+        result = MAV_RESULT_ACCEPTED;
+        break;
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        camera->set_trigger_distance(packet.param1);
+        result = MAV_RESULT_ACCEPTED;
+        break;
+    default:
+        result = MAV_RESULT_UNSUPPORTED;
+    }
+    return result;
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -1736,6 +1856,13 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
 
+    case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:
+        /* fall through */
+    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
+        /* fall through */
+        handle_common_camera_message(msg);
+        break;
+
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
         /* fall through */
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
@@ -1756,6 +1883,16 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         /* fall through */
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
         handle_common_mission_message(msg);
+        break;
+
+    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
+        /* fall through */
+    case MAVLINK_MSG_ID_GPS_INPUT:
+        /* fall through */
+    case MAVLINK_MSG_ID_HIL_GPS:
+        /* fall through */
+    case MAVLINK_MSG_ID_GPS_INJECT_DATA:
+        handle_common_gps_message(msg);
         break;
 
     case MAVLINK_MSG_ID_STATUSTEXT:
@@ -1883,6 +2020,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         result = handle_rc_bind(packet);
         break;
 
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        /* fall through */
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+        /* fall through */
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        result = handle_command_camera(packet);
+        break;
+
     case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS: {
         result = handle_command_preflight_set_sensor_offsets(packet);
         break;
@@ -1904,6 +2049,118 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
     }
 
     return result;
+}
+
+bool GCS_MAVLINK::try_send_compass_message(const enum ap_message id)
+{
+    Compass *compass = get_compass();
+    if (compass == nullptr) {
+        return true;
+    }
+    bool ret = true;
+    switch (id) {
+    case MSG_MAG_CAL_PROGRESS:
+        compass->send_mag_cal_progress(chan);
+        ret = true;;
+        break;
+    case MSG_MAG_CAL_REPORT:
+        compass->send_mag_cal_report(chan);
+        ret = true;
+        break;
+    default:
+        ret = true;
+        break;
+    }
+    return ret;
+}
+
+bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
+{
+    AP_Mission *mission = get_mission();
+    if (mission == nullptr) {
+        return true;
+    }
+
+    bool ret = true;
+    switch (id) {
+    case MSG_CURRENT_WAYPOINT:
+        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
+        mavlink_msg_mission_current_send(chan, mission->get_current_nav_index());
+        ret = true;
+        break;
+    case MSG_MISSION_ITEM_REACHED:
+        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
+        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
+        ret = true;
+        break;
+    case MSG_NEXT_WAYPOINT:
+        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
+        queued_waypoint_send();
+        ret = true;
+        break;
+    default:
+        ret = true;
+        break;
+    }
+    return ret;
+}
+
+void GCS_MAVLINK::send_hwstatus()
+{
+    mavlink_msg_hwstatus_send(
+        chan,
+        hal.analogin->board_voltage()*1000,
+        0);
+}
+
+bool GCS_MAVLINK::try_send_message(const enum ap_message id)
+{
+    if (telemetry_delayed()) {
+        return false;
+    }
+
+    bool ret = true;
+
+    switch(id) {
+
+    case MSG_NEXT_PARAM:
+        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
+        queued_param_send();
+        ret = true;
+        break;
+
+    case MSG_HWSTATUS:
+        CHECK_PAYLOAD_SIZE(HWSTATUS);
+        send_hwstatus();
+        ret = true;
+        break;
+
+    case MSG_CURRENT_WAYPOINT:
+        /* fall through */
+    case MSG_MISSION_ITEM_REACHED:
+        /* fall through */
+    case MSG_NEXT_WAYPOINT:
+        ret = try_send_mission_message(id);
+        break;
+
+    case MSG_MAG_CAL_PROGRESS:
+        /* fall through */
+    case MSG_MAG_CAL_REPORT:
+        ret = try_send_compass_message(id);
+        break;
+
+    default:
+        // try_send_message must always at some stage return true for
+        // a message, or we will attempt to infinitely retry the
+        // message as part of send_message.
+        // This message will be sent out at the same rate as the
+        // unknown message, so should be safe.
+        gcs().send_text(MAV_SEVERITY_DEBUG, "Sending unknown message (%u)", id);
+        ret = true;
+        break;
+    }
+
+    return ret;
 }
 
 GCS &gcs()

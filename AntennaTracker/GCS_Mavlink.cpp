@@ -101,19 +101,6 @@ void Tracker::send_location(mavlink_channel_t chan)
         ahrs.yaw_sensor);
 }
 
-void Tracker::send_hwstatus(mavlink_channel_t chan)
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        0,
-        0);
-}
-
-void Tracker::send_waypoint_request(mavlink_channel_t chan)
-{
-    gcs().chan(chan-MAVLINK_COMM_0).queued_waypoint_send();
-}
-
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
 {
 	float alt_diff = (g.alt_source == ALT_SOURCE_BARO) ? nav_status.alt_difference_baro : nav_status.alt_difference_gps;
@@ -210,16 +197,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
         break;
 
-    case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
-        queued_param_send();
-        break;
-
-    case MSG_NEXT_WAYPOINT:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        tracker.send_waypoint_request(chan);
-        break;
-
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs(tracker.ahrs);
@@ -230,46 +207,8 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         tracker.send_simstate(chan);
         break;
 
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        tracker.send_hwstatus(chan);
-        break;
-    case MSG_MAG_CAL_PROGRESS:
-        tracker.compass.send_mag_cal_progress(chan);
-        break;
-
-    case MSG_MAG_CAL_REPORT:
-        tracker.compass.send_mag_cal_report(chan);
-        break;
-
-    case MSG_SERVO_OUT:
-    case MSG_EXTENDED_STATUS1:
-    case MSG_EXTENDED_STATUS2:
-    case MSG_RETRY_DEFERRED:
-    case MSG_ADSB_VEHICLE:
-    case MSG_CURRENT_WAYPOINT:
-    case MSG_VFR_HUD:
-    case MSG_SYSTEM_TIME:
-    case MSG_LIMITS_STATUS:
-    case MSG_FENCE_STATUS:
-    case MSG_WIND:
-    case MSG_RANGEFINDER:
-    case MSG_TERRAIN:
-    case MSG_BATTERY2:
-    case MSG_BATTERY_STATUS:
-    case MSG_CAMERA_FEEDBACK:
-    case MSG_MOUNT_STATUS:
-    case MSG_OPTICAL_FLOW:
-    case MSG_GIMBAL_REPORT:
-    case MSG_EKF_STATUS_REPORT:
-    case MSG_PID_TUNING:
-    case MSG_VIBRATION:
-    case MSG_RPM:
-    case MSG_MISSION_ITEM_REACHED:
-    case MSG_POSITION_TARGET_GLOBAL_INT:
-    case MSG_AOA_SSA:
-    case MSG_LANDING:
-        break; // just here to prevent a warning
+    default:
+        return GCS_MAVLINK::try_send_message(id);
     }
     return true;
 }
@@ -813,16 +752,6 @@ mission_failed:
         handle_serial_control(msg, tracker.gps);
         break;
 
-    case MAVLINK_MSG_ID_GPS_INJECT_DATA:
-        handle_gps_inject(msg, tracker.gps);
-        break;
-
-    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
-    case MAVLINK_MSG_ID_GPS_INPUT:
-    case MAVLINK_MSG_ID_HIL_GPS:
-        tracker.gps.handle_msg(msg);
-        break;
-
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         send_autopilot_version(FIRMWARE_VERSION);
         break;
@@ -891,11 +820,21 @@ void Tracker::gcs_update(void)
  */
 void Tracker::gcs_retry_deferred(void)
 {
-    gcs().send_message(MSG_RETRY_DEFERRED);
-    gcs().service_statustext();
+    gcs().retry_deferred();
+}
+
+AP_GPS *GCS_MAVLINK_Tracker::get_gps() const
+{
+    return &tracker.gps;
 }
 
 Compass *GCS_MAVLINK_Tracker::get_compass() const
 {
     return &tracker.compass;
 }
+
+/* dummy methods to avoid having to link against AP_Camera */
+void AP_Camera::control_msg(mavlink_message_t const*) {}
+void AP_Camera::configure(float, float, float, float, float, float, float) {}
+void AP_Camera::control(float, float, float, float, float, float) {}
+/* end dummy methods to avoid having to link against AP_Camera */

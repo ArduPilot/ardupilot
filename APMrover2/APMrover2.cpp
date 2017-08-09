@@ -54,10 +54,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_alt,             10,   3400),
     SCHED_TASK(update_beacon,          50,     50),
     SCHED_TASK(update_visual_odom,     50,     50),
-    SCHED_TASK(update_wheel_encoder,   50,     50),
-    SCHED_TASK(navigate,               10,   1600),
+    SCHED_TASK(update_wheel_encoder,   20,     50),
     SCHED_TASK(update_compass,         10,   2000),
-    SCHED_TASK(update_commands,        10,   1000),
+    SCHED_TASK(update_mission,         10,   1000),
     SCHED_TASK(update_logging1,        10,   1000),
     SCHED_TASK(update_logging2,        10,   1000),
     SCHED_TASK(gcs_retry_deferred,     50,   1000),
@@ -104,8 +103,6 @@ void Rover::setup()
 
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
-
-    in_auto_reverse = false;
 
     init_ardupilot();
 
@@ -180,6 +177,8 @@ void Rover::ahrs_update()
     Vector3f velocity;
     if (ahrs.get_velocity_NED(velocity)) {
         ground_speed = norm(velocity.x, velocity.y);
+    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        ground_speed = ahrs.groundspeed();
     }
 
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
@@ -207,13 +206,7 @@ void Rover::mount_update(void)
 void Rover::update_trigger(void)
 {
 #if CAMERA == ENABLED
-    camera.trigger_pic_cleanup();
-    if (camera.check_trigger_pin()) {
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    }
+    camera.update_trigger();
 #endif
 }
 
@@ -396,29 +389,15 @@ void Rover::update_GPS_10Hz(void)
 
         // set system time if necessary
         set_system_time_from_GPS();
-
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-
-            // get ground speed estimate from AHRS
-            ground_speed = ahrs.groundspeed();
-
 #if CAMERA == ENABLED
-            if (camera.update_location(current_loc, rover.ahrs) == true) {
-                do_take_picture();
-            }
+        camera.update();
 #endif
-        }
     }
 }
 
 void Rover::update_current_mode(void)
 {
     control_mode->update();
-}
-
-void Rover::update_navigation()
-{
-    control_mode->update_navigation();
 }
 
 AP_HAL_MAIN_CALLBACKS(&rover);

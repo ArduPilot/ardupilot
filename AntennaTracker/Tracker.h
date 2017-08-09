@@ -199,8 +199,6 @@ private:
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
-    void send_hwstatus(mavlink_channel_t chan);
-    void send_waypoint_request(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void mavlink_check_target(const mavlink_message_t* msg);

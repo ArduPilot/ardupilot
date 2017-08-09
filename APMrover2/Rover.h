@@ -233,6 +233,7 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, AUTO, ...
     Mode *control_mode;
+    mode_reason_t control_mode_reason = MODE_REASON_INITIALISED;
 
     // Used to maintain the state of the previous control switch position
     // This is set to -1 when we need to re-read the switch
@@ -263,13 +264,8 @@ private:
     // true if we have a position estimate from AHRS
     bool have_position;
 
-    bool rtl_complete;
-
     // angle of our next navigation waypoint
     int32_t next_navigation_leg_cd;
-
-    // ground speed error in m/s
-    float groundspeed_error;
 
     // receiver RSSI
     uint8_t receiver_rssi;
@@ -292,7 +288,6 @@ private:
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
-    int16_t throttle;
 
     // CH7 control
     // Used to track the CH7 toggle state.
@@ -312,12 +307,6 @@ private:
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
 
-    // Waypoint distances
-    // Distance between rover and next waypoint.  Meters
-    float wp_distance;
-    // Distance between previous and next waypoint.  Meters
-    int32_t wp_totalDistance;
-
     // Conditional command
     // A value used in condition commands (eg delay, change alt, etc.)
     // For example in a change altitude command, it is the altitude to change to.
@@ -325,9 +314,6 @@ private:
     // A starting value used to check the status of a conditional command.
     // For example in a delay command the condition_start records that start time for the delay
     int32_t condition_start;
-
-    // Use for stopping navigation in auto mode and do rotation on spot.
-    bool do_auto_rotation;
 
     // 3D Location vectors
     // Location structure defined in AP_Common
@@ -342,11 +328,6 @@ private:
 
     // true if the compass's initial location has been set
     bool compass_init_location;
-
-    // The location of the previous waypoint.  Used for track following and altitude ramp calculations
-    struct Location prev_WP;
-    // The location of the current/active waypoint.  Used for track following
-    struct Location next_WP;
 
     // IMU variables
     // The main loop execution time.  Seconds
@@ -370,9 +351,6 @@ private:
     // set if we are driving backwards
     bool in_reverse;
 
-    // set if the users asks for auto reverse
-    bool in_auto_reverse;
-
     // true if pivoting (set by use_pivot_steering)
     bool pivot_steering_active;
 
@@ -390,26 +368,23 @@ private:
     // Loiter control
     uint16_t loiter_duration;       // How long we should loiter at the nav_waypoint (time in seconds)
     uint32_t loiter_start_time;     // How long have we been loitering - The start time in millis
-    bool active_loiter;             // TRUE if we actively return to the loitering waypoint if we drift off
     float distance_past_wp;         // record the distance we have gone past the wp
     bool previously_reached_wp;     // set to true if we have EVER reached the waypoint
 
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
 
-    // Store parameters from Guided msg
-    struct {
-      float turn_angle;          // target heading in centi-degrees
-      float target_speed;        // target speed in m/s
-      float target_steer_speed;  // target steer speed in degree/s
-      uint32_t msg_time_ms;      // time of last guided message
-    } guided_control;
-
     // Store the time the last GPS message was received.
     uint32_t last_gps_msg_ms{0};
 
     // last visual odometry update time
     uint32_t visual_odom_last_update_ms;
+
+    // last wheel encoder update times
+    float wheel_encoder_last_angle_rad[WHEELENCODER_MAX_INSTANCES];     // distance in radians at time of last update to EKF
+    uint32_t wheel_encoder_last_update_ms[WHEELENCODER_MAX_INSTANCES];  // system time of last ping from each encoder
+    uint32_t wheel_encoder_last_ekf_update_ms;                          // system time of last encoder data push to EKF
+    float wheel_encoder_rpm[WHEELENCODER_MAX_INSTANCES];                // for reporting to GCS
 
     // True when we are doing motor test
     bool motor_test;
@@ -441,7 +416,6 @@ private:
     void update_GPS_50Hz(void);
     void update_GPS_10Hz(void);
     void update_current_mode(void);
-    void update_navigation();
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void update_sensor_status_flags(void);
@@ -451,16 +425,15 @@ private:
     void send_servo_out(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
-    void send_hwstatus(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
-    void send_current_waypoint(mavlink_channel_t chan);
+    void send_wheel_encoder(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);
 
     Mode *control_mode_from_num(enum mode num);
-    bool set_mode(Mode &mode);
+    bool set_mode(Mode &mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
 
     void do_erase_logs(void);
@@ -485,27 +458,19 @@ private:
     void Log_Arm_Disarm();
 
     void load_parameters(void);
-    bool use_pivot_steering(void);
+    bool use_pivot_steering(float yaw_error_cd);
     void set_servos(void);
-    void set_auto_WP(const struct Location& loc);
-    void set_guided_WP(const struct Location& loc);
-    void set_guided_velocity(float target_steer_speed, float target_speed);
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
     void set_system_time_from_GPS();
-    void restart_nav();
     void exit_mission();
     void do_RTL(void);
     bool verify_RTL();
     bool verify_wait_delay();
     bool verify_within_distance();
-    bool verify_yaw();
-#if CAMERA == ENABLED
-    void do_take_picture();
-    void log_picture();
-#endif
-    void update_commands(void);
+    bool verify_nav_set_yaw_speed();
+    void update_mission(void);
     void delay(uint32_t ms);
     void mavlink_delay(uint32_t ms);
     void read_control_switch();
@@ -515,7 +480,6 @@ private:
     void update_events(void);
     void button_update(void);
     void stats_update();
-    void navigate();
     void set_control_channels(void);
     void init_rc_in();
     void init_rc_out();
@@ -553,7 +517,7 @@ private:
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    void do_nav_wp(const AP_Mission::Mission_Command& cmd);
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_at_dest);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
@@ -561,7 +525,7 @@ private:
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
-    void do_yaw(const AP_Mission::Mission_Command& cmd);
+    void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
 #if CAMERA == ENABLED
@@ -577,10 +541,6 @@ private:
     bool motor_active();
     void update_home();
     void accel_cal_update(void);
-    void nav_set_yaw_speed();
-    bool do_yaw_rotation();
-    void nav_set_speed();
-    bool in_stationary_loiter(void);
     void crash_check();
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);

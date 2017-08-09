@@ -958,7 +958,7 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             // calculate intermediate expressions for X axis Kalman gains
-            float R_VEL = bodyOdmDataDelayed.velErr;
+            float R_VEL = sq(bodyOdmDataDelayed.velErr);
             float t2 = q0*q3*2.0f;
             float t3 = q1*q2*2.0f;
             float t4 = t2+t3;
@@ -1130,7 +1130,7 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             // calculate intermediate expressions for Y axis Kalman gains
-            float R_VEL = bodyOdmDataDelayed.velErr;
+            float R_VEL = sq(bodyOdmDataDelayed.velErr);
             float t2 = q0*q3*2.0f;
             float t9 = q1*q2*2.0f;
             float t3 = t2-t9;
@@ -1302,7 +1302,7 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             // calculate intermediate expressions for Z axis Kalman gains
-            float R_VEL = bodyOdmDataDelayed.velErr;
+            float R_VEL = sq(bodyOdmDataDelayed.velErr);
             float t2 = q0*q2*2.0f;
             float t3 = q1*q3*2.0f;
             float t4 = t2+t3;
@@ -1564,11 +1564,44 @@ void NavEKF3_core::SelectBodyOdomFusion()
         // start performance timer
         hal.util->perf_begin(_perf_FuseBodyOdom);
 
+        usingWheelSensors = false;
+
         // Fuse data into the main filter
         FuseBodyVel();
 
         // stop the performance timer
         hal.util->perf_end(_perf_FuseBodyOdom);
+
+    } else if (storedWheelOdm.recall(wheelOdmDataDelayed, imuDataDelayed.time_ms)) {
+
+        // check if the delta time is too small to calculate a velocity
+        if (wheelOdmDataNew.delTime > EKF_TARGET_DT) {
+
+            // get the forward velocity
+            float fwdSpd = wheelOdmDataNew.delAng * wheelOdmDataNew.radius * (1.0f / wheelOdmDataNew.delTime);
+
+            // get the unit vector from the projection of the X axis onto the horizontal
+            Vector3f unitVec;
+            unitVec.x = prevTnb.a.x;
+            unitVec.y = prevTnb.a.y;
+            unitVec.z = 0.0f;
+            unitVec.normalized();
+
+            // multiply by forward speed to get velocity vector measured by wheel encoders
+            Vector3f velNED = unitVec * fwdSpd;
+
+            // This is a hack to enable use of the existing body frame velocity fusion method
+            // TODO write a dedicated observation model for wheel encoders
+            usingWheelSensors = true;
+            bodyOdmDataDelayed.vel = prevTnb * velNED;
+            bodyOdmDataDelayed.body_offset = wheelOdmDataNew.hub_offset;
+            bodyOdmDataDelayed.velErr = frontend->_wencOdmVelErr;
+
+            // Fuse data into the main filter
+            FuseBodyVel();
+
+        }
+
     }
 }
 

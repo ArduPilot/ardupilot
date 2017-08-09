@@ -163,36 +163,15 @@ bool OreoLED_PX4::mode_firmware_update()
 }
 
 
-// Procedure for when Pixhawk is booting up and initializing
-// Makes all LEDs rapidly strobe blue. Returns LED_INIT_STAGE
-// 1 = Default, initialization has not yet begun
-// 2 = Initialization flag found, initialization in progress
-// 3 = Initialization flag no longer found, initialization complete
+// Makes all LEDs rapidly strobe blue while gyros initialize.
 bool OreoLED_PX4::mode_init()
 {
-    static uint16_t stage = 1;
-
-    // Pixhawk has not begun initializing yet. Strobe all blue
-    if ((!AP_Notify::flags.initialising) && ((stage == 1))) {
+    if (AP_Notify::flags.initialising) {
         set_rgb(OREOLED_INSTANCE_ALL, OREOLED_PATTERN_STROBE, 0, 0, 255,0,0,0,PERIOD_SUPER,0);
-
-    // Pixhawk has begun initializing
-    } else if ((AP_Notify::flags.initialising) && ((stage == 1))) { 
-        stage = 2;
-        set_rgb(OREOLED_INSTANCE_ALL, OREOLED_PATTERN_STROBE, 0, 0, 255,0,0,0,PERIOD_SUPER,0);
-
-    // Pixhawk still initializing
-    } else if ((AP_Notify::flags.initialising) && ((stage == 2))) { 
-        set_rgb(OREOLED_INSTANCE_ALL, OREOLED_PATTERN_STROBE, 0, 0, 255,0,0,0,PERIOD_SUPER,0);
-
-    // Pixhawk has completed initialization
-    } else if((!AP_Notify::flags.initialising) && ((stage == 2))) {
-        stage = 0;
-        set_rgb(OREOLED_INSTANCE_ALL, OREOLED_PATTERN_SOLID, 0, 0, 255);
-
-    } else { stage = 0; }
-
-    return stage;
+        return true;
+    } else { 
+        return false;
+    }
 }
 
 

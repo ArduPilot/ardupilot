@@ -272,7 +272,7 @@ void Copter::init_disarm_motors()
 void Copter::motors_output()
 {
 #if ADVANCED_FAILSAFE == ENABLED
-    // this is to allow the failsafe module to deliberately crash 
+    // this is to allow the failsafe module to deliberately crash
     // the vehicle. Only used in extreme circumstances to meet the
     // OBC rules
     if (g2.afs.should_crash_vehicle()) {
@@ -291,10 +291,10 @@ void Copter::motors_output()
 
     // cork now, so that all channel outputs happen at once
     hal.rcout->cork();
-    
+
     // update output on any aux channels, for manual passthru
     SRV_Channels::output_ch_all();
-    
+
     // check if we are performing the motor test
     if (ap.motor_test) {
         motor_test_output();

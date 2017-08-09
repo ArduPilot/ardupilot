@@ -74,7 +74,7 @@ uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velIn
     velInnovVar.x = varInnovBodyVel[0];
     velInnovVar.y = varInnovBodyVel[1];
     velInnovVar.z = varInnovBodyVel[2];
-    return bodyOdmDataDelayed.time_ms;
+    return MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
 }
 
 // return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
@@ -404,6 +404,9 @@ void NavEKF3_core::getMagXYZ(Vector3f &magXYZ) const
 // return true if offsets are valid
 bool NavEKF3_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
+    if (!_ahrs->get_compass()) {
+        return false;
+    }
     // compass offsets are valid if we have finalised magnetic field initialisation, magnetic field learning is not prohibited,
     // primary compass is valid and state variances have converged
     const float maxMagVar = 5E-6f;

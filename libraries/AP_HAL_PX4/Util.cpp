@@ -120,6 +120,8 @@ bool PX4Util::get_system_id(char buf[40])
     const char *board_type = "PX4v2";
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     const char *board_type = "PX4v4";
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
+    const char *board_type = "PX4v4PRO";
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     const char *board_type = "AEROFCv1";
 #else

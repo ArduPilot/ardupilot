@@ -346,7 +346,7 @@ uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
 /**
    calculate current time since the unix epoch in microseconds
  */
-uint64_t AP_GPS::time_epoch_usec(uint8_t instance)
+uint64_t AP_GPS::time_epoch_usec(uint8_t instance) const
 {
     const GPS_State &istate = state[instance];
     if (istate.last_gps_time_ms == 0) {
@@ -737,21 +737,37 @@ void AP_GPS::update(void)
 
 }
 
+void AP_GPS::handle_gps_inject(const mavlink_message_t *msg)
+{
+    mavlink_gps_inject_data_t packet;
+    mavlink_msg_gps_inject_data_decode(msg, &packet);
+    //TODO: check target
+
+    inject_data(packet.data, packet.len);
+}
+
 /*
   pass along a mavlink message (for MAV type)
  */
 void AP_GPS::handle_msg(const mavlink_message_t *msg)
 {
-    if (msg->msgid == MAVLINK_MSG_ID_GPS_RTCM_DATA) {
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
         // pass data to de-fragmenter
         handle_gps_rtcm_data(msg);
-        return;
-    }
-    uint8_t i;
-    for (i=0; i<num_instances; i++) {
-        if ((drivers[i] != nullptr) && (_type[i] != GPS_TYPE_NONE)) {
-            drivers[i]->handle_msg(msg);
+        break;
+    case MAVLINK_MSG_ID_GPS_INJECT_DATA:
+        handle_gps_inject(msg);
+        break;
+    default: {
+        uint8_t i;
+        for (i=0; i<num_instances; i++) {
+            if ((drivers[i] != nullptr) && (_type[i] != GPS_TYPE_NONE)) {
+                drivers[i]->handle_msg(msg);
+            }
         }
+        break;
+    }
     }
 }
 

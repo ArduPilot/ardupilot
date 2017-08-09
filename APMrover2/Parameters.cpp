@@ -546,9 +546,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: AP_MotorsUGV.cpp
     AP_SUBGROUPINFO(motors, "MOT_", 8, ParametersG2, AP_MotorsUGV),
 
-    // @Group: WENC_
+    // @Group: WENC
     // @Path: ../libraries/AP_WheelEncoder/AP_WheelEncoder.cpp
-    AP_SUBGROUPINFO(wheel_encoder, "WENC_", 9, ParametersG2, AP_WheelEncoder),
+    AP_SUBGROUPINFO(wheel_encoder, "WENC", 9, ParametersG2, AP_WheelEncoder),
 
     AP_GROUPEND
 };

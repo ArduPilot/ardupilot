@@ -40,7 +40,7 @@ public:
     AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav);
 
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
-    void enable(bool true_false) { _enabled = true_false; }
+    void enable(bool value);
 
     /// enabled - returns true if fence is enabled
     bool enabled() const { return _enabled; }

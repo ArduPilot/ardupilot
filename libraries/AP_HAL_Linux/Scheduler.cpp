@@ -83,6 +83,8 @@ void Scheduler::init()
         SCHED_THREAD(io, IO),
     };
 
+    _main_ctx = pthread_self();
+
 #if !APM_BUILD_TYPE(APM_BUILD_Replay)
     // we don't run Replay in real-time...
     mlockall(MCL_CURRENT|MCL_FUTURE);
@@ -148,6 +150,12 @@ void Scheduler::delay(uint16_t ms)
     if (_stopped_clock_usec) {
         return;
     }
+
+    if (!in_main_thread()) {
+        fprintf(stderr, "Scheduler::delay() called outside main thread\n");
+        return;
+    }
+
     uint64_t start = AP_HAL::millis64();
 
     while ((AP_HAL::millis64() - start) < ms) {
@@ -184,75 +192,13 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
         }
     }
 
-    if (_num_timer_procs < LINUX_SCHEDULER_MAX_TIMER_PROCS) {
-        _timer_proc[_num_timer_procs] = proc;
-        _num_timer_procs++;
-    } else {
+    if (_num_timer_procs >= LINUX_SCHEDULER_MAX_TIMER_PROCS) {
         hal.console->printf("Out of timer processes\n");
-    }
-}
-
-bool Scheduler::register_timer_process(AP_HAL::MemberProc proc,
-                                       uint8_t freq_div)
-{
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-    if (freq_div > 1) {
-        return _register_timesliced_proc(proc, freq_div);
-    }
-    /* fallback to normal timer process */
-#endif
-    register_timer_process(proc);
-    return false;
-}
-
-bool Scheduler::_register_timesliced_proc(AP_HAL::MemberProc proc,
-                                          uint8_t freq_div)
-{
-    unsigned int i, j;
-    uint8_t distance, min_distance, best_distance;
-    uint8_t best_timeslot;
-
-    if (_num_timesliced_procs > LINUX_SCHEDULER_MAX_TIMESLICED_PROCS) {
-        hal.console->printf("Out of timesliced processes\n");
-        return false;
+        return;
     }
 
-    /* if max_freq_div increases, update the timeslots accordingly */
-    if (freq_div > _max_freq_div) {
-        for (i = 0; i < _num_timesliced_procs; i++) {
-            _timesliced_proc[i].timeslot =  _timesliced_proc[i].timeslot
-                                            / _max_freq_div * freq_div;
-        }
-        _max_freq_div = freq_div;
-    }
-
-    best_distance = 0;
-    best_timeslot = 0;
-
-    /* Look for the timeslot that maximizes the min distance with other timeslots */
-    for (i = 0; i < _max_freq_div; i++) {
-        min_distance = _max_freq_div;
-        for (j = 0; j < _num_timesliced_procs; j++) {
-            distance = std::min(i - _timesliced_proc[j].timeslot,
-                            _max_freq_div + _timesliced_proc[j].timeslot - i);
-            if (distance < min_distance) {
-                min_distance = distance;
-                if (min_distance == 0) {
-                    break;
-                }
-            }
-        }
-        if (min_distance > best_distance) {
-            best_distance = min_distance;
-            best_timeslot = i;
-        }
-    }
-
-    _timesliced_proc[_num_timesliced_procs].proc = proc;
-    _timesliced_proc[_num_timesliced_procs].timeslot = best_timeslot;
-    _timesliced_proc[_num_timesliced_procs].freq_div = freq_div;
-    _num_timesliced_procs++;
-    return true;
+    _timer_proc[_num_timer_procs] = proc;
+    _num_timer_procs++;
 }
 
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
@@ -299,7 +245,9 @@ void Scheduler::_timer_task()
 
     if (!_timer_semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         printf("Failed to take timer semaphore in %s\n", __PRETTY_FUNCTION__);
+        return;
     }
+
     // now call the timer based drivers
     for (i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i]) {
@@ -313,20 +261,6 @@ void Scheduler::_timer_task()
         ((RPIOUARTDriver *)hal.uartC)->_timer_tick();
     }
 #endif
-
-    for (i = 0; i < _num_timesliced_procs; i++) {
-        if ((_timeslices_count + _timesliced_proc[i].timeslot)
-            % _timesliced_proc[i].freq_div == 0) {
-            _timesliced_proc[i].proc();
-        }
-    }
-
-    if (_max_freq_div != 0) {
-        _timeslices_count++;
-        if (_timeslices_count == _max_freq_div) {
-            _timeslices_count = 0;
-        }
-    }
 
     _timer_semaphore.give();
 
@@ -414,9 +348,9 @@ void Scheduler::_io_task()
     _run_io();
 }
 
-bool Scheduler::in_timerprocess()
+bool Scheduler::in_main_thread()
 {
-    return _in_timer_proc;
+    return pthread_equal(pthread_self(), _main_ctx);
 }
 
 void Scheduler::_wait_all_threads()

@@ -70,7 +70,7 @@ public:
     }
     
 private:
-    static const uint8_t num_buses = 2;
+    static const uint8_t num_buses = 3;
     static DeviceBus businfo[num_buses];
     
     uint8_t _busnum;

@@ -195,6 +195,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             nav_filter_status filt_state;
             EKF2.getFilterStatus(-1,filt_state);
             AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
+            AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
         }
     }
 }
@@ -266,6 +267,7 @@ void AP_AHRS_NavEKF::update_EKF3(void)
             nav_filter_status filt_state;
             EKF3.getFilterStatus(-1,filt_state);
             AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
+            AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
         }
     }
 }

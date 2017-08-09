@@ -147,7 +147,7 @@ void Sub::loop()
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
     uint32_t time_available = (timer + MAIN_LOOP_MICROS) - micros();
-    scheduler.run(time_available);
+    scheduler.run(time_available > MAIN_LOOP_MICROS ? 0u : time_available);
 }
 
 
@@ -238,13 +238,7 @@ void Sub::update_mount()
 // update camera trigger
 void Sub::update_trigger(void)
 {
-    camera.trigger_pic_cleanup();
-    if (camera.check_trigger_pin()) {
-        gcs().send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    }
+    camera.update_trigger();
 }
 #endif
 
@@ -408,15 +402,9 @@ void Sub::update_GPS(void)
         // set system time if necessary
         set_system_time_from_GPS();
 
-        // checks to initialise home and take location based pictures
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-
 #if CAMERA == ENABLED
-            if (camera.update_location(current_loc, sub.ahrs) == true) {
-                do_take_picture();
-            }
+        camera.update();
 #endif
-        }
     }
 }
 

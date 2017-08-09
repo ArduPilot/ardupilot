@@ -7,6 +7,8 @@
 
 # TODO: implement more unit+regression tests
 
+from __future__ import print_function
+
 import DataflashLog
 import traceback
 from VehicleType import VehicleType
@@ -69,11 +71,11 @@ try:
 	# ...
 
 
-	print "All unit/regression tests GOOD\n"
+	print("All unit/regression tests GOOD\n")
 
 except Exception as e:
-	print "Error found: " + traceback.format_exc()
-	print "UNIT TEST FAILED\n"
+	print("Error found: " + traceback.format_exc())
+	print("UNIT TEST FAILED\n")
 
 
 

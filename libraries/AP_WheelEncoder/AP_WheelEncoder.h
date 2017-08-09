@@ -21,7 +21,8 @@
 
 // Maximum number of WheelEncoder measurement instances available on this platform
 #define WHEELENCODER_MAX_INSTANCES      2
-#define WHEELENCODER_SCALING_DEFAULT    0.05f   // default scaling between sensor readings and millimeters
+#define WHEELENCODER_CPR_DEFAULT        3200    // default encoder counts per full revolution of the wheel
+#define WHEELENCODER_RADIUS_DEFAULT     0.05f   // default wheel radius of 5cm (0.05m)
 
 class AP_WheelEncoder_Backend; 
  
@@ -64,10 +65,19 @@ public:
     // return true if the instance is enabled
     bool enabled(uint8_t instance) const;
 
-    // get the position of the wheel associated with the wheel encoder
-    Vector2f get_position(uint8_t instance) const;
+    // get the counts per revolution of the encoder
+    uint16_t get_counts_per_revolution(uint8_t instance) const;
 
-    // get the total distance traveled in meters
+    // get the wheel radius in meters
+    float get_wheel_radius(uint8_t instance) const;
+
+    // get the position of the wheel associated with the wheel encoder
+    Vector3f get_position(uint8_t instance) const;
+
+    // get total delta angle (in radians) measured by the wheel encoder
+    float get_delta_angle(uint8_t instance) const;
+
+    // get the total distance traveled in meters or radians
     float get_distance(uint8_t instance) const;
 
     // get the total number of sensor reading from the encoder
@@ -87,9 +97,9 @@ public:
 protected:
     // parameters for each instance
     AP_Int8  _type[WHEELENCODER_MAX_INSTANCES];
-    AP_Float _scaling[WHEELENCODER_MAX_INSTANCES];
-    AP_Float _pos_x[WHEELENCODER_MAX_INSTANCES];
-    AP_Float _pos_y[WHEELENCODER_MAX_INSTANCES];
+    AP_Int16 _counts_per_revolution[WHEELENCODER_MAX_INSTANCES];
+    AP_Float _wheel_radius[WHEELENCODER_MAX_INSTANCES];
+    AP_Vector3f _pos_offset[WHEELENCODER_MAX_INSTANCES];
     AP_Int8  _pina[WHEELENCODER_MAX_INSTANCES];
     AP_Int8  _pinb[WHEELENCODER_MAX_INSTANCES];
 

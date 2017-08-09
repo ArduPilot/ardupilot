@@ -1190,6 +1190,7 @@ void QuadPlane::update_transition(void)
     if (have_airspeed &&
         assistance_needed(aspeed) &&
         !is_tailsitter() &&
+        hal.util->get_soft_armed() &&
         (plane.auto_throttle_mode ||
          plane.channel_throttle->get_control_in()>0 ||
          plane.is_flying())) {

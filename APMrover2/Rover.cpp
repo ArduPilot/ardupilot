@@ -35,17 +35,15 @@ Rover::Rover(void) :
             FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)),
     ServoRelayEvents(relay),
 #if CAMERA == ENABLED
-    camera(&relay),
+    camera(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs),
 #endif
 #if MOUNT == ENABLED
     camera_mount(ahrs, current_loc),
 #endif
     control_mode(&mode_initializing),
-    throttle(500),
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry(ahrs, battery, rangefinder),
 #endif
-    do_auto_rotation(false),
     home(ahrs.get_home()),
     G_Dt(0.02f)
 {

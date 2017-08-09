@@ -35,7 +35,7 @@ extern AP_HAL::HAL& hal;
 #endif
 
 #ifndef AP_COMPASS_OFFSETS_MAX_DEFAULT
-#define AP_COMPASS_OFFSETS_MAX_DEFAULT 600
+#define AP_COMPASS_OFFSETS_MAX_DEFAULT 850
 #endif
 
 const AP_Param::GroupInfo Compass::var_info[] = {
@@ -520,12 +520,16 @@ void Compass::_detect_backends(void)
         return;
     }
 
+
+    // default mask to disable some compasses
+    int32_t mask_default = 1U<<DRIVER_QMC5883;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
         // default to disabling LIS3MDL on pixhawk2 due to hardware issue
-        _driver_type_mask.set_default(1U<<DRIVER_LIS3MDL);
+        mask_default |= 1U<<DRIVER_LIS3MDL;
     }
 #endif
+    _driver_type_mask.set_default(mask_default);
     
 /*
   macro to add a backend with check for too many backends or compass
@@ -554,7 +558,8 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-    case AP_BoardConfig::PX4_BOARD_PIXRACER: {
+    case AP_BoardConfig::PX4_BOARD_PIXRACER: 
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:{
         bool both_i2c_external = (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2);
         // external i2c bus
         ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
@@ -640,6 +645,13 @@ void Compass::_detect_backends(void)
                     AP_Compass_HMC5843::name, false);
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                     AP_Compass_AK8963::name, false);
+
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
+        ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
+                    AP_Compass_AK8963::name, false);
+        ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME),
+                                                              false, ROTATION_NONE),
+                    AP_Compass_LIS3MDL::name, false);
         break;
 
     case AP_BoardConfig::PX4_BOARD_PHMINI:

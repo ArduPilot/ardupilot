@@ -17,6 +17,7 @@
 # TODO: add test for noisy baro values
 # TODO: support loading binary log files (use Tridge's mavlogdump?)
 
+from __future__ import print_function
 
 import DataflashLog
 
@@ -93,22 +94,22 @@ class TestSuite(object):
 
     def outputPlainText(self, outputStats):
         '''output test results in plain text'''
-        print 'Dataflash log analysis report for file: ' + self.logfile
-        print 'Log size: %.2fmb (%d lines)' % (self.logdata.filesizeKB / 1024.0, self.logdata.lineCount)
-        print 'Log duration: %s' % str(datetime.timedelta(seconds=self.logdata.durationSecs)) + '\n'
+        print('Dataflash log analysis report for file: ' + self.logfile)
+        print('Log size: %.2fmb (%d lines)' % (self.logdata.filesizeKB / 1024.0, self.logdata.lineCount))
+        print('Log duration: %s' % str(datetime.timedelta(seconds=self.logdata.durationSecs)) + '\n')
 
         if self.logdata.vehicleType == VehicleType.Copter and self.logdata.getCopterType():
-            print 'Vehicle Type: %s (%s)' % (self.logdata.vehicleTypeString, self.logdata.getCopterType())
+            print('Vehicle Type: %s (%s)' % (self.logdata.vehicleTypeString, self.logdata.getCopterType()))
         else:
-            print 'Vehicle Type: %s' % self.logdata.vehicleTypeString
-        print 'Firmware Version: %s (%s)' % (self.logdata.firmwareVersion, self.logdata.firmwareHash)
-        print 'Hardware: %s' % self.logdata.hardwareType
-        print 'Free RAM: %s' % self.logdata.freeRAM
+            print('Vehicle Type: %s' % self.logdata.vehicleTypeString)
+        print('Firmware Version: %s (%s)' % (self.logdata.firmwareVersion, self.logdata.firmwareHash))
+        print('Hardware: %s' % self.logdata.hardwareType)
+        print('Free RAM: %s' % self.logdata.freeRAM)
         if self.logdata.skippedLines:
-            print "\nWARNING: %d malformed log lines skipped during read" % self.logdata.skippedLines
-        print '\n'
+            print("\nWARNING: %d malformed log lines skipped during read" % self.logdata.skippedLines)
+        print('\n')
 
-        print "Test Results:"
+        print("Test Results:")
         for test in self.tests:
             if not test.enable:
                 continue
@@ -118,23 +119,23 @@ class TestSuite(object):
             if outputStats:
                 execTime = "  (%6.2fms)" % (test.execTime)
             if test.result.status == TestResult.StatusType.GOOD:
-                print "  %20s:  GOOD       %-55s%s" % (test.name, statusMessageFirstLine, execTime)
+                print("  %20s:  GOOD       %-55s%s" % (test.name, statusMessageFirstLine, execTime))
             elif test.result.status == TestResult.StatusType.FAIL:
-                print "  %20s:  FAIL       %-55s%s    [GRAPH]" % (test.name, statusMessageFirstLine, execTime)
+                print("  %20s:  FAIL       %-55s%s    [GRAPH]" % (test.name, statusMessageFirstLine, execTime))
             elif test.result.status == TestResult.StatusType.WARN:
-                print "  %20s:  WARN       %-55s%s    [GRAPH]" % (test.name, statusMessageFirstLine, execTime)
+                print("  %20s:  WARN       %-55s%s    [GRAPH]" % (test.name, statusMessageFirstLine, execTime))
             elif test.result.status == TestResult.StatusType.NA:
                 # skip any that aren't relevant for this vehicle/hardware/etc
                 continue
             else:
-                print "  %20s:  UNKNOWN    %-55s%s" % (test.name, statusMessageFirstLine, execTime)
+                print("  %20s:  UNKNOWN    %-55s%s" % (test.name, statusMessageFirstLine, execTime))
             #if statusMessageExtra:
             for line in statusMessageExtra:
-                print "  %29s     %s" % ("",line)
+                print("  %29s     %s" % ("",line))
 
-        print '\n'
-        print 'The Log Analyzer is currently BETA code.\nFor any support or feedback on the log analyzer please email Andrew Chapman (amchapman@gmail.com)'
-        print '\n'
+        print('\n')
+        print('The Log Analyzer is currently BETA code.\nFor any support or feedback on the log analyzer please email Andrew Chapman (amchapman@gmail.com)')
+        print('\n')
 
     def outputXML(self, xmlFile):
         '''output test results to an XML file'''
@@ -152,60 +153,60 @@ class TestSuite(object):
 
 
         # output header info
-        print >>xml, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-        print >>xml, "<loganalysis>"
-        print >>xml, "<header>"
-        print >>xml, "  <logfile>"   + escape(self.logfile) + "</logfile>"
-        print >>xml, "  <sizekb>"    + escape(`self.logdata.filesizeKB`) + "</sizekb>"
-        print >>xml, "  <sizelines>" + escape(`self.logdata.lineCount`) + "</sizelines>"
-        print >>xml, "  <duration>"  + escape(str(datetime.timedelta(seconds=self.logdata.durationSecs))) + "</duration>"
-        print >>xml, "  <vehicletype>" + escape(self.logdata.vehicleTypeString) + "</vehicletype>"
+        xml.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+        xml.write("<loganalysis>\n")
+        xml.write("<header>\n")
+        xml.write("  <logfile>"   + escape(self.logfile) + "</logfile>\n")
+        xml.write("  <sizekb>"    + escape(repr(self.logdata.filesizeKB)) + "</sizekb>\n")
+        xml.write("  <sizelines>" + escape(repr(self.logdata.lineCount)) + "</sizelines>\n")
+        xml.write("  <duration>"  + escape(str(datetime.timedelta(seconds=self.logdata.durationSecs))) + "</duration>\n")
+        xml.write("  <vehicletype>" + escape(self.logdata.vehicleTypeString) + "</vehicletype>\n")
         if self.logdata.vehicleType == VehicleType.Copter and self.logdata.getCopterType():
-            print >>xml, "  <coptertype>"  + escape(self.logdata.getCopterType()) + "</coptertype>"
-        print >>xml, "  <firmwareversion>" + escape(self.logdata.firmwareVersion) + "</firmwareversion>"
-        print >>xml, "  <firmwarehash>" + escape(self.logdata.firmwareHash) + "</firmwarehash>"
-        print >>xml, "  <hardwaretype>" + escape(self.logdata.hardwareType) + "</hardwaretype>"
-        print >>xml, "  <freemem>" + escape(`self.logdata.freeRAM`) + "</freemem>"
-        print >>xml, "  <skippedlines>" + escape(`self.logdata.skippedLines`) + "</skippedlines>"
-        print >>xml, "</header>"
+            xml.write("  <coptertype>"  + escape(self.logdata.getCopterType()) + "</coptertype>\n")
+        xml.write("  <firmwareversion>" + escape(self.logdata.firmwareVersion) + "</firmwareversion>\n")
+        xml.write("  <firmwarehash>" + escape(self.logdata.firmwareHash) + "</firmwarehash>\n")
+        xml.write("  <hardwaretype>" + escape(self.logdata.hardwareType) + "</hardwaretype>\n")
+        xml.write("  <freemem>" + escape(repr(self.logdata.freeRAM)) + "</freemem>\n")
+        xml.write("  <skippedlines>" + escape(repr(self.logdata.skippedLines)) + "</skippedlines>\n")
+        xml.write("</header>\n")
 
         # output parameters
-        print >>xml, "<params>"
+        xml.write("<params>\n")
         for param, value in self.logdata.parameters.items():
-            print >>xml, "  <param name=\"%s\" value=\"%s\" />" % (param,escape(`value`))
-        print >>xml, "</params>"
+            xml.write("  <param name=\"%s\" value=\"%s\" />\n" % (param,escape(repr(value))))
+        xml.write("</params>\n")
 
         # output test results
-        print >>xml, "<results>"
+        xml.write("<results>\n")
         for test in self.tests:
             if not test.enable:
                 continue
-            print >>xml, "  <result>"
+            xml.write("  <result>\n")
             if test.result.status == TestResult.StatusType.GOOD:
-                print >>xml, "    <name>" + escape(test.name) + "</name>"
-                print >>xml, "    <status>GOOD</status>"
-                print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
+                xml.write("    <name>" + escape(test.name) + "</name>\n")
+                xml.write("    <status>GOOD</status>\n")
+                xml.write("    <message>" + escape(test.result.statusMessage) + "</message>\n")
             elif test.result.status == TestResult.StatusType.FAIL:
-                print >>xml, "    <name>" + escape(test.name) + "</name>"
-                print >>xml, "    <status>FAIL</status>"
-                print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
-                print >>xml, "    <data>(test data will be embedded here at some point)</data>"
+                xml.write("    <name>" + escape(test.name) + "</name>\n")
+                xml.write("    <status>FAIL</status>\n")
+                xml.write("    <message>" + escape(test.result.statusMessage) + "</message>\n")
+                xml.write("    <data>(test data will be embedded here at some point)</data>\n")
             elif test.result.status == TestResult.StatusType.WARN:
-                print >>xml, "    <name>" + escape(test.name) + "</name>"
-                print >>xml, "    <status>WARN</status>"
-                print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
-                print >>xml, "    <data>(test data will be embedded here at some point)</data>"
+                xml.write("    <name>" + escape(test.name) + "</name>\n")
+                xml.write("    <status>WARN</status>\n")
+                xml.write("    <message>" + escape(test.result.statusMessage) + "</message>\n")
+                xml.write("    <data>(test data will be embedded here at some point)</data>\n")
             elif test.result.status == TestResult.StatusType.NA:
-                print >>xml, "    <name>" + escape(test.name) + "</name>"
-                print >>xml, "    <status>NA</status>"
+                xml.write("    <name>" + escape(test.name) + "</name>\n")
+                xml.write("    <status>NA</status>\n")
             else:
-                print >>xml, "    <name>" + escape(test.name) + "</name>"
-                print >>xml, "    <status>UNKNOWN</status>"
-                print >>xml, "    <message>" + escape(test.result.statusMessage) + "</message>"
-            print >>xml, "  </result>"
-        print >>xml, "</results>"
+                xml.write("    <name>" + escape(test.name) + "</name>\n")
+                xml.write("    <status>UNKNOWN</status>\n")
+                xml.write("    <message>" + escape(test.result.statusMessage) + "</message>\n")
+            xml.write("  </result>\n")
+        xml.write("</results>\n")
 
-        print >>xml, "</loganalysis>"
+        xml.write("</loganalysis>\n")
 
         xml.close()
 
@@ -230,7 +231,7 @@ def main():
     logdata = DataflashLog.DataflashLog(args.logfile.name, format=args.format, ignoreBadlines=args.skip_bad) # read log
     endTime = time.time()
     if args.profile:
-        print "Log file read time: %.2f seconds" % (endTime-startTime)
+        print("Log file read time: %.2f seconds" % (endTime-startTime))
 
     # check for empty log if requested
     if args.empty:
@@ -245,7 +246,7 @@ def main():
     testSuite.run(logdata, args.verbose)  # run tests
     endTime = time.time()
     if args.profile:
-        print "Test suite run time: %.2f seconds" % (endTime-startTime)
+        print("Test suite run time: %.2f seconds" % (endTime-startTime))
 
     # deal with output
     if not args.quiet:
@@ -253,7 +254,7 @@ def main():
     if args.xml:
         testSuite.outputXML(args.xml)
         if not args.quiet:
-            print "XML output written to file: %s\n" % args.xml
+            print("XML output written to file: %s\n" % args.xml)
 
 
 if __name__ == "__main__":

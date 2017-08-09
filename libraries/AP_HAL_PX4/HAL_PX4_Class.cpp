@@ -59,7 +59,7 @@ static PX4::SPIDeviceManager spi_mgr_instance;
 #define UARTD_DEFAULT_DEVICE "/dev/ttyS2"
 #define UARTE_DEFAULT_DEVICE "/dev/ttyS6"
 #define UARTF_DEFAULT_DEVICE "/dev/null"
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
@@ -68,10 +68,10 @@ static PX4::SPIDeviceManager spi_mgr_instance;
 #define UARTF_DEFAULT_DEVICE "/dev/ttyS0" // wifi
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyS1" // Aero
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS2" // GPS
-#define UARTC_DEFAULT_DEVICE "/dev/ttyS4" // Telem
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS5" // GPS
+#define UARTC_DEFAULT_DEVICE "/dev/ttyS3" // Telem
 // ttyS0: ESC
-// ttyS3: RC
+// ttyS2: RC
 #define UARTD_DEFAULT_DEVICE "/dev/null"
 #define UARTE_DEFAULT_DEVICE "/dev/null"
 #define UARTF_DEFAULT_DEVICE "/dev/null"
