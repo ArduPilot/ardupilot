@@ -45,7 +45,6 @@ class ManifestGenerator():
             "Plane": "FIXED_WING",
             "AntennaTracker": "ANTENNA_TRACKER",
             "Rover": "GROUND_ROVER",
-            "PX4IO": "ARDUPILOT_PX4IO",
             "Sub": "SUBMARINE"
         }
         if frame in frame_to_mavlink_dict:
@@ -202,7 +201,7 @@ class ManifestGenerator():
         xfirmwares = dict()
 
         # used to listdir basedir here, but since this is also a web document root, there's a lot of other stuff accumulated...
-        vehicletypes = [ 'AntennaTracker', 'Copter', 'Plane', 'PX4IO', 'Rover', 'Sub' ]
+        vehicletypes = [ 'AntennaTracker', 'Copter', 'Plane', 'Rover', 'Sub' ]
         for vehicletype in vehicletypes:
             vdir = os.listdir(os.path.join(basedir, vehicletype))
             for firstlevel in vdir:

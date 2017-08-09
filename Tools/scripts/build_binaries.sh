@@ -494,7 +494,7 @@ build_ardusub() {
                 error_count=$((error_count+1))
                 continue
             }
-            cp -f $BUILDROOT/px4-$v/bin/ArduSub.px4 ArduSub-$v.px4 || {
+            cp -f $BUILDROOT/px4-$v/bin/ardusub.px4 ArduSub-$v.px4 || {
                 echo "Failed build copy of ArduSub PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
