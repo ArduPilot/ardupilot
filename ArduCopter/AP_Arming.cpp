@@ -330,62 +330,14 @@ void AP_Arming_Copter::pre_arm_rc_checks(const bool display_failure)
         return;
     }
 
-    // set rc-checks to success if RC checks are disabled
-    if ((checks_to_perform != ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_RC)) {
-        set_pre_arm_rc_check(true);
-        return;
-    }
-
     const RC_Channel *channels[] = {
         copter.channel_roll,
         copter.channel_pitch,
         copter.channel_throttle,
         copter.channel_yaw
     };
-    const char *channel_names[] = { "Roll", "Pitch", "Throttle", "Yaw" };
 
-    for (uint8_t i=0; i<ARRAY_SIZE(channels);i++) {
-        const RC_Channel *channel = channels[i];
-        const char *channel_name = channel_names[i];
-        // check if radio has been calibrated
-        if (!channel->min_max_configured()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: RC %s not configured", channel_name);
-            }
-            return;
-        }
-        if (channel->get_radio_min() > 1300) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: %s radio min too high", channel_name);
-            }
-            return;
-        }
-        if (channel->get_radio_max() < 1700) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: %s radio max too low", channel_name);
-            }
-            return;
-        }
-        if (i == 2) {
-            // skip checking trim for throttle as older code did not check it
-            continue;
-        }
-        if (channel->get_radio_trim() < channel->get_radio_min()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: %s radio trim below min", channel_name);
-            }
-            return;
-        }
-        if (channel->get_radio_trim() > channel->get_radio_max()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: %s radio trim above max", channel_name);
-            }
-            return;
-        }
-    }
-
-    // if we've gotten this far rc is ok
-    set_pre_arm_rc_check(true);
+    copter.ap.pre_arm_rc_check = rc_checks_copter_sub(display_failure, channels);
 }
 
 // performs pre_arm gps related checks and returns true if passed
