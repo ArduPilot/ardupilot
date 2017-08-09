@@ -340,13 +340,6 @@
 #define HAL_GPIO_C_LED_PIN        16
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_URUS
-#define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
-// Stub the sensors out for now, at least we can build and run
-#define HAL_INS_DEFAULT HAL_INS_HIL
-#define HAL_BARO_DEFAULT HAL_BARO_HIL
-#define HAL_COMPASS_DEFAULT HAL_COMPASS_HIL
 #else
 #error "no Linux board subtype set"
 #endif
