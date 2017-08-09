@@ -200,6 +200,21 @@ def run_step(step):
     if step == "prerequisites":
         return test_prerequisites()
 
+    if step == 'build.All':
+        return build_all()
+
+    if step == 'build.Binaries':
+        return build_binaries()
+
+    if step == 'build.DevRelease':
+        return build_devrelease()
+
+    if step == 'build.Examples':
+        return build_examples()
+
+    if step == 'build.Parameters':
+        return build_parameters()
+
     if step == 'build.ArduPlane':
         return util.build_SITL('bin/arduplane', j=opts.j, debug=opts.debug)
 
@@ -220,17 +235,9 @@ def run_step(step):
 
     binary = binary_path(step, debug=opts.debug)
 
-    if step == 'defaults.ArduPlane':
-        return get_default_params('ArduPlane', binary)
-
-    if step == 'defaults.ArduCopter':
-        return get_default_params('ArduCopter', binary)
-
-    if step == 'defaults.APMrover2':
-        return get_default_params('APMrover2', binary)
-    
-    if step == 'defaults.ArduSub':
-        return get_default_params('ArduSub', binary)
+    if step.startswith("default"):
+        vehicle = step[8:]
+        return get_default_params(vehicle, binary)
 
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
@@ -249,21 +256,6 @@ def run_step(step):
     
     if step == 'dive.ArduSub':
         return ardusub.dive_ArduSub(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
-
-    if step == 'build.All':
-        return build_all()
-
-    if step == 'build.Binaries':
-        return build_binaries()
-
-    if step == 'build.DevRelease':
-        return build_devrelease()
-
-    if step == 'build.Examples':
-        return build_examples()
-
-    if step == 'build.Parameters':
-        return build_parameters()
 
     if step == 'convertgpx':
         return convert_gpx()
