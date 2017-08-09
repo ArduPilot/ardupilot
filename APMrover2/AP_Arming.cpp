@@ -20,33 +20,23 @@ bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
         const char *channel_name = channel_names[i];
         // check if radio has been calibrated
         if (!channel->min_max_configured()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: RC %s not configured", channel_name);
-            }
+            check_failed(ARMING_CHECK_RC, display_failure, "RC %s not configured", channel_name);
             return false;
         }
         if (channel->get_radio_min() > 1300) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s radio min too high", channel_name);
-            }
+            check_failed(ARMING_CHECK_RC, display_failure, "%s radio min too high", channel_name);
             return false;
         }
         if (channel->get_radio_max() < 1700) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s radio max too low", channel_name);
-            }
+            check_failed(ARMING_CHECK_RC, display_failure, "%s radio max too low", channel_name);
             return false;
         }
         if (channel->get_radio_trim() < channel->get_radio_min()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s radio trim below min", channel_name);
-            }
+            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim below min", channel_name);
             return false;
         }
         if (channel->get_radio_trim() > channel->get_radio_max()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s radio trim above max", channel_name);
-            }
+            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim above max", channel_name);
             return false;
         }
     }
