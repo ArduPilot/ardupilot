@@ -1,15 +1,16 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder_I2C.h"
 #include <AP_HAL/I2CDevice.h>
 
-class AP_RangeFinder_VL53L0X : public AP_RangeFinder_Backend
+class AP_RangeFinder_VL53L0X : public AP_RangeFinder_I2C
 {
+    using AP_RangeFinder_I2C::AP_RangeFinder_I2C;
 
 public:
+
     // static detection function
-    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state);
 
     // update state
     void update(void);
@@ -20,9 +21,10 @@ protected:
         return MAV_DISTANCE_SENSOR_LASER;
     }
 
+    uint8_t addr() const override { return 0x29; }
+    bool probe() override;
+
 private:
-    // constructor
-    AP_RangeFinder_VL53L0X(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     void init();
     void timer();

@@ -211,43 +211,37 @@ const AP_RangeFinder_VL53L0X::RegData AP_RangeFinder_VL53L0X::tuning_data[] =
     { 0x80, 0x00 },
 };
 
-/*
-   The constructor also initializes the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
-AP_RangeFinder_VL53L0X::AP_RangeFinder_VL53L0X(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
-    : AP_RangeFinder_Backend(_state)
-    , dev(std::move(_dev)) {}
-
 
 /*
-   detect if a VL53L0X rangefinder is connected. We'll detect by
-   trying to take a reading on I2C. If we get a result the sensor is
-   there.
+   detect if a VL53L0X rangefinder is connected.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_VL53L0X::detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+AP_RangeFinder_Backend *AP_RangeFinder_VL53L0X::detect(RangeFinder::RangeFinder_State &_state)
 {
-    AP_RangeFinder_VL53L0X *sensor
-        = new AP_RangeFinder_VL53L0X(_state, std::move(dev));
-
+    AP_RangeFinder_VL53L0X *sensor = new AP_RangeFinder_VL53L0X(_state);
     if (!sensor) {
-        delete sensor;
         return nullptr;
     }
 
-    if (sensor->dev->get_semaphore()->take(0)) {
-        if (!sensor->check_id()) {
-            sensor->dev->get_semaphore()->give();
-            delete sensor;
-            return nullptr;
-        }
-        sensor->dev->get_semaphore()->give();
+    if (!sensor->probe_buses()) {
+        delete sensor;
+        return nullptr;
     }
-
-    sensor->init();
-
     return sensor;
+}
+
+// returns true if the device is present
+bool AP_RangeFinder_VL53L0X::probe()
+{
+    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
+    if (!check_id()) {
+        dev->get_semaphore()->give();
+        return false;
+    }
+    dev->get_semaphore()->give();
+    init();
+    return true;
 }
 
 // check sensor ID registers
