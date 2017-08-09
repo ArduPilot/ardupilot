@@ -230,7 +230,7 @@ __step_table = {
     'convertgpx': convert_gpx
 }
 
-def run_step(step, opts):
+def run_step(step):
     """Run one step."""
 
     # remove old logs
@@ -395,7 +395,7 @@ def check_logs(step):
         os.rename(corefile, newname)
         util.run_cmd('/bin/cp A*/A*.elf ../buildlogs', directory=util.reltopdir('.'))
 
-def run_tests(steps, opts):
+def run_tests(steps):
     """Run a list of steps."""
     global results
 
@@ -522,7 +522,7 @@ if __name__ == "__main__":
     results = TestResults()
 
     try:
-        if not run_tests(matched, opts):
+        if not run_tests(matched):
             sys.exit(1)
     except KeyboardInterrupt:
         util.pexpect_close_all()
