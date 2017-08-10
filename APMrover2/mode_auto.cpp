@@ -54,8 +54,7 @@ void ModeAuto::update()
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true);
             } else {
                 // we have reached the destination so stop
-                g2.motors.set_throttle(g.throttle_min.get());
-                g2.motors.set_steering(0.0f);
+                stop_vehicle();
                 lateral_acceleration = 0.0f;
             }
             break;
@@ -72,8 +71,7 @@ void ModeAuto::update()
                 // check if we have reached target
                 _reached_heading = (fabsf(yaw_error) < radians(5));
             } else {
-                g2.motors.set_throttle(g.throttle_min.get());
-                g2.motors.set_steering(0.0f);
+                stop_vehicle();
             }
             break;
         }
@@ -178,11 +176,7 @@ void ModeAuto::calc_throttle(float target_speed, bool nudge_allowed)
 {
     // If not autostarting set the throttle to minimum
     if (!check_trigger()) {
-        g2.motors.set_throttle(g.throttle_min.get());
-        // Stop rotation in case of loitering and skid steering
-        if (g2.motors.have_skid_steering()) {
-            g2.motors.set_steering(0.0f);
-        }
+        stop_vehicle();
         return;
     }
     Mode::calc_throttle(target_speed, nudge_allowed);

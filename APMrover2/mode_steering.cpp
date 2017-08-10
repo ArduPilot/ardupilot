@@ -9,7 +9,7 @@ void ModeSteering::update()
     // get speed forward
     float speed;
     if (!attitude_control.get_forward_speed(speed)) {
-        // no valid speed so so stop
+        // no valid speed so stop
         g2.motors.set_throttle(g.throttle_min.get());
         g2.motors.set_steering(0.0f);
         lateral_acceleration = 0.0f;
@@ -37,9 +37,12 @@ void ModeSteering::update()
     // mark us as in_reverse when using a negative throttle
     rover.set_reverse(reversed);
 
-    // run steering controller
-    calc_nav_steer(reversed);
-
     // run speed to throttle output controller
-    calc_throttle(target_speed, false);
+    if (is_zero(target_speed)) {
+        stop_vehicle();
+    } else {
+        // run steering controller
+        calc_nav_steer(reversed);
+        calc_throttle(target_speed, false);
+    }
 }
