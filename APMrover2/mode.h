@@ -4,6 +4,8 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>  // for MAV_SEVERITY
 #include "defines.h"
 
+#define MODE_NEXT_HEADING_UNKNOWN   99999.0f    // used to indicate to set_desired_location method that next leg's heading is unknown
+
 class Mode
 {
 public:
@@ -62,7 +64,9 @@ public:
     virtual float get_distance_to_destination() const { return 0.0f; }
 
     // set desired location and speed (used in RTL, Guided, Auto)
-    virtual void set_desired_location(const struct Location& destination);
+    //   next_leg_bearing_cd should be heading to the following waypoint (used to slow the vehicle in order to make the turn)
+    virtual void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN);
+
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() { return true; }
 
@@ -126,6 +130,7 @@ protected:
     float _desired_yaw_cd;      // desired yaw in centi-degrees
     float _yaw_error_cd;        // error between desired yaw and actual yaw in centi-degrees
     float _desired_speed;       // desired speed in m/s
+    float _desired_speed_final; // desired speed in m/s when we reach the destination
     float _speed_error;         // ground speed error in m/s
 };
 
@@ -149,7 +154,7 @@ public:
 
     // set desired location, heading and speed
     // set stay_active_at_dest if the vehicle should attempt to maintain it's position at the destination (mostly for boats)
-    void set_desired_location(const struct Location& destination, bool stay_active_at_dest);
+    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN, bool stay_active_at_dest = false);
     bool reached_destination() override;
 
     // heading and speed control
@@ -199,7 +204,7 @@ public:
     float get_distance_to_destination() const override;
 
     // set desired location, heading and speed
-    void set_desired_location(const struct Location& destination) override;
+    void set_desired_location(const struct Location& destination);
     void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
 
     // set desired heading-delta, turn-rate and speed

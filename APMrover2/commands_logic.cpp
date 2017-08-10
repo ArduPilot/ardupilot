@@ -22,9 +22,6 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 
     gcs().send_text(MAV_SEVERITY_INFO, "Executing command ID #%i", cmd.id);
 
-    // remember the course of our next navigation leg
-    next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
-
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
         do_nav_wp(cmd, false);
@@ -228,9 +225,17 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_a
     // this is the delay, stored in seconds
     loiter_duration = cmd.p1;
 
+    // get heading to following waypoint (auto mode reduces speed to allowing corning without large overshoot)
+    // in case of non-zero loiter duration, we provide heading-unknown to signal we should stop at the point
+    float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN;
+    if (loiter_duration == 0) {
+    	next_leg_bearing_cd = mission.get_next_ground_course_cd(MODE_NEXT_HEADING_UNKNOWN);
+    }
+
+    // retrieve and sanitize target location
     Location cmdloc = cmd.content.location;
     location_sanitize(current_loc, cmdloc);
-    mode_auto.set_desired_location(cmdloc, stay_active_at_dest);
+    mode_auto.set_desired_location(cmdloc, next_leg_bearing_cd, stay_active_at_dest);
 }
 
 void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
