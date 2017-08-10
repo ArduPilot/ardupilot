@@ -472,15 +472,15 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS_", AP_GPS),
 
-    #if AP_AHRS_NAVEKF_AVAILABLE
-        // @Group: EK2_
-        // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
-        GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
+#if AP_AHRS_NAVEKF_AVAILABLE
+    // @Group: EK2_
+    // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
+    GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
 
-        // @Group: EK3_
-        // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
-        GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
-    #endif
+    // @Group: EK3_
+    // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
+    GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
+#endif
 
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
