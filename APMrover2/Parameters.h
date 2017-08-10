@@ -168,6 +168,7 @@ public:
         k_param_command_total = 220,    // unused
         k_param_command_index,          // unused
         k_param_waypoint_radius,
+        k_param_waypoint_overshoot,
 
         //
         // 230: camera control
@@ -271,6 +272,7 @@ public:
     // Waypoints
     //
     AP_Float    waypoint_radius;
+    AP_Float    waypoint_overshoot;
 
     Parameters() {}
 };

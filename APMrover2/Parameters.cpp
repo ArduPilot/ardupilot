@@ -314,6 +314,15 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(waypoint_radius,        "WP_RADIUS",        2.0f),
 
+    // @Param: WP_OVERSHOOT
+    // @DisplayName: Waypoint overshoot maximum
+    // @Description: Waypoint overshoot maximum in meters.  The vehicle will attempt to stay within this many meters of the track as it completes one waypoint and moves to the next.
+    // @Units: m
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Standard
+    GSCALAR(waypoint_overshoot,     "WP_OVERSHOOT", 2.0f),
+
     // @Param: TURN_MAX_G
     // @DisplayName: Turning maximum G force
     // @Description: The maximum turning acceleration (in units of gravities) that the rover can handle while remaining stable. The navigation code will keep the lateral acceleration below this level to avoid rolling over or slipping the wheels in turns
