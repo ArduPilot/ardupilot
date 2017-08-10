@@ -35,8 +35,7 @@ void ModeRTL::update()
         calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true);
     } else {
         // we've reached destination so stop
-        g2.motors.set_throttle(g.throttle_min.get());
-        g2.motors.set_steering(0.0f);
+        stop_vehicle();
         lateral_acceleration = 0.0f;
     }
 }

@@ -82,6 +82,27 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed)
     }
 }
 
+// performs a controlled stop with steering centered
+bool Mode::stop_vehicle()
+{
+    // call throttle controller and convert output to -100 to +100 range
+    bool stopped = false;
+    float throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.have_skid_steering(), g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise / 100.0f, stopped);
+
+    // apply limits on throttle
+    if (is_negative(throttle_out)) {
+        g2.motors.set_throttle(constrain_float(throttle_out, -g.throttle_max, -g.throttle_min));
+    } else {
+        g2.motors.set_throttle(constrain_float(throttle_out, g.throttle_min, g.throttle_max));
+    }
+
+    // do not attempt to steer
+    g2.motors.set_steering(0.0f);
+
+    // return true once stopped
+    return stopped;
+}
+
 // estimate maximum vehicle speed (in m/s)
 float Mode::calc_speed_max(float cruise_speed, float cruise_throttle)
 {

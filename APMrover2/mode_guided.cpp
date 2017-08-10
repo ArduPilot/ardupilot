@@ -30,15 +30,12 @@ void ModeGuided::update()
                     _reached_destination = true;
                     rover.gcs().send_mission_item_reached_message(0);
                 }
-                // continue driving towards destination
+                // drive towards destination
                 calc_lateral_acceleration(_origin, _destination);
                 calc_nav_steer();
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true);
             } else {
-                // we've reached destination so stop
-                g2.motors.set_throttle(g.throttle_min.get());
-                g2.motors.set_steering(0.0f);
-                lateral_acceleration = 0.0f;
+                stop_vehicle();
             }
             break;
         }
@@ -57,7 +54,7 @@ void ModeGuided::update()
                 g2.motors.set_steering(steering_out * 4500.0f);
                 calc_throttle(_desired_speed, true);
             } else {
-                g2.motors.set_throttle(g.throttle_min.get());
+                stop_vehicle();
                 g2.motors.set_steering(0.0f);
             }
             break;
@@ -76,7 +73,7 @@ void ModeGuided::update()
                 g2.motors.set_steering(steering_out * 4500.0f);
                 calc_throttle(_desired_speed, true);
             } else {
-                g2.motors.set_throttle(g.throttle_min.get());
+                stop_vehicle();
                 g2.motors.set_steering(0.0f);
             }
             break;

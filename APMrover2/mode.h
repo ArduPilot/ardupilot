@@ -98,6 +98,9 @@ protected:
     // on things like proximity to corners and current speed
     virtual void calc_throttle(float target_speed, bool nudge_allowed = true);
 
+    // performs a controlled stop. returns true once vehicle has stopped
+    bool stop_vehicle();
+
     // estimate maximum vehicle speed (in m/s)
     float calc_speed_max(float cruise_speed, float cruise_throttle);
 
