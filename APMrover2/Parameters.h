@@ -326,6 +326,9 @@ public:
 
     // steering and throttle controller
     AR_AttitudeControl attitude_control;
+
+    // turn radius of vehicle (only used in steering mode)
+    AP_Float turn_radius;
 };
 
 extern const AP_Param::Info var_info[];

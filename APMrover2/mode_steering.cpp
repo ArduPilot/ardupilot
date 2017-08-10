@@ -12,7 +12,7 @@ void ModeSteering::update()
     // acceleration at full steering lock for this speed. That is V^2/R where R is the radius of turn.
     // We get the radius of turn from half the STEER2SRV_P.
     const float ground_speed = rover.ground_speed;
-    float max_g_force = ground_speed * ground_speed / rover.steerController.get_turn_radius();
+    float max_g_force = ground_speed * ground_speed / MAX(g2.turn_radius, 0.1f);
 
     // constrain to user set TURN_MAX_G
     max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
