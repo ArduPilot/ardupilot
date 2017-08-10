@@ -532,6 +532,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/APM_Control/AR_AttitudeControl.cpp
     AP_SUBGROUPINFO(attitude_control, "ATC", 10, ParametersG2, AR_AttitudeControl),
 
+    // @Param: TURN_RADIUS
+    // @DisplayName: Turn radius of vehicle
+    // @Description: Turn radius of vehicle in meters while at low speeds.  Lower values produce tighter turns in steering mode
+    // @Units: m
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TURN_RADIUS", 11, ParametersG2, turn_radius, 0.9),
+
     AP_GROUPEND
 };
 
