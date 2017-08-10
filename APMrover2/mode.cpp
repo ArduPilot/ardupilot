@@ -118,10 +118,10 @@ float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
     yaw_error_ratio *= (100 - g.speed_turn_gain) * 0.01f;
 
     // calculate absolute lateral acceleration expressed as a ratio (from 0 ~ 1) of the vehicle's maximum lateral acceleration
-    float lateral_accel_ratio = constrain_float(fabsf(target_lateral_accel_G / (g.turn_max_g * GRAVITY_MSS)), 0.0f, 1.0f);
+    const float lateral_accel_ratio = constrain_float(fabsf(target_lateral_accel_G / (g.turn_max_g * GRAVITY_MSS)), 0.0f, 1.0f);
 
     // calculate a lateral acceleration based speed scaling
-    float lateral_accel_speed_scaling = 1.0f - lateral_accel_ratio * yaw_error_ratio;
+    const float lateral_accel_speed_scaling = 1.0f - lateral_accel_ratio * yaw_error_ratio;
 
     // calculate a pivot steering based speed scaling (default to no reduction)
     float pivot_speed_scaling = 1.0f;
