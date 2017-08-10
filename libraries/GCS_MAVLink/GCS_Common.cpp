@@ -1685,14 +1685,24 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
     if (df == nullptr) {
         return;
     }
-    // ignore any statustext messages not from our GCS:
-    if (msg->sysid != sysid_my_gcs()) {
-        return;
-    }
+
     mavlink_statustext_t packet;
     mavlink_msg_statustext_decode(msg, &packet);
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+4] = { 'G','C','S',':'};
-    memcpy(&text[4], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
+    const uint8_t max_prefix_len = 20;
+    const uint8_t text_len = MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+max_prefix_len;
+    char text[text_len] = { 'G','C','S',':'};
+    uint8_t offset = strlen(text);
+
+    if (msg->sysid != sysid_my_gcs()) {
+        offset = hal.util->snprintf(text,
+                                    max_prefix_len,
+                                    "SRC=%u/%u:",
+                                    msg->sysid,
+                                    msg->compid);
+    }
+
+    memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
+
     df->Log_Write_Message(text);
 }
 
