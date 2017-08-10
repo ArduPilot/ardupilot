@@ -259,9 +259,6 @@ private:
     // true if we have a position estimate from AHRS
     bool have_position;
 
-    // angle of our next navigation waypoint
-    int32_t next_navigation_leg_cd;
-
     // receiver RSSI
     uint8_t receiver_rssi;
 

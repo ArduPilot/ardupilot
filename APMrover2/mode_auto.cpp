@@ -10,7 +10,7 @@ bool ModeAuto::_enter()
     }
 
     // init location target
-    set_desired_location(rover.current_loc, false);
+    set_desired_location(rover.current_loc);
 
     // other initialisation
     auto_triggered = false;
@@ -81,10 +81,10 @@ void ModeAuto::update()
 }
 
 // set desired location to drive to
-void ModeAuto::set_desired_location(const struct Location& destination, bool stay_active_at_dest)
+void ModeAuto::set_desired_location(const struct Location& destination, float next_leg_bearing_cd, bool stay_active_at_dest)
 {
     // call parent
-    Mode::set_desired_location(destination);
+    Mode::set_desired_location(destination, next_leg_bearing_cd);
 
     _submode = Auto_WP;
     _stay_active_at_dest = stay_active_at_dest;

@@ -26,7 +26,7 @@ bool Mode::enter()
 }
 
 // set desired location
-void Mode::set_desired_location(const struct Location& destination)
+void Mode::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
     // record targets
     _origin = rover.current_loc;
@@ -36,6 +36,21 @@ void Mode::set_desired_location(const struct Location& destination)
     // initialise distance
     _distance_to_destination = get_distance(_origin, _destination);
     _reached_destination = false;
+
+    // set final desired speed
+    _desired_speed_final = 0.0f;
+    if (!is_equal(next_leg_bearing_cd, MODE_NEXT_HEADING_UNKNOWN)) {
+        // if not turning can continue at full speed
+        if (is_zero(next_leg_bearing_cd)) {
+            _desired_speed_final = _desired_speed;
+        } else {
+            // calculate maximum speed that keeps overshoot within bounds
+            const float curr_leg_bearing_cd = get_bearing_cd(_origin, _destination);
+            const float turn_angle_cd = wrap_180_cd(next_leg_bearing_cd - curr_leg_bearing_cd);
+            const float radius_m = fabsf(g.waypoint_overshoot / (cosf(radians(turn_angle_cd * 0.01f)) - 1.0f));
+            _desired_speed_final = MIN(_desired_speed, safe_sqrt(g.turn_max_g * GRAVITY_MSS * radius_m));
+        }
+    }
 }
 
 // set desired heading and speed
@@ -148,14 +163,17 @@ float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
         pivot_speed_scaling = 0.0f;
     }
 
-    // calculate a waypoint distance based scaling (default to no reduction)
-    float distance_speed_scaling = 1.0f;
-    if (is_positive(distance_to_waypoint)) {
-        distance_speed_scaling = 1.0f - yaw_error_ratio;
+    // scaled speed
+    float speed_scaled = desired_speed * MIN(lateral_accel_speed_scaling, pivot_speed_scaling);
+
+    // limit speed based on distance to waypoint and max acceleration/deceleration
+    if (is_positive(distance_to_waypoint) && is_positive(attitude_control.get_accel_max())) {
+        const float speed_max = safe_sqrt(2.0f * distance_to_waypoint * attitude_control.get_accel_max() + sq(_desired_speed_final));
+        speed_scaled = constrain_float(speed_scaled, -speed_max, speed_max);
     }
 
     // return minimum speed
-    return desired_speed * MIN(MIN(lateral_accel_speed_scaling, distance_speed_scaling), pivot_speed_scaling);
+    return speed_scaled;
 }
 
 // calculate the lateral acceleration target to cause the vehicle to drive along the path from origin to destination
