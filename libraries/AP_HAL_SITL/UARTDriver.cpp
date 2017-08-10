@@ -67,6 +67,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
              tcp:0:wait       // tcp listen on use base_port + 0
              tcpclient:192.168.2.15:5762
              uart:/dev/ttyUSB0:57600
+             sim:ParticleSensor_SDS021:
          */
         char *saveptr = nullptr;
         char *s = strdup(path);
@@ -89,6 +90,12 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _uart_path = strdup(args1);
             _uart_baudrate = baudrate;
             _uart_start_connection();
+        } else if (strcmp(devtype, "sim") == 0) {
+            ::printf("SIM connection %s:%s\n", args1, args2);
+            if (!_connected) {
+                _connected = true;
+                _fd = _sitlState->sim_fd(args1, args2);
+            }
         } else {
             AP_HAL::panic("Invalid device path: %s", path);
         }

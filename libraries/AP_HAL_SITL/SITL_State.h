@@ -52,6 +52,10 @@ public:
         return _base_port;
     }
 
+    // create a file desciptor attached to a virtual device; type of
+    // device is given by name parameter
+    int sim_fd(const char *name, const char *arg);
+
     bool use_rtscts(void) const {
         return _use_rtscts;
     }
