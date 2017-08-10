@@ -191,6 +191,12 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     }
 }
 
+#define streq(a, b) (!strcmp(a, b))
+int SITL_State::sim_fd(const char *name, const char *arg)
+{
+    AP_HAL::panic("unknown simulated device: %s", name);
+}
+
 #ifndef HIL_MODE
 /*
   check for a SITL RC input packet
