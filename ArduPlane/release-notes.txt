@@ -1,4 +1,4 @@
-Release 3.8.0, 2nd August 2017
+Release 3.8.0, 5th August 2017
 ------------------------------
 
 The ArduPilot development team is very proud to announce the release
@@ -11,7 +11,7 @@ versions of the code.
 To help with migration from the 3.7.1 release to 3.8.0 there is a
 migration guide here:
 
-  http://plane.ardupilot.com/wiki/plane-3-7-to-3-8-migration.html
+  http://ardupilot.org/plane/docs/plane-3-7-to-3-8-migration.html
 
 All users should read the migration guide carefully. While the
 firmware will try to auto-migrate most settings, please do very
