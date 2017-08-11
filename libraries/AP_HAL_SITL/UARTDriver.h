@@ -38,6 +38,10 @@ public:
 
     void set_blocking_writes(bool blocking)
     {
+        if (_claimed) {
+            return;
+        }
+
         _nonblocking_writes = !blocking;
     }
 
@@ -60,7 +64,9 @@ public:
     enum flow_control get_flow_control(void) { return FLOW_CONTROL_ENABLE; }
 
     void _timer_tick(void);
-    
+
+    int claim();
+
 private:
     uint8_t _portNumber;
     bool _connected = false; // true if a client has connected
@@ -88,6 +94,7 @@ private:
 
     SITL_State *_sitlState;
 
+    bool _claimed;
 };
 
 #endif

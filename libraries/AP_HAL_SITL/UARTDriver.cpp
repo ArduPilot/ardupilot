@@ -47,8 +47,22 @@ bool UARTDriver::_console;
 
 /* UARTDriver method implementations */
 
+int UARTDriver::claim()
+{
+    if (!_claimed && _fd > 0) {
+        _claimed = true;
+        return _fd;
+    }
+
+    return -1;
+}
+
 void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
+    if (_claimed) {
+        return;
+    }
+
     const char *path = _sitlState->_uart_path[_portNumber];
 
     if (strcmp(path, "GPS1") == 0) {
@@ -103,6 +117,10 @@ void UARTDriver::end()
 
 uint32_t UARTDriver::available(void)
 {
+    if (_claimed) {
+        return 0;
+    }
+
     _check_connection();
 
     if (!_connected) {
@@ -114,6 +132,10 @@ uint32_t UARTDriver::available(void)
 
 uint32_t UARTDriver::txspace(void)
 {
+    if (_claimed) {
+        return 0;
+    }
+
     _check_connection();
     if (!_connected) {
         return 0;
@@ -123,6 +145,10 @@ uint32_t UARTDriver::txspace(void)
 
 int16_t UARTDriver::read(void)
 {
+    if (_claimed) {
+        return -1;
+    }
+
     if (available() <= 0) {
         return -1;
     }
@@ -137,6 +163,10 @@ void UARTDriver::flush(void)
 
 size_t UARTDriver::write(uint8_t c)
 {
+    if (_claimed) {
+        return 0;
+    }
+
     if (txspace() <= 0) {
         return 0;
     }
@@ -146,6 +176,10 @@ size_t UARTDriver::write(uint8_t c)
 
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
+    if (_claimed) {
+        return 0;
+    }
+
     if (txspace() <= (ssize_t)size) {
         size = txspace();
     }
@@ -404,6 +438,10 @@ void UARTDriver::_check_reconnect(void)
 
 void UARTDriver::_timer_tick(void)
 {
+    if (_claimed) {
+        return;
+    }
+
     if (!_connected) {
         _check_reconnect();
         return;
