@@ -963,7 +963,6 @@ private:
     void startup_ground(void);
     enum FlightMode get_previous_mode();
     void set_mode(enum FlightMode mode, mode_reason_t reason);
-    bool mavlink_set_mode(uint8_t mode);
     void exit_mode(enum FlightMode mode);
     void check_long_failsafe();
     void check_short_failsafe();
