@@ -891,6 +891,10 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 
+    // @Group: SAFERTL__
+    // @Path: ../libraries/AC_SafeRTL/AC_SafeRTL.cpp
+    GOBJECT(safe_rtl_path, "SAFERTL_", SafeRTL_Path),
+
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),

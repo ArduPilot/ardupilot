@@ -132,12 +132,16 @@ void Copter::safe_rtl_pre_land_position_run()
 *   This method might take longer than 1ms. It should be run as often as possible,
 *   ideally not in the main loop.
 */
-void Copter::safe_rtl_background_cleanup()
+void Copter::safe_rtl_background_detect_simplifications()
 {
-    if (!safe_rtl_path.is_active()) {
-        return;
-    }
-
     safe_rtl_path.detect_simplifications();
+}
+
+/**
+*   This method might take longer than 1ms. It should be run as often as possible,
+*   ideally not in the main loop.
+*/
+void Copter::safe_rtl_background_detect_loops()
+{
     safe_rtl_path.detect_loops();
 }

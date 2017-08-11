@@ -368,6 +368,8 @@ public:
 
         // 254,255: reserved
 
+        k_param_safe_rtl_path = 256, // SafeRTL
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };

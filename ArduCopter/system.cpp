@@ -293,7 +293,8 @@ void Copter::init_ardupilot()
     mission.init();
 
     // initialize SafeRTL cleanup methods
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&Copter::safe_rtl_background_cleanup, void));
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&Copter::safe_rtl_background_detect_simplifications, void));
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&Copter::safe_rtl_background_detect_loops, void));
 
     // initialise DataFlash library
     DataFlash.set_mission(&mission);

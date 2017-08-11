@@ -954,7 +954,8 @@ private:
     void safe_rtl_path_follow_run();
     void safe_rtl_pre_land_position_run();
     void safe_rtl_land();
-    void safe_rtl_background_cleanup();
+    void safe_rtl_background_detect_simplifications();
+    void safe_rtl_background_detect_loops();
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);
