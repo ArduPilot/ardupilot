@@ -51,4 +51,10 @@ public:
      */
     void printf(const char *s, ...) FMT_PRINTF(2, 3);
     void vprintf(const char *s, va_list ap);
+
+    /* Allows someone to claim the raw UART. For current cases this corresponds
+     * to the file descriptor.
+     * NOTE: Implemented here aa all instances may not support this.
+     */
+    virtual int claim() { return -1; }
 };
