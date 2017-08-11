@@ -58,15 +58,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
 
-#if CLI_ENABLED == ENABLED
-    // @Param: CLI_ENABLED
-    // @DisplayName: CLI Enable
-    // @Description: This enables/disables the checking for three carriage returns on telemetry links on startup to enter the diagnostics command line interface
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    GSCALAR(cli_enabled,    "CLI_ENABLED",    0),
-#endif
-
     // @Param: PILOT_THR_FILT
     // @DisplayName: Throttle filter cutoff
     // @Description: Throttle filter cutoff (Hz) - active whenever altitude control is inactive - 0 to disable
@@ -1064,7 +1055,7 @@ const AP_Param::ConversionInfo conversion_table[] = {
 void Copter::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf("Bad var table\n");
+        hal.console->printf("Bad var table\n");
         AP_HAL::panic("Bad var table");
     }
 
@@ -1076,19 +1067,19 @@ void Copter::load_parameters(void)
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->printf("Firmware change: erasing EEPROM...\n");
+        hal.console->printf("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        cliSerial->printf("done.\n");
+        hal.console->printf("done.\n");
     }
 
     uint32_t before = micros();
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all(false);
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
-    cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
+    hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
