@@ -30,7 +30,6 @@
 // Common dependencies
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
-#include <AP_Menu/AP_Menu.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 
@@ -167,10 +166,6 @@ private:
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
 
-
-    // cliSerial isn't strictly necessary - it is an alias for hal.console. It may
-    // be deprecated in favor of hal.console in later releases.
-    AP_HAL::BetterStream* cliSerial;
 
     // Global parameters are all contained within the 'g' class.
     Parameters g;
@@ -720,7 +715,6 @@ private:
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
-    void do_erase_logs(void);
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
     void Log_Write_Current();
@@ -751,7 +745,6 @@ private:
     void Log_Write_Proximity();
     void Log_Write_Beacon();
     void Log_Write_Vehicle_Startup_Messages();
-    void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void load_parameters(void);
     void convert_pid_parameters(void);
     void userhook_init();
@@ -1058,16 +1051,6 @@ private:
     void terrain_update();
     void terrain_logging();
     bool terrain_use();
-    void report_batt_monitor();
-    void report_frame();
-    void report_radio();
-    void report_ins();
-    void report_flight_modes();
-    void report_optflow();
-    void print_radio_values();
-    void print_switch(uint8_t p, uint8_t m, bool b);
-    void print_accel_offsets_and_scaling(void);
-    void print_gyro_offsets(void);
     void report_compass();
     void print_blanks(int16_t num);
     void print_divider(void);
@@ -1149,9 +1132,7 @@ private:
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
     void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
-    void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void log_init(void);
-    void run_cli(AP_HAL::UARTDriver *port);
     void init_capabilities(void);
     void dataflash_periodic(void);
     void accel_cal_update(void);
@@ -1159,32 +1140,7 @@ private:
 public:
     void mavlink_delay_cb();
     void failsafe_check();
-    int8_t dump_log(uint8_t argc, const Menu::arg *argv);
-    int8_t erase_logs(uint8_t argc, const Menu::arg *argv);
-    int8_t select_logs(uint8_t argc, const Menu::arg *argv);
-    bool print_log_menu(void);
-
-    int8_t process_logs(uint8_t argc, const Menu::arg *argv);
-    int8_t main_menu_help(uint8_t, const Menu::arg*);
-    int8_t setup_mode(uint8_t argc, const Menu::arg *argv);
-    int8_t setup_factory(uint8_t argc, const Menu::arg *argv);
-    int8_t setup_set(uint8_t argc, const Menu::arg *argv);
-    int8_t setup_show(uint8_t argc, const Menu::arg *argv);
-    int8_t esc_calib(uint8_t argc, const Menu::arg *argv);
-
-    int8_t test_mode(uint8_t argc, const Menu::arg *argv);
-    int8_t test_baro(uint8_t argc, const Menu::arg *argv);
-    int8_t test_compass(uint8_t argc, const Menu::arg *argv);
-    int8_t test_ins(uint8_t argc, const Menu::arg *argv);
-    int8_t test_optflow(uint8_t argc, const Menu::arg *argv);
-    int8_t test_relay(uint8_t argc, const Menu::arg *argv);
-    int8_t test_shell(uint8_t argc, const Menu::arg *argv);
-    int8_t test_rangefinder(uint8_t argc, const Menu::arg *argv);
-
-    int8_t reboot_board(uint8_t argc, const Menu::arg *argv);
 };
-
-#define MENU_FUNC(func) FUNCTOR_BIND(&copter, &Copter::func, int8_t, uint8_t, const Menu::arg *)
 
 extern const AP_HAL::HAL& hal;
 extern Copter copter;
