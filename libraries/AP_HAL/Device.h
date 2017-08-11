@@ -30,7 +30,8 @@ public:
         BUS_TYPE_UNKNOWN = 0,
         BUS_TYPE_I2C     = 1,
         BUS_TYPE_SPI     = 2,
-        BUS_TYPE_UAVCAN  = 3
+        BUS_TYPE_UAVCAN  = 3,
+        BUS_TYPE_SENSORHUB = 4,
     };
 
     enum Speed {
