@@ -13,6 +13,24 @@
 
 #include "AC_SafeRTL.h"
 
+const AP_Param::GroupInfo SafeRTL_Path::var_info[] = {
+    // @Param: ACCURACY
+    // @DisplayName: The accuracy to use for SafeRTL
+    // @Description: The distance flown (in meters) before a new point is dropped.
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("ACCURACY", 0, SafeRTL_Path, accuracy, SAFERTL_ACCURACY_DEFAULT),
+
+    // @Param: desired_path_len
+    // @DisplayName: SafeRTL Path Length
+    // @Description: The maximum number of points set by SafeRTL. 0 to disable SafeRTL.
+    // @Range: 0 500
+    // @User: Advanced
+    AP_GROUPINFO("PATH_LEN", 1, SafeRTL_Path, desired_path_len, SAFERTL_PATH_LEN_DEFAULT),
+
+    AP_GROUPEND
+};
+
 /*
 *    This library is used for Copter's Safe Return-to-Launch feature. It stores
 *    "breadcrumbs" in memory, up to a certain number  of breadcrumbs have been stored,
@@ -39,13 +57,14 @@
 */
 
 SafeRTL_Path::SafeRTL_Path(bool log) :
-    _logging_enabled(log),
-    _active(false),
     _accepting_new_points(true),
+    _active(false),
+    _logging_enabled(log),
+    _simplification_stack_last_index(-1),
     _prunable_loops_last_index(-1)
 {
-    _simplification_bitmask = std::bitset<SAFERTL_MAX_PATH_LEN>().set(); //initialize to 0b1111...
-    path[0] = {0.0f, 0.0f, 0.0f};
+    AP_Param::setup_object_defaults(this, var_info);
+    _simplification_bitmask = std::bitset<SAFERTL_MAX_ALLOWABLE_PATH_LEN>().set(); //initialize to 0b1111...
     _time_of_last_good_position = AP_HAL::millis();
 }
 
@@ -67,6 +86,7 @@ void SafeRTL_Path::update(bool position_ok, Vector3f current_pos, GCS* gcs)
                 gcs->send_text(MAV_SEVERITY_WARNING,"SafeRTL Unavailable: Bad Position");
             }
         }
+        return;
     }
 
     // it's important to do the cleanup before adding the point, because appending a point will reset the cleanup methods,
@@ -83,8 +103,6 @@ void SafeRTL_Path::update(bool position_ok, Vector3f current_pos, GCS* gcs)
         return;
     }
 
-    // TODO give up on SafeRTL if the position has been bad for X seconds.
-
     if (position_ok) { // meters from origin, NED
         // append the new point, if appropriate
         if (HYPOT(current_pos, path[_last_index]) > SAFERTL_POSITION_DELTA) {
@@ -97,10 +115,10 @@ void SafeRTL_Path::update(bool position_ok, Vector3f current_pos, GCS* gcs)
 
             // if cleanup algorithms are finished (And therefore not runnning), reset them
             if (_simplification_complete) {
-                _reset_simplification();
+                _reset_simplification(false);
             }
             if (_pruning_complete) {
-                _reset_pruning();
+                _reset_pruning(false);
             }
         }
     }
@@ -119,13 +137,13 @@ Vector3f* SafeRTL_Path::thorough_cleanup()
     _zero_points_by_simplification_bitmask();
 
     // apply pruning
-    _zero_points_by_loops(SAFERTL_MAX_PATH_LEN); // prune every single loop
+    _zero_points_by_loops(SAFERTL_MAX_ALLOWABLE_PATH_LEN); // prune every single loop
 
     _remove_empty_points();
 
     // end by resetting the state of the cleanup methods.
-    _reset_simplification();
-    _reset_pruning();
+    _reset_simplification(true);
+    _reset_pruning(true);
 
     return path;
 }
@@ -148,18 +166,18 @@ bool SafeRTL_Path::pop_point(Vector3f& point)
 */
 void SafeRTL_Path::reset_path(bool position_ok, const Vector3f start, GCS* gcs)
 {
-    _last_index = 0;
-    path[_last_index] = start;
-    _simplification_complete = false;
-    _simplification_clean_until = 0;
-    _pruning_complete = false;
-    _pruning_clean_until = 0;
-    _prunable_loops_last_index = -1;
+    // if the user wishes to deactivate safertl, deactivate it.
+    if (desired_path_len == 0 || is_zero(accuracy)) {
+        _active = false;
+        return;
+    }
 
-    if (position_ok) {
-        _active = true;
-        _time_of_last_good_position = AP_HAL::millis();
-    } else {
+    // reset simplification
+    _reset_simplification(true);
+    // reset pruning
+    _reset_pruning(true);
+
+    if (!position_ok) {
         _active = false;
         if (_logging_enabled) {
             DataFlash_Class::instance()->Log_Write_SRTL(DataFlash_Class::SRTL_DEACTIVATED_BAD_POSITION, {0.0f, 0.0f, 0.0f});
@@ -167,7 +185,53 @@ void SafeRTL_Path::reset_path(bool position_ok, const Vector3f start, GCS* gcs)
         if (gcs) {
             gcs->send_text(MAV_SEVERITY_WARNING, "SafeRTL Unavailable: Bad Position");
         }
+        return;
     }
+
+    // constrain the path length, in case the user decided to make the path unreasonably long.
+    desired_path_len = MIN(SAFERTL_MAX_ALLOWABLE_PATH_LEN, desired_path_len);
+
+    // if it's time to change the size of the arrays, delete them, then reinitialize them
+    if (desired_path_len != _current_path_len) {
+        if (path != nullptr) {
+            delete[] path;
+        }
+        if (_prunable_loops != nullptr) {
+            delete[] _prunable_loops;
+        }
+        if (_simplification_stack != nullptr) {
+            delete[] _simplification_stack;
+        }
+        _current_path_len = desired_path_len;
+
+        path = new (std::nothrow) Vector3f[_current_path_len];
+        _prunable_loops = new (std::nothrow) loop[_current_path_len * SAFERTL_LOOP_BUFFER_LEN_MULT];
+        _simplification_stack = new (std::nothrow) start_finish[_current_path_len * SAFERTL_SIMPLIFICATION_STACK_LEN_MULT];
+
+        // if memory allocation failed
+        if (path == nullptr || _prunable_loops == nullptr || _simplification_stack == nullptr) {
+            if (gcs) {
+                gcs->send_text(MAV_SEVERITY_WARNING, "SafeRTL Unavailable: Alloc failed");
+            }
+            if (path != nullptr) {
+                delete[] path;
+            }
+            if (_prunable_loops != nullptr) {
+                delete[] _prunable_loops;
+            }
+            if (_simplification_stack != nullptr) {
+                delete[] _simplification_stack;
+            }
+            _current_path_len = 0;
+            _active = false;
+            return;
+        }
+    }
+
+    _last_index = 0;
+    path[_last_index] = start;
+    _time_of_last_good_position = AP_HAL::millis();
+    _active = true;
 }
 
 /**
@@ -176,21 +240,21 @@ void SafeRTL_Path::reset_path(bool position_ok, const Vector3f start, GCS* gcs)
 */
 void SafeRTL_Path::detect_simplifications()
 {
-    if (_simplification_complete || !_active || _last_index < 2) {
+    if (!_active || _simplification_complete || _last_index < 2) {
         return;
-    } else if (_simplification_stack.is_empty()) {  // if not complete but also nothing to do, we must be restarting.
+    } else if (_simplification_stack_last_index == -1) {  // if not complete but also nothing to do, we must be restarting.
         // reset to beginning state
-        _simplification_stack.push_back(start_finish {0, _last_index});
+        _simplification_stack[++_simplification_stack_last_index] = start_finish {0, _last_index};
     }
     uint32_t start_time = AP_HAL::micros();
-    uint32_t start_index, end_index;
-    while (!_simplification_stack.is_empty()) {
+    int32_t start_index, end_index;
+    while (_simplification_stack_last_index >= 0) { // while there is something to do
         if (AP_HAL::micros() - start_time > SAFERTL_SIMPLIFICATION_TIME) {
             return;
         }
 
         start_finish tmp {}; // initialize to zero to suppress warnings
-        _simplification_stack.pop_front(tmp);
+        tmp = _simplification_stack[_simplification_stack_last_index--];
         start_index = tmp.start;
         end_index = tmp.finish;
 
@@ -200,8 +264,8 @@ void SafeRTL_Path::detect_simplifications()
         }
 
         float max_dist = 0.0f;
-        uint32_t index = start_index;
-        for (uint32_t i = index + 1; i < end_index; i++) {
+        int32_t index = start_index;
+        for (int32_t i = index + 1; i < end_index; i++) {
             if (_simplification_bitmask[i]) {
                 float dist = _point_line_dist(path[i], path[start_index], path[end_index]);
                 if (dist > max_dist) {
@@ -212,10 +276,15 @@ void SafeRTL_Path::detect_simplifications()
         }
 
         if (max_dist > SAFERTL_SIMPLIFICATION_EPSILON) {
-            _simplification_stack.push_back(start_finish{start_index, index});
-            _simplification_stack.push_back(start_finish{index, end_index});
+            // if the to-do list is full, give up on simplifying. This should never happen.
+            if (_simplification_stack_last_index > _current_path_len * SAFERTL_SIMPLIFICATION_STACK_LEN_MULT) {
+                _simplification_complete = true;
+                return;
+            }
+            _simplification_stack[++_simplification_stack_last_index] = start_finish {start_index, index};
+            _simplification_stack[++_simplification_stack_last_index] = start_finish {index, end_index};
         } else {
-            for (uint32_t i = start_index + 1; i < end_index; i++) {
+            for (int32_t i = start_index + 1; i < end_index; i++) {
                 _simplification_bitmask[i] = false;
             }
         }
@@ -232,7 +301,8 @@ void SafeRTL_Path::detect_simplifications()
 */
 void SafeRTL_Path::detect_loops()
 {
-    if (!_active || _pruning_complete || _prunable_loops_last_index >= SAFERTL_LOOP_BUFFER_LEN - 1 || _last_index < 3) {
+    // if SafeRTL is not active OR if this algorithm has already run to completion OR there's fewer than 3 points in the path
+    if (!_active || _pruning_complete || _last_index < 3) {
         return;
     }
     uint32_t start_time = AP_HAL::micros();
@@ -244,11 +314,16 @@ void SafeRTL_Path::detect_loops()
         }
 
         // this check prevents detection of a loop-within-a-loop
-        uint32_t j = MAX(_pruning_current_i + 2, _pruning_min_j);
+        int32_t j = MAX(_pruning_current_i + 2, _pruning_min_j);
         while (j < _last_index) {
             dist_point dp = _segment_segment_dist(path[_pruning_current_i], path[_pruning_current_i+1], path[j], path[j+1]);
-            if (dp.distance <= SAFERTL_PRUNING_DELTA) {
+            if (dp.distance <= SAFERTL_PRUNING_DELTA) { // if there is a loop here
                 _pruning_min_j = j;
+                // if the buffer is full
+                if ( _prunable_loops_last_index >= _current_path_len * SAFERTL_LOOP_BUFFER_LEN_MULT - 1) {
+                    _pruning_complete = true; // pruning is effectively complete now, since there's no reason to continue looking for them.
+                    return;
+                }
                 // int promotion rules disallow using i+1 and j+1
                 _prunable_loops[++_prunable_loops_last_index] = {(++_pruning_current_i)--,(++j)--,dp.point};
             }
@@ -272,23 +347,25 @@ bool SafeRTL_Path::_routine_cleanup()
 {
     // We only do a routine cleanup if the memory is almost full. Cleanup deletes
     // points which are potentially useful, so it would be bad to clean up if we don't have to
-    if (_last_index < SAFERTL_MAX_PATH_LEN - 10) {
+    if (_last_index < _current_path_len - 10) {
         return true;
     }
 
-    uint32_t potential_amount_to_simplify = _simplification_bitmask.size() - _simplification_bitmask.count();
+    int32_t potential_amount_to_simplify = _simplification_bitmask.size() - _simplification_bitmask.count();
 
     // if simplifying will remove more than 10 points, just do it
     if (potential_amount_to_simplify >= 10) {
         _zero_points_by_simplification_bitmask();
         _remove_empty_points();
         // end by resetting the state of the cleanup methods.
-        _reset_simplification();
-        _reset_pruning();
+        _reset_simplification(true);
+        _reset_pruning(true);
         return true;
     }
 
-    uint32_t potential_amount_to_prune = 0;
+    // return false;
+
+    int32_t potential_amount_to_prune = 0;
     for (int32_t i = 0; i <= _prunable_loops_last_index; i++) {
         // add 1 at the end, because a pruned loop is always replaced by one new point.
         potential_amount_to_prune += _prunable_loops[i].end_index - _prunable_loops[i].start_index + 1;
@@ -299,8 +376,8 @@ bool SafeRTL_Path::_routine_cleanup()
         _zero_points_by_loops(10);
         _remove_empty_points();
         // end by resetting the state of the cleanup methods.
-        _reset_simplification();
-        _reset_pruning();
+        _reset_simplification(true);
+        _reset_pruning(true);
         return true;
     }
 
@@ -310,22 +387,36 @@ bool SafeRTL_Path::_routine_cleanup()
         _zero_points_by_loops(10);
         _remove_empty_points();
         // end by resetting the state of the cleanup methods.
-        _reset_simplification();
-        _reset_pruning();
+        _reset_simplification(true);
+        _reset_pruning(true);
         return true;
     }
     return false;
 }
 
-void SafeRTL_Path::_reset_simplification()
+/**
+*   A hard reset will "forget" the optimizations that can be made. A soft reset
+*   should be used when a point is appended, a hard reset should be used when the existing path is altered.
+*/
+void SafeRTL_Path::_reset_simplification(bool hard)
 {
+    if (hard) {
+        _simplification_clean_until = 0;
+    }
     _simplification_complete = false;
-    _simplification_stack.clear();
+    _simplification_stack_last_index = -1;
     _simplification_bitmask.set();
 }
 
-void SafeRTL_Path::_reset_pruning()
+/**
+*   A hard reset will "forget" the optimizations that can be made. A soft reset
+*   should be used when a point is appended, a hard reset should be used when the existing path is altered.
+*/
+void SafeRTL_Path::_reset_pruning(bool hard)
 {
+    if (hard) {
+        _pruning_clean_until = 0;
+    }
     _pruning_complete = false;
     _pruning_current_i = _pruning_clean_until;
     _pruning_min_j = _pruning_clean_until+2;
@@ -334,7 +425,7 @@ void SafeRTL_Path::_reset_pruning()
 
 void SafeRTL_Path::_zero_points_by_simplification_bitmask()
 {
-    for (uint32_t i = 0; i <= _last_index; i++) {
+    for (int32_t i = 0; i <= _last_index; i++) {
         if (!_simplification_bitmask[i]) {
             _simplification_clean_until = MIN(_simplification_clean_until, i-1);
             if (path[i] != Vector3f(0.0f, 0.0f, 0.0f)) {
@@ -350,13 +441,13 @@ void SafeRTL_Path::_zero_points_by_simplification_bitmask()
 /**
 *   Only prunes loops until $points_to_delete points have been removed. It does not necessarily prune all loops.
 */
-void SafeRTL_Path::_zero_points_by_loops(uint32_t points_to_delete)
+void SafeRTL_Path::_zero_points_by_loops(int32_t points_to_delete)
 {
-    int removed_points = 0;
+    int32_t removed_points = 0;
     for (int32_t i = 0; i <= _prunable_loops_last_index; i++) {
         loop l = _prunable_loops[i];
         _pruning_clean_until = MIN(_pruning_clean_until, l.start_index-1);
-        for (uint32_t j = l.start_index; j < l.end_index; j++) {
+        for (int32_t j = l.start_index; j < l.end_index; j++) {
             // zero this point if it wasn't already zeroed
             if (path[j] != Vector3f(0.0f, 0.0f, 0.0f)) {
                 if (_logging_enabled) {
@@ -379,9 +470,9 @@ void SafeRTL_Path::_zero_points_by_loops(uint32_t points_to_delete)
 */
 void SafeRTL_Path::_remove_empty_points()
 {
-    uint32_t i = 0;
-    uint32_t j = 0;
-    uint32_t removed = 0;
+    int32_t i = 0;
+    int32_t j = 0;
+    int32_t removed = 0;
     while (++i <= _last_index) { // never removes the first item. This should always be {0,0,0}
         if (path[i] != Vector3f(0.0f, 0.0f, 0.0f)) {
             path[++j] = path[i];
