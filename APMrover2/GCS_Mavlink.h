@@ -26,6 +26,8 @@ protected:
 
     uint8_t sysid_my_gcs() const override;
 
+    bool set_mode(uint8_t mode) override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
