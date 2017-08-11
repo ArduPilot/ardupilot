@@ -830,11 +830,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_SET_MODE: {     // MAV ID: 11
-        handle_set_mode(msg, FUNCTOR_BIND(&sub, &Sub::gcs_set_mode, bool, uint8_t));
-        break;
-    }
-
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {       // MAV ID: 21
         // mark the firmware version in the tlog
         send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
@@ -1608,6 +1603,11 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
+}
+
+bool GCS_MAVLINK_Sub::set_mode(uint8_t mode)
+{
+    return sub.set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
 }
 
 // dummy method to avoid linking AFS
