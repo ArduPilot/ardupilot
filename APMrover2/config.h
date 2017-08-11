@@ -209,11 +209,6 @@
   #define HIL_SERVOS DISABLED
 #endif
 
-// use this to completely disable the CLI
-#ifndef CLI_ENABLED
-  #define CLI_ENABLED ENABLED
-#endif
-
 // if RESET_SWITCH_CH is not zero, then this is the PWM value on
 // that channel where we reset the control mode to the current switch
 // position (to for example return to switched mode after failsafe or
