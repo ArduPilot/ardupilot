@@ -230,6 +230,7 @@ protected:
     virtual AP_ServoRelayEvents *get_servorelayevents() const = 0;
     virtual AP_GPS *get_gps() const = 0;
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
+    virtual bool set_mode(uint8_t mode) = 0;
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
@@ -245,9 +246,8 @@ protected:
     AP_Int16        streamRates[NUM_STREAMS];
 
     void handle_request_data_stream(mavlink_message_t *msg, bool save);
-    FUNCTOR_TYPEDEF(set_mode_fn, bool, uint8_t);
-    void handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode);
 
+    void handle_set_mode(mavlink_message_t* msg);
     void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);

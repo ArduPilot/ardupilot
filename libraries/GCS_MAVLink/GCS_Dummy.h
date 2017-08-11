@@ -22,6 +22,7 @@ protected:
     AP_ServoRelayEvents *get_servorelayevents() const override { return nullptr; }
 
     uint8_t sysid_my_gcs() const override { return 1; }
+    bool set_mode(uint8_t mode) override { return false; };
 
 };
 

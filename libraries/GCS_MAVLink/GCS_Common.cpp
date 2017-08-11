@@ -1292,7 +1292,7 @@ void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
 /*
   handle a SET_MODE MAVLink message
  */
-void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode)
+void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;
     mavlink_set_mode_t packet;
@@ -1804,6 +1804,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
         /* fall through */
         handle_common_camera_message(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SET_MODE:
+        handle_set_mode(msg);
         break;
 
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
