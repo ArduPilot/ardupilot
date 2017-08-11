@@ -28,6 +28,7 @@ protected:
     AP_GPS *get_gps() const override { return nullptr; };
     AP_Camera *get_camera() const override { return nullptr; };
     uint8_t sysid_my_gcs() const override { return 1; }
+    bool set_mode(uint8_t mode) override { return false; };
 
 private:
 
