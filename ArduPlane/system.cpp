@@ -462,37 +462,6 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     steerController.reset_I();    
 }
 
-/*
-  set_mode() wrapper for MAVLink SET_MODE
- */
-bool Plane::mavlink_set_mode(uint8_t mode)
-{
-    switch (mode) {
-    case MANUAL:
-    case CIRCLE:
-    case STABILIZE:
-    case TRAINING:
-    case ACRO:
-    case FLY_BY_WIRE_A:
-    case AUTOTUNE:
-    case FLY_BY_WIRE_B:
-    case CRUISE:
-    case AVOID_ADSB:
-    case GUIDED:
-    case AUTO:
-    case RTL:
-    case LOITER:
-    case QSTABILIZE:
-    case QHOVER:
-    case QLOITER:
-    case QLAND:
-    case QRTL:
-        set_mode((enum FlightMode)mode, MODE_REASON_GCS_COMMAND);
-        return true;
-    }
-    return false;
-}
-
 // exit_mode - perform any cleanup required when leaving a flight mode
 void Plane::exit_mode(enum FlightMode mode)
 {

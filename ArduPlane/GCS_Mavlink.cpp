@@ -1397,12 +1397,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_SET_MODE:
-    {
-        handle_set_mode(msg, FUNCTOR_BIND(&plane, &Plane::mavlink_set_mode, bool, uint8_t));
-        break;
-    }
-
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
     {
         // mark the firmware version in the tlog
@@ -1909,3 +1903,35 @@ AP_Rally *GCS_MAVLINK_Plane::get_rally() const
 {
     return &plane.rally;
 }
+
+/*
+  set_mode() wrapper for MAVLink SET_MODE
+ */
+bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
+{
+    switch (mode) {
+    case MANUAL:
+    case CIRCLE:
+    case STABILIZE:
+    case TRAINING:
+    case ACRO:
+    case FLY_BY_WIRE_A:
+    case AUTOTUNE:
+    case FLY_BY_WIRE_B:
+    case CRUISE:
+    case AVOID_ADSB:
+    case GUIDED:
+    case AUTO:
+    case RTL:
+    case LOITER:
+    case QSTABILIZE:
+    case QHOVER:
+    case QLOITER:
+    case QLAND:
+    case QRTL:
+        plane.set_mode((enum FlightMode)mode, MODE_REASON_GCS_COMMAND);
+        return true;
+    }
+    return false;
+}
+
