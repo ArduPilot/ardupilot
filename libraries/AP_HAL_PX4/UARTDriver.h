@@ -39,6 +39,8 @@ public:
     void set_flow_control(enum flow_control flow_control);
     enum flow_control get_flow_control(void) { return _flow_control; }
 
+    int claim();
+
 private:
     const char *_devpath;
     int _fd;
@@ -69,4 +71,5 @@ private:
 
     pid_t _uart_owner_pid;
 
+    bool _claimed;
 };

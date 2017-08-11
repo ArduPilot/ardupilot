@@ -35,12 +35,25 @@ PX4UARTDriver::PX4UARTDriver(const char *devpath, const char *perf_name) :
 
 extern const AP_HAL::HAL& hal;
 
+int PX4UARTDriver::claim() {
+    if (!_claimed && _fd > 0) {
+        _claimed = true;
+        return _fd;
+    }
+
+    return -1;
+}
+
 /*
   this UART driver maps to a serial device in /dev
  */
 
 void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
+    if (_claimed) {
+        return;
+    }
+
     if (strcmp(_devpath, "/dev/null") == 0) {
         // leave uninitialised
         return;
@@ -133,7 +146,11 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
 void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
 {
-	if (_fd == -1) {
+    if (_claimed) {
+        return;
+    }
+
+    if (_fd == -1) {
         return;
     }
     struct termios t;
@@ -167,6 +184,10 @@ void PX4UARTDriver::begin(uint32_t b)
  */
 void PX4UARTDriver::try_initialise(void)
 {
+    if (_claimed) {
+        return;
+    }
+
     if (_initialised) {
         return;
     }
@@ -182,6 +203,10 @@ void PX4UARTDriver::try_initialise(void)
 
 void PX4UARTDriver::end()
 {
+    if (_claimed) {
+        return;
+    }
+
     _initialised = false;
     while (_in_timer) hal.scheduler->delay(1);
     if (_fd != -1) {
@@ -203,6 +228,10 @@ bool PX4UARTDriver::is_initialized()
 
 void PX4UARTDriver::set_blocking_writes(bool blocking)
 {
+    if (_claimed) {
+        return;
+    }
+
     _nonblocking_writes = !blocking;
 }
 
@@ -213,6 +242,10 @@ bool PX4UARTDriver::tx_pending() { return false; }
  */
 uint32_t PX4UARTDriver::available()
 {
+    if (_claimed) {
+        return 0;
+    }
+
     if (!_initialised) {
         try_initialise();
         return 0;
@@ -226,6 +259,10 @@ uint32_t PX4UARTDriver::available()
  */
 uint32_t PX4UARTDriver::txspace()
 {
+    if (_claimed) {
+        return 0;
+    }
+
     if (!_initialised) {
         try_initialise();
         return 0;
@@ -242,6 +279,11 @@ int16_t PX4UARTDriver::read()
     if (_uart_owner_pid != getpid()){
         return -1;
     }
+
+    if (_claimed) {
+        return -1;
+    }
+
     if (!_initialised) {
         try_initialise();
         return -1;
@@ -263,6 +305,11 @@ size_t PX4UARTDriver::write(uint8_t c)
     if (_uart_owner_pid != getpid()){
         return 0;
     }
+
+    if (_claimed) {
+        return 0;
+    }
+
     if (!_initialised) {
         try_initialise();
         return 0;
@@ -285,10 +332,15 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
     if (_uart_owner_pid != getpid()){
         return 0;
     }
-	if (!_initialised) {
+
+    if (_claimed) {
+        return 0;
+    }
+
+    if (!_initialised) {
         try_initialise();
-		return 0;
-	}
+        return 0;
+    }
 
     if (!_nonblocking_writes) {
         /*
@@ -407,6 +459,10 @@ void PX4UARTDriver::_timer_tick(void)
 {
     int ret;
     uint32_t n;
+
+    if (_claimed) {
+        return;
+    }
 
     if (!_initialised) return;
 
