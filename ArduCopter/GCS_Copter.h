@@ -24,7 +24,4 @@ private:
 
     GCS_MAVLINK_Copter _chan[MAVLINK_COMM_NUM_BUFFERS];
 
-    bool cli_enabled() const override;
-    AP_HAL::BetterStream* cliSerial() override;
-
 };
