@@ -158,7 +158,6 @@ public:
 private:
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::FixedWing aparm;
-    AP_HAL::BetterStream* cliSerial;
 
     // Global parameters are all contained within the 'g' and 'g2' classes.
     Parameters g;
@@ -824,7 +823,6 @@ private:
     void gcs_send_airspeed_calibration(const Vector3f &vg);
     void gcs_retry_deferred(void);
 
-    void do_erase_logs(void);
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
@@ -845,7 +843,6 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AOA_SSA();
     void Log_Write_AETR();
-    void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page);
 
     void load_parameters(void);
     void convert_mixers(void);
@@ -962,17 +959,6 @@ private:
     void button_update(void);
     void stats_update();
     void ice_update(void);
-    void report_radio();
-    void report_ins();
-    void report_compass();
-    void print_radio_values();
-    void print_done();
-    void print_blanks(int16_t num);
-    void print_divider(void);
-    void zero_eeprom(void);
-    void print_enabled(bool b);
-    void print_accel_offsets_and_scaling(void);
-    void print_gyro_offsets(void);
     void init_ardupilot();
     void startup_ground(void);
     enum FlightMode get_previous_mode();
@@ -984,7 +970,6 @@ private:
     void startup_INS_ground(void);
     void update_notify();
     void resetPerfData(void);
-    void print_comma(void);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
     void change_arm_state(void);
@@ -996,7 +981,6 @@ private:
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
     void complete_auto_takeoff(void);
-    void print_hit_enter();
     void ahrs_update();
     void update_speed_height(void);
     void update_GPS_50Hz(void);
@@ -1088,9 +1072,7 @@ private:
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void notify_flight_mode(enum FlightMode mode);
-    void run_cli(AP_HAL::UARTDriver *port);
     void log_init();
     void init_capabilities(void);
     void dataflash_periodic(void);
@@ -1111,35 +1093,7 @@ private:
 public:
     void mavlink_delay_cb();
     void failsafe_check(void);
-    bool print_log_menu(void);
-    int8_t dump_log(uint8_t argc, const Menu::arg *argv);
-    int8_t erase_logs(uint8_t argc, const Menu::arg *argv);
-    int8_t select_logs(uint8_t argc, const Menu::arg *argv);
-    int8_t process_logs(uint8_t argc, const Menu::arg *argv);
-    int8_t setup_mode(uint8_t argc, const Menu::arg *argv);
-    int8_t setup_factory(uint8_t argc, const Menu::arg *argv);
-    int8_t setup_erase(uint8_t argc, const Menu::arg *argv);
-    int8_t test_mode(uint8_t argc, const Menu::arg *argv);
-    int8_t reboot_board(uint8_t argc, const Menu::arg *argv);
-    int8_t main_menu_help(uint8_t argc, const Menu::arg *argv);
-    int8_t test_radio_pwm(uint8_t argc, const Menu::arg *argv);
-    int8_t test_radio(uint8_t argc, const Menu::arg *argv);
-    int8_t test_failsafe(uint8_t argc, const Menu::arg *argv);
-    int8_t test_relay(uint8_t argc, const Menu::arg *argv);
-    int8_t test_wp(uint8_t argc, const Menu::arg *argv);
-    void test_wp_print(const AP_Mission::Mission_Command& cmd);
-    int8_t test_xbee(uint8_t argc, const Menu::arg *argv);
-    int8_t test_modeswitch(uint8_t argc, const Menu::arg *argv);
-    int8_t test_logging(uint8_t argc, const Menu::arg *argv);
-    int8_t test_gps(uint8_t argc, const Menu::arg *argv);
-    int8_t test_ins(uint8_t argc, const Menu::arg *argv);
-    int8_t test_mag(uint8_t argc, const Menu::arg *argv);
-    int8_t test_airspeed(uint8_t argc, const Menu::arg *argv);
-    int8_t test_pressure(uint8_t argc, const Menu::arg *argv);
-    int8_t test_shell(uint8_t argc, const Menu::arg *argv);
 };
-
-#define MENU_FUNC(func) FUNCTOR_BIND(&plane, &Plane::func, int8_t, uint8_t, const Menu::arg *)
 
 extern const AP_HAL::HAL& hal;
 extern Plane plane;
