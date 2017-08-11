@@ -99,8 +99,6 @@ void Rover::stats_update(void)
  */
 void Rover::setup()
 {
-    cliSerial = hal.console;
-
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
