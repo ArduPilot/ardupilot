@@ -347,12 +347,6 @@
  # define SCALING_SPEED          15.0
 #endif
 
-// use this to completely disable the CLI. We now default the CLI to
-// off on smaller boards.
-#ifndef CLI_ENABLED
-#define CLI_ENABLED ENABLED
-#endif
-
 // use this to disable geo-fencing
 #ifndef GEOFENCE_ENABLED
  # define GEOFENCE_ENABLED ENABLED

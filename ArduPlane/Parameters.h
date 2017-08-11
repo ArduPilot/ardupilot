@@ -134,7 +134,7 @@ public:
         k_param_override_channel,
         k_param_stall_prevention,
         k_param_optflow,
-        k_param_cli_enabled,
+        k_param_cli_enabled_old, // unused - CLI removed
         k_param_trim_rc_at_start,
         k_param_hil_mode,
         k_param_land_disarm_delay,  // unused - moved to AP_Landing
@@ -361,9 +361,6 @@ public:
     AP_Int16 sysid_this_mav;
     AP_Int16 sysid_my_gcs;
     AP_Int8 telem_delay;
-#if CLI_ENABLED == ENABLED
-    AP_Int8 cli_enabled;
-#endif
 
     AP_Float hil_err_limit;
 
