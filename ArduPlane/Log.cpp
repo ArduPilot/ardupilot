@@ -3,157 +3,6 @@
 
 #if LOGGING_ENABLED == ENABLED
 
-#if CLI_ENABLED == ENABLED
-// Code to Write and Read packets from DataFlash.log memory
-// Code to interact with the user to dump or erase logs
-
-// Creates a constant array of structs representing menu options
-// and stores them in Flash memory, not RAM.
-// User enters the string in the console to call the functions on the right.
-// See class Menu in AP_Coommon for implementation details
-static const struct Menu::command log_menu_commands[] = {
-    {"dump",        MENU_FUNC(dump_log)},
-    {"erase",       MENU_FUNC(erase_logs)},
-    {"enable",      MENU_FUNC(select_logs)},
-    {"disable",     MENU_FUNC(select_logs)}
-};
-
-// A Macro to create the Menu
-MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&plane, &Plane::print_log_menu, bool));
-
-bool Plane::print_log_menu(void)
-{
-    cliSerial->printf("logs enabled: \n");
-
-    if (0 == g.log_bitmask) {
-        cliSerial->printf("none\n");
-    }else{
-        // Macro to make the following code a bit easier on the eye.
-        // Pass it the capitalised name of the log option, as defined
-        // in defines.h but without the LOG_ prefix.  It will check for
-        // the bit being set and print the name of the log option to suit.
- #define PLOG(_s) if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %s", # _s)
-        PLOG(ATTITUDE_FAST);
-        PLOG(ATTITUDE_MED);
-        PLOG(GPS);
-        PLOG(PM);
-        PLOG(CTUN);
-        PLOG(NTUN);
-        PLOG(MODE);
-        PLOG(IMU);
-        PLOG(CMD);
-        PLOG(CURRENT);
-        PLOG(COMPASS);
-        PLOG(TECS);
-        PLOG(CAMERA);
-        PLOG(RC);
-        PLOG(SONAR);
- #undef PLOG
-    }
-
-    cliSerial->printf("\n");
-
-    DataFlash.ListAvailableLogs(cliSerial);
-    return(true);
-}
-
-int8_t Plane::dump_log(uint8_t argc, const Menu::arg *argv)
-{
-    int16_t dump_log_num;
-    uint16_t dump_log_start;
-    uint16_t dump_log_end;
-
-    // check that the requested log number can be read
-    dump_log_num = argv[1].i;
-
-    if (dump_log_num == -2) {
-        DataFlash.DumpPageInfo(cliSerial);
-        return(-1);
-    } else if (dump_log_num <= 0) {
-        cliSerial->printf("dumping all\n");
-        Log_Read(0, 1, 0);
-        return(-1);
-    } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
-        cliSerial->printf("bad log number\n");
-        return(-1);
-    }
-
-    DataFlash.get_log_boundaries(dump_log_num, dump_log_start, dump_log_end);
-    Log_Read((uint16_t)dump_log_num, dump_log_start, dump_log_end);
-    return 0;
-}
-
-int8_t Plane::erase_logs(uint8_t argc, const Menu::arg *argv)
-{
-    DataFlash.EnableWrites(false);
-    do_erase_logs();
-    DataFlash.EnableWrites(true);
-    return 0;
-}
-
-int8_t Plane::select_logs(uint8_t argc, const Menu::arg *argv)
-{
-    uint32_t bits;
-
-    if (argc != 2) {
-        cliSerial->printf("missing log type\n");
-        return(-1);
-    }
-
-    bits = 0;
-
-    // Macro to make the following code a bit easier on the eye.
-    // Pass it the capitalised name of the log option, as defined
-    // in defines.h but without the LOG_ prefix.  It will check for
-    // that name as the argument to the command, and set the bit in
-    // bits accordingly.
-    //
-    if (!strcasecmp(argv[1].str, "all")) {
-        bits = 0xFFFFFFFFUL;
-    } else {
- #define TARG(_s)        if (!strcasecmp(argv[1].str, # _s)) bits |= MASK_LOG_ ## _s
-        TARG(ATTITUDE_FAST);
-        TARG(ATTITUDE_MED);
-        TARG(GPS);
-        TARG(PM);
-        TARG(CTUN);
-        TARG(NTUN);
-        TARG(MODE);
-        TARG(IMU);
-        TARG(CMD);
-        TARG(CURRENT);
-        TARG(COMPASS);
-        TARG(TECS);
-        TARG(CAMERA);
-        TARG(RC);
-        TARG(SONAR);
- #undef TARG
-    }
-
-    if (!strcasecmp(argv[0].str, "enable")) {
-        g.log_bitmask.set_and_save(g.log_bitmask | bits);
-    }else{
-        g.log_bitmask.set_and_save(g.log_bitmask & ~bits);
-    }
-    return(0);
-}
-
-int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv)
-{
-    log_menu.run();
-    return 0;
-}
-
-#endif // CLI_ENABLED == ENABLED
-
-void Plane::do_erase_logs(void)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Erasing logs");
-    DataFlash.EraseAll();
-    gcs().send_text(MAV_SEVERITY_INFO, "Log erase complete");
-}
-
-
 // Write an attitude packet
 void Plane::Log_Write_Attitude(void)
 {
@@ -561,22 +410,6 @@ const struct LogStructure Plane::log_structure[] = {
       "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap" }, \
 };
 
-#if CLI_ENABLED == ENABLED
-// Read the DataFlash.log memory : Packet Parser
-void Plane::Log_Read(uint16_t list_entry, int16_t start_page, int16_t end_page)
-{
-    cliSerial->printf("\n" FIRMWARE_STRING
-                             "\nFree RAM: %u\n",
-                        (unsigned)hal.util->available_memory());
-
-    cliSerial->printf("%s\n", HAL_BOARD_NAME);
-
-	DataFlash.LogReadProcess(list_entry, start_page, end_page,
-                             FUNCTOR_BIND_MEMBER(&Plane::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),
-                             cliSerial);
-}
-#endif // CLI_ENABLED
-
 void Plane::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
@@ -593,21 +426,10 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
 void Plane::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
-
-    gcs().reset_cli_timeout();
 }
 
 #else // LOGGING_ENABLED
 
- #if CLI_ENABLED == ENABLED
-bool Plane::print_log_menu(void) { return true; }
-int8_t Plane::dump_log(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Plane::erase_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Plane::select_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
- #endif // CLI_ENABLED == ENABLED
-
-void Plane::do_erase_logs(void) {}
 void Plane::Log_Write_Attitude(void) {}
 void Plane::Log_Write_Fast(void) {}
 void Plane::Log_Write_Performance() {}
@@ -629,10 +451,6 @@ void Plane::Log_Write_RC(void) {}
 void Plane::Log_Write_Baro(void) {}
 void Plane::Log_Write_Airspeed(void) {}
 void Plane::Log_Write_Home_And_Origin() {}
-
- #if CLI_ENABLED == ENABLED
-void Plane::Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page) {}
- #endif // CLI_ENABLED
 
 void Plane::log_init(void) {}
 

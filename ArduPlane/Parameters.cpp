@@ -39,15 +39,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
-#if CLI_ENABLED == ENABLED
-    // @Param: CLI_ENABLED
-    // @DisplayName: CLI Enable
-    // @Description: This enables/disables the checking for three carriage returns on telemetry links on startup to enter the diagnostics command line interface
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    GSCALAR(cli_enabled,            "CLI_ENABLED",    0),
-#endif
-
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
@@ -1273,19 +1264,19 @@ const AP_Param::ConversionInfo conversion_table[] = {
 void Plane::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf("Bad parameter table\n");
+        hal.console->printf("Bad parameter table\n");
         AP_HAL::panic("Bad parameter table");
     }
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->printf("Firmware change: erasing EEPROM...\n");
+        hal.console->printf("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        cliSerial->printf("done.\n");
+        hal.console->printf("done.\n");
     }
 
     uint32_t before = micros();
@@ -1319,7 +1310,7 @@ void Plane::load_parameters(void)
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 
-    cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
+    hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }
 
 /*
@@ -1352,7 +1343,7 @@ void Plane::convert_mixers(void)
         chan4->get_function() == SRV_Channel::k_rudder &&
         !chan2->function_configured() &&
         !chan4->function_configured()) {
-        cliSerial->printf("Converting vtail_output %u\n", vtail_output.get());
+        hal.console->printf("Converting vtail_output %u\n", vtail_output.get());
         switch (vtail_output) {
         case MIXING_UPUP:
         case MIXING_UPUP_SWP:
@@ -1388,7 +1379,7 @@ void Plane::convert_mixers(void)
         chan2->get_function() == SRV_Channel::k_elevator &&
         !chan1->function_configured() &&
         !chan2->function_configured()) {
-        cliSerial->printf("convert elevon_output %u\n", elevon_output.get());
+        hal.console->printf("convert elevon_output %u\n", elevon_output.get());
         switch (elevon_output) {
         case MIXING_UPUP:
         case MIXING_UPUP_SWP:
