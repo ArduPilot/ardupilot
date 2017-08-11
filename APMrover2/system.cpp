@@ -244,18 +244,6 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     return true;
 }
 
-/*
-  set_mode() wrapper for MAVLink SET_MODE
- */
-bool Rover::mavlink_set_mode(uint8_t mode)
-{
-    Mode *new_mode = control_mode_from_num((enum mode)mode);
-    if (new_mode == nullptr) {
-        return false;
-    }
-    return set_mode(*new_mode, MODE_REASON_GCS_COMMAND);
-}
-
 void Rover::startup_INS_ground(void)
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Warming up ADC");
