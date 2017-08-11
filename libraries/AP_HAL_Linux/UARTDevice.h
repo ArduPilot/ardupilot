@@ -20,6 +20,8 @@ public:
         return _flow_control;
     }
 
+    virtual int get_fd() { return _fd; }
+
 private:
     void _disable_crlf();
     AP_HAL::UARTDriver::flow_control _flow_control = AP_HAL::UARTDriver::flow_control::FLOW_CONTROL_DISABLE;

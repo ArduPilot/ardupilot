@@ -41,11 +41,24 @@ UARTDriver::UARTDriver(bool default_console) :
     }
 }
 
+int UARTDriver::claim()
+{
+
+    if (!_claimed && _device) {
+        _claimed = true;
+        return _device->get_fd();
+    }
+
+    return -1;
+}
+
 /*
   set the tty device to use for this UART
  */
 void UARTDriver::set_device_path(const char *path)
 {
+    if (_claimed) return;
+
     device_path = path;
 }
 
@@ -54,11 +67,15 @@ void UARTDriver::set_device_path(const char *path)
  */
 void UARTDriver::begin(uint32_t b)
 {
+    if (_claimed) return;
+
     begin(b, 0, 0);
 }
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
+    if (_claimed) return;
+
     if (!_initialised) {
         if (device_path == nullptr && _console) {
             _device = new ConsoleDevice();
@@ -202,6 +219,8 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
  */
 void UARTDriver::end()
 {
+    if (_claimed) return;
+
     _initialised = false;
     _connected = false;
 
@@ -234,6 +253,8 @@ bool UARTDriver::is_initialized()
  */
 void UARTDriver::set_blocking_writes(bool blocking)
 {
+    if (_claimed) return;
+
     _nonblocking_writes = !blocking;
 }
 
@@ -243,7 +264,11 @@ void UARTDriver::set_blocking_writes(bool blocking)
  */
 bool UARTDriver::tx_pending()
 {
-    return (_writebuf.available() > 0);
+    if (_claimed) {
+        return false;
+    }
+
+    return _writebuf.available() > 0;
 }
 
 /*
@@ -251,6 +276,8 @@ bool UARTDriver::tx_pending()
  */
 uint32_t UARTDriver::available()
 {
+    if (_claimed) return 0;
+
     if (!_initialised) {
         return 0;
     }
@@ -262,6 +289,8 @@ uint32_t UARTDriver::available()
  */
 uint32_t UARTDriver::txspace()
 {
+    if (_claimed) return 0;
+
     if (!_initialised) {
         return 0;
     }
@@ -270,6 +299,8 @@ uint32_t UARTDriver::txspace()
 
 int16_t UARTDriver::read()
 {
+    if (_claimed) return -1;
+
     if (!_initialised) {
         return -1;
     }
@@ -285,6 +316,8 @@ int16_t UARTDriver::read()
 /* Linux implementations of Print virtual methods */
 size_t UARTDriver::write(uint8_t c)
 {
+    if (_claimed) return 0;
+
     if (!_initialised) {
         return 0;
     }
@@ -303,6 +336,8 @@ size_t UARTDriver::write(uint8_t c)
  */
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
+    if (_claimed) return 0;
+
     if (!_initialised) {
         return 0;
     }
@@ -450,6 +485,8 @@ bool UARTDriver::_write_pending_bytes(void)
  */
 void UARTDriver::_timer_tick(void)
 {
+    if (_claimed) return;
+
     if (!_initialised) return;
 
     _in_timer = true;

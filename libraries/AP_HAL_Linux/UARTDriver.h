@@ -46,10 +46,15 @@ public:
 
     virtual void set_flow_control(enum flow_control flow_control_setting) override
    {
+       if (_claimed) return;
+
        _device->set_flow_control(flow_control_setting);
    }
 
+    int claim();
+
 private:
+    bool _claimed;
     AP_HAL::OwnPtr<SerialDevice> _device;
     bool _nonblocking_writes;
     bool _console;

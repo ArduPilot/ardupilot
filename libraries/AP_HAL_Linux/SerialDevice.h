@@ -20,4 +20,5 @@ public:
     {
         /* most devices simply igmore this setting */
     };
+    virtual int get_fd() { return -1; };
 };
