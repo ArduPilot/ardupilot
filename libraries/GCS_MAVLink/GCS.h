@@ -89,8 +89,7 @@ class GCS_MAVLINK
 {
 public:
     GCS_MAVLINK();
-    FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
-    void        update(run_cli_fn run_cli, uint32_t max_time_us=1000);
+    void        update(uint32_t max_time_us=1000);
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
@@ -132,9 +131,6 @@ public:
 
     // see if we should send a stream now. Called at 50Hz
     bool        stream_trigger(enum streams stream_num);
-
-    // call to reset the timeout window for entering the cli
-    void reset_cli_timeout();
 
     bool is_high_bandwidth() { return chan == MAVLINK_COMM_0; }
     // return true if this channel has hardware flow control
@@ -336,9 +332,6 @@ private:
     ///
     uint16_t                    packet_drops;
 
-    // this allows us to detect the user wanting the CLI to start
-    uint8_t        crlf_count;
-
     // waypoints
     uint16_t        waypoint_dest_sysid; // where to send requests
     uint16_t        waypoint_dest_compid; // "
@@ -352,10 +345,6 @@ private:
 
     // number of extra ticks to add to slow things down for the radio
     uint8_t         stream_slowdown;
-
-    // millis value to calculate cli timeout relative to.
-    // exists so we can separate the cli entry time from the system start time
-    uint32_t _cli_timeout;
 
     // perf counters
     static AP_HAL::Util::perf_counter_t _perf_packet;
@@ -465,7 +454,6 @@ public:
     virtual GCS_MAVLINK &chan(const uint8_t ofs) = 0;
     virtual const GCS_MAVLINK &chan(const uint8_t ofs) const = 0;
     virtual uint8_t num_gcs() const = 0;
-    void reset_cli_timeout();
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_home(const Location &home) const;
@@ -474,11 +462,6 @@ public:
     void data_stream_send();
     void update();
     virtual void setup_uarts(AP_SerialManager &serial_manager);
-    void handle_interactive_setup();
-
-    FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
-    run_cli_fn _run_cli;
-    void set_run_cli_func(run_cli_fn run_cli) { _run_cli = run_cli; }
 
     /*
       set a dataflash pointer for logging
@@ -504,9 +487,6 @@ public:
 private:
 
     static GCS *_singleton;
-
-    virtual bool cli_enabled() const = 0;
-    virtual AP_HAL::BetterStream*  cliSerial() = 0;
 
     struct statustext_t {
         uint8_t                 bitmask;

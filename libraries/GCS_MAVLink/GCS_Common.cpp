@@ -59,7 +59,6 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
     mavlink_comm_port[chan] = _port;
     initialised = true;
     _queued_parameter = nullptr;
-    reset_cli_timeout();
 
     if (!_perf_packet) {
         _perf_packet = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "GCS_Packet");
@@ -167,10 +166,6 @@ GCS_MAVLINK::queued_waypoint_send()
             waypoint_request_i,
             MAV_MISSION_TYPE_MISSION);
     }
-}
-
-void GCS_MAVLINK::reset_cli_timeout() {
-    _cli_timeout = AP_HAL::millis();
 }
 
 void GCS_MAVLINK::send_meminfo(void)
@@ -821,8 +816,8 @@ void GCS_MAVLINK::send_message(enum ap_message id)
 void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
                                  mavlink_message_t &msg)
 {
-    // we exclude radio packets to make it possible to use the
-    // CLI over the radio
+    // we exclude radio packets because we historically used this to
+    // make it possible to use the CLI over the radio
     if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
         mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
     }
@@ -849,7 +844,7 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
 }
 
 void
-GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
+GCS_MAVLINK::update(uint32_t max_time_us)
 {
     // receive new packets
     mavlink_message_t msg;
@@ -865,22 +860,6 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
     for (uint16_t i=0; i<nbytes; i++)
     {
         uint8_t c = comm_receive_ch(chan);
-
-        if (run_cli) {
-            /* allow CLI to be started by hitting enter 3 times, if no
-             *  heartbeat packets have been received */
-            if ((mavlink_active==0) && (AP_HAL::millis() - _cli_timeout) < 20000 && 
-                comm_is_idle(chan)) {
-                if (c == '\n' || c == '\r') {
-                    crlf_count++;
-                } else {
-                    crlf_count = 0;
-                }
-                if (crlf_count == 3) {
-                    run_cli(_port);
-                }
-            }
-        }
 
         bool parsed_packet = false;
         
@@ -1235,13 +1214,6 @@ void GCS::service_statustext(void)
     }
 }
 
-void GCS::reset_cli_timeout()
-{
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        chan(i).reset_cli_timeout();
-    }
-}
-
 void GCS::send_message(enum ap_message id)
 {
     for (uint8_t i=0; i<num_gcs(); i++) {
@@ -1274,7 +1246,7 @@ void GCS::update(void)
 {
     for (uint8_t i=0; i<num_gcs(); i++) {
         if (chan(i).initialised) {
-            chan(i).update(_run_cli);
+            chan(i).update();
         }
     }
 }
@@ -1293,21 +1265,6 @@ void GCS::setup_uarts(AP_SerialManager &serial_manager)
 {
     for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         chan(i).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-    }
-}
-
-void GCS::handle_interactive_setup()
-{
-    if (cli_enabled()) {
-        AP_HAL::BetterStream* _cliSerial = cliSerial();
-        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        _cliSerial->printf("%s\n", msg);
-        if (chan(1).initialised && (chan(1).get_uart() != NULL)) {
-            chan(1).get_uart()->printf("%s\n", msg);
-        }
-        if (num_gcs() > 2 && chan(2).initialised && (chan(2).get_uart() != NULL)) {
-            chan(2).get_uart()->printf("%s\n", msg);
-        }
     }
 }
 
