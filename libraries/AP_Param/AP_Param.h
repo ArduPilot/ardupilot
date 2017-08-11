@@ -344,21 +344,6 @@ public:
     ///
     static void         erase_all(void);
 
-    /// print the value of all variables
-    static void         show_all(AP_HAL::BetterStream *port, bool showKeyValues=false);
-
-    /// print the value of one variable
-    static void         show(const AP_Param *param, 
-                             const char *name,
-                             enum ap_var_type ptype, 
-                             AP_HAL::BetterStream *port);
-
-    /// print the value of one variable
-    static void         show(const AP_Param *param, 
-                             const ParamToken &token,
-                             enum ap_var_type ptype, 
-                             AP_HAL::BetterStream *port);
-
     /// Returns the first variable
     ///
     /// @return             The first variable in _var_info, or nullptr if
