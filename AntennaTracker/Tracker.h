@@ -241,7 +241,6 @@ private:
     void disarm_servos();
     void prepare_servos();
     void set_mode(enum ControlMode mode);
-    bool mavlink_set_mode(uint8_t mode);
     void check_usb_mux(void);
     void update_vehicle_pos_estimate();
     void update_tracker_position();

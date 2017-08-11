@@ -218,23 +218,6 @@ void Tracker::set_mode(enum ControlMode mode)
 	DataFlash.Log_Write_Mode(control_mode);
 }
 
-/*
-  set_mode() wrapper for MAVLink SET_MODE
- */
-bool Tracker::mavlink_set_mode(uint8_t mode)
-{
-    switch (mode) {
-    case AUTO:
-    case MANUAL:
-    case SCAN:
-    case SERVO_TEST:
-    case STOP:
-        set_mode((enum ControlMode)mode);
-        return true;
-    }
-    return false;
-}
-
 void Tracker::check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
