@@ -1,3 +1,5 @@
+ATC_STR_RAT_P   1
+ATC_SPEED_P 0.1
 EK2_ENABLE      1
 WP_RADIUS 3
 LOG_BITMASK	65535
@@ -20,7 +22,6 @@ MODE3        11
 MODE4        10
 MODE5        2
 MODE6        0
-STEER2SRV_P     1.8
 SIM_GPS_DELAY 1
 NAVL1_PERIOD 8
 # we need small INS_ACC offsets so INS is recognised as being calibrated
