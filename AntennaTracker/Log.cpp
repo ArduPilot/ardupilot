@@ -87,8 +87,6 @@ void Tracker::Log_Write_Vehicle_Startup_Messages()
 void Tracker::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
-
-    gcs().reset_cli_timeout();
 }
 
 #else // LOGGING_ENABLED
