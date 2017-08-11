@@ -23,7 +23,6 @@
 // Libraries
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Menu/AP_Menu.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_GPS/AP_GPS.h>                          // ArduPilot GPS library
@@ -122,7 +121,6 @@ public:
     void loop(void) override;
 
 private:
-    AP_HAL::BetterStream* cliSerial;
 
     // must be the first AP_Param variable declared to ensure its
     // constructor runs before the constructors of the other AP_Param
@@ -434,7 +432,6 @@ private:
     bool set_mode(Mode &mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
 
-    void do_erase_logs(void);
     void Log_Write_Performance();
     void Log_Write_Steering();
     void Log_Write_Startup(uint8_t type);
@@ -451,7 +448,6 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_WheelEncoder();
-    void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
     void Log_Arm_Disarm();
 
@@ -496,8 +492,6 @@ private:
     void read_battery(void);
     void read_receiver_rssi(void);
     void read_rangefinders(void);
-    void zero_eeprom(void);
-    void print_enabled(bool b);
     void init_ardupilot();
     void startup_ground(void);
     void set_reverse(bool reverse);
@@ -509,8 +503,6 @@ private:
     void check_usb_mux(void);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
-    void print_hit_enter();
-    void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void notify_mode(enum mode new_mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -545,35 +537,8 @@ private:
 #endif
 
 public:
-    bool print_log_menu(void);
-    int8_t dump_log(uint8_t argc, const Menu::arg *argv);
-    int8_t erase_logs(uint8_t argc, const Menu::arg *argv);
-    int8_t select_logs(uint8_t argc, const Menu::arg *argv);
-    int8_t process_logs(uint8_t argc, const Menu::arg *argv);
-    int8_t setup_erase(uint8_t argc, const Menu::arg *argv);
-    int8_t setup_mode(uint8_t argc, const Menu::arg *argv);
-    int8_t reboot_board(uint8_t, const Menu::arg*);
-    int8_t main_menu_help(uint8_t argc, const Menu::arg *argv);
-    int8_t test_mode(uint8_t argc, const Menu::arg *argv);
-    void run_cli(AP_HAL::UARTDriver *port);
     void mavlink_delay_cb();
     void failsafe_check();
-    int8_t test_radio_pwm(uint8_t argc, const Menu::arg *argv);
-    int8_t test_passthru(uint8_t argc, const Menu::arg *argv);
-    int8_t test_radio(uint8_t argc, const Menu::arg *argv);
-    int8_t test_failsafe(uint8_t argc, const Menu::arg *argv);
-    int8_t test_relay(uint8_t argc, const Menu::arg *argv);
-    int8_t test_wp(uint8_t argc, const Menu::arg *argv);
-    void test_wp_print(const AP_Mission::Mission_Command& cmd);
-    int8_t test_modeswitch(uint8_t argc, const Menu::arg *argv);
-    int8_t test_logging(uint8_t argc, const Menu::arg *argv);
-    int8_t test_gps(uint8_t argc, const Menu::arg *argv);
-    int8_t test_ins(uint8_t argc, const Menu::arg *argv);
-    int8_t test_mag(uint8_t argc, const Menu::arg *argv);
-    int8_t test_rangefinder(uint8_t argc, const Menu::arg *argv);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    int8_t test_shell(uint8_t argc, const Menu::arg *argv);
-#endif
 
     void dataflash_periodic(void);
     void update_soft_armed();
@@ -583,8 +548,6 @@ public:
     uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec);
     void motor_test_stop();
 };
-
-#define MENU_FUNC(func) FUNCTOR_BIND(&rover, &Rover::func, int8_t, uint8_t, const Menu::arg *)
 
 extern const AP_HAL::HAL& hal;
 extern Rover rover;

@@ -8,7 +8,7 @@ void Rover::init_compass()
     }
 
     if (!compass.init()|| !compass.read()) {
-        cliSerial->printf("Compass initialisation failed!\n");
+        hal.console->printf("Compass initialisation failed!\n");
         g.compass_enabled = false;
     } else {
         ahrs.set_compass(&compass);
