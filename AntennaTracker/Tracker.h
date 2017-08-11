@@ -266,7 +266,5 @@ public:
     void mavlink_delay_cb();
 };
 
-#define MENU_FUNC(func) FUNCTOR_BIND(&tracker, &Tracker::func, int8_t, uint8_t, const Menu::arg *)
-
 extern const AP_HAL::HAL& hal;
 extern Tracker tracker;

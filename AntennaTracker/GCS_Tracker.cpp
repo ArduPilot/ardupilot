@@ -1,15 +1,6 @@
 #include "GCS_Tracker.h"
 #include "Tracker.h"
 
-bool GCS_Tracker::cli_enabled() const
-{
-    return false;
-}
-
-AP_HAL::BetterStream* GCS_Tracker::cliSerial() {
-    return nullptr;
-}
-
 static void mavlink_snoop_static(const mavlink_message_t* msg)
 {
     tracker.mavlink_snoop(msg);
