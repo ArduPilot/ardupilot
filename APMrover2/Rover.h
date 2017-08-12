@@ -68,7 +68,6 @@
 #include "mode.h"
 
 #include "AP_Arming.h"
-#include "compat.h"
 
 #include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
