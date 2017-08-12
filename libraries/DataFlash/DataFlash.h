@@ -50,7 +50,6 @@ class DataFlash_Class
     friend class DataFlash_Backend; // for _num_types
 
 public:
-    FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
 
     DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask);
@@ -83,13 +82,6 @@ public:
     uint16_t find_last_log() const;
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
     uint16_t get_num_logs(void);
-    void LogReadProcess(uint16_t log_num,
-                                uint16_t start_page, uint16_t end_page, 
-                                print_mode_fn printMode,
-                                AP_HAL::BetterStream *port);
-    void DumpPageInfo(AP_HAL::BetterStream *port);
-    void ShowDeviceInfo(AP_HAL::BetterStream *port);
-    void ListAvailableLogs(AP_HAL::BetterStream *port);
 
     void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
 

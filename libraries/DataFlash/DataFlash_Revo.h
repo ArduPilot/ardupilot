@@ -180,15 +180,6 @@ public:
     uint16_t start_new_log(void);
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
     uint16_t find_last_log() override;
-    void LogReadProcess(const uint16_t list_entry,
-                        uint16_t start_page, uint16_t end_page,
-                        print_mode_fn print_mode,
-                        AP_HAL::BetterStream *port);
-    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
-    void DumpPageInfo(AP_HAL::BetterStream *port);
-    void ShowDeviceInfo(AP_HAL::BetterStream *port);
-    void ListAvailableLogs(AP_HAL::BetterStream *port);
-
 
     int16_t get_log_data_raw(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);

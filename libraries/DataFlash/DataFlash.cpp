@@ -522,38 +522,6 @@ uint16_t DataFlash_Class::get_num_logs(void) {
     return backends[0]->get_num_logs();
 }
 
-void DataFlash_Class::LogReadProcess(uint16_t log_num,
-                                     uint16_t start_page, uint16_t end_page,
-                                     print_mode_fn printMode,
-                                     AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->LogReadProcess(log_num, start_page, end_page, printMode, port);
-}
-void DataFlash_Class::DumpPageInfo(AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->DumpPageInfo(port);
-}
-void DataFlash_Class::ShowDeviceInfo(AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->ShowDeviceInfo(port);
-}
-void DataFlash_Class::ListAvailableLogs(AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->ListAvailableLogs(port);
-}
-
 /* we're started if any of the backends are started */
 bool DataFlash_Class::logging_started(void) {
     for (uint8_t i=0; i< _next_backend; i++) {
