@@ -385,15 +385,14 @@ private:
     ModeRTL mode_rtl;
 
 private:
-    // private member functions
+
+    // APMrover2.cpp
+    void stats_update();
     void ahrs_update();
     void mount_update(void);
     void update_trigger(void);
     void update_alt();
     void gcs_failsafe_check(void);
-    void init_compass(void);
-    void compass_accumulate(void);
-    void compass_cal_update(void);
     void update_compass(void);
     void update_logging1(void);
     void update_logging2(void);
@@ -402,76 +401,123 @@ private:
     void update_GPS_50Hz(void);
     void update_GPS_10Hz(void);
     void update_current_mode(void);
+
+    // capabilities.cpp
+    void init_capabilities(void);
+
+    // commands_logic.cpp
+    void update_mission(void);
+    bool start_command(const AP_Mission::Mission_Command& cmd);
+    void exit_mission();
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
+    bool verify_command(const AP_Mission::Mission_Command& cmd);
+    void do_RTL(void);
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_at_dest);
+    void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_time(const AP_Mission::Mission_Command& cmd);
+    void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool verify_RTL();
+    bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_set_yaw_speed();
+    void do_wait_delay(const AP_Mission::Mission_Command& cmd);
+    void do_within_distance(const AP_Mission::Mission_Command& cmd);
+    bool verify_wait_delay();
+    bool verify_within_distance();
+    void do_change_speed(const AP_Mission::Mission_Command& cmd);
+    void do_set_home(const AP_Mission::Mission_Command& cmd);
+#if CAMERA == ENABLED
+    void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
+    void do_digicam_control(const AP_Mission::Mission_Command& cmd);
+#endif
+    void do_set_reverse(const AP_Mission::Mission_Command& cmd);
+
+    // commands.cpp
+    void update_home_from_EKF();
+    bool set_home_to_current_location(bool lock);
+    bool set_home(const Location& loc, bool lock);
+    void set_system_time_from_GPS();
+    void update_home();
+
+    // compat.cpp
+    void delay(uint32_t ms);
+    void mavlink_delay(uint32_t ms);
+
+    // control_modes.cpp
+    Mode *control_mode_from_num(enum mode num);
+    void read_control_switch();
+    uint8_t readSwitch(void);
+    void reset_control_switch();
+    void read_trim_switch();
+    bool motor_active();
+
+    // crash_check.cpp
+    void crash_check();
+
+    // events.cpp
+    void update_events(void);
+
+    // failsafe.cpp
+    void failsafe_trigger(uint8_t failsafe_type, bool on);
+#if ADVANCED_FAILSAFE == ENABLED
+    void afs_fs_check(void);
+#endif
+
+    // GCS_Mavlink.cpp
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
-    void update_sensor_status_flags(void);
     void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
-    void send_pid_tuning(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
+    void send_pid_tuning(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);
 
-    Mode *control_mode_from_num(enum mode num);
-    bool set_mode(Mode &mode, mode_reason_t reason);
-    bool mavlink_set_mode(uint8_t mode);
-
+    // Log.cpp
     void Log_Write_Performance();
     void Log_Write_Steering();
+    void Log_Write_Beacon();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
     void Log_Write_Nav_Tuning();
-    void Log_Write_Rangefinder();
-    void Log_Write_Beacon();
-    void Log_Write_Current();
     void Log_Write_Attitude();
+    void Log_Write_Rangefinder();
+    void Log_Write_Current();
+    void Log_Arm_Disarm();
     void Log_Write_RC(void);
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
     void Log_Write_Home_And_Origin();
-    void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_WheelEncoder();
+    void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
-    void Log_Arm_Disarm();
+    void Log_Write_Vehicle_Startup_Messages();
 
+    // Parameters.cpp
     void load_parameters(void);
-    bool use_pivot_steering(float yaw_error_cd);
-    void set_servos(void);
-    void update_home_from_EKF();
-    bool set_home_to_current_location(bool lock);
-    bool set_home(const Location& loc, bool lock);
-    void set_system_time_from_GPS();
-    void exit_mission();
-    void do_RTL(void);
-    bool verify_RTL();
-    bool verify_wait_delay();
-    bool verify_within_distance();
-    bool verify_nav_set_yaw_speed();
-    void update_mission(void);
-    void delay(uint32_t ms);
-    void mavlink_delay(uint32_t ms);
-    void read_control_switch();
-    uint8_t readSwitch(void);
-    void reset_control_switch();
-    void read_trim_switch();
-    void update_events(void);
-    void button_update(void);
-    void stats_update();
+
+    // radio.cpp
     void set_control_channels(void);
     void init_rc_in();
     void init_rc_out();
+    void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);
     bool throttle_failsafe_active();
     void trim_control_surfaces();
     void trim_radio();
+
+    // sensors.cpp
+    void init_compass(void);
+    void compass_accumulate(void);
     void init_barometer(bool full_calibration);
     void init_rangefinder(void);
     void init_beacon();
@@ -481,50 +527,37 @@ private:
     void update_wheel_encoder();
     void read_battery(void);
     void read_receiver_rssi(void);
+    void compass_cal_update(void);
+    void accel_cal_update(void);
     void read_rangefinders(void);
+    void button_update(void);
+    void update_sensor_status_flags(void);
+
+    // Steering.cpp
+    bool use_pivot_steering(float yaw_error_cd);
+    void set_servos(void);
+
+    // system.cpp
     void init_ardupilot();
     void startup_ground(void);
     void set_reverse(bool reverse);
-
-    void failsafe_trigger(uint8_t failsafe_type, bool on);
+    bool set_mode(Mode &mode, mode_reason_t reason);
+    bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
     void update_notify();
     void resetPerfData(void);
     void check_usb_mux(void);
+    void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
+    void notify_mode(enum mode new_mode);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
-    void notify_mode(enum mode new_mode);
-    bool start_command(const AP_Mission::Mission_Command& cmd);
-    bool verify_command(const AP_Mission::Mission_Command& cmd);
-    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_at_dest);
-    void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
-    void do_loiter_time(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-    bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
-    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
-    void do_wait_delay(const AP_Mission::Mission_Command& cmd);
-    void do_within_distance(const AP_Mission::Mission_Command& cmd);
-    void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
-    void do_change_speed(const AP_Mission::Mission_Command& cmd);
-    void do_set_home(const AP_Mission::Mission_Command& cmd);
-#if CAMERA == ENABLED
-    void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
-    void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-#endif
-    void do_set_reverse(const AP_Mission::Mission_Command& cmd);
-    void init_capabilities(void);
-    void rudder_arm_disarm_check();
     void change_arm_state(void);
-    bool disarm_motors(void);
     bool arm_motors(AP_Arming::ArmingMethod method);
-    bool motor_active();
-    void update_home();
-    void accel_cal_update(void);
-    void crash_check();
-#if ADVANCED_FAILSAFE == ENABLED
-    void afs_fs_check(void);
-#endif
+    bool disarm_motors(void);
+
+    // test.cpp
+    void print_hit_enter();
+    void print_enabled(bool b);
 
 public:
     void mavlink_delay_cb();
