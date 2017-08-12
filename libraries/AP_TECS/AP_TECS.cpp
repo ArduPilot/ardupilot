@@ -608,7 +608,8 @@ void AP_TECS::_update_throttle_with_airspeed(void)
     else
     {
         // Calculate gain scaler from specific energy error to throttle
-        float K_STE2Thr = 1 / (timeConstant() * (_STEdot_max - _STEdot_min));
+        // (_STEdot_max - _STEdot_min) / (_THRmaxf - _THRminf) is the derivative of STEdot wrt throttle measured across the max allowed throttle range.
+        float K_STE2Thr = 1 / (timeConstant() * (_STEdot_max - _STEdot_min) / (_THRmaxf - _THRminf));
 
         // Calculate feed-forward throttle
         float ff_throttle = 0;
