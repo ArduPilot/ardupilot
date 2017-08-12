@@ -228,9 +228,6 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_a
     // this is the delay, stored in seconds
     loiter_duration = cmd.p1;
 
-    // this is the distance we travel past the waypoint - not there yet so 0 initially
-    distance_past_wp = 0;
-
     Location cmdloc = cmd.content.location;
     location_sanitize(current_loc, cmdloc);
     mode_auto.set_desired_location(cmdloc, stay_active_at_dest);
