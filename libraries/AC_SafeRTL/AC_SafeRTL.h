@@ -36,7 +36,7 @@ public:
     SafeRTL_Path(bool log);
 
     // call this a couple of times per second with a position, regardless of what mode the vehicle is in
-    void update(bool position_ok, Vector3f current_pos, GCS* gcs);
+    void update(bool position_ok, Vector3f current_pos);
 
     // turn on/off accepting new points in calls to append_if_far_enough
     void accepting_new_points(bool value) { _accepting_new_points = value; }
@@ -51,7 +51,7 @@ public:
     bool pop_point(Vector3f& point);
 
     // clear return path and set home locatione
-    void reset_path(bool position_ok, const Vector3f start, GCS* gcs);
+    void reset_path(bool position_ok, const Vector3f start);
 
     bool cleanup_ready() const { return _pruning_complete && _simplification_complete; }
     bool is_active() const { return _active; }

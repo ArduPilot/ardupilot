@@ -464,7 +464,7 @@ void Copter::three_hz_loop()
     if (motors->armed()){
         Vector3f current_pos {};
         ahrs.get_relative_position_NED_origin(current_pos);
-        safe_rtl_path.update(position_ok(), current_pos, &gcs());
+        safe_rtl_path.update(position_ok(), current_pos);
     }
 }
 

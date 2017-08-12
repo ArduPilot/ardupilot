@@ -68,7 +68,7 @@ SafeRTL_Path::SafeRTL_Path(bool log) :
     _time_of_last_good_position = AP_HAL::millis();
 }
 
-void SafeRTL_Path::update(bool position_ok, Vector3f current_pos, GCS* gcs)
+void SafeRTL_Path::update(bool position_ok, Vector3f current_pos)
 {
     if (!_active || !_accepting_new_points) {
         return;
@@ -81,9 +81,7 @@ void SafeRTL_Path::update(bool position_ok, Vector3f current_pos, GCS* gcs)
             _active = false;
             if (_logging_enabled) {
                 DataFlash_Class::instance()->Log_Write_SRTL(DataFlash_Class::SRTL_DEACTIVATED_BAD_POSITION, {0.0f, 0.0f, 0.0f});
-            }
-            if (gcs) {
-                gcs->send_text(MAV_SEVERITY_WARNING,"SafeRTL Unavailable: Bad Position");
+                gcs().send_text(MAV_SEVERITY_WARNING,"SafeRTL Unavailable: Bad Position");
             }
         }
         return;
@@ -96,9 +94,7 @@ void SafeRTL_Path::update(bool position_ok, Vector3f current_pos, GCS* gcs)
         _active = false;
         if (_logging_enabled) {
             DataFlash_Class::instance()->Log_Write_SRTL(DataFlash_Class::SRTL_DEACTIVATED_CLEANUP_FAILED, {0.0f, 0.0f, 0.0f});
-        }
-        if (gcs) {
-            gcs->send_text(MAV_SEVERITY_WARNING,"SafeRTL Unavailable: Path Cleanup Failed");
+            gcs().send_text(MAV_SEVERITY_WARNING,"SafeRTL Unavailable: Path Cleanup Failed");
         }
         return;
     }
@@ -164,7 +160,7 @@ bool SafeRTL_Path::pop_point(Vector3f& point)
 /**
 *   Pass nullptr for the gcs argument if you don't want errors being reported to the user.
 */
-void SafeRTL_Path::reset_path(bool position_ok, const Vector3f start, GCS* gcs)
+void SafeRTL_Path::reset_path(bool position_ok, const Vector3f start)
 {
     // if the user wishes to deactivate safertl, deactivate it.
     if (desired_path_len == 0 || is_zero(accuracy)) {
@@ -181,9 +177,7 @@ void SafeRTL_Path::reset_path(bool position_ok, const Vector3f start, GCS* gcs)
         _active = false;
         if (_logging_enabled) {
             DataFlash_Class::instance()->Log_Write_SRTL(DataFlash_Class::SRTL_DEACTIVATED_BAD_POSITION, {0.0f, 0.0f, 0.0f});
-        }
-        if (gcs) {
-            gcs->send_text(MAV_SEVERITY_WARNING, "SafeRTL Unavailable: Bad Position");
+            gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL Unavailable: Bad Position");
         }
         return;
     }
@@ -210,8 +204,8 @@ void SafeRTL_Path::reset_path(bool position_ok, const Vector3f start, GCS* gcs)
 
         // if memory allocation failed
         if (path == nullptr || _prunable_loops == nullptr || _simplification_stack == nullptr) {
-            if (gcs) {
-                gcs->send_text(MAV_SEVERITY_WARNING, "SafeRTL Unavailable: Alloc failed");
+            if (_logging_enabled) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL Unavailable: Alloc failed");
             }
             if (path != nullptr) {
                 delete[] path;

@@ -69,10 +69,9 @@ void loop()
 
 void reset()
 {
-    GCS_Copter * none = nullptr;
-    p->reset_path(true, Vector3f{0.0f, 0.0f, 0.0f}, none);
+    p->reset_path(true, Vector3f{0.0f, 0.0f, 0.0f});
     for (Vector3f v : test_path_before) {
-        p->update(true, v, none);
+        p->update(true, v);
     }
 }
 
