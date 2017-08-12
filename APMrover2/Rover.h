@@ -23,66 +23,67 @@
 // Libraries
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_GPS/AP_GPS.h>                          // ArduPilot GPS library
-#include <AP_ADC/AP_ADC.h>                          // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_Baro/AP_Baro.h>
-#include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
-#include <AP_Math/AP_Math.h>                        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
-#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
-#include <AP_AHRS/AP_AHRS.h>                        // ArduPilot Mega DCM Library
-#include <AP_NavEKF2/AP_NavEKF2.h>
-#include <AP_NavEKF3/AP_NavEKF3.h>
-#include <AP_Mission/AP_Mission.h>                  // Mission command library
-#include <AP_Rally/AP_Rally.h>
-#include <AP_Terrain/AP_Terrain.h>
 #include <AC_PID/AC_P.h>
 #include <AC_PID/AC_PID.h>
-#include <RC_Channel/RC_Channel.h>                  // RC Channel Library
-#include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
-#include <Filter/Filter.h>                          // Filter library
-#include <Filter/Butter.h>                          // Filter library - butterworth filter
-#include <AP_Buffer/AP_Buffer.h>                    // FIFO buffer library
-#include <Filter/ModeFilter.h>                      // Mode Filter from Filter library
-#include <Filter/AverageFilter.h>                   // Mode Filter from Filter library
-#include <AP_Relay/AP_Relay.h>                      // APM relay
-#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Mount/AP_Mount.h>                      // Camera/Antenna mount
-#include <AP_Camera/AP_Camera.h>                    // Camera triggering
-#include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
+#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
+#include <AP_ADC/AP_ADC.h>                          // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_AHRS/AP_AHRS.h>                        // ArduPilot Mega DCM Library
 #include <AP_Airspeed/AP_Airspeed.h>                // needed for AHRS build
-#include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
-#include <DataFlash/DataFlash.h>
-#include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
-#include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
-#include <AP_Navigation/AP_Navigation.h>
-#include <AP_L1_Control/AP_L1_Control.h>
-#include <APM_Control/AR_AttitudeControl.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
-#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
-#include "AP_MotorsUGV.h"
-
-#include "mode.h"
-
-#include "AP_Arming.h"
-
-#include <AP_Notify/AP_Notify.h>                    // Notify library
-#include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
-#include <AP_OpticalFlow/AP_OpticalFlow.h>          // Optical Flow library
-#include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
+#include <AP_Buffer/AP_Buffer.h>                    // FIFO buffer library
 #include <AP_Button/AP_Button.h>
+#include <AP_Camera/AP_Camera.h>                    // Camera triggering
+#include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
+#include <AP_Declination/AP_Declination.h>          // Compass declination library
+#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <AP_GPS/AP_GPS.h>                          // ArduPilot GPS library
+#include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
+#include <AP_L1_Control/AP_L1_Control.h>
+#include <AP_Math/AP_Math.h>                        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_Menu/AP_Menu.h>
+#include <AP_Mission/AP_Mission.h>                  // Mission command library
+#include <AP_Mount/AP_Mount.h>                      // Camera/Antenna mount
+#include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
+#include <AP_Navigation/AP_Navigation.h>
+#include <AP_Notify/AP_Notify.h>                    // Notify library
+#include <AP_OpticalFlow/AP_OpticalFlow.h>          // Optical Flow library
+#include <AP_Param/AP_Param.h>
+#include <AP_Rally/AP_Rally.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
+#include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
+#include <AP_Relay/AP_Relay.h>                      // APM relay
+#include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
+#include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
+#include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Stats/AP_Stats.h>                      // statistics library
-#include <AP_Beacon/AP_Beacon.h>
+#include <AP_Terrain/AP_Terrain.h>
+#include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
-
-// Configuration
-#include "config.h"
+#include <APM_Control/AR_AttitudeControl.h>
+#include <DataFlash/DataFlash.h>
+#include <Filter/AverageFilter.h>                   // Mode Filter from Filter library
+#include <Filter/Butter.h>                          // Filter library - butterworth filter
+#include <Filter/Filter.h>                          // Filter library
+#include <Filter/ModeFilter.h>                      // Mode Filter from Filter library
+#include <RC_Channel/RC_Channel.h>                  // RC Channel Library
+#include <StorageManager/StorageManager.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
 
 // Local modules
+#include "AP_MotorsUGV.h"
+#include "mode.h"
+#include "AP_Arming.h"
+// Configuration
+#include "config.h"
 #include "defines.h"
 #if ADVANCED_FAILSAFE == ENABLED
 #include "afs_rover.h"
@@ -90,12 +91,6 @@
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
 #include "GCS_Rover.h"
-
-#include <AP_Declination/AP_Declination.h>          // ArduPilot Mega Declination Helper Library
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
-#endif
 
 class Rover : public AP_HAL::HAL::Callbacks {
 public:
