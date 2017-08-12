@@ -53,13 +53,6 @@ public:
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override;
     uint16_t get_num_logs() override;
     uint16_t start_new_log(void) override;
-    void LogReadProcess(const uint16_t log_num,
-                        uint16_t start_page, uint16_t end_page, 
-                        print_mode_fn print_mode,
-                        AP_HAL::BetterStream *port) override;
-    void DumpPageInfo(AP_HAL::BetterStream *port) override;
-    void ShowDeviceInfo(AP_HAL::BetterStream *port) override;
-    void ListAvailableLogs(AP_HAL::BetterStream *port) override;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     void flush(void) override;

@@ -214,7 +214,6 @@ void DataFlashTest_AllTypes::setup(void)
 
     // Test
     hal.scheduler->delay(20);
-    dataflash.ShowDeviceInfo(hal.console);
 
     Log_Write_TypeMessages();
     Log_Write_TypeMessages_Log_Write();
