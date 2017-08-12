@@ -660,8 +660,8 @@ void Plane::update_load_factor(void)
         // limit to 85 degrees to prevent numerical errors
         demanded_roll = 85;
     }
-    aerodynamic_load_factor = 1.0f / cosf(radians(demanded_roll)); // limited to ~11.5g at 85 deg
-    stall_factor = safe_sqrt(aerodynamic_load_factor); // stall speed increases with sqrt of load factor
+        stall_factor = safe_sqrt(1.0f / cosf(radians(demanded_roll))); // limited to ~11.5g at 85 deg
+        // stall speed increases with sqrt of aerodynamic load factor
 
     if (!aparm.stall_prevention) {
         // stall prevention is disabled

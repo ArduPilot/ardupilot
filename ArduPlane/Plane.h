@@ -590,9 +590,9 @@ private:
     // we separate out rudder input to allow for RUDDER_ONLY=1
     int16_t rudder_input;
 
-    // the aerodymamic load factor. This is calculated from the demanded
-    // roll before the roll is clipped, using 1/sqrt(cos(nav_roll))
-    float aerodynamic_load_factor = 1.0f;
+    // the increase in stall speed due to G force in turns. This is calculated from the demanded
+    // roll before the roll is clipped, using sqrt(aerodynamic_load_factor)
+    float stall_factor = 1.0f;
 
     // a smoothed airspeed estimate, used for limiting roll angle
     float smoothed_airspeed;
