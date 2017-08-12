@@ -172,12 +172,12 @@ void QuadPlane::tailsitter_output(void)
 
         // temporary debug logging
         static int dec_count=0;
-        if ((dec_count++ >= 3) && (thr_boost > 1.05f)) {
+        if ((dec_count++ >= 40) && (thr_boost > 1.05f)) {
             dec_count = 0;
-//            hal.console->printf("roll_error_norm: %5.3f, thr_boosted: %5.3f, thr_scaled: %5.3f\n",
-//                    (double) roll_error_norm,
-//                    (double) thr_boosted,
-//                    (double) thr_scaled);
+            hal.console->printf("norm_err_max: %5.3f, thr_boost: %5.3f, ail_scale: %5.3f\n",
+                    (double) norm_err_max,
+                    (double) thr_boost,
+                    (double) ail_scale);
             DataFlash_Class::instance()->Log_Write("TCOM", "TimeUS,Perr,YErr,ThrA,ElvD,AilS,PkP,DesY,Yaw,Gscl", "Qfffffffff",
                                                    AP_HAL::micros64(),
                                                    (double) pitch_error_norm,
