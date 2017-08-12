@@ -132,15 +132,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(speed_turn_gain,    "SPEED_TURN_GAIN",  50),
 
-    // @Param: SPEED_TURN_DIST
-    // @DisplayName: Distance to turn to start reducing speed
-    // @Description: The distance to the next turn at which the rover reduces its target speed by the SPEED_TURN_GAIN
-    // @Units: m
-    // @Range: 0 100
-    // @Increment: 0.1
-    // @User: Standard
-    GSCALAR(speed_turn_dist,    "SPEED_TURN_DIST",  2.0f),
-
     // @Param: BRAKING_PERCENT
     // @DisplayName: Percentage braking to apply
     // @Description: The maximum reverse throttle braking percentage to apply when cornering
