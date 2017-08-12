@@ -7,7 +7,6 @@
 #include <GCS_MAVLink/GCS.h>
 
 #include <bitset>
-#include <new>          // std::nothrow
 #include <vector>
 
 #define SAFERTL_ACCURACY_DEFAULT 2.0f

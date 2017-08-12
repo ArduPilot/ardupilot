@@ -187,35 +187,25 @@ void SafeRTL_Path::reset_path(bool position_ok, const Vector3f start)
 
     // if it's time to change the size of the arrays, delete them, then reinitialize them
     if (desired_path_len != _current_path_len) {
-        if (path != nullptr) {
-            delete[] path;
-        }
-        if (_prunable_loops != nullptr) {
-            delete[] _prunable_loops;
-        }
-        if (_simplification_stack != nullptr) {
-            delete[] _simplification_stack;
-        }
+        free(path);
+        free(_prunable_loops);
+        free(_simplification_stack);
+
         _current_path_len = desired_path_len;
 
-        path = new (std::nothrow) Vector3f[_current_path_len];
-        _prunable_loops = new (std::nothrow) loop[_current_path_len * SAFERTL_LOOP_BUFFER_LEN_MULT];
-        _simplification_stack = new (std::nothrow) start_finish[_current_path_len * SAFERTL_SIMPLIFICATION_STACK_LEN_MULT];
+        path = (Vector3f*) malloc(_current_path_len * sizeof(Vector3f));
+        _prunable_loops = (loop*) malloc(_current_path_len * sizeof(loop));
+        _simplification_stack = (start_finish*) malloc(_current_path_len * sizeof(start_finish));
 
         // if memory allocation failed
         if (path == nullptr || _prunable_loops == nullptr || _simplification_stack == nullptr) {
             if (_logging_enabled) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL Unavailable: Alloc failed");
             }
-            if (path != nullptr) {
-                delete[] path;
-            }
-            if (_prunable_loops != nullptr) {
-                delete[] _prunable_loops;
-            }
-            if (_simplification_stack != nullptr) {
-                delete[] _simplification_stack;
-            }
+            free(path);
+            free(_prunable_loops);
+            free(_simplification_stack);
+
             _current_path_len = 0;
             _active = false;
             return;
