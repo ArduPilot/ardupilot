@@ -801,7 +801,7 @@ private:
 #endif // CONFIG_HAL_BOARD
     
     void adjust_nav_pitch_throttle(void);
-    void update_load_factor(void);
+    void update_stall_factor(void);
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_fence_status(mavlink_channel_t chan);
