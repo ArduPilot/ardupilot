@@ -104,7 +104,7 @@ public:
         k_param_crosstrack_entry_angle,
         k_param_speed_cruise,
         k_param_speed_turn_gain,
-        k_param_speed_turn_dist,
+        k_param_speed_turn_dist,    // unused
         k_param_ch7_option,
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
@@ -235,7 +235,6 @@ public:
     //
     AP_Float    speed_cruise;
     AP_Int8     speed_turn_gain;
-    AP_Float    speed_turn_dist;
     AP_Int8     ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
