@@ -67,12 +67,16 @@ void QuadPlane::tailsitter_output(void)
     const float throttle_servo_max = 100.0f;
 
     static float orig_pkP = -1.0f;
+    static float orig_pkD = -1.0f;
     static float orig_rkP = -1.0f;
     static float orig_ykP = -1.0f;
 
     if (tailsitter.tcomp_gain > 0) {
         if (orig_pkP < 0.0f) {
             orig_pkP = attitude_control->get_rate_pitch_pid().kP();
+        }
+        if (orig_pkD < 0.0f) {
+            orig_pkD = attitude_control->get_rate_pitch_pid().kD();
         }
         if (orig_rkP < 0.0f) {
             orig_rkP = attitude_control->get_rate_roll_pid().kP();
@@ -156,13 +160,15 @@ void QuadPlane::tailsitter_output(void)
 
         // reduce PID gains in proportion to throttle level
         float pitch_kP = orig_pkP;
+        float pitch_kD = orig_pkD;
         float roll_kP = orig_rkP;
         float yaw_kP = orig_rkP;
 
         float gain_scale = 1.0;
-        if (true && avg_thr_norm > 0.5f) { //motors->get_throttle_hover()) {
-            gain_scale = 0.5f / avg_thr_norm;
+        if (avg_thr_norm > 0.5f) { //motors->get_throttle_hover()) {
+            gain_scale = fmaxf(1.0f, 0.35f / avg_thr_norm);
             pitch_kP *= gain_scale;
+            pitch_kD *= gain_scale;
             roll_kP *= gain_scale;
             yaw_kP *= gain_scale;
         }
