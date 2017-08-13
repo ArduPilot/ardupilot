@@ -33,7 +33,6 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 #endif
 
-
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: 0_BAUD
     // @DisplayName: Serial0 baud rate
@@ -147,6 +146,8 @@ void AP_SerialManager::init_console()
                          AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX);
 }
 
+extern bool g_nsh_should_exit;
+
 // init - // init - initialise serial ports
 void AP_SerialManager::init()
 {
@@ -163,6 +164,14 @@ void AP_SerialManager::init()
     
     // initialise serial ports
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
+
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+        if (i == 5 && state[i].protocol != SerialProtocol_None) {
+            // tell nsh to exit to free up this uart
+            g_nsh_should_exit = true;
+        }
+#endif
+        
         if (state[i].uart != nullptr) {
             switch (state[i].protocol) {
                 case SerialProtocol_None:
