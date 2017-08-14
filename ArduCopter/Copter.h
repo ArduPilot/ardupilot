@@ -223,7 +223,7 @@ private:
     AP_Mission mission;
 
     // Arming/Disarming mangement class
-    AP_Arming_Copter arming {ahrs, barometer, compass, battery, inertial_nav, ins};
+    AP_Arming_Copter arming {ahrs, barometer, compass, battery, inertial_nav, ins, &fence};
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED

@@ -5,6 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AC_Fence/AC_Fence.h>
 
 class AP_Arming {
 public:
@@ -23,6 +24,7 @@ public:
         ARMING_CHECK_LOGGING    = 0x0400,
         ARMING_CHECK_SWITCH     = 0x0800,
         ARMING_CHECK_GPS_CONFIG = 0x1000,
+        ARMING_CHECK_FENCE      = 0x2000,
     };
 
     enum ArmingMethod {
@@ -38,7 +40,7 @@ public:
     };
 
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-              const AP_BattMonitor &battery);
+              const AP_BattMonitor &battery, const AC_Fence *fence=nullptr);
 
     // these functions should not be used by Copter which holds the armed state in the motors library
     ArmingRequired arming_required();
@@ -74,6 +76,7 @@ protected:
     const AP_Baro           &barometer;
     Compass                 &_compass;
     const AP_BattMonitor    &_battery;
+    const AC_Fence          *_fence;
 
     // internal members
     bool                    armed:1;
@@ -94,11 +97,15 @@ protected:
 
     virtual bool gps_checks(bool report);
 
+    virtual bool position_checks(bool report) { return true; }
+
     bool battery_checks(bool report);
 
     bool hardware_safety_check(bool report);
 
     bool board_voltage_checks(bool report);
+
+    bool fence_checks(bool report);
 
     bool manual_transmitter_checks(bool report);
 

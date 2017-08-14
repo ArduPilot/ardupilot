@@ -40,8 +40,8 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: CHECK
     // @DisplayName: Arm Checks to Peform (bitmask)
     // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72. For most users it is recommended that you set this to 1 to enable all checks.
-    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Failsafe,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration
-    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration
+    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Failsafe,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration,8192:Fence
+    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:Fence
     // @User: Standard
     AP_GROUPINFO("CHECK",        2,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
@@ -75,11 +75,12 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
 AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                     const AP_BattMonitor &battery) :
+                     const AP_BattMonitor &battery, const AC_Fence *fence) :
     ahrs(ahrs_ref),
     barometer(baro),
     _compass(compass),
     _battery(battery),
+    _fence(fence),
     armed(false),
     arming_method(NONE)
 {
@@ -466,6 +467,26 @@ bool AP_Arming::board_voltage_checks(bool report)
     return true;
 }
 
+bool AP_Arming::fence_checks(bool report)
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_FENCE)) {
+        if (_fence == nullptr) {
+            // not a fence capable vehicle
+            return true;
+        }
+        // check fence is initialised
+        const char *fail_msg = nullptr;
+        if (!_fence->pre_arm_check(fail_msg)) {
+            if (report && fail_msg != nullptr) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Fence : %s", fail_msg);
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
@@ -484,7 +505,9 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  battery_checks(report)
         &  logging_checks(report)
         &  manual_transmitter_checks(report)
-        &  board_voltage_checks(report);
+        &  board_voltage_checks(report)
+        &  position_checks(report)
+        &  fence_checks(report);
 }
 
 bool AP_Arming::arm_checks(uint8_t method)
