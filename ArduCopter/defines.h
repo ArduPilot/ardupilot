@@ -72,6 +72,7 @@ enum aux_sw_func {
     AUXSW_PRECISION_LOITER =    39,  // enable precision loiter
     AUXSW_AVOID_PROXIMITY =     40,  // enable object avoidance using proximity sensors (ie. horizontal lidar)
     AUXSW_ARMDISARM =           41,  // arm or disarm vehicle
+    AUXSW_SAFE_RTL =            42, // change to SafeRTL flight mode
     AUXSW_SWITCH_MAX,
 };
 
@@ -104,6 +105,7 @@ enum control_mode_t {
     THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
     AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
     GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
+    SAFE_RTL =     21,  // SAFE_RTL returns to home by retracing its steps
 };
 
 enum mode_reason_t {
@@ -218,6 +220,15 @@ enum RTLState {
     RTL_LoiterAtHome,
     RTL_FinalDescent,
     RTL_Land
+};
+
+// Safe RTL states
+enum SafeRTLState {
+    SafeRTL_WaitForPathCleanup,
+    SafeRTL_PathFollow,
+    SafeRTL_PreLandPosition,
+    SafeRTL_Descend,
+    SafeRTL_Land
 };
 
 // Alt_Hold states

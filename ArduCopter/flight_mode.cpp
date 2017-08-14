@@ -109,6 +109,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             success = guided_nogps_init(ignore_checks);
             break;
 
+        case SAFE_RTL:
+            success = safe_rtl_init(ignore_checks);
+            break;
+
         default:
             success = false;
             break;
@@ -246,6 +250,11 @@ void Copter::update_flight_mode()
             guided_nogps_run();
             break;
 
+
+        case SAFE_RTL:
+            safe_rtl_run();
+            break;
+
         default:
             break;
     }
@@ -297,6 +306,11 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
         }
     }
 #endif //HELI_FRAME
+
+    if(old_control_mode == SAFE_RTL){
+        // allow new breadcrumbs again.
+        safe_rtl_path.accepting_new_points(true);
+    }
 }
 
 // returns true or false whether mode requires GPS
@@ -307,6 +321,7 @@ bool Copter::mode_requires_GPS(control_mode_t mode)
         case GUIDED:
         case LOITER:
         case RTL:
+        case SAFE_RTL:
         case CIRCLE:
         case DRIFT:
         case POSHOLD:
@@ -485,9 +500,11 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     case GUIDED_NOGPS:
         port->printf("GUIDED_NOGPS");
         break;
+    case SAFE_RTL:
+        port->printf("SAFE_RTL");
+        break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);
         break;
     }
 }
-

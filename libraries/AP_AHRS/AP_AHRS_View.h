@@ -77,6 +77,15 @@ public:
         return ahrs.get_position(loc);
     }
 
+    bool get_origin(struct Location &loc) const {
+        return ahrs.get_origin(loc);
+    }
+
+    Location get_home(void) const {
+        return ahrs.get_home();
+    }
+
+
     Vector3f wind_estimate(void) {
         return ahrs.wind_estimate();
     }
