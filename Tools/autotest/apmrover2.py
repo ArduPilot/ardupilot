@@ -122,6 +122,68 @@ def do_set_mode_via_command_long(mavproxy, mav):
         time.sleep(0.1)
     return False
 
+def drive_brake_get_stopping_distance(mavproxy, mav, speed):
+    # measure our stopping distance:
+    old_cruise_speed = get_parameter(mavproxy, 'CRUISE_SPEED')
+    old_accel_max = get_parameter(mavproxy, 'ATC_ACCEL_MAX')
+
+    # controller tends not to meet cruise speed (max of ~14 when 15
+    # set), thus *1.2
+    set_parameter(mavproxy, 'CRUISE_SPEED', speed*1.2)
+    # at time of writing, the vehicle is only capable of 10m/s/s accel
+    set_parameter(mavproxy, 'ATC_ACCEL_MAX', 15)
+    mavproxy.send("mode STEERING\n")
+    wait_mode(mav, 'STEERING')
+    mavproxy.send('rc 3 2000\n')
+    wait_groundspeed(mav, 15, 100)
+    initial = mav.location()
+    initial_time = time.time()
+    while time.time() - initial_time < 2:
+        # wait for a position update from the autopilot
+        start = mav.location()
+        if start != initial:
+            break
+    mavproxy.send('rc 3 1500\n')
+    wait_groundspeed(mav, 0, 0.2) # why do we not stop?!
+    initial = mav.location()
+    initial_time = time.time()
+    while time.time() - initial_time < 2:
+        # wait for a position update from the autopilot
+        stop = mav.location()
+        if stop != initial:
+            break
+    delta = get_distance(start, stop)
+
+    set_parameter(mavproxy, 'CRUISE_SPEED', old_cruise_speed)
+    set_parameter(mavproxy, 'ATC_ACCEL_MAX', old_accel_max)
+
+    return delta
+
+def drive_brake(mavproxy, mav):
+    old_using_brake = get_parameter(mavproxy, 'ATC_BRAKE')
+    old_cruise_speed = get_parameter(mavproxy, 'CRUISE_SPEED')
+
+    set_parameter(mavproxy, 'CRUISE_SPEED', 15)
+    set_parameter(mavproxy, 'ATC_BRAKE', 0)
+
+    distance_without_brakes = drive_brake_get_stopping_distance(mavproxy, mav, 15)
+
+    # brakes on:
+    set_parameter(mavproxy, 'ATC_BRAKE', 1)
+    distance_with_brakes = drive_brake_get_stopping_distance(mavproxy, mav, 15)
+    # revert state:
+    set_parameter(mavproxy, 'ATC_BRAKE', old_using_brake)
+    set_parameter(mavproxy, 'CRUISE_SPEED', old_cruise_speed)
+
+    delta = distance_without_brakes - distance_with_brakes
+    if delta < distance_without_brakes*0.05: # 5% isn't asking for much
+        print("Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)" % (distance_with_brakes, distance_without_brakes, delta))
+        return False
+    else:
+        print("Brakes work (with=%0.2fm without=%0.2fm delta=%0.2fm)" % (distance_with_brakes, distance_without_brakes, delta))
+
+    return True
+
 vinfo = vehicleinfo.VehicleInfo()
 
 def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None, gdbserver=False, speedup=10):
@@ -156,9 +218,8 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
     for x in params:
         mavproxy.send("param load %s\n" % os.path.join(testdir, x))
         mavproxy.expect('Loaded [0-9]+ parameters')
-    mavproxy.send("param set LOG_REPLAY 1\n")
-    mavproxy.send("param set LOG_DISARMED 1\n")
-    time.sleep(3)
+    set_parameter(mavproxy, 'LOG_REPLAY', 1)
+    set_parameter(mavproxy, 'LOG_DISARMED', 1)
 
     # restart with new parms
     util.pexpect_close(mavproxy)
@@ -213,6 +274,9 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
             failed = True
         if not drive_mission(mavproxy, mav, os.path.join(testdir, "rover1.txt")):
             print("Failed mission")
+            failed = True
+        if not drive_brake(mavproxy, mav):
+            print("Failed brake")
             failed = True
         if not disarm_rover(mavproxy, mav):
             print("Failed to DISARM")
