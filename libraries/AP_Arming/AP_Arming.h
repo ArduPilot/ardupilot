@@ -105,6 +105,6 @@ protected:
 
     virtual enum HomeState home_status() const = 0;
 
-    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4]) const;
+    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4], const bool check_min_max = true) const;
 
 };

@@ -567,7 +567,8 @@ AP_Arming::ArmingRequired AP_Arming::arming_required()
 }
 
 // Copter and sub share the same RC input limits
-bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channel *channels[4]) const
+// Copter checks that min and max have been configured by default, Sub does not
+bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channel *channels[4], const bool check_min_max) const
 {
     // set rc-checks to success if RC checks are disabled
     if ((checks_to_perform != ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_RC)) {
@@ -582,7 +583,7 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
         const RC_Channel *channel = channels[i];
         const char *channel_name = channel_names[i];
         // check if radio has been calibrated
-        if (!channel->min_max_configured()) {
+        if (check_min_max && !channel->min_max_configured()) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: RC %s not configured", channel_name);
             }
