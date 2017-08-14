@@ -621,7 +621,7 @@ void Plane::update_flight_mode(void)
     case TRAINING: {
         training_manual_roll = false;
         training_manual_pitch = false;
-        update_load_factor();
+        update_stall_factor();
         
         // if the roll is past the set roll limit, then
         // we set target roll to the limit
@@ -670,7 +670,7 @@ void Plane::update_flight_mode(void)
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
-        update_load_factor();
+        update_stall_factor();
         float pitch_input = channel_pitch->norm_input();
         if (pitch_input > 0) {
             nav_pitch_cd = pitch_input * aparm.pitch_limit_max_cd;
@@ -705,7 +705,7 @@ void Plane::update_flight_mode(void)
         // Thanks to Yury MonZon for the altitude limit code!
         nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
-        update_load_factor();
+        update_stall_factor();
         update_fbwb_speed_height();
         break;
         
@@ -724,7 +724,7 @@ void Plane::update_flight_mode(void)
         if (!cruise_state.locked_heading) {
             nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
             nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
-            update_load_factor();
+            update_stall_factor();
         } else {
             calc_nav_roll();
         }
@@ -743,7 +743,7 @@ void Plane::update_flight_mode(void)
         // holding altitude at the altitude we set when we
         // switched into the mode
         nav_roll_cd  = roll_limit_cd / 3;
-        update_load_factor();
+        update_stall_factor();
         calc_nav_pitch();
         calc_throttle();
         break;
@@ -930,7 +930,7 @@ void Plane::update_alt()
                                                  get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
-                                                 aerodynamic_load_factor);
+                                                 stall_factor);
     }
 }
 

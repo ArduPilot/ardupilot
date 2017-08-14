@@ -556,7 +556,7 @@ void Plane::calc_nav_roll()
     }
 
     nav_roll_cd = constrain_int32(commanded_roll, -roll_limit_cd, roll_limit_cd);
-    update_load_factor();
+    update_stall_factor();
 }
 
 
@@ -653,15 +653,15 @@ void Plane::adjust_nav_pitch_throttle(void)
   calculate a new aerodynamic_load_factor and limit nav_roll_cd to
   ensure that the aircraft can achieve required airspeed to maintain altitude in turns
  */
-void Plane::update_load_factor(void)
+void Plane::update_stall_factor(void)
 {
     float demanded_roll = fabsf(nav_roll_cd*0.01f);
     if (demanded_roll > 85) {
         // limit to 85 degrees to prevent numerical errors
         demanded_roll = 85;
     }
-    aerodynamic_load_factor = 1.0f / cosf(radians(demanded_roll)); // limited to ~11.5g at 85 deg
-    stall_factor = safe_sqrt(aerodynamic_load_factor); // stall speed increases with sqrt of load factor
+        stall_factor = safe_sqrt(1.0f / cosf(radians(demanded_roll))); // limited to ~11.5g at 85 deg
+        // stall speed increases with sqrt of aerodynamic load factor
 
     if (!aparm.stall_prevention) {
         // stall prevention is disabled
