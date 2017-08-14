@@ -225,7 +225,7 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_a
     // this is the delay, stored in seconds
     loiter_duration = cmd.p1;
 
-    // get heading to following waypoint (auto mode reduces speed to allowing corning without large overshoot)
+    // get heading to following waypoint (auto mode reduces speed to allow corning without large overshoot)
     // in case of non-zero loiter duration, we provide heading-unknown to signal we should stop at the point
     float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN;
     if (loiter_duration == 0) {
