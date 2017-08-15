@@ -84,7 +84,8 @@ protected:
     AP_Int8 _pwm_type;  // PWM output type
     AP_Int8 _pwm_freq;  // PWM output freq for brushed motors
     AP_Int8 _disarm_disable_pwm;    // disable PWM output while disarmed
-    AP_Int8 _slew_rate; // slew rate expressed as a percentage / second
+    AP_Int8 _slew_rate;   // slew rate expressed as a percentage / second
+    AP_Int16 _relay_map;  // output to relay mapping for brushed controler
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500

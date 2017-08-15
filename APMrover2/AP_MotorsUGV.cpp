@@ -54,6 +54,14 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SLEWRATE", 4, AP_MotorsUGV, _slew_rate, 100),
 
+    // @Param: RELAY_MAP
+    // @DisplayName: Relay map bitmask to associate a relay to an output.
+    // @Description: Map bitmask of which relay to associate with an ouput to allow direction handling of brushed controler like H-Bridge. Output order is Throttle, Steering, ThrottleLeft, ThrottleRight. Zero means disable.  You can select whatever mapping you prefer by adding together the values of each output. Default is 8448 (0x2100 in hexa), which mean no relay for Throttle and Steering, relay 1 for ThrottleLeft and relay 2 for ThrottleRight.
+    // @Values: 0:Disable, 1:Throttle-relay1, 2:Throttle-relay2, 3:Throttle-relay3, 4:Throttle-relay4, 16:Steering-relay1, 32:Steering-relay2, 48:Steering-relay3, 64:Steering-relay4, 256:ThrottleLeft-relay1, 512:ThrottleLeft-relay2, 768:ThrottleLeft-relay3, 1024:ThrottleLeft-relay4, 4096:ThrottleRight-relay1, 8192:ThrottleRight-relay2, 12288:ThrottleRight-relay3, 16384:ThrottleRight-relay4,
+    // @Bitmask: 0:None,1:Throttle,2:Steering,3:ThrottleLeft,4:ThrottleRight
+    // @User: Advanced
+    AP_GROUPINFO("RELAY_MAP", 5, AP_MotorsUGV, _relay_map, 0x2100),
+
     AP_GROUPEND
 };
 
@@ -118,12 +126,12 @@ void AP_MotorsUGV::output(bool armed, float dt)
 void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
 {
     // always allow steering to move
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
+    output_throttle(SRV_Channel::k_steering, steering);
 
     // output to throttle channels
     if (armed) {
         // handle armed case
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+        output_throttle(SRV_Channel::k_throttle, throttle);
     } else {
         // handle disarmed case
         if (_disarm_disable_pwm) {
@@ -193,39 +201,47 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100
 void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle)
 {
-    // sanity check servo function
-    if (function != SRV_Channel::k_throttle && function != SRV_Channel::k_throttleLeft && function != SRV_Channel::k_throttleRight) {
-        return;
-    }
-
     // constrain output
-    throttle = constrain_float(throttle, -100.0f, 100.0f);
+    if (function != SRV_Channel::k_steering) {
+        throttle = constrain_float(throttle, -100.0f, 100.0f);
+    }
 
     // set relay if necessary
     if (_pwm_type == PWM_TYPE_BRUSHED) {
+        // invert the direction in case of reversed ouput
+        const SRV_Channel *outch = SRV_Channels::get_channel_for(function);
+        const int8_t reverse_multiplier = outch == nullptr ? 1 : outch->get_reversed() ? -1 : 1;
+        throttle = reverse_multiplier * throttle;
         switch (function) {
             case SRV_Channel::k_throttle:
+                _relayEvents.do_set_relay(((int16_t)_relay_map & 0x000F) - 1, is_negative(throttle));
+                break;
+            case SRV_Channel::k_steering:
+                _relayEvents.do_set_relay((((int16_t)_relay_map & 0x00F0) >> 4) - 1, is_negative(throttle));
+                break;
             case SRV_Channel::k_throttleLeft:
-                _relayEvents.do_set_relay(0, is_negative(throttle));
+                _relayEvents.do_set_relay((((int16_t)_relay_map & 0x0F00) >> 8) - 1, is_negative(throttle));
                 break;
             case SRV_Channel::k_throttleRight:
-                _relayEvents.do_set_relay(1, is_negative(throttle));
+                _relayEvents.do_set_relay((((int16_t)_relay_map & 0xF000) >> 12) - 1, is_negative(throttle));
                 break;
             default:
                 // do nothing
                 break;
         }
-        throttle = fabsf(throttle);
+        // invert the ouput to always have positive value calculated by calc_pwm
+        throttle = reverse_multiplier * fabsf(throttle);
     }
 
     // output to servo channel
     switch (function) {
         case SRV_Channel::k_throttle:
+        case SRV_Channel::k_steering:
             SRV_Channels::set_output_scaled(function,  throttle);
             break;
         case SRV_Channel::k_throttleLeft:
         case SRV_Channel::k_throttleRight:
-            SRV_Channels::set_output_scaled(function,  throttle*10.0f);
+            SRV_Channels::set_output_scaled(function,  throttle * 10.0f);
             break;
         default:
             // do nothing
@@ -291,6 +307,8 @@ void AP_MotorsUGV::setup_safety_output()
 {
     if (_pwm_type == PWM_TYPE_BRUSHED) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle);
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_steering);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
     }
