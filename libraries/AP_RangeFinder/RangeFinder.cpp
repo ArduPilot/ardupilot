@@ -701,28 +701,26 @@ void RangeFinder::detect_instance(uint8_t instance)
     }
 }
 
-// query status
-RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
-{
-    // sanity check instance
-    if (instance >= RANGEFINDER_MAX_INSTANCES) {
-        return RangeFinder_NotConnected;
+AP_RangeFinder_Backend *RangeFinder::get_backend(uint8_t id) const {
+    if (id >= num_instances) {
+        return nullptr;
     }
-
-    if (drivers[instance] == nullptr || state[instance].type == RangeFinder_TYPE_NONE) {
-        return RangeFinder_NotConnected;
+    if (drivers[id] != nullptr) {
+        if (drivers[id]->type() == RangeFinder_TYPE_NONE) {
+            // pretend it isn't here; disabled at runtime?
+            return nullptr;
+        }
     }
-
-    return state[instance].status;
-}
+    return drivers[id];
+};
 
 RangeFinder::RangeFinder_Status RangeFinder::status_orient(enum Rotation orientation) const
 {
-    uint8_t i;
-    if (find_instance(orientation, i)) {
-        return status(i);
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return RangeFinder_NotConnected;
     }
-    return RangeFinder_NotConnected;
+    return backend->status();
 }
 
 void RangeFinder::handle_msg(mavlink_message_t *msg)
@@ -738,93 +736,86 @@ void RangeFinder::handle_msg(mavlink_message_t *msg)
 // return true if we have a range finder with the specified orientation
 bool RangeFinder::has_orientation(enum Rotation orientation) const
 {
-    uint8_t i;
-    return find_instance(orientation, i);
+    return (find_instance(orientation) != nullptr);
 }
 
 // find first range finder instance with the specified orientation
-bool RangeFinder::find_instance(enum Rotation orientation, uint8_t &instance) const
+AP_RangeFinder_Backend *RangeFinder::find_instance(enum Rotation orientation) const
 {
     for (uint8_t i=0; i<num_instances; i++) {
-        if (state[i].orientation == orientation) {
-            instance = i;
-            return true;
+        AP_RangeFinder_Backend *backend = get_backend(i);
+        if (backend == nullptr) {
+            continue;
         }
+        if (backend->orientation() != orientation) {
+            continue;
+        }
+        return backend;
     }
-    return false;
+    return nullptr;
 }
 
 uint16_t RangeFinder::distance_cm_orient(enum Rotation orientation) const
 {
-    uint8_t i;
-    if (find_instance(orientation, i)) {
-        return distance_cm(i);
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
     }
-    return 0;
+    return backend->distance_cm();
 }
 
 uint16_t RangeFinder::voltage_mv_orient(enum Rotation orientation) const
 {
-    uint8_t i;
-    if (find_instance(orientation, i)) {
-        return voltage_mv(i);
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
     }
-    return 0;
+    return backend->voltage_mv();
 }
 
 int16_t RangeFinder::max_distance_cm_orient(enum Rotation orientation) const
 {
-    uint8_t i;
-    if (find_instance(orientation, i)) {
-        return max_distance_cm(i);
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
     }
-    return 0;
+    return backend->max_distance_cm();
 }
 
 int16_t RangeFinder::min_distance_cm_orient(enum Rotation orientation) const
 {
-    uint8_t i;
-    if (find_instance(orientation, i)) {
-        return min_distance_cm(i);
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
     }
-    return 0;
+    return backend->min_distance_cm();
 }
 
 int16_t RangeFinder::ground_clearance_cm_orient(enum Rotation orientation) const
 {
-    uint8_t i;
-    if (find_instance(orientation, i)) {
-        return ground_clearance_cm(i);
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
     }
-    return 0;
-}
-
-// true if sensor is returning data
-bool RangeFinder::has_data(uint8_t instance) const
-{
-    // sanity check instance
-    if (instance >= RANGEFINDER_MAX_INSTANCES) {
-        return RangeFinder_NotConnected;
-    }
-    return ((state[instance].status != RangeFinder_NotConnected) && (state[instance].status != RangeFinder_NoData));
+    return backend->ground_clearance_cm();
 }
 
 bool RangeFinder::has_data_orient(enum Rotation orientation) const
 {
-    uint8_t i;
-    if (find_instance(orientation, i)) {
-        return has_data(i);
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return false;
     }
-    return false;
+    return backend->has_data();
 }
 
 uint8_t RangeFinder::range_valid_count_orient(enum Rotation orientation) const
 {
-    uint8_t i;
-    if (find_instance(orientation, i)) {
-        return range_valid_count(i);
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
     }
-    return 0;
+    return backend->range_valid_count();
 }
 
 /*
@@ -845,30 +836,18 @@ bool RangeFinder::pre_arm_check() const
 
 const Vector3f &RangeFinder::get_pos_offset_orient(enum Rotation orientation) const
 {
-    uint8_t i=0;
-    if (find_instance(orientation, i)) {
-        return get_pos_offset(i);
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return pos_offset_zero;
     }
-    return pos_offset_zero;
-}
-
-MAV_DISTANCE_SENSOR RangeFinder::get_sensor_type(uint8_t instance) const {
-    // sanity check instance
-    if (instance >= RANGEFINDER_MAX_INSTANCES) {
-        return MAV_DISTANCE_SENSOR_UNKNOWN;
-    }
-
-    if (drivers[instance] == nullptr || state[instance].type == RangeFinder_TYPE_NONE) {
-        return MAV_DISTANCE_SENSOR_UNKNOWN;
-    }
-    return drivers[instance]->get_sensor_type();
+    return backend->get_pos_offset();
 }
 
 MAV_DISTANCE_SENSOR RangeFinder::get_sensor_type_orient(enum Rotation orientation) const
 {
-    uint8_t i;
-    if (find_instance(orientation, i)) {
-        return get_sensor_type(i);
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return MAV_DISTANCE_SENSOR_UNKNOWN;
     }
-    return MAV_DISTANCE_SENSOR_UNKNOWN;
+    return backend->get_sensor_type();
 }

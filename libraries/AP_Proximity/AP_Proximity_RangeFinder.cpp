@@ -18,6 +18,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <AP_RangeFinder/RangeFinder_Backend.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -39,21 +40,25 @@ void AP_Proximity_RangeFinder::update(void)
 
     // look through all rangefinders
     for (uint8_t i=0; i<rngfnd->num_sensors(); i++) {
-        if (rngfnd->has_data(i)) {
+        AP_RangeFinder_Backend *sensor = rngfnd->get_backend(i);
+        if (sensor == nullptr) {
+            continue;
+        }
+        if (sensor->has_data()) {
             // check for horizontal range finders
-            if (rngfnd->get_orientation(i) <= ROTATION_YAW_315) {
-                uint8_t sector = (uint8_t)rngfnd->get_orientation(i);
+            if (sensor->orientation() <= ROTATION_YAW_315) {
+                uint8_t sector = (uint8_t)sensor->orientation();
                 _angle[sector] = sector * 45;
-                _distance[sector] = rngfnd->distance_cm(i) / 100.0f;
-                _distance_min = rngfnd->min_distance_cm(i) / 100.0f;
-                _distance_max = rngfnd->max_distance_cm(i) / 100.0f;
+                _distance[sector] = sensor->distance_cm() / 100.0f;
+                _distance_min = sensor->min_distance_cm() / 100.0f;
+                _distance_max = sensor->max_distance_cm() / 100.0f;
                 _distance_valid[sector] = (_distance[sector] >= _distance_min) && (_distance[sector] <= _distance_max);
                 _last_update_ms = AP_HAL::millis();
                 update_boundary_for_sector(sector);
             }
             // check upward facing range finder
-            if (rngfnd->get_orientation(i) == ROTATION_PITCH_90) {
-                _distance_upward = rngfnd->distance_cm(i) / 100.0f;
+            if (sensor->orientation() == ROTATION_PITCH_90) {
+                _distance_upward = sensor->distance_cm() / 100.0f;
                 _last_upward_update_ms = AP_HAL::millis();
             }
         }

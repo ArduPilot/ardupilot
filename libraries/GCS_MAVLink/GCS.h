@@ -153,7 +153,7 @@ public:
     void send_power_status(void);
     void send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const;
     bool send_battery_status(const AP_BattMonitor &battery) const;
-    void send_distance_sensor(const RangeFinder &rangefinder, const uint8_t instance) const;
+    void send_distance_sensor(const AP_RangeFinder_Backend *sensor) const;
     bool send_distance_sensor(const RangeFinder &rangefinder) const;
     void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
     void send_rangefinder_downward(const RangeFinder &rangefinder) const;

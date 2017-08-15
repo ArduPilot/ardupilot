@@ -118,64 +118,26 @@ public:
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(mavlink_message_t *msg);
 
-#define _RangeFinder_STATE(instance) state[instance]
-
     // return true if we have a range finder with the specified orientation
     bool has_orientation(enum Rotation orientation) const;
 
     // find first range finder instance with the specified orientation
-    bool find_instance(enum Rotation orientation, uint8_t &instance) const;
+    AP_RangeFinder_Backend *find_instance(enum Rotation orientation) const;
 
-    // get orientation of a given range finder
-    enum Rotation get_orientation(uint8_t instance) const {
-        return (instance<num_instances? (enum Rotation)_RangeFinder_STATE(instance).orientation.get() : ROTATION_NONE);
-    }
+    AP_RangeFinder_Backend *get_backend(uint8_t id) const;
 
-    uint16_t distance_cm(uint8_t instance) const {
-        return (instance<num_instances? _RangeFinder_STATE(instance).distance_cm : 0);
-    }
+    // methods to return a distance on a particular orientation from
+    // any sensor which can current supply it
     uint16_t distance_cm_orient(enum Rotation orientation) const;
-
-    uint16_t voltage_mv(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).voltage_mv;
-    }
     uint16_t voltage_mv_orient(enum Rotation orientation) const;
-
-    int16_t max_distance_cm(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).max_distance_cm;
-    }
     int16_t max_distance_cm_orient(enum Rotation orientation) const;
-
-    int16_t min_distance_cm(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).min_distance_cm;
-    }
     int16_t min_distance_cm_orient(enum Rotation orientation) const;
-
-    int16_t ground_clearance_cm(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).ground_clearance_cm;
-    }
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
-
-    MAV_DISTANCE_SENSOR get_sensor_type(uint8_t instance) const;
-
     MAV_DISTANCE_SENSOR get_sensor_type_orient(enum Rotation orientation) const;
-
-    // query status
-    RangeFinder_Status status(uint8_t instance) const;
     RangeFinder_Status status_orient(enum Rotation orientation) const;
-
-    // query type
-    RangeFinder_Type type(uint8_t instance) const { return (RangeFinder_Type)_RangeFinder_STATE(instance).type.get(); }
-
-    // true if sensor is returning data
-    bool has_data(uint8_t instance) const;
     bool has_data_orient(enum Rotation orientation) const;
-
-    // returns count of consecutive good readings
-    uint8_t range_valid_count(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).range_valid_count;
-    }
     uint8_t range_valid_count_orient(enum Rotation orientation) const;
+    const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
 
     /*
       set an externally estimated terrain height. Used to enable power
@@ -192,11 +154,6 @@ public:
      */
     bool pre_arm_check() const;
 
-    // return a 3D vector defining the position offset of the sensor in metres relative to the body frame origin
-    const Vector3f &get_pos_offset(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).pos_offset;
-    }
-    const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
 
 private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];

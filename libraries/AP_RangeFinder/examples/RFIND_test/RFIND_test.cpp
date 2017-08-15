@@ -3,7 +3,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_RangeFinder/RangeFinder_Backend.h>
 
 void setup();
 void loop();
@@ -35,8 +35,25 @@ void loop()
     hal.scheduler->delay(100);
     sonar.update();
 
-    hal.console->printf("All: device_0 type %d status %d distance_cm %d, device_1 type %d status %d distance_cm %d\n",
-                        (int)sonar.type(0), (int)sonar.status(0), sonar.distance_cm(0), (int)sonar.type(1), (int)sonar.status(1), sonar.distance_cm(1));
+    bool had_data = false;
+    for (uint8_t i=0; i<sonar.num_sensors(); i++) {
+        AP_RangeFinder_Backend *sensor = sonar.get_backend(i);
+        if (sensor == nullptr) {
+            continue;
+        }
+        if (!sensor->has_data()) {
+            continue;
+        }
+        hal.console->printf("All: device_%u type %d status %d distance_cm %d\n",
+                            i,
+                            (int)sensor->type(),
+                            (int)sensor->status(),
+                            sensor->distance_cm());
+        had_data = true;
+    }
+    if (!had_data) {
+        hal.console->printf("All: no data on any sensor\n");
+    }
 
 }
 AP_HAL_MAIN();
