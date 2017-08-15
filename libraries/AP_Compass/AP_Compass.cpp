@@ -578,6 +578,9 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_QMC5883L_I2C_ADDR),
                 								both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_YAW_270),
         			AP_Compass_QMC5883L::name,both_i2c_external);
+		//external i2c bus
+		ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_IST8310_I2C_ADDR),
+                                                ROTATION_PITCH_180_YAW_270), AP_Compass_IST8310::name, true);
         
 #if !HAL_MINIMIZE_FEATURES
         // AK09916 on ICM20948
