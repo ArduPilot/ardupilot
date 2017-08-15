@@ -28,6 +28,7 @@
 #define APM_BUILD_UNKNOWN        5
 #define APM_BUILD_Replay         6
 #define APM_BUILD_ArduSub        7
+#define APM_BUILD_SensorHub 8
 
 /*
   using this macro catches cases where we try to check vehicle type on
