@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_trone::AP_RangeFinder_trone(uint8_t bus, RangeFinder::RangeFinder_State &_state)
-    : AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_LASER)
+    : AP_RangeFinder_Backend(_state)
     , dev(hal.i2c_mgr->get_device(bus, TRONE_I2C_ADDR))
 {
 }
@@ -88,8 +88,8 @@ bool AP_RangeFinder_trone::init(void)
     // give time for the sensor to process the request
     hal.scheduler->delay(70);
 
-    uint16_t distance_cm;
-    if (!collect(distance_cm)) {
+    uint16_t _distance_cm;
+    if (!collect(_distance_cm)) {
         dev->get_semaphore()->give();
         return false;
     }
@@ -112,7 +112,7 @@ bool AP_RangeFinder_trone::measure()
 }
 
 // collect - return last value measured by sensor
-bool AP_RangeFinder_trone::collect(uint16_t &distance_cm)
+bool AP_RangeFinder_trone::collect(uint16_t &_distance_cm)
 {
     uint8_t d[3];
 
@@ -126,7 +126,7 @@ bool AP_RangeFinder_trone::collect(uint16_t &distance_cm)
         return false;
     }
     
-    distance_cm = ((uint16_t(d[0]) << 8) | d[1]) / 10;
+    _distance_cm = ((uint16_t(d[0]) << 8) | d[1]) / 10;
 
     return true;
 }
@@ -137,9 +137,9 @@ bool AP_RangeFinder_trone::collect(uint16_t &distance_cm)
 void AP_RangeFinder_trone::timer(void)
 {
     // take a reading
-    uint16_t distance_cm;
-    if (collect(distance_cm) && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        accum.sum += distance_cm;
+    uint16_t _distance_cm;
+    if (collect(_distance_cm) && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        accum.sum += _distance_cm;
         accum.count++;
         _sem->give();
     }

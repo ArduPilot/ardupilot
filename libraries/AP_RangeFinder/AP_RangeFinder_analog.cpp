@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_UNKNOWN)
+    AP_RangeFinder_Backend(_state)
 {
     source = hal.analogin->channel(_state.pin);
     if (source == nullptr) {
@@ -90,7 +90,7 @@ void AP_RangeFinder_analog::update(void)
     float scaling = state.scaling;
     float offset  = state.offset;
     RangeFinder::RangeFinder_Function function = (RangeFinder::RangeFinder_Function)state.function.get();
-    int16_t max_distance_cm = state.max_distance_cm;
+    int16_t _max_distance_cm = state.max_distance_cm;
 
     switch (function) {
     case RangeFinder::FUNCTION_LINEAR:
@@ -106,8 +106,8 @@ void AP_RangeFinder_analog::update(void)
             dist_m = 0;
         }
         dist_m = scaling / (v - offset);
-        if (isinf(dist_m) || dist_m > max_distance_cm * 0.01f) {
-            dist_m = max_distance_cm * 0.01f;
+        if (isinf(dist_m) || dist_m > _max_distance_cm * 0.01f) {
+            dist_m = _max_distance_cm * 0.01f;
         }
         break;
     }

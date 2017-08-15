@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_UNKNOWN)
+    AP_RangeFinder_Backend(_state)
 {
     last_update_ms = AP_HAL::millis();
     distance_cm = 0;

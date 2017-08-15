@@ -217,7 +217,7 @@ const AP_RangeFinder_VL53L0X::RegData AP_RangeFinder_VL53L0X::tuning_data[] =
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_VL53L0X::AP_RangeFinder_VL53L0X(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
-    : AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_LASER)
+    : AP_RangeFinder_Backend(_state)
     , dev(std::move(_dev)) {}
 
 
@@ -326,12 +326,12 @@ void AP_RangeFinder_VL53L0X::getSequenceStepEnables(SequenceStepEnables * enable
 
 // Get the VCSEL pulse period in PCLKs for the given period type.
 // based on VL53L0X_get_vcsel_pulse_period()
-uint8_t AP_RangeFinder_VL53L0X::getVcselPulsePeriod(vcselPeriodType type)
+uint8_t AP_RangeFinder_VL53L0X::getVcselPulsePeriod(vcselPeriodType _type)
 {
 #define decodeVcselPeriod(reg_val)      (((reg_val) + 1) << 1)
-    if (type == VcselPeriodPreRange) {
+    if (_type == VcselPeriodPreRange) {
         return decodeVcselPeriod(read_register(PRE_RANGE_CONFIG_VCSEL_PERIOD));
-    } else if (type == VcselPeriodFinalRange) {
+    } else if (_type == VcselPeriodFinalRange) {
         return decodeVcselPeriod(read_register(FINAL_RANGE_CONFIG_VCSEL_PERIOD));
     }
     return 255;

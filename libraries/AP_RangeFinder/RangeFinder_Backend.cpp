@@ -24,9 +24,8 @@ extern const AP_HAL::HAL& hal;
   base class constructor. 
   This incorporates initialisation as well.
 */
-AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state, MAV_DISTANCE_SENSOR _sensor_type) :
-        state(_state),
-        sensor_type(_sensor_type)
+AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state) :
+        state(_state)
 {
     _sem = hal.util->new_semaphore();    
 }
@@ -45,12 +44,12 @@ void AP_RangeFinder_Backend::update_status()
 }
 
 // set status and update valid count
-void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status status)
+void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status _status)
 {
-    state.status = status;
+    state.status = _status;
 
     // update valid count
-    if (status == RangeFinder::RangeFinder_Good) {
+    if (_status == RangeFinder::RangeFinder_Good) {
         if (state.range_valid_count < 10) {
             state.range_valid_count++;
         }
