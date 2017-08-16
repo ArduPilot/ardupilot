@@ -126,7 +126,10 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     // Get list of available cache coherent physical addresses
     for (i = 0; i < _page_count; i++) {
         _virt_pages[i] = mmap(0, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_NORESERVE | MAP_LOCKED, -1, 0);
-        ::read(file, &pageInfo, 8);
+        if (::read(file, &pageInfo, 8) < 8) {
+            fprintf(stderr, "Failed to read pagemap\n");
+            exit(-1);
+        }
         _phys_pages[i] = (void *)((uintptr_t)(pageInfo * PAGE_SIZE) | bus);
     }
 
