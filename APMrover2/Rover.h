@@ -77,6 +77,7 @@
 #include <RC_Channel/RC_Channel.h>                  // RC Channel Library
 #include <StorageManager/StorageManager.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_Proximity/AP_Proximity.h>              // Proximity array library
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -519,6 +520,7 @@ private:
     void Log_Write_Nav_Tuning();
     void Log_Write_Attitude();
     void Log_Write_Rangefinder();
+    void Log_Write_Proximity();
     void Log_Write_Current();
     void Log_Arm_Disarm();
     void Log_Write_RC(void);
@@ -549,6 +551,8 @@ private:
     void compass_accumulate(void);
     void init_barometer(bool full_calibration);
     void init_rangefinder(void);
+    void init_proximity();
+    void update_proximity();
     void init_beacon();
     void update_beacon();
     void init_visual_odom();

@@ -23,6 +23,7 @@ def build(bld):
             'AP_WheelEncoder',
             'AP_SmartRTL',
             'AC_Fence',
+            'AP_Proximity',
         ],
     )
 

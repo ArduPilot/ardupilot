@@ -27,6 +27,7 @@ protected:
     enum HomeState home_status() const override;
     bool position_checks(bool display_failure);
     bool fence_checks(bool display_failure);
+    bool proximity_check(bool display_failure);
 
 private:
     const AC_Fence *_fence;

@@ -266,6 +266,23 @@ void Rover::read_rangefinders(void)
     }
 }
 
+// initialise proximity sensor
+void Rover::init_proximity(void)
+{
+#if PROXIMITY_ENABLED == ENABLED
+    g2.proximity.init();
+    g2.proximity.set_rangefinder(&rangefinder);
+#endif
+}
+
+// update proximity sensor
+void Rover::update_proximity(void)
+{
+#if PROXIMITY_ENABLED == ENABLED
+    g2.proximity.update();
+#endif
+}
+
 /*
   update AP_Button
  */
@@ -296,7 +313,11 @@ void Rover::update_sensor_status_flags(void)
     if (rover.DataFlash.logging_present()) {  // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
-
+#if PROXIMITY_ENABLED == ENABLED
+    if (rover.g2.proximity.get_status() > AP_Proximity::Proximity_NotConnected) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    }
+#endif
 
     // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control and motor output which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL &
@@ -356,7 +377,11 @@ void Rover::update_sensor_status_flags(void)
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
-
+#if PROXIMITY_ENABLED == ENABLED
+    if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    }
+#endif
     if (rover.DataFlash.logging_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }

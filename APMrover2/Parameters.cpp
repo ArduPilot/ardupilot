@@ -548,6 +548,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(fence, "FENCE_", 17, ParametersG2, AC_Fence),
 #endif
 
+#if PROXIMITY_ENABLED == ENABLED
+    // @Group: PRX
+    // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
+    AP_SUBGROUPINFO(proximity, "PRX", 18, ParametersG2, AP_Proximity),
+#endif
+
     AP_GROUPEND
 };
 
@@ -559,6 +565,9 @@ ParametersG2::ParametersG2(void)
 #endif
 #if AC_FENCE == ENABLED
     fence(rover.ahrs),
+#endif
+#if PROXIMITY_ENABLED == ENABLED
+    proximity(rover.serial_manager),
 #endif
     beacon(rover.serial_manager),
     motors(rover.ServoRelayEvents),

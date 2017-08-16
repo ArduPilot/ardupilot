@@ -304,6 +304,10 @@ public:
 #if AC_FENCE == ENABLED
     AC_Fence fence;
 #endif
+#if PROXIMITY_ENABLED == ENABLED
+    // proximity (aka object avoidance) library
+    AP_Proximity proximity;
+#endif
 
     AP_Beacon beacon;
 
