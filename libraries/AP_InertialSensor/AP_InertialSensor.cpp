@@ -423,6 +423,12 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   0),
 
+    // @Param: NOTCH_
+    // @DisplayName: Notch filter
+    // @Description: Gyro notch filter
+    // @User: Advanced
+    AP_SUBGROUPINFO(_notch_filter, "NOTCH_",  37, AP_InertialSensor, NotchFilterVector3fParam),
+    
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -638,6 +644,8 @@ AP_InertialSensor::init(uint16_t sample_rate)
 
     _sample_period_usec = 1000*1000UL / _sample_rate;
 
+    _notch_filter.init(sample_rate);
+    
     // establish the baseline time between samples
     _delta_time = 0;
     _next_sample_usec = 0;
@@ -1266,6 +1274,9 @@ void AP_InertialSensor::update(void)
         }
     }
 
+    // apply notch filter to primary gyro
+    _gyro[_primary_gyro] = _notch_filter.apply(_gyro[_primary_gyro]);
+    
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;

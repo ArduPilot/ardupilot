@@ -23,6 +23,7 @@
 #include <AP_Math/AP_Math.h>
 #include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
+#include <Filter/NotchFilter.h>
 
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
@@ -311,6 +312,9 @@ private:
     Vector3f _gyro_filtered[INS_MAX_INSTANCES];
     bool _new_accel_data[INS_MAX_INSTANCES];
     bool _new_gyro_data[INS_MAX_INSTANCES];
+
+    // optional notch filter on gyro
+    NotchFilterVector3fParam _notch_filter;
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
