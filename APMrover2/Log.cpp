@@ -130,8 +130,8 @@ void Rover::Log_Write_Nav_Tuning()
         time_us             : AP_HAL::micros64(),
         yaw                 : static_cast<uint16_t>(ahrs.yaw_sensor),
         wp_distance         : control_mode->get_distance_to_destination(),
-        target_bearing_cd   : static_cast<uint16_t>(fabsf(nav_controller->target_bearing_cd())),
-        nav_bearing_cd      : static_cast<uint16_t>(fabsf(nav_controller->nav_bearing_cd())),
+        target_bearing_cd   : static_cast<uint16_t>(abs(nav_controller->target_bearing_cd())),
+        nav_bearing_cd      : static_cast<uint16_t>(abs(nav_controller->nav_bearing_cd())),
         throttle            : int8_t(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)),
         xtrack_error        : nav_controller->crosstrack_error()
     };

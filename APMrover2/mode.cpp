@@ -140,7 +140,7 @@ float Mode::calc_speed_nudge(float target_speed, float cruise_speed, float cruis
     }
 
     const float speed_increase_max = vehicle_speed_max - fabsf(target_speed);
-    float speed_nudge = ((fabsf(pilot_throttle) - 50.0f) / 50.0f) * speed_increase_max;
+    float speed_nudge = ((static_cast<float>(abs(pilot_throttle)) - 50.0f) * 0.02f) * speed_increase_max;
     if (pilot_throttle < 0) {
         speed_nudge = -speed_nudge;
     }
