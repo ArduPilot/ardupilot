@@ -34,13 +34,13 @@ public:
     // setup servo output ranges
     void setup_servo_output();
 
-    // set steering as a value from -4500 to +4500
+    // get or set steering as a value from -4500 to +4500
     float get_steering() const { return _steering; }
-    void set_steering(float steering) { _steering = steering; }
+    void set_steering(float steering);
 
-    // get or set throttle as a value from 0 to 100
+    // get or set throttle as a value from -100 to 100
     float get_throttle() const { return _throttle; }
-    void set_throttle(float throttle) { _throttle = throttle; }
+    void set_throttle(float throttle);
 
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
@@ -97,6 +97,8 @@ protected:
     AP_Int8 _pwm_freq;  // PWM output freq for brushed motors
     AP_Int8 _disarm_disable_pwm;    // disable PWM output while disarmed
     AP_Int8 _slew_rate; // slew rate expressed as a percentage / second
+    AP_Int8 _throttle_min; // throttle minimum percentage
+    AP_Int8 _throttle_max; // throttle maximum percentage
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
