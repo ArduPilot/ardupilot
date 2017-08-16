@@ -27,7 +27,7 @@ public:
         // Misc
         //
         k_param_log_bitmask_old = 10,  // unused
-        k_param_num_resets,
+        k_param_num_resets_old,         // unused
         k_param_reset_switch_chan,
         k_param_initial_mode,
         k_param_scheduler,
@@ -212,7 +212,6 @@ public:
     // Misc
     //
     AP_Int32    log_bitmask;
-    AP_Int16    num_resets;
     AP_Int8     reset_switch_chan;
     AP_Int8     initial_mode;
 

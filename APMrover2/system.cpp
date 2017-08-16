@@ -66,10 +66,6 @@ void Rover::init_ardupilot()
 
     rssi.init();
 
-    // keep a record of how many resets have happened. This can be
-    // used to detect in-flight resets
-    g.num_resets.set_and_save(g.num_resets+1);
-
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
