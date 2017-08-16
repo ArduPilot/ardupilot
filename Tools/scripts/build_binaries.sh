@@ -523,7 +523,7 @@ done
 
 rm -rf $TMPDIR
 
-if ./Tools/scripts/generate-manifest.py $binaries http://firmware.ardupilot.org >$binaries/manifest.json.new; then
+if ./Tools/scripts/generate_manifest.py $binaries http://firmware.ardupilot.org >$binaries/manifest.json.new; then
     echo "Manifest generation succeeded"
     # provide a pre-compressed manifest.  For reference, a 7M manifest
     # "gzip -9"s to 300k in 1 second, "xz -e"s to 80k in 26 seconds
