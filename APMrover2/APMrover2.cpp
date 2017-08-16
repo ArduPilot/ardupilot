@@ -70,7 +70,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(check_usb_mux,           3,   1000),
     SCHED_TASK(mount_update,           50,    600),
     SCHED_TASK(update_trigger,         50,    600),
-    SCHED_TASK(gcs_failsafe_check,     10,    600),
+    SCHED_TASK(ten_hz_loop,            10,    600),
     SCHED_TASK(compass_accumulate,     50,    900),
     SCHED_TASK(smart_rtl_update,        3,    100),
     SCHED_TASK(update_notify,          50,    300),
@@ -354,6 +354,15 @@ void Rover::one_second_loop(void)
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
     update_sensor_status_flags();
+}
+
+void Rover::ten_hz_loop(void)
+{
+    gcs_failsafe_check();
+#if AC_FENCE == ENABLED
+    // check if we have breached a fence
+    fence_check();
+#endif  // AC_FENCE_ENABLED
 }
 
 void Rover::dataflash_periodic(void)

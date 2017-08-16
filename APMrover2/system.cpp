@@ -228,6 +228,13 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 
     control_mode = &new_mode;
 
+#if AC_FENCE == ENABLED
+    // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
+    // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
+    // but it should be harmless to disable the fence temporarily in these situations as well
+    g2.fence.manual_recovery_start();
+#endif
+
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode->mode_number());
 #endif
@@ -370,7 +377,73 @@ void Rover::smart_rtl_update()
 
 // returns true if vehicle is a boat
 // this affects whether the vehicle tries to maintain position after reaching waypoints
-bool Rover::is_boat() const
-{
-    return ((enum frame_class)g2.frame_class.get() == FRAME_BOAT);
+bool Rover::is_boat() const {
+    return ((enum frame_class) g2.frame_class.get() == FRAME_BOAT);
 }
+
+// position_ok - returns true if the horizontal absolute position is ok and home position is set
+bool Rover::position_ok()
+{
+    // return false if ekf failsafe has triggered // TODO : update with the addition of EKF failsafe
+    /*if (failsafe.ekf) {
+        return false;
+    }*/
+
+    // check ekf position estimate
+    return (ekf_position_ok() || optflow_position_ok());
+}
+
+// ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
+bool Rover::ekf_position_ok()
+{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow navigation with dcm position
+        return false;
+    }
+
+    // with EKF use filter status and ekf check
+    if (!ahrs_state.has_filt_status) {
+        return false;
+    }
+
+    // if disarmed we accept a predicted horizontal position
+    if (!arming.is_armed()) {
+        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+    } else {
+        // once armed we require a good absolute position and EKF must not be in const_pos_mode
+        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+    }
+}
+
+// optflow_position_ok - returns true if optical flow based position estimate is ok
+bool Rover::optflow_position_ok()
+{
+#if OPTFLOW != ENABLED && VISUAL_ODOMETRY_ENABLED != ENABLED
+    return false;
+#else
+    // return immediately if EKF not used
+    if (!ahrs_state.has_filt_status) {
+        return false;
+    }
+
+    // return immediately if neither optflow nor visual odometry is enabled
+#if OPTFLOW == ENABLED
+    if (!optflow.enabled()) {
+        return false;
+    }
+#endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    if (!g2.visual_odom.enabled()) {
+        return false;
+    }
+#endif
+
+    // if disarmed we accept a predicted horizontal relative position
+    if (!arming.is_armed()) {
+        return (filt_status.flags.pred_horiz_pos_rel);
+    } else {
+        return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
+    }
+#endif
+}
+
