@@ -74,7 +74,8 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 {
     return (AP_Arming::pre_arm_checks(report)
             & rover.g2.motors.pre_arm_check(report)
-            & fence_checks(report));
+            & fence_checks(report)
+            & proximity_check(report));
 }
 
 bool AP_Arming_Rover::fence_checks(bool report)
@@ -87,5 +88,36 @@ bool AP_Arming_Rover::fence_checks(bool report)
         }
         return false;
     }
+    return true;
+}
+
+// check nothing is too close to vehicle
+bool AP_Arming_Rover::proximity_check(bool report)
+{
+    // return true immediately if no sensor present
+    if (rover.g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+        return true;
+    }
+
+    // return false if proximity sensor unhealthy
+    if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
+        }
+        return false;
+    }
+
+    // get closest object if we might use it for avoidance
+    float angle_deg, distance;
+    if (rover.g2.proximity.get_closest_object(angle_deg, distance)) {
+        // display error if something is within 60cm
+        if (distance <= 0.6f) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Proximity %d deg, %4.2fm", static_cast<int32_t>(angle_deg), static_cast<double>(distance));
+            }
+            return false;
+        }
+    }
+
     return true;
 }
