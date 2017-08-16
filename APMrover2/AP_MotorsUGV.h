@@ -31,6 +31,7 @@ public:
     // setup output in case of main CPU failure
     void setup_safety_output();
 
+    // setup servo output ranges
     void setup_servo_output();
 
     // set steering as a value from -4500 to +4500

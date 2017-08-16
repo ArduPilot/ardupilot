@@ -75,6 +75,47 @@ void AP_MotorsUGV::init()
     setup_safety_output();
 }
 
+// setup output in case of main CPU failure
+void AP_MotorsUGV::setup_safety_output()
+{
+    if (_pwm_type == PWM_TYPE_BRUSHED) {
+        // set trim to min to set duty cycle range (0 - 100%) to servo range
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
+    }
+
+    if (_disarm_disable_pwm) {
+        // throttle channels output zero pwm (i.e. no signal)
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+    } else {
+        // throttle channels output trim values (because rovers will go backwards if set to MIN)
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    }
+
+    // stop sending pwm if main CPU fails
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+}
+
+// setup servo output ranges
+void AP_MotorsUGV::setup_servo_output()
+{
+    // k_steering are limited to -45;45 degree
+    SRV_Channels::set_angle(SRV_Channel::k_steering, SERVO_MAX);
+
+    // k_throttle are in power percent so -100 ... 100
+    SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
+
+    // skid steering left/right throttle as -1000 to 1000 values
+    SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
+    SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
+}
+
 /*
   work out if skid steering is available
  */
@@ -273,20 +314,6 @@ void AP_MotorsUGV::set_limits_from_input(bool armed, float steering, float throt
     limit.throttle_upper = !armed || (throttle >= 100.0f);
 }
 
-// setup servo output
-void AP_MotorsUGV::setup_servo_output()
-{
-    // k_steering are limited to -45;45 degree
-    SRV_Channels::set_angle(SRV_Channel::k_steering, SERVO_MAX);
-
-    // k_throttle are in power percent so -100 ... 100
-    SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
-
-    // skid steering left/right throttle as -1000 to 1000 values
-    SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
-    SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
-}
-
 // setup pwm output type
 void AP_MotorsUGV::setup_pwm_type()
 {
@@ -312,33 +339,6 @@ void AP_MotorsUGV::setup_pwm_type()
         // do nothing
         break;
     }
-}
-
-// setup output in case of main CPU failure
-void AP_MotorsUGV::setup_safety_output()
-{
-    if (_pwm_type == PWM_TYPE_BRUSHED) {
-        // set trim to min to set duty cycle range (0 - 100%) to servo range
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
-        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
-    }
-
-    if (_disarm_disable_pwm) {
-        // throttle channels output zero pwm (i.e. no signal)
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-    } else {
-        // throttle channels output trim values (because rovers will go backwards if set to MIN)
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-    }
-
-    // stop sending pwm if main CPU fails
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
 }
 
 // test steering or throttle output as a percentage of the total (range -100 to +100)
