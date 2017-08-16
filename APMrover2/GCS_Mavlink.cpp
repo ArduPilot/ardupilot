@@ -941,12 +941,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-    case MAVLINK_MSG_ID_SET_MODE:
-        {
-            handle_set_mode(msg, FUNCTOR_BIND(&rover, &Rover::mavlink_set_mode, bool, uint8_t));
-            break;
-        }
-
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
         {
             // mark the firmware version in the tlog
@@ -1425,4 +1419,13 @@ Compass *GCS_MAVLINK_Rover::get_compass() const
 AP_Mission *GCS_MAVLINK_Rover::get_mission()
 {
     return &rover.mission;
+}
+
+bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
+{
+    Mode *new_mode = rover.control_mode_from_num((enum mode)mode);
+    if (new_mode == nullptr) {
+        return false;
+    }
+    return rover.set_mode(*new_mode, MODE_REASON_GCS_COMMAND);
 }

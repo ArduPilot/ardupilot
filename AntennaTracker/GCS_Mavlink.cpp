@@ -740,12 +740,6 @@ mission_failed:
         break;
     }
 
-    case MAVLINK_MSG_ID_SET_MODE:
-    {
-        handle_set_mode(msg, FUNCTOR_BIND(&tracker, &Tracker::mavlink_set_mode, bool, uint8_t));
-        break;
-    }
-
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, tracker.gps);
         break;
@@ -829,6 +823,23 @@ AP_GPS *GCS_MAVLINK_Tracker::get_gps() const
 Compass *GCS_MAVLINK_Tracker::get_compass() const
 {
     return &tracker.compass;
+}
+
+/*
+  set_mode() wrapper for MAVLink SET_MODE
+ */
+bool GCS_MAVLINK_Tracker::set_mode(uint8_t mode)
+{
+    switch (mode) {
+    case AUTO:
+    case MANUAL:
+    case SCAN:
+    case SERVO_TEST:
+    case STOP:
+        tracker.set_mode((enum ControlMode)mode);
+        return true;
+    }
+    return false;
 }
 
 /* dummy methods to avoid having to link against AP_Camera */

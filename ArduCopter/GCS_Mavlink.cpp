@@ -714,21 +714,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_SET_MODE:       // MAV ID: 11
-    {
-#ifdef DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE
-        if (!copter.failsafe.radio) {
-            handle_set_mode(msg, FUNCTOR_BIND(&copter, &Copter::gcs_set_mode, bool, uint8_t));
-        } else {
-            // don't allow mode changes while in radio failsafe
-            mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, MAV_RESULT_FAILED);
-        }
-#else
-        handle_set_mode(msg, FUNCTOR_BIND(&copter, &Copter::gcs_set_mode, bool, uint8_t));
-#endif
-        break;
-    }
-
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
     {
         // if we have not yet initialised (including allocating the motors
@@ -1797,4 +1782,15 @@ AP_Rally *GCS_MAVLINK_Copter::get_rally() const
 #else
     return nullptr;
 #endif
+}
+
+bool GCS_MAVLINK_Copter::set_mode(const uint8_t mode)
+{
+#ifdef DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE
+    if (copter.failsafe.radio) {
+        // don't allow mode changes while in radio failsafe
+        return false;
+    }
+#endif
+    return copter.set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
 }
