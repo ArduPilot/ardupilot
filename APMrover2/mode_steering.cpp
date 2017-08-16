@@ -4,7 +4,7 @@
 void ModeSteering::update()
 {
     // convert pilot throttle input to desired speed (up to twice the cruise speed)
-    float target_speed = channel_throttle->get_control_in() * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise);
+    float target_speed = channel_throttle->get_control_in() * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
 
     // get speed forward
     float speed;
