@@ -139,24 +139,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(ch7_option,             "CH7_OPTION",          CH7_OPTION),
 
-    // @Param: THR_MIN
-    // @DisplayName: Minimum Throttle
-    // @Description: The minimum throttle setting to which the autopilot will apply. This is mostly useful for rovers with internal combustion motors, to prevent the motor from cutting out in auto mode.
-    // @Units: %
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(throttle_min,           "THR_MIN",          THROTTLE_MIN),
-
-    // @Param: THR_MAX
-    // @DisplayName: Maximum Throttle
-    // @Description: The maximum throttle setting to which the autopilot will apply. This can be used to prevent overheating a ESC or motor on an electric rover.
-    // @Units: %
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(throttle_max,           "THR_MAX",          THROTTLE_MAX),
-
     // @Param: CRUISE_THROTTLE
     // @DisplayName: Base throttle percentage in auto
     // @Description: The base throttle percentage to use in auto mode. The CRUISE_SPEED parameter controls the target speed, but the rover starts with the CRUISE_THROTTLE setting as the initial estimate for how much throttle is needed to achieve that speed. It then adjusts the throttle based on how fast the rover is actually going.
@@ -568,6 +550,8 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_serial0_baud,       0,      AP_PARAM_INT16, "SERIAL0_BAUD" },
     { Parameters::k_param_serial1_baud,       0,      AP_PARAM_INT16, "SERIAL1_BAUD" },
     { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
+    { Parameters::k_param_throttle_min_old,   0,      AP_PARAM_INT8,  "MOT_THR_MIN" },
+    { Parameters::k_param_throttle_max_old,   0,      AP_PARAM_INT8,  "MOT_THR_MAX" },
 };
 
 void Rover::load_parameters(void)
