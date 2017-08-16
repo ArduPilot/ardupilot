@@ -541,7 +541,7 @@ private:
     void init_ardupilot();
     void startup_ground(void);
     void set_reverse(bool reverse);
-    bool set_mode(Mode &mode, mode_reason_t reason);
+    bool set_mode(Mode &new_mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
     void update_notify();
