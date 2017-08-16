@@ -145,7 +145,7 @@ void AP_MotorsUGV::set_throttle(float throttle)
 {
     // sanity check throttle min and max
     _throttle_min = constrain_int16(_throttle_min, 0, 20);
-    _throttle_max = constrain_int16(_throttle_max,30,100);
+    _throttle_max = constrain_int16(_throttle_max, 30, 100);
 
     // check throttle is between -_throttle_max ~ +_throttle_max but outside -throttle_min ~ +throttle_min
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
