@@ -11,19 +11,24 @@
  */
 bool Plane::auto_takeoff_check(void)
 {
+    static uint32_t last_tkoff_arm_time = 0;
+    static uint32_t last_check_ms = 0;
+    static uint32_t last_report_ms = 0;
+    static bool launchTimerStarted = false;
+
     // this is a more advanced check that relies on TECS
     uint32_t now = millis();
     uint16_t wait_time_ms = MIN(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
     // Reset states if process has been interrupted
-    if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
-	    takeoff_state.launchTimerStarted = false;
-	    takeoff_state.last_tkoff_arm_time = 0;
-        takeoff_state.last_check_ms = now;
+    if (last_check_ms && (now - last_check_ms) > 200) {
+	    launchTimerStarted = false;
+	    last_tkoff_arm_time = 0;
+        last_check_ms = now;
         return false;
     }
 
-    takeoff_state.last_check_ms = now;
+    last_check_ms = now;
 
     // Check for bad GPS
     if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
@@ -38,21 +43,21 @@ bool Plane::auto_takeoff_check(void)
     }
 
     // we've reached the acceleration threshold, so start the timer
-    if (!takeoff_state.launchTimerStarted) {
-        takeoff_state.launchTimerStarted = true;
-        takeoff_state.last_tkoff_arm_time = now;
-        if (now - takeoff_state.last_report_ms > 2000) {
+    if (!launchTimerStarted) {
+        launchTimerStarted = true;
+        last_tkoff_arm_time = now;
+        if (now - last_report_ms > 2000) {
             gcs().send_text(MAV_SEVERITY_INFO, "Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec",
                               (double)SpdHgt_Controller->get_VXdot(), (double)(wait_time_ms*0.001f));
-            takeoff_state.last_report_ms = now;
+            last_report_ms = now;
         }
     }
 
     // Only perform velocity check if not timed out
-    if ((now - takeoff_state.last_tkoff_arm_time) > wait_time_ms+100U) {
-        if (now - takeoff_state.last_report_ms > 2000) {
+    if ((now - last_tkoff_arm_time) > wait_time_ms+100U) {
+        if (now - last_report_ms > 2000) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Timeout AUTO");
-            takeoff_state.last_report_ms = now;
+            last_report_ms = now;
         }
         goto no_launch;
     }
@@ -69,10 +74,10 @@ bool Plane::auto_takeoff_check(void)
 
     // Check ground speed and time delay
     if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
-        ((now - takeoff_state.last_tkoff_arm_time) >= wait_time_ms)) {
+        ((now - last_tkoff_arm_time) >= wait_time_ms)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
-        takeoff_state.launchTimerStarted = false;
-        takeoff_state.last_tkoff_arm_time = 0;
+        launchTimerStarted = false;
+        last_tkoff_arm_time = 0;
         steer_state.locked_course_err = 0; // use current heading without any error offset
         return true;
     }
@@ -81,8 +86,8 @@ bool Plane::auto_takeoff_check(void)
     return false;
 
 no_launch:
-    takeoff_state.launchTimerStarted = false;
-    takeoff_state.last_tkoff_arm_time = 0;
+    launchTimerStarted = false;
+    last_tkoff_arm_time = 0;
     return false;
 }
 
