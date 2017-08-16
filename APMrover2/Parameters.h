@@ -124,8 +124,8 @@ public:
         k_param_rc_8_old,
 
         // throttle control
-        k_param_throttle_min = 170,
-        k_param_throttle_max,
+        k_param_throttle_min_old = 170, // unused
+        k_param_throttle_max_old,       // unused
         k_param_throttle_cruise,
         k_param_throttle_slewrate_old,  // unused
         k_param_throttle_reduction,     // unused
@@ -238,8 +238,6 @@ public:
 
     // Throttle
     //
-    AP_Int8     throttle_min;
-    AP_Int8     throttle_max;
     AP_Int8     throttle_cruise;
     AP_Int8     skid_steer_in;
 
