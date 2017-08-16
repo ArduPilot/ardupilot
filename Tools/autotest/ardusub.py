@@ -19,54 +19,42 @@ HOME = mavutil.location(33.810313, -118.393867, 0, 185)
 homeloc = None
 
 
-def arm_sub(mavproxy, mav):
-    for i in range(8):
-        mavproxy.send('rc %d 1500\n' % (i+1))
-
-    mavproxy.send('arm throttle\n')
-    mavproxy.expect('ARMED')
-
-    progress("SUB ARMED")
-    return True
-
 def dive_manual(mavproxy, mav):
-    mavproxy.send('rc 3 1600\n')
-    mavproxy.send('rc 5 1600\n')
-    mavproxy.send('rc 6 1550\n')
+    set_rc(mavproxy, mav, 3, 1600)
+    set_rc(mavproxy, mav, 5, 1600)
+    set_rc(mavproxy, mav, 6, 1550)
 
     if not wait_distance(mav, 50, accuracy=7, timeout=200):
         return False
     
-    mavproxy.send('rc 4 1550\n')
+    set_rc(mavproxy, mav, 4, 1550)
     
     if not wait_heading(mav, 0):
         return False
     
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 4, 1500)
     
     if not wait_distance(mav, 50, accuracy=7, timeout=100):
         return False
     
-    mavproxy.send('rc 4 1550\n')
+    set_rc(mavproxy, mav, 4, 1550)
     
     if not wait_heading(mav, 0):
         return False
     
-    mavproxy.send('rc 4 1500\n')
-    mavproxy.send('rc 5 1500\n')
-    mavproxy.send('rc 6 1100\n')
+    set_rc(mavproxy, mav, 4, 1500)
+    set_rc(mavproxy, mav, 5, 1500)
+    set_rc(mavproxy, mav, 6, 1100)
     
     if not wait_distance(mav, 75, accuracy=7, timeout=100):
         return False
-    
-    mavproxy.send('rc all 1500\n')
-    
-    mavproxy.send('disarm\n');
 
-    # wait for disarm
-    mav.motors_disarmed_wait()
+    set_rc_default(mavproxy)
+
+    disarm_vehicle(mavproxy, mav)
     progress("Manual dive OK")
     return True
+
 
 def dive_mission(mavproxy, mav, filename):
     
@@ -75,8 +63,9 @@ def dive_mission(mavproxy, mav, filename):
     mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Saved [0-9]+ waypoints')
+    set_rc_default(mavproxy)
     
-    if not arm_sub(mavproxy, mav):
+    if not arm_vehicle(mavproxy, mav):
         progress("Failed to ARM")
         return False
     
@@ -85,14 +74,12 @@ def dive_mission(mavproxy, mav, filename):
     
     if not wait_waypoint(mav, 1, 5, max_dist=5):
         return False
-    
-    mavproxy.send('disarm\n');
-    
-    # wait for disarm
-    mav.motors_disarmed_wait()
+
+    disarm_vehicle(mavproxy, mav)
 
     progress("Mission OK")
     return True
+
 
 def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
     """Dive ArduSub in SITL.
@@ -108,7 +95,7 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
     sitl = util.start_SITL(binary, model='vectored', wipe=True, home=home, speedup=speedup)
-    mavproxy = util.start_MAVProxy_SITL('ArduSub', options=options)
+    mavproxy = util.start_MAVProxy_SITL('ArduSub')
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
@@ -169,7 +156,8 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
         
         homeloc = mav.location()
         progress("Home location: %s" % homeloc)
-        if not arm_sub(mavproxy, mav):
+        set_rc_default(mavproxy)
+        if not arm_vehicle(mavproxy, mav):
             progress("Failed to ARM")
             failed = True
         if not dive_manual(mavproxy, mav):
