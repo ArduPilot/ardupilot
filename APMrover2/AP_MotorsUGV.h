@@ -102,7 +102,7 @@ protected:
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
-    float   _throttle;  // requested throttle as a value from 0 to 100
+    float   _throttle;  // requested throttle as a value from -100 to 100
     float   _last_throttle;
     bool    _use_slew_rate; // true if we should slew limit the throttle for one interation
 };
