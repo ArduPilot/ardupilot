@@ -546,6 +546,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AC_Fence/AC_Fence.cpp
     AP_SUBGROUPINFO(fence, "FENCE_", 17, ParametersG2, AC_Fence),
 
+    // @Group: PRX
+    // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
+    AP_SUBGROUPINFO(proximity, "PRX", 18, ParametersG2, AP_Proximity),
+
     AP_GROUPEND
 };
 
@@ -559,7 +563,8 @@ ParametersG2::ParametersG2(void)
     motors(rover.ServoRelayEvents),
     attitude_control(rover.ahrs),
     smart_rtl(rover.ahrs),
-    fence(rover.ahrs)
+    fence(rover.ahrs),
+    proximity(rover.serial_manager)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

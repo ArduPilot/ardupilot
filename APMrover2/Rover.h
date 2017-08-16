@@ -77,6 +77,7 @@
 #include <RC_Channel/RC_Channel.h>                  // RC Channel Library
 #include <StorageManager/StorageManager.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_Proximity/AP_Proximity.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -519,6 +520,7 @@ private:
     void Log_Write_Home_And_Origin();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_WheelEncoder();
+    void Log_Write_Proximity();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
     void Log_Write_Vehicle_Startup_Messages();
@@ -552,6 +554,8 @@ private:
     void accel_cal_update(void);
     void read_rangefinders(void);
     void button_update(void);
+    void init_proximity();
+    void update_proximity();
     void update_sensor_status_flags(void);
 
     // Steering.cpp

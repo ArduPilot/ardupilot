@@ -275,6 +275,19 @@ void Rover::button_update(void)
     button.update();
 }
 
+// initialise proximity sensor
+void Rover::init_proximity(void)
+{
+    g2.proximity.init();
+    g2.proximity.set_rangefinder(&rangefinder);
+}
+
+// update proximity sensor
+void Rover::update_proximity(void)
+{
+    g2.proximity.update();
+}
+
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but
@@ -297,7 +310,9 @@ void Rover::update_sensor_status_flags(void)
     if (rover.DataFlash.logging_present()) {  // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
-
+    if (rover.g2.proximity.get_status() > AP_Proximity::Proximity_NotConnected) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    }
 
     // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control and motor output which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL &
@@ -357,7 +372,9 @@ void Rover::update_sensor_status_flags(void)
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
-
+    if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    }
     if (rover.DataFlash.logging_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }

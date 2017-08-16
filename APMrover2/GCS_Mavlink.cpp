@@ -381,6 +381,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         rover.send_rangefinder(chan);
         send_distance_sensor(rover.rangefinder);
+        send_proximity(rover.g2.proximity);
         break;
 
     case MSG_RPM:
@@ -1386,6 +1387,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
         rover.rangefinder.handle_msg(msg);
+        rover.g2.proximity.handle_msg(msg);
         break;
 
     case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
