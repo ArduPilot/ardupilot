@@ -229,7 +229,7 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_a
     // in case of non-zero loiter duration, we provide heading-unknown to signal we should stop at the point
     float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN;
     if (loiter_duration == 0) {
-    	next_leg_bearing_cd = mission.get_next_ground_course_cd(MODE_NEXT_HEADING_UNKNOWN);
+        next_leg_bearing_cd = mission.get_next_ground_course_cd(MODE_NEXT_HEADING_UNKNOWN);
     }
 
     // retrieve and sanitize target location
