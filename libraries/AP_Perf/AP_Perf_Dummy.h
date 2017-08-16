@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2016-2017  Intel Corporation. All rights reserved.
- *
  * This file is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 3 of the License, or
@@ -16,17 +14,18 @@
  */
 #pragma once
 
-#include <inttypes.h>
+#include "AP_Perf_Backend.h"
 
-class Perf_Lttng {
+class AP_Perf_Dummy : public AP_Perf_Backend {
 public:
-#ifdef HAVE_LTTNG_UST
-    void begin(const char *name);
-    void end(const char *name);
-    void count(const char *name, uint64_t val);
-#else
-    void begin(const char *name) { }
-    void end(const char *name) { }
-    void count(const char *name, uint64_t val) { }
-#endif
+    using perf_counter_type = AP_Perf::perf_counter_type;
+    using perf_counter_t = AP_Perf::perf_counter_t;
+
+    perf_counter_t add(perf_counter_type type, const char *name) override {
+        return 0;
+    }
+
+    void begin(perf_counter_t pc) override { }
+    void end(perf_counter_t pc) override { }
+    void count(perf_counter_t pc) override { }
 };

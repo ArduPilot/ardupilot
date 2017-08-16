@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016  Intel Corporation. All rights reserved.
+ * Copyright (C) 2016-2017  Intel Corporation. All rights reserved.
  *
  * This file is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -14,11 +14,10 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include "AP_Perf_Linux.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#ifndef HAVE_LTTNG_UST
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <time.h>
@@ -27,12 +26,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
-#ifndef PRIu64
-#define PRIu64 "llu"
-#endif
-
 static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
-
 
 static inline uint64_t now_nsec()
 {
@@ -92,7 +86,7 @@ AP_Perf_Linux::AP_Perf_Linux()
     _perf_counters.reserve(50);
 
 #ifdef DEBUG_PERF
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Perf_Lttng::_debug_counters, void));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Perf_Linux::_debug_counters, void));
 #endif
 }
 
@@ -104,7 +98,7 @@ void AP_Perf_Linux::begin(AP_Perf::perf_counter_t pc)
         return;
     }
 
-    AP_Perf::AP_Perf_Counter &perf = _perf_counters[idx];
+    AP_Perf_Counter &perf = _perf_counters[idx];
     if (perf.type != AP_Perf::PC_ELAPSED) {
         hal.console->printf("perf_begin() called on perf_counter_t(%s) that"
                             " is not of PC_ELAPSED type.\n",
@@ -121,6 +115,7 @@ void AP_Perf_Linux::begin(AP_Perf::perf_counter_t pc)
     _update_count++;
 
     perf.start = now_nsec();
+    _lttng.begin(perf.name);
 }
 
 void AP_Perf_Linux::end(AP_Perf::perf_counter_t pc)
@@ -131,7 +126,7 @@ void AP_Perf_Linux::end(AP_Perf::perf_counter_t pc)
         return;
     }
 
-    AP_Perf::AP_Perf_Counter &perf = _perf_counters[idx];
+    AP_Perf_Counter &perf = _perf_counters[idx];
     if (perf.type != AP_Perf::PC_ELAPSED) {
         hal.console->printf("perf_begin() called on perf_counter_t(%s) that"
                             " is not of PC_ELAPSED type.\n",
@@ -168,6 +163,8 @@ void AP_Perf_Linux::end(AP_Perf::perf_counter_t pc)
     perf.avg += (delta_intvl / perf.count);
     perf.m2 += (delta_intvl * (elapsed - perf.avg));
     perf.start = 0;
+
+    _lttng.end(perf.name);
 }
 
 void AP_Perf_Linux::count(AP_Perf::perf_counter_t pc)
@@ -178,7 +175,7 @@ void AP_Perf_Linux::count(AP_Perf::perf_counter_t pc)
         return;
     }
 
-    AP_Perf::AP_Perf_Counter &perf = _perf_counters[idx];
+    AP_Perf_Counter &perf = _perf_counters[idx];
     if (perf.type != AP_Perf::PC_COUNT) {
         hal.console->printf("perf_begin() called on perf_counter_t(%s) that"
                             " is not of PC_COUNT type.\n",
@@ -188,6 +185,8 @@ void AP_Perf_Linux::count(AP_Perf::perf_counter_t pc)
 
     _update_count++;
     perf.count++;
+
+    _lttng.count(perf.name, perf.count);
 }
 
 AP_Perf::perf_counter_t AP_Perf_Linux::add(AP_Perf::perf_counter_type type, const char *name)
@@ -207,5 +206,5 @@ AP_Perf::perf_counter_t AP_Perf_Linux::add(AP_Perf::perf_counter_type type, cons
 
     return pc;
 }
-#endif // HAVE_LTTNG_UST
-#endif // CONFIG_HAL_BOARD
+
+#endif

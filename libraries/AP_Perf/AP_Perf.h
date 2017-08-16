@@ -16,15 +16,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <limits.h>
-
-#ifdef HAVE_LTTNG_UST
-#include "Perf_Lttng.h"
-#endif
-
 class AP_Perf_Backend;
-
 
 class AP_Perf {
 public:
@@ -33,52 +25,22 @@ public:
         PC_ELAPSED,      /**< measure the time elapsed performing an event */
         PC_INTERVAL      /**< measure the interval between instances of an event */
     };
-
     typedef void *perf_counter_t;
-
-    class AP_Perf_Counter {
-    public:
-
-        AP_Perf_Counter(perf_counter_type type_, const char *name_)
-            : name{name_}
-            , type{type_}
-            , min{ULONG_MAX}
-        {
-        }
-
-#ifdef HAVE_LTTNG_UST
-        Perf_Lttng lttng;
-#endif
-
-        const char *name;
-
-        perf_counter_type type;
-
-        uint64_t count;
-
-        /* Everything below is in nanoseconds */
-        uint64_t start;
-        uint64_t total;
-        uint64_t min;
-        uint64_t max;
-
-        double avg;
-        double m2;
-    };
 
     AP_Perf();
 
-    // New API
-    virtual perf_counter_t add(perf_counter_type type, const char *name);
-    virtual void begin(perf_counter_t pc);
-    virtual void end(perf_counter_t pc);
-    virtual void count(perf_counter_t pc);
+    void begin(perf_counter_t pc);
+    void end(perf_counter_t pc);
+    void count(perf_counter_t pc);
+    perf_counter_t add(perf_counter_type t, const char *name);
 
-    // PX4 API
-    virtual void perf_begin(perf_counter_t pc) { begin(pc); }
-    virtual void perf_end(perf_counter_t pc) { end(pc); }
-    virtual void perf_count(perf_counter_t pc) { count(pc); }
-    virtual perf_counter_t perf_alloc(perf_counter_type t, const char *name) { return add(t, name); }
+    // Old API: remove when all conversions are done
+    void perf_begin(perf_counter_t pc) { begin(pc); }
+    void perf_end(perf_counter_t pc) { end(pc); }
+    void perf_count(perf_counter_t pc) { count(pc); }
+    perf_counter_t perf_alloc(perf_counter_type t, const char *name) {
+        return add(t, name);
+    }
 
     static AP_Perf *get_instance() { return &_instance; }
 
