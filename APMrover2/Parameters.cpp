@@ -575,6 +575,7 @@ void Rover::load_parameters(void)
     const uint32_t before = micros();
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
+    AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_ROVER);
 
