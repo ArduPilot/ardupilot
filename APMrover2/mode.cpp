@@ -68,7 +68,7 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed)
 {
     // add in speed nudging
     if (nudge_allowed) {
-        target_speed = calc_speed_nudge(target_speed, g.speed_cruise, g.throttle_cruise / 100.0f);
+        target_speed = calc_speed_nudge(target_speed, g.speed_cruise, g.throttle_cruise * 0.01f);
     }
 
     // call throttle controller and convert output to -100 to +100 range
