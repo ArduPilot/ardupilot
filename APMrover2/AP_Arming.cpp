@@ -72,5 +72,20 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
 bool AP_Arming_Rover::pre_arm_checks(bool report)
 {
-    return rover.g2.motors.pre_arm_check(report) & AP_Arming::pre_arm_checks(report);
+    return (AP_Arming::pre_arm_checks(report)
+            & rover.g2.motors.pre_arm_check(report)
+            & fence_checks(report));
+}
+
+bool AP_Arming_Rover::fence_checks(bool report)
+{
+    // check fence is initialised
+    const char *fail_msg = nullptr;
+    if (!_fence.pre_arm_check(fail_msg)) {
+        if (report && fail_msg != nullptr) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Fence : %s", fail_msg);
+        }
+        return false;
+    }
+    return true;
 }
