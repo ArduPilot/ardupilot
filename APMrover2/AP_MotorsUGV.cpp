@@ -54,6 +54,24 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SLEWRATE", 4, AP_MotorsUGV, _slew_rate, 100),
 
+    // @Param: THR_MIN
+    // @DisplayName: Throttle minimum
+    // @Description: Throttle minimum percentage the autopilot will apply. This is mostly useful for rovers with internal combustion motors, to prevent the motor from cutting out in auto mode.
+    // @Units: %
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("THR_MIN", 5, AP_MotorsUGV, _throttle_min, 0),
+
+    // @Param: THR_MAX
+    // @DisplayName: Throttle maximum
+    // @Description: Throttle maximum percentage the autopilot will apply. This can be used to prevent overheating an ESC or motor on an electric rover
+    // @Units: %
+    // @Range: 30 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("THR_MAX", 6, AP_MotorsUGV, _throttle_max, 100),
+
     AP_GROUPEND
 };
 
@@ -116,6 +134,30 @@ void AP_MotorsUGV::setup_servo_output()
     SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
 }
 
+// set steering as a value from -4500 to +4500
+void AP_MotorsUGV::set_steering(float steering)
+{
+    _steering = constrain_float(steering, -4500.0f, 4500.0f);
+}
+
+// set throttle as a value from -100 to 100
+void AP_MotorsUGV::set_throttle(float throttle)
+{
+    // sanity check throttle min and max
+    _throttle_min = constrain_int16(_throttle_min, 0, 20);
+    _throttle_max = constrain_int16(_throttle_max,30,100);
+
+    // check throttle is between -_throttle_max ~ +_throttle_max but outside -throttle_min ~ +throttle_min
+    _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
+    if ((_throttle_min > 0) && (fabsf(_throttle) < _throttle_min)) {
+        if (is_negative(_throttle)) {
+            _throttle = -_throttle_min;
+        } else {
+            _throttle = _throttle_min;
+        }
+    }
+}
+
 /*
   work out if skid steering is available
  */
@@ -134,10 +176,6 @@ void AP_MotorsUGV::output(bool armed, float dt)
     if (!hal.util->get_soft_armed()) {
         armed = false;
     }
-
-    // ensure steering and throttle are within limits
-    _steering = constrain_float(_steering, -4500.0f, 4500.0f);
-    _throttle = constrain_float(_throttle, -100.0f, 100.0f);
 
     slew_limit_throttle(dt);
 
@@ -310,8 +348,8 @@ void AP_MotorsUGV::set_limits_from_input(bool armed, float steering, float throt
     // set limits based on inputs
     limit.steer_left = !armed || (steering <= -4500.0f);
     limit.steer_right = !armed || (steering >= 4500.0f);
-    limit.throttle_lower = !armed || (throttle <= -100.0f);
-    limit.throttle_upper = !armed || (throttle >= 100.0f);
+    limit.throttle_lower = !armed || (throttle <= -_throttle_max);
+    limit.throttle_upper = !armed || (throttle >= _throttle_max);
 }
 
 // setup pwm output type
