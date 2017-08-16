@@ -542,6 +542,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 16, ParametersG2, frame_class, 1),
 
+    // @Group: FENCE_
+    // @Path: ../libraries/AC_Fence/AC_Fence.cpp
+    AP_SUBGROUPINFO(fence, "FENCE_", 17, ParametersG2, AC_Fence),
+
     AP_GROUPEND
 };
 
@@ -554,7 +558,8 @@ ParametersG2::ParametersG2(void)
     beacon(rover.serial_manager),
     motors(rover.ServoRelayEvents),
     attitude_control(rover.ahrs),
-    smart_rtl(rover.ahrs)
+    smart_rtl(rover.ahrs),
+    fence(rover.ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
