@@ -22,6 +22,7 @@ def build(bld):
             'AP_AdvancedFailsafe',
             'AP_WheelEncoder',
             'AP_SmartRTL',
+            'AC_Fence',
         ],
     )
 
