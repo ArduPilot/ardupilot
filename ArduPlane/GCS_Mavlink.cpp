@@ -1583,10 +1583,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_SERIAL_CONTROL:
-        handle_serial_control(msg, plane.gps);
-        break;
-
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
         plane.rangefinder.handle_msg(msg);
         break;
