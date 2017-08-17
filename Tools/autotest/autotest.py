@@ -18,8 +18,8 @@ import traceback
 from apmrover2 import *
 from arducopter import *
 from quadplane import *
+from arduplane import *
 
-import arduplane
 import ardusub
 from pysim import util
 from pymavlink import mavutil
@@ -232,7 +232,8 @@ def run_step(step):
         return arducopter.fly_Helicopter()
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
+        arduplane = AutotestPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return arduplane.fly_ArduPlane()
 
     if step == 'fly.QuadPlane':
         quadplane = AutotestQuadPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
