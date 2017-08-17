@@ -137,110 +137,108 @@ class AutotestSub(Autotest):
     def test_mission(self, filename):
         super(AutotestSub, self).test_mission(filename)
 
+    def dive_manual(self):
+        self.mavproxy.send('rc 3 1600\n')
+        self.mavproxy.send('rc 5 1600\n')
+        self.mavproxy.send('rc 6 1550\n')
 
-def dive_manual(self):
-    self.mavproxy.send('rc 3 1600\n')
-    self.mavproxy.send('rc 5 1600\n')
-    self.mavproxy.send('rc 6 1550\n')
+        if not self.wait_distance(50, accuracy=7, timeout=200):
+            return False
 
-    if not self.wait_distance(50, accuracy=7, timeout=200):
-        return False
-    
-    self.mavproxy.send('rc 4 1550\n')
-    
-    if not self.wait_heading(0):
-        return False
-    
-    self.mavproxy.send('rc 4 1500\n')
-    
-    if not self.wait_distance(50, accuracy=7, timeout=100):
-        return False
-    
-    self.mavproxy.send('rc 4 1550\n')
-    
-    if not self.wait_heading(0):
-        return False
-    
-    self.mavproxy.send('rc 4 1500\n')
-    self.mavproxy.send('rc 5 1500\n')
-    self.mavproxy.send('rc 6 1100\n')
-    
-    if not self.wait_distance(75, accuracy=7, timeout=100):
-        return False
+        self.mavproxy.send('rc 4 1550\n')
 
-    self.set_rc_default()
+        if not self.wait_heading(0):
+            return False
 
-    self.disarm_vehicle()
-    progress("Manual dive OK")
-    return True
+        self.mavproxy.send('rc 4 1500\n')
 
+        if not self.wait_distance(50, accuracy=7, timeout=100):
+            return False
 
-def dive_mission(self, filename):
-    
-    progress("Executing mission %s" % filename)
-    self.mavproxy.send('wp load %s\n' % filename)
-    self.mavproxy.expect('Flight plan received')
-    self.mavproxy.send('wp list\n')
-    self.mavproxy.expect('Saved [0-9]+ waypoints')
-    self.set_rc_default()
-    
-    if not self.arm_vehicle():
-        progress("Failed to ARM")
-        return False
+        self.mavproxy.send('rc 4 1550\n')
 
-    self.mavproxy.send('mode auto\n')
-    self.wait_mode('AUTO')
-    
-    if not self.wait_waypoint(1, 5, max_dist=5):
-        return False
+        if not self.wait_heading(0):
+            return False
 
-    self.disarm_vehicle()
+        self.mavproxy.send('rc 4 1500\n')
+        self.mavproxy.send('rc 5 1500\n')
+        self.mavproxy.send('rc 6 1100\n')
 
-    progress("Mission OK")
-    return True
+        if not self.wait_distance(75, accuracy=7, timeout=100):
+            return False
 
-def dive_ArduSub(self):
-    """Dive ArduSub in SITL.
-
-    you can pass viewerip as an IP address to optionally send fg and
-    mavproxy packets too for local viewing of the mission in real time
-    """
-    if not self.hasInit:
-        self.init()
-
-    failed = False
-    e = 'None'
-    try:
-        progress("Waiting for a heartbeat with mavlink protocol %s" % self.mav.WIRE_PROTOCOL_VERSION)
-        self.mav.wait_heartbeat()
-        progress("Waiting for GPS fix")
-        self.mav.wait_gps_fix()
-
-        # wait for EKF and GPS checks to pass
-        self.mavproxy.expect('IMU0 is using GPS')
-
-        self.homeloc = self.mav.location()
-        progress("Home location: %s" % self.homeloc)
         self.set_rc_default()
+
+        self.disarm_vehicle()
+        progress("Manual dive OK")
+        return True
+
+    def dive_mission(self, filename):
+
+        progress("Executing mission %s" % filename)
+        self.mavproxy.send('wp load %s\n' % filename)
+        self.mavproxy.expect('Flight plan received')
+        self.mavproxy.send('wp list\n')
+        self.mavproxy.expect('Saved [0-9]+ waypoints')
+        self.set_rc_default()
+
         if not self.arm_vehicle():
             progress("Failed to ARM")
-            failed = True
-        if not dive_manual(self):
-            progress("Failed manual dive")
-            failed = True
-        if not dive_mission(self,os.path.join(testdir, "sub_mission.txt")):
-            progress("Failed auto mission")
-            failed = True
-        if not self.log_download(util.reltopdir("../buildlogs/ArduSub-log.bin")):
-            progress("Failed log download")
-            failed = True
-    except pexpect.TIMEOUT as e:
-        progress("Failed with timeout")
-        failed = True
+            return False
 
-    self.close()
+        self.mavproxy.send('mode auto\n')
+        self.wait_mode('AUTO')
 
-    if failed:
-        progress("FAILED: %s" % e)
-        return False
-    return True
+        if not self.wait_waypoint(1, 5, max_dist=5):
+            return False
+
+        self.disarm_vehicle()
+
+        progress("Mission OK")
+        return True
+
+    def dive_ArduSub(self):
+        """Dive ArduSub in SITL.
+
+        you can pass viewerip as an IP address to optionally send fg and
+        mavproxy packets too for local viewing of the mission in real time
+        """
+        if not self.hasInit:
+            self.init()
+
+        failed = False
+        e = 'None'
+        try:
+            progress("Waiting for a heartbeat with mavlink protocol %s" % self.mav.WIRE_PROTOCOL_VERSION)
+            self.mav.wait_heartbeat()
+            progress("Waiting for GPS fix")
+            self.mav.wait_gps_fix()
+
+            # wait for EKF and GPS checks to pass
+            self.mavproxy.expect('IMU0 is using GPS')
+
+            self.homeloc = self.mav.location()
+            progress("Home location: %s" % self.homeloc)
+            self.set_rc_default()
+            if not self.arm_vehicle():
+                progress("Failed to ARM")
+                failed = True
+            if not self.dive_manual():
+                progress("Failed manual dive")
+                failed = True
+            if not self.dive_mission(os.path.join(testdir, "sub_mission.txt")):
+                progress("Failed auto mission")
+                failed = True
+            if not self.log_download(util.reltopdir("../buildlogs/ArduSub-log.bin")):
+                progress("Failed log download")
+                failed = True
+        except pexpect.TIMEOUT as e:
+            progress("Failed with timeout")
+            failed = True
+
+        self.close()
+
+        if failed:
+            progress("FAILED: %s" % e)
+            return False
+        return True

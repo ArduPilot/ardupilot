@@ -19,8 +19,8 @@ from apmrover2 import *
 from arducopter import *
 from quadplane import *
 from arduplane import *
+from ardusub import *
 
-import ardusub
 from pysim import util
 from pymavlink import mavutil
 from pymavlink.generator import mavtemplate
@@ -244,7 +244,8 @@ def run_step(step):
         return apmrover2.test_all()
 
     if step == 'dive.ArduSub':
-        return ardusub.dive_ArduSub(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
+        ardusub = AutotestSub(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return ardusub.dive_ArduSub()
 
     if step == 'build.All':
         return build_all()
