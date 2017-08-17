@@ -79,6 +79,7 @@ enum ap_message {
     MSG_BATTERY_STATUS,
     MSG_AOA_SSA,
     MSG_LANDING,
+    MSG_SUB_INFO,
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
 
