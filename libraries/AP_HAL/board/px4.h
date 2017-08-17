@@ -85,6 +85,11 @@
 #define HAL_PX4_HAVE_PWM_INPUT 0
 #endif
 
+/* px4fmu-v2 */
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#define HAL_COMPASS_IST8310_I2C_ADDR 0x0E
+#endif
+
 /* px4fmu-v4 */
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V4
 #define HAL_PX4_HAVE_PX4IO 0
