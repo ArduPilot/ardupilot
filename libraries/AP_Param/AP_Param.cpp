@@ -649,6 +649,13 @@ bool AP_Param::is_sentinal(const Param_header &phdr)
         phdr.group_element == _sentinal_group) {
         return true;
     }
+    // also check for 0xFFFFFFFF and 0x00000000, which are the fill
+    // values for storage. These can appear if power off occurs while
+    // writing data
+    uint32_t v = *(uint32_t *)&phdr;
+    if (v == 0 || v == 0xFFFFFFFF) {
+        return true;
+    }
     return false;
 }
 
