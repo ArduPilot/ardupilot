@@ -799,8 +799,8 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_home(Vector3f &vec) const
 
     Vector3f offset = location_3d_diff_NED(originLLH, _home);
 
-    vec.x = originNED.x + offset.x;
-    vec.y = originNED.y + offset.y;
+    vec.x = originNED.x - offset.x;
+    vec.y = originNED.y - offset.y;
     vec.z = originNED.z - offset.z;
     return true;
 }
@@ -848,8 +848,8 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_home(Vector2f &posNE) const
 
     Vector2f offset = location_diff(originLLH, _home);
 
-    posNE.x = originNE.x + offset.x;
-    posNE.y = originNE.y + offset.y;
+    posNE.x = originNE.x - offset.x;
+    posNE.y = originNE.y - offset.y;
     return true;
 }
 
