@@ -56,13 +56,6 @@
   #define CURRENT_PIN_1    -1
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// HIL_MODE                                 OPTIONAL
-
-#ifndef HIL_MODE
-  #define HIL_MODE HIL_MODE_DISABLED
-#endif
-
 #ifndef MAV_SYSTEM_ID
   #define MAV_SYSTEM_ID    1
 #endif
@@ -79,10 +72,6 @@
 
 #ifndef CH7_OPTION
   #define CH7_OPTION CH7_SAVE_WP
-#endif
-
-#ifndef TUNING_OPTION
-  #define TUNING_OPTION TUN_NONE
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -121,14 +110,6 @@
 #endif
 #if !defined(MODE_6)
   #define MODE_6    MANUAL
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-// THROTTLE_OUT
-//
-#ifndef THROTTE_OUT
-  #define THROTTLE_OUT ENABLED
 #endif
 
 
@@ -178,19 +159,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Servo Mapping
-//
-#ifndef THROTTLE_MIN
-  #define THROTTLE_MIN      0  // percent
-#endif
-#ifndef THROTTLE_CRUISE
-  #define THROTTLE_CRUISE  45
-#endif
-#ifndef THROTTLE_MAX
-  #define THROTTLE_MAX    100
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
 #ifndef LOGGING_ENABLED
@@ -203,11 +171,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
-
-// use this to enable servos in HIL mode
-#ifndef HIL_SERVOS
-  #define HIL_SERVOS DISABLED
-#endif
 
 // if RESET_SWITCH_CH is not zero, then this is the PWM value on
 // that channel where we reset the control mode to the current switch
