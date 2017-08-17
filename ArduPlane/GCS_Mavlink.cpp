@@ -1602,16 +1602,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         send_autopilot_version(FIRMWARE_VERSION);
         break;
 
-    case MAVLINK_MSG_ID_LED_CONTROL:
-        // send message to Notify
-        AP_Notify::handle_led_control(msg);
-        break;
-
-    case MAVLINK_MSG_ID_PLAY_TUNE:
-        // send message to Notify
-        AP_Notify::handle_play_tune(msg);
-        break;
-
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
     {
         // Only allow companion computer (or other external controller) to
