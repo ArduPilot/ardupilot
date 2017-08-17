@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 /**
    handle a SERIAL_CONTROL message
  */
-void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
+void GCS_MAVLINK::handle_serial_control(const mavlink_message_t *msg)
 {
     mavlink_serial_control_t packet;
     mavlink_msg_serial_control_decode(msg, &packet);
@@ -39,6 +39,8 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
         // how did this packet get to us?
         return;
     }
+
+    AP_GPS *gps = get_gps();
 
     bool exclusive = (packet.flags & SERIAL_CONTROL_FLAG_EXCLUSIVE) != 0;
 
@@ -53,11 +55,17 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
         break;
     case SERIAL_CONTROL_DEV_GPS1:
         stream = port = hal.uartB;
-        gps.lock_port(0, exclusive);
+        if (gps == nullptr) {
+            return;
+        }
+        gps->lock_port(0, exclusive);
         break;
     case SERIAL_CONTROL_DEV_GPS2:
         stream = port = hal.uartE;
-        gps.lock_port(1, exclusive);
+        if (gps == nullptr) {
+            return;
+        }
+        gps->lock_port(1, exclusive);
         break;
     case SERIAL_CONTROL_DEV_SHELL:
         stream = hal.util->get_shell_stream();

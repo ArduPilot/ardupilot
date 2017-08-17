@@ -1832,6 +1832,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_common_mission_message(msg);
         break;
 
+    case MAVLINK_MSG_ID_SERIAL_CONTROL:
+        handle_serial_control(msg);
+        break;
+
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
         /* fall through */
     case MAVLINK_MSG_ID_GPS_INPUT:
