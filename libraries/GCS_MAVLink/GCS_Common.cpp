@@ -1846,6 +1846,16 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_statustext(msg);
         break;
 
+    case MAVLINK_MSG_ID_LED_CONTROL:
+        // send message to Notify
+        AP_Notify::handle_led_control(msg);
+        break;
+
+    case MAVLINK_MSG_ID_PLAY_TUNE:
+        // send message to Notify
+        AP_Notify::handle_play_tune(msg);
+        break;
+
     case MAVLINK_MSG_ID_RALLY_POINT:
         /* fall through */
     case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
