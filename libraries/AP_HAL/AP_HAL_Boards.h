@@ -37,6 +37,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_DARK       1016
 #define HAL_BOARD_SUBTYPE_LINUX_URUS       1017
 #define HAL_BOARD_SUBTYPE_LINUX_BLUE       1018
+#define HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ 1019
 
 /* HAL PX4 sub-types, starting at 2000 */
 #define HAL_BOARD_SUBTYPE_PX4_V1           2000
@@ -105,6 +106,7 @@
 #define HAL_COMPASS_NAVIO2             14
 #define HAL_COMPASS_NAVIO              15
 #define HAL_COMPASS_AERO               16
+#define HAL_COMPASS_OCPOC_ZYNQ         17
 
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1
