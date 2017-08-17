@@ -71,7 +71,7 @@ public:
     /// loiter controller
     ///
 
-    /// init_loiter_target to a position in cm from home
+    /// init_loiter_target to a position in cm from ekf origin
     ///     caller can set reset_I to false to preserve I term since previous time loiter controller ran.  Should only be false when caller is sure that not too much time has passed to invalidate the I terms
     void init_loiter_target(const Vector3f& position, bool reset_I=true);
 
@@ -143,21 +143,21 @@ public:
     /// get_wp_acceleration - returns acceleration in cm/s/s during missions
     float get_wp_acceleration() const { return _wp_accel_cms.get(); }
 
-    /// get_wp_destination waypoint using position vector (distance from home in cm)
+    /// get_wp_destination waypoint using position vector (distance from ekf origin in cm)
     const Vector3f &get_wp_destination() const { return _destination; }
 
-    /// get origin using position vector (distance from home in cm)
+    /// get origin using position vector (distance from ekf origin in cm)
     const Vector3f &get_wp_origin() const { return _origin; }
 
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
     bool set_wp_destination(const Location_Class& destination);
 
-    /// set_wp_destination waypoint using position vector (distance from home in cm)
+    /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
     bool set_wp_destination(const Vector3f& destination, bool terrain_alt = false);
 
-    /// set_wp_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
+    /// set_wp_origin_and_destination - set origin and destination waypoints using position vectors (distance from ekf origin in cm)
     ///     terrain_alt should be true if origin.z and destination.z are desired altitudes above terrain (false if these are alt-above-ekf-origin)
     ///     returns false on failure (likely caused by missing terrain data)
     bool set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt = false);
@@ -223,7 +223,7 @@ public:
     ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
     bool set_spline_destination(const Location_Class& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location_Class next_destination);
 
-    /// set_spline_destination waypoint using position vector (distance from home in cm)
+    /// set_spline_destination waypoint using position vector (distance from ekf origin in cm)
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
     ///     terrain_alt should be true if destination.z is a desired altitudes above terrain (false if its desired altitudes above ekf origin)
     ///     stopped_at_start should be set to true if vehicle is stopped at the origin
@@ -232,7 +232,7 @@ public:
     ///     next_destination.z  must be in the same "frame" as destination.z (i.e. if destination is a alt-above-terrain, next_destination should be too)
     bool set_spline_destination(const Vector3f& destination, bool terrain_alt, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination);
 
-    /// set_spline_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
+    /// set_spline_origin_and_destination - set origin and destination waypoints using position vectors (distance from ekf origin in cm)
     ///     terrain_alt should be true if origin.z and destination.z are desired altitudes above terrain (false if desired altitudes above ekf origin)
     ///     stopped_at_start should be set to true if vehicle is stopped at the origin
     ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
@@ -253,10 +253,10 @@ public:
     int32_t get_roll() const { return _pos_control.get_roll(); }
     int32_t get_pitch() const { return _pos_control.get_pitch(); }
 
-    /// get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
+    /// get_desired_alt - get desired altitude (in cm above ekf origin) from loiter or wp controller which should be fed into throttle controller
     float get_desired_alt() const { return _pos_control.get_alt_target(); }
 
-    /// set_desired_alt - set desired altitude (in cm above home)
+    /// set_desired_alt - set desired altitude (in cm above ekf origin)
     void set_desired_alt(float desired_alt) { _pos_control.set_alt_target(desired_alt); }
 
     /// advance_wp_target_along_track - move target location along track from origin to destination
@@ -344,8 +344,8 @@ protected:
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call
     uint8_t     _wp_step;               // used to decide which portion of wpnav controller to run during this iteration
-    Vector3f    _origin;                // starting point of trip to next waypoint in cm from home (equivalent to next_WP)
-    Vector3f    _destination;           // target destination in cm from home (equivalent to next_WP)
+    Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
+    Vector3f    _destination;           // target destination in cm from ekf origin
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination
     float       _track_length;          // distance in cm between origin and destination
     float       _track_length_xy;       // horizontal distance in cm between origin and destination
