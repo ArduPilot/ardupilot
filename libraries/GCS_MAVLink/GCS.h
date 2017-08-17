@@ -267,7 +267,7 @@ protected:
     void handle_common_camera_message(const mavlink_message_t *msg);
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
-    void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
+    void handle_serial_control(const mavlink_message_t *msg);
 
     void handle_common_message(mavlink_message_t *msg);
     void handle_setup_signing(const mavlink_message_t *msg);
