@@ -16,8 +16,8 @@ import time
 import traceback
 
 from apmrover2 import *
+from arducopter import *
 
-import arducopter
 import arduplane
 import quadplane
 import ardusub
@@ -224,10 +224,12 @@ def run_step(step):
         return get_default_params(vehicle, binary)
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        arducopter = AutotestCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return arducopter.fly_ArduCopter()
 
     if step == 'fly.CopterAVC':
-        return arducopter.fly_CopterAVC(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        arducopter = AutotestCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return arducopter.fly_Helicopter()
 
     if step == 'fly.ArduPlane':
         return arduplane.fly_ArduPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
