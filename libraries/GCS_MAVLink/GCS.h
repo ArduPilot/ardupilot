@@ -71,6 +71,7 @@ enum ap_message {
     MSG_POSITION_TARGET_GLOBAL_INT,
     MSG_ADSB_VEHICLE,
     MSG_BATTERY_STATUS,
+    MSG_NAMED_FLOAT,
     MSG_RETRY_DEFERRED // this must be last
 };
 
