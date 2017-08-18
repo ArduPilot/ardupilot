@@ -1820,6 +1820,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_set_mode(msg);
         break;
 
+    case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
+        handle_send_autopilot_version(msg);
+        break;
+
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
         /* fall through */
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
@@ -1943,6 +1947,14 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     }
 }
 
+void GCS_MAVLINK::handle_send_autopilot_version(const mavlink_message_t *msg)
+{
+    const AP_FWVersion &fwver = get_fwver();
+    send_autopilot_version(fwver.major, fwver.minor, fwver.patch, fwver.fw_type);
+}
+
+
+
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet)
 {
     Compass *compass = get_compass();
@@ -1974,6 +1986,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &pac
     return compass->handle_mag_cal_command(packet);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet)
+{
+    if (!is_equal(packet.param1,1.0f)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    const AP_FWVersion &fwver = get_fwver();
+    send_autopilot_version(fwver.major, fwver.minor, fwver.patch, fwver.fw_type);
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
@@ -1998,6 +2021,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         result = handle_command_camera(packet);
         break;
+
+    case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
+        result = handle_command_request_autopilot_capabilities(packet);
+        break;
+    }
 
     case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS: {
         result = handle_command_preflight_set_sensor_offsets(packet);
