@@ -1,4 +1,7 @@
-APM:Copter Release Notes:
+APM:Heli Release Notes:
+------------------------------------------------------------------
+Heli 1.0.0 17-Aug-2017
+1.) fork ArduHeli from ArduCopter 3.3.3
 ------------------------------------------------------------------
 Copter 3.3.3 24-Feb-2016 / 3.3.3-rc2 27-Jan-2016
 Changes from 3.3.3-rc1

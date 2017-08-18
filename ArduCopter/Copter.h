@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APM:Copter V3.3.3"
-#define FIRMWARE_VERSION 3,3,3,FIRMWARE_VERSION_TYPE_OFFICIAL
+#define THISFIRMWARE "APM:Heli V1.0.0"
+#define FIRMWARE_VERSION 1,0,0,FIRMWARE_VERSION_TYPE_OFFICIAL
 
 /*
    This program is free software: you can redistribute it and/or modify
