@@ -35,6 +35,20 @@ void Sub::init_ardupilot()
     BoardConfig_CAN.init();
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // Detection won't work until after BoardConfig.init()
+    switch (AP_BoardConfig::get_board_type()) {
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
+        AP_Param::set_default_by_name("GND_EXT_BUS", 0);
+        break;
+    default:
+        AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+        break;
+    }
+#else
+    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+#endif
+
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
     
