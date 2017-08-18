@@ -199,6 +199,7 @@ void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
 
 uint16_t AP_BoardConfig::get_sbus_rate() {
     uint16_t rate = 50;
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (px4.sbus_out_rate.get() >= 1) {
         static const struct {
             uint8_t value;
@@ -219,6 +220,7 @@ uint16_t AP_BoardConfig::get_sbus_rate() {
             }
         }
     }
+#endif
     return rate;
 }
 
