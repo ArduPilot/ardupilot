@@ -62,7 +62,6 @@ static void loop()
             // use roll = 0, pitch = 0 for this example
             dcm_matrix.from_euler(0, 0, 0);
             heading = compass.calculate_heading(dcm_matrix, i);
-            compass.learn_offsets();
 
             const Vector3f &mag = compass.get_field(i);
 

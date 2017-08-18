@@ -52,6 +52,8 @@ public:
     Compass(const Compass &other) = delete;
     Compass &operator=(const Compass&) = delete;
 
+    friend class CompassLearn;
+
     /// Initialize the compass device.
     ///
     /// @returns    True if the compass was initialized OK, false if it was not
@@ -182,13 +184,13 @@ public:
     // learn offsets accessor
     bool learn_offsets_enabled() const { return _learn; }
 
-    /// Perform automatic offset updates
-    ///
-    void learn_offsets(void);
-
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(uint8_t i) const;
     bool use_for_yaw(void) const;
+
+    void set_use_for_yaw(uint8_t i, bool use) {
+        _state[i].use_for_yaw.set(use);
+    }
 
     /// Sets the local magnetic field declination.
     ///
@@ -301,7 +303,8 @@ public:
     enum LearnType {
         LEARN_NONE=0,
         LEARN_INTERNAL=1,
-        LEARN_EKF=2
+        LEARN_EKF=2,
+        LEARN_INFLIGHT=3
     };
 
     // return the chosen learning type
@@ -309,6 +312,15 @@ public:
         return (enum LearnType)_learn.get();
     }
 
+    // set the learning type
+    void set_learn_type(enum LearnType type, bool save) {
+        if (save) {
+            _learn.set_and_save((int8_t)type);
+        } else {
+            _learn.set((int8_t)type);
+        }
+    }
+    
     // return maximum allowed compass offsets
     uint16_t get_offsets_max(void) const {
         return (uint16_t)_offset_max.get();

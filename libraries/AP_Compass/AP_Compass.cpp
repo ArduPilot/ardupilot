@@ -1011,7 +1011,10 @@ Compass::use_for_yaw(void) const
 bool
 Compass::use_for_yaw(uint8_t i) const
 {
-    return _state[i].use_for_yaw;
+    // when we are doing in-flight compass learning the state
+    // estimator must not use the compass. The learning code turns off
+    // inflight learning when it has converged
+    return _state[i].use_for_yaw && _learn.get() != LEARN_INFLIGHT;
 }
 
 void
