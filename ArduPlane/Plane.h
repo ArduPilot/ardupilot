@@ -797,11 +797,12 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // the crc of the last created PX4Mixer
     int32_t last_mixer_crc = -1;
+#endif // CONFIG_HAL_BOARD
+
     // uart port for SBUS1 output
     AP_HAL::UARTDriver* sbus1_uart = nullptr;
     uint16_t sbus_frame_interval;   // microseconds
-#endif // CONFIG_HAL_BOARD
-    
+
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_heartbeat(mavlink_channel_t chan);
