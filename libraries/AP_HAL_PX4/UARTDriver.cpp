@@ -115,6 +115,11 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         // set the baudrate.
 		tcgetattr(_fd, &t);
 		t.c_cflag |= CRTS_IFLOW;
+
+		// !!! this probably breaks a bunch of things; need a new method to set parity and stop bits
+        /* even parity, two stop bits */
+        t.c_cflag |= (CSTOPB | PARENB);
+
 		tcsetattr(_fd, TCSANOW, &t);
 	}
 
@@ -151,6 +156,29 @@ void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
         _first_write_time = 0;
     }
     _flow_control = fcontrol;
+}
+
+void PX4UARTDriver::set_parity(bool odd) {
+    if (_fd == -1) {
+        return;
+    }
+    struct termios t;
+    tcgetattr(_fd, &t);
+    t.c_cflag |= PARENB;
+    if (odd) t.c_cflag |= PARODD;
+    else t.c_cflag &= ~PARODD;
+    tcsetattr(_fd, TCSANOW, &t);
+}
+
+void PX4UARTDriver::set_stop_bits(int n) {
+    if (_fd == -1) {
+        return;
+    }
+    struct termios t;
+    tcgetattr(_fd, &t);
+    if (n > 1) t.c_cflag |= CSTOPB;
+    else t.c_cflag &= ~CSTOPB;
+    tcsetattr(_fd, TCSANOW, &t);
 }
 
 void PX4UARTDriver::begin(uint32_t b)
@@ -193,7 +221,9 @@ void PX4UARTDriver::end()
     _writebuf.set_size(0);
 }
 
-void PX4UARTDriver::flush() {}
+void PX4UARTDriver::flush() {
+//    _timer_tick();
+}
 
 bool PX4UARTDriver::is_initialized()
 {

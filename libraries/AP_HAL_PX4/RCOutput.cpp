@@ -525,6 +525,8 @@ void PX4RCOutput::_send_outputs(void)
     }
 
 update_pwm:
+    hal.uartF->write("test\n");
+
     for (uint8_t i=0; i<ORB_MULTI_MAX_INSTANCES; i++) {
         bool rc_updated = false;
         if (_outputs[i].pwm_sub >= 0 && 
