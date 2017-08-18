@@ -794,12 +794,12 @@ private:
 
     static const struct LogStructure log_structure[];
     
-    // uart port for SBUS1 output
-    AP_HAL::UARTDriver* sbus1_uart = nullptr;
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // the crc of the last created PX4Mixer
     int32_t last_mixer_crc = -1;
+    // uart port for SBUS1 output
+    AP_HAL::UARTDriver* sbus1_uart = nullptr;
+    uint16_t sbus_frame_interval;   // microseconds
 #endif // CONFIG_HAL_BOARD
     
     void adjust_nav_pitch_throttle(void);

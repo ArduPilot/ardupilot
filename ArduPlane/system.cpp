@@ -191,6 +191,7 @@ void Plane::init_ardupilot()
     	sbus1_uart->begin(100000);
     	sbus1_uart->set_parity(false);
     	sbus1_uart->set_stop_bits(2);
+    	sbus_frame_interval = (1000UL * 1000UL) / BoardConfig.get_sbus_rate();
     }
 
     // choose the nav controller

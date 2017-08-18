@@ -731,18 +731,10 @@ void Plane::set_servos(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
     }
 
-    // run output mixer and send values to the hal for output
-    static uint64_t last_time = 0;
-    if (last_time == 0) last_time = AP_HAL::micros64();
-    else {
-        uint64_t now = AP_HAL::micros64();
-        uint32_t delta_t = now - last_time;
-        last_time = now;
-        ::printf("dt: %d\n", delta_t);
-    }
     servos_output();
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 // SBUS1 constant definitions
 // pulse widths measured using FrSky Sbus/PWM converter
@@ -759,37 +751,44 @@ void Plane::set_servos(void)
 void
 Plane::sbus1_out(AP_HAL::UARTDriver* uart)
 {
-    uint8_t buffer[SBUS_BSIZE] = { 0x0f };  // first byte is always 0x0f
-    uint8_t index = 1;
-    uint8_t offset = 0;
-    uint16_t value;
+    // limit output rate to 300Hz (3.33msec interval) to ensure 330usec minimum interframe gap
+    static uint32_t last_micros = 0;
+    uint32_t now = AP_HAL::micros();
+    if ((now - last_micros) > sbus_frame_interval) { //3333) {
+        last_micros = now;
+        uint8_t buffer[SBUS_BSIZE] = { 0x0f };  // first byte is always 0x0f
+        uint8_t index = 1;
+        uint8_t offset = 0;
+        uint16_t value;
 
-    /* construct sbus frame representing channels 1-16  */
-    for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
-        SRV_Channel* chan = SRV_Channels::srv_channel(i);
-        if (chan != nullptr) {
-            value = (uint16_t)((chan->get_output_pwm() - SBUS_MIN) * SBUS_SCALE);
-        } else {
-            value = 0;
+        /* construct sbus frame representing channels 1-16  */
+        for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
+            SRV_Channel* chan = SRV_Channels::srv_channel(i);
+            if (chan != nullptr) {
+                value = (uint16_t)((chan->get_output_pwm() - SBUS_MIN) * SBUS_SCALE);
+            } else {
+                value = 0;
+            }
+
+            /*protect from out of bounds values and limit to 11 bits*/
+            if (value > 0x07ff) {
+                value = 0x07ff;
+            }
+
+            while (offset >= 8) {
+                ++index;
+                offset -= 8;
+            }
+
+            buffer[index] |= (value << (offset)) & 0xff;
+            buffer[index + 1] |= (value >> (8 - offset)) & 0xff;
+            buffer[index + 2] |= (value >> (16 - offset)) & 0xff;
+            offset += 11;
         }
-
-        /*protect from out of bounds values and limit to 11 bits*/
-        if (value > 0x07ff) {
-            value = 0x07ff;
-        }
-
-        while (offset >= 8) {
-            ++index;
-            offset -= 8;
-        }
-
-        buffer[index] |= (value << (offset)) & 0xff;
-        buffer[index + 1] |= (value >> (8 - offset)) & 0xff;
-        buffer[index + 2] |= (value >> (16 - offset)) & 0xff;
-        offset += 11;
+        uart->write(buffer, sizeof(buffer));
     }
-    hal.uartD->write(buffer, sizeof(buffer));
 }
+#endif
 
 /*
   run configured output mixer. This takes calculated servo_out values
@@ -823,12 +822,14 @@ void Plane::servos_output(void)
     
     hal.rcout->push();
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (sbus1_uart != nullptr) {
         // E-Flite Convergence controller has PWM freq of 71Hz
         // but this method is called at only 50Hz
         // send sbus output to uartD
         sbus1_out(sbus1_uart);
     }
+#endif
 
     if (g2.servo_channels.auto_trim_enabled()) {
         servos_auto_trim();
