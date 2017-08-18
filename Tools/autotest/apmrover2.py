@@ -340,12 +340,8 @@ class AutotestRover(Autotest):
 #################################################
 # AUTOTEST ALL
 #################################################
-    def test_all(self):
-        """Drive APMrover2 in SITL.
-
-        you can pass viewerip as an IP address to optionally send fg and
-        mavproxy packets too for local viewing of the mission in real time
-        """
+    def autotest(self):
+        """Autotest APMrover2 in SITL."""
         if not self.hasInit:
             self.init()
 

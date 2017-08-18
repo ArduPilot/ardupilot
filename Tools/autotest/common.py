@@ -525,3 +525,8 @@ class Autotest(ABC):
     @abc.abstractmethod
     def test_mission(self, filename):
         pass
+
+    @abc.abstractmethod
+    def autotest(self):
+        """Autotest used by ArduPilot autotest CI."""
+        pass

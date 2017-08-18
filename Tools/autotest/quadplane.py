@@ -141,9 +141,8 @@ class AutotestQuadPlane(Autotest):
         progress("Mission OK")
         return True
 
-    def fly_QuadPlane(self):
-        """Fly QuadPlane in SITL.
-        """
+    def autotest(self):
+        """Autotest QuadPlane in SITL."""
         self.frame = 'quadplane'
         if not self.hasInit:
             self.init()

@@ -197,12 +197,8 @@ class AutotestSub(Autotest):
         progress("Mission OK")
         return True
 
-    def dive_ArduSub(self):
-        """Dive ArduSub in SITL.
-
-        you can pass viewerip as an IP address to optionally send fg and
-        mavproxy packets too for local viewing of the mission in real time
-        """
+    def autotest(self):
+        """Autotest ArduSub in SITL."""
         if not self.hasInit:
             self.init()
 

@@ -510,12 +510,8 @@ class AutotestPlane(Autotest):
         progress("Mission OK")
         return True
 
-    def fly_ArduPlane(self):
-        """Fly ArduPlane in SITL.
-
-        you can pass viewerip as an IP address to optionally send fg and
-        mavproxy packets too for local viewing of the flight in real time
-        """
+    def autotest(self):
+        """Autotest ArduPlane in SITL."""
         if not self.hasInit:
             self.init()
 

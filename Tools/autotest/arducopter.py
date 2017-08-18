@@ -1023,12 +1023,8 @@ class AutotestCopter(Autotest):
         self.wait_mode('LOITER')
         return ret
 
-    def fly_ArduCopter(self):
-        """Fly ArduCopter in SITL.
-
-        you can pass viewerip as an IP address to optionally send fg and
-        mavproxy packets too for local viewing of the flight in real time
-        """
+    def autotest(self):
+        """Autotest ArduCopter in SITL."""
         self.frame = '+'
         if not self.hasInit:
             self.init()
@@ -1314,8 +1310,8 @@ class AutotestCopter(Autotest):
             return False
         return True
 
-    def fly_Helicopter(self):
-        """Fly Helicopter in SITL for AVC2013 mission."""
+    def autotest_heli(self):
+        """Autotest Helicopter in SITL with AVC2013 mission."""
         self.frame = 'heli'
         if not self.hasInit:
             self.init()
