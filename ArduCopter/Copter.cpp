@@ -21,7 +21,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Copter class
  */
 Copter::Copter(void) :
-    DataFlash{FIRMWARE_STRING, g.log_bitmask},
+    DataFlash{fwver.fw_string, g.log_bitmask},
     flight_modes(&g.flight_mode1),
     mission(ahrs, 
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),

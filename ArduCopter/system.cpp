@@ -36,8 +36,9 @@ void Copter::init_ardupilot()
     // init vehicle capabilties
     init_capabilities();
 
-    hal.console->printf("\n\nInit " FIRMWARE_STRING
+    hal.console->printf("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
+                        fwver.fw_string,
                         (unsigned)hal.util->available_memory());
 
     //
@@ -100,7 +101,7 @@ void Copter::init_ardupilot()
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
     char firmware_buf[50];
-    snprintf(firmware_buf, sizeof(firmware_buf), FIRMWARE_STRING " %s", get_frame_string());
+    snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", fwver.fw_string, get_frame_string());
     frsky_telemetry.init(serial_manager, firmware_buf,
                          get_frame_mav_type(),
                          &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value);
