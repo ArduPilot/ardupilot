@@ -1149,14 +1149,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
 #endif
 
-        case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
-            if (is_equal(packet.param1,1.0f)) {
-                send_autopilot_version(FIRMWARE_VERSION);
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-        }
-
         case MAV_CMD_DO_SEND_BANNER: {
             result = MAV_RESULT_ACCEPTED;
 
@@ -1589,10 +1581,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
         copter.terrain.handle_data(chan, msg);
 #endif
-        break;
-
-    case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        send_autopilot_version(FIRMWARE_VERSION);
         break;
 
     case MAVLINK_MSG_ID_SET_HOME_POSITION:

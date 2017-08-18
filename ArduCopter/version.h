@@ -11,5 +11,3 @@
 #define FW_MINOR 6
 #define FW_PATCH 0
 #define FW_TYPE FIRMWARE_VERSION_TYPE_DEV
-
-extern const AP_FWVersion fwver;
