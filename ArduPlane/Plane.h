@@ -794,6 +794,9 @@ private:
 
     static const struct LogStructure log_structure[];
     
+    // uart port for SBUS1 output
+    AP_HAL::UARTDriver* sbus1_uart = nullptr;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // the crc of the last created PX4Mixer
     int32_t last_mixer_crc = -1;
@@ -1088,6 +1091,8 @@ private:
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);
     void avoid_adsb_run();
+
+    void sbus1_out(AP_HAL::UARTDriver* uart);
 
 public:
     void mavlink_delay_cb();
