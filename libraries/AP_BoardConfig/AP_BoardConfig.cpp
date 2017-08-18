@@ -197,6 +197,32 @@ void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
 #endif
 }
 
+uint16_t AP_BoardConfig::get_sbus_rate() {
+    uint16_t rate = 50;
+    if (px4.sbus_out_rate.get() >= 1) {
+        static const struct {
+            uint8_t value;
+            uint16_t rate;
+        } rates[] = {
+            { 1, 50 },
+            { 2, 75 },
+            { 3, 100 },
+            { 4, 150 },
+            { 5, 200 },
+            { 6, 250 },
+            { 7, 300 }
+        };
+        for (uint8_t i=0; i<ARRAY_SIZE(rates); i++) {
+            if (rates[i].value == px4.sbus_out_rate) {
+                rate = rates[i].rate;
+                break;
+            }
+        }
+    }
+    return rate;
+}
+
+
 void AP_BoardConfig::init_safety()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN

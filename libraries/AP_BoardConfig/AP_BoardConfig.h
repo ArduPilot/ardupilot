@@ -61,6 +61,8 @@ public:
     // set default value for BRD_SAFETY_MASK
     void set_default_safety_ignore_mask(uint16_t mask);
 
+    uint16_t get_sbus_rate();
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     static enum px4_board_type get_board_type(void) {
         return px4_configured_board;
