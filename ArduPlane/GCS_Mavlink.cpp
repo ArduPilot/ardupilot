@@ -1278,8 +1278,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
-
-        case MAV_CMD_DO_SET_HOME:
+        }
+        case MAV_CMD_DO_SET_HOME: {
             // param1 : use current (1=use current location, 0=use specified location)
             // param5 : latitude
             // param6 : longitude
