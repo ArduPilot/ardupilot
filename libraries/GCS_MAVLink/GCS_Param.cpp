@@ -191,6 +191,14 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     mavlink_param_request_list_t packet;
     mavlink_msg_param_request_list_decode(msg, &packet);
 
+    // mark the firmware version in the tlog
+    const AP_FWVersion &fwver = get_fwver();
+    send_text(MAV_SEVERITY_INFO, fwver.fw_string);
+
+#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
+    send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
+#endif
+
     // send system ID if we can
     char sysid[40];
     if (hal.util->get_system_id(sysid)) {
