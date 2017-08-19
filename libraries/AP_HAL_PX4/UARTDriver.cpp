@@ -153,6 +153,29 @@ void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
     _flow_control = fcontrol;
 }
 
+void PX4UARTDriver::set_parity(bool odd) {
+    if (_fd == -1) {
+        return;
+    }
+    struct termios t;
+    tcgetattr(_fd, &t);
+    t.c_cflag |= PARENB;
+    if (odd) t.c_cflag |= PARODD;
+    else t.c_cflag &= ~PARODD;
+    tcsetattr(_fd, TCSANOW, &t);
+}
+
+void PX4UARTDriver::set_stop_bits(int n) {
+    if (_fd == -1) {
+        return;
+    }
+    struct termios t;
+    tcgetattr(_fd, &t);
+    if (n > 1) t.c_cflag |= CSTOPB;
+    else t.c_cflag &= ~CSTOPB;
+    tcsetattr(_fd, TCSANOW, &t);
+}
+
 void PX4UARTDriver::begin(uint32_t b)
 {
 	begin(b, 0, 0);

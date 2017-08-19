@@ -798,7 +798,11 @@ private:
     // the crc of the last created PX4Mixer
     int32_t last_mixer_crc = -1;
 #endif // CONFIG_HAL_BOARD
-    
+
+    // uart port for SBUS1 output
+    AP_HAL::UARTDriver* sbus1_uart = nullptr;
+    uint16_t sbus_frame_interval;   // microseconds
+
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_heartbeat(mavlink_channel_t chan);
@@ -1088,6 +1092,8 @@ private:
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);
     void avoid_adsb_run();
+
+    void sbus1_out(AP_HAL::UARTDriver* uart);
 
 public:
     void mavlink_delay_cb();

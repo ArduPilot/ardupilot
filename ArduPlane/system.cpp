@@ -185,6 +185,15 @@ void Plane::init_ardupilot()
     // that can change initial values of channels
     init_rc_out_aux();
     
+    // check for a serial port assigned for SBUS output
+    sbus1_uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Sbus1, 0);
+    if (sbus1_uart != nullptr) {
+    	sbus1_uart->begin(100000);
+    	sbus1_uart->set_parity(false);
+    	sbus1_uart->set_stop_bits(2);
+    	sbus_frame_interval = (1000UL * 1000UL) / BoardConfig.get_sbus_rate();
+    }
+
     // choose the nav controller
     set_nav_controller();
 
