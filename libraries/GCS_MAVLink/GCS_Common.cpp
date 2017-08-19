@@ -2019,11 +2019,22 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavl
     return MAV_RESULT_ACCEPTED;
 }
 
+
+MAV_RESULT GCS_MAVLINK::handle_command_do_send_banner(const mavlink_command_long_t &packet)
+{
+    send_banner();
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
+
+    case MAV_CMD_DO_SEND_BANNER:
+        result = handle_command_do_send_banner(packet);
+        break;
 
     case MAV_CMD_DO_START_MAG_CAL:
     case MAV_CMD_DO_ACCEPT_MAG_CAL:
