@@ -1272,13 +1272,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-        case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
-            if (is_equal(packet.param1,1.0f)) {
-                send_autopilot_version(FIRMWARE_VERSION);
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-        }
         case MAV_CMD_DO_SET_HOME: {
             // param1 : use current (1=use current location, 0=use specified location)
             // param5 : latitude
@@ -1592,10 +1585,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 #if AP_TERRAIN_AVAILABLE
         plane.terrain.handle_data(chan, msg);
 #endif
-        break;
-
-    case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        send_autopilot_version(FIRMWARE_VERSION);
         break;
 
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
