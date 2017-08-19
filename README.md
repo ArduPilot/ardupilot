@@ -1,3 +1,9 @@
+#ArduHeli Project#
+
+ArduHeli is a fork from ArduCopter 3.3.3 for the purpose of developing stable traditional helicopter-specific firmware for the Pixhawk autopilot. If you would like to make contributions to the code please get involved and PR your changes to the master branch.
+
+Information below on the ArduPilot project, the origins of ArduHeli.
+
 #ArduPilot Project#
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/diydrones/ardupilot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
