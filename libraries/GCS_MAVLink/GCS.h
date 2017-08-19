@@ -259,6 +259,7 @@ protected:
     void handle_mission_write_partial_list(AP_Mission &mission, mavlink_message_t *msg);
     bool handle_mission_item(mavlink_message_t *msg, AP_Mission &mission);
 
+    void handle_common_param_message(mavlink_message_t *msg);
     void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
