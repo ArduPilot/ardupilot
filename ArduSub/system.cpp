@@ -23,9 +23,10 @@ void Sub::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    hal.console->printf("\n\nInit " FIRMWARE_STRING
-                      "\n\nFree RAM: %u\n",
-                      (unsigned)hal.util->available_memory());
+    hal.console->printf("\n\nInit %s"
+                        "\n\nFree RAM: %u\n",
+                        fwver.fw_string,
+                        (unsigned)hal.util->available_memory());
 
     // load parameters from EEPROM
     load_parameters();
