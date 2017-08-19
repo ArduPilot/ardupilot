@@ -58,10 +58,6 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-y6.parm" ],
             },
-            "firefly": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/firefly.parm",
-            },
             "dodeca-hexa": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
@@ -137,6 +133,10 @@ class VehicleInfo(object):
             "quadplane": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane.parm",
+            },
+            "firefly": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": "default_params/firefly.parm",
             },
             "plane-elevon": {
                 "waf_target": "bin/arduplane",
