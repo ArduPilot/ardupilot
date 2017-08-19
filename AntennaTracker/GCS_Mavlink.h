@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
+#include "version.h"
 
 class GCS_MAVLINK_Tracker : public GCS_MAVLINK
 {

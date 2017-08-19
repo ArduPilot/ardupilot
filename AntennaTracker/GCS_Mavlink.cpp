@@ -582,14 +582,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 break;
             }
 
-            case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
-                if (is_equal(packet.param1,1.0f)) {
-                    send_autopilot_version(FIRMWARE_VERSION);
-                    result = MAV_RESULT_ACCEPTED;
-                }
-                break;
-            }
-
             case MAV_CMD_ACCELCAL_VEHICLE_POS:
                 result = MAV_RESULT_FAILED;
 
@@ -739,10 +731,6 @@ mission_failed:
         tracker.tracking_update_pressure(packet);
         break;
     }
-
-    case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        send_autopilot_version(FIRMWARE_VERSION);
-        break;
 
     default:
         handle_common_message(msg);
