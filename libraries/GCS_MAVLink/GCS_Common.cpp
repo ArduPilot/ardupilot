@@ -1785,6 +1785,8 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_setup_signing(msg);
         break;
 
+    case MAVLINK_MSG_ID_PARAM_SET:
+        /* fall through */
     case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
         handle_common_param_message(msg);
         break;
