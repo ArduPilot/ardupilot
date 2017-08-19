@@ -449,12 +449,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_PARAM_SET:
-    {
-        handle_param_set(msg, nullptr);
-        break;
-    }
-
     case MAVLINK_MSG_ID_HEARTBEAT:
         break;
 
