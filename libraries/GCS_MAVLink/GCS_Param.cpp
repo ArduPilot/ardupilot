@@ -235,7 +235,7 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
     param_requests.push(req);
 }
 
-void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash)
+void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg)
 {
     mavlink_param_set_t packet;
     mavlink_msg_param_set_decode(msg, &packet);
@@ -269,6 +269,7 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
     // save the change
     vp->save(force_save);
 
+    DataFlash_Class *DataFlash = DataFlash_Class::instance();
     if (DataFlash != nullptr) {
         DataFlash->Log_Write_Parameter(key, vp->cast_to_float(var_type));
     }
@@ -440,6 +441,9 @@ void GCS_MAVLINK::send_parameter_reply(void)
 void GCS_MAVLINK::handle_common_param_message(mavlink_message_t *msg)
 {
     switch (msg->msgid) {
+    case MAVLINK_MSG_ID_PARAM_SET:
+        handle_param_set(msg);
+        break;
     case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
         handle_param_request_read(msg);
         break;
