@@ -734,12 +734,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_PARAM_SET:     // 23
-    {
-        handle_param_set(msg, &copter.DataFlash);
-        break;
-    }
-
     case MAVLINK_MSG_ID_PARAM_VALUE:
     {
 #if MOUNT == ENABLED
