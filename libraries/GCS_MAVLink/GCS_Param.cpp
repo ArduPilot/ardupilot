@@ -441,6 +441,9 @@ void GCS_MAVLINK::send_parameter_reply(void)
 void GCS_MAVLINK::handle_common_param_message(mavlink_message_t *msg)
 {
     switch (msg->msgid) {
+    case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
+        handle_param_request_list(msg);
+        break;
     case MAVLINK_MSG_ID_PARAM_SET:
         handle_param_set(msg);
         break;
