@@ -436,3 +436,12 @@ void GCS_MAVLINK::send_parameter_reply(void)
         reply.count,
         reply.param_index);
 }
+
+void GCS_MAVLINK::handle_common_param_message(mavlink_message_t *msg)
+{
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
+        handle_param_request_read(msg);
+        break;
+    }
+}
