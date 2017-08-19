@@ -318,7 +318,7 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     case JSButton::button_function_t::k_trim_pitch_dec:
         pitchTrim = constrain_float(pitchTrim-10,-200,200);
         break;
-    case JSButton::button_function_t::k_input_hold_toggle:
+    case JSButton::button_function_t::k_input_hold_set:
         if (!held) {
             zTrim = z_last-500;
             xTrim = x_last;
@@ -539,7 +539,7 @@ void Sub::default_js_buttons()
         {JSButton::button_function_t::k_arm,                    JSButton::button_function_t::k_none},
         {JSButton::button_function_t::k_mount_center,           JSButton::button_function_t::k_none},
 
-        {JSButton::button_function_t::k_input_hold_toggle,      JSButton::button_function_t::k_none},
+        {JSButton::button_function_t::k_input_hold_set,         JSButton::button_function_t::k_none},
         {JSButton::button_function_t::k_mount_tilt_down,        JSButton::button_function_t::k_none},
         {JSButton::button_function_t::k_mount_tilt_up,          JSButton::button_function_t::k_none},
         {JSButton::button_function_t::k_gain_inc,               JSButton::button_function_t::k_trim_pitch_dec},
