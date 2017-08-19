@@ -897,11 +897,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_PARAM_SET: {   // 23
-        handle_param_set(msg, &sub.DataFlash);
-        break;
-    }
-
     case MAVLINK_MSG_ID_PARAM_VALUE: {
         sub.camera_mount.handle_param_value(msg);
         break;
