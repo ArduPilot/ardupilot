@@ -263,6 +263,7 @@ protected:
     void handle_param_set(mavlink_message_t *msg);
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
+    virtual bool params_ready() const { return true; }
 
     void handle_common_gps_message(mavlink_message_t *msg);
     void handle_common_rally_message(mavlink_message_t *msg);
@@ -281,6 +282,8 @@ protected:
 
     void handle_send_autopilot_version(const mavlink_message_t *msg);
     MAV_RESULT handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet);
+
+    virtual void send_banner();
 
     void handle_device_op_read(mavlink_message_t *msg);
     void handle_device_op_write(mavlink_message_t *msg);
