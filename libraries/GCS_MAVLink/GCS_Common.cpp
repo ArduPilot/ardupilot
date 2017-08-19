@@ -1784,9 +1784,11 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_SETUP_SIGNING:
         handle_setup_signing(msg);
         break;
+
     case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
-        handle_param_request_read(msg);
+        handle_common_param_message(msg);
         break;
+
     case MAVLINK_MSG_ID_DEVICE_OP_READ:
         handle_device_op_read(msg);
         break;
