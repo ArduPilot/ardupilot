@@ -443,12 +443,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
     }
 
 
-    case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-    {
-        handle_param_request_list(msg);
-        break;
-    }
-
     case MAVLINK_MSG_ID_HEARTBEAT:
         break;
 
