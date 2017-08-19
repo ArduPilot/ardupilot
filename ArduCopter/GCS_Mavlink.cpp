@@ -699,6 +699,25 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
+bool GCS_MAVLINK_Copter::params_ready() const
+{
+    if (AP_BoardConfig::in_sensor_config_error()) {
+        // we may never have parameters "initialised" in this case
+        return true;
+    }
+    // if we have not yet initialised (including allocating the motors
+    // object) we drop this request. That prevents the GCS from getting
+    // a confusing parameter count during bootup
+    return copter.ap.initialised_params;
+}
+
+void GCS_MAVLINK_Copter::send_banner()
+{
+    GCS_MAVLINK::send_banner();
+    send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
+}
+
+
 void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
@@ -711,26 +730,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         if(msg->sysid != copter.g.sysid_my_gcs) break;
         copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
         copter.pmTest1++;
-        break;
-    }
-
-    case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
-    {
-        // if we have not yet initialised (including allocating the motors
-        // object) we drop this request. That prevents the GCS from getting
-        // a confusing parameter count during bootup
-        if (!copter.ap.initialised_params && !AP_BoardConfig::in_sensor_config_error()) {
-            break;
-        }
-
-        // mark the firmware version in the tlog
-        send_text(MAV_SEVERITY_INFO, fwver.fw_string);
-
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
-#endif
-        send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
-        handle_param_request_list(msg);
         break;
     }
 
