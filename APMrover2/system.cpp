@@ -23,8 +23,9 @@ void Rover::init_ardupilot()
     // initialise console serial port
     serial_manager.init_console();
 
-    hal.console->printf("\n\nInit " FIRMWARE_STRING
+    hal.console->printf("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
+                        fwver.fw_string,
                         hal.util->available_memory());
 
     //
@@ -79,7 +80,7 @@ void Rover::init_ardupilot()
 
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init(serial_manager, FIRMWARE_STRING, MAV_TYPE_GROUND_ROVER);
+    frsky_telemetry.init(serial_manager, fwver.fw_string, MAV_TYPE_GROUND_ROVER);
 #endif
 
 #if LOGGING_ENABLED == ENABLED
