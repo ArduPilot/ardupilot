@@ -32,6 +32,9 @@ protected:
 
     bool set_mode(uint8_t mode) override;
 
+    bool params_ready() const override;
+    void send_banner() override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
