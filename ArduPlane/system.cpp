@@ -23,8 +23,9 @@ void Plane::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    hal.console->printf("\n\nInit " FIRMWARE_STRING
+    hal.console->printf("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
+                        fwver.fw_string,
                         (unsigned)hal.util->available_memory());
 
 
@@ -114,7 +115,7 @@ void Plane::init_ardupilot()
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
-    frsky_telemetry.init(serial_manager, FIRMWARE_STRING,
+    frsky_telemetry.init(serial_manager, fwver.fw_string,
                          MAV_TYPE_FIXED_WING,
                          &g.fs_batt_voltage, &g.fs_batt_mah);
 #endif
