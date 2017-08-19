@@ -888,7 +888,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {       // MAV ID: 21
         // mark the firmware version in the tlog
-        send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
+        send_text(MAV_SEVERITY_INFO, fwver.fw_string);
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
         send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
@@ -1271,7 +1271,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_DO_SEND_BANNER: {
             result = MAV_RESULT_ACCEPTED;
 
-            send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
+            send_text(MAV_SEVERITY_INFO, fwver.fw_string);
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
             send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);

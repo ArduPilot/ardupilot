@@ -82,6 +82,7 @@
 #include "Parameters.h"
 #include "AP_Arming_Sub.h"
 #include "GCS_Sub.h"
+#include "version.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if OPTFLOW == ENABLED
@@ -135,6 +136,19 @@ public:
     void loop() override;
 
 private:
+
+    const AP_FWVersion fwver {
+        major: FW_MAJOR,
+        minor: FW_MINOR,
+        patch: FW_PATCH,
+        fw_type: FW_TYPE,
+#ifndef GIT_VERSION
+        fw_string: THISFIRMWARE
+#else
+        fw_string: THISFIRMWARE " (" GIT_VERSION ")"
+#endif
+    };
+
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
 
