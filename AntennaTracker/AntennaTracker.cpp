@@ -125,7 +125,7 @@ void Tracker::ten_hz_logging_loop()
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Tracker::Tracker(void)
-    : DataFlash{FIRMWARE_STRING, g.log_bitmask}
+    : DataFlash{fwver.fw_string, g.log_bitmask}
 {
     memset(&current_loc, 0, sizeof(current_loc));
     memset(&vehicle, 0, sizeof(vehicle));
