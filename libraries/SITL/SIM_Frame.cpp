@@ -39,6 +39,14 @@ static Motor quad_x_motors[] =
     Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
 };
 
+static Motor tiltquad_h_vectored_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1, -1, 0, 0, 7, 10, -90),
+    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3, -1, 0, 0, 8, 10, -90),
+    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4, -1, 0, 0, 8, 10, -90),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, -1, 0, 0, 7, 10, -90),
+};
+
 static Motor hexa_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
@@ -153,6 +161,7 @@ static Frame supported_frames[] =
     Frame("quad",      4, quad_plus_motors),
     Frame("copter",    4, quad_plus_motors),
     Frame("x",         4, quad_x_motors),
+    Frame("tilthvec",  4, tiltquad_h_vectored_motors),
     Frame("hexax",     6, hexax_motors),
     Frame("hexa",      6, hexa_motors),
     Frame("octa-quad", 8, octa_quad_motors),
