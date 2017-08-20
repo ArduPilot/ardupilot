@@ -70,7 +70,6 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
     // succeed if pre arm checks are disabled
     if (checks_to_perform == ARMING_CHECK_NONE) {
         set_pre_arm_check(true);
-        set_pre_arm_rc_check(true);
         return true;
     }
 
@@ -85,13 +84,6 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
         & parameter_checks(display_failure)
         & motor_checks(display_failure)
         & pilot_throttle_checks(display_failure);
-}
-
-bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
-{
-    // pre-arm rc checks a prerequisite
-    pre_arm_rc_checks(display_failure);
-    return copter.ap.pre_arm_rc_check;
 }
 
 bool AP_Arming_Copter::barometer_checks(bool display_failure)
@@ -322,14 +314,8 @@ bool AP_Arming_Copter::pilot_throttle_checks(bool display_failure)
     return true;
 }
 
-// perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag
-void AP_Arming_Copter::pre_arm_rc_checks(const bool display_failure)
+bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
 {
-    // exit immediately if we've already successfully performed the pre-arm rc check
-    if (copter.ap.pre_arm_rc_check) {
-        return;
-    }
-
     const RC_Channel *channels[] = {
         copter.channel_roll,
         copter.channel_pitch,
@@ -338,6 +324,7 @@ void AP_Arming_Copter::pre_arm_rc_checks(const bool display_failure)
     };
 
     copter.ap.pre_arm_rc_check = rc_checks_copter_sub(display_failure, channels);
+    return copter.ap.pre_arm_rc_check;
 }
 
 // performs pre_arm gps related checks and returns true if passed
@@ -764,12 +751,5 @@ void AP_Arming_Copter::set_pre_arm_check(bool b)
     if(copter.ap.pre_arm_check != b) {
         copter.ap.pre_arm_check = b;
         AP_Notify::flags.pre_arm_check = b;
-    }
-}
-
-void AP_Arming_Copter::set_pre_arm_rc_check(bool b)
-{
-    if(copter.ap.pre_arm_rc_check != b) {
-        copter.ap.pre_arm_rc_check = b;
     }
 }
