@@ -120,6 +120,11 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane-tilttrivec.parm",
             },
+            "quadplane-tilthvec": {
+                "make_target": "sitl",
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/plane.parm", "default_params/quadplane-tilthvec.parm"],
+            },
             "quadplane-tri": {
                 "make_target": "sitl",
                 "waf_target": "bin/arduplane",
