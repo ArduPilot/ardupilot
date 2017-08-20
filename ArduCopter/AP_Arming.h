@@ -17,7 +17,8 @@ public:
 
     void update(void);
     bool all_checks_passing(bool arming_from_gcs);
-    void pre_arm_rc_checks(bool display_failure);
+
+    bool rc_calibration_checks(bool display_failure);
 
 protected:
 
@@ -39,10 +40,8 @@ protected:
     bool motor_checks(bool display_failure);
     bool pilot_throttle_checks(bool display_failure);
     bool barometer_checks(bool display_failure);
-    bool rc_calibration_checks(bool display_failure);
 
     void set_pre_arm_check(bool b);
-    void set_pre_arm_rc_check(bool b);
 
     enum HomeState home_status() const override;
 
