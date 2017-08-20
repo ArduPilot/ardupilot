@@ -250,8 +250,7 @@ void Copter::init_ardupilot()
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // enable output to motors
-    arming.pre_arm_rc_checks(true);
-    if (ap.pre_arm_rc_check) {
+    if (arming.rc_calibration_checks(true)) {
         enable_motor_output();
     }
 
