@@ -179,7 +179,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Units: Seconds
     // @Range: 0.1 3.0
     // @User: Standard
-    GSCALAR(failsafe_pilot_input_timeout, "FS_PILOT_TIMEOUT", 1.0f),
+    GSCALAR(failsafe_pilot_input_timeout, "FS_PILOT_TIMEOUT", 3.0f),
 
     // @Param: XTRACK_ANG_LIM
     // @DisplayName: Crosstrack correction angle limit
