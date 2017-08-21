@@ -7,8 +7,6 @@ class GCS_MAVLINK_Tracker : public GCS_MAVLINK
 
 public:
 
-    void data_stream_send(void) override;
-
 protected:
 
     // telem_delay is not used by Tracker but is pure virtual, thus
