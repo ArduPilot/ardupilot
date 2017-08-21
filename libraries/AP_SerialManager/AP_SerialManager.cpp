@@ -225,7 +225,6 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_ULANDING_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ULANDING_BUFSIZE_TX);
                     break;
-
                 case SerialProtocol_Volz:
                                     // Note baudrate is hardcoded to 115200
                                     state[i].baud = AP_SERIALMANAGER_VOLZ_BAUD;   // update baud param in case user looks at it
@@ -233,6 +232,15 @@ void AP_SerialManager::init()
                                     		AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
 											AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
                                     break;
+                case SerialProtocol_Sbus1:
+                    state[i].baud = AP_SERIALMANAGER_SBUS1_BAUD / 1000;   // update baud param in case user looks at it
+                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                         AP_SERIALMANAGER_SBUS1_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_SBUS1_BUFSIZE_TX);
+                    state[i].uart->configure_parity(2);    // enable even parity
+                    state[i].uart->set_stop_bits(2);
+                    state[i].uart->set_unbuffered_writes(true);
+                    break;
             }
         }
     }
