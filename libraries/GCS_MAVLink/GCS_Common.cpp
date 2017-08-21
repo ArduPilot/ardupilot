@@ -2713,6 +2713,58 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     return ret;
 }
 
+void GCS_MAVLINK::data_stream_send(void)
+{
+    if (waypoint_receiving) {
+        // don't interfere with mission transfer
+        return;
+    }
+
+    if (!hal.scheduler->in_delay_callback()) {
+        // DataFlash_Class will not send log data if we are armed.
+        DataFlash_Class::instance()->handle_log_send();
+    }
+
+    gcs().set_out_of_time(false);
+
+    send_queued_parameters();
+
+    if (gcs().out_of_time()) return;
+
+    if (hal.scheduler->in_delay_callback()) {
+        if (in_hil_mode()) {
+            // in HIL we need to keep sending servo values to ensure
+            // the simulator doesn't pause, otherwise our sensor
+            // calibration could stall
+            if (stream_trigger(STREAM_RAW_CONTROLLER)) {
+                send_message(MSG_SERVO_OUT);
+            }
+            if (stream_trigger(STREAM_RC_CHANNELS)) {
+                send_message(MSG_SERVO_OUTPUT_RAW);
+            }
+        }
+        // send no other streams while in delay, just in case they
+        // take way too long to run
+        return;
+    }
+
+    for (uint8_t i=0; all_stream_entries[i].ap_message_ids != nullptr; i++) {
+        const streams id = (streams)all_stream_entries[i].stream_id;
+        if (!stream_trigger(id)) {
+            continue;
+        }
+        const uint8_t *msg_ids = all_stream_entries[i].ap_message_ids;
+        for (uint8_t j=0; j<all_stream_entries[i].num_ap_message_ids; j++) {
+            const uint8_t msg_id = msg_ids[j];
+            send_message((ap_message)msg_id);
+        }
+        if (gcs().out_of_time()) {
+            break;
+        }
+    }
+}
+
+
 GCS &gcs()
 {
     return *GCS::instance();
