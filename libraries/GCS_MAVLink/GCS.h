@@ -85,6 +85,15 @@ enum ap_message {
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
 
+// convenience macros for defining which ap_message ids are in which streams:
+#define MAV_STREAM_ENTRY(stream_name)           \
+    {                                           \
+        GCS_MAVLINK::stream_name,               \
+        stream_name ## _msgs,                   \
+        ARRAY_SIZE(stream_name ## _msgs)        \
+    }
+#define MAV_STREAM_TERMINATOR { 0, nullptr, 0 }
+
 ///
 /// @class	GCS_MAVLINK
 /// @brief	MAVLink transport control class
@@ -99,7 +108,7 @@ public:
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *fmt, ...);
-    virtual void        data_stream_send(void) = 0;
+    void        data_stream_send();
     void        queued_param_send();
     void        queued_waypoint_send();
     // packetReceived is called on any successful decode of a mavlink message
@@ -218,8 +227,18 @@ public:
 
     // alternative protocol function handler
     FUNCTOR_TYPEDEF(protocol_handler_fn_t, bool, uint8_t, AP_HAL::UARTDriver *);
-    
+
+    struct stream_entries {
+        const uint8_t stream_id; // narrowed from uint32_t (enumeration)
+        const uint8_t *ap_message_ids; // narrowed from uint32_t (enumeration)
+        const uint8_t num_ap_message_ids;
+    };
+    // vehicle subclass cpp files should define this:
+    static const struct stream_entries all_stream_entries[];
+
 protected:
+
+    virtual bool in_hil_mode() const { return false; }
 
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
