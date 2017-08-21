@@ -613,9 +613,6 @@ private:
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
 
-    // true if we are out of time in our event timeslice
-    bool gcs_out_of_time;
-
     // last valid RC input time
     uint32_t last_radio_update_ms;
 
