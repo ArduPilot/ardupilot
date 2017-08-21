@@ -73,6 +73,11 @@
 #define AP_SERIALMANAGER_VOLZ_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_VOLZ_BUFSIZE_TX     128
 
+// SBUS servo outputs
+#define AP_SERIALMANAGER_SBUS1_BAUD           100000
+#define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
+#define AP_SERIALMANAGER_SBUS1_BUFSIZE_TX     32
+
 
 class AP_SerialManager {
 public:
@@ -93,6 +98,7 @@ public:
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
         SerialProtocol_Beacon = 13,
         SerialProtocol_Volz = 14,                    // Volz servo protocol
+        SerialProtocol_Sbus1 = 15
     };
 
     // get singleton instance
