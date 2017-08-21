@@ -176,8 +176,8 @@ void AP_BoardConfig::px4_setup_sbus(void)
                 rate = rates[i].rate;
             }
         }
-        if (!hal.rcout->enable_sbus_out(rate)) {
-            hal.console->printf("Failed to enable SBUS out\n");
+        if (!hal.rcout->enable_px4io_sbus_out(rate)) {
+            hal.console->printf("Failed to enable PX4IO SBUS out\n");
         }
     }
 #endif
