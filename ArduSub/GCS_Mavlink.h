@@ -6,8 +6,6 @@ class GCS_MAVLINK_Sub : public GCS_MAVLINK {
 
 public:
 
-    void data_stream_send(void) override;
-
 protected:
 
     uint32_t telem_delay() const override {
