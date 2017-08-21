@@ -126,6 +126,12 @@ void Copter::init_ardupilot()
 
     init_rc_in();               // sets up rc channels from radio
 
+    // check for a serial port assigned for SBUS output
+    AP_HAL::UARTDriver *sbus1_uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Sbus1, 0);
+    if (sbus1_uart != nullptr) {
+        hal.rcout->enable_sbus_out(sbus1_uart, 100);
+    }
+
     // default frame class to match firmware if possible
     set_default_frame_class();
 
@@ -259,7 +265,8 @@ void Copter::init_ardupilot()
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // enable output to motors
-    if (arming.rc_calibration_checks(true)) {
+    arming.pre_arm_rc_checks(true);
+    if (ap.pre_arm_rc_check) {
         enable_motor_output();
     }
 
