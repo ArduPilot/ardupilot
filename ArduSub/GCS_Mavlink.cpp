@@ -488,7 +488,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 
     switch (id) {
 
-    case MSG_SUB_INFO:
+    case MSG_NAMED_FLOAT:
         sub.send_info(chan);
         break;
 
@@ -777,7 +777,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         send_message(MSG_GPS2_RTK);
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
         send_message(MSG_LIMITS_STATUS);
-        send_message(MSG_SUB_INFO);
+        send_message(MSG_NAMED_FLOAT);
     }
 
     if (sub.gcs_out_of_time) {
