@@ -77,7 +77,6 @@ Sub::Sub(void) :
           terrain(ahrs, mission, rally),
 #endif
           in_mavlink_delay(false),
-          gcs_out_of_time(false),
           param_loader(var_info),
           last_pilot_yaw_input_ms(0)
 {
