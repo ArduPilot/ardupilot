@@ -810,13 +810,9 @@ void Sub::load_parameters(void)
     AP_Param::set_default_by_name("BRD_SAFETYENABLE", 0);
     AP_Param::set_default_by_name("GND_EXT_BUS", 1);
     AP_Param::set_default_by_name("ARMING_CHECK",
-            AP_Arming::ARMING_CHECK_BARO |
-            AP_Arming::ARMING_CHECK_COMPASS |
-            AP_Arming::ARMING_CHECK_INS |
             AP_Arming::ARMING_CHECK_RC |
             AP_Arming::ARMING_CHECK_VOLTAGE |
-            AP_Arming::ARMING_CHECK_BATTERY |
-            AP_Arming::ARMING_CHECK_LOGGING);
+            AP_Arming::ARMING_CHECK_BATTERY);
     AP_Param::set_default_by_name("CIRCLE_RATE", 2.0f);
     AP_Param::set_default_by_name("ATC_ACCEL_Y_MAX", 110000.0f);
     AP_Param::set_default_by_name("RC3_TRIM", 1100);
