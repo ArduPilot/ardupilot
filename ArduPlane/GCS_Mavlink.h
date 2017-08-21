@@ -10,8 +10,6 @@ class GCS_MAVLINK_Plane : public GCS_MAVLINK
 
 public:
 
-    void data_stream_send(void) override;
-
 protected:
 
     uint32_t telem_delay() const override;
@@ -34,6 +32,8 @@ protected:
 
     MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
+
+    virtual bool in_hil_mode() const override;
 
 private:
 
