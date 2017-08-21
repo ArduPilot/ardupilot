@@ -26,8 +26,6 @@ class GCS_MAVLINK_routing : public GCS_MAVLINK
 
 public:
 
-    void data_stream_send(void) override { };
-
 protected:
 
     uint32_t telem_delay() const override { return 0; }
