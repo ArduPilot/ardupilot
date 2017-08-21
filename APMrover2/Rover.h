@@ -357,9 +357,6 @@ private:
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
 
-    // true if we are out of time in our event timeslice
-    bool gcs_out_of_time;
-
     static const AP_Param::Info var_info[];
     static const LogStructure log_structure[];
 
