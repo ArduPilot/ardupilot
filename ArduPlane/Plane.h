@@ -794,9 +794,6 @@ private:
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay = false;
 
-    // true if we are out of time in our event timeslice
-    bool gcs_out_of_time = false;
-
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
