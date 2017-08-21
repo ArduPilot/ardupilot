@@ -45,6 +45,13 @@ uint32_t millis()
     return millis64() & 0xFFFFFFFF;
 }
 
+uint32_t raw_micros()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)(1.0e6*(ts.tv_sec + (ts.tv_nsec*1.0e-9))) & 0xFFFFFFFF;
+}
+
 uint64_t micros64()
 {
     const Linux::Scheduler* scheduler = Linux::Scheduler::from(hal.scheduler);
