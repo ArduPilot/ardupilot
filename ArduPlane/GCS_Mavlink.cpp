@@ -427,7 +427,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
     if (!plane.in_mavlink_delay && plane.scheduler.time_available_usec() < 200) {
-        plane.gcs_out_of_time = true;
+        gcs().set_out_of_time(true);
         return false;
     }
 
@@ -725,7 +725,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 void
 GCS_MAVLINK_Plane::data_stream_send(void)
 {
-    plane.gcs_out_of_time = false;
+    gcs().set_out_of_time(false);
 
     if (!plane.in_mavlink_delay) {
         plane.DataFlash.handle_log_send(*this);
@@ -733,7 +733,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
 
     send_queued_parameters();
 
-    if (plane.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (plane.in_mavlink_delay) {
 #if HIL_SUPPORT
@@ -753,7 +753,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         return;
     }
 
-    if (plane.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
@@ -761,7 +761,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_RAW_IMU3);
     }
 
-    if (plane.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
         send_message(MSG_EXTENDED_STATUS1);
@@ -776,7 +776,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_POSITION_TARGET_GLOBAL_INT);
     }
 
-    if (plane.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_POSITION)) {
         // sent with GPS read
@@ -784,20 +784,20 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_LOCAL_POSITION);
     }
 
-    if (plane.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
         send_message(MSG_SERVO_OUT);
     }
 
-    if (plane.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_SERVO_OUTPUT_RAW);
         send_message(MSG_RADIO_IN);
     }
 
-    if (plane.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
@@ -811,13 +811,13 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_LANDING);
     }
 
-    if (plane.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_EXTRA2)) {
         send_message(MSG_VFR_HUD);
     }
 
-    if (plane.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
@@ -839,7 +839,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
         send_message(MSG_VIBRATION);
     }
 
-    if (plane.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_ADSB)) {
         send_message(MSG_ADSB_VEHICLE);
