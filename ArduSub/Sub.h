@@ -496,7 +496,7 @@ private:
     void rpm_update();
 #endif
     void send_temperature(mavlink_channel_t chan);
-    void send_info(mavlink_channel_t chan);
+    bool send_info(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);

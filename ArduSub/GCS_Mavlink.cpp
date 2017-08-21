@@ -357,63 +357,53 @@ void NOINLINE Sub::send_temperature(mavlink_channel_t chan)
         celsius.temperature() * 100);
 }
 
-void NOINLINE Sub::send_info(mavlink_channel_t chan)
+bool NOINLINE Sub::send_info(mavlink_channel_t chan)
 {
     // Just do this all at once, hopefully the hard-wire telemetry requirement means this is ok
     // Name is char[10]
-    if (!HAVE_PAYLOAD_SPACE(chan, NAMED_VALUE_FLOAT)) {
-        return;
-    }
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
     mavlink_msg_named_value_float_send(
             chan,
             AP_HAL::millis(),
             "CamTilt",
             1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_tilt) / 2.0f + 0.5f));
 
-    if (!HAVE_PAYLOAD_SPACE(chan, NAMED_VALUE_FLOAT)) {
-        return;
-    }
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
     mavlink_msg_named_value_float_send(
             chan,
             AP_HAL::millis(),
             "TetherTrn",
             quarter_turn_count/4);
 
-    if (!HAVE_PAYLOAD_SPACE(chan, NAMED_VALUE_FLOAT)) {
-        return;
-    }
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
     mavlink_msg_named_value_float_send(
             chan,
             AP_HAL::millis(),
             "Lights1",
             SRV_Channels::get_output_norm(SRV_Channel::k_rcin9) / 2.0f + 0.5f);
 
-    if (!HAVE_PAYLOAD_SPACE(chan, NAMED_VALUE_FLOAT)) {
-        return;
-    }
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
     mavlink_msg_named_value_float_send(
             chan,
             AP_HAL::millis(),
             "Lights2",
             SRV_Channels::get_output_norm(SRV_Channel::k_rcin10) / 2.0f + 0.5f);
 
-    if (!HAVE_PAYLOAD_SPACE(chan, NAMED_VALUE_FLOAT)) {
-        return;
-    }
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
     mavlink_msg_named_value_float_send(
             chan,
             AP_HAL::millis(),
             "PilotGain",
             gain);
 
-    if (!HAVE_PAYLOAD_SPACE(chan, NAMED_VALUE_FLOAT)) {
-        return;
-    }
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
     mavlink_msg_named_value_float_send(
             chan,
             AP_HAL::millis(),
             "InputHold",
             input_hold_engaged);
+
+    return true;
 }
 
 /*
