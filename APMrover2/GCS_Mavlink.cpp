@@ -502,125 +502,75 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-void
-GCS_MAVLINK_Rover::data_stream_send(void)
+static const uint8_t STREAM_RAW_SENSORS_msgs[] = {
+    MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
+    MSG_RAW_IMU2,  // BARO
+    MSG_RAW_IMU3  // SENSOR_OFFSETS
+};
+static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
+    MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
+    MSG_EXTENDED_STATUS2, // MEMINFO
+    MSG_CURRENT_WAYPOINT,
+    MSG_GPS_RAW,
+    MSG_GPS_RTK,
+    MSG_GPS2_RAW,
+    MSG_GPS2_RTK,
+    MSG_NAV_CONTROLLER_OUTPUT,
+    MSG_FENCE_STATUS,
+};
+static const uint8_t STREAM_POSITION_msgs[] = {
+    MSG_LOCATION,
+    MSG_LOCAL_POSITION
+};
+static const uint8_t STREAM_RAW_CONTROLLER_msgs[] = {
+    MSG_SERVO_OUT,
+};
+static const uint8_t STREAM_RC_CHANNELS_msgs[] = {
+    MSG_SERVO_OUTPUT_RAW,
+    MSG_RADIO_IN
+};
+static const uint8_t STREAM_EXTRA1_msgs[] = {
+    MSG_ATTITUDE,
+    MSG_SIMSTATE, // SIMSTATE, AHRS2
+    MSG_PID_TUNING,
+};
+static const uint8_t STREAM_EXTRA2_msgs[] = {
+    MSG_VFR_HUD
+};
+static const uint8_t STREAM_EXTRA3_msgs[] = {
+    MSG_AHRS,
+    MSG_HWSTATUS,
+    MSG_RANGEFINDER,
+    MSG_SYSTEM_TIME,
+    MSG_BATTERY2,
+    MSG_BATTERY_STATUS,
+    MSG_MOUNT_STATUS,
+    MSG_MAG_CAL_REPORT,
+    MSG_MAG_CAL_PROGRESS,
+    MSG_EKF_STATUS_REPORT,
+    MSG_VIBRATION,
+    MSG_RPM
+};
+
+const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
+    MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
+    MAV_STREAM_ENTRY(STREAM_EXTENDED_STATUS),
+    MAV_STREAM_ENTRY(STREAM_POSITION),
+    MAV_STREAM_ENTRY(STREAM_RAW_CONTROLLER),
+    MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
+    MAV_STREAM_ENTRY(STREAM_EXTRA1),
+    MAV_STREAM_ENTRY(STREAM_EXTRA2),
+    MAV_STREAM_ENTRY(STREAM_EXTRA3),
+    MAV_STREAM_TERMINATOR // must have this at end of stream_entries
+};
+
+bool GCS_MAVLINK_Rover::in_hil_mode() const
 {
-    gcs().set_out_of_time(false);
-
-    send_queued_parameters();
-
-    if (gcs().out_of_time()) {
-      return;
-    }
-
-    if (hal.scheduler->in_delay_callback()) {
 #if HIL_MODE != HIL_MODE_DISABLED
-        // in HIL we need to keep sending servo values to ensure
-        // the simulator doesn't pause, otherwise our sensor
-        // calibration could stall
-        if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-            send_message(MSG_SERVO_OUT);
-        }
-        if (stream_trigger(STREAM_RC_CHANNELS)) {
-            send_message(MSG_SERVO_OUTPUT_RAW);
-        }
+    return rover.g.hil_mode == 1;
 #endif
-        // don't send any other stream types while in the delay callback
-        return;
-    }
-
-    if (gcs().out_of_time()) {
-      return;
-    }
-
-    if (stream_trigger(STREAM_RAW_SENSORS)) {
-        send_message(MSG_RAW_IMU1);
-        send_message(MSG_RAW_IMU2);
-        send_message(MSG_RAW_IMU3);
-    }
-
-    if (gcs().out_of_time()) {
-      return;
-    }
-
-    if (stream_trigger(STREAM_EXTENDED_STATUS)) {
-        send_message(MSG_EXTENDED_STATUS1);
-        send_message(MSG_EXTENDED_STATUS2);
-        send_message(MSG_CURRENT_WAYPOINT);
-        send_message(MSG_GPS_RAW);
-        send_message(MSG_GPS_RTK);
-        send_message(MSG_GPS2_RAW);
-        send_message(MSG_GPS2_RTK);
-        send_message(MSG_NAV_CONTROLLER_OUTPUT);
-        send_message(MSG_FENCE_STATUS);
-    }
-
-    if (gcs().out_of_time()) {
-      return;
-    }
-
-    if (stream_trigger(STREAM_POSITION)) {
-        // sent with GPS read
-        send_message(MSG_LOCATION);
-        send_message(MSG_LOCAL_POSITION);
-    }
-
-    if (gcs().out_of_time()) {
-      return;
-    }
-
-    if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-        send_message(MSG_SERVO_OUT);
-    }
-
-    if (gcs().out_of_time()) {
-      return;
-    }
-
-    if (stream_trigger(STREAM_RC_CHANNELS)) {
-        send_message(MSG_SERVO_OUTPUT_RAW);
-        send_message(MSG_RADIO_IN);
-    }
-
-    if (gcs().out_of_time()) {
-      return;
-    }
-
-    if (stream_trigger(STREAM_EXTRA1)) {
-        send_message(MSG_ATTITUDE);
-        send_message(MSG_SIMSTATE);
-        send_message(MSG_PID_TUNING);
-    }
-
-    if (gcs().out_of_time()) {
-      return;
-    }
-
-    if (stream_trigger(STREAM_EXTRA2)) {
-        send_message(MSG_VFR_HUD);
-    }
-
-    if (gcs().out_of_time()) {
-      return;
-    }
-
-    if (stream_trigger(STREAM_EXTRA3)) {
-        send_message(MSG_AHRS);
-        send_message(MSG_HWSTATUS);
-        send_message(MSG_RANGEFINDER);
-        send_message(MSG_SYSTEM_TIME);
-        send_message(MSG_BATTERY2);
-        send_message(MSG_BATTERY_STATUS);
-        send_message(MSG_MAG_CAL_REPORT);
-        send_message(MSG_MAG_CAL_PROGRESS);
-        send_message(MSG_MOUNT_STATUS);
-        send_message(MSG_EKF_STATUS_REPORT);
-        send_message(MSG_VIBRATION);
-        send_message(MSG_RPM);
-    }
+    return false;
 }
-
-
 
 bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
