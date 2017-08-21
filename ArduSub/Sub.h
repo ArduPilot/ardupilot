@@ -451,9 +451,6 @@ private:
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
 
-    // true if we are out of time in our event timeslice
-    bool gcs_out_of_time;
-
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;

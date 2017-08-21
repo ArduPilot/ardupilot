@@ -482,7 +482,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
     if (sub.scheduler.time_available_usec() < 250 && sub.motors.armed()) {
-        sub.gcs_out_of_time = true;
+        gcs().set_out_of_time(true);
         return false;
     }
 
@@ -744,11 +744,11 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         sub.DataFlash.handle_log_send(*this);
     }
 
-    sub.gcs_out_of_time = false;
+    gcs().set_out_of_time(false);
 
     send_queued_parameters();
 
-    if (sub.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
         return;
     }
 
@@ -763,7 +763,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         send_message(MSG_RAW_IMU3);
     }
 
-    if (sub.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
         return;
     }
 
@@ -780,7 +780,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         send_message(MSG_NAMED_FLOAT);
     }
 
-    if (sub.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
         return;
     }
 
@@ -789,14 +789,14 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         send_message(MSG_LOCAL_POSITION);
     }
 
-    if (sub.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
         return;
     }
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
     }
 
-    if (sub.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
         return;
     }
 
@@ -805,7 +805,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         send_message(MSG_RADIO_IN);
     }
 
-    if (sub.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
         return;
     }
 
@@ -815,7 +815,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         send_message(MSG_PID_TUNING);
     }
 
-    if (sub.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
         return;
     }
 
@@ -823,7 +823,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         send_message(MSG_VFR_HUD);
     }
 
-    if (sub.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
         return;
     }
 
@@ -849,7 +849,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
 #endif
     }
 
-    if (sub.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
         return;
     }
 }
