@@ -278,7 +278,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
     if (!rover.in_mavlink_delay && rover.scheduler.time_available_usec() < 1200) {
-        rover.gcs_out_of_time = true;
+        gcs().set_out_of_time(true);
         return false;
     }
 
@@ -502,7 +502,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 void
 GCS_MAVLINK_Rover::data_stream_send(void)
 {
-    rover.gcs_out_of_time = false;
+    gcs().set_out_of_time(false);
 
     if (!rover.in_mavlink_delay) {
         rover.DataFlash.handle_log_send(*this);
@@ -510,7 +510,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
 
     send_queued_parameters();
 
-    if (rover.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
       return;
     }
 
@@ -530,7 +530,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         return;
     }
 
-    if (rover.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
       return;
     }
 
@@ -539,7 +539,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         send_message(MSG_RAW_IMU3);
     }
 
-    if (rover.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
       return;
     }
 
@@ -554,7 +554,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         send_message(MSG_NAV_CONTROLLER_OUTPUT);
     }
 
-    if (rover.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
       return;
     }
 
@@ -564,7 +564,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         send_message(MSG_LOCAL_POSITION);
     }
 
-    if (rover.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
       return;
     }
 
@@ -572,7 +572,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         send_message(MSG_SERVO_OUT);
     }
 
-    if (rover.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
       return;
     }
 
@@ -581,7 +581,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         send_message(MSG_RADIO_IN);
     }
 
-    if (rover.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
       return;
     }
 
@@ -593,7 +593,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         }
     }
 
-    if (rover.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
       return;
     }
 
@@ -601,7 +601,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
         send_message(MSG_VFR_HUD);
     }
 
-    if (rover.gcs_out_of_time) {
+    if (gcs().out_of_time()) {
       return;
     }
 
