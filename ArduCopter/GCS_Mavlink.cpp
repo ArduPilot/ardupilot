@@ -294,7 +294,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     // dereference; it means that we send messages out even if we're
     // failing to detect a PX4 board type (see delay(3000) in px_drivers).
     if (copter.motors != nullptr && copter.scheduler.time_available_usec() < 250 && copter.motors->armed()) {
-        copter.gcs_out_of_time = true;
+        gcs().set_out_of_time(true);
         return false;
     }
 #endif
@@ -581,11 +581,11 @@ GCS_MAVLINK_Copter::data_stream_send(void)
         copter.DataFlash.handle_log_send(*this);
     }
 
-    copter.gcs_out_of_time = false;
+    gcs().set_out_of_time(false);
 
     send_queued_parameters();
 
-    if (copter.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (copter.in_mavlink_delay) {
         // don't send any other stream types while in the delay callback
@@ -598,7 +598,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
         send_message(MSG_RAW_IMU3);  // SENSOR_OFFSETS
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
         send_message(MSG_EXTENDED_STATUS1); // SYS_STATUS, POWER_STATUS
@@ -612,26 +612,26 @@ GCS_MAVLINK_Copter::data_stream_send(void)
         send_message(MSG_FENCE_STATUS);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_POSITION)) {
         send_message(MSG_LOCATION);
         send_message(MSG_LOCAL_POSITION);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_SERVO_OUTPUT_RAW);
         send_message(MSG_RADIO_IN);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
@@ -639,13 +639,13 @@ GCS_MAVLINK_Copter::data_stream_send(void)
         send_message(MSG_PID_TUNING);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_EXTRA2)) {
         send_message(MSG_VFR_HUD);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_EXTRA3)) {
         send_message(MSG_AHRS);
@@ -667,7 +667,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
         send_message(MSG_RPM);
     }
 
-    if (copter.gcs_out_of_time) return;
+    if (gcs().out_of_time()) return;
 
     if (stream_trigger(STREAM_ADSB)) {
         send_message(MSG_ADSB_VEHICLE);
