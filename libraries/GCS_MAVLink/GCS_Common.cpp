@@ -61,7 +61,6 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
     chan = mav_chan;
 
     mavlink_comm_port[chan] = _port;
-    initialised = true;
     _queued_parameter = nullptr;
 
     snprintf(_perf_packet_name, sizeof(_perf_packet_name), "GCS_Packet_%u", chan);
@@ -69,6 +68,8 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
 
     snprintf(_perf_update_name, sizeof(_perf_update_name), "GCS_Update_%u", chan);
     _perf_update = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _perf_update_name);
+
+    initialised = true;
 }
 
 
