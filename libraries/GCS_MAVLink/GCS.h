@@ -477,6 +477,13 @@ public:
     void update();
     virtual void setup_uarts(AP_SerialManager &serial_manager);
 
+    bool out_of_time() const {
+        return _out_of_time;
+    }
+    void set_out_of_time(bool val) {
+        _out_of_time = val;
+    }
+
     /*
       set a dataflash pointer for logging
      */
@@ -514,6 +521,9 @@ private:
 #endif
 
     ObjectArray<statustext_t> _statustext_queue{_status_capacity};
+
+    // true if we are running short on time in our main loop
+    bool _out_of_time;
 
 };
 
