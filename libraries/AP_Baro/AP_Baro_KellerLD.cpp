@@ -235,8 +235,8 @@ void AP_Baro_KellerLD::update()
 
     _sem->give();
 
-    uint16_t raw_pressure_avg = ((float)sum_pressure) / num_samples;
-    uint16_t raw_temperature_avg = ((float)sum_temperature) / num_samples;
+    uint16_t raw_pressure_avg = sum_pressure / num_samples;
+    uint16_t raw_temperature_avg = sum_temperature / num_samples;
 
     // per datasheet
     float pressure = (raw_pressure_avg - 16384) * (_p_max - _p_min) / 32768 + _p_min;
