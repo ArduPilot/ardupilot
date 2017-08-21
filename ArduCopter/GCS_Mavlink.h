@@ -10,8 +10,6 @@ class GCS_MAVLINK_Copter : public GCS_MAVLINK
 
 public:
 
-    void data_stream_send(void) override;
-
 protected:
 
     uint32_t telem_delay() const override;
