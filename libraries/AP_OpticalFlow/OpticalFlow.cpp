@@ -83,6 +83,11 @@ OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
 
 void OpticalFlow::init(void)
 {
+    // return immediately if not enabled
+    if (!_enabled) {
+        return;
+    }
+
     if (!backend) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK) {
