@@ -23,7 +23,7 @@ Rover::Rover(void) :
     param_loader(var_info),
     channel_steer(nullptr),
     channel_throttle(nullptr),
-    channel_learn(nullptr),
+    channel_aux(nullptr),
     DataFlash{FIRMWARE_STRING, g.log_bitmask},
     modes(&g.mode1),
     L1_controller(ahrs, nullptr),

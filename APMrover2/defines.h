@@ -113,3 +113,13 @@ enum mode_reason_t {
     MODE_REASON_CRASH_FAILSAFE,
     MODE_REASON_MISSION_COMMAND
 };
+
+// values used by the ap.ch7_opt and ap.ch8_opt flags
+enum aux_switch_pos {
+    AUX_SWITCH_LOW,
+    AUX_SWITCH_MIDDLE,
+    AUX_SWITCH_HIGH
+};
+
+#define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
+#define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
