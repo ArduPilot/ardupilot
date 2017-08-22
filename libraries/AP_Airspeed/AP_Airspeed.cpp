@@ -263,7 +263,7 @@ void AP_Airspeed::read(void)
     switch ((enum pitot_tube_order)_tube_order.get()) {
     case PITOT_TUBE_ORDER_NEGATIVE:
         airspeed_pressure = -airspeed_pressure;
-        // no break
+        FALLTHROUGH;
     case PITOT_TUBE_ORDER_POSITIVE:
         if (airspeed_pressure < -32) {
             // we're reading more than about -8m/s. The user probably has
