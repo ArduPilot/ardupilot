@@ -89,7 +89,7 @@ private:
     AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
     AP_Int16 _yawAngle_cd;          // yaw angle of sensor X axis with respect to vehicle X axis - centi degrees
     AP_Vector3f _pos_offset;        // position offset of the flow sensor in the body frame
-    AP_Int8  _bus_id;               // ID on bus (some sensors only)
+    AP_Int8  _address;              // address on the bus (allows selecting between 8 possible I2C addresses for px4flow)
 
     // state filled in by backend
     struct OpticalFlow_state _state;

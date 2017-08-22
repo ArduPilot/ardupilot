@@ -62,7 +62,7 @@ bool AP_OpticalFlow_PX4Flow::scan_buses(void)
             continue;
         }
 #endif
-        AP_HAL::OwnPtr<AP_HAL::Device> tdev = hal.i2c_mgr->get_device(bus, PX4FLOW_BASE_I2C_ADDR + get_bus_id());
+        AP_HAL::OwnPtr<AP_HAL::Device> tdev = hal.i2c_mgr->get_device(bus, PX4FLOW_BASE_I2C_ADDR + get_address());
         if (!tdev) {
             continue;
         }
@@ -106,7 +106,7 @@ void AP_OpticalFlow_PX4Flow::timer(void)
         return;
     }
     struct OpticalFlow::OpticalFlow_state state {};
-    state.device_id = get_bus_id();
+    state.device_id = get_address();
 
     if (frame.integration_timespan > 0) {
         const Vector2f flowScaler = _flowScaler();
