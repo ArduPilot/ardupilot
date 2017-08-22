@@ -614,7 +614,7 @@ void Replay::set_signal_handlers(void)
 void Replay::write_ekf_logs(void)
 {
     if (!LogReader::in_list("EKF", nottypes)) {
-        _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs,false);
+        _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs);
     }
     if (!LogReader::in_list("AHRS2", nottypes)) {
         _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
