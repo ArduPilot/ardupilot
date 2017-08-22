@@ -71,6 +71,7 @@
 #include <Filter/AverageFilter.h>                   // Mode Filter from Filter library
 #include <Filter/Butter.h>                          // Filter library - butterworth filter
 #include <Filter/Filter.h>                          // Filter library
+#include <Filter/LowPassFilter.h>
 #include <Filter/ModeFilter.h>                      // Mode Filter from Filter library
 #include <RC_Channel/RC_Channel.h>                  // RC Channel Library
 #include <StorageManager/StorageManager.h>
@@ -380,6 +381,13 @@ private:
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
 
+    // cruise throttle and speed learning
+    struct {
+        bool learning;
+        LowPassFilterFloat speed_filt = LowPassFilterFloat(2.0f);
+        LowPassFilterFloat throttle_filt = LowPassFilterFloat(2.0f);
+    } cruise_learn;
+
 private:
 
     // APMrover2.cpp
@@ -451,6 +459,11 @@ private:
 
     // crash_check.cpp
     void crash_check();
+
+    // cruise_learn.cpp
+    void cruise_learn_start();
+    void cruise_learn_update();
+    void cruise_learn_complete();
 
     // events.cpp
     void update_events(void);
