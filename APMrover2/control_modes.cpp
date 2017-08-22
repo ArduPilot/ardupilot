@@ -9,9 +9,6 @@ Mode *Rover::control_mode_from_num(const enum mode num)
     case MANUAL:
         ret = &mode_manual;
         break;
-    case LEARNING:
-        ret = &mode_learning;
-        break;
     case STEERING:
         ret = &mode_steering;
         break;

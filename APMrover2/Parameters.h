@@ -160,7 +160,7 @@ public:
         k_param_mode4,
         k_param_mode5,
         k_param_mode6,
-        k_param_learn_channel,
+        k_param_aux_channel,
 
         //
         // 220: Waypoint data
