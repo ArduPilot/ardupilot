@@ -177,7 +177,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         }
         stage = DEEPSTALL_STAGE_ESTIMATE_WIND;
         loiter_sum_cd = 0; // reset the loiter counter
-        // no break
+        FALLTHROUGH;
     case DEEPSTALL_STAGE_ESTIMATE_WIND:
         {
         landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, 1);
@@ -199,7 +199,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         }
         stage = DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT;
         loiter_sum_cd = 0; // reset the loiter counter
-        // no break
+        FALLTHROUGH;
         }
     case DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT:
         // rebuild the approach path if we have done less then a full circle to allow it to be
@@ -221,14 +221,14 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         }
         stage = DEEPSTALL_STAGE_FLY_TO_ARC;
         memcpy(&breakout_location, &current_loc, sizeof(Location));
-        // no break
+        FALLTHROUGH;
     case DEEPSTALL_STAGE_FLY_TO_ARC:
         if (get_distance(current_loc, arc_entry) > 2 * landing.aparm.loiter_radius) {
             landing.nav_controller->update_waypoint(breakout_location, arc_entry);
             return false;
         }
         stage = DEEPSTALL_STAGE_ARC;
-        // no break
+        FALLTHROUGH;
     case DEEPSTALL_STAGE_ARC:
         {
         Vector2f groundspeed = landing.ahrs.groundspeed_vector();
@@ -240,7 +240,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         }
         stage = DEEPSTALL_STAGE_APPROACH;
         }
-        // no break
+        FALLTHROUGH;
     case DEEPSTALL_STAGE_APPROACH:
         {
         Location entry_point;
@@ -274,7 +274,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         }
         L1_xtrack_i = 0; // reset the integrators
         }
-        // no break
+        FALLTHROUGH;
     case DEEPSTALL_STAGE_LAND:
         // while in deepstall the only thing verify needs to keep the extended approach point sufficently far away
         landing.nav_controller->update_waypoint(current_loc, extended_approach);
