@@ -567,6 +567,10 @@ public:
     
     // control over servo output ranges
     SRV_Channels servo_channels;
+
+    // flight mode channel
+    AP_Int8         flight_mode_channel;
+
 };
 
 extern const AP_Param::Info        var_info[];

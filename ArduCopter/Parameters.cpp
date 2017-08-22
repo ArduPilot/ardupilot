@@ -1005,7 +1005,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // ID 19 reserved for TCAL (PR pending)
     // ID 20 reserved for TX_TYPE (PR pending)
-    
+
+    // @Param: FLTMODE_CH
+    // @DisplayName: Flightmode channel
+    // @Description: RC Channel to use for flight mode control
+    // @User: Advanced
+    AP_GROUPINFO("FLTMODE_CH", 21, ParametersG2, flight_mode_channel, FLIGHT_MODE_CHANNEL),
+
     AP_GROUPEND
 };
 
