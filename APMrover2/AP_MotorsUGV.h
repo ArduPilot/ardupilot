@@ -80,8 +80,8 @@ protected:
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle);
 
-    // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
-    void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle);
+    // set ouput to a channel.  Sets relays if required
+    void set_output(SRV_Channel::Aux_servo_function_t function, float output);
 
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
