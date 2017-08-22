@@ -265,17 +265,6 @@ public:
 };
 
 
-class ModeLearning : public ModeManual
-{
-public:
-
-    uint32_t mode_number() const override { return LEARNING; }
-
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-};
-
-
 class ModeRTL : public Mode
 {
 public:

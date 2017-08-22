@@ -93,26 +93,6 @@
   #error XXX
 #endif
 
-#if !defined(MODE_1)
-  #define MODE_1    LEARNING
-#endif
-#if !defined(MODE_2)
-  #define MODE_2    LEARNING
-#endif
-#if !defined(MODE_3)
-  #define MODE_3    LEARNING
-#endif
-#if !defined(MODE_4)
-  #define MODE_4    LEARNING
-#endif
-#if !defined(MODE_5)
-  #define MODE_5    LEARNING
-#endif
-#if !defined(MODE_6)
-  #define MODE_6    MANUAL
-#endif
-
-
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // STARTUP BEHAVIOUR
