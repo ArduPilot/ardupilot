@@ -510,7 +510,6 @@ private:
     void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);
-    bool throttle_failsafe_active();
     void trim_control_surfaces();
     void trim_radio();
 
