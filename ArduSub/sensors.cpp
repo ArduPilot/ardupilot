@@ -128,11 +128,6 @@ void Sub::compass_accumulate(void)
 #if OPTFLOW == ENABLED
 void Sub::init_optflow()
 {
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
     // initialise optical flow sensor
     optflow.init();
 }
