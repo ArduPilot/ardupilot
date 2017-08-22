@@ -442,7 +442,6 @@ private:
 
     // compat.cpp
     void delay(uint32_t ms);
-    void mavlink_delay(uint32_t ms);
 
     // control_modes.cpp
     Mode *control_mode_from_num(enum mode num);
