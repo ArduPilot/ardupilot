@@ -1073,15 +1073,15 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
 }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
+void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 {
     // only log EKF2 if enabled
     if (ahrs.get_NavEKF2().activeCores() > 0) {
-        Log_Write_EKF2(ahrs, optFlowEnabled);
+        Log_Write_EKF2(ahrs);
     }
     // only log EKF3 if enabled
     if (ahrs.get_NavEKF3().activeCores() > 0) {
-        Log_Write_EKF3(ahrs, optFlowEnabled);
+        Log_Write_EKF3(ahrs);
     }
 }
 
@@ -1105,7 +1105,7 @@ void DataFlash_Class::Log_Write_EKF_Timing(const char *name, uint64_t time_us, c
               (double)timing.delVelDT_max);
 }
 
-void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
+void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs)
 {
     uint64_t time_us = AP_HAL::micros64();
     // Write first EKF packet
@@ -1439,7 +1439,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 }
 
 
-void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
+void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs)
 {
     uint64_t time_us = AP_HAL::micros64();
 	// Write first EKF packet
