@@ -71,14 +71,17 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
         read_len = 0;
         modbus_status = LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST;
         }
-        // no break to fall through to next state LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST immediately
+
+        // fall through to next state LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST
+        // immediately
+        FALLTHROUGH;
 
     case LEDDARONE_MODBUS_STATE_PRE_SEND_REQUEST:
         // send a request message for Modbus function 4
         uart->write(send_request_buffer, sizeof(send_request_buffer));
         modbus_status = LEDDARONE_MODBUS_STATE_SENT_REQUEST;
         last_sending_request_ms = AP_HAL::millis();
-        // no break
+        FALLTHROUGH;
 
     case LEDDARONE_MODBUS_STATE_SENT_REQUEST:
         if (uart->available()) {
