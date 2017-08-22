@@ -129,7 +129,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: CH7_OPTION
     // @DisplayName: Channel 7 option
     // @Description: What to do use channel 7 for
-    // @Values: 0:Nothing,1:LearnWaypoint
+    // @Values: 0:Nothing,1:SaveWaypoint
     // @User: Standard
     GSCALAR(ch7_option,             "CH7_OPTION",          CH7_OPTION),
 
@@ -227,11 +227,11 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(rangefinder_debounce,   "RNGFND_DEBOUNCE",    2),
 
-    // @Param: LEARN_CH
-    // @DisplayName: Learning channel
-    // @Description: RC Channel to use for learning waypoints
+    // @Param: AUX_CH
+    // @DisplayName: Auxiliary switch channel
+    // @Description: RC Channel to use for auxiliary functions including saving waypoints
     // @User: Advanced
-    GSCALAR(learn_channel,    "LEARN_CH",       7),
+    GSCALAR(aux_channel,    "AUX_CH",       7),
 
     // @Param: MODE_CH
     // @DisplayName: Mode channel
