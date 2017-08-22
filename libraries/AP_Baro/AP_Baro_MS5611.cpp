@@ -98,6 +98,7 @@ bool AP_Baro_MS56XX::_init()
     switch (_ms56xx_type) {
     case BARO_MS5607:
         name = "MS5607";
+        FALLTHROUGH;
     case BARO_MS5611:
         prom_read_ok = _read_prom_5611(prom);
         break;
