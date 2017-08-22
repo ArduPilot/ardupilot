@@ -815,7 +815,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 
             case MAV_MODE_STABILIZE_DISARMED:
             case MAV_MODE_STABILIZE_ARMED:
-                rover.set_mode(rover.mode_learning, MODE_REASON_GCS_COMMAND);
+                rover.set_mode(rover.mode_steering, MODE_REASON_GCS_COMMAND);
                 result = MAV_RESULT_ACCEPTED;
                 break;
 

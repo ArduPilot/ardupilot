@@ -377,7 +377,6 @@ private:
     ModeManual mode_manual;
     ModeGuided mode_guided;
     ModeAuto mode_auto;
-    ModeLearning mode_learning;
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
 
