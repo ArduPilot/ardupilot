@@ -21,7 +21,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: SYSID_SW_TYPE
     // @DisplayName: Software Type
     // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
-    // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover
+    // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover,40:ArduSub
     // @User: Advanced
     // @ReadOnly: True
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
