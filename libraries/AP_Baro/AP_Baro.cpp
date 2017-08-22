@@ -39,6 +39,7 @@
 #include "AP_Baro_UAVCAN.h"
 #endif
 
+#define MSL_PRESSURE 101325
 #define C_TO_KELVIN 273.15f
 // Gas Constant is from Aerodynamics for Engineering Students, Third Edition, E.L.Houghton and N.B.Carruthers
 #define ISA_GAS_CONSTANT 287.26f
@@ -62,7 +63,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, sensors[0].ground_pressure, 0),
+    AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, sensors[0].ground_pressure, MSL_PRESSURE),
 
     // @Param: TEMP
     // @DisplayName: ground temperature
@@ -113,7 +114,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("ABS_PRESS2", 9, AP_Baro, sensors[1].ground_pressure, 0),
+    AP_GROUPINFO("ABS_PRESS2", 9, AP_Baro, sensors[1].ground_pressure, MSL_PRESSURE),
 
     // Slot 10 used to be TEMP2
 #endif
@@ -127,7 +128,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("ABS_PRESS3", 11, AP_Baro, sensors[2].ground_pressure, 0),
+    AP_GROUPINFO("ABS_PRESS3", 11, AP_Baro, sensors[2].ground_pressure, MSL_PRESSURE),
 
     // Slot 12 used to be TEMP3
 #endif
