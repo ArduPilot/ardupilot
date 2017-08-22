@@ -83,7 +83,7 @@ AP_GPS_SIRF::read(void)
                 break;
             }
             _step = 0;
-        // FALLTHROUGH
+            FALLTHROUGH;
         case 0:
             if(PREAMBLE1 == data)
                 _step++;
