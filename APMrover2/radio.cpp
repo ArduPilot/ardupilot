@@ -189,7 +189,7 @@ void Rover::trim_control_surfaces()
 
 void Rover::trim_radio()
 {
-    for (int y = 0; y < 30; y++) {
+    for (uint8_t y = 0; y < 30; y++) {
         read_radio();
     }
     trim_control_surfaces();
