@@ -398,7 +398,7 @@ AP_GPS_UBLOX::read(void)
             }
             _step = 0;
             Debug("reset %u", __LINE__);
-            /* no break */
+            FALLTHROUGH;
         case 0:
             if(PREAMBLE1 == data)
                 _step++;
@@ -1215,7 +1215,7 @@ reset:
                 break;
             }
             state.step = 0;
-            /* no break */
+            FALLTHROUGH;
         case 0:
             if (PREAMBLE1 == data)
                 state.step++;
