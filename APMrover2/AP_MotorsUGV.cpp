@@ -98,6 +98,8 @@ void AP_MotorsUGV::setup_safety_output()
 {
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle);
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_steering);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
     }
@@ -200,12 +202,12 @@ void AP_MotorsUGV::output(bool armed, float dt)
 void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
 {
     // always allow steering to move
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
+    output_throttle(SRV_Channel::k_steering, steering);
 
     // output to throttle channels
     if (armed) {
         // handle armed case
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+        output_throttle(SRV_Channel::k_throttle, throttle);
     } else {
         // handle disarmed case
         if (_disarm_disable_pwm) {
@@ -290,13 +292,10 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100
 void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle)
 {
-    // sanity check servo function
-    if (function != SRV_Channel::k_throttle && function != SRV_Channel::k_throttleLeft && function != SRV_Channel::k_throttleRight) {
-        return;
-    }
-
     // constrain output
-    throttle = constrain_float(throttle, -100.0f, 100.0f);
+    if (function != SRV_Channel::k_steering) {
+        throttle = constrain_float(throttle, -100.0f, 100.0f);
+    }
 
     // set relay if necessary
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
@@ -308,6 +307,11 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
         bool relay_high = out_chan->get_reversed() ? !is_negative(throttle) : is_negative(throttle);
         switch (function) {
             case SRV_Channel::k_throttle:
+                _relayEvents.do_set_relay(0, relay_high);
+                break;
+            case SRV_Channel::k_steering:
+                _relayEvents.do_set_relay(1, relay_high);
+                break;
             case SRV_Channel::k_throttleLeft:
                 _relayEvents.do_set_relay(0, relay_high);
                 break;
@@ -325,11 +329,12 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
     // output to servo channel
     switch (function) {
         case SRV_Channel::k_throttle:
+        case SRV_Channel::k_steering:
             SRV_Channels::set_output_scaled(function,  throttle);
             break;
         case SRV_Channel::k_throttleLeft:
         case SRV_Channel::k_throttleRight:
-            SRV_Channels::set_output_scaled(function,  throttle*10.0f);
+            SRV_Channels::set_output_scaled(function,  throttle * 10.0f);
             break;
         default:
             // do nothing
