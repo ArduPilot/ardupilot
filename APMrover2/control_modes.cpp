@@ -174,6 +174,15 @@ void Rover::read_aux_switch()
             }
         }
         break;
+
+    // learn cruise speed and throttle
+    case CH7_LEARN_CRUISE:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            cruise_learn_start();
+        } else if (aux_ch7 == AUX_SWITCH_LOW) {
+            cruise_learn_complete();
+        }
+        break;
     }
 }
 
