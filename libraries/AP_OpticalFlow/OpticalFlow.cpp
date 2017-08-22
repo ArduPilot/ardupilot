@@ -104,8 +104,6 @@ void OpticalFlow::init(void)
 
     if (backend != nullptr) {
         backend->init();
-    } else {
-        _enabled = 0;
     }
 }
 
