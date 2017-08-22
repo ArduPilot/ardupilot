@@ -18,34 +18,24 @@ void Rover::failsafe_check()
 {
     static uint16_t last_mainLoop_count;
     static uint32_t last_timestamp;
-    static bool in_failsafe;
     const uint32_t tnow = AP_HAL::micros();
 
     if (mainLoop_count != last_mainLoop_count) {
         // the main loop is running, all is OK
         last_mainLoop_count = mainLoop_count;
         last_timestamp = tnow;
-        in_failsafe = false;
         return;
     }
 
     if (tnow - last_timestamp > 200000) {
         // we have gone at least 0.2 seconds since the main loop
         // ran. That means we're in trouble, or perhaps are in
-        // an initialisation routine or log erase. Start passing RC
-        // inputs through to outputs
-        in_failsafe = true;
-    }
-
-    if (in_failsafe && tnow - last_timestamp > 20000 &&
-        channel_throttle->read() >= static_cast<uint16_t>(g.fs_throttle_value)) {
-        // pass RC inputs to outputs every 20ms
-        last_timestamp = tnow;
-        hal.rcin->clear_overrides();
-        for (uint8_t ch = 0; ch < 4; ch++) {
-            hal.rcout->write(ch, hal.rcin->read(ch));
+        // an initialisation routine or log erase. disarm the motors
+        // To-Do: log error to dataflash
+        if (arming.is_armed()) {
+            // disarm motors
+            disarm_motors();
         }
-        SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);
     }
 }
 
