@@ -264,7 +264,7 @@ public:
     AP_Int8     mode4;
     AP_Int8     mode5;
     AP_Int8     mode6;
-    AP_Int8     learn_channel;
+    AP_Int8     aux_channel;
 
     // Waypoints
     //

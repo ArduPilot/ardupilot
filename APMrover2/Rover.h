@@ -144,7 +144,7 @@ private:
     // primary control channels
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
-    RC_Channel *channel_learn;
+    RC_Channel *channel_aux;
 
     DataFlash_Class DataFlash;
 
@@ -276,11 +276,8 @@ private:
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
 
-    // CH7 control
-    // Used to track the CH7 toggle state.
-    // When CH7 goes LOW PWM from HIGH PWM, this value will have been set true
-    // This allows advanced functionality to know when to execute
-    bool ch7_flag;
+    // CH7 auxiliary switches last known position
+    aux_switch_pos aux_ch7;
 
     // Battery Sensors
     AP_BattMonitor battery;
@@ -448,7 +445,9 @@ private:
     void read_control_switch();
     uint8_t readSwitch(void);
     void reset_control_switch();
-    void read_trim_switch();
+    aux_switch_pos read_aux_switch_pos();
+    void init_aux_switch();
+    void read_aux_switch();
     bool motor_active();
 
     // crash_check.cpp
