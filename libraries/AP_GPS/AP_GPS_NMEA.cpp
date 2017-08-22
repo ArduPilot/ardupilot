@@ -140,7 +140,7 @@ bool AP_GPS_NMEA::_decode(char c)
     switch (c) {
     case ',': // term terminators
         _parity ^= c;
-        /* no break */
+        FALLTHROUGH;
     case '\r':
     case '\n':
     case '*':
