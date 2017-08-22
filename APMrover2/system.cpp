@@ -242,13 +242,8 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 
 void Rover::startup_INS_ground(void)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Warming up ADC");
-    mavlink_delay(500);
-
-    // Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
-    // -----------------------
     gcs().send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
-    mavlink_delay(1000);
+    hal.scheduler->delay(100);
 
     ahrs.init();
     // say to EKF that rover only move by goind forward
