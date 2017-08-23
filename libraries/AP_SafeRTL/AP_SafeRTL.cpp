@@ -317,11 +317,11 @@ void AP_SafeRTL::detect_simplifications()
 }
 
 /**
-*   This method runs for the allotted time, and detects loops in a path. All detected loops are added to _prunable_loops,
+*   This method runs for the allotted time, and detects loops in a path. Any detected loops are added to _prunable_loops,
 *   this function does not alter the path in memory. It works by comparing the line segment between any two sequential points
 *   to the line segment between any other two sequential points. If they get close enough, anything between them could be pruned.
 *
-*   Note that this method might take a bit longer than LOOP_TIME. It only stops after it's already run longer.
+*   Note that this method might take a bit longer than SAFERTL_LOOP_TIME_US. It only stops after it's already run longer.
 */
 void AP_SafeRTL::detect_loops()
 {
