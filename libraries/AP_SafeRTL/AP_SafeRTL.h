@@ -112,7 +112,7 @@ private:
     Vector3f* _path;    // points are stored in meters from EKF origin in NED
     int16_t _path_points_max;   // after the array has been allocated, we will need to know how big it is. We can't use the parameter, because a user could change the parameter in-flight
     int16_t _last_index;        // index of most recent point added to path
-    uint32_t _time_of_last_good_position; // the time when a last good position was reported. If no position is available for a while, SafeRTL will be disabled.
+    uint32_t _last_good_position_ms;    // the last system time a last good position was reported. If no position is available for a while, SafeRTL will be disabled.
 
     // Simplify state
     bool _simplify_complete;

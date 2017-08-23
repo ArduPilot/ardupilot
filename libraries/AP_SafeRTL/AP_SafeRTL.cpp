@@ -146,7 +146,7 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
 
     // save current position as first point in path
     _path[_last_index] = current_pos;
-    _time_of_last_good_position = AP_HAL::millis();
+    _last_good_position_ms = AP_HAL::millis();
     _active = true;
 }
 
@@ -169,9 +169,9 @@ void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
     }
 
     if (position_ok) {
-        _time_of_last_good_position = AP_HAL::millis();
+        _last_good_position_ms = AP_HAL::millis();
     } else {
-        if (AP_HAL::millis() - _time_of_last_good_position > SAFERTL_BAD_POSITION_TIMEOUT) {
+        if (AP_HAL::millis() - _last_good_position_ms > SAFERTL_BAD_POSITION_TIMEOUT) {
             _active = false;
             log_action(SRTL_DEACTIVATED_BAD_POSITION);
             gcs().send_text(MAV_SEVERITY_WARNING,"SafeRTL deactivated: bad position");
