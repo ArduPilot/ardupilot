@@ -109,7 +109,7 @@ private:
     bool _initialised;  // true once initialised (arrays have been allocated successfully)
     bool _active;       // true if safeRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SafeRTL will be permanently deactivated (for the remainder of the flight)
     Vector3f* _path;    // points are stored in meters from EKF origin in NED
-    int16_t _current_path_len;  // after the array has been allocated, we will need to know how big it is. We can't use the parameter, because a user could change the parameter in-flight
+    int16_t _path_points_max;   // after the array has been allocated, we will need to know how big it is. We can't use the parameter, because a user could change the parameter in-flight
     int16_t _last_index;        // index of most recent point added to path
     uint32_t _time_of_last_good_position; // the time when a last good position was reported. If no position is available for a while, SafeRTL will be disabled.
 

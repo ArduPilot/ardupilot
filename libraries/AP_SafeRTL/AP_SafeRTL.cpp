@@ -107,7 +107,7 @@ void AP_SafeRTL::init()
         return;
     }
 
-    _current_path_len = _points_max;
+    _path_points_max = _points_max;
     _initialised = true;
 
     // register SafeRTL cleanup methods to run in IO thread
@@ -307,7 +307,7 @@ void AP_SafeRTL::detect_simplifications()
 
         if (max_dist > SAFERTL_SIMPLIFICATION_EPSILON) {
             // if the to-do list is full, give up on simplifying. This should never happen.
-            if (_simplify_stack_last_index > _current_path_len * SAFERTL_SIMPLIFICATION_STACK_LEN_MULT) {
+            if (_simplify_stack_last_index > _path_points_max * SAFERTL_SIMPLIFICATION_STACK_LEN_MULT) {
                 _simplify_complete = true;
                 return;
             }
@@ -350,7 +350,7 @@ void AP_SafeRTL::detect_loops()
             if (dp.distance <= SAFERTL_PRUNING_DELTA) { // if there is a loop here
                 _prune_min_j = j;
                 // if the buffer is full
-                if ( _prunable_loops_last_index >= _current_path_len * SAFERTL_LOOP_BUFFER_LEN_MULT - 1) {
+                if ( _prunable_loops_last_index >= _path_points_max * SAFERTL_LOOP_BUFFER_LEN_MULT - 1) {
                     _prune_complete = true; // pruning is effectively complete now, since there's no reason to continue looking for them.
                     return;
                 }
@@ -377,7 +377,7 @@ bool AP_SafeRTL::routine_cleanup()
 {
     // We only do a routine cleanup if the memory is almost full. Cleanup deletes
     // points which are potentially useful, so it would be bad to clean up if we don't have to
-    if (_last_index < _current_path_len - 10) {
+    if (_last_index < _path_points_max - 10) {
         return true;
     }
 
