@@ -462,12 +462,10 @@ void AP_SafeRTL::zero_points_by_simplify_bitmask()
     }
 }
 
-/**
-*   Only prunes loops until $points_to_delete points have been removed. It does not necessarily prune all loops.
-*/
-void AP_SafeRTL::zero_points_by_loops(int16_t points_to_delete)
+// prunes loops until points_to_delete points have been removed. It does not necessarily prune all loops.
+void AP_SafeRTL::zero_points_by_loops(uint16_t points_to_delete)
 {
-    int16_t removed_points = 0;
+    uint16_t removed_points = 0;
     for (int16_t i = 0; i <= _prunable_loops_last_index; i++) {
         prune_loop_t l = _prunable_loops[i];
         _prune_clean_until = MIN(_prune_clean_until, l.start_index-1);

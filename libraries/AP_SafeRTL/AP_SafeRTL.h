@@ -55,7 +55,7 @@ public:
     bool thorough_cleanup();
 
     // get a point on the path
-    const Vector3f& get_point(int16_t index) const { return _path[index]; }
+    const Vector3f& get_point(uint16_t index) const { return _path[index]; }
 
     // get next point on the path to home, returns true on success
     bool pop_point(Vector3f& point);
@@ -108,7 +108,7 @@ private:
     void reset_pruning();
 
     void zero_points_by_simplify_bitmask();
-    void zero_points_by_loops(int16_t points_to_delete);
+    void zero_points_by_loops(uint16_t points_to_delete);
     void remove_empty_points();
 
     // dist_point holds the closest distance reached between 2 line segments, and the point exactly between them
