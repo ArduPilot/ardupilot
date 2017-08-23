@@ -24,13 +24,13 @@ const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ACCURACY", 0, AP_SafeRTL, _accuracy, SAFERTL_ACCURACY_DEFAULT),
 
-    // @Param: POINTS_MAX
+    // @Param: POINTS
     // @DisplayName: SafeRTL maximum number of points on path
     // @Description: SafeRTL maximum number of points on path. Set to 0 to disable SafeRTL.  100 points consumes about 3k of memory.
     // @Range: 0 500
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("POINTS_MAX", 1, AP_SafeRTL, _points_max, SAFERTL_POINTS_MAX_DEFAULT),
+    AP_GROUPINFO("POINTS", 1, AP_SafeRTL, _points_max, SAFERTL_POINTS_DEFAULT),
 
     AP_GROUPEND
 };
