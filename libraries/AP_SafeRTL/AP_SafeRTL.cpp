@@ -190,7 +190,7 @@ void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
     }
 
     if (position_ok) {
-        // append the new point, if appropriate
+        // append the new point, if we have traveled far enough
         if (HYPOT(current_pos, _path[_last_index]) > _accuracy) {
             // add the breadcrumb
             _path[++_last_index] = current_pos;
