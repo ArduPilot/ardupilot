@@ -163,7 +163,7 @@ private:
 
     AP_GPS gps = AP_GPS::create();
 
-    AP_LeakDetector leak_detector;
+    AP_LeakDetector leak_detector = AP_LeakDetector::create();
 
     TSYS01 celsius;
     AP_Baro barometer = AP_Baro::create();
