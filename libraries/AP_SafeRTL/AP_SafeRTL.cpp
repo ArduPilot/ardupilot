@@ -88,7 +88,7 @@ void AP_SafeRTL::init()
     _points_max = constrain_int16(_points_max, 0, SAFERTL_POINTS_MAX);
 
     // check if user has disabled SafeRTL
-    if (_points_max == 0 || is_zero(_accuracy)) {
+    if (_points_max == 0 || is_positive(_accuracy)) {
         return;
     }
 
