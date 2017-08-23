@@ -186,7 +186,7 @@ private:
     RC_Channel *channel_rudder;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
-    AP_Notify notify;
+    AP_Notify notify = AP_Notify::create();
 
     DataFlash_Class DataFlash;
 
