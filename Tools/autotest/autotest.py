@@ -15,11 +15,12 @@ import sys
 import time
 import traceback
 
-import apmrover2
-import arducopter
-import arduplane
-import quadplane
-import ardusub
+from apmrover2 import *
+from arducopter import *
+from quadplane import *
+from arduplane import *
+from ardusub import *
+
 from pysim import util
 from pymavlink import mavutil
 from pymavlink.generator import mavtemplate
@@ -223,22 +224,28 @@ def run_step(step):
         return get_default_params(vehicle, binary)
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        arducopter = AutotestCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return arducopter.autotest()
 
     if step == 'fly.CopterAVC':
-        return arducopter.fly_CopterAVC(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        arducopter = AutotestCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return arducopter.autotest()
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
+        arduplane = AutotestPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return arduplane.autotest()
 
     if step == 'fly.QuadPlane':
-        return quadplane.fly_QuadPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
+        quadplane = AutotestQuadPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return quadplane.autotest()
 
     if step == 'drive.APMrover2':
-        return apmrover2.drive_APMrover2(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
-    
+        apmrover2 = AutotestRover(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return apmrover2.autotest()
+
     if step == 'dive.ArduSub':
-        return ardusub.dive_ArduSub(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb)
+        ardusub = AutotestSub(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame)
+        return ardusub.autotest()
 
     if step == 'build.All':
         return build_all()
