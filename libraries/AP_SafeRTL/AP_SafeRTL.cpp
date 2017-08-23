@@ -375,7 +375,7 @@ bool AP_SafeRTL::routine_cleanup()
         return true;
     }
 
-    int16_t potential_amount_to_simplify = SAFERTL_POINTS_MAX - _simplify_bitmask.count();
+    int16_t potential_amount_to_simplify = _simplify_bitmask.size() - _simplify_bitmask.count();
 
     // if simplifying will remove more than 10 points, just do it
     if (potential_amount_to_simplify >= SAFERTL_CLEANUP_POINT_MIN) {
