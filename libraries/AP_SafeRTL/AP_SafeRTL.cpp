@@ -133,7 +133,10 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
     reset_simplification(true);
     // reset pruning
     reset_pruning(true);
+    // clear path
+    _last_index = 0;
 
+    // de-activate if no position at take-off
     if (!position_ok) {
         _active = false;
         log_action(SRTL_DEACTIVATED_BAD_POSITION);
@@ -141,7 +144,7 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
         return;
     }
 
-    _last_index = 0;
+    // save current position as first point in path
     _path[_last_index] = current_pos;
     _time_of_last_good_position = AP_HAL::millis();
     _active = true;
