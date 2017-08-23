@@ -14,7 +14,13 @@ class AP_LeakDetector {
     friend class AP_LeakDetector_Digital;
 
 public:
-    AP_LeakDetector();
+    static AP_LeakDetector create() { return AP_LeakDetector{}; }
+
+    constexpr AP_LeakDetector(AP_LeakDetector &&other) = default;
+
+    /* Do not allow copies */
+    AP_LeakDetector(const AP_LeakDetector &other) = delete;
+    AP_LeakDetector &operator=(const AP_LeakDetector&) = delete;
 
     enum LeakDetector_Type {
         LEAKDETECTOR_TYPE_NONE = 0,
@@ -42,6 +48,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    AP_LeakDetector();
+
     AP_LeakDetector_Backend *_drivers[LEAKDETECTOR_MAX_INSTANCES];
     LeakDetector_State _state[LEAKDETECTOR_MAX_INSTANCES];
 
