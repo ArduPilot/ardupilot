@@ -1007,8 +1007,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // ID 20 reserved for TX_TYPE (PR pending)
 
     // @Group: SAFERTL_
-    // @Path: ../libraries/AC_SafeRTL/AC_SafeRTL.cpp
-    AP_SUBGROUPINFO(safe_rtl, "SAFERTL_", 21, ParametersG2, AC_SafeRTL),
+    // @Path: ../libraries/AP_SafeRTL/AP_SafeRTL.cpp
+    AP_SUBGROUPINFO(safe_rtl, "SAFERTL_", 21, ParametersG2, AP_SafeRTL),
 
     AP_GROUPEND
 };

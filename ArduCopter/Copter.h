@@ -92,7 +92,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
-#include <AC_SafeRTL/AC_SafeRTL.h>
+#include <AP_SafeRTL/AP_SafeRTL.h>
 
 // Configuration
 #include "defines.h"

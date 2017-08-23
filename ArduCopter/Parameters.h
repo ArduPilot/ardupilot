@@ -569,7 +569,7 @@ public:
     SRV_Channels servo_channels;
 
     // Safe RTL library
-    AC_SafeRTL safe_rtl;
+    AP_SafeRTL safe_rtl;
 };
 
 extern const AP_Param::Info        var_info[];
