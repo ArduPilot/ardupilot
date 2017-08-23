@@ -78,14 +78,16 @@ void Copter::safe_rtl_path_follow_run()
     // if we are close to current target point, switch the next point to be our target.
     if (wp_nav->reached_wp_destination()) {
         Vector3f next_point;
-        bool last_point = g2.safe_rtl.pop_point(next_point);
-        if (!last_point) {
-            // go to next point along path
+        if (g2.safe_rtl.pop_point(next_point)) {
+            // this is the very last point, add 2m to the target alt and move to pre-land state
+            if (g2.safe_rtl.get_num_points() == 0) {
+                next_point.z -= 2.0f;
+                safe_rtl_state = SafeRTL_PreLandPosition;
+            }
+            // send target to waypoint controller
             wp_nav->set_wp_destination_NED(next_point);
-        } else {   // if this is the last point, we should prepare to land
-            // go to the point that is 2m above the point, instead of directly home.
-            next_point[2] -= 2.0f;
-            wp_nav->set_wp_destination_NED(next_point);
+        } else {
+            // this should never happen but just in case, land
             safe_rtl_state = SafeRTL_PreLandPosition;
         }
     }
