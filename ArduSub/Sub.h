@@ -148,7 +148,7 @@ private:
     AP_Scheduler scheduler = AP_Scheduler::create();
 
     // AP_Notify instance
-    AP_Notify notify;
+    AP_Notify notify = AP_Notify::create();
 
     // primary input control channels
     RC_Channel *channel_roll;
