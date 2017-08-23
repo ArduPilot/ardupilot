@@ -36,28 +36,37 @@ const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
 };
 
 /*
-*    This library is used for Copter's Safe Return-to-Launch feature. It stores
-*    "breadcrumbs" in memory, up to a certain number  of breadcrumbs have been stored,
-*    and then cleans up those breadcrumbs when space is filling up. When Safe-RTL is
-*    triggered, a more thorough cleanup occurs, and then the resulting path can
-*    is fed into WP_NAV to fly it.
+*    This library is used for the Safe Return-to-Launch feature. The vehicle's position
+*    (aka "bread crumbs") are stored into an array in memory at regular intervals.
+*    After a certain number of bread crumbs have been stored and space within the array
+*    is low, clean-up algorithms are run to reduce the total number of points.
+*    When Safe-RTL is initiated by the vehicle code, a more thorough cleanup runs and
+*    the resulting path is fed into navigation controller to return the vehicle to home.
 *
-*    The cleanup consists of two parts, pruning and simplification. Pruning works
-*    by calculating the closest distance reached by the line segment between any
-*    two pairs of sequential points, and cuts out anything between two points
+*    The cleanup consists of two parts, pruning and simplification:
+*
+*    1. Pruning calculates the closest distance between two line segments formed by
+*    two pairs of sequential points, and then cuts out anything between two points
 *    when their line segments get close. This algorithm will never compare two
 *    consecutive line segments. Obviously the segments (p1,p2) and (p2,p3) will
 *    get very close (they touch), but there would be nothing to trim between them.
-*    The simplification step uses the Ramer-Douglas-Peucker algorithm.
-*    See Wikipedia for description.
 *
-*    The simplification and pruning algorithms do not alter the path in memory,
-*    and are designed to run in the background. They each have a parameter that
-*    decides how long they will run before saving their state and returning. They
-*    are both anytime algorithms, which is helpful when memory is filling up and
-*    we just need to quickly identify a handful of points which can be deleted.
-*    The algorithms can also report if they are done. If not, the thorough cleanup
-*    will just have to wait for a bit until they are both done.
+*    2. Simplification uses the Ramer-Douglas-Peucker algorithm. See Wikipedia for
+*    a more complete description.
+*
+*    The simplification and pruning algorithms run in the background and do not alter
+*    the path in memory.  Two definitions, SAFERTL_SIMPLIFICATION_TIME_US and
+*    SAFERTL_LOOP_TIME_US are used to limit how long each algorithm will be run
+*    before they save their state and return.
+*
+*    Both algorithm are "anytime algorithms" meaning they can be interrupted before
+*    they complete which is helpful when memory is filling up and we just need to
+*    quickly identify a handful of points which can be deleted.
+*
+*    Once the algorithms have completed the _simplification_complete and _pruning_complete
+*    flags are set to true.  The "thorough cleanup" procedure which is run as the
+*    vehicle initiates RTL, waits for these flags to become true.  This can force
+*    the vehicle to pause for a few seconds before initiating the return journey.
 */
 
 AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs) :
