@@ -273,19 +273,17 @@ void AP_SafeRTL::detect_simplifications()
     }
 
     const uint32_t start_time_us = AP_HAL::micros();
-    int16_t start_index, end_index;
     while (_simplify_stack_last_index >= 0) { // while there is something to do
         if (AP_HAL::micros() - start_time_us > SAFERTL_SIMPLIFICATION_TIME_US) {
             return;
         }
 
-        simplify_start_finish_t tmp {}; // initialize to zero to suppress warnings
-        tmp = _simplify_stack[_simplify_stack_last_index--];
-        start_index = tmp.start;
-        end_index = tmp.finish;
+        const simplify_start_finish_t tmp = _simplify_stack[_simplify_stack_last_index--];
+        const int16_t start_index = tmp.start;
+        const int16_t end_index = tmp.finish;
 
         // if we've already verified that everything before here is clean
-        if (tmp.finish <= _simplify_clean_until) {
+        if (end_index <= _simplify_clean_until) {
             continue;
         }
 
@@ -293,7 +291,7 @@ void AP_SafeRTL::detect_simplifications()
         int16_t index = start_index;
         for (int16_t i = index + 1; i < end_index; i++) {
             if (_simplify_bitmask.get(i)) {
-                float dist = point_line_dist(_path[i], _path[start_index], _path[end_index]);
+                const float dist = point_line_dist(_path[i], _path[start_index], _path[end_index]);
                 if (dist > max_dist) {
                     index = i;
                     max_dist = dist;
