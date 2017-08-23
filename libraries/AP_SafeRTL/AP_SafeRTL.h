@@ -88,7 +88,7 @@ private:
     // misc cleanup helper methods:
     void reset_simplification(bool hard);
     void reset_pruning(bool hard);
-    void zero_points_by_simplification_bitmask();
+    void zero_points_by_simplify_bitmask();
     void zero_points_by_loops(int16_t points_to_delete);
     void remove_empty_points();
 
@@ -113,31 +113,28 @@ private:
     int16_t _last_index;        // index of most recent point added to path
     uint32_t _time_of_last_good_position; // the time when a last good position was reported. If no position is available for a while, SafeRTL will be disabled.
 
-    // Simplification state
-    bool _simplification_complete;
+    // Simplify state
+    bool _simplify_complete;
     // structure and buffer to hold the "to-do list" for the SIMPLIFICATION algorithm.
     typedef struct {
         int16_t start;
         int16_t finish;
-    } start_finish;
-    start_finish* _simplification_stack;
-    int16_t _simplification_stack_last_index = -1;
-    Bitmask _simplification_bitmask = Bitmask(SAFERTL_POINTS_MAX);  // simplify algorithm clears bits for each point that can be removed
-    // everything before _simplification_clean_until has been calculated already to be un-simplify-able. This avoids recalculating a known result.
-    int16_t _simplification_clean_until;
+    } simplify_start_finish_t;
+    simplify_start_finish_t* _simplify_stack;
+    int16_t _simplify_stack_last_index = -1;
+    Bitmask _simplify_bitmask = Bitmask(SAFERTL_POINTS_MAX);  // simplify algorithm clears bits for each point that can be removed
+    int16_t _simplify_clean_until;  // everything before _simplify_clean_until has been calculated already to be un-simplify-able. This avoids recalculating a known result.
 
     // Pruning state
-    bool _pruning_complete;
-    int16_t _pruning_current_i;
-    int16_t _pruning_min_j;
+    bool _prune_complete;
+    int16_t _prune_current_i;
+    int16_t _prune_min_j;
     typedef struct {
         int16_t start_index;
         int16_t end_index;
         Vector3f halfway_point;
-    } loop;
-    // the result of the pruning algorithm
-    loop* _prunable_loops;
+    } prune_loop_t;
+    prune_loop_t* _prunable_loops;  // the result of the pruning algorithm
     int16_t _prunable_loops_last_index = -1;
-    // everything before _pruning_clean_until has been calculated already to be un-simplify-able. This avoids recalculating a known result.
-    int16_t _pruning_clean_until;
+    int16_t _prune_clean_until; // everything before _prune_clean_until has been calculated already to be un-simplify-able. This avoids recalculating a known result.
 };
