@@ -70,10 +70,7 @@ const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
 */
 
 AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs) :
-    _ahrs(ahrs),
-    _active(false),
-    _simplification_stack_last_index(-1),
-    _prunable_loops_last_index(-1)
+    _ahrs(ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
     _simplification_bitmask = std::bitset<SAFERTL_POINTS_MAX>().set(); //initialize to 0b1111...

@@ -123,7 +123,7 @@ private:
         int16_t finish;
     } start_finish;
     start_finish* _simplification_stack;
-    int16_t _simplification_stack_last_index;
+    int16_t _simplification_stack_last_index = -1;
     // the result of the simplification algorithm
     std::bitset<SAFERTL_POINTS_MAX> _simplification_bitmask;
     // everything before _simplification_clean_until has been calculated already to be un-simplify-able. This avoids recalculating a known result.
@@ -140,7 +140,7 @@ private:
     } loop;
     // the result of the pruning algorithm
     loop* _prunable_loops;
-    int16_t _prunable_loops_last_index;
+    int16_t _prunable_loops_last_index = -1;
     // everything before _pruning_clean_until has been calculated already to be un-simplify-able. This avoids recalculating a known result.
     int16_t _pruning_clean_until;
 };
