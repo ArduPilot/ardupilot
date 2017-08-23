@@ -135,8 +135,7 @@ bool AP_Baro_KellerLD::_init()
         return false;
     }
 
-    const char* name = "Keller LD";
-    printf("%s found on bus %u address 0x%02x\n", name, _dev->bus_num(), _dev->get_bus_address());
+    printf("Keller LD found on bus %u address 0x%02x\n", _dev->bus_num(), _dev->get_bus_address());
 
     // Send a command to read temperature first
     _dev->transfer(&CMD_REQUEST_MEASUREMENT, 1, nullptr, 0);
@@ -152,8 +151,12 @@ bool AP_Baro_KellerLD::_init()
     
     _dev->get_semaphore()->give();
 
-    /* Request 100Hz update */
-    _dev->register_periodic_callback(10 * AP_USEC_PER_MSEC,
+    // The sensor needs time to take a deep breath after reading out the calibration...
+    hal.scheduler->delay(150);
+
+    // Request 50Hz update
+    // The sensor really struggles with any jitter in timing at 100Hz, and will sometimes start reading out all zeros
+    _dev->register_periodic_callback(20 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_Baro_KellerLD::_timer, void));
     return true;
 }
@@ -163,8 +166,8 @@ bool AP_Baro_KellerLD::_read()
 {
     uint8_t data[5];
     if (!_dev->transfer(0x0, 1, data, sizeof(data))) {
-        return false;
         Debug("Keller LD read failed!");
+        return false;
     }
 
     //uint8_t status = data[0];
@@ -179,6 +182,11 @@ bool AP_Baro_KellerLD::_read()
         Debug("pressure_raw: %d\ttemperature_raw: %d", pressure_raw, temperature_raw);
     }
 #endif
+
+    if (pressure_raw == 0 || temperature_raw == 0) {
+        Debug("Keller: bad read");
+        return false;
+    }
 
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _update_and_wrap_accumulator(pressure_raw, temperature_raw, 128);
