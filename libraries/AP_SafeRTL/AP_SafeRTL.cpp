@@ -556,6 +556,11 @@ float AP_SafeRTL::point_line_dist(const Vector3f &point, const Vector3f &line1, 
     float b = HYPOT(line1, line2);
     float c = HYPOT(line2, point);
 
+    // protect against divide by zero later
+    if (is_zero(b)) {
+        return 0.0f;
+    }
+
     // semiperimeter of triangle
     float s = (a+b+c)/2.0f;
 
