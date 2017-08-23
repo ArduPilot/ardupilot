@@ -93,9 +93,9 @@ void AP_SafeRTL::init()
     }
 
     // allocate arrays
-    _path = (Vector3f*)malloc(_points_max * sizeof(Vector3f));
-    _prunable_loops = (loop*)malloc(_points_max * sizeof(loop));
-    _simplification_stack = (start_finish*)malloc(_points_max * sizeof(start_finish));
+    _path = (Vector3f*)calloc(_points_max, sizeof(Vector3f));
+    _prunable_loops = (loop*)calloc(_points_max, sizeof(loop));
+    _simplification_stack = (start_finish*)calloc(_points_max, sizeof(start_finish));
 
     // check if memory allocation failed
     if (_path == nullptr || _prunable_loops == nullptr || _simplification_stack == nullptr) {
