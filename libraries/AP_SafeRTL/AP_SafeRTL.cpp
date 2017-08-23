@@ -237,22 +237,23 @@ bool AP_SafeRTL::thorough_cleanup()
     return true;
 }
 
-/**
-*   Returns true if the list is empty after popping this point.
-*/
+// get next point on the path to home, returns true on success
 bool AP_SafeRTL::pop_point(Vector3f& point)
 {
-    // this should never happen but just in case
-    if (!_active) {
+    // check we have a point
+    if (!_active || _last_index < 0) {
         return false;
     }
 
-    if (_last_index == 0) {
-        point = _path[0];
-        return true;
-    }
-    point =  _path[_last_index--];
-    return false;
+    // return last point and remove from path
+    point = _path[_last_index--];
+    return true;
+}
+
+// returns number of points on the path
+uint16_t AP_SafeRTL::get_num_points()
+{
+    return _last_index+1;
 }
 
 /**

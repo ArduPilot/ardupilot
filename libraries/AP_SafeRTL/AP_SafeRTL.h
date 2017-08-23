@@ -55,8 +55,11 @@ public:
     // get a point on the path
     const Vector3f& get_point(int16_t index) const { return _path[index]; }
 
-    // get next point on the path to home, returns true if point is the last point (i.e. home)
+    // get next point on the path to home, returns true on success
     bool pop_point(Vector3f& point);
+
+    // returns number of points on the path
+    uint16_t get_num_points();
 
     // the two cleanup steps. These are run regularly from the IO thread
     // these are public so that they can be tested by the example sketch
