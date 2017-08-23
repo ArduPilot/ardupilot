@@ -96,7 +96,7 @@ private:
     AP_Scheduler scheduler = AP_Scheduler::create();
 
     // notification object for LEDs, buzzers etc
-    AP_Notify notify;
+    AP_Notify notify = AP_Notify::create();
 
     uint32_t start_time_ms = 0;
 

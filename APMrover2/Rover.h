@@ -251,7 +251,7 @@ private:
     } failsafe;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
-    AP_Notify notify;
+    AP_Notify notify = AP_Notify::create();
 
     // true if we have a position estimate from AHRS
     bool have_position;
