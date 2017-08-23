@@ -74,7 +74,6 @@ AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs) :
 {
     AP_Param::setup_object_defaults(this, var_info);
     _simplification_bitmask.setall();
-    _time_of_last_good_position = AP_HAL::millis();
 }
 
 // initialise safe rtl including setting up background processes
