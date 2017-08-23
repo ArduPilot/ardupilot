@@ -371,14 +371,14 @@ bool AP_SafeRTL::routine_cleanup()
 {
     // We only do a routine cleanup if the memory is almost full. Cleanup deletes
     // points which are potentially useful, so it would be bad to clean up if we don't have to
-    if (_last_index < _path_points_max - 10) {
+    if (_last_index < MAX(_path_points_max - SAFERTL_CLEANUP_START_MARGIN, 0)) {
         return true;
     }
 
     int16_t potential_amount_to_simplify = SAFERTL_POINTS_MAX - _simplify_bitmask.count();
 
     // if simplifying will remove more than 10 points, just do it
-    if (potential_amount_to_simplify >= 10) {
+    if (potential_amount_to_simplify >= SAFERTL_CLEANUP_POINT_MIN) {
         zero_points_by_simplify_bitmask();
         remove_empty_points();
         // end by resetting the state of the cleanup methods.
@@ -394,8 +394,8 @@ bool AP_SafeRTL::routine_cleanup()
     }
 
     // if pruning could remove 10+ points, prune loops until 10 or more points have been removed (doesn't necessarily prune all loops)
-    if (potential_amount_to_prune >= 10) {
-        zero_points_by_loops(10);
+    if (potential_amount_to_prune >= SAFERTL_CLEANUP_POINT_MIN) {
+        zero_points_by_loops(SAFERTL_CLEANUP_POINT_MIN);
         remove_empty_points();
         // end by resetting the state of the cleanup methods.
         reset_simplification();
@@ -404,9 +404,9 @@ bool AP_SafeRTL::routine_cleanup()
     }
 
     // as a last resort, see if pruning and simplifying together would remove 10+ points.
-    if (potential_amount_to_prune + potential_amount_to_simplify >= 10) {
+    if (potential_amount_to_prune + potential_amount_to_simplify >= SAFERTL_CLEANUP_POINT_MIN) {
         zero_points_by_simplify_bitmask();
-        zero_points_by_loops(10);
+        zero_points_by_loops(SAFERTL_CLEANUP_POINT_MIN);
         remove_empty_points();
         // end by resetting the state of the cleanup methods.
         reset_simplification();
