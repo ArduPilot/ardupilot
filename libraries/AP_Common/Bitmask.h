@@ -88,6 +88,11 @@ public:
         return sum;
     }
 
+    // return number of bits available (may be slightly larger than number requested in constructor)
+    uint16_t size() {
+        return numwords * 32;
+    }
+
 private:
     uint16_t numwords;
     uint32_t *bits;
