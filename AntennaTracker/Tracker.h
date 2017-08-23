@@ -93,8 +93,8 @@ private:
     Parameters g;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
- 
+    AP_Scheduler scheduler = AP_Scheduler::create();
+
     // notification object for LEDs, buzzers etc
     AP_Notify notify;
 

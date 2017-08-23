@@ -175,7 +175,7 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler scheduler = AP_Scheduler::create();
 
     // AP_Notify instance
     AP_Notify notify;
