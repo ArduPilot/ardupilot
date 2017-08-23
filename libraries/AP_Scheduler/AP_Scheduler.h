@@ -51,9 +51,14 @@
 class AP_Scheduler
 {
 public:
-    // constructor
-    AP_Scheduler(void);
-    
+    static AP_Scheduler create() { return AP_Scheduler{}; }
+
+    constexpr AP_Scheduler(AP_Scheduler &&other) = default;
+
+    /* Do not allow copies */
+    AP_Scheduler(const AP_Scheduler &other) = delete;
+    AP_Scheduler &operator=(const AP_Scheduler&) = delete;
+
     FUNCTOR_TYPEDEF(task_fn_t, void);
 
     struct Task {
@@ -100,12 +105,14 @@ public:
     static int8_t current_task;
 
 private:
+    AP_Scheduler();
+
     // used to enable scheduler debugging
     AP_Int8 _debug;
 
     // overall scheduling rate in Hz
     AP_Int16 _loop_rate_hz;  // The value of this variable can be changed with the non-initialization. (Ex. Tuning by GDB)
-    
+
     // progmem list of tasks to run
     const struct Task *_tasks;
 
