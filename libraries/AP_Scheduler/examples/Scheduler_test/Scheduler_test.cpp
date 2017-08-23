@@ -17,7 +17,7 @@ public:
 private:
 
     AP_InertialSensor ins = AP_InertialSensor::create();
-    AP_Scheduler scheduler;
+    AP_Scheduler scheduler = AP_Scheduler::create();
 
     uint32_t ins_counter;
     static const AP_Scheduler::Task scheduler_tasks[];
