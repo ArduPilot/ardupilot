@@ -48,6 +48,18 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     AP_GROUPEND
 };
 
+DataFlash_Class::DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask)
+    : _firmware_string(firmware_string)
+    , _log_bitmask(log_bitmask)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    if (_instance != nullptr) {
+        AP_HAL::panic("DataFlash must be singleton");
+    }
+
+    _instance = this;
+}
+
 void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_types)
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Preparing log system");
