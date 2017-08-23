@@ -349,7 +349,7 @@ void AP_SafeRTL::detect_loops()
                     return;
                 }
                 // int promotion rules disallow using i+1 and j+1
-                _prunable_loops[++_prunable_loops_last_index] = {(++_prune_current_i)--,(++j)--,dp.point};
+                _prunable_loops[++_prunable_loops_last_index] = {(++_prune_current_i)--,(++j)--,dp.midpoint};
             }
             j++;
         }
@@ -476,7 +476,7 @@ void AP_SafeRTL::zero_points_by_loops(uint16_t points_to_delete)
                 _path[j].zero();
             }
         }
-        _path[(int16_t)((l.start_index+l.end_index)/2.0)] = l.halfway_point;
+        _path[(int16_t)((l.start_index+l.end_index)/2.0)] = l.midpoint;
         removed_points += l.end_index - l.start_index - 1;
         if (removed_points > points_to_delete) {
             return;
@@ -485,17 +485,17 @@ void AP_SafeRTL::zero_points_by_loops(uint16_t points_to_delete)
 }
 
 /**
-*  Removes all NULL points from the path, and shifts remaining items to correct position.
+*  Removes all 0,0,0 points from the path, and shifts remaining items to correct position.
 *  The first item will not be removed.
 */
 void AP_SafeRTL::remove_empty_points()
 {
-    int16_t i = 0;
-    int16_t j = 0;
-    int16_t removed = 0;
-    while (++i <= _last_index) { // never removes the first item. This should always be {0,0,0}
-        if (!_path[i].is_zero()) {
-            _path[++j] = _path[i];
+    int16_t src = 0;
+    int16_t dest = 0;
+    uint16_t removed = 0;
+    while (++src <= _last_index) { // never removes the first point
+        if (!_path[src].is_zero()) {
+            _path[++dest] = _path[src];
         } else {
             removed++;
         }
@@ -542,8 +542,8 @@ AP_SafeRTL::dist_point AP_SafeRTL::segment_segment_dist(const Vector3f &p1, cons
         // difference between two closest points
         Vector3f dP = line_start_diff+line1*t1-line2*t2;
 
-        Vector3f halfway_point = (p1+line1*t1 + p3+line2*t2)/2.0f;
-        return {dP.length(), halfway_point};
+        Vector3f midpoint = (p1+line1*t1 + p3+line2*t2)/2.0f;
+        return {dP.length(), midpoint};
     }
 }
 

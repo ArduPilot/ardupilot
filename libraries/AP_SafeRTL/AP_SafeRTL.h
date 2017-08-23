@@ -114,7 +114,7 @@ private:
     // dist_point holds the closest distance reached between 2 line segments, and the point exactly between them
     typedef struct {
         float distance;
-        Vector3f point;
+        Vector3f midpoint;
     } dist_point;
 
     // get the closest distance between 2 line segments and the point midway between the closest points
@@ -150,7 +150,7 @@ private:
     typedef struct {
         int16_t start_index;
         int16_t end_index;
-        Vector3f halfway_point;
+        Vector3f midpoint;
     } prune_loop_t;
     prune_loop_t* _prunable_loops;  // the result of the pruning algorithm
     int16_t _prunable_loops_last_index = -1;
