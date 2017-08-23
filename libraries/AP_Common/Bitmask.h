@@ -35,6 +35,13 @@ public:
         bits[word] |= (1U << ofs);
     }
 
+    // set all bits
+    void setall(void) {
+        for (uint16_t i=0; i<numwords; i++) {
+            bits[i] = 0xffffffff;
+        }
+    }
+
     // clear given bitnumber
     void clear(uint16_t bit) {
         uint16_t word = bit/32;
@@ -65,7 +72,27 @@ public:
         }
         return true;
     }
-    
+
+    // return number of bits set
+    uint16_t count() {
+        uint16_t sum = 0;
+        for (uint16_t i=0; i<numwords; i++) {
+            if (sizeof(bits[i]) <= sizeof(int)) {
+                sum += __builtin_popcount(bits[i]);
+            } else if (sizeof(bits[i]) <= sizeof(long)) {
+                sum += __builtin_popcountl(bits[i]);
+            } else {
+                sum += __builtin_popcountll(bits[i]);
+            }
+        }
+        return sum;
+    }
+
+    // return number of bits available (may be slightly larger than number requested in constructor)
+    uint16_t size() {
+        return numwords * 32;
+    }
+
 private:
     uint16_t numwords;
     uint32_t *bits;
