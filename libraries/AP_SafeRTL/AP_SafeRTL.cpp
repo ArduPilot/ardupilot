@@ -18,7 +18,8 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
     // @Param: ACCURACY
     // @DisplayName: SafeRTL _accuracy
-    // @Description: SafeRTL _accuracy. The distance flown (in meters) before a new point is dropped.
+    // @Description: SafeRTL _accuracy. The minimum distance between points.
+    // @Units: m
     // @Range: 0 10
     // @User: Advanced
     AP_GROUPINFO("ACCURACY", 0, AP_SafeRTL, _accuracy, SAFERTL_ACCURACY_DEFAULT),
