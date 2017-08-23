@@ -24,13 +24,13 @@ const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ACCURACY", 0, AP_SafeRTL, _accuracy, SAFERTL_ACCURACY_DEFAULT),
 
-    // @Param: PATH_LEN
-    // @DisplayName: SafeRTL path length
-    // @Description: SafeRTL path length. The maximum number of points saved by SafeRTL. Set to 0 to disable SafeRTL.
+    // @Param: POINTS_MAX
+    // @DisplayName: SafeRTL maximum number of points on path
+    // @Description: SafeRTL maximum number of points on path. Set to 0 to disable SafeRTL.  100 points consumes about 3k of memory.
     // @Range: 0 500
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("PATH_LEN", 1, AP_SafeRTL, _desired_path_len, SAFERTL_PATH_LEN_DEFAULT),
+    AP_GROUPINFO("POINTS_MAX", 1, AP_SafeRTL, _points_max, SAFERTL_POINTS_MAX_DEFAULT),
 
     AP_GROUPEND
 };
@@ -75,7 +75,7 @@ AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs) :
 void AP_SafeRTL::init()
 {
     // check if user has disabled SafeRTL
-    if (_desired_path_len == 0 || is_zero(_accuracy)) {
+    if (_points_max == 0 || is_zero(_accuracy)) {
         _active = false;
         return;
     }
@@ -86,12 +86,12 @@ void AP_SafeRTL::init()
     }
 
     // constrain the path length, in case the user decided to make the path unreasonably long.
-    _desired_path_len = MIN(SAFERTL_PATH_LEN_MAX, _desired_path_len);
+    _points_max = MIN(SAFERTL_PATH_LEN_MAX, _points_max);
 
     // allocate arrays
-    _path = (Vector3f*)malloc(_desired_path_len * sizeof(Vector3f));
-    _prunable_loops = (loop*)malloc(_desired_path_len * sizeof(loop));
-    _simplification_stack = (start_finish*)malloc(_desired_path_len * sizeof(start_finish));
+    _path = (Vector3f*)malloc(_points_max * sizeof(Vector3f));
+    _prunable_loops = (loop*)malloc(_points_max * sizeof(loop));
+    _simplification_stack = (start_finish*)malloc(_points_max * sizeof(start_finish));
 
     // check if memory allocation failed
     if (_path == nullptr || _prunable_loops == nullptr || _simplification_stack == nullptr) {
@@ -103,7 +103,7 @@ void AP_SafeRTL::init()
         _initialised = false;
         return;
     } else {
-        _current_path_len = _desired_path_len;
+        _current_path_len = _points_max;
         _initialised = true;
     }
 
@@ -139,7 +139,7 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
     }
 
     // constrain the path length, in case the user decided to make the path unreasonably long.
-    _desired_path_len = MIN(SAFERTL_PATH_LEN_MAX, _desired_path_len);
+    _points_max = MIN(SAFERTL_PATH_LEN_MAX, _points_max);
 
     _last_index = 0;
     _path[_last_index] = current_pos;
@@ -570,5 +570,5 @@ float AP_SafeRTL::point_line_dist(const Vector3f &point, const Vector3f &line1, 
 // logging
 void AP_SafeRTL::log_action(SRTL_Actions action, const Vector3f point)
 {
-    DataFlash_Class::instance()->Log_Write_SRTL(_active, _last_index, _desired_path_len, action, point);
+    DataFlash_Class::instance()->Log_Write_SRTL(_active, _last_index, _points_max, action, point);
 }

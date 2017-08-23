@@ -12,7 +12,7 @@
 
 // definitions and macros
 #define SAFERTL_ACCURACY_DEFAULT        2.0f    // default _ACCURACY parameter value.  Points will be no closer than this distance together.
-#define SAFERTL_PATH_LEN_DEFAULT        150     // default _PATH_LEN parameter value.  High numbers improve path pruning but use more memory and CPU for cleanup. Memory used will be 20bytes * this number.
+#define SAFERTL_POINTS_MAX_DEFAULT      150     // default _POINTS_MAX parameter value.  High numbers improve path pruning but use more memory and CPU for cleanup. Memory used will be 20bytes * this number.
 #define SAFERTL_PATH_LEN_MAX            500     // path length limited to this number even if the user sets to a higher value
 #define SAFERTL_BAD_POSITION_TIMEOUT    15000   // the time in milliseconds with no valid position, before SafeRTL is disabled for the flight
 #define SAFERTL_PRUNING_DELTA (_accuracy * 0.99) // How many meters apart must two points be, such that we can assume that there is no obstacle between them.  must be smaller than _ACCURACY parameter
@@ -83,7 +83,7 @@ private:
 
     // parameters
     AP_Float _accuracy;
-    AP_Int16 _desired_path_len;
+    AP_Int16 _points_max;
 
     // perform clean-up regularly from main loop
     bool routine_cleanup();
