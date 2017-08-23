@@ -14,15 +14,6 @@ bool Copter::safe_rtl_init(bool ignore_checks)
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
 
-        // if we're within 4m of the landing point, just skip right to pre-land-positioning
-        // otherwise, begin a normal safertl procedure from the start
-        if (HYPOT(current_pos, g2.safe_rtl.get_point(0)) <= 4.0f) {
-            current_pos[2] -= 2.0f; // go to the point two meters above the landing spot, then start landing.
-            safe_rtl_state = SafeRTL_PreLandPosition;
-        } else {
-            safe_rtl_state = SafeRTL_WaitForPathCleanup;
-        }
-
         // set current target to a reasonable stopping point
         Vector3f stopping_point;
         pos_control->get_stopping_point_xy(stopping_point);
