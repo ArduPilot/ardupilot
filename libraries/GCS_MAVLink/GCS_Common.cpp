@@ -20,7 +20,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
-#include "ap_version.h"
+#include "AP_Common/AP_FWVersion.h"
 #include "GCS.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
