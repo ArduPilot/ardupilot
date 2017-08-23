@@ -2,13 +2,11 @@
 
 #include <AP_Buffer/AP_Buffer.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Common/Bitmask.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS.h>
-
-#include <bitset>
-#include <vector>
 
 // definitions and macros
 #define SAFERTL_ACCURACY_DEFAULT        2.0f    // default _ACCURACY parameter value.  Points will be no closer than this distance together.
@@ -124,8 +122,7 @@ private:
     } start_finish;
     start_finish* _simplification_stack;
     int16_t _simplification_stack_last_index = -1;
-    // the result of the simplification algorithm
-    std::bitset<SAFERTL_POINTS_MAX> _simplification_bitmask;
+    Bitmask _simplification_bitmask = Bitmask(SAFERTL_POINTS_MAX);  // simplify algorithm clears bits for each point that can be removed
     // everything before _simplification_clean_until has been calculated already to be un-simplify-able. This avoids recalculating a known result.
     int16_t _simplification_clean_until;
 

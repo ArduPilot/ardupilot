@@ -73,7 +73,7 @@ AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs) :
     _ahrs(ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    _simplification_bitmask = std::bitset<SAFERTL_POINTS_MAX>().set(); //initialize to 0b1111...
+    _simplification_bitmask.setall();
     _time_of_last_good_position = AP_HAL::millis();
 }
 
@@ -295,7 +295,7 @@ void AP_SafeRTL::detect_simplifications()
         float max_dist = 0.0f;
         int16_t index = start_index;
         for (int16_t i = index + 1; i < end_index; i++) {
-            if (_simplification_bitmask[i]) {
+            if (_simplification_bitmask.get(i)) {
                 float dist = point_line_dist(_path[i], _path[start_index], _path[end_index]);
                 if (dist > max_dist) {
                     index = i;
@@ -314,7 +314,7 @@ void AP_SafeRTL::detect_simplifications()
             _simplification_stack[++_simplification_stack_last_index] = start_finish {index, end_index};
         } else {
             for (int16_t i = start_index + 1; i < end_index; i++) {
-                _simplification_bitmask[i] = false;
+                _simplification_bitmask.clear(i);
             }
         }
     }
@@ -380,7 +380,7 @@ bool AP_SafeRTL::routine_cleanup()
         return true;
     }
 
-    int16_t potential_amount_to_simplify = _simplification_bitmask.size() - _simplification_bitmask.count();
+    int16_t potential_amount_to_simplify = SAFERTL_POINTS_MAX - _simplification_bitmask.count();
 
     // if simplifying will remove more than 10 points, just do it
     if (potential_amount_to_simplify >= 10) {
@@ -432,7 +432,7 @@ void AP_SafeRTL::reset_simplification(bool hard)
     }
     _simplification_complete = false;
     _simplification_stack_last_index = -1;
-    _simplification_bitmask.set();
+    _simplification_bitmask.setall();
 }
 
 /**
@@ -453,7 +453,7 @@ void AP_SafeRTL::reset_pruning(bool hard)
 void AP_SafeRTL::zero_points_by_simplification_bitmask()
 {
     for (int16_t i = 0; i <= _last_index; i++) {
-        if (!_simplification_bitmask[i]) {
+        if (!_simplification_bitmask.get(i)) {
             _simplification_clean_until = MIN(_simplification_clean_until, i-1);
             if (_path[i] != Vector3f(0.0f, 0.0f, 0.0f)) {
                 log_action(SRTL_POINT_SIMPLIFY, _path[i]);
