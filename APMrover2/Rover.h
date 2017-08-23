@@ -130,7 +130,7 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler scheduler = AP_Scheduler::create();
 
     // mapping between input channels
     RCMapper rcmap;
