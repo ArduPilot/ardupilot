@@ -77,7 +77,13 @@ public:
     uint16_t count() {
         uint16_t sum = 0;
         for (uint16_t i=0; i<numwords; i++) {
-            sum += bits[i];
+            if (sizeof(bits[i]) <= sizeof(int)) {
+                sum += __builtin_popcount(bits[i]);
+            } else if (sizeof(bits[i]) <= sizeof(long)) {
+                sum += __builtin_popcountl(bits[i]);
+            } else {
+                sum += __builtin_popcountll(bits[i]);
+            }
         }
         return sum;
     }
