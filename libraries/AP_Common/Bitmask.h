@@ -35,6 +35,13 @@ public:
         bits[word] |= (1U << ofs);
     }
 
+    // set all bits
+    void setall(void) {
+        for (uint16_t i=0; i<numwords; i++) {
+            bits[i] = 1;
+        }
+    }
+
     // clear given bitnumber
     void clear(uint16_t bit) {
         uint16_t word = bit/32;
@@ -65,7 +72,16 @@ public:
         }
         return true;
     }
-    
+
+    // return number of bits set
+    uint16_t count() {
+        uint16_t sum = 0;
+        for (uint16_t i=0; i<numwords; i++) {
+            sum += bits[i];
+        }
+        return sum;
+    }
+
 private:
     uint16_t numwords;
     uint32_t *bits;
