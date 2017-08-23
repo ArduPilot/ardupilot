@@ -33,7 +33,8 @@ public:
     // initialise safe rtl including setting up background processes
     void init();
 
-    // clear return path and set home location.  This should be called as part of the arming procedure
+    // clear return path and set return location is position_ok is true.  This should be called as part of the arming procedure
+    // if position_ok is false, SafeRTL will not be available.
     // example sketches use method that allows providing vehicle position directly
     void reset_path(bool position_ok);
     void reset_path(bool position_ok, const Vector3f& current_pos);
