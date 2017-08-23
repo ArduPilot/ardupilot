@@ -23,8 +23,8 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 /*
   constructor for main Sub class
  */
-Sub::Sub(void) :
-    DataFlash {fwver.fw_string, g.log_bitmask},
+Sub::Sub(void)
+    : DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask)),
           mission(ahrs,
                   FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
                   FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
