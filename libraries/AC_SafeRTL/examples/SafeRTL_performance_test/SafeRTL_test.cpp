@@ -30,7 +30,7 @@ public:
 static DummyVehicle vehicle;
 
 AP_AHRS_NavEKF ahrs(vehicle.ahrs);
-AC_SafeRTL safe_rtl {ahrs};
+AP_SafeRTL safe_rtl {ahrs};
 
 void setup();
 void loop();

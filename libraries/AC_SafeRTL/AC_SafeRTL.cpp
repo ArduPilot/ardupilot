@@ -11,17 +11,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "AC_SafeRTL.h"
+#include "AP_SafeRTL.h"
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AC_SafeRTL::var_info[] = {
+const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
     // @Param: ACCURACY
     // @DisplayName: SafeRTL _accuracy
     // @Description: SafeRTL _accuracy. The distance flown (in meters) before a new point is dropped.
     // @Range: 0 10
     // @User: Advanced
-    AP_GROUPINFO("ACCURACY", 0, AC_SafeRTL, _accuracy, SAFERTL_ACCURACY_DEFAULT),
+    AP_GROUPINFO("ACCURACY", 0, AP_SafeRTL, _accuracy, SAFERTL_ACCURACY_DEFAULT),
 
     // @Param: PATH_LEN
     // @DisplayName: SafeRTL path length
@@ -29,7 +29,7 @@ const AP_Param::GroupInfo AC_SafeRTL::var_info[] = {
     // @Range: 0 500
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("PATH_LEN", 1, AC_SafeRTL, _desired_path_len, SAFERTL_PATH_LEN_DEFAULT),
+    AP_GROUPINFO("PATH_LEN", 1, AP_SafeRTL, _desired_path_len, SAFERTL_PATH_LEN_DEFAULT),
 
     AP_GROUPEND
 };
@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AC_SafeRTL::var_info[] = {
 *    will just have to wait for a bit until they are both done.
 */
 
-AC_SafeRTL::AC_SafeRTL(const AP_AHRS& ahrs) :
+AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs) :
     _ahrs(ahrs),
     _active(false),
     _simplification_stack_last_index(-1),
@@ -71,7 +71,7 @@ AC_SafeRTL::AC_SafeRTL(const AP_AHRS& ahrs) :
 }
 
 // initialise safe rtl including setting up background processes
-void AC_SafeRTL::init()
+void AP_SafeRTL::init()
 {
     // check if user has disabled SafeRTL
     if (_desired_path_len == 0 || is_zero(_accuracy)) {
@@ -107,19 +107,19 @@ void AC_SafeRTL::init()
     }
 
     // register SafeRTL cleanup methods to run in IO thread
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AC_SafeRTL::detect_simplifications, void));
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AC_SafeRTL::detect_loops, void));
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_SafeRTL::detect_simplifications, void));
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_SafeRTL::detect_loops, void));
 }
 
 // clear return path and set home location.  This should be called as part of the arming procedure
-void AC_SafeRTL::reset_path(bool position_ok)
+void AP_SafeRTL::reset_path(bool position_ok)
 {
     Vector3f current_pos;
     position_ok &= _ahrs.get_relative_position_NED_origin(current_pos);
     reset_path(position_ok, current_pos);
 }
 
-void AC_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
+void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
 {
     if (!_initialised) {
         return;
@@ -147,7 +147,7 @@ void AC_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
 }
 
 // call this a couple of times per second regardless of what mode the vehicle is in
-void AC_SafeRTL::update(bool position_ok, bool save_position)
+void AP_SafeRTL::update(bool position_ok, bool save_position)
 {
     if (!_active || !position_ok || !save_position) {
         return;
@@ -158,7 +158,7 @@ void AC_SafeRTL::update(bool position_ok, bool save_position)
     update(position_ok, current_pos);
 }
 
-void AC_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
+void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
 {
     if (!_active) {
         return;
@@ -211,7 +211,7 @@ void AC_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
 *
 *  Probably best not to run this unless cleanup_ready() is returning true
 */
-bool AC_SafeRTL::thorough_cleanup()
+bool AP_SafeRTL::thorough_cleanup()
 {
     // this should never happen but just in case
     if (!_active) {
@@ -241,7 +241,7 @@ bool AC_SafeRTL::thorough_cleanup()
 /**
 *   Returns true if the list is empty after popping this point.
 */
-bool AC_SafeRTL::pop_point(Vector3f& point)
+bool AP_SafeRTL::pop_point(Vector3f& point)
 {
     // this should never happen but just in case
     if (!_active) {
@@ -260,7 +260,7 @@ bool AC_SafeRTL::pop_point(Vector3f& point)
 *    Simplifies a 3D path, according to the Ramer-Douglas-Peucker algorithm.
 *    Returns the number of items which were removed. end_index is the index of the last element in the path.
 */
-void AC_SafeRTL::detect_simplifications()
+void AP_SafeRTL::detect_simplifications()
 {
     if (!_active || _simplification_complete || _last_index < 2) {
         return;
@@ -321,7 +321,7 @@ void AC_SafeRTL::detect_simplifications()
 *
 *   Note that this method might take a bit longer than LOOP_TIME. It only stops after it's already run longer.
 */
-void AC_SafeRTL::detect_loops()
+void AP_SafeRTL::detect_loops()
 {
     // if SafeRTL is not active OR if this algorithm has already run to completion OR there's fewer than 3 points in the path
     if (!_active || _pruning_complete || _last_index < 3) {
@@ -365,7 +365,7 @@ void AC_SafeRTL::detect_loops()
 *   Otherwise, it will run a cleanup, based on info computed by the background methods, detect_simplifications() and detect_loops().
 *   If no cleanup is possible, this method returns false. This should be treated as an error condition.
 */
-bool AC_SafeRTL::routine_cleanup()
+bool AP_SafeRTL::routine_cleanup()
 {
     // We only do a routine cleanup if the memory is almost full. Cleanup deletes
     // points which are potentially useful, so it would be bad to clean up if we don't have to
@@ -418,7 +418,7 @@ bool AC_SafeRTL::routine_cleanup()
 *   A hard reset will "forget" the optimizations that can be made. A soft reset
 *   should be used when a point is appended, a hard reset should be used when the existing path is altered.
 */
-void AC_SafeRTL::reset_simplification(bool hard)
+void AP_SafeRTL::reset_simplification(bool hard)
 {
     if (hard) {
         _simplification_clean_until = 0;
@@ -432,7 +432,7 @@ void AC_SafeRTL::reset_simplification(bool hard)
 *   A hard reset will "forget" the optimizations that can be made. A soft reset
 *   should be used when a point is appended, a hard reset should be used when the existing path is altered.
 */
-void AC_SafeRTL::reset_pruning(bool hard)
+void AP_SafeRTL::reset_pruning(bool hard)
 {
     if (hard) {
         _pruning_clean_until = 0;
@@ -443,7 +443,7 @@ void AC_SafeRTL::reset_pruning(bool hard)
     _prunable_loops_last_index = -1; // clear the loops that we've recorded
 }
 
-void AC_SafeRTL::zero_points_by_simplification_bitmask()
+void AP_SafeRTL::zero_points_by_simplification_bitmask()
 {
     for (int16_t i = 0; i <= _last_index; i++) {
         if (!_simplification_bitmask[i]) {
@@ -459,7 +459,7 @@ void AC_SafeRTL::zero_points_by_simplification_bitmask()
 /**
 *   Only prunes loops until $points_to_delete points have been removed. It does not necessarily prune all loops.
 */
-void AC_SafeRTL::zero_points_by_loops(int16_t points_to_delete)
+void AP_SafeRTL::zero_points_by_loops(int16_t points_to_delete)
 {
     int16_t removed_points = 0;
     for (int16_t i = 0; i <= _prunable_loops_last_index; i++) {
@@ -484,7 +484,7 @@ void AC_SafeRTL::zero_points_by_loops(int16_t points_to_delete)
 *  Removes all NULL points from the path, and shifts remaining items to correct position.
 *  The first item will not be removed.
 */
-void AC_SafeRTL::remove_empty_points()
+void AP_SafeRTL::remove_empty_points()
 {
     int16_t i = 0;
     int16_t j = 0;
@@ -506,7 +506,7 @@ void AC_SafeRTL::remove_empty_points()
 *  Limitation: This function does not work for parallel lines. In this case, it will return FLT_MAX. This does not matter for the path cleanup algorithm because
 *  the pruning will still occur fine between the first parallel segment and a segment which is directly before or after the second segment.
 */
-AC_SafeRTL::dist_point AC_SafeRTL::segment_segment_dist(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3, const Vector3f &p4)
+AP_SafeRTL::dist_point AP_SafeRTL::segment_segment_dist(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3, const Vector3f &p4)
 {
     Vector3f line1 = p2-p1;
     Vector3f line2 = p4-p3;
@@ -547,7 +547,7 @@ AC_SafeRTL::dist_point AC_SafeRTL::segment_segment_dist(const Vector3f &p1, cons
 /**
 *  Returns the closest distance from a point to a 3D line. The line is defined by any 2 points
 */
-float AC_SafeRTL::point_line_dist(const Vector3f &point, const Vector3f &line1, const Vector3f &line2)
+float AP_SafeRTL::point_line_dist(const Vector3f &point, const Vector3f &line1, const Vector3f &line2)
 {
     // triangle side lengths
     float a = HYPOT(point, line1);
@@ -567,7 +567,7 @@ float AC_SafeRTL::point_line_dist(const Vector3f &point, const Vector3f &line1, 
 }
 
 // logging
-void AC_SafeRTL::log_action(SRTL_Actions action, const Vector3f point)
+void AP_SafeRTL::log_action(SRTL_Actions action, const Vector3f point)
 {
     DataFlash_Class::instance()->Log_Write_SRTL(_active, _last_index, _desired_path_len, action, point);
 }

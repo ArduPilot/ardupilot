@@ -25,12 +25,12 @@
 #define SAFERTL_LOOP_TIME_US            300 // maximum time (in microseconds) that the loop finding algorithm will run before returning
 #define HYPOT(a,b)                      (a-b).length()  // macro to calculate length between two points
 
-class AC_SafeRTL {
+class AP_SafeRTL {
 
 public:
 
     // constructor
-    AC_SafeRTL(const AP_AHRS& ahrs);
+    AP_SafeRTL(const AP_AHRS& ahrs);
 
     // initialise safe rtl including setting up background processes
     void init();
