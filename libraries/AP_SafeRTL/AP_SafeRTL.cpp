@@ -79,19 +79,18 @@ AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs) :
 // initialise safe rtl including setting up background processes
 void AP_SafeRTL::init()
 {
-    // check if user has disabled SafeRTL
-    if (_points_max == 0 || is_zero(_accuracy)) {
-        _active = false;
-        return;
-    }
-
     // protect against repeated call to init
     if (_initialised) {
         return;
     }
 
     // constrain the path length, in case the user decided to make the path unreasonably long.
-    _points_max = MIN(SAFERTL_POINTS_MAX, _points_max);
+    _points_max = constrain_int16(_points_max, 0, SAFERTL_POINTS_MAX);
+
+    // check if user has disabled SafeRTL
+    if (_points_max == 0 || is_zero(_accuracy)) {
+        return;
+    }
 
     // allocate arrays
     _path = (Vector3f*)malloc(_points_max * sizeof(Vector3f));
@@ -105,7 +104,6 @@ void AP_SafeRTL::init()
         free(_path);
         free(_prunable_loops);
         free(_simplification_stack);
-        _initialised = false;
         return;
     } else {
         _current_path_len = _points_max;
