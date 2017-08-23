@@ -105,10 +105,10 @@ void AP_SafeRTL::init()
         free(_prunable_loops);
         free(_simplify_stack);
         return;
-    } else {
-        _current_path_len = _points_max;
-        _initialised = true;
     }
+
+    _current_path_len = _points_max;
+    _initialised = true;
 
     // register SafeRTL cleanup methods to run in IO thread
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_SafeRTL::detect_simplifications, void));
