@@ -141,9 +141,6 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
         return;
     }
 
-    // constrain the path length, in case the user decided to make the path unreasonably long.
-    _points_max = MIN(SAFERTL_POINTS_MAX, _points_max);
-
     _last_index = 0;
     _path[_last_index] = current_pos;
     _time_of_last_good_position = AP_HAL::millis();
