@@ -574,5 +574,5 @@ float AP_SafeRTL::point_line_dist(const Vector3f &point, const Vector3f &line1, 
 // logging
 void AP_SafeRTL::log_action(SRTL_Actions action, const Vector3f point)
 {
-    DataFlash_Class::instance()->Log_Write_SRTL(_active, _last_index, _points_max, action, point);
+    DataFlash_Class::instance()->Log_Write_SRTL(_active, _last_index, _path_points_max, action, point);
 }
