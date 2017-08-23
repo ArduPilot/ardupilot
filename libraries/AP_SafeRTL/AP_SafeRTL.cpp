@@ -130,9 +130,9 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
     }
 
     // reset simplification
-    reset_simplification(true);
+    reset_simplification();
     // reset pruning
-    reset_pruning(true);
+    reset_pruning();
     // clear path
     _last_index = 0;
 
@@ -199,10 +199,10 @@ void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
 
             // if cleanup algorithms are finished (and therefore not running), reset them
             if (_simplify_complete) {
-                reset_simplification(false);
+                restart_simplification();
             }
             if (_prune_complete) {
-                reset_pruning(false);
+                restart_pruning();
             }
         }
     }
@@ -236,8 +236,8 @@ bool AP_SafeRTL::thorough_cleanup()
     remove_empty_points();
 
     // end by resetting the state of the cleanup methods.
-    reset_simplification(true);
-    reset_pruning(true);
+    reset_simplification();
+    reset_pruning();
 
     return true;
 }
@@ -388,8 +388,8 @@ bool AP_SafeRTL::routine_cleanup()
         zero_points_by_simplify_bitmask();
         remove_empty_points();
         // end by resetting the state of the cleanup methods.
-        reset_simplification(true);
-        reset_pruning(true);
+        reset_simplification();
+        reset_pruning();
         return true;
     }
 
@@ -404,8 +404,8 @@ bool AP_SafeRTL::routine_cleanup()
         zero_points_by_loops(10);
         remove_empty_points();
         // end by resetting the state of the cleanup methods.
-        reset_simplification(true);
-        reset_pruning(true);
+        reset_simplification();
+        reset_pruning();
         return true;
     }
 
@@ -415,40 +415,44 @@ bool AP_SafeRTL::routine_cleanup()
         zero_points_by_loops(10);
         remove_empty_points();
         // end by resetting the state of the cleanup methods.
-        reset_simplification(true);
-        reset_pruning(true);
+        reset_simplification();
+        reset_pruning();
         return true;
     }
     return false;
 }
 
-/**
-*   A hard reset will "forget" the optimizations that can be made. A soft reset
-*   should be used when a point is appended, a hard reset should be used when the existing path is altered.
-*/
-void AP_SafeRTL::reset_simplification(bool hard)
+// restart simplification algorithm, should be called whenever a new point is added
+void AP_SafeRTL::restart_simplification()
 {
-    if (hard) {
-        _simplify_clean_until = 0;
-    }
     _simplify_complete = false;
     _simplify_stack_last_index = -1;
     _simplify_bitmask.setall();
 }
 
-/**
-*   A hard reset will "forget" the optimizations that can be made. A soft reset
-*   should be used when a point is appended, a hard reset should be used when the existing path is altered.
-*/
-void AP_SafeRTL::reset_pruning(bool hard)
+// reset simplification algorithm so that it will re-check all points in the path
+// should be called if the existing path is altered for example when a loop as been removed
+void AP_SafeRTL::reset_simplification()
 {
-    if (hard) {
-        _prune_clean_until = 0;
-    }
+    _simplify_clean_until = 0;
+    restart_simplification();
+}
+
+// restart pruning algorithm, should be called whenever a new point is added
+void AP_SafeRTL::restart_pruning()
+{
     _prune_complete = false;
     _prune_current_i = _prune_clean_until;
     _prune_min_j = _prune_clean_until+2;
     _prunable_loops_last_index = -1; // clear the loops that we've recorded
+}
+
+// reset pruning algorithm so that it will re-check all points in the path
+// should be called if the existing path is altered for example when a loop as been removed
+void AP_SafeRTL::reset_pruning()
+{
+    _prune_clean_until = 0;
+    restart_pruning();
 }
 
 void AP_SafeRTL::zero_points_by_simplify_bitmask()

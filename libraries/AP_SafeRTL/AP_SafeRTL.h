@@ -86,9 +86,21 @@ private:
 
     // perform clean-up regularly from main loop
     bool routine_cleanup();
-    // misc cleanup helper methods:
-    void reset_simplification(bool hard);
-    void reset_pruning(bool hard);
+
+    // restart simplification algorithm, should be called whenever a new point is added
+    void restart_simplification();
+
+    // reset simplification algorithm so that it will re-check all points in the path
+    // should be called if the existing path is altered for example when a loop as been removed
+    void reset_simplification();
+
+    // restart pruning algorithm, should be called whenever a new point is added
+    void restart_pruning();
+
+    // reset pruning algorithm so that it will re-check all points in the path
+    // should be called if the existing path is altered for example when a loop as been removed
+    void reset_pruning();
+
     void zero_points_by_simplify_bitmask();
     void zero_points_by_loops(int16_t points_to_delete);
     void remove_empty_points();
