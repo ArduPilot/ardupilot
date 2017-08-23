@@ -100,7 +100,7 @@ void AP_SafeRTL::init()
     // check if memory allocation failed
     if (_path == nullptr || _prunable_loops == nullptr || _simplify_stack == nullptr) {
         log_action(SRTL_DEACTIVATED_INIT_FAILED);
-        gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL: unavailable init failed");
+        gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL deactivated: init failed");
         free(_path);
         free(_prunable_loops);
         free(_simplify_stack);
@@ -140,7 +140,7 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
     if (!position_ok) {
         _active = false;
         log_action(SRTL_DEACTIVATED_BAD_POSITION);
-        gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL: unavailable bad position");
+        gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL deactivated: bad position");
         return;
     }
 
@@ -174,7 +174,7 @@ void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
         if (AP_HAL::millis() - _time_of_last_good_position > SAFERTL_BAD_POSITION_TIMEOUT) {
             _active = false;
             log_action(SRTL_DEACTIVATED_BAD_POSITION);
-            gcs().send_text(MAV_SEVERITY_WARNING,"SafeRTL: unavailable bad position");
+            gcs().send_text(MAV_SEVERITY_WARNING,"SafeRTL deactivated: bad position");
         }
         return;
     }
@@ -185,7 +185,7 @@ void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
     if (!routine_cleanup()) {
         _active = false;
         log_action(SRTL_DEACTIVATED_CLEANUP_FAILED);
-        gcs().send_text(MAV_SEVERITY_WARNING,"SafeRTL: unavailable path cleanup failed");
+        gcs().send_text(MAV_SEVERITY_WARNING,"SafeRTL deactivated: path cleanup failed");
         return;
     }
 
