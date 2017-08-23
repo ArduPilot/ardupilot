@@ -80,7 +80,7 @@ AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs) :
 void AP_SafeRTL::init()
 {
     // protect against repeated call to init
-    if (_initialised) {
+    if (_path != nullptr) {
         return;
     }
 
@@ -108,7 +108,6 @@ void AP_SafeRTL::init()
     }
 
     _path_points_max = _points_max;
-    _initialised = true;
 
     // register SafeRTL cleanup methods to run in IO thread
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_SafeRTL::detect_simplifications, void));
@@ -125,7 +124,7 @@ void AP_SafeRTL::reset_path(bool position_ok)
 
 void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
 {
-    if (!_initialised) {
+    if (_path == nullptr) {
         return;
     }
 

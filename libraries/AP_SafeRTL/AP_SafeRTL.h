@@ -45,7 +45,7 @@ public:
     void update(bool position_ok, const Vector3f& current_pos);
 
     // return true if safe_rtl is usable (it may become unusable if the user took off without GPS lock or the path became too long)
-    bool is_active() const { return (_initialised && _active); }
+    bool is_active() const { return _active; }
 
     // perform thorough clean-up of the return path.  This should be run just before initiating the RTL.
     // Returns true if the cleanup is complete.  This should be called intermittently and the return journey should not begin until this has returned tru
@@ -119,7 +119,6 @@ private:
     void log_action(SRTL_Actions action, const Vector3f point = Vector3f());
 
     // SafeRTL State Variables
-    bool _initialised;  // true once initialised (arrays have been allocated successfully)
     bool _active;       // true if safeRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SafeRTL will be permanently deactivated (for the remainder of the flight)
     Vector3f* _path;    // points are stored in meters from EKF origin in NED
     int16_t _path_points_max;   // after the array has been allocated, we will need to know how big it is. We can't use the parameter, because a user could change the parameter in-flight
