@@ -256,10 +256,8 @@ uint16_t AP_SafeRTL::get_num_points()
     return _last_index+1;
 }
 
-/**
-*    Simplifies a 3D path, according to the Ramer-Douglas-Peucker algorithm.
-*    Returns the number of items which were removed. end_index is the index of the last element in the path.
-*/
+// Simplifies a 3D path, according to the Ramer-Douglas-Peucker algorithm.
+// _simplify_complete is set to true when all simplifications on the path have been identified
 void AP_SafeRTL::detect_simplifications()
 {
     if (!_active || _simplify_complete || _last_index < 2) {
