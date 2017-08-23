@@ -272,10 +272,10 @@ void AP_SafeRTL::detect_simplifications()
         _simplify_stack[++_simplify_stack_last_index] = simplify_start_finish_t {0, _last_index};
     }
 
-    uint32_t start_time = AP_HAL::micros();
+    const uint32_t start_time_us = AP_HAL::micros();
     int16_t start_index, end_index;
     while (_simplify_stack_last_index >= 0) { // while there is something to do
-        if (AP_HAL::micros() - start_time > SAFERTL_SIMPLIFICATION_TIME_US) {
+        if (AP_HAL::micros() - start_time_us > SAFERTL_SIMPLIFICATION_TIME_US) {
             return;
         }
 
@@ -331,11 +331,11 @@ void AP_SafeRTL::detect_loops()
     if (!_active || _prune_complete || _last_index < 3) {
         return;
     }
-    uint32_t start_time = AP_HAL::micros();
+    const uint32_t start_time_us = AP_HAL::micros();
 
     while (_prune_current_i < _last_index - 1) {
         // if this method has run for long enough, exit
-        if (AP_HAL::micros() - start_time > SAFERTL_LOOP_TIME_US) {
+        if (AP_HAL::micros() - start_time_us > SAFERTL_LOOP_TIME_US) {
             return;
         }
 
