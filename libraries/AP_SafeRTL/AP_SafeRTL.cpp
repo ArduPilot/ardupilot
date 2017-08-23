@@ -454,7 +454,7 @@ void AP_SafeRTL::zero_points_by_simplify_bitmask()
     for (int16_t i = 0; i <= _last_index; i++) {
         if (!_simplify_bitmask.get(i)) {
             _simplify_clean_until = MIN(_simplify_clean_until, i-1);
-            if (_path[i] != Vector3f(0.0f, 0.0f, 0.0f)) {
+            if (!_path[i].is_zero()) {
                 log_action(SRTL_POINT_SIMPLIFY, _path[i]);
                 _path[i].zero();
             }
@@ -473,7 +473,7 @@ void AP_SafeRTL::zero_points_by_loops(int16_t points_to_delete)
         _prune_clean_until = MIN(_prune_clean_until, l.start_index-1);
         for (int16_t j = l.start_index; j < l.end_index; j++) {
             // zero this point if it wasn't already zeroed
-            if (_path[j] != Vector3f(0.0f, 0.0f, 0.0f)) {
+            if (!_path[j].is_zero()) {
                 log_action(SRTL_POINT_PRUNE, _path[j]);
                 _path[j].zero();
             }
@@ -496,7 +496,7 @@ void AP_SafeRTL::remove_empty_points()
     int16_t j = 0;
     int16_t removed = 0;
     while (++i <= _last_index) { // never removes the first item. This should always be {0,0,0}
-        if (_path[i] != Vector3f(0.0f, 0.0f, 0.0f)) {
+        if (!_path[i].is_zero()) {
             _path[++j] = _path[i];
         } else {
             removed++;
