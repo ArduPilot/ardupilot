@@ -268,10 +268,14 @@ void AP_SafeRTL::detect_simplifications()
 {
     if (!_active || _simplify_complete || _last_index < 2) {
         return;
-    } else if (_simplify_stack_last_index == -1) {  // if not complete but also nothing to do, we must be restarting.
+    }
+
+    // if not complete but also nothing to do, we must be restarting
+    if (_simplify_stack_last_index == -1) {
         // reset to beginning state
         _simplify_stack[++_simplify_stack_last_index] = simplify_start_finish_t {0, _last_index};
     }
+
     uint32_t start_time = AP_HAL::micros();
     int16_t start_index, end_index;
     while (_simplify_stack_last_index >= 0) { // while there is something to do
