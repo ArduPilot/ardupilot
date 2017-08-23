@@ -67,7 +67,7 @@ AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs) :
     _prunable_loops_last_index(-1)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    _simplification_bitmask = std::bitset<SAFERTL_PATH_LEN_MAX>().set(); //initialize to 0b1111...
+    _simplification_bitmask = std::bitset<SAFERTL_POINTS_MAX>().set(); //initialize to 0b1111...
     _time_of_last_good_position = AP_HAL::millis();
 }
 
@@ -86,7 +86,7 @@ void AP_SafeRTL::init()
     }
 
     // constrain the path length, in case the user decided to make the path unreasonably long.
-    _points_max = MIN(SAFERTL_PATH_LEN_MAX, _points_max);
+    _points_max = MIN(SAFERTL_POINTS_MAX, _points_max);
 
     // allocate arrays
     _path = (Vector3f*)malloc(_points_max * sizeof(Vector3f));
@@ -139,7 +139,7 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
     }
 
     // constrain the path length, in case the user decided to make the path unreasonably long.
-    _points_max = MIN(SAFERTL_PATH_LEN_MAX, _points_max);
+    _points_max = MIN(SAFERTL_POINTS_MAX, _points_max);
 
     _last_index = 0;
     _path[_last_index] = current_pos;
@@ -228,7 +228,7 @@ bool AP_SafeRTL::thorough_cleanup()
     zero_points_by_simplification_bitmask();
 
     // apply pruning, prune every single loop
-    zero_points_by_loops(SAFERTL_PATH_LEN_MAX);
+    zero_points_by_loops(SAFERTL_POINTS_MAX);
 
     remove_empty_points();
 

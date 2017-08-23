@@ -13,13 +13,13 @@
 // definitions and macros
 #define SAFERTL_ACCURACY_DEFAULT        2.0f    // default _ACCURACY parameter value.  Points will be no closer than this distance together.
 #define SAFERTL_POINTS_MAX_DEFAULT      150     // default _POINTS_MAX parameter value.  High numbers improve path pruning but use more memory and CPU for cleanup. Memory used will be 20bytes * this number.
-#define SAFERTL_PATH_LEN_MAX            500     // path length limited to this number even if the user sets to a higher value
+#define SAFERTL_POINTS_MAX              500     // the absolute maximum number of points this library can support.
 #define SAFERTL_BAD_POSITION_TIMEOUT    15000   // the time in milliseconds with no valid position, before SafeRTL is disabled for the flight
 #define SAFERTL_PRUNING_DELTA (_accuracy * 0.99) // How many meters apart must two points be, such that we can assume that there is no obstacle between them.  must be smaller than _ACCURACY parameter
 #define SAFERTL_SIMPLIFICATION_EPSILON (_accuracy * 0.5)
 #define SAFERTL_SIMPLIFICATION_STACK_LEN_MULT (2/3)+1 // the amount of memory to be allocated for the SIMPLIFICATION algorithm to write its to do list.
-// If SAFERTL_SIMPLIFICATION_STACK_LEN_MULT is too low it can cause a buffer overflow! The number to put here is int((s/2-1)+min(s/2, SAFERTL_PATH_LEN_MAX-s)), where s = pow(2, floor(log(SAFERTL_PATH_LEN_MAX)/log(2)))
-// To avoid this annoying math, a good-enough overestimate is ceil(SAFERTL_PATH_LEN_MAX*2./3.)
+// If SAFERTL_SIMPLIFICATION_STACK_LEN_MULT is too low it can cause a buffer overflow! The number to put here is int((s/2-1)+min(s/2, SAFERTL_POINTS_MAX-s)), where s = pow(2, floor(log(SAFERTL_POINTS_MAX)/log(2)))
+// To avoid this annoying math, a good-enough overestimate is ceil(SAFERTL_POINTS_MAX*2./3.)
 #define SAFERTL_SIMPLIFICATION_TIME_US  200 // maximum time (in microseconds) the simplification algorithm will run before returning
 #define SAFERTL_LOOP_BUFFER_LEN_MULT    1/4
 #define SAFERTL_LOOP_TIME_US            300 // maximum time (in microseconds) that the loop finding algorithm will run before returning
@@ -125,7 +125,7 @@ private:
     start_finish* _simplification_stack;
     int16_t _simplification_stack_last_index;
     // the result of the simplification algorithm
-    std::bitset<SAFERTL_PATH_LEN_MAX> _simplification_bitmask;
+    std::bitset<SAFERTL_POINTS_MAX> _simplification_bitmask;
     // everything before _simplification_clean_until has been calculated already to be un-simplify-able. This avoids recalculating a known result.
     int16_t _simplification_clean_until;
 
