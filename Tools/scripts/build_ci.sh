@@ -30,11 +30,19 @@ fi
 
 if [[ "$CI_BUILD_TARGET" == *"px4"* ]]; then
     export CCACHE_MAXSIZE="1500M"
-elif [[ "$CI_BUILD_TARGET" == "sitltest" ]]; then
+elif [[ "$CI_BUILD_TARGET" == "sitltest"] ||
+      ["$CI_BUILD_TARGET" == "sitltest-shub" ]]; then
     export CCACHE_MAXSIZE="300M"
 else
     export CCACHE_MAXSIZE="1000M"
 fi
+
+declare -A waf_supported_boards
+
+waf=modules/waf/waf-light
+
+# get list of boards supported by the waf build
+for board in $($waf list_boards | head -n1); do waf_supported_boards[$board]=1; done
 
 # special case for SITL testing in CI
 if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
@@ -50,14 +58,19 @@ if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
     echo "Running SITL Rover test"
     Tools/autotest/autotest.py -j2 build.APMrover2 drive.APMrover2
     exit 0
+elif [ "$CI_BUILD_TARGET" = "sitltest-shub" ]; then
+    echo "Installing pymavlink"
+    git submodule init
+    git submodule update
+    (cd modules/mavlink/pymavlink && python setup.py build install --user)
+    unset BUILDROOT
+    echo "Build SITL QuadCopter SensorHub"
+    $waf configure --board sitl --sensorhub-sink
+    $waf --target bin/arducopter
+    echo "Running SITL QuadCopter test"
+    Tools/autotest/autotest.py -j2 defaults.ArduCopter fly.ArduCopter --frame sensorhub
+    exit 0
 fi
-
-declare -A waf_supported_boards
-
-waf=modules/waf/waf-light
-
-# get list of boards supported by the waf build
-for board in $($waf list_boards | head -n1); do waf_supported_boards[$board]=1; done
 
 function get_time {
     date -u "+%s"

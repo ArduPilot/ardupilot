@@ -108,6 +108,11 @@ class VehicleInfo(object):
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
             },
+            "sensorhub": {
+                "model": "+",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter-shub.parm",
+            },
         },
     },
     "ArduPlane": {
@@ -252,7 +257,7 @@ class VehicleInfo(object):
         if "sitl-port" not in ret:
             ret["sitl-port"] = True
 
-        if opts.model is not None:
+        if opts is not None and opts.model is not None:
             ret["model"] = opts.model
 
         if (ret["model"].find("xplane") != -1 or ret["model"].find("flightaxis") != -1):
@@ -264,7 +269,7 @@ class VehicleInfo(object):
         if "waf_target" not in ret:
             ret["waf_target"] = self.default_waf_target(vehicle)
 
-        if opts.build_target is not None:
+        if opts is not None and opts.build_target is not None:
             ret["make_target"] = opts.build_target
             ret["waf_target"] = opts.build_target
 

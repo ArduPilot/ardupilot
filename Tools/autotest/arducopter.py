@@ -967,12 +967,18 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     mavproxy packets too for local viewing of the flight in real time
     """
     global homeloc
-
     if frame is None:
-        frame = '+'
+        frame = 'quad'
+
+    frame_opts = vinfo.options_for_frame(frame, 'ArduCopter', None)
+
+    if frame_opts is None:
+        model = '+'
+    else:
+        model = frame_opts['model']
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=speedup_default)
+    sitl = util.start_SITL(binary, wipe=True, model=model, home=home, speedup=speedup_default)
     mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
     mavproxy.expect('Received [0-9]+ parameters')
 
@@ -992,7 +998,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
 
-    sitl = util.start_SITL(binary, model=frame, home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb)
+    sitl = util.start_SITL(binary, model=model, home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
