@@ -47,8 +47,9 @@ public:
     // return true if safe_rtl is usable (it may become unusable if the user took off without GPS lock or the path became too long)
     bool is_active() const { return _active; }
 
-    // perform thorough clean-up of the return path.  This should be run just before initiating the RTL.
-    // Returns true if the cleanup is complete.  This should be called intermittently and the return journey should not begin until this has returned tru
+    // perform thorough cleanup including simplification, pruning and removal of all unnecessary points
+    // returns true if the thorough cleanup was completed, false if it has not yet completed
+    // this method should be called repeatedly until it returns true before initiating the return journey
     bool thorough_cleanup();
 
     // get a point on the path

@@ -207,13 +207,9 @@ void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
     }
 }
 
-/**
-*  Run this method only when preparing to initiate the RTL procedure. Returns a
-*  pointer to the cleaned-up path. Returns nullptr if the cleanup algorithms aren't ready yet.
-*  If this happens, just run this method again a bit later.
-*
-*  Probably best not to run this unless cleanup_ready() is returning true
-*/
+// perform thorough cleanup including simplification, pruning and removal of all unnecessary points
+// returns true if the thorough cleanup was completed, false if it has not yet completed
+// this method should be called repeatedly until it returns true before initiating the return journey
 bool AP_SafeRTL::thorough_cleanup()
 {
     // this should never happen but just in case
