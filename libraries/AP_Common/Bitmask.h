@@ -48,7 +48,7 @@ public:
             bits[i] = 0;
         }
     }
-    
+
     // return true if given bitnumber is set
     bool get(uint16_t bit) {
         uint16_t word = bit/32;
