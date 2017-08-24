@@ -110,7 +110,7 @@ void Rover::reset_control_switch()
 // ready auxiliary switch's position
 aux_switch_pos Rover::read_aux_switch_pos()
 {
-    uint16_t radio_in = channel_aux->get_radio_in();
+    const uint16_t radio_in = channel_aux->get_radio_in();
     if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;
     if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;
     return AUX_SWITCH_MIDDLE;
@@ -126,7 +126,7 @@ void Rover::init_aux_switch()
 void Rover::read_aux_switch()
 {
     // do not consume input during rc or throttle failsafe
-    if (failsafe.bits & FAILSAFE_EVENT_THROTTLE || failsafe.bits & FAILSAFE_EVENT_RC) {
+    if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (failsafe.bits & FAILSAFE_EVENT_RC)) {
         return;
     }
 
