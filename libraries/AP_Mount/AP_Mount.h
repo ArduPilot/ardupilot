@@ -70,7 +70,7 @@ public:
     AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc);
 
     // init - detect and initialise all mounts
-    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
+    void init(const AP_SerialManager& serial_manager);
 
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();
