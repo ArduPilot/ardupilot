@@ -45,8 +45,7 @@ public:
     virtual void set_flow_control(enum flow_control flow_control_setting) {};
     virtual enum flow_control get_flow_control(void) { return FLOW_CONTROL_DISABLE; }
 
-    virtual void enable_parity(bool on){};
-    virtual void set_parity(bool odd){};
+    virtual void configure_parity(uint8_t v){};
     virtual void set_stop_bits(int n){};
 
     /* Implementations of BetterStream virtual methods. These are

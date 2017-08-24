@@ -113,8 +113,7 @@ AP_HAL::RCOutput::sbus1_out(uint16_t *pwidth, uint8_t nchan)
 void AP_HAL::RCOutput::enable_sbus_out(UARTDriver* uart, uint16_t rate) {
     sbus1_uart = uart;
     sbus1_uart->begin(100000);
-    sbus1_uart->enable_parity(true);
-    sbus1_uart->set_parity(false);
+    sbus1_uart->configure_parity(2);    // enable even parity
     sbus1_uart->set_stop_bits(2);
     sbus_frame_interval = (1000UL * 1000UL) / rate;
 }
