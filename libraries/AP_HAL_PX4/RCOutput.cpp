@@ -560,7 +560,7 @@ void PX4RCOutput::push()
     }
 
     // send SBUS1 servo outputs
-    hal.rcout->sbus1_out();
+    hal.rcout->sbus1_out(_period, PX4_NUM_OUTPUT_CHANNELS);
 }
 
 void PX4RCOutput::timer_tick(void)
