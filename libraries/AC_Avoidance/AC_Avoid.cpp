@@ -331,20 +331,25 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     // limit acceleration
     const float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
-    bool limit_alt = false;
-    float alt_diff = 0.0f;   // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
+    bool limit_max_alt = false;
+    float alt_max_diff = 0.0f;   // distance from max altitude limit to vehicle in metres (positive means vehicle is below ceiling limit)
 
     const AP_AHRS &_ahrs = AP::ahrs();
 
-    // calculate distance below fence
-    AC_Fence *fence = AP::fence();
-    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence && (fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
-        // calculate distance from vehicle to safe altitude
+    // Vertical fence limits
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
+        AC_Fence *fence = AP::fence();
         float veh_alt;
+        // TODO: shouldn't this be relative to origin instead, to be consistent with the code 24 lines bellow?
         _ahrs.get_relative_position_D_home(veh_alt);
-        // _fence.get_safe_alt_max() is UP, veh_alt is DOWN:
-        alt_diff = fence->get_safe_alt_max() + veh_alt;
-        limit_alt = true;
+
+        // calculate distance below ceiling fence
+        if (fence && (fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
+            // calculate distance from vehicle to safe ceiling altitude
+            // fence->get_safe_alt_max() is UP, veh_alt is DOWN:
+            alt_max_diff = fence->get_safe_alt_max() + veh_alt;
+            limit_max_alt = true;
+        }
     }
 
     // calculate distance to (e.g.) optical flow altitude limit
@@ -355,27 +360,29 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         _ahrs.get_relative_position_D_origin(curr_alt)) {
         // alt_limit is UP, curr_alt is DOWN:
         const float ctrl_alt_diff = alt_limit + curr_alt;
-        if (!limit_alt || ctrl_alt_diff < alt_diff) {
-            alt_diff = ctrl_alt_diff;
-            limit_alt = true;
+        if (!limit_max_alt || (ctrl_alt_diff < alt_max_diff)) {
+            alt_max_diff = ctrl_alt_diff;
+            limit_max_alt = true;
         }
     }
 
-    // get distance from proximity sensor
+    // vertical proximity limits
     float proximity_alt_diff;
     AP_Proximity *proximity = AP::proximity();
+
+    // use distance from upward proximity sensor if closer than the ones calculated above
     if (proximity && proximity->get_upward_distance(proximity_alt_diff)) {
         proximity_alt_diff -= _margin;
-        if (!limit_alt || proximity_alt_diff < alt_diff) {
-            alt_diff = proximity_alt_diff;
-            limit_alt = true;
+        if (!limit_max_alt || (proximity_alt_diff < alt_max_diff)) {
+            alt_max_diff = proximity_alt_diff;
+            limit_max_alt = true;
         }
     }
 
     // limit climb rate
-    if (limit_alt) {
-        // do not allow climbing if we've breached the safe altitude
-        if (alt_diff <= 0.0f) {
+    if (limit_max_alt) {
+        // do not allow climbing if we've breached the safe ceiling altitude
+        if (alt_max_diff <= 0.0f) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
             // also calculate backup speed that will get us back to safe altitude
             backup_speed = -1*(get_max_speed(kP, accel_cmss_limited, -alt_diff*100.0f, dt));
@@ -383,7 +390,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         }
 
         // limit climb rate
-        const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_diff*100.0f, dt);
+        const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_max_diff*100.0f, dt);
         climb_rate_cms = MIN(max_speed, climb_rate_cms);
     }
 # endif
