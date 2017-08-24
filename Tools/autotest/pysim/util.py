@@ -194,17 +194,19 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
     cmd = []
     if valgrind and os.path.exists('/usr/bin/valgrind'):
         cmd.extend(['valgrind', '-q', '--log-file=%s' % valgrind_log_filepath(binary=binary, model=model)])
-    if gdb:
+    if gdbserver:
+        cmd.extend(['gdbserver', 'localhost:3333'])
+        if gdb:
+            # attach gdb to the gdbserver:
+            f = open("/tmp/x.gdb", "w")
+            f.write("target extended-remote localhost:3333\nc\n")
+            f.close()
+            run_cmd('screen -d -m -S ardupilot-gdb bash -c "gdb -x /tmp/x.gdb"')
+    elif gdb:
         f = open("/tmp/x.gdb", "w")
         f.write("r\n")
         f.close()
         cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
-    if gdbserver:
-        f = open("/tmp/x.gdb", "w")
-        f.write("target extended-remote localhost:3333\nc\n")
-        f.close()
-        cmd.extend(['gdbserver', 'localhost:3333'])
-        run_cmd('screen -d -m -S ardupilot-gdb bash -c "gdb -x /tmp/x.gdb"')
 
     cmd.append(binary)
     if wipe:
