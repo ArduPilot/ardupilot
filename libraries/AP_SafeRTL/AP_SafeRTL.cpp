@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
 *    a more complete description.
 *
 *    The simplification and pruning algorithms run in the background and do not alter
-*    the path in memory.  Two definitions, SAFERTL_SIMPLIFICATION_TIME_US and
+*    the path in memory.  Two definitions, SAFERTL_SIMPLIFY_TIME_US and
 *    SAFERTL_LOOP_TIME_US are used to limit how long each algorithm will be run
 *    before they save their state and return.
 *
@@ -272,7 +272,7 @@ void AP_SafeRTL::detect_simplifications()
 
     const uint32_t start_time_us = AP_HAL::micros();
     while (_simplify_stack_last_index >= 0) { // while there is something to do
-        if (AP_HAL::micros() - start_time_us > SAFERTL_SIMPLIFICATION_TIME_US) {
+        if (AP_HAL::micros() - start_time_us > SAFERTL_SIMPLIFY_TIME_US) {
             return;
         }
 
@@ -297,9 +297,9 @@ void AP_SafeRTL::detect_simplifications()
             }
         }
 
-        if (max_dist > SAFERTL_SIMPLIFICATION_EPSILON) {
+        if (max_dist > SAFERTL_SIMPLIFY_EPSILON) {
             // if the to-do list is full, give up on simplifying. This should never happen.
-            if (_simplify_stack_last_index > _path_points_max * SAFERTL_SIMPLIFICATION_STACK_LEN_MULT) {
+            if (_simplify_stack_last_index > _path_points_max * SAFERTL_SIMPLIFY_STACK_LEN_MULT) {
                 _simplify_complete = true;
                 return;
             }

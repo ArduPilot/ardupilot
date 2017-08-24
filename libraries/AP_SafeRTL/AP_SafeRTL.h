@@ -16,11 +16,11 @@
 #define SAFERTL_CLEANUP_START_MARGIN    10      // routine cleanup algorithms begin when the path array has only this many empty slots remaining
 #define SAFERTL_CLEANUP_POINT_MIN       10      // cleanup algorithms will remove points if they remove at least this many points
 #define SAFERTL_PRUNING_DELTA (_accuracy * 0.99) // How many meters apart must two points be, such that we can assume that there is no obstacle between them.  must be smaller than _ACCURACY parameter
-#define SAFERTL_SIMPLIFICATION_EPSILON (_accuracy * 0.5)
-#define SAFERTL_SIMPLIFICATION_STACK_LEN_MULT (2/3)+1 // the amount of memory to be allocated for the SIMPLIFICATION algorithm to write its to do list.
-// If SAFERTL_SIMPLIFICATION_STACK_LEN_MULT is too low it can cause a buffer overflow! The number to put here is int((s/2-1)+min(s/2, SAFERTL_POINTS_MAX-s)), where s = pow(2, floor(log(SAFERTL_POINTS_MAX)/log(2)))
+#define SAFERTL_SIMPLIFY_EPSILON (_accuracy * 0.5)
+#define SAFERTL_SIMPLIFY_STACK_LEN_MULT (2/3)+1 // the amount of memory to be allocated for the SIMPLIFICATION algorithm to write its to do list.
+// If SAFERTL_SIMPLIFY_STACK_LEN_MULT is too low it can cause a buffer overflow! The number to put here is int((s/2-1)+min(s/2, SAFERTL_POINTS_MAX-s)), where s = pow(2, floor(log(SAFERTL_POINTS_MAX)/log(2)))
 // To avoid this annoying math, a good-enough overestimate is ceil(SAFERTL_POINTS_MAX*2./3.)
-#define SAFERTL_SIMPLIFICATION_TIME_US  200 // maximum time (in microseconds) the simplification algorithm will run before returning
+#define SAFERTL_SIMPLIFY_TIME_US        200 // maximum time (in microseconds) the simplification algorithm will run before returning
 #define SAFERTL_LOOP_BUFFER_LEN_MULT    1/4
 #define SAFERTL_LOOP_TIME_US            300 // maximum time (in microseconds) that the loop finding algorithm will run before returning
 #define HYPOT(a,b)                      (a-b).length()  // macro to calculate length between two points
