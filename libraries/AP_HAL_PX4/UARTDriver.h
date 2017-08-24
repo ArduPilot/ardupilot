@@ -39,8 +39,7 @@ public:
     void set_flow_control(enum flow_control flow_control);
     enum flow_control get_flow_control(void) { return _flow_control; }
 
-    void enable_parity(bool on);
-    void set_parity(bool odd);
+    void configure_parity(uint8_t v);
     void set_stop_bits(int n);
 
 private:

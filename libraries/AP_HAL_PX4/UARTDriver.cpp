@@ -153,25 +153,25 @@ void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
     _flow_control = fcontrol;
 }
 
-void PX4UARTDriver::enable_parity(bool on) {
+void PX4UARTDriver::configure_parity(uint8_t v) {
     if (_fd == -1) {
         return;
     }
     struct termios t;
     tcgetattr(_fd, &t);
-    if (on) t.c_cflag |= PARENB;
-    else t.c_cflag &= ~PARENB;
-    tcsetattr(_fd, TCSANOW, &t);
-}
-
-void PX4UARTDriver::set_parity(bool odd) {
-    if (_fd == -1) {
-        return;
+    if (v != 0) {
+        // enable parity
+        t.c_cflag |= PARENB;
+        if (v == 1) {
+            t.c_cflag |= PARODD;
+        } else {
+            t.c_cflag &= ~PARODD;
+        }
     }
-    struct termios t;
-    tcgetattr(_fd, &t);
-    if (odd) t.c_cflag |= PARODD;
-    else t.c_cflag &= ~PARODD;
+    else {
+        // disable parity
+        t.c_cflag &= ~PARENB;
+    }
     tcsetattr(_fd, TCSANOW, &t);
 }
 
