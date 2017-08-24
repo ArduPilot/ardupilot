@@ -24,8 +24,6 @@ enum autopilot_yaw_mode {
 // Ch6... Ch12 aux switch control
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
 #define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
-#define CH6_PWM_TRIGGER_HIGH    1800
-#define CH6_PWM_TRIGGER_LOW     1200
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliary switch is in the low position (pwm <1200)
