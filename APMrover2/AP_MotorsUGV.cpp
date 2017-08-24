@@ -98,6 +98,7 @@ void AP_MotorsUGV::setup_safety_output()
 {
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
     }
@@ -205,7 +206,7 @@ void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
     // output to throttle channels
     if (armed) {
         // handle armed case
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+        output_throttle(SRV_Channel::k_throttle, throttle);
     } else {
         // handle disarmed case
         if (_disarm_disable_pwm) {
@@ -331,7 +332,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
             break;
         case SRV_Channel::k_throttleLeft:
         case SRV_Channel::k_throttleRight:
-            SRV_Channels::set_output_scaled(function,  throttle*10.0f);
+            SRV_Channels::set_output_scaled(function,  throttle * 10.0f);
             break;
         default:
             // do nothing
