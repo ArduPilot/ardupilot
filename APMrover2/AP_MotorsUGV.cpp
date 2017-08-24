@@ -98,6 +98,8 @@ void AP_MotorsUGV::setup_safety_output()
 {
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle);
+        SRV_Channels::set_trim_to_min_for(SRV_Channel::k_steering);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleLeft);
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttleRight);
     }
@@ -200,12 +202,12 @@ void AP_MotorsUGV::output(bool armed, float dt)
 void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
 {
     // always allow steering to move
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
+    set_output(SRV_Channel::k_steering, steering);
 
     // output to throttle channels
     if (armed) {
         // handle armed case
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+        set_output(SRV_Channel::k_throttle, throttle);
     } else {
         // handle disarmed case
         if (_disarm_disable_pwm) {
@@ -283,20 +285,17 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     }
 
     // send pwm value to each motor
-    output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
-    output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right);
+    set_output(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
+    set_output(SRV_Channel::k_throttleRight, 100.0f * motor_right);
 }
 
-// output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100
-void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle)
+// output value to channels.  throttle should be scaled from -100 to 100
+void AP_MotorsUGV::set_output(SRV_Channel::Aux_servo_function_t function, float value)
 {
-    // sanity check servo function
-    if (function != SRV_Channel::k_throttle && function != SRV_Channel::k_throttleLeft && function != SRV_Channel::k_throttleRight) {
-        return;
-    }
-
     // constrain output
-    throttle = constrain_float(throttle, -100.0f, 100.0f);
+    if (function != SRV_Channel::k_steering) {
+        value = constrain_float(value, -100.0f, 100.0f);
+    }
 
     // set relay if necessary
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
@@ -305,9 +304,16 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
         if (out_chan == nullptr) {
             return;
         }
-        bool relay_high = out_chan->get_reversed() ? !is_negative(throttle) : is_negative(throttle);
+        const int8_t reverse_multiplier = out_chan->get_reversed() ? -1 : 1;
+        const bool relay_high = is_negative(reverse_multiplier * value);
+
         switch (function) {
             case SRV_Channel::k_throttle:
+                _relayEvents.do_set_relay(0, relay_high);
+                break;
+            case SRV_Channel::k_steering:
+                _relayEvents.do_set_relay(1, relay_high);
+                break;
             case SRV_Channel::k_throttleLeft:
                 _relayEvents.do_set_relay(0, relay_high);
                 break;
@@ -318,18 +324,19 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
                 // do nothing
                 break;
         }
-        // brushed-with-relay motors should receive positive values
-        throttle = fabsf(throttle);
+        // invert the ouput to always have positive value calculated by calc_pwm
+        value = reverse_multiplier * fabsf(value);
     }
 
     // output to servo channel
     switch (function) {
         case SRV_Channel::k_throttle:
-            SRV_Channels::set_output_scaled(function,  throttle);
+        case SRV_Channel::k_steering:
+            SRV_Channels::set_output_scaled(function,  value);
             break;
         case SRV_Channel::k_throttleLeft:
         case SRV_Channel::k_throttleRight:
-            SRV_Channels::set_output_scaled(function,  throttle*10.0f);
+            SRV_Channels::set_output_scaled(function,  value * 10.0f);
             break;
         default:
             // do nothing
@@ -401,28 +408,28 @@ bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
             if (!SRV_Channels::function_assigned(SRV_Channel::k_throttle)) {
                 return false;
             }
-            output_throttle(SRV_Channel::k_throttle, pct);
+            set_output(SRV_Channel::k_throttle, pct);
             break;
         }
         case MOTOR_TEST_STEERING: {
             if (!SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
                 return false;
             }
-            SRV_Channels::set_output_scaled(SRV_Channel::k_steering, pct * 45.0f);
+            set_output(SRV_Channel::k_steering, pct * 45.0f);
             break;
         }
         case MOTOR_TEST_THROTTLE_LEFT: {
             if (!SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft)) {
                 return false;
             }
-            output_throttle(SRV_Channel::k_throttleLeft, pct);
+            set_output(SRV_Channel::k_throttleLeft, pct);
             break;
         }
         case MOTOR_TEST_THROTTLE_RIGHT: {
             if (!SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
                 return false;
             }
-            output_throttle(SRV_Channel::k_throttleRight, pct);
+            set_output(SRV_Channel::k_throttleRight, pct);
             break;
         }
         default:
