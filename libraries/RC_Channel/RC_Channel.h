@@ -102,6 +102,8 @@ public:
     
     bool min_max_configured() const;
     
+    AP_Int16    option; // e.g. activate EPM gripper / enable fence
+
 private:
 
     // pwm is stored here
@@ -164,7 +166,7 @@ public:
     static bool set_overrides(int16_t *overrides, const uint8_t len);  // set multiple overrides at once
 
     static void set_pwm_all(void);
-    
+
 private:
     static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
