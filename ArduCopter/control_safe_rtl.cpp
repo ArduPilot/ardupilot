@@ -22,6 +22,8 @@ bool Copter::safe_rtl_init(bool ignore_checks)
         // initialise yaw to obey user parameter
         set_auto_yaw_mode(get_default_auto_yaw_mode(true));
 
+        // wait for cleanup of return path
+        safe_rtl_state = SafeRTL_WaitForPathCleanup;
         return true;
     } else {
         return false;
