@@ -72,7 +72,7 @@
  * input arg is pointer to uart
  */
 void
-AP_HAL::RCOutput::sbus1_out()
+AP_HAL::RCOutput::sbus1_out(uint16_t *pwidth, uint8_t nchan)
 {
     if (sbus1_uart == nullptr) return;
 
@@ -86,14 +86,10 @@ AP_HAL::RCOutput::sbus1_out()
         uint8_t offset = 0;
         uint16_t value;
 
-        /* construct sbus frame representing channels 1-16  */
-        for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
-            SRV_Channel* chan = SRV_Channels::srv_channel(i);
-            if (chan != nullptr) {
-                value = (uint16_t)((chan->get_output_pwm() - SBUS_MIN) * SBUS_SCALE);
-            } else {
-                value = 0;
-            }
+        /* construct sbus frame representing channels 1 through 16 (max) */
+        if (nchan > SBUS_CHANNELS) nchan = SBUS_CHANNELS;
+        for (unsigned i = 0; i < nchan; ++i) {
+            value = (uint16_t)((pwidth[i] - SBUS_MIN) * SBUS_SCALE);
 
             /*protect from out of bounds values and limit to 11 bits*/
             if (value > 0x07ff) {
