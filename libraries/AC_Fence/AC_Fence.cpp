@@ -276,6 +276,22 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         return false;
     }
 
+    // validate FENCE_MARGIN parameter range
+    if (_margin < 0.0f) {
+        fail_msg = "Invalid FENCE_MARGIN value";
+        return false;
+    }
+
+    if (_alt_max < _alt_min) {
+        fail_msg =  "FENCE_ALT_MAX < FENCE_ALT_MIN";
+        return false;
+    }
+
+    if (_alt_max - _alt_min <= 2.0f * _margin) {
+        fail_msg =  "FENCE_MARGIN too big";
+        return false;
+    }
+
     // if we got this far everything must be ok
     return true;
 }
@@ -343,14 +359,14 @@ bool AC_Fence::check_fence_alt_min()
     _curr_alt = -_curr_alt; // translate Down to Up
 
     // check if we are under the altitude fence
-    if (_curr_alt < _alt_min) {
+    if (_curr_alt <= _alt_min) {
 
         // record distance below breach
         _alt_min_breach_distance = _alt_min - _curr_alt;
 
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_ALT_MIN) ||
-            (!is_zero(_alt_min_backup) && _curr_alt < _alt_min_backup)) {
+            (!is_zero(_alt_min_backup) && _curr_alt <= _alt_min_backup)) {
 
             // new breach
             record_breach(AC_FENCE_TYPE_ALT_MIN);
