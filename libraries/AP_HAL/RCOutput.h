@@ -127,7 +127,7 @@ public:
     // uart port for SBUS1 output
     UARTDriver* sbus1_uart = nullptr;
     uint16_t sbus_frame_interval;   // microseconds
-    virtual void sbus1_out();
+    virtual void sbus1_out(uint16_t *pwidth, uint8_t nchan);
 
     /*
      * Optional method to control the update of the motors. Derived classes
