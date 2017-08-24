@@ -2,6 +2,7 @@
 #include "AC_PosControl.h"
 #include <AP_Math/AP_Math.h>
 #include <DataFlash/DataFlash.h>
+#include "../ArduCopter/Copter.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -534,8 +535,14 @@ void AC_PosControl::run_z_controller()
     // To-Do: check these speed limits here or in the pos->rate controller
     _limit.vel_up = false;
     _limit.vel_down = false;
-    if (_vel_target.z < _speed_down_cms) {
-        _vel_target.z = _speed_down_cms;
+
+    // adjust z-acceleration based on fence FORCE FIELD
+    float target_descend_rate = _speed_down_cms;
+
+    copter.avoid.adjust_velocity_z(_p_pos_z.kP(), _vel_target.z, target_descend_rate);
+
+    if (_vel_target.z < target_descend_rate) {
+        _vel_target.z = target_descend_rate;
         _limit.vel_down = true;
     }
     if (_vel_target.z > _speed_up_cms) {
