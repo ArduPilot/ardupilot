@@ -9,8 +9,7 @@
 
 bool Copter::safe_rtl_init(bool ignore_checks)
 {
-    Vector3f current_pos;
-    if ((position_ok() || ignore_checks) && g2.safe_rtl.is_active() && ahrs.get_relative_position_NED_origin(current_pos)) {
+    if ((position_ok() || ignore_checks) && g2.safe_rtl.is_active()) {
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
 
