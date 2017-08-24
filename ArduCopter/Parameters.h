@@ -367,6 +367,8 @@ public:
 
         // 254,255: reserved
 
+        k_param_fs_severe_batt_volt = 256,
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -396,6 +398,7 @@ public:
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
+    AP_Float        fs_severe_batt_volt;
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position

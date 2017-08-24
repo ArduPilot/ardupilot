@@ -71,6 +71,32 @@ void Copter::failsafe_battery_event(void)
 
 }
 
+void Copter::failsafe_severe_battery_event(void)
+{
+    // return immediately if low battery event has already been triggered
+    if (fs_low_batt_land) {
+        return;
+    }
+    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors->armed()) {
+        if (should_disarm_on_failsafe()) {
+            init_disarm_motors();
+        } else {
+            if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
+                set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+            } else {
+                set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+            }
+        }
+    }
+
+    fs_low_batt_land = true;
+
+    // warn the ground station and log to dataflash
+    gcs_send_text(MAV_SEVERITY_WARNING,"Severely Low battery: LANDING");
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
+
+}
+
 // failsafe_gcs_check - check for ground station failsafe
 void Copter::failsafe_gcs_check()
 {

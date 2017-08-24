@@ -523,6 +523,9 @@ private:
     // handle repeated servo and relay events
     AP_ServoRelayEvents ServoRelayEvents;
 
+    // Failsafe low batt landing
+    bool fs_low_batt_land = false;
+
     // Reference to the camera object (it uses the relay object inside it)
 #if CAMERA == ENABLED
     AP_Camera camera;
@@ -957,6 +960,7 @@ private:
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();
     void failsafe_battery_event(void);
+    void failsafe_severe_battery_event(void);
     void failsafe_gcs_check();
     void failsafe_gcs_off_event(void);
     void failsafe_terrain_check();

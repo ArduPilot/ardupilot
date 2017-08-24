@@ -172,6 +172,14 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", FS_BATT_VOLTAGE_DEFAULT),
 
+    // @Param: FS_SEVERE_BATT_VOLTAGE
+    // @DisplayName: Failsafe severe battery voltage
+    // @Description: Battery voltage to trigger landing. If the battery voltage drops below this voltage then the copter will LAND
+    // @Units: Volts
+    // @Increment: 0.1
+    // @User: Standard
+    GSCALAR(fs_severe_batt_volt,    "FS_SEVERE_VOLT", FS_BATT_VOLTAGE_DEFAULT),
+
     // @Param: FS_BATT_MAH
     // @DisplayName: Failsafe battery milliAmpHours
     // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe. If the battery remaining drops below this level then the copter will RTL
