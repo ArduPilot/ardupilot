@@ -94,8 +94,12 @@ void AP_SafeRTL::init()
 
     // allocate arrays
     _path = (Vector3f*)calloc(_points_max, sizeof(Vector3f));
-    _prunable_loops = (prune_loop_t*)calloc(_points_max, sizeof(prune_loop_t));
-    _simplify_stack = (simplify_start_finish_t*)calloc(_points_max, sizeof(simplify_start_finish_t));
+
+    _prunable_loops_max = _points_max * SAFERTL_PRUNING_LOOP_BUFFER_LEN_MULT;
+    _prunable_loops = (prune_loop_t*)calloc(_prunable_loops_max, sizeof(prune_loop_t));
+
+    _simplify_stack_max = _points_max * SAFERTL_SIMPLIFY_STACK_LEN_MULT;
+    _simplify_stack = (simplify_start_finish_t*)calloc(_simplify_stack_max, sizeof(simplify_start_finish_t));
 
     // check if memory allocation failed
     if (_path == nullptr || _prunable_loops == nullptr || _simplify_stack == nullptr) {
@@ -299,7 +303,7 @@ void AP_SafeRTL::detect_simplifications()
 
         if (max_dist > SAFERTL_SIMPLIFY_EPSILON) {
             // if the to-do list is full, give up on simplifying. This should never happen.
-            if (_simplify_stack_last_index > _path_points_max * SAFERTL_SIMPLIFY_STACK_LEN_MULT) {
+            if (_simplify_stack_last_index > _simplify_stack_max) {
                 _simplify_complete = true;
                 return;
             }
@@ -342,7 +346,7 @@ void AP_SafeRTL::detect_loops()
             if (dp.distance <= SAFERTL_PRUNING_DELTA) { // if there is a loop here
                 _prune_min_j = j;
                 // if the buffer is full
-                if ( _prunable_loops_last_index >= _path_points_max * SAFERTL_LOOP_BUFFER_LEN_MULT - 1) {
+                if ( _prunable_loops_last_index >= _prunable_loops_max - 1) {
                     _prune_complete = true; // pruning is effectively complete now, since there's no reason to continue looking for them.
                     return;
                 }
