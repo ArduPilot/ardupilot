@@ -13,6 +13,7 @@
 #define AC_FENCE_TYPE_ALT_MAX                       1       // high alt fence which usually initiates an RTL
 #define AC_FENCE_TYPE_CIRCLE                        2       // circular horizontal fence (usually initiates an RTL)
 #define AC_FENCE_TYPE_POLYGON                       4       // polygon horizontal fence
+#define AC_FENCE_TYPE_ALT_MIN                       8       // min alt fence
 
 // valid actions should a fence be breached
 #define AC_FENCE_ACTION_REPORT_ONLY                 0       // report to GCS that boundary has been breached but take no further action
@@ -23,6 +24,7 @@
 #define AC_FENCE_ALT_MIN_DEFAULT                    -10.0f  // default maximum depth in meters
 #define AC_FENCE_CIRCLE_RADIUS_DEFAULT              300.0f  // default circular fence radius is 300m
 #define AC_FENCE_ALT_MAX_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further up
+#define AC_FENCE_ALT_MIN_BACKUP_DISTANCE            1.0f    // after fence is broken we recreate the fence 1m further down
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
 #define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
 
@@ -47,6 +49,9 @@ public:
 
     /// get_enabled_fences - returns bitmask of enabled fences
     uint8_t get_enabled_fences() const;
+
+    // the vehicle code should use this to disable low altitude fence
+    void enable_low_alt(bool value);
 
     /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
     bool pre_arm_check(const char* &fail_msg) const;
@@ -79,7 +84,7 @@ public:
     /// get_safe_alt - returns maximum safe altitude (i.e. alt_max - margin)
     float get_safe_alt_max() const { return _alt_max - _margin; }
 
-    /// get_safe_alt_min - returns the minimum safe altitude (i.e. alt_min - margin)
+    /// get_safe_alt_min - returns the minimum safe altitude (i.e. alt_min + margin)
     float get_safe_alt_min() const { return _alt_min + _margin; }
 
     /// get_radius - returns the fence radius in meters
@@ -107,6 +112,7 @@ public:
     void handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg);
 
     static const struct AP_Param::GroupInfo var_info[];
+    bool            _low_alt_fence_enabled;
 
     // methods for mavlink SYS_STATUS message (send_extended_status1)
     bool sys_status_present() const;
@@ -117,6 +123,9 @@ private:
 
     /// check_fence_alt_max - true if alt fence has been newly breached
     bool check_fence_alt_max();
+
+    /// check_fence_alt_min - true if minimum altitude fence has been newly breached
+    bool check_fence_alt_min();
 
     /// check_fence_polygon - true if polygon fence has been newly breached
     bool check_fence_polygon();
@@ -153,15 +162,17 @@ private:
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
+    float           _alt_min_backup;        // backup altitude lower limit in meters used to refire the breach if the vehicle continues to move further away
     float           _circle_radius_backup;  // backup circle fence radius in meters used to refire the breach if the vehicle continues to move further away
 
     // breach distances
     float           _alt_max_breach_distance;   // distance above the altitude max
+    float           _alt_min_breach_distance;   // distance below the altitude min
     float           _circle_breach_distance;    // distance beyond the circular fence
 
     // other internal variables
     float           _home_distance;         // distance from home in meters (provided by main code)
-    float _curr_alt;
+    float           _curr_alt;
 
 
     // breach information
