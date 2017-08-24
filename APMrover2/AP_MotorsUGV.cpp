@@ -129,9 +129,9 @@ void AP_MotorsUGV::setup_servo_output()
     // k_throttle are in power percent so -100 ... 100
     SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
 
-    // skid steering left/right throttle as -1000 to 1000 values
-    SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
-    SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
+    // skid steering left/right throttle as -100 to 100 values
+    SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  100);
+    SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 100);
 }
 
 // set steering as a value from -4500 to +4500
@@ -329,7 +329,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
             break;
         case SRV_Channel::k_throttleLeft:
         case SRV_Channel::k_throttleRight:
-            SRV_Channels::set_output_scaled(function,  throttle*10.0f);
+            SRV_Channels::set_output_scaled(function,  throttle);
             break;
         default:
             // do nothing
