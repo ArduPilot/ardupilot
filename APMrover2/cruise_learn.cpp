@@ -3,20 +3,19 @@
 // start cruise throttle and speed learning
 void Rover::cruise_learn_start()
 {
-    // if disarmed do nothing
-    if (!arming.is_armed()) {
+    // if disarmed or no speed available do nothing
+    float speed;
+    if (!arming.is_armed() || !g2.attitude_control.get_forward_speed(speed)) {
         cruise_learn.learning = false;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning NOT stated");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning NOT started");
         return;
     }
-    // when switch is high, start learning
-    float speed;
-    if (g2.attitude_control.get_forward_speed(speed)) {
-        cruise_learn.learning = true;
-        cruise_learn.speed_filt.reset(speed);
-        cruise_learn.throttle_filt.reset(g2.motors.get_throttle());
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning started");
-    }
+    // start learning
+    cruise_learn.learning = true;
+    cruise_learn.speed_filt.reset(speed);
+    cruise_learn.throttle_filt.reset(g2.motors.get_throttle());
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning started");
+    // To-Do: add dataflash logging of learning started event
 }
 
 // update cruise learning with latest speed and throttle
@@ -37,8 +36,8 @@ void Rover::cruise_learn_complete()
 {
     // when switch is moved low, save learned cruise value
     if (cruise_learn.learning) {
-        float thr = cruise_learn.throttle_filt.get();
-        float speed = cruise_learn.speed_filt.get();
+        const float thr = cruise_learn.throttle_filt.get();
+        const float speed = cruise_learn.speed_filt.get();
         if (thr >= 10.0f && thr <= 100.0f && is_positive(speed)) {
             g.throttle_cruise.set_and_save(thr);
             g.speed_cruise.set_and_save(speed);
@@ -47,5 +46,6 @@ void Rover::cruise_learn_complete()
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning failed");
         }
         cruise_learn.learning = false;
+        // To-Do: add dataflash logging of learning completion event
     }
 }
