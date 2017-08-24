@@ -133,7 +133,6 @@ void DFMessageWriter_WriteSysInfo::process() {
                 return; // call me again
             }
         }
-        FALLTHROUGH;
     }
 
     _finished = true;  // all done!
