@@ -33,7 +33,6 @@
 #include <ctype.h>
 #include <stdio.h>
 
-#define FTDI_DEBUG 0
 #define RP_DEBUG_LEVEL 0
 
 #if RP_DEBUG_LEVEL
@@ -154,16 +153,6 @@ void AP_Proximity_RPLidarA2::reset_rplidar()
     if (_uart == nullptr) {
         return;
     }
-#if FTDI_DEBUG
-    _uart->write(0x32); //SP as padding for ftdi cable
-    _uart->write(0x32);
-    _uart->write(0x32); //SP as padding for ftdi cable
-    _uart->write(0x32);
-    _uart->write(0x32); //SP as padding for ftdi cable
-    _uart->write(0x32);
-    _uart->write(0x32); //SP as padding for ftdi cable
-    _uart->write(0x32);
-#endif
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_RESET};
     _uart->write(tx_buffer, 2);
     _resetted = true;                   ///< be aware of extra 63 bytes coming after reset containing FW information
@@ -241,16 +230,6 @@ void AP_Proximity_RPLidarA2::set_scan_mode()
     if (_uart == nullptr) {
         return;
     }
-#if FTDI_DEBUG
-    _uart->write(0x32); //SP as padding for ftdi cable
-    _uart->write(0x32);
-    _uart->write(0x32); //SP as padding for ftdi cable
-    _uart->write(0x32);
-    _uart->write(0x32); //SP as padding for ftdi cable
-    _uart->write(0x32);
-    _uart->write(0x32); //SP as padding for ftdi cable
-    _uart->write(0x32);
-#endif
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_SCAN};
     _uart->write(tx_buffer, 2);
     _last_request_ms = AP_HAL::millis();
