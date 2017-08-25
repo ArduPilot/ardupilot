@@ -26,14 +26,24 @@
 #define RANGEFINDER_PREARM_ALT_MAX_CM           200
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 
-class AP_RangeFinder_Backend; 
- 
+class AP_RangeFinder_Backend;
+
 class RangeFinder
 {
-public:
     friend class AP_RangeFinder_Backend;
 
-    RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default);
+public:
+    static RangeFinder create(AP_SerialManager &_serial_manager,
+                              enum Rotation orientation_default)
+    {
+        return RangeFinder(_serial_manager, orientation_default);
+    }
+
+    constexpr RangeFinder(RangeFinder &&other) = default;
+
+    /* Do not allow copies */
+    RangeFinder(const RangeFinder &other) = delete;
+    RangeFinder &operator=(const RangeFinder&) = delete;
 
     // RangeFinder driver types
     enum RangeFinder_Type {
@@ -156,6 +166,8 @@ public:
 
 
 private:
+    RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default);
+
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances:3;
