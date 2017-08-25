@@ -78,10 +78,9 @@ for t in $CI_BUILD_TARGET; do
             fi
 
             start_time=$(get_time)
-            make $t -j2
+            CCACHE_DISABLE="true" make $t -j2
             diff_time=$(($(get_time)-$start_time))
             echo -e "\033[32m'make' finished successfully (${diff_time}s)\033[0m"
-            ccache -s && ccache -z
             popd
         done
     fi
