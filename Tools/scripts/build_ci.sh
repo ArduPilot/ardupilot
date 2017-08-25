@@ -44,11 +44,11 @@ if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
     (cd modules/mavlink/pymavlink && python setup.py build install --user)
     unset BUILDROOT
     echo "Running SITL QuadCopter test"
-    Tools/autotest/autotest.py -j2 build.ArduCopter fly.ArduCopter
+    Tools/autotest/autotest.py build.ArduCopter fly.ArduCopter
     echo "Running SITL QuadPlane test"
-    Tools/autotest/autotest.py -j2 build.ArduPlane fly.QuadPlane
+    Tools/autotest/autotest.py build.ArduPlane fly.QuadPlane
     echo "Running SITL Rover test"
-    Tools/autotest/autotest.py -j2 build.APMrover2 drive.APMrover2
+    Tools/autotest/autotest.py build.APMrover2 drive.APMrover2
     exit 0
 fi
 
