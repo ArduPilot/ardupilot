@@ -281,13 +281,12 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
     hover(mavproxy, mav)
-    failed = False
 
     # fly east 60 meters
     print("# Going forward %u meters" % side)
     mavproxy.send('rc 2 1350\n')
     if not wait_distance(mav, side, 5, 60):
-        failed = True
+        return False
     mavproxy.send('rc 2 1500\n')
 
     # pull throttle low
