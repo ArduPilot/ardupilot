@@ -174,6 +174,21 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_overruns;
 
     const char *last_io_operation = "";
+
+    struct df_stats {
+        uint16_t blocks;
+        uint32_t bytes;
+        uint32_t buf_space_min;
+        uint32_t buf_space_max;
+        uint32_t buf_space_sigma;
+    };
+    struct df_stats stats;
+
+    void Log_Write_DataFlash_Stats_File(const struct df_stats &_stats);
+    void df_stats_gather(uint16_t bytes_written);
+    void df_stats_log();
+    void df_stats_clear();
+
 };
 
 #endif // HAL_OS_POSIX_IO
