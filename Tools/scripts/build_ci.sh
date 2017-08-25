@@ -65,8 +65,8 @@ function get_time {
 
 echo "Targets: $CI_BUILD_TARGET"
 for t in $CI_BUILD_TARGET; do
-    # only do make-based builds for GCC when target is PX4 or when launched by a scheduled job
-    if [[ "$cxx_compiler" != "clang++" && ( $t == "px4"* || -n ${CI_CRON_JOB+1} ) ]]; then
+    # only do make-based builds for GCC, when target is PX4-v3 or build is launched by a scheduled job and target is a PX4 board or SITL
+    if [[ "$cxx_compiler" != "clang++" && ($t == "px4-v3" || (-n ${CI_CRON_JOB+1} && ($t == "px4"* || $t == "sitl"))) ]]; then
         echo "Starting make based build for target ${t}..."
         for v in "ArduPlane" "ArduCopter" "APMrover2" "ArduSub" "AntennaTracker"; do
             echo "Building $v for ${t}..."
@@ -84,15 +84,6 @@ for t in $CI_BUILD_TARGET; do
             ccache -s && ccache -z
             popd
         done
-
-        if [[ $t == linux ]]; then
-            echo "Building Replay for ${t}..."
-
-            pushd "Tools/Replay"
-            make clean
-            make -j2
-            popd
-        fi
     fi
 
     if [[ -n ${waf_supported_boards[$t]} && -z ${CI_CRON_JOB+1} ]]; then
