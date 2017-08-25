@@ -174,7 +174,6 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
 {
     char *filename = _log_file_name(lognum);
     if (filename == nullptr) {
-        // internal_error();
         return false; // ?!
     }
     bool ret = file_exists(filename);
@@ -290,7 +289,7 @@ uint16_t DataFlash_File::find_oldest_log()
     // doing a *lot* of asprintf()s and stat()s
     DIR *d = opendir(_log_directory);
     if (d == nullptr) {
-        // internal_error();
+        internal_error();
         return 0;
     }
 
@@ -353,7 +352,7 @@ void DataFlash_File::Prep_MinSpace()
     do {
         float avail = avail_space_percent();
         if (is_equal(avail, -1.0f)) {
-            // internal_error()
+            internal_error();
             break;
         }
         if (avail >= min_avail_space_percent) {
@@ -361,12 +360,12 @@ void DataFlash_File::Prep_MinSpace()
         }
         if (count++ > MAX_LOG_FILES+10) {
             // *way* too many deletions going on here.  Possible internal error.
-            // internal_error();
+            internal_error();
             break;
         }
         char *filename_to_remove = _log_file_name(log_to_remove);
         if (filename_to_remove == nullptr) {
-            // internal_error();
+            internal_error();
             break;
         }
         if (file_exists(filename_to_remove)) {
@@ -380,7 +379,7 @@ void DataFlash_File::Prep_MinSpace()
                     // sequence of files...  however, there may be still
                     // files out there, so keep going.
                 } else {
-                    // internal_error();
+                    internal_error();
                     break;
                 }
             } else {
