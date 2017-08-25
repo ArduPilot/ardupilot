@@ -118,7 +118,7 @@ private:
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF2 EKF2{&ahrs, barometer, rng};
     NavEKF3 EKF3{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rng, EKF2, EKF3};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs{ins, barometer, gps};
 #endif
