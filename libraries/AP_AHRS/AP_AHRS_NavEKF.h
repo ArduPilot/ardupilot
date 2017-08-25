@@ -45,7 +45,7 @@ public:
     };
 
     // Constructor
-    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
+    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps,
                    NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
 
     // return the smoothed gyro vector corrected for drift
