@@ -122,8 +122,6 @@ public:
     virtual void vehicle_was_disarmed() { };
 
 protected:
-    uint32_t dropped;
-    uint8_t internal_errors; // uint8_t - wishful thinking?
 
     DataFlash_Class &_front;
 
@@ -154,7 +152,7 @@ protected:
     DFMessageWriter_DFLogStart *_startup_messagewriter;
     bool _writing_startup_messages;
 
-    uint32_t _internal_errors;
+    uint8_t _internal_errors;
     uint32_t _dropped;
 
     // must be called when a new log is being started:
