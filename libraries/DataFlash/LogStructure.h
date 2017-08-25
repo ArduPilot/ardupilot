@@ -41,6 +41,18 @@ struct PACKED log_Parameter {
     float value;
 };
 
+struct PACKED log_DSF {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint32_t dropped;
+    uint8_t  internal_errors;
+    uint16_t blocks;
+    uint32_t bytes;
+    uint32_t buf_space_min;
+    uint32_t buf_space_max;
+    uint32_t buf_space_avg;
+};
+
 struct PACKED log_GPS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1142,6 +1154,8 @@ Format characters in the format string for binary log messages
       "IMT3",IMT_FMT,IMT_LABELS }, \
     { LOG_ORGN_MSG, sizeof(log_ORGN), \
       "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt" }, \
+    { LOG_DF_FILE_STATS, sizeof(log_DSF), \
+      "DSF", "QIBHIIII", "TimeUS,Dp,IErr,Blk,Bytes,FMn,FMx,FAv" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
       "RPM",  "Qff", "TimeUS,rpm1,rpm2" }, \
     { LOG_GIMBAL1_MSG, sizeof(log_Gimbal1), \
@@ -1295,6 +1309,8 @@ enum LogMessages {
     LOG_AOA_SSA_MSG,
     LOG_BEACON_MSG,
     LOG_PROXIMITY_MSG,
+    LOG_DF_FILE_STATS,
+
 };
 
 enum LogOriginType {
