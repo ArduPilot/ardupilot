@@ -126,9 +126,10 @@ def build_examples():
 def build_parameters():
     """Run the param_parse.py script."""
     print("Running param_parse.py")
-    if util.run_cmd(util.reltopdir('Tools/autotest/param_metadata/param_parse.py'), directory=util.reltopdir('.')) != 0:
-        print("Failed param_parse.py")
-        return False
+    for vehicle in 'ArduPlane', 'ArduCopter', 'ArduSub', 'APMrover2', 'AntennaTracker':
+        if util.run_cmd([util.reltopdir('Tools/autotest/param_metadata/param_parse.py'), '--vehicle', vehicle], directory=util.reltopdir('.')) != 0:
+            print("Failed param_parse.py (%s)" % vehicle)
+            return False
     return True
 
 
