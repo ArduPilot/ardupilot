@@ -29,29 +29,7 @@
 
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
-#include <GCS_MAVLink/GCS.h>
-#include <AP_Common/AP_Common.h>      ///< using overloaded uart->write() function for transmitting HEX bytes
-
-#define COMM_ACTIVITY_TIMEOUT_MS        200
-#define RESET_RPA2_WAIT_MS              8
-#define RESYNC_TIMEOUT                  5000
-
-// Commands
-//-----------------------------------------
-
-// Commands without payload and response
-#define RPLIDAR_PREAMBLE               0xA5
-#define RPLIDAR_CMD_STOP               0x25
-#define RPLIDAR_CMD_SCAN               0x20
-#define RPLIDAR_CMD_FORCE_SCAN         0x21
-#define RPLIDAR_CMD_RESET              0x40
-
-// Commands without payload but have response
-#define RPLIDAR_CMD_GET_DEVICE_INFO    0x50
-#define RPLIDAR_CMD_GET_DEVICE_HEALTH  0x52
-
-// Commands with payload and have response
-#define RPLIDAR_CMD_EXPRESS_SCAN       0x82
+#include <AP_HAL/AP_HAL.h>                   ///< for UARTDriver
 
 
 class AP_Proximity_RPLidarA2 : public AP_Proximity_Backend
@@ -106,7 +84,6 @@ private:
 
     // reply related variables
     AP_HAL::UARTDriver *_uart;
-  //  char element_buf[2][10];
     uint8_t _descriptor[7];
     char _rp_systeminfo[63];
     bool _descriptor_data;
@@ -121,8 +98,9 @@ private:
     uint8_t _element_len[2];
     uint8_t _element_num;
     uint8_t _payload_length;
-    uint8_t cnt = 0 ;
-    uint8_t _sync_error = 0 ;
+    uint8_t _cnt;
+    uint8_t _sync_error ;
+    uint16_t _byte_count;
 
 
     // request related variables

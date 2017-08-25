@@ -36,6 +36,35 @@
 #define FTDI_DEBUG 0
 #define RP_DEBUG_LEVEL 0
 
+#if RP_DEBUG_LEVEL
+  #include <GCS_MAVLINK/GCS.h>
+  #define Debug(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
+#else
+  #define Debug(level, fmt, args ...)
+#endif
+
+#define COMM_ACTIVITY_TIMEOUT_MS        200
+#define RESET_RPA2_WAIT_MS              8
+#define RESYNC_TIMEOUT                  5000
+
+// Commands
+//-----------------------------------------
+
+// Commands without payload and response
+#define RPLIDAR_PREAMBLE               0xA5
+#define RPLIDAR_CMD_STOP               0x25
+#define RPLIDAR_CMD_SCAN               0x20
+#define RPLIDAR_CMD_FORCE_SCAN         0x21
+#define RPLIDAR_CMD_RESET              0x40
+
+// Commands without payload but have response
+#define RPLIDAR_CMD_GET_DEVICE_INFO    0x50
+#define RPLIDAR_CMD_GET_DEVICE_HEALTH  0x52
+
+// Commands with payload and have response
+#define RPLIDAR_CMD_EXPRESS_SCAN       0x82
+
+
 extern const AP_HAL::HAL& hal;
 
 /*
@@ -48,10 +77,13 @@ AP_Proximity_RPLidarA2::AP_Proximity_RPLidarA2(AP_Proximity &_frontend,
                                                AP_SerialManager &serial_manager) :
                                                AP_Proximity_Backend(_frontend, _state)
 {
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);                // selected in MP at SerialConfig
+    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
     if (_uart != nullptr) {
         _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
     }
+    _cnt = 0 ;
+    _sync_error = 0 ;
+    _byte_count = 0;
 }
 
 // detect if a RPLidarA2 proximity sensor is connected by looking for a configured serial port
@@ -68,7 +100,7 @@ void AP_Proximity_RPLidarA2::update(void)
     }
 
     // initialise sensor if necessary
-    if(!_initialised)
+    if (!_initialised)
     {
         _initialised = initialise();    //returns true if everything initialized properly
     }
@@ -82,9 +114,7 @@ void AP_Proximity_RPLidarA2::update(void)
     // check for timeout and set health status
     if ((_last_distance_received_ms == 0) || (AP_HAL::millis() - _last_distance_received_ms > COMM_ACTIVITY_TIMEOUT_MS)) {
         set_status(AP_Proximity::Proximity_NoData);
-#if RP_DEBUG_LEVEL > 0
-        GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "LIDAR NO DATA");
-#endif
+        Debug(1, "LIDAR NO DATA");
     } else {
         set_status(AP_Proximity::Proximity_Good);
     }
@@ -112,9 +142,7 @@ bool AP_Proximity_RPLidarA2::initialise()
     }
     if (!_initialised) {
         reset_rplidar();            // set to a known state
-#if RP_DEBUG_LEVEL > 0
-        GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "LIDAR initialised");
-#endif
+        Debug(1, "LIDAR initialised");
         return true;
     }
 
@@ -139,11 +167,8 @@ void AP_Proximity_RPLidarA2::reset_rplidar()
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_RESET};
     _uart->write(tx_buffer, 2);
     _resetted = true;                   ///< be aware of extra 63 bytes coming after reset containing FW information
-#if RP_DEBUG_LEVEL > 0
-    GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "LIDAR reset");
-#endif
+    Debug(1, "LIDAR reset");
     hal.scheduler->delay(RESET_RPA2_WAIT_MS);                      ///< wait at least 8ms after sending new request
-    //hal.scheduler->delay_microseconds(PROXIMITY_RPA2_TIMEOUT_MS * 1000);
     _last_reset_ms =  AP_HAL::millis();
     _rp_state = rp_resetted;
 
@@ -229,9 +254,7 @@ void AP_Proximity_RPLidarA2::set_scan_mode()
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_SCAN};
     _uart->write(tx_buffer, 2);
     _last_request_ms = AP_HAL::millis();
-#if RP_DEBUG_LEVEL > 0
-    GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "LIDAR SCAN MODE ACTIVATED");
-#endif
+    Debug(1, "LIDAR SCAN MODE ACTIVATED");
     _rp_state = rp_responding;
 }
 
@@ -252,79 +275,64 @@ void AP_Proximity_RPLidarA2::get_readings()
     if (_uart == nullptr) {
         return;
     }
-#if RP_DEBUG_LEVEL > 1
-    GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "             CURRENT STATE: %d ", _rp_state);
-#endif
+    Debug(2, "             CURRENT STATE: %d ", _rp_state);
     uint32_t nbytes = _uart->available();
-    static uint16_t byte_count = 0;
 
     while (nbytes-- > 0) {
 
         uint8_t c = _uart->read();
-#if RP_DEBUG_LEVEL > 1
-        GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "UART READ %x <%c>", c, c); //show HEX values
-#endif
+        Debug(2, "UART READ %x <%c>", c, c); //show HEX values
 
         STATE:
         switch(_rp_state){
 
             case rp_resetted:
-#if RP_DEBUG_LEVEL > 2
-                GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "                  BYTE_COUNT %d", byte_count);
-#endif
-                if ((c == 0x52 || _information_data) && byte_count < 62)
+                Debug(3, "                  BYTE_COUNT %d", _byte_count);
+                if ((c == 0x52 || _information_data) && _byte_count < 62)
                 {
                     if(c == 0x52) {
                         _information_data = true;
                     }
-                    _rp_systeminfo[byte_count] = c;
-#if RP_DEBUG_LEVEL > 2
-                    GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "_rp_systeminfo[%d]=%x",byte_count,_rp_systeminfo[byte_count]);
-#endif
-                    byte_count++;
+                    _rp_systeminfo[_byte_count] = c;
+                    Debug(3, "_rp_systeminfo[%d]=%x",_byte_count,_rp_systeminfo[_byte_count]);
+                    _byte_count++;
                     break;
                 }
                 else
                 {
 
                     if (_information_data) {
-#if RP_DEBUG_LEVEL > 0
-                        GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "GOT RPLIDAR INFORMATION");
-#endif
+                        Debug(1, "GOT RPLIDAR INFORMATION");
                         _information_data = false;
-                        byte_count = 0;
+                        _byte_count = 0;
 
                         set_scan_mode();
                         break;
                     }
 
-                    if (cnt>5) {
+                    if (_cnt>5) {
                         _rp_state = rp_unknown;
-                        cnt=0;
+                        _cnt=0;
                         break;
                     }
-                    cnt++;
+                    _cnt++;
                     break;
                 }
                 break;
 
             case rp_responding:
-#if RP_DEBUG_LEVEL > 1
-                GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "RESPONDING");
-#endif
+                Debug(2, "RESPONDING");
                 if(c == RPLIDAR_PREAMBLE || _descriptor_data) {
                     _descriptor_data = true;
-                    _descriptor[byte_count] = c;
-                    byte_count++;
+                    _descriptor[_byte_count] = c;
+                    _byte_count++;
                     //descriptor packet has 7 byte in total
-                    if(byte_count == sizeof(_descriptor)) {
-#if RP_DEBUG_LEVEL > 1
-                        GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "LIDAR DESCRIPTOR CATCHED");
-#endif
+                    if(_byte_count == sizeof(_descriptor)) {
+                        Debug(2,"LIDAR DESCRIPTOR CATCHED");
                         _response_type = ResponseType_Descriptor;
                         //identify the payload data after the descriptor
                         parse_response_descriptor();
-                        byte_count = 0;
+                        _byte_count = 0;
 
                     }
                 } else {
@@ -334,63 +342,49 @@ void AP_Proximity_RPLidarA2::get_readings()
 
             case rp_measurements:
                 if (_sync_error) {    //out of 5-byte sync mask -> catch new revolution
-#if RP_DEBUG_LEVEL > 0
-                    GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "       OUT OF SYNC");
-#endif
+                    Debug(1, "       OUT OF SYNC");
                     //on first revolution bit 1 = 1, bit 2 = 0 of the first byte
                     if ((c & 0x03) == 0x01) {
                         _sync_error = 0;
-#if RP_DEBUG_LEVEL > 0
-                        GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "                  RESYNC");
-#endif
+                        Debug(1, "                  RESYNC");
                     } else {
                         if (AP_HAL::millis() - _last_distance_received_ms > RESYNC_TIMEOUT) reset_rplidar();
                         break;
                     }
                 }
-#if RP_DEBUG_LEVEL > 2
-                GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "READ PAYLOAD");
-#endif
-                payload[byte_count] = c;
-                byte_count++;
+                Debug(3, "READ PAYLOAD");
+                payload[_byte_count] = c;
+                _byte_count++;
 
-                if (byte_count == _payload_length) {
-#if RP_DEBUG_LEVEL > 1
-                    GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "LIDAR MEASUREMENT CATCHED");
-#endif
+                if (_byte_count == _payload_length) {
+                    Debug(2, "LIDAR MEASUREMENT CATCHED");
                     parse_response_data();
-                    byte_count = 0;
+                    _byte_count = 0;
 
                 }
                 break;
 
             case rp_health:
-#if RP_DEBUG_LEVEL > 0
-                GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "state: HEALTH");
-#endif
+                Debug(1, "state: HEALTH");
                 break;
 
             case rp_unknown:
-#if RP_DEBUG_LEVEL > 0
-                GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "state: UNKNOWN");
-#endif
+                Debug(1, "state: UNKNOWN");
                 if (c == RPLIDAR_PREAMBLE) {
                     _rp_state = rp_responding;
                     goto STATE;
                     break;
                 }
-                cnt++;
-                if (cnt>10) {
+                _cnt++;
+                if (_cnt>10) {
                     reset_rplidar();
                     _rp_state = rp_resetted;
-                    cnt=0;
+                    _cnt=0;
                 }
                 break;
 
             default:
-#if RP_DEBUG_LEVEL > 0
-                GCS_MAVLINK::send_text(MAV_SEVERITY_CRITICAL, "UNKNOWN LIDAR STATE");
-#endif
+                Debug(1, "UNKNOWN LIDAR STATE");
                 break;
 
         }
@@ -408,9 +402,7 @@ void AP_Proximity_RPLidarA2::parse_response_descriptor()
             _payload_length = sizeof(payload.sensor_scan);
             static_assert(sizeof(payload.sensor_scan) == 5, "Unexpected payload.sensor_scan data structure size");
             _response_type = ResponseType_SCAN;
-#if RP_DEBUG_LEVEL > 1
-            GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "Measurement response detected");
-#endif
+            Debug(2, "Measurement response detected");
             _last_distance_received_ms = AP_HAL::millis();
             _rp_state = rp_measurements;
         }
@@ -424,9 +416,7 @@ void AP_Proximity_RPLidarA2::parse_response_descriptor()
         }
         return;
     }
-#if RP_DEBUG_LEVEL > 0
-    GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "Invalid response descriptor");
-#endif
+    Debug(1, "Invalid response descriptor");
     _rp_state = rp_unknown;
 
 }
@@ -435,32 +425,30 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 {
     switch (_response_type){
         case ResponseType_SCAN:
-#if RP_DEBUG_LEVEL > 1
-            GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "UART %02x %02x%02x %02x%02x", payload[0], payload[2], payload[1], payload[4], payload[3]); //show HEX values
-#endif
+            Debug(2, "UART %02x %02x%02x %02x%02x", payload[0], payload[2], payload[1], payload[4], payload[3]); //show HEX values
             //check if valid SCAN packet: a valid packet starts with startbits which are complementary plus a checkbit in byte+1
             if ((payload.sensor_scan.startbit == !payload.sensor_scan.not_startbit) && payload.sensor_scan.checkbit) {
                 const float angle_deg = payload.sensor_scan.angle_q6/64.0f;
                 const float distance_m = (payload.sensor_scan.distance_q2/4000.0f);
                 //const float quality = payload.sensor_scan.quality;
-#if RP_DEBUG_LEVEL > 1
-                GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, "                                       D%02.2f A%03.1f Q%02d", distance_m, angle_deg, quality);
-#endif
+                Debug(2, "                                       D%02.2f A%03.1f Q%02d", distance_m, angle_deg, quality);
 
+                _last_distance_received_ms = AP_HAL::millis();
                 uint8_t sector;
                 if (convert_angle_to_sector(angle_deg, sector)) {
-                    _angle[sector] = angle_deg;
-                    _distance[sector] = distance_m;
-                    _distance_valid[sector] = true;
-                    _last_distance_received_ms = AP_HAL::millis();
-                    // update boundary used for avoidance
-                    update_boundary_for_sector(sector);
+                    if (distance_m > distance_min()) {
+                        _angle[sector] = angle_deg;
+                        _distance[sector] = distance_m;
+                        _distance_valid[sector] = true;
+                        // update boundary used for avoidance
+                        update_boundary_for_sector(sector);
+                    } else {
+                        _distance_valid[sector] = false;
+                    }
                 }
             } else {
                 //not valid payload packet
-#if RP_DEBUG_LEVEL > 0
-                GCS_MAVLINK::send_text(MAV_SEVERITY_CRITICAL, "Invalid Payload");
-#endif
+                Debug(1, "Invalid Payload");
                 _sync_error++;
 
             }
@@ -469,17 +457,13 @@ void AP_Proximity_RPLidarA2::parse_response_data()
         case ResponseType_Health:
             //health issue if status is "3" ->HW error
             if (payload.sensor_health.status == 3) {
-#if RP_DEBUG_LEVEL > 0
-                GCS_MAVLINK::send_text(MAV_SEVERITY_CRITICAL, "LIDAR Error");
-#endif
+                Debug(1, "LIDAR Error");
             }
             break;
 
         default:
             /*no valid payload packets recognized: return payload data=0*/
-#if RP_DEBUG_LEVEL > 0
-            GCS_MAVLINK::send_text(MAV_SEVERITY_CRITICAL, "Unknown LIDAR packet");
-#endif
+            Debug(1, "Unknown LIDAR packet");
             break;
     }
 
