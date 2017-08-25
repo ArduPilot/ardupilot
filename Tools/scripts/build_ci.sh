@@ -45,10 +45,13 @@ if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
     unset BUILDROOT
     echo "Running SITL QuadCopter test"
     Tools/autotest/autotest.py build.ArduCopter fly.ArduCopter
+    ccache -s && ccache -z
     echo "Running SITL QuadPlane test"
     Tools/autotest/autotest.py build.ArduPlane fly.QuadPlane
+    ccache -s && ccache -z
     echo "Running SITL Rover test"
     Tools/autotest/autotest.py build.APMrover2 drive.APMrover2
+    ccache -s && ccache -z
     exit 0
 fi
 
