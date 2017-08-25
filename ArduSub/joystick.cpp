@@ -567,7 +567,5 @@ void Sub::set_neutral_controls()
         channels[i] = 0xffff;
     }
 
-    channels[4] = 0xffff; // Leave mode switch where it was
-
     hal.rcin->set_overrides(channels, 10);
 }
