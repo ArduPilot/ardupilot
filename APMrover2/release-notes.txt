@@ -1,3 +1,30 @@
+APMrover2 Release Notes:
+========================
+APM:Rover V3.2.0-rc1 25-Aug-2017
+Changes from 3.1.2:
+1) Skid-steering vehicle support added (i.e. tank track or R2D2 style vehicles)
+2) Brushless motor support
+3) Improved speed/throttle and steering controllers:
+    a) layered P and PID controllers with optional feedforward, input filtering and saturation handling (reduces unnecessary I-term build-up) 
+    b) forward-back acceleration limited (see ATC_ACCEL_MAX parameter)
+    c) pro-active slowing before waypoint in order to keep overshoot at or below WP_OVERSHOOT distance
+    d) proper output scaling for skid-steering vs regular car steering controls
+    e) TURN_RADIUS parameter added to allow better control of turn in Steering mode
+    f) speed along forward-back axis used instead of total ground speed (resolves unusual behaviour for boats being washed downstream)
+4) Auxiliary switch changes (see CH7_OPTION parameter):
+    a) "Save Waypoint" saves the current location as a waypoint in all modes except AUTO if the vehicle is armed.  If disarmed the mission is cleared and home is set to the current location.
+    b) "Learn Cruise" sets the THROTTLE_CRUISE and SPEED_CRUISE parameter values to the vehicle's current speed and throttle level 
+5) Wheel encoder supported for non-GPS navigation (can also be used with GPS)
+6) Visual Odometry support for non-GPS navigation (can also be used with GPS)
+7) Guided mode improvements:
+    a) for SET_ATTITUDE_TARGET accepts quaternions for target heading, valid thrust changed to -1 ~ +1 range (was previously 0 ~ 1)
+    b) COMMAND_LONG.SET_YAW_SPEED support fixes (thrust field accepted as target speed in m/s)
+    c) SET_POSITION_TARGET_GLOBAL_INT, _LOCAL_NED fixes and added support for yaw and yaw-rate fields
+8) Bug Fixes:
+    a) resolve occasional start of motors after power-on
+    b) steering mode turn direction fix while reversing
+    c) reversing in auto mode fixes (see DO_REVERSE mission command)
+----------------------------------------------------------
 Release 3.1.2, 15 March 2017
 ============================
 Minor bugfix release.
