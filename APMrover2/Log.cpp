@@ -8,14 +8,11 @@
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint32_t loop_time;
+    uint16_t num_long;
     uint16_t main_loop_count;
     uint32_t g_dt_max;
-    int16_t  gyro_drift_x;
-    int16_t  gyro_drift_y;
-    int16_t  gyro_drift_z;
-    uint8_t  i2c_lockup_count;
-    uint16_t ins_error_count;
+    uint32_t g_dt_min;
+    uint32_t log_dropped;
     uint32_t mem_avail;
 };
 
@@ -25,14 +22,11 @@ void Rover::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us         : AP_HAL::micros64(),
-        loop_time       : millis()- perf_mon_timer,
-        main_loop_count : mainLoop_count,
-        g_dt_max        : G_Dt_max,
-        gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
-        gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
-        gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),
-        i2c_lockup_count: 0,
-        ins_error_count : ins.error_count(),
+        num_long        : perf.num_long,
+        main_loop_count : perf.mainLoop_count,
+        g_dt_max        : perf.G_Dt_max,
+        g_dt_min        : perf.G_Dt_min,
+        log_dropped     : DataFlash.num_dropped() - perf.last_log_dropped,
         hal.util->available_memory()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -329,7 +323,7 @@ void Rover::Log_Write_WheelEncoder()
 const LogStructure Rover::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),
-      "PM",  "QIHIhhhBHI", "TimeUS,LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr,Mem" },
+      "PM",  "QHHIIII",  "TimeUS,NLon,NLoop,MaxT,MinT,LogDrop,Mem" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),
       "STRT", "QBH",        "TimeUS,SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),

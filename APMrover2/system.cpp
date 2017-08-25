@@ -262,10 +262,31 @@ void Rover::update_notify()
     notify.update();
 }
 
+void Rover::log_perf_info()
+{
+    if (scheduler.debug() != 0) {
+        gcs().send_text(MAV_SEVERITY_INFO, "PERF: %u/%u Dt=%u/%u Log=%u",
+                        (unsigned)perf.num_long,
+                        (unsigned)perf.mainLoop_count,
+                        (unsigned)perf.G_Dt_max,
+                        (unsigned)perf.G_Dt_min,
+                        (unsigned)(DataFlash.num_dropped() - perf.last_log_dropped));
+    }
+
+    if (should_log(MASK_LOG_PM)) {
+        Log_Write_Performance();
+    }
+
+    resetPerfData();
+}
+
 void Rover::resetPerfData(void) {
-    mainLoop_count = 0;
-    G_Dt_max = 0;
-    perf_mon_timer = millis();
+    perf.mainLoop_count = 0;
+    perf.G_Dt_max       = 0;
+    perf.G_Dt_min       = 0;
+    perf.num_long       = 0;
+    perf.start_ms       = millis();
+    perf.last_log_dropped = DataFlash.num_dropped();
 }
 
 
