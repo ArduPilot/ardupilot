@@ -201,7 +201,7 @@ private:
     Compass compass = Compass::create();
     AP_InertialSensor ins = AP_InertialSensor::create();
 
-    RangeFinder rangefinder {serial_manager, ROTATION_PITCH_270};
+    RangeFinder rangefinder = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
     struct {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
