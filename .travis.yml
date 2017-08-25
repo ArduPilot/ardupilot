@@ -74,8 +74,6 @@ matrix:
     - compiler: "gcc"
       env: CI_BUILD_TARGET="sitl minlure raspilot linux navio2 bebop"
     - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v1 px4-v4pro"
-    - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v2 px4-v4"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v3"
