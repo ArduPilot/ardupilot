@@ -112,7 +112,7 @@ private:
 
     AP_InertialSensor ins = AP_InertialSensor::create();
 
-    RangeFinder rng {serial_manager, ROTATION_NONE};
+    RangeFinder rng = RangeFinder::create(serial_manager, ROTATION_NONE);
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
