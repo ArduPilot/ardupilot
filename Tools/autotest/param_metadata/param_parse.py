@@ -25,11 +25,15 @@ parser.add_option("--no-emit", dest='emit_params', action='store_false', default
 
 prog_param = re.compile(r"@Param: *(\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
+# match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): (.*)")
+# match e.g @Value[ArduCopter]: 0=Volcano, 1=Peppermint
+prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([\w,]+)}: (.*)")
 
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
-prog_group_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
+# prog_group_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
+prog_group_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([,\w]+)})?: (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % opts.vehicle)
@@ -63,6 +67,10 @@ for vehicle_path in vehicle_paths:
     vehicles.append(Vehicle(name, path))
     debug('Found vehicle type %s' % name)
 
+if len(vehicles) > 1:
+    print("Single vehicle only, please")
+    sys.exit(1)
+
 for vehicle in vehicles:
     debug("===\n\n\nProcessing %s" % vehicle.name)
 
@@ -81,7 +89,7 @@ for vehicle in vehicles:
             if field[0] in known_group_fields:
                 setattr(l, field[0], field[1])
             else:
-                error("unknown parameter metadata field '%s'" % field[0])
+                error("group: unknown parameter metadata field '%s'" % field[0])
         if not any(l.name == parsed_l.name for parsed_l in libraries):
             libraries.append(l)
 
@@ -96,7 +104,7 @@ for vehicle in vehicles:
             if field[0] in known_param_fields:
                 setattr(p, field[0], field[1])
             else:
-                error("unknown parameter metadata field '%s'" % field[0])
+                error("param: unknown parameter metadata field '%s'" % field[0])
         for req_field in required_param_fields:
             if req_field not in field_list:
                 error("missing parameter metadata field '%s' in %s" % (req_field, field_text))
@@ -109,7 +117,9 @@ debug("Found %u documented libraries" % len(libraries))
 
 alllibs = libraries[:]
 
-def process_library(library, pathprefix=None):
+vehicle = vehicles[0]
+
+def process_library(vehicle, library, pathprefix=None):
     '''process one library'''
     paths = library.Path.split(',')
     for path in paths:
@@ -143,7 +153,18 @@ def process_library(library, pathprefix=None):
                 if field[0] in known_param_fields:
                     setattr(p, field[0], field[1])
                 else:
-                    error("unknown parameter metadata field %s" % field[0])
+                    error("param: unknown parameter metadata field %s" % field[0])
+#            print("matching %s" % field_text)
+            fields = prog_param_tagged_fields.findall(field_text)
+            for field in fields:
+                only_for_vehicles = field[1].split(",")
+#                print("vehicle=%s field[1]=%s only_for_vehicles=%s\n" % (vehicle.name,field[1], str(only_for_vehicles)))
+                if vehicle.name not in only_for_vehicles:
+                    continue;
+                if field[0] in known_param_fields:
+                    setattr(p, field[0], field[2])
+                else:
+                    error("tagged param unknown parameter metadata field '%s'" % field[0])
             library.params.append(p)
 
         group_matches = prog_groups.findall(p_text)
@@ -162,14 +183,14 @@ def process_library(library, pathprefix=None):
             if not any(l.name == parsed_l.name for parsed_l in libraries):
                 l.name = library.name + l.name
                 debug("Group name: %s" % l.name)
-                process_library(l, os.path.dirname(libraryfname))
+                process_library(vehicle, l, os.path.dirname(libraryfname))
                 alllibs.append(l)
 
 for library in libraries:
     debug("===\n\n\nProcessing library %s" % library.name)
 
     if hasattr(library, 'Path'):
-        process_library(library)
+        process_library(vehicle, library)
     else:
         error("Skipped: no Path found")
 
