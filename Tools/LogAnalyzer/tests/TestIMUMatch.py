@@ -98,7 +98,7 @@ class TestIMUMatch(Test):
             ydiff_filtered += (ydiff-ydiff_filtered)*dt/filter_tc
             zdiff_filtered += (zdiff-zdiff_filtered)*dt/filter_tc
 
-            diff_filtered = math.sqrt(xdiff_filtered**2+ydiff_filtered**2+zdiff_filtered**2)
+            diff_filtered = sqrt(xdiff_filtered**2+ydiff_filtered**2+zdiff_filtered**2)
             max_diff_filtered = max(max_diff_filtered,diff_filtered)
             #print(max_diff_filtered)
             last_t = t
