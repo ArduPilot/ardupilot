@@ -205,7 +205,7 @@ private:
 
     AP_InertialSensor ins = AP_InertialSensor::create();
 
-    RangeFinder rangefinder {serial_manager, ROTATION_PITCH_270};
+    RangeFinder rangefinder = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
 
     AP_Vehicle::FixedWing::Rangefinder_State rangefinder_state;
 

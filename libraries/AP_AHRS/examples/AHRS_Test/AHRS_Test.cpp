@@ -23,7 +23,7 @@ AP_SerialManager serial_manager;
 
 class DummyVehicle {
 public:
-    RangeFinder sonar {serial_manager, ROTATION_PITCH_270};
+    RangeFinder sonar = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
     AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF2, EKF3,
                         AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
     NavEKF2 EKF2{&ahrs, barometer, sonar};
