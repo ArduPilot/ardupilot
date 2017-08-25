@@ -32,20 +32,20 @@ void Rover::failsafe_check()
     if (tnow - last_timestamp > 200000) {
         // we have gone at least 0.2 seconds since the main loop
         // ran. That means we're in trouble, or perhaps are in
-        // an initialisation routine or log erase. Start passing RC
-        // inputs through to outputs
+        // an initialisation routine or log erase. That means we're in trouble and should
+        // disarm the motors
         in_failsafe = true;
+        // send to motor
+        SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+        SRV_Channels::set_output_limit(SRV_Channel::k_steering, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
     }
-
-    if (in_failsafe && tnow - last_timestamp > 20000 &&
-        channel_throttle->read() >= static_cast<uint16_t>(g.fs_throttle_value)) {
-        // pass RC inputs to outputs every 20ms
-        last_timestamp = tnow;
-        hal.rcin->clear_overrides();
-        for (uint8_t ch = 0; ch < 4; ch++) {
-            hal.rcout->write(ch, hal.rcin->read(ch));
+    if (in_failsafe && tnow - last_timestamp > 200000) {
+        // we have gone at least 2 seconds since the main loop
+        // ran.
+        if (arming.is_armed()) {
+            // disarm motors
+            disarm_motors();
         }
-        SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);
     }
 }
 
