@@ -209,7 +209,7 @@ private:
 
     AP_Vehicle::FixedWing::Rangefinder_State rangefinder_state;
 
-    AP_RPM rpm_sensor;
+    AP_RPM rpm_sensor = AP_RPM::create();
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
