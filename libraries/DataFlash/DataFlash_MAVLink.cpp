@@ -133,7 +133,7 @@ bool DataFlash_MAVLink::WritesOK() const
 bool DataFlash_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
     if (!semaphore->take_nonblocking()) {
-        dropped++;
+        _dropped++;
         return false;
     }
 
@@ -145,7 +145,7 @@ bool DataFlash_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
     if (bufferspace_available() < size) {
         if (_startup_messagewriter->finished()) {
             // do not count the startup packets as being dropped...
-            dropped++;
+            _dropped++;
         }
         semaphore->give();
         return false;
@@ -306,13 +306,9 @@ void DataFlash_MAVLink::handle_retry(uint32_t seqno)
     }
 }
 
-void DataFlash_MAVLink::internal_error() {
-    internal_errors++;
-    DataFlash_Backend::internal_error();
-}
 void DataFlash_MAVLink::stats_init() {
-    dropped = 0;
-    internal_errors = 0;
+    _dropped = 0;
+    _internal_errors = 0;
     stats.resends = 0;
     stats_reset();
 }
@@ -341,10 +337,10 @@ void DataFlash_MAVLink::Log_Write_DF_MAV(DataFlash_MAVLink &df)
         LOG_PACKET_HEADER_INIT(LOG_DF_MAV_STATS),
         timestamp         : AP_HAL::millis(),
         seqno             : df._next_seq_num-1,
-        dropped           : df.dropped,
+        dropped           : df._dropped,
         retries           : df._blocks_retry.sent_count,
         resends           : df.stats.resends,
-        internal_errors   : df.internal_errors,
+        internal_errors   : df._internal_errors,
         state_free_avg    : (uint8_t)(df.stats.state_free/df.stats.collection_count),
         state_free_min    : df.stats.state_free_min,
         state_free_max    : df.stats.state_free_max,

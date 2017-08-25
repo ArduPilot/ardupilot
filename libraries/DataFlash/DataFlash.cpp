@@ -528,7 +528,6 @@ uint32_t DataFlash_Class::num_dropped() const
 // end functions pass straight through to backend
 
 void DataFlash_Class::internal_error() const {
-//    _internal_errors++;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     abort();
 #endif
