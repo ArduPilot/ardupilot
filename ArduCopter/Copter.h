@@ -211,7 +211,7 @@ private:
         int8_t glitch_count;
     } rangefinder_state = { false, false, 0, 0 };
 
-    AP_RPM rpm_sensor;
+    AP_RPM rpm_sensor = AP_RPM::create();
 
     // Inertial Navigation EKF
     NavEKF2 EKF2{&ahrs, barometer, rangefinder};

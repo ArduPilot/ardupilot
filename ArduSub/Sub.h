@@ -180,7 +180,7 @@ private:
     } rangefinder_state = { false, false, 0, 0 };
 
 #if RPM_ENABLED == ENABLED
-    AP_RPM rpm_sensor;
+    AP_RPM rpm_sensor = AP_RPM::create();
 #endif
 
     // Inertial Navigation EKF
