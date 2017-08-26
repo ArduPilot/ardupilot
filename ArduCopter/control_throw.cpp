@@ -90,6 +90,7 @@ void Copter::throw_run()
                 case RTL:
                 case LAND:
                 case BRAKE:
+                case LOITER:
                     set_mode((control_mode_t)g2.throw_nextmode.get(), MODE_REASON_THROW_COMPLETE);
                     break;
                 default:
