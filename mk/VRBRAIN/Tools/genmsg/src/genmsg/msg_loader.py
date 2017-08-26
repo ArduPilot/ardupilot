@@ -198,7 +198,7 @@ def _load_constant_line(orig_line):
     else:
         line_splits = [x.strip() for x in ' '.join(line_splits[1:]).split(CONSTCHAR)] #resplit on '='
         if len(line_splits) != 2:
-            raise InvalidMsgSpec("Invalid constant declaration: %s"%l)
+            raise InvalidMsgSpec("Invalid constant declaration: %s"%orig_line)
         name = line_splits[0]
         val = line_splits[1]
 
