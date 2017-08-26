@@ -3,6 +3,11 @@ import DataflashLog
 
 import math
 
+try:               # Python 2
+    reduce
+except NameError:  # Python 3
+    from functools import reduce
+
 
 class TestCompass(Test):
     '''test for compass offsets and throttle interference'''
