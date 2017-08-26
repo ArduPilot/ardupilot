@@ -1,5 +1,6 @@
 from __future__ import print_function
 import math
+import os
 import time
 
 from pymavlink import mavwp
@@ -281,3 +282,15 @@ def log_download(mavproxy, mav, filename, timeout=360):
     mav.wait_heartbeat()
     mav.wait_heartbeat()
     return True
+
+def move_most_recent_log(dest):
+    """Move the most recent log file"""
+    with open("logs/LASTLOG.TXT") as log_num_file:
+        log_num = int(log_num_file.read().strip())
+        log_path = util.reltopdir("logs/%08d.BIN" % log_num)
+        print("Moving log %s to %s" % (log_path, dest))
+        os.rename(log_path, dest)
+
+def is_CI_test():
+    """Returns true if the test is running as part of a CI build"""
+    return os.environ.get('CI') == 'true'
