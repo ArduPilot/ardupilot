@@ -135,7 +135,7 @@ public:
         k_param_stall_prevention,
         k_param_optflow,
         k_param_cli_enabled,
-        k_param_trim_rc_at_start,
+        k_param_trim_rc_at_start, // unused
         k_param_hil_mode,
         k_param_land_disarm_delay,  // unused - moved to AP_Landing
         k_param_glide_slope_threshold,
@@ -369,7 +369,6 @@ public:
 
     AP_Int8  rtl_autoland;
 
-    AP_Int8  trim_rc_at_start;
     AP_Int8  crash_accel_threshold;
 
     // Feed-forward gains
