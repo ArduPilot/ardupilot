@@ -31,10 +31,6 @@ homeloc = None
 num_wp = 0
 
 
-def wait_ready_to_arm(mavproxy):
-    # wait for EKF and GPS checks to pass
-    mavproxy.expect('IMU0 is using GPS')
-
 def hover(mavproxy, mav, hover_throttle=1500):
     mavproxy.send('rc 3 %u\n' % hover_throttle)
     return True
@@ -1051,7 +1047,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
         setup_rc(mavproxy)
         homeloc = mav.location()
 
-        wait_ready_to_arm(mavproxy)
+        wait_ready_to_arm(mav)
 
         # Arm
         print("# Arm motors")
@@ -1409,7 +1405,7 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         print("Lowering rotor speed")
         mavproxy.send('rc 8 1000\n')
 
-        wait_ready_to_arm(mavproxy)
+        wait_ready_to_arm(mav)
 
         # Arm
         print("# Arm motors")
