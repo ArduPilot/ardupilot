@@ -29,7 +29,6 @@ AVCHOME = mavutil.location(40.072842, -105.230575, 1586, 0)
 
 homeloc = None
 num_wp = 0
-speedup_default = 10
 
 
 def wait_ready_to_arm(mavproxy):
@@ -972,7 +971,7 @@ def setup_rc(mavproxy):
     mavproxy.send('rc 3 1000\n')
 
 
-def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None, gdbserver=False):
+def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None, gdbserver=False, speedup=10):
     """Fly ArduCopter in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -984,7 +983,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
         frame = '+'
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=speedup_default)
+    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=speedup)
     mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
     mavproxy.expect('Received [0-9]+ parameters')
 
@@ -1004,7 +1003,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
 
-    sitl = util.start_SITL(binary, model=frame, home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
+    sitl = util.start_SITL(binary, model=frame, home=home, speedup=speedup, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
@@ -1329,7 +1328,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     return True
 
 
-def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None, gdbserver=False):
+def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None, gdbserver=False, speedup=10):
     """Fly ArduCopter in SITL for AVC2013 mission."""
     global homeloc
 
@@ -1337,7 +1336,7 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         frame = 'heli'
 
     home = "%f,%f,%u,%u" % (AVCHOME.lat, AVCHOME.lng, AVCHOME.alt, AVCHOME.heading)
-    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=speedup_default)
+    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=speedup)
     mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550')
     mavproxy.expect('Received [0-9]+ parameters')
 
@@ -1357,7 +1356,7 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
 
-    sitl = util.start_SITL(binary, model='heli', home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
+    sitl = util.start_SITL(binary, model='heli', home=home, speedup=speedup, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip

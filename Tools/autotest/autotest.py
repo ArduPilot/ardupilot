@@ -222,23 +222,33 @@ def run_step(step):
         vehicle = step[8:]
         return get_default_params(vehicle, binary)
 
+    fly_opts = {
+        "viewerip": opts.viewerip,
+        "use_map": opts.map,
+        "valgrind": opts.valgrind,
+        "gdb": opts.gdb,
+        "gdbserver": opts.gdbserver,
+    }
+    if opts.speedup is not None:
+        fly_opts.speedup = opts.speedup
+
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame, gdbserver=opts.gdbserver)
+        return arducopter.fly_ArduCopter(binary, frame=opts.frame, **fly_opts)
 
     if step == 'fly.CopterAVC':
-        return arducopter.fly_CopterAVC(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame, gdbserver=opts.gdbserver)
+        return arducopter.fly_CopterAVC(binary, **fly_opts)
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, gdbserver=opts.gdbserver)
+        return arduplane.fly_ArduPlane(binary, **fly_opts)
 
     if step == 'fly.QuadPlane':
-        return quadplane.fly_QuadPlane(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, gdbserver=opts.gdbserver)
+        return quadplane.fly_QuadPlane(binary, **fly_opts)
 
     if step == 'drive.APMrover2':
-        return apmrover2.drive_APMrover2(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, frame=opts.frame, gdbserver=opts.gdbserver)
+        return apmrover2.drive_APMrover2(binary, frame=opts.frame, **fly_opts)
 
     if step == 'dive.ArduSub':
-        return ardusub.dive_ArduSub(binary, viewerip=opts.viewerip, use_map=opts.map, valgrind=opts.valgrind, gdb=opts.gdb, gdbserver=opts.gdbserver)
+        return ardusub.dive_ArduSub(binary, **fly_opts)
 
     if step == 'build.All':
         return build_all()
@@ -435,6 +445,7 @@ if __name__ == "__main__":
     parser.add_option("--map", action='store_true', default=False, help='show map')
     parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
     parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
+    parser.add_option("--speedup", default=None, type='int', help='speedup to run the simulations at')
     parser.add_option("--valgrind", default=False, action='store_true', help='run ArduPilot binaries under valgrind')
     parser.add_option("--gdb", default=False, action='store_true', help='run ArduPilot binaries under gdb')
     parser.add_option("--debug", default=False, action='store_true', help='make built binaries debug binaries')
