@@ -17,8 +17,8 @@
 class AC_InputManager_Heli : public AC_InputManager {
 public:
     // Constructor
-    AC_InputManager_Heli(uint16_t loop_rate):
-        AC_InputManager(loop_rate)
+    AC_InputManager_Heli():
+        AC_InputManager()
     {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
