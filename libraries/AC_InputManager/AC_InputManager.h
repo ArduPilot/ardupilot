@@ -11,14 +11,13 @@
 /// @brief  Class managing the pilot's control inputs
 class AC_InputManager{
 public:
-    AC_InputManager(uint16_t loop_rate):
-        _loop_rate(loop_rate)
-    {
+    AC_InputManager() {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
     }
 
     static const struct AP_Param::GroupInfo        var_info[];
+    void set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
 
 protected:
 
