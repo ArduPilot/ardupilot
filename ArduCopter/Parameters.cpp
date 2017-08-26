@@ -908,7 +908,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: THROW_NEXTMODE
     // @DisplayName: Throw mode's follow up mode
     // @Description: Vehicle will switch to this mode after the throw is successfully completed.  Default is to stay in throw mode (18)
-    // @Values: 3:Auto,4:Guided,6:RTL,9:Land,17:Brake,18:Throw
+    // @Values: 3:Auto,4:Guided,5:LOITER,6:RTL,9:Land,17:Brake,18:Throw
     // @User: Standard
     AP_GROUPINFO("THROW_NEXTMODE", 3, ParametersG2, throw_nextmode, 18),
 
