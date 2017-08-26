@@ -7,6 +7,7 @@ May 2013
 See http://codex.wordpress.org/XML-RPC_WordPress_API/Posts
 '''
 
+fron __future__ import print_function
 import xmlrpclib, sys
 
 from optparse import OptionParser
