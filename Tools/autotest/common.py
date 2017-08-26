@@ -290,7 +290,3 @@ def move_most_recent_log(dest):
         log_path = util.reltopdir("logs/%08d.BIN" % log_num)
         print("Moving log %s to %s" % (log_path, dest))
         os.rename(log_path, dest)
-
-def is_CI_test():
-    """Returns true if the test is running as part of a CI build"""
-    return os.environ.get('CI') == 'true'

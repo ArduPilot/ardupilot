@@ -1333,8 +1333,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     util.pexpect_close(sitl)
 
     # copy DF log
-    if not is_CI_test():
-        move_most_recent_log("../buildlogs/ArduCopter-log.bin")
+    move_most_recent_log("../buildlogs/ArduCopter-log.bin")
 
     valgrind_log = util.valgrind_log_filepath(binary=binary, model='+')
     if os.path.exists(valgrind_log):
@@ -1467,8 +1466,7 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     util.pexpect_close(sitl)
 
     # copy DF log
-    if not is_CI_test():
-        move_most_recent_log("../buildlogs/CopterAVC-log.bin")
+    move_most_recent_log("../buildlogs/CopterAVC-log.bin")
 
     valgrind_log = util.valgrind_log_filepath(binary=binary, model='heli')
     if os.path.exists(valgrind_log):
