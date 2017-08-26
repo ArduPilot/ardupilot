@@ -11,6 +11,26 @@ from pysim import util
 expect_list = []
 
 
+def wait_ready_to_arm(mav):
+    # wait for EKF checks to pass
+    return wait_ekf_happy(mav)
+
+def wait_ekf_happy(mav, timeout=30):
+    """Wait for EKF to be happy"""
+
+    tstart = get_sim_time(mav)
+    required_value = 831
+    print("Waiting for EKF value %u" % (required_value))
+    while get_sim_time(mav) < tstart + timeout:
+        m = mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
+        current = m.flags
+        print("Wait EKF.flags: required:%u current:%u\n" % (required_value, current))
+        if current == required_value:
+            print("EKF Flags OK")
+            return True
+    print("Failed to get EKF.flags=%u" % required_value)
+    return False
+
 def expect_list_clear():
     """clear the expect list."""
     global expect_list
