@@ -1,6 +1,7 @@
 from LogAnalyzer import Test,TestResult
 import DataflashLog
 
+from functools import reduce
 import math
 
 
@@ -112,13 +113,3 @@ class TestCompass(Test):
         except KeyError as e:
             self.result.status = TestResult.StatusType.FAIL
             self.result.statusMessage = str(e) + ' not found'
-
-
-
-
-
-
-
-
-
-
