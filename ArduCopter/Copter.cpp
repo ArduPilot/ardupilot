@@ -99,7 +99,7 @@ Copter::Copter(void) :
 #endif
 #if FRAME_CONFIG == HELI_FRAME
     // ToDo: Input Manager is only used by Heli for 3.3, but will be used by all frames for 3.4
-    input_manager(MAIN_LOOP_RATE),
+    input_manager(),
 #endif
     in_mavlink_delay(false),
     gcs_out_of_time(false),
