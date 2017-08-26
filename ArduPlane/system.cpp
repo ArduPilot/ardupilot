@@ -224,12 +224,6 @@ void Plane::startup_ground(void)
     //
     startup_INS_ground();
 
-    // read the radio to set trims
-    // ---------------------------
-    if (g.trim_rc_at_start != 0) {
-        trim_radio();
-    }
-
     // Save the settings for in-air restart
     // ------------------------------------
     //save_EEPROM_groundstart();
