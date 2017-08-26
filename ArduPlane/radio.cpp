@@ -325,7 +325,7 @@ void Plane::trim_control_surfaces()
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerLeft1);
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerLeft2);
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerRight1);
-        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerRight1);
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerRight2);
     }
 
     if (SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto) == 0 &&
