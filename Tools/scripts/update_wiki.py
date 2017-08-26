@@ -87,5 +87,5 @@ r = server.wp.editPost(opts.blog_id, opts.username, opts.password, post_id, { 'p
 if r == True:
     print("Upload OK")
     sys.exit(0)
-print 'result: ', r
+print('result: ', r)
 sys.exit(1)
