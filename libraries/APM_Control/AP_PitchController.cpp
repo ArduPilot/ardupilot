@@ -134,7 +134,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     // Scaler is applied before integrator so that integrator state relates directly to elevator deflection
     // This means elevator trim offset doesn't change as the value of scaler changes with airspeed
     // Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
-    if (!disable_integrator && gains.I > 0) {
+    if (!disable_integrator && is_positive(gains.I)) {
         float k_I = gains.I;
         if (is_zero(gains.FF)) {
             /*

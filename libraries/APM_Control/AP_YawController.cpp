@@ -128,7 +128,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     // Apply integrator, but clamp input to prevent control saturation and freeze integrator below min FBW speed
     // Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
     // Don't integrate if _K_D is zero as integrator will keep winding up
-    if (!disable_integrator && _K_D > 0) {
+    if (!disable_integrator && is_positive(_K_D)) {
         // only integrate if airspeed above min value
         if (aspeed >  static_cast<float>(aspd_min))
         {
@@ -159,7 +159,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 
     // Protect against increases to _K_D during in-flight tuning from creating large control transients
     // due to stored integrator values
-    if (_K_D > _K_D_last && _K_D > 0) {
+    if (_K_D > _K_D_last && is_positive(_K_D)) {
         _integrator = _K_D_last/_K_D * _integrator;
     }
     _K_D_last = _K_D;

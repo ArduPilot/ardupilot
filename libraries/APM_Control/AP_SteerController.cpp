@@ -158,7 +158,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 
     // Multiply yaw rate error by _ki_rate and integrate
     // Don't integrate if in stabilize mode as the integrator will wind up against the pilots inputs
-    if (ki_rate > 0 && speed >= _minspeed) {
+    if (is_positive(ki_rate) && speed >= _minspeed) {
         // only integrate if gain and time step are positive.
         if (dt > 0) {
             float integrator_delta = rate_error * ki_rate * delta_time * scaler;

@@ -184,9 +184,9 @@ void AP_AutoTune::update(float desired_rate, float achieved_rate, float servo_ou
         // we are not demanding max rate
         new_state = DEMAND_UNSATURATED;
     } else if (fabsf(achieved_rate) > abs_desired_rate) {
-        new_state = desired_rate > 0 ? DEMAND_OVER_POS : DEMAND_OVER_NEG;
+        new_state = is_positive(desired_rate) ? DEMAND_OVER_POS : DEMAND_OVER_NEG;
     } else {
-        new_state = desired_rate > 0 ? DEMAND_UNDER_POS : DEMAND_UNDER_NEG;
+        new_state = is_positive(desired_rate) ? DEMAND_UNDER_POS : DEMAND_UNDER_NEG;
     }
     if (new_state != state) {
         check_state_exit(now - state_enter_ms);
