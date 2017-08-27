@@ -93,7 +93,7 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
 static const struct {
     float tau;
     float Dratio;
-    float rmax;
+    int16_t rmax;
 } tuning_table[] = {
     { 0.70f, 0.050f,  20 },   // level 1
     { 0.65f, 0.055f,  30 },   // level 2
@@ -336,8 +336,8 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
         LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
         time_us    : AP_HAL::micros64(),
         type       : static_cast<uint8_t>(type),
-        state      : (uint8_t)state,
-        servo      : (int16_t)(servo*100),
+        state      : static_cast<uint8_t>(state),
+        servo      : static_cast<int16_t>(servo*100),
         demanded   : demanded,
         achieved   : achieved,
         P          : current.P.get()

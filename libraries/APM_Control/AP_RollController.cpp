@@ -104,7 +104,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     float eas2tas = _ahrs.get_EAS2TAS();
     float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
     float k_ff = gains.FF / eas2tas;
-    float delta_time    = (float)dt * 0.001f;
+    float delta_time    = static_cast<float>(dt) * 0.001f;
 
     // Limit the demanded roll rate
     if (gains.rmax && desired_rate < -gains.rmax) {
@@ -132,7 +132,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     // Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
     if (!disable_integrator && ki_rate > 0) {
         // only integrate if gain and time step are positive and airspeed above min value.
-        if (dt > 0 && aspeed > float(aparm.airspeed_min)) {
+        if (dt > 0 && aspeed >  static_cast<float>(aparm.airspeed_min)) {
             float integrator_delta = rate_error * ki_rate * delta_time * scaler;
             // prevent the integrator from increasing if surface defln demand is above the upper limit
             if (_last_out < -45) {
@@ -175,7 +175,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     _last_out += _pid_info.I;
 
     // Convert to centi-degrees and constrain
-    return constrain_float(_last_out * 100, -4500, 4500);
+    return static_cast<int32_t>(constrain_float(_last_out * 100.0f, -4500.0f, 4500.0f));
 }
 
 

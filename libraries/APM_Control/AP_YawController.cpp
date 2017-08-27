@@ -88,7 +88,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
         aspd_min = 1;
     }
 
-    float delta_time = (float) dt / 1000.0f;
+    float delta_time = static_cast<float>(dt) / 1000.0f;
 
     // Calculate yaw rate required to keep up with a constant height coordinated turn
     float aspeed;
@@ -100,9 +100,9 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     }
     if (!_ahrs.airspeed_estimate(&aspeed)) {
         // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max));
+        aspeed = 0.5f*(static_cast<float>(aspd_min) + static_cast<float>(aparm.airspeed_max));
     }
-    rate_offset = (GRAVITY_MSS / MAX(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
+    rate_offset = (GRAVITY_MSS / MAX(aspeed ,  static_cast<float>(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 
     // Get body rate vector (radians/sec)
     float omega_z = _ahrs.get_gyro().z;
@@ -130,7 +130,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     // Don't integrate if _K_D is zero as integrator will keep winding up
     if (!disable_integrator && _K_D > 0) {
         // only integrate if airspeed above min value
-        if (aspeed > float(aspd_min))
+        if (aspeed >  static_cast<float>(aspd_min))
         {
             // prevent the integrator from increasing if surface defln demand is above the upper limit
             if (_last_out < -45) {
@@ -173,7 +173,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     _last_out =  _pid_info.I + _pid_info.D;
 
     // Convert to centi-degrees and constrain
-    return constrain_float(_last_out * 100, -4500, 4500);
+    return static_cast<int32_t>(constrain_float(_last_out * 100.0f, -4500.0f, 4500.0f));
 }
 
 void AP_YawController::reset_I()

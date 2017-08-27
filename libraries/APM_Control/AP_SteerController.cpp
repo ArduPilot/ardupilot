@@ -154,7 +154,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     float ki_rate = _K_I * _tau * 45.0f;
     float kp_ff = MAX((_K_P - _K_I * _tau) * _tau  - _K_D , 0) * 45.0f;
     float k_ff = _K_FF * 45.0f;
-    float delta_time    = (float)dt * 0.001f;
+    float delta_time    = static_cast<float>(dt) * 0.001f;
 
     // Multiply yaw rate error by _ki_rate and integrate
     // Don't integrate if in stabilize mode as the integrator will wind up against the pilots inputs
@@ -199,7 +199,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     }
 
     // Convert to centi-degrees and constrain
-    return constrain_float(_last_out * 100, -derate_constraint, derate_constraint);
+    return static_cast<int32_t>(constrain_float(_last_out * 100.0f, -derate_constraint, derate_constraint));
 }
 
 

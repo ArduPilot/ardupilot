@@ -121,7 +121,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     }
     _last_t = tnow;
 
-    float delta_time    = (float)dt * 0.001f;
+    float delta_time    = static_cast<float>(dt) * 0.001f;
 
     // Get body rate vector (radians/sec)
     float omega_y = _ahrs.get_gyro().y;
@@ -151,7 +151,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
         }
         float ki_rate = k_I * gains.tau;
         // only integrate if gain and time step are positive and airspeed above min value.
-        if (dt > 0 && aspeed > 0.5f * float(aparm.airspeed_min)) {
+        if (dt > 0 && aspeed > 0.5f *  static_cast<float>(aparm.airspeed_min)) {
             float integrator_delta = rate_error * ki_rate * delta_time * scaler;
             if (_last_out < -45) {
                 // prevent the integrator from increasing if surface defln demand is above the upper limit
@@ -211,18 +211,18 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
       beyond the configured roll limit, reducing to zero at 90
       degrees
     */
-    float roll_wrapped = fabsf(_ahrs.roll_sensor);
+    float roll_wrapped = abs(_ahrs.roll_sensor);
     if (roll_wrapped > 9000) {
         roll_wrapped = 18000 - roll_wrapped;
     }
     if (roll_wrapped > aparm.roll_limit_cd + 500 && aparm.roll_limit_cd < 8500 &&
-        labs(_ahrs.pitch_sensor) < 7000) {
-        float roll_prop = (roll_wrapped - (aparm.roll_limit_cd + 500)) / (float)(9000 - aparm.roll_limit_cd);
+        abs(_ahrs.pitch_sensor) < 7000) {
+        float roll_prop = (roll_wrapped - (aparm.roll_limit_cd + 500)) / static_cast<float>(9000 - aparm.roll_limit_cd);
         _last_out *= (1 - roll_prop);
     }
 
     // Convert to centi-degrees and constrain
-    return constrain_float(_last_out * 100, -4500, 4500);
+    return static_cast<int32_t>(constrain_float(_last_out * 100.0f, -4500.0f, 4500.0f));
 }
 
 /*
@@ -240,7 +240,7 @@ int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
     float aspeed;
     if (!_ahrs.airspeed_estimate(&aspeed)) {
         // If no airspeed available use average of min and max
-        aspeed = 0.5f * (float(aparm.airspeed_min) + float(aparm.airspeed_max));
+        aspeed = 0.5f * (static_cast<float>(aparm.airspeed_min) + static_cast<float>(aparm.airspeed_max));
     }
     return _get_rate_out(desired_rate, scaler, false, aspeed);
 }
@@ -271,13 +271,13 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
     }
     if (!_ahrs.airspeed_estimate(&aspeed)) {
         // If no airspeed available use average of min and max
-        aspeed = 0.5f * (float(aparm.airspeed_min) + float(aparm.airspeed_max));
+        aspeed = 0.5f * (static_cast<float>(aparm.airspeed_min) + static_cast<float>(aparm.airspeed_max));
     }
     if (abs(_ahrs.pitch_sensor) > 7000) {
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) ,  static_cast<float>(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
     if (inverted) {
         rate_offset = -rate_offset;
