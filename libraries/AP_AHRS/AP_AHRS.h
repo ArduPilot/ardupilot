@@ -302,7 +302,7 @@ public:
     virtual bool get_position(struct Location &loc) const = 0;
 
     // return a wind estimation vector, in m/s
-    virtual Vector3f wind_estimate(void) = 0;
+    virtual Vector3f wind_estimate(void) const = 0;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate

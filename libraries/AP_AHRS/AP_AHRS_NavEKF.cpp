@@ -432,7 +432,7 @@ float AP_AHRS_NavEKF::get_error_yaw(void) const
 }
 
 // return a wind estimation vector, in m/s
-Vector3f AP_AHRS_NavEKF::wind_estimate(void)
+Vector3f AP_AHRS_NavEKF::wind_estimate(void) const
 {
     Vector3f wind;
     switch (active_EKF_type()) {
