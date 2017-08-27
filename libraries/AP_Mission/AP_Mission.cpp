@@ -22,6 +22,13 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RESTART",  1, AP_Mission, _restart, AP_MISSION_RESTART_DEFAULT),
 
+    // @Param: OPTIONS
+    // @DisplayName: Mission options bitmask
+    // @Description: Bitmask of what options to use in missions.
+    // @Bitmask: 0:Clear Mission on reboot
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -43,6 +50,12 @@ void AP_Mission::init()
 
     // changes in Content size break the storage
     static_assert(sizeof(union Content) == 12, "AP_Mission: Content must be 12 bytes");
+
+    // If Mission Clear bit is set then it should clear the mission, otherwise retain the mission.
+    if (AP_MISSION_MASK_MISSION_CLEAR & _options) {
+    	gcs().send_text(MAV_SEVERITY_INFO, "Clearing Mission");
+    	clear();	
+    }
 
     _last_change_time_ms = AP_HAL::millis();
 }

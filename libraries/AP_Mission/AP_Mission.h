@@ -37,6 +37,9 @@
 
 #define AP_MISSION_RESTART_DEFAULT          0       // resume the mission from the last command run by default
 
+#define AP_MISSION_OPTIONS_DEFAULT          0       // Do not clear the mission when rebooting
+#define AP_MISSION_MASK_MISSION_CLEAR       (1<<0)  // If set then Clear the mission on boot
+
 /// @class    AP_Mission
 /// @brief    Object managing Mission
 class AP_Mission {
@@ -504,6 +507,7 @@ private:
     // parameters
     AP_Int16                _cmd_total;  // total number of commands in the mission
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
+    AP_Int16                _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started
