@@ -173,7 +173,7 @@ void AP_AutoTune::update(float desired_rate, float achieved_rate, float servo_ou
     float abs_desired_rate = fabsf(desired_rate);
     uint32_t now = AP_HAL::millis();
 
-    if (fabsf(servo_out) >= 45) {
+    if (fabsf(servo_out) >= 45.0f) {
         // we have saturated the servo demand (not including
         // integrator), we cannot get any information that would allow
         // us to increase the gain

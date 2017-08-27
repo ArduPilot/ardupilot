@@ -135,16 +135,16 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
         if (dt > 0 && aspeed >  static_cast<float>(aparm.airspeed_min)) {
             float integrator_delta = rate_error * ki_rate * delta_time * scaler;
             // prevent the integrator from increasing if surface defln demand is above the upper limit
-            if (_last_out < -45) {
-                integrator_delta = MAX(integrator_delta , 0);
-            } else if (_last_out > 45) {
+            if (_last_out < -45.0f) {
+                integrator_delta = MAX(integrator_delta , 0.0f);
+            } else if (_last_out > 45.0f) {
                 // prevent the integrator from decreasing if surface defln demand  is below the lower limit
-                 integrator_delta = MIN(integrator_delta, 0);
+                 integrator_delta = MIN(integrator_delta, 0.0f);
             }
             _pid_info.I += integrator_delta;
         }
     } else {
-        _pid_info.I = 0;
+        _pid_info.I = 0.0f;
     }
 
     // Scale the integration limit
@@ -214,6 +214,6 @@ int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool d
 
 void AP_RollController::reset_I()
 {
-    _pid_info.I = 0;
+    _pid_info.I = 0.0f;
 }
 

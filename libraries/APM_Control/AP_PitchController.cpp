@@ -153,12 +153,12 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
         // only integrate if gain and time step are positive and airspeed above min value.
         if (dt > 0 && aspeed > 0.5f *  static_cast<float>(aparm.airspeed_min)) {
             float integrator_delta = rate_error * ki_rate * delta_time * scaler;
-            if (_last_out < -45) {
+            if (_last_out < -45.0f) {
                 // prevent the integrator from increasing if surface defln demand is above the upper limit
-                integrator_delta = MAX(integrator_delta , 0);
-            } else if (_last_out > 45) {
+                integrator_delta = MAX(integrator_delta , 0.0f);
+            } else if (_last_out > 45.0f) {
                 // prevent the integrator from decreasing if surface defln demand  is below the lower limit
-                integrator_delta = MIN(integrator_delta , 0);
+                integrator_delta = MIN(integrator_delta , 0.0f);
             }
             _pid_info.I += integrator_delta;
         }
@@ -212,10 +212,10 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
       degrees
     */
     float roll_wrapped = abs(_ahrs.roll_sensor);
-    if (roll_wrapped > 9000) {
-        roll_wrapped = 18000 - roll_wrapped;
+    if (roll_wrapped > 9000.0f) {
+        roll_wrapped = 18000.0f - roll_wrapped;
     }
-    if (roll_wrapped > aparm.roll_limit_cd + 500 && aparm.roll_limit_cd < 8500 &&
+    if (roll_wrapped > aparm.roll_limit_cd + 500.0f && aparm.roll_limit_cd < 8500 &&
         abs(_ahrs.pitch_sensor) < 7000) {
         float roll_prop = (roll_wrapped - (aparm.roll_limit_cd + 500)) / static_cast<float>(9000 - aparm.roll_limit_cd);
         _last_out *= (1 - roll_prop);
@@ -258,15 +258,15 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
     float bank_angle = _ahrs.roll;
 
     // limit bank angle between +- 80 deg if right way up
-    if (fabsf(bank_angle) < radians(90)) {
-        bank_angle = constrain_float(bank_angle, -radians(80), radians(80));
+    if (fabsf(bank_angle) < radians(90.0f)) {
+        bank_angle = constrain_float(bank_angle, -radians(80.0f), radians(80.0f));
         inverted = false;
     } else {
         inverted = true;
-        if (bank_angle > 0.0f) {
-            bank_angle = constrain_float(bank_angle, radians(100), radians(180));
+        if (is_positive(bank_angle)) {
+            bank_angle = constrain_float(bank_angle, radians(100.0f), radians(180.0f));
         } else {
-            bank_angle = constrain_float(bank_angle, -radians(180), -radians(100));
+            bank_angle = constrain_float(bank_angle, -radians(180.0f), -radians(100.0f));
         }
     }
     if (!_ahrs.airspeed_estimate(&aspeed)) {
@@ -275,9 +275,9 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
     }
     if (abs(_ahrs.pitch_sensor) > 7000) {
         // don't do turn coordination handling when at very high pitch angles
-        rate_offset = 0;
+        rate_offset = 0.0f;
     } else {
-        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) ,  static_cast<float>(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.pitch) * fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) ,  static_cast<float>(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
     if (inverted) {
         rate_offset = -rate_offset;
@@ -335,5 +335,5 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
 
 void AP_PitchController::reset_I()
 {
-    _pid_info.I = 0;
+    _pid_info.I = 0.0f;
 }

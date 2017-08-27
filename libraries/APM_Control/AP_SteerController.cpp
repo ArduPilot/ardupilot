@@ -164,15 +164,15 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
             float integrator_delta = rate_error * ki_rate * delta_time * scaler;
             // prevent the integrator from increasing if steering defln demand is above the upper limit
             if (_last_out < -45) {
-                integrator_delta = MAX(integrator_delta , 0);
+                integrator_delta = MAX(integrator_delta , 0.0f);
             } else if (_last_out > 45) {
                 // prevent the integrator from decreasing if steering defln demand is below the lower limit
-                integrator_delta = MIN(integrator_delta, 0);
+                integrator_delta = MIN(integrator_delta, 0.0f);
             }
             _pid_info.I += integrator_delta;
         }
     } else {
-        _pid_info.I = 0;
+        _pid_info.I = 0.0f;
     }
 
     // Scale the integration limit
@@ -188,11 +188,11 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     // Calculate the demanded control surface deflection
     _last_out = _pid_info.D + _pid_info.FF + _pid_info.P + _pid_info.I;
 
-    float derate_constraint = 4500;
+    float derate_constraint = 4500.0f;
 
     // Calculate required constrain based on speed
     if (!is_zero(_deratespeed) && speed > _deratespeed) {
-        derate_constraint = 4500 - (speed - _deratespeed) * _deratefactor * 100;
+        derate_constraint = 4500.0f - (speed - _deratespeed) * _deratefactor * 100.0f;
         if (derate_constraint < _mindegree) {
             derate_constraint = _mindegree;
         }
@@ -241,6 +241,6 @@ int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err)
 
 void AP_SteerController::reset_I()
 {
-    _pid_info.I = 0;
+    _pid_info.I = 0.0f;
 }
 
