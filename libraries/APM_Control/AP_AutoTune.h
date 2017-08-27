@@ -57,7 +57,7 @@ private:
     // what type of autotune is this
     ATType type;
 
-	const AP_Vehicle::FixedWing &aparm;
+    const AP_Vehicle::FixedWing &aparm;
 
     DataFlash_Class &dataflash;
 
