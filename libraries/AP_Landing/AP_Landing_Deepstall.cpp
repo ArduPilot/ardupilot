@@ -126,7 +126,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 
     // @Group: DS_
     // @Path: ../PID/PID.cpp
-    AP_SUBGROUPINFO(ds_PID, "", 14, AP_Landing_Deepstall, PID),
+    AP_SUBGROUPINFO(ds_PID, "", 14, AP_Landing_Deepstall, AC_PID),
 
     // @Param: ABORTALT
     // @DisplayName: Deepstall minimum abort altitude
@@ -557,6 +557,7 @@ float AP_Landing_Deepstall::update_steering()
                                     (double)degrees(yaw_rate),
                                     (double)location_diff(current_loc, landing_point).length());
 #endif // DEBUG_PRINTS
-
-    return ds_PID.get_pid(error);
+    ds_PID.set_dt(dt);
+    ds_PID.set_input_filter_all(error);
+    return ds_PID.get_pid();
 }
