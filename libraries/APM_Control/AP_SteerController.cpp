@@ -122,7 +122,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 */
 int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 {
-    uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::millis();
     uint32_t dt = tnow - _last_t;
     if (_last_t == 0 || dt > 1000) {
         dt = 0;
@@ -137,7 +137,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 
     // this is a linear approximation of the inverse steering
     // equation for a ground vehicle. It returns steering as an angle from -45 to 45
-    float scaler = 1.0f / speed;
+    const float scaler = 1.0f / speed;
 
     _pid_info.desired = desired_rate;
 
@@ -147,14 +147,14 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     if (_reverse) {
         yaw_rate_earth *= -1.0f;
     }
-    float rate_error = (desired_rate - yaw_rate_earth) * scaler;
+    const float rate_error = (desired_rate - yaw_rate_earth) * scaler;
 
     // Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-    float ki_rate = _K_I * _tau * 45.0f;
-    float kp_ff = MAX((_K_P - _K_I * _tau) * _tau  - _K_D , 0) * 45.0f;
-    float k_ff = _K_FF * 45.0f;
-    float delta_time    = static_cast<float>(dt) * 0.001f;
+    const float ki_rate = _K_I * _tau * 45.0f;
+    const float kp_ff = MAX((_K_P - _K_I * _tau) * _tau  - _K_D , 0) * 45.0f;
+    const float k_ff = _K_FF * 45.0f;
+    const float delta_time    = static_cast<float>(dt) * 0.001f;
 
     // Multiply yaw rate error by _ki_rate and integrate
     // Don't integrate if in stabilize mode as the integrator will wind up against the pilots inputs
@@ -176,7 +176,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     }
 
     // Scale the integration limit
-    float intLimScaled = _imax * 0.01f;
+    const float intLimScaled = _imax * 0.01f;
 
     // Constrain the integrator state
     _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
@@ -234,7 +234,7 @@ int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err)
     }
 
     // Calculate the desired steering rate (deg/sec) from the angle error
-    float desired_rate = angle_err * 0.01f / _tau;
+    const float desired_rate = angle_err * 0.01f / _tau;
 
     return get_steering_out_rate(desired_rate);
 }

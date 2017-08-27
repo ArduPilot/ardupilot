@@ -75,7 +75,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
 
 int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 {
-    uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::millis();
     uint32_t dt = tnow - _last_t;
     if (_last_t == 0 || dt > 1000) {
         dt = 0;
@@ -88,11 +88,10 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
         aspd_min = 1;
     }
 
-    float delta_time = static_cast<float>(dt) / 1000.0f;
+    const float delta_time = static_cast<float>(dt) / 1000.0f;
 
     // Calculate yaw rate required to keep up with a constant height coordinated turn
     float aspeed;
-    float rate_offset;
     float bank_angle = _ahrs.roll;
     // limit bank angle between +- 80 deg if right way up
     if (fabsf(bank_angle) < 1.5707964f) {
@@ -102,28 +101,28 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
         // If no airspeed available use average of min and max
         aspeed = 0.5f*(static_cast<float>(aspd_min) + static_cast<float>(aparm.airspeed_max));
     }
-    rate_offset = (GRAVITY_MSS / MAX(aspeed ,  static_cast<float>(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
+    const float rate_offset = (GRAVITY_MSS / MAX(aspeed ,  static_cast<float>(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 
     // Get body rate vector (radians/sec)
-    float omega_z = _ahrs.get_gyro().z;
+    const float omega_z = _ahrs.get_gyro().z;
 
     // Get the accln vector (m/s^2)
-    float accel_y = _ahrs.get_ins().get_accel().y;
+    const float accel_y = _ahrs.get_ins().get_accel().y;
 
     // Subtract the steady turn component of rate from the measured rate
     // to calculate the rate relative to the turn requirement in degrees/sec
-    float rate_hp_in = ToDeg(omega_z - rate_offset);
+    const float rate_hp_in = ToDeg(omega_z - rate_offset);
 
     // Apply a high-pass filter to the rate to washout any steady state error
     // due to bias errors in rate_offset
     // Use a cut-off frequency of omega = 0.2 rad/sec
     // Could make this adjustable by replacing 0.9960080 with (1 - omega * dt)
-    float rate_hp_out = 0.9960080f * _last_rate_hp_out + rate_hp_in - _last_rate_hp_in;
+    const float rate_hp_out = 0.9960080f * _last_rate_hp_out + rate_hp_in - _last_rate_hp_in;
     _last_rate_hp_out = rate_hp_out;
     _last_rate_hp_in = rate_hp_in;
 
     // Calculate input to integrator
-    float integ_in = - _K_I * (_K_A * accel_y + rate_hp_out);
+    const float integ_in = - _K_I * (_K_A * accel_y + rate_hp_out);
 
     // Apply integrator, but clamp input to prevent control saturation and freeze integrator below min FBW speed
     // Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
@@ -152,7 +151,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     }
 
     // Scale the integration limit
-    float intLimScaled = _imax * 0.01f / (_K_D * scaler * scaler);
+    const float intLimScaled = _imax * 0.01f / (_K_D * scaler * scaler);
 
     // Constrain the integrator state
     _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);

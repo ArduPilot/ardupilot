@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 */
 int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
 {
-    uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::millis();
     uint32_t dt = tnow - _last_t;
     if (_last_t == 0 || dt > 1000) {
         dt = 0;
@@ -100,11 +100,11 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 
     // Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-    float ki_rate = gains.I * gains.tau;
-    float eas2tas = _ahrs.get_EAS2TAS();
-    float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
-    float k_ff = gains.FF / eas2tas;
-    float delta_time    = static_cast<float>(dt) * 0.001f;
+    const float ki_rate = gains.I * gains.tau;
+    const float eas2tas = _ahrs.get_EAS2TAS();
+    const float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0.0f) / eas2tas;
+    const float k_ff = gains.FF / eas2tas;
+    const float delta_time = static_cast<float>(dt) * 0.001f;
 
     // Limit the demanded roll rate
     if (gains.rmax && desired_rate < -gains.rmax) {
@@ -114,11 +114,11 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     }
 
     // Get body rate vector (radians/sec)
-    float omega_x = _ahrs.get_gyro().x;
+    const float omega_x = _ahrs.get_gyro().x;
 
     // Calculate the roll rate error (deg/sec) and apply gain scaler
-    float achieved_rate = ToDeg(omega_x);
-    float rate_error = (desired_rate - achieved_rate) * scaler;
+    const float achieved_rate = ToDeg(omega_x);
+    const float rate_error = (desired_rate - achieved_rate) * scaler;
 
     // Get an airspeed estimate - default to zero if none available
     float aspeed;
@@ -148,7 +148,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     }
 
     // Scale the integration limit
-    float intLimScaled = gains.imax * 0.01f;
+    const float intLimScaled = gains.imax * 0.01f;
 
     // Constrain the integrator state
     _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
@@ -207,7 +207,7 @@ int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool d
     }
 
     // Calculate the desired roll rate (deg/sec) from the angle error
-    float desired_rate = angle_err * 0.01f / gains.tau;
+    const float desired_rate = angle_err * 0.01f / gains.tau;
 
     return _get_rate_out(desired_rate, scaler, disable_integrator);
 }

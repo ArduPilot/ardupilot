@@ -115,7 +115,7 @@ void AP_AutoTune::start(void)
 {
     running = true;
     state = DEMAND_UNSATURATED;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     state_enter_ms = now;
     last_save_ms = now;
@@ -170,8 +170,8 @@ void AP_AutoTune::update(float desired_rate, float achieved_rate, float servo_ou
 
     // see what state we are in
     ATState new_state;
-    float abs_desired_rate = fabsf(desired_rate);
-    uint32_t now = AP_HAL::millis();
+    const float abs_desired_rate = fabsf(desired_rate);
+    const uint32_t now = AP_HAL::millis();
 
     if (fabsf(servo_out) >= 45.0f) {
         // we have saturated the servo demand (not including
@@ -239,7 +239,8 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
  */
 void AP_AutoTune::check_save(void)
 {
-    if (AP_HAL::millis() - last_save_ms < AUTOTUNE_SAVE_PERIOD) {
+    const uint32_t now = AP_HAL::millis();
+    if (now - last_save_ms < AUTOTUNE_SAVE_PERIOD) {
         return;
     }
 
@@ -247,7 +248,7 @@ void AP_AutoTune::check_save(void)
     // the last save period. This means the pilot has
     // AUTOTUNE_SAVE_PERIOD milliseconds to decide they don't like the
     // gains and switch out of autotune
-    ATGains tmp = current;
+    const ATGains tmp = current;
 
     save_gains(next_save);
     Debug("SAVE P -> %.3f\n", current.P.get());
@@ -260,7 +261,7 @@ void AP_AutoTune::check_save(void)
 
     // the next values to save will be the ones we are flying now
     next_save = current;
-    last_save_ms = AP_HAL::millis();
+    last_save_ms = now;
 }
 
 /*
@@ -289,7 +290,7 @@ void AP_AutoTune::log_param_change(float v, const char *suffix)
  */
 void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const char *suffix)
 {
-    float old_value = v.get();
+    const float old_value = v.get();
     v.set(value);
     if (value <= 0 || fabsf((value-old_value)/value) > 0.001f) {
         v.save();
@@ -302,7 +303,7 @@ void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const char *su
  */
 void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const char *suffix)
 {
-    int16_t old_value = v.get();
+    const int16_t old_value = v.get();
     v.set(value);
     if (old_value != v.get()) {
         v.save();

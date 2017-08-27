@@ -113,7 +113,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 */
 int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed)
 {
-    uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::millis();
     uint32_t dt = tnow - _last_t;
 
     if (_last_t == 0 || dt > 1000) {
@@ -121,14 +121,14 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     }
     _last_t = tnow;
 
-    float delta_time    = static_cast<float>(dt) * 0.001f;
+    const float delta_time = static_cast<float>(dt) * 0.001f;
 
     // Get body rate vector (radians/sec)
-    float omega_y = _ahrs.get_gyro().y;
+    const float omega_y = _ahrs.get_gyro().y;
 
     // Calculate the pitch rate error (deg/sec) and scale
-    float achieved_rate = ToDeg(omega_y);
-    float rate_error = (desired_rate - achieved_rate) * scaler;
+    const float achieved_rate = ToDeg(omega_y);
+    const float rate_error = (desired_rate - achieved_rate) * scaler;
 
     // Multiply pitch rate error by _ki_rate and integrate
     // Scaler is applied before integrator so that integrator state relates directly to elevator deflection
@@ -149,7 +149,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
              */
             k_I = MAX(k_I, 0.15f);
         }
-        float ki_rate = k_I * gains.tau;
+        const float ki_rate = k_I * gains.tau;
         // only integrate if gain and time step are positive and airspeed above min value.
         if (dt > 0 && aspeed > 0.5f *  static_cast<float>(aparm.airspeed_min)) {
             float integrator_delta = rate_error * ki_rate * delta_time * scaler;
@@ -167,16 +167,16 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     }
 
     // Scale the integration limit
-    float intLimScaled = gains.imax * 0.01f;
+    const float intLimScaled = gains.imax * 0.01f;
 
     // Constrain the integrator state
     _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
 
     // Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-    float eas2tas = _ahrs.get_EAS2TAS();
-    float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
-    float k_ff = gains.FF / eas2tas;
+    const float eas2tas = _ahrs.get_EAS2TAS();
+    const float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0.0f) / eas2tas;
+    const float k_ff = gains.FF / eas2tas;
 
     // Calculate the demanded control surface deflection
     // Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
@@ -217,7 +217,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     }
     if (roll_wrapped > aparm.roll_limit_cd + 500.0f && aparm.roll_limit_cd < 8500 &&
         abs(_ahrs.pitch_sensor) < 7000) {
-        float roll_prop = (roll_wrapped - (aparm.roll_limit_cd + 500)) / static_cast<float>(9000 - aparm.roll_limit_cd);
+        const float roll_prop = (roll_wrapped - (aparm.roll_limit_cd + 500)) / static_cast<float>(9000 - aparm.roll_limit_cd);
         _last_out *= (1 - roll_prop);
     }
 
@@ -300,14 +300,13 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
     // Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
     // Pitch rate offset is the component of turn rate about the pitch axis
     float aspeed;
-    float rate_offset;
     bool inverted;
 
     if (gains.tau < 0.1f) {
         gains.tau.set(0.1f);
     }
 
-    rate_offset = _get_coordination_rate_offset(aspeed, inverted);
+    const float rate_offset = _get_coordination_rate_offset(aspeed, inverted);
 
     // Calculate the desired pitch rate (deg/sec) from the angle error
     float desired_rate = angle_err * 0.01f / gains.tau;
