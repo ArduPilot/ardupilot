@@ -1,12 +1,8 @@
 from LogAnalyzer import Test,TestResult
 import DataflashLog
 
+from functools import reduce
 import math
-
-try:               # Python 2
-    reduce
-except NameError:  # Python 3
-    from functools import reduce
 
 
 class TestCompass(Test):
@@ -117,13 +113,3 @@ class TestCompass(Test):
         except KeyError as e:
             self.result.status = TestResult.StatusType.FAIL
             self.result.statusMessage = str(e) + ' not found'
-
-
-
-
-
-
-
-
-
-
