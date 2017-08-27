@@ -231,7 +231,6 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
 }
 
 // return a throttle output from -1 to +1 given a desired speed in m/s (use negative speeds to travel backwards)
-//   skid_steering should be true for skid-steer vehicles
 //   motor_limit should be true if motors have hit their upper or lower limits
 //   cruise speed should be in m/s, cruise throttle should be a number from -1 to +1
 float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle)
@@ -312,7 +311,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
 }
 
 // return a throttle output from -1 to +1 to perform a controlled stop.  returns true once the vehicle has stopped
-float AR_AttitudeControl::get_throttle_out_stop(bool skid_steering, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, bool &stopped)
+float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, bool &stopped)
 {
     // get current system time
     uint32_t now = AP_HAL::millis();
@@ -344,7 +343,7 @@ float AR_AttitudeControl::get_throttle_out_stop(bool skid_steering, bool motor_l
         // clear stopped system time
         _stop_last_ms = 0;
         // run speed controller to bring vehicle to stop
-        return get_throttle_out_speed(0.0f, skid_steering, motor_limit_low, motor_limit_high, cruise_speed, cruise_throttle);
+        return get_throttle_out_speed(0.0f, motor_limit_low, motor_limit_high, cruise_speed, cruise_throttle);
     }
 }
 

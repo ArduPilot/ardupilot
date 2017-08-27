@@ -60,13 +60,12 @@ public:
     void set_throttle_limits(float throttle_accel_max, float throttle_decel_max);
 
     // return a throttle output from -1 to +1 given a desired speed in m/s (use negative speeds to travel backwards)
-    //   skid_steering should be true for skid-steer vehicles
     //   motor_limit should be true if motors have hit their upper or lower limits
     //   cruise speed should be in m/s, cruise throttle should be a number from -1 to +1
-    float get_throttle_out_speed(float desired_speed, bool skid_steering, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle);
+    float get_throttle_out_speed(float desired_speed, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle);
 
     // return a throttle output from -1 to +1 to perform a controlled stop.  stopped is set to true once stop has been completed
-    float get_throttle_out_stop(bool skid_steering, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, bool &stopped);
+    float get_throttle_out_stop(bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, bool &stopped);
 
     // low level control accessors for reporting and logging
     AC_P& get_steering_angle_p() { return _steer_angle_p; }
