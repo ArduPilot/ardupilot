@@ -382,6 +382,10 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
+    if (_heliflags.inverted_flight) {
+        coll_in = 1 - coll_in;
+    }
+        
     // rescale roll_out and pitch_out into the min and max ranges to provide linear motion
     // across the input range instead of stopping when the input hits the constrain value
     // these calculations are based on an assumption of the user specified cyclic_max
