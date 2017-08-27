@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Units: s
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("TCONST",      0, AP_SteerController, _tau,       0.75f),
+    AP_GROUPINFO("TCONST", 0, AP_SteerController, _tau, 0.75f),
 
     // @Param: P
     // @DisplayName: Steering turning gain
@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: User
-    AP_GROUPINFO("P",      1, AP_SteerController, _K_P,        1.8f),
+    AP_GROUPINFO("P", 1, AP_SteerController, _K_P, 1.8f),
 
     // @Param: I
     // @DisplayName: Integrator Gain
@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Range: 0 1.0
     // @Increment: 0.05
     // @User: User
-    AP_GROUPINFO("I",        3, AP_SteerController, _K_I,        0.2f),
+    AP_GROUPINFO("I", 3, AP_SteerController, _K_I, 0.2f),
 
     // @Param: D
     // @DisplayName: Damping Gain
@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Range: 0 0.1
     // @Increment: 0.01
     // @User: User
-    AP_GROUPINFO("D",        4, AP_SteerController, _K_D,        0.005f),
+    AP_GROUPINFO("D", 4, AP_SteerController, _K_D, 0.005f),
 
     // @Param: IMAX
     // @DisplayName: Integrator limit
@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Increment: 1
     // @Units: cdeg
     // @User: Advanced
-    AP_GROUPINFO("IMAX",     5, AP_SteerController, _imax,        1500),
+    AP_GROUPINFO("IMAX", 5, AP_SteerController, _imax, 1500),
 
     // @Param: MINSPD
     // @DisplayName: Minimum speed
@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Increment: 0.1
     // @Units: m/s
     // @User: User
-    AP_GROUPINFO("MINSPD",   6, AP_SteerController, _minspeed,    1.0f),
+    AP_GROUPINFO("MINSPD", 6, AP_SteerController, _minspeed, 1.0f),
 
 
     // @Param: FF
@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Range: 0.0 10.0
     // @Increment: 0.1
     // @User: User
-    AP_GROUPINFO("FF",      7, AP_SteerController, _K_FF,        0),
+    AP_GROUPINFO("FF", 7, AP_SteerController, _K_FF, 0),
 
 
     // @Param: DRTSPD
@@ -92,7 +92,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Increment: 0.1
     // @Units: m/s
     // @User: Advanced
-    AP_GROUPINFO("DRTSPD",  8, AP_SteerController, _deratespeed,        0),
+    AP_GROUPINFO("DRTSPD", 8, AP_SteerController, _deratespeed, 0),
 
     // @Param: DRTFCT
     // @DisplayName: Derating factor
@@ -101,7 +101,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Increment: 0.1
     // @Units: deg/m/s
     // @User: Advanced
-    AP_GROUPINFO("DRTFCT", 9, AP_SteerController, _deratefactor,        10),
+    AP_GROUPINFO("DRTFCT", 9, AP_SteerController, _deratefactor, 10),
 
     // @Param: DRTMIN
     // @DisplayName: Minimum angle of wheel
@@ -110,7 +110,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Increment: 0.1
     // @Units: cdeg
     // @User: Advanced
-    AP_GROUPINFO("DRTMIN", 10, AP_SteerController, _mindegree,        4500),
+    AP_GROUPINFO("DRTMIN", 10, AP_SteerController, _mindegree, 4500),
 
     AP_GROUPEND
 };
@@ -181,7 +181,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     // Constrain the integrator state
     _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
 
-    _pid_info.D = rate_error * _K_D * 4.0f; 
+    _pid_info.D = rate_error * _K_D * 4.0f;
     _pid_info.P = (ToRad(desired_rate) * kp_ff) * scaler;
     _pid_info.FF = (ToRad(desired_rate) * k_ff) * scaler;
 

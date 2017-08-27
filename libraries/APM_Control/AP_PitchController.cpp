@@ -30,7 +30,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Units: s
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("TCONST",      0, AP_PitchController, gains.tau,       0.5f),
+    AP_GROUPINFO("TCONST", 0, AP_PitchController, gains.tau, 0.5f),
 
     // @Param: P
     // @DisplayName: Proportional Gain
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Range: 0.1 3.0
     // @Increment: 0.1
     // @User: User
-    AP_GROUPINFO("P",        1, AP_PitchController, gains.P,          0.6f),
+    AP_GROUPINFO("P", 1, AP_PitchController, gains.P, 0.6f),
 
     // @Param: D
     // @DisplayName: Damping Gain
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Range: 0 0.1
     // @Increment: 0.01
     // @User: User
-    AP_GROUPINFO("D",        2, AP_PitchController, gains.D,        0.02f),
+    AP_GROUPINFO("D", 2, AP_PitchController, gains.D, 0.02f),
 
     // @Param: I
     // @DisplayName: Integrator Gain
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Range: 0 0.5
     // @Increment: 0.05
     // @User: User
-    AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.15f),
+    AP_GROUPINFO("I", 3, AP_PitchController, gains.I, 0.15f),
 
     // @Param: RMAX_UP
     // @DisplayName: Pitch up max rate
@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Units: deg/s
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("RMAX_UP",     4, AP_PitchController, gains.rmax,   0.0f),
+    AP_GROUPINFO("RMAX_UP", 4, AP_PitchController, gains.rmax, 0.0f),
 
     // @Param: RMAX_DN
     // @DisplayName: Pitch down max rate
@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Units: deg/s
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("RMAX_DN",     5, AP_PitchController, _max_rate_neg,   0.0f),
+    AP_GROUPINFO("RMAX_DN", 5, AP_PitchController, _max_rate_neg, 0.0f),
 
     // @Param: RLL
     // @DisplayName: Roll compensation
@@ -80,7 +80,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Range: 0.7 1.5
     // @Increment: 0.05
     // @User: User
-    AP_GROUPINFO("RLL",      6, AP_PitchController, _roll_ff,        1.0f),
+    AP_GROUPINFO("RLL", 6, AP_PitchController, _roll_ff, 1.0f),
 
     // @Param: IMAX
     // @DisplayName: Integrator limit
@@ -88,7 +88,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Range: 0 4500
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("IMAX",      7, AP_PitchController, gains.imax,     3000),
+    AP_GROUPINFO("IMAX", 7, AP_PitchController, gains.imax, 3000),
 
     // @Param: FF
     // @DisplayName: Feed forward Gain
@@ -96,7 +96,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Range: 0.1 4.0
     // @Increment: 0.1
     // @User: User
-    AP_GROUPINFO("FF",        8, AP_PitchController, gains.FF,       0.0f),
+    AP_GROUPINFO("FF", 8, AP_PitchController, gains.FF, 0.0f),
 
     AP_GROUPEND
 };
@@ -150,8 +150,8 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
             k_I = MAX(k_I, 0.15f);
         }
         float ki_rate = k_I * gains.tau;
-        //only integrate if gain and time step are positive and airspeed above min value.
-        if (dt > 0 && aspeed > 0.5f*float(aparm.airspeed_min)) {
+        // only integrate if gain and time step are positive and airspeed above min value.
+        if (dt > 0 && aspeed > 0.5f * float(aparm.airspeed_min)) {
             float integrator_delta = rate_error * ki_rate * delta_time * scaler;
             if (_last_out < -45) {
                 // prevent the integrator from increasing if surface defln demand is above the upper limit
@@ -189,12 +189,12 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     _pid_info.desired = desired_rate;
 
     if (autotune.running && aspeed > aparm.airspeed_min) {
-        // let autotune have a go at the values 
+        // let autotune have a go at the values
         // Note that we don't pass the integrator component so we get
         // a better idea of how much the base PD controller
         // contributed
         autotune.update(desired_rate, achieved_rate, _last_out);
-        
+
         // set down rate to rate up when auto-tuning
         _max_rate_neg.set_and_save_ifchanged(gains.rmax);
     }
@@ -217,10 +217,10 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     }
     if (roll_wrapped > aparm.roll_limit_cd + 500 && aparm.roll_limit_cd < 8500 &&
         labs(_ahrs.pitch_sensor) < 7000) {
-        float roll_prop = (roll_wrapped - (aparm.roll_limit_cd+500)) / (float)(9000 - aparm.roll_limit_cd);
+        float roll_prop = (roll_wrapped - (aparm.roll_limit_cd + 500)) / (float)(9000 - aparm.roll_limit_cd);
         _last_out *= (1 - roll_prop);
     }
-    
+
     // Convert to centi-degrees and constrain
     return constrain_float(_last_out * 100, -4500, 4500);
 }
@@ -240,7 +240,7 @@ int32_t AP_PitchController::get_rate_out(float desired_rate, float scaler)
     float aspeed;
     if (!_ahrs.airspeed_estimate(&aspeed)) {
         // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
+        aspeed = 0.5f * (float(aparm.airspeed_min) + float(aparm.airspeed_max));
     }
     return _get_rate_out(desired_rate, scaler, false, aspeed);
 }
@@ -259,19 +259,19 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 
     // limit bank angle between +- 80 deg if right way up
     if (fabsf(bank_angle) < radians(90)) {
-        bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
+        bank_angle = constrain_float(bank_angle, -radians(80), radians(80));
         inverted = false;
     } else {
         inverted = true;
         if (bank_angle > 0.0f) {
-            bank_angle = constrain_float(bank_angle,radians(100),radians(180));
+            bank_angle = constrain_float(bank_angle, radians(100), radians(180));
         } else {
-            bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
+            bank_angle = constrain_float(bank_angle, -radians(180), -radians(100));
         }
     }
     if (!_ahrs.airspeed_estimate(&aspeed)) {
         // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
+        aspeed = 0.5f * (float(aparm.airspeed_min) + float(aparm.airspeed_max));
     }
     if (abs(_ahrs.pitch_sensor) > 7000) {
         // don't do turn coordination handling when at very high pitch angles
@@ -287,7 +287,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
 
 // Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
 // A positive demand is up
-// Inputs are: 
+// Inputs are:
 // 1) demanded pitch angle in centi-degrees
 // 2) control gain scaler = scaling_speed / aspeed
 // 3) boolean which is true when stabilise mode is active

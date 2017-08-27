@@ -7,7 +7,7 @@
 #include <cmath>
 
 class AP_YawController {
-public:                      
+public:
     AP_YawController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
         aparm(parms),
         _ahrs(ahrs)

@@ -9,7 +9,7 @@ class AP_SteerController {
 public:
     AP_SteerController(AP_AHRS &ahrs) :
         _ahrs(ahrs)
-    { 
+    {
         AP_Param::setup_object_defaults(this, var_info);
     }
 

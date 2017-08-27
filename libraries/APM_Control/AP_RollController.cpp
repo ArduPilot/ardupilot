@@ -30,7 +30,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Units: s
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("TCONST",      0, AP_RollController, gains.tau,       0.5f),
+    AP_GROUPINFO("TCONST", 0, AP_RollController, gains.tau, 0.5f),
 
     // @Param: P
     // @DisplayName: Proportional Gain
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Range: 0.1 4.0
     // @Increment: 0.1
     // @User: User
-    AP_GROUPINFO("P",        1, AP_RollController, gains.P,        0.6f),
+    AP_GROUPINFO("P", 1, AP_RollController, gains.P, 0.6f),
 
     // @Param: D
     // @DisplayName: Damping Gain
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Range: 0 0.1
     // @Increment: 0.01
     // @User: User
-    AP_GROUPINFO("D",        2, AP_RollController, gains.D,        0.02f),
+    AP_GROUPINFO("D", 2, AP_RollController, gains.D, 0.02f),
 
     // @Param: I
     // @DisplayName: Integrator Gain
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Range: 0 1.0
     // @Increment: 0.05
     // @User: User
-    AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.1f),
+    AP_GROUPINFO("I", 3, AP_RollController, gains.I, 0.1f),
 
     // @Param: RMAX
     // @DisplayName: Maximum Roll Rate
@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Units: deg/s
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("RMAX",   4, AP_RollController, gains.rmax,       0),
+    AP_GROUPINFO("RMAX", 4, AP_RollController, gains.rmax, 0),
 
     // @Param: IMAX
     // @DisplayName: Integrator limit
@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Range: 0 4500
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("IMAX",      5, AP_RollController, gains.imax,        3000),
+    AP_GROUPINFO("IMAX", 5, AP_RollController, gains.imax, 3000),
 
     // @Param: FF
     // @DisplayName: Feed forward Gain
@@ -79,7 +79,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Range: 0.1 4.0
     // @Increment: 0.1
     // @User: User
-    AP_GROUPINFO("FF",        6, AP_RollController, gains.FF,          0.0f),
+    AP_GROUPINFO("FF", 6, AP_RollController, gains.FF, 0.0f),
 
     AP_GROUPEND
 };
@@ -131,7 +131,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     // This means aileron trim offset doesn't change as the value of scaler changes with airspeed
     // Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
     if (!disable_integrator && ki_rate > 0) {
-        //only integrate if gain and time step are positive and airspeed above min value.
+        // only integrate if gain and time step are positive and airspeed above min value.
         if (dt > 0 && aspeed > float(aparm.airspeed_min)) {
             float integrator_delta = rate_error * ki_rate * delta_time * scaler;
             // prevent the integrator from increasing if surface defln demand is above the upper limit
@@ -165,7 +165,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     _last_out = _pid_info.FF + _pid_info.P + _pid_info.D;
 
     if (autotune.running && aspeed > aparm.airspeed_min) {
-        // let autotune have a go at the values 
+        // let autotune have a go at the values
         // Note that we don't pass the integrator component so we get
         // a better idea of how much the base PD controller
         // contributed

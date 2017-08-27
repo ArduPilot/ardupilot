@@ -13,7 +13,7 @@ public:
         aparm(parms),
         autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms, _dataflash),
         _ahrs(ahrs)
-    { 
+    {
         AP_Param::setup_object_defaults(this, var_info);
     }
 
@@ -40,7 +40,7 @@ public:
     AP_Float &kI(void) { return gains.I; }
     AP_Float &kD(void) { return gains.D; }
     AP_Float &kFF(void) { return gains.FF; }
-    
+
 private:
     const AP_Vehicle::FixedWing &aparm;
     AP_AutoTune::ATGains gains;

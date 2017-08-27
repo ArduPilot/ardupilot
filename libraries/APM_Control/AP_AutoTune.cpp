@@ -78,10 +78,10 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
 {}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <stdio.h>
-# define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
+  #include <stdio.h>
+  #define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
- # define Debug(fmt, args ...)
+  #define Debug(fmt, args ...)
 #endif
 
 /*

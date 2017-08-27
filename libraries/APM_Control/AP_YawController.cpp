@@ -30,7 +30,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     // @Range: 0 4
     // @Increment: 0.25
     // @User: Advanced
-    AP_GROUPINFO("SLIP",    0, AP_YawController, _K_A,    0),
+    AP_GROUPINFO("SLIP", 0, AP_YawController, _K_A, 0),
 
     // @Param: INT
     // @DisplayName: Sideslip control integrator
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     // @Range: 0 2
     // @Increment: 0.25
     // @User: Advanced
-    AP_GROUPINFO("INT",    1, AP_YawController, _K_I,    0),
+    AP_GROUPINFO("INT", 1, AP_YawController, _K_I, 0),
 
     // @Param: DAMP
     // @DisplayName: Yaw damping
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     // @Range: 0 2
     // @Increment: 0.25
     // @User: Advanced
-    AP_GROUPINFO("DAMP",   2, AP_YawController, _K_D,    0),
+    AP_GROUPINFO("DAMP", 2, AP_YawController, _K_D, 0),
 
     // @Param: RLL
     // @DisplayName: Yaw coordination gain
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     // @Range: 0.8 1.2
     // @Increment: 0.05
     // @User: Advanced
-    AP_GROUPINFO("RLL",   3, AP_YawController, _K_FF,   1),
+    AP_GROUPINFO("RLL", 3, AP_YawController, _K_FF, 1),
 
     /*
       Note: index 4 should not be used - it was used for an incorrect
@@ -68,7 +68,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     // @Range: 0 4500
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("IMAX",  5, AP_YawController, _imax,        1500),
+    AP_GROUPINFO("IMAX", 5, AP_YawController, _imax, 1500),
 
     AP_GROUPEND
 };
@@ -96,7 +96,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     float bank_angle = _ahrs.roll;
     // limit bank angle between +- 80 deg if right way up
     if (fabsf(bank_angle) < 1.5707964f) {
-        bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
+        bank_angle = constrain_float(bank_angle, -1.3962634f, 1.3962634f);
     }
     if (!_ahrs.airspeed_estimate(&aspeed)) {
         // If no airspeed available use average of min and max
@@ -122,14 +122,14 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     _last_rate_hp_out = rate_hp_out;
     _last_rate_hp_in = rate_hp_in;
 
-    //Calculate input to integrator
+    // Calculate input to integrator
     float integ_in = - _K_I * (_K_A * accel_y + rate_hp_out);
 
     // Apply integrator, but clamp input to prevent control saturation and freeze integrator below min FBW speed
     // Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
     // Don't integrate if _K_D is zero as integrator will keep winding up
     if (!disable_integrator && _K_D > 0) {
-        //only integrate if airspeed above min value
+        // only integrate if airspeed above min value
         if (aspeed > float(aspd_min))
         {
             // prevent the integrator from increasing if surface defln demand is above the upper limit
