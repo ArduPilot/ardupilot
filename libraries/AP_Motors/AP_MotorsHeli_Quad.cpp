@@ -239,11 +239,20 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
         limit.throttle_lower = true;
     }
 
+    if (_heliflags.inverted_flight) {
+        collective_out = 1 - collective_out;
+    }
+    
     // feed power estimate into main rotor controller
     _rotor.set_motor_load(fabsf(collective_out - _collective_mid_pct));
 
     // scale collective to -1 to 1
     collective_out = collective_out*2-1;
+
+    if (collective_out < 0) {
+        // with negative collective yaw torque is reversed
+        yaw_out = -yaw_out;
+    }
 
     float out[AP_MOTORS_HELI_QUAD_NUM_MOTORS] {};
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
