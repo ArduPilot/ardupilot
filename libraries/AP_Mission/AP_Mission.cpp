@@ -22,6 +22,13 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RESTART",  1, AP_Mission, _restart, AP_MISSION_RESTART_DEFAULT),
 
+    // @Param: RETAIN
+    // @DisplayName: Mission retained after reboot
+    // @Description: Controls mission if the mission is retained after a reboot, 0 to clear, 1 to retain.
+    // @Values: 0:Clear Mission, 1:Retain Mission
+    // @User: Advanced
+    AP_GROUPINFO("RETAIN",  2, AP_Mission, _retain, AP_MISSION_RETAIN_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -44,6 +51,12 @@ void AP_Mission::init()
     // prevent an easy programming error, this will be optimised out
     if (sizeof(union Content) != 12) {
         AP_HAL::panic("AP_Mission Content must be 12 bytes");
+    }
+    
+    // If _retain equals 0 then it should clear the mission
+    if(_retain == 0) {
+    	gcs().send_text(MAV_SEVERITY_INFO, "Clearing Mission");
+    	clear();	
     }
 
     _last_change_time_ms = AP_HAL::millis();
