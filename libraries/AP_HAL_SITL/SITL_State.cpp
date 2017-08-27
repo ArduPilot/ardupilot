@@ -8,10 +8,10 @@
 #include "UARTDriver.h"
 #include "Scheduler.h"
 
-#include <stdio.h>
+#include <cstdio>
 #include <signal.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <errno.h>
 #include <sys/select.h>
 

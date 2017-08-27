@@ -3,7 +3,7 @@
 
 #include "AP_HAL_SITL.h"
 #include "AnalogIn.h"
-#include <stdint.h>
+#include <cstdint>
 
 using namespace HALSITL;
 

@@ -11,7 +11,7 @@
 #define REMOTE_LOG_DEBUGGING 0
 
 #if REMOTE_LOG_DEBUGGING
-#include <stdio.h>
+#include <cstdio>
  # define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
 #else
  # define Debug(fmt, args ...)

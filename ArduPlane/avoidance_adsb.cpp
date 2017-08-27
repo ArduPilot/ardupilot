@@ -1,5 +1,5 @@
 
-#include <stdio.h>
+#include <cstdio>
 #include "Plane.h"
 
 void Plane::avoidance_adsb_update(void)

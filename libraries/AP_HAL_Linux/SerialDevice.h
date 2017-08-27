@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdlib>
 
 #include "AP_HAL_Linux.h"
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "AP_HAL_Namespace.h"
 #include "AP_HAL_Boards.h"

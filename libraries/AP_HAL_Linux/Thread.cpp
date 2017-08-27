@@ -18,7 +18,7 @@
 
 #include <alloca.h>
 #include <sys/types.h>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 #include <utility>
 

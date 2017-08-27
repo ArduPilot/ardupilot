@@ -17,7 +17,7 @@
 //  UAVCAN GPS driver
 //
 #include "AP_GPS_UAVCAN.h"
-#include <stdint.h>
+#include <cstdint>
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>

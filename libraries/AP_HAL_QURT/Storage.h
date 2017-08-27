@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_QURT_Namespace.h"
 #include "Semaphores.h"
-#include <stdio.h>
+#include <cstdio>
 
 #define QURT_STORAGE_SIZE HAL_STORAGE_SIZE
 

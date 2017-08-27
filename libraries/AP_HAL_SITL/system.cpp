@@ -1,5 +1,5 @@
 #include <stdarg.h>
-#include <stdio.h>
+#include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>

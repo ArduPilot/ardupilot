@@ -5,7 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_OS_POSIX_IO
-#include <stdio.h>
+#include <cstdio>
 #endif
 
 void setup();

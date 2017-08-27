@@ -18,7 +18,7 @@
  *       Code by RandyMackay. DIYDrones.com
  *
  */
-#include <stdlib.h>
+#include <cstdlib>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsHeli.h"
 #include <GCS_MAVLink/GCS.h>

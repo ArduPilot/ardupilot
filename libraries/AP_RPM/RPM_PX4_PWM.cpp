@@ -28,7 +28,7 @@
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_sensor.h>
 #include <uORB/topics/pwm_input.h>
-#include <stdio.h>
+#include <cstdio>
 #include <errno.h>
 #include <cmath>
 

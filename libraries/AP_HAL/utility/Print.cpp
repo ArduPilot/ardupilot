@@ -19,10 +19,10 @@
  Modified 23 November 2006 by David A. Mellis
  */
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <string.h>
-#include <stdint.h>
+#include <cstdint>
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL_Namespace.h>

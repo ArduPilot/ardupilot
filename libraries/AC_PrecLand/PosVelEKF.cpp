@@ -1,5 +1,5 @@
 #include "PosVelEKF.h"
-#include <math.h>
+#include <cmath>
 #include <string.h>
 
 #define POSVELEKF_POS_CALC_NIS(__P, __R, __X, __Z, __RET_NIS) \

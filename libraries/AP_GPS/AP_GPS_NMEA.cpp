@@ -31,8 +31,8 @@
 #include <AP_Common/AP_Common.h>
 
 #include <ctype.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdlib>
 
 #include "AP_GPS_NMEA.h"
 
@@ -42,7 +42,7 @@ extern const AP_HAL::HAL& hal;
 // #define NMEA_LOG_PATH "nmea.log"
 
 #ifdef NMEA_LOG_PATH
-#include <stdio.h>
+#include <cstdio>
 #endif
 
 // SiRF init messages //////////////////////////////////////////////////////////

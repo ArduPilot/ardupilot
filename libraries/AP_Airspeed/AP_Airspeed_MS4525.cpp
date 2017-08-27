@@ -22,7 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>
-#include <stdio.h>
+#include <cstdio>
 #include <utility>
 
 extern const AP_HAL::HAL &hal;

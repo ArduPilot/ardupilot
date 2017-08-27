@@ -39,7 +39,7 @@
 #if HAL_OS_POSIX_IO
 
 #include "getopt_cpp.h"
-#include <stdio.h>
+#include <cstdio>
 #include <string.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT

@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <errno.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "AuxiliaryBus.h"
 

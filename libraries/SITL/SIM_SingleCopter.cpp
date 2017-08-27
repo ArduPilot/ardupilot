@@ -18,7 +18,7 @@
 
 #include "SIM_SingleCopter.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 using namespace SITL;
 

@@ -33,7 +33,7 @@
 
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 
 /**
  * @file protocol.h

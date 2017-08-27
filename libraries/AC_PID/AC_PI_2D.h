@@ -5,7 +5,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <cmath>
 
 #define AC_PI_2D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency

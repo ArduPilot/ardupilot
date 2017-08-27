@@ -12,8 +12,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>

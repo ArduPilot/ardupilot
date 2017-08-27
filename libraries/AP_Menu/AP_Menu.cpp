@@ -3,7 +3,7 @@
 #include "AP_Menu.h"
 
 #include <ctype.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string.h>
 
 #include <AP_Common/AP_Common.h>

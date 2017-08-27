@@ -14,8 +14,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <stdio.h>
+#include <cunistd>
+#include <cstdio>
 #include <drivers/drv_pwm_output.h>
 #include <systemlib/mixer/mixer.h>
 #include <modules/px4iofirmware/protocol.h>

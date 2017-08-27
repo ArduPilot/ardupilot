@@ -8,7 +8,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 

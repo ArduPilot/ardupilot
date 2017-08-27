@@ -1,7 +1,7 @@
 #pragma once
 
 #include <atomic>
-#include <stdint.h>
+#include <cstdint>
 
 /*
  * Circular buffer of bytes.

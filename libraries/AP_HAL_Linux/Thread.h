@@ -17,8 +17,8 @@
 #pragma once
 
 #include <pthread.h>
-#include <inttypes.h>
-#include <stdlib.h>
+#include <cinttypes>
+#include <cstdlib>
 
 #include <AP_HAL/utility/functor.h>
 

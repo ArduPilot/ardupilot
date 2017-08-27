@@ -30,7 +30,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <stdint.h>
+#include <cstdint>
 
 int16_t ftoa_engine(float val, char *buf,
 		    uint8_t precision, uint8_t maxDecimals);

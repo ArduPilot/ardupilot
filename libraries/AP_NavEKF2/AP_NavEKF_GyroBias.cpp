@@ -7,7 +7,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 

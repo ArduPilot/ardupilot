@@ -21,14 +21,14 @@
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 
 #include "UARTQFlight.h"
 
 #include <AP_HAL_Linux/qflight/qflight_util.h>
 #include <AP_HAL_Linux/qflight/qflight_dsp.h>
-#include <stdio.h>
+#include <cstdio>
 
 QFLIGHTDevice::QFLIGHTDevice(const char *_device_path)
 {

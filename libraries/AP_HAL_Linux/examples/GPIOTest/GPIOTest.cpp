@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 
 #include <AP_Common/AP_Common.h>

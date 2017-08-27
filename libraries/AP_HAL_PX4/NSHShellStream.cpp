@@ -6,10 +6,10 @@
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include <stdio.h>
+#include <cstdio>
 #include <stdarg.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <errno.h>
 #include <apps/nsh.h>
 #include <fcntl.h>

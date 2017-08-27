@@ -20,8 +20,8 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <limits.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdarg.h>

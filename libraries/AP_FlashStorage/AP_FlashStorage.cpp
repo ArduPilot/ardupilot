@@ -17,7 +17,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_FlashStorage/AP_FlashStorage.h>
-#include <stdio.h>
+#include <cstdio>
 
 #define FLASHSTORAGE_DEBUG 0
 

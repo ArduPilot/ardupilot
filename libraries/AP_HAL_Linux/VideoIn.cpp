@@ -27,8 +27,8 @@
 #include <linux/videodev2.h>
 #include <pthread.h>
 #include <sched.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>

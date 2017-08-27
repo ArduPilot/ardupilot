@@ -22,7 +22,7 @@
 
 #define MAX_ANGULAR_SPEED (2 * M_PI)
 
-#include <stdio.h>
+#include <cstdio>
 
 SITL::Calibration::Calibration(const char *home_str, const char *frame_str)
     : Aircraft(home_str, frame_str)

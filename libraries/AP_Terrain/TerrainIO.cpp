@@ -26,7 +26,7 @@
 #if AP_TERRAIN_AVAILABLE
 
 #include <assert.h>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>

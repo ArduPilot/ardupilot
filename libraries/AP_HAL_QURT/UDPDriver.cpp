@@ -16,10 +16,10 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 #include "UDPDriver.h"
-#include <stdio.h>
+#include <cstdio>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
 

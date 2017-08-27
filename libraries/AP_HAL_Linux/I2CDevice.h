@@ -16,7 +16,7 @@
  */
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <vector>
 
 #include <AP_HAL/HAL.h>

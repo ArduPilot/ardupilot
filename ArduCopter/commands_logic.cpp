@@ -701,7 +701,7 @@ bool Copter::verify_land()
 #define NAV_PAYLOAD_PLACE_DEBUGGING 0
 
 #if NAV_PAYLOAD_PLACE_DEBUGGING
-#include <stdio.h>
+#include <cstdio>
 #define debug(fmt, args ...)  do {::fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
 #define debug(fmt, args ...)

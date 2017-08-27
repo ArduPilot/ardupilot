@@ -17,7 +17,7 @@
 */
 
 #include "SIM_Sprayer.h"
-#include <stdio.h>
+#include <cstdio>
 
 using namespace SITL;
 

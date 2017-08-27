@@ -5,7 +5,7 @@
 // easily fragmented.
 
 #include <AP_HAL/AP_HAL.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 /*
   globally override new and delete to ensure that we always start with

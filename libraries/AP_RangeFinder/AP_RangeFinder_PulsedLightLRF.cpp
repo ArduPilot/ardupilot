@@ -15,7 +15,7 @@
 #include "AP_RangeFinder_PulsedLightLRF.h"
 
 #include <utility>
-#include <stdio.h>
+#include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>

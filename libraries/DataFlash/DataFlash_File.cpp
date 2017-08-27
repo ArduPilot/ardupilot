@@ -20,13 +20,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
 #include <AP_Math/AP_Math.h>
-#include <stdio.h>
+#include <cstdio>
 #include <time.h>
 #include <dirent.h>
 #include <GCS_MAVLink/GCS.h>

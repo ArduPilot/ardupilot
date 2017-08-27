@@ -12,7 +12,7 @@
 /// long and float for convenience.
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <AP_HAL/AP_HAL.h>
 
 #define MENU_COMMANDLINE_MAX    32      ///< maximum input line length

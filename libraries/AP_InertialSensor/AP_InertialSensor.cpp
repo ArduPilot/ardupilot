@@ -24,7 +24,7 @@
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
 #ifdef INS_TIMING_DEBUG
-#include <stdio.h>
+#include <cstdio>
 #define timing_printf(fmt, args...)      do { printf("[timing] " fmt, ##args); } while(0)
 #else
 #define timing_printf(fmt, args...)

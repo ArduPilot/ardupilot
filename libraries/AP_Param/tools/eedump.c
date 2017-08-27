@@ -1,9 +1,9 @@
 /*
  * Simple tool to dump the AP_Var contents from an EEPROM dump
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
 
 uint8_t eeprom[0x1000];
 

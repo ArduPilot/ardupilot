@@ -21,7 +21,7 @@
 
 #include <stddef.h>
 #include <string.h>
-#include <stdint.h>
+#include <cstdint>
 #include <cmath>
 
 #include <AP_HAL/AP_HAL.h>

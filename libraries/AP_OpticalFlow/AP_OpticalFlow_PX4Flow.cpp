@@ -23,7 +23,7 @@
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
 #include "OpticalFlow.h"
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 

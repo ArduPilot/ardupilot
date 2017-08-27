@@ -19,7 +19,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <board_config.h>
 #include "WheelEncoder_Quadrature.h"
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 AP_WheelEncoder_Quadrature::IrqState AP_WheelEncoder_Quadrature::irq_state[WHEELENCODER_MAX_INSTANCES];

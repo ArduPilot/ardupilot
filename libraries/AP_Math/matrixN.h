@@ -5,7 +5,7 @@
 #pragma once
 
 #include "math.h"
-#include <stdint.h>
+#include <cstdint>
 #include "vectorN.h"
 
 template <typename T, uint8_t N>

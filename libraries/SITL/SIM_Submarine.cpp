@@ -20,7 +20,7 @@
 #include <AP_Motors/AP_Motors.h>
 #include "Frame_Vectored.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 using namespace SITL;
 

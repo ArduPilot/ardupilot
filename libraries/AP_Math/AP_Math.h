@@ -2,7 +2,7 @@
 
 #include <cmath>
 #include <limits>
-#include <stdint.h>
+#include <cstdint>
 #include <type_traits>
 
 #include <AP_Common/AP_Common.h>

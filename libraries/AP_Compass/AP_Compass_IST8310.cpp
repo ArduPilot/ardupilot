@@ -18,7 +18,7 @@
  */
 #include "AP_Compass_IST8310.h"
 
-#include <stdio.h>
+#include <cstdio>
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>

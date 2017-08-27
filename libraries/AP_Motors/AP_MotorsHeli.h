@@ -2,7 +2,7 @@
 /// @brief	Motor control class for Traditional Heli
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library

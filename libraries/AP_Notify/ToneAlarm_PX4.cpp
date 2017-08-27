@@ -29,7 +29,7 @@
 #include <string.h>
 
 #include <drivers/drv_tone_alarm.h>
-#include <stdio.h>
+#include <cstdio>
 #include <errno.h>
 
 extern const AP_HAL::HAL& hal;

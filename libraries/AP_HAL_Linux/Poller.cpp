@@ -16,8 +16,8 @@
  */
 #include <errno.h>
 #include <fcntl.h>
-#include <inttypes.h>
-#include <stdio.h>
+#include <cinttypes>
+#include <cstdio>
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 #include <sys/types.h>

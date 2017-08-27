@@ -22,7 +22,7 @@
 
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
-#include <stdio.h>
+#include <cstdio>
 
 #define CHIP_ID_REG 0x40
 #define CHIP_ID_VAL 0x32

@@ -18,11 +18,11 @@
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <systemlib/systemlib.h>
 #include <nuttx/config.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <pthread.h>
 #include <poll.h>
 #include <drivers/drv_hrt.h>

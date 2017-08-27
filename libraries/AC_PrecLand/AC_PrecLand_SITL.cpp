@@ -5,7 +5,7 @@ extern const AP_HAL::HAL& hal;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <stdio.h>
+#include <cstdio>
 
 // Constructor
 AC_PrecLand_SITL::AC_PrecLand_SITL(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state)

@@ -17,7 +17,7 @@
 */
 
 #include "SIM_Gripper_Servo.h"
-#include <stdio.h>
+#include <cstdio>
 
 using namespace SITL;
 

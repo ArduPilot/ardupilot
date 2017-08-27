@@ -2,9 +2,9 @@
  * Simple tool to dump the AP_Param contents from an EEPROM dump
  * Andrew Tridgell February 2012
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
 
 uint8_t eeprom[0x1000];
 

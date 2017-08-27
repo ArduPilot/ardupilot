@@ -15,7 +15,7 @@
 
 #include "Device.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 /*
   using checked registers allows a device check that a set of critical

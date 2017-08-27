@@ -31,7 +31,7 @@ Datasheets:
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "AP_InertialSensor_L3G4200D.h"
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <utility>
 
 const extern AP_HAL::HAL &hal;

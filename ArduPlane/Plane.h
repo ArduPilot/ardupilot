@@ -26,8 +26,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <cmath>
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>

@@ -14,7 +14,7 @@
 // Authored by Jonathan Challinger, 3D Robotics Inc.
 
 #include "AccelCalibrator.h"
-#include <stdio.h>
+#include <cstdio>
 #include <AP_HAL/AP_HAL.h>
 
 const extern AP_HAL::HAL& hal;

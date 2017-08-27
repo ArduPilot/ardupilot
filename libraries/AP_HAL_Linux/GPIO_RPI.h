@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include "AP_HAL_Linux.h"
 
 #define LOW                 0

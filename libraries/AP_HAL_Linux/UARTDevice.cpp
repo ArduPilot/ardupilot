@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
-#include <stdio.h>
+#include <cstdio>
 #include <termios.h>
 #include <unistd.h>
 

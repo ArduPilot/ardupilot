@@ -26,7 +26,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_RCMapper/AP_RCMapper.h>
-#include <inttypes.h>
+#include <cinttypes>
 
 
 class AP_AdvancedFailsafe

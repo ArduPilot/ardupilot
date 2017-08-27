@@ -115,7 +115,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <stdio.h>
+#include <cstdio>
 
 #define DEBUG_LOG_STRUCTURES 0
 

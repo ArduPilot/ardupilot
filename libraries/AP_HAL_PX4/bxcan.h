@@ -9,7 +9,7 @@
 #pragma once
 
 #include <uavcan/uavcan.hpp>
-#include <stdint.h>
+#include <cstdint>
 
 #include <nuttx/arch.h>
 #include <arch/board/board.h>

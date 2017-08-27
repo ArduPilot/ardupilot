@@ -1,7 +1,7 @@
 #include "TSYS01.h"
 
 #include <utility>
-#include <stdio.h>
+#include <cstdio>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>

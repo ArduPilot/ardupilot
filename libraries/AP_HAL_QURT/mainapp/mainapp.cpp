@@ -1,12 +1,12 @@
 /*
   main program for HAL_QURT port
  */
-#include <stdio.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdint>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string.h>
 #include <time.h>
 #include <errno.h>

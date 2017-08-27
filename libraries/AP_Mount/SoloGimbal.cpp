@@ -4,7 +4,7 @@
 
 #include "SoloGimbal.h"
 
-#include <stdio.h>
+#include <cstdio>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;

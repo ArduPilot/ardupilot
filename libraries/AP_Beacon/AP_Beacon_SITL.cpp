@@ -18,7 +18,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_Beacon_SITL.h"
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 

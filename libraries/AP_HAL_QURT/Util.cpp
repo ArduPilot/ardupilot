@@ -1,7 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
 #include "Semaphores.h"
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 

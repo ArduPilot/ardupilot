@@ -17,8 +17,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/v4l2-subdev.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
