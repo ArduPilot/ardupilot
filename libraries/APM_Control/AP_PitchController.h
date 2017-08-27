@@ -9,7 +9,7 @@
 
 class AP_PitchController {
 public:
-    AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
+    AP_PitchController(const AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const DataFlash_Class &_dataflash) :
         aparm(parms),
         autotune(gains, AP_AutoTune::AUTOTUNE_PITCH, parms, _dataflash),
         _ahrs(ahrs)
@@ -48,6 +48,6 @@ private:
     int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed);
     float   _get_coordination_rate_offset(float &aspeed, bool &inverted) const;
 
-    AP_AHRS &_ahrs;
+    const AP_AHRS &_ahrs;
 
 };

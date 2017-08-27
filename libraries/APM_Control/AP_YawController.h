@@ -8,7 +8,7 @@
 
 class AP_YawController {
 public:
-    AP_YawController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
+    AP_YawController(const AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
         aparm(parms),
         _ahrs(ahrs)
     {
@@ -43,5 +43,5 @@ private:
 
     DataFlash_Class::PID_Info _pid_info;
 
-    AP_AHRS &_ahrs;
+    const AP_AHRS &_ahrs;
 };

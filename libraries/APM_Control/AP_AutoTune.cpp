@@ -68,7 +68,7 @@ extern const AP_HAL::HAL& hal;
 // constructor
 AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
                          const AP_Vehicle::FixedWing &parms,
-                         DataFlash_Class &_dataflash) :
+                         const DataFlash_Class &_dataflash) :
     running(false),
     current(_gains),
     type(_type),

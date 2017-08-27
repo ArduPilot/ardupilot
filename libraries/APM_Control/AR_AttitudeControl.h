@@ -85,7 +85,7 @@ public:
 private:
 
     // external references
-    AP_AHRS &_ahrs;
+    const AP_AHRS &_ahrs;
 
     // parameters
     AC_P     _steer_angle_p;        // steering angle controller
