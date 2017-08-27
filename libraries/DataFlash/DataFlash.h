@@ -83,7 +83,7 @@ public:
     }
     
     /* Write a block of data at current offset */
-    void WriteBlock(const void *pBuffer, uint16_t size);
+    void WriteBlock(const void *pBuffer, uint16_t size) const;
     /* Write an *important* block of data at current offset */
     void WriteCriticalBlock(const void *pBuffer, uint16_t size);
 
@@ -109,7 +109,7 @@ public:
 
     void StopLogging();
 
-    void Log_Write_Parameter(const char *name, float value);
+    void Log_Write_Parameter(const char *name, float value) const;
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, uint64_t time_us=0);
     void Log_Write_RFND(const RangeFinder &rangefinder);
     void Log_Write_IMU(const AP_InertialSensor &ins);
@@ -172,7 +172,7 @@ public:
     // returns true if logging of a message should be attempted
     bool should_log(uint32_t mask) const;
 
-    bool logging_started(void);
+    bool logging_started(void) const;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only DataFlash_File support this:
