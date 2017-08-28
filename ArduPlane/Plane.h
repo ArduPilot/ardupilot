@@ -279,7 +279,7 @@ private:
 
 #if OPTFLOW == ENABLED
     // Optical flow sensor
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow = OpticalFlow::create(ahrs);
 #endif
 
     // Rally Ponints
