@@ -103,6 +103,15 @@ def do_get_banner(mavproxy, mav):
     mavproxy.expect("APM:Rover")
     return True;
 
+def do_get_autopilot_capabilities(mavproxy, mav):
+    mavproxy.send("long REQUEST_AUTOPILOT_CAPABILITIES 1\n")
+    m = mav.recv_match(type='AUTOPILOT_VERSION', blocking=True, timeout=10)
+    if m is None:
+        print("AUTOPILOT_VERSION not received")
+        return False
+    print("AUTOPILOT_VERSION received")
+    return True;
+
 vinfo = vehicleinfo.VehicleInfo()
 
 def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None, gdbserver=False, speedup=10):
@@ -212,6 +221,9 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         # function may bite you.
         print("Getting banner")
         if not do_get_banner(mavproxy, mav):
+            failed = True
+        print("Getting autopilot capabilities")
+        if not do_get_autopilot_capabilities(mavproxy, mav):
             failed = True
     except pexpect.TIMEOUT as e:
         print("Failed with timeout")
