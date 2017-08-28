@@ -3,7 +3,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "AnalogIn.h"
 #include <drivers/drv_adc.h>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

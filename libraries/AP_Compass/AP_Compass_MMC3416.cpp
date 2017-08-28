@@ -20,7 +20,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <utility>
 #include <AP_Math/AP_Math.h>
-#include <stdio.h>
+#include <cstdio>
 #include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL &hal;

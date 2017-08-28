@@ -8,8 +8,8 @@
 #include <fcntl.h>
 #include <iostream>
 #include <poll.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>

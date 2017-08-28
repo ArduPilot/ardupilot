@@ -23,7 +23,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_ADSB.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <stdio.h>  // for sprintf
+#include <cstdio>  // for sprintf
 #include <limits.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>

@@ -2,7 +2,7 @@
 // Test for AP_GPS_AUTO
 //
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>

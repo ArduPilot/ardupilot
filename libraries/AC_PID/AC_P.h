@@ -5,7 +5,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <cmath>
 
 /// @class	AC_P

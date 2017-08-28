@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
+#include <cstdint>
 #include <stdbool.h>
 
 #define AHRS_state_version 3

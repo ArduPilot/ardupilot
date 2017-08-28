@@ -2,7 +2,7 @@
 #include_next <byteswap.h>
 #else
 
-#include <inttypes.h>
+#include <cinttypes>
 
 /* minimal version defining only the macros we need in our codebase */
 

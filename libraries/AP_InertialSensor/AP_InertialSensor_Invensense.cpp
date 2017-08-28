@@ -19,7 +19,7 @@
 
 #include <assert.h>
 #include <utility>
-#include <stdio.h>
+#include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
 

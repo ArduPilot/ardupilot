@@ -21,7 +21,7 @@
  */
 
 #include <AP_Math/AP_Math.h>
-#include <inttypes.h>
+#include <cinttypes>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Beacon/AP_Beacon.h>

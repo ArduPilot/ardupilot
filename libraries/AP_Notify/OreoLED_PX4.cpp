@@ -27,7 +27,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <drivers/drv_oreoled.h>
-#include <stdio.h>
+#include <cstdio>
 #include <errno.h>
 #include "AP_Notify.h"
 

@@ -3,7 +3,7 @@
 #include "AP_InertialSensor_Backend.h"
 #include <DataFlash/DataFlash.h>
 #include <AP_Module/AP_Module.h>
-#include <stdio.h>
+#include <cstdio>
 
 #define SENSOR_RATE_DEBUG 0
 

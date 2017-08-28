@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #if AVOIDANCE_DEBUGGING
-#include <stdio.h>
+#include <cstdio>
 #define debug(fmt, args ...)  do {::fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
 #define debug(fmt, args ...)

@@ -15,7 +15,7 @@
 
 #include "AP_Beacon_Backend.h"
 // debug
-#include <stdio.h>
+#include <cstdio>
 
 /*
   base class constructor. 

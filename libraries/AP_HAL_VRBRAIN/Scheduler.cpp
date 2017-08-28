@@ -5,10 +5,10 @@
 #include "Scheduler.h"
 
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sched.h>
 #include <errno.h>
-#include <stdio.h>
+#include <cstdio>
 #include <drivers/drv_hrt.h>
 #include <nuttx/arch.h>
 #include <systemlib/systemlib.h>

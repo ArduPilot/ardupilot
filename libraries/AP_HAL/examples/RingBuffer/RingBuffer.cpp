@@ -95,7 +95,7 @@ int main(int argc, char const **argv) {
 
 #else
 
-#include <stdio.h>
+#include <cstdio>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

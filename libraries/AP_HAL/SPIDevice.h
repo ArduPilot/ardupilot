@@ -16,7 +16,7 @@
  */
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 
 #include "AP_HAL_Namespace.h"
 #include "Device.h"

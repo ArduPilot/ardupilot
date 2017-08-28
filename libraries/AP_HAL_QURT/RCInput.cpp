@@ -1,15 +1,15 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-#include <stdio.h>
+#include <cstdio>
 #include <sys/time.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdint.h>
+#include <cstdint>
 #include <dev_fs_lib_serial.h>
 
 #include "RCInput.h"

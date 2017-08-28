@@ -22,7 +22,7 @@
 
 #include <byteswap.h>
 #include <endian.h>
-#include <stdint.h>
+#include <cstdint>
 
 #ifdef __CHECKER__
 #define __ap_bitwise __attribute__((bitwise))

@@ -19,7 +19,7 @@
 
 #include "SIM_Plane.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 using namespace SITL;
 

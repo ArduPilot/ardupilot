@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-#include <stdio.h>
+#include <cstdio>
 #include "Storage.h"
 
 using namespace QURT;

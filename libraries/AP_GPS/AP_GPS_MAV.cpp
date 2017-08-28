@@ -17,7 +17,7 @@
 //  MAVLINK GPS driver
 //
 #include "AP_GPS_MAV.h"
-#include <stdint.h>
+#include <cstdint>
 
 AP_GPS_MAV::AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)

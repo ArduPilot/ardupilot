@@ -4,13 +4,13 @@
 #include "RCInput.h"
 #include <signal.h>
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <stdarg.h>
-#include <stdint.h>
+#include <cstdint>
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>

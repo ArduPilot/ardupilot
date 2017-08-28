@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <GCS_MAVLink/GCS_MAVLink.h>  // for MAV_SEVERITY
 #include "defines.h"
 

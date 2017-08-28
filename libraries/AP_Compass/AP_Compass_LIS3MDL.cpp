@@ -22,7 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <utility>
 #include <AP_Math/AP_Math.h>
-#include <stdio.h>
+#include <cstdio>
 
 #define ADDR_CTRL_REG1      0x20
 #define ADDR_CTRL_REG2      0x21

@@ -19,9 +19,9 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <inttypes.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cinttypes>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>

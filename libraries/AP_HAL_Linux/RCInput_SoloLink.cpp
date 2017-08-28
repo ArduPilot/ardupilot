@@ -17,8 +17,8 @@
 #include "RCInput_SoloLink.h"
 
 #include <errno.h>
-#include <inttypes.h>
-#include <stdio.h>
+#include <cinttypes>
+#include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
 

@@ -19,7 +19,7 @@
  */
 
 #include "AP_AHRS_View.h"
-#include <stdio.h>
+#include <cstdio>
 
 AP_AHRS_View::AP_AHRS_View(AP_AHRS &_ahrs, enum Rotation _rotation) :
     rotation(_rotation),

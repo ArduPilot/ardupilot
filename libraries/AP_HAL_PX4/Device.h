@@ -14,7 +14,7 @@
  */
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <AP_HAL/HAL.h>
 #include "Semaphores.h"
 #include "Scheduler.h"

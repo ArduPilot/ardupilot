@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <AP_HAL/Device.h>
 
 class AuxiliaryBus;

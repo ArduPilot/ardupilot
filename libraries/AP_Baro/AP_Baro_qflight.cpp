@@ -2,7 +2,7 @@
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include "AP_Baro_qflight.h"
 #include <AP_HAL_Linux/qflight/qflight_util.h>
 #include <AP_HAL_Linux/qflight/qflight_dsp.h>

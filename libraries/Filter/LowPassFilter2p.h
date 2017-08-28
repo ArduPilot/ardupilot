@@ -16,7 +16,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <cmath>
-#include <inttypes.h>
+#include <cinttypes>
 
 
 /// @file   LowPassFilter2p.h

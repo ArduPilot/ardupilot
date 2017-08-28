@@ -27,7 +27,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include "AP_NavEKF2.h"
-#include <stdio.h>
+#include <cstdio>
 #include <AP_Math/vectorN.h>
 #include <AP_NavEKF2/AP_NavEKF2_Buffer.h>
 

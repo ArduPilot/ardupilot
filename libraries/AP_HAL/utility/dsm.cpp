@@ -35,8 +35,8 @@
  *
  ****************************************************************************/
 
-#include <stdint.h>
-#include <stdio.h>
+#include <cstdint>
+#include <cstdio>
 
 #include "dsm.h"
 
@@ -450,7 +450,7 @@ dsm_parse(uint64_t now, uint8_t *frame, unsigned len, uint16_t *values,
 #include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <termios.h>
 #include <string.h>
 

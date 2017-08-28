@@ -5,7 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
-#include <stdio.h>
+#include <cstdio>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

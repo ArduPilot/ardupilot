@@ -18,7 +18,7 @@
 
 #include "SIM_Gazebo.h"
 
-#include <stdio.h>
+#include <cstdio>
 #include <errno.h>
 
 #include <AP_HAL/AP_HAL.h>

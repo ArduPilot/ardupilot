@@ -18,7 +18,7 @@
 
 #include "SIM_CRRCSim.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
 

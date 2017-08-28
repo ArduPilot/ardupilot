@@ -19,7 +19,7 @@
 #include <AP_HAL/Device.h>
 #include <AP_HAL/I2CDevice.h>
 #include "GCS.h"
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 

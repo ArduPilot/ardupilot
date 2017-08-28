@@ -18,7 +18,7 @@
 
 #include "SIM_Gimbal.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "SIM_Aircraft.h"
 

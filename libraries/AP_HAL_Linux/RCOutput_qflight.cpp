@@ -25,7 +25,7 @@
 #include <AP_HAL_Linux/qflight/qflight_util.h>
 #include <AP_HAL_Linux/qflight/qflight_dsp.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 

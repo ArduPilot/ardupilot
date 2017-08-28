@@ -19,7 +19,7 @@
 #include "SIM_ADSB.h"
 #include "SITL.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "SIM_Aircraft.h"
 

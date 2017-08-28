@@ -14,7 +14,7 @@
  */
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/SPIDevice.h>
 #include <drivers/device/spi.h>

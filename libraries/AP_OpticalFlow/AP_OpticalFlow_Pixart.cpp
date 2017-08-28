@@ -27,7 +27,7 @@
 #include "OpticalFlow.h"
 #include "AP_OpticalFlow_Pixart.h"
 #include "AP_OpticalFlow_Pixart_SROM.h"
-#include <stdio.h>
+#include <cstdio>
 
 #define debug(fmt, args ...)  do {printf(fmt, ## args); } while(0)
 

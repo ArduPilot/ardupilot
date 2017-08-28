@@ -1,6 +1,6 @@
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Declination/AP_Declination.h>

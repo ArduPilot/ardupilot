@@ -18,7 +18,7 @@
  */
 #include "AP_Airspeed_MS5525.h"
 
-#include <stdio.h>
+#include <cstdio>
 #include <utility>
 
 #include <AP_Common/AP_Common.h>

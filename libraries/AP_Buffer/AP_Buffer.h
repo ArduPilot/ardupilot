@@ -2,7 +2,7 @@
 /// @brief	fifo (queue) buffer template class
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 /// @class      AP_Buffer
 template <class T, uint8_t SIZE>

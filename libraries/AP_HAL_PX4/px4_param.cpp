@@ -10,7 +10,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <px4_defines.h>
 #include <px4_posix.h>
-#include <stdio.h>
+#include <cstdio>
 
 #include "systemlib/param/param.h"
 

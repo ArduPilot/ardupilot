@@ -30,7 +30,7 @@
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
-#include <stdio.h>
+#include <cstdio>
 
 AP_Notify *AP_Notify::_instance;
 

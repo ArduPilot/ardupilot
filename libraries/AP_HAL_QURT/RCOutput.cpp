@@ -4,7 +4,7 @@
 
 #include "RCOutput.h"
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 #include <unistd.h>
 #include <dev_fs_lib_serial.h>

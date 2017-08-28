@@ -3,9 +3,9 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "UARTDriver.h"
 
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>

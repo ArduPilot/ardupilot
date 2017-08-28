@@ -17,7 +17,7 @@
 #include "AP_Proximity_MAV.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 

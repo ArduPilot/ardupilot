@@ -21,9 +21,9 @@
 
 #include "AP_RangeFinder_BBB_PRU.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>

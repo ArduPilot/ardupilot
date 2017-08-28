@@ -43,8 +43,8 @@
  * @author Lorenz Meier <lm@inf.ethz.ch>
  */
 
-#include <stdio.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdint>
 #include "st24.h"
 
 #define ST24_DATA_LEN_MAX	64

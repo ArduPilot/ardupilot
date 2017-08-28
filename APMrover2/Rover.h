@@ -18,7 +18,7 @@
 #pragma once
 
 #include <cmath>
-#include <stdarg.h>
+#include <cstdarg>
 
 // Libraries
 #include <AP_Common/AP_Common.h>

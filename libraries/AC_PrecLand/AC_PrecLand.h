@@ -4,7 +4,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <stdint.h>
+#include <cstdint>
 #include "PosVelEKF.h"
 #include <AP_Buffer/AP_Buffer.h>
 

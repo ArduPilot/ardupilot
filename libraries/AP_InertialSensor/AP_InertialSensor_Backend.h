@@ -22,7 +22,7 @@
  */
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 
 #include <AP_Math/AP_Math.h>
 

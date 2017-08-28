@@ -7,10 +7,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sched.h>
 #include <errno.h>
-#include <stdio.h>
+#include <cstdio>
 #include <dspal/include/pthread.h>
 #include <dspal_types.h>
 

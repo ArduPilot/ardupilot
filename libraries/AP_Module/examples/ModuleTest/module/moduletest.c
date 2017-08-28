@@ -2,10 +2,10 @@
   very simple example module
  */
 
-#include <stdio.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdint>
 #include <stdbool.h>
-#include <math.h>
+#include <cmath>
 
 #include <AP_Module_Structures.h>
 

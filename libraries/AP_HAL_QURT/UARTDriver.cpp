@@ -16,12 +16,12 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 #include "UARTDriver.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 #include <dev_fs_lib_serial.h>
 #include <AP_HAL/utility/RingBuffer.h>

@@ -26,7 +26,7 @@
 #if AP_TERRAIN_AVAILABLE
 
 #include <assert.h>
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 

@@ -1,7 +1,7 @@
 #include "SPIUARTDriver.h"
 
 #include <assert.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <cstdio>
 
 #include <AP_HAL/AP_HAL.h>
@@ -10,7 +10,7 @@
 extern const AP_HAL::HAL &hal;
 
 #ifdef SPIUART_DEBUG
-#include <stdio.h>
+#include <cstdio>
 #define debug(fmt, args ...)  do {hal.console->printf("[SPIUARTDriver]: %s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #define error(fmt, args ...)  do {fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else

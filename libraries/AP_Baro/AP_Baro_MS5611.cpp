@@ -15,7 +15,7 @@
 #include "AP_Baro_MS5611.h"
 
 #include <utility>
-#include <stdio.h>
+#include <cstdio>
 
 #include <AP_Math/AP_Math.h>
 

@@ -20,7 +20,7 @@
 
 #include <AP_HAL/AP_HAL_Namespace.h>
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <string.h>
 
 /**

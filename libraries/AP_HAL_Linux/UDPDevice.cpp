@@ -1,7 +1,7 @@
 #include "UDPDevice.h"
 
 #include <fcntl.h>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/ioctl.h>
 
 #include <AP_HAL/AP_HAL.h>

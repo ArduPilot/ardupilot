@@ -19,8 +19,8 @@
 #include <cmath>
 #include <fcntl.h>
 #include <linux/limits.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>

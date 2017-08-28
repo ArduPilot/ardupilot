@@ -5,7 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_FlashStorage/AP_FlashStorage.h>
-#include <stdio.h>
+#include <cstdio>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

@@ -14,7 +14,7 @@
  */
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 
 #include "AP_HAL_Linux.h"
 

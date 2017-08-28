@@ -18,7 +18,7 @@
 
 #include "SIM_Balloon.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace SITL {
 

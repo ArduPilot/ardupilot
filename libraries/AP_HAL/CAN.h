@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <string.h>
 #include <assert.h>
 #include <cmath>

@@ -43,8 +43,8 @@
  * @author Marco Bauer <marco@wtns.de>
  */
 
-#include <stdio.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdint>
 #include "sumd.h"
 
 #define SUMD_MAX_CHANNELS	32

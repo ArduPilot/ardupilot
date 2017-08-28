@@ -19,7 +19,7 @@
 //
 
 #include "AP_GPS_SIRF.h"
-#include <stdint.h>
+#include <cstdint>
 
 // Initialisation messages
 //

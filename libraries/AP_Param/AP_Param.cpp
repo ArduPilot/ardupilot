@@ -31,7 +31,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <StorageManager/StorageManager.h>
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL &hal;
 
@@ -1732,7 +1732,7 @@ void AP_Param::set_float(float value, enum ap_var_type var_type)
 
 
 #if HAL_OS_POSIX_IO == 1
-#include <stdio.h>
+#include <cstdio>
 
 /*
   parse a parameter file line

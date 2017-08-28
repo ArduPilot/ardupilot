@@ -1,7 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_SITL.h"
 #include <SITL/SITL.h>
-#include <stdio.h>
+#include <cstdio>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 

@@ -1,5 +1,5 @@
 #include <stdarg.h>
-#include <stdio.h>
+#include <cstdio>
 
 #include <drivers/drv_hrt.h>
 

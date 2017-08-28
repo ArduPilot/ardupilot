@@ -17,7 +17,7 @@
   support for external modules
  */
 
-#include <stdio.h>
+#include <cstdio>
 #include <dirent.h>
 #if defined(HAVE_LIBDL)
 #include <dlfcn.h>

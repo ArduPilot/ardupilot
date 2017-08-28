@@ -22,7 +22,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <time.h>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/types.h>

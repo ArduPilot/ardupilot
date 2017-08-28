@@ -17,9 +17,9 @@
   that runs on the DSPs. See qflight_dsp.idl for the interface
   definition for the RPC calls
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
 #include "qflight_dsp.h"
 extern "C" {
 #include "bmp280_api.h"
@@ -29,7 +29,7 @@ extern "C" {
 #include <types.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdint.h>
+#include <cstdint>
 #include <stdarg.h>
 #include <sys/timespec.h>
 #include <errno.h>
@@ -39,7 +39,7 @@ extern "C" {
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <dev_fs_lib_serial.h>
 #include "qflight_buffer.h"
 #include <AP_HAL/utility/RingBuffer.h>

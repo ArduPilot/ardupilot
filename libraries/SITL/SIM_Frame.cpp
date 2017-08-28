@@ -19,7 +19,7 @@
 #include "SIM_Frame.h"
 #include <AP_Motors/AP_Motors.h>
 
-#include <stdio.h>
+#include <cstdio>
 
 using namespace SITL;
 

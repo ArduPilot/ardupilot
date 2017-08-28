@@ -20,7 +20,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <utility>
 #include <AP_Math/AP_Math.h>
-#include <stdio.h>
+#include <cstdio>
 
 #define REG_COMPANY_ID      0x00
 #define REG_DEVICE_ID       0x01

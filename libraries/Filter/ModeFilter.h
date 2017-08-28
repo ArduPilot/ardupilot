@@ -19,7 +19,7 @@
 ///         the filter size (i.e buffer size) should always be an odd number
 #pragma once
 
-#include <inttypes.h>
+#include <cinttypes>
 #include "FilterClass.h"
 #include "FilterWithBuffer.h"
 

@@ -38,7 +38,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

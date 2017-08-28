@@ -19,9 +19,9 @@
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) &&      \
     defined(HAVE_LIBIIO)
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -29,7 +29,7 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <float.h>
-#include <math.h>
+#include <cmath>
 #include <time.h>
 #include <iio.h>
 #include "AP_RangeFinder_Bebop.h"

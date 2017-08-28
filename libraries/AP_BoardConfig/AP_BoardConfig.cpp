@@ -20,7 +20,7 @@
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_BoardConfig.h"
-#include <stdio.h>
+#include <cstdio>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <sys/types.h>

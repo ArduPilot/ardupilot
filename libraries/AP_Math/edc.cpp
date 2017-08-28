@@ -11,7 +11,7 @@
  */
 #include "edc.h"
 
-#include <inttypes.h>
+#include <cinttypes>
 
 /* CRC16 implementation according to CCITT standards */
 static const uint16_t crc16tab[256] = {

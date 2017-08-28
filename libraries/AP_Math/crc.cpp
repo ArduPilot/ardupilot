@@ -16,7 +16,7 @@
   collection of CRCs. 
  */
 
-#include <stdint.h>
+#include <cstdint>
 #include "crc.h"
 
 static const uint8_t crc8_table[] = {

@@ -22,7 +22,7 @@
  */
 #include <AP_HAL/AP_HAL.h>
 #include "AP_IRLock_I2C.h"
-#include <stdio.h>
+#include <cstdio>
 #include <utility>
 #include <AP_HAL/I2CDevice.h>
 

@@ -20,7 +20,7 @@
 
 #include "AP_Notify.h"
 
-#include <stdio.h>
+#include <cstdio>
 #include <AP_GPS/AP_GPS.h>
 
 #include <utility>

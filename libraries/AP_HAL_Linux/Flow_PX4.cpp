@@ -42,8 +42,8 @@
 #include "Flow_PX4.h"
 
 #include <cmath>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 extern const AP_HAL::HAL& hal;
 

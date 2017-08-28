@@ -21,7 +21,7 @@
 #include <fcntl.h>
 #include <linux/v4l2-mediabus.h>
 #include <pthread.h>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>

@@ -14,7 +14,7 @@ const extern AP_HAL::HAL& hal;
 #include <drivers/drv_gyro.h>
 #include <drivers/drv_hrt.h>
 
-#include <stdio.h>
+#include <cstdio>
 
 AP_InertialSensor_PX4::AP_InertialSensor_PX4(AP_InertialSensor &imu) :
     AP_InertialSensor_Backend(imu)

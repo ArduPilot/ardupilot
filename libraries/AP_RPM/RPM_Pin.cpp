@@ -19,7 +19,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <board_config.h>
 #include "RPM_Pin.h"
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 AP_RPM_Pin::IrqState AP_RPM_Pin::irq_state[RPM_MAX_INSTANCES];

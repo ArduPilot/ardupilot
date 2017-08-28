@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_MotorsHeli_RSC.h"

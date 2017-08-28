@@ -1,6 +1,6 @@
 #include "AP_Soaring.h"
 #include <GCS_MAVLink/GCS.h>
-#include <stdint.h>
+#include <cstdint>
 extern const AP_HAL::HAL& hal;
 
 

@@ -7,7 +7,7 @@
   ICM-20608
  */
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>

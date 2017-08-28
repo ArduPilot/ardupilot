@@ -17,7 +17,7 @@
 #include "AP_Proximity_RangeFinder.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
-#include <stdio.h>
+#include <cstdio>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
 extern const AP_HAL::HAL& hal;

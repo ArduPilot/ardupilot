@@ -24,7 +24,7 @@
 #include "RCInput_DSM.h"
 #include <AP_HAL_Linux/qflight/qflight_util.h>
 #include <AP_HAL_Linux/qflight/qflight_dsp.h>
-#include <stdio.h>
+#include <cstdio>
 
 extern const AP_HAL::HAL& hal;
 

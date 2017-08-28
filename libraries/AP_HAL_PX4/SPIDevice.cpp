@@ -17,7 +17,7 @@
 #include <arch/board/board.h>
 #include "board_config.h"
 #include <drivers/device/spi.h>
-#include <stdio.h>
+#include <cstdio>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/OwnPtr.h>
 #include "Scheduler.h"

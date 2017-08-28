@@ -17,7 +17,7 @@
  *       RC_Channel.cpp - class for one RC channel input
  */
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <cmath>
 
 #include <AP_HAL/AP_HAL.h>

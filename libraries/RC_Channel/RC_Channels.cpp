@@ -18,7 +18,7 @@
  *
  */
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <cmath>
 
 #include <AP_HAL/AP_HAL.h>

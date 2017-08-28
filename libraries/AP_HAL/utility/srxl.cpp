@@ -20,8 +20,8 @@
    - 2016.10.23: SRXL variant V1 sucessfully (Testbench and Pixhawk/MissionPlanner) tested with RX-9-DR M-LINK (SW v1.26)
  */
 
-#include <stdio.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdint>
 #include <string.h>
 #include "srxl.h"
 
@@ -368,7 +368,7 @@ int srxl_decode(uint64_t timestamp_us, uint8_t byte, uint8_t *num_values, uint16
 #include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <termios.h>
 
 static uint64_t micros64(void)
@@ -452,7 +452,7 @@ int main(int argc, const char *argv[])
 #include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <termios.h>
 
 int main(int argc, const char *argv[])

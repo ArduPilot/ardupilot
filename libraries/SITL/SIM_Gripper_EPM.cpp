@@ -17,7 +17,7 @@
 */
 
 #include "SIM_Gripper_EPM.h"
-#include <stdio.h>
+#include <cstdio>
 #include <AP_Common/AP_Common.h>
 
 using namespace SITL;

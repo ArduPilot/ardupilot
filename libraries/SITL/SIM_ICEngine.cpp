@@ -17,7 +17,7 @@
 */
 
 #include "SIM_ICEngine.h"
-#include <stdio.h>
+#include <cstdio>
 
 using namespace SITL;
 

@@ -7,7 +7,7 @@ void Copter::avoidance_adsb_update(void)
     avoidance_adsb.update();
 }
 
-#include <stdio.h>
+#include <cstdio>
 
 MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::Obstacle *obstacle, MAV_COLLISION_ACTION requested_action)
 {
