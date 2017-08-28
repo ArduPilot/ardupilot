@@ -154,6 +154,7 @@ public:
     void Log_Write_AOA_SSA(AP_AHRS &ahrs);
     void Log_Write_Beacon(AP_Beacon &beacon);
     void Log_Write_Proximity(AP_Proximity &proximity);
+    void Log_Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 

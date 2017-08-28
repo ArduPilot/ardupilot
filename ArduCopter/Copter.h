@@ -92,6 +92,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_SafeRTL/AP_SafeRTL.h>
 
 // Configuration
 #include "defines.h"
@@ -398,6 +399,9 @@ private:
         bool land;
         bool terrain_used;
     } rtl_path;
+
+    // SafeRTL
+    SafeRTLState safe_rtl_state; // records state of SafeRTL
 
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
@@ -932,6 +936,13 @@ private:
     void rtl_land_run();
     void rtl_build_path(bool terrain_following_allowed);
     void rtl_compute_return_target(bool terrain_following_allowed);
+    bool safe_rtl_init(bool ignore_checks);
+    void safe_rtl_run();
+    void safe_rtl_wait_cleanup_run();
+    void safe_rtl_path_follow_run();
+    void safe_rtl_pre_land_position_run();
+    void safe_rtl_land();
+    void safe_rtl_save_position();
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);
