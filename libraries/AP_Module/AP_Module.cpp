@@ -18,8 +18,8 @@
  */
 
 #include <stdio.h>
-#include <dirent.h>
 #if defined(HAVE_LIBDL)
+#include <dirent.h>
 #include <dlfcn.h>
 #endif
 #include <AP_Module/AP_Module.h>
@@ -75,6 +75,7 @@ void AP_Module::module_scan(const char *path)
 */
 void AP_Module::init(const char *module_path)
 {
+#if AP_MODULE_SUPPORTED
     // scan through module directory looking for *.so
     DIR *d;
     struct dirent *de;
@@ -95,6 +96,7 @@ void AP_Module::init(const char *module_path)
         free(path);
     }
     closedir(d);
+#endif
 }
 
 
