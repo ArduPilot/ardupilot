@@ -213,6 +213,7 @@ bool AP_GPS_SIRF::_detect(struct SIRF_detect_state &state, uint8_t data)
             break;
         }
         state.step = 0;
+        FALLTHROUGH;
     case 0:
         state.payload_length = state.payload_counter = state.checksum = 0;
         if (PREAMBLE1 == data)
