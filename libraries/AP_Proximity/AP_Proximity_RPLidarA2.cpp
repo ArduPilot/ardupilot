@@ -14,6 +14,7 @@
  */
 
 /*
+ * ArduPilot device driver for SLAMTEC RPLIDAR A2 (16m range version)
  *
  * ALL INFORMATION REGARDING PROTOCOL WAS DERIVED FROM RPLIDAR DATASHEET:
  *
@@ -21,10 +22,9 @@
  * http://bucket.download.slamtec.com/63ac3f0d8c859d3a10e51c6b3285fcce25a47357/LR001_SLAMTEC_rplidar_protocol_v1.0_en.pdf
  *
  * Author: Steven Josefs, IAV GmbH
- *
+ * Based on the LightWare SF40C ArduPilot device driver from Randy Mackay
  *
  */
-
 
 
 #include <AP_HAL/AP_HAL.h>
@@ -37,7 +37,7 @@
 
 #if RP_DEBUG_LEVEL
   #include <GCS_MAVLINK/GCS.h>
-  #define Debug(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { GCS_MAVLINK::send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
+  #define Debug(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
 #else
   #define Debug(level, fmt, args ...)
 #endif
@@ -99,11 +99,9 @@ void AP_Proximity_RPLidarA2::update(void)
     }
 
     // initialise sensor if necessary
-    if (!_initialised)
-    {
+    if (!_initialised) {
         _initialised = initialise();    //returns true if everything initialized properly
     }
-
 
     // if LIDAR in known state
     if (_initialised) {
@@ -122,7 +120,7 @@ void AP_Proximity_RPLidarA2::update(void)
 // get maximum distance (in meters) of sensor
 float AP_Proximity_RPLidarA2::distance_max() const
 {
-    return 16.0f;  //16m max range RPLIDAR2
+    return 16.0f;  //16m max range RPLIDAR2, if you want to support the 8m version this is the only line to change
 }
 
 // get minimum distance (in meters) of sensor
@@ -130,7 +128,6 @@ float AP_Proximity_RPLidarA2::distance_min() const
 {
     return 0.20f;  //20cm min range RPLIDAR2
 }
-
 
 bool AP_Proximity_RPLidarA2::initialise()
 {
@@ -168,7 +165,7 @@ void AP_Proximity_RPLidarA2::reset_rplidar()
 void AP_Proximity_RPLidarA2::init_sectors()
 {
     // use defaults if no ignore areas defined
-    uint8_t ignore_area_count = get_ignore_area_count();
+    const uint8_t ignore_area_count = get_ignore_area_count();
     if (ignore_area_count == 0) {
         _sector_initialised = true;
         return;
@@ -267,24 +264,20 @@ void AP_Proximity_RPLidarA2::get_readings()
 
             case rp_resetted:
                 Debug(3, "                  BYTE_COUNT %d", _byte_count);
-                if ((c == 0x52 || _information_data) && _byte_count < 62)
-                {
-                    if(c == 0x52) {
+                if ((c == 0x52 || _information_data) && _byte_count < 62) {
+                    if (c == 0x52) {
                         _information_data = true;
                     }
                     _rp_systeminfo[_byte_count] = c;
                     Debug(3, "_rp_systeminfo[%d]=%x",_byte_count,_rp_systeminfo[_byte_count]);
                     _byte_count++;
                     break;
-                }
-                else
-                {
+                } else {
 
                     if (_information_data) {
                         Debug(1, "GOT RPLIDAR INFORMATION");
                         _information_data = false;
                         _byte_count = 0;
-
                         set_scan_mode();
                         break;
                     }
@@ -301,18 +294,17 @@ void AP_Proximity_RPLidarA2::get_readings()
 
             case rp_responding:
                 Debug(2, "RESPONDING");
-                if(c == RPLIDAR_PREAMBLE || _descriptor_data) {
+                if (c == RPLIDAR_PREAMBLE || _descriptor_data) {
                     _descriptor_data = true;
                     _descriptor[_byte_count] = c;
                     _byte_count++;
                     //descriptor packet has 7 byte in total
-                    if(_byte_count == sizeof(_descriptor)) {
+                    if (_byte_count == sizeof(_descriptor)) {
                         Debug(2,"LIDAR DESCRIPTOR CATCHED");
                         _response_type = ResponseType_Descriptor;
                         //identify the payload data after the descriptor
                         parse_response_descriptor();
                         _byte_count = 0;
-
                     }
                 } else {
                     _rp_state = rp_unknown;
@@ -339,7 +331,6 @@ void AP_Proximity_RPLidarA2::get_readings()
                     Debug(2, "LIDAR MEASUREMENT CATCHED");
                     parse_response_data();
                     _byte_count = 0;
-
                 }
                 break;
 
@@ -409,31 +400,30 @@ void AP_Proximity_RPLidarA2::parse_response_data()
             if ((payload.sensor_scan.startbit == !payload.sensor_scan.not_startbit) && payload.sensor_scan.checkbit) {
                 const float angle_deg = payload.sensor_scan.angle_q6/64.0f;
                 const float distance_m = (payload.sensor_scan.distance_q2/4000.0f);
-                //const float quality = payload.sensor_scan.quality;
+#if RP_DEBUG_LEVEL >= 2
+                const float quality = payload.sensor_scan.quality;
                 Debug(2, "                                       D%02.2f A%03.1f Q%02d", distance_m, angle_deg, quality);
-
+#endif
                 _last_distance_received_ms = AP_HAL::millis();
                 uint8_t sector;
                 if (convert_angle_to_sector(angle_deg, sector)) {
                     if (distance_m > distance_min()) {
-                        if(_last_sector == sector)
-                        {
-                            if(_distance_m_last > distance_m)
-                            {
+                        if (_last_sector == sector) {
+                            if (_distance_m_last > distance_m) {
                                 _distance_m_last = distance_m;
                                 _angle_deg_last  = angle_deg;
-                                _send_sector     = sector;
                             }
                         } else {
-
-                          _last_sector = sector;
-                          _distance_m_last = distance_m;
-                          _angle_deg_last  = angle_deg;
-                          _angle[_send_sector] = _angle_deg_last;
-                          _distance[_send_sector] = _distance_m_last;
-                          _distance_valid[_send_sector] = true;
-                          // update boundary used for avoidance
-                          update_boundary_for_sector(_send_sector);
+                            // A new sector started, the previous one can be updated now
+                            _angle[_last_sector] = _angle_deg_last;
+                            _distance[_last_sector] = _distance_m_last;
+                            _distance_valid[_last_sector] = true;
+                            // update boundary used for avoidance
+                            update_boundary_for_sector(_last_sector);
+                            // initialize the new sector
+                            _last_sector     = sector;
+                            _distance_m_last = distance_m;
+                            _angle_deg_last  = angle_deg;
                         }
                     } else {
                         _distance_valid[sector] = false;
@@ -443,7 +433,6 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                 //not valid payload packet
                 Debug(1, "Invalid Payload");
                 _sync_error++;
-
             }
             break;
 

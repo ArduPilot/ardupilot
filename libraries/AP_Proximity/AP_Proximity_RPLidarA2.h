@@ -14,6 +14,7 @@
  */
 
 /*
+ * ArduPilot device driver for SLAMTEC RPLIDAR A2 (16m range version)
  *
  * ALL INFORMATION REGARDING PROTOCOL WAS DERIVED FROM RPLIDAR DATASHEET:
  *
@@ -21,6 +22,7 @@
  * http://bucket.download.slamtec.com/63ac3f0d8c859d3a10e51c6b3285fcce25a47357/LR001_SLAMTEC_rplidar_protocol_v1.0_en.pdf
  *
  * Author: Steven Josefs, IAV GmbH
+ * Based on the LightWare SF40C ArduPilot device driver from Randy Mackay
  *
  */
 
@@ -50,8 +52,6 @@ public:
     float distance_min() const;
 
 private:
-
-
     enum rp_state {
             rp_unknown = 0,
             rp_resetted,
@@ -72,7 +72,6 @@ private:
     void init_sectors();
     void set_scan_mode();
 
-
     // send request for something from sensor
     //void request_new_data();
     void send_request_for_health();
@@ -80,7 +79,6 @@ private:
     void parse_response_descriptor();
     void get_readings();
     void reset_rplidar();
-
 
     // reply related variables
     AP_HAL::UARTDriver *_uart;
@@ -102,21 +100,17 @@ private:
     uint8_t _sync_error ;
     uint16_t _byte_count;
 
-
     // request related variables
     enum ResponseType _response_type;         ///< response from the lidar
     enum rp_state _rp_state;
     uint8_t   _last_sector;                   ///< last sector requested
     uint32_t  _last_request_ms;               ///< system time of last request
     uint32_t  _last_distance_received_ms;     ///< system time of last distance measurement received from sensor
-    uint8_t   _request_count;                 ///< counter used to interleave requests for distance with health requests
     uint32_t  _last_reset_ms;
 
     // sector related variables
-    uint8_t _send_sector;
     float _angle_deg_last;
     float _distance_m_last;
-
 
     struct PACKED _sensor_scan {
         uint8_t startbit      : 1;            ///< on the first revolution 1 else 0
@@ -131,7 +125,6 @@ private:
         uint8_t status;                       ///< status definition: 0 good, 1 warning, 2 error
         uint16_t error_code;                  ///< the related error code
     };
-
 
     union PACKED {
         DEFINE_BYTE_ARRAY_METHODS
