@@ -246,8 +246,9 @@ private:
     uint32_t ekfYawReset_ms = 0;
     int8_t ekf_primary_core;
 
+    AP_SerialManager serial_manager = AP_SerialManager::create();
+
     // GCS selection
-    AP_SerialManager serial_manager;
     GCS_Copter _gcs; // avoid using this; use gcs()
     GCS_Copter &gcs() { return _gcs; }
 

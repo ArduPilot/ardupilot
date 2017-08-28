@@ -195,8 +195,9 @@ private:
     SITL::SITL sitl;
 #endif
 
+    AP_SerialManager serial_manager = AP_SerialManager::create();
+
     // GCS handling
-    AP_SerialManager serial_manager;
     GCS_Rover _gcs;  // avoid using this; use gcs()
     GCS_Rover &gcs() { return _gcs; }
 

@@ -139,7 +139,7 @@ private:
     bool yaw_servo_out_filt_init = false;
     bool pitch_servo_out_filt_init = false;
 
-    AP_SerialManager serial_manager;
+    AP_SerialManager serial_manager = AP_SerialManager::create();
     GCS_Tracker _gcs; // avoid using this; use gcs()
     GCS_Tracker &gcs() { return _gcs; }
 
