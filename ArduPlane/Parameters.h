@@ -541,6 +541,10 @@ public:
 
     // mask of channels to do manual pass-thru for
     AP_Int32 manual_rc_mask;
+
+    // home reset altitude threshold
+    AP_Int8 home_reset_threshold;
+
 };
 
 extern const AP_Param::Info var_info[];
