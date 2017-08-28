@@ -233,7 +233,7 @@ private:
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow = OpticalFlow::create(ahrs);
 #endif
 
     // gnd speed limit required to observe optical flow sensor limits
