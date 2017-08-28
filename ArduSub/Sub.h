@@ -212,9 +212,9 @@ private:
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms = 0;
 
-    // GCS selection
-    AP_SerialManager serial_manager;
+    AP_SerialManager serial_manager = AP_SerialManager::create();
 
+    // GCS selection
     GCS_Sub _gcs; // avoid using this; use gcs()
     GCS_Sub &gcs() { return _gcs; }
 

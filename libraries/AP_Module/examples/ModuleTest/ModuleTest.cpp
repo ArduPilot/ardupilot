@@ -16,7 +16,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static AP_InertialSensor ins = AP_InertialSensor::create();
 static AP_GPS gps = AP_GPS::create();
 static AP_Baro baro = AP_Baro::create();
-AP_SerialManager serial_manager;
+static AP_SerialManager serial_manager = AP_SerialManager::create();
 
 // choose which AHRS system to use
 AP_AHRS_DCM  ahrs(ins, baro, gps);
