@@ -112,6 +112,11 @@ private:
     uint8_t   _request_count;                 ///< counter used to interleave requests for distance with health requests
     uint32_t  _last_reset_ms;
 
+    // sector related variables
+    uint8_t _send_sector;
+    float _angle_deg_last;
+    float _distance_m_last;
+
 
     struct PACKED _sensor_scan {
         uint8_t startbit      : 1;            ///< on the first revolution 1 else 0
