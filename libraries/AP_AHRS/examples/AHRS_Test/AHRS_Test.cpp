@@ -19,7 +19,7 @@ static Compass compass = Compass::create();
 
 static AP_GPS gps = AP_GPS::create();
 static AP_Baro barometer = AP_Baro::create();
-AP_SerialManager serial_manager;
+static AP_SerialManager serial_manager = AP_SerialManager::create();
 
 class DummyVehicle {
 public:

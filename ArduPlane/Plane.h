@@ -254,9 +254,9 @@ private:
     // external failsafe boards during baro and airspeed calibration
     bool in_calibration;
 
+    AP_SerialManager serial_manager = AP_SerialManager::create();
 
     // GCS selection
-    AP_SerialManager serial_manager;
     GCS_Plane _gcs; // avoid using this; use gcs()
     GCS_Plane &gcs() { return _gcs; }
 

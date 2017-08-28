@@ -43,7 +43,7 @@ AP_BoardLED board_led;
 // This example uses GPS system. Create it.
 static AP_GPS gps = AP_GPS::create();
 // Serial manager is needed for UART comunications
-AP_SerialManager serial_manager;
+static AP_SerialManager serial_manager = AP_SerialManager::create();
 
 
 void setup()

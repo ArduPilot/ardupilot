@@ -62,7 +62,7 @@ public:
     AP_Baro barometer = AP_Baro::create();
     AP_GPS gps = AP_GPS::create();
     Compass compass = Compass::create();
-    AP_SerialManager serial_manager;
+    AP_SerialManager serial_manager = AP_SerialManager::create();
     RangeFinder rng = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
     NavEKF2 EKF2{&ahrs, barometer, rng};
     NavEKF3 EKF3{&ahrs, barometer, rng};
