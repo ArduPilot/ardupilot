@@ -229,7 +229,7 @@ private:
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void));
 
     // Arming/Disarming mangement class
-    AP_Arming_Copter arming {ahrs, barometer, compass, battery, inertial_nav, ins};
+    AP_Arming_Copter arming = AP_Arming_Copter::create(ahrs, barometer, compass, battery, inertial_nav, ins);
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
