@@ -30,8 +30,13 @@ class OpticalFlow
     friend class OpticalFlow_backend;
 
 public:
-    // constructor
-    OpticalFlow(AP_AHRS_NavEKF& ahrs);
+    static OpticalFlow create(AP_AHRS_NavEKF& ahrs) { return OpticalFlow{ahrs}; }
+
+    constexpr OpticalFlow(OpticalFlow &&other) = default;
+
+    /* Do not allow copies */
+    OpticalFlow(const OpticalFlow &other) = delete;
+    OpticalFlow &operator=(const OpticalFlow&) = delete;
 
     // init - initialise sensor
     void init(void);
@@ -76,6 +81,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    OpticalFlow(AP_AHRS_NavEKF& ahrs);
+
     AP_AHRS_NavEKF &_ahrs;
     OpticalFlow_backend *backend;
 
