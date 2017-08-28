@@ -53,6 +53,21 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     if (strstr(frame_str, "-elevrev")) {
         reverse_elevator_rudder = true;
     }
+    if (strstr(frame_str, "-catapult")) {
+        have_launcher = true;
+        launch_accel = 15;
+        launch_time = 2;
+    }
+    if (strstr(frame_str, "-bungee")) {
+        have_launcher = true;
+        launch_accel = 7;
+        launch_time = 4;
+    }
+    if (strstr(frame_str, "-throw")) {
+        have_launcher = true;
+        launch_accel = 10;
+        launch_time = 1;
+    }
    if (strstr(frame_str, "-tailsitter")) {
        tailsitter = true;
        ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
@@ -230,6 +245,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float aileron  = filtered_servo_angle(input, 0);
     float elevator = filtered_servo_angle(input, 1);
     float rudder   = filtered_servo_angle(input, 3);
+    bool launch_triggered = input.servos[6] > 1700;
     float throttle;
     if (reverse_elevator_rudder) {
         elevator = -elevator;
@@ -294,6 +310,25 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     Vector3f force = getForce(aileron, elevator, rudder);
     rot_accel = getTorque(aileron, elevator, rudder, thrust, force);
 
+    if (have_launcher) {
+        /*
+          simple simulation of a launcher
+         */
+        if (launch_triggered) {
+            uint64_t now = AP_HAL::millis64();
+            if (launch_start_ms == 0) {
+                launch_start_ms = now;
+            }
+            if (now - launch_start_ms < launch_time*1000) {
+                force.x += launch_accel;
+                force.z += launch_accel/3;
+            }
+        } else {
+            // allow reset of catapult
+            launch_start_ms = 0;
+        }
+    }
+    
     // simulate engine RPM
     rpm1 = thrust * 7000;
     
