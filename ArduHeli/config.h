@@ -74,27 +74,11 @@
 // FRAME_CONFIG
 //
 #ifndef FRAME_CONFIG
- # define FRAME_CONFIG   QUAD_FRAME
+ # define FRAME_CONFIG   HELI_FRAME
 #endif
 
-#if FRAME_CONFIG == QUAD_FRAME
- # define FRAME_CONFIG_STRING "QUAD"
-#elif FRAME_CONFIG == TRI_FRAME
- # define FRAME_CONFIG_STRING "TRI"
-#elif FRAME_CONFIG == HEXA_FRAME
- # define FRAME_CONFIG_STRING "HEXA"
-#elif FRAME_CONFIG == Y6_FRAME
- # define FRAME_CONFIG_STRING "Y6"
-#elif FRAME_CONFIG == OCTA_FRAME
- # define FRAME_CONFIG_STRING "OCTA"
-#elif FRAME_CONFIG == OCTA_QUAD_FRAME
- # define FRAME_CONFIG_STRING "OCTA_QUAD"
-#elif FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
  # define FRAME_CONFIG_STRING "HELI"
-#elif FRAME_CONFIG == SINGLE_FRAME
- # define FRAME_CONFIG_STRING "SINGLE"
-#elif FRAME_CONFIG == COAX_FRAME
- # define FRAME_CONFIG_STRING "COAX"
 #else
  # define FRAME_CONFIG_STRING "UNKNOWN"
 #endif
@@ -104,44 +88,27 @@
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
-  # define RATE_ROLL_P                          0.02
-  # define RATE_ROLL_I                          0.5
-  # define RATE_ROLL_D                          0.001
+  # define RATE_ROLL_P                          0
+  # define RATE_ROLL_I                          0
+  # define RATE_ROLL_D                          0
   # define RATE_ROLL_IMAX                       4500
-  # define RATE_ROLL_FF                         0.05
-  # define RATE_ROLL_FILT_HZ                    20.0f
-  # define RATE_PITCH_P                         0.02
-  # define RATE_PITCH_I                         0.5
-  # define RATE_PITCH_D                         0.001
+  # define RATE_ROLL_FF                         0.15
+  # define RATE_ROLL_FILT_HZ                    12.0f
+  # define RATE_PITCH_P                         0
+  # define RATE_PITCH_I                         0
+  # define RATE_PITCH_D                         0
   # define RATE_PITCH_IMAX                      4500
-  # define RATE_PITCH_FF                        0.05
-  # define RATE_PITCH_FILT_HZ                   20.0f
-  # define RATE_YAW_P                           0.15
-  # define RATE_YAW_I                           0.100
+  # define RATE_PITCH_FF                        0.15
+  # define RATE_PITCH_FILT_HZ                   10.0f
+  # define RATE_YAW_P                           0.25
+  # define RATE_YAW_I                           0.18
   # define RATE_YAW_D                           0.003
-  # define RATE_YAW_IMAX                        4500
+  # define RATE_YAW_IMAX                        3300
   # define RATE_YAW_FF                          0.02
   # define RATE_YAW_FILT_HZ                     20.0f
   # define THR_MIN_DEFAULT                      0
   # define AUTOTUNE_ENABLED                     DISABLED
-#endif
-
-/////////////////////////////////////////////////////////////////////////////////
-// Y6 defaults
-#if FRAME_CONFIG == Y6_FRAME
-  # define RATE_ROLL_P                  0.1f
-  # define RATE_ROLL_D                  0.006f
-  # define RATE_PITCH_P                 0.1f
-  # define RATE_PITCH_D                 0.006f
-  # define RATE_YAW_P                   0.150f
-  # define RATE_YAW_I                   0.015f
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// PWM control
-// default RC speed in Hz
-#ifndef RC_FAST_SPEED
-   #   define RC_FAST_SPEED 490
+  # define POSHOLD_ENABLED                      DISABLED // PosHold flight mode disabled by default
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -309,12 +276,6 @@
 //  OPTICAL_FLOW
 #ifndef OPTFLOW
  # define OPTFLOW       ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-//  Auto Tuning
-#ifndef AUTOTUNE_ENABLED
- # define AUTOTUNE_ENABLED  ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -531,59 +492,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Rate controller gains
-//
-
-#ifndef RATE_ROLL_P
- # define RATE_ROLL_P        		0.150f
-#endif
-#ifndef RATE_ROLL_I
- # define RATE_ROLL_I        		0.100f
-#endif
-#ifndef RATE_ROLL_D
- # define RATE_ROLL_D        		0.004f
-#endif
-#ifndef RATE_ROLL_IMAX
- # define RATE_ROLL_IMAX         	2000
-#endif
-#ifndef RATE_ROLL_FILT_HZ
- # define RATE_ROLL_FILT_HZ         20.0f
-#endif
-
-#ifndef RATE_PITCH_P
- # define RATE_PITCH_P       		0.150f
-#endif
-#ifndef RATE_PITCH_I
- # define RATE_PITCH_I       		0.100f
-#endif
-#ifndef RATE_PITCH_D
- # define RATE_PITCH_D       		0.004f
-#endif
-#ifndef RATE_PITCH_IMAX
- # define RATE_PITCH_IMAX        	2000
-#endif
-#ifndef RATE_PITCH_FILT_HZ
- # define RATE_PITCH_FILT_HZ        20.0f
-#endif
-
-
-#ifndef RATE_YAW_P
- # define RATE_YAW_P              	0.200f
-#endif
-#ifndef RATE_YAW_I
- # define RATE_YAW_I              	0.020f
-#endif
-#ifndef RATE_YAW_D
- # define RATE_YAW_D              	0.000f
-#endif
-#ifndef RATE_YAW_IMAX
- # define RATE_YAW_IMAX            	1000
-#endif
-#ifndef RATE_YAW_FILT_HZ
- # define RATE_YAW_FILT_HZ          5.0f
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Loiter position control gains
 //
 #ifndef POS_XY_P
@@ -617,19 +525,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// PosHold parameter defaults
-//
-#ifndef POSHOLD_ENABLED
- # define POSHOLD_ENABLED               ENABLED // PosHold flight mode enabled by default
-#endif
-#ifndef POSHOLD_BRAKE_RATE_DEFAULT
- # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
-#endif
-#ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
- # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //
 #ifndef THR_MID_DEFAULT
@@ -656,7 +551,7 @@
 
 // Accel (vertical) control gains
 #ifndef ACCEL_Z_P
- # define ACCEL_Z_P     0.50f
+ # define ACCEL_Z_P     0.30f                    // set to 0.3 by default for helicopters
 #endif
 #ifndef ACCEL_Z_I
  # define ACCEL_Z_I     1.00f
