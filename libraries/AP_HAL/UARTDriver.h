@@ -48,6 +48,11 @@ public:
     virtual void configure_parity(uint8_t v){};
     virtual void set_stop_bits(int n){};
 
+    /* unbuffered writes bypass the ringbuffer and go straight to the
+     * file descriptor
+     */
+    virtual bool set_unbuffered_writes(bool on){ return false; };
+
     /* Implementations of BetterStream virtual methods. These are
      * provided by AP_HAL to ensure consistency between ports to
      * different boards
