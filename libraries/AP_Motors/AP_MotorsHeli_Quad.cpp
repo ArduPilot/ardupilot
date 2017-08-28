@@ -239,6 +239,8 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
         limit.throttle_lower = true;
     }
 
+    float collective_range = (_collective_max - _collective_min) / 1000.0f;
+
     if (_heliflags.inverted_flight) {
         collective_out = 1 - collective_out;
     }
@@ -248,6 +250,9 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
 
     // scale collective to -1 to 1
     collective_out = collective_out*2-1;
+
+    // reserve some collective for attitude control
+    collective_out *= collective_range;
 
     if (collective_out < 0) {
         // with negative collective yaw torque is reversed
