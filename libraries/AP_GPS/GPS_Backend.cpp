@@ -184,3 +184,45 @@ bool AP_GPS_Backend::should_df_log() const
     }
     return true;
 }
+
+
+void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
+{
+    const uint8_t instance = state.instance;
+    // send status
+    switch (instance) {
+        case 0:
+            mavlink_msg_gps_rtk_send(chan,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_week_number,
+                                 state.rtk_time_week_ms,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_num_sats,
+                                 state.rtk_baseline_coords_type,
+                                 state.rtk_baseline_x_mm,
+                                 state.rtk_baseline_y_mm,
+                                 state.rtk_baseline_z_mm,
+                                 state.rtk_accuracy,
+                                 state.rtk_iar_num_hypotheses);
+            break;
+        case 1:
+            mavlink_msg_gps2_rtk_send(chan,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_week_number,
+                                 state.rtk_time_week_ms,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_num_sats,
+                                 state.rtk_baseline_coords_type,
+                                 state.rtk_baseline_x_mm,
+                                 state.rtk_baseline_y_mm,
+                                 state.rtk_baseline_z_mm,
+                                 state.rtk_accuracy,
+                                 state.rtk_iar_num_hypotheses);
+            break;
+    }
+}
+
