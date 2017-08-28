@@ -34,7 +34,7 @@ public:
 };
 
 static DummyVehicle vehicle;
-static OpticalFlow optflow(vehicle.ahrs);
+static OpticalFlow optflow = OpticalFlow::create(vehicle.ahrs);
 
 void setup()
 {
