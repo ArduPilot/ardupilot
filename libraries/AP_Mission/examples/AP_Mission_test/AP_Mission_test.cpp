@@ -44,10 +44,10 @@ private:
     void run_replace_cmd_test();
     void run_max_cmd_test();
 
-    AP_Mission mission{ahrs,
+    AP_Mission mission = AP_Mission::create(ahrs,
             FUNCTOR_BIND_MEMBER(&MissionTest::start_cmd, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&MissionTest::verify_cmd, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&MissionTest::mission_complete, void)};
+            FUNCTOR_BIND_MEMBER(&MissionTest::mission_complete, void));
 };
 
 static MissionTest missiontest;

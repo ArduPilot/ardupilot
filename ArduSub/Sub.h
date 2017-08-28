@@ -193,7 +193,10 @@ private:
 #endif
 
     // Mission library
-    AP_Mission mission;
+    AP_Mission mission = AP_Mission::create(ahrs,
+            FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void));
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED

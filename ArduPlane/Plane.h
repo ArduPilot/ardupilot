@@ -599,10 +599,10 @@ private:
     float smoothed_airspeed;
 
     // Mission library
-    AP_Mission mission {ahrs, 
+    AP_Mission mission = AP_Mission::create(ahrs,
             FUNCTOR_BIND_MEMBER(&Plane::start_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Plane::verify_command_callback, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void)};
+            FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void));
 
 
 #if PARACHUTE == ENABLED

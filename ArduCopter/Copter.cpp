@@ -26,10 +26,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 Copter::Copter(void)
     : DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask)),
     flight_modes(&g.flight_mode1),
-    mission(ahrs, 
-            FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
     control_mode(STABILIZE),
     scaleLongDown(1),
     wp_bearing(0),
