@@ -28,7 +28,8 @@ PX4UARTDriver::PX4UARTDriver(const char *devpath, const char *perf_name) :
     _in_timer(false),
     _perf_uart(perf_alloc(PC_ELAPSED, perf_name)),
     _os_start_auto_space(-1),
-    _flow_control(FLOW_CONTROL_DISABLE)
+    _flow_control(FLOW_CONTROL_DISABLE),
+    _unbuffered_writes(false)
 {
 }
 
@@ -186,6 +187,11 @@ void PX4UARTDriver::set_stop_bits(int n) {
     tcsetattr(_fd, TCSANOW, &t);
 }
 
+bool PX4UARTDriver::set_unbuffered_writes(bool on) {
+    _unbuffered_writes = on;
+    return _unbuffered_writes;
+}
+
 void PX4UARTDriver::begin(uint32_t b)
 {
 	begin(b, 0, 0);
@@ -328,7 +334,7 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
 		return 0;
 	}
 
-    if (!_nonblocking_writes || _unbuffered_writes) {
+    if (!_nonblocking_writes) {
         /*
           use the per-byte delay loop in write() above for blocking and unbuffered writes
          */
@@ -340,7 +346,12 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
-    return _writebuf.write(buffer, size);
+    if (_unbuffered_writes) {
+        // write buffer straight to the file descriptor
+        return _write_fd(buffer, size);
+    } else {
+        return _writebuf.write(buffer, size);
+    }
 }
 
 /*
