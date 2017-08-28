@@ -25,10 +25,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
  */
 Sub::Sub(void)
     : DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask)),
-          mission(ahrs,
-                  FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
-                  FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
-                  FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void)),
           control_mode(MANUAL),
           motors(MAIN_LOOP_RATE),
           scaleLongDown(1),

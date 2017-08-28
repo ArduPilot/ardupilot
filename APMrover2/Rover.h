@@ -179,7 +179,10 @@ private:
     AP_Navigation *nav_controller;
 
     // Mission library
-    AP_Mission mission;
+    AP_Mission mission = AP_Mission::create(ahrs,
+            FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
+            FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
+            FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void));
 
 #if AP_AHRS_NAVEKF_AVAILABLE
     OpticalFlow optflow{ahrs};
