@@ -580,7 +580,7 @@ private:
 #endif
 
     // Landing Gear Controller
-    AP_LandingGear landinggear;
+    AP_LandingGear landinggear = AP_LandingGear::create();
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
