@@ -137,7 +137,7 @@ bool AP_Baro_KellerLD::_init()
 
     printf("Keller LD found on bus %u address 0x%02x\n", _dev->bus_num(), _dev->get_bus_address());
 
-    // Send a command to read temperature first
+    // Send a command to take a measurement
     _dev->transfer(&CMD_REQUEST_MEASUREMENT, 1, nullptr, 0);
 
     memset(&_accum, 0, sizeof(_accum));
@@ -197,10 +197,11 @@ bool AP_Baro_KellerLD::_read()
     return false;
 }
 
-// Periodic callback, regular update at 100Hz
+// Periodic callback, regular update at 50Hz
 // Read out most recent measurement, and request another
 // Max conversion time according to datasheet is ~8ms, so
-// max update rate is ~125Hz
+// max update rate is ~125Hz, yet we struggle to get consistent
+// performance/data at 100Hz
 void AP_Baro_KellerLD::_timer(void)
 {
     _read();
