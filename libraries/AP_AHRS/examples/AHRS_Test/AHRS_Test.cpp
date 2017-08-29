@@ -13,6 +13,8 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+
+static AP_BoardConfig board_config = AP_BoardConfig::create();
 static AP_InertialSensor ins = AP_InertialSensor::create();
 
 static Compass compass = Compass::create();
@@ -38,8 +40,7 @@ AP_AHRS_NavEKF ahrs(vehicle.ahrs);
 
 void setup(void)
 {
-    AP_BoardConfig{}.init();
-
+    board_config.init();
     ins.init(100);
     ahrs.init();
     serial_manager.init();

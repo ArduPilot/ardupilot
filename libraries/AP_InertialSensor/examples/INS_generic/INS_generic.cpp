@@ -14,7 +14,7 @@ static void display_offsets_and_scaling();
 static void run_test();
 
 // board specific config
-AP_BoardConfig BoardConfig;
+static AP_BoardConfig BoardConfig = AP_BoardConfig::create();
 
 void setup(void);
 void loop(void);
