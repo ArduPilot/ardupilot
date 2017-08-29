@@ -59,9 +59,6 @@ Sub::Sub(void)
           pmTest1(0),
           fast_loopTimer(0),
           mainLoop_count(0),
-#if MOUNT == ENABLED
-          camera_mount(ahrs, current_loc),
-#endif
 #if AC_FENCE == ENABLED
           fence(ahrs, inertial_nav),
 #endif

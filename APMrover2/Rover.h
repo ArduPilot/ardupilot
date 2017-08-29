@@ -217,7 +217,7 @@ private:
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps solution for altitude rather than gps only.
-    AP_Mount camera_mount;
+    AP_Mount camera_mount = AP_Mount::create(ahrs, current_loc);
 #endif
 
     // true if initialisation has completed
