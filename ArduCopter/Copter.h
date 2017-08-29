@@ -541,9 +541,9 @@ private:
     // handle repeated servo and relay events
     AP_ServoRelayEvents ServoRelayEvents = AP_ServoRelayEvents::create(relay);
 
-    // Reference to the camera object (it uses the relay object inside it)
+    // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera;
+    AP_Camera camera = AP_Camera::create(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs);
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff

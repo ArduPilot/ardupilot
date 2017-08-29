@@ -206,13 +206,13 @@ private:
 
     AP_ServoRelayEvents ServoRelayEvents = AP_ServoRelayEvents::create(relay);
 
-    // Camera
-#if CAMERA == ENABLED
-    AP_Camera camera;
-#endif
-
     // The rover's current location
     struct Location current_loc;
+
+    // Camera
+#if CAMERA == ENABLED
+    AP_Camera camera = AP_Camera::create(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs);
+#endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
