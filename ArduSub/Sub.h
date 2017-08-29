@@ -426,7 +426,7 @@ private:
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence    fence;
+    AC_Fence fence = AC_Fence::create(ahrs, inertial_nav);
 #endif
 
     // Rally library
