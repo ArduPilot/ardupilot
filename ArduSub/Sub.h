@@ -326,7 +326,7 @@ private:
     uint32_t nav_delay_time_start;
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery = AP_BattMonitor::create();
 
     AP_Arming_Sub arming = AP_Arming_Sub::create(ahrs, barometer, compass, battery);
 
