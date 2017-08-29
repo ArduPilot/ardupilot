@@ -31,19 +31,20 @@
 class AP_Camera {
 
 public:
-    /// Constructor
-    ///
-    AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_GPS &_gps, const AP_AHRS &_ahrs) :
-        _trigger_counter(0),    // count of number of cycles shutter has been held open
-        _image_index(0),
-        log_camera_bit(_log_camera_bit),
-        current_loc(_loc),
-        gps(_gps),
-        ahrs(_ahrs)
-    {
-		AP_Param::setup_object_defaults(this, var_info);
-        _apm_relay = obj_relay;
+    static AP_Camera create(AP_Relay *obj_relay,
+                            uint32_t _log_camera_bit,
+                            const struct Location &_loc,
+                            const AP_GPS &_gps,
+                            const AP_AHRS &_ahrs) {
+        return AP_Camera{obj_relay, _log_camera_bit, _loc, _gps, _ahrs};
     }
+
+    constexpr AP_Camera(AP_Camera &&other) = default;
+
+    /* Do not allow copies */
+    AP_Camera(const AP_Camera &other) = delete;
+    AP_Camera &operator=(const AP_Camera&) = delete;
+
 
     // MAVLink methods
     void            control_msg(const mavlink_message_t* msg);
@@ -68,6 +69,18 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
+    AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_GPS &_gps, const AP_AHRS &_ahrs)
+        : _trigger_counter(0) // count of number of cycles shutter has been held open
+        , _image_index(0)
+        , log_camera_bit(_log_camera_bit)
+        , current_loc(_loc)
+        , gps(_gps)
+        , ahrs(_ahrs)
+    {
+        AP_Param::setup_object_defaults(this, var_info);
+        _apm_relay = obj_relay;
+    }
+
     AP_Int8         _trigger_type;      // 0:Servo,1:Relay
     AP_Int8         _trigger_duration;  // duration in 10ths of a second that the camera shutter is held open
     AP_Int8         _relay_on;          // relay value to trigger camera
