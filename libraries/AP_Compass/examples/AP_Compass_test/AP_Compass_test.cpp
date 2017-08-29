@@ -9,6 +9,7 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+static AP_BoardConfig board_config = AP_BoardConfig::create();
 static Compass compass = Compass::create();
 
 uint32_t timer;
@@ -17,7 +18,7 @@ static void setup()
 {
     hal.console->printf("Compass library test\n");
 
-    AP_BoardConfig{}.init();  // initialise the board drivers
+    board_config.init();
 
     if (!compass.init()) {
         AP_HAL::panic("compass initialisation failed!");

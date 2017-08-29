@@ -37,6 +37,8 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+static AP_BoardConfig board_config = AP_BoardConfig::create();
+
 // create board led object
 AP_BoardLED board_led;
 
@@ -50,7 +52,7 @@ void setup()
 {
     hal.console->printf("GPS AUTO library test\n");
 
-    AP_BoardConfig{}.init();
+    board_config.init();
 
     // Initialise the leds
     board_led.init();

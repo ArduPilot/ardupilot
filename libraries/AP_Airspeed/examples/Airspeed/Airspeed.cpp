@@ -31,6 +31,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 float temperature;
 
 AP_Airspeed airspeed;
+static AP_BoardConfig board_config = AP_BoardConfig::create();
 
 namespace {
 // try to set the object value but provide diagnostic if it failed
@@ -53,7 +54,7 @@ void setup()
     set_object_value(&airspeed, airspeed.var_info, "ENABLE", 1);
     set_object_value(&airspeed, airspeed.var_info, "USE", 1);
 
-    AP_BoardConfig{}.init();
+    board_config.init();
 
     airspeed.init();
     airspeed.calibrate(false);
