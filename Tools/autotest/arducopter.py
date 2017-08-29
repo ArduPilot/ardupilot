@@ -29,7 +29,7 @@ AVCHOME = mavutil.location(40.072842, -105.230575, 1586, 0)
 
 homeloc = None
 num_wp = 0
-speedup_default = 10
+speedup_default = 20
 
 
 def wait_ready_to_arm(mavproxy):
@@ -1004,6 +1004,30 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
 
+    # test a log download
+    sitl = util.start_SITL(binary, model=frame, home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
+    mavproxy = util.start_MAVProxy_SITL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
+    mavproxy.expect('Received [0-9]+ parameters')
+    # get a mavlink connection going
+    try:
+        mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
+    except Exception as msg:
+        print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+        raise
+    mav.message_hooks.append(message_hook)
+    mav.idle_hooks.append(idle_hook)
+    # give the log some time to fill up
+    time.sleep(10 / speedup_default)
+    print("# Log Download")
+    if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduCopter-log-download.bin")):
+        print("Failed log download")
+        failed = True
+
+    # reboot for the remainint testing
+    mav.close()
+    util.pexpect_close(mavproxy)
+    util.pexpect_close(sitl)
+
     sitl = util.start_SITL(binary, model=frame, home=home, speedup=speedup_default, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
@@ -1300,11 +1324,6 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
         # wait for disarm
         mav.motors_disarmed_wait()
 
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduCopter-log.bin")):
-            failed_test_msg = "log_download failed"
-            print(failed_test_msg)
-            failed = True
-
     except pexpect.TIMEOUT as failed_test_msg:
         failed_test_msg = "Timeout"
         failed = True
@@ -1312,6 +1331,9 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
+
+    # copy DF log
+    move_most_recent_log("../buildlogs/ArduCopter-log.bin")
 
     valgrind_log = util.valgrind_log_filepath(binary=binary, model='+')
     if os.path.exists(valgrind_log):
@@ -1434,10 +1456,6 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         mavproxy.send('rc 8 1000\n')
 
         # mission includes disarm at end so should be ok to download logs now
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/CopterAVC-log.bin")):
-            failed_test_msg = "log_download failed"
-            print(failed_test_msg)
-            failed = True
 
     except pexpect.TIMEOUT as failed_test_msg:
         failed_test_msg = "Timeout"
@@ -1446,6 +1464,9 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
+
+    # copy DF log
+    move_most_recent_log("../buildlogs/CopterAVC-log.bin")
 
     valgrind_log = util.valgrind_log_filepath(binary=binary, model='heli')
     if os.path.exists(valgrind_log):
