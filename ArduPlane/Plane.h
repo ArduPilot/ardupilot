@@ -606,7 +606,7 @@ private:
 
 
 #if PARACHUTE == ENABLED
-    AP_Parachute parachute {relay};
+    AP_Parachute parachute = AP_Parachute::create(relay);
 #endif
 
     // terrain handling
