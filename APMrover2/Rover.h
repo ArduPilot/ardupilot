@@ -204,7 +204,7 @@ private:
     // relay support
     AP_Relay relay = AP_Relay::create();
 
-    AP_ServoRelayEvents ServoRelayEvents;
+    AP_ServoRelayEvents ServoRelayEvents = AP_ServoRelayEvents::create(relay);
 
     // Camera
 #if CAMERA == ENABLED
