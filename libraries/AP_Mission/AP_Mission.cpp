@@ -41,10 +41,8 @@ void AP_Mission::init()
     // command list will be cleared if they do not match
     check_eeprom_version();
 
-    // prevent an easy programming error, this will be optimised out
-    if (sizeof(union Content) != 12) {
-        AP_HAL::panic("AP_Mission Content must be 12 bytes");
-    }
+    // changes in Content size break the storage
+    static_assert(sizeof(union Content) == 12, "AP_Mission: Content must be 12 bytes");
 
     _last_change_time_ms = AP_HAL::millis();
 }
