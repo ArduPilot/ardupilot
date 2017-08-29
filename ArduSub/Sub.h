@@ -408,7 +408,7 @@ private:
     uint16_t mainLoop_count;
 
     // Reference to the relay object
-    AP_Relay relay;
+    AP_Relay relay = AP_Relay::create();
 
     // handle repeated servo and relay events
     AP_ServoRelayEvents ServoRelayEvents;

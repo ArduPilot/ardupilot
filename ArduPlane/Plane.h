@@ -267,7 +267,7 @@ private:
     AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
     // Relay
-    AP_Relay relay;
+    AP_Relay relay = AP_Relay::create();
 
     // handle servo and relay events
     AP_ServoRelayEvents ServoRelayEvents {relay};
