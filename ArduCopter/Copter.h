@@ -571,7 +571,7 @@ private:
 
     // Crop Sprayer
 #if SPRAYER == ENABLED
-    AC_Sprayer sprayer;
+    AC_Sprayer sprayer = AC_Sprayer::create(&inertial_nav);
 #endif
 
     // Parachute release
