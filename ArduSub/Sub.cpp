@@ -59,9 +59,6 @@ Sub::Sub(void)
           pmTest1(0),
           fast_loopTimer(0),
           mainLoop_count(0),
-#if AC_RALLY == ENABLED
-          rally(ahrs),
-#endif
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
           terrain(ahrs, mission, rally),
 #endif

@@ -560,9 +560,10 @@ private:
 #if AC_AVOID_ENABLED == ENABLED
     AC_Avoid avoid;
 #endif
+
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally_Copter rally;
+    AP_Rally_Copter rally = AP_Rally_Copter::create(ahrs);
 #endif
 
     // RSSI 
