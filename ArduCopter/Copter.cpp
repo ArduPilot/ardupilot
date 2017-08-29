@@ -66,9 +66,6 @@ Copter::Copter(void)
     mainLoop_count(0),
     rtl_loiter_start_time(0),
     auto_trim_counter(0),
-#if PARACHUTE == ENABLED
-    parachute(relay),
-#endif
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     terrain(ahrs, mission, rally),
 #endif

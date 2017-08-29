@@ -22,7 +22,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static AP_Relay relay = AP_Relay::create();
 
 // Parachute
-AP_Parachute parachute(relay);
+static AP_Parachute parachute = AP_Parachute::create(relay);
 
 void setup()
 {
