@@ -764,11 +764,11 @@ private:
 
     // last time home was updated while disarmed
     uint32_t last_home_update_ms;
-    
+
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
-    AP_Mount camera_mount {ahrs, current_loc};
+    AP_Mount camera_mount = AP_Mount::create(ahrs, current_loc);
 #endif
 
     // Arming/Disarming mangement class
