@@ -676,6 +676,7 @@ int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
     uint8_t len =  LOG_PACKET_HEADER_LEN;
     for (uint8_t i=0; i<strlen(fmt); i++) {
         switch(fmt[i]) {
+        case 'a' : len += sizeof(int16_t[32]); break;
         case 'b' : len += sizeof(int8_t); break;
         case 'c' : len += sizeof(int16_t); break;
         case 'd' : len += sizeof(double); break;
