@@ -285,8 +285,8 @@ private:
     // Rally Ponints
     AP_Rally rally = AP_Rally::create(ahrs);
 
-    // RSSI 
-    AP_RSSI rssi;      
+    // RSSI
+    AP_RSSI rssi = AP_RSSI::create();
 
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO

@@ -189,7 +189,7 @@ private:
 #endif
 
     // RSSI
-    AP_RSSI rssi;
+    AP_RSSI rssi = AP_RSSI::create();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
