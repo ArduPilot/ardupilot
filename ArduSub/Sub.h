@@ -431,7 +431,7 @@ private:
 
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally rally;
+    AP_Rally rally = AP_Rally::create(ahrs);
 #endif
 
     // terrain handling

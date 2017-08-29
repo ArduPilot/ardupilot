@@ -283,8 +283,8 @@ private:
 #endif
 
     // Rally Ponints
-    AP_Rally rally {ahrs};
-    
+    AP_Rally rally = AP_Rally::create(ahrs);
+
     // RSSI 
     AP_RSSI rssi;      
 
