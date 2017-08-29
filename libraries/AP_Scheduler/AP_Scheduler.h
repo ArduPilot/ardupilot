@@ -22,6 +22,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/Util.h>
+#include <AP_Math/AP_Math.h>
 
 #define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
 
@@ -96,6 +97,13 @@ public:
     uint32_t get_loop_period_us() const {
         return 1000000UL / _loop_rate_hz;
     }
+    // get the time-allowed-per-loop:
+    float get_loop_period_s() {
+        if (is_zero(_loop_period_s)) {
+            _loop_period_s = 1.0 / _loop_rate_hz;
+        }
+        return _loop_period_s;
+    }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -107,7 +115,13 @@ private:
     AP_Int8 _debug;
 
     // overall scheduling rate in Hz
-    AP_Int16 _loop_rate_hz;  // The value of this variable can be changed with the non-initialization. (Ex. Tuning by GDB)
+    // The value of this variable can be changed with the
+    // non-initialization. (Ex. Tuning by GDB).  However, if you do,
+    // make sure you update _loop_period_us at the same time.  And all
+    // the other places which take a copy of this at startup and don't
+    // get refreshed.  So, really, don't.
+    AP_Int16 _loop_rate_hz;
+    float _loop_period_s;
 
     // progmem list of tasks to run
     const struct Task *_tasks;
