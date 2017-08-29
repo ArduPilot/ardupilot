@@ -566,8 +566,8 @@ private:
     AP_Rally_Copter rally = AP_Rally_Copter::create(ahrs);
 #endif
 
-    // RSSI 
-    AP_RSSI rssi;      
+    // RSSI
+    AP_RSSI rssi = AP_RSSI::create();
 
     // Crop Sprayer
 #if SPRAYER == ENABLED
