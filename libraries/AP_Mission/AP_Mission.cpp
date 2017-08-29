@@ -53,7 +53,7 @@ void AP_Mission::init()
         AP_HAL::panic("AP_Mission Content must be 12 bytes");
     }
     
-    // If _retain equals 0 then it should clear the mission
+    // If Mission retain bit is not set then it should clear the mission
     if(!is_option(MASK_MISSION_RETAIN)) {
     	gcs().send_text(MAV_SEVERITY_INFO, "Clearing Mission");
     	clear();	
