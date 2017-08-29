@@ -31,7 +31,6 @@ Rover::Rover(void) :
     modes(&g.mode1),
     L1_controller(ahrs, nullptr),
     nav_controller(&L1_controller),
-    ServoRelayEvents(relay),
 #if CAMERA == ENABLED
     camera(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs),
 #endif
