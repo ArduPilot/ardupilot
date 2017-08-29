@@ -25,18 +25,15 @@
 class AP_Parachute {
 
 public:
-
-    /// Constructor
-    AP_Parachute(AP_Relay& relay) :
-        _relay(relay),
-        _release_time(0),
-        _release_initiated(false),
-        _release_in_progress(false),
-        _released(false)
-    {
-        // setup parameter defaults
-        AP_Param::setup_object_defaults(this, var_info);
+    static AP_Parachute create(AP_Relay &relay) {
+        return AP_Parachute{relay};
     }
+
+    constexpr AP_Parachute(AP_Parachute &&other) = default;
+
+    /* Do not allow copies */
+    AP_Parachute(const AP_Parachute &other) = delete;
+    AP_Parachute &operator=(const AP_Parachute&) = delete;
 
     /// enabled - enable or disable parachute release
     void enabled(bool on_off);
@@ -66,6 +63,18 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
+    /// Constructor
+    AP_Parachute(AP_Relay &relay)
+        : _relay(relay)
+        , _release_time(0)
+        , _release_initiated(false)
+        , _release_in_progress(false)
+        , _released(false)
+    {
+        // setup parameter defaults
+        AP_Param::setup_object_defaults(this, var_info);
+    }
+
     // Parameters
     AP_Int8     _enabled;       // 1 if parachute release is enabled
     AP_Int8     _release_type;  // 0:Servo,1:Relay
