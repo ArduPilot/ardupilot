@@ -9,11 +9,13 @@ extern "C" typedef int (*main_fn_t)(int argc, char **);
 
 class AP_BoardConfig {
 public:
-    // constructor
-    AP_BoardConfig(void)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    };
+    static AP_BoardConfig create() { return AP_BoardConfig{}; }
+
+    constexpr AP_BoardConfig(AP_BoardConfig &&other) = default;
+
+    /* Do not allow copies */
+    AP_BoardConfig(const AP_BoardConfig &other) = delete;
+    AP_BoardConfig &operator=(const AP_BoardConfig&) = delete;
 
     void init(void);
     void init_safety(void);
@@ -68,6 +70,10 @@ public:
 #endif
 
 private:
+    AP_BoardConfig() {
+        AP_Param::setup_object_defaults(this, var_info);
+    };
+
     AP_Int16 vehicleSerialNumber;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
