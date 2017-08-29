@@ -59,9 +59,6 @@ Sub::Sub(void)
           pmTest1(0),
           fast_loopTimer(0),
           mainLoop_count(0),
-#if CAMERA == ENABLED
-          camera(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs),
-#endif
 #if MOUNT == ENABLED
           camera_mount(ahrs, current_loc),
 #endif
