@@ -31,9 +31,6 @@ Rover::Rover(void) :
     modes(&g.mode1),
     L1_controller(ahrs, nullptr),
     nav_controller(&L1_controller),
-#if MOUNT == ENABLED
-    camera_mount(ahrs, current_loc),
-#endif
     control_mode(&mode_initializing),
     home(ahrs.get_home()),
     G_Dt(0.02f)
