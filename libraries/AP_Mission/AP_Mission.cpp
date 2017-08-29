@@ -22,12 +22,12 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RESTART",  1, AP_Mission, _restart, AP_MISSION_RESTART_DEFAULT),
 
-    // @Param: RETAIN
-    // @DisplayName: Mission retained after reboot
-    // @Description: Controls mission if the mission is retained after a reboot, 0 to clear, 1 to retain.
+    // @Param: OPTIONS
+    // @DisplayName: Mission options bitmask
+    // @Description: Bitmap of what options to use. This values is made up of the sum of each of the mission options you require.  The individual bits are CLEAR_MISSION=1
     // @Values: 0:Clear Mission, 1:Retain Mission
     // @User: Advanced
-    AP_GROUPINFO("RETAIN",  2, AP_Mission, _retain, AP_MISSION_RETAIN_DEFAULT),
+    AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
 
     AP_GROUPEND
 };
@@ -54,7 +54,7 @@ void AP_Mission::init()
     }
     
     // If _retain equals 0 then it should clear the mission
-    if(_retain == 0) {
+    if(!is_option(MASK_MISSION_RETAIN)) {
     	gcs().send_text(MAV_SEVERITY_INFO, "Clearing Mission");
     	clear();	
     }
@@ -1688,3 +1688,14 @@ bool AP_Mission::jump_to_landing_sequence(void)
     gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
     return false;
 }
+
+bool AP_Mission::is_option(const uint8_t mask)
+{
+	if (!(mask & _options)) {
+        return false;
+    }
+
+	return true;
+}
+
+
