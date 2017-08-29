@@ -1,6 +1,24 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.5.1beta1 29-August-2017
+
+Changes from 3.5:
+
+- Various parameter metadata and default value corrections
+- Add support for PLAY_TUNE and LED_CONTROL mavlink commands
+- Send sub-specific telemetry via NAMED_VALUE_FLOAT (tether turns, camera tilt angle etc.)
+- Support for Keller LD pressure sensors enabling depth measurement to 200 bar / 2 km
+- Relax arming checks, no sensor checks required by default
+- Increase pilot input failsafe timeout from 1 second to 3 seconds
+- Default INS_GYR_CAL behavior to 'Never' (0)
+- Bug fix neutralization of forward input channel during failsafe
+- Bug fix notify LED status code does not reflect leak fault resolution
+- Set GND_EXT_BUS appropriately at boot for both Pixhawk 1 and Pixhawk 2
+- Bug fix sensor health flag with no pressure sensor detected at boot
+- Acknowledge MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN before shutting down
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 3.5 09-May-2017 / Sub 3.5-rc2 04-May-2017
 
 Changes from 3.5-rc1:
