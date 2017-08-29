@@ -172,11 +172,11 @@ private:
     RCMapper rcmap = RCMapper::create();
 
     // board specific config
-    AP_BoardConfig BoardConfig;
+    AP_BoardConfig BoardConfig = AP_BoardConfig::create();
 
     // board specific config for CAN bus
 #if HAL_WITH_UAVCAN
-    AP_BoardConfig_CAN BoardConfig_CAN;
+    AP_BoardConfig_CAN BoardConfig_CAN = AP_BoardConfig_CAN::create();
 #endif
 
     // primary input channels
