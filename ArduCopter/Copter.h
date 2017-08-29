@@ -536,7 +536,7 @@ private:
     uint8_t auto_trim_counter;
 
     // Reference to the relay object
-    AP_Relay relay;
+    AP_Relay relay = AP_Relay::create();
 
     // handle repeated servo and relay events
     AP_ServoRelayEvents ServoRelayEvents;
