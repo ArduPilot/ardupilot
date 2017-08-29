@@ -672,7 +672,7 @@ if cmd_opts.valgrind and (cmd_opts.gdb or cmd_opts.gdb_stopped):
     print("May not use valgrind with gdb")
     sys.exit(1)
 
-if cmd_opts.valgrind and opts.callgrind:
+if cmd_opts.valgrind and cmd_opts.callgrind:
     print("May not use valgrind with callgrind")
     sys.exit(1)
 
