@@ -395,7 +395,7 @@ private:
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry {ahrs, battery, rangefinder};
+    AP_Frsky_Telem frsky_telemetry = AP_Frsky_Telem::create(ahrs, battery, rangefinder);
 #endif
 
     // Variables for extended status MAVLink messages

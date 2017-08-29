@@ -39,9 +39,6 @@ Rover::Rover(void) :
     camera_mount(ahrs, current_loc),
 #endif
     control_mode(&mode_initializing),
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry(ahrs, battery, rangefinder),
-#endif
     home(ahrs.get_home()),
     G_Dt(0.02f)
 {
