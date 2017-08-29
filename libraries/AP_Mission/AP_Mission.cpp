@@ -24,8 +24,8 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Mission options bitmask
-    // @Description: Bitmap of what options to use. This values is made up of the sum of each of the mission options you require.  The individual bits are CLEAR_MISSION=1
-    // @Values: 0:Clear Mission, 1:Retain Mission
+    // @Description: Bitmap of what options to use. This values is made up of the sum of each of the mission options you require.
+    // @Bitmask: 0:Clear Mission
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
 
@@ -53,8 +53,8 @@ void AP_Mission::init()
         AP_HAL::panic("AP_Mission Content must be 12 bytes");
     }
     
-    // If Mission retain bit is not set then it should clear the mission
-    if(!is_option(MASK_MISSION_RETAIN)) {
+    // If Mission Clear bit is set then it should clear the mission, otherwise retain the mission.
+    if(MASK_MISSION_CLEAR & _options) {
     	gcs().send_text(MAV_SEVERITY_INFO, "Clearing Mission");
     	clear();	
     }
@@ -1688,14 +1688,3 @@ bool AP_Mission::jump_to_landing_sequence(void)
     gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
     return false;
 }
-
-bool AP_Mission::is_option(const uint8_t mask)
-{
-	if (!(mask & _options)) {
-        return false;
-    }
-
-	return true;
-}
-
-
