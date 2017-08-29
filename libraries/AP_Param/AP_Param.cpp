@@ -73,6 +73,7 @@ StorageAccess AP_Param::_storage(StorageManager::StorageParam);
 
 // flags indicating frame type
 uint16_t AP_Param::_frame_type_flags;
+struct AP_Param::AP_Param_LookupCacheEntry AP_Param::lookup_cache[lookup_cache_size];
 
 // write to EEPROM
 void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
@@ -295,6 +296,12 @@ bool AP_Param::setup(void)
         Debug("bad header in setup - erasing");
         erase_all();
     }
+
+    // initialise the lookup cache:
+    ::fprintf(stderr, "%u bytes used for AP_Param lookup cache (%u*%u)\n",
+              sizeof(lookup_cache),
+              lookup_cache_size,
+              sizeof(lookup_cache[0]));
 
     return true;
 }
@@ -958,10 +965,58 @@ void AP_Param::notify() const {
 }
 
 
+
+bool AP_Param::find_in_cache(uint8_t &offset)
+{
+    uint8_t oldest_offset = 0;
+    uint32_t oldest_access_time = (uint32_t)-1;
+    const uint32_t now = AP_HAL::millis();
+    for(uint8_t i=0; i<lookup_cache_size; i++) {
+        if (lookup_cache[i].me == this) {
+            lookup_cache[i].accessed = now;
+            offset = i;
+            return true;
+        }
+        if (lookup_cache[i].accessed < oldest_access_time) {
+            oldest_access_time = lookup_cache[i].accessed;
+            oldest_offset = i;
+        }
+    }
+    offset = oldest_offset;
+    return false;
+}
+
+void AP_Param::update_cache(const uint8_t offset,
+                       const char *name,
+                       const enum ap_var_type phdr_type,
+                       const uint8_t idx,
+                       const AP_Param *ap,
+                       const uint16_t ofs)
+{
+    AP_Param_LookupCacheEntry &oldest = lookup_cache[offset];
+    oldest.me = this;
+    memcpy(oldest.name, name, AP_MAX_NAME_SIZE);
+    oldest.phdr_type = phdr_type;
+    oldest.idx = idx;
+    oldest.ap = ap;
+    oldest.ofs = ofs;
+    oldest.accessed = AP_HAL::micros();
+}
+
 // Save the variable to EEPROM, if supported
 //
 bool AP_Param::save(bool force_save)
 {
+    uint8_t lookup_cache_offset;
+    if (find_in_cache(lookup_cache_offset)) {
+        AP_Param_LookupCacheEntry cache = lookup_cache[lookup_cache_offset];
+        eeprom_write_check(cache.ap, cache.ofs+sizeof(struct Param_header), type_size(cache.phdr_type));
+        send_parameter(cache.name, cache.phdr_type, cache.idx);
+        return true;
+    } else {
+        // lookup_cache_offset is the oldest cache entry
+    }
+
     uint32_t group_element = 0;
     const struct GroupInfo *ginfo;
     struct GroupNesting group_nesting {};
@@ -1008,6 +1063,8 @@ bool AP_Param::save(bool force_save)
         // found an existing copy of the variable
         eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
         send_parameter(name, (enum ap_var_type)phdr.type, idx);
+        // store cache info:
+        update_cache(lookup_cache_offset, name, (enum ap_var_type)phdr.type, idx, ap, ofs);
         return true;
     }
     if (ofs == (uint16_t) ~0) {

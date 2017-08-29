@@ -541,6 +541,29 @@ private:
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
 
     static bool _hide_disabled_groups;
+
+    static const uint8_t lookup_cache_size = 5;
+    struct AP_Param_LookupCacheEntry {
+    public:
+        AP_Param *me;
+
+        char name[AP_MAX_NAME_SIZE+1];
+        enum ap_var_type phdr_type;
+        uint8_t idx;
+        const AP_Param *ap;
+        uint16_t ofs;
+
+        uint32_t accessed;
+    };
+
+    static struct AP_Param_LookupCacheEntry lookup_cache[];
+    bool find_in_cache(uint8_t &cache_offset);
+    void update_cache(const uint8_t offset,
+                      const char *name,
+                      const enum ap_var_type phdr_type,
+                      const uint8_t idx,
+                      const AP_Param *ap,
+                      const uint16_t ofs);
 };
 
 /// Template class for scalar variables.
