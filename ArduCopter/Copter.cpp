@@ -69,9 +69,6 @@ Copter::Copter(void)
 #if AC_AVOID_ENABLED == ENABLED
     avoid(ahrs, inertial_nav, fence, g2.proximity, &g2.beacon),
 #endif
-#if AC_RALLY == ENABLED
-    rally(ahrs),
-#endif
 #if SPRAYER == ENABLED
     sprayer(&inertial_nav),
 #endif
