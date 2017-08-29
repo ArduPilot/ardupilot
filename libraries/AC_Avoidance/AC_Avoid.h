@@ -29,9 +29,19 @@
  */
 class AC_Avoid {
 public:
+    static AC_Avoid create(const AP_AHRS& ahrs,
+                           const AP_InertialNav& inav,
+                           const AC_Fence& fence,
+                           const AP_Proximity& proximity,
+                           const AP_Beacon* beacon = nullptr) {
+        return AC_Avoid{ahrs, inav, fence, proximity, beacon};
+    }
 
-    /// Constructor
-    AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
+    constexpr AC_Avoid(AC_Avoid &&other) = default;
+
+    /* Do not allow copies */
+    AC_Avoid(const AC_Avoid &other) = delete;
+    AC_Avoid &operator=(const AC_Avoid&) = delete;
 
     /*
      * Adjusts the desired velocity so that the vehicle can stop
@@ -56,6 +66,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
 
     /*
      * Adjusts the desired velocity for the circular fence.
