@@ -450,7 +450,7 @@ private:
     } throw_state = {Throw_Disarmed, Throw_Disarmed, 0, false, 0, 0.0f};
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery = AP_BattMonitor::create();
 
     // FrSky telemetry support
 #if FRSKY_TELEM_ENABLED == ENABLED
