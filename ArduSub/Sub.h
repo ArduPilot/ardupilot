@@ -251,7 +251,7 @@ private:
     mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
 
 #if RCMAP_ENABLED == ENABLED
-    RCMapper rcmap;
+    RCMapper rcmap = RCMapper::create();
 #endif
 
     // board specific config

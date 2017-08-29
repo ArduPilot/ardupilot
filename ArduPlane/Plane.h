@@ -169,7 +169,7 @@ private:
     AP_Scheduler scheduler = AP_Scheduler::create();
 
     // mapping between input channels
-    RCMapper rcmap;
+    RCMapper rcmap = RCMapper::create();
 
     // board specific config
     AP_BoardConfig BoardConfig;
