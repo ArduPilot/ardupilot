@@ -452,16 +452,16 @@ private:
     // Battery Sensors
     AP_BattMonitor battery = AP_BattMonitor::create();
 
-    // FrSky telemetry support
 #if FRSKY_TELEM_ENABLED == ENABLED
-    AP_Frsky_Telem frsky_telemetry;
+    // FrSky telemetry support
+    AP_Frsky_Telem frsky_telemetry = AP_Frsky_Telem::create(ahrs, battery, rangefinder);
 #endif
 
     // Variables for extended status MAVLink messages
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
-    
+
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
