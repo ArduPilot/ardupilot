@@ -66,9 +66,6 @@ Copter::Copter(void)
     mainLoop_count(0),
     rtl_loiter_start_time(0),
     auto_trim_counter(0),
-#if SPRAYER == ENABLED
-    sprayer(&inertial_nav),
-#endif
 #if PARACHUTE == ENABLED
     parachute(relay),
 #endif
