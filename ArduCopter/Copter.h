@@ -576,7 +576,7 @@ private:
 
     // Parachute release
 #if PARACHUTE == ENABLED
-    AP_Parachute parachute;
+    AP_Parachute parachute = AP_Parachute::create(relay);
 #endif
 
     // Landing Gear Controller
