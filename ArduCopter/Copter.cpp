@@ -66,9 +66,6 @@ Copter::Copter(void)
     mainLoop_count(0),
     rtl_loiter_start_time(0),
     auto_trim_counter(0),
-#if AC_AVOID_ENABLED == ENABLED
-    avoid(ahrs, inertial_nav, fence, g2.proximity, &g2.beacon),
-#endif
 #if SPRAYER == ENABLED
     sprayer(&inertial_nav),
 #endif

@@ -390,10 +390,6 @@ private:
 
     AC_PosControl_Sub pos_control;
 
-#if AVOIDANCE_ENABLED == ENABLED
-    AC_Avoid avoid;
-#endif
-
     AC_WPNav wp_nav;
     AC_Circle circle_nav;
 
@@ -427,6 +423,10 @@ private:
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
     AC_Fence fence = AC_Fence::create(ahrs, inertial_nav);
+#endif
+
+#if AVOIDANCE_ENABLED == ENABLED
+    AC_Avoid avoid = AC_Avoid::create(ahrs, inertial_nav, fence, g2.proximity, &g2.beacon);
 #endif
 
     // Rally library
