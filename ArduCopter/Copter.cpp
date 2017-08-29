@@ -45,7 +45,6 @@ Copter::Copter(void)
     yaw_look_at_heading(0),
     yaw_look_at_heading_slew(0),
     yaw_look_ahead_bearing(0.0f),
-    G_Dt(MAIN_LOOP_SECONDS),
     inertial_nav(ahrs),
     pmTest1(0),
     fast_loopTimer(0),
