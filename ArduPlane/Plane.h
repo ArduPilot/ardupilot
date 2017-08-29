@@ -391,7 +391,7 @@ private:
     int32_t altitude_error_cm;
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery = AP_BattMonitor::create();
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support

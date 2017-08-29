@@ -286,7 +286,7 @@ private:
     aux_switch_pos aux_ch7;
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery = AP_BattMonitor::create();
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
