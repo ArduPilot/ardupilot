@@ -772,7 +772,7 @@ private:
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming_Plane arming {ahrs, barometer, compass, battery};
+    AP_Arming_Plane arming = AP_Arming_Plane::create(ahrs, barometer, compass, battery);
 
     AP_Param param_loader {var_info};
 
