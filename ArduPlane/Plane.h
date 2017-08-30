@@ -220,7 +220,7 @@ private:
     AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, barometer, gps);
 #endif
 
-    AP_TECS TECS_controller {ahrs, aparm, landing, g2.soaring_controller};
+    AP_TECS TECS_controller = AP_TECS::create(ahrs, aparm, landing, g2.soaring_controller);
     AP_L1_Control L1_controller {ahrs, &TECS_controller};
 
     // Attitude to servo controllers
