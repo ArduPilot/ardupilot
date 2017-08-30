@@ -35,7 +35,7 @@ public:
 static DummyVehicle vehicle;
 
 // choose which AHRS system to use
-// AP_AHRS_DCM  ahrs(ins, baro, gps);
+// AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, barometer, gps);
 AP_AHRS_NavEKF &ahrs = vehicle.ahrs;
 
 void setup(void)
