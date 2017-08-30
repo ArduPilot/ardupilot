@@ -221,13 +221,13 @@ private:
 #endif
 
     AP_TECS TECS_controller = AP_TECS::create(ahrs, aparm, landing, g2.soaring_controller);
-    AP_L1_Control L1_controller {ahrs, &TECS_controller};
+    AP_L1_Control L1_controller = AP_L1_Control::create(ahrs, &TECS_controller);
 
     // Attitude to servo controllers
-    AP_RollController  rollController {ahrs, aparm, DataFlash};
-    AP_PitchController pitchController {ahrs, aparm, DataFlash};
-    AP_YawController   yawController {ahrs, aparm};
-    AP_SteerController steerController {ahrs};
+    AP_RollController rollController = AP_RollController::create(ahrs, aparm, DataFlash);
+    AP_PitchController pitchController = AP_PitchController::create(ahrs, aparm, DataFlash);
+    AP_YawController yawController = AP_YawController::create(ahrs, aparm);
+    AP_SteerController steerController = AP_SteerController::create(ahrs);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
