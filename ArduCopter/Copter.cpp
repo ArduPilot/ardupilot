@@ -66,9 +66,6 @@ Copter::Copter(void)
     mainLoop_count(0),
     rtl_loiter_start_time(0),
     auto_trim_counter(0),
-#if PRECISION_LANDING == ENABLED
-    precland(ahrs, inertial_nav),
-#endif
 #if FRAME_CONFIG == HELI_FRAME
     // ToDo: Input Manager is only used by Heli for 3.3, but will be used by all frames for 3.4
     input_manager(),
