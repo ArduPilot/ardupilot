@@ -38,9 +38,6 @@ public:
         YES_ZERO_PWM = 2
     };
 
-    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-              const AP_BattMonitor &battery);
-
     // these functions should not be used by Copter which holds the armed state in the motors library
     ArmingRequired arming_required();
     virtual bool arm(uint8_t method);
@@ -64,6 +61,9 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
+    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
+              const AP_BattMonitor &battery);
+
     // Parameters
     AP_Int8                 require;
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
