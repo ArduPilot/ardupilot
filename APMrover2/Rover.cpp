@@ -29,7 +29,6 @@ Rover::Rover(void) :
     channel_aux(nullptr),
     DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask)),
     modes(&g.mode1),
-    L1_controller(ahrs, nullptr),
     nav_controller(&L1_controller),
     control_mode(&mode_initializing),
     home(ahrs.get_home()),
