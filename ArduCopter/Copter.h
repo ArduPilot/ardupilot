@@ -601,7 +601,7 @@ private:
     AP_ADSB adsb = AP_ADSB::create(ahrs);
 
     // avoidance of adsb enabled vehicles (normally manned vheicles)
-    AP_Avoidance_Copter avoidance_adsb{ahrs, adsb};
+    AP_Avoidance_Copter avoidance_adsb = AP_Avoidance_Copter::create(ahrs, adsb);
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
