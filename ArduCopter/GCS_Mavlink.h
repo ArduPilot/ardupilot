@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
+#include "version.h"
 
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
@@ -26,10 +27,14 @@ protected:
     AP_GPS *get_gps() const override;
     MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
+    const AP_FWVersion &get_fwver() const override;
 
     uint8_t sysid_my_gcs() const override;
 
     bool set_mode(uint8_t mode) override;
+
+    bool params_ready() const override;
+    void send_banner() override;
 
 private:
 

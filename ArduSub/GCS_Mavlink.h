@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
+#include "version.h"
 
 class GCS_MAVLINK_Sub : public GCS_MAVLINK {
 
@@ -20,6 +21,8 @@ protected:
     AP_Camera *get_camera() const override;
     AP_ServoRelayEvents *get_servorelayevents() const override;
     AP_GPS *get_gps() const override;
+    const AP_FWVersion &get_fwver() const override;
+
     MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
 
     uint8_t sysid_my_gcs() const override;

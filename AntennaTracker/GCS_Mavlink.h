@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
+#include "version.h"
 
 class GCS_MAVLINK_Tracker : public GCS_MAVLINK
 {
@@ -22,6 +23,7 @@ protected:
     AP_Camera *get_camera() const override { return nullptr; };
     AP_ServoRelayEvents *get_servorelayevents() const override { return nullptr; }
     AP_GPS *get_gps() const override;
+    const AP_FWVersion &get_fwver() const override;
 
     uint8_t sysid_my_gcs() const override;
 

@@ -699,6 +699,25 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
+bool GCS_MAVLINK_Copter::params_ready() const
+{
+    if (AP_BoardConfig::in_sensor_config_error()) {
+        // we may never have parameters "initialised" in this case
+        return true;
+    }
+    // if we have not yet initialised (including allocating the motors
+    // object) we drop this request. That prevents the GCS from getting
+    // a confusing parameter count during bootup
+    return copter.ap.initialised_params;
+}
+
+void GCS_MAVLINK_Copter::send_banner()
+{
+    GCS_MAVLINK::send_banner();
+    send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
+}
+
+
 void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
@@ -711,32 +730,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         if(msg->sysid != copter.g.sysid_my_gcs) break;
         copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
         copter.pmTest1++;
-        break;
-    }
-
-    case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:         // MAV ID: 21
-    {
-        // if we have not yet initialised (including allocating the motors
-        // object) we drop this request. That prevents the GCS from getting
-        // a confusing parameter count during bootup
-        if (!copter.ap.initialised_params && !AP_BoardConfig::in_sensor_config_error()) {
-            break;
-        }
-
-        // mark the firmware version in the tlog
-        send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
-
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
-#endif
-        send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
-        handle_param_request_list(msg);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_PARAM_SET:     // 23
-    {
-        handle_param_set(msg, &copter.DataFlash);
         break;
     }
 
@@ -1148,34 +1141,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             }
             break;
 #endif
-
-        case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
-            if (is_equal(packet.param1,1.0f)) {
-                send_autopilot_version(FIRMWARE_VERSION);
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-        }
-
-        case MAV_CMD_DO_SEND_BANNER: {
-            result = MAV_RESULT_ACCEPTED;
-
-            send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
-
-            #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-            send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
-            #endif
-
-            send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
-
-            // send system ID if we can
-            char sysid[40];
-            if (hal.util->get_system_id(sysid)) {
-                send_text(MAV_SEVERITY_INFO, sysid);
-            }
-
-            break;
-        }
 
         /* Solo user presses Fly button */
         case MAV_CMD_SOLO_BTN_FLY_CLICK: {
@@ -1591,10 +1556,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 #endif
         break;
 
-    case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        send_autopilot_version(FIRMWARE_VERSION);
-        break;
-
     case MAVLINK_MSG_ID_SET_HOME_POSITION:
     {
         mavlink_set_home_position_t packet;
@@ -1779,4 +1740,10 @@ bool GCS_MAVLINK_Copter::set_mode(const uint8_t mode)
     }
 #endif
     return copter.set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
+}
+
+
+const AP_FWVersion &GCS_MAVLINK_Copter::get_fwver() const
+{
+    return copter.fwver;
 }

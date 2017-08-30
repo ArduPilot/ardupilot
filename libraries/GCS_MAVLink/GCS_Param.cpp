@@ -17,7 +17,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 
-#include "ap_version.h"
+#include "AP_Common/AP_FWVersion.h"
 #include "GCS.h"
 
 extern const AP_HAL::HAL& hal;
@@ -188,14 +188,15 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
 
 void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
 {
+    if (!params_ready()) {
+        return;
+    }
+
     mavlink_param_request_list_t packet;
     mavlink_msg_param_request_list_decode(msg, &packet);
 
-    // send system ID if we can
-    char sysid[40];
-    if (hal.util->get_system_id(sysid)) {
-        send_text(MAV_SEVERITY_INFO, sysid);
-    }
+    // requesting parameters is a convenient way to get extra information
+    send_banner();
 
     // Start sending parameters - next call to ::update will kick the first one out
     _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
@@ -235,7 +236,7 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
     param_requests.push(req);
 }
 
-void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash)
+void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg)
 {
     mavlink_param_set_t packet;
     mavlink_msg_param_set_decode(msg, &packet);
@@ -269,6 +270,7 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
     // save the change
     vp->save(force_save);
 
+    DataFlash_Class *DataFlash = DataFlash_Class::instance();
     if (DataFlash != nullptr) {
         DataFlash->Log_Write_Parameter(key, vp->cast_to_float(var_type));
     }
@@ -435,4 +437,19 @@ void GCS_MAVLINK::send_parameter_reply(void)
         mav_var_type(reply.p_type),
         reply.count,
         reply.param_index);
+}
+
+void GCS_MAVLINK::handle_common_param_message(mavlink_message_t *msg)
+{
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
+        handle_param_request_list(msg);
+        break;
+    case MAVLINK_MSG_ID_PARAM_SET:
+        handle_param_set(msg);
+        break;
+    case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
+        handle_param_request_read(msg);
+        break;
+    }
 }

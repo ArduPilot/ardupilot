@@ -1,4 +1,4 @@
-#include "ap_version.h"
+#include "AP_Common/AP_FWVersion.h"
 #include "DFMessageWriter.h"
 
 extern const AP_HAL::HAL& hal;

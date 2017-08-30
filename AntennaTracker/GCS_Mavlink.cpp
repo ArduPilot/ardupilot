@@ -443,18 +443,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
     }
 
 
-    case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-    {
-        handle_param_request_list(msg);
-        break;
-    }
-
-    case MAVLINK_MSG_ID_PARAM_SET:
-    {
-        handle_param_set(msg, nullptr);
-        break;
-    }
-
     case MAVLINK_MSG_ID_HEARTBEAT:
         break;
 
@@ -577,14 +565,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
                     // when packet.param1 == 3 we reboot to hold in bootloader
                     hal.scheduler->reboot(is_equal(packet.param1,3.0f));
-                    result = MAV_RESULT_ACCEPTED;
-                }
-                break;
-            }
-
-            case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
-                if (is_equal(packet.param1,1.0f)) {
-                    send_autopilot_version(FIRMWARE_VERSION);
                     result = MAV_RESULT_ACCEPTED;
                 }
                 break;
@@ -740,10 +720,6 @@ mission_failed:
         break;
     }
 
-    case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        send_autopilot_version(FIRMWARE_VERSION);
-        break;
-
     default:
         handle_common_message(msg);
         break;
@@ -836,6 +812,12 @@ bool GCS_MAVLINK_Tracker::set_mode(uint8_t mode)
         return true;
     }
     return false;
+}
+
+
+const AP_FWVersion &GCS_MAVLINK_Tracker::get_fwver() const
+{
+    return tracker.fwver;
 }
 
 /* dummy methods to avoid having to link against AP_Camera */

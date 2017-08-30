@@ -860,14 +860,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-        case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
-            if (is_equal(packet.param1, 1.0f)) {
-                send_autopilot_version(FIRMWARE_VERSION);
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-        }
-
         case MAV_CMD_DO_SET_HOME:
         {
             // param1 : use current (1=use current location, 0=use specified location)
@@ -940,24 +932,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 
             break;
         }
-
-    case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-        {
-            // mark the firmware version in the tlog
-            send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
-
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-            send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
-#endif
-            handle_param_request_list(msg);
-            break;
-        }
-
-    case MAVLINK_MSG_ID_PARAM_SET:
-    {
-        handle_param_set(msg, &rover.DataFlash);
-        break;
-    }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
     {
@@ -1278,10 +1252,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         rover.rangefinder.handle_msg(msg);
         break;
 
-    case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        send_autopilot_version(FIRMWARE_VERSION);
-        break;
-
     case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
         rover.g2.visual_odom.handle_msg(msg);
         break;
@@ -1414,4 +1384,9 @@ bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
         return false;
     }
     return rover.set_mode(*new_mode, MODE_REASON_GCS_COMMAND);
+}
+
+const AP_FWVersion &GCS_MAVLINK_Rover::get_fwver() const
+{
+    return rover.fwver;
 }

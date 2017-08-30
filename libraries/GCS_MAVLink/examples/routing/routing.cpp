@@ -11,6 +11,16 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+
+const AP_FWVersion fwver
+{
+    major: 3,
+    minor: 1,
+    patch: 4,
+    fw_type: FIRMWARE_VERSION_TYPE_DEV,
+    fw_string: "routing example"
+};
+
 class GCS_MAVLINK_routing : public GCS_MAVLINK
 {
 
@@ -29,6 +39,7 @@ protected:
     AP_Camera *get_camera() const override { return nullptr; };
     uint8_t sysid_my_gcs() const override { return 1; }
     bool set_mode(uint8_t mode) override { return false; };
+    const AP_FWVersion &get_fwver() const override { return fwver; }
 
 private:
 
