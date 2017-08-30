@@ -184,7 +184,7 @@ private:
 #endif
 
     // Inertial Navigation EKF
-    NavEKF2 EKF2 {&ahrs, barometer, rangefinder};
+    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, rangefinder);
     NavEKF3 EKF3 {&ahrs, barometer, rangefinder};
     AP_AHRS_NavEKF ahrs {ins, barometer, gps, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
