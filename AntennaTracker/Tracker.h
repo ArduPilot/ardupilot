@@ -117,7 +117,7 @@ private:
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, rng);
-    NavEKF3 EKF3{&ahrs, barometer, rng};
+    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, rng);
     AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3};
 #else
     AP_AHRS_DCM ahrs{ins, barometer, gps};
