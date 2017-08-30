@@ -614,13 +614,13 @@ private:
     AP_Terrain terrain = AP_Terrain::create(ahrs, mission, rally);
 #endif
 
-    AP_Landing landing {mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
+    AP_Landing landing = AP_Landing::create(mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
         FUNCTOR_BIND_MEMBER(&Plane::set_target_altitude_proportion, void, const Location&, float),
         FUNCTOR_BIND_MEMBER(&Plane::constrain_target_altitude_location, void, const Location&, const Location&),
         FUNCTOR_BIND_MEMBER(&Plane::adjusted_altitude_cm, int32_t),
         FUNCTOR_BIND_MEMBER(&Plane::adjusted_relative_altitude_cm, int32_t),
         FUNCTOR_BIND_MEMBER(&Plane::disarm_if_autoland_complete, void),
-        FUNCTOR_BIND_MEMBER(&Plane::update_flight_stage, void)};
+        FUNCTOR_BIND_MEMBER(&Plane::update_flight_stage, void));
 
     AP_ADSB adsb = AP_ADSB::create(ahrs);
 
