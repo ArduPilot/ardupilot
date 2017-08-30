@@ -29,14 +29,17 @@
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing, const SoaringController &soaring_controller) :
-        _ahrs(ahrs),
-        aparm(parms),
-        _landing(landing),
-        _soaring_controller(soaring_controller)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
+    static AP_TECS create(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms,
+                          const AP_Landing &landing,
+                          const SoaringController &soaring_controller) {
+        return AP_TECS{ahrs, parms, landing, soaring_controller};
     }
+
+    constexpr AP_TECS(AP_TECS &&other) = default;
+
+    /* Do not allow copies */
+    AP_TECS(const AP_TECS &other) = delete;
+    AP_TECS &operator=(const AP_TECS&) = delete;
 
     // Update of the estimated height and height rate internal state
     // Update of the inertial speed rate internal state
@@ -119,6 +122,15 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing, const SoaringController &soaring_controller)
+        : _ahrs(ahrs)
+        , aparm(parms)
+        , _landing(landing)
+        , _soaring_controller(soaring_controller)
+    {
+        AP_Param::setup_object_defaults(this, var_info);
+    }
+
     // Last time update_50Hz was called
     uint64_t _update_50hz_last_usec;
 
@@ -370,4 +382,3 @@ private:
     // current time constant
     float timeConstant(void) const;
 };
-
