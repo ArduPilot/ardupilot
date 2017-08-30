@@ -19,7 +19,7 @@ static AP_Baro baro = AP_Baro::create();
 static AP_SerialManager serial_manager = AP_SerialManager::create();
 
 // choose which AHRS system to use
-AP_AHRS_DCM  ahrs(ins, baro, gps);
+static AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, baro, gps);
 
 void setup(void)
 {

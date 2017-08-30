@@ -120,7 +120,7 @@ private:
     NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, rng);
     AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3);
 #else
-    AP_AHRS_DCM ahrs{ins, barometer, gps};
+    AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, barometer, gps);
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
