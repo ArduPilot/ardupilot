@@ -625,7 +625,7 @@ private:
     AP_ADSB adsb = AP_ADSB::create(ahrs);
 
     // avoidance of adsb enabled vehicles (normally manned vheicles)
-    AP_Avoidance_Plane avoidance_adsb {ahrs, adsb};
+    AP_Avoidance_Plane avoidance_adsb = AP_Avoidance_Plane::create(ahrs, adsb);
 
     // Outback Challenge Failsafe Support
     AP_AdvancedFailsafe_Plane afs {mission, barometer, gps, rcmap};
