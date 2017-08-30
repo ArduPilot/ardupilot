@@ -589,7 +589,7 @@ private:
 
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
-    AC_PrecLand precland;
+    AC_PrecLand precland = AC_PrecLand::create(ahrs, inertial_nav);
 #endif
 
     // Pilot Input Management Library
