@@ -584,7 +584,7 @@ private:
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    AP_Terrain terrain;
+    AP_Terrain terrain = AP_Terrain::create(ahrs, mission, rally);
 #endif
 
     // Precision Landing

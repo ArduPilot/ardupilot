@@ -56,9 +56,6 @@ Sub::Sub(void)
           pmTest1(0),
           fast_loopTimer(0),
           mainLoop_count(0),
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-          terrain(ahrs, mission, rally),
-#endif
           in_mavlink_delay(false),
           param_loader(var_info),
           last_pilot_yaw_input_ms(0)

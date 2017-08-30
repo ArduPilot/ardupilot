@@ -611,7 +611,7 @@ private:
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
-    AP_Terrain terrain {ahrs, mission, rally};
+    AP_Terrain terrain = AP_Terrain::create(ahrs, mission, rally);
 #endif
 
     AP_Landing landing {mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
