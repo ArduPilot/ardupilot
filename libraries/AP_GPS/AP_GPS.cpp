@@ -472,7 +472,9 @@ void AP_GPS::detect_instance(uint8_t instance)
     switch (_type[instance]) {
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
+        dstate->auto_detected_baud = false; // specified, not detected
         new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance]);
+        goto found_gps; // bypass the baudrate auto-detection code, it does not work for AsteRX-M2 UAS FW 4.2.2
         break;
 
     case GPS_TYPE_GSOF:
