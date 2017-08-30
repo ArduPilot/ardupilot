@@ -90,7 +90,14 @@ float Plane::liftCoeff(float alpha) const
     const float M = coefficient.mcoeff;
     const float c_lift_0 = coefficient.c_lift_0;
     const float c_lift_a0 = coefficient.c_lift_a;
-    
+
+    // clamp the value of alpha to avoid exp(90) in calculation of sigmoid
+    const float max_alpha_delta = 0.8f;
+    if (alpha-alpha0 > max_alpha_delta) {
+        alpha = alpha0 + max_alpha_delta;
+    } else if (alpha0-alpha > max_alpha_delta) {
+        alpha = alpha0 - max_alpha_delta;
+    }
 	double sigmoid = ( 1+exp(-M*(alpha-alpha0))+exp(M*(alpha+alpha0)) ) / (1+exp(-M*(alpha-alpha0))) / (1+exp(M*(alpha+alpha0)));
 	double linear = (1.0-sigmoid) * (c_lift_0 + c_lift_a0*alpha); //Lift at small AoA
 	double flatPlate = sigmoid*(2*copysign(1,alpha)*pow(sin(alpha),2)*cos(alpha)); //Lift beyond stall
