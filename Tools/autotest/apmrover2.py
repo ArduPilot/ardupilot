@@ -146,7 +146,7 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/APMrover2-test.tlog")
+    buildlog = buildlogs_path("APMrover2-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
@@ -193,7 +193,7 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         if not disarm_rover(mavproxy, mav):
             print("Failed to DISARM")
             failed = True
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/APMrover2-log.bin")):
+        if not log_download(mavproxy, mav, buildlogs_path("APMrover2-log.bin")):
             print("Failed log download")
             failed = True
 #        if not drive_left_circuit(mavproxy, mav):
@@ -213,7 +213,7 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
     valgrind_log = util.valgrind_log_filepath(binary=binary, model='rover')
     if os.path.exists(valgrind_log):
         os.chmod(valgrind_log, 0o644)
-        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/APMrover2-valgrind.log"))
+        shutil.copy(valgrind_log, buildlogs_path("APMrover2-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % e)

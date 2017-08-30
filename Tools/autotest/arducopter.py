@@ -1014,7 +1014,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/ArduCopter-test.tlog")
+    buildlog = buildlogs_path("ArduCopter-test.tlog")
     print("buildlog=%s" % buildlog)
     copy_tlog = False
     if os.path.exists(buildlog):
@@ -1299,7 +1299,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
         # wait for disarm
         mav.motors_disarmed_wait()
 
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduCopter-log.bin")):
+        if not log_download(mavproxy, mav, buildlogs_path("ArduCopter-log.bin")):
             failed_test_msg = "log_download failed"
             print(failed_test_msg)
             failed = True
@@ -1315,7 +1315,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
     valgrind_log = util.valgrind_log_filepath(binary=binary, model='+')
     if os.path.exists(valgrind_log):
         os.chmod(valgrind_log, 0o644)
-        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/ArduCopter-valgrind.log"))
+        shutil.copy(valgrind_log, buildlogs_path("ArduCopter-valgrind.log"))
 
     # [2014/05/07] FC Because I'm doing a cross machine build (source is on host, build is on guest VM) I cannot hard link
     # This flag tells me that I need to copy the data out
@@ -1367,7 +1367,7 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/CopterAVC-test.tlog")
+    buildlog = buildlogs_path("CopterAVC-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
@@ -1433,7 +1433,7 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         mavproxy.send('rc 8 1000\n')
 
         # mission includes disarm at end so should be ok to download logs now
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/CopterAVC-log.bin")):
+        if not log_download(mavproxy, mav, buildlogs_path("CopterAVC-log.bin")):
             failed_test_msg = "log_download failed"
             print(failed_test_msg)
             failed = True
@@ -1449,7 +1449,7 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     valgrind_log = util.valgrind_log_filepath(binary=binary, model='heli')
     if os.path.exists(valgrind_log):
         os.chmod(valgrind_log, 0o644)
-        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/Helicopter-valgrind.log"))
+        shutil.copy(valgrind_log, buildlogs_path("Helicopter-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % failed_test_msg)

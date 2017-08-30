@@ -127,7 +127,7 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/ArduSub-test.tlog")
+    buildlog = buildlogs_path("ArduSub-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
@@ -176,7 +176,7 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
         if not dive_mission(mavproxy, mav, os.path.join(testdir, "sub_mission.txt")):
             print("Failed auto mission")
             failed = True
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduSub-log.bin")):
+        if not log_download(mavproxy, mav, buildlogs_path("ArduSub-log.bin")):
             print("Failed log download")
             failed = True
     except pexpect.TIMEOUT as e:
@@ -190,7 +190,7 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
     valgrind_log = util.valgrind_log_filepath(binary=binary, model='sub')
     if os.path.exists(valgrind_log):
         os.chmod(valgrind_log, 0o644)
-        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/APMrover2-valgrind.log"))
+        shutil.copy(valgrind_log, buildlogs_path("APMrover2-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % e)

@@ -65,7 +65,7 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/QuadPlane-test.tlog")
+    buildlog = buildlogs_path("QuadPlane-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
@@ -127,7 +127,7 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     valgrind_log = util.valgrind_log_filepath(binary=binary, model='quadplane')
     if os.path.exists(valgrind_log):
         os.chmod(valgrind_log, 0o644)
-        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/QuadPlane-valgrind.log"))
+        shutil.copy(valgrind_log, buildlogs_path("QuadPlane-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % e)

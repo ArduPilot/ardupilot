@@ -1,5 +1,6 @@
 from __future__ import print_function
 import math
+import os
 import time
 
 from pymavlink import mavwp
@@ -9,6 +10,18 @@ from pysim import util
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing
 expect_list = []
+
+def buildlogs_dirpath():
+    return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
+
+def buildlogs_path(path):
+    '''return a string representing path in the buildlogs directory'''
+    bits = [buildlogs_dirpath()]
+    if isinstance(path, list):
+        bits.extend(path)
+    else:
+        bits.append(path)
+    return os.path.join(*bits)
 
 
 def expect_list_clear():

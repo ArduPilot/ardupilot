@@ -462,7 +462,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    buildlog = util.reltopdir("../buildlogs/ArduPlane-test.tlog")
+    buildlog = buildlogs_path("ArduPlane-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
@@ -553,7 +553,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
             print("Failed mission")
             failed = True
             fail_list.append("mission")
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduPlane-log.bin")):
+        if not log_download(mavproxy, mav, buildlogs_path("ArduPlane-log.bin")):
             print("Failed log download")
             failed = True
             fail_list.append("log_download")
@@ -569,7 +569,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     valgrind_log = util.valgrind_log_filepath(binary=binary, model='plane-elevrev')
     if os.path.exists(valgrind_log):
         os.chmod(valgrind_log, 0o644)
-        shutil.copy(valgrind_log, util.reltopdir("../buildlogs/ArduPlane-valgrind.log"))
+        shutil.copy(valgrind_log, buildlogs_path("ArduPlane-valgrind.log"))
 
     if failed:
         print("FAILED: %s" % e, fail_list)
