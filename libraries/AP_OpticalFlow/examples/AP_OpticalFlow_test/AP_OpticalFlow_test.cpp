@@ -27,8 +27,8 @@ public:
     AP_InertialSensor ins = AP_InertialSensor::create();
     AP_SerialManager serial_manager = AP_SerialManager::create();
     RangeFinder sonar = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3,
-                        AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3,
+                                                 AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF);
     NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, sonar);
     NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, sonar);
 };

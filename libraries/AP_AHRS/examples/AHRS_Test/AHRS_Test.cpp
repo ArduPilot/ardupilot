@@ -28,15 +28,15 @@ public:
     RangeFinder sonar = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
     NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, sonar);
     NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, sonar);
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3,
-                        AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3,
+                                                 AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF);
 };
 
 static DummyVehicle vehicle;
 
 // choose which AHRS system to use
 // AP_AHRS_DCM  ahrs(ins, baro, gps);
-AP_AHRS_NavEKF ahrs(vehicle.ahrs);
+AP_AHRS_NavEKF &ahrs = vehicle.ahrs;
 
 void setup(void)
 {
