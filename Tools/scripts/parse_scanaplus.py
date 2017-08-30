@@ -21,7 +21,9 @@ x = []
 y = []
 min_frame_gap = 1e6
 min_gap_t = 0
-trailing_edge = 0
+trailing_edge0 = 0
+sbus_latency_max = 0
+sbus_latency_max_t = 0
 last_frame = 0
 frame_start = 0
 frame_interval = 0
@@ -29,6 +31,10 @@ min_frame_interval = 1e6
 max_frame_interval = 0
 min_interval_t = 0
 max_interval_t = 0
+rising_edge5 = 0
+new_frame = False
+maxwidth5 = 0
+maxwidth5_t = 0
 
 for row in data:
     # skip header
@@ -45,23 +51,38 @@ for row in data:
 
     # time in seconds
     tfields = row[0].split()
-    tval = float(''.join(tfields[:-1]))
-    units = tfields[-1]
-    if (units == 'us'):
-        t = tval * 1e-6
-    elif (units == 'ms'):
-        t = tval * 1e-3
-    elif (units == 's'):
-        t = tval
+    if len(tfields) > 1:
+        tval = float(''.join(tfields[:-1]))
+        units = tfields[-1]
+        if (units == 'us'):
+            t = tval * 1e-6
+        elif (units == 'ms'):
+            t = tval * 1e-3
+        elif (units == 's'):
+            t = tval
+    else:
+        t = float(row[0])
 
     # current value of each channel
     values = [int(row[i]) for i in range(1,len(row))]
     
+    # channel 5 is a pulse bracketing the call to _write_fd
+    # measure delay from ch5 rising edge to start of sbus frame
+    if values[5] == 1 and prev_values[5] == 0:
+        rising_edge5 = t
+        new_frame = True
+    if values[5] == 0 and prev_values[5] == 1 and rising_edge5 != 0:
+        width5 = t - rising_edge5;
+        if width5 > maxwidth5:
+            maxwidth5 = width5
+            maxwidth5_t = t
+    prev_values[5] = values[5]
+                
     # channel 0 is the uart output
     # look for start of frame at each rising edge
-    if values[0] == 1 and prev_values[0] == 0 and trailing_edge != 0:
+    if values[0] == 1 and prev_values[0] == 0 and trailing_edge0 != 0:
         # require interframe gap of at least 12 bits)
-        if (t - trailing_edge) > .000120:
+        if (t - trailing_edge0) > .000120:
             frame_interval = t - frame_start
             if frame_interval > .003 and frame_interval < min_frame_interval: 
                 min_frame_interval = frame_interval
@@ -69,8 +90,15 @@ for row in data:
             if (frame_interval < .008) and (frame_interval > max_frame_interval): 
                 max_frame_interval = frame_interval
                 max_interval_t = t
-            frame_gap = t - trailing_edge
+            frame_gap = t - trailing_edge0
             frame_start = t
+            if new_frame:
+                new_frame = False
+                sbus_latency = frame_start - rising_edge5
+                if (sbus_latency > sbus_latency_max):
+                    sbus_latency_max = sbus_latency
+                    sbus_latency_max_t = frame_start
+                
 #             print("frame_start: %.6f, gap: %.6f" % (frame_start, frame_gap))
             if frame_gap < min_frame_gap:
                 min_frame_gap = frame_gap
@@ -78,11 +106,12 @@ for row in data:
     
     # record time of last trailing edge
     if values[0] == 0 and prev_values[0] == 1:
-        trailing_edge = t
+        trailing_edge0 = t
         
     prev_values[0] = values[0]
-                
-    channelset = range(1,nchannels)
+    
+    # channels 1-4 are the sbus decoder outputs
+    channelset = range(1,5)
     for c in channelset:
         if values[c] == 0 and prev_values[c] == 1 and pulse_start[c] != 0:
             pulse = t - pulse_start[c]
@@ -106,6 +135,8 @@ for row in data:
 sys.stdout.write("min_frame_gap: %.6f at %.6f\n" % (min_frame_gap, min_gap_t))
 sys.stdout.write("min_frame_interval: %.6f, at: %.6f\n" % (min_frame_interval, min_interval_t))
 sys.stdout.write("max_frame_interval: %.6f, at: %.6f\n" % (max_frame_interval, max_interval_t))
+sys.stdout.write("sbus_latency_max: %.6f, at: %.6f\n" % (sbus_latency_max, sbus_latency_max_t))
+sys.stdout.write("maxwidth5: %.6f, at: %.6f\n" % (maxwidth5, maxwidth5_t))
 
 xa = np.array(x)
 ya = np.array(y)
