@@ -24,6 +24,18 @@ from pysim import util
 from pymavlink import mavutil
 from pymavlink.generator import mavtemplate
 
+def buildlogs_dirpath():
+    return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
+
+def buildlogs_path(path):
+    '''return a string representing path in the buildlogs directory'''
+    bits = [buildlogs_dirpath()]
+    if isinstance(path, list):
+        bits.extend(path)
+    else:
+        bits.append(path)
+    return os.path.join(*bits)
+
 def get_default_params(atype, binary):
     """Get default parameters."""
 
@@ -47,7 +59,7 @@ def get_default_params(atype, binary):
         mavproxy = util.start_MAVProxy_SITL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
-    dest = util.reltopdir('../buildlogs/%s-defaults.parm' % atype)
+    dest = buildlogs_path('%s-defaults.parm' % atype)
     shutil.copy(parmfile, dest)
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
@@ -117,7 +129,7 @@ def build_parameters():
 
 def convert_gpx():
     """Convert any tlog files to GPX and KML."""
-    mavlog = glob.glob(util.reltopdir("../buildlogs/*.tlog"))
+    mavlog = glob.glob(buildlogs_path("*.tlog"))
     for m in mavlog:
         util.run_cmd(util.reltopdir("modules/mavlink/pymavlink/tools/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
@@ -131,7 +143,7 @@ def convert_gpx():
 def test_prerequisites():
     """Check we have the right directories and tools to run tests."""
     print("Testing prerequisites")
-    util.mkdir_p(util.reltopdir('../buildlogs'))
+    util.mkdir_p(buildlogs_dirpath())
     return True
 
 
@@ -309,12 +321,12 @@ class TestResults(object):
 
     def addglob(self, name, pattern):
         """Add a set of files."""
-        for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
+        for f in glob.glob(buildlogs_path(pattern)):
             self.addfile(name, os.path.basename(f))
 
     def addglobimage(self, name, pattern):
         """Add a set of images."""
-        for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
+        for f in glob.glob(buildlogs_path(pattern)):
             self.addimage(name, os.path.basename(f))
 
 
@@ -323,11 +335,11 @@ def write_webresults(results_to_write):
     t = mavtemplate.MAVTemplate()
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
         html = util.loadfile(h)
-        f = open(util.reltopdir("../buildlogs/%s" % os.path.basename(h)), mode='w')
+        f = open(buildlogs_path(os.path.basename(h)), mode='w')
         t.write(f, html, results_to_write)
         f.close()
     for f in glob.glob(util.reltopdir('Tools/autotest/web/*.png')):
-        shutil.copy(f, util.reltopdir('../buildlogs/%s' % os.path.basename(f)))
+        shutil.copy(f, buildlogs_path(os.path.basename(f)))
 
 
 def write_fullresults():
@@ -384,16 +396,17 @@ def check_logs(step):
     logs = glob.glob("logs/*.BIN")
     for log in logs:
         bname = os.path.basename(log)
-        newname = util.reltopdir("../buildlogs/%s-%s" % (vehicle, bname))
+        newname = buildlogs_path("%s-%s" % (vehicle, bname))
         print("Renaming %s to %s" % (log, newname))
-        os.rename(log, newname)
+        shutil.move(log, newname)
 
     corefile = "core"
     if os.path.exists(corefile):
-        newname = util.reltopdir("../buildlogs/%s.core" % vehicle)
+        newname = buildlogs_path("%s.core" % vehicle)
         print("Renaming %s to %s" % (corefile, newname))
-        os.rename(corefile, newname)
-        util.run_cmd('/bin/cp A*/A*.elf ../buildlogs', directory=util.reltopdir('.'))
+        shutil.move(corefile, newname)
+        util.run_cmd('/bin/cp A*/A*.elf %s' % buildlogs_dirpath(),
+                     directory=util.reltopdir('.'))
 
 def run_tests(steps):
     """Run a list of steps."""
@@ -500,9 +513,10 @@ if __name__ == "__main__":
             print(step)
         sys.exit(0)
 
-    util.mkdir_p(util.reltopdir('../buildlogs'))
+    util.mkdir_p(buildlogs_dirpath())
 
-    lckfile = util.reltopdir('../buildlogs/autotest.lck')
+    lckfile = buildlogs_path('autotest.lck')
+    print("lckfile=%s" % repr(lckfile))
     lck = util.lock_file(lckfile)
 
     if lck is None:
