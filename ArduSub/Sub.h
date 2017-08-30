@@ -328,7 +328,7 @@ private:
     // Battery Sensors
     AP_BattMonitor battery;
 
-    AP_Arming_Sub arming {ahrs, barometer, compass, battery};
+    AP_Arming_Sub arming = AP_Arming_Sub::create(ahrs, barometer, compass, battery);
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
