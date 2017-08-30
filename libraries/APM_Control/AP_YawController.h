@@ -7,16 +7,16 @@
 #include <cmath>
 
 class AP_YawController {
-public:                      
-	AP_YawController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
-		aparm(parms),
-        _ahrs(ahrs)
-	{
-		AP_Param::setup_object_defaults(this, var_info);
-		_pid_info.desired = 0;
-		_pid_info.FF = 0;
-		_pid_info.P = 0;
-	}
+public:
+    static AP_YawController create(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) {
+        return AP_YawController{ahrs, parms};
+    }
+
+    constexpr AP_YawController(AP_YawController &&other) = default;
+
+    /* Do not allow copies */
+    AP_YawController(const AP_YawController &other) = delete;
+    AP_YawController &operator=(const AP_YawController&) = delete;
 
 	int32_t get_servo_out(float scaler, bool disable_integrator);
 
@@ -27,7 +27,17 @@ public:
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
-	const AP_Vehicle::FixedWing &aparm;
+    AP_YawController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms)
+        : aparm(parms)
+        , _ahrs(ahrs)
+    {
+        AP_Param::setup_object_defaults(this, var_info);
+        _pid_info.desired = 0;
+        _pid_info.FF = 0;
+        _pid_info.P = 0;
+    }
+
+    const AP_Vehicle::FixedWing &aparm;
 	AP_Float _K_A;
 	AP_Float _K_I;
 	AP_Float _K_D;
