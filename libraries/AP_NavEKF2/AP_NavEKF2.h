@@ -34,13 +34,23 @@
 class NavEKF2_core;
 class AP_AHRS;
 
-class NavEKF2
-{
-public:
+class NavEKF2 {
     friend class NavEKF2_core;
-    static const struct AP_Param::GroupInfo var_info[];
 
-    NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
+public:
+    static NavEKF2 create(const AP_AHRS *ahrs,
+                          AP_Baro &baro,
+                          const RangeFinder &rng) {
+        return NavEKF2{ahrs, baro, rng};
+    }
+
+    constexpr NavEKF2(NavEKF2 &&other) = default;
+
+    /* Do not allow copies */
+    NavEKF2(const NavEKF2 &other) = delete;
+    NavEKF2 &operator=(const NavEKF2&) = delete;
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     // allow logging to determine the number of active cores
     uint8_t activeCores(void) const {
@@ -318,8 +328,10 @@ public:
 
     // get timing statistics structure
     void getTimingStatistics(int8_t instance, struct ekf_timing &timing);
-    
+
 private:
+    NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
+
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF2_core *core = nullptr;
