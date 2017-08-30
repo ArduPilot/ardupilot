@@ -171,7 +171,7 @@ private:
 #endif
 
     // Arming/Disarming management class
-    AP_Arming_Rover arming {ahrs, barometer, compass, battery};
+    AP_Arming_Rover arming = AP_Arming_Rover::create(ahrs, barometer, compass, battery);
 
     AP_L1_Control L1_controller;
 
