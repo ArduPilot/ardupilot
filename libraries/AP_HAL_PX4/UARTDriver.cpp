@@ -346,9 +346,19 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
+#define SBUS_DEBUG_LATENCY 0
     if (_unbuffered_writes) {
+#if SBUS_DEBUG_LATENCY
+        hal.gpio->pinMode(55, HAL_GPIO_OUTPUT);
+        hal.gpio->write(55, 1);
+#endif
         // write buffer straight to the file descriptor
-        return _write_fd(buffer, size);
+        int status =  _write_fd(buffer, size);
+#if SBUS_DEBUG_LATENCY
+        hal.gpio->pinMode(55, HAL_GPIO_OUTPUT);
+        hal.gpio->write(55, 0);
+#endif
+        return status;
     } else {
         return _writebuf.write(buffer, size);
     }
