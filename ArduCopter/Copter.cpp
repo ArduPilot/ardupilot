@@ -66,10 +66,6 @@ Copter::Copter(void)
     mainLoop_count(0),
     rtl_loiter_start_time(0),
     auto_trim_counter(0),
-#if FRAME_CONFIG == HELI_FRAME
-    // ToDo: Input Manager is only used by Heli for 3.3, but will be used by all frames for 3.4
-    input_manager(),
-#endif
     in_mavlink_delay(false),
     param_loader(var_info)
 {

@@ -593,10 +593,9 @@ private:
 #endif
 
     // Pilot Input Management Library
-    // Only used for Helicopter for AC3.3, to be expanded to include Multirotor
-    // child class for AC3.4
+    // Only used for Helicopter for now
 #if FRAME_CONFIG == HELI_FRAME
-    AC_InputManager_Heli input_manager;
+    AC_InputManager_Heli input_manager = AC_InputManager_Heli::create();
 #endif
 
     AP_ADSB adsb {ahrs};
