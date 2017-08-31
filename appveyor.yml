@@ -1,6 +1,6 @@
 branches:
   only:
-  - master-appveyor
+  - master
 
 environment:
   matrix:
