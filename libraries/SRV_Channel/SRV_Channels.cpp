@@ -111,6 +111,14 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
 
+    // @Param: SBUS_RATE
+    // @DisplayName: SBUS default output rate
+    // @Description: This sets the SBUS output frame rate in Hz.
+    // @Range: 25 250
+    // @User: Advanced
+    // @Units: Hz
+    AP_GROUPINFO("SBUS_RATE",  19, SRV_Channels, sbus_rate, 50),
+
     AP_GROUPEND
 };
 

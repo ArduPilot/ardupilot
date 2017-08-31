@@ -414,6 +414,8 @@ public:
         return SRV_Channel::Aux_servo_function_t((SRV_Channel::k_motor9+(channel-8)));
     }
     
+    AP_Int16 sbus_rate;
+
 private:
     struct {
         bool k_throttle_reversible:1;
