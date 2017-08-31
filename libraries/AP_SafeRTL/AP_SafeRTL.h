@@ -132,6 +132,7 @@ private:
     // remove all zero points from the path
     void remove_empty_points();
 
+public:
     // dist_point holds the closest distance reached between 2 line segments, and the point exactly between them
     typedef struct {
         float distance;
@@ -140,6 +141,7 @@ private:
 
     // get the closest distance between 2 line segments and the point midway between the closest points
     static dist_point segment_segment_dist(const Vector3f& p1, const Vector3f& p2, const Vector3f& p3, const Vector3f& p4);
+private:
 
     // de-activate SafeRTL, send warning to GCS and log to dataflash
     void deactivate(SRTL_Actions action, const char *reason);
@@ -169,31 +171,35 @@ private:
     uint16_t _path_points_count;// number of points in the path array
     AP_HAL::Semaphore *_path_sem;   // semaphore for updating path
 
-    // Simplify state
-    bool _simplify_complete;
-    uint16_t _simplify_path_points_count;	// copy of _path_points_count taken when the simply algorithm started
-    // structure and buffer to hold the "to-do list" for the SIMPLIFICATION algorithm.
+    // Simplify
+    // structure and buffer to hold the "to-do list" for the simplify algorithm.
     typedef struct {
         uint16_t start;
         uint16_t finish;
     } simplify_start_finish_t;
-    simplify_start_finish_t* _simplify_stack;
-    uint16_t _simplify_stack_max;   // maximum number of elements in the _simplify_stack array
-    uint16_t _simplify_stack_count; // number of elements in _simplify_stack array
-    Bitmask _simplify_bitmask = Bitmask(SAFERTL_POINTS_MAX);  // simplify algorithm clears bits for each point that can be removed
+    struct {
+        bool complete;
+        uint16_t path_points_count;  // copy of _path_points_count taken when the simply algorithm started
+        simplify_start_finish_t* stack;
+        uint16_t stack_max;     // maximum number of elements in the _simplify_stack array
+        uint16_t stack_count;   // number of elements in _simplify_stack array
+        Bitmask bitmask = Bitmask(SAFERTL_POINTS_MAX);  // simplify algorithm clears bits for each point that can be removed
+    } _simplify;
 
-    // Pruning state
-    bool _prune_complete;
-    uint16_t _prune_path_points_count;  // copy of _path_points_count taken when the prune algorithm started
-    uint16_t _prune_i;	// loop search's outer loop index
-    uint16_t _prune_j;  // loop search's inner loop index
-    uint16_t _prune_j_min;	// inner loop search starts each iteration from no lower than this index
+    // Pruning
     typedef struct {
         uint16_t start_index;
         uint16_t end_index;
         Vector3f midpoint;
     } prune_loop_t;
-    prune_loop_t* _prunable_loops;  // the result of the pruning algorithm
-    uint16_t _prunable_loops_max;   // maximum number of elements in the _prunable_loops array
-    uint16_t _prunable_loops_count; // number of elements in the _prunable_loops array
+    struct {
+        bool complete;
+        uint16_t path_points_count;  // copy of _path_points_count taken when the prune algorithm started
+        uint16_t i;     // loop search's outer loop index
+        uint16_t j;     // loop search's inner loop index
+        uint16_t j_min; // inner loop search starts each iteration from no lower than this index
+        prune_loop_t* loops;// the result of the pruning algorithm
+        uint16_t loops_max; // maximum number of elements in the _prunable_loops array
+        uint16_t loops_count;   // number of elements in the _prunable_loops array
+    } _prune;
 };
