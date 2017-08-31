@@ -98,11 +98,8 @@ public:
         return 1000000UL / _loop_rate_hz;
     }
     // get the time-allowed-per-loop:
-    float get_loop_period_s() {
-        if (is_zero(_loop_period_s)) {
-            _loop_period_s = 1.0 / _loop_rate_hz;
-        }
-        return _loop_period_s;
+    float get_loop_period_s() const {
+        return 1.0 / _loop_rate_hz;
     }
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -121,7 +118,6 @@ private:
     // the other places which take a copy of this at startup and don't
     // get refreshed.  So, really, don't.
     AP_Int16 _loop_rate_hz;
-    float _loop_period_s;
 
     // progmem list of tasks to run
     const struct Task *_tasks;
