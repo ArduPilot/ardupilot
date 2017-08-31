@@ -28,7 +28,7 @@ VAGRANT_USER=ubuntu
 
 usermod -a -G dialout $VAGRANT_USER
 
-apt-get -y remove modemmanager
+apt-get -y remove modemmanager apport
 apt-get -y update
 apt-get -y install dos2unix g++-4.7 ccache python-lxml screen xterm gdb pkgconf
 apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS
@@ -62,6 +62,7 @@ fi
 PROFILE_TEXT="
 $PROFILE_TEXT
 source /vagrant/Tools/vagrant/shellinit.sh
+ulimit -c unlimited
 # This allows the PX4NuttX build to proceed when the underlying fs is on windows
 # It is only marginally less efficient on Linux
 export PX4_WINTOOL=y
