@@ -17,8 +17,8 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
     // @Param: ACCURACY
-    // @DisplayName: SafeRTL _accuracy
-    // @Description: SafeRTL _accuracy. The minimum distance between points.
+    // @DisplayName: SafeRTL accuracy
+    // @Description: SafeRTL accuracy. The minimum distance between points.
     // @Units: m
     // @Range: 0 10
     // @User: Advanced
@@ -36,37 +36,40 @@ const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
 };
 
 /*
-*    This library is used for the Safe Return-to-Launch feature. The vehicle's position
-*    (aka "bread crumbs") are stored into an array in memory at regular intervals.
-*    After a certain number of bread crumbs have been stored and space within the array
-*    is low, clean-up algorithms are run to reduce the total number of points.
-*    When Safe-RTL is initiated by the vehicle code, a more thorough cleanup runs and
-*    the resulting path is fed into navigation controller to return the vehicle to home.
+*    This library is used for the Safe Return-to-Launch feature. The vehicle's
+*    position (aka "bread crumbs") are stored into an array in memory at
+*    regular intervals.  After a certain number of bread crumbs have been
+*    stored and space within the array is low, clean-up algorithms are run to
+*    reduce the total number of points.  When Safe-RTL is initiated by the
+*    vehicle code, a more thorough cleanup runs and the resulting path is fed
+*    into navigation controller to return the vehicle to home.
 *
 *    The cleanup consists of two parts, pruning and simplification:
 *
-*    1. Pruning calculates the closest distance between two line segments formed by
-*    two pairs of sequential points, and then cuts out anything between two points
-*    when their line segments get close. This algorithm will never compare two
-*    consecutive line segments. Obviously the segments (p1,p2) and (p2,p3) will
-*    get very close (they touch), but there would be nothing to trim between them.
+*    1. Pruning calculates the closest distance between two line segments formed
+*    by two pairs of sequential points, and then cuts out anything between two
+*    points when their line segments get close. This algorithm will never
+*    compare two consecutive line segments. Obviously the segments (p1,p2) and
+*    (p2,p3) will get very close (they touch), but there would be nothing to
+*    trim between them.
 *
-*    2. Simplification uses the Ramer-Douglas-Peucker algorithm. See Wikipedia for
-*    a more complete description.
+*    2. Simplification uses the Ramer-Douglas-Peucker algorithm. See Wikipedia
+*    for a more complete description.
 *
-*    The simplification and pruning algorithms run in the background and do not alter
-*    the path in memory.  Two definitions, SAFERTL_SIMPLIFY_TIME_US and
-*    SAFERTL_LOOP_TIME_US are used to limit how long each algorithm will be run
-*    before they save their state and return.
+*    The simplification and pruning algorithms run in the background and do not
+*    alter the path in memory.  Two definitions, SAFERTL_SIMPLIFY_TIME_US and
+*    SAFERTL_PRUNING_LOOP_TIME_US are used to limit how long each algorithm will
+*    be run before they save their state and return.
 *
-*    Both algorithm are "anytime algorithms" meaning they can be interrupted before
-*    they complete which is helpful when memory is filling up and we just need to
-*    quickly identify a handful of points which can be deleted.
+*    Both algorithms are "anytime algorithms" meaning they can be interrupted
+*    before they complete which is helpful when memory is filling up and we just
+*    need to quickly identify a handful of points which can be deleted.
 *
-*    Once the algorithms have completed the _simplify_complete and _prune_complete
-*    flags are set to true.  The "thorough cleanup" procedure which is run as the
-*    vehicle initiates RTL, waits for these flags to become true.  This can force
-*    the vehicle to pause for a few seconds before initiating the return journey.
+*    Once the algorithms have completed the _simplify_complete and
+*    _prune_complete flags are set to true.  The "thorough cleanup" procedure,
+*    which is run as the vehicle initiates the SafeRTL flight mode, waits for
+*    these flags to become true.  This can force the vehicle to pause for a few
+*    seconds before initiating the return journey.
 */
 
 AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs, bool example_mode) :
@@ -75,11 +78,6 @@ AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs, bool example_mode) :
 {
     AP_Param::setup_object_defaults(this, var_info);
     _simplify_bitmask.setall();
-}
-
-AP_SafeRTL::~AP_SafeRTL()
-{
-    delete _path_sem;
 }
 
 // initialise safe rtl including setting up background processes
@@ -122,7 +120,7 @@ void AP_SafeRTL::init()
     // create semaphore
     _path_sem = hal.util->new_semaphore();
 
-    // when running the example sketch, we want the cleanup tasks to run when we tell them to, no in the background (so that they can be timed.)
+    // when running the example sketch, we want the cleanup tasks to run when we tell them to, not in the background (so that they can be timed.)
     if (!_example_mode){
         // register background cleanup to run in IO thread
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_SafeRTL::run_background_cleanup, void));
@@ -186,16 +184,13 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
 
     // de-activate if no position at take-off
     if (!position_ok) {
-        _active = false;
-        log_action(SRTL_DEACTIVATED_BAD_POSITION);
-        gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL deactivated: bad position");
+        deactivate(SRTL_DEACTIVATED_BAD_POSITION, "bad position");
         return;
     }
 
     // save current position as first point in path
     if (!add_point(current_pos)) {
-        _active = false;
-        gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL deactivated: failed to save point");
+        deactivate(SRTL_ADD_FAILED_NO_SEMAPHORE, "failed to save initial point");
         return;
     }
 
@@ -204,7 +199,7 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
     _active = true;
 }
 
-// call this a couple of times per second regardless of what mode the vehicle is in
+// call this at 3hz (or higher) regardless of what mode the vehicle is in
 void AP_SafeRTL::update(bool position_ok, bool save_position)
 {
     if (!_active || !position_ok || !save_position) {
@@ -223,7 +218,7 @@ void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
     }
 
     if (position_ok) {
-        uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
         _last_good_position_ms = now;
         // add the point
         if (add_point(current_pos)) {
@@ -233,17 +228,13 @@ void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
 
     // check for timeout due to bad position
     if (AP_HAL::millis() - _last_good_position_ms > SAFERTL_TIMEOUT) {
-        _active = false;
-        log_action(SRTL_DEACTIVATED_BAD_POSITION_TIMEOUT);
-        gcs().send_text(MAV_SEVERITY_WARNING,"SafeRTL deactivated: bad position");
+        deactivate(SRTL_DEACTIVATED_BAD_POSITION_TIMEOUT, "bad position");
         return;
     }
 
     // check for timeout due to failure to save points to path (most likely due to buffer filling up)
     if (AP_HAL::millis() - _last_position_save_ms > SAFERTL_TIMEOUT) {
-        _active = false;
-        log_action(SRTL_DEACTIVATED_PATH_FULL_TIMEOUT);
-        gcs().send_text(MAV_SEVERITY_WARNING,"SafeRTL deactivated: buffer full");
+        deactivate(SRTL_DEACTIVATED_PATH_FULL_TIMEOUT, "buffer full");
     }
 }
 
@@ -330,7 +321,7 @@ void AP_SafeRTL::run_background_cleanup()
         return;
     }
     // local copy of _path_points_count
-    uint16_t path_points_count = _path_points_count;
+    const uint16_t path_points_count = _path_points_count;
     _path_sem->give();
 
     // check if thorough cleanup is required
@@ -345,10 +336,10 @@ void AP_SafeRTL::run_background_cleanup()
         // we do not perform any further detection or cleanup until the requester acknowledges
         // they have what they need by setting _thorough_clean_request_ms back to zero
         return;
-    } else {
-        // ensure clean complete time is zero
-        _thorough_clean_complete_ms = 0;
     }
+
+    // ensure clean complete time is zero
+    _thorough_clean_complete_ms = 0;
 
     // check if path array is nearly full, if yes we should do a routine cleanup (i.e. remove 10 points)
     bool path_nearly_full = path_points_count >= MAX(_path_points_max - SAFERTL_CLEANUP_START_MARGIN, 0);
@@ -379,7 +370,7 @@ void AP_SafeRTL::run_background_cleanup()
 //   the calls to remove_empty_points causes the detect_ algorithms to begin their calculations from scratch
 void AP_SafeRTL::routine_cleanup()
 {
-    uint16_t potential_amount_to_simplify = _simplify_bitmask.size() - _simplify_bitmask.count();
+    const uint16_t potential_amount_to_simplify = _simplify_bitmask.size() - _simplify_bitmask.count();
 
     // if simplifying will remove more than 10 points, just do it
     if (potential_amount_to_simplify >= SAFERTL_CLEANUP_POINT_MIN) {
@@ -548,7 +539,7 @@ void AP_SafeRTL::detect_loops()
     const uint32_t start_time_us = AP_HAL::micros();
 
     // run for defined amount of time
-    while (AP_HAL::micros() - start_time_us < SAFERTL_LOOP_TIME_US) {
+    while (AP_HAL::micros() - start_time_us < SAFERTL_PRUNING_LOOP_TIME_US) {
 
         // advance inner loop
         _prune_j++;
@@ -596,7 +587,7 @@ void AP_SafeRTL::reset_if_new_points(uint16_t path_points_count)
 }
 
 // reset simplification algorithm so that it will re-check all points in the path
-// should be called if the existing path is altered for example when a loop as been removed
+// should be called if the existing path has been altered, for example when a loop as been removed
 void AP_SafeRTL::reset_simplification(uint16_t path_points_count)
 {
     _simplify_complete = false;
@@ -620,7 +611,7 @@ void AP_SafeRTL::reset_pruning(uint16_t path_points_count)
 // set all points that can be removed to zero
 void AP_SafeRTL::zero_points_by_simplify_bitmask()
 {
-    for (uint16_t i = 0; i < _path_points_count; i++) {
+    for (uint16_t i = 1; i < _path_points_count; i++) {
         if (!_simplify_bitmask.get(i)) {
             if (!_path[i].is_zero()) {
                 log_action(SRTL_POINT_SIMPLIFY, _path[i]);
@@ -657,14 +648,14 @@ void AP_SafeRTL::zero_points_by_loops(uint16_t points_to_delete)
 */
 void AP_SafeRTL::remove_empty_points()
 {
-    uint16_t src = 0;
-    uint16_t dest = 0;
+    uint16_t dest = 1;
     uint16_t removed = 0;
-    while (++src < _path_points_count) { // never removes the first point
-        if (!_path[src].is_zero()) {
-            _path[++dest] = _path[src];
-        } else {
+    for (uint16_t src = 1; src < _path_points_count; src++) {
+        if (_path[src].is_zero()) {
             removed++;
+        } else {
+            _path[dest] = _path[src];
+            dest++;
         }
     }
     _path_points_count -= removed;
@@ -678,21 +669,22 @@ void AP_SafeRTL::remove_empty_points()
 *  Returns the closest distance in 3D space between any part of two input segments, defined from p1 to p2 and from p3 to p4.
 *  Also returns the point which is halfway between
 *
-*  Limitation: This function does not work for parallel lines. In this case, it will return FLT_MAX. This does not matter for the path cleanup algorithm because
-*  the pruning will still occur fine between the first parallel segment and a segment which is directly before or after the second segment.
+*  Limitation: This function does not work for parallel lines. In this case, dist_point.distance will be FLT_MAX.
+*  This does not matter for the path cleanup algorithm because the pruning will still occur fine between the first
+*  parallel segment and a segment which is directly before or after the second segment.
 */
 AP_SafeRTL::dist_point AP_SafeRTL::segment_segment_dist(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3, const Vector3f &p4)
 {
-    Vector3f line1 = p2-p1;
-    Vector3f line2 = p4-p3;
-    Vector3f line_start_diff = p1-p3; // from the beginning of the second line to the beginning of the first line
+    const Vector3f line1 = p2-p1;
+    const Vector3f line2 = p4-p3;
+    const Vector3f line_start_diff = p1-p3; // from the beginning of the second line to the beginning of the first line
 
     // these don't really have a physical representation. They're only here to break up the longer formulas below.
-    float a = line1*line1;
-    float b = line1*line2;
-    float c = line2*line2;
-    float d = line1*line_start_diff;
-    float e = line2*line_start_diff;
+    const float a = line1*line1;
+    const float b = line1*line2;
+    const float c = line2*line2;
+    const float d = line1*line_start_diff;
+    const float e = line2*line_start_diff;
 
     // the parameter for the position on line1 and line2 which define the closest points.
     float t1 = 0.0f;
@@ -702,24 +694,32 @@ AP_SafeRTL::dist_point AP_SafeRTL::segment_segment_dist(const Vector3f &p1, cons
     // could always be pruned start/end of the previous/subsequent line segment
     if (is_zero((a*c)-(b*b))) {
         return {FLT_MAX, Vector3f(0.0f, 0.0f, 0.0f)};
-    } else {
-        t1 = (b*e-c*d)/(a*c-b*b);
-        t2 = (a*e-b*d)/(a*c-b*b);
-
-        // restrict both parameters between 0 and 1.
-        t1 = constrain_float(t1, 0.0f, 1.0f);
-        t2 = constrain_float(t2, 0.0f, 1.0f);
-
-        // difference between two closest points
-        Vector3f dP = line_start_diff+line1*t1-line2*t2;
-
-        Vector3f midpoint = (p1+line1*t1 + p3+line2*t2)/2.0f;
-        return {dP.length(), midpoint};
     }
+
+    t1 = (b*e-c*d)/(a*c-b*b);
+    t2 = (a*e-b*d)/(a*c-b*b);
+
+    // restrict both parameters between 0 and 1.
+    t1 = constrain_float(t1, 0.0f, 1.0f);
+    t2 = constrain_float(t2, 0.0f, 1.0f);
+
+    // difference between two closest points
+    const Vector3f dP = line_start_diff+line1*t1-line2*t2;
+
+    const Vector3f midpoint = (p1+line1*t1 + p3+line2*t2)/2.0f;
+    return {dP.length(), midpoint};
+}
+
+// de-activate SafeRTL, send warning to GCS and log to dataflash
+void AP_SafeRTL::deactivate(SRTL_Actions action, const char *reason)
+{
+    _active = false;
+    log_action(action);
+    gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL deactivated: %s", reason);
 }
 
 // logging
-void AP_SafeRTL::log_action(SRTL_Actions action, const Vector3f point)
+void AP_SafeRTL::log_action(SRTL_Actions action, const Vector3f &point)
 {
     if (!_example_mode) {
         DataFlash_Class::instance()->Log_Write_SRTL(_active, _path_points_count, _path_points_max, action, point);
