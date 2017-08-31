@@ -19,10 +19,10 @@
 #define SAFERTL_SIMPLIFY_STACK_LEN_MULT (2.0f/3.0f)+1   // simplify buffer size as compared to maximum number of points.
                                                 // The minimum is int((s/2-1)+min(s/2, SAFERTL_POINTS_MAX-s)), where s = pow(2, floor(log(SAFERTL_POINTS_MAX)/log(2)))
                                                 // To avoid this annoying math, a good-enough overestimate is ceil(SAFERTL_POINTS_MAX*2.0f/3.0f)
-#define SAFERTL_SIMPLIFY_TIME_US        200 // maximum time (in microseconds) the simplification algorithm will run before returning
+#define SAFERTL_SIMPLIFY_TIME_US        200     // maximum time (in microseconds) the simplification algorithm will run before returning
 #define SAFERTL_PRUNING_DELTA (_accuracy * 0.99) // How many meters apart must two points be, such that we can assume that there is no obstacle between them.  must be smaller than _ACCURACY parameter
 #define SAFERTL_PRUNING_LOOP_BUFFER_LEN_MULT 0.25f // pruning loop buffer size as compared to maximum number of points
-#define SAFERTL_LOOP_TIME_US            300 // maximum time (in microseconds) that the loop finding algorithm will run before returning
+#define SAFERTL_PRUNING_LOOP_TIME_US    200     // maximum time (in microseconds) that the loop finding algorithm will run before returning
 
 class AP_SafeRTL {
 
@@ -30,7 +30,6 @@ public:
 
     // constructor, destructor
     AP_SafeRTL(const AP_AHRS& ahrs, bool example_mode = false);
-    ~AP_SafeRTL();
 
     // initialise safe rtl including setting up background processes
     void init();
@@ -47,13 +46,13 @@ public:
     // get next point on the path to home, returns true on success
     bool pop_point(Vector3f& point);
 
-    // clear return path and set return location is position_ok is true.  This should be called as part of the arming procedure
+    // clear return path and set return location if position_ok is true.  This should be called as part of the arming procedure
     // if position_ok is false, SafeRTL will not be available.
-    // example sketches use method that allows providing vehicle position directly
+    // example sketches use the method that allows providing vehicle position directly
     void reset_path(bool position_ok);
     void reset_path(bool position_ok, const Vector3f& current_pos);
 
-    // call this a couple of times per second regardless of what mode the vehicle is in
+    // call this at 3hz (or higher) regardless of what mode the vehicle is in
     // example sketches use method that allows providing vehicle position directly
     void update(bool position_ok, bool save_position);
     void update(bool position_ok, const Vector3f& current_pos);
@@ -142,8 +141,11 @@ private:
     // get the closest distance between 2 line segments and the point midway between the closest points
     static dist_point segment_segment_dist(const Vector3f& p1, const Vector3f& p2, const Vector3f& p3, const Vector3f& p4);
 
+    // de-activate SafeRTL, send warning to GCS and log to dataflash
+    void deactivate(SRTL_Actions action, const char *reason);
+
     // logging
-    void log_action(SRTL_Actions action, const Vector3f point = Vector3f());
+    void log_action(SRTL_Actions action, const Vector3f &point = Vector3f());
 
     // external references
     const AP_AHRS& _ahrs;
