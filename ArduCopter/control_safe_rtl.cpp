@@ -25,9 +25,9 @@ bool Copter::safe_rtl_init(bool ignore_checks)
         // wait for cleanup of return path
         safe_rtl_state = SafeRTL_WaitForPathCleanup;
         return true;
-    } else {
-        return false;
     }
+
+    return false;
 }
 
 // perform cleanup required when leaving safe_rtl
@@ -38,7 +38,7 @@ void Copter::safe_rtl_exit()
 
 void Copter::safe_rtl_run()
 {
-    switch(safe_rtl_state){
+    switch (safe_rtl_state) {
         case SafeRTL_WaitForPathCleanup:
             safe_rtl_wait_cleanup_run();
             break;
@@ -77,8 +77,8 @@ void Copter::safe_rtl_path_follow_run()
     if (wp_nav->reached_wp_destination()) {
         Vector3f next_point;
         if (g2.safe_rtl.pop_point(next_point)) {
-            // this is the very last point, add 2m to the target alt and move to pre-land state
             if (g2.safe_rtl.get_num_points() == 0) {
+                // this is the very last point, add 2m to the target alt and move to pre-land state
                 next_point.z -= 2.0f;
                 safe_rtl_state = SafeRTL_PreLandPosition;
             }
@@ -130,7 +130,7 @@ void Copter::safe_rtl_pre_land_position_run()
 // save current position for use by the safe_rtl flight mode
 void Copter::safe_rtl_save_position()
 {
-    bool save_position = motors->armed() && (control_mode != SAFE_RTL);
+    const bool save_position = motors->armed() && (control_mode != SAFE_RTL);
 
     g2.safe_rtl.update(position_ok(), save_position);
 }
