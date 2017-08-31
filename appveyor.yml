@@ -1,0 +1,11 @@
+branches:
+  only:
+  - master-appveyor
+
+environment:
+  matrix:
+  - TOOLSET: cygwin
+
+build_script: Tools\scripts\build_appveyor.bat
+
+test: off
