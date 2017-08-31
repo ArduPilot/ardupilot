@@ -57,14 +57,14 @@ public:
     }
 
     // return true if given bitnumber is set
-    bool get(uint16_t bit) {
+    bool get(uint16_t bit) const {
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
         return (bits[word] & (1U << ofs)) != 0;
     }
 
     // return true if all bits are clear
-    bool empty(void) {
+    bool empty(void) const {
         for (uint16_t i=0; i<numwords; i++) {
             if (bits[i] != 0) {
                 return false;
@@ -74,7 +74,7 @@ public:
     }
 
     // return number of bits set
-    uint16_t count() {
+    uint16_t count() const {
         uint16_t sum = 0;
         for (uint16_t i=0; i<numwords; i++) {
             if (sizeof(bits[i]) <= sizeof(int)) {
@@ -89,7 +89,7 @@ public:
     }
 
     // return number of bits available (may be slightly larger than number requested in constructor)
-    uint16_t size() {
+    uint16_t size() const {
         return numwords * 32;
     }
 
