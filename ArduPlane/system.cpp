@@ -188,7 +188,7 @@ void Plane::init_ardupilot()
     // check for a serial port assigned for SBUS output
     AP_HAL::UARTDriver *sbus1_uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Sbus1, 0);
     if (sbus1_uart != nullptr) {
-        hal.rcout->enable_sbus_out(sbus1_uart, 100);
+        hal.rcout->enable_sbus_out(sbus1_uart, g2.servo_channels.sbus_rate.get());
     }
 
     // choose the nav controller
