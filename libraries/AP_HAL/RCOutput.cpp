@@ -98,6 +98,12 @@ void AP_HAL::RCOutput::enable_sbus_out(UARTDriver* uart, uint16_t rate) {
     sbus1_uart->configure_parity(2);    // enable even parity
     sbus1_uart->set_stop_bits(2);
     sbus1_uart->set_unbuffered_writes(true);
-    sbus_frame_interval = (1000UL * 1000UL) / rate;
+    // subtract 500msec from requested frame interval to allow for latency
+    sbus_frame_interval = (1000UL * 1000UL) / rate - 500;
+    // at 100,000 bps, a 300 bit sbus frame takes 3msec to transfer
+    // require a minimum 700usec interframe gap
+    if (sbus_frame_interval < 3700) {
+        sbus_frame_interval = 3700;
+    }
 }
 
