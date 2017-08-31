@@ -33,6 +33,7 @@ min_interval_t = 0
 max_interval_t = 0
 rising_edge5 = 0
 new_frame = False
+frame_intervals = []
 maxwidth5 = 0
 maxwidth5_t = 0
 
@@ -73,6 +74,8 @@ for row in data:
         new_frame = True
     if values[5] == 0 and prev_values[5] == 1 and rising_edge5 != 0:
         width5 = t - rising_edge5;
+        if frame_start < rising_edge5:
+            print("aux6 TE before frame_start at %.6f" % t)
         if width5 > maxwidth5:
             maxwidth5 = width5
             maxwidth5_t = t
@@ -84,6 +87,7 @@ for row in data:
         # require interframe gap of at least 12 bits)
         if (t - trailing_edge0) > .000120:
             frame_interval = t - frame_start
+            frame_intervals.append(frame_interval)
             if frame_interval > .003 and frame_interval < min_frame_interval: 
                 min_frame_interval = frame_interval
                 min_interval_t = t
@@ -138,10 +142,16 @@ sys.stdout.write("max_frame_interval: %.6f, at: %.6f\n" % (max_frame_interval, m
 sys.stdout.write("sbus_latency_max: %.6f, at: %.6f\n" % (sbus_latency_max, sbus_latency_max_t))
 sys.stdout.write("maxwidth5: %.6f, at: %.6f\n" % (maxwidth5, maxwidth5_t))
 
+intervals = np.array(frame_intervals)
+
 xa = np.array(x)
 ya = np.array(y)
 plt.figure(1)
 plt.plot(xa, ya)
 plt.grid()
+
+plt.figure(2)
+plt.hist(intervals,25)
+
 plt.show()
 
