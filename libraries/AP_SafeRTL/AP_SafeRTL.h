@@ -13,6 +13,7 @@
 #define SAFERTL_POINTS_DEFAULT          150     // default _POINTS parameter value.  High numbers improve path pruning but use more memory and CPU for cleanup. Memory used will be 20bytes * this number.
 #define SAFERTL_POINTS_MAX              500     // the absolute maximum number of points this library can support.
 #define SAFERTL_TIMEOUT                 15000   // the time in milliseconds with no points saved to the path (for whatever reason), before SafeRTL is disabled for the flight
+#define SAFERTL_CLEANUP_POINT_TRIGGER   50      // simplification will trigger when this many points are added to the path
 #define SAFERTL_CLEANUP_START_MARGIN    10      // routine cleanup algorithms begin when the path array has only this many empty slots remaining
 #define SAFERTL_CLEANUP_POINT_MIN       10      // cleanup algorithms will remove points if they remove at least this many points
 #define SAFERTL_SIMPLIFY_EPSILON (_accuracy * 0.5f)
@@ -93,17 +94,18 @@ private:
         SRTL_DEACTIVATED_INIT_FAILED,
         SRTL_DEACTIVATED_BAD_POSITION,
         SRTL_DEACTIVATED_BAD_POSITION_TIMEOUT,
-        SRTL_DEACTIVATED_PATH_FULL_TIMEOUT
+        SRTL_DEACTIVATED_PATH_FULL_TIMEOUT,
+        SRTL_DEACTIVATED_PROGRAM_ERROR,
     };
 
     // add point to end of path
     bool add_point(const Vector3f& point);
 
     // routine cleanup attempts to remove 10 points (see SAFERTL_CLEANUP_POINT_MIN definition) by simplification or loop pruning
-    void routine_cleanup();
+    void routine_cleanup(uint16_t path_points_count, uint16_t path_points_complete_limit);
 
     // thorough cleanup simplifies and prunes all loops.  returns true if the cleanup was completed.
-    // path_points_count is _path_points_count but passed into avoid having to take the semaphore
+    // path_points_count is _path_points_count but passed in to avoid having to take the semaphore
     bool thorough_cleanup(uint16_t path_points_count, ThoroughCleanupType clean_type);
 
     // the two cleanup steps run from the background thread
@@ -111,28 +113,43 @@ private:
     void detect_simplifications();
     void detect_loops();
 
-    // reset simplification and pruning if new points have been added to path
-    // path_points_count is _path_points_count but passed into avoid having to take the semaphore
-    void reset_if_new_points(uint16_t path_points_count);
+    // restart simplify or pruning if new points have been added to path
+    // path_points_count is _path_points_count but passed in to avoid having to take the semaphore
+    void restart_simplify_if_new_points(uint16_t path_points_count);
 
-    // reset simplification algorithm so that it will re-check all points in the path
-    // should be called if the existing path is altered for example when a loop as been removed
-    // path_points_count is _path_points_count but passed into avoid having to take the semaphore
-    void reset_simplification(uint16_t path_points_count);
+    // restart pruning if new points have been simplified
+    void restart_pruning_if_new_points();
+
+    // restart simplify algorithm so that detect_simplify will check all new points that have been added
+    // to the path since it last completed.
+    // path_points_count is _path_points_count but passed in to avoid having to take the semaphore
+    void restart_simplification(uint16_t path_points_count);
+
+    // reset simplify algorithm so that it will re-check all points in the path
+    void reset_simplification();
+
+    // restart pruning algorithm so that detect_loops will check all new points that have been added
+    // to the path since it last completed.
+    // path_points_count is _path_points_count but passed in to avoid having to take the semaphore
+    void restart_pruning(uint16_t path_points_count);
 
     // reset pruning algorithm so that it will re-check all points in the path
-    // should be called if the existing path is altered for example when a loop as been removed
-    // path_points_count is _path_points_count but passed into avoid having to take the semaphore
-    void reset_pruning(uint16_t path_points_count);
+    void reset_pruning();
 
-    // set all points that can be removed to zero
-    void zero_points_by_simplify_bitmask();
-    void zero_points_by_loops(uint16_t points_to_delete);
+    // remove all simplify-able points from the path
+    void remove_points_by_simplify_bitmask();
 
-    // remove all zero points from the path
-    void remove_empty_points();
+    // remove loops until at least num_point_to_remove have been removed from path
+    // does not necessarily prune all loops
+    // returns false if it failed to remove points (because it could not take semaphore)
+    bool remove_points_by_loops(uint16_t num_points_to_remove);
 
-public:
+    // add loop to loops array
+    //  returns true if loop added successfully, false on failure (because loop array is full)
+    //  checks if loop overlaps with an existing loop, keeps only the longer loop
+    //  example: segment_a(point2~point3) overlaps with segment_b (point5~point6), add_loop(3,5,midpoint)
+    bool add_loop(uint16_t start_index, uint16_t end_index, const Vector3f& midpoint);
+
     // dist_point holds the closest distance reached between 2 line segments, and the point exactly between them
     typedef struct {
         float distance;
@@ -141,7 +158,6 @@ public:
 
     // get the closest distance between 2 line segments and the point midway between the closest points
     static dist_point segment_segment_dist(const Vector3f& p1, const Vector3f& p2, const Vector3f& p3, const Vector3f& p4);
-private:
 
     // de-activate SafeRTL, send warning to GCS and log to dataflash
     void deactivate(SRTL_Actions action, const char *reason);
@@ -169,6 +185,7 @@ private:
     Vector3f* _path;    // points are stored in meters from EKF origin in NED
     uint16_t _path_points_max;  // after the array has been allocated, we will need to know how big it is. We can't use the parameter, because a user could change the parameter in-flight
     uint16_t _path_points_count;// number of points in the path array
+    uint16_t _path_points_completed_limit;  // set by main thread to the path_point_count when a point is popped.  used by simplify and prune algorithms to detect path shrinking
     AP_HAL::Semaphore *_path_sem;   // semaphore for updating path
 
     // Simplify
@@ -178,8 +195,10 @@ private:
         uint16_t finish;
     } simplify_start_finish_t;
     struct {
-        bool complete;
-        uint16_t path_points_count;  // copy of _path_points_count taken when the simply algorithm started
+        bool complete;          // true after simplify_detection has completed
+        bool removal_required;  // true if some simplify-able points have been found on the path, set true by detect_simplifications, set false by remove_points_by_simplify_bitmask
+        uint16_t path_points_count; // copy of _path_points_count taken when the simply algorithm started
+        uint16_t path_points_completed = SAFERTL_POINTS_MAX; // number of points in that path that have already been simplified and should be ignored
         simplify_start_finish_t* stack;
         uint16_t stack_max;     // maximum number of elements in the _simplify_stack array
         uint16_t stack_count;   // number of elements in _simplify_stack array
@@ -188,18 +207,22 @@ private:
 
     // Pruning
     typedef struct {
-        uint16_t start_index;
-        uint16_t end_index;
-        Vector3f midpoint;
+        uint16_t start_index;   // index of the first point in the loop
+        uint16_t end_index;     // index of the last point in the loop
+        Vector3f midpoint;      // midpoint which should replace the first point when the loop is removed
+        float length_squared;   // length squared (in meters) of the loop (used so we can remove the longest loops)
     } prune_loop_t;
     struct {
         bool complete;
         uint16_t path_points_count;  // copy of _path_points_count taken when the prune algorithm started
+        uint16_t path_points_completed; // number of points in that path that have already been checked for loops and should be ignored
         uint16_t i;     // loop search's outer loop index
         uint16_t j;     // loop search's inner loop index
-        uint16_t j_min; // inner loop search starts each iteration from no lower than this index
         prune_loop_t* loops;// the result of the pruning algorithm
         uint16_t loops_max; // maximum number of elements in the _prunable_loops array
         uint16_t loops_count;   // number of elements in the _prunable_loops array
     } _prune;
+
+    // returns true if the two loops overlap (used within add_loop to determine which loops to keep or throw away)
+    bool loops_overlap(const prune_loop_t& loop1, const prune_loop_t& loop2) const;
 };

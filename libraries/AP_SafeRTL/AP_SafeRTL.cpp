@@ -159,6 +159,9 @@ bool AP_SafeRTL::pop_point(Vector3f& point)
     // return last point and remove from path
     point = _path[--_path_points_count];
 
+    // record count of last point popped
+    _path_points_completed_limit = _path_points_count;
+
     _path_sem->give();
     return true;
 }
@@ -182,8 +185,8 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
 
     // reset simplification and pruning.  These functions access members that should normally only
     // be touched by the background thread but it will not be running because active should be false
-    reset_simplification(0);
-    reset_pruning(0);
+    reset_simplification();
+    reset_pruning();
 
     // de-activate if no position at take-off
     if (!position_ok) {
@@ -321,8 +324,10 @@ void AP_SafeRTL::run_background_cleanup()
     if (!_path_sem->take_nonblocking()) {
         return;
     }
-    // local copy of _path_points_count
+    // local copy of _path_points_count and _path_points_completed_limit
     const uint16_t path_points_count = _path_points_count;
+    const uint16_t path_points_completed_limit = _path_points_completed_limit;
+    _path_points_completed_limit = SAFERTL_POINTS_MAX;
     _path_sem->give();
 
     // check if thorough cleanup is required
@@ -342,116 +347,99 @@ void AP_SafeRTL::run_background_cleanup()
     // ensure clean complete time is zero
     _thorough_clean_complete_ms = 0;
 
-    // check if path array is nearly full, if yes we should do a routine cleanup (i.e. remove 10 points)
-    bool path_nearly_full = path_points_count >= MAX(_path_points_max - SAFERTL_CLEANUP_START_MARGIN, 0);
-    if (path_nearly_full) {
-        routine_cleanup();
-    }
+    // perform routine cleanup which removes 10 to 50 points if possible
+    routine_cleanup(path_points_count, path_points_completed_limit);
+}
 
-    // detect simplifications
+// routine cleanup is called regularly from run_background_cleanup
+//   simplifies the path after SAFERTL_CLEANUP_POINT_TRIGGER points (50 points) have been added OR
+//   SAFERTL_CLEANUP_POINT_MIN (10 points) have been added and the path has less than SAFERTL_CLEANUP_START_MARGIN spaces (10 spaces) remaining
+//   prunes the path if the path has less than SAFERTL_CLEANUP_START_MARGIN spaces (10 spaces) remaining
+void AP_SafeRTL::routine_cleanup(uint16_t path_points_count, uint16_t path_points_completed_limit)
+{
+    // if simplify is running, let it run to completion
     if (!_simplify.complete) {
         detect_simplifications();
         return;
     }
 
-    // detect prunable loops
+    // remove simplified from path if required
+    if (_simplify.removal_required) {
+        remove_points_by_simplify_bitmask();
+        return;
+    }
+
+    // if necessary restart detect_pruning up to last point simplified
+    if (_prune.complete) {
+        restart_pruning_if_new_points();
+    }
+    // if pruning is running, let it run to completion
     if (!_prune.complete) {
         detect_loops();
         return;
     }
 
-    // checks if new points have appeared on the path and resets simplification and pruning
-    reset_if_new_points(path_points_count);
-}
+    // detect path shrinkage and reduce simplify and prune path_points_completed count
+    if (_simplify.path_points_completed > path_points_completed_limit) {
+        _simplify.path_points_completed = path_points_completed_limit;
+    }
+    if (_prune.path_points_completed > path_points_completed_limit) {
+        _prune.path_points_completed = path_points_completed_limit;
+    }
 
-// routine cleanup attempts to remove 10 points (see SAFERTL_CLEANUP_POINT_MIN definition) by simplification or loop pruning
-//   it is called from run_background_cleanup if the buffer is nearly full (has only SAFERTL_CLEANUP_START_MARGIN empty slots remaining)
-//   this routine first tries to regain 10 points through simplification, failing that it tries to free 10 through pruning loops
-//   and finally if neither of these yields 10 points it will remove whatever it can through both simplification and pruning loops
-//   the calls to remove_empty_points causes the detect_ algorithms to begin their calculations from scratch
-void AP_SafeRTL::routine_cleanup()
-{
-    const uint16_t potential_amount_to_simplify = _simplify.bitmask.size() - _simplify.bitmask.count();
+    // calculate the number of points we could simplify
+    const uint16_t points_to_simplify = (path_points_count > _simplify.path_points_completed) ? (path_points_count - _simplify.path_points_completed) : 0 ;
+    const bool low_on_space = (_path_points_max - path_points_count) <= SAFERTL_CLEANUP_START_MARGIN;
 
-    // if simplifying will remove more than 10 points, just do it
-    if (potential_amount_to_simplify >= SAFERTL_CLEANUP_POINT_MIN) {
-        // take semaphore to avoid conflicts with new points being added
-        if (!_path_sem->take_nonblocking()) {
-            return;
-        }
-        zero_points_by_simplify_bitmask();
-        remove_empty_points();
-        _path_sem->give();
+    // if 50 points can be simplified or we are low on space and at least 10 points can be simplified
+    if ((points_to_simplify >= SAFERTL_CLEANUP_POINT_TRIGGER) || (low_on_space && (points_to_simplify >= SAFERTL_CLEANUP_POINT_MIN))) {
+        restart_simplification(path_points_count);
         return;
     }
 
-    uint16_t potential_amount_to_prune = 0;
-    for (uint16_t i = 0; i < _prune.loops_count; i++) {
-        // add 1 at the end, because a pruned loop is always replaced by one new point.
-        potential_amount_to_prune += _prune.loops[i].end_index - _prune.loops[i].start_index + 1;
-    }
-
-    // if pruning could remove 10+ points, prune loops until 10 or more points have been removed (doesn't necessarily prune all loops)
-    if (potential_amount_to_prune >= SAFERTL_CLEANUP_POINT_MIN) {
-        // take semaphore to avoid conflicts with new points being added
-        if (!_path_sem->take_nonblocking()) {
-            return;
-        }
-        zero_points_by_loops(SAFERTL_CLEANUP_POINT_MIN);
-        remove_empty_points();
-        _path_sem->give();
-        return;
-    }
-
-    // as a last resort, see if pruning and simplifying together would remove 10+ points.
-    if (potential_amount_to_prune + potential_amount_to_simplify >= SAFERTL_CLEANUP_POINT_MIN) {
-        // take semaphore to avoid conflicts with new points being added
-        if (!_path_sem->take_nonblocking()) {
-            return;
-        }
-        zero_points_by_simplify_bitmask();
-        zero_points_by_loops(SAFERTL_CLEANUP_POINT_MIN);
-        remove_empty_points();
-        _path_sem->give();
+    // we are low on space, prune
+    if (low_on_space) {
+        // remove at least 10 points
+        remove_points_by_loops(SAFERTL_CLEANUP_POINT_MIN);
     }
 }
 
 // thorough cleanup simplifies and prunes all loops.  returns true if the cleanup was completed.
-// path_points_count is _path_points_count but passed into avoid having to take the semaphore
+// path_points_count is _path_points_count but passed in to avoid having to take the semaphore
 bool AP_SafeRTL::thorough_cleanup(uint16_t path_points_count, ThoroughCleanupType clean_type)
 {
-    // reset simplify and pruning if new points have appeared on path
-    reset_if_new_points(path_points_count);
-
-    // if simplification is not complete, run it
-    if (!_simplify.complete && (clean_type != THOROUGH_CLEAN_PRUNE_ONLY)) {
-        detect_simplifications();
-        return false;
-    }
-    if (!_prune.complete && (clean_type != THOROUGH_CLEAN_SIMPLIFY_ONLY)) {
-        detect_loops();
-        return false;
-    }
-
-    // take semaphore to avoid conflicts with new points being added
-    if (!_path_sem->take_nonblocking()) {
-        return false;
-    }
-
-    // apply simplification
     if (clean_type != THOROUGH_CLEAN_PRUNE_ONLY) {
-        zero_points_by_simplify_bitmask();
+        // restart simplify if new points have appeared on path
+        if (_simplify.complete) {
+            restart_simplify_if_new_points(path_points_count);
+        }
+        // if simplification is not complete, run it
+        if (!_simplify.complete) {
+            detect_simplifications();
+            return false;
+        }
+        // remove simplified points from path if required
+        if (_simplify.removal_required) {
+            remove_points_by_simplify_bitmask();
+            return false;
+        }
     }
 
-    // apply pruning, prune every single loop
     if (clean_type != THOROUGH_CLEAN_SIMPLIFY_ONLY) {
-        zero_points_by_loops(SAFERTL_POINTS_MAX);
+        // if necessary restart detect_pruning up to last point simplified
+        if (_prune.complete) {
+            restart_pruning_if_new_points();
+        }
+        // if pruning is not complete, run it
+        if (!_prune.complete) {
+            detect_loops();
+            return false;
+        }
+        // remove pruning points
+        if (!remove_points_by_loops(SAFERTL_POINTS_MAX)) {
+            return false;
+        }
     }
-
-    // remove all simplified and pruned points
-    remove_empty_points();
-
-    _path_sem->give();
 
     return true;
 }
@@ -468,8 +456,10 @@ void AP_SafeRTL::detect_simplifications()
 
     // if not complete but also nothing to do, we must be restarting
     if (_simplify.stack_count == 0) {
-        // reset to beginning state.  a single element in the array with start = first path point, finish = final path point
-        _simplify.stack[0].start = 0;
+        // reset to beginning state. add a single element in the array with:
+        //   start = first path point OR the index of the last already-simplified point
+        //   finish = final path point
+        _simplify.stack[0].start = (_simplify.path_points_completed > 0) ? _simplify.path_points_completed - 1 : 0;
         _simplify.stack[0].finish = _simplify.path_points_count-1;
         _simplify.stack_count++;
     }
@@ -515,9 +505,11 @@ void AP_SafeRTL::detect_simplifications()
             // if the farthest point was closer than ACCURACY * 0.5 we can simplify all points between start and end
             for (uint16_t i = start_index + 1; i < end_index; i++) {
                 _simplify.bitmask.clear(i);
+                _simplify.removal_required = true;
             }
         }
     }
+    _simplify.path_points_completed = _simplify.path_points_count;
     _simplify.complete = true;
 }
 
@@ -544,126 +536,239 @@ void AP_SafeRTL::detect_loops()
 
         // advance inner loop
         _prune.j++;
-        if (_prune.j > _prune.path_points_count-2) {
-            // advance outer loop
-            _prune.i++;
-            if (_prune.i > _prune.path_points_count - 4) {
+        if (_prune.j > _prune.i - 2) {
+            // set inner loop back to first point
+            _prune.j = 1;
+            // reduce outer loop
+            _prune.i--;
+            // complete when outer loop has run out of new points to check
+            if (_prune.i < 4 || _prune.i < _prune.path_points_completed) {
                 _prune.complete = true;
+                _prune.path_points_completed = _prune.path_points_count;
                 return;
             }
-            // push inner loop to start from outer loop+2 and skip over known loops
-            _prune.j = MAX(_prune.i + 2, _prune.j_min);
         }
 
         // find the closest distance between two line segments and the mid-point
-        dist_point dp = segment_segment_dist(_path[_prune.i], _path[_prune.i+1], _path[_prune.j], _path[_prune.j+1]);
-        if (dp.distance < SAFERTL_PRUNING_DELTA) { // if there is a loop here
-            // if the buffer is full, stop trying to prune
-            if (_prune.loops_count >= _prune.loops_max) {
+        dist_point dp = segment_segment_dist(_path[_prune.i], _path[_prune.i-1], _path[_prune.j-1], _path[_prune.j]);
+        if (dp.distance < SAFERTL_PRUNING_DELTA) {
+            // if there is a loop here, add to loop array
+            if (!add_loop(_prune.j, _prune.i-1, dp.midpoint)) {
+                // if the buffer is full, stop trying to prune
                 _prune.complete = true;
-                return;
             }
-            // add loop to _prune.loops array
-            _prune.loops[_prune.loops_count].start_index = _prune.i + 1;
-            _prune.loops[_prune.loops_count].end_index = _prune.j + 1;
-            _prune.loops[_prune.loops_count].midpoint = dp.midpoint;
-            _prune.loops_count++;
-            // record inner loop should start no lower than 2nd segment
-            _prune.j_min = _prune.j + 1;
+            // set inner loop forward to trigger outer loop move to next segment
+            _prune.j = _prune.i;
         }
     }
 }
 
-// reset simplification and pruning if new points have been added to path
-// path_points_count is _path_points_count but passed into avoid having to take the semaphore
-void AP_SafeRTL::reset_if_new_points(uint16_t path_points_count)
+// restart simplify if new points have been added to path
+// path_points_count is _path_points_count but passed in to avoid having to take the semaphore
+void AP_SafeRTL::restart_simplify_if_new_points(uint16_t path_points_count)
 {
     // any difference in the number of points is because of new points being added to path
     if (_simplify.path_points_count != path_points_count) {
-        reset_simplification(path_points_count);
-    }
-    if (_prune.path_points_count != path_points_count) {
-        reset_pruning(path_points_count);
+        restart_simplification(path_points_count);
     }
 }
 
-// reset simplification algorithm so that it will re-check all points in the path
-// should be called if the existing path has been altered, for example when a loop as been removed
-void AP_SafeRTL::reset_simplification(uint16_t path_points_count)
+// reset pruning if new points have been simplified
+void AP_SafeRTL::restart_pruning_if_new_points()
+{
+    // any difference in the number of points is because of new points being added to path
+    if (_prune.path_points_count != _simplify.path_points_completed) {
+        restart_pruning(_simplify.path_points_completed);
+    }
+}
+
+// restart simplification algorithm so that it will check new points in the path
+void AP_SafeRTL::restart_simplification(uint16_t path_points_count)
 {
     _simplify.complete = false;
-    _simplify.stack_count = 0;
+    _simplify.removal_required = false;
     _simplify.bitmask.setall();
+    _simplify.stack_count = 0;
     _simplify.path_points_count = path_points_count;
 }
 
-// reset pruning algorithm so that it will re-check all points in the path
-// should be called if the existing path is altered for example when a loop as been removed
-void AP_SafeRTL::reset_pruning(uint16_t path_points_count)
+// reset simplification algorithm so that it will re-check all points in the path
+void AP_SafeRTL::reset_simplification()
+{
+    restart_simplification(0);
+    _simplify.path_points_completed = 0;
+}
+
+// restart pruning algorithm to check new points that have arrived
+void AP_SafeRTL::restart_pruning(uint16_t path_points_count)
 {
     _prune.complete = false;
-    _prune.i = 0;
-    _prune.j = _prune.i+1;  // detect_loops will increment this to the correct starting point of _prune.i+2.
-    _prune.j_min = _prune.j;
-    _prune.loops_count = 0; // clear the loops that we've recorded
+    _prune.i = (path_points_count > 0) ? path_points_count - 1 : 0;
+    _prune.j = 0;
     _prune.path_points_count = path_points_count;
 }
 
-// set all points that can be removed to zero
-void AP_SafeRTL::zero_points_by_simplify_bitmask()
+// reset pruning algorithm so that it will re-check all points in the path
+void AP_SafeRTL::reset_pruning()
 {
-    for (uint16_t i = 1; i < _path_points_count; i++) {
-        if (!_simplify.bitmask.get(i)) {
-            if (!_path[i].is_zero()) {
-                log_action(SRTL_POINT_SIMPLIFY, _path[i]);
-                _path[i].zero();
-            }
-        }
-    }
+    restart_pruning(0);
+    _prune.loops_count = 0; // clear the loops that we've recorded
+    _prune.path_points_completed = 0;
 }
 
-// prunes loops until points_to_delete points have been removed. It does not necessarily prune all loops.
-void AP_SafeRTL::zero_points_by_loops(uint16_t points_to_delete)
+// remove all simplify-able points from the path
+void AP_SafeRTL::remove_points_by_simplify_bitmask()
 {
-    uint16_t removed_points = 0;
-    for (uint16_t i = 0; i < _prune.loops_count; i++) {
-        prune_loop_t l = _prune.loops[i];
-        for (uint16_t j = l.start_index; j < l.end_index; j++) {
-            // zero this point if it wasn't already zeroed
-            if (!_path[j].is_zero()) {
-                log_action(SRTL_POINT_PRUNE, _path[j]);
-                _path[j].zero();
-            }
-        }
-        _path[(uint16_t)((l.start_index+l.end_index)/2.0)] = l.midpoint;
-        removed_points += l.end_index - l.start_index - 1;
-        if (removed_points > points_to_delete) {
-            return;
-        }
+    // get semaphore before modifying path
+    if (!_path_sem->take_nonblocking()) {
+        return;
     }
-}
-
-/**
-*  Removes all 0,0,0 points from the path, and shifts remaining items to correct position.
-*  The first item will not be removed.
-*/
-void AP_SafeRTL::remove_empty_points()
-{
     uint16_t dest = 1;
     uint16_t removed = 0;
     for (uint16_t src = 1; src < _path_points_count; src++) {
-        if (_path[src].is_zero()) {
+        if (!_simplify.bitmask.get(src)) {
+            log_action(SRTL_POINT_SIMPLIFY, _path[src]);
             removed++;
         } else {
             _path[dest] = _path[src];
             dest++;
         }
     }
-    _path_points_count -= removed;
 
-    // reset state of simplification and pruning
-    reset_simplification(_path_points_count);
-    reset_pruning(_path_points_count);
+    // reduce count of the number of points simplified
+    if (_path_points_count > removed && _simplify.path_points_count > removed) {
+        _path_points_count -= removed;
+        _simplify.path_points_count -= removed;
+        _simplify.path_points_completed = _simplify.path_points_count;
+    } else {
+        // this is an error that should never happen so deactivate
+        deactivate(SRTL_DEACTIVATED_PROGRAM_ERROR, "program error");
+    }
+
+    _path_sem->give();
+
+    // flag point removal is complete
+    _simplify.bitmask.setall();
+    _simplify.removal_required = false;
+}
+
+// remove loops until at least num_point_to_delete have been removed from path
+// does not necessarily prune all loops
+// returns false if it failed to remove points (because it could not take semaphore)
+bool AP_SafeRTL::remove_points_by_loops(uint16_t num_points_to_remove)
+{
+    // exit immediately if no loops to prune
+    if (_prune.loops_count == 0) {
+        return true;
+    }
+
+    // get semaphore before modifying path
+    if (!_path_sem->take_nonblocking()) {
+        return false;
+    }
+
+    uint16_t removed_points = 0;
+    uint16_t i = _prune.loops_count;
+    while ((i > 0) && (removed_points < num_points_to_remove)) {
+        i--;
+        prune_loop_t loop = _prune.loops[i];
+
+        // midpoint goes into start_index (this is the end point of the first segment)
+        _path[loop.start_index] = loop.midpoint;
+
+        // shift points after the end of the loop down by the number of points in the loop
+        uint16_t loop_num_points_to_remove = loop.end_index - loop.start_index;
+        for (uint16_t dest = loop.start_index + 1; dest < _path_points_count - loop_num_points_to_remove; dest++) {
+            log_action(SRTL_POINT_PRUNE, _path[dest]);
+            _path[dest] = _path[dest + loop_num_points_to_remove];
+        }
+
+        if (_path_points_count > loop_num_points_to_remove) {
+            _path_points_count -= loop_num_points_to_remove;
+            removed_points += loop_num_points_to_remove;
+        } else {
+            // this is an error that should never happen so deactivate
+            deactivate(SRTL_DEACTIVATED_PROGRAM_ERROR, "program error");
+            _path_sem->give();
+            // we return true so thorough_cleanup does not get stuck
+            return true;
+        }
+
+        // fix the indices of any existing prune loops
+        // we do not check for overlapping loops because add_loops should have caught them
+        for (uint16_t loop_cnt = 0; loop_cnt < i; loop_cnt++) {
+            if (_prune.loops[loop_cnt].start_index >= loop.end_index) {
+                _prune.loops[loop_cnt].start_index -= loop_num_points_to_remove;
+            }
+            if (_prune.loops[loop_cnt].end_index >= loop.end_index) {
+                _prune.loops[loop_cnt].end_index -= loop_num_points_to_remove;
+            }
+        }
+
+        // remove last prune loop from array
+        _prune.loops_count--;
+    }
+
+    _path_sem->give();
+    return true;
+}
+
+// add loop to loops array
+//  returns true if loop added successfully, false if loop array is full
+//  checks if loop overlaps with an existing loop, keeps only the longer loop
+bool AP_SafeRTL::add_loop(uint16_t start_index, uint16_t end_index, const Vector3f& midpoint)
+{
+    // if the buffer is full, return failure
+    if (_prune.loops_count >= _prune.loops_max) {
+        return false;
+    }
+
+    // sanity check indices
+    if (end_index <= start_index) {
+        return false;
+    }
+
+    // create new loop structure and calculate length squared of loop
+    prune_loop_t new_loop = {start_index, end_index, midpoint, 0.0f};
+    new_loop.length_squared = midpoint.distance_squared(_path[start_index]) + midpoint.distance_squared(_path[end_index]);
+    for (uint16_t i = start_index; i < end_index; i++) {
+        new_loop.length_squared += _path[i].distance_squared(_path[i+1]);
+    }
+
+    // look for overlapping loops and find their combined length
+    bool overlapping_loops = false;
+    float overlapping_loop_length = 0.0f;
+    for (uint16_t loop_idx = 0; loop_idx < _prune.loops_count; loop_idx++) {
+        if (loops_overlap(_prune.loops[loop_idx], new_loop)) {
+            overlapping_loops = true;
+            overlapping_loop_length += _prune.loops[loop_idx].length_squared;
+        }
+    }
+
+    // handle overlapping loops
+    if (overlapping_loops) {
+        // if adding this loop would lengthen the path, discard the new loop but return success
+        if (overlapping_loop_length > new_loop.length_squared) {
+            return true;
+        }
+        // remove overlapping loops
+        uint16_t dest_idx = 0;
+        uint16_t removed = 0;
+        for (uint16_t src_idx = 0; src_idx < _prune.loops_count; src_idx++) {
+            if (loops_overlap(_prune.loops[src_idx], new_loop)) {
+                removed++;
+            } else {
+                _prune.loops[dest_idx] = _prune.loops[src_idx];
+                dest_idx++;
+            }
+        }
+        _prune.loops_count -= removed;
+    }
+
+    // add new loop to _prune.loops array
+    _prune.loops[_prune.loops_count] = new_loop;
+    _prune.loops_count++;
+    return true;
 }
 
 /**
@@ -725,4 +830,25 @@ void AP_SafeRTL::log_action(SRTL_Actions action, const Vector3f &point)
     if (!_example_mode) {
         DataFlash_Class::instance()->Log_Write_SRTL(_active, _path_points_count, _path_points_max, action, point);
     }
+}
+
+// returns true if the two loops overlap (used within add_loop to determine which loops to keep or throw away)
+bool AP_SafeRTL::loops_overlap(const prune_loop_t &loop1, const prune_loop_t &loop2) const
+{
+    // check if loop1 within loop2
+    if (loop1.start_index >= loop2.start_index && loop1.end_index <= loop2.end_index) {
+        return true;
+    }
+    // check if loop2 within loop1
+    if (loop2.start_index >= loop1.start_index && loop2.end_index <= loop1.end_index) {
+        return true;
+    }
+    // check for partial overlap (loop1's start OR end point is within loop2)
+    const bool loop1_start_in_loop2 = (loop1.start_index >= loop2.start_index) && (loop1.start_index <= loop2.end_index);
+    const bool loop1_end_in_loop2 = (loop1.end_index >= loop2.start_index) && (loop1.end_index <= loop2.end_index);
+    if (loop1_start_in_loop2 != loop1_end_in_loop2) {
+        return true;
+    }
+    // if we got here, no overlap
+    return false;
 }
