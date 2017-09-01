@@ -405,7 +405,7 @@ float Vector3<T>::distance_to_segment(const Vector3<T> &seg_start, const Vector3
     }
 
     // semiperimeter of triangle
-    float s = (a+b+c)/2.0f;
+    float s = (a+b+c) * 0.5f;
 
     float area_squared = s*(s-a)*(s-b)*(s-c);
     // area must be constrained above 0 because a triangle could have 3 points could be on a line and float rounding could push this under 0
