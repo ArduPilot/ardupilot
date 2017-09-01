@@ -230,20 +230,21 @@ build_arduplane() {
         return
     }
     skip_build $tag $ddir || {
-        for v in v1 v2 v3 v4 v4pro; do
-            skip_board_waf px4-$v && continue
-            echo "Building plane for px4-$v in $BUILDROOT"
+        for v in px4-v1 px4-v2 px4-v3 px4-v4 px4-v4pro; do
+            skip_board_waf $v && continue
+            echo "Building plane for $v in $BUILDROOT"
             waf configure --board $b --out $BUILDROOT clean && waf plane || {
                 echo "Failed build of ArduPlane PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
             }
-            cp -f $BUILDROOT/px4-$v/bin/arduplane.px4 ArduPlane-$v.px4 || {
+            v_noprefix=${v//px4-/}
+            cp -f $BUILDROOT/px4-$v/bin/arduplane.px4 ArduPlane-$v_noprefix.px4 || {
                 echo "Failed build copy of ArduPlane PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
             }
-            copyit ArduPlane-$v.px4 $ddir $tag "ArduPlane"
+            copyit ArduPlane-$v_noprefix.px4 $ddir $tag "ArduPlane"
         done
     }
     checkout ArduPlane "latest" "" ""
@@ -314,20 +315,21 @@ build_arducopter() {
         echo "Building ArduCopter $tag PX4$framesuffix binaries"
         ddir="$binaries/Copter/$hdate/PX4$framesuffix"
         skip_build $tag $ddir && continue
-        for v in v1 v2 v3 v4 v4pro; do
-            skip_board_waf px4-$v && continue
+        for v in px4-v1 px4-v2 px4-v3 px4-v4 px4-v4pro; do
+            skip_board_waf $v && continue
             waf configure --board $b --out $BUILDROOT clean && \
                 waf build --target bin/arducopter$framesuffix || {
                 echo "Failed build of ArduCopter$framesuffix PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
             }
-            cp -f $BUILDROOT/px4-$v/bin/arducopter"$framesuffix".px4 ArduCopter-$v.px4 || {
+            v_noprefix=${v//px4-/}
+            cp -f $BUILDROOT/$v/bin/arducopter"$framesuffix".px4 ArduCopter-$v_noprefix.px4 || {
                 echo "Failed build copy of ArduCopter$framesuffix PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
             }
-            copyit ArduCopter-$v.px4 $ddir $tag "ArduCopter"
+            copyit ArduCopter-$v_noprefix.px4 $ddir $tag "ArduCopter"
         done
     done
     checkout ArduCopter "latest" "" ""
@@ -377,20 +379,21 @@ build_rover() {
         return
     }
     skip_build $tag $ddir || {
-        for v in v1 v2 v3 v4 v4pro; do
-            skip_board_waf px4-$v && continue
-            echo "Building rover for px4-$v in $BUILDROOT"
+        for v in px4-v1 px4-v2 px4-v3 px4-v4 px4-v4pro; do
+            skip_board_waf $v && continue
+            echo "Building rover for $v in $BUILDROOT"
             waf configure --board $b --out $BUILDROOT clean && waf rover || {
                 echo "Failed build of rover PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
             }
-            cp -f $BUILDROOT/px4-$v/bin/ardurover.px4 APMrover2-$v.px4 || {
+            v_noprefix=${v//px4-/}
+            cp -f $BUILDROOT/$v/bin/ardurover.px4 APMrover2-$v_noprefix.px4 || {
                 echo "Failed build copy of rover PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
             }
-            copyit APMrover2-$v.px4 $ddir $tag "APMrover2"
+            copyit APMrover2-$v_noprefix.px4 $ddir $tag "APMrover2"
         done
     }
     checkout APMrover2 "latest" "" ""
@@ -442,7 +445,7 @@ build_antennatracker() {
         return
     }
     skip_build $tag $ddir || {
-        for v in v1 v2 v3 v4 v4pro; do
+        for v in px4-v1 px4-v2 px4-v3 px4-v4 px4-v4pro; do
             skip_board_waf px4-$v && continue
             echo "Building antennatracker for px4-$v in $BUILDROOT"
             waf configure --board $b --out $BUILDROOT clean && waf antennatracker || {
@@ -450,12 +453,13 @@ build_antennatracker() {
                 error_count=$((error_count+1))
                 continue
             }
-            cp -f $BUILDROOT/px4-$v/bin/antennatracker.px4 AntennaTracker-$v.px4 || {
+            v_noprefix=${v//px4-/}
+            cp -f $BUILDROOT/px4-$v/bin/antennatracker.px4 AntennaTracker-$v_noprefix.px4 || {
                 echo "Failed build copy of antennatracker PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
             }
-            copyit AntennaTracker-$v.px4 $ddir $tag "AntennaTracker"
+            copyit AntennaTracker-$v_noprefix.px4 $ddir $tag "AntennaTracker"
         done
     }
     checkout AntennaTracker "latest" "" ""
@@ -486,20 +490,21 @@ build_ardusub() {
         return
     }
     skip_build $tag $ddir || {
-        for v in v1 v2 v3 v4 v4pro; do
-            skip_board_waf px4-$v && continue
-            echo "Building ArduSub for px4-$v in $BUILDROOT"
+        for v in px4-v1 px4-v2 px4-v3 px4-v4 px4-v4pro; do
+            skip_board_waf $v && continue
+            echo "Building ArduSub for $v in $BUILDROOT"
             waf configure --board $b --out $BUILDROOT clean && waf sub || {
                 echo "Failed build of ArduSub PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
             }
-            cp -f $BUILDROOT/px4-$v/bin/ardusub.px4 ArduSub-$v.px4 || {
+            v_noprefix=${v//px4-/}
+            cp -f $BUILDROOT/$v/bin/ardusub.px4 ArduSub-$v_noprefix.px4 || {
                 echo "Failed build copy of ArduSub PX4 $tag for $v"
                 error_count=$((error_count+1))
                 continue
             }
-            copyit ArduSub-$v.px4 $ddir $tag "ArduSub"
+            copyit ArduSub-$v_noprefix.px4 $ddir $tag "ArduSub"
         done
     }
     checkout ArduSub "latest" "" ""
