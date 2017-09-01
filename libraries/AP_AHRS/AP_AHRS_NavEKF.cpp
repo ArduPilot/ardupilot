@@ -1381,7 +1381,7 @@ bool AP_AHRS_NavEKF::resetHeightDatum(void)
 // send a EKF_STATUS_REPORT for current EKF
 void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan)
 {
-    switch (active_EKF_type()) {
+    switch (ekf_type()) {
     case EKF_TYPE_NONE:
         // send zero status report
         mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0);
