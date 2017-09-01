@@ -22,6 +22,8 @@
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include <AP_InertialSensor/AP_InertialSensor_Backend.h>
+
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -106,6 +108,17 @@ public:
     void Log_Write_RFND(const RangeFinder &rangefinder);
     void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t time_us, uint8_t imu_mask);
+    bool Log_Write_ISBH(uint16_t seqno,
+                        AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
+                        uint8_t instance,
+                        uint16_t multiplier,
+                        uint64_t sample_us,
+                        float sample_rate_hz);
+    bool Log_Write_ISBD(uint16_t isb_seqno,
+                        uint16_t seqno,
+                        const int16_t x[32],
+                        const int16_t y[32],
+                        const int16_t z[32]);
     void Log_Write_Vibration(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
