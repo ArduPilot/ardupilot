@@ -1366,13 +1366,16 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-        case MAV_CMD_DO_GO_AROUND:
-            if (copter.do_user_go_around(300)) {
+        case MAV_CMD_DO_GO_AROUND: {
+            float go_around_alt = 300.0f;
+            if (packet.param1 > 0) go_around_alt = packet.param1 * 100; //MP send go_around with 0 alt param
+            if (copter.do_user_go_around(go_around_alt)) {
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_FAILED;
             }
             break;
+        }
 
         case MAV_CMD_DO_FENCE_ENABLE:
 #if AC_FENCE == ENABLED
