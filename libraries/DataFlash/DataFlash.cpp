@@ -705,3 +705,62 @@ int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
 /* End of Log_Write support */
 
 #undef FOR_EACH_BACKEND
+
+// Write information about a series of IMU readings to log:
+bool DataFlash_Class::Log_Write_ISBH(const uint16_t seqno,
+                                     const AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
+                                     const uint8_t sensor_instance,
+                                     const uint16_t multiplier,
+                                     const uint64_t sample_us,
+                                     const float sample_rate_hz)
+{
+    if (_next_backend == 0) {
+        return false;
+    }
+    struct log_ISBH pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ISBH_MSG),
+        time_us        : AP_HAL::micros64(),
+        seqno          : seqno,
+        sensor_type    : (uint8_t)sensor_type,
+        instance       : sensor_instance,
+        multiplier     : multiplier,
+        sample_us      : sample_us,
+        sample_rate_hz : sample_rate_hz,
+    };
+
+    // only the first backend need succeed for us to be successful
+    for (uint8_t i=1; i<_next_backend; i++) {
+        backends[i]->WriteBlock(&pkt, sizeof(pkt));
+    }
+
+    return backends[0]->WriteBlock(&pkt, sizeof(pkt));
+}
+
+
+// Write a series of IMU readings to log:
+bool DataFlash_Class::Log_Write_ISBD(const uint16_t isb_seqno,
+                                     const uint16_t seqno,
+                                     const int16_t x[32],
+                                     const int16_t y[32],
+                                     const int16_t z[32])
+{
+    if (_next_backend == 0) {
+        return false;
+    }
+    struct log_ISBD pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ISBD_MSG),
+        time_us    : AP_HAL::micros64(),
+        isb_seqno  : isb_seqno,
+        seqno      : seqno
+    };
+    memcpy(pkt.x, x, sizeof(pkt.x));
+    memcpy(pkt.y, y, sizeof(pkt.y));
+    memcpy(pkt.z, z, sizeof(pkt.z));
+
+    // only the first backend need succeed for us to be successful
+    for (uint8_t i=1; i<_next_backend; i++) {
+        backends[i]->WriteBlock(&pkt, sizeof(pkt));
+    }
+
+    return backends[0]->WriteBlock(&pkt, sizeof(pkt));
+}
