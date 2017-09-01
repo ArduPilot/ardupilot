@@ -315,7 +315,7 @@ build_arducopter() {
         echo "Building ArduCopter $tag PX4$framesuffix binaries"
         ddir="$binaries/Copter/$hdate/PX4$framesuffix"
         skip_build $tag $ddir && continue
-        for v in px4-v1 px4-v2 px4-v3 px4-v4 px4-v4pro; do
+        for v in px4-v1 px4-v2 px4-v3 px4-v4 px4-v4pro the-cube-green; do
             skip_board_waf $v && continue
             waf configure --board $b --out $BUILDROOT clean && \
                 waf build --target bin/arducopter$framesuffix || {
