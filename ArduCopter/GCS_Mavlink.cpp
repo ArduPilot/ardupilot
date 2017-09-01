@@ -1366,6 +1366,14 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_DO_GO_AROUND:
+            if (copter.do_user_go_around(300)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+            break;
+
         case MAV_CMD_DO_FENCE_ENABLE:
 #if AC_FENCE == ENABLED
             result = MAV_RESULT_ACCEPTED;
