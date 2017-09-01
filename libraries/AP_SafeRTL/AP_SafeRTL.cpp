@@ -96,6 +96,12 @@ void AP_SafeRTL::init()
         return;
     }
 
+    // create semaphore
+    _path_sem = hal.util->new_semaphore();
+    if (_path_sem == nullptr) {
+        return;
+    }
+
     // allocate arrays
     _path = (Vector3f*)calloc(_points_max, sizeof(Vector3f));
 
@@ -116,9 +122,6 @@ void AP_SafeRTL::init()
     }
 
     _path_points_max = _points_max;
-
-    // create semaphore
-    _path_sem = hal.util->new_semaphore();
 
     // when running the example sketch, we want the cleanup tasks to run when we tell them to, not in the background (so that they can be timed.)
     if (!_example_mode){
@@ -202,7 +205,7 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
 // call this at 3hz (or higher) regardless of what mode the vehicle is in
 void AP_SafeRTL::update(bool position_ok, bool save_position)
 {
-    if (!_active || !position_ok || !save_position) {
+    if (!_active || !save_position) {
         return;
     }
 
@@ -223,18 +226,16 @@ void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
         // add the point
         if (add_point(current_pos)) {
             _last_position_save_ms = now;
+        } else if (AP_HAL::millis() - _last_position_save_ms > SAFERTL_TIMEOUT) {
+            // deactivate after timeout due to failure to save points to path (most likely due to buffer filling up)
+            deactivate(SRTL_DEACTIVATED_PATH_FULL_TIMEOUT, "buffer full");
         }
-    }
-
-    // check for timeout due to bad position
-    if (AP_HAL::millis() - _last_good_position_ms > SAFERTL_TIMEOUT) {
-        deactivate(SRTL_DEACTIVATED_BAD_POSITION_TIMEOUT, "bad position");
-        return;
-    }
-
-    // check for timeout due to failure to save points to path (most likely due to buffer filling up)
-    if (AP_HAL::millis() - _last_position_save_ms > SAFERTL_TIMEOUT) {
-        deactivate(SRTL_DEACTIVATED_PATH_FULL_TIMEOUT, "buffer full");
+    } else {
+        // check for timeout due to bad position
+        if (AP_HAL::millis() - _last_good_position_ms > SAFERTL_TIMEOUT) {
+            deactivate(SRTL_DEACTIVATED_BAD_POSITION_TIMEOUT, "bad position");
+            return;
+        }
     }
 }
 
