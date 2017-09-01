@@ -462,8 +462,8 @@ void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
 
 void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
 {
-    AP_GPS gps = _ahrs.get_gps();
-    Vector3f gps_velocity = gps.velocity();
+    const AP_GPS &gps = _ahrs.get_gps();
+    const Vector3f &gps_velocity = gps.velocity();
 
     int32_t latitude = _my_loc.lat;
     int32_t longitude = _my_loc.lng;
