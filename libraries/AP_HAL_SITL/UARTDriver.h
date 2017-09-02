@@ -59,6 +59,10 @@ public:
 
     enum flow_control get_flow_control(void) { return FLOW_CONTROL_ENABLE; }
 
+    virtual bool set_speed(int speed);
+    virtual void configure_parity(uint8_t v);
+    virtual void set_stop_bits(int n);
+
     void _timer_tick(void);
     
 private:
