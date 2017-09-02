@@ -19,8 +19,8 @@
 extern const AP_HAL::HAL &hal;
 
 
-#define LPS25H_ID            0xBD
-#define LPS25H_REG_ID		0x0F
+#define LPS25H_ID            	  0xBD
+#define LPS25H_REG_ID			  0x0F
 #define LPS25H_CTRL_REG1_ADDR     0x20
 #define LPS25H_CTRL_REG2_ADDR     0x21
 #define LPS25H_CTRL_REG3_ADDR     0x22
@@ -96,14 +96,12 @@ void AP_Baro_LPS25H::_timer(void)
 // transfer data to the frontend
 void AP_Baro_LPS25H::update(void)
 {
-//printf("here  :-) \n");
-
     if (_sem->take_nonblocking()) {
         if (!_has_sample) {
             _sem->give();
             return;
         }
-//printf("here  :-)2 \n");
+
         _copy_to_frontend(_instance, _pressure, _temperature);
         _has_sample = false;
         _sem->give();
@@ -116,12 +114,8 @@ void AP_Baro_LPS25H::_update_temperature(void)
 	uint8_t pu8[2];
 	_dev->read_registers(LPS25H_TEMP_OUT_ADDR, pu8, 1);
 	_dev->read_registers(0x2c, pu8+1, 1);
-	/*printf("high value is value are: 0x%X \n",pu8[1]);
-	printf("low value is value are: 0x%X \n",pu8[0]);*/
 	int16_t Temp_Reg_s16 = (uint16_t)(pu8[1]<<8) | pu8[0];
-	//printf("read value is value are: %d \n",Temp_Reg_s16);
 	Temp_Reg_s16=(int16_t)((float)(Temp_Reg_s16/480)+42.5);
-	//printf("temp is: %d\n",Temp_Reg_s16);
 	_temperature=Temp_Reg_s16;
 	
 }
@@ -133,13 +127,8 @@ void AP_Baro_LPS25H::_update_pressure(void)
 	_dev->read_registers(PRESS_OUT_XL_ADDR, pressure, 1);
 	_dev->read_registers(0x29, pressure+1, 1);
 	_dev->read_registers(0x2a, pressure+2,1);
-	
-	int32_t Pressure_Reg_s32 = ((uint32_t)pressure[2]<<16)|((uint32_t)pressure[1]<<8)|pressure[0]; // make a
-	/*printf("pressure is : 0x%X\n",pressure[2]);
-	printf("pressure is : 0x%X\n",pressure[1]);
-	printf("pressure is : 0x%X\n",pressure[0]);*/
+	int32_t Pressure_Reg_s32 = ((uint32_t)pressure[2]<<16)|((uint32_t)pressure[1]<<8)|pressure[0];
 	int32_t Pressure_mb = Pressure_Reg_s32 / 4096; // scale
-	//printf("pressure is : %d\n",Pressure_mb);
 	_pressure=Pressure_mb;
 	_has_sample=true;
 }
