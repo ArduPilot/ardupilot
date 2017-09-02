@@ -1,5 +1,4 @@
 #include "Copter.h"
-#include "version.h"
 
 #include "GCS_Mavlink.h"
 
