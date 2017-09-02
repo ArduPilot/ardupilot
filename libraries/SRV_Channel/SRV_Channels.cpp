@@ -123,7 +123,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Range: 25 250
     // @User: Advanced
     // @Units: Hz
-    AP_GROUPINFO("SBUS_RATE",  19, SRV_Channels, sbus_rate, 50),
+    AP_GROUPINFO("_SBUS_RATE",  19, SRV_Channels, sbus_rate, 50),
 
     AP_GROUPEND
 };
