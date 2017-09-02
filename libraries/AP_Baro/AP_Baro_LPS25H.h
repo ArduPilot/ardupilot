@@ -32,11 +32,6 @@ private:
 
     bool _has_sample;
     uint8_t _instance;
-    int32_t _t_fine;
     float _pressure;
     float _temperature;
-
-    // Internal calibration registers
-    int16_t _t2, _t3, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9;
-    uint16_t _t1, _p1;
 };
