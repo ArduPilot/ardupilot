@@ -82,6 +82,9 @@ void RCOutput::push(void)
         memcpy(_sitlState->pwm_output, _pending, SITL_NUM_CHANNELS * sizeof(uint16_t));
         _corked = false;
     }
+
+    // send SBUS1 servo outputs
+    AP_HAL::get_HAL().rcout->sbus1_out(_sitlState->pwm_output, SITL_NUM_CHANNELS);
 }
 
 #endif
