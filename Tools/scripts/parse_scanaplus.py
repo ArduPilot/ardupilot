@@ -69,17 +69,18 @@ for row in data:
     
     # channel 5 is a pulse bracketing the call to _write_fd
     # measure delay from ch5 rising edge to start of sbus frame
-    if values[5] == 1 and prev_values[5] == 0:
-        rising_edge5 = t
-        new_frame = True
-    if values[5] == 0 and prev_values[5] == 1 and rising_edge5 != 0:
-        width5 = t - rising_edge5;
-        if frame_start < rising_edge5:
-            print("aux6 TE before frame_start at %.6f" % t)
-        if width5 > maxwidth5:
-            maxwidth5 = width5
-            maxwidth5_t = t
-    prev_values[5] = values[5]
+    if (nchannels == 6):
+        if values[5] == 1 and prev_values[5] == 0:
+            rising_edge5 = t
+            new_frame = True
+        if values[5] == 0 and prev_values[5] == 1 and rising_edge5 != 0:
+            width5 = t - rising_edge5;
+            if frame_start < rising_edge5:
+                print("aux6 TE before frame_start at %.6f" % t)
+            if width5 > maxwidth5:
+                maxwidth5 = width5
+                maxwidth5_t = t
+        prev_values[5] = values[5]
                 
     # channel 0 is the uart output
     # look for start of frame at each rising edge
