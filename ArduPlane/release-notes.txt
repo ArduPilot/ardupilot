@@ -1,3 +1,31 @@
+Release 3.8.1, 3rd September 2017
+---------------------------------
+
+This is a bugfix release for 3.8.0, with just a few small changes, and
+only one new feature.
+
+The bug fixes are:
+
+ - removed TRIM_RC_AT_START option, as this was causing significant
+   issues
+
+ - fixed bug in TRIM_AUTO support with differential spoilers
+
+ - fixed bug with RCn_TRIM == RCn_MIN in MANUAL mode
+
+ - fixed combination of TKOFF_THR_MINACC and TKOFF_THR_DELAY
+
+ - fixed a bug in sending STATUSTEXT messages on all MAVLink channels
+
+The new feature is that you can set the protocol for the debug UART on
+FMUv2 or FMUv3 board (such as a Pixhawk or Cube) to allow allow UART5
+to be used for arbitrary protocols. To use this fetaure just set
+SERIAL5_PROTOCOL to the desired serial protocol. This should be useful
+to users who have multiple serial devices (such as rangefinders) they
+want to connect and have run out of UARTs.
+
+Happy flying!
+
 Release 3.8.0, 5th August 2017
 ------------------------------
 
