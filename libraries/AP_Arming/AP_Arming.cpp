@@ -450,6 +450,11 @@ bool AP_Arming::hardware_safety_check(bool report)
     return true;
 }
 
+bool AP_Arming::rc_calibration_checks(bool report)
+{
+    return true;
+}
+
 bool AP_Arming::manual_transmitter_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -462,9 +467,9 @@ bool AP_Arming::manual_transmitter_checks(bool report)
             return false;
         }
 
-        //TODO verify radio calibration
-        //Requires access to Parameters ... which are implemented a little
-        //differently for Rover, Plane, and Copter.
+        if (!rc_calibration_checks(report)) {
+            return false;
+        }
     }
 
     return true;
