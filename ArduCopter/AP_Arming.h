@@ -20,7 +20,7 @@ public:
     void update(void);
     bool all_checks_passing(bool arming_from_gcs);
 
-    bool rc_calibration_checks(bool display_failure);
+    bool rc_calibration_checks(bool display_failure) override;
 
 protected:
 

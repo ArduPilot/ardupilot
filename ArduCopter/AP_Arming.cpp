@@ -57,8 +57,7 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
         return true;
     }
 
-    return rc_calibration_checks(display_failure)
-        & fence_checks(display_failure)
+    return fence_checks(display_failure)
         & parameter_checks(display_failure)
         & motor_checks(display_failure)
         & pilot_throttle_checks(display_failure) &
@@ -302,7 +301,9 @@ bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
         copter.channel_yaw
     };
 
-    copter.ap.pre_arm_rc_check = rc_checks_copter_sub(display_failure, channels);
+    copter.ap.pre_arm_rc_check = rc_checks_copter_sub(display_failure, channels)
+        & AP_Arming::rc_calibration_checks(display_failure);
+
     return copter.ap.pre_arm_rc_check;
 }
 
