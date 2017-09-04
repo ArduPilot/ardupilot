@@ -561,17 +561,6 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return true;
     }
 
-    #if AC_FENCE == ENABLED
-    // check vehicle is within fence
-    const char *fail_msg = nullptr;
-    if (!copter.fence.pre_arm_check(fail_msg)) {
-        if (display_failure && fail_msg != nullptr) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Arm: %s", fail_msg);
-        }
-        return false;
-    }
-    #endif
-
     // check lean angle
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_INS)) {
         if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > copter.aparm.angle_max) {
