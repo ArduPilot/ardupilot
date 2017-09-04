@@ -571,13 +571,6 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         }
     }
 
-    // check for missing terrain data
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
-        if (!pre_arm_terrain_check(display_failure)) {
-            return false;
-        }
-    }
-
     // check adsb
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
         if (copter.failsafe.adsb) {
