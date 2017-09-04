@@ -1374,7 +1374,7 @@ void AP_GPS::calc_blended_state(void)
 
     /*
      * Calculate an instantaneous weighted/blended average location from the available GPS instances and store in the _output_state.
-     * This will be statisticaly the most likely location, but will be not stable enough for direct use by the autopilot.
+     * This will be statistically the most likely location, but will be not stable enough for direct use by the autopilot.
     */
 
     // Use the GPS with the highest weighting as the reference position
