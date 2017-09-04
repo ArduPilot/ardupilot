@@ -369,6 +369,7 @@ void Copter::notify_flight_mode(control_mode_t mode)
         case AVOID_ADSB:
         case GUIDED_NOGPS:
         case LAND:
+        case SAFE_RTL:
             // autopilot modes
             AP_Notify::flags.autopilot_mode = true;
             break;
