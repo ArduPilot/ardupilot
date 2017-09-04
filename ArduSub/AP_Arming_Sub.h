@@ -14,7 +14,7 @@ public:
     AP_Arming_Sub(const AP_Arming_Sub &other) = delete;
     AP_Arming_Sub &operator=(const AP_Baro&) = delete;
 
-    bool rc_check(bool report=true);
+    bool rc_calibration_checks(bool report=true) override;
     bool pre_arm_checks(bool report) override;
 
 protected:
