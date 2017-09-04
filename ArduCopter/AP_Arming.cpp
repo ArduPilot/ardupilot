@@ -12,24 +12,18 @@ void AP_Arming_Copter::update(void)
         pre_arm_display_counter = 0;
     }
 
-    if (pre_arm_checks(display_fail)) {
-        set_pre_arm_check(true);
-    }
+    set_pre_arm_check(pre_arm_checks(display_fail));
 }
 
 // performs pre-arm checks and arming checks
 bool AP_Arming_Copter::all_checks_passing(bool arming_from_gcs)
 {
-    if (pre_arm_checks(true)) {
-        set_pre_arm_check(true);
-    } else {
-        return false;
-    }
+    set_pre_arm_check(pre_arm_checks(true));
 
     return copter.ap.pre_arm_check && arm_checks(true, arming_from_gcs);
 }
 
-// perform pre-arm checks and set ap.pre_arm_check flag
+// perform pre-arm checks
 //  return true if the checks pass successfully
 // NOTE: this does *NOT* call AP_Arming::pre_arm_checks() yet!
 bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
@@ -59,17 +53,8 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
         return false;
     }
 
-    // exit immediately if we've already successfully performed the pre-arm check
-    if (copter.ap.pre_arm_check) {
-        // run gps checks because results may change and affect LED colour
-        // no need to display failures because arm_checks will do that if the pilot tries to arm
-        gps_checks(false);
-        return true;
-    }
-
     // succeed if pre arm checks are disabled
     if (checks_to_perform == ARMING_CHECK_NONE) {
-        set_pre_arm_check(true);
         return true;
     }
 
@@ -748,8 +733,6 @@ enum HomeState AP_Arming_Copter::home_status() const
 
 void AP_Arming_Copter::set_pre_arm_check(bool b)
 {
-    if(copter.ap.pre_arm_check != b) {
-        copter.ap.pre_arm_check = b;
-        AP_Notify::flags.pre_arm_check = b;
-    }
+    copter.ap.pre_arm_check = b;
+    AP_Notify::flags.pre_arm_check = b;
 }
