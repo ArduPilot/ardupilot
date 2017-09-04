@@ -23,7 +23,7 @@ bool AP_Arming_Sub::pre_arm_checks(bool report)
         return true;
     }
 
-    return AP_Arming::pre_arm_checks(report) & ins_checks(report);
+    return AP_Arming::pre_arm_checks(report);
 }
 
 bool AP_Arming_Sub::ins_checks(bool report)
