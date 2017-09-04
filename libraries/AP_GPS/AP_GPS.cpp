@@ -1423,6 +1423,8 @@ void AP_GPS::calc_blended_state(void)
             _last_time_updated[i] = state[i].last_gps_time_ms;
         }
     }
+    state[GPS_BLENDED_INSTANCE].last_gps_time_ms = state[best_index].last_gps_time_ms;
+
 
     // Calculate the offset from each GPS solution to the blended solution
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
