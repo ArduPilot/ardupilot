@@ -203,7 +203,11 @@ class ManifestGenerator():
         # used to listdir basedir here, but since this is also a web document root, there's a lot of other stuff accumulated...
         vehicletypes = [ 'AntennaTracker', 'Copter', 'Plane', 'Rover', 'Sub' ]
         for vehicletype in vehicletypes:
-            vdir = os.listdir(os.path.join(basedir, vehicletype))
+            try:
+                vdir = os.listdir(os.path.join(basedir, vehicletype))
+            except OSError as e:
+                if e.errno == 2:
+                    continue
             for firstlevel in vdir:
                 if firstlevel == "files.html":
                     # generated file which should be ignored
