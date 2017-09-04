@@ -132,14 +132,22 @@ AP_GPS_SBF::parse(uint8_t temp)
             }
             break;
         case sbf_msg_parser_t::DATA:
-            if (sbf_msg.read >= sizeof(sbf_msg.data)) {
-                Debug("parse overflow length=%u\n", (unsigned)sbf_msg.read);
-                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
-                break;
+            if (sbf_msg.read < sizeof(sbf_msg.data)) {
+                sbf_msg.data.bytes[sbf_msg.read] = temp;
             }
-            sbf_msg.data.bytes[sbf_msg.read] = temp;
             sbf_msg.read++;
             if (sbf_msg.read >= (sbf_msg.length - 8)) {
+                if (sbf_msg.read > sizeof(sbf_msg.data)) {
+                    // not interested in these large messages
+                    sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                    break;
+                }
+                if (sbf_msg.length < 8) {
+                    Debug("length error %u\n", (unsigned)sbf_msg.length);
+                    sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                    crc_error_counter++;
+                    break;
+                }
                 uint16_t crc = crc16_ccitt((uint8_t*)&sbf_msg.blockid, 2, 0);
                 crc = crc16_ccitt((uint8_t*)&sbf_msg.length, 2, crc);
                 crc = crc16_ccitt((uint8_t*)&sbf_msg.data, sbf_msg.length - 8, crc);
