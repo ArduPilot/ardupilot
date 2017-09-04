@@ -1420,7 +1420,7 @@ void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_ve
 void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
 {
     Vector3f local_position, velocity;
-    if (!ahrs.get_relative_position_NED_home(local_position) ||
+    if (!ahrs.get_relative_position_NED_origin(local_position) ||
         !ahrs.get_velocity_NED(velocity)) {
         // we don't know the position and velocity
         return;
