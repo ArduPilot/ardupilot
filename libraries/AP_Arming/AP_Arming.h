@@ -101,6 +101,8 @@ protected:
 
     virtual bool board_voltage_checks(bool report);
 
+    virtual bool rc_calibration_checks(bool report);
+
     bool manual_transmitter_checks(bool report);
 
     virtual enum HomeState home_status() const = 0;
