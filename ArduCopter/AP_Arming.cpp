@@ -571,16 +571,6 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         }
     }
 
-    // check battery voltage
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
-        if (copter.failsafe.battery || (!copter.ap.usb_connected && copter.battery.exhausted(copter.g.fs_batt_voltage, copter.g.fs_batt_mah))) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: Check Battery");
-            }
-            return false;
-        }
-    }
-
     // check for missing terrain data
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
         if (!pre_arm_terrain_check(display_failure)) {
