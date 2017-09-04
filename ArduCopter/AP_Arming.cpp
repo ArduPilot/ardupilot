@@ -25,7 +25,6 @@ bool AP_Arming_Copter::all_checks_passing(bool arming_from_gcs)
 
 // perform pre-arm checks
 //  return true if the checks pass successfully
-// NOTE: this does *NOT* call AP_Arming::pre_arm_checks() yet!
 bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 {
     // exit immediately if already armed
@@ -68,7 +67,8 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
         & logging_checks(display_failure)
         & parameter_checks(display_failure)
         & motor_checks(display_failure)
-        & pilot_throttle_checks(display_failure);
+        & pilot_throttle_checks(display_failure) &
+        AP_Arming::pre_arm_checks(display_failure);
 }
 
 bool AP_Arming_Copter::barometer_checks(bool display_failure)
