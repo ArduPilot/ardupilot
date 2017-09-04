@@ -34,6 +34,7 @@ protected:
     bool ins_checks(bool display_failure) override;
     bool compass_checks(bool display_failure) override;
     bool gps_checks(bool display_failure) override;
+    bool barometer_checks(bool display_failure) override;
 
     // NOTE! the following check functions *DO NOT* call into AP_Arming!
     bool fence_checks(bool display_failure);
@@ -41,7 +42,6 @@ protected:
     bool parameter_checks(bool display_failure);
     bool motor_checks(bool display_failure);
     bool pilot_throttle_checks(bool display_failure);
-    bool barometer_checks(bool display_failure);
 
     void set_pre_arm_check(bool b);
 
