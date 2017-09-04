@@ -99,7 +99,7 @@ protected:
 
     bool hardware_safety_check(bool report);
 
-    bool board_voltage_checks(bool report);
+    virtual bool board_voltage_checks(bool report);
 
     bool manual_transmitter_checks(bool report);
 
