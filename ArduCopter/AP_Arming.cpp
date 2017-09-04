@@ -58,7 +58,6 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
     }
 
     return rc_calibration_checks(display_failure)
-        & gps_checks(display_failure)
         & fence_checks(display_failure)
         & board_voltage_checks(display_failure)
         & logging_checks(display_failure)
