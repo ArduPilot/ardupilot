@@ -493,37 +493,6 @@ bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
 //  has side-effect that logging is started
 bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 {
-    // check accels and gyro are healthy
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_INS)) {
-        //check if accelerometers have calibrated and require reboot
-        if (_ins.accel_cal_requires_reboot()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Accels calibrated requires reboot");
-            }
-            return false;
-        }
-
-        if (!_ins.get_accel_health_all()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: Accels not healthy");
-            }
-            return false;
-        }
-        if (!_ins.get_gyro_health_all()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: Gyros not healthy");
-            }
-            return false;
-        }
-        // get ekf attitude (if bad, it's usually the gyro biases)
-        if (!pre_arm_ekf_attitude_check()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: gyros still settling");
-            }
-            return false;
-        }
-    }
-
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
         if (display_failure) {
