@@ -402,6 +402,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // call parent gps checks
     if (!AP_Arming::gps_checks(display_failure)) {
+        AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
 
