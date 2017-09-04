@@ -57,8 +57,7 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
         return true;
     }
 
-    return barometer_checks(display_failure)
-        & rc_calibration_checks(display_failure)
+    return rc_calibration_checks(display_failure)
         & compass_checks(display_failure)
         & gps_checks(display_failure)
         & fence_checks(display_failure)
