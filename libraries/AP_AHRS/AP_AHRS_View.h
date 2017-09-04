@@ -145,6 +145,14 @@ public:
         return ahrs.getLastPosDownReset(posDelta);
     }
 
+    // rotate a 2D vector from earth frame to body frame
+    // in result, x is forward, y is right
+    Vector2f rotate_earth_to_body2D(const Vector2f &ef_vector) const;
+
+    // rotate a 2D vector from earth frame to body frame
+    // in input, x is forward, y is right
+    Vector2f rotate_body_to_earth2D(const Vector2f &bf) const;
+    
     // return the average size of the roll/pitch error estimate
     // since last call
     float get_error_rp(void) const {
