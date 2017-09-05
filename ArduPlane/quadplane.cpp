@@ -748,7 +748,7 @@ void QuadPlane::run_z_controller(void)
         // set alt target to current height on transition. This
         // starts the Z controller off with the right values
         gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)inertial_nav.get_altitude());
-        pos_control->set_alt_target(inertial_nav.get_altitude());
+        set_alt_target_current();
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
         // initialize vertical speeds and leash lengths
@@ -776,7 +776,7 @@ void QuadPlane::init_hover(void)
     pos_control->set_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control->set_alt_target(inertial_nav.get_altitude());
+    set_alt_target_current();
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     init_throttle_wait();
@@ -840,7 +840,7 @@ void QuadPlane::init_loiter(void)
     pos_control->set_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control->set_alt_target(inertial_nav.get_altitude());
+    set_alt_target_current();
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     init_throttle_wait();
@@ -1793,7 +1793,7 @@ void QuadPlane::vtol_position_controller(void)
                                                      plane.auto_state.wp_proportion,
                                                      0, 1);
             }
-            pos_control->set_alt_target(target_altitude - plane.home.alt);
+            adjust_alt_target(target_altitude - plane.home.alt);
         } else {
             pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false);
         }
@@ -1941,8 +1941,6 @@ void QuadPlane::control_qrtl(void)
         // change target altitude to home alt
         plane.next_WP_loc.alt = plane.home.alt;
         verify_vtol_land();
-    } else {
-        pos_control->set_alt_target(qrtl_alt*100UL);
     }
 }
 
@@ -1980,7 +1978,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     pos_control->set_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control->set_alt_target(inertial_nav.get_altitude());
+    set_alt_target_current();
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
     
     // also update nav_controller for status output
@@ -2019,7 +2017,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     target.x = diff2d.x * 100;
     target.y = diff2d.y * 100;
     target.z = plane.next_WP_loc.alt - origin.alt;
-    pos_control->set_alt_target(inertial_nav.get_altitude());
+    set_alt_target_current();
     
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
@@ -2039,7 +2037,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     }
     transition_state = TRANSITION_AIRSPEED_WAIT;
     plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
-    pos_control->set_alt_target(inertial_nav.get_altitude());
+    set_alt_target_current();
 
     plane.complete_auto_takeoff();
     
@@ -2114,7 +2112,7 @@ bool QuadPlane::verify_vtol_land(void)
     float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
     if (poscontrol.state == QPOS_LAND_DESCEND && height_above_ground < land_final_alt) {
         poscontrol.state = QPOS_LAND_FINAL;
-        pos_control->set_alt_target(inertial_nav.get_altitude());
+        set_alt_target_current();
 
         // cut IC engine if enabled
         if (land_icengine_cut != 0) {
@@ -2323,4 +2321,23 @@ bool QuadPlane::guided_mode_enabled(void)
         return false;
     }
     return guided_mode != 0;
+}
+
+/*
+  set altitude target to current altitude
+ */
+void QuadPlane::set_alt_target_current(void)
+{
+    pos_control->set_alt_target(inertial_nav.get_altitude());
+}
+
+/*
+  adjust the altitude target to the given target, moving it slowly
+ */
+void QuadPlane::adjust_alt_target(float altitude_cm)
+{
+    float current_alt = inertial_nav.get_altitude();
+    // don't let it get beyond 50cm from current altitude
+    float target_cm = constrain_float(altitude_cm, current_alt-50, current_alt+50);
+    pos_control->set_alt_target(target_cm);
 }
