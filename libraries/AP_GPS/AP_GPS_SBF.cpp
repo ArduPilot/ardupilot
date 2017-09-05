@@ -130,6 +130,13 @@ AP_GPS_SBF::parse(uint8_t temp)
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
                 Debug("bad packet length=%u\n", (unsigned)sbf_msg.length);
             }
+            if (sbf_msg.length < 8) {
+                Debug("bad packet length=%u\n", (unsigned)sbf_msg.length);
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                crc_error_counter++; // this is a probable buffer overflow, but this
+                                     // indicates not enough bytes to do a crc
+                break;
+            }
             break;
         case sbf_msg_parser_t::DATA:
             if (sbf_msg.read < sizeof(sbf_msg.data)) {
@@ -140,12 +147,6 @@ AP_GPS_SBF::parse(uint8_t temp)
                 if (sbf_msg.read > sizeof(sbf_msg.data)) {
                     // not interested in these large messages
                     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
-                    break;
-                }
-                if (sbf_msg.length < 8) {
-                    Debug("length error %u\n", (unsigned)sbf_msg.length);
-                    sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
-                    crc_error_counter++;
                     break;
                 }
                 uint16_t crc = crc16_ccitt((uint8_t*)&sbf_msg.blockid, 2, 0);
