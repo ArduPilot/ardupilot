@@ -20,7 +20,6 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
-#include "AP_Common/AP_FWVersion.h"
 #include "GCS.h"
 
 #include <stdio.h>
@@ -1371,42 +1370,40 @@ void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optf
 /*
   send AUTOPILOT_VERSION packet
  */
-void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_version, uint8_t patch_version, uint8_t version_type) const
+void GCS_MAVLINK::send_autopilot_version() const
 {
-    uint32_t flight_sw_version = 0;
+    uint32_t flight_sw_version;
     uint32_t middleware_sw_version = 0;
     uint32_t os_sw_version = 0;
     uint32_t board_version = 0;
-    uint8_t flight_custom_version[8];
-    uint8_t middleware_custom_version[8];
-    uint8_t os_custom_version[8];
+    char flight_custom_version[8]{};
+    char middleware_custom_version[8]{};
+    char os_custom_version[8]{};
     uint16_t vendor_id = 0;
     uint16_t product_id = 0;
     uint64_t uid = 0;
-    
-    flight_sw_version = major_version << (8*3) | \
-                        minor_version << (8*2) | \
-                        patch_version << (8*1) | \
-                        version_type  << (8*0);
+    const AP_FWVersion &version = get_fwver();
 
-#if defined(GIT_VERSION)
-    strncpy((char *)flight_custom_version, GIT_VERSION, 8);
-#else
-    memset(middleware_custom_version,0,8);
-#endif
+    flight_sw_version = version.major << (8 * 3) | \
+                        version.minor << (8 * 2) | \
+                        version.patch << (8 * 1) | \
+                        (uint32_t)(version.fw_type) << (8 * 0);
 
-#if defined(PX4_GIT_VERSION)
-    strncpy((char *)middleware_custom_version, PX4_GIT_VERSION, 8);
-#else
-    memset(middleware_custom_version,0,8);
-#endif
-    
-#if defined(NUTTX_GIT_VERSION)
-    strncpy((char *)os_custom_version, NUTTX_GIT_VERSION, 8);
-#else
-    memset(os_custom_version,0,8);
-#endif
-    
+    if (version.fw_hash_str) {
+        strncpy(flight_custom_version, version.fw_hash_str, sizeof(flight_custom_version) - 1);
+        flight_custom_version[sizeof(flight_custom_version) - 1] = '\0';
+    }
+
+    if (version.middleware_hash_str) {
+        strncpy(middleware_custom_version, version.middleware_hash_str, sizeof(middleware_custom_version) - 1);
+        middleware_custom_version[sizeof(middleware_custom_version) - 1] = '\0';
+    }
+
+    if (version.os_hash_str) {
+        strncpy(os_custom_version, version.os_hash_str, sizeof(os_custom_version) - 1);
+        os_custom_version[sizeof(os_custom_version) - 1] = '\0';
+    }
+
     mavlink_msg_autopilot_version_send(
         chan,
         hal.util->get_capabilities(),
@@ -1414,9 +1411,9 @@ void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_ve
         middleware_sw_version,
         os_sw_version,
         board_version,
-        flight_custom_version,
-        middleware_custom_version,
-        os_custom_version,
+        (uint8_t *)flight_custom_version,
+        (uint8_t *)middleware_custom_version,
+        (uint8_t *)os_custom_version,
         vendor_id,
         product_id,
         uid
@@ -1999,8 +1996,7 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
 
 void GCS_MAVLINK::handle_send_autopilot_version(const mavlink_message_t *msg)
 {
-    const AP_FWVersion &fwver = get_fwver();
-    send_autopilot_version(fwver.major, fwver.minor, fwver.patch, fwver.fw_type);
+    send_autopilot_version();
 }
 
 void GCS_MAVLINK::send_banner()
@@ -2058,8 +2054,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavl
         return MAV_RESULT_FAILED;
     }
 
-    const AP_FWVersion &fwver = get_fwver();
-    send_autopilot_version(fwver.major, fwver.minor, fwver.patch, fwver.fw_type);
+    send_autopilot_version();
+
     return MAV_RESULT_ACCEPTED;
 }
 
