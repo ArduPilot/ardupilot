@@ -25,7 +25,8 @@ AP_Perf::AP_Perf()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     _backend = new AP_Perf_Nuttx();
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX || \
+      CONFIG_HAL_BOARD == HAL_BOARD_SITL
     _backend = new AP_Perf_Linux();
 #else
     // An empty definition.

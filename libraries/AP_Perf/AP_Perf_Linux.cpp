@@ -16,7 +16,8 @@
  */
 #include "AP_Perf_Linux.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || \
+    CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <inttypes.h>
 #include <stdio.h>
