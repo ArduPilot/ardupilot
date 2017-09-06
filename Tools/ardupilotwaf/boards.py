@@ -31,6 +31,7 @@ class Board:
 
     def __init__(self):
         self.with_uavcan = False
+        self.optimize = None
 
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = self.toolchain
@@ -152,6 +153,8 @@ class Board:
                 '-g',
                 '-O0',
             ]
+        elif self.optimize is not None:
+            env.CXXFLAGS += self.optimize
 
         if cfg.env.DEST_OS == 'darwin':
             env.LINKFLAGS += [
@@ -209,6 +212,10 @@ def get_board(ctx):
 # be worthy to keep board definitions in files of their own.
 
 class sitl(Board):
+    def __init__(self):
+        super(sitl, self).__init__()
+        self.optimize = ['-O3']
+        
     def configure_env(self, cfg, env):
         super(sitl, self).configure_env(cfg, env)
 
@@ -216,11 +223,6 @@ class sitl(Board):
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
         )
-
-        if not cfg.env.DEBUG:
-            env.CXXFLAGS += [
-                '-O3',
-            ]
 
         env.LIB += [
             'm',
@@ -240,6 +242,10 @@ class sitl(Board):
             ]
 
 class linux(Board):
+    def __init__(self):
+        super(linux, self).__init__()
+        self.optimize = ['-O3']
+        
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
 
@@ -249,11 +255,6 @@ class linux(Board):
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NONE',
         )
-
-        if not cfg.env.DEBUG:
-            env.CXXFLAGS += [
-                '-O3',
-            ]
 
         env.LIB += [
             'm',
@@ -547,6 +548,7 @@ class px4_v3(px4):
         self.board_name = 'px4fmu-v3'
         self.px4io_name = 'px4io-v2'
         self.with_uavcan = True
+        self.optimize = ["-O3"]
 
 class px4_v4(px4):
     name = 'px4-v4'
@@ -556,6 +558,7 @@ class px4_v4(px4):
         self.board_name = 'px4fmu-v4'
         self.romfs_exclude(['oreoled.bin'])
         self.with_uavcan = True
+        self.optimize = ["-O3"]
 
 class px4_v4pro(px4):
     name = 'px4-v4pro'
@@ -566,6 +569,7 @@ class px4_v4pro(px4):
         self.px4io_name = 'px4io-v2'
         self.romfs_exclude(['oreoled.bin'])
         self.with_uavcan = True		
+        self.optimize = ["-O3"]
 		
 class aerofc_v1(px4):
     name = 'aerofc-v1'
@@ -576,3 +580,4 @@ class aerofc_v1(px4):
         self.romfs_exclude(['oreoled.bin'])
         self.board_rc = True
         self.param_defaults = '../../../Tools/Frame_params/intel-aero-rtf.param'
+
