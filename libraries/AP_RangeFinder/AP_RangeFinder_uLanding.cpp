@@ -18,6 +18,8 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 
+#define ULANDING_HDR 254 // Header Byte from uLanding (0xFE)
+
 extern const AP_HAL::HAL& hal;
 
 /*
@@ -55,25 +57,31 @@ bool AP_RangeFinder_uLanding::get_reading(uint16_t &reading_cm)
     // read any available lines from the uLanding
     float sum = 0;
     uint16_t count = 0;
-    uint8_t  index = 0;
+    bool hdr_found = false;
 
     int16_t nbytes = uart->available();
     while (nbytes-- > 0) {
         uint8_t c = uart->read();
-        // ok, we have located start byte
-        if (c == 72 && index == 0) {
+        
+        if (c == ULANDING_HDR && !hdr_found) {
+            // located header byte
             linebuf_len = 0;
-            index       = 1;
+            hdr_found   = true;
         }
-        // now it is ready to decode index information
-        if (index == 1) {
-            linebuf[linebuf_len] = c;
-            linebuf_len ++;
-            if (linebuf_len == 3) {
-                index = 0;
-                sum += (linebuf[2]&0x7F) *128 + (linebuf[1]&0x7F);
+        // decode index information
+        if (hdr_found) {
+            linebuf[linebuf_len++] = c;
+
+            // process linebuf once we've collected six bytes of data
+            if (linebuf_len == 6) {
+                // evaluate checksum
+                if (((linebuf[1] + linebuf[2] + linebuf[3] + linebuf[4]) & 0xFF) == linebuf[5]) {
+                    sum += linebuf[3]*256 + linebuf[2];
+                    count++;
+                }
+
+                hdr_found = false;
                 linebuf_len = 0;
-                count ++;
             }
         }
     }
@@ -82,7 +90,8 @@ bool AP_RangeFinder_uLanding::get_reading(uint16_t &reading_cm)
         return false;
     }
 
-    reading_cm = 2.5f * sum / count;
+    reading_cm = sum / count;
+
     return true;
 }
 
