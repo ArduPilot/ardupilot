@@ -77,13 +77,16 @@ void Copter::safe_rtl_path_follow_run()
     if (wp_nav->reached_wp_destination()) {
         Vector3f next_point;
         if (g2.safe_rtl.pop_point(next_point)) {
+            bool fast_waypoint = true;
             if (g2.safe_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
                 next_point.z -= 2.0f;
                 safe_rtl_state = SafeRTL_PreLandPosition;
+                fast_waypoint = false;
             }
             // send target to waypoint controller
             wp_nav->set_wp_destination_NED(next_point);
+            wp_nav->set_fast_waypoint(fast_waypoint);
         } else {
             // this can only happen if we fail to get the semaphore which should never happen but just in case, land
             safe_rtl_state = SafeRTL_PreLandPosition;
