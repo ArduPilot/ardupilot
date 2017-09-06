@@ -85,6 +85,7 @@ class Board:
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
+            '-Wno-trigraphs',
         ]
 
         if 'clang' in cfg.env.COMPILER_CC:
@@ -102,6 +103,7 @@ class Board:
             env.CFLAGS += [
                 '-g',
                 '-O0',
+                '-Wno-trigraphs',
             ]
 
         env.CXXFLAGS += [
@@ -130,6 +132,7 @@ class Board:
             '-Werror=init-self',
             '-Werror=switch',
             '-Wfatal-errors',
+            '-Wno-trigraphs',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
