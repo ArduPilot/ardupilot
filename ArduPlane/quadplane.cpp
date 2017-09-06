@@ -861,6 +861,9 @@ bool QuadPlane::is_flying(void)
     if (!available()) {
         return false;
     }
+    if (plane.control_mode == GUIDED && guided_takeoff) {
+        return true;
+    }
     if (motors->get_throttle() > 0.01f && !motors->limit.throttle_lower) {
         return true;
     }
@@ -893,6 +896,9 @@ bool QuadPlane::is_flying_vtol(void)
     }
     if (motors->get_throttle() > 0.01f) {
         // if we are demanding more than 1% throttle then don't consider aircraft landed
+        return true;
+    }
+    if (plane.control_mode == GUIDED && guided_takeoff) {
         return true;
     }
     if (plane.control_mode == QSTABILIZE || plane.control_mode == QHOVER || plane.control_mode == QLOITER) {
@@ -980,6 +986,8 @@ void QuadPlane::control_loiter()
         float descent_rate = (poscontrol.state == QPOS_LAND_FINAL)? land_speed_cms:landing_descent_rate_cms(height_above_ground);
         pos_control->set_alt_target_from_climb_rate(-descent_rate, plane.G_Dt, true);
         check_land_complete();
+    } else if (plane.control_mode == GUIDED && guided_takeoff) {
+        pos_control->set_alt_target_from_climb_rate_ff(0, plane.G_Dt, false);
     } else {
         // update altitude target and call position controller
         pos_control->set_alt_target_from_climb_rate_ff(get_pilot_desired_climb_rate_cms(), plane.G_Dt, false);
@@ -1533,6 +1541,9 @@ bool QuadPlane::init_mode(void)
         break;
     case QRTL:
         init_qrtl();
+        break;
+    case GUIDED:
+        guided_takeoff = false;
         break;
     default:
         break;
@@ -2289,6 +2300,7 @@ void QuadPlane::guided_start(void)
 {
     poscontrol.state = QPOS_POSITION1;
     poscontrol.speed_scale = 0;
+    guided_takeoff = false;
     setup_target_position();
     poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
 }
@@ -2298,8 +2310,15 @@ void QuadPlane::guided_start(void)
  */
 void QuadPlane::guided_update(void)
 {
-    // run VTOL position controller
-    vtol_position_controller();
+    if (plane.control_mode == GUIDED && guided_takeoff && plane.current_loc.alt < plane.next_WP_loc.alt) {
+        throttle_wait = false;
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        takeoff_controller();
+    } else {
+        guided_takeoff = false;
+        // run VTOL position controller
+        vtol_position_controller();
+    }
 }
 
 void QuadPlane::afs_terminate(void)
@@ -2323,4 +2342,33 @@ bool QuadPlane::guided_mode_enabled(void)
         return false;
     }
     return guided_mode != 0;
+}
+
+// user initiated takeoff for guided mode
+bool QuadPlane::do_user_takeoff(float takeoff_altitude)
+{
+    if (plane.control_mode != GUIDED) {
+        gcs().send_text(MAV_SEVERITY_INFO, "User Takeoff only in GUIDED mode");
+        return false;
+    }
+    if (!hal.util->get_soft_armed()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Must be armed for takeoff");
+        return false;
+    }
+    if (guided_mode == 0) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Q_GUIDED_MODE must be set to 1");
+        return false;
+    }
+    if (is_flying()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Already flying - no takeoff");
+        return false;
+    }
+    plane.auto_state.vtol_loiter = true;
+    plane.prev_WP_loc = plane.current_loc;
+    plane.next_WP_loc = plane.current_loc;
+    plane.next_WP_loc.alt += takeoff_altitude*100;
+    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    guided_start();
+    guided_takeoff = true;
+    return false;
 }
