@@ -9,7 +9,7 @@ void blink();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static ToshibaLED_I2C toshiba_led;
+static ToshibaLED_I2C toshiba_led(1);
 
 void setup(void)
 {
