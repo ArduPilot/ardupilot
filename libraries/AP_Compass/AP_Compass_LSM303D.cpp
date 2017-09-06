@@ -355,7 +355,7 @@ void AP_Compass_LSM303D::_update()
     rotate_field(raw_field, _compass_instance);
 
     // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, AP_HAL::micros(), _compass_instance);
+    publish_raw_field(raw_field, _compass_instance);
 
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);

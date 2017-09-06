@@ -201,7 +201,7 @@ void AP_Compass_AK09916::timer()
     rotate_field(field, compass_instance);
 
     /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, AP_HAL::micros(), compass_instance);
+    publish_raw_field(field, compass_instance);
 
     /* correct raw_field for known errors */
     correct_field(field, compass_instance);
