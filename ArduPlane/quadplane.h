@@ -88,6 +88,9 @@ public:
     
     // check if we have completed transition
     bool tailsitter_transition_complete(void);
+
+    // user initiated takeoff for guided mode
+    bool do_user_takeoff(float takeoff_altitude);
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -291,6 +294,9 @@ private:
 
     // true when in angle assist
     bool in_angle_assist:1;
+
+    // are we in a guided takeoff?
+    bool guided_takeoff:1;
 
     struct {
         // time when motors reached lower limit
