@@ -32,7 +32,11 @@ extern const AP_HAL::HAL& hal;
 const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_CHEK_MSG, sizeof(log_Chek),
-      "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }
+      "CHEK",
+      "QccCLLffff",
+      "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD",
+      "sdddDUmnnn",
+      "FBBBGGB000"}
 };
 
 LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, 
