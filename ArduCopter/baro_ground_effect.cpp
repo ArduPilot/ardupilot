@@ -24,9 +24,7 @@ void Copter::update_ground_effect_detector(void)
     }
 
     if (position_ok() || optflow_position_ok()) {
-        Vector3f vel = inertial_nav.get_velocity();
-        vel.z = 0.0f;
-        xy_speed_cms = vel.length();
+        xy_speed_cms = norm(current_vel.x, current_vel.y);
     }
 
     // takeoff logic
@@ -40,12 +38,12 @@ void Copter::update_ground_effect_detector(void)
     bool throttle_up = mode_has_manual_throttle(control_mode) && channel_throttle->get_control_in() > 0;
     if (!throttle_up && ap.land_complete) {
         gndeffect_state.takeoff_time_ms = tnow_ms;
-        gndeffect_state.takeoff_alt_cm = inertial_nav.get_altitude();
+        gndeffect_state.takeoff_alt_cm = current_pos.z;
     }
 
     // if we are in takeoff_expected and we meet the conditions for having taken off
     // end the takeoff_expected state
-    if (gndeffect_state.takeoff_expected && (tnow_ms-gndeffect_state.takeoff_time_ms > 5000 || inertial_nav.get_altitude()-gndeffect_state.takeoff_alt_cm > 50.0f)) {
+    if (gndeffect_state.takeoff_expected && (tnow_ms-gndeffect_state.takeoff_time_ms > 5000 || current_pos.z-gndeffect_state.takeoff_alt_cm > 50.0f)) {
         gndeffect_state.takeoff_expected = false;
     }
 
@@ -58,7 +56,7 @@ void Copter::update_ground_effect_detector(void)
 
     bool descent_demanded = pos_control->is_active_z() && des_climb_rate_cms < 0.0f;
     bool slow_descent_demanded = descent_demanded && des_climb_rate_cms >= -100.0f;
-    bool z_speed_low = fabsf(inertial_nav.get_velocity_z()) <= 60.0f;
+    bool z_speed_low = fabsf(current_vel.z) <= 60.0f;
     bool slow_descent = (slow_descent_demanded || (z_speed_low && descent_demanded));
 
     gndeffect_state.touchdown_expected = slow_horizontal && slow_descent;

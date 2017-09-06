@@ -255,7 +255,6 @@ void NOINLINE Sub::send_location(mavlink_channel_t chan)
     } else {
         fix_time = millis();
     }
-    const Vector3f &vel = inertial_nav.get_velocity();
     mavlink_msg_global_position_int_send(
         chan,
         fix_time,
@@ -263,9 +262,9 @@ void NOINLINE Sub::send_location(mavlink_channel_t chan)
         current_loc.lng,                // in 1E7 degrees
         (ahrs.get_home().alt + current_loc.alt) * 10UL,      // millimeters above sea level
         current_loc.alt * 10,           // millimeters above ground
-        vel.x,                          // X speed cm/s (+ve North)
-        vel.y,                          // Y speed cm/s (+ve East)
-        vel.z,                          // Z speed cm/s (+ve up)
+        current_vel.x,                  // X speed cm/s (+ve North)
+        current_vel.y,                  // Y speed cm/s (+ve East)
+        current_vel.z,                  // Z speed cm/s (+ve up)
         ahrs.yaw_sensor);               // compass heading in 1/100 degree
 }
 
@@ -1324,7 +1323,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
                     packet.coordinate_frame == MAV_FRAME_BODY_NED ||
                     packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-                pos_vector += sub.inertial_nav.get_position();
+                pos_vector += sub.current_pos;
             } else {
                 // convert from alt-above-home to alt-above-ekf-origin
                 pos_vector.z = sub.pv_alt_above_origin(pos_vector.z);

@@ -48,8 +48,8 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     AP_GROUPEND
 };
 
-AC_Sprayer::AC_Sprayer(const AP_InertialNav* inav) :
-    _inav(inav),
+AC_Sprayer::AC_Sprayer(AP_AHRS_NavEKF* ahrs) :
+    _ahrs(ahrs),
     _speed_over_min_time(0),
     _speed_under_min_time(0)
 {
@@ -107,7 +107,7 @@ AC_Sprayer::update()
     }
 
     // get horizontal velocity
-    const Vector3f &velocity = _inav->get_velocity();
+    const Vector2f velocity = _ahrs->groundspeed_vector() * 100.0f;
     float ground_speed = norm(velocity.x,velocity.y);
 
     // get the current time

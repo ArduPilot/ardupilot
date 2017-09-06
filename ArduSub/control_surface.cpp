@@ -15,8 +15,7 @@ bool Sub::surface_init()
     pos_control.set_accel_z(wp_nav.get_accel_z());
 
     // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    pos_control.init_vel_controller_z(current_vel.z);
 
     return true;
 

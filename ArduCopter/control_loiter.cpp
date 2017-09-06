@@ -25,8 +25,7 @@ bool Copter::loiter_init(bool ignore_checks)
 
         // initialise position and desired velocity
         if (!pos_control->is_active_z()) {
-            pos_control->set_alt_target_to_current_alt();
-            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+            pos_control->init_vel_controller_z(current_vel.z);
         }
 
         return true;
@@ -59,12 +58,13 @@ void Copter::precision_loiter_xy()
     wp_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel_rel;
     if (!precland.get_target_position_cm(target_pos)) {
-        target_pos.x = inertial_nav.get_position().x;
-        target_pos.y = inertial_nav.get_position().y;
+        target_pos.x = current_pos.x;
+        target_pos.y = current_pos.y;
+
     }
     if (!precland.get_target_velocity_relative_cms(target_vel_rel)) {
-        target_vel_rel.x = -inertial_nav.get_velocity().x;
-        target_vel_rel.y = -inertial_nav.get_velocity().y;
+        target_vel_rel.x = -current_vel.x;
+        target_vel_rel.y = -current_vel.y;
     }
     pos_control->set_xy_target(target_pos.x, target_pos.y);
     pos_control->override_vehicle_velocity_xy(-target_vel_rel);

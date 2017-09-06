@@ -61,7 +61,6 @@
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
-#include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>           // Waypoint navigation library
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AC_Fence/AC_Fence.h>           // Fence library
@@ -357,6 +356,9 @@ private:
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
     Location_Class current_loc;
+    Location ekf_origin;
+    Vector3f current_pos;
+    Vector3f current_vel;
 
     // Navigation Yaw control
     // auto flight mode's yaw mode
@@ -387,9 +389,6 @@ private:
     // Integration time (in seconds) for the gyros (DCM algorithm)
     // Updated with the fast loop
     float G_Dt;
-
-    // Inertial Navigation
-    AP_InertialNav_NavEKF inertial_nav;
 
     AP_AHRS_View ahrs_view;
 

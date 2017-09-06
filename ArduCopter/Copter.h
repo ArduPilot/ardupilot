@@ -71,7 +71,6 @@
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed/AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
-#include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>           // ArduCopter waypoint navigation library
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
@@ -237,7 +236,7 @@ private:
     AP_Mission mission;
 
     // Arming/Disarming mangement class
-    AP_Arming_Copter arming {ahrs, barometer, compass, battery, inertial_nav, ins};
+    AP_Arming_Copter arming {ahrs, barometer, compass, battery, ins};
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
@@ -480,6 +479,9 @@ private:
     // 3D Location vectors
     // Current location of the copter (altitude is relative to home)
     Location_Class current_loc;
+    Location ekf_origin;
+    Vector3f current_pos;
+    Vector3f current_vel;
 
     // Navigation Yaw control
     // auto flight mode's yaw mode
@@ -511,9 +513,6 @@ private:
     // Integration time (in seconds) for the gyros (DCM algorithm)
     // Updated with the fast loop
     float G_Dt;
-
-    // Inertial Navigation
-    AP_InertialNav_NavEKF inertial_nav;
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here

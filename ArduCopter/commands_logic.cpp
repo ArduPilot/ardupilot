@@ -771,15 +771,15 @@ bool Copter::verify_payload_place()
         FALLTHROUGH;
     case PayloadPlaceStateType_Descending_Start:
         nav_payload_place.descend_start_timestamp = now;
-        nav_payload_place.descend_start_altitude = inertial_nav.get_altitude();
+        nav_payload_place.descend_start_altitude = current_pos.z;
         nav_payload_place.descend_throttle_level = 0;
         nav_payload_place.state = PayloadPlaceStateType_Descending;
         FALLTHROUGH;
     case PayloadPlaceStateType_Descending:
         // make sure we don't descend too far:
-        debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()), nav_payload_place.descend_max);
+        debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - current_pos.z), nav_payload_place.descend_max);
         if (!is_zero(nav_payload_place.descend_max) &&
-            nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()  > nav_payload_place.descend_max) {
+            nav_payload_place.descend_start_altitude - current_pos.z  > nav_payload_place.descend_max) {
             nav_payload_place.state = PayloadPlaceStateType_Ascending;
             gcs().send_text(MAV_SEVERITY_WARNING, "Reached maximum descent");
             return false; // we'll do any cleanups required next time through the loop
@@ -837,7 +837,7 @@ bool Copter::verify_payload_place()
         }
         FALLTHROUGH;
     case PayloadPlaceStateType_Ascending_Start: {
-        Location_Class target_loc = inertial_nav.get_position();
+        Location_Class target_loc{current_pos};
         target_loc.alt = nav_payload_place.descend_start_altitude;
         auto_wp_start(target_loc);
         nav_payload_place.state = PayloadPlaceStateType_Ascending;
@@ -914,18 +914,17 @@ bool Copter::verify_circle(const AP_Mission::Mission_Command& cmd)
     // check if we've reached the edge
     if (auto_mode == Auto_CircleMoveToEdge) {
         if (wp_nav->reached_wp_destination()) {
-            Vector3f curr_pos = inertial_nav.get_position();
             Vector3f circle_center = pv_location_to_vector(cmd.content.location);
 
             // set target altitude if not provided
             if (is_zero(circle_center.z)) {
-                circle_center.z = curr_pos.z;
+                circle_center.z = current_pos.z;
             }
 
             // set lat/lon position if not provided
             if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
-                circle_center.x = curr_pos.x;
-                circle_center.y = curr_pos.y;
+                circle_center.x = current_pos.x;
+                circle_center.y = current_pos.y;
             }
 
             // start circling

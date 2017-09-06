@@ -563,7 +563,7 @@ bool QuadPlane::setup(void)
         goto failed;
     }
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
-    pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control,
+    pos_control = new AC_PosControl(ahrs, *ahrs_view, *motors, *attitude_control,
                                     p_alt_hold, p_vel_z, pid_accel_z,
                                     p_pos_xy, pi_vel_xy);
     if (!pos_control) {
@@ -571,7 +571,7 @@ bool QuadPlane::setup(void)
         goto failed;
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
-    wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    wp_nav = new AC_WPNav(ahrs, *ahrs_view, *pos_control, *attitude_control);
     if (!wp_nav) {
         hal.console->printf("%s wp_nav\n", strUnableToAllocate);
         goto failed;
@@ -747,9 +747,12 @@ void QuadPlane::run_z_controller(void)
     if (now - last_pidz_active_ms > 2000) {
         // set alt target to current height on transition. This
         // starts the Z controller off with the right values
-        gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)inertial_nav.get_altitude());
-        pos_control->set_alt_target(inertial_nav.get_altitude());
-        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+        float alt{};
+        ahrs.get_relative_position_D_origin(alt);
+        gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)(alt * -100.0f));
+        Vector3f vel;
+        ahrs.get_velocity_NED(vel);
+        pos_control->init_vel_controller_z(vel.z * -100.0f);  // NED m/s to NEU cm/s
 
         // initialize vertical speeds and leash lengths
         pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
@@ -776,8 +779,9 @@ void QuadPlane::init_hover(void)
     pos_control->set_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control->set_alt_target(inertial_nav.get_altitude());
-    pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+    pos_control->init_vel_controller_z(vel.z * -100.0f);  // NED m/s to NEU cm/s
 
     init_throttle_wait();
 }
@@ -840,8 +844,9 @@ void QuadPlane::init_loiter(void)
     pos_control->set_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control->set_alt_target(inertial_nav.get_altitude());
-    pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+    pos_control->init_vel_controller_z(vel.z * -100.0f);  // NED m/s to NEU cm/s
 
     init_throttle_wait();
 }
@@ -1416,7 +1421,9 @@ void QuadPlane::check_throttle_suppression(void)
     }
 
     // if our vertical velocity is greater than 1m/s then allow motors to run
-    if (fabsf(inertial_nav.get_velocity_z()) > 100) {
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+    if (fabsf(vel.z) > 1.0f) {
         return;
     }
 
@@ -1705,7 +1712,9 @@ void QuadPlane::vtol_position_controller(void)
         
         pos_control->update_vel_controller_xyz(ekfNavVelGainScaler);
 
-        const Vector3f& curr_pos = inertial_nav.get_position();
+        Vector2f curr_pos;
+        ahrs.get_relative_position_NE_origin(curr_pos);
+        curr_pos = curr_pos * 100.0f;  // m to cm
         pos_control->set_xy_target(curr_pos.x, curr_pos.y);
 
         pos_control->freeze_ff_xy();
@@ -1824,7 +1833,8 @@ void QuadPlane::vtol_position_controller(void)
 void QuadPlane::setup_target_position(void)
 {
     const Location &loc = plane.next_WP_loc;
-    Location origin = inertial_nav.get_origin();
+    Location origin{};
+    ahrs.get_origin(origin);
     Vector2f diff2d;
 
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
@@ -1980,9 +1990,9 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     pos_control->set_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control->set_alt_target(inertial_nav.get_altitude());
-    pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-    
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+    pos_control->init_vel_controller_z(vel.z * -100.0f);  // NED m/s to NEU cm/s
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
     return true;
@@ -2012,14 +2022,17 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
 
     throttle_wait = false;
     landing_detect.lower_limit_start_ms = 0;
-    Location origin = inertial_nav.get_origin();
+    struct Location origin {};
+    ahrs.get_origin(origin);
     Vector2f diff2d;
     Vector3f target;
     diff2d = location_diff(origin, plane.next_WP_loc);
     target.x = diff2d.x * 100;
     target.y = diff2d.y * 100;
     target.z = plane.next_WP_loc.alt - origin.alt;
-    pos_control->set_alt_target(inertial_nav.get_altitude());
+    float alt{};
+    ahrs.get_relative_position_D_origin(alt);
+    pos_control->set_alt_target(alt * -100.0f);
     
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
@@ -2039,7 +2052,9 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     }
     transition_state = TRANSITION_AIRSPEED_WAIT;
     plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
-    pos_control->set_alt_target(inertial_nav.get_altitude());
+    float alt{};
+    ahrs.get_relative_position_D_origin(alt);
+    pos_control->set_alt_target(alt * -100.0f);
 
     plane.complete_auto_takeoff();
     
@@ -2062,7 +2077,9 @@ void QuadPlane::check_land_complete(void)
         landing_detect.land_start_ms = 0;
         return;
     }
-    float height = inertial_nav.get_altitude()*0.01f;
+    float height{};
+    ahrs.get_relative_position_D_origin(height);
+    height = height  * -1.0f;
     if (landing_detect.land_start_ms == 0) {
         landing_detect.land_start_ms = now;
         landing_detect.vpos_start_m = height;
@@ -2114,7 +2131,9 @@ bool QuadPlane::verify_vtol_land(void)
     float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
     if (poscontrol.state == QPOS_LAND_DESCEND && height_above_ground < land_final_alt) {
         poscontrol.state = QPOS_LAND_FINAL;
-        pos_control->set_alt_target(inertial_nav.get_altitude());
+        float alt{};
+        ahrs.get_relative_position_D_origin(alt);
+        pos_control->set_alt_target(alt * - 100.0f);
 
         // cut IC engine if enabled
         if (land_icengine_cut != 0) {
@@ -2132,15 +2151,19 @@ void QuadPlane::Log_Write_QControl_Tuning()
 {
     const Vector3f &desired_velocity = pos_control->get_desired_velocity();
     const Vector3f &accel_target = pos_control->get_accel_target();
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+    float alt{};
+    ahrs.get_relative_position_D_origin(alt);
     struct log_QControl_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_QTUN_MSG),
         time_us             : AP_HAL::micros64(),
         angle_boost         : attitude_control->angle_boost(),
         throttle_out        : motors->get_throttle(),
         desired_alt         : pos_control->get_alt_target() / 100.0f,
-        inav_alt            : inertial_nav.get_altitude() / 100.0f,
+        inav_alt            : -alt,  // NED to NEU
         desired_climb_rate  : (int16_t)pos_control->get_vel_target_z(),
-        climb_rate          : (int16_t)inertial_nav.get_velocity_z(),
+        climb_rate          : (int16_t)(vel.z * -100.0f),  // NED m/s to NEU cm/s
         dvx                 : desired_velocity.x*0.01f,
         dvy                 : desired_velocity.y*0.01f,
         dax                 : accel_target.x*0.01f,

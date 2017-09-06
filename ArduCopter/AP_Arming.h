@@ -6,10 +6,8 @@ class AP_Arming_Copter : public AP_Arming
 {
 public:
     AP_Arming_Copter(const AP_AHRS_NavEKF &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                     const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav,
-                     const AP_InertialSensor &ins) :
+                     const AP_BattMonitor &battery, const AP_InertialSensor &ins) :
         AP_Arming(ahrs_ref, baro, compass, battery),
-        _inav(inav),
         _ins(ins),
         _ahrs_navekf(ahrs_ref)
         {
@@ -47,7 +45,6 @@ protected:
 
 private:
 
-    const AP_InertialNav_NavEKF &_inav;
     const AP_InertialSensor &_ins;
     const AP_AHRS_NavEKF &_ahrs_navekf;
 

@@ -63,7 +63,6 @@ Copter::Copter(void) :
     condition_value(0),
     condition_start(0),
     G_Dt(MAIN_LOOP_SECONDS),
-    inertial_nav(ahrs),
     pmTest1(0),
     fast_loopTimer(0),
     mainLoop_count(0),
@@ -77,16 +76,16 @@ Copter::Copter(void) :
     camera_mount(ahrs, current_loc),
 #endif
 #if AC_FENCE == ENABLED
-    fence(ahrs, inertial_nav),
+    fence(ahrs),
 #endif
 #if AC_AVOID_ENABLED == ENABLED
-    avoid(ahrs, inertial_nav, fence, g2.proximity, &g2.beacon),
+    avoid(ahrs, fence, g2.proximity, &g2.beacon),
 #endif
 #if AC_RALLY == ENABLED
     rally(ahrs),
 #endif
 #if SPRAYER == ENABLED
-    sprayer(&inertial_nav),
+    sprayer(&ahrs),
 #endif
 #if PARACHUTE == ENABLED
     parachute(relay),
@@ -95,7 +94,7 @@ Copter::Copter(void) :
     terrain(ahrs, mission, rally),
 #endif
 #if PRECISION_LANDING == ENABLED
-    precland(ahrs, inertial_nav),
+    precland(ahrs),
 #endif
 #if FRAME_CONFIG == HELI_FRAME
     // ToDo: Input Manager is only used by Heli for 3.3, but will be used by all frames for 3.4

@@ -689,9 +689,6 @@ void Replay::read_sensors(const char *type)
     
     if (run_ahrs) {
         _vehicle.ahrs.update();
-        if (_vehicle.ahrs.get_home().lat != 0) {
-            _vehicle.inertial_nav.update(_vehicle.ins.get_delta_time());
-        }
         if ((downsample == 0 || ++output_counter % downsample == 0) && !logmatch) {
             write_ekf_logs();
         }

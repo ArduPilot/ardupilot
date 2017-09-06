@@ -80,7 +80,7 @@ float Copter::get_roi_yaw()
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
-        yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), roi_WP);
+        yaw_look_at_WP_bearing = pv_get_bearing_cd(current_pos, roi_WP);
     }
 
     return yaw_look_at_WP_bearing;
@@ -88,11 +88,10 @@ float Copter::get_roi_yaw()
 
 float Copter::get_look_ahead_yaw()
 {
-    const Vector3f& vel = inertial_nav.get_velocity();
-    float speed = norm(vel.x,vel.y);
+    const float speed = norm(current_vel.x,current_vel.y);
     // Commanded Yaw to automatically look ahead.
     if (position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
-        yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
+        yaw_look_ahead_bearing = degrees(atan2f(current_vel.y,current_vel.x))*100.0f;
     }
     return yaw_look_ahead_bearing;
 }
@@ -226,13 +225,12 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
     static uint32_t last_call_ms = 0;
     float distance_error;
     float velocity_correction;
-    float current_alt = inertial_nav.get_altitude();
 
     uint32_t now = millis();
 
     // reset target altitude if this controller has just been engaged
     if (now - last_call_ms > RANGEFINDER_TIMEOUT_MS) {
-        target_rangefinder_alt = rangefinder_state.alt_cm + current_alt_target - current_alt;
+        target_rangefinder_alt = rangefinder_state.alt_cm + current_alt_target - current_pos.z;
     }
     last_call_ms = now;
 
@@ -268,7 +266,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
     }
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
-    distance_error = (target_rangefinder_alt - rangefinder_state.alt_cm) - (current_alt_target - current_alt);
+    distance_error = (target_rangefinder_alt - rangefinder_state.alt_cm) - (current_alt_target - current_pos.z);
     velocity_correction = distance_error * g.rangefinder_gain;
     velocity_correction = constrain_float(velocity_correction, -THR_SURFACE_TRACKING_VELZ_MAX, THR_SURFACE_TRACKING_VELZ_MAX);
 

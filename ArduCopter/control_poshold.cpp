@@ -93,8 +93,7 @@ bool Copter::poshold_init(bool ignore_checks)
 
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
-        pos_control->set_alt_target_to_current_alt();
-        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+        pos_control->init_vel_controller_z(current_vel.z);
     }
 
     // initialise lean angles to current attitude
@@ -141,7 +140,6 @@ void Copter::poshold_run()
     float controller_to_pilot_roll_mix; // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float vel_fw, vel_right;            // vehicle's current velocity in body-frame forward and right directions
-    const Vector3f& vel = inertial_nav.get_velocity();
 
     // initialize vertical speeds and acceleration
     pos_control->set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
@@ -215,8 +213,8 @@ void Copter::poshold_run()
 
         // convert inertial nav earth-frame velocities to body-frame
         // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
-        vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
-        vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
+        vel_fw = current_vel.x*ahrs.cos_yaw() + current_vel.y*ahrs.sin_yaw();
+        vel_right = -current_vel.x*ahrs.sin_yaw() + current_vel.y*ahrs.cos_yaw();
         
         // If not in LOITER, retrieve latest wind compensation lean angles related to current yaw
         if (poshold.roll_mode != POSHOLD_LOITER || poshold.pitch_mode != POSHOLD_LOITER)
@@ -423,7 +421,7 @@ void Copter::poshold_run()
             poshold.pitch_mode = POSHOLD_BRAKE_TO_LOITER;
             poshold.brake_to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
             // init loiter controller
-            wp_nav->init_loiter_target(inertial_nav.get_position(), poshold.loiter_reset_I); // (false) to avoid I_term reset. In original code, velocity(0,0,0) was used instead of current velocity: wp_nav->init_loiter_target(inertial_nav.get_position(), Vector3f(0,0,0));
+            wp_nav->init_loiter_target(current_pos, poshold.loiter_reset_I); // (false) to avoid I_term reset. In original code, velocity(0,0,0) was used instead of current velocity: wp_nav->init_loiter_target(inertial_nav.get_position(), Vector3f(0,0,0));
             // at this stage, we are going to run update_loiter that will reset I_term once. From now, we ensure next time that we will enter loiter and update it, I_term won't be reset anymore
             poshold.loiter_reset_I = false;
             // set delay to start of wind compensation estimate updates
@@ -616,7 +614,7 @@ void Copter::poshold_update_wind_comp_estimate()
     }
 
     // check horizontal velocity is low
-    if (inertial_nav.get_velocity_xy() > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX) {
+    if (norm(current_vel.x, current_vel.y) > POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX) {
         return;
     }
 

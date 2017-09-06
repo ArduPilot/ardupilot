@@ -76,20 +76,18 @@ void Sub::Log_Write_Nav_Tuning()
     const Vector3f &pos_target = pos_control.get_pos_target();
     const Vector3f &vel_target = pos_control.get_vel_target();
     const Vector3f &accel_target = pos_control.get_accel_target();
-    const Vector3f &position = inertial_nav.get_position();
-    const Vector3f &velocity = inertial_nav.get_velocity();
 
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
         time_us         : AP_HAL::micros64(),
         desired_pos_x   : pos_target.x,
         desired_pos_y   : pos_target.y,
-        pos_x           : position.x,
-        pos_y           : position.y,
+        pos_x           : current_pos.x,
+        pos_y           : current_pos.y,
         desired_vel_x   : vel_target.x,
         desired_vel_y   : vel_target.y,
-        vel_x           : velocity.x,
-        vel_y           : velocity.y,
+        vel_x           : current_vel.x,
+        vel_y           : current_vel.y,
         desired_accel_x : accel_target.x,
         desired_accel_y : accel_target.y
     };
@@ -130,7 +128,7 @@ void Sub::Log_Write_Control_Tuning()
         throttle_out        : motors.get_throttle(),
         throttle_hover      : motors.get_throttle_hover(),
         desired_alt         : pos_control.get_alt_target() / 100.0f,
-        inav_alt            : inertial_nav.get_altitude() / 100.0f,
+        inav_alt            : current_pos.z / 100.0f,
         baro_alt            : barometer.get_altitude(),
         desired_rangefinder_alt   : (int16_t)target_rangefinder_alt,
         rangefinder_alt           : rangefinder_state.alt_cm,

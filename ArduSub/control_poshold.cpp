@@ -19,8 +19,7 @@ bool Sub::poshold_init()
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // initialise position and desired velocity
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    pos_control.init_vel_controller_z(current_vel.z);
 
     // set target to current position
     // only init here as we can switch to PosHold in flight with a velocity <> 0 that will be used as _last_vel in PosControl and never updated again as we inhibit Reset_I
@@ -121,7 +120,7 @@ void Sub::poshold_run()
     // call z axis position controller
     if (ap.at_bottom) {
         pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
-        pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+        pos_control.set_alt_target(current_pos.z + 10.0f); // set target to 10 cm above bottom
     } else {
         pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
     }
