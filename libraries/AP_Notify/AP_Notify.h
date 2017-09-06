@@ -115,6 +115,9 @@ public:
     // initialisation
     void init(bool enable_external_leds);
 
+    // add all backends
+    void add_backends(void);
+
     /// update - allow updates of leds that cannot be updated during a timed interrupt
     void update(void);
 
@@ -152,4 +155,5 @@ private:
     char _flight_mode_str[5];
 
     static NotifyDevice* _devices[];
+    static uint8_t _num_devices;
 };
