@@ -804,8 +804,9 @@ Compass::read(void)
         // call read on each of the backend. This call updates field[i]
         _backends[i]->read();
     }
+    uint32_t time = AP_HAL::millis();
     for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
-        _state[i].healthy = (AP_HAL::millis() - _state[i].last_update_ms < 500);
+        _state[i].healthy = (time - _state[i].last_update_ms < 500);
     }
     return healthy();
 }
