@@ -153,9 +153,8 @@ void AP_Compass_UAVCAN::handle_mag_msg(Vector3f &mag)
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _instance);
 
-    _last_timestamp = AP_HAL::micros64();
     // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, (uint32_t) _last_timestamp, _instance);
+    publish_raw_field(raw_field, _instance);
 
     // correct raw_field for known errors
     correct_field(raw_field, _instance);

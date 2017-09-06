@@ -72,8 +72,6 @@ void AP_Compass_QURT::timer_update(void)
         return;
     }
 
-    last_timestamp = data.timestamp;
-    
     Vector3f raw_field(data.mag_raw[0],
                        data.mag_raw[1],
                        -data.mag_raw[2]);
@@ -82,7 +80,7 @@ void AP_Compass_QURT::timer_update(void)
     rotate_field(raw_field, instance);
 
     // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, data.timestamp, instance);
+    publish_raw_field(raw_field, instance);
 
     // correct raw_field for known errors
     correct_field(raw_field, instance);
