@@ -1094,6 +1094,18 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_ACCEPTED;
             break;
 
+        case MAV_CMD_NAV_TAKEOFF: {
+            // user takeoff only works with quadplane code for now
+            // param7 : altitude [metres]
+            float takeoff_alt = packet.param7;
+            if (plane.quadplane.available() && plane.quadplane.do_user_takeoff(takeoff_alt)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+            break;
+        }
+            
 #if MOUNT == ENABLED
         // Sets the region of interest (ROI) for the camera
         case MAV_CMD_DO_SET_ROI:
