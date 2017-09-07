@@ -932,7 +932,7 @@ private:
 
     bool rtl_init(bool ignore_checks);
     void rtl_restart_without_terrain();
-    void rtl_run();
+    void rtl_run(bool disarm_on_land=true);
     void rtl_climb_start();
     void rtl_return_start();
     void rtl_climb_return_run();
@@ -941,7 +941,7 @@ private:
     void rtl_descent_start();
     void rtl_descent_run();
     void rtl_land_start();
-    void rtl_land_run();
+    void rtl_land_run(bool disarm_on_land);
     void rtl_build_path(bool terrain_following_allowed);
     void rtl_compute_return_target(bool terrain_following_allowed);
     bool smart_rtl_init(bool ignore_checks);
