@@ -35,7 +35,7 @@ void Copter::rtl_restart_without_terrain()
 
 // rtl_run - runs the return-to-launch controller
 // should be called at 100hz or more
-void Copter::rtl_run()
+void Copter::rtl_run(bool disarm_on_land)
 {
     // check if we need to move to next state
     if (rtl_state_complete) {
@@ -82,7 +82,7 @@ void Copter::rtl_run()
         break;
 
     case RTL_Land:
-        rtl_land_run();
+        rtl_land_run(disarm_on_land);
         break;
     }
 }
@@ -358,7 +358,7 @@ void Copter::rtl_land_start()
 
 // rtl_returnhome_run - return home
 //      called by rtl_run at 100hz or more
-void Copter::rtl_land_run()
+void Copter::rtl_land_run(bool disarm_on_land)
 {
     // if not auto armed or landing completed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
@@ -375,7 +375,7 @@ void Copter::rtl_land_run()
         wp_nav->init_loiter_target();
 
         // disarm when the landing detector says we've landed
-        if (ap.land_complete) {
+        if (ap.land_complete && disarm_on_land) {
             init_disarm_motors();
         }
 
