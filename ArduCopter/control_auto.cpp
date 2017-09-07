@@ -425,7 +425,7 @@ void Copter::auto_rtl_start()
 void Copter::auto_rtl_run()
 {
     // call regular rtl flight mode run function
-    rtl_run();
+    rtl_run(false);
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
