@@ -152,7 +152,6 @@ static int main_loop(int argc, char **argv)
     hal.uartC->begin(57600);
     hal.uartD->begin(57600);
     hal.uartE->begin(57600);
-    hal.uartF->begin(57600);
     hal.scheduler->init();
 
     /*
