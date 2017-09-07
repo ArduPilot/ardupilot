@@ -46,10 +46,8 @@ PWM_Sysfs_Base::~PWM_Sysfs_Base()
 {
     ::close(_duty_cycle_fd);
 
-    free(_export_path);
     free(_polarity_path);
     free(_enable_path);
-    free(_duty_path);
     free(_period_path);
 }
 
