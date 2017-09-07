@@ -1056,8 +1056,7 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
 bool
 Compass::use_for_yaw(void) const
 {
-    uint8_t prim = get_primary();
-    return healthy(prim) && use_for_yaw(prim);
+    return use_for_yaw(get_primary());
 }
 
 /// return true if the specified compass can be used for yaw calculations
@@ -1067,7 +1066,7 @@ Compass::use_for_yaw(uint8_t i) const
     // when we are doing in-flight compass learning the state
     // estimator must not use the compass. The learning code turns off
     // inflight learning when it has converged
-    return _state[i].use_for_yaw && _learn.get() != LEARN_INFLIGHT;
+    return healthy(i) && _state[i].use_for_yaw && _learn.get() != LEARN_INFLIGHT;
 }
 
 void
