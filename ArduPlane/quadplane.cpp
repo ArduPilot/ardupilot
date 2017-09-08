@@ -1714,7 +1714,7 @@ void QuadPlane::vtol_position_controller(void)
         pos_control->set_desired_velocity_xy(target_speed_xy.x*100,
                                              target_speed_xy.y*100);
         
-        pos_control->update_vel_controller_xyz(ekfNavVelGainScaler);
+        pos_control->update_vel_controller_xy(ekfNavVelGainScaler);
 
         const Vector3f& curr_pos = inertial_nav.get_position();
         pos_control->set_xy_target(curr_pos.x, curr_pos.y);
