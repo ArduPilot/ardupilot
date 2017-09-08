@@ -50,18 +50,17 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_AEROFC_V1
+#ifdef HAL_RCOUTPUT_TAP_DEVICE
 
 #include "RCOutput_Tap.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
-
-#include <drivers/drv_hrt.h>
 
 #include <AP_Math/AP_Math.h>
 
@@ -72,14 +71,11 @@
 #define debug(fmt, args...)
 #endif
 
-#define UART_DEVICE_PATH "/dev/ttyS0"
-
 extern const AP_HAL::HAL &hal;
 
 /****** ESC data types ******/
 
 #define ESC_HAVE_CURRENT_SENSOR
-#define MIN_BOOT_TIME_USEC (550 * AP_USEC_PER_MSEC)
 
 static const uint8_t crcTable[256] = {
     0x00, 0xE7, 0x29, 0xCE, 0x52, 0xB5, 0x7B, 0x9C, 0xA4, 0x43, 0x8D, 0x6A,
@@ -137,7 +133,7 @@ static const uint8_t device_dir_map[] = {0, 1, 0, 1, 0, 1, 0, 1};
 
 #define MIN_BOOT_TIME_MSEC (550) // Minimum time to wait after Power on before sending commands
 
-namespace PX4 {
+namespace ap {
 
 /****** Run ***********/
 
@@ -304,7 +300,7 @@ enum PARSR_ESC_STATE {
 /****************************/
 }
 
-using namespace PX4;
+using namespace ap;
 
 void RCOutput_Tap::_uart_close()
 {
@@ -318,32 +314,30 @@ void RCOutput_Tap::_uart_close()
 bool RCOutput_Tap::_uart_open()
 {
     // open uart
-    _uart_fd = open(UART_DEVICE_PATH, O_RDWR | O_NOCTTY | O_NONBLOCK);
+    _uart_fd = open(HAL_RCOUTPUT_TAP_DEVICE, O_RDWR | O_NOCTTY | O_NONBLOCK);
     int termios_state = -1;
 
     if (_uart_fd < 0) {
-        PX4_ERR("failed to open uart device!");
+        ::fprintf(stderr, "failed to open uart device! %s\n", HAL_RCOUTPUT_TAP_DEVICE);
         return -1;
     }
 
-    // set baud rate
-    int speed = 250000;
     struct termios uart_config;
+    memset(&uart_config, 0, sizeof(uart_config));
     tcgetattr(_uart_fd, &uart_config);
 
     // clear ONLCR flag (which appends a CR for every LF)
     uart_config.c_oflag &= ~ONLCR;
 
-    // set baud rate
-    if (cfsetispeed(&uart_config, speed) < 0 || cfsetospeed(&uart_config, speed) < 0) {
-        ::fprintf(stderr, "failed to set baudrate for %s: %d\n",
-                  UART_DEVICE_PATH, termios_state);
+    if ((termios_state = tcsetattr(_uart_fd, TCSANOW, &uart_config)) < 0) {
+        ::fprintf(stderr, "tcsetattr failed for %s\n", HAL_RCOUTPUT_TAP_DEVICE);
         _uart_close();
         return false;
     }
 
-    if ((termios_state = tcsetattr(_uart_fd, TCSANOW, &uart_config)) < 0) {
-        fprintf(stderr, "tcsetattr failed for %s\n", UART_DEVICE_PATH);
+    if (!_uart_set_speed(250000)) {
+        ::fprintf(stderr, "failed to set baudrate for %s: %m\n",
+                  HAL_RCOUTPUT_TAP_DEVICE);
         _uart_close();
         return false;
     }
@@ -353,16 +347,16 @@ bool RCOutput_Tap::_uart_open()
 
 void RCOutput_Tap::init()
 {
-    _perf_rcout = perf_alloc(PC_ELAPSED, "APM_rcout");
+    _perf_rcout = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "APM_rcout");
 
     if (!_uart_open()) {
-        AP_HAL::panic("Unable to open " UART_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " HAL_RCOUTPUT_TAP_DEVICE);
         return;
     }
 
-    hrt_abstime uptime_usec = hrt_absolute_time();
-    if (uptime_usec < MIN_BOOT_TIME_USEC) {
-        hal.scheduler->delay((MIN_BOOT_TIME_USEC - uptime_usec) / AP_USEC_PER_MSEC);
+    uint32_t now = AP_HAL::millis();
+    if (now < MIN_BOOT_TIME_MSEC) {
+        hal.scheduler->delay(MIN_BOOT_TIME_MSEC - now);
     }
 
     /* Issue Basic Config */
@@ -385,7 +379,7 @@ void RCOutput_Tap::init()
     int ret = _send_packet(packet);
     if (ret < 0) {
         _uart_close();
-        AP_HAL::panic("Unable to send configuration to " UART_DEVICE_PATH);
+        AP_HAL::panic("Unable to send configuration to " HAL_RCOUTPUT_TAP_DEVICE);
         return;
     }
 
@@ -504,7 +498,7 @@ void RCOutput_Tap::push()
 {
     _corking = false;
 
-    perf_begin(_perf_rcout);
+    hal.util->perf_begin(_perf_rcout);
 
     uint16_t out[TAP_ESC_MAX_MOTOR_NUM];
     uint8_t motor_cnt = _channels_count;
@@ -578,7 +572,7 @@ void RCOutput_Tap::push()
 
     _next_channel_reply = (_next_channel_reply + 1) % _channels_count;
 
-    perf_end(_perf_rcout);
+    hal.util->perf_end(_perf_rcout);
 }
 
 #endif

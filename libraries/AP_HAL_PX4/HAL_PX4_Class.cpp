@@ -2,6 +2,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
+#include <AP_HAL/utility/RCOutput_Tap.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
@@ -13,7 +14,6 @@
 #include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
-#include "RCOutput_Tap.h"
 #include "AnalogIn.h"
 #include "Util.h"
 #include "GPIO.h"
@@ -34,6 +34,7 @@
 #include <drivers/drv_hrt.h>
 
 using namespace PX4;
+using namespace ap;
 
 //static Empty::GPIO gpioDriver;
 
