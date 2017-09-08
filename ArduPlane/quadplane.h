@@ -273,6 +273,9 @@ private:
     // last throttle value when active
     float last_throttle;
 
+    // pitch when we enter loiter mode
+    int32_t loiter_initial_pitch_cd;
+    
     const float smoothing_gain = 6;
 
     // true if we have reached the airspeed threshold for transition
