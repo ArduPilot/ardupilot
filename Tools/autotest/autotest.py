@@ -532,16 +532,17 @@ if __name__ == "__main__":
             matches = [step for step in steps if fnmatch.fnmatch(step.lower(), a.lower())]
             if not len(matches):
                 print("No steps matched {}".format(a))
+                sys.exit(1)
             matched.extend(matches)
         steps = matched
 
     # skip steps according to --skip option:
-    steps = [ s for s in steps if should_run_step(s) ]
+    steps_to_run = [ s for s in steps if should_run_step(s) ]
 
     results = TestResults()
 
     try:
-        if not run_tests(steps):
+        if not run_tests(steps_to_run):
             sys.exit(1)
     except KeyboardInterrupt:
         util.pexpect_close_all()
