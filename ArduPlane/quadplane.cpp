@@ -1808,7 +1808,7 @@ void QuadPlane::vtol_position_controller(void)
     switch (poscontrol.state) {
     case QPOS_POSITION1:
     case QPOS_POSITION2:
-        if (plane.control_mode == QRTL) {
+        if (plane.control_mode == QRTL || plane.control_mode == GUIDED) {
             plane.ahrs.get_position(plane.current_loc);
             float target_altitude = plane.next_WP_loc.alt;
             if (poscontrol.slow_descent) {
