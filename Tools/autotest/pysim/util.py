@@ -98,14 +98,16 @@ def waf_clean():
     run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True)
 
 
-def build_SITL(build_target, j=None, debug=False, board='sitl'):
+def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, configure=True):
     """Build desktop SITL."""
 
     # first configure
-    waf_configure(board, j=j, debug=debug)
+    if configure:
+        waf_configure(board, j=j, debug=debug)
 
     # then clean
-    waf_clean()
+    if clean:
+        waf_clean()
 
     # then build
     cmd_make = [relwaf(), "build", "--target", build_target]
