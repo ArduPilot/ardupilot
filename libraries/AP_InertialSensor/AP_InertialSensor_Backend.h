@@ -174,10 +174,6 @@ protected:
     // return the requested sample rate in Hz
     uint16_t get_sample_rate_hz(void) const;
 
-    // access to frontend dataflash.  If raw-imu logging is not
-    // enabled, nullptr is returned
-    DataFlash_Class *get_dataflash() const;
-
     // common gyro update function for all backends
     void update_gyro(uint8_t instance);
 
@@ -216,4 +212,11 @@ protected:
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available
+
+private:
+
+    bool should_log_imu_raw() const;
+    void log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel);
+    void log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gryo);
+
 };
