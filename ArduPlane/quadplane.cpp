@@ -844,6 +844,9 @@ void QuadPlane::init_loiter(void)
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     init_throttle_wait();
+
+    // remember initial pitch
+    loiter_initial_pitch_cd = MAX(plane.ahrs.pitch_sensor, 0);
 }
 
 void QuadPlane::init_land(void)
@@ -964,15 +967,28 @@ void QuadPlane::control_loiter()
     // run loiter controller
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-    // call attitude controller with conservative smoothing gain of 4.0f
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(),
-                                                                  wp_nav->get_pitch(),
-                                                                  get_desired_yaw_rate_cds(),
-                                                                  4.0f);
-
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = wp_nav->get_roll();
     plane.nav_pitch_cd = wp_nav->get_pitch();
+
+    uint32_t now = AP_HAL::millis();
+    if (now - last_pidz_init_ms < (uint32_t)transition_time_ms && !is_tailsitter()) {
+        // we limit pitch during initial transition
+        float pitch_limit_cd = linear_interpolate(loiter_initial_pitch_cd, aparm.angle_max,
+                                                  now,
+                                                  last_pidz_init_ms, last_pidz_init_ms+transition_time_ms);
+        if (plane.nav_pitch_cd > pitch_limit_cd) {
+            plane.nav_pitch_cd = pitch_limit_cd;
+            pos_control->set_limit_accel_xy();            
+        }
+    }
+    
+    
+    // call attitude controller with conservative smoothing gain of 4.0f
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+                                                                  plane.nav_pitch_cd,
+                                                                  get_desired_yaw_rate_cds(),
+                                                                  4.0f);
 
     if (plane.control_mode == QLAND) {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
