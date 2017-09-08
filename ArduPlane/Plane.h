@@ -43,6 +43,7 @@
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include <RC_Channel/RC_ModeSwitch.h>     // RC ModeSwitch Library
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>                     // Filter library
@@ -196,6 +197,8 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_throttle;
     RC_Channel *channel_rudder;
+
+    RC_ModeSwitch modeswitch{g.flight_mode_channel};
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;

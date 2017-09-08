@@ -51,6 +51,19 @@
 // run at 400Hz on all systems
 # define MAIN_LOOP_SECONDS 0.0025f
 
+//////////////////////////////////////////////////////////////////////////////
+// FLIGHT_MODE
+// FLIGHT_MODE_CHANNEL
+//
+#ifndef FLIGHT_MODE_CHANNEL
+ # define FLIGHT_MODE_CHANNEL    5
+#endif
+#if (FLIGHT_MODE_CHANNEL != 5) && (FLIGHT_MODE_CHANNEL != 6) && (FLIGHT_MODE_CHANNEL != 7) && (FLIGHT_MODE_CHANNEL != 8)
+ # error XXX
+ # error XXX You must set FLIGHT_MODE_CHANNEL to 5, 6, 7 or 8
+ # error XXX
+#endif
+
 #ifndef ARMING_DELAY_SEC
     # define ARMING_DELAY_SEC 2.0f
 #endif

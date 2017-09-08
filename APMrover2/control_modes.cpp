@@ -36,11 +36,9 @@ Mode *Rover::control_mode_from_num(const enum mode num)
 void Rover::read_control_switch()
 {
     static bool switch_debouncer;
-    const uint8_t switchPosition = readSwitch();
-
-    // If switchPosition = 255 this indicates that the mode control channel input was out of range
-    // If we get this value we do not want to change modes.
-    if (switchPosition == 255) {
+    uint8_t switchPosition;
+    if (!modeswitch.readSwitch(switchPosition)) {
+        // consider failure to read the switch as a "don't change modes"
         return;
     }
 
@@ -76,29 +74,6 @@ void Rover::read_control_switch()
     }
 
     switch_debouncer = false;
-}
-
-uint8_t Rover::readSwitch(void) {
-    const uint16_t pulsewidth = hal.rcin->read(g.mode_channel - 1);
-    if (pulsewidth <= 900 || pulsewidth >= 2200) {
-        return 255;  // This is an error condition
-    }
-    if (pulsewidth <= 1230) {
-        return 0;
-    }
-    if (pulsewidth <= 1360) {
-        return 1;
-    }
-    if (pulsewidth <= 1490) {
-        return 2;
-    }
-    if (pulsewidth <= 1620) {
-        return 3;
-    }
-    if (pulsewidth <= 1749) {
-        return 4;  // Software Manual
-    }
-    return 5;  // Hardware Manual
 }
 
 void Rover::reset_control_switch()

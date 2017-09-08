@@ -56,6 +56,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
+#include <RC_Channel/RC_ModeSwitch.h>     // RC ModeSwitch Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <AP_Proximity/AP_Proximity.h>
@@ -199,6 +200,8 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
+
+    RC_ModeSwitch modeswitch{g2.flight_mode_channel};
 
     // Dataflash
     DataFlash_Class DataFlash;

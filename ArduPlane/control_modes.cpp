@@ -3,11 +3,11 @@
 void Plane::read_control_switch()
 {
     static bool switch_debouncer;
-    uint8_t switchPosition = readSwitch();
-
-    // If switchPosition = 255 this indicates that the mode control channel input was out of range
-    // If we get this value we do not want to change modes.
-    if(switchPosition == 255) return;
+    uint8_t switchPosition;
+    if (!modeswitch.readSwitch(switchPosition)) {
+        // consider failure to read the switch as a "don't change modes"
+        return;
+    }
 
     if (failsafe.ch3_failsafe || failsafe.ch3_counter > 0) {
         // when we are in ch3_failsafe mode then RC input is not
@@ -96,18 +96,6 @@ void Plane::read_control_switch()
         }
     }
 #endif // HAVE_PX4_MIXER
-}
-
-uint8_t Plane::readSwitch(void)
-{
-    uint16_t pulsewidth = hal.rcin->read(g.flight_mode_channel - 1);
-    if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
-    if (pulsewidth <= 1230) return 0;
-    if (pulsewidth <= 1360) return 1;
-    if (pulsewidth <= 1490) return 2;
-    if (pulsewidth <= 1620) return 3;
-    if (pulsewidth <= 1749) return 4;              // Software Manual
-    return 5;                                                           // Hardware Manual
 }
 
 void Plane::reset_control_switch()
