@@ -1,3 +1,30 @@
+Release 3.8.2beta1, 9th September 2017
+--------------------------------------
+
+This is a minor release, with a few small fixes and one important
+crash bug fix.
+
+The crash bug is in the Septentrio (SBF) GPS driver. Anyone flying
+with an SBF GPS should update to this release. The driver had a bug
+that could cause a in-flight crash under some circumstances.
+
+Other changes in this release are:
+
+ - support takeoff in GUIDED mode for quadplanes
+
+ - support changing target altitude while hovering in GUIDED mode for
+   quadplanes
+
+ - improved descent rate control in QRTL and QLAND modes. This fixes
+   an issue with higher than configured descent rates, and smoothes
+   out the change in descent rate for the change to the final landing
+   stage
+
+ - smooth out the transition to QLOITER or QLAND when transitioning
+   from fixed wing mode. This prevents the sudden nose up when
+   changing to QLOITER or QLAND mode while flying at high speed.
+
+
 Release 3.8.1, 3rd September 2017
 ---------------------------------
 
