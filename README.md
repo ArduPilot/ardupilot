@@ -108,8 +108,6 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Board***: VRBrain
 - [Julien BERAUD](https://github.com/jberaud)
   - ***Board***: Bebop & Bebop 2
-- [Pritam Ghanghas](https://github.com/pritamghanghas)
-  - ***Board***: Raspilot
 - [Matt Lawrence](https://github.com/Pedals2Paddles)
   - ***Vehicle***: 3DR Solo & Solo based vehicles
 - [Gustavo José de Sousa](https://github.com/guludo)
