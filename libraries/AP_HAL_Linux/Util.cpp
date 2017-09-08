@@ -10,7 +10,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "Heat_Pwm.h"
-#include "ToneAlarm_Raspilot.h"
 #include "ToneAlarm_Disco.h"
 #include "Util.h"
 
@@ -19,9 +18,7 @@ using namespace Linux;
 extern const AP_HAL::HAL& hal;
 
 static int state;
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-ToneAlarm_Raspilot Util::_toneAlarm;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 ToneAlarm_Disco Util::_toneAlarm;
 #else
 ToneAlarm Util::_toneAlarm;
