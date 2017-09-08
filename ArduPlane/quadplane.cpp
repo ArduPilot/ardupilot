@@ -920,7 +920,7 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground)
 {
     float ret = linear_interpolate(land_speed_cms, wp_nav->get_speed_down(),
                                    height_above_ground,
-                                   land_final_alt, land_final_alt+3);
+                                   land_final_alt, land_final_alt+6);
     return ret;
 }
 
@@ -2123,7 +2123,6 @@ bool QuadPlane::verify_vtol_land(void)
     float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
     if (poscontrol.state == QPOS_LAND_DESCEND && height_above_ground < land_final_alt) {
         poscontrol.state = QPOS_LAND_FINAL;
-        set_alt_target_current();
 
         // cut IC engine if enabled
         if (land_icengine_cut != 0) {
