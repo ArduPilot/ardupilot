@@ -210,23 +210,29 @@ def run_step(step):
     if step == "prerequisites":
         return test_prerequisites()
 
+    build_opts = {
+        "j": opts.j,
+        "debug": opts.debug,
+        "clean": not opts.no_clean,
+        "configure": not opts.no_configure,
+    }
     if step == 'build.ArduPlane':
-        return util.build_SITL('bin/arduplane', j=opts.j, debug=opts.debug)
+        return util.build_SITL('bin/arduplane', **build_opts)
 
     if step == 'build.APMrover2':
-        return util.build_SITL('bin/ardurover', j=opts.j, debug=opts.debug)
+        return util.build_SITL('bin/ardurover', **build_opts)
 
     if step == 'build.ArduCopter':
-        return util.build_SITL('bin/arducopter', j=opts.j, debug=opts.debug)
+        return util.build_SITL('bin/arducopter', **build_opts)
 
     if step == 'build.AntennaTracker':
-        return util.build_SITL('bin/antennatracker', j=opts.j, debug=opts.debug)
+        return util.build_SITL('bin/antennatracker', **build_opts)
 
     if step == 'build.Helicopter':
-        return util.build_SITL('bin/arducopter-heli', j=opts.j, debug=opts.debug)
+        return util.build_SITL('bin/arducopter-heli', **build_opts)
     
     if step == 'build.ArduSub':
-        return util.build_SITL('bin/ardusub', j=opts.j, debug=opts.debug)
+        return util.build_SITL('bin/ardusub', **build_opts)
 
     binary = binary_path(step, debug=opts.debug)
 
@@ -465,6 +471,8 @@ if __name__ == "__main__":
     parser.add_option("-j", default=None, type='int', help='build CPUs')
     parser.add_option("--frame", type='string', default=None, help='specify frame type')
     parser.add_option("--gdbserver", default=False, action='store_true', help='run ArduPilot binaries under gdbserver')
+    parser.add_option("--no-clean", default=False, action='store_true', help='do not clean before building', dest="no_clean")
+    parser.add_option("--no-configure", default=False, action='store_true', help='do not configure before building', dest="no_configure")
 
     opts, args = parser.parse_args()
 
