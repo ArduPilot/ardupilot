@@ -481,7 +481,7 @@ void AP_Baro::init(void)
     drivers[0] = new AP_Baro_QURT(*this);
     _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_LPS25H
-ADD_BACKEND(AP_Baro_LPS25H::probe(*this,
+	ADD_BACKEND(AP_Baro_LPS25H::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_LPS25H_I2C_BUS, HAL_BARO_LPS25H_I2C_ADDR))));
 #endif
 
