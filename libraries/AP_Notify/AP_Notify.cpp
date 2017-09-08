@@ -166,10 +166,6 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new AP_BoardLED());
     ADD_BACKEND(new Display());
 
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
-    ADD_BACKEND(new ToneAlarm_Linux());
-
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
     ADD_BACKEND(new RCOutputRGBLedOff(15, 13, 14, 255));
 
