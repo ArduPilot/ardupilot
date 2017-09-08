@@ -94,6 +94,11 @@ qurt: HAL_BOARD = HAL_BOARD_QURT
 qurt: TOOLCHAIN = QURT
 qurt: all
 
+dragonboard: HAL_BOARD = HAL_BOARD_LINUX
+dragonboard: TOOLCHAIN = NATIVE
+dragonboard: BUILDSYS_DEPRECATED = 1
+dragonboard: all
+
 # cope with HIL targets
 %-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
 %-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "

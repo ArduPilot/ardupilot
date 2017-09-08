@@ -586,3 +586,12 @@ class aerofc_v1(px4):
         self.romfs_exclude(['oreoled.bin'])
         self.board_rc = True
         self.param_defaults = '../../../Tools/Frame_params/intel-aero-rtf.param'
+
+
+class dragonboard(linux):
+    def configure_env(self, cfg, env):
+        super(dragonboard, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_DRAGONBOARD',
+        )
