@@ -27,11 +27,9 @@ extern const AP_HAL::HAL &hal;
 #define LPS25H_CTRL_REG3_ADDR     0x22
 #define LPS25H_CTRL_REG4_ADDR     0x23
 #define LPS25H_FIFO_CTRL          0x2E
-#define LPS25H_TEMP_OUT_ADDR      0x2B
-#define PRESS_OUT_XL_ADDR		  0x28
-#define TEMP_OUT_H_ADDR			  0x2C
-#define PRESS_OUT_L_ADDR		  0x29
-#define PRESS_OUT_H_ADDR		  0x2A
+#define LPS25H_TEMP_OUT_ADDR      0xAB	//Regsiter address is 0x2B in 2's compliment.
+#define PRESS_OUT_XL_ADDR		  0xA8	//Regsiter address is 0x28 in 2's compliment.
+//putting 1 in the MSB of those two registers turns on Auto increment for faster reading. 
 
 AP_Baro_LPS25H::AP_Baro_LPS25H(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : AP_Baro_Backend(baro)
@@ -115,8 +113,7 @@ void AP_Baro_LPS25H::update(void)
 void AP_Baro_LPS25H::_update_temperature(void)
 {
 	uint8_t pu8[2];
-	_dev->read_registers(LPS25H_TEMP_OUT_ADDR, pu8, 1);
-	_dev->read_registers(TEMP_OUT_H_ADDR, pu8+1, 1);
+	_dev->read_registers(LPS25H_TEMP_OUT_ADDR, pu8, 2);
 	int16_t Temp_Reg_s16 = (uint16_t)(pu8[1]<<8) | pu8[0];
 	_temperature=((float)(Temp_Reg_s16/480)+42.5);
 	
@@ -126,10 +123,8 @@ void AP_Baro_LPS25H::_update_temperature(void)
 void AP_Baro_LPS25H::_update_pressure(void)
 {
 	uint8_t pressure[3];
-	_dev->read_registers(PRESS_OUT_XL_ADDR, pressure, 1);
-	_dev->read_registers(PRESS_OUT_L_ADDR, pressure + 1, 1);
-	_dev->read_registers(PRESS_OUT_H_ADDR, pressure + 2,1);
-	int32_t Pressure_Reg_s32 = ((uint32_t)pressure[2]<<16)|((uint32_t)pressure[1]<<8)|pressure[0];
+	_dev->read_registers(PRESS_OUT_XL_ADDR, pressure, 3);
+	int32_t Pressure_Reg_s32 = ((uint32_t)pressure[2]<<16)|((uint32_t)pressure[1]<<8)|(uint32_t)pressure[0];
 	int32_t Pressure_mb = Pressure_Reg_s32 / 4096; // scale
 	_pressure=Pressure_mb;
 	_has_sample=true;
