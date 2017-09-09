@@ -1,4 +1,4 @@
-#include "SafeRTL_test.h"
+#include "SmartRTL_test.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
@@ -30,7 +30,7 @@ public:
 static DummyVehicle vehicle;
 
 AP_AHRS_NavEKF ahrs(vehicle.ahrs);
-AP_SafeRTL safe_rtl {ahrs, true};
+AP_SmartRTL smart_rtl {ahrs, true};
 
 void setup();
 void loop();
@@ -41,7 +41,7 @@ void setup()
 {
     hal.console->printf("SafeRTL test\n");
     AP_BoardConfig{}.init();
-    safe_rtl.init();
+    smart_rtl.init();
 }
 
 void loop()
@@ -53,7 +53,7 @@ void loop()
 
     hal.console->printf("--------------------\n");
 
-    // reset path and upload "test_path_before" to safe_rtl
+    // reset path and upload "test_path_before" to smart_rtl
     reference_time = AP_HAL::micros();
     reset();
     run_time = AP_HAL::micros() - reference_time;
@@ -63,8 +63,8 @@ void loop()
 
     // test simplifications
     reference_time = AP_HAL::micros();
-    while (!safe_rtl.request_thorough_cleanup(AP_SafeRTL::THOROUGH_CLEAN_SIMPLIFY_ONLY)) {
-        safe_rtl.run_background_cleanup();
+    while (!smart_rtl.request_thorough_cleanup(AP_SmartRTL::THOROUGH_CLEAN_SIMPLIFY_ONLY)) {
+        smart_rtl.run_background_cleanup();
     }
     run_time = AP_HAL::micros() - reference_time;
     check_path(test_path_after_simplifying, "simplify", run_time);
@@ -73,8 +73,8 @@ void loop()
     hal.scheduler->delay(5);    // delay 5 milliseconds because request_through_cleanup uses millisecond timestamps
     reset();
     reference_time = AP_HAL::micros();
-    while (!safe_rtl.request_thorough_cleanup(AP_SafeRTL::THOROUGH_CLEAN_ALL)) {
-        safe_rtl.run_background_cleanup();
+    while (!smart_rtl.request_thorough_cleanup(AP_SmartRTL::THOROUGH_CLEAN_ALL)) {
+        smart_rtl.run_background_cleanup();
     }
     run_time = AP_HAL::micros() - reference_time;
     check_path(test_path_complete, "simplify and pruning", run_time);
@@ -83,27 +83,27 @@ void loop()
     hal.scheduler->delay(5e3); // 5 seconds
 }
 
-// reset path (i.e. clear path and add home) and upload "test_path_before" to safe_rtl
+// reset path (i.e. clear path and add home) and upload "test_path_before" to smart_rtl
 void reset()
 {
-    safe_rtl.reset_path(true, Vector3f{0.0f, 0.0f, 0.0f});
+    smart_rtl.reset_path(true, Vector3f{0.0f, 0.0f, 0.0f});
     for (Vector3f v : test_path_before) {
-        safe_rtl.update(true, v);
+        smart_rtl.update(true, v);
     }
 }
 
-// compare the vector array passed in with the path held in the safe_rtl object
+// compare the vector array passed in with the path held in the smart_rtl object
 void check_path(const std::vector<Vector3f>& correct_path, const char* test_name, uint32_t time_us)
 {
     // check number of points
-    bool num_points_match = correct_path.size() == safe_rtl.get_num_points();
-    uint16_t points_to_compare = MIN(correct_path.size(), safe_rtl.get_num_points());
+    bool num_points_match = correct_path.size() == smart_rtl.get_num_points();
+    uint16_t points_to_compare = MIN(correct_path.size(), smart_rtl.get_num_points());
 
     // check all points match
     bool points_match = true;
     uint16_t failure_index = 0;
     for (uint16_t i = 0; i < points_to_compare; i++) {
-        if (safe_rtl.get_point(i) != correct_path[i]) {
+        if (smart_rtl.get_point(i) != correct_path[i]) {
             failure_index = i;
             points_match = false;
         }
@@ -113,12 +113,12 @@ void check_path(const std::vector<Vector3f>& correct_path, const char* test_name
     hal.console->printf("%s: %s time:%u us\n", test_name, (num_points_match && points_match) ? "success" : "fail", time_us);
 
     // display number of points
-    hal.console->printf("   expected %u points, got %u\n", (unsigned)correct_path.size(), (unsigned)safe_rtl.get_num_points());
+    hal.console->printf("   expected %u points, got %u\n", (unsigned)correct_path.size(), (unsigned)smart_rtl.get_num_points());
 
     // display the first failed point and all subsequent points
     if (!points_match) {
         for (uint16_t j = failure_index; j < points_to_compare; j++) {
-            const Vector3f& safertl_point = safe_rtl.get_point(j);
+            const Vector3f& safertl_point = smart_rtl.get_point(j);
             hal.console->printf("   expected point %d to be %4.2f,%4.2f,%4.2f, got %4.2f,%4.2f,%4.2f\n",
                             (int)j,
                             (double)correct_path[j].x,
