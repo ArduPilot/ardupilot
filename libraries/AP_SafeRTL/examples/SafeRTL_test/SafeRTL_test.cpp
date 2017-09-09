@@ -69,16 +69,6 @@ void loop()
     run_time = AP_HAL::micros() - reference_time;
     check_path(test_path_after_simplifying, "simplify", run_time);
 
-    // test pruning
-    hal.scheduler->delay(5);    // delay 5 milliseconds because request_through_cleanup uses millisecond timestamps
-    reset();
-    reference_time = AP_HAL::micros();
-    while (!safe_rtl.request_thorough_cleanup(AP_SafeRTL::THOROUGH_CLEAN_PRUNE_ONLY)) {
-        safe_rtl.run_background_cleanup();
-    }
-    run_time = AP_HAL::micros() - reference_time;
-    check_path(test_path_after_pruning, "prune", run_time);
-
     // test both simplification and pruning
     hal.scheduler->delay(5);    // delay 5 milliseconds because request_through_cleanup uses millisecond timestamps
     reset();
@@ -87,7 +77,7 @@ void loop()
         safe_rtl.run_background_cleanup();
     }
     run_time = AP_HAL::micros() - reference_time;
-    check_path(test_path_complete, "both", run_time);
+    check_path(test_path_complete, "simplify and pruning", run_time);
 
     // delay before next display
     hal.scheduler->delay(5e3); // 5 seconds
