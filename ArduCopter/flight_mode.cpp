@@ -109,8 +109,8 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             success = guided_nogps_init(ignore_checks);
             break;
 
-        case SAFE_RTL:
-            success = safe_rtl_init(ignore_checks);
+        case SMART_RTL:
+            success = smart_rtl_init(ignore_checks);
             break;
 
         default:
@@ -251,8 +251,8 @@ void Copter::update_flight_mode()
             break;
 
 
-        case SAFE_RTL:
-            safe_rtl_run();
+        case SMART_RTL:
+            smart_rtl_run();
             break;
 
         default:
@@ -288,9 +288,9 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
     // cancel any takeoffs in progress
     takeoff_stop();
 
-    // call safe_rtl cleanup
-    if (old_control_mode == SAFE_RTL) {
-        safe_rtl_exit();
+    // call smart_rtl cleanup
+    if (old_control_mode == SMART_RTL) {
+        smart_rtl_exit();
     }
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -321,7 +321,7 @@ bool Copter::mode_requires_GPS(control_mode_t mode)
         case GUIDED:
         case LOITER:
         case RTL:
-        case SAFE_RTL:
+        case SMART_RTL:
         case CIRCLE:
         case DRIFT:
         case POSHOLD:
@@ -369,7 +369,7 @@ void Copter::notify_flight_mode(control_mode_t mode)
         case AVOID_ADSB:
         case GUIDED_NOGPS:
         case LAND:
-        case SAFE_RTL:
+        case SMART_RTL:
             // autopilot modes
             AP_Notify::flags.autopilot_mode = true;
             break;
