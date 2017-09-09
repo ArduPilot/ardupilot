@@ -25,17 +25,17 @@
 #define SAFERTL_PRUNING_LOOP_BUFFER_LEN_MULT 0.25f // pruning loop buffer size as compared to maximum number of points
 #define SAFERTL_PRUNING_LOOP_TIME_US    200     // maximum time (in microseconds) that the loop finding algorithm will run before returning
 
-class AP_SafeRTL {
+class AP_SmartRTL {
 
 public:
 
     // constructor, destructor
-    AP_SafeRTL(const AP_AHRS& ahrs, bool example_mode = false);
+    AP_SmartRTL(const AP_AHRS& ahrs, bool example_mode = false);
 
     // initialise safe rtl including setting up background processes
     void init();
 
-    // return true if safe_rtl is usable (it may become unusable if the user took off without GPS lock or the path became too long)
+    // return true if smart_rtl is usable (it may become unusable if the user took off without GPS lock or the path became too long)
     bool is_active() const { return _active; }
 
     // returns number of points on the path
