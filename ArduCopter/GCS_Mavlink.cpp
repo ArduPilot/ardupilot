@@ -52,7 +52,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
     case CIRCLE:
     case POSHOLD:
     case BRAKE:
-    case SAFE_RTL:
+    case SMART_RTL:
         base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal

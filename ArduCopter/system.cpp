@@ -229,7 +229,7 @@ void Copter::init_ardupilot()
     mission.init();
 
     // initialize SafeRTL
-    g2.safe_rtl.init();
+    g2.smart_rtl.init();
 
     // initialise DataFlash library
     DataFlash.set_mission(&mission);
