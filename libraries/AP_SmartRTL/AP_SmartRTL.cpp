@@ -11,18 +11,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "AP_SafeRTL.h"
+#include "AP_SmartRTL.h"
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
+const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
     // @Param: ACCURACY
     // @DisplayName: SafeRTL accuracy
     // @Description: SafeRTL accuracy. The minimum distance between points.
     // @Units: m
     // @Range: 0 10
     // @User: Advanced
-    AP_GROUPINFO("ACCURACY", 0, AP_SafeRTL, _accuracy, SAFERTL_ACCURACY_DEFAULT),
+    AP_GROUPINFO("ACCURACY", 0, AP_SmartRTL, _accuracy, SAFERTL_ACCURACY_DEFAULT),
 
     // @Param: POINTS
     // @DisplayName: SafeRTL maximum number of points on path
@@ -30,7 +30,7 @@ const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
     // @Range: 0 500
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("POINTS", 1, AP_SafeRTL, _points_max, SAFERTL_POINTS_DEFAULT),
+    AP_GROUPINFO("POINTS", 1, AP_SmartRTL, _points_max, SAFERTL_POINTS_DEFAULT),
 
     AP_GROUPEND
 };
@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AP_SafeRTL::var_info[] = {
 *    seconds before initiating the return journey.
 */
 
-AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs, bool example_mode) :
+AP_SmartRTL::AP_SmartRTL(const AP_AHRS& ahrs, bool example_mode) :
     _ahrs(ahrs),
     _example_mode(example_mode)
 {
@@ -81,7 +81,7 @@ AP_SafeRTL::AP_SafeRTL(const AP_AHRS& ahrs, bool example_mode) :
 }
 
 // initialise safe rtl including setting up background processes
-void AP_SafeRTL::init()
+void AP_SmartRTL::init()
 {
     // protect against repeated call to init
     if (_path != nullptr) {
@@ -126,18 +126,18 @@ void AP_SafeRTL::init()
     // when running the example sketch, we want the cleanup tasks to run when we tell them to, not in the background (so that they can be timed.)
     if (!_example_mode){
         // register background cleanup to run in IO thread
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_SafeRTL::run_background_cleanup, void));
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_SmartRTL::run_background_cleanup, void));
     }
 }
 
 // returns number of points on the path
-uint16_t AP_SafeRTL::get_num_points() const
+uint16_t AP_SmartRTL::get_num_points() const
 {
     return _path_points_count;
 }
 
 // get next point on the path to home, returns true on success
-bool AP_SafeRTL::pop_point(Vector3f& point)
+bool AP_SmartRTL::pop_point(Vector3f& point)
 {
     // check we are active
     if (!_active) {
@@ -167,14 +167,14 @@ bool AP_SafeRTL::pop_point(Vector3f& point)
 }
 
 // clear return path and set home location.  This should be called as part of the arming procedure
-void AP_SafeRTL::reset_path(bool position_ok)
+void AP_SmartRTL::reset_path(bool position_ok)
 {
     Vector3f current_pos;
     position_ok &= _ahrs.get_relative_position_NED_origin(current_pos);
     reset_path(position_ok, current_pos);
 }
 
-void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
+void AP_SmartRTL::reset_path(bool position_ok, const Vector3f& current_pos)
 {
     if (_path == nullptr) {
         return;
@@ -206,7 +206,7 @@ void AP_SafeRTL::reset_path(bool position_ok, const Vector3f& current_pos)
 }
 
 // call this at 3hz (or higher) regardless of what mode the vehicle is in
-void AP_SafeRTL::update(bool position_ok, bool save_position)
+void AP_SmartRTL::update(bool position_ok, bool save_position)
 {
     if (!_active || !save_position) {
         return;
@@ -217,7 +217,7 @@ void AP_SafeRTL::update(bool position_ok, bool save_position)
     update(position_ok, current_pos);
 }
 
-void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
+void AP_SmartRTL::update(bool position_ok, const Vector3f& current_pos)
 {
     if (!_active) {
         return;
@@ -245,7 +245,7 @@ void AP_SafeRTL::update(bool position_ok, const Vector3f& current_pos)
 // request thorough cleanup including simplification, pruning and removal of all unnecessary points
 // returns true if the thorough cleanup was completed, false if it has not yet completed
 // this method should be called repeatedly until it returns true before initiating the return journey
-bool AP_SafeRTL::request_thorough_cleanup(ThoroughCleanupType clean_type)
+bool AP_SmartRTL::request_thorough_cleanup(ThoroughCleanupType clean_type)
 {
     // this should never happen but just in case
     if (!_active) {
@@ -271,7 +271,7 @@ bool AP_SafeRTL::request_thorough_cleanup(ThoroughCleanupType clean_type)
 }
 
 // cancel request for thorough cleanup
-void AP_SafeRTL::cancel_request_for_thorough_cleanup()
+void AP_SmartRTL::cancel_request_for_thorough_cleanup()
 {
     _thorough_clean_request_ms = 0;
 }
@@ -281,7 +281,7 @@ void AP_SafeRTL::cancel_request_for_thorough_cleanup()
 //
 
 // add point to end of path (if necessary), returns true on success
-bool AP_SafeRTL::add_point(const Vector3f& point)
+bool AP_SmartRTL::add_point(const Vector3f& point)
 {
     // get semaphore
     if (!_path_sem->take_nonblocking()) {
@@ -314,7 +314,7 @@ bool AP_SafeRTL::add_point(const Vector3f& point)
 }
 
 // run background cleanup - should be run regularly from the IO thread
-void AP_SafeRTL::run_background_cleanup()
+void AP_SmartRTL::run_background_cleanup()
 {
     if (!_active) {
         return;
@@ -355,7 +355,7 @@ void AP_SafeRTL::run_background_cleanup()
 //   simplifies the path after SAFERTL_CLEANUP_POINT_TRIGGER points (50 points) have been added OR
 //   SAFERTL_CLEANUP_POINT_MIN (10 points) have been added and the path has less than SAFERTL_CLEANUP_START_MARGIN spaces (10 spaces) remaining
 //   prunes the path if the path has less than SAFERTL_CLEANUP_START_MARGIN spaces (10 spaces) remaining
-void AP_SafeRTL::routine_cleanup(uint16_t path_points_count, uint16_t path_points_completed_limit)
+void AP_SmartRTL::routine_cleanup(uint16_t path_points_count, uint16_t path_points_completed_limit)
 {
     // if simplify is running, let it run to completion
     if (!_simplify.complete) {
@@ -406,7 +406,7 @@ void AP_SafeRTL::routine_cleanup(uint16_t path_points_count, uint16_t path_point
 
 // thorough cleanup simplifies and prunes all loops.  returns true if the cleanup was completed.
 // path_points_count is _path_points_count but passed in to avoid having to take the semaphore
-bool AP_SafeRTL::thorough_cleanup(uint16_t path_points_count, ThoroughCleanupType clean_type)
+bool AP_SmartRTL::thorough_cleanup(uint16_t path_points_count, ThoroughCleanupType clean_type)
 {
     if (clean_type != THOROUGH_CLEAN_PRUNE_ONLY) {
         // restart simplify if new points have appeared on path
@@ -446,7 +446,7 @@ bool AP_SafeRTL::thorough_cleanup(uint16_t path_points_count, ThoroughCleanupTyp
 
 // Simplifies a 3D path, according to the Ramer-Douglas-Peucker algorithm.
 // _simplify.complete is set to true when all simplifications on the path have been identified
-void AP_SafeRTL::detect_simplifications()
+void AP_SmartRTL::detect_simplifications()
 {
     // complete immediately if only one segment
     if (_simplify.path_points_count < 3) {
@@ -520,7 +520,7 @@ void AP_SafeRTL::detect_simplifications()
 *
 *   reset_pruning should have been called at least once before this function is called to setup the indexes (_prune.i, etc)
 */
-void AP_SafeRTL::detect_loops()
+void AP_SmartRTL::detect_loops()
 {
     // if there are less than 4 points (3 segments), mark complete
     if (_prune.path_points_count < 4) {
@@ -565,7 +565,7 @@ void AP_SafeRTL::detect_loops()
 
 // restart simplify if new points have been added to path
 // path_points_count is _path_points_count but passed in to avoid having to take the semaphore
-void AP_SafeRTL::restart_simplify_if_new_points(uint16_t path_points_count)
+void AP_SmartRTL::restart_simplify_if_new_points(uint16_t path_points_count)
 {
     // any difference in the number of points is because of new points being added to path
     if (_simplify.path_points_count != path_points_count) {
@@ -574,7 +574,7 @@ void AP_SafeRTL::restart_simplify_if_new_points(uint16_t path_points_count)
 }
 
 // reset pruning if new points have been simplified
-void AP_SafeRTL::restart_pruning_if_new_points()
+void AP_SmartRTL::restart_pruning_if_new_points()
 {
     // any difference in the number of points is because of new points being added to path
     if (_prune.path_points_count != _simplify.path_points_completed) {
@@ -583,7 +583,7 @@ void AP_SafeRTL::restart_pruning_if_new_points()
 }
 
 // restart simplification algorithm so that it will check new points in the path
-void AP_SafeRTL::restart_simplification(uint16_t path_points_count)
+void AP_SmartRTL::restart_simplification(uint16_t path_points_count)
 {
     _simplify.complete = false;
     _simplify.removal_required = false;
@@ -593,14 +593,14 @@ void AP_SafeRTL::restart_simplification(uint16_t path_points_count)
 }
 
 // reset simplification algorithm so that it will re-check all points in the path
-void AP_SafeRTL::reset_simplification()
+void AP_SmartRTL::reset_simplification()
 {
     restart_simplification(0);
     _simplify.path_points_completed = 0;
 }
 
 // restart pruning algorithm to check new points that have arrived
-void AP_SafeRTL::restart_pruning(uint16_t path_points_count)
+void AP_SmartRTL::restart_pruning(uint16_t path_points_count)
 {
     _prune.complete = false;
     _prune.i = (path_points_count > 0) ? path_points_count - 1 : 0;
@@ -609,7 +609,7 @@ void AP_SafeRTL::restart_pruning(uint16_t path_points_count)
 }
 
 // reset pruning algorithm so that it will re-check all points in the path
-void AP_SafeRTL::reset_pruning()
+void AP_SmartRTL::reset_pruning()
 {
     restart_pruning(0);
     _prune.loops_count = 0; // clear the loops that we've recorded
@@ -617,7 +617,7 @@ void AP_SafeRTL::reset_pruning()
 }
 
 // remove all simplify-able points from the path
-void AP_SafeRTL::remove_points_by_simplify_bitmask()
+void AP_SmartRTL::remove_points_by_simplify_bitmask()
 {
     // get semaphore before modifying path
     if (!_path_sem->take_nonblocking()) {
@@ -655,7 +655,7 @@ void AP_SafeRTL::remove_points_by_simplify_bitmask()
 // remove loops until at least num_point_to_delete have been removed from path
 // does not necessarily prune all loops
 // returns false if it failed to remove points (because it could not take semaphore)
-bool AP_SafeRTL::remove_points_by_loops(uint16_t num_points_to_remove)
+bool AP_SmartRTL::remove_points_by_loops(uint16_t num_points_to_remove)
 {
     // exit immediately if no loops to prune
     if (_prune.loops_count == 0) {
@@ -716,7 +716,7 @@ bool AP_SafeRTL::remove_points_by_loops(uint16_t num_points_to_remove)
 // add loop to loops array
 //  returns true if loop added successfully, false if loop array is full
 //  checks if loop overlaps with an existing loop, keeps only the longer loop
-bool AP_SafeRTL::add_loop(uint16_t start_index, uint16_t end_index, const Vector3f& midpoint)
+bool AP_SmartRTL::add_loop(uint16_t start_index, uint16_t end_index, const Vector3f& midpoint)
 {
     // if the buffer is full, return failure
     if (_prune.loops_count >= _prune.loops_max) {
@@ -779,7 +779,7 @@ bool AP_SafeRTL::add_loop(uint16_t start_index, uint16_t end_index, const Vector
 *  This does not matter for the path cleanup algorithm because the pruning will still occur fine between the first
 *  parallel segment and a segment which is directly before or after the second segment.
 */
-AP_SafeRTL::dist_point AP_SafeRTL::segment_segment_dist(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3, const Vector3f &p4)
+AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3, const Vector3f &p4)
 {
     const Vector3f line1 = p2-p1;
     const Vector3f line2 = p4-p3;
@@ -817,7 +817,7 @@ AP_SafeRTL::dist_point AP_SafeRTL::segment_segment_dist(const Vector3f &p1, cons
 }
 
 // de-activate SafeRTL, send warning to GCS and log to dataflash
-void AP_SafeRTL::deactivate(SRTL_Actions action, const char *reason)
+void AP_SmartRTL::deactivate(SRTL_Actions action, const char *reason)
 {
     _active = false;
     log_action(action);
@@ -825,7 +825,7 @@ void AP_SafeRTL::deactivate(SRTL_Actions action, const char *reason)
 }
 
 // logging
-void AP_SafeRTL::log_action(SRTL_Actions action, const Vector3f &point)
+void AP_SmartRTL::log_action(SRTL_Actions action, const Vector3f &point)
 {
     if (!_example_mode) {
         DataFlash_Class::instance()->Log_Write_SRTL(_active, _path_points_count, _path_points_max, action, point);
@@ -833,7 +833,7 @@ void AP_SafeRTL::log_action(SRTL_Actions action, const Vector3f &point)
 }
 
 // returns true if the two loops overlap (used within add_loop to determine which loops to keep or throw away)
-bool AP_SafeRTL::loops_overlap(const prune_loop_t &loop1, const prune_loop_t &loop2) const
+bool AP_SmartRTL::loops_overlap(const prune_loop_t &loop1, const prune_loop_t &loop2) const
 {
     // check if loop1 within loop2
     if (loop1.start_index >= loop2.start_index && loop1.end_index <= loop2.end_index) {
