@@ -544,6 +544,13 @@ protected:
     const char *name() const override { return "RTL"; }
     const char *name4() const override { return "RTL "; }
 
+    void descent_start();
+    void descent_run();
+    void land_start();
+    void land_run(bool disarm_on_land);
+
+    void set_descent_target_alt(uint32_t alt) { rtl_path.descent_target.alt = alt; }
+
 private:
 
     void climb_start();
@@ -551,10 +558,6 @@ private:
     void climb_return_run();
     void loiterathome_start();
     void loiterathome_run();
-    void descent_start();
-    void descent_run();
-    void land_start();
-    void land_run(bool disarm_on_land);
     void build_path(bool terrain_following_allowed);
     void compute_return_target(bool terrain_following_allowed);
 
@@ -893,5 +896,42 @@ protected:
     const char *name4() const override { return "GNGP"; }
 
 private:
+
+};
+
+
+class FlightMode_SMARTRTL : public FlightMode_RTL {
+
+public:
+
+    FlightMode_SMARTRTL(Copter &copter) :
+        FlightMode_SMARTRTL::FlightMode_RTL(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override; // should be called at 100hz or more
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override {
+        return false;
+    }
+    bool is_autopilot() const override { return true; }
+
+    void save_position();
+    void exit();
+
+protected:
+
+    const char *name() const override { return "SMARTRTL"; }
+    const char *name4() const override { return "SRTL"; }
+
+private:
+
+    void wait_cleanup_run();
+    void path_follow_run();
+    void pre_land_position_run();
+    void land();
+    SmartRTLState smart_rtl_state = SmartRTL_PathFollow;
 
 };
