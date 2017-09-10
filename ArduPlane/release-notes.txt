@@ -1,5 +1,5 @@
-Release 3.8.2beta1, 9th September 2017
---------------------------------------
+Release 3.8.2, 11th September 2017
+----------------------------------
 
 This is a minor release, with a few small fixes and one important
 crash bug fix.
@@ -24,6 +24,9 @@ Other changes in this release are:
    from fixed wing mode. This prevents the sudden nose up when
    changing to QLOITER or QLAND mode while flying at high speed.
 
+ - added MANUAL_CONTROL support, allowing for joystick control from QGroundControl
+
+Happy flying!
 
 Release 3.8.1, 3rd September 2017
 ---------------------------------
