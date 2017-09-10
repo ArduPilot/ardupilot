@@ -33,7 +33,6 @@ Copter::Copter(void)
     home_bearing(0),
     home_distance(0),
     wp_distance(0),
-    smart_rtl_state(SmartRTL_PathFollow),
     simple_cos_yaw(1.0f),
     simple_sin_yaw(0.0f),
     super_simple_last_bearing(0),
