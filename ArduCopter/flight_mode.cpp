@@ -170,7 +170,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 
         case SMART_RTL:
-            success = smart_rtl_init(ignore_checks);
+            success = flightmode_guided_nogps.init(ignore_checks);
+            if (success) {
+                flightmode = &flightmode_smartrtl;
+            }
             break;
 
         default:
@@ -239,10 +242,6 @@ void Copter::update_flight_mode()
 
     switch (control_mode) {
 
-        case SMART_RTL:
-            smart_rtl_run();
-            break;
-
         default:
             break;
     }
@@ -278,7 +277,7 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
 
     // call smart_rtl cleanup
     if (old_control_mode == SMART_RTL) {
-        smart_rtl_exit();
+        flightmode_smartrtl.exit();
     }
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -308,8 +307,6 @@ bool Copter::mode_requires_GPS()
         return flightmode->requires_GPS();
     }
     switch (control_mode) {
-        case SMART_RTL:
-            return true;
         default:
             return false;
     }
@@ -352,9 +349,6 @@ void Copter::notify_flight_mode()
         return;
     }
     switch (control_mode) {
-        case SMART_RTL:
-            // autopilot modes
-            AP_Notify::flags.autopilot_mode = true;
             break;
     default:
             // all other are manual flight modes

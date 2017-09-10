@@ -392,9 +392,6 @@ private:
         float descend_max; // centimetres
     } nav_payload_place;
 
-    // SmartRTL
-    SmartRTLState smart_rtl_state;  // records state of SmartRTL
-
     // SIMPLE Mode
     // Used to track the orientation of the vehicle for Simple mode. This value is reset at each arming
     // or in SuperSimple mode when the vehicle leaves a 20m radius from home.
@@ -770,14 +767,7 @@ private:
     void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
 
-    bool smart_rtl_init(bool ignore_checks);
-    void smart_rtl_exit();
-    void smart_rtl_run();
-    void smart_rtl_wait_cleanup_run();
-    void smart_rtl_path_follow_run();
-    void smart_rtl_pre_land_position_run();
-    void smart_rtl_land();
-    void smart_rtl_save_position();
+    void smart_rtl_save_position(); // method for scheduler to call
 
     void crash_check();
     void parachute_check();
@@ -1019,6 +1009,8 @@ private:
     Copter::FlightMode_THROW flightmode_throw{*this};
 
     Copter::FlightMode_GUIDED_NOGPS flightmode_guided_nogps{*this};
+
+    Copter::FlightMode_SMARTRTL flightmode_smartrtl{*this};
 
 public:
     void mavlink_delay_cb();

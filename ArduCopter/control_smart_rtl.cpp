@@ -7,9 +7,9 @@
  * Once the copter is close to home, it will run a standard land controller.
  */
 
-bool Copter::smart_rtl_init(bool ignore_checks)
+bool Copter::FlightMode_SMARTRTL::init(bool ignore_checks)
 {
-    if ((position_ok() || ignore_checks) && g2.smart_rtl.is_active()) {
+    if ((copter.position_ok() || ignore_checks) && g2.smart_rtl.is_active()) {
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
 
@@ -20,7 +20,7 @@ bool Copter::smart_rtl_init(bool ignore_checks)
         wp_nav->set_wp_destination(stopping_point);
 
         // initialise yaw to obey user parameter
-        set_auto_yaw_mode(get_default_auto_yaw_mode(true));
+        copter.set_auto_yaw_mode(copter.get_default_auto_yaw_mode(true));
 
         // wait for cleanup of return path
         smart_rtl_state = SmartRTL_WaitForPathCleanup;
@@ -31,33 +31,33 @@ bool Copter::smart_rtl_init(bool ignore_checks)
 }
 
 // perform cleanup required when leaving smart_rtl
-void Copter::smart_rtl_exit()
+void Copter::FlightMode_SMARTRTL::exit()
 {
     g2.smart_rtl.cancel_request_for_thorough_cleanup();
 }
 
-void Copter::smart_rtl_run()
+void Copter::FlightMode_SMARTRTL::run()
 {
     switch (smart_rtl_state) {
         case SmartRTL_WaitForPathCleanup:
-            smart_rtl_wait_cleanup_run();
+            wait_cleanup_run();
             break;
         case SmartRTL_PathFollow:
-            smart_rtl_path_follow_run();
+            path_follow_run();
             break;
         case SmartRTL_PreLandPosition:
-            smart_rtl_pre_land_position_run();
+            pre_land_position_run();
             break;
         case SmartRTL_Descend:
-            rtl_descent_run(); // Re-using the descend method from normal rtl mode.
+            descent_run(); // Re-using the descend method from normal rtl mode.
             break;
         case SmartRTL_Land:
-            rtl_land_run(true); // Re-using the land method from normal rtl mode.
+            land_run(true); // Re-using the land method from normal rtl mode.
             break;
     }
 }
 
-void Copter::smart_rtl_wait_cleanup_run()
+void Copter::FlightMode_SMARTRTL::wait_cleanup_run()
 {
     // hover at current target position
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
@@ -71,7 +71,7 @@ void Copter::smart_rtl_wait_cleanup_run()
     }
 }
 
-void Copter::smart_rtl_path_follow_run()
+void Copter::FlightMode_SMARTRTL::path_follow_run()
 {
     // if we are close to current target point, switch the next point to be our target.
     if (wp_nav->reached_wp_destination()) {
@@ -108,17 +108,17 @@ void Copter::smart_rtl_path_follow_run()
     }
 }
 
-void Copter::smart_rtl_pre_land_position_run()
+void Copter::FlightMode_SMARTRTL::pre_land_position_run()
 {
     // if we are close to 2m above start point, we are ready to land.
     if (wp_nav->reached_wp_destination()) {
         // choose descend and hold, or land based on user parameter rtl_alt_final
-        if (g.rtl_alt_final <= 0 || failsafe.radio) {
-            rtl_land_start();
+        if (g.rtl_alt_final <= 0 || copter.failsafe.radio) {
+            land_start();
             smart_rtl_state = SmartRTL_Land;
         } else {
-            rtl_path.descent_target.alt = g.rtl_alt_final;
-            rtl_descent_start();
+            set_descent_target_alt(copter.g.rtl_alt_final);
+            descent_start();
             smart_rtl_state = SmartRTL_Descend;
         }
     }
@@ -131,9 +131,9 @@ void Copter::smart_rtl_pre_land_position_run()
 }
 
 // save current position for use by the smart_rtl flight mode
-void Copter::smart_rtl_save_position()
+void Copter::FlightMode_SMARTRTL::save_position()
 {
-    const bool save_position = motors->armed() && (control_mode != SMART_RTL);
+    const bool should_save_position = motors->armed() && (copter.control_mode != SMART_RTL);
 
-    g2.smart_rtl.update(position_ok(), save_position);
+    copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
