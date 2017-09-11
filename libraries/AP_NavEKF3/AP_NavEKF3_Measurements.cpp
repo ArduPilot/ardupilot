@@ -238,6 +238,7 @@ void NavEKF3_core::readMagData()
         allMagSensorsFailed = true;
         return;        
     }
+
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
     uint8_t maxCount = _ahrs->get_compass()->get_count();
@@ -258,43 +259,43 @@ void NavEKF3_core::readMagData()
         InitialiseVariablesMag();
     }
     
+    // If the magnetometer has timed out (been rejected too long) we find another magnetometer to use if available
+    // Don't do this if we are on the ground because there can be magnetic interference and we need to know if there is a problem
+    // before taking off. Don't do this within the first 30 seconds from startup because the yaw error could be due to large yaw gyro bias affsets
+    if (magTimeout && (maxCount > 1) && !onGround && imuSampleTime_ms - ekfStartTime_ms > 30000) {
+
+        // search through the list of magnetometers
+        for (uint8_t i=1; i<maxCount; i++) {
+            uint8_t tempIndex = magSelectIndex + i;
+            // loop back to the start index if we have exceeded the bounds
+            if (tempIndex >= maxCount) {
+                tempIndex -= maxCount;
+            }
+            // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
+            if (_ahrs->get_compass()->use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
+                magSelectIndex = tempIndex;
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+                // reset the timeout flag and timer
+                magTimeout = false;
+                lastHealthyMagTime_ms = imuSampleTime_ms;
+                // zero the learned magnetometer bias states
+                stateStruct.body_magfield.zero();
+                // clear the measurement buffer
+                storedMag.reset();
+                // clear the data waiting flag so that we do not use any data pending from the previous sensor
+                magDataToFuse = false;
+                // request a reset of the magnetic field states
+                magStateResetRequest = true;
+                // declare the field unlearned so that the reset request will be obeyed
+                magFieldLearned = false;
+                break;
+            }
+        }
+    }
+
     // limit compass update rate to prevent high processor loading because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
     if (use_compass() && ((_ahrs->get_compass()->last_update_usec() - lastMagUpdate_us) > 1000 * frontend->sensorIntervalMin_ms)) {
         frontend->logging.log_compass = true;
-
-        // If the magnetometer has timed out (been rejected too long) we find another magnetometer to use if available
-        // Don't do this if we are on the ground because there can be magnetic interference and we need to know if there is a problem
-        // before taking off. Don't do this within the first 30 seconds from startup because the yaw error could be due to large yaw gyro bias affsets
-        if (magTimeout && (maxCount > 1) && !onGround && imuSampleTime_ms - ekfStartTime_ms > 30000) {
-
-            // search through the list of magnetometers
-            for (uint8_t i=1; i<maxCount; i++) {
-                uint8_t tempIndex = magSelectIndex + i;
-                // loop back to the start index if we have exceeded the bounds
-                if (tempIndex >= maxCount) {
-                    tempIndex -= maxCount;
-                }
-                // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
-                if (_ahrs->get_compass()->use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
-                    magSelectIndex = tempIndex;
-                    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
-                    // reset the timeout flag and timer
-                    magTimeout = false;
-                    lastHealthyMagTime_ms = imuSampleTime_ms;
-                    // zero the learned magnetometer bias states
-                    stateStruct.body_magfield.zero();
-                    // clear the measurement buffer
-                    storedMag.reset();
-                    // clear the data waiting flag so that we do not use any data pending from the previous sensor
-                    magDataToFuse = false;
-                    // request a reset of the magnetic field states
-                    magStateResetRequest = true;
-                    // declare the field unlearned so that the reset request will be obeyed
-                    magFieldLearned = false;
-                    break;
-                }
-            }
-        }
 
         // detect changes to magnetometer offset parameters and reset states
         Vector3f nowMagOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex);
