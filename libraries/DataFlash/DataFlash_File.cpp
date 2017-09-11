@@ -1194,6 +1194,9 @@ bool DataFlash_File::io_thread_alive() const
 
 bool DataFlash_File::logging_failed() const
 {
+    if (!_initialised) {
+        return true;
+    }
     if (_open_error) {
         return true;
     }
