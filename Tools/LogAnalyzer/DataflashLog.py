@@ -429,6 +429,7 @@ class DataflashLog(object):
         self.lineCount    = 0
         self.skippedLines = 0
         self.backpatch_these_modechanges = []
+        self.frame   = None
 
         if logfile:
             self.read(logfile, format, ignoreBadlines)
@@ -450,6 +451,23 @@ class DataflashLog(object):
             return "octo"
         else:
             return ""
+
+    def num_motor_channels(self):
+        motor_channels_for_frame = {
+            "QUAD": 4,
+            "HEXA": 6,
+            "Y6": 6,
+            "OCTA": 8,
+            "OCTA_QUAD": 8,
+#            "HELI": 1,
+#            "HELI_DUAL": 2,
+            "TRI": 3,
+            "SINGLE": 1,
+            "COAX": 2,
+            "TAILSITTER": 1,
+            "DODECA_HEXA" : 12,
+        }
+        return motor_channels_for_frame[self.frame]
 
     def read(self, logfile, format="auto", ignoreBadlines=False):
         '''returns on successful log read (including bad lines if ignoreBadlines==True), will throw an Exception otherwise'''
@@ -558,6 +576,9 @@ class DataflashLog(object):
         for (lineNumber, e) in self.backpatch_these_modechanges:
             self.handleModeChange(lineNumber, e)
 
+    def set_frame(self, frame):
+        self.frame = frame
+
     def process(self, lineNumber, e):
         if e.NAME == 'FMT':
             cls = e.to_class()
@@ -569,8 +590,11 @@ class DataflashLog(object):
         elif e.NAME == "PARM":
             self.parameters[e.Name] = e.Value
         elif e.NAME == "MSG":
+            tokens = e.Message.split(' ')
+            if not self.frame:
+                if "Frame" in tokens[0]:
+                    self.set_frame(tokens[1])
             if not self.vehicleType:
-                tokens = e.Message.split(' ')
                 try:
                     self.set_vehicleType_from_MSG_vehicle(tokens[0]);
                 except ValueError:

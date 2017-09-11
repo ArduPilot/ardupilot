@@ -35,6 +35,9 @@ class TestBalanceTwist(Test):
             if num_channels < len(ch[i]):
                 num_channels = len(ch[i])
 
+        if logdata.frame:
+            num_channels = logdata.num_motor_channels()
+
         if num_channels < 2:
             return
 
