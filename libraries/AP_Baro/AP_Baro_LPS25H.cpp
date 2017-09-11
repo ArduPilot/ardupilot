@@ -89,12 +89,9 @@ bool AP_Baro_LPS25H::_init()
 //  acumulate a new sensor reading
 void AP_Baro_LPS25H::_timer(void)
 {
-	if (_sem->take_nonblocking()) {
 		_update_temperature();
 		_update_pressure();
 		_has_sample = true;
-		_sem->give();
-	}
 }
 
 // transfer data to the frontend
@@ -118,7 +115,10 @@ void AP_Baro_LPS25H::_update_temperature(void)
 	uint8_t pu8[2];
 	_dev->read_registers(LPS25H_TEMP_OUT_ADDR, pu8, 2);
 	int16_t Temp_Reg_s16 = (uint16_t)(pu8[1]<<8) | pu8[0];
-	_temperature=((float)(Temp_Reg_s16/480)+42.5);
+	if (_sem->take_nonblocking()) {
+		_temperature=((float)(Temp_Reg_s16/480)+42.5);
+	}
+	_sem->give();
 	
 }
 
@@ -129,5 +129,8 @@ void AP_Baro_LPS25H::_update_pressure(void)
 	_dev->read_registers(PRESS_OUT_XL_ADDR, pressure, 3);
 	int32_t Pressure_Reg_s32 = ((uint32_t)pressure[2]<<16)|((uint32_t)pressure[1]<<8)|(uint32_t)pressure[0];
 	int32_t Pressure_mb = Pressure_Reg_s32 / 4096; // scale
-	_pressure=Pressure_mb;
+	if (_sem->take_nonblocking()) {
+		_pressure=Pressure_mb;
+	}
+	_sem->give();
 }
