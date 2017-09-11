@@ -1173,6 +1173,9 @@ bool DataFlash_File::io_thread_alive() const
 
 bool DataFlash_File::logging_failed() const
 {
+    if (!_initialised) {
+        return true;
+    }
     if (_write_fd == -1 &&
         (hal.util->get_soft_armed() ||
          _front.log_while_disarmed())) {
