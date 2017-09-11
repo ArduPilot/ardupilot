@@ -57,6 +57,8 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 // constructor
 AP_Scheduler::AP_Scheduler(void)
 {
+    _perf = AP_Perf::get_instance();
+
     _loop_rate_hz.set(SCHEDULER_DEFAULT_LOOP_RATE);
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -94,14 +96,14 @@ void AP_Scheduler::run(uint32_t time_available)
     uint32_t now = run_started_usec;
 
     if (_debug > 1 && _perf_counters == nullptr) {
-        _perf_counters = new AP_HAL::Util::perf_counter_t[_num_tasks];
+        _perf_counters = new AP_Perf::perf_counter_t[_num_tasks];
         if (_perf_counters != nullptr) {
             for (uint8_t i=0; i<_num_tasks; i++) {
-                _perf_counters[i] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _tasks[i].name);
+                _perf_counters[i] = _perf->perf_alloc(AP_Perf::PC_ELAPSED, _tasks[i].name);
             }
         }
     }
-    
+
     for (uint8_t i=0; i<_num_tasks; i++) {
         uint16_t dt = _tick_counter - _last_run[i];
         uint16_t interval_ticks = _loop_rate_hz / _tasks[i].rate_hz;
@@ -129,11 +131,11 @@ void AP_Scheduler::run(uint32_t time_available)
                 _task_time_started = now;
                 current_task = i;
                 if (_debug > 1 && _perf_counters && _perf_counters[i]) {
-                    hal.util->perf_begin(_perf_counters[i]);
+                    _perf->perf_begin(_perf_counters[i]);
                 }
                 _tasks[i].function();
                 if (_debug > 1 && _perf_counters && _perf_counters[i]) {
-                    hal.util->perf_end(_perf_counters[i]);
+                    _perf->perf_end(_perf_counters[i]);
                 }
                 current_task = -1;
 

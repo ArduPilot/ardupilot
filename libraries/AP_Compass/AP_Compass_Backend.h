@@ -20,6 +20,7 @@
 #pragma once
 
 #include "AP_Compass.h"
+#include <AP_Perf/AP_Perf.h>
 
 class Compass;  // forward declaration
 class AP_Compass_Backend
@@ -106,6 +107,7 @@ protected:
 
     // semaphore for access to shared frontend data
     AP_HAL::Semaphore *_sem;
+    AP_Perf *_perf;
 
 private:
     void apply_corrections(Vector3f &mag, uint8_t i);

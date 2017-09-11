@@ -219,7 +219,7 @@ void NavEKF3_core::realignYawGPS()
 void NavEKF3_core::SelectMagFusion()
 {
     // start performance timer
-    hal.util->perf_begin(_perf_FuseMagnetometer);
+    _perf->perf_begin(_perf_FuseMagnetometer);
 
     // clear the flag that lets other processes know that the expensive magnetometer fusion operation has been perfomred on that time step
     // used for load levelling
@@ -260,16 +260,16 @@ void NavEKF3_core::SelectMagFusion()
                 FuseDeclination(0.34f);
             }
             // fuse the three magnetometer componenents sequentially
-            hal.util->perf_begin(_perf_test[0]);
+            _perf->perf_begin(_perf_test[0]);
             for (mag_state.obsIndex = 0; mag_state.obsIndex <= 2; mag_state.obsIndex++) {
                 FuseMagnetometer();
                 // don't continue fusion if unhealthy
                 if (!magHealth) {
-                    hal.util->perf_end(_perf_test[0]);
+                    _perf->perf_end(_perf_test[0]);
                     break;
                 }
             }
-            hal.util->perf_end(_perf_test[0]);
+            _perf->perf_end(_perf_test[0]);
             // zero the test ratio output from the inactive simple magnetometer yaw fusion
             yawTestRatio = 0.0f;
         }
@@ -304,7 +304,7 @@ void NavEKF3_core::SelectMagFusion()
     }
 
     // stop performance timer
-    hal.util->perf_end(_perf_FuseMagnetometer);
+    _perf->perf_end(_perf_FuseMagnetometer);
 }
 
 /*

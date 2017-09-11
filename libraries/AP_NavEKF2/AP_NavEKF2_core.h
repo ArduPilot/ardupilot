@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <AP_Math/vectorN.h>
 #include <AP_NavEKF2/AP_NavEKF2_Buffer.h>
+#include <AP_Perf/AP_Perf.h>
 
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
@@ -1112,15 +1113,16 @@ private:
     char prearm_fail_string[40];
 
     // performance counters
-    AP_HAL::Util::perf_counter_t  _perf_UpdateFilter;
-    AP_HAL::Util::perf_counter_t  _perf_CovariancePrediction;
-    AP_HAL::Util::perf_counter_t  _perf_FuseVelPosNED;
-    AP_HAL::Util::perf_counter_t  _perf_FuseMagnetometer;
-    AP_HAL::Util::perf_counter_t  _perf_FuseAirspeed;
-    AP_HAL::Util::perf_counter_t  _perf_FuseSideslip;
-    AP_HAL::Util::perf_counter_t  _perf_TerrainOffset;
-    AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
-    AP_HAL::Util::perf_counter_t  _perf_test[10];
+    AP_Perf *_perf;
+    AP_Perf::perf_counter_t  _perf_UpdateFilter;
+    AP_Perf::perf_counter_t  _perf_CovariancePrediction;
+    AP_Perf::perf_counter_t  _perf_FuseVelPosNED;
+    AP_Perf::perf_counter_t  _perf_FuseMagnetometer;
+    AP_Perf::perf_counter_t  _perf_FuseAirspeed;
+    AP_Perf::perf_counter_t  _perf_FuseSideslip;
+    AP_Perf::perf_counter_t  _perf_TerrainOffset;
+    AP_Perf::perf_counter_t  _perf_FuseOptFlow;
+    AP_Perf::perf_counter_t  _perf_test[10];
 
     // timing statistics
     struct ekf_timing timing;

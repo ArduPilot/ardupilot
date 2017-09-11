@@ -141,42 +141,6 @@ uint32_t VRBRAINUtil::available_memory(void)
     return mallinfo().fordblks;
 }
 
-/*
-  AP_HAL wrapper around PX4 perf counters
- */
-VRBRAINUtil::perf_counter_t VRBRAINUtil::perf_alloc(VRBRAINUtil::perf_counter_type t, const char *name)
-{
-    ::perf_counter_type vrbrain_t;
-    switch (t) {
-    case VRBRAINUtil::PC_COUNT:
-        vrbrain_t = ::PC_COUNT;
-        break;
-    case VRBRAINUtil::PC_ELAPSED:
-        vrbrain_t = ::PC_ELAPSED;
-        break;
-    case VRBRAINUtil::PC_INTERVAL:
-        vrbrain_t = ::PC_INTERVAL;
-        break;
-    default:
-        return nullptr;
-    }
-    return (perf_counter_t)::perf_alloc(vrbrain_t, name);
-}
-
-void VRBRAINUtil::perf_begin(perf_counter_t h)
-{
-    ::perf_begin((::perf_counter_t)h);
-}
-
-void VRBRAINUtil::perf_end(perf_counter_t h)
-{
-    ::perf_end((::perf_counter_t)h);
-}
-
-void VRBRAINUtil::perf_count(perf_counter_t h)
-{
-    ::perf_count((::perf_counter_t)h);
-}
 
 void VRBRAINUtil::set_imu_temp(float current)
 {

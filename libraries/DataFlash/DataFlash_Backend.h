@@ -2,6 +2,8 @@
 
 #include "DataFlash.h"
 
+#include <AP_Perf/AP_Perf.h>
+
 class DFMessageWriter_DFLogStart;
 
 class DataFlash_Backend
@@ -122,8 +124,8 @@ public:
     virtual void vehicle_was_disarmed() { };
 
 protected:
-
     DataFlash_Class &_front;
+    AP_Perf *_perf;
 
     virtual void periodic_10Hz(const uint32_t now);
     virtual void periodic_1Hz(const uint32_t now);

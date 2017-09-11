@@ -76,14 +76,13 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     _writebuf_chunk(4096),
 #endif
     _last_write_time(0),
-    _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
-    _perf_fsync(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_fsync")),
-    _perf_errors(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_errors")),
-    _perf_overruns(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_overruns"))
+    _perf_write(_perf->perf_alloc(AP_Perf::PC_ELAPSED, "DF_write")),
+    _perf_fsync(_perf->perf_alloc(AP_Perf::PC_ELAPSED, "DF_fsync")),
+    _perf_errors(_perf->perf_alloc(AP_Perf::PC_COUNT, "DF_errors")),
+    _perf_overruns(_perf->perf_alloc(AP_Perf::PC_COUNT, "DF_overruns"))
 {
     df_stats_clear();
 }
-
 
 void DataFlash_File::Init()
 {
@@ -569,7 +568,7 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
 
     // if no room for entire message - drop it:
     if (space < size) {
-        hal.util->perf_count(_perf_overruns);
+        _perf->perf_count(_perf_overruns);
         _dropped++;
         semaphore->give();
         return false;
@@ -1127,7 +1126,7 @@ void DataFlash_File::_io_timer(void)
         last_io_operation = "";
     }
 
-    hal.util->perf_begin(_perf_write);
+    _perf->perf_begin(_perf_write);
 
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
@@ -1151,7 +1150,7 @@ void DataFlash_File::_io_timer(void)
     ssize_t nwritten = ::write(_write_fd, head, nbytes);
     last_io_operation = "";
     if (nwritten <= 0) {
-        hal.util->perf_count(_perf_errors);
+        _perf->perf_count(_perf_errors);
         last_io_operation = "close";
         close(_write_fd);
         last_io_operation = "";
@@ -1172,7 +1171,7 @@ void DataFlash_File::_io_timer(void)
         last_io_operation = "";
 #endif
     }
-    hal.util->perf_end(_perf_write);
+    _perf->perf_end(_perf_write);
 }
 
 // this sensor is enabled if we should be logging at the moment

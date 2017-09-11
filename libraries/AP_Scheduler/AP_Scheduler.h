@@ -22,6 +22,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/Util.h>
+#include <AP_Perf/AP_Perf.h>
 
 #define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
 
@@ -100,6 +101,8 @@ public:
     static int8_t current_task;
 
 private:
+    AP_Perf *_perf;
+
     // used to enable scheduler debugging
     AP_Int8 _debug;
 
@@ -132,5 +135,5 @@ private:
     uint8_t _spare_ticks;
 
     // performance counters
-    AP_HAL::Util::perf_counter_t *_perf_counters;
+    AP_Perf::perf_counter_t *_perf_counters;
 };

@@ -354,7 +354,7 @@ void NavEKF2_core::SelectVelPosFusion()
 void NavEKF2_core::FuseVelPosNED()
 {
     // start performance timer
-    hal.util->perf_begin(_perf_FuseVelPosNED);
+    _perf->perf_begin(_perf_FuseVelPosNED);
 
     // health is set bad until test passed
     velHealth = false;
@@ -726,7 +726,7 @@ void NavEKF2_core::FuseVelPosNED()
     }
 
     // stop performance timer
-    hal.util->perf_end(_perf_FuseVelPosNED);
+    _perf->perf_end(_perf_FuseVelPosNED);
 }
 
 /********************************************************

@@ -166,12 +166,12 @@ private:
     const uint32_t _free_space_min_avail = 8388608; // bytes
 
     AP_HAL::Semaphore *semaphore;
-    
+
     // performance counters
-    AP_HAL::Util::perf_counter_t  _perf_write;
-    AP_HAL::Util::perf_counter_t  _perf_fsync;
-    AP_HAL::Util::perf_counter_t  _perf_errors;
-    AP_HAL::Util::perf_counter_t  _perf_overruns;
+    AP_Perf::perf_counter_t  _perf_write;
+    AP_Perf::perf_counter_t  _perf_fsync;
+    AP_Perf::perf_counter_t  _perf_errors;
+    AP_Perf::perf_counter_t  _perf_overruns;
 
     const char *last_io_operation = "";
 

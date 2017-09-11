@@ -25,7 +25,7 @@ public:
         DataFlash_Backend(front, writer),
         _max_blocks_per_send_blocks(8),
         _blockcount(32) // this may get reduced in Init if allocation fails
-        ,_perf_packing(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DM_packing"))
+        ,_perf_packing(_perf->perf_alloc(AP_Perf::PC_ELAPSED, "DM_packing"))
         { }
 
     // initialisation
@@ -182,9 +182,9 @@ private:
         return false;
     }
     // performance counters
-    AP_HAL::Util::perf_counter_t  _perf_errors;
-    AP_HAL::Util::perf_counter_t  _perf_packing;
-    AP_HAL::Util::perf_counter_t  _perf_overruns;
+    AP_Perf::perf_counter_t  _perf_errors;
+    AP_Perf::perf_counter_t  _perf_packing;
+    AP_Perf::perf_counter_t  _perf_overruns;
 
     AP_HAL::Semaphore *semaphore;
 };

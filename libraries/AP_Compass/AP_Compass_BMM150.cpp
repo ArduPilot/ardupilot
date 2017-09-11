@@ -222,7 +222,7 @@ bool AP_Compass_BMM150::init()
     _dev->set_device_type(DEVTYPE_BMM150);
     set_dev_id(_compass_instance, _dev->get_bus_id());
 
-    _perf_err = hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "BMM150_err");
+    _perf_err = _perf->perf_alloc(AP_Perf::PC_COUNT, "BMM150_err");
 
     // 2 retries for run
     _dev->set_retries(2);
@@ -298,7 +298,7 @@ void AP_Compass_BMM150::_update()
             _last_read_ms = now;
             _dev->write_register(POWER_AND_OPERATIONS_REG, SOFT_RESET);
             _dev->write_register(POWER_AND_OPERATIONS_REG, POWER_CONTROL_VAL, true);
-            hal.util->perf_count(_perf_err);
+            _perf->perf_count(_perf_err);
         }
         return;
     }
