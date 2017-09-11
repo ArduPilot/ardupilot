@@ -1706,6 +1706,30 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:
+    {
+        // decode packet
+        mavlink_set_position_target_local_ned_t packet;
+        mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
+
+        // exit if vehicle is not in Guided mode
+        if (plane.control_mode != GUIDED) {
+            break;
+        }
+
+        // only local moves for now
+        if (packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED) {
+            break;
+        }
+
+        // just do altitude for now
+        plane.next_WP_loc.alt += -packet.z*100.0;
+        gcs().send_text(MAV_SEVERITY_INFO, "Change alt to %.1f",
+                        (plane.next_WP_loc.alt - plane.home.alt)*0.01);
+        
+        break;
+    }
+
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
     {
         // Only want to allow companion computer position control when
