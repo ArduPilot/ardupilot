@@ -2402,5 +2402,5 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
     guided_start();
     guided_takeoff = true;
-    return false;
+    return true;
 }
