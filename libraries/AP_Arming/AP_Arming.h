@@ -69,6 +69,7 @@ protected:
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Float                _min_voltage[AP_BATT_MONITOR_MAX_INSTANCES];
+    AP_Int8                 _gps_minimum_sats;
 
     // references
     const AP_AHRS           &ahrs;

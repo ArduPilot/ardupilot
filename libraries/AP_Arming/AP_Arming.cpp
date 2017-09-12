@@ -69,6 +69,14 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VOLT2_MIN",     5,     AP_Arming,  _min_voltage[1],  0),
 
+    // @Param: GPS_SATS
+    // @DisplayName: Minimum number of GPS satellites
+    // @Description: The minimum number of GPS satellites on the primary GPS to arm the aircraft, set to 0 to disable the check.
+    // @Increment: 1
+    // @Range: 6 15
+    // @User: Standard
+    AP_GROUPINFO("GPS_SATS",      6,     AP_Arming,  _gps_minimum_sats,  6),
+
     AP_GROUPEND
 };
 
@@ -346,6 +354,14 @@ bool AP_Arming::gps_checks(bool report)
             gps.status() < AP_GPS::GPS_OK_FIX_3D) {
             if (report) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Bad GPS Position");
+            }
+            return false;
+        }
+
+        // satellite count
+        if (_gps_minimum_sats > 0 && gps.num_sats() < _gps_minimum_sats) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: GPS too few sats (has %d, needs %d)", gps.num_sats(), _gps_minimum_sats);
             }
             return false;
         }
