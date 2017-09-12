@@ -1,7 +1,6 @@
 #include "GCS_Mavlink.h"
 
 #include "Plane.h"
-#include "version.h"
 
 void Plane::send_heartbeat(mavlink_channel_t chan)
 {
