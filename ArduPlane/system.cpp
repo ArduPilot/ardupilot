@@ -1,5 +1,4 @@
 #include "Plane.h"
-#include "version.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
