@@ -1,5 +1,4 @@
 #include "Plane.h"
-#include "version.h"
 
 #if LOGGING_ENABLED == ENABLED
 
