@@ -1,6 +1,10 @@
 #pragma once
 
-#include "AP_Common/AP_FWVersion.h"
+#ifndef FORCE_VERSION_H_INCLUDE
+#error version.h should never be included directly. You probably want to include AP_Common/AP_FWVersion.h
+#endif
+
+#include "ap_version.h"
 
 #define THISFIRMWARE "AntennaTracker V1.0.0"
 
