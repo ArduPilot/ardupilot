@@ -1,5 +1,4 @@
 #include "Rover.h"
-#include "version.h"
 
 #include "GCS_Mavlink.h"
 
