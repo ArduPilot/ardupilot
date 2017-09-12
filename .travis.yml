@@ -72,7 +72,7 @@ matrix:
   fast_finish: true
   include:
     - compiler: "gcc"
-      env: CI_BUILD_TARGET="sitl minlure raspilot linux navio2 bebop"
+      env: CI_BUILD_TARGET="sitl minlure linux navio2 bebop"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v2 px4-v4"
     - compiler: "gcc"
