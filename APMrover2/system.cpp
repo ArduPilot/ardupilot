@@ -6,7 +6,6 @@ The init_ardupilot function processes everything we need for an in - air restart
 *****************************************************************************/
 
 #include "Rover.h"
-#include "version.h"
 
 static void mavlink_delay_cb_static()
 {
