@@ -1,5 +1,4 @@
 #include "Rover.h"
-#include "version.h"
 
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
