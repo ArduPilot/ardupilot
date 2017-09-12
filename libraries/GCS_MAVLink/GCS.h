@@ -363,6 +363,8 @@ private:
     // perf counters
     AP_HAL::Util::perf_counter_t _perf_packet;
     AP_HAL::Util::perf_counter_t _perf_update;
+    char _perf_packet_name[16];
+    char _perf_update_name[16];
 
     // deferred message handling.  We size the deferred_message
     // ringbuffer so we can defer every message type
