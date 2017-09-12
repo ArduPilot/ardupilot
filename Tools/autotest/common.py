@@ -10,10 +10,12 @@ from pysim import util
 # messages. This keeps the output to stdout flowing
 expect_list = []
 
+class AutoTestTimeoutException(Exception):
+    pass
 
-def wait_ready_to_arm(mav):
+def wait_ready_to_arm(mav, timeout=None):
     # wait for EKF checks to pass
-    return wait_ekf_happy(mav)
+    return wait_ekf_happy(mav, timeout=timeout)
 
 def wait_ekf_happy(mav, timeout=30):
     """Wait for EKF to be happy"""
@@ -21,15 +23,15 @@ def wait_ekf_happy(mav, timeout=30):
     tstart = get_sim_time(mav)
     required_value = 831
     print("Waiting for EKF value %u" % (required_value))
-    while get_sim_time(mav) < tstart + timeout:
+    while timeout is None or get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
         current = m.flags
-        print("Wait EKF.flags: required:%u current:%u\n" % (required_value, current))
+        print("Wait EKF.flags: required:%u current:%u" % (required_value, current))
         if current == required_value:
             print("EKF Flags OK")
-            return True
+            return
     print("Failed to get EKF.flags=%u" % required_value)
-    return False
+    raise AutoTestTimeoutException()
 
 def expect_list_clear():
     """clear the expect list."""
