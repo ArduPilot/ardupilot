@@ -1,7 +1,7 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub 3.5.1beta1 29-August-2017
+Sub 3.5.1 12-September-2017 / Sub 3.5.1beta1 29-August-2017
 
 Changes from 3.5:
 
