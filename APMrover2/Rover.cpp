@@ -17,7 +17,10 @@
 */
 
 #include "Rover.h"
+
+#define FORCE_VERSION_H_INCLUDE
 #include "version.h"
+#undef FORCE_VERSION_H_INCLUDE
 
 Rover::Rover(void) :
     param_loader(var_info),
