@@ -1,5 +1,14 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5.3-rc1 12-Sep-2017
+Changes from 3.5.2
+1) Guided mode support yaw and yaw-rate fields from set-position-target message
+2) Optical Flow startup retries 10 times 
+3) Bug fixes:
+    a) Septentrio RTK GPS driver robustness improvements for long messages
+    b) dataflash not-logging checks if not initialised
+    c) fix reporting of relative-position-NE-to-home (most users will not notice this difference) 
+------------------------------------------------------------------
 Copter 3.5.2 14-Aug-2017 / Copter 3.5.2-rc1 05-Aug-2017
 Changes from 3.5.1
 1) GPS glitch arming check and notification (flashing blue-yellow LED, message on HUD)
