@@ -26,7 +26,8 @@ def wait_ekf_happy(mav, timeout=30):
     while timeout is None or get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
         current = m.flags
-        print("Wait EKF.flags: required:%u current:%u" % (required_value, current))
+        if (tstart - get_sim_time(mav)) % 5 == 0:
+            print("Wait EKF.flags: required:%u current:%u" % (required_value, current))
         if current == required_value:
             print("EKF Flags OK")
             return
