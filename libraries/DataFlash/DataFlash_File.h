@@ -161,7 +161,12 @@ private:
     const uint32_t _free_space_check_interval = 1000UL; // milliseconds
     const uint32_t _free_space_min_avail = 8388608; // bytes
 
+    // semaphore mediates access to the ringbuffer
     AP_HAL::Semaphore *semaphore;
+    // write_fd_semaphore mediates access to write_fd so the frontend
+    // can open/close files without causing the backend to write to a
+    // bad fd
+    AP_HAL::Semaphore *write_fd_semaphore;
     
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_write;
