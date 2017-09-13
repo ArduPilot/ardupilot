@@ -104,7 +104,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: RF_SELECT
     // @DisplayName: Transceiver RF selection
-    // @Description: Transceiver RF selection for Rx enable and/or Tx enable.
+    // @Description: Transceiver RF selection for Rx enable and/or Tx enable. This only effects devices that can Tx and Rx. Rx-only devices override this to always be Rx-only.
     // @Values: 0:Disabled,1:Rx-Only,2:Tx-Only,3:Rx and Tx Enabled
     // @User: Advanced
     AP_GROUPINFO("RF_SELECT",   9, AP_ADSB, out_state.cfg.rfSelect, UAVIONIX_ADSB_OUT_RF_SELECT_RX_ENABLED),
