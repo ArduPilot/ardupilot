@@ -1,5 +1,4 @@
 #include "Copter.h"
-#include "version.h"
 
 #if LOGGING_ENABLED == ENABLED
 

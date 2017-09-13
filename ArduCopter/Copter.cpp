@@ -13,7 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Copter.h"
-#include "version.h"
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
