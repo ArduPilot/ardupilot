@@ -97,6 +97,11 @@ void DataFlash_File::Init()
         AP_HAL::panic("Failed to create DataFlash_File semaphore");
         return;
     }
+    write_fd_semaphore = hal.util->new_semaphore();
+    if (write_fd_semaphore == nullptr) {
+        AP_HAL::panic("Failed to create DataFlash_File write_fd_semaphore");
+        return;
+    }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // try to cope with an existing lowercase log directory
@@ -195,6 +200,9 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
         // If you try to close the file here then it will almost
         // certainly block.  Since this is the main thread, this is
         // likely to cause a crash.
+
+        // semaphore_write_fd not taken here as if the io thread is
+        // dead it may not release lock...
         _write_fd = -1;
         _initialised = false;
     }
@@ -830,10 +838,17 @@ uint16_t DataFlash_File::get_num_logs()
  */
 void DataFlash_File::stop_logging(void)
 {
+    // best-case effort to avoid annoying the IO thread
+    const bool have_sem = write_fd_semaphore->take(1);
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
         ::close(fd);
+    }
+    if (have_sem) {
+        write_fd_semaphore->give();
+    } else {
+        _internal_errors++;
     }
 }
 
@@ -884,12 +899,17 @@ uint16_t DataFlash_File::start_new_log(void)
         _open_error = true;
         return 0xFFFF;
     }
+    if (!write_fd_semaphore->take(1)) {
+        _open_error = true;
+        return 0xFFFF;
+    }
     _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
         _initialised = false;
         _open_error = true;
+        write_fd_semaphore->give();
         int saved_errno = errno;
         ::printf("Log open fail for %s - %s\n",
                  fname, strerror(saved_errno));
@@ -901,6 +921,7 @@ uint16_t DataFlash_File::start_new_log(void)
     free(fname);
     _write_offset = 0;
     _writebuf.clear();
+    write_fd_semaphore->give();
 
     // now update lastlog.txt with the new log number
     fname = _lastlog_file_name();
@@ -1090,8 +1111,13 @@ void DataFlash_File::flush(void)
         _io_timer();
     }
     hal.scheduler->resume_timer_procs();
-    if (_write_fd != -1) {
-        ::fsync(_write_fd);
+    if (write_fd_semaphore->take(1)) {
+        if (_write_fd != -1) {
+            ::fsync(_write_fd);
+        }
+        write_fd_semaphore->give();
+    } else {
+        _internal_errors++;
     }
 }
 #endif
@@ -1148,6 +1174,13 @@ void DataFlash_File::_io_timer(void)
     }
 
     last_io_operation = "write";
+    if (!write_fd_semaphore->take(1)) {
+        return;
+    }
+    if (_write_fd == -1) {
+        write_fd_semaphore->give();
+        return;
+    }
     ssize_t nwritten = ::write(_write_fd, head, nbytes);
     last_io_operation = "";
     if (nwritten <= 0) {
@@ -1172,6 +1205,7 @@ void DataFlash_File::_io_timer(void)
         last_io_operation = "";
 #endif
     }
+    write_fd_semaphore->give();
     hal.util->perf_end(_perf_write);
 }
 
