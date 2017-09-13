@@ -89,7 +89,7 @@ class ManifestGenerator():
                 firmware_version = firmware_version.strip()
                 (version_numbers,release_type) = firmware_version.split("-")
             except ValueError as e:
-                # print("malformed firmware-version.txt at (%s)" % (firmware_version_file,))
+                # print("malformed firmware-version.txt at (%s)" % (firmware_version_file,), file=sys.stderr)
                 firmware_version = None
             except Exception as e:
                 # this exception is swallowed.... the current archive
@@ -224,7 +224,7 @@ class ManifestGenerator():
                     tag = firstlevel
                     if tag not in self.known_release_types:
                         print("Unknown tag (%s) in directory (%s)" %
-                              (tag, vdir))
+                              (tag, vdir), file=sys.stderr)
                     tag_path = os.path.join(basedir, vehicletype, tag)
                     self.add_firmware_data_from_dir(tag_path, xfirmwares, vehicletype, releasetype=tag)
 
