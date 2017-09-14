@@ -17,20 +17,20 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
     // @Param: ACCURACY
-    // @DisplayName: SafeRTL accuracy
-    // @Description: SafeRTL accuracy. The minimum distance between points.
+    // @DisplayName: SmartRTL accuracy
+    // @Description: SmartRTL accuracy. The minimum distance between points.
     // @Units: m
     // @Range: 0 10
     // @User: Advanced
-    AP_GROUPINFO("ACCURACY", 0, AP_SmartRTL, _accuracy, SAFERTL_ACCURACY_DEFAULT),
+    AP_GROUPINFO("ACCURACY", 0, AP_SmartRTL, _accuracy, SMARTRTL_ACCURACY_DEFAULT),
 
     // @Param: POINTS
-    // @DisplayName: SafeRTL maximum number of points on path
-    // @Description: SafeRTL maximum number of points on path. Set to 0 to disable SafeRTL.  100 points consumes about 3k of memory.
+    // @DisplayName: SmartRTL maximum number of points on path
+    // @Description: SmartRTL maximum number of points on path. Set to 0 to disable SmartRTL.  100 points consumes about 3k of memory.
     // @Range: 0 500
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("POINTS", 1, AP_SmartRTL, _points_max, SAFERTL_POINTS_DEFAULT),
+    AP_GROUPINFO("POINTS", 1, AP_SmartRTL, _points_max, SMARTRTL_POINTS_DEFAULT),
 
     AP_GROUPEND
 };
@@ -57,8 +57,8 @@ const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
 *    for a more complete description.
 *
 *    The simplification and pruning algorithms run in the background and do not
-*    alter the path in memory.  Two definitions, SAFERTL_SIMPLIFY_TIME_US and
-*    SAFERTL_PRUNING_LOOP_TIME_US are used to limit how long each algorithm will
+*    alter the path in memory.  Two definitions, SMARTRTL_SIMPLIFY_TIME_US and
+*    SMARTRTL_PRUNING_LOOP_TIME_US are used to limit how long each algorithm will
 *    be run before they save their state and return.
 *
 *    Both algorithms are "anytime algorithms" meaning they can be interrupted
@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
 *
 *    Once the algorithms have completed the simplify.complete and
 *    prune.complete flags are set to true.  The "thorough cleanup" procedure,
-*    which is run as the vehicle initiates the SafeRTL flight mode, waits for
+*    which is run as the vehicle initiates the SmartRTL flight mode, waits for
 *    these flags to become true.  This can force the vehicle to pause for a few
 *    seconds before initiating the return journey.
 */
@@ -89,9 +89,9 @@ void AP_SmartRTL::init()
     }
 
     // constrain the path length, in case the user decided to make the path unreasonably long.
-    _points_max = constrain_int16(_points_max, 0, SAFERTL_POINTS_MAX);
+    _points_max = constrain_int16(_points_max, 0, SMARTRTL_POINTS_MAX);
 
-    // check if user has disabled SafeRTL
+    // check if user has disabled SmartRTL
     if (_points_max == 0 || !is_positive(_accuracy)) {
         return;
     }
@@ -105,16 +105,16 @@ void AP_SmartRTL::init()
     // allocate arrays
     _path = (Vector3f*)calloc(_points_max, sizeof(Vector3f));
 
-    _prune.loops_max = _points_max * SAFERTL_PRUNING_LOOP_BUFFER_LEN_MULT;
+    _prune.loops_max = _points_max * SMARTRTL_PRUNING_LOOP_BUFFER_LEN_MULT;
     _prune.loops = (prune_loop_t*)calloc(_prune.loops_max, sizeof(prune_loop_t));
 
-    _simplify.stack_max = _points_max * SAFERTL_SIMPLIFY_STACK_LEN_MULT;
+    _simplify.stack_max = _points_max * SMARTRTL_SIMPLIFY_STACK_LEN_MULT;
     _simplify.stack = (simplify_start_finish_t*)calloc(_simplify.stack_max, sizeof(simplify_start_finish_t));
 
     // check if memory allocation failed
     if (_path == nullptr || _prune.loops == nullptr || _simplify.stack == nullptr) {
         log_action(SRTL_DEACTIVATED_INIT_FAILED);
-        gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL deactivated: init failed");
+        gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL deactivated: init failed");
         free(_path);
         free(_prune.loops);
         free(_simplify.stack);
@@ -229,13 +229,13 @@ void AP_SmartRTL::update(bool position_ok, const Vector3f& current_pos)
         // add the point
         if (add_point(current_pos)) {
             _last_position_save_ms = now;
-        } else if (AP_HAL::millis() - _last_position_save_ms > SAFERTL_TIMEOUT) {
+        } else if (AP_HAL::millis() - _last_position_save_ms > SMARTRTL_TIMEOUT) {
             // deactivate after timeout due to failure to save points to path (most likely due to buffer filling up)
             deactivate(SRTL_DEACTIVATED_PATH_FULL_TIMEOUT, "buffer full");
         }
     } else {
         // check for timeout due to bad position
-        if (AP_HAL::millis() - _last_good_position_ms > SAFERTL_TIMEOUT) {
+        if (AP_HAL::millis() - _last_good_position_ms > SMARTRTL_TIMEOUT) {
             deactivate(SRTL_DEACTIVATED_BAD_POSITION_TIMEOUT, "bad position");
             return;
         }
@@ -327,7 +327,7 @@ void AP_SmartRTL::run_background_cleanup()
     // local copy of _path_points_count and _path_points_completed_limit
     const uint16_t path_points_count = _path_points_count;
     const uint16_t path_points_completed_limit = _path_points_completed_limit;
-    _path_points_completed_limit = SAFERTL_POINTS_MAX;
+    _path_points_completed_limit = SMARTRTL_POINTS_MAX;
     _path_sem->give();
 
     // check if thorough cleanup is required
@@ -352,9 +352,9 @@ void AP_SmartRTL::run_background_cleanup()
 }
 
 // routine cleanup is called regularly from run_background_cleanup
-//   simplifies the path after SAFERTL_CLEANUP_POINT_TRIGGER points (50 points) have been added OR
-//   SAFERTL_CLEANUP_POINT_MIN (10 points) have been added and the path has less than SAFERTL_CLEANUP_START_MARGIN spaces (10 spaces) remaining
-//   prunes the path if the path has less than SAFERTL_CLEANUP_START_MARGIN spaces (10 spaces) remaining
+//   simplifies the path after SMARTRTL_CLEANUP_POINT_TRIGGER points (50 points) have been added OR
+//   SMARTRTL_CLEANUP_POINT_MIN (10 points) have been added and the path has less than SMARTRTL_CLEANUP_START_MARGIN spaces (10 spaces) remaining
+//   prunes the path if the path has less than SMARTRTL_CLEANUP_START_MARGIN spaces (10 spaces) remaining
 void AP_SmartRTL::routine_cleanup(uint16_t path_points_count, uint16_t path_points_completed_limit)
 {
     // if simplify is running, let it run to completion
@@ -389,10 +389,10 @@ void AP_SmartRTL::routine_cleanup(uint16_t path_points_count, uint16_t path_poin
 
     // calculate the number of points we could simplify
     const uint16_t points_to_simplify = (path_points_count > _simplify.path_points_completed) ? (path_points_count - _simplify.path_points_completed) : 0 ;
-    const bool low_on_space = (_path_points_max - path_points_count) <= SAFERTL_CLEANUP_START_MARGIN;
+    const bool low_on_space = (_path_points_max - path_points_count) <= SMARTRTL_CLEANUP_START_MARGIN;
 
     // if 50 points can be simplified or we are low on space and at least 10 points can be simplified
-    if ((points_to_simplify >= SAFERTL_CLEANUP_POINT_TRIGGER) || (low_on_space && (points_to_simplify >= SAFERTL_CLEANUP_POINT_MIN))) {
+    if ((points_to_simplify >= SMARTRTL_CLEANUP_POINT_TRIGGER) || (low_on_space && (points_to_simplify >= SMARTRTL_CLEANUP_POINT_MIN))) {
         restart_simplification(path_points_count);
         return;
     }
@@ -400,7 +400,7 @@ void AP_SmartRTL::routine_cleanup(uint16_t path_points_count, uint16_t path_poin
     // we are low on space, prune
     if (low_on_space) {
         // remove at least 10 points
-        remove_points_by_loops(SAFERTL_CLEANUP_POINT_MIN);
+        remove_points_by_loops(SMARTRTL_CLEANUP_POINT_MIN);
     }
 }
 
@@ -436,7 +436,7 @@ bool AP_SmartRTL::thorough_cleanup(uint16_t path_points_count, ThoroughCleanupTy
             return false;
         }
         // remove pruning points
-        if (!remove_points_by_loops(SAFERTL_POINTS_MAX)) {
+        if (!remove_points_by_loops(SMARTRTL_POINTS_MAX)) {
             return false;
         }
     }
@@ -468,7 +468,7 @@ void AP_SmartRTL::detect_simplifications()
     while (_simplify.stack_count > 0) { // while there is something to do
 
         // if this method has run for long enough, exit
-        if (AP_HAL::micros() - start_time_us > SAFERTL_SIMPLIFY_TIME_US) {
+        if (AP_HAL::micros() - start_time_us > SMARTRTL_SIMPLIFY_TIME_US) {
             return;
         }
 
@@ -493,7 +493,7 @@ void AP_SmartRTL::detect_simplifications()
 
         // if the farthest point is more than ACCURACY * 0.5 add two new elements to the _simplification_stack
         // so that on the next iteration we will check between start-to-farthestpoint and farthestpoint-to-end
-        if (max_dist > SAFERTL_SIMPLIFY_EPSILON) {
+        if (max_dist > SMARTRTL_SIMPLIFY_EPSILON) {
             // if the to-do list is full, give up on simplifying. This should never happen.
             if (_simplify.stack_count >= _simplify.stack_max) {
                 _simplify.complete = true;
@@ -532,7 +532,7 @@ void AP_SmartRTL::detect_loops()
     const uint32_t start_time_us = AP_HAL::micros();
 
     // run for defined amount of time
-    while (AP_HAL::micros() - start_time_us < SAFERTL_PRUNING_LOOP_TIME_US) {
+    while (AP_HAL::micros() - start_time_us < SMARTRTL_PRUNING_LOOP_TIME_US) {
 
         // advance inner loop
         _prune.j++;
@@ -551,7 +551,7 @@ void AP_SmartRTL::detect_loops()
 
         // find the closest distance between two line segments and the mid-point
         dist_point dp = segment_segment_dist(_path[_prune.i], _path[_prune.i-1], _path[_prune.j-1], _path[_prune.j]);
-        if (dp.distance < SAFERTL_PRUNING_DELTA) {
+        if (dp.distance < SMARTRTL_PRUNING_DELTA) {
             // if there is a loop here, add to loop array
             if (!add_loop(_prune.j, _prune.i-1, dp.midpoint)) {
                 // if the buffer is full, stop trying to prune
@@ -816,12 +816,12 @@ AP_SmartRTL::dist_point AP_SmartRTL::segment_segment_dist(const Vector3f &p1, co
     return {dP.length(), midpoint};
 }
 
-// de-activate SafeRTL, send warning to GCS and log to dataflash
+// de-activate SmartRTL, send warning to GCS and log to dataflash
 void AP_SmartRTL::deactivate(SRTL_Actions action, const char *reason)
 {
     _active = false;
     log_action(action);
-    gcs().send_text(MAV_SEVERITY_WARNING, "SafeRTL deactivated: %s", reason);
+    gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL deactivated: %s", reason);
 }
 
 // logging
