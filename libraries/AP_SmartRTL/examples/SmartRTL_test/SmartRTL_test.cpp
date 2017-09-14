@@ -39,7 +39,7 @@ void check_path(const std::vector<Vector3f> &correct_path, const char* test_name
 
 void setup()
 {
-    hal.console->printf("SafeRTL test\n");
+    hal.console->printf("SmartRTL test\n");
     AP_BoardConfig{}.init();
     smart_rtl.init();
 }
@@ -118,15 +118,15 @@ void check_path(const std::vector<Vector3f>& correct_path, const char* test_name
     // display the first failed point and all subsequent points
     if (!points_match) {
         for (uint16_t j = failure_index; j < points_to_compare; j++) {
-            const Vector3f& safertl_point = smart_rtl.get_point(j);
+            const Vector3f& smartrtl_point = smart_rtl.get_point(j);
             hal.console->printf("   expected point %d to be %4.2f,%4.2f,%4.2f, got %4.2f,%4.2f,%4.2f\n",
                             (int)j,
                             (double)correct_path[j].x,
                             (double)correct_path[j].y,
                             (double)correct_path[j].z,
-                            (double)safertl_point.x,
-                            (double)safertl_point.y,
-                            (double)safertl_point.z
+                            (double)smartrtl_point.x,
+                            (double)smartrtl_point.y,
+                            (double)smartrtl_point.z
                             );
         }
     }
