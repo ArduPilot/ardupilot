@@ -306,7 +306,10 @@ bool AP_GPS_NMEA::_term_complete()
                     make_gps_time(_new_date, _new_time * 10);
                     state.last_gps_time_ms = now;
                     // To-Do: add support for proper reporting of 2D and 3D fix
-                    state.status           = AP_GPS::GPS_OK_FIX_3D;
+                    if (_gga_gps_status > 0) //use GGA quality indicator if available
+                        state.status = _gga_gps_status;
+                    else
+                        state.status = AP_GPS::GPS_OK_FIX_3D;
                     fill_3d_velocity();
                     break;
                 case _GPS_SENTENCE_GGA:
@@ -316,8 +319,33 @@ bool AP_GPS_NMEA::_term_complete()
                     state.location.lng  = _new_longitude;
                     state.num_sats      = _new_satellite_count;
                     state.hdop          = _new_hdop;
-                    // To-Do: add support for proper reporting of 2D and 3D fix
-                    state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    switch(_new_quality_indicator) {
+                    case 0: // Fix not available or invalid
+                        state.status = AP_GPS::NO_FIX;
+                        break;
+                    case 1: // GPS SPS Mode, fix valid
+                        state.status = AP_GPS::GPS_OK_FIX_3D;
+                        break;
+                    case 2: // Differential GPS, SPS Mode, fix valid
+                        state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                        break;
+                    case 3: // GPS PPS Mode, fix valid
+                        state.status = AP_GPS::GPS_OK_FIX_3D;
+                        break;
+                    case 4: // Real Time Kinematic. System used in RTK mode with fixed integers
+                        state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                        break;
+                    case 5: // Float RTK. Satellite system used in RTK mode, floating integers
+                        state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                        break;
+                    case 6: // Estimated (dead reckoning) Mode
+                        state.status = AP_GPS::GPS_OK_FIX_3D;
+                        break;
+                    default:
+                        state.status = AP_GPS::NO_FIX;
+                        break;
+                    }
+                    _gga_gps_status = state.status;
                     break;
                 case _GPS_SENTENCE_VTG:
                     _last_VTG_ms = now;
@@ -381,6 +409,7 @@ bool AP_GPS_NMEA::_term_complete()
             break;
         case _GPS_SENTENCE_GGA + 6: // Fix data (GGA)
             _gps_data_good = _term[0] > '0';
+            _new_quality_indicator = _term[0] - '0';
             break;
         case _GPS_SENTENCE_VTG + 9: // validity (VTG) (we may not see this field)
             _gps_data_good = _term[0] != 'N';
