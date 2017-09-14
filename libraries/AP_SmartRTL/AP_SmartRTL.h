@@ -9,21 +9,21 @@
 #include <GCS_MAVLink/GCS.h>
 
 // definitions and macros
-#define SAFERTL_ACCURACY_DEFAULT        2.0f    // default _ACCURACY parameter value.  Points will be no closer than this distance (in meters) together.
-#define SAFERTL_POINTS_DEFAULT          150     // default _POINTS parameter value.  High numbers improve path pruning but use more memory and CPU for cleanup. Memory used will be 20bytes * this number.
-#define SAFERTL_POINTS_MAX              500     // the absolute maximum number of points this library can support.
-#define SAFERTL_TIMEOUT                 15000   // the time in milliseconds with no points saved to the path (for whatever reason), before SafeRTL is disabled for the flight
-#define SAFERTL_CLEANUP_POINT_TRIGGER   50      // simplification will trigger when this many points are added to the path
-#define SAFERTL_CLEANUP_START_MARGIN    10      // routine cleanup algorithms begin when the path array has only this many empty slots remaining
-#define SAFERTL_CLEANUP_POINT_MIN       10      // cleanup algorithms will remove points if they remove at least this many points
-#define SAFERTL_SIMPLIFY_EPSILON (_accuracy * 0.5f)
-#define SAFERTL_SIMPLIFY_STACK_LEN_MULT (2.0f/3.0f)+1   // simplify buffer size as compared to maximum number of points.
-                                                // The minimum is int((s/2-1)+min(s/2, SAFERTL_POINTS_MAX-s)), where s = pow(2, floor(log(SAFERTL_POINTS_MAX)/log(2)))
-                                                // To avoid this annoying math, a good-enough overestimate is ceil(SAFERTL_POINTS_MAX*2.0f/3.0f)
-#define SAFERTL_SIMPLIFY_TIME_US        200     // maximum time (in microseconds) the simplification algorithm will run before returning
-#define SAFERTL_PRUNING_DELTA (_accuracy * 0.99) // How many meters apart must two points be, such that we can assume that there is no obstacle between them.  must be smaller than _ACCURACY parameter
-#define SAFERTL_PRUNING_LOOP_BUFFER_LEN_MULT 0.25f // pruning loop buffer size as compared to maximum number of points
-#define SAFERTL_PRUNING_LOOP_TIME_US    200     // maximum time (in microseconds) that the loop finding algorithm will run before returning
+#define SMARTRTL_ACCURACY_DEFAULT        2.0f   // default _ACCURACY parameter value.  Points will be no closer than this distance (in meters) together.
+#define SMARTRTL_POINTS_DEFAULT          150    // default _POINTS parameter value.  High numbers improve path pruning but use more memory and CPU for cleanup. Memory used will be 20bytes * this number.
+#define SMARTRTL_POINTS_MAX              500    // the absolute maximum number of points this library can support.
+#define SMARTRTL_TIMEOUT                 15000  // the time in milliseconds with no points saved to the path (for whatever reason), before SmartRTL is disabled for the flight
+#define SMARTRTL_CLEANUP_POINT_TRIGGER   50     // simplification will trigger when this many points are added to the path
+#define SMARTRTL_CLEANUP_START_MARGIN    10     // routine cleanup algorithms begin when the path array has only this many empty slots remaining
+#define SMARTRTL_CLEANUP_POINT_MIN       10     // cleanup algorithms will remove points if they remove at least this many points
+#define SMARTRTL_SIMPLIFY_EPSILON (_accuracy * 0.5f)
+#define SMARTRTL_SIMPLIFY_STACK_LEN_MULT (2.0f/3.0f)+1  // simplify buffer size as compared to maximum number of points.
+                                                // The minimum is int((s/2-1)+min(s/2, SMARTRTL_POINTS_MAX-s)), where s = pow(2, floor(log(SMARTRTL_POINTS_MAX)/log(2)))
+                                                // To avoid this annoying math, a good-enough overestimate is ceil(SMARTRTL_POINTS_MAX*2.0f/3.0f)
+#define SMARTRTL_SIMPLIFY_TIME_US        200    // maximum time (in microseconds) the simplification algorithm will run before returning
+#define SMARTRTL_PRUNING_DELTA (_accuracy * 0.99)   // How many meters apart must two points be, such that we can assume that there is no obstacle between them.  must be smaller than _ACCURACY parameter
+#define SMARTRTL_PRUNING_LOOP_BUFFER_LEN_MULT 0.25f // pruning loop buffer size as compared to maximum number of points
+#define SMARTRTL_PRUNING_LOOP_TIME_US    200    // maximum time (in microseconds) that the loop finding algorithm will run before returning
 
 class AP_SmartRTL {
 
@@ -48,7 +48,7 @@ public:
     bool pop_point(Vector3f& point);
 
     // clear return path and set return location if position_ok is true.  This should be called as part of the arming procedure
-    // if position_ok is false, SafeRTL will not be available.
+    // if position_ok is false, SmartRTL will not be available.
     // example sketches use the method that allows providing vehicle position directly
     void reset_path(bool position_ok);
     void reset_path(bool position_ok, const Vector3f& current_pos);
@@ -101,7 +101,7 @@ private:
     // add point to end of path
     bool add_point(const Vector3f& point);
 
-    // routine cleanup attempts to remove 10 points (see SAFERTL_CLEANUP_POINT_MIN definition) by simplification or loop pruning
+    // routine cleanup attempts to remove 10 points (see SMARTRTL_CLEANUP_POINT_MIN definition) by simplification or loop pruning
     void routine_cleanup(uint16_t path_points_count, uint16_t path_points_complete_limit);
 
     // thorough cleanup simplifies and prunes all loops.  returns true if the cleanup was completed.
@@ -159,7 +159,7 @@ private:
     // get the closest distance between 2 line segments and the point midway between the closest points
     static dist_point segment_segment_dist(const Vector3f& p1, const Vector3f& p2, const Vector3f& p3, const Vector3f& p4);
 
-    // de-activate SafeRTL, send warning to GCS and log to dataflash
+    // de-activate SmartRTL, send warning to GCS and log to dataflash
     void deactivate(SRTL_Actions action, const char *reason);
 
     // logging
@@ -172,10 +172,10 @@ private:
     AP_Float _accuracy;
     AP_Int16 _points_max;
 
-    // SafeRTL State Variables
-    bool _active;       // true if safeRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SafeRTL will be permanently deactivated (for the remainder of the flight)
+    // SmartRTL State Variables
+    bool _active;       // true if SmartRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SmartRTL will be permanently deactivated (for the remainder of the flight)
     bool _example_mode; // true when being called from the example sketch, logging and background tasks are disabled
-    uint32_t _last_good_position_ms;    // the last system time a last good position was reported. If no position is available for a while, SafeRTL will be disabled.
+    uint32_t _last_good_position_ms;    // the last system time a last good position was reported. If no position is available for a while, SmartRTL will be disabled.
     uint32_t _last_position_save_ms;    // the system time a position was saved to the path (used for timeout)
     uint32_t _thorough_clean_request_ms;// the last system time the thorough cleanup was requested (set by thorough_cleanup method, used by background cleanup)
     uint32_t _thorough_clean_complete_ms; // set to _thorough_clean_request_ms when the background thread completes the thorough cleanup
@@ -198,11 +198,11 @@ private:
         bool complete;          // true after simplify_detection has completed
         bool removal_required;  // true if some simplify-able points have been found on the path, set true by detect_simplifications, set false by remove_points_by_simplify_bitmask
         uint16_t path_points_count; // copy of _path_points_count taken when the simply algorithm started
-        uint16_t path_points_completed = SAFERTL_POINTS_MAX; // number of points in that path that have already been simplified and should be ignored
+        uint16_t path_points_completed = SMARTRTL_POINTS_MAX; // number of points in that path that have already been simplified and should be ignored
         simplify_start_finish_t* stack;
         uint16_t stack_max;     // maximum number of elements in the _simplify_stack array
         uint16_t stack_count;   // number of elements in _simplify_stack array
-        Bitmask bitmask = Bitmask(SAFERTL_POINTS_MAX);  // simplify algorithm clears bits for each point that can be removed
+        Bitmask bitmask = Bitmask(SMARTRTL_POINTS_MAX);  // simplify algorithm clears bits for each point that can be removed
     } _simplify;
 
     // Pruning
