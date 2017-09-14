@@ -24,11 +24,17 @@ protected:
     }
 
 private:
+    // detect uLanding Firmware Version
+    bool detect_uLanding_version(void);
+
     // get a reading
     bool get_reading(uint16_t &reading_cm);
 
     AP_HAL::UARTDriver *uart = nullptr;
     uint32_t last_reading_ms = 0;
-    uint8_t linebuf[10];
+    uint8_t linebuf[6];
     uint8_t linebuf_len = 0;
+    bool _uLanding_version_check = false;
+    uint8_t _uLanding_hdr;
+    uint8_t _uLanding_version;
 };
