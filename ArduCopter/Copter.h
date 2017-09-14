@@ -414,8 +414,8 @@ private:
         bool terrain_used;
     } rtl_path;
 
-    // SafeRTL
-    SafeRTLState smart_rtl_state; // records state of SafeRTL
+    // SmartRTL
+    SmartRTLState smart_rtl_state;  // records state of SmartRTL
 
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw

@@ -37,7 +37,7 @@ Copter::Copter(void) :
     guided_mode(Guided_TakeOff),
     rtl_state(RTL_InitialClimb),
     rtl_state_complete(false),
-    smart_rtl_state(SafeRTL_PathFollow),
+    smart_rtl_state(SmartRTL_PathFollow),
     circle_pilot_yaw_override(false),
     simple_cos_yaw(1.0f),
     simple_sin_yaw(0.0f),

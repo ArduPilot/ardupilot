@@ -179,7 +179,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     }
     calc_distance_and_bearing();
 
-    // Reset SafeRTL return location. If activated, SafeRTL will ultimately try to land at this point
+    // Reset SmartRTL return location. If activated, SmartRTL will ultimately try to land at this point
     g2.smart_rtl.reset_path(position_ok());
 
     // enable gps velocity based centrefugal force compensation
