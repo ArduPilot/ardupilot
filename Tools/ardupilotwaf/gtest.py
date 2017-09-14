@@ -4,11 +4,12 @@
 """
 gtest is a Waf tool for test builds in Ardupilot
 """
+from __future__ import absolute_import
 
 from waflib import Utils
 from waflib.Configure import conf
 
-import boards
+from . import boards
 
 def configure(cfg):
     cfg.env.HAS_GTEST = False

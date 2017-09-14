@@ -3,6 +3,7 @@
 Python interface to euroc ROS multirotor simulator
 See https://pixhawk.org/dev/ros/sitl
 """
+from __future__ import absolute_import
 
 import time
 
@@ -12,8 +13,8 @@ import rosgraph_msgs.msg as rosgraph_msgs
 import rospy
 import sensor_msgs.msg as sensor_msgs
 
-from aircraft import Aircraft
-from rotmat import Vector3, Matrix3
+from .aircraft import Aircraft
+from .rotmat import Vector3, Matrix3
 
 
 def quat_to_dcm(q1, q2, q3, q4):

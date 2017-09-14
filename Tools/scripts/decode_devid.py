@@ -5,6 +5,7 @@ decode a device ID, such as used for COMPASS_DEV_ID, INS_ACC_ID etc
 To understand the devtype you should look at the backend headers for
 the sensor library, such as libraries/AP_Compass/AP_Compass_Backend.h
 '''
+from __future__ import print_function
 
 import sys
 import optparse

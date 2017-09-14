@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 from xml.sax.saxutils import escape, quoteattr
 
-from emit import Emit
-from param import known_param_fields, known_units
+from .emit import Emit
+from .param import known_param_fields, known_units
 
 
 # Emit APM documentation in an machine readable XML format

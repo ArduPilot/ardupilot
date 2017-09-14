@@ -1,9 +1,10 @@
+from __future__ import absolute_import
 import math
 import random
 import time
-import util
+from . import util
 
-from rotmat import Vector3, Matrix3
+from .rotmat import Vector3, Matrix3
 
 
 class Aircraft(object):

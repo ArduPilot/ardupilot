@@ -3,6 +3,7 @@
 """
 Extract version information for the various vehicle types, print it
 """
+from __future__ import print_function
 
 import os
 import re

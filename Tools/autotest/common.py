@@ -1,10 +1,11 @@
 from __future__ import print_function
+from __future__ import absolute_import
 import math
 import time
 
 from pymavlink import mavwp
 
-from pysim import util
+from .pysim import util
 
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing

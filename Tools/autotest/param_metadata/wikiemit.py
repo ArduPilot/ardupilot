@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import re
 
-from emit import Emit
-from param import known_param_fields, known_units
+from .emit import Emit
+from .param import known_param_fields, known_units
 
 
 # Emit docs in a form acceptable to the APM wiki site

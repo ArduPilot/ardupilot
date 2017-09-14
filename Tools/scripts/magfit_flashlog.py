@@ -3,6 +3,7 @@
 ''' fit best estimate of magnetometer offsets from ArduCopter flashlog
 using the algorithm from Bill Premerlani
 '''
+from __future__ import print_function
 
 import sys, time, os, math
 
@@ -87,7 +88,7 @@ def find_offsets(data, ofs):
         ofs = ofs - delta
 
         if opts.verbose:
-            print ofs
+            print(ofs)
     return ofs
 
 

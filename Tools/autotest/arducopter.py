@@ -7,6 +7,7 @@
 #   switch 5 = Loiter
 #   switch 6 = Stabilize
 from __future__ import print_function
+from __future__ import absolute_import
 import math
 import os
 import shutil
@@ -15,9 +16,9 @@ import time
 import pexpect
 from pymavlink import mavutil, mavwp
 
-from common import *
-from pysim import util
-from pysim import vehicleinfo
+from .common import *
+from .pysim import util
+from .pysim import vehicleinfo
 
 vinfo = vehicleinfo.VehicleInfo()
 

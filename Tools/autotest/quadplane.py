@@ -1,12 +1,13 @@
 # fly ArduPlane QuadPlane in SITL
 from __future__ import print_function
+from __future__ import absolute_import
 import os
 import pexpect
 import shutil
 from pymavlink import mavutil
 
-from common import *
-from pysim import util
+from .common import *
+from .pysim import util
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))

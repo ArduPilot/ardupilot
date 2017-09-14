@@ -3,6 +3,7 @@
 Add git hashes to .px4 file for PX4/Pixhawk build
 Written by Jon Challinger January 2015
 '''
+from __future__ import print_function
 
 import json
 import sys
