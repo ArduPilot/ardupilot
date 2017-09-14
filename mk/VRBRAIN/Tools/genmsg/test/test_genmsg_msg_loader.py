@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2009, Willow Garage, Inc.

@@ -3,9 +3,10 @@
 simple test of wind generation code
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import time
-import util
-from rotmat import Vector3
+from . import util
+from .rotmat import Vector3
 
 wind = util.Wind('7,90,0.1')
 

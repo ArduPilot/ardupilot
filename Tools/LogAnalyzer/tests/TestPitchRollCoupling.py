@@ -100,7 +100,7 @@ class TestPitchRollCoupling(Test):
                         if abs(pitch)>(maxLeanAngle+maxLeanAngleBuffer) and abs(pitch)>abs(maxPitch):
                             maxPitch = pitch
                             maxPitchLine = lit.currentLine
-                    lit.next()
+                    next(lit)
         # check for breaking max lean angles
         if maxRoll and abs(maxRoll)>abs(maxPitch):
             self.result.status = TestResult.StatusType.FAIL

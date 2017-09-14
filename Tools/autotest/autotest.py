@@ -4,6 +4,7 @@
  Andrew Tridgell, October 2011
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import atexit
 import fnmatch
 import glob
@@ -15,12 +16,12 @@ import sys
 import time
 import traceback
 
-import apmrover2
-import arducopter
-import arduplane
-import quadplane
-import ardusub
-from pysim import util
+from . import apmrover2
+from . import arducopter
+from . import arduplane
+from . import quadplane
+from . import ardusub
+from .pysim import util
 from pymavlink import mavutil
 from pymavlink.generator import mavtemplate
 

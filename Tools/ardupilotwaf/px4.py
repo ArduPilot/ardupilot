@@ -4,6 +4,7 @@
 """
 Waf tool for PX4 build
 """
+from __future__ import print_function
 
 from waflib import Errors, Logs, Task, Utils
 from waflib.TaskGen import after_method, before_method, feature

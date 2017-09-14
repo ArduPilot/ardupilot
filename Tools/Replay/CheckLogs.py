@@ -2,6 +2,7 @@
 '''
 run Replay over a set of logs to check for code regressions
 '''
+from __future__ import print_function
 
 import optparse, os, sys
 

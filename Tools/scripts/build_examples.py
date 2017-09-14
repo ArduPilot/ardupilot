@@ -5,6 +5,7 @@
 # Peter Barker, June 2016
 # based on build_examples.sh,  Andrew Tridgell, November 2012
 
+from __future__ import print_function
 import os
 import sys
 import optparse

@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import absolute_import
 import glob
 import os
 import re
 import sys
 from optparse import OptionParser
 
-from param import (Library, Parameter, Vehicle, known_group_fields,
+from .param import (Library, Parameter, Vehicle, known_group_fields,
                    known_param_fields, required_param_fields, known_units)
-from htmlemit import HtmlEmit
-from rstemit import RSTEmit
-from wikiemit import WikiEmit
-from xmlemit import XmlEmit
-from mdemit import MDEmit
+from .htmlemit import HtmlEmit
+from .rstemit import RSTEmit
+from .wikiemit import WikiEmit
+from .xmlemit import XmlEmit
+from .mdemit import MDEmit
 
 parser = OptionParser("param_parse.py [options]")
 parser.add_option("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")

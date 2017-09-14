@@ -7,6 +7,7 @@ Peter Barker, April 2016
 based on sim_vehicle.sh by Andrew Tridgell, October 2011
 """
 from __future__ import print_function
+from __future__ import absolute_import
 
 import atexit
 import errno
@@ -274,7 +275,7 @@ def wait_unlimited():
     """Wait until signal received"""
     time.sleep(987654321987654321)
 
-from pysim import vehicleinfo
+from .pysim import vehicleinfo
 vinfo = vehicleinfo.VehicleInfo()
 
 def do_build_waf(opts, frame_options):
