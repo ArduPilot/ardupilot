@@ -44,7 +44,7 @@ void Copter::ekf_check()
     }
 
     // compare compass and velocity variance vs threshold
-    if (ekf_over_threshold()) {
+    if (ekf_over_threshold() || ekf_check_position_problem()) {
         // if compass is not yet flagged as bad
         if (!ekf_check_state.bad_variance) {
             // increase counter
@@ -86,17 +86,27 @@ void Copter::ekf_check()
     // To-Do: add ekf variances to extended status
 }
 
+// ekf_check_position_problem - returns true if the EKF has a positioning problem
+bool Copter::ekf_check_position_problem()
+{
+    // either otflow or abs means we're OK:
+    if (optflow_position_ok()) {
+        return false;
+    }
+    if (ekf_position_ok()) {
+        return false;
+    }
+
+    return true;
+}
+
+
 // ekf_over_threshold - returns true if the ekf's variance are over the tolerance
 bool Copter::ekf_over_threshold()
 {
     // return false immediately if disabled
     if (g.fs_ekf_thresh <= 0.0f) {
         return false;
-    }
-
-    // return true immediately if position is bad
-    if (!ekf_position_ok() && !optflow_position_ok()) {
-        return true;
     }
 
     // use EKF to get variance
