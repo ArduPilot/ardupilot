@@ -97,7 +97,24 @@ bool Copter::ekf_check_position_problem()
         return false;
     }
 
-    return true;
+    // We don't know where we are.  Is this a problem?
+    if (copter.mode_requires_GPS(copter.control_mode)) {
+        // Oh, yes, we have a problem
+        return true;
+    }
+    // sometimes LAND *does* require GPS:
+    if (control_mode == LAND && landing_with_GPS()) {
+        return true;
+    }
+
+    // we're in a non-GPS mode (e.g. althold/stabilize)
+
+    if (g.fs_ekf_action == FS_EKF_ACTION_LAND_EVEN_STABILIZE) {
+        // the user is making an issue out of it
+        return true;
+    }
+
+    return false;
 }
 
 
