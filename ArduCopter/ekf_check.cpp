@@ -151,11 +151,6 @@ bool Copter::ekf_over_threshold()
 // failsafe_ekf_event - perform ekf failsafe
 void Copter::failsafe_ekf_event()
 {
-    // return immediately if ekf failsafe already triggered
-    if (failsafe.ekf) {
-        return;
-    }
-
     // EKF failsafe event has occurred
     failsafe.ekf = true;
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
@@ -182,11 +177,6 @@ void Copter::failsafe_ekf_event()
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared
 void Copter::failsafe_ekf_off_event(void)
 {
-    // return immediately if not in ekf failsafe
-    if (!failsafe.ekf) {
-        return;
-    }
-
     // clear flag and log recovery
     failsafe.ekf = false;
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_RESOLVED);
