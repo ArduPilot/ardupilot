@@ -340,7 +340,6 @@ bool AP_GPS_NMEA::_term_complete()
                         state.status = AP_GPS::GPS_OK_FIX_3D;
                         break;
                     }
-                    _gga_gps_status = state.status;
                     break;
                 case _GPS_SENTENCE_VTG:
                     _last_VTG_ms = now;
