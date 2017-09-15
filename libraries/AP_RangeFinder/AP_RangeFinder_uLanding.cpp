@@ -154,35 +154,35 @@ bool AP_RangeFinder_uLanding::get_reading(uint16_t &reading_cm)
         
         if ((c == _header) && !hdr_found) {
             // located header byte
-            linebuf_len = 0;
+            _linebuf_len = 0;
             hdr_found   = true;
         }
         // decode index information
         if (hdr_found) {
-            linebuf[linebuf_len++] = c;
+            _linebuf[_linebuf_len++] = c;
 
-            /* don't process linebuf until we've collected six bytes of data
-             * (or 3 bytes for Version 0 firmware)
-             */
-            if ((linebuf_len < (sizeof(linebuf)/sizeof(linebuf[0]))) ||
-                (_version == 0 && linebuf_len < 3)) {
+            if ((_linebuf_len < (sizeof(_linebuf)/sizeof(_linebuf[0]))) ||
+                (_version == 0 && _linebuf_len < 3)) {
+                /* don't process _linebuf until we've collected six bytes of data
+                 * (or 3 bytes for Version 0 firmware)
+                 */
                 continue;
             } else {
                 if (_version == 0) {
-                    // parse data from Firmware Version #0
-                    sum += (linebuf[2]&0x7F)*128 + (linebuf[1]&0x7F);
+                    // parse data for Firmware Version #0
+                    sum += (_linebuf[2]&0x7F)*128 + (_linebuf[1]&0x7F);
                     count++;
                 } else {
                     // evaluate checksum
-                    if (((linebuf[1] + linebuf[2] + linebuf[3] + linebuf[4]) & 0xFF) == linebuf[5]) {
-                        // if checksum passed, parse data from Firmware Version #1
-                        sum += linebuf[3]*256 + linebuf[2];
+                    if (((_linebuf[1] + _linebuf[2] + _linebuf[3] + _linebuf[4]) & 0xFF) == _linebuf[5]) {
+                        // if checksum passed, parse data for Firmware Version #1
+                        sum += _linebuf[3]*256 + _linebuf[2];
                         count++;
                     }
                 }
 
                 hdr_found = false;
-                linebuf_len = 0;
+                _linebuf_len = 0;
             }
         }
     }
@@ -207,9 +207,9 @@ void AP_RangeFinder_uLanding::update(void)
 {
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
-        last_reading_ms = AP_HAL::millis();
+        _last_reading_ms = AP_HAL::millis();
         update_status();
-    } else if (AP_HAL::millis() - last_reading_ms > 200) {
+    } else if (AP_HAL::millis() - _last_reading_ms > 200) {
         set_status(RangeFinder::RangeFinder_NoData);
     }
 }
