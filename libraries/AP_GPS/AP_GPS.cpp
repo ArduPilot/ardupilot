@@ -307,6 +307,23 @@ uint8_t AP_GPS::num_sensors(void) const
     }
 }
 
+bool AP_GPS::is_healthy() const {
+    return is_healthy(primary_instance); //could be overloaded with defaults
+}
+
+bool AP_GPS::is_healthy(uint8_t instance) const {
+    if (instance >= GPS_MAX_RECEIVERS)
+        return false;
+
+    uint32_t tnow = AP_HAL::millis();
+    if (drivers[instance] != nullptr && state[instance].status != NO_GPS &&
+      tnow - timing[instance].last_message_time_ms < get_rate_ms(instance) &&
+      drivers[instance]->is_healthy())
+        return true;
+
+    return false;
+}
+
 bool AP_GPS::speed_accuracy(uint8_t instance, float &sacc) const
 {
     if (state[instance].have_speed_accuracy) {
