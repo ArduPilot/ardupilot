@@ -3,12 +3,10 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -126,7 +124,8 @@ private:
     uint8_t _term_number;                                       ///< term index within the current sentence
     uint8_t _term_offset;                                       ///< character offset with the term being received
     bool _gps_data_good;                                        ///< set when the sentence indicates data is good
-
+    uint8_t _gps_status;                                        /////////////////////////////////////////////////////////////////////////
+    
     // The result of parsing terms within a message is stored temporarily until
     // the message is completely processed and the checksum validated.
     // This avoids the need to buffer the entire message.
