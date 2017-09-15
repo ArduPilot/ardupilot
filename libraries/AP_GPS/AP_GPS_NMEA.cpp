@@ -305,11 +305,6 @@ bool AP_GPS_NMEA::_term_complete()
                     state.ground_course    = wrap_360(_new_course*0.01f);
                     make_gps_time(_new_date, _new_time * 10);
                     state.last_gps_time_ms = now;
-                    // To-Do: add support for proper reporting of 2D and 3D fix
-                    if (_gga_gps_status > 0) //use GGA quality indicator if available
-                        state.status = _gga_gps_status;
-                    else
-                        state.status = AP_GPS::GPS_OK_FIX_3D;
                     fill_3d_velocity();
                     break;
                 case _GPS_SENTENCE_GGA:
@@ -339,10 +334,10 @@ bool AP_GPS_NMEA::_term_complete()
                         state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                         break;
                     case 6: // Estimated (dead reckoning) Mode
-                        state.status = AP_GPS::GPS_OK_FIX_3D;
-                        break;
-                    default:
                         state.status = AP_GPS::NO_FIX;
+                        break;
+                    default://to maintain compatibility with MAV_GPS_INPUT and others
+                        state.status = AP_GPS::GPS_OK_FIX_3D;
                         break;
                     }
                     _gga_gps_status = state.status;

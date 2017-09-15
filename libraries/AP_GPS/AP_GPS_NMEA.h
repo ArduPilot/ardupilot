@@ -140,7 +140,7 @@ private:
     uint16_t _new_hdop;                                                 ///< HDOP parsed from a term
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
     uint8_t _new_quality_indicator;                                     ///< GPS quality indicator parsed from a term
-    AP_GPS::GPS_Status _gga_gps_status = AP_GPS::NO_FIX;
+    AP_GPS::GPS_Status _gga_gps_status = AP_GPS::NO_GPS;
 
     uint32_t _last_RMC_ms = 0;
     uint32_t _last_GGA_ms = 0;
