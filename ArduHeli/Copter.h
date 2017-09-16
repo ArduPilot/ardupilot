@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #define THISFIRMWARE "ArduHeli V2.1"
-#define FIRMWARE_VERSION 2,1,0,FIRMWARE_VERSION_TYPE_STABLE
+#define FIRMWARE_VERSION 2,1,0,FIRMWARE_VERSION_TYPE_OFFICIAL
 
 /*
    This program is free software: you can redistribute it and/or modify
