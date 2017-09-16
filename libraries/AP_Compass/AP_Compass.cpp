@@ -620,6 +620,13 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_AK09916_I2C_ADDR),
                                                               both_i2c_external, both_i2c_external?ROTATION_YAW_270:ROTATION_NONE),
                     AP_Compass_AK09916::name, both_i2c_external);
+
+        // IST8310 on external and internal bus
+        ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_IST8310_I2C_ADDR),
+                                                              true, ROTATION_PITCH_180), AP_Compass_IST8310::name, true);
+
+        ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_IST8310_I2C_ADDR),
+                                                              both_i2c_external, ROTATION_PITCH_180), AP_Compass_IST8310::name, both_i2c_external);
 #endif // HAL_MINIMIZE_FEATURES
         }
         break;
@@ -627,7 +634,7 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_AEROFC:
 #ifdef HAL_COMPASS_IST8310_I2C_BUS
         ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_IST8310_I2C_BUS, HAL_COMPASS_IST8310_I2C_ADDR),
-                                                              ROTATION_PITCH_180_YAW_90), AP_Compass_IST8310::name, true);
+                                                              true, ROTATION_PITCH_180_YAW_90), AP_Compass_IST8310::name, true);
 #endif
         break;
     default:
