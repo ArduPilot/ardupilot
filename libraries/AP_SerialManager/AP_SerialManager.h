@@ -87,7 +87,7 @@ public:
         SerialProtocol_SToRM32 = 8,
         SerialProtocol_Lidar = 9,
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
-        SerialProtocol_Lidar360 = 11,                // Lightware SF40C or TeraRanger Tower
+        SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
         SerialProtocol_Beacon = 13
     };
