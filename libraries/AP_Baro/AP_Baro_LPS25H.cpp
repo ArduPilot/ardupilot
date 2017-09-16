@@ -117,8 +117,8 @@ void AP_Baro_LPS25H::_update_temperature(void)
 	int16_t Temp_Reg_s16 = (uint16_t)(pu8[1]<<8) | pu8[0];
 	if (_sem->take_nonblocking()) {
 		_temperature=((float)(Temp_Reg_s16/480)+42.5);
-	}
 	_sem->give();
+	}
 	
 }
 
@@ -131,6 +131,6 @@ void AP_Baro_LPS25H::_update_pressure(void)
 	int32_t Pressure_mb = Pressure_Reg_s32 / 4096; // scale
 	if (_sem->take_nonblocking()) {
 		_pressure=Pressure_mb;
-	}
 	_sem->give();
+	}
 }
