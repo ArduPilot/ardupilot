@@ -198,6 +198,11 @@ public:
         delete[] _buffer;
     }
 
+    // return total number of objects
+    uint16_t size(void) const {
+        return _size;
+    }
+
     // return number of objects available to be read
     uint16_t available(void) const {
         return _count;
