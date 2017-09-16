@@ -1291,22 +1291,36 @@ void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
  */
 void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg)
 {
-    uint8_t result = MAV_RESULT_FAILED;
     mavlink_set_mode_t packet;
     mavlink_msg_set_mode_decode(msg, &packet);
 
+    const MAV_MODE base_mode = (MAV_MODE)packet.base_mode;
+    const uint32_t custom_mode = packet.custom_mode;
+
+    const MAV_RESULT result = _set_mode_common(base_mode, custom_mode);
+
+    // send ACK or NAK
+    mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
+}
+
+/*
+  code common to both SET_MODE mavlink message and command long set_mode msg
+*/
+MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode)
+{
+    MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
     // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
-    if (packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
-        if (set_mode(packet.custom_mode)) {
+    if (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
+        if (set_mode(custom_mode)) {
             result = MAV_RESULT_ACCEPTED;
         }
-    } else if (packet.base_mode == MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
+    } else if (base_mode == (MAV_MODE)MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
         // set the safety switch position. Must be in a command by itself
-        if (packet.custom_mode == 0) {
+        if (custom_mode == 0) {
             // turn safety off (pwm outputs flow to the motors)
             hal.rcout->force_safety_off();
             result = MAV_RESULT_ACCEPTED;
-        } else if (packet.custom_mode == 1) {
+        } else if (custom_mode == 1) {
             // turn safety on (no pwm outputs to the motors)
             if (hal.rcout->force_safety_on()) {
                 result = MAV_RESULT_ACCEPTED;
@@ -1314,8 +1328,7 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg)
         }
     }
 
-    // send ACK or NAK
-    mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
+    return result;
 }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
