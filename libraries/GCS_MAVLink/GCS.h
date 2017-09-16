@@ -314,6 +314,8 @@ private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
 
+    MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
+
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
 
     MAV_RESULT handle_servorelay_message(mavlink_command_long_t &packet);
