@@ -77,13 +77,14 @@ extern const AP_HAL::HAL &hal;
 
 AP_Compass_Backend *AP_Compass_IST8310::probe(Compass &compass,
                                               AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                              bool force_external,
                                               enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
 
-    AP_Compass_IST8310 *sensor = new AP_Compass_IST8310(compass, std::move(dev), rotation);
+    AP_Compass_IST8310 *sensor = new AP_Compass_IST8310(compass, std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -94,10 +95,12 @@ AP_Compass_Backend *AP_Compass_IST8310::probe(Compass &compass,
 
 AP_Compass_IST8310::AP_Compass_IST8310(Compass &compass,
                                        AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                       bool force_external,
                                        enum Rotation rotation)
     : AP_Compass_Backend(compass)
     , _dev(std::move(dev))
     , _rotation(rotation)
+    , _force_external(force_external)
 {
 }
 
@@ -163,6 +166,10 @@ bool AP_Compass_IST8310::init()
     _dev->set_device_type(DEVTYPE_IST8310);
     set_dev_id(_instance, _dev->get_bus_id());
 
+    if (_force_external) {
+        set_external(_instance, true);
+    }
+    
     _periodic_handle = _dev->register_periodic_callback(SAMPLING_PERIOD_USEC,
         FUNCTOR_BIND_MEMBER(&AP_Compass_IST8310::timer, void));
 
