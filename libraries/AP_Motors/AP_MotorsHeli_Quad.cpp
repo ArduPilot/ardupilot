@@ -254,18 +254,40 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     // reserve some collective for attitude control
     collective_out *= collective_range;
 
-    if (collective_out < 0) {
-        // with negative collective yaw torque is reversed
-        yaw_out = -yaw_out;
-    }
-
     float out[AP_MOTORS_HELI_QUAD_NUM_MOTORS] {};
+
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         out[i] =
             _rollFactor[CH_1+i] * roll_out +
             _pitchFactor[CH_1+i] * pitch_out +
-            _yawFactor[CH_1+i] * yaw_out +
             _collectiveFactor[CH_1+i] * collective_out;
+    }
+
+    // see if we need to scale down yaw_out
+    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
+        float y = _yawFactor[CH_1+i] * yaw_out;
+        if (out[i] < 0) {
+            // the slope of the yaw effect changes at zero collective
+            y = -y;
+        }
+        if (out[i] * (out[i] + y) < 0) {
+            // applying this yaw demand would change the sign of the
+            // collective, which means the yaw would not be applied
+            // evenly. We scale down the overall yaw demand to prevent
+            // it crossing over zero
+            float s = -(out[i] / y);
+            yaw_out *= s;
+        }
+    }
+
+    // now apply the yaw correction
+    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
+        float y = _yawFactor[CH_1+i] * yaw_out;
+        if (out[i] < 0) {
+            // the slope of the yaw effect changes at zero collective
+            y = -y;
+        }
+        out[i] += y;
     }
     
     // move the servos
