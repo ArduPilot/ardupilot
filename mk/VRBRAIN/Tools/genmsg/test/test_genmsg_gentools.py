@@ -31,7 +31,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
 import os
 import sys 
         
@@ -107,13 +106,13 @@ def test_compute_md5_text():
     tests = _load_md5_tests('md5text')
     # text file #1 is the reference
     for k, files in tests.items():
-        print(("running tests", k))
+        print("running tests", k)
         ref_file = [f for f in files if f.endswith('%s1.txt'%k)]
         if not ref_file:
             assert False, "failed to load %s"%k
         ref_file = ref_file[0]
         ref_text = open(ref_file, 'r').read().strip()
-        print(("KEY", k))
+        print("KEY", k)
         files = [f for f in files if not f.endswith('%s1.txt'%k)]
         for f in files[1:]:
             f_text = _compute_md5_text(msg_context, f)
@@ -126,7 +125,7 @@ def test_md5_equals():
     search_path = get_search_path()
     tests = _load_md5_tests('same')
     for k, files in tests.items():
-        print(("running tests", k))
+        print("running tests", k)
         md5sum = _compute_md5(msg_context, files[0])
         for f in files[1:]:
             assert md5sum == _compute_md5(msg_context, f), "failed on %s: \n[%s]\nvs.\n[%s]\n"%(k, _compute_md5_text(msg_context, files[0]), _compute_md5_text(msg_context, f))
@@ -137,7 +136,7 @@ def test_md5_not_equals():
 
     tests = _load_md5_tests('different')
     for k, files in tests.items():
-        print(("running tests", k))
+        print("running tests", k)
         md5s = set()
         md6md5sum = _compute_md5(msg_context, files[0])
         for f in files:
