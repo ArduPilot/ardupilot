@@ -2036,11 +2036,23 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_send_banner(const mavlink_command_long
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_long_t &packet)
+{
+    const MAV_MODE base_mode = (MAV_MODE)packet.param1;
+    const uint32_t custom_mode = (uint32_t)packet.param2;
+
+    return _set_mode_common(base_mode, custom_mode);
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
+
+    case MAV_CMD_DO_SET_MODE:
+        result = handle_command_do_set_mode(packet);
+        break;
 
     case MAV_CMD_DO_SEND_BANNER:
         result = handle_command_do_send_banner(packet);
