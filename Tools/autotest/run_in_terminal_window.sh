@@ -7,7 +7,7 @@ name="$1"
 shift
 echo "RiTW: Starting $name : $*"
 
-if [ ! -v SITL_RITW_MINIMIZE ]; then
+if [ -z "$SITL_RITW_MINIMIZE" ]; then
     SITL_RITW_MINIMIZE=1
 fi
 
