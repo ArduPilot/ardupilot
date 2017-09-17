@@ -70,36 +70,37 @@ struct MultiplierStructure {
 
 // all units here should be base units
 // This does mean battery capacity is here as "amp*second"
+// Please keep the names consistent with Tools/autotest/param_metadata/param.py:33
 const struct UnitStructure log_Units[] = {
-    { '-', "" },    // no units e.g. Pi, or a string
-    { '?', "UNKNOWN" },    // Units which haven't been worked out yet....
-    { 'A', "amp" },
-    { 'd', "degrees" }, // of the angular variety, -180 to 180
-    { 'D', "deglatitude" },
-    { 'b', "bytes" },
-    { 'k', "degrees/second" },
-    { 'e', "degrees/second/second" },
-    { 'E', "radians/second" },
-    { 'G', "gauss" },
-    { 'h', "degheading" }, // 0.? to 359.?
-    { 'i', "amp*seconds" },
-    // { 'l', "litres" },
-    { 'L', "radians/second/second" },
-    { 'm', "metres" },
-    { 'n', "metres/second" },
-    // { 'N', "Newton" },
-    { 'o', "metres/second/second" },
-    { 'O', "degcelsius" },
-    { 'S', "satellites" },
-    { 's', "seconds" },
-    { 'q', "rpm" },
-    { 'r', "radians" },
-    { 'u', "pulses/minute" }, // i.e. ppm
-    { 'U', "deglongitude" },
-    { 'v', "volt" },
-    { 'P', "pascal" },
-    { 'w', "ohm" },
-    { 'z', "hertz" }
+    { '-', "" },              // no units e.g. Pi, or a string
+    { '?', "UNKNOWN" },       // Units which haven't been worked out yet....
+    { 'A', "A" },             // Ampere
+    { 'd', "deg" },           // of the angular variety, -180 to 180
+    { 'b', "B" },             // bytes
+    { 'k', "deg/s" },         // degrees per second. Degrees are NOT SI, but is some situations more user-friendly than radians
+    { 'D', "deglatitude" },   // degrees of latitude
+    { 'e', "deg/s/s" },       // degrees per second per second. Degrees are NOT SI, but is some situations more user-friendly than radians
+    { 'E', "rad/s" },         // radians per second
+    { 'G', "Gauss" },         // Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
+    { 'h', "degheading" },    // 0.? to 359.?
+    { 'i', "A.s" },           // Ampere second
+    // { 'l', "l" },          // litres
+    { 'L', "rad/s/s" },       // radians per second per second
+    { 'm', "m" },             // metres
+    { 'n', "m/s" },           // metres per second
+    // { 'N', "N" },          // Newton
+    { 'o', "m/s/s" },         // metres per second per second
+    { 'O', "degC" },          // degrees Celsius. Not SI, but Kelvin is too cumbersome for most users
+    { 'S', "satellites" },    // number of satellites
+    { 's', "s" },             // seconds
+    { 'q', "rpm" },           // rounds per minute. Not SI, but sometimes more intuitive than Hertz
+    { 'r', "rad" },           // radians
+    { 'U', "deglongitude" },  // degrees of longitude
+    { 'u', "ppm" },           // pulses per minute
+    { 'v', "V" },             // Volt
+    { 'P', "Pa" },            // Pascal
+    { 'w', "Ohm" },           // Ohm
+    { 'z', "Hz" }             // Hertz
 };
 
 // this multiplier information applies to the raw value present in the
@@ -122,7 +123,7 @@ const struct MultiplierStructure log_Multipliers[] = {
     { 'F', 1e-6 },
     { 'G', 1e-7 },
 // <leave a gap here, just in case....>
-    { '!', 3.6 }, // (amps*seconds => milliamps*hours) and (km/h => m/s)
+    { '!', 3.6 }, // (ampere*second => milliampere*hour) and (km/h => m/s)
 };
 
 struct PACKED log_Parameter {
