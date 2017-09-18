@@ -176,6 +176,7 @@ public:
     void send_local_position(const AP_AHRS &ahrs) const;
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
+    void send_ekf_origin(const Location &ekf_origin) const;
     void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
@@ -476,6 +477,7 @@ public:
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_home(const Location &home) const;
+    void send_ekf_origin(const Location &ekf_origin) const;
     // push send_message() messages and queued statustext messages etc:
     void retry_deferred();
     void data_stream_send();

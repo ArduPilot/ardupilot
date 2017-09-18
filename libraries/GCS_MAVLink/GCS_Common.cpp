@@ -1480,6 +1480,17 @@ void GCS_MAVLINK::send_home(const Location &home) const
     }
 }
 
+void GCS_MAVLINK::send_ekf_origin(const Location &ekf_origin) const
+{
+    if (HAVE_PAYLOAD_SPACE(chan, GPS_GLOBAL_ORIGIN)) {
+        mavlink_msg_gps_global_origin_send(
+            chan,
+            ekf_origin.lat,
+            ekf_origin.lng,
+            ekf_origin.alt * 10);
+    }
+}
+
 /*
   wrapper for sending heartbeat
  */
