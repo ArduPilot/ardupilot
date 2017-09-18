@@ -550,3 +550,11 @@ void Sub::set_neutral_controls()
 
     hal.rcin->set_overrides(channels, 10);
 }
+
+void Sub::clear_input_hold()
+{
+    xTrim = 0;
+    yTrim = 0;
+    zTrim = 0;
+    input_hold_engaged = false;
+}
