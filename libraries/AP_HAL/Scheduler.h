@@ -54,5 +54,8 @@ public:
      */
     virtual void     stop_clock(uint64_t time_usec) {}
 
+    virtual bool     in_main_thread() const = 0;
+
     virtual void create_uavcan_thread() {};
+
 };
