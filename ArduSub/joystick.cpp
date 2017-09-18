@@ -323,8 +323,13 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             zTrim = abs(z_last-500) > 50 ? z_last-500 : 0;
             xTrim = abs(x_last) > 50 ? x_last : 0;
             yTrim = abs(y_last) > 50 ? y_last : 0;
+            bool input_hold_engaged_last = input_hold_engaged;
             input_hold_engaged = zTrim || xTrim || yTrim;
-            gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
+            if (input_hold_engaged) {
+                gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
+            } else if (input_hold_engaged_last) {
+                gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Disabled");
+            }
         }
         break;
     case JSButton::button_function_t::k_relay_1_on:
