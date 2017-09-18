@@ -146,7 +146,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: THR_MIN_PWM
     // @DisplayName: Minimum PWM output
     // @Description: This is the minimum PWM output for the quad motors
-    // @Units: Hz
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
@@ -155,7 +155,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: THR_MAX_PWM
     // @DisplayName: Maximum PWM output
     // @Description: This is the maximum PWM output for the quad motors
-    // @Units: Hz
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
