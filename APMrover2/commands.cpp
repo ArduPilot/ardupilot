@@ -17,7 +17,7 @@ bool Rover::set_home_to_current_location(bool lock)
 {
     // use position from EKF if available otherwise use GPS
     Location temp_loc;
-    if (ahrs.get_position(temp_loc)) {
+    if (ahrs.have_inertial_nav() && ahrs.get_position(temp_loc)) {
         return set_home(temp_loc, lock);
     }
     return false;
