@@ -1191,31 +1191,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-        case MAV_CMD_DO_SET_MODE:
-            switch ((uint16_t)packet.param1) {
-            case MAV_MODE_MANUAL_ARMED:
-            case MAV_MODE_MANUAL_DISARMED:
-                plane.set_mode(MANUAL, MODE_REASON_GCS_COMMAND);
-                result = MAV_RESULT_ACCEPTED;
-                break;
-
-            case MAV_MODE_AUTO_ARMED:
-            case MAV_MODE_AUTO_DISARMED:
-                plane.set_mode(AUTO, MODE_REASON_GCS_COMMAND);
-                result = MAV_RESULT_ACCEPTED;
-                break;
-
-            case MAV_MODE_STABILIZE_DISARMED:
-            case MAV_MODE_STABILIZE_ARMED:
-                plane.set_mode(FLY_BY_WIRE_A, MODE_REASON_GCS_COMMAND);
-                result = MAV_RESULT_ACCEPTED;
-                break;
-
-            default:
-                result = MAV_RESULT_UNSUPPORTED;
-            }
-            break;
-
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             result = handle_preflight_reboot(packet, plane.quadplane.enable != 0);
             break;
