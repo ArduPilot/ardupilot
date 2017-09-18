@@ -34,4 +34,9 @@ void GCS::send_home(const Location &home) const
     FOR_EACH_ACTIVE_CHANNEL(send_home(home));
 }
 
+void GCS::send_ekf_origin(const Location &ekf_origin) const
+{
+    FOR_EACH_ACTIVE_CHANNEL(send_ekf_origin(ekf_origin));
+}
+
 #undef FOR_EACH_ACTIVE_CHANNEL
