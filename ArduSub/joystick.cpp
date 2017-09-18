@@ -295,6 +295,9 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         pitchTrim = constrain_float(pitchTrim-10,-200,200);
         break;
     case JSButton::button_function_t::k_input_hold_set:
+        if(!motors.armed()) {
+            break;
+        }
         if (!held) {
             zTrim = abs(z_last-500) > 50 ? z_last-500 : 0;
             xTrim = abs(x_last) > 50 ? x_last : 0;
