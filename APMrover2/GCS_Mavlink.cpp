@@ -643,6 +643,23 @@ void GCS_MAVLINK_Rover::handle_change_alt_request(AP_Mission::Mission_Command &c
 void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
+
+    case MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN:
+    {
+        mavlink_set_gps_global_origin_t packet;
+        mavlink_msg_set_gps_global_origin_decode(msg, &packet);
+        // sanity check location
+        if (!check_latlng(packet.latitude, packet.longitude)) {
+            break;
+        }
+        Location ekf_origin {};
+        ekf_origin.lat = packet.latitude;
+        ekf_origin.lng = packet.longitude;
+        ekf_origin.alt = packet.altitude / 10;
+        rover.set_ekf_origin(ekf_origin);
+        break;
+    }
+
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
         {
             handle_request_data_stream(msg, true);
@@ -829,6 +846,10 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_GET_HOME_POSITION:
             if (rover.home_is_set != HOME_UNSET) {
                 send_home(rover.ahrs.get_home());
+                Location ekf_origin;
+                if (rover.ahrs.get_origin(ekf_origin)) {
+                    send_ekf_origin(ekf_origin);
+                }
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_FAILED;

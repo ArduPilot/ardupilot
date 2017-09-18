@@ -451,6 +451,7 @@ private:
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
+    void set_ekf_origin(const Location& loc);
     void set_system_time_from_GPS();
     void update_home();
 
