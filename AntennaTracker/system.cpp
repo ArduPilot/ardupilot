@@ -166,6 +166,33 @@ void Tracker::set_home(struct Location temp)
     set_home_eeprom(temp);
     current_loc = temp;
     gcs().send_home(temp);
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        gcs().send_ekf_origin(ekf_origin);
+    }
+}
+
+// sets ekf_origin if it has not been set.
+//  should only be used when there is no GPS to provide an absolute position
+void Tracker::set_ekf_origin(const Location& loc)
+{
+    // check location is valid
+    if (!check_latlng(loc)) {
+        return;
+    }
+
+    // check EKF origin has already been set
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        return;
+    }
+
+    if (!ahrs.set_origin(loc)) {
+        return;
+    }
+
+    // send ekf origin to GCS
+    gcs().send_ekf_origin(loc);
 }
 
 void Tracker::arm_servos()
