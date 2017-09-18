@@ -332,7 +332,7 @@ void Scheduler::_io_task()
     _run_io();
 }
 
-bool Scheduler::in_main_thread()
+bool Scheduler::in_main_thread() const
 {
     return pthread_equal(pthread_self(), _main_ctx);
 }
