@@ -158,6 +158,8 @@ public:
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
     static void send_home_all(const Location &home);
+    void send_ekf_origin(const Location &ekf_origin) const;
+    static void send_ekf_origin_all(const Location &ekf_origin);
     void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);

@@ -1416,6 +1416,33 @@ void GCS_MAVLINK::send_home_all(const Location &home)
     }
 }
 
+void GCS_MAVLINK::send_ekf_origin(const Location &ekf_origin) const
+{
+    if (HAVE_PAYLOAD_SPACE(chan, GPS_GLOBAL_ORIGIN)) {
+        mavlink_msg_gps_global_origin_send(
+            chan,
+            ekf_origin.lat,
+            ekf_origin.lng,
+            ekf_origin.alt * 10);
+    }
+}
+
+void GCS_MAVLINK::send_ekf_origin_all(const Location &ekf_origin)
+{
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        if ((1U<<i) & mavlink_active) {
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+            if (HAVE_PAYLOAD_SPACE(chan, GPS_GLOBAL_ORIGIN)) {
+                mavlink_msg_gps_global_origin_send(
+                    chan,
+                    ekf_origin.lat,
+                    ekf_origin.lng,
+                    ekf_origin.alt * 10);
+            }
+        }
+    }
+}
+
 /*
   wrapper for sending heartbeat
  */
