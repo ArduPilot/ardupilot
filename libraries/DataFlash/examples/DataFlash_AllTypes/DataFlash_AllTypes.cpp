@@ -48,12 +48,29 @@ enum MyLogMessages {
 };
 
 static const struct LogStructure log_structure[] = {
-    { LOG_TYP1_MSG, sizeof(log_TYP1),
-      "TYP1", "QabBhHiIfdnNZ",        "TimeUS,a,b,B,h,H,i,I,f,d,n,N,Z" },
-    { LOG_TYP2_MSG, sizeof(log_TYP2),
-      "TYP2", "QcCeELMqQ",        "TimeUS,c,C,e,E,L,M,q,Q" },
-    { LOG_MESSAGE_MSG, sizeof(log_Message),
-      "MSG",  "QZ",     "TimeUS,Message"}
+    { LOG_TYP1_MSG,
+      sizeof(log_TYP1),
+      "TYP1",
+      "QbBhHiIfdnNZ",
+      "TimeUS,b,B,h,H,i,I,f,d,n,N,Z",
+      "s-----------",
+      "F-----------"
+    },
+    { LOG_TYP2_MSG,
+      sizeof(log_TYP2),
+      "TYP2",
+      "QcCeELMqQ",
+      "TimeUS,c,C,e,E,L,M,q,Q",
+      "s--------",
+      "F--------"
+    },
+    { LOG_MESSAGE_MSG,
+      sizeof(log_Message),
+      "MSG",
+      "QZ",
+      "TimeUS,Message",
+      "s-",
+      "F-"}
 };
 
 // these are identical to the entries in the above log-structure.  Not
