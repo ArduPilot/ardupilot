@@ -529,25 +529,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
                 break;
 
-            case MAV_CMD_DO_SET_MODE:
-                switch ((uint16_t)packet.param1) {
-                    case MAV_MODE_MANUAL_ARMED:
-                    case MAV_MODE_MANUAL_DISARMED:
-                        tracker.set_mode(MANUAL);
-                        result = MAV_RESULT_ACCEPTED;
-                        break;
-
-                    case MAV_MODE_AUTO_ARMED:
-                    case MAV_MODE_AUTO_DISARMED:
-                        tracker.set_mode(AUTO);
-                        result = MAV_RESULT_ACCEPTED;
-                        break;
-
-                    default:
-                        result = MAV_RESULT_UNSUPPORTED;
-                }
-                break;
-
             case MAV_CMD_DO_SET_SERVO:
                 if (tracker.servo_test_set_servo(packet.param1, packet.param2)) {
                     result = MAV_RESULT_ACCEPTED;
