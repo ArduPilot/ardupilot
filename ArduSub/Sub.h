@@ -648,6 +648,7 @@ private:
     void handle_jsbutton_press(uint8_t button,bool shift=false,bool held=false);
     JSButton* get_button(uint8_t index);
     void default_js_buttons(void);
+    void clear_input_hold();
     void init_barometer(bool save);
     void read_barometer(void);
     void init_rangefinder(void);
