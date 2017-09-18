@@ -29,6 +29,7 @@ public:
 
     void register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
 
+    bool in_main_thread() const override { return !_in_timer_proc && !_in_io_proc; };
     void system_initialized();
 
     void reboot(bool hold_in_bootloader);
