@@ -261,7 +261,7 @@ void *Scheduler::_io_thread(void *arg)
     return nullptr;
 }
 
-bool Scheduler::in_main_thread()
+bool Scheduler::in_main_thread() const
 {
     return getpid() == _main_task_pid;
 }
