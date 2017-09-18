@@ -86,6 +86,12 @@ bool DataFlash_Backend::WriteBlockCheckStartupMessages()
         return true;
     }
 
+    if (!_startup_messagewriter->finished() &&
+        !hal.scheduler->in_main_thread()) {
+        // only the main thread may write startup messages out
+        return false;
+    }
+
     // we're not writing startup messages, so this must be some random
     // caller hoping to write blocks out.  Push out log blocks - we
     // might end up clearing the buffer.....
@@ -271,6 +277,9 @@ bool DataFlash_Backend::StartNewLogOK() const
     if (_front.in_log_download()) {
         return false;
     }
+    if (!hal.scheduler->in_main_thread()) {
+        return false;
+    }
     return true;
 }
 
@@ -297,6 +306,12 @@ bool DataFlash_Backend::ShouldLog() const
         return false;
     }
     if (!_initialised) {
+        return false;
+    }
+
+    if (!_startup_messagewriter->finished() &&
+        !hal.scheduler->in_main_thread()) {
+        // only the main thread may write startup messages out
         return false;
     }
 
