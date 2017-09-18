@@ -2387,10 +2387,6 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
         gcs().send_text(MAV_SEVERITY_INFO, "Must be armed for takeoff");
         return false;
     }
-    if (guided_mode == 0) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Q_GUIDED_MODE must be set to 1");
-        return false;
-    }
     if (is_flying()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Already flying - no takeoff");
         return false;
