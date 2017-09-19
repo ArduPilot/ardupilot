@@ -2005,9 +2005,10 @@ void GCS_MAVLINK::send_banner()
     const AP_FWVersion &fwver = get_fwver();
     send_text(MAV_SEVERITY_INFO, fwver.fw_string);
 
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-    send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
-#endif
+    if (fwver.middleware_hash_str && fwver.os_hash_str) {
+        send_text(MAV_SEVERITY_INFO, "PX4: %s NuttX: %s",
+                  fwver.middleware_hash_str, fwver.os_hash_str);
+    }
 
     // send system ID if we can
     char sysid[40];
