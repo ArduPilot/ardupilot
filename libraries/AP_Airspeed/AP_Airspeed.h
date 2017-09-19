@@ -161,6 +161,7 @@ private:
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;
+    float           _filtered_pressure;
     float			_corrected_pressure;
     float           _EAS2TAS;
     bool		    _healthy:1;
