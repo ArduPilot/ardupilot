@@ -235,6 +235,7 @@ protected:
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
     virtual bool set_mode(uint8_t mode) = 0;
     virtual const AP_FWVersion &get_fwver() const = 0;
+    virtual void set_ekf_origin(const Location& loc) = 0;
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
@@ -276,6 +277,7 @@ protected:
     void handle_serial_control(const mavlink_message_t *msg);
 
     void handle_common_message(mavlink_message_t *msg);
+    void handle_set_gps_global_origin(const mavlink_message_t *msg);
     void handle_setup_signing(const mavlink_message_t *msg);
     uint8_t handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
