@@ -256,15 +256,23 @@ void AP_Airspeed::read(void)
     // remember raw pressure for logging
     _corrected_pressure = airspeed_pressure;
 
+    // filter before clamping positive
+    _filtered_pressure      = 0.7f * _filtered_pressure  +  0.3f * airspeed_pressure;
+
     /*
-      we support different pitot tube setups so used can choose if
+      we support different pitot tube setups so user can choose if
       they want to be able to detect pressure on the static port
      */
     switch ((enum pitot_tube_order)_tube_order.get()) {
     case PITOT_TUBE_ORDER_NEGATIVE:
-        airspeed_pressure = -airspeed_pressure;
-        FALLTHROUGH;
+        _last_pressure          = -airspeed_pressure;
+        _raw_airspeed           = sqrtf(MAX(-airspeed_pressure, 0) * _ratio);
+        _airspeed               = sqrtf(MAX(-_filtered_pressure, 0) * _ratio);
+        break;
     case PITOT_TUBE_ORDER_POSITIVE:
+        _last_pressure          = airspeed_pressure;
+        _raw_airspeed           = sqrtf(MAX(airspeed_pressure, 0) * _ratio);
+        _airspeed               = sqrtf(MAX(_filtered_pressure, 0) * _ratio);
         if (airspeed_pressure < -32) {
             // we're reading more than about -8m/s. The user probably has
             // the ports the wrong way around
@@ -273,13 +281,12 @@ void AP_Airspeed::read(void)
         break;
     case PITOT_TUBE_ORDER_AUTO:
     default:
-        airspeed_pressure = fabsf(airspeed_pressure);
+        _last_pressure          = fabsf(airspeed_pressure);
+        _raw_airspeed           = sqrtf(fabsf(airspeed_pressure) * _ratio);
+        _airspeed               = sqrtf(fabsf(_filtered_pressure) * _ratio);
         break;
     }
-    airspeed_pressure       = MAX(airspeed_pressure, 0);
-    _last_pressure          = airspeed_pressure;
-    _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
-    _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
+
     _last_update_ms         = AP_HAL::millis();
 }
 
