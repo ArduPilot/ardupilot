@@ -758,7 +758,7 @@ void Plane::servos_output(void)
     servo_output_mixers();
 
     // support MANUAL_RCMASK
-    if (g2.manual_rc_mask.get() != 0) {
+    if (g2.manual_rc_mask.get() != 0 && control_mode == MANUAL) {
         SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
     }
     
