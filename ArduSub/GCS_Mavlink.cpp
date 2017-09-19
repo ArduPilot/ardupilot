@@ -1373,9 +1373,11 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         }
 
         // check for supported coordinate frames
-        if (packet.coordinate_frame != MAV_FRAME_GLOBAL_INT &&
+        if (packet.coordinate_frame != MAV_FRAME_GLOBAL &&
+                packet.coordinate_frame != MAV_FRAME_GLOBAL_INT &&
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT && // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
+                packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT &&
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
             break;
         }
@@ -1409,10 +1411,12 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 loc.flags.relative_alt = true;
                 loc.flags.terrain_alt = false;
                 break;
+            case MAV_FRAME_GLOBAL_TERRAIN_ALT:
             case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
                 loc.flags.relative_alt = true;
                 loc.flags.terrain_alt = true;
                 break;
+            case MAV_FRAME_GLOBAL:
             case MAV_FRAME_GLOBAL_INT:
             default:
                 loc.flags.relative_alt = false;
