@@ -832,8 +832,9 @@ void QuadPlane::control_hover(void)
 
 void QuadPlane::init_loiter(void)
 {
-    // set target to current position
-    wp_nav->init_loiter_target();
+    Vector3f stopping_point;
+    wp_nav->get_loiter_stopping_point_xy(stopping_point);
+    wp_nav->init_loiter_target(stopping_point);
 
     // initialize vertical speed and acceleration
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
