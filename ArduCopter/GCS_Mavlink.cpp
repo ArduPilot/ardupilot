@@ -820,6 +820,49 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_msg_command_int_decode(msg, &packet);
         switch(packet.command)
         {
+            case MAV_CMD_DO_SET_HOME: {
+                // assume failure
+                result = MAV_RESULT_FAILED;
+                if (is_equal(packet.param1, 1.0f)) {
+                    // if param1 is 1, use current location
+                    if (copter.set_home_to_current_location(true)) {
+                        result = MAV_RESULT_ACCEPTED;
+                    }
+                    break;
+                }
+                // ensure param1 is zero
+                if (!is_zero(packet.param1)) {
+                    break;
+                }
+                // check frame type is supported
+                if (packet.frame != MAV_FRAME_GLOBAL &&
+                    packet.frame != MAV_FRAME_GLOBAL_INT &&
+                    packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+                    packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+                    break;
+                }
+                // sanity check location
+                if (!check_latlng(packet.x, packet.y)) {
+                    break;
+                }
+                Location new_home_loc {};
+                new_home_loc.lat = packet.x;
+                new_home_loc.lng = packet.y;
+                new_home_loc.alt = packet.z * 100;
+                // handle relative altitude
+                if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+                    if (copter.ap.home_state == HOME_UNSET) {
+                        // cannot use relative altitude if home is not set
+                        break;
+                    }
+                    new_home_loc.alt += copter.ahrs.get_home().alt;
+                }
+                if (copter.set_home(new_home_loc, true)) {
+                    result = MAV_RESULT_ACCEPTED;
+                }
+                break;
+            }
+
             case MAV_CMD_DO_SET_ROI: {
                 // param1 : /* Region of interest mode (not used)*/
                 // param2 : /* MISSION index/ target ID (not used)*/
@@ -840,6 +883,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
                 break;
             }
+
             default:
                 result = MAV_RESULT_UNSUPPORTED;
                 break;
