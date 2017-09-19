@@ -189,8 +189,8 @@ private:
 template <class T>
 class ObjectArray {
 public:
-    ObjectArray(uint16_t size) {
-        _size = size;
+    ObjectArray(uint16_t size_) {
+        _size = size_;
         _head = _count = 0;
         _buffer = new T[_size];
     }
