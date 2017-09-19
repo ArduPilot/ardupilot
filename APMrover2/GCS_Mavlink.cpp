@@ -1095,9 +1095,11 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 break;
             }
             // check for supported coordinate frames
-            if (packet.coordinate_frame != MAV_FRAME_GLOBAL_INT &&
+            if (packet.coordinate_frame != MAV_FRAME_GLOBAL &&
+                packet.coordinate_frame != MAV_FRAME_GLOBAL_INT &&
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
+                packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT &&
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
                 break;
             }
