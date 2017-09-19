@@ -891,22 +891,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN:
-    {
-        mavlink_set_gps_global_origin_t packet;
-        mavlink_msg_set_gps_global_origin_decode(msg, &packet);
-        // sanity check location
-        if (!check_latlng(packet.latitude, packet.longitude)) {
-            break;
-        }
-        Location ekf_origin {};
-        ekf_origin.lat = packet.latitude;
-        ekf_origin.lng = packet.longitude;
-        ekf_origin.alt = packet.altitude / 10;
-        sub.set_ekf_origin(ekf_origin);
-        break;
-    }
-
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM: {  // MAV ID: 66
         handle_request_data_stream(msg, false);
         break;
@@ -1634,6 +1618,11 @@ bool GCS_MAVLINK_Sub::set_mode(uint8_t mode)
 const AP_FWVersion &GCS_MAVLINK_Sub::get_fwver() const
 {
     return sub.fwver;
+}
+
+void GCS_MAVLINK_Sub::set_ekf_origin(const Location& loc)
+{
+    sub.set_ekf_origin(loc);
 }
 
 // dummy method to avoid linking AFS
