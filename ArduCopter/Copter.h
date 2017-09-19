@@ -972,6 +972,7 @@ private:
 
     void ekf_check();
     bool ekf_over_threshold();
+    bool ekf_check_position_problem();
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
     void esc_calibration_startup_check();

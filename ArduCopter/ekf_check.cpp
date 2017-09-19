@@ -44,7 +44,7 @@ void Copter::ekf_check()
     }
 
     // compare compass and velocity variance vs threshold
-    if (ekf_over_threshold()) {
+    if (ekf_over_threshold() || ekf_check_position_problem()) {
         // if compass is not yet flagged as bad
         if (!ekf_check_state.bad_variance) {
             // increase counter
@@ -86,17 +86,44 @@ void Copter::ekf_check()
     // To-Do: add ekf variances to extended status
 }
 
+// ekf_check_position_problem - returns true if the EKF has a positioning problem
+bool Copter::ekf_check_position_problem()
+{
+    // either otflow or abs means we're OK:
+    if (optflow_position_ok()) {
+        return false;
+    }
+    if (ekf_position_ok()) {
+        return false;
+    }
+
+    // We don't know where we are.  Is this a problem?
+    if (copter.mode_requires_GPS(copter.control_mode)) {
+        // Oh, yes, we have a problem
+        return true;
+    }
+    // sometimes LAND *does* require GPS:
+    if (control_mode == LAND && landing_with_GPS()) {
+        return true;
+    }
+
+    // we're in a non-GPS mode (e.g. althold/stabilize)
+
+    if (g.fs_ekf_action == FS_EKF_ACTION_LAND_EVEN_STABILIZE) {
+        // the user is making an issue out of it
+        return true;
+    }
+
+    return false;
+}
+
+
 // ekf_over_threshold - returns true if the ekf's variance are over the tolerance
 bool Copter::ekf_over_threshold()
 {
     // return false immediately if disabled
     if (g.fs_ekf_thresh <= 0.0f) {
         return false;
-    }
-
-    // return true immediately if position is bad
-    if (!ekf_position_ok() && !optflow_position_ok()) {
-        return true;
     }
 
     // use EKF to get variance
@@ -124,21 +151,6 @@ bool Copter::ekf_over_threshold()
 // failsafe_ekf_event - perform ekf failsafe
 void Copter::failsafe_ekf_event()
 {
-    // return immediately if ekf failsafe already triggered
-    if (failsafe.ekf) {
-        return;
-    }
-
-    // do nothing if motors disarmed
-    if (!motors->armed()) {
-        return;
-    }
-
-    // do nothing if not in GPS flight mode and ekf-action is not land-even-stabilize
-    if ((control_mode != LAND) && !mode_requires_GPS(control_mode) && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
-        return;
-    }
-
     // EKF failsafe event has occurred
     failsafe.ekf = true;
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
@@ -165,11 +177,6 @@ void Copter::failsafe_ekf_event()
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared
 void Copter::failsafe_ekf_off_event(void)
 {
-    // return immediately if not in ekf failsafe
-    if (!failsafe.ekf) {
-        return;
-    }
-
     // clear flag and log recovery
     failsafe.ekf = false;
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_RESOLVED);
