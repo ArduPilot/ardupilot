@@ -1796,6 +1796,24 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &pack
     return result;
 }
 
+void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t *msg)
+{
+    mavlink_set_gps_global_origin_t packet;
+    mavlink_msg_set_gps_global_origin_decode(msg, &packet);
+
+    // sanity check location
+    if (!check_latlng(packet.latitude, packet.longitude)) {
+        // silently drop the request
+        return;
+    }
+
+    Location ekf_origin {};
+    ekf_origin.lat = packet.latitude;
+    ekf_origin.lng = packet.longitude;
+    ekf_origin.alt = packet.altitude / 10;
+    set_ekf_origin(ekf_origin);
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -1812,6 +1830,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         /* fall through */
     case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
         handle_common_param_message(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SET_GPS_GLOBAL_ORIGIN:
+        handle_set_gps_global_origin(msg);
         break;
 
     case MAVLINK_MSG_ID_DEVICE_OP_READ:
