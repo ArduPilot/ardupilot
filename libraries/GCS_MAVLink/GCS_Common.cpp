@@ -1792,6 +1792,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &pack
         break;
     default:
         result = MAV_RESULT_UNSUPPORTED;
+        break;
     }
     return result;
 }
@@ -2137,6 +2138,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
 
     default:
         result = MAV_RESULT_UNSUPPORTED;
+        break;
     }
 
     return result;
