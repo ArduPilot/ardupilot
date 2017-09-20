@@ -159,6 +159,9 @@ public:
     AP_Float temp_tconst;
     AP_Float temp_baro_factor;
     
+    // differential pressure sensor tube order
+    AP_Int8 arspd_signflip;
+
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);
