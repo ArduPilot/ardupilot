@@ -1321,6 +1321,10 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             if (is_equal(packet.param1,1.0f)) {
                 plane.init_home();
             } else {
+                // ensure param1 is zero
+                if (!is_zero(packet.param1)) {
+                    break;
+                }
                 if (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7)) {
                     // don't allow the 0,0 position
                     break;
