@@ -911,6 +911,55 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 
         switch(packet.command) {
 
+        case MAV_CMD_DO_SET_HOME: {
+            result = MAV_RESULT_FAILED; // assume failure
+            if (is_equal(packet.param1, 1.0f)) {
+                plane.init_home();
+            } else {
+                // ensure param1 is zero
+                if (!is_zero(packet.param1)) {
+                    break;
+                }
+                if ((packet.x == 0) && (packet.y == 0) && is_zero(packet.z)) {
+                    // don't allow the 0,0 position
+                    break;
+                }
+                // check frame type is supported
+                if (packet.frame != MAV_FRAME_GLOBAL &&
+                    packet.frame != MAV_FRAME_GLOBAL_INT &&
+                    packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+                    packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+                    break;
+                }
+                // sanity check location
+                if (!check_latlng(packet.x, packet.y)) {
+                    break;
+                }
+                Location new_home_loc {};
+                new_home_loc.lat = packet.x;
+                new_home_loc.lng = packet.y;
+                new_home_loc.alt = packet.z * 100;
+                // handle relative altitude
+                if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+                    if (plane.home_is_set == HOME_UNSET) {
+                        // cannot use relative altitude if home is not set
+                        break;
+                    }
+                    new_home_loc.alt += plane.ahrs.get_home().alt;
+                }
+                plane.ahrs.set_home(new_home_loc);
+                plane.home_is_set = HOME_SET_NOT_LOCKED;
+                plane.Log_Write_Home_And_Origin();
+                gcs().send_home(new_home_loc);
+                result = MAV_RESULT_ACCEPTED;
+                gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
+                                        (double)(new_home_loc.lat*1.0e-7f),
+                                        (double)(new_home_loc.lng*1.0e-7f),
+                                        (uint32_t)(new_home_loc.alt*0.01f));
+            }
+            break;
+        }
+
         case MAV_CMD_DO_REPOSITION:
             // sanity check location
             if (!check_latlng(packet.x, packet.y)) {
