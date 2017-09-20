@@ -67,7 +67,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(check_long_failsafe,     3,    400),
     SCHED_TASK(read_receiver_rssi,     10,    100),
     SCHED_TASK(rpm_update,             10,    100),
-    SCHED_TASK(airspeed_ratio_update,   1,    100),
+    SCHED_TASK(airspeed_ratio_update,  10,    100),
     SCHED_TASK(update_mount,           50,    100),
     SCHED_TASK(update_trigger,         50,    100),
     SCHED_TASK(log_perf_info,         0.2,    100),
@@ -415,6 +415,9 @@ void Plane::dataflash_periodic(void)
  */
 void Plane::airspeed_ratio_update(void)
 {
+    const Vector3f &vg = gps.velocity();
+    gcs_send_airspeed_calibration(vg);
+
     if (!airspeed.enabled() ||
         gps.status() < AP_GPS::GPS_OK_FIX_3D ||
         gps.ground_speed() < 4) {
@@ -435,7 +438,7 @@ void Plane::airspeed_ratio_update(void)
         // don't calibrate when going beyond normal flight envelope
         return;
     }
-    const Vector3f &vg = gps.velocity();
+//    const Vector3f &vg = gps.velocity();
     airspeed.update_calibration(vg, aparm.airspeed_max);
     gcs_send_airspeed_calibration(vg);
 }
