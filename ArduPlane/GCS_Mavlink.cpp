@@ -1757,7 +1757,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // just do altitude for now
         plane.next_WP_loc.alt += -packet.z*100.0;
         gcs().send_text(MAV_SEVERITY_INFO, "Change alt to %.1f",
-                        (plane.next_WP_loc.alt - plane.home.alt)*0.01);
+                        (double)((plane.next_WP_loc.alt - plane.home.alt)*0.01));
         
         break;
     }
