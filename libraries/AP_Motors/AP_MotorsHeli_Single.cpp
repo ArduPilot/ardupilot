@@ -480,8 +480,19 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
         limit.yaw = true;
     }
 
-    rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(yaw_out, _yaw_servo));
-
+    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH){
+        if (_main_rotor.get_desired_speed() > 0.0f && hal.util->get_soft_armed()) {
+            // constrain output so that motor never fully stops
+            yaw_out = constrain_float(yaw_out, -0.9f, 1.0f);
+            // output yaw servo to tail rsc
+            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(yaw_out, _yaw_servo));
+        } else {
+            // output zero speed to tail rsc
+            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(-1.0f, _yaw_servo));
+        }
+    } else {
+        rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(yaw_out, _yaw_servo));
+    }
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // output gain to exernal gyro
         if (_acro_tail && _ext_gyro_gain_acro > 0) {
@@ -489,10 +500,6 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
         } else {
             write_aux(_ext_gyro_gain_std/1000.0f);
         }
-    } else if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH && _main_rotor.get_desired_speed() > 0.0f) {
-        // output yaw servo to tail rsc
-        // To-Do: fix this messy calculation
-        write_aux(yaw_out*0.5f+1.0f);
     }
 }
 
