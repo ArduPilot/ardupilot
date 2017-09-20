@@ -896,6 +896,10 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_ACCEPTED;
                 }
             } else {
+                // ensure param1 is zero
+                if (!is_zero(packet.param1)) {
+                    break;
+                }
                 Location new_home_loc {};
                 new_home_loc.lat = static_cast<int32_t>(packet.param5 * 1.0e7f);
                 new_home_loc.lng = static_cast<int32_t>(packet.param6 * 1.0e7f);
