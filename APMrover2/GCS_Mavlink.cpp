@@ -657,6 +657,50 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         uint8_t result = MAV_RESULT_UNSUPPORTED;
 
         switch (packet.command) {
+
+        case MAV_CMD_DO_SET_HOME: {
+            // assume failure
+            result = MAV_RESULT_FAILED;
+            if (is_equal(packet.param1, 1.0f)) {
+                // if param1 is 1, use current location
+                if (rover.set_home_to_current_location(true)) {
+                    result = MAV_RESULT_ACCEPTED;
+                }
+                break;
+            }
+            // ensure param1 is zero
+            if (!is_zero(packet.param1)) {
+                break;
+            }
+            // check frame type is supported
+            if (packet.frame != MAV_FRAME_GLOBAL &&
+                packet.frame != MAV_FRAME_GLOBAL_INT &&
+                packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+                packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+                break;
+            }
+            // sanity check location
+            if (!check_latlng(packet.x, packet.y)) {
+                break;
+            }
+            Location new_home_loc {};
+            new_home_loc.lat = packet.x;
+            new_home_loc.lng = packet.y;
+            new_home_loc.alt = packet.z * 100;
+            // handle relative altitude
+            if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+                if (rover.home_is_set == HOME_UNSET) {
+                    // cannot use relative altitude if home is not set
+                    break;
+                }
+                new_home_loc.alt += rover.ahrs.get_home().alt;
+            }
+            if (rover.set_home(new_home_loc, true)) {
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+        }
+
 #if MOUNT == ENABLED
         case MAV_CMD_DO_SET_ROI: {
             // param1 : /* Region of interest mode (not used)*/
