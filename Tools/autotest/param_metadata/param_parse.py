@@ -25,7 +25,7 @@ parser.add_option("--no-emit", dest='emit_params', action='store_false', default
 
 prog_param = re.compile(r"@Param: *(\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
-prog_param_fields = re.compile(r"[ \t]*// @(\w+): (.*)")
+prog_param_fields = re.compile(r"[ \t]*// @(\w+): ([^\n\r@]*)(?:(?:@)(.*))?")
 
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
@@ -134,6 +134,8 @@ def process_library(library, pathprefix=None):
 
         param_matches = prog_group_param.findall(p_text)
         debug("Found %u documented parameters" % len(param_matches))
+        
+        vehicle_overrides = []
         for param_match in param_matches:
             p = Parameter(library.name+param_match[0])
             debug(p.name + ' ')
@@ -141,7 +143,14 @@ def process_library(library, pathprefix=None):
             fields = prog_param_fields.findall(field_text)
             for field in fields:
                 if field[0] in known_param_fields:
-                    setattr(p, field[0], field[1])
+                    if field[2] is not '':
+                        overriding_vehicles = field[2].split(',')
+                        for v in overriding_vehicles:
+                            if v == opts.vehicle:
+                                vehicle_overrides.append(field[0])
+                                setattr(p, field[0], field[1].strip())
+                    elif field[0] not in vehicle_overrides:
+                        setattr(p, field[0], field[1])
                 else:
                     error("unknown parameter metadata field %s" % field[0])
             library.params.append(p)
