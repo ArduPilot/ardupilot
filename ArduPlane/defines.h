@@ -31,6 +31,12 @@ enum gcs_failsafe {
                                  // while in AUTO mode
 };
 
+enum short_failsafe_action {
+    SHORT_FS_ACTION_BESTGUESS = 0,
+    SHORT_FS_ACTION_CIRCLE = 1,
+    SHORT_FS_ACTION_FBWA = 2,
+    SHORT_FS_ACTION_DISABLED = 3,
+};
 
 enum FlightMode {
     MANUAL        = 0,
