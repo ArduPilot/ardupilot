@@ -77,7 +77,7 @@ void Rover::rudder_arm_disarm_check()
             // not at full right rudder
             rudder_arm_timer = 0;
         }
-    } else if (!motor_active() & !g2.motors.have_skid_steering()) {
+    } else if (!motor_active() && !g2.motors.have_skid_steering()) {
         // when armed and motor not active (not moving), full left rudder starts disarming counter
         // This is disabled for skid steering otherwise when tring to turn a skid steering rover around
         // the rover would disarm
