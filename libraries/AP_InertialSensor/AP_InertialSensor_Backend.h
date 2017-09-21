@@ -88,9 +88,11 @@ public:
         DEVTYPE_ACC_BMA180   = 0x12,
         DEVTYPE_ACC_MPU6000  = 0x13,
         DEVTYPE_ACC_MPU9250  = 0x16,
+        DEVTYPE_ACC_IIS328DQ = 0x17,
         DEVTYPE_GYR_MPU6000  = 0x21,
         DEVTYPE_GYR_L3GD20   = 0x22,
-        DEVTYPE_GYR_MPU9250  = 0x24
+        DEVTYPE_GYR_MPU9250  = 0x24,
+        DEVTYPE_GYR_I3G4250D = 0x25,
     };
         
 protected:
