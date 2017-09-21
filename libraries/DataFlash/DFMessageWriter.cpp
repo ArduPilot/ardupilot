@@ -1,6 +1,10 @@
 #include "AP_Common/AP_FWVersion.h"
 #include "DFMessageWriter.h"
 
+#define FORCE_VERSION_H_INCLUDE
+#include "ap_version.h"
+#undef FORCE_VERSION_H_INCLUDE
+
 extern const AP_HAL::HAL& hal;
 
 /* LogStartup - these are simple state machines which allow us to
