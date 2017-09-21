@@ -39,7 +39,7 @@ public:
 
     const char *name() const override { return "SBF"; }
 
-    bool is_configured (void) override { return (!gps._raw_data || (RxState & SBF_DISK_ACTIVITY)); }
+    bool is_configured (void) override;
 
     void broadcast_configuration_failure_reason(void) const override;
 
@@ -65,7 +65,6 @@ private:
    
     uint32_t crc_error_counter = 0;
     uint32_t last_injected_data_ms = 0;
-    bool validcommand = false;
     uint32_t RxState;
 
     enum sbf_ids {
@@ -174,7 +173,8 @@ private:
             BLOCKID2,
             LENGTH1,
             LENGTH2,
-            DATA
+            DATA,
+            COMMAND_LINE // used to parse command responses
         } sbf_state;
         uint16_t preamble;
         uint16_t crc;
