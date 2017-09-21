@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.5.3-rc1 12-Sep-2017
+Copter 3.5.3 21-Sep-2017 / Copter 3.5.3-rc1 12-Sep-2017
 Changes from 3.5.2
 1) Guided mode support yaw and yaw-rate fields from set-position-target message
 2) Optical Flow startup retries 10 times 
