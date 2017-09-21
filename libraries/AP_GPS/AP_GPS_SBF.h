@@ -60,7 +60,7 @@ private:
     "sso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic+ReceiverStatus+VelCovGeodetic, msec100\n",
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
-    "spm, Rover, StandAlone+SBAS+DGPS+RTK\n",
+    "spm, Rover, all\n",
     "sso, Stream2, Dsk1, postprocess+event, msec100\n"};
    
     uint32_t crc_error_counter = 0;
