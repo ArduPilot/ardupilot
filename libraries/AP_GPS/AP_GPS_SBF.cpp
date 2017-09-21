@@ -55,7 +55,8 @@ AP_GPS_SBF::read(void)
 {
     uint32_t now = AP_HAL::millis();
 
-    if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
+    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
+        _init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
         const char *init_str = _initialisation_blob[_init_blob_index];
         if (validcommand) {
             _init_blob_index++;
