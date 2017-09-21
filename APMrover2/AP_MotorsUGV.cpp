@@ -21,7 +21,7 @@ extern const AP_HAL::HAL& hal;
 // parameters for the motor class
 const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Param: PWM_TYPE
-    // @DisplayName: Output PWM type
+    // @DisplayName: Motor Output PWM type
     // @Description: This selects the output PWM type as regular PWM, OneShot, Brushed motor support using PWM (duty cycle) with separated direction signal, Brushed motor support with separate throttle and direction PWM (duty cyle)
     // @Values: 0:Normal,1:OneShot,2:OneShot125,3:BrushedWithRelay,4:BrushedBiPolar
     // @User: Advanced
@@ -29,8 +29,8 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     AP_GROUPINFO("PWM_TYPE", 1, AP_MotorsUGV, _pwm_type, PWM_TYPE_NORMAL),
 
     // @Param: PWM_FREQ
-    // @DisplayName: Output PWM freq for brushed motors
-    // @Description: Output PWM freq for brushed motors
+    // @DisplayName: Motor Output PWM freq for brushed motors
+    // @Description: Motor Output PWM freq for brushed motors
     // @Units: kHz
     // @Range: 1 20
     // @Increment: 1
