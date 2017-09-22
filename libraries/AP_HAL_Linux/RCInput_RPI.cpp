@@ -25,6 +25,12 @@
 #include "RCInput_RPI.h"
 #include "Util_RPI.h"
 
+#ifdef DEBUG
+#define debug(fmt, args ...) do { fprintf(stderr,"[RCInput_RPI]: %s:%d: " fmt, __FUNCTION__, __LINE__, ## args); } while (0)
+#else
+#define debug(fmt, args ...)
+#endif
+
 //Parametres
 #define RCIN_RPI_BUFFER_LENGTH   8
 #define RCIN_RPI_SAMPLE_FREQ     500
@@ -486,6 +492,7 @@ void RCInput_RPI::_timer_tick()
     // Now we are getting address in which DMAC is writing at current moment
     dma_cb_t *ad = (dma_cb_t *)con_blocks->get_virt_addr(dma_reg[RCIN_RPI_DMA_CONBLK_AD | RCIN_RPI_DMA_CHANNEL << 8]);
     if (!ad) {
+        debug("DMA sampling stopped, restarting...\n");
         init_ctrl_data();
         init_PCM();
         init_DMA();
@@ -508,6 +515,7 @@ void RCInput_RPI::_timer_tick()
     // How many bytes have DMA transferred (and we can process)?
     // We can't stay in method for a long time, because it may lead to delays
     if (counter > RCIN_RPI_MAX_COUNTER) {
+        debug("%5d sample(s) dropped\n", (counter - RCIN_RPI_MAX_COUNTER) / 0x8);
         counter = RCIN_RPI_MAX_COUNTER;
     }
 
