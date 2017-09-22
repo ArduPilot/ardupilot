@@ -306,7 +306,7 @@ void Plane::update_sensor_status_flags(void)
     if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.is_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED
