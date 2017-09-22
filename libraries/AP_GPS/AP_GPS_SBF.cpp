@@ -55,7 +55,8 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 {
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
 
-    port->write((const uint8_t*)_initialisation_blob[0], strlen(_initialisation_blob[0]));
+    port->write((const uint8_t*)_port_enable, strlen(_port_enable));
+    _config_last_ack_time = AP_HAL::millis();
 }
 
 // Process all bytes available from the stream
@@ -70,10 +71,16 @@ AP_GPS_SBF::read(void)
         const char *init_str = _initialisation_blob[_init_blob_index];
 
         if (now > _init_blob_time) {
-            Debug("SBF sending init blob: %s\n", init_str);
-            port->write((const uint8_t*)init_str, strlen(init_str));
-            // if this is too low a race condition on start occurs and the GPS isn't detected
-            _init_blob_time = now + 2000;
+            if (now > _config_last_ack_time + 2500) {
+                // try to enable input on the GPS port if we have not made progress on configuring it
+                Debug("SBF Sending port enable");
+                port->write((const uint8_t*)_port_enable, strlen(_port_enable));
+                _config_last_ack_time = now;
+            } else {
+                Debug("SBF sending init string: %s", init_str);
+                port->write((const uint8_t*)init_str, strlen(init_str));
+            }
+            _init_blob_time = now + 1000;
         }
     }
 
@@ -194,6 +201,7 @@ AP_GPS_SBF::parse(uint8_t temp)
                                      sbf_msg.read - SBF_EXCESS_COMMAND_BYTES)) {
                             Debug("SBF Ack Command: %s\n", sbf_msg.data.bytes);
                             _init_blob_index++;
+                            _config_last_ack_time = AP_HAL::millis();
                         } else {
                             Debug("SBF Ack command (unexpected): %s\n", sbf_msg.data.bytes);
                         }
