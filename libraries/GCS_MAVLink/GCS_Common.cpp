@@ -1476,7 +1476,8 @@ void GCS_MAVLINK::send_home(const Location &home) const
             home.alt * 10,
             0.0f, 0.0f, 0.0f,
             q,
-            0.0f, 0.0f, 0.0f);
+            0.0f, 0.0f, 0.0f,
+            AP_HAL::micros64());
     }
 }
 
@@ -1487,7 +1488,8 @@ void GCS_MAVLINK::send_ekf_origin(const Location &ekf_origin) const
             chan,
             ekf_origin.lat,
             ekf_origin.lng,
-            ekf_origin.alt * 10);
+            ekf_origin.alt * 10,
+            AP_HAL::micros64());
     }
 }
 
