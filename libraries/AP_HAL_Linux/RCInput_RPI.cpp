@@ -485,6 +485,13 @@ void RCInput_RPI::_timer_tick()
 
     // Now we are getting address in which DMAC is writing at current moment
     dma_cb_t *ad = (dma_cb_t *)con_blocks->get_virt_addr(dma_reg[RCIN_RPI_DMA_CONBLK_AD | RCIN_RPI_DMA_CHANNEL << 8]);
+    if (!ad) {
+        init_ctrl_data();
+        init_PCM();
+        init_DMA();
+        return;
+    }
+
     for (int j = 1; j >= -1; j--) {
         void *x = circle_buffer->get_virt_addr((ad + j)->dst);
         if (x != nullptr) {
