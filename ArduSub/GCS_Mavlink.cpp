@@ -163,7 +163,7 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (gps.status() > AP_GPS::NO_GPS) {
+    if (gps.is_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED
