@@ -125,7 +125,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
     _calibration.state.z = 1.0f / sqrtf(ratio);
 
     // calculate true airspeed, assuming a airspeed ratio of 1.0
-    float dpress = get_differential_pressure();
+    float dpress = MAX(get_differential_pressure(), 0);
     float true_airspeed = sqrtf(dpress) * _EAS2TAS;
 
     float zratio = _calibration.update(true_airspeed, vground, max_airspeed_allowed_during_cal);
