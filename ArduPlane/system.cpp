@@ -510,10 +510,10 @@ void Plane::check_long_failsafe()
         // We do not change state but allow for user to change mode
         if (failsafe.state == FAILSAFE_GCS && 
             (tnow - failsafe.last_heartbeat_ms) < timeout_seconds*1000) {
-            failsafe.state = FAILSAFE_NONE;
+            failsafe_long_off_event(MODE_REASON_GCS_FAILSAFE);
         } else if (failsafe.state == FAILSAFE_LONG && 
                    !failsafe.ch3_failsafe) {
-            failsafe.state = FAILSAFE_NONE;
+            failsafe_long_off_event(MODE_REASON_RADIO_FAILSAFE);
         }
     }
 }
