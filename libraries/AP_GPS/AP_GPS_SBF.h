@@ -64,7 +64,7 @@ private:
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
     "spm, Rover, all\n",
-    "sso, Stream2, Dsk1, postprocess+event, msec100\n"};
+    "sso, Stream2, Dsk1, postprocess+event+comment, msec100\n"};
     uint32_t _config_last_ack_time;
 
     const char* _port_enable = "\nSSSSSSSSSS\n";
