@@ -484,7 +484,7 @@ float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const f
     float wind_length = MAX(wind_vec.length(), 0.05f); // always assume a slight wind to avoid divide by 0
     Vector2f course_vec(cosf(course), sinf(course));
 
-    float offset = course + atan2f(-wind.y, -wind.x) + M_PI;
+    float offset = course - atan2f(-wind.y, -wind.x);
 
     // estimator for how far the aircraft will travel while entering the stall
     float stall_distance = slope_a * wind_length * cosf(offset) + slope_b;
