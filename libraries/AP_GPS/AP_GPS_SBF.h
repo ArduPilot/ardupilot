@@ -46,6 +46,9 @@ public:
     // get the velocity lag, returns true if the driver is confident in the returned value
     bool get_lag(float &lag_sec) const override { lag_sec = 0.08f; return true; } ;
 
+    bool is_healthy(void) const override;
+
+
 private:
 
     bool parse(uint8_t temp);
@@ -66,6 +69,7 @@ private:
     uint32_t crc_error_counter = 0;
     uint32_t last_injected_data_ms = 0;
     uint32_t RxState;
+    uint32_t RxError;
 
     enum sbf_ids {
         DOP = 4001,
@@ -185,4 +189,14 @@ private:
     } sbf_msg;
 
     void log_ExtEventPVTGeodetic(const msg4007 &temp);
+
+    enum {
+        SOFTWARE      = (1 << 3),
+        WATCHDOG      = (1 << 4),
+        CONGESTION    = (1 << 6),
+        MISSEDEVENT   = (1 << 8),
+        CPUOVERLOAD   = (1 << 9),
+        INVALIDCONFIG = (1 << 10),
+        OUTOFGEOFENCE = (1 << 11),
+    } RxError_bits;
 };

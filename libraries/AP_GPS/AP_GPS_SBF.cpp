@@ -41,6 +41,14 @@ do {                                            \
 
 #define SBF_EXCESS_COMMAND_BYTES 5 // 2 start bytes + validity byte + space byte + endline byte
 
+#define RX_ERROR_MASK (SOFTWARE      | \
+                       CONGESTION    | \
+                       MISSEDEVENT   | \
+                       CPUOVERLOAD   | \
+                       INVALIDCONFIG | \
+                       OUTOFGEOFENCE)
+
+
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
@@ -339,6 +347,7 @@ AP_GPS_SBF::process_message(void)
     {
         const msg4014 &temp = sbf_msg.data.msg4014u;
         RxState = temp.RxState;
+        RxError = temp.RxError;
         break;
     }
     case VelCovGeodetic:
@@ -386,4 +395,8 @@ bool AP_GPS_SBF::is_configured (void) {
     return (!gps._raw_data || (RxState & SBF_DISK_ACTIVITY)) &&
             (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE ||
              _init_blob_index >= ARRAY_SIZE(_initialisation_blob));
+}
+
+bool AP_GPS_SBF::is_healthy (void) const {
+    return (RxError & RX_ERROR_MASK) == 0;
 }

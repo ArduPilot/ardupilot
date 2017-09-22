@@ -401,8 +401,9 @@ public:
     // indicate which bit in LOG_BITMASK indicates gps logging enabled
     void set_log_gps_bit(uint32_t bit) { _log_gps_bit = bit; }
 
-    // report if the gps is healthy (this is defined as having received an update at a rate greater than 4Hz)
-    bool is_healthy(uint8_t instance) const { return last_message_delta_time_ms(instance) < GPS_MAX_DELTA_MS; }
+    // report if the gps is healthy (this is defined as existing, an update at a rate greater than 4Hz,
+    // as well as any driver specific behaviour)
+    bool is_healthy(uint8_t instance) const;
     bool is_healthy(void) const { return is_healthy(primary_instance); }
 
 protected:
