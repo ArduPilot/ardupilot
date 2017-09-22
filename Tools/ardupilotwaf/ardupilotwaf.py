@@ -2,13 +2,14 @@
 # encoding: utf-8
 
 from __future__ import print_function
+from __future__ import absolute_import
 from waflib import Build, Logs, Options, Utils
 from waflib.Configure import conf
 from waflib.TaskGen import before_method, feature
 import os.path, os
 from collections import OrderedDict
 
-import ap_persistent
+from . import ap_persistent
 
 SOURCE_EXTS = [
     '*.S',

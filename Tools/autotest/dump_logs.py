@@ -4,11 +4,12 @@
  Andrew Tridgell, April 2013
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import optparse
 import os
 import sys
 
-from pysim import util
+from .pysim import util
 
 
 ############## main program #############

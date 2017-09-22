@@ -26,6 +26,7 @@ some of them will be rewritten, see the implementation for details).
 This tool also checks if the headers used by the source files don't use
 vehicle-related headers and fails the build if they do.
 """
+from __future__ import absolute_import
 import os
 import re
 
@@ -34,7 +35,7 @@ from waflib.Configure import conf
 from waflib.TaskGen import after_method, before_method, feature
 from waflib.Tools import c_preproc
 
-import ardupilotwaf as ap
+from . import ardupilotwaf as ap
 
 UTILITY_SOURCE_EXTS = ['utility/' + glob for glob in ap.SOURCE_EXTS]
 

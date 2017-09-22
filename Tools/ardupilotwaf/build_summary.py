@@ -34,6 +34,7 @@ tg.build_summary['binary'] should be set as the Node object or a path relative
 to bld.bldnode for the binary file. Otherwise, size information won't be
 printed for that target.
 '''
+from __future__ import print_function
 import sys
 
 from waflib import Context, Logs, Node

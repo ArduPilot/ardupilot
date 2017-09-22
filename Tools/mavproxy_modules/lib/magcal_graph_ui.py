@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # Copyright (C) 2016  Intel Corporation. All rights reserved.
 #
 # This file is free software: you can redistribute it and/or modify it
@@ -21,7 +22,7 @@ from pymavlink.mavutil import mavlink
 from MAVProxy.modules.lib import wx_processguard
 from MAVProxy.modules.lib.wx_loader import wx
 
-import geodesic_grid as grid
+from . import geodesic_grid as grid
 
 class MagcalPanel(wx.Panel):
     _status_markup_strings = {

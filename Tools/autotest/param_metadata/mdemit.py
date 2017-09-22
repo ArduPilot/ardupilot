@@ -2,9 +2,10 @@
 """
 Emit parameter documentation in markdown format
 """
+from __future__ import absolute_import
 
-from param import known_param_fields
-from emit import Emit
+from .param import known_param_fields
+from .emit import Emit
 import re
 import os
 

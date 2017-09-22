@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import errno
 import socket
 import sys
@@ -76,7 +77,7 @@ while True:
         print("%u FPS len=%u" % (count, len(udp_buffer)))
         count = 0
         tlast = time.time()
-        print(fg.get('latitude', units='degrees'),
+        print((fg.get('latitude', units='degrees'),
               fg.get('longitude', units='degrees'),
               fg.get('altitude', units='meters'),
-              fg.get('vcas', units='mps'))
+              fg.get('vcas', units='mps')))

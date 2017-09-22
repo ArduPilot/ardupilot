@@ -2,9 +2,10 @@
 """
 Emit docs in a form acceptable to the old Ardupilot wordpress docs site
 """
+from __future__ import absolute_import
 
-from param import known_param_fields, known_units
-from emit import Emit
+from .param import known_param_fields, known_units
+from .emit import Emit
 import cgi
 
 
