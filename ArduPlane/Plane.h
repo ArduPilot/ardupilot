@@ -901,6 +901,7 @@ private:
     void failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t reason);
     void failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason);
     void failsafe_short_off_event(mode_reason_t reason);
+    void failsafe_long_off_event(mode_reason_t reason);
     void low_battery_event(void);
     void update_events(void);
     uint8_t max_fencepoints(void);
