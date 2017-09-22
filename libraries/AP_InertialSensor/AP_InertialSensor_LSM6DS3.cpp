@@ -36,6 +36,7 @@ extern const AP_HAL::HAL &hal;
 #define CTRL1_XL					0x10 
 #define CTRL9_XL					0x18
 #define OUT_X_L_A					0x28
+#define OUT_X_L_G					0x22	
 #define STATUS_REG					0x1E 
 #define XL_DATA_READY_MASK			0x1
 #define G_DATA_READY_MASK           (0x1 << 1)
@@ -43,7 +44,6 @@ extern const AP_HAL::HAL &hal;
 #define CTRL1_XL_16g                (0x1 << 2)
 #define CTRL9_XL_AXIS_VALUES		(0x7 << 3) 
 #define CTRL10_C_AXIS_VALUES		(0x7 << 3) 
-
 
 AP_InertialSensor_LSM6DS3::AP_InertialSensor_LSM6DS3(AP_InertialSensor &imu,AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_InertialSensor_Backend(imu)
@@ -254,8 +254,7 @@ void AP_InertialSensor_LSM6DS3::_read_data_transaction_a()
 void AP_InertialSensor_LSM6DS3::_read_data_transaction_g()
 {
     struct sensor_raw_data raw_data = { };
-    //const uint8_t reg = OUT_X_L_G | 0xC0;
-    const uint8_t reg = OUT_X_L_G;//miri
+    const uint8_t reg = OUT_X_L_G;
     if (!_dev->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data)))
 	{
         hal.console->printf("LSM6DS3: error reading gyroscope\n");
@@ -266,7 +265,7 @@ void AP_InertialSensor_LSM6DS3::_read_data_transaction_g()
     gyro_data *= _gyro_scale;
     _rotate_and_correct_gyro(_gyro_instance, gyro_data);
     _notify_new_gyro_raw_sample(_gyro_instance, gyro_data, AP_HAL::micros64());
-   // printf("gyro data x: %lf, y : %lf , z : %lf\n", gyro_data.x, gyro_data.y, gyro_data.z);
+
 }
 
 bool AP_InertialSensor_LSM6DS3::update()
