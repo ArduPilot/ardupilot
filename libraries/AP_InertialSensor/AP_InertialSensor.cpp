@@ -20,6 +20,7 @@
 #include "AP_InertialSensor_QURT.h"
 #include "AP_InertialSensor_SITL.h"
 #include "AP_InertialSensor_qflight.h"
+#include "AP_InertialSensor_LSM6DS3.h"
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -815,6 +816,8 @@ AP_InertialSensor::detect_backends(void)
     } else {
         hal.console->printf("aero: onboard IMU not detected\n");
     }
+#elif HAL_INS_DEFAULT == HAL_INS_LSM6DS3
+    _add_backend(AP_InertialSensor_LSM6DS3::probe(*this, hal.i2c_mgr->get_device(HAL_INS_LSM6DS3_I2C_BUS, HAL_INS_LSM6DS3_I2C_ADDR)));
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
