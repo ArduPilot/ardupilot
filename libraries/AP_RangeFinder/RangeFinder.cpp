@@ -618,8 +618,16 @@ void RangeFinder::detect_instance(uint8_t instance)
         break;
     case RangeFinder_TYPE_LWI2C:
         if (state[instance].address) {
+#ifdef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
             _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance],
                 hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, state[instance].address)));
+#else
+            if (!_add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance],
+                                                                  hal.i2c_mgr->get_device(1, state[instance].address)))) {
+                _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance],
+                                                                 hal.i2c_mgr->get_device(0, state[instance].address)));
+            }
+#endif
         }
         break;
     case RangeFinder_TYPE_TRI2C:
