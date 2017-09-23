@@ -35,9 +35,11 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state)
+AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder &_ranger, uint8_t instance,
+                                                           RangeFinder::RangeFinder_State &_state,
+                                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_RangeFinder_Backend(_ranger, instance, _state)
-    , _dev(hal.i2c_mgr->get_device(1, AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR))
+    , _dev(std::move(dev))
 {
 }
 
@@ -47,10 +49,11 @@ AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder &_ranger,
    there.
 */
 AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder &_ranger, uint8_t instance,
-                                                             RangeFinder::RangeFinder_State &_state)
+                                                             RangeFinder::RangeFinder_State &_state,
+                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     AP_RangeFinder_MaxsonarI2CXL *sensor
-        = new AP_RangeFinder_MaxsonarI2CXL(_ranger, instance, _state);
+        = new AP_RangeFinder_MaxsonarI2CXL(_ranger, instance, _state, std::move(dev));
     if (!sensor) {
         return nullptr;
     }
