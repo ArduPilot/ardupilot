@@ -76,11 +76,3 @@ try:
 except Exception as e:
 	print("Error found: " + traceback.format_exc())
 	print("UNIT TEST FAILED\n")
-
-
-
-
-
-
-
-
