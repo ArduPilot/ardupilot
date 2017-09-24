@@ -86,7 +86,7 @@ bool AP_InertialSensor_LSM6DS3::_init()
     for (tries = 0; tries < 5; tries++)
 	{
         _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
-  		_dev->write_register(FIFO_CTRL5, 0x50); //fifo odr 6.6khz , fifo bypass mode
+  		_dev->write_register(FIFO_CTRL5, 0x56); //fifo odr 6.6khz , fifo Continuous mode.
 		_accel_init();
 		_gyro_init();
 		_dev->set_speed(AP_HAL::Device::SPEED_HIGH);
