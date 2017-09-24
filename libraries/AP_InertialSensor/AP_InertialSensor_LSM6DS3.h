@@ -63,8 +63,6 @@ AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
      * by reading the status register. It is *strongly* recommended to use
      * data-ready GPIO pins for performance reasons.
      */
-    AP_HAL::DigitalSource * _drdy_pin_a;
-    AP_HAL::DigitalSource * _drdy_pin_g;
     float _gyro_scale;
     float _accel_scale;
     uint8_t _gyro_instance;
