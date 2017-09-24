@@ -42,8 +42,8 @@ private:
         A_SCALE_16G = 16,
     };
 
-    bool _accel_data_ready();
-    bool _gyro_data_ready();
+    bool _accel_data_ready(uint8_t status);
+    bool _gyro_data_ready(uint8_t status);
     void _poll_data();
     bool _init();
     void _gyro_init();

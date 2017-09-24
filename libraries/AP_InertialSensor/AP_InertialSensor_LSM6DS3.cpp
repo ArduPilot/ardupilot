@@ -75,14 +75,14 @@ bool AP_InertialSensor_LSM6DS3::_init()
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
-    uint8_t tries, whoami;    
+    uint8_t tries, whoami, status;    
     whoami = _register_read(WHO_AM_I_ADDR);
     if (whoami != LSM6DS3_WHOAMI) {	//not LSM6DS3
         hal.console->printf("LSM6DS3: unexpected acc/mag  WHOAMI 0x%x\n", (unsigned)whoami);
         _dev->get_semaphore()->give();
 		return false;
     }
-        
+      
     for (tries = 0; tries < 5; tries++)
 	{
         _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
@@ -91,7 +91,8 @@ bool AP_InertialSensor_LSM6DS3::_init()
 		_gyro_init();
 		_dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 		hal.scheduler->delay(10);
-		if (_accel_data_ready() && _gyro_data_ready())
+		status = _register_read(STATUS_REG);
+		if (_accel_data_ready(status) && _gyro_data_ready(status))
 		{ 
 			break;
 		}
@@ -197,11 +198,12 @@ void AP_InertialSensor_LSM6DS3::_set_accel_scale(accel_scale scale)
  */
 void AP_InertialSensor_LSM6DS3::_poll_data()
 {
-    if (_gyro_data_ready())
+	uint8_t status = _register_read(STATUS_REG);
+    if (_gyro_data_ready(status))
 	{
         _read_data_transaction_g();
     }
-    if (_accel_data_ready())
+    if (_accel_data_ready(status))
 	{
         _read_data_transaction_a();
     }
@@ -218,15 +220,13 @@ void AP_InertialSensor_LSM6DS3::_poll_data()
     }
 }
 
-bool AP_InertialSensor_LSM6DS3::_accel_data_ready()
+bool AP_InertialSensor_LSM6DS3::_accel_data_ready(uint8_t status)
 {
-    uint8_t status = _register_read(STATUS_REG);
     return status & XL_DATA_READY_MASK;
 }
 
-bool AP_InertialSensor_LSM6DS3::_gyro_data_ready()
+bool AP_InertialSensor_LSM6DS3::_gyro_data_ready(uint8_t status)
 {
-    uint8_t status = _register_read(STATUS_REG);
     return status & G_DATA_READY_MASK;
 }
 
