@@ -39,6 +39,7 @@ extern const AP_HAL::HAL &hal;
 #define OUT_X_L_G					0x22	
 #define STATUS_REG					0x1E 
 #define XL_DATA_READY_MASK			0x1
+#define CTRL2_G_HIGHT_PERFORM_2000_DPS  0x8C
 #define G_DATA_READY_MASK           (0x1 << 1)
 #define CTRL1_XL_1600khz            (0x8 << 4)
 #define CTRL1_XL_16g                (0x1 << 2)
@@ -138,7 +139,7 @@ void AP_InertialSensor_LSM6DS3::_register_write(uint8_t reg, uint8_t val, bool c
 void AP_InertialSensor_LSM6DS3::_gyro_init()
 {
     _register_write(CTRL10_C,CTRL10_C_AXIS_VALUES);
-    _register_write(CTRL2_G,0x8C);
+    _register_write(CTRL2_G,CTRL2_G_HIGHT_PERFORM_2000_DPS);
     _set_gyro_scale(G_SCALE_2000DPS);
 }
 
