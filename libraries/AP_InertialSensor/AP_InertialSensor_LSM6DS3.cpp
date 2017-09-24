@@ -123,21 +123,16 @@ void AP_InertialSensor_LSM6DS3::start(void)
 uint8_t AP_InertialSensor_LSM6DS3::_register_read(uint8_t reg)
 {
     uint8_t val = 0;
-	if (_sem->take_nonblocking()) 
-	{
-    	_dev->read_registers(reg, &val, 1);
-		_sem->give();
-    }
+	
+    _dev->read_registers(reg, &val, 1);
 	return val;
 }
 
 void AP_InertialSensor_LSM6DS3::_register_write(uint8_t reg, uint8_t val, bool checked)
 {
-	if (_sem->take_nonblocking()) 
-	{
-    	_dev->write_register(reg, val);
-		_sem->give();
-	}
+
+    _dev->write_register(reg, val);
+	
 }
 
 void AP_InertialSensor_LSM6DS3::_gyro_init()
