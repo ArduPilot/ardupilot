@@ -931,7 +931,7 @@ void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
     if (inst >= GPS_MAX_RECEIVERS) {
         return;
     }
-    if (drivers[inst] != nullptr && drivers[inst]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
+    if (drivers[inst] != nullptr && drivers[inst]->supports_mavlink_gps_rtk_message()) {
         drivers[inst]->send_mavlink_gps_rtk(chan);
     }
 }
