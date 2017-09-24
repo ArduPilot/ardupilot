@@ -25,7 +25,7 @@ extern const AP_HAL::HAL &hal;
 
 
 ////////////////////////////
-// LSM6DS3 Gyro Registers //
+// LSM6DS3 Registers //
 ////////////////////////////
 #define WHO_AM_I_ADDR				0x0F
 #define LSM6DS3_WHOAMI  			0x69 
@@ -126,6 +126,7 @@ uint8_t AP_InertialSensor_LSM6DS3::_register_read(uint8_t reg)
 	if (_sem->take_nonblocking()) 
 	{
     	_dev->read_registers(reg, &val, 1);
+		_sem->give();
     }
 	return val;
 }
@@ -135,6 +136,7 @@ void AP_InertialSensor_LSM6DS3::_register_write(uint8_t reg, uint8_t val, bool c
 	if (_sem->take_nonblocking()) 
 	{
     	_dev->write_register(reg, val);
+		_sem->give();
 	}
 }
 
