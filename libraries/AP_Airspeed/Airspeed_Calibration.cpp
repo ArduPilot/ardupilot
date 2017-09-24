@@ -152,12 +152,15 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
 // log airspeed calibration data to MAVLink
 void AP_Airspeed::log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground)
 {
+    float temp;
+    get_temperature(temp);
     mavlink_msg_airspeed_autocal_send(chan,
                                       vground.x,
                                       vground.y,
                                       vground.z,
                                       get_differential_pressure(),
-                                      _EAS2TAS,
+//                                      _EAS2TAS,
+                                      temp,
                                       _ratio.get(),
                                       _calibration.state.x,
                                       _calibration.state.y,
