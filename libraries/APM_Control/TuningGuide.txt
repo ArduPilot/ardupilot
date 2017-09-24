@@ -95,12 +95,12 @@ additional values that can be set by more advanced users.
     gain in increments of 0.1 until you are happy with the response.
    
 2)  If during 1) the wings start to 'waggle' and you are not happy with 
-	the speed of the response, then CTL_RLL_K_D can be increased in small 
-	increments of 0.01 until the wing waggle goes away and step 1 can be 
-	repeated. Do not go above 0.1 for CTL_RLL_K_D without checking the 
-	temperature of your servos when you land as in extreme cases turning 
-	up this gain can cause rapid servo movement and overheat the servos 
-	leading to premature failure.
+    the speed of the response, then CTL_RLL_K_D can be increased in small
+    increments of 0.01 until the wing waggle goes away and step 1 can be
+    repeated. Do not go above 0.1 for CTL_RLL_K_D without checking the
+    temperature of your servos when you land as in extreme cases turning
+    up this gain can cause rapid servo movement and overheat the servos
+    leading to premature failure.
 
 Method 2:
 
@@ -114,9 +114,9 @@ back to manual is done quickly, could overstress the plane.
     oscillate, then halve it.
 
 3)  Reduce CTL_RLL_TAU from the default value of 0.7 for a more rapid 
-	response if desired and if your aircraft is capable of doing so. 
-	If the bank angle starts to overshoot or you see wing 'waggle', 
-	you have gone too far.
+    response if desired and if your aircraft is capable of doing so.
+    If the bank angle starts to overshoot or you see wing 'waggle',
+    you have gone too far.
 
 Advanced:
 
@@ -194,10 +194,10 @@ back to manual is done quickly, could overstress the plane.
 
 2)  Increase CTL_PTCH_K_D in increments of 0.01 until it it starts to
     oscillate, then halve it.
-	
+
 1)  Reduce CTL_PTCH_TAU from the default value of 0.7 for a more rapid 
-	response if required and if your aircraft is capable of doing so. 
-	If the pitch response starts to overshoot, you have gone too far. 
+    response if required and if your aircraft is capable of doing so.
+    If the pitch response starts to overshoot, you have gone too far.
 
 Advanced Options:
 

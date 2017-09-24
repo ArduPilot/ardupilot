@@ -68,7 +68,7 @@ extern const AP_HAL::HAL& hal;
 // constructor
 AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
                          const AP_Vehicle::FixedWing &parms,
-                         DataFlash_Class &_dataflash) :
+                         const DataFlash_Class &_dataflash) :
     running(false),
     current(_gains),
     type(_type),
@@ -78,10 +78,10 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
 {}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <stdio.h>
-# define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
+  #include <stdio.h>
+  #define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
- # define Debug(fmt, args ...)
+  #define Debug(fmt, args ...)
 #endif
 
 /*
@@ -93,7 +93,7 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
 static const struct {
     float tau;
     float Dratio;
-    float rmax;
+    int16_t rmax;
 } tuning_table[] = {
     { 0.70f, 0.050f,  20 },   // level 1
     { 0.65f, 0.055f,  30 },   // level 2
@@ -115,7 +115,7 @@ void AP_AutoTune::start(void)
 {
     running = true;
     state = DEMAND_UNSATURATED;
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     state_enter_ms = now;
     last_save_ms = now;
@@ -170,10 +170,10 @@ void AP_AutoTune::update(float desired_rate, float achieved_rate, float servo_ou
 
     // see what state we are in
     ATState new_state;
-    float abs_desired_rate = fabsf(desired_rate);
-    uint32_t now = AP_HAL::millis();
+    const float abs_desired_rate = fabsf(desired_rate);
+    const uint32_t now = AP_HAL::millis();
 
-    if (fabsf(servo_out) >= 45) {
+    if (fabsf(servo_out) >= 45.0f) {
         // we have saturated the servo demand (not including
         // integrator), we cannot get any information that would allow
         // us to increase the gain
@@ -184,9 +184,9 @@ void AP_AutoTune::update(float desired_rate, float achieved_rate, float servo_ou
         // we are not demanding max rate
         new_state = DEMAND_UNSATURATED;
     } else if (fabsf(achieved_rate) > abs_desired_rate) {
-        new_state = desired_rate > 0 ? DEMAND_OVER_POS : DEMAND_OVER_NEG;
+        new_state = is_positive(desired_rate) ? DEMAND_OVER_POS : DEMAND_OVER_NEG;
     } else {
-        new_state = desired_rate > 0 ? DEMAND_UNDER_POS : DEMAND_UNDER_NEG;
+        new_state = is_positive(desired_rate) ? DEMAND_UNDER_POS : DEMAND_UNDER_NEG;
     }
     if (new_state != state) {
         check_state_exit(now - state_enter_ms);
@@ -239,7 +239,8 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
  */
 void AP_AutoTune::check_save(void)
 {
-    if (AP_HAL::millis() - last_save_ms < AUTOTUNE_SAVE_PERIOD) {
+    const uint32_t now = AP_HAL::millis();
+    if (now - last_save_ms < AUTOTUNE_SAVE_PERIOD) {
         return;
     }
 
@@ -247,7 +248,7 @@ void AP_AutoTune::check_save(void)
     // the last save period. This means the pilot has
     // AUTOTUNE_SAVE_PERIOD milliseconds to decide they don't like the
     // gains and switch out of autotune
-    ATGains tmp = current;
+    const ATGains tmp = current;
 
     save_gains(next_save);
     Debug("SAVE P -> %.3f\n", current.P.get());
@@ -260,7 +261,7 @@ void AP_AutoTune::check_save(void)
 
     // the next values to save will be the ones we are flying now
     next_save = current;
-    last_save_ms = AP_HAL::millis();
+    last_save_ms = now;
 }
 
 /*
@@ -289,7 +290,7 @@ void AP_AutoTune::log_param_change(float v, const char *suffix)
  */
 void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const char *suffix)
 {
-    float old_value = v.get();
+    const float old_value = v.get();
     v.set(value);
     if (value <= 0 || fabsf((value-old_value)/value) > 0.001f) {
         v.save();
@@ -302,7 +303,7 @@ void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const char *su
  */
 void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const char *suffix)
 {
-    int16_t old_value = v.get();
+    const int16_t old_value = v.get();
     v.set(value);
     if (old_value != v.get()) {
         v.save();
@@ -336,8 +337,8 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
         LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
         time_us    : AP_HAL::micros64(),
         type       : static_cast<uint8_t>(type),
-    	state      : (uint8_t)state,
-        servo      : (int16_t)(servo*100),
+        state      : static_cast<uint8_t>(state),
+        servo      : static_cast<int16_t>(servo*100),
         demanded   : demanded,
         achieved   : achieved,
         P          : current.P.get()

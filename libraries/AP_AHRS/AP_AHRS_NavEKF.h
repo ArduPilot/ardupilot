@@ -76,7 +76,7 @@ public:
     float           get_error_yaw() const override;
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate() override;
+    Vector3f wind_estimate() const override;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate

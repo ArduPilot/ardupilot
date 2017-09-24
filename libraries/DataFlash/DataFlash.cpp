@@ -352,7 +352,7 @@ void DataFlash_Class::set_mission(const AP_Mission *mission) {
 }
 
 // start functions pass straight through to backend:
-void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
+void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) const {
     FOR_EACH_BACKEND(WriteBlock(pBuffer, size));
 }
 
@@ -451,7 +451,7 @@ void DataFlash_Class::ListAvailableLogs(AP_HAL::BetterStream *port) {
 }
 
 /* we're started if any of the backends are started */
-bool DataFlash_Class::logging_started(void) {
+bool DataFlash_Class::logging_started(void) const {
     for (uint8_t i=0; i< _next_backend; i++) {
         if (backends[i]->logging_started()) {
             return true;
@@ -505,7 +505,7 @@ void DataFlash_Class::Log_Write_Mode(uint8_t mode, uint8_t reason)
     FOR_EACH_BACKEND(Log_Write_Mode(mode, reason));
 }
 
-void DataFlash_Class::Log_Write_Parameter(const char *name, float value)
+void DataFlash_Class::Log_Write_Parameter(const char *name, float value) const
 {
     FOR_EACH_BACKEND(Log_Write_Parameter(name, value));
 }

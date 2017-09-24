@@ -34,7 +34,7 @@ public:
 
 
     // constructor
-    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash);
+    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms, const DataFlash_Class &_dataflash);
 
     // called when autotune mode is entered
     void start(void);
@@ -49,7 +49,7 @@ public:
 
     // are we running?
     bool running:1;
-    
+
 private:
     // the current gains
     ATGains &current;
@@ -57,18 +57,18 @@ private:
     // what type of autotune is this
     ATType type;
 
-	const AP_Vehicle::FixedWing &aparm;
+    const AP_Vehicle::FixedWing &aparm;
 
-    DataFlash_Class &dataflash;
+    const DataFlash_Class &dataflash;
 
     // did we saturate surfaces?
     bool saturated_surfaces:1;
 
     // values to restore if we leave autotune mode
-    ATGains restore; 
+    ATGains restore;
 
     // values we last saved
-    ATGains last_save; 
+    ATGains last_save;
 
     // values to save on the next save event
     ATGains next_save;
@@ -78,7 +78,7 @@ private:
 
     // the demanded/achieved state
     enum ATState {DEMAND_UNSATURATED,
-                  DEMAND_UNDER_POS, 
+                  DEMAND_UNDER_POS,
                   DEMAND_OVER_POS,
                   DEMAND_UNDER_NEG,
                   DEMAND_OVER_NEG} state = DEMAND_UNSATURATED;
@@ -90,7 +90,6 @@ private:
     void check_state_exit(uint32_t state_time_ms);
     void save_gains(const ATGains &v);
 
-    void write_log_headers(void);
     void write_log(float servo, float demanded, float achieved);
 
     void log_param_change(float v, const char *suffix);
