@@ -17,7 +17,7 @@ class TestVibration(Test):
     def run(self, logdata, verbose):
         self.result = TestResult()
 
-        if logdata.vehicleType != "ArduCopter":
+        if logdata.vehicleType != VehicleType.Copter:
             self.result.status = TestResult.StatusType.NA
             return
 

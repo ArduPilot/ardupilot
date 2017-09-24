@@ -336,9 +336,14 @@ class DataflashLogHelper:
         if not "GPS" in logdata.channels:
             raise Exception("no GPS log data found")
         # older logs use 'TIme', newer logs use 'TimeMS'
-        timeLabel = "TimeMS"
-        if "Time" in logdata.channels["GPS"]:
-            timeLabel = "Time"
+        # even newer logs use TimeUS
+        timeLabel = None
+        for possible in "TimeMS", "Time", "TimeUS":
+            if possible in logdata.channels["GPS"]:
+                timeLabel = possible
+                break
+        if timeLabel is None:
+            raise Exception("Unable to get time label")
         while lineNumber <= logdata.lineCount:
             if lineNumber in logdata.channels["GPS"][timeLabel].dictData:
                 return logdata.channels["GPS"][timeLabel].dictData[lineNumber]

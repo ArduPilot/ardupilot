@@ -17,7 +17,7 @@ class TestPitchRollCoupling(Test):
         self.result = TestResult()
         self.result.status = TestResult.StatusType.GOOD
 
-        if logdata.vehicleType != "ArduCopter":
+        if logdata.vehicleType != VehicleType.Copter:
             self.result.status = TestResult.StatusType.NA
             return
 
