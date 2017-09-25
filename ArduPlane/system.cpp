@@ -480,7 +480,7 @@ void Plane::check_long_failsafe()
     // -------------------
     if (failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS && flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
         uint32_t radio_timeout_ms = failsafe.last_valid_rc_ms;
-        if (g.short_fs_action != SHORT_FS_ACTION_DISABLED) {
+        if (failsafe.state == FAILSAFE_SHORT) {
             // time is relative to when short failsafe enabled
             radio_timeout_ms = failsafe.ch3_timer_ms;
         }
