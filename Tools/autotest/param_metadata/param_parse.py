@@ -168,7 +168,7 @@ def process_library(vehicle, library, pathprefix=None):
                 if field[0] in known_param_fields:
                     setattr(p, field[0], field[2])
                 else:
-                    error("tagged param unknown parameter metadata field '%s'" % field[0])
+                    error("tagged param: unknown parameter metadata field '%s'" % field[0])
             library.params.append(p)
 
         group_matches = prog_groups.findall(p_text)
