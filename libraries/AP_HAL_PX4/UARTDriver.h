@@ -4,6 +4,7 @@
 
 #include "AP_HAL_PX4.h"
 #include <systemlib/perf_counter.h>
+#include "Semaphores.h"
 
 class PX4::PX4UARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -72,6 +73,5 @@ private:
     uint32_t _total_written;
     enum flow_control _flow_control;
 
-    pid_t _uart_owner_pid;
-
+    Semaphore _semaphore;
 };
