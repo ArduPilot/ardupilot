@@ -58,10 +58,17 @@ def error(str_to_print):
     error_count += 1
     print(str_to_print)
 
+truename_map = {
+    "APMrover2": "Rover",
+    "ArduSub": "Sub",
+    "ArduCopter": "Copter",
+    "ArduPlane": "Plane",
+    "AntennaTracker": "Tracker",
+}
 for vehicle_path in vehicle_paths:
     name = os.path.basename(os.path.dirname(vehicle_path))
     path = os.path.normpath(os.path.dirname(vehicle_path))
-    vehicles.append(Vehicle(name, path))
+    vehicles.append(Vehicle(name, path, truename_map[name]))
     debug('Found vehicle type %s' % name)
 
 if len(vehicles) > 1:
@@ -156,7 +163,7 @@ def process_library(vehicle, library, pathprefix=None):
             for field in fields:
                 only_for_vehicles = field[1].split(",")
 #                print("vehicle=%s field[1]=%s only_for_vehicles=%s\n" % (vehicle.name,field[1], str(only_for_vehicles)))
-                if vehicle.name not in only_for_vehicles:
+                if vehicle.truename not in only_for_vehicles:
                     continue;
                 if field[0] in known_param_fields:
                     setattr(p, field[0], field[2])
