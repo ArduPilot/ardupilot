@@ -5,7 +5,9 @@ class Parameter(object):
 
 
 class Vehicle(object):
-    def __init__(self, name, path):
+    def __init__(self, name, path, truename=None):
+        if truename is not None:
+            self.truename = truename
         self.name = name
         self.path = path
         self.params = []
