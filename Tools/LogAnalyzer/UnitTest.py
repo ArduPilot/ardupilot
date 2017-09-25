@@ -56,10 +56,10 @@ try:
 	assert(lit['ATT']['RollIn']   == 11.19)
 	assert(lit['CURR']['CurrTot'] == 25.827288)
 	assert(lit['D32']['Value']    == 11122)
-	lit.next()
+	next(lit)
 	assert(lit.iterators == {'CURR': (9, 514), 'ERR': (1, 553), 'NTUN': (0, 2206), 'CTUN': (88, 502), 'GPS': (0, 552), 'CMD': (0, 607), 'D32': (0, 305), 'ATT': (83, 501), 'EV': (4, 606), 'DU32': (9, 513), 'PM': (1, 719)})
 	lit.jump(4750)
-	lit.next()
+	next(lit)
 	assert(lit.currentLine == 4751)
 	assert(lit['ATT']['Roll'] == 2.99)
 
@@ -76,11 +76,3 @@ try:
 except Exception as e:
 	print("Error found: " + traceback.format_exc())
 	print("UNIT TEST FAILED\n")
-
-
-
-
-
-
-
-
