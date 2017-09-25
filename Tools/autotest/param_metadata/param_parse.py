@@ -27,7 +27,7 @@ prog_param = re.compile(r"@Param: *(\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): (.*)")
-# match e.g @Value[ArduCopter]: 0=Volcano, 1=Peppermint
+# match e.g @Value{ArduCopter}: 0=Volcano, 1=Peppermint
 prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([\w,]+)}: (.*)")
 
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
