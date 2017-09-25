@@ -21,7 +21,7 @@ parser.add_option("--vehicle", default='*',  help="Vehicle type to generate for"
 
 # Regular expressions for parsing the parameter metadata
 
-prog_param = re.compile(r"@Param: *(\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
+prog_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([,\w]+)})?: (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): (.*)")
@@ -29,9 +29,6 @@ prog_param_fields = re.compile(r"[ \t]*// @(\w+): (.*)")
 prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([\w,]+)}: (.*)")
 
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
-
-# prog_group_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
-prog_group_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([,\w]+)})?: (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % opts.vehicle)
@@ -140,7 +137,7 @@ def process_library(vehicle, library, pathprefix=None):
             error("Path %s not found for library %s" % (path, library.name))
             continue
 
-        param_matches = prog_group_param.findall(p_text)
+        param_matches = prog_param.findall(p_text)
         debug("Found %u documented parameters" % len(param_matches))
         for param_match in param_matches:
             p = Parameter(library.name+param_match[0])
