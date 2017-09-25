@@ -114,9 +114,6 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     default:
         break;
     }
-    if (fstype == FAILSAFE_GCS) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "No GCS heartbeat");
-    }
     gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode);
 }
 
