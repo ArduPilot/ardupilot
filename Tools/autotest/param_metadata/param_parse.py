@@ -158,11 +158,11 @@ def process_library(vehicle, library, pathprefix=None):
                     setattr(p, field[0], field[1])
                 else:
                     error("param: unknown parameter metadata field %s" % field[0])
-#            print("matching %s" % field_text)
+            debug("matching %s" % field_text)
             fields = prog_param_tagged_fields.findall(field_text)
             for field in fields:
                 only_for_vehicles = field[1].split(",")
-#                print("vehicle=%s field[1]=%s only_for_vehicles=%s\n" % (vehicle.name,field[1], str(only_for_vehicles)))
+                debug("field[0]=%s vehicle=%s truename=%s field[1]=%s only_for_vehicles=%s\n" % (field[0], vehicle.name,vehicle.truename,field[1], str(only_for_vehicles)))
                 if vehicle.truename not in only_for_vehicles:
                     continue;
                 if field[0] in known_param_fields:
