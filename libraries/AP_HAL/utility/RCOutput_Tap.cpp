@@ -538,12 +538,12 @@ void RCOutput_Tap::push()
         out[i] = RPMSTOPPED;
     }
 
-/*
+    /*
      * Value packet format, little endian
      *
-     * | 15 | 14 | 13 | 12 | 11  | 10  | 11 | 12 | 11 | 10 ...... 0 |
-     * --------------------------------------------------------------
-     * | -- | -- | -- | -- | REV | FEN | BL | GL | RL |  RPM value  |
+     * | 15  | 14  | 13 | 12 | 11 | 10 ...... 0 |
+     * ------------------------------------------
+     * | REV | FEN | BL | GL | RL |  RPM value  |
      *
      * RPM value: [ RPMMIN, RPMMAX ]
      * RL: LED1
