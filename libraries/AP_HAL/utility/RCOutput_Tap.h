@@ -91,7 +91,6 @@ private:
     bool _corking;
 
     uint8_t _channels_count = MAX_MOTORS;
-    uint8_t _next_channel_reply;
 
     uint16_t _period[MAX_MOTORS];
     uint16_t _esc_pwm_min;

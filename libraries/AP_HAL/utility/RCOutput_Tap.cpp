@@ -553,11 +553,6 @@ void RCOutput_Tap::push()
      * REV: Reverse direction
      */
 
-// TODO: enable feedback from 1 ESC and read data back
-#if 0
-	out[_next_channel_reply] |= RUN_FEEDBACK_ENABLE_MASK;
-#endif
-
     EscPacket packet = {0xfe, _channels_count, ESCBUS_MSG_ID_RUN};
     packet.len *= sizeof(packet.d.reqRun.value[0]);
 
@@ -569,8 +564,6 @@ void RCOutput_Tap::push()
     if (ret < 1) {
         debug("TX ERROR: ret: %d, errno: %d", ret, errno);
     }
-
-    _next_channel_reply = (_next_channel_reply + 1) % _channels_count;
 
     hal.util->perf_end(_perf_rcout);
 }
