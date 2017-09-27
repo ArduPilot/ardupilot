@@ -885,6 +885,9 @@ def fly_avc_test(mavproxy, mav):
     print("Fly AVC mission from 1 to %u" % num_wp)
     mavproxy.send('wp set 1\n')
 
+    # wait for motor runup
+    wait_seconds(mav, 20)
+
     # switch into AUTO mode and raise throttle
     mavproxy.send('switch 4\n')  # auto mode
     wait_mode(mav, 'AUTO')
