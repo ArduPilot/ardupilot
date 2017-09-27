@@ -89,12 +89,14 @@ private:
 
     uint8_t _enabled_channels;
     bool _corking;
+    bool _led_on;
 
     uint8_t _channels_count = MAX_MOTORS;
 
     uint16_t _period[MAX_MOTORS];
     uint16_t _esc_pwm_min;
     uint16_t _esc_pwm_max;
+    uint32_t _last_led_update_msec;
     int _uart_fd = -1;
 };
 
