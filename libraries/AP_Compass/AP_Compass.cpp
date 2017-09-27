@@ -520,16 +520,12 @@ void Compass::_detect_backends(void)
         return;
     }
 
-
-    // default mask to disable some compasses
-    int32_t mask_default = 1U<<DRIVER_QMC5883;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
         // default to disabling LIS3MDL on pixhawk2 due to hardware issue
-        mask_default |= 1U<<DRIVER_LIS3MDL;
+        _driver_type_mask.set_default(1U<<DRIVER_LIS3MDL);
     }
 #endif
-    _driver_type_mask.set_default(mask_default);
     
 /*
   macro to add a backend with check for too many backends or compass
