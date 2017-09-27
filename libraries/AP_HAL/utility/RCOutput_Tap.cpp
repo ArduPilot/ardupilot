@@ -556,8 +556,17 @@ void RCOutput_Tap::push()
     EscPacket packet = {0xfe, _channels_count, ESCBUS_MSG_ID_RUN};
     packet.len *= sizeof(packet.d.reqRun.value[0]);
 
+    uint32_t tnow = AP_HAL::millis();
+    if (tnow - _last_led_update_msec > 250) {
+        _led_on = !_led_on;
+        _last_led_update_msec = tnow;
+    }
+
     for (uint8_t i = 0; i < _channels_count; i++) {
         packet.d.reqRun.value[i] = out[i] & RUN_CHANNEL_VALUE_MASK;
+        if (_led_on) {
+            packet.d.reqRun.value[i] |= RUN_LED_ON_MASK;
+        }
     }
 
     int ret = _send_packet(packet);
