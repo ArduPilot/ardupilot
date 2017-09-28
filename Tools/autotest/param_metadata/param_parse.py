@@ -23,12 +23,12 @@ parser.add_option("--no-emit", dest='emit_params', action='store_false', default
 
 # Regular expressions for parsing the parameter metadata
 
-prog_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([,\w]+)})?: (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
+prog_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): (.*)")
 # match e.g @Value{ArduCopter}: 0=Volcano, 1=Peppermint
-prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([\w,]+)}: (.*)")
+prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: (.*)")
 
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
@@ -162,6 +162,10 @@ def process_library(vehicle, library, pathprefix=None):
             fields = prog_param_tagged_fields.findall(field_text)
             for field in fields:
                 only_for_vehicles = field[1].split(",")
+                only_for_vehicles = [ x.rstrip().lstrip() for x in only_for_vehicles ]
+                delta = set(only_for_vehicles) - set(truename_map.values())
+                if len(delta):
+                    error("Unknown vehicles (%s)" % delta)
                 debug("field[0]=%s vehicle=%s truename=%s field[1]=%s only_for_vehicles=%s\n" % (field[0], vehicle.name,vehicle.truename,field[1], str(only_for_vehicles)))
                 if vehicle.truename not in only_for_vehicles:
                     continue;
