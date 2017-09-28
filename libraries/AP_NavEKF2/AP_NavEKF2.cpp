@@ -544,8 +544,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: OGN_HGT_MASK
     // @DisplayName: Bitmask control of EKF reference height correction
-    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be corrected so that the height returned by the getLLH() function is compensated for primary height sensor drift and change in datum over time. The first two bit positions control when the height datum will be corrected. Correction is performed using a Bayes filter and only operates when GPS quality permits. The third bit position controls where the corrections to the GPS reference datum are applied. Corrections can be applied to the local vertical position (default) or to the reported EKF origin height.
-    // @Bitmask: 0:Correct when using Baro height,1:Correct when using range finder height,2:Apply corrections to origin height
+    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be corrected so that the height returned by the getLLH() function is compensated for primary height sensor drift and change in datum over time. The first two bit positions control when the height datum will be corrected. Correction is performed using a Bayes filter and only operates when GPS quality permits. The third bit position controls where the corrections to the GPS reference datum are applied. Corrections can be applied to the local vertical position or to the reported EKF origin height (default).
+    // @Bitmask: 0:Correct when using Baro height,1:Correct when using range finder height,2:Apply corrections to local position
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("OGN_HGT_MASK", 49, NavEKF2, _originHgtMode, 0),
@@ -583,7 +583,8 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
     gndGradientSigma(50),           // RMS terrain gradient percentage assumed by the terrain height estimation
     fusionTimeStep_ms(10),          // The minimum number of msec between covariance prediction and fusion operations
-    runCoreSelection(false)         // true when the default primary core has stabilised after startup and core selection can run
+    runCoreSelection(false),        // true when the default primary core has stabilised after startup and core selection can run
+    inhibitGpsVertVelUse(false)     // true when GPS vertical velocity use is prohibited
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -656,7 +657,7 @@ bool NavEKF2::InitialiseFilter(void)
         }
 
         if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
             _enable.set(0);
             return false;
         }
@@ -664,7 +665,7 @@ bool NavEKF2::InitialiseFilter(void)
         core = new NavEKF2_core[num_cores];
         if (core == nullptr) {
             _enable.set(0);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
             return false;
         }
 

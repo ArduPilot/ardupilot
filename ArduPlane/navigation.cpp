@@ -101,8 +101,11 @@ void Plane::navigate()
 
 void Plane::calc_airspeed_errors()
 {
-    float airspeed_measured_cm = airspeed.get_airspeed_cm();
-
+    float airspeed_measured = 0;
+    
+    // we use the airspeed estimate function not direct sensor as TECS
+    // may be using synthetic airspeed
+    ahrs.airspeed_estimate(&airspeed_measured);
 
     // FBW_B airspeed target
     if (control_mode == FLY_BY_WIRE_B || 
@@ -125,9 +128,10 @@ void Plane::calc_airspeed_errors()
     // but only when this is faster than the target airspeed commanded
     // above.
     if (control_mode >= FLY_BY_WIRE_B && (aparm.min_gndspeed_cm > 0)) {
-        int32_t min_gnd_target_airspeed = airspeed_measured_cm + groundspeed_undershoot;
-        if (min_gnd_target_airspeed > target_airspeed_cm)
+        int32_t min_gnd_target_airspeed = airspeed_measured*100 + groundspeed_undershoot;
+        if (min_gnd_target_airspeed > target_airspeed_cm) {
             target_airspeed_cm = min_gnd_target_airspeed;
+        }
     }
 
     // Bump up the target airspeed based on throttle nudging
@@ -141,7 +145,7 @@ void Plane::calc_airspeed_errors()
 
     // use the TECS view of the target airspeed for reporting, to take
     // account of the landing speed
-    airspeed_error = SpdHgt_Controller->get_target_airspeed() - airspeed_measured_cm * 0.01f;
+    airspeed_error = SpdHgt_Controller->get_target_airspeed() - airspeed_measured;
 }
 
 void Plane::calc_gndspeed_undershoot()
@@ -197,7 +201,7 @@ void Plane::update_loiter(uint16_t radius)
             loiter.start_time_ms = millis();
             if (control_mode == GUIDED || control_mode == AVOID_ADSB) {
                 // starting a loiter in GUIDED means we just reached the target point
-                gcs_send_mission_item_reached_message(0);
+                gcs().send_mission_item_reached_message(0);
             }
             if (quadplane.guided_mode_enabled()) {
                 quadplane.guided_start();

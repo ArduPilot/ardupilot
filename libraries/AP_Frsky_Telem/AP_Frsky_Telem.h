@@ -108,11 +108,17 @@ for FrSky SPort Passthrough
 
 
 
-class AP_Frsky_Telem
-{
+class AP_Frsky_Telem {
 public:
-    //constructor
-    AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
+    static AP_Frsky_Telem create(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng) {
+        return AP_Frsky_Telem{ahrs, battery, rng};
+    }
+
+    constexpr AP_Frsky_Telem(AP_Frsky_Telem &&other) = default;
+
+    /* Do not allow copies */
+    AP_Frsky_Telem(const AP_Frsky_Telem &other) = delete;
+    AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
 
     // init - perform required initialisation
     void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, const AP_Float *fs_batt_voltage = nullptr, const AP_Float *fs_batt_mah = nullptr, const uint32_t *ap_valuep = nullptr);
@@ -127,7 +133,7 @@ public:
     // set land_complete flag to 0 if is_flying
     // set land_complete flag to 1 if not flying
     void set_is_flying(bool is_flying) { (is_flying) ? (_ap.value &= ~AP_LANDCOMPLETE_FLAG) : (_ap.value |= AP_LANDCOMPLETE_FLAG); }
- 
+
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
@@ -135,8 +141,10 @@ public:
     void update_sensor_status_flags(uint32_t error_mask) { _ap.sensor_status_flags = error_mask; }
 
     static ObjectArray<mavlink_statustext_t> _statustext_queue;
-    
+
 private:
+    AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
+
     AP_AHRS &_ahrs;
     const AP_BattMonitor &_battery;
     const RangeFinder &_rng;

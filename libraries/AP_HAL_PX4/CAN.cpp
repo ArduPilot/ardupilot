@@ -9,6 +9,7 @@
 #include <AP_HAL/system.h>
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 #if HAL_WITH_UAVCAN
 
@@ -58,6 +59,7 @@ uavcan::MonotonicTime clock::getMonotonic()
 BusEvent::BusEvent(PX4CANManager& can_driver) :
     _signal(0)
 {
+    sem_init(&_wait_semaphore, 0, 0);
 }
 
 BusEvent::~BusEvent()
@@ -110,12 +112,14 @@ static void handleTxInterrupt(uint8_t iface_index)
 {
     if (iface_index < CAN_STM32_NUM_IFACES) {
         uint64_t utc_usec = clock::getUtcUSecFromCanInterrupt();
-        if (utc_usec > 0) {
-            utc_usec--;
-        }
-        PX4CAN* iface = ((PX4CANManager*) hal.can_mgr)->getIface(iface_index);
-        if (iface != nullptr) {
-            iface->handleTxInterrupt(utc_usec);
+
+        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+            if (hal.can_mgr[i] != nullptr) {
+                PX4CAN* iface = ((PX4CANManager*) hal.can_mgr[i])->getIface_out_to_in(iface_index);
+                if (iface != nullptr) {
+                    iface->handleTxInterrupt(utc_usec);
+                }
+            }
         }
     }
 }
@@ -124,18 +128,19 @@ static void handleRxInterrupt(uint8_t iface_index, uint8_t fifo_index)
 {
     if (iface_index < CAN_STM32_NUM_IFACES) {
         uint64_t utc_usec = clock::getUtcUSecFromCanInterrupt();
-        if (utc_usec > 0) {
-            utc_usec--;
-        }
-        PX4CAN* iface = ((PX4CANManager*) hal.can_mgr)->getIface(iface_index);
-        if (iface != nullptr) {
-            iface->handleRxInterrupt(fifo_index, utc_usec);
+
+        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+            if (hal.can_mgr[i] != nullptr) {
+                PX4CAN* iface = ((PX4CANManager*) hal.can_mgr[i])->getIface_out_to_in(iface_index);
+                if (iface != nullptr) {
+                    iface->handleRxInterrupt(fifo_index, utc_usec);
+                }
+            }
         }
     }
 }
 
 const uint32_t PX4CAN::TSR_ABRQx[PX4CAN::NumTxMailboxes] = { bxcan::TSR_ABRQ0, bxcan::TSR_ABRQ1, bxcan::TSR_ABRQ2 };
-PX4CAN* PX4CANManager::ifaces[CAN_STM32_NUM_IFACES] = {};
 
 int PX4CAN::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
 {
@@ -165,7 +170,7 @@ int PX4CAN::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
     const uint8_t max_quanta_per_bit = (target_bitrate >= 1000000) ? 10 : 17;
 
     if (max_quanta_per_bit > (MaxBS1 + MaxBS2)) {
-        if (AP_BoardConfig::get_can_debug() >= 1) {
+        if (AP_BoardConfig_CAN::get_can_debug() >= 1) {
             printf("PX4CAN::computeTimings max_quanta_per_bit problem\n\r");
         }
     }
@@ -234,7 +239,7 @@ int PX4CAN::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
                 uint16_t(1000 * (1 + bs1) / (1 + bs1 + bs2)))
         {
             if (bs1_bs2_sum <= arg_bs1) {
-                if (AP_BoardConfig::get_can_debug() >= 1) {
+                if (AP_BoardConfig_CAN::get_can_debug() >= 1) {
                     AP_HAL::panic("PX4CAN::computeTimings bs1_bs2_sum <= arg_bs1");
                 }
             }
@@ -264,13 +269,13 @@ int PX4CAN::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
      * Final validation
      */
     if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
-        if (AP_BoardConfig::get_can_debug() >= 1) {
+        if (AP_BoardConfig_CAN::get_can_debug() >= 1) {
             printf("PX4CAN::computeTimings target_bitrate error\n\r");
         }
         return -ErrLogic;
     }
 
-    if (AP_BoardConfig::get_can_debug() >= 2) {
+    if (AP_BoardConfig_CAN::get_can_debug() >= 2) {
         printf("PX4CAN::computeTimings Timings: quanta/bit: %d, sample point location: %.1f%%\n\r",
                int(1 + solution.bs1 + solution.bs2), double(solution.sample_point_permill / 10.0));
     }
@@ -380,11 +385,69 @@ int16_t PX4CAN::receive(uavcan::CanFrame& out_frame, uavcan::MonotonicTime& out_
 
 int16_t PX4CAN::configureFilters(const uavcan::CanFilterConfig* filter_configs, uint16_t num_configs)
 {
-    // TODO: Hardware filter support
-    CriticalSectionLocker lock;
-    (void) filter_configs;
-    (void) num_configs;
-    return -ErrNotImplemented;
+    if (num_configs <= NumFilters) {
+        CriticalSectionLocker lock;
+
+        can_->FMR |= bxcan::FMR_FINIT;
+
+        // Slave (CAN2) gets half of the filters
+        can_->FMR = (can_->FMR & ~0x00003F00) | static_cast<uint32_t>(NumFilters) << 8;
+
+        can_->FFA1R = 0x0AAAAAAA; // FIFO's are interleaved between filters
+        can_->FM1R = 0; // Identifier Mask mode
+        can_->FS1R = 0x7ffffff; // Single 32-bit for all
+
+        const uint8_t filter_start_index = (self_index_ == 0) ? 0 : NumFilters;
+
+        if (num_configs == 0) {
+            can_->FilterRegister[filter_start_index].FR1 = 0;
+            can_->FilterRegister[filter_start_index].FR2 = 0;
+            can_->FA1R = 1 << filter_start_index;
+        } else {
+            for (uint8_t i = 0; i < NumFilters; i++) {
+                if (i < num_configs) {
+                    uint32_t id   = 0;
+                    uint32_t mask = 0;
+
+                    const uavcan::CanFilterConfig* const cfg = filter_configs + i;
+
+                    if ((cfg->id & uavcan::CanFrame::FlagEFF) || !(cfg->mask & uavcan::CanFrame::FlagEFF)) {
+                        id   = (cfg->id   & uavcan::CanFrame::MaskExtID) << 3;
+                        mask = (cfg->mask & uavcan::CanFrame::MaskExtID) << 3;
+                        id |= bxcan::RIR_IDE;
+                    } else {
+                        id   = (cfg->id   & uavcan::CanFrame::MaskStdID) << 21;
+                        mask = (cfg->mask & uavcan::CanFrame::MaskStdID) << 21;
+                    }
+
+                    if (cfg->id & uavcan::CanFrame::FlagRTR) {
+                        id |= bxcan::RIR_RTR;
+                    }
+
+                    if (cfg->mask & uavcan::CanFrame::FlagEFF) {
+                        mask |= bxcan::RIR_IDE;
+                    }
+
+                    if (cfg->mask & uavcan::CanFrame::FlagRTR) {
+                        mask |= bxcan::RIR_RTR;
+                    }
+
+                    can_->FilterRegister[filter_start_index + i].FR1 = id;
+                    can_->FilterRegister[filter_start_index + i].FR2 = mask;
+
+                    can_->FA1R |= (1 << (filter_start_index + i));
+                } else {
+                    can_->FA1R &= ~(1 << (filter_start_index + i));
+                }
+            }
+        }
+
+        can_->FMR &= ~bxcan::FMR_FINIT;
+
+        return 0;
+    }
+
+    return -ErrFilterNumConfigs;
 }
 
 bool PX4CAN::waitMsrINakBitStateChange(bool target_state)
@@ -414,7 +477,7 @@ int PX4CAN::init(const uint32_t bitrate, const OperatingMode mode)
     }
 
     if (!waitMsrINakBitStateChange(true)) {
-        if (AP_BoardConfig::get_can_debug() >= 1) {
+        if (AP_BoardConfig_CAN::get_can_debug() >= 1) {
             printf("PX4CAN::init MSR INAK not set\n\r");
         }
         can_->MCR = bxcan::MCR_RESET;
@@ -440,7 +503,7 @@ int PX4CAN::init(const uint32_t bitrate, const OperatingMode mode)
         can_->MCR = bxcan::MCR_RESET;
         return timings_res;
     }
-    if (AP_BoardConfig::get_can_debug() >= 2) {
+    if (AP_BoardConfig_CAN::get_can_debug() >= 2) {
         printf("PX4CAN::init Timings: presc=%u sjw=%u bs1=%u bs2=%u\n\r", unsigned(timings.prescaler),
                unsigned(timings.sjw), unsigned(timings.bs1), unsigned(timings.bs2));
     }
@@ -460,7 +523,7 @@ int PX4CAN::init(const uint32_t bitrate, const OperatingMode mode)
     can_->MCR &= ~bxcan::MCR_INRQ; // Leave init mode
 
     if (!waitMsrINakBitStateChange(false)) {
-        if (AP_BoardConfig::get_can_debug() >= 1) {
+        if (AP_BoardConfig_CAN::get_can_debug() >= 1) {
             printf("PX4CAN::init MSR INAK not cleared\n\r");
         }
         can_->MCR = bxcan::MCR_RESET;
@@ -479,12 +542,19 @@ int PX4CAN::init(const uint32_t bitrate, const OperatingMode mode)
         can_->FFA1R = 0; // All assigned to FIFO0 by default
         can_->FM1R = 0; // Indentifier Mask mode
 
+#if CAN_STM32_NUM_IFACES > 1
         can_->FS1R = 0x7ffffff; // Single 32-bit for all
         can_->FilterRegister[0].FR1 = 0; // CAN1 accepts everything
         can_->FilterRegister[0].FR2 = 0;
         can_->FilterRegister[NumFilters].FR1 = 0; // CAN2 accepts everything
         can_->FilterRegister[NumFilters].FR2 = 0;
         can_->FA1R = 1 | (1 << NumFilters); // One filter per each iface
+#else
+        can_->FS1R = 0x1fff;
+        can_->FilterRegister[0].FR1 = 0;
+        can_->FilterRegister[0].FR2 = 0;
+        can_->FA1R = 1;
+#endif
 
         can_->FMR &= ~bxcan::FMR_FINIT;
     }
@@ -530,7 +600,10 @@ void PX4CAN::handleTxInterrupt(const uint64_t utc_usec)
         can_->TSR = bxcan::TSR_RQCP2;
         handleTxMailboxInterrupt(2, txok, utc_usec);
     }
-    update_event_.signalFromInterrupt();
+
+    if(update_event_ != nullptr) {
+        update_event_->signalFromInterrupt();
+    }
 
     pollErrorFlagsFromISR();
 }
@@ -591,7 +664,9 @@ void PX4CAN::handleRxInterrupt(uint8_t fifo_index, uint64_t utc_usec)
         rx_queue_.push(frm);
 
         had_activity_ = true;
-        update_event_.signalFromInterrupt();
+        if(update_event_ != nullptr) {
+            update_event_->signalFromInterrupt();
+        }
 
         pollErrorFlagsFromISR();
     }
@@ -743,46 +818,50 @@ int32_t PX4CAN::tx_pending()
 /*
  * CanDriver
  */
+
+PX4CANManager::PX4CANManager() :
+    update_event_(*this), if0_(bxcan::Can[0], nullptr, 0, CAN_STM32_RX_QUEUE_SIZE), if1_(
+    bxcan::Can[1], nullptr, 1, CAN_STM32_RX_QUEUE_SIZE), initialized_(false), p_uavcan(nullptr)
+{
+    uavcan::StaticAssert<(CAN_STM32_RX_QUEUE_SIZE <= PX4CAN::MaxRxQueueCapacity)>::check();
+
+    for(uint8_t i = 0; i < CAN_STM32_NUM_IFACES; i++) {
+        _ifaces_out_to_in[i] = UINT8_MAX;
+    }
+}
+
 uavcan::CanSelectMasks PX4CANManager::makeSelectMasks(const uavcan::CanFrame* (&pending_tx)[uavcan::MaxCanIfaces]) const
 {
     uavcan::CanSelectMasks msk;
 
-    if (can_number_ >= 1) {
-        // Iface 0
-        msk.read = if0_.isRxBufferEmpty() ? 0 : 1;
+    for (uint8_t i = 0; i < _ifaces_num; i++) {
+        if (ifaces[i] != nullptr) {
+            if (!ifaces[i]->isRxBufferEmpty()) {
+                msk.read |= 1 << i;
+            }
 
-        if (pending_tx[0] != nullptr) {
-            msk.write = if0_.canAcceptNewTxFrame(*pending_tx[0]) ? 1 : 0;
-        }
-    }
-
-#if CAN_STM32_NUM_IFACES > 1
-    if (can_number_ >= 2) {
-        if (!if1_.isRxBufferEmpty()) {
-            msk.read |= 1 << 1;
-        }
-
-        // Iface 1
-        if (pending_tx[1] != nullptr) {
-            if (if1_.canAcceptNewTxFrame(*pending_tx[1])) {
-                msk.write |= 1 << 1;
+            if (pending_tx[i] != nullptr) {
+                if (ifaces[i]->canAcceptNewTxFrame(*pending_tx[i])) {
+                    msk.write |= 1 << i;
+                }
             }
         }
     }
-#endif
 
     return msk;
 }
 
 bool PX4CANManager::hasReadableInterfaces() const
 {
-#if CAN_STM32_NUM_IFACES > 1
-    if (can_number_ >= 2) {
-        return !if0_.isRxBufferEmpty() || !if1_.isRxBufferEmpty();
-    }
-#endif
+    bool ret = false;
 
-    return !if0_.isRxBufferEmpty();
+    for (uint8_t i = 0; i < _ifaces_num; i++) {
+        if (ifaces[i] != nullptr) {
+            ret |= !ifaces[i]->isRxBufferEmpty();
+        }
+    }
+
+    return ret;
 }
 
 int16_t PX4CANManager::select(uavcan::CanSelectMasks& inout_masks,
@@ -791,23 +870,15 @@ int16_t PX4CANManager::select(uavcan::CanSelectMasks& inout_masks,
     const uavcan::CanSelectMasks in_masks = inout_masks;
     const uavcan::MonotonicTime time = clock::getMonotonic();
 
-    if (can_number_ >= 1) {
-        if0_.discardTimedOutTxMailboxes(time); // Check TX timeouts - this may release some TX slots
-        {
-            CriticalSectionLocker cs_locker;
-            if0_.pollErrorFlagsFromISR();
+    for (uint8_t i = 0; i < _ifaces_num; i++) {
+        if (ifaces[i] != nullptr) {
+            ifaces[i]->discardTimedOutTxMailboxes(time);
+            {
+                CriticalSectionLocker cs_locker;
+                ifaces[i]->pollErrorFlagsFromISR();
+            }
         }
     }
-
-#if CAN_STM32_NUM_IFACES > 1
-    if (can_number_ >= 2) {
-        if1_.discardTimedOutTxMailboxes(time);
-        {
-            CriticalSectionLocker cs_locker;
-            if1_.pollErrorFlagsFromISR();
-        }
-    }
-#endif
 
     inout_masks = makeSelectMasks(pending_tx); // Check if we already have some of the requested events
     if ((inout_masks.read & in_masks.read) != 0 || (inout_masks.write & in_masks.write) != 0) {
@@ -821,22 +892,19 @@ int16_t PX4CANManager::select(uavcan::CanSelectMasks& inout_masks,
 
 void PX4CANManager::initOnce(uint8_t can_number)
 {
-    /*
-     * CAN1, CAN2
-     */
     {
         CriticalSectionLocker lock;
-        if (can_number >= 1) {
+        if (can_number == 0) {
             modifyreg32(STM32_RCC_APB1ENR, 0, RCC_APB1ENR_CAN1EN);
         }
 #if CAN_STM32_NUM_IFACES > 1
-        if (can_number >= 2) {
+        if (can_number == 1) {
             modifyreg32(STM32_RCC_APB1ENR, 0, RCC_APB1ENR_CAN2EN);
         }
 #endif
     }
 
-    if (can_number >= 1) {
+    if (can_number == 0) {
 #if defined(GPIO_CAN1_RX) && defined(GPIO_CAN1_TX)
         stm32_configgpio(GPIO_CAN1_RX);
         stm32_configgpio(GPIO_CAN1_TX);
@@ -845,7 +913,7 @@ void PX4CANManager::initOnce(uint8_t can_number)
 #endif
     }
 #if CAN_STM32_NUM_IFACES > 1
-    if (can_number >= 2) {
+    if (can_number == 1) {
 #if defined(GPIO_CAN2_RX) && defined(GPIO_CAN2_TX)
         stm32_configgpio(GPIO_CAN2_RX | GPIO_PULLUP);
         stm32_configgpio(GPIO_CAN2_TX);
@@ -858,7 +926,7 @@ void PX4CANManager::initOnce(uint8_t can_number)
     /*
      * IRQ
      */
-    if (can_number >= 1) {
+    if (can_number == 0) {
 #if defined(STM32_IRQ_CAN1TX) && defined(STM32_IRQ_CAN1RX0) && defined(STM32_IRQ_CAN1RX1)
         CAN_IRQ_ATTACH(STM32_IRQ_CAN1TX, can1_irq);
         CAN_IRQ_ATTACH(STM32_IRQ_CAN1RX0, can1_irq);
@@ -869,7 +937,7 @@ void PX4CANManager::initOnce(uint8_t can_number)
     }
 
 #if CAN_STM32_NUM_IFACES > 1
-    if (can_number >= 2) {
+    if (can_number == 1) {
 #if defined(STM32_IRQ_CAN2TX) && defined(STM32_IRQ_CAN2RX0) && defined(STM32_IRQ_CAN2RX1)
         CAN_IRQ_ATTACH(STM32_IRQ_CAN2TX, can2_irq);
         CAN_IRQ_ATTACH(STM32_IRQ_CAN2RX0, can2_irq);
@@ -884,61 +952,59 @@ void PX4CANManager::initOnce(uint8_t can_number)
 int PX4CANManager::init(const uint32_t bitrate, const PX4CAN::OperatingMode mode, uint8_t can_number)
 {
     int res = -ErrNotImplemented;
+    static bool initialized_once[CAN_STM32_NUM_IFACES];
 
-    if (can_number <= CAN_STM32_NUM_IFACES) {
+    if (can_number < CAN_STM32_NUM_IFACES) {
         res = 0;
 
-        can_number_ = can_number;
-
-        if (AP_BoardConfig::get_can_debug() >= 2) {
+        if (AP_BoardConfig_CAN::get_can_debug(can_number) >= 2) {
             printf("PX4CANManager::init Bitrate %lu mode %d bus %d\n\r", static_cast<unsigned long>(bitrate),
                    static_cast<int>(mode), static_cast<int>(can_number));
         }
 
-        static bool initialized_once = false;
-        if (!initialized_once) {
-            initialized_once = true;
-            if (AP_BoardConfig::get_can_debug() >= 2) {
+        // If this outside physical interface was never inited - do this and add it to in/out conversion tables
+        if (!initialized_once[can_number]) {
+            initialized_once[can_number] = true;
+            _ifaces_num++;
+            _ifaces_out_to_in[can_number] = _ifaces_num - 1;
+
+            if (AP_BoardConfig_CAN::get_can_debug(can_number) >= 2) {
                 printf("PX4CANManager::init First initialization bus %d\n\r", static_cast<int>(can_number));
             }
+
             initOnce(can_number);
         }
 
         /*
          * CAN1
          */
-        if (can_number >= 1) {
-            if (AP_BoardConfig::get_can_debug() >= 2) {
+        if (can_number == 0) {
+            if (AP_BoardConfig_CAN::get_can_debug(0) >= 2) {
                 printf("PX4CANManager::init Initing iface 0...\n\r");
             }
-            ifaces[0] = &if0_;               // This link must be initialized first,
-            res = if0_.init(bitrate, mode); // otherwise an IRQ may fire while the interface is not linked yet;
-            if (res < 0) {             // a typical race condition.
-                printf("PX4CANManager::init Iface 0 init failed %i\n\r", res);
-                ifaces[0] = nullptr;
-                return res;
-            }
+            ifaces[_ifaces_out_to_in[can_number]] = &if0_;               // This link must be initialized first,
         }
 
 #if CAN_STM32_NUM_IFACES > 1
         /*
          * CAN2
          */
-        if (can_number >= 2) {
-            if (AP_BoardConfig::get_can_debug() >= 2) {
+        if (can_number == 1) {
+            if (AP_BoardConfig_CAN::get_can_debug(1) >= 2) {
                 printf("PX4CANManager::init Initing iface 1...\n\r");
             }
-            ifaces[1] = &if1_;                          // Same thing here.
-            res = if1_.init(bitrate, mode);
-            if (res < 0) {
-                printf("PX4CANManager::init Iface 1 init failed %i\n\r", res);
-                ifaces[1] = nullptr;
-                return res;
-            }
+            ifaces[_ifaces_out_to_in[can_number]] = &if1_;                          // Same thing here.
         }
 #endif
 
-        if (AP_BoardConfig::get_can_debug() >= 2) {
+        ifaces[_ifaces_out_to_in[can_number]]->set_update_event(&update_event_);
+        res = ifaces[_ifaces_out_to_in[can_number]]->init(bitrate, mode);
+        if (res < 0) {
+            ifaces[_ifaces_out_to_in[can_number]] = nullptr;
+            return res;
+        }
+
+        if (AP_BoardConfig_CAN::get_can_debug(can_number) >= 2) {
             printf("PX4CANManager::init CAN drv init OK, res = %d\n\r", res);
         }
     }
@@ -948,45 +1014,58 @@ int PX4CANManager::init(const uint32_t bitrate, const PX4CAN::OperatingMode mode
 
 PX4CAN* PX4CANManager::getIface(uint8_t iface_index)
 {
-    if (iface_index < CAN_STM32_NUM_IFACES) {
+    if (iface_index < _ifaces_num) {
         return ifaces[iface_index];
     }
+
+    return nullptr;
+}
+
+PX4CAN* PX4CANManager::getIface_out_to_in(uint8_t iface_index)
+{
+    // Find which internal interface corresponds to required outside physical interface
+    if (iface_index < CAN_STM32_NUM_IFACES) {
+        if (_ifaces_out_to_in[iface_index] != UINT8_MAX) {
+            return ifaces[_ifaces_out_to_in[iface_index]];
+        }
+    }
+
     return nullptr;
 }
 
 bool PX4CANManager::hadActivity()
 {
-    bool ret = if0_.hadActivity();
-#if CAN_STM32_NUM_IFACES > 1
-    ret |= if1_.hadActivity();
-#endif
+    bool ret = false;
+
+    // Go through all interfaces that are present in this manager
+    for (uint8_t i = 0; i < _ifaces_num; i++)
+    {
+        if (ifaces[i] != nullptr) {
+            ret |= ifaces[i]->hadActivity();
+        }
+    }
+
     return ret;
 }
 
 bool PX4CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
+    // Try to init outside physical interface 'can_number'
     if (init(bitrate, PX4CAN::OperatingMode::NormalMode, can_number) >= 0) {
-        initialized_ = true;
-
-        if (p_uavcan != nullptr) {
-            uint16_t UAVCAN_init_tries;
-
-            // TODO: Limit number of times we try to init UAVCAN and also provide
-            //       the reasonable actions when it fails.
-            for (UAVCAN_init_tries = 0; UAVCAN_init_tries < 100; UAVCAN_init_tries++) {
-                if (p_uavcan->try_init() == true) {
-                    return true;
-                }
-                hal.scheduler->delay(1);
-            }
-        }
+        return true;
     }
+
     return false;
 }
 
 bool PX4CANManager::is_initialized()
 {
     return initialized_;
+}
+
+void PX4CANManager::initialized(bool val)
+{
+    initialized_ = val;
 }
 
 AP_UAVCAN *PX4CANManager::get_UAVCAN(void)

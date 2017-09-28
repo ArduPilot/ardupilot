@@ -36,7 +36,7 @@ public:
     void stop_logging() override;
 
     /* Write a block of data at current offset */
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size,
+    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size,
                                bool is_critical) override;
 
     // initialisation
@@ -131,8 +131,6 @@ private:
     uint8_t _target_system_id;
     uint8_t _target_component_id;
 
-    bool _initialised;
-
     // this controls the maximum number of blocks we will push from
     // the pending and send queues in any call to push_log_blocks.
     // push_log_blocks is called by periodic_tasks.  Each block is 200
@@ -152,8 +150,7 @@ private:
     bool _sending_to_client;
 
     void Log_Write_DF_MAV(DataFlash_MAVLink &df);
-    
-    void internal_error();
+
     uint32_t bufferspace_available() override; // in bytes
     uint8_t remaining_space_in_current_block();
     // write buffer

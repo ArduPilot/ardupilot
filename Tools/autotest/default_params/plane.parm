@@ -62,8 +62,6 @@ PTCH2SRV_P       2.5
 PTCH2SRV_RLL     1
 NAVL1_PERIOD     15
 ACRO_LOCKING     1
-ELEVON_OUTPUT    0
-VTAIL_OUTPUT     0
 # we need small INS_ACC offsets so INS is recognised as being calibrated
 INS_ACCOFFS_X   0.001
 INS_ACCOFFS_Y   0.001

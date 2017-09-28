@@ -25,13 +25,11 @@
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
+SRV_Channels *SRV_Channels::instance;
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
 Bitmask SRV_Channels::function_mask{SRV_Channel::k_nr_aux_servo_functions};
 SRV_Channels::srv_function SRV_Channels::functions[SRV_Channel::k_nr_aux_servo_functions];
-
-AP_Int32* SRV_Channels::p_can_servo_bm = nullptr;
-AP_Int32* SRV_Channels::p_can_esc_bm = nullptr;
 
 const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: 1_
@@ -97,27 +95,21 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: 16_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[15], "16_",  16, SRV_Channels, SRV_Channel),
-    
+
     // @Param: _AUTO_TRIM
     // @DisplayName: Automatic servo trim
     // @Description: This enables automatic servo trim in flight. Servos will be trimed in stabilized flight modes when the aircraft is close to level. Changes to servo trim will be saved every 10 seconds and will persist between flights.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO_FRAME("_AUTO_TRIM",  17, SRV_Channels, auto_trim, 0, AP_PARAM_FRAME_PLANE),
-    
-    // @Param: _CANSRV_BM
-    // @DisplayName: RC Out channels to be transmitted as servo over CAN bus
-    // @Description: Bitmask with one set for channel to be transmitted as a servo command over CAN bus
-    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
-    // @User: Standard
-    AP_GROUPINFO("_CANSRV_BM", 18, SRV_Channels, can_servo_bm, 0),
 
-    // @Param: _CANESC_BM
-    // @DisplayName: RC Out channels to be transmitted as ESC over CAN bus
-    // @Description: Bitmask with one set for channel to be transmitted as a ESC command over CAN bus
-    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
-    // @User: Standard
-    AP_GROUPINFO("_CANESC_BM", 19, SRV_Channels, can_esc_bm, 0),
+    // @Param: _RATE
+    // @DisplayName: Servo default output rate
+    // @Description: This sets the default output rate in Hz for all outputs.
+    // @Range: 25 400
+    // @User: Advanced
+    // @Units: Hz
+    AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
 
     AP_GROUPEND
 };
@@ -127,10 +119,9 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
  */
 SRV_Channels::SRV_Channels(void)
 {
+    instance = this;
     channels = obj_channels;
-    p_can_servo_bm = &can_servo_bm;
-    p_can_esc_bm = &can_esc_bm;
-    
+
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
 

@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from LogAnalyzer import Test,TestResult
 import DataflashLog
 
@@ -14,7 +16,7 @@ class TestPerformance(Test):
         self.result.status = TestResult.StatusType.GOOD
 
         # this test should be valid for all vehicle types, just need to figure out why PM logging data is different in each
-        if logdata.vehicleType != "ArduCopter":
+        if logdata.vehicleType != VehicleType.Copter:
             self.result.status = TestResult.StatusType.NA
             return
 
@@ -29,7 +31,7 @@ class TestPerformance(Test):
         #   if not armingLines:
         #       break 
         #   if maxT[0] > armingLines[0]:
-        #       #print "Ignoring maxT from line %d, as it is the first PM line after arming on line %d" % (maxT[0],armingLines[0])
+        #       #print("Ignoring maxT from line %d, as it is the first PM line after arming on line %d" % (maxT[0],armingLines[0]))
         #       ignoreMaxTLines.append(maxT[0])
         #       armingLines.pop(0)
 
@@ -53,7 +55,7 @@ class TestPerformance(Test):
                     maxPercentSlow = percentSlow
                     maxPercentSlowLine = line
             #if (maxT > 13000) and line not in ignoreMaxTLines:
-            #   print "MaxT of %d detected on line %d" % (maxT,line)
+            #   print("MaxT of %d detected on line %d" % (maxT,line))
         if (maxPercentSlow > 10) or (slowLoopLineCount > 6):
             self.result.status = TestResult.StatusType.FAIL
             self.result.statusMessage = "%d slow loop lines found, max %.2f%% on line %d" % (slowLoopLineCount,maxPercentSlow,maxPercentSlowLine)

@@ -6,6 +6,7 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_RangeFinder/RangeFinder_Backend.h>
 
 #include <stdio.h>
 
@@ -172,7 +173,7 @@ void NavEKF2_core::ResetHeight(void)
 
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
-    if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS == 0) {
+    if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS == 0 && !frontend->inhibitGpsVertVelUse) {
         stateStruct.velocity.z =  gpsDataNew.vel.z;
     } else if (onGround) {
         stateStruct.velocity.z = 0.0f;
@@ -495,7 +496,7 @@ void NavEKF2_core::FuseVelPosNED()
             // test velocity measurements
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if inhibited by the user or if we are using synthetic data
-            if (frontend->_fusionModeGPS >= 1 || PV_AidingMode != AID_ABSOLUTE) {
+            if (frontend->_fusionModeGPS > 0 || PV_AidingMode != AID_ABSOLUTE || frontend->inhibitGpsVertVelUse) {
                 imax = 1;
             }
             float innovVelSumSq = 0; // sum of squares of velocity innovations
@@ -744,10 +745,13 @@ void NavEKF2_core::selectHeightForFusion()
     // the corrected reading is the reading that would have been taken if the sensor was
     // co-located with the IMU
     if (rangeDataToFuse) {
-        Vector3f posOffsetBody = frontend->_rng.get_pos_offset(rangeDataDelayed.sensor_idx) - accelPosOffset;
-        if (!posOffsetBody.is_zero()) {
-            Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
-            rangeDataDelayed.rng += posOffsetEarth.z / prevTnb.c.z;
+        AP_RangeFinder_Backend *sensor = frontend->_rng.get_backend(rangeDataDelayed.sensor_idx);
+        if (sensor != nullptr) {
+            Vector3f posOffsetBody = sensor->get_pos_offset() - accelPosOffset;
+            if (!posOffsetBody.is_zero()) {
+                Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+                rangeDataDelayed.rng += posOffsetEarth.z / prevTnb.c.z;
+            }
         }
     }
 

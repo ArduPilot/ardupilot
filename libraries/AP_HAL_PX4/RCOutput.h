@@ -40,6 +40,9 @@ public:
     void timer_tick(void) override;
     bool enable_sbus_out(uint16_t rate_hz) override;
 
+    // set default output update rate
+    void set_default_rate(uint16_t rate_hz) override;
+
 private:
     int _pwm_fd;
     int _alt_fd;
@@ -79,4 +82,5 @@ private:
     enum AP_HAL::Util::safety_state _safety_state_request = AP_HAL::Util::SAFETY_NONE;
     uint32_t _safety_state_request_last_ms = 0;
     void force_safety_pending_requests(void);
+    uint16_t _default_rate_hz = 50;
 };

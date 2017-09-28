@@ -66,7 +66,7 @@ void Copter::failsafe_battery_event(void)
     set_failsafe_battery(true);
 
     // warn the ground station and log to dataflash
-    gcs_send_text(MAV_SEVERITY_WARNING,"Low battery");
+    gcs().send_text(MAV_SEVERITY_WARNING,"Low battery");
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }
@@ -172,7 +172,7 @@ void Copter::failsafe_terrain_set_status(bool data_ok)
 void Copter::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
-    gcs_send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
+    gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_TERRAIN, ERROR_CODE_FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {
@@ -181,6 +181,26 @@ void Copter::failsafe_terrain_on_event()
         rtl_restart_without_terrain();
     } else {
         set_mode_RTL_or_land_with_pause(MODE_REASON_TERRAIN_FAILSAFE);
+    }
+}
+
+// check for gps glitch failsafe
+void Copter::gpsglitch_check()
+{
+    // get filter status
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+    bool gps_glitching = filt_status.flags.gps_glitching;
+
+    // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
+    if (ap.gps_glitching != gps_glitching) {
+        ap.gps_glitching = gps_glitching;
+        if (gps_glitching) {
+            Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_GPS_GLITCH);
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch");
+        } else {
+            Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
+        }
     }
 }
 

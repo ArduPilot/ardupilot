@@ -116,7 +116,7 @@ public:
     /*
       enable SBUS out at the given rate
      */
-    virtual bool     enable_sbus_out(uint16_t rate_gz) { return false; }
+    virtual bool     enable_sbus_out(uint16_t rate_hz) { return false; }
 
     /*
      * Optional method to control the update of the motors. Derived classes
@@ -133,4 +133,9 @@ public:
         MODE_PWM_BRUSHED
     };
     virtual void    set_output_mode(enum output_mode mode) {}
+
+    /*
+      set default update rate
+     */
+    virtual void    set_default_rate(uint16_t rate_hz) {}
 };

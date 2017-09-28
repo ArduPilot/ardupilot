@@ -53,6 +53,7 @@ public:
         k_param_avoidance_adsb,
         k_param_landing,
         k_param_NavEKF3,
+        k_param_BoardConfig_CAN,
 
         // Misc
         //
@@ -60,9 +61,9 @@ public:
         k_param_log_bitmask_old,  // unused
         k_param_pitch_trim_cd,
         k_param_mix_mode,
-        k_param_reverse_elevons,
-        k_param_reverse_ch1_elevon,
-        k_param_reverse_ch2_elevon,
+        k_param_reverse_elevons, // unused
+        k_param_reverse_ch1_elevon, // unused
+        k_param_reverse_ch2_elevon, // unused
         k_param_flap_1_percent,
         k_param_flap_1_speed,
         k_param_flap_2_percent,
@@ -85,9 +86,9 @@ public:
         k_param_takeoff_heading_hold, // unused
         k_param_level_roll_limit,
         k_param_hil_servos,
-        k_param_vtail_output,
+        k_param_vtail_output, // unused
         k_param_nav_controller,
-        k_param_elevon_output,
+        k_param_elevon_output, // unused
         k_param_att_controller,
         k_param_mixing_gain,
         k_param_scheduler,
@@ -105,7 +106,7 @@ public:
         k_param_BoardConfig,
         k_param_rssi_range,     // unused, replaced by rssi_ library parameters
         k_param_flapin_channel,
-        k_param_flaperon_output,
+        k_param_flaperon_output, // unused
         k_param_gps,
         k_param_autotune_level,
         k_param_rally,
@@ -133,8 +134,8 @@ public:
         k_param_override_channel,
         k_param_stall_prevention,
         k_param_optflow,
-        k_param_cli_enabled,
-        k_param_trim_rc_at_start,
+        k_param_cli_enabled_old, // unused - CLI removed
+        k_param_trim_rc_at_start, // unused
         k_param_hil_mode,
         k_param_land_disarm_delay,  // unused - moved to AP_Landing
         k_param_glide_slope_threshold,
@@ -360,15 +361,11 @@ public:
     AP_Int16 sysid_this_mav;
     AP_Int16 sysid_my_gcs;
     AP_Int8 telem_delay;
-#if CLI_ENABLED == ENABLED
-    AP_Int8 cli_enabled;
-#endif
 
     AP_Float hil_err_limit;
 
     AP_Int8  rtl_autoland;
 
-    AP_Int8  trim_rc_at_start;
     AP_Int8  crash_accel_threshold;
 
     // Feed-forward gains
@@ -457,14 +454,8 @@ public:
     // Misc
     //
     AP_Int8 auto_trim;
-    AP_Int8 mix_mode;
-    AP_Int8 vtail_output;
-    AP_Int8 elevon_output;
     AP_Int8 rudder_only;
     AP_Float mixing_gain;
-    AP_Int8 reverse_elevons;
-    AP_Int8 reverse_ch1_elevon;
-    AP_Int8 reverse_ch2_elevon;
     AP_Int16 mixing_offset;
     AP_Int16 dspoiler_rud_rate;
     AP_Int16 num_resets;
@@ -497,7 +488,6 @@ public:
     AP_Float takeoff_pitch_limit_reduction_sec;
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
-    AP_Int8 flaperon_output;
 #if AP_TERRAIN_AVAILABLE
     AP_Int8 terrain_follow;
     AP_Int16 terrain_lookahead;
@@ -548,6 +538,13 @@ public:
 
     // dual motor tailsitter rudder to differential thrust scaling: 0-100%
     AP_Int8 rudd_dt_gain;
+
+    // mask of channels to do manual pass-thru for
+    AP_Int32 manual_rc_mask;
+
+    // home reset altitude threshold
+    AP_Int8 home_reset_threshold;
+
 };
 
 extern const AP_Param::Info var_info[];

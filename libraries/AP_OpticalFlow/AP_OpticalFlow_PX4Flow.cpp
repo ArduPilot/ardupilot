@@ -27,7 +27,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define PX4FLOW_BASE_I2C_ADDR 0x42
+#define PX4FLOW_BASE_I2C_ADDR   0x42
+#define PX4FLOW_INIT_RETRIES    10      // attempt to initialise the sensor up to 10 times at startup
 
 // constructor
 AP_OpticalFlow_PX4Flow::AP_OpticalFlow_PX4Flow(OpticalFlow &_frontend) :
@@ -55,30 +56,39 @@ AP_OpticalFlow_PX4Flow *AP_OpticalFlow_PX4Flow::detect(OpticalFlow &_frontend)
  */
 bool AP_OpticalFlow_PX4Flow::scan_buses(void)
 {
-    for (uint8_t bus = 0; bus < 3; bus++) {
-#ifdef HAL_OPTFLOW_PX4FLOW_I2C_BUS
-        // only one bus from HAL
-        if (bus != HAL_OPTFLOW_PX4FLOW_I2C_BUS) {
-            continue;
+    bool success = false;
+    uint8_t retry_attempt = 0;
+
+    while (!success && retry_attempt < PX4FLOW_INIT_RETRIES) {
+        for (uint8_t bus = 0; bus < 3; bus++) {
+    #ifdef HAL_OPTFLOW_PX4FLOW_I2C_BUS
+            // only one bus from HAL
+            if (bus != HAL_OPTFLOW_PX4FLOW_I2C_BUS) {
+                continue;
+            }
+    #endif
+            AP_HAL::OwnPtr<AP_HAL::Device> tdev = hal.i2c_mgr->get_device(bus, PX4FLOW_BASE_I2C_ADDR + get_address());
+            if (!tdev) {
+                continue;
+            }
+            if (!tdev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+                continue;
+            }
+            struct i2c_integral_frame frame;
+            success = tdev->read_registers(REG_INTEGRAL_FRAME, (uint8_t *)&frame, sizeof(frame));
+            tdev->get_semaphore()->give();
+            if (success) {
+                printf("Found PX4Flow on bus %u\n", bus);
+                dev = std::move(tdev);
+                break;
+            }
         }
-#endif
-        AP_HAL::OwnPtr<AP_HAL::Device> tdev = hal.i2c_mgr->get_device(bus, PX4FLOW_BASE_I2C_ADDR + get_bus_id());
-        if (!tdev) {
-            continue;
-        }
-        if (!tdev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-            continue;
-        }
-        struct i2c_integral_frame frame;
-        bool ok = tdev->read_registers(REG_INTEGRAL_FRAME, (uint8_t *)&frame, sizeof(frame));
-        tdev->get_semaphore()->give();
-        if (ok) {
-            printf("Found PX4Flow on bus %u\n", bus);
-            dev = std::move(tdev);
-            break;
+        retry_attempt++;
+        if (!success) {
+            hal.scheduler->delay(10);
         }
     }
-    return !!dev;
+    return success;
 }
 
 // setup the device
@@ -106,7 +116,7 @@ void AP_OpticalFlow_PX4Flow::timer(void)
         return;
     }
     struct OpticalFlow::OpticalFlow_state state {};
-    state.device_id = get_bus_id();
+    state.device_id = get_address();
 
     if (frame.integration_timespan > 0) {
         const Vector2f flowScaler = _flowScaler();

@@ -723,11 +723,11 @@ void AC_PosControl::init_vel_controller_xyz()
     init_ekf_z_reset();
 }
 
-/// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
-///     velocity targets should we set using set_desired_velocity_xyz() method
+/// update_velocity_controller_xy - run the velocity controller - should be called at 100hz or higher
+///     velocity targets should we set using set_desired_velocity_xy() method
 ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
 ///     throttle targets will be sent directly to the motors
-void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
+void AC_PosControl::update_vel_controller_xy(float ekfNavVelGainScaler)
 {
     // capture time since last iteration
     uint32_t now = AP_HAL::millis();
@@ -761,6 +761,16 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
         // update xy update time
         _last_update_xy_ms = now;
     }
+}
+
+
+/// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
+///     velocity targets should we set using set_desired_velocity_xyz() method
+///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
+///     throttle targets will be sent directly to the motors
+void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
+{
+    update_vel_controller_xy(ekfNavVelGainScaler);
 
     // update altitude target
     set_alt_target_from_climb_rate_ff(_vel_desired.z, _dt, false);

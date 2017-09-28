@@ -36,17 +36,26 @@
 #define AP_AHRS_NAVEKF_AVAILABLE 1
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
-class AP_AHRS_NavEKF : public AP_AHRS_DCM
-{
+class AP_AHRS_NavEKF : public AP_AHRS_DCM {
 public:
     enum Flags {
         FLAG_NONE = 0,
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
-    // Constructor
-    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-                   NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
+    static AP_AHRS_NavEKF create(AP_InertialSensor &ins,
+                                 AP_Baro &baro,
+                                 AP_GPS &gps,
+                                 NavEKF2 &_EKF2, NavEKF3 &_EKF3,
+                                 Flags flags = FLAG_NONE) {
+        return AP_AHRS_NavEKF{ins, baro, gps, _EKF2, _EKF3, flags};
+    }
+
+    constexpr AP_AHRS_NavEKF(AP_AHRS_NavEKF &&other) = default;
+
+    /* Do not allow copies */
+    AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
+    AP_AHRS_NavEKF &operator=(const AP_AHRS_NavEKF&) = delete;
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const override;
@@ -291,5 +300,10 @@ private:
     uint32_t _last_body_odm_update_ms = 0;
     void update_SITL(void);
 #endif    
+
+private:
+    // Constructor
+    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps,
+                   NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
 };
 #endif

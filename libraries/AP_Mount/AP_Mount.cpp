@@ -408,14 +408,14 @@ AP_Mount::AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc)
 }
 
 // init - detect and initialise all mounts
-void AP_Mount::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager)
+void AP_Mount::init(const AP_SerialManager& serial_manager)
 {
     // check init has not been called before
     if (_num_instances != 0) {
         return;
     }
 
-    _dataflash = dataflash;
+    _dataflash = DataFlash_Class::instance();
 
     // default mount to servo mount if rc output channels to control roll, tilt or pan have been defined
     if (!state[0]._type.configured()) {

@@ -8,13 +8,13 @@
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
-AP_InertialSensor ins;
+static AP_InertialSensor ins = AP_InertialSensor::create();
 
 static void display_offsets_and_scaling();
 static void run_test();
 
 // board specific config
-AP_BoardConfig BoardConfig;
+static AP_BoardConfig BoardConfig = AP_BoardConfig::create();
 
 void setup(void);
 void loop(void);

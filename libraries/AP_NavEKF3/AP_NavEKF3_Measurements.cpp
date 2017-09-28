@@ -6,6 +6,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_RangeFinder/RangeFinder_Backend.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -35,13 +36,17 @@ void NavEKF3_core::readRangeFinder(void)
         // use data from two range finders if available
 
         for (uint8_t sensorIndex = 0; sensorIndex <= 1; sensorIndex++) {
-            if ((frontend->_rng.get_orientation(sensorIndex) == ROTATION_PITCH_270) && (frontend->_rng.status(sensorIndex) == RangeFinder::RangeFinder_Good)) {
+            AP_RangeFinder_Backend *sensor = frontend->_rng.get_backend(sensorIndex);
+            if (sensor == nullptr) {
+                continue;
+            }
+            if ((sensor->orientation() == ROTATION_PITCH_270) && (sensor->status() == RangeFinder::RangeFinder_Good)) {
                 rngMeasIndex[sensorIndex] ++;
                 if (rngMeasIndex[sensorIndex] > 2) {
                     rngMeasIndex[sensorIndex] = 0;
                 }
                 storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
-                storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = frontend->_rng.distance_cm(sensorIndex) * 0.01f;
+                storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance_cm() * 0.01f;
             }
 
             // check for three fresh samples
@@ -122,11 +127,35 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
 
     // simple model of accuracy
     // TODO move this calculation outside of EKF into the sensor driver
-    const float minVelErr = 0.5f;
-    const float maxVelErr = 10.0f;
-    bodyOdmDataNew.velErr = minVelErr + (maxVelErr - minVelErr) * (1.0f - 0.01f * quality);
+    bodyOdmDataNew.velErr = frontend->_visOdmVelErrMin + (frontend->_visOdmVelErrMax - frontend->_visOdmVelErrMin) * (1.0f - 0.01f * quality);
 
     storedBodyOdm.push(bodyOdmDataNew);
+
+}
+
+void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
+{
+    // This is a simple hack to get wheel encoder data into the EKF and verify the interface sign conventions and units
+    // It uses the exisiting body frame velocity fusion.
+    // TODO implement a dedicated wheel odometry observaton model
+
+    // limit update rate to maximum allowed by sensor buffers and fusion process
+    // don't try to write to buffer until the filter has been initialised
+    if (((timeStamp_ms - wheelOdmMeasTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
+        return;
+    }
+
+    wheelOdmDataNew.hub_offset = &posOffset;
+    wheelOdmDataNew.delAng = delAng;
+    wheelOdmDataNew.radius = radius;
+    wheelOdmDataNew.delTime = delTime;
+    wheelOdmMeasTime_ms = timeStamp_ms;
+
+    // becasue we are currently converting to an equivalent velocity measurement before fusing
+    // the measurement time is moved back to the middle of the sampling period
+    wheelOdmDataNew.time_ms = timeStamp_ms - (uint32_t)(500.0f * delTime);
+
+    storedWheelOdm.push(wheelOdmDataNew);
 
 }
 
@@ -237,7 +266,7 @@ void NavEKF3_core::readMagData()
                 // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
                 if (_ahrs->get_compass()->use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
                     magSelectIndex = tempIndex;
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
                     // reset the timeout flag and timer
                     magTimeout = false;
                     lastHealthyMagTime_ms = imuSampleTime_ms;
@@ -494,8 +523,8 @@ void NavEKF3_core::readGpsData()
                 gpsNoiseScaler = 2.0f;
             }
 
-            // Check if GPS can output vertical velocity and set GPS fusion mode accordingly
-            if (_ahrs->get_gps().have_vertical_velocity() && frontend->_fusionModeGPS == 0) {
+            // Check if GPS can output vertical velocity, vertical velocity use is permitted and set GPS fusion mode accordingly
+            if (_ahrs->get_gps().have_vertical_velocity() && (frontend->_fusionModeGPS == 0) && !frontend->inhibitGpsVertVelUse) {
                 useGpsVertVel = true;
             } else {
                 useGpsVertVel = false;

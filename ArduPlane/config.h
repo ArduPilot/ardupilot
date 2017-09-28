@@ -78,37 +78,6 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-//////////////////////////////////////////////////////////////////////////////
-// Radio channel limits
-//
-// Note that these are not called out in APM_Config.h.reference.
-//
-#ifndef CH5_MIN
- # define CH5_MIN        1000
-#endif
-#ifndef CH5_MAX
- # define CH5_MAX        2000
-#endif
-#ifndef CH6_MIN
- # define CH6_MIN        1000
-#endif
-#ifndef CH6_MAX
- # define CH6_MAX        2000
-#endif
-#ifndef CH7_MIN
- # define CH7_MIN        1000
-#endif
-#ifndef CH7_MAX
- # define CH7_MAX        2000
-#endif
-#ifndef CH8_MIN
- # define CH8_MIN        1000
-#endif
-#ifndef CH8_MAX
- # define CH8_MAX        2000
-#endif
-
-
 #ifndef FLAP_1_PERCENT
  # define FLAP_1_PERCENT 0
 #endif
@@ -217,14 +186,6 @@
 // FLIGHT AND NAVIGATION CONTROL
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// Altitude measurement and control.
-//
-#ifndef ALTITUDE_MIX
- # define ALTITUDE_MIX                   1
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_CRUISE
@@ -345,12 +306,6 @@
 
 #ifndef SCALING_SPEED
  # define SCALING_SPEED          15.0
-#endif
-
-// use this to completely disable the CLI. We now default the CLI to
-// off on smaller boards.
-#ifndef CLI_ENABLED
-#define CLI_ENABLED ENABLED
 #endif
 
 // use this to disable geo-fencing

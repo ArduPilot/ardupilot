@@ -1,5 +1,4 @@
 #include "Sub.h"
-#include "version.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -23,20 +22,41 @@ void Sub::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    hal.console->printf("\n\nInit " FIRMWARE_STRING
-                      "\n\nFree RAM: %u\n",
-                      (unsigned)hal.util->available_memory());
+    hal.console->printf("\n\nInit %s"
+                        "\n\nFree RAM: %u\n",
+                        fwver.fw_string,
+                        (unsigned)hal.util->available_memory());
 
     // load parameters from EEPROM
     load_parameters();
 
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // Detection won't work until after BoardConfig.init()
+    switch (AP_BoardConfig::get_board_type()) {
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
+        AP_Param::set_default_by_name("GND_EXT_BUS", 0);
+        break;
+    default:
+        AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+        break;
+    }
+#else
+    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+#endif
 
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
     
     // initialise serial port
     serial_manager.init();
+
+    // setup first port early to allow BoardConfig to report errors
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
@@ -59,9 +79,7 @@ void Sub::init_ardupilot()
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     // setup telem slots with serial ports
-    for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-    }
+    gcs().setup_uarts(serial_manager);
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
@@ -117,7 +135,7 @@ void Sub::init_ardupilot()
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(&DataFlash, serial_manager);
+    camera_mount.init(serial_manager);
 #endif
 
 #ifdef USERHOOK_INIT
@@ -184,10 +202,6 @@ void Sub::init_ardupilot()
 
     // init vehicle capabilties
     init_capabilities();
-
-    if (DataFlash.log_while_disarmed()) {
-        start_logging(); // create a new log if necessary
-    }
 
     // disable safety if requested
     BoardConfig.init_safety();    
@@ -291,11 +305,8 @@ bool Sub::optflow_position_ok()
 bool Sub::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!DataFlash.should_log(mask)) {
-        return false;
-    }
-    start_logging();
-    return true;
+    ap.logging_started = DataFlash.logging_started();
+    return DataFlash.should_log(mask);
 #else
     return false;
 #endif

@@ -7,7 +7,6 @@
 #define FALSE 0
 
 #define DEBUG 0
-#define LOITER_RANGE 60 // for calculating power outside of loiter radius
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an
                         // arbitrary representation of servo max travel.
 
@@ -32,17 +31,6 @@ enum gcs_failsafe {
                                  // while in AUTO mode
 };
 
-
-// active altitude sensor
-// ----------------------
-#define SONAR 0
-#define BARO 1
-
-#define PITOT_SOURCE_ADC 1
-#define PITOT_SOURCE_ANALOG_PIN 2
-
-#define T6 1000000
-#define T7 10000000
 
 enum FlightMode {
     MANUAL        = 0,
@@ -115,15 +103,6 @@ typedef enum GeofenceEnableReason {
     GCS_TOGGLED          //Fence enabled/disabled by the GCS via Mavlink
 } GeofenceEnableReason;
 
-//repeating events
-#define NO_REPEAT 0
-#define CH_5_TOGGLE 1
-#define CH_6_TOGGLE 2
-#define CH_7_TOGGLE 3
-#define CH_8_TOGGLE 4
-#define RELAY_TOGGLE 5
-#define STOP_REPEAT 10
-
 
 // Logging message types
 enum log_messages {
@@ -146,6 +125,7 @@ enum log_messages {
     LOG_PIQP_MSG,
     LOG_PIQY_MSG,
     LOG_PIQA_MSG,
+    LOG_AETR_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -166,51 +146,12 @@ enum log_messages {
 #define MASK_LOG_ARM_DISARM             (1<<15)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 
-// Waypoint Modes
-// ----------------
-#define ABS_WP 0
-#define REL_WP 1
-
-// Command Queues
-// ---------------
-#define COMMAND_MUST 0
-#define COMMAND_MAY 1
-#define COMMAND_NOW 2
-
-// Events
-// ------
-#define EVENT_WILL_REACH_WAYPOINT 1
-#define EVENT_SET_NEW_COMMAND_INDEX 2
-#define EVENT_LOADED_WAYPOINT 3
-#define EVENT_LOOP 4
-
-// Climb rate calculations
-#define ALTITUDE_HISTORY_LENGTH 8       //Number of (time,altitude) points to
-                                        // regress a climb rate from
-
-#define AN4                     4
-#define AN5                     5
-
-#define SPEEDFILT 400                   // centimeters/second; the speed below
-                                        // which a groundstart will be
-                                        // triggered
-
-// convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps
-// to -1)
-#define BOOL_TO_SIGN(bvalue) ((bvalue) ? -1 : 1)
-
 // altitude control algorithms
 enum {
     ALT_CONTROL_DEFAULT      = 0,
     ALT_CONTROL_NON_AIRSPEED = 1,
     ALT_CONTROL_TECS         = 2,
     ALT_CONTROL_AIRSPEED     = 3
-};
-
-// attitude controller choice
-enum {
-    ATT_CONTROL_PID = 0,
-    ATT_CONTROL_APMCONTROL = 1
 };
 
 enum {

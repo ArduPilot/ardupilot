@@ -102,12 +102,14 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_elevator_with_input:
     case k_aileron:
     case k_elevator:
-    case k_dspoiler1:
-    case k_dspoiler2:
+    case k_dspoilerLeft1:
+    case k_dspoilerLeft2:
+    case k_dspoilerRight1:
+    case k_dspoilerRight2:
     case k_rudder:
     case k_steering:
-    case k_flaperon1:
-    case k_flaperon2:
+    case k_flaperon_left:
+    case k_flaperon_right:
     case k_tiltMotorLeft:
     case k_tiltMotorRight:
     case k_elevon_left:
@@ -135,29 +137,31 @@ void SRV_Channels::update_aux_servo_function(void)
     for (uint8_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
         functions[i].channel_mask = 0;
     }
-    
+
     // set auxiliary ranges
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        channels[i].aux_servo_function_setup();
-        function_mask.set((uint8_t)channels[i].function.get());
-        functions[channels[i].function.get()].channel_mask |= 1U<<i;
+        if ((uint8_t)channels[i].function.get() < SRV_Channel::k_nr_aux_servo_functions) {
+            channels[i].aux_servo_function_setup();
+            function_mask.set((uint8_t)channels[i].function.get());
+            functions[channels[i].function.get()].channel_mask |= 1U<<i;
+        }
     }
     initialised = true;
 }
 
-
 /// Should be called after the the servo functions have been initialized
 void SRV_Channels::enable_aux_servos()
 {
+    hal.rcout->set_default_rate(uint16_t(instance->default_rate.get()));
+
     update_aux_servo_function();
 
     // enable all channels that are set to a valid function. This
     // includes k_none servos, which allows those to get their initial
     // trim value on startup
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)channels[i].function.get();
         // see if it is a valid function
-        if (function < SRV_Channel::k_nr_aux_servo_functions) {
+        if ((uint8_t)channels[i].function.get() < SRV_Channel::k_nr_aux_servo_functions) {
             hal.rcout->enable_ch(channels[i].ch_num);
         }
     }
@@ -209,22 +213,18 @@ SRV_Channels::set_output_pwm_trimmed(SRV_Channel::Aux_servo_function_t function,
 }
 
 /*
-  set and save the trim value to radio_in for all channels matching
+  set and save the trim value to current output for all channels matching
   the given function type
  */
 void
-SRV_Channels::set_trim_to_radio_in_for(SRV_Channel::Aux_servo_function_t function)
+SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t function)
 {
     if (!function_assigned(function)) {
         return;
     }
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function.get() == function) {
-            RC_Channel *rc = RC_Channels::rc_channel(channels[i].ch_num);
-            if (rc && rc->get_radio_in() != 0) {
-                rc->set_radio_trim(rc->get_radio_in());
-                rc->save_radio_trim();
-            }
+            channels[i].servo_trim.set_and_save_ifchanged(channels[i].output_pwm);
         }
     }
 }
@@ -253,6 +253,24 @@ SRV_Channels::copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool
             }
         }
     }
+}
+
+/*
+  copy radio_in to radio_out for a channel mask
+ */
+void
+SRV_Channels::copy_radio_in_out_mask(uint16_t mask)
+{
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        if ((1U<<i) & mask) {
+            RC_Channel *rc = RC_Channels::rc_channel(channels[i].ch_num);
+            if (rc == nullptr) {
+                continue;
+            }
+            channels[i].set_output_pwm(rc->get_radio_in());
+        }
+    }
+
 }
 
 /*
@@ -446,7 +464,6 @@ int16_t SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t functi
     return 0;
 }
 
-
 // set the trim for a function channel to given pwm
 void SRV_Channels::set_trim_to_pwm_for(SRV_Channel::Aux_servo_function_t function, int16_t pwm)
 {
@@ -480,7 +497,6 @@ void SRV_Channels::set_default_function(uint8_t chan, SRV_Channel::Aux_servo_fun
         }
     }
 }
-
 
 void SRV_Channels::set_esc_scaling_for(SRV_Channel::Aux_servo_function_t function)
 {
@@ -519,7 +535,6 @@ void SRV_Channels::adjust_trim(SRV_Channel::Aux_servo_function_t function, float
         trimmed_mask |= 1U<<i;
     }
 }
-
 
 // get pwm output for the first channel of the given function type.
 bool SRV_Channels::get_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t &value)
@@ -574,6 +589,10 @@ float SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t function)
  */
 void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt)
 {
+    if (slew_rate <= 0) {
+        // nothing to do
+        return;
+    }
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &ch = channels[i];
         if (ch.function == function) {
@@ -650,7 +669,7 @@ bool SRV_Channels::upgrade_parameters(const uint8_t rc_keys[14], uint16_t aux_ch
         // upgrade already done
         return false;
     }
-    
+
     // old system had 14 RC channels
     for (uint8_t i=0; i<14; i++) {
         uint8_t k = rc_keys[i];
@@ -679,7 +698,7 @@ bool SRV_Channels::upgrade_parameters(const uint8_t rc_keys[14], uint16_t aux_ch
             { 1, &srv_chan.function,   nullptr,             AP_PARAM_INT8,  FLAG_AUX_ONLY },
         };
         bool is_aux = aux_channel_mask & (1U<<i);
-        
+
         for (uint8_t j=0; j<ARRAY_SIZE(mapping); j++) {
             const struct mapping &m = mapping[j];
             AP_Param::ConversionInfo info;
@@ -696,7 +715,7 @@ bool SRV_Channels::upgrade_parameters(const uint8_t rc_keys[14], uint16_t aux_ch
 
             // if this was an aux channel we need to shift by 6 bits, but not for RCn_FUNCTION
             info.old_group_element = (is_aux && !aux_only)?(m.old_index<<6):m.old_index;
-            
+
             if (!AP_Param::find_old_parameter(&info, v)) {
                 // the parameter wasn't set in the old eeprom
                 continue;
@@ -706,7 +725,7 @@ bool SRV_Channels::upgrade_parameters(const uint8_t rc_keys[14], uint16_t aux_ch
                 // special mapping from RCn_REV to RCn_REVERSED
                 v8.set(v8.get() == -1?1:0);
             }
-            
+
             if (!m.new_srv_param->configured_in_storage()) {
                 // not configured yet in new eeprom
                 if (m.type == AP_PARAM_INT16) {
@@ -741,14 +760,11 @@ bool SRV_Channels::upgrade_parameters(const uint8_t rc_keys[14], uint16_t aux_ch
         }
     }
 
-    
     // mark the upgrade as having been done
     channels[15].function.set_and_save(channels[15].function.get());
 
     return true;
 }
-
-
 
 /*
   Upgrade servo MIN/MAX/TRIM/REVERSE parameters for a single AP_Motors
@@ -773,7 +789,7 @@ void SRV_Channels::upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors
             { 2, &srv_chan.servo_max,  AP_PARAM_INT16, FLAG_NONE },
             { 3, &srv_chan.reversed,   AP_PARAM_INT8,  FLAG_IS_REVERSE },
     };
-        
+
     for (uint8_t j=0; j<ARRAY_SIZE(mapping); j++) {
         const struct mapping &m = mapping[j];
         AP_Param::ConversionInfo info;
@@ -785,7 +801,7 @@ void SRV_Channels::upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors
         info.type = m.type;
         info.new_name = nullptr;
         info.old_group_element = ap_motors_idx | (m.old_index<<6);
-        
+
         if (!AP_Param::find_old_parameter(&info, v)) {
             // the parameter wasn't set in the old eeprom
             continue;
@@ -806,7 +822,6 @@ void SRV_Channels::upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors
         }
     }
 }
-
 
 // set RC output frequency on a function output
 void SRV_Channels::set_rc_frequency(SRV_Channel::Aux_servo_function_t function, uint16_t frequency_hz)

@@ -108,6 +108,7 @@ void Copter::heli_update_landing_swash()
             break;
 
         case RTL:
+        case SMART_RTL:
             if (rtl_state == RTL_Land) {
                 motors->set_collective_for_landing(true);
             }else{

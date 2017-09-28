@@ -542,11 +542,38 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: OGN_HGT_MASK
     // @DisplayName: Bitmask control of EKF reference height correction
-    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be corrected so that the height returned by the getLLH() function is compensated for primary height sensor drift and change in datum over time. The first two bit positions control when the height datum will be corrected. Correction is performed using a Bayes filter and only operates when GPS quality permits. The third bit position controls where the corrections to the GPS reference datum are applied. Corrections can be applied to the local vertical position (default) or to the reported EKF origin height.
-    // @Bitmask: 0:Correct when using Baro height,1:Correct when using range finder height,2:Apply corrections to origin height
+    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be corrected so that the height returned by the getLLH() function is compensated for primary height sensor drift and change in datum over time. The first two bit positions control when the height datum will be corrected. Correction is performed using a Bayes filter and only operates when GPS quality permits. The third bit position controls where the corrections to the GPS reference datum are applied. Corrections can be applied to the local vertical position or to the reported EKF origin height (default).
+    // @Bitmask: 0:Correct when using Baro height,1:Correct when using range finder height,2:Apply corrections to local position
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("OGN_HGT_MASK", 50, NavEKF3, _originHgtMode, 0),
+
+    // @Param: VIS_VERR_MIN
+    // @DisplayName: Visual odometry minimum velocity error
+    // @Description: This is the 1-STD odometry velocity observation error that will be assumed when maximum quality is reported by the sensor. When quality is between max and min, the error will be calculated using linear interpolation between VIS_VERR_MIN and VIS_VERR_MAX.
+    // @Range: 0.05 0.5
+    // @Increment: 0.05
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("VIS_VERR_MIN", 51, NavEKF3, _visOdmVelErrMin, 0.1f),
+
+    // @Param: VIS_VERR_MAX
+    // @DisplayName: Visual odometry maximum velocity error
+    // @Description: This is the 1-STD odometry velocity observation error that will be assumed when minimum quality is reported by the sensor. When quality is between max and min, the error will be calculated using linear interpolation between VIS_VERR_MIN and VIS_VERR_MAX.
+    // @Range: 0.5 5.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("VIS_VERR_MAX", 52, NavEKF3, _visOdmVelErrMax, 0.9f),
+
+    // @Param: WENC_VERR
+    // @DisplayName: Wheel odometry velocity error
+    // @Description: This is the 1-STD odometry velocity observation error that will be assumed when wheel encoder data is being fused.
+    // @Range: 0.01 1.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("WENC_VERR", 53, NavEKF3, _wencOdmVelErr, 0.1f),
 
     AP_GROUPEND
 };
@@ -582,7 +609,9 @@ NavEKF3::NavEKF3(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gndGradientSigma(50),           // RMS terrain gradient percentage assumed by the terrain height estimation
     fusionTimeStep_ms(10),          // The minimum number of msec between covariance prediction and fusion operations
     sensorIntervalMin_ms(50),       // The minimum allowed time between measurements from any non-IMU sensor (msec)
-    runCoreSelection(false)         // true when the default primary core has stabilised after startup and core selection can run
+    runCoreSelection(false),        // true when the default primary core has stabilised after startup and core selection can run
+    inhibitGpsVertVelUse(false)     // true when GPS vertical velocity use is prohibited
+
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -664,7 +693,7 @@ bool NavEKF3::InitialiseFilter(void)
 
         // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF3: not enough memory");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: not enough memory");
             _enable.set(0);
             return false;
         }
@@ -673,7 +702,7 @@ bool NavEKF3::InitialiseFilter(void)
         core = new NavEKF3_core[num_cores];
         if (core == nullptr) {
             _enable.set(0);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF3: allocation failed");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: allocation failed");
             return false;
         }
 
@@ -1159,6 +1188,23 @@ void NavEKF3::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Ve
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
             core[i].writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, posOffset);
+        }
+    }
+}
+
+/*
+ * Write odometry data from a wheel encoder. The axis of rotation is assumed to be parallel to the vehicle body axis
+ *
+ * delAng is the measured change in angular position from the previous measurement where a positive rotation is produced by forward motion of the vehicle (rad)
+ * delTime is the time interval for the measurement of delAng (sec)
+ * timeStamp_ms is the time when the rotation was last measured (msec)
+ * posOffset is the XYZ body frame position of the wheel hub (m)
+*/
+void NavEKF3::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].writeWheelOdom(delAng, delTime, timeStamp_ms, posOffset, radius);
         }
     }
 }

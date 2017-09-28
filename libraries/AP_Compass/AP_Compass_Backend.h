@@ -81,7 +81,7 @@ protected:
      */
 
     void rotate_field(Vector3f &mag, uint8_t instance);
-    void publish_raw_field(const Vector3f &mag, uint32_t time_us, uint8_t instance);
+    void publish_raw_field(const Vector3f &mag, uint8_t instance);
     void correct_field(Vector3f &mag, uint8_t i);
     void publish_filtered_field(const Vector3f &mag, uint8_t instance);
     void set_last_update_usec(uint32_t last_update, uint8_t instance);

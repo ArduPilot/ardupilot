@@ -10,6 +10,7 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
+#include <AP_RangeFinder/RangeFinder_Backend.h>
 
 #include "DataFlash.h"
 #include "DataFlash_File.h"
@@ -281,7 +282,8 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, uint64_t time_
         vacc          : (uint16_t)MIN((vacc*100), UINT16_MAX),
         sacc          : (uint16_t)MIN((sacc*100), UINT16_MAX),
         have_vv       : (uint8_t)gps.have_vertical_velocity(i),
-        sample_ms     : gps.last_message_time_ms(i)
+        sample_ms     : gps.last_message_time_ms(i),
+        delta_ms      : gps.last_message_delta_time_ms(i)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 }
@@ -290,13 +292,16 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, uint64_t time_
 // Write an RFND (rangefinder) packet
 void DataFlash_Class::Log_Write_RFND(const RangeFinder &rangefinder)
 {
+    AP_RangeFinder_Backend *s0 = rangefinder.get_backend(0);
+    AP_RangeFinder_Backend *s1 = rangefinder.get_backend(1);
+
     struct log_RFND pkt = {
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_RFND_MSG)),
         time_us       : AP_HAL::micros64(),
-        dist1         : rangefinder.distance_cm(0),
-        orient1       : rangefinder.get_orientation(0),
-        dist2         : rangefinder.distance_cm(1),
-        orient2       : rangefinder.get_orientation(1)
+        dist1         : s0 ? s0->distance_cm() : (uint16_t)0,
+        orient1       : s0 ? s0->orientation() : ROTATION_NONE,
+        dist2         : s1 ? s1->distance_cm() : (uint16_t)0,
+        orient2       : s1 ? s1->orientation() : ROTATION_NONE,
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
@@ -667,7 +672,6 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
     }
     float home, origin;
     ahrs.get_relative_position_D_home(home);
-    ahrs.get_relative_position_D_origin(origin);
     struct log_POS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_POS_MSG),
         time_us        : AP_HAL::micros64(),
@@ -675,21 +679,21 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
         lng            : loc.lng,
         alt            : loc.alt*1.0e-2f,
         rel_home_alt   : -home,
-        rel_origin_alt : -origin
+        rel_origin_alt : ahrs.get_relative_position_D_origin(origin) ? -origin : nanf("ARDUPILOT")
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
+void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs)
 {
     // only log EKF2 if enabled
     if (ahrs.get_NavEKF2().activeCores() > 0) {
-        Log_Write_EKF2(ahrs, optFlowEnabled);
+        Log_Write_EKF2(ahrs);
     }
     // only log EKF3 if enabled
     if (ahrs.get_NavEKF3().activeCores() > 0) {
-        Log_Write_EKF3(ahrs, optFlowEnabled);
+        Log_Write_EKF3(ahrs);
     }
 }
 
@@ -713,7 +717,7 @@ void DataFlash_Class::Log_Write_EKF_Timing(const char *name, uint64_t time_us, c
               (double)timing.delVelDT_max);
 }
 
-void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
+void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs)
 {
     uint64_t time_us = AP_HAL::micros64();
     // Write first EKF packet
@@ -1055,7 +1059,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 }
 
 
-void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
+void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs)
 {
     uint64_t time_us = AP_HAL::micros64();
 	// Write first EKF packet
@@ -1925,4 +1929,58 @@ void DataFlash_Class::Log_Write_Beacon(AP_Beacon &beacon)
        posz            : pos.z
     };
     WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
+}
+
+// Write proximity sensor distances
+void DataFlash_Class::Log_Write_Proximity(AP_Proximity &proximity)
+{
+    // exit immediately if not enabled
+    if (proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+        return;
+    }
+
+    AP_Proximity::Proximity_Distance_Array dist_array {};
+    proximity.get_horizontal_distances(dist_array);
+
+    float dist_up;
+    if (!proximity.get_upward_distance(dist_up)) {
+        dist_up = 0.0f;
+    }
+
+    float close_ang = 0.0f, close_dist = 0.0f;
+    proximity.get_closest_object(close_ang, close_dist);
+
+    struct log_Proximity pkt_proximity = {
+            LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
+            time_us         : AP_HAL::micros64(),
+            health          : (uint8_t)proximity.get_status(),
+            dist0           : dist_array.distance[0],
+            dist45          : dist_array.distance[1],
+            dist90          : dist_array.distance[2],
+            dist135         : dist_array.distance[3],
+            dist180         : dist_array.distance[4],
+            dist225         : dist_array.distance[5],
+            dist270         : dist_array.distance[6],
+            dist315         : dist_array.distance[7],
+            distup          : dist_up,
+            closest_angle   : close_ang,
+            closest_dist    : close_dist
+    };
+    WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
+}
+
+void DataFlash_Class::Log_Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& breadcrumb)
+{
+    struct log_SRTL pkt_srtl = {
+        LOG_PACKET_HEADER_INIT(LOG_SRTL_MSG),
+        time_us         : AP_HAL::micros64(),
+        active          : active,
+        num_points      : num_points,
+        max_points      : max_points,
+        action          : action,
+        N               : breadcrumb.x,
+        E               : breadcrumb.y,
+        D               : breadcrumb.z
+    };
+    WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
 }

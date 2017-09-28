@@ -262,12 +262,12 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     // constrain and scale the desired acceleration
     float des_accel_change_total = norm(des_accel_diff.x, des_accel_diff.y);
     float accel_change_max = _loiter_jerk_max_cmsss * nav_dt;
-    
+
     if (_loiter_jerk_max_cmsss > 0.0f && des_accel_change_total > accel_change_max && des_accel_change_total > 0.0f) {
         des_accel_diff.x = accel_change_max * des_accel_diff.x/des_accel_change_total;
         des_accel_diff.y = accel_change_max * des_accel_diff.y/des_accel_change_total;
     }
-    
+
     // adjust the desired acceleration
     _loiter_desired_accel += des_accel_diff;
 
@@ -468,6 +468,13 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
 
     // set origin and destination
     return set_wp_origin_and_destination(origin, destination, terrain_alt);
+}
+
+/// set waypoint destination using NED position vector from ekf origin in meters
+bool AC_WPNav::set_wp_destination_NED(const Vector3f& destination_NED)
+{
+    // convert NED to NEU and do not use terrain following
+    return set_wp_destination(Vector3f(destination_NED.x * 100.0f, destination_NED.y * 100.0f, -destination_NED.z * 100.0f), false);
 }
 
 /// set_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)

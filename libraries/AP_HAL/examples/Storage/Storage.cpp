@@ -9,13 +9,13 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-AP_HAL::Storage *st;
-
 void setup(void) 
 {
     /*
       init Storage API
      */
+    AP_HAL::Storage *st = hal.storage;
+
     hal.console->printf("Starting AP_HAL::Storage test\r\n");
     st->init();
 

@@ -606,7 +606,7 @@ void Plane::rangefinder_height_update(void)
                  (control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND)) &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
+                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
             }
         }
         rangefinder_state.last_distance = distance;
@@ -643,7 +643,7 @@ void Plane::rangefinder_height_update(void)
             if (fabsf(rangefinder_state.correction - rangefinder_state.initial_correction) > 30) {
                 // the correction has changed by more than 30m, reset use of Lidar. We may have a bad lidar
                 if (rangefinder_state.in_use) {
-                    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", (double)rangefinder_state.height_estimate);
+                    gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", (double)rangefinder_state.height_estimate);
                 }
                 memset(&rangefinder_state, 0, sizeof(rangefinder_state));
             }

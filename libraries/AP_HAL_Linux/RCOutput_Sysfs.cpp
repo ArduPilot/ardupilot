@@ -37,7 +37,7 @@ RCOutput_Sysfs::~RCOutput_Sysfs()
         delete _pwm_channels[i];
     }
 
-    delete _pwm_channels;
+    delete [] _pwm_channels;
 }
 
 void RCOutput_Sysfs::init()

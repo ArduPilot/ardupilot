@@ -25,10 +25,9 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_LightWareSerial::AP_RangeFinder_LightWareSerial(RangeFinder &_ranger, uint8_t instance,
-                                                               RangeFinder::RangeFinder_State &_state,
+AP_RangeFinder_LightWareSerial::AP_RangeFinder_LightWareSerial(RangeFinder::RangeFinder_State &_state,
                                                                AP_SerialManager &serial_manager) :
-    AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_LASER)
+    AP_RangeFinder_Backend(_state)
 {
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, 0);
     if (uart != nullptr) {
@@ -41,7 +40,7 @@ AP_RangeFinder_LightWareSerial::AP_RangeFinder_LightWareSerial(RangeFinder &_ran
    trying to take a reading on Serial. If we get a result the sensor is
    there.
 */
-bool AP_RangeFinder_LightWareSerial::detect(RangeFinder &_ranger, uint8_t instance, AP_SerialManager &serial_manager)
+bool AP_RangeFinder_LightWareSerial::detect(AP_SerialManager &serial_manager)
 {
     return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, 0) != nullptr;
 }

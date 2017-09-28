@@ -58,10 +58,6 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-y6.parm" ],
             },
-            "firefly": {
-                "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/firefly.parm",
-            },
             "dodeca-hexa": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
@@ -87,7 +83,8 @@ class VehicleInfo(object):
             "heli-dual": {
                 "make_target": "sitl-heli-dual",
                 "waf_target": "bin/arducopter-heli",
-                "default_params_filename": "default_params/copter-heli-dual.parm",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                                            "default_params/copter-heli-dual.parm"],
             },
             "heli-compound": {
                 "make_target": "sitl-heli-compound",
@@ -101,7 +98,8 @@ class VehicleInfo(object):
             "coaxcopter": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",
-                "default_params_filename": "default_params/copter-coax.parm",
+                "default_params_filename": ["default_params/copter-single.parm",
+                                            "default_params/copter-coax.parm"],
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
@@ -122,6 +120,11 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane-tilttrivec.parm",
             },
+            "quadplane-tilthvec": {
+                "make_target": "sitl",
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/plane.parm", "default_params/quadplane-tilthvec.parm"],
+            },
             "quadplane-tri": {
                 "make_target": "sitl",
                 "waf_target": "bin/arduplane",
@@ -136,13 +139,17 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane.parm",
             },
+            "firefly": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": "default_params/firefly.parm",
+            },
             "plane-elevon": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-elevons.parm",
+                "default_params_filename": ["default_params/plane.parm", "default_params/plane-elevons.parm"],
             },
             "plane-vtail": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-vtail.parm",
+                "default_params_filename": ["default_params/plane.parm", "default_params/plane-vtail.parm"],
             },
             "plane-tailsitter": {
                 "waf_target": "bin/arduplane",
@@ -151,6 +158,10 @@ class VehicleInfo(object):
             "plane": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/plane.parm",
+            },
+            "plane-dspoilers": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": ["default_params/plane.parm", "default_params/plane-dspoilers.parm"]
             },
             "gazebo-zephyr": {
                 "waf_target": "bin/arduplane",
@@ -181,11 +192,13 @@ class VehicleInfo(object):
             },
             "rover-skid": {
                 "waf_target": "bin/ardurover",
-                "default_params_filename": "default_params/rover-skid.parm",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/rover-skid.parm"],
             },
             "gazebo-rover": {
                 "waf_target": "bin/ardurover",
-                "default_params_filename": "default_params/rover-skid.parm",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/rover-skid.parm"],
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",

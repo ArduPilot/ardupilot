@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from LogAnalyzer import Test,TestResult
 import DataflashLog
 
@@ -23,12 +25,12 @@ class TestDupeLogData(Test):
 		# c
 		data = logdata.channels["ATT"]["Pitch"].listData
 		for i in range(sampleStartIndex, len(data)):
-			#print "Checking against index %d" % i
+			#print("Checking against index %d" % i)
 			if i == sampleStartIndex:
 				continue # skip matching against ourselves
 			j = 0
 			while j<20 and (i+j)<len(data) and data[i+j][1] == sample[j][1]:
-				#print "### Match found, j=%d, data=%f, sample=%f, log data matched to sample at line %d" % (j,data[i+j][1],sample[j][1],data[i+j][0])
+				#print("### Match found, j=%d, data=%f, sample=%f, log data matched to sample at line %d" % (j,data[i+j][1],sample[j][1],data[i+j][0]))
 				j += 1
 			if j == 20: # all samples match
 				return data[i][0]
@@ -52,17 +54,17 @@ class TestDupeLogData(Test):
 		step = attEndIndex / 11
 		for i in range(step,attEndIndex-step,step):
 			sampleStartIndices.append(i)
-			#print "Dupe data sample point index %d at line %d" % (i, logdata.channels["ATT"]["Pitch"].listData[i][0])
+			#print("Dupe data sample point index %d at line %d" % (i, logdata.channels["ATT"]["Pitch"].listData[i][0]))
 
 		# get 20 datapoints of pitch from each sample location and check for a match elsewhere
 		sampleIndex = 0
 		for i in range(sampleStartIndices[0], len(logdata.channels["ATT"]["Pitch"].listData)):
 			if i == sampleStartIndices[sampleIndex]:
-				#print "Checking sample %d" % i
+				#print("Checking sample %d" % i)
 				sample = logdata.channels["ATT"]["Pitch"].listData[i:i+20]
 				matchedLine = self.__matchSample(sample, i, logdata)
 				if matchedLine:
-					#print "Data from line %d found duplicated at line %d" % (sample[0][0],matchedLine)
+					#print("Data from line %d found duplicated at line %d" % (sample[0][0],matchedLine))
 					self.result.status = TestResult.StatusType.FAIL
 					self.result.statusMessage = "Duplicate data chunks found in log (%d and %d)" % (sample[0][0],matchedLine)
 					return

@@ -40,8 +40,18 @@ class AP_Notify
     friend class RGBLed;            // RGBLed needs access to notify parameters
     friend class Display;           // Display needs access to notify parameters
 public:
-    // Constructor
-    AP_Notify();   
+    static AP_Notify create() { return AP_Notify{}; }
+
+    // get singleton instance
+    static AP_Notify *instance(void) {
+        return _instance;
+    }
+
+    constexpr AP_Notify(AP_Notify &&other) = default;
+
+    /* Do not allow copies */
+    AP_Notify(const AP_Notify &other) = delete;
+    AP_Notify &operator=(const AP_Notify&) = delete;
 
     // Oreo LED Themes
     enum Oreo_LED_Theme {
@@ -71,6 +81,7 @@ public:
         uint32_t leak_detected      : 1;    // 1 if leak detected
         float    battery_voltage       ;    // battery voltage
         uint32_t gps_fusion         : 1;    // 0 = GPS fix rejected by EKF, not usable for flight. 1 = GPS in use by EKF, usable for flight
+        uint32_t gps_glitching      : 1;    // 1 if gps is glitching
 
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
@@ -109,6 +120,9 @@ public:
     // initialisation
     void init(bool enable_external_leds);
 
+    // add all backends
+    void add_backends(void);
+
     /// update - allow updates of leds that cannot be updated during a timed interrupt
     void update(void);
 
@@ -131,6 +145,9 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    AP_Notify();
+
+    static AP_Notify *_instance;
 
     // parameters
     AP_Int8 _rgb_led_brightness;
@@ -144,4 +161,5 @@ private:
     char _flight_mode_str[5];
 
     static NotifyDevice* _devices[];
+    static uint8_t _num_devices;
 };

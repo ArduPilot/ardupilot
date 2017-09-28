@@ -41,7 +41,6 @@
 // run at 400Hz on all systems
 # define MAIN_LOOP_RATE    400
 # define MAIN_LOOP_SECONDS 0.0025f
-# define MAIN_LOOP_MICROS  2500
 
 #ifndef SURFACE_DEPTH_DEFAULT
 # define SURFACE_DEPTH_DEFAULT -10.0f // pressure sensor reading 10cm depth means craft is considered surfaced
@@ -204,7 +203,7 @@
 
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
-# define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
+# define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_CORRECT_XTRACK
 #endif
 
 #ifndef AUTO_YAW_SLEW_RATE

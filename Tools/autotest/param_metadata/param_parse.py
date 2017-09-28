@@ -17,6 +17,7 @@ from mdemit import MDEmit
 parser = OptionParser("param_parse.py [options]")
 parser.add_option("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
 parser.add_option("--vehicle", default='*',  help="Vehicle type to generate for")
+parser.add_option("--no-emit", dest='emit_params', action='store_false', default=True, help="don't emit parameter documention, just validate")
 (opts, args) = parser.parse_args()
 
 
@@ -230,10 +231,11 @@ def do_emit(emit):
 
     emit.close()
 
-do_emit(XmlEmit())
-do_emit(WikiEmit())
-do_emit(HtmlEmit())
-do_emit(RSTEmit())
-do_emit(MDEmit())
+if opts.emit_params:
+    do_emit(XmlEmit())
+    do_emit(WikiEmit())
+    do_emit(HtmlEmit())
+    do_emit(RSTEmit())
+    do_emit(MDEmit())
 
 sys.exit(error_count)

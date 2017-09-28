@@ -96,8 +96,6 @@ void Plane::stats_update(void)
 
 void Plane::setup() 
 {
-    cliSerial = hal.console;
-
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
@@ -223,13 +221,7 @@ void Plane::update_mount(void)
 void Plane::update_trigger(void)
 {
 #if CAMERA == ENABLED
-    camera.trigger_pic_cleanup();
-    if (camera.check_trigger_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    }    
+    camera.update_trigger();
 #endif
 }
 
@@ -323,7 +315,7 @@ void Plane::update_aux(void)
 void Plane::one_second_loop()
 {
     // send a heartbeat
-    gcs_send_message(MSG_HEARTBEAT);
+    gcs().send_message(MSG_HEARTBEAT);
 
     // make it possible to change control channel ordering at runtime
     set_control_channels();
@@ -378,7 +370,7 @@ void Plane::one_second_loop()
 void Plane::log_perf_info()
 {
     if (scheduler.debug() != 0) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "PERF: %u/%u Dt=%u/%u Log=%u",
+        gcs().send_text(MAV_SEVERITY_INFO, "PERF: %u/%u Dt=%u/%u Log=%u",
                           (unsigned)perf.num_long,
                           (unsigned)perf.mainLoop_count,
                           (unsigned)perf.G_Dt_max,
@@ -514,10 +506,8 @@ void Plane::update_GPS_10Hz(void)
         geofence_check(false);
 
 #if CAMERA == ENABLED
-        if (camera.update_location(current_loc, plane.ahrs ) == true) {
-            do_take_picture();
-        }
-#endif        
+        camera.update();
+#endif
 
         // update wind estimate
         ahrs.estimate_wind();
@@ -540,7 +530,7 @@ void Plane::handle_auto_mode(void)
         // this could happen if AP_Landing::restart_landing_sequence() returns false which would only happen if:
         // restart_landing_sequence() is called when not executing a NAV_LAND or there is no previous nav point
         set_mode(RTL, MODE_REASON_MISSION_END);
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
+        gcs().send_text(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
     }
 
@@ -617,7 +607,7 @@ void Plane::update_flight_mode(void)
             quadplane.guided_update();
             break;
         }
-        // no break
+        FALLTHROUGH;
 
     case RTL:
     case LOITER:
@@ -702,7 +692,7 @@ void Plane::update_flight_mode(void)
             if (tdrag_mode && !auto_state.fbwa_tdrag_takeoff_mode) {
                 if (auto_state.highest_airspeed < g.takeoff_tdrag_speed1) {
                     auto_state.fbwa_tdrag_takeoff_mode = true;
-                    gcs_send_text(MAV_SEVERITY_WARNING, "FBWA tdrag mode");
+                    gcs().send_text(MAV_SEVERITY_WARNING, "FBWA tdrag mode");
                 }
             }
         }
@@ -845,7 +835,8 @@ void Plane::update_navigation()
         if (radius > 0) {
             loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
         }
-        // no break, fall through to LOITER
+        // fall through to LOITER
+        FALLTHROUGH;
 
     case LOITER:
     case AVOID_ADSB:
@@ -888,7 +879,7 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
     landing.handle_flight_stage_change(fs == AP_Vehicle::FixedWing::FLIGHT_LAND);
 
     if (fs == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
                           auto_state.takeoff_altitude_rel_cm/100);
     }
 
@@ -955,12 +946,12 @@ void Plane::update_flight_stage(void)
             } else if (auto_state.takeoff_complete == false) {
                 set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_TAKEOFF);
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
-
                 if (landing.is_commanded_go_around() || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
-                } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90) {
-                    plane.gcs_send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
+                } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90 &&
+                           landing.request_go_around()) {
+                    gcs().send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
                 } else {
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
@@ -1032,7 +1023,7 @@ void Plane::disarm_if_autoland_complete()
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= landing.get_disarm_delay()*1000UL) {
             if (disarm_motors()) {
-                gcs_send_text(MAV_SEVERITY_INFO,"Auto disarmed");
+                gcs().send_text(MAV_SEVERITY_INFO,"Auto disarmed");
             }
         }
     }

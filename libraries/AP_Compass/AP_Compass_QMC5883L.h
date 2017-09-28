@@ -33,6 +33,7 @@ class AP_Compass_QMC5883L : public AP_Compass_Backend
 public:
     static AP_Compass_Backend *probe(Compass &compass,
                                      AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+									 bool force_external,
                                      enum Rotation rotation = ROTATION_NONE);
 
     void read() override;
@@ -42,8 +43,11 @@ public:
 private:
     AP_Compass_QMC5883L(Compass &compass,
                        AP_HAL::OwnPtr<AP_HAL::Device> dev,
+					   bool force_external,
                        enum Rotation rotation);
 
+    void _dump_registers();
+    bool _check_whoami();
     void timer();
     bool init();
 
@@ -54,4 +58,5 @@ private:
 
     enum Rotation _rotation;
     uint8_t _instance;
+    bool _force_external:1;
 };

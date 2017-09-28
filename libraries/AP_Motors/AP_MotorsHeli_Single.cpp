@@ -553,7 +553,7 @@ bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
     // returns false if Phase Angle is outside of range 
     if ((_phase_angle > 90) || (_phase_angle < -90)){
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_PHANG out of range");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_PHANG out of range");
         }
         return false;
     }
@@ -561,7 +561,7 @@ bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
     // returns false if Acro External Gyro Gain is outside of range
     if ((_ext_gyro_gain_acro < 0) || (_ext_gyro_gain_acro > 1000)){
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN_ACRO out of range");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN_ACRO out of range");
         }
         return false;
     }
@@ -569,7 +569,7 @@ bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
     // returns false if Standard External Gyro Gain is outside of range
     if ((_ext_gyro_gain_std < 0) || (_ext_gyro_gain_std > 1000)){
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN out of range");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN out of range");
         }
         return false;
     }

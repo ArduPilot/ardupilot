@@ -50,6 +50,8 @@ void AP_BattMonitor_SMBus_Solo::timer()
             _state.cell_voltages.cells[i] = cell;
             pack_voltage_mv += (float)cell;
         }
+        _has_cell_voltages = true;
+
         // accumulate the pack voltage out of the total of the cells
         // because the Solo's I2C bus is so noisy, it's worth not spending the
         // time and bus bandwidth to request the pack voltage as a seperate

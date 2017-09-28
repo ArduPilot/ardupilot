@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RSSI Type
     // @Description: Radio Receiver RSSI type. If your radio receiver supports RSSI of some kind, set it here, then set its associated RSSI_XXXXX parameters, if any.
-    // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue
+    // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue,3:ReceiverProtocol
     // @User: Standard
     AP_GROUPINFO("TYPE", 0, AP_RSSI, rssi_type,  BOARD_RSSI_DEFAULT),
 
@@ -128,6 +128,13 @@ float AP_RSSI::read_receiver_rssi()
         case RssiType::RSSI_RC_CHANNEL_VALUE :
             receiver_rssi = read_channel_rssi();
             break;
+        case RssiType::RSSI_RECEIVER : {
+            int16_t rssi = hal.rcin->get_rssi();
+            if (rssi != -1) {
+                receiver_rssi = rssi / 255.0;
+            }
+            break;
+        }
         default :   
             receiver_rssi = 0.0f;
             break;

@@ -18,9 +18,7 @@
 #define AP_COMPASS_MOT_COMP_CURRENT     0x02
 
 // setup default mag orientation for some board types
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-# define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 # define MAG_BOARD_ORIENTATION ROTATION_YAW_90
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI)
@@ -46,9 +44,13 @@ class Compass
 {
 friend class AP_Compass_Backend;
 public:
-    /// Constructor
-    ///
-    Compass();
+    static Compass create() { return Compass{}; }
+
+    constexpr Compass(Compass &&other) = default;
+
+    /* Do not allow copies */
+    Compass(const Compass &other) = delete;
+    Compass &operator=(const Compass&) = delete;
 
     /// Initialize the compass device.
     ///
@@ -122,7 +124,7 @@ public:
     /*
       handle an incoming MAG_CAL command
     */
-    uint8_t handle_mag_cal_command(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_mag_cal_command(const mavlink_command_long_t &packet);
 
     void send_mag_cal_progress(mavlink_channel_t chan);
     void send_mag_cal_report(mavlink_channel_t chan);
@@ -291,6 +293,8 @@ public:
     }
 
 private:
+    Compass();
+
     /// Register a new compas driver, allocating an instance number
     ///
     /// @return number of compass instances
@@ -320,6 +324,26 @@ private:
     bool _cal_complete_requires_reboot;
     bool _cal_has_run;
 
+    // enum of drivers for COMPASS_TYPEMASK
+    enum DriverType {
+        DRIVER_HMC5883  =0,
+        DRIVER_LSM303D  =1,
+        DRIVER_AK8963   =2,
+        DRIVER_BMM150   =3,
+        DRIVER_LSM9DS1  =4,
+        DRIVER_LIS3MDL  =5,
+        DRIVER_AK09916  =6,
+        DRIVER_IST8310  =7,
+        DRIVER_ICM20948 =8,
+        DRIVER_MMC3416  =9,
+        DRIVER_QFLIGHT  =10,
+        DRIVER_UAVCAN   =11,
+        DRIVER_QMC5883  =12,
+        DRIVER_SITL     =13,
+    };
+
+    bool _driver_enabled(enum DriverType driver_type);
+    
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;
@@ -398,4 +422,7 @@ private:
     bool _hil_mode:1;
 
     AP_Float _calibration_threshold;
+
+    // mask of driver types to not load. Bit positions match DEVTYPE_ in backend
+    AP_Int32 _driver_type_mask;
 };

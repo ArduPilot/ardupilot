@@ -64,6 +64,7 @@ void AP_BattMonitor_SMBus_Maxell::timer()
     // read cell voltages
     for (uint8_t i = 0; i < BATTMONITOR_SMBUS_MAXELL_NUM_CELLS; i++) {
         if (read_word(maxell_cell_ids[i], data)) {
+            _has_cell_voltages = true;
             _state.cell_voltages.cells[i] = data;
         } else {
             _state.cell_voltages.cells[i] = UINT16_MAX;

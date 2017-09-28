@@ -25,7 +25,7 @@ bool Copter::auto_init(bool ignore_checks)
 
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
         if (motors->armed() && ap.land_complete && !mission.starts_with_takeoff_cmd()) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
             return false;
         }
 
@@ -644,17 +644,22 @@ void Copter::set_auto_yaw_mode(uint8_t yaw_mode)
     case AUTO_YAW_RESETTOARMEDYAW:
         // initial_armed_bearing will be set during arming so no init required
         break;
+
+    case AUTO_YAW_RATE:
+        // initialise target yaw rate to zero
+        auto_yaw_rate_cds = 0.0f;
+        break;
     }
 }
 
 // set_auto_yaw_look_at_heading - sets the yaw look at heading for auto mode
-void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle)
+void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle)
 {
     // get current yaw target
     int32_t curr_yaw_target = attitude_control->get_att_target_euler_cd().z;
 
-    // get final angle, 1 = Relative, 0 = Absolute
-    if (relative_angle == 0) {
+    // calculate final angle as relative to vehicle heading or absolute
+    if (!relative_angle) {
         // absolute angle
         yaw_look_at_heading = wrap_360_cd(angle_deg * 100);
     } else {
@@ -717,6 +722,13 @@ void Copter::set_auto_yaw_roi(const Location &roi_location)
     }
 }
 
+// set auto yaw rate in centi-degrees per second
+void Copter::set_auto_yaw_rate(float turn_rate_cds)
+{
+    set_auto_yaw_mode(AUTO_YAW_RATE);
+    auto_yaw_rate_cds = turn_rate_cds;
+}
+
 // get_auto_heading - returns target heading depending upon auto_yaw_mode
 // 100hz update rate
 float Copter::get_auto_heading(void)
@@ -745,6 +757,17 @@ float Copter::get_auto_heading(void)
         // we don't use wp_bearing because we don't want the copter to turn too much during flight
         return wp_nav->get_yaw();
     }
+}
+
+// returns yaw rate held in auto_yaw_rate and normally set by SET_POSITION_TARGET mavlink messages (positive it clockwise, negative is counter clockwise)
+float Copter::get_auto_yaw_rate_cds(void)
+{
+    if (auto_yaw_mode == AUTO_YAW_RATE) {
+        return auto_yaw_rate_cds;
+    }
+
+    // return zero turn rate (this should never happen)
+    return 0.0f;
 }
 
 // auto_payload_place_start - initialises controller to implement a placing

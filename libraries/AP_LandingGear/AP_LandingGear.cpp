@@ -26,8 +26,32 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SERVO_DEPLOY", 1, AP_LandingGear, _servo_deploy_pwm, AP_LANDINGGEAR_SERVO_DEPLOY_PWM_DEFAULT),
 
+    // @Param: STARTUP
+    // @DisplayName: Landing Gear Startup position
+    // @Description: Landing Gear Startup behaviour control
+    // @Values: 0:WaitForPilotInput, 1:Retract, 2:Deploy
+    // @User: Standard
+    AP_GROUPINFO("STARTUP", 2, AP_LandingGear, _startup_behaviour, (uint8_t)AP_LandingGear::LandingGear_Startup_WaitForPilotInput),
+
     AP_GROUPEND
 };
+
+/// initialise state of landing gear
+void AP_LandingGear::init()
+{
+    switch ((enum LandingGearStartupBehaviour)_startup_behaviour.get()) {
+        default:
+        case LandingGear_Startup_WaitForPilotInput:
+            // do nothing
+            break;
+        case LandingGear_Startup_Retract:
+            retract();
+            break;
+        case LandingGear_Startup_Deploy:
+            deploy();
+            break;
+    }
+}
 
 /// set landing gear position to retract, deploy or deploy-and-keep-deployed
 void AP_LandingGear::set_position(LandingGearCommand cmd)

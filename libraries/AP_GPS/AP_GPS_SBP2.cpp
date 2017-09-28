@@ -51,7 +51,7 @@ do {                                            \
 #if SBP_INFOREPORTING
  # define Info(fmt, args ...)                                               \
 do {                                                                        \
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, fmt "\n", ## args); \
+    gcs().send_text(MAV_SEVERITY_INFO, fmt "\n", ## args); \
 } while(0) 
 #else
  # define Info(fmt, args ...)
@@ -309,7 +309,7 @@ AP_GPS_SBP2::_attempt_state_update()
         state.vertical_accuracy     = (float) last_pos_llh.v_accuracy * 1.0e-3f;
 
         //
-        // Set flags appropriartely
+        // Set flags appropriately
         //
         state.have_vertical_velocity   = true;
         state.have_speed_accuracy      = !is_zero(state.speed_accuracy);

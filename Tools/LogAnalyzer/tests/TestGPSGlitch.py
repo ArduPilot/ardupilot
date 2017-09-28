@@ -9,6 +9,16 @@ class TestGPSGlitch(Test):
 		Test.__init__(self)
 		self.name = "GPS"
 
+        def findSatsChan(self, channels):
+                for chan in "NSats","NSat","numSV":
+                        if chan in channels:
+                                return channels[chan]
+
+        def findHDopChan(self, channels):
+                for chan in "HDop","HDp","EPH":
+                        if chan in channels:
+                                return channels[chan]
+
 	def run(self, logdata, verbose):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.GOOD
@@ -25,9 +35,9 @@ class TestGPSGlitch(Test):
 			for i in range(len(logdata.channels["ERR"]["Subsys"].listData)):
 				subSys = logdata.channels["ERR"]["Subsys"].listData[i][1]
 				eCode  = logdata.channels["ERR"]["ECode"].listData[i][1]
-			 	if subSys == 11 and (eCode == 2):
+				if subSys == 11 and (eCode == 2):
 			 		gpsGlitchCount += 1
- 		if gpsGlitchCount:
+		if gpsGlitchCount:
 			self.result.status = TestResult.StatusType.FAIL
 			self.result.statusMessage = "GPS glitch errors found (%d)" % gpsGlitchCount
 
@@ -37,11 +47,13 @@ class TestGPSGlitch(Test):
 		minSatsFAIL = 5
 		maxHDopWARN = 3.0
 		maxHDopFAIL = 10.0
-		foundBadSatsWarn = logdata.channels["GPS"]["NSats"].min() < minSatsWARN
-		foundBadHDopWarn = logdata.channels["GPS"]["HDop"].max()  > maxHDopWARN
-		foundBadSatsFail = logdata.channels["GPS"]["NSats"].min() < minSatsFAIL
-		foundBadHDopFail = logdata.channels["GPS"]["HDop"].max()  > maxHDopFAIL
-		satsMsg = "Min satellites: %s, Max HDop: %s" % (logdata.channels["GPS"]["NSats"].min(), logdata.channels["GPS"]["HDop"].max())	
+		satsChan = self.findSatsChan(logdata.channels["GPS"])
+		hdopChan = self.findHDopChan(logdata.channels["GPS"])
+		foundBadSatsWarn = satsChan.min() < minSatsWARN
+		foundBadHDopWarn = hdopChan.max()  > maxHDopWARN
+		foundBadSatsFail = satsChan.min() < minSatsFAIL
+		foundBadHDopFail = hdopChan.max()  > maxHDopFAIL
+		satsMsg = "Min satellites: %s, Max HDop: %s" % (satsChan.min(), hdopChan.max())
 		if gpsGlitchCount:
 			self.result.statusMessage = self.result.statusMessage + "\n" + satsMsg
 		if foundBadSatsFail or foundBadHDopFail:

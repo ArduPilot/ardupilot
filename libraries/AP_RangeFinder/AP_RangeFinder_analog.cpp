@@ -31,17 +31,17 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_UNKNOWN)
+AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_state) :
+    AP_RangeFinder_Backend(_state)
 {
-    source = hal.analogin->channel(ranger._pin[instance]);
+    source = hal.analogin->channel(_state.pin);
     if (source == nullptr) {
         // failed to allocate a ADC channel? This shouldn't happen
         set_status(RangeFinder::RangeFinder_NotConnected);
         return;
     }
-    source->set_stop_pin((uint8_t)ranger._stop_pin[instance]);
-    source->set_settle_time((uint16_t)ranger._settle_time_ms[instance]);
+    source->set_stop_pin((uint8_t)_state.stop_pin);
+    source->set_settle_time((uint16_t)_state.settle_time_ms);
     set_status(RangeFinder::RangeFinder_NoData);
 }
 
@@ -50,9 +50,9 @@ AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder &_ranger, uint8_t insta
    can do is check if the pin number is valid. If it is, then assume
    that the device is connected
 */
-bool AP_RangeFinder_analog::detect(RangeFinder &_ranger, uint8_t instance)
+bool AP_RangeFinder_analog::detect(RangeFinder::RangeFinder_State &_state)
 {
-    if (_ranger._pin[instance] != -1) {
+    if (_state.pin != -1) {
         return true;
     }
     return false;
@@ -69,10 +69,10 @@ void AP_RangeFinder_analog::update_voltage(void)
        return;
    }
    // cope with changed settings
-   source->set_pin(ranger._pin[state.instance]);
-   source->set_stop_pin((uint8_t)ranger._stop_pin[state.instance]);
-   source->set_settle_time((uint16_t)ranger._settle_time_ms[state.instance]);
-   if (ranger._ratiometric[state.instance]) {
+   source->set_pin(state.pin);
+   source->set_stop_pin((uint8_t)state.stop_pin);
+   source->set_settle_time((uint16_t)state.settle_time_ms);
+   if (state.ratiometric) {
        state.voltage_mv = source->voltage_average_ratiometric() * 1000U;
    } else {
        state.voltage_mv = source->voltage_average() * 1000U;
@@ -87,10 +87,10 @@ void AP_RangeFinder_analog::update(void)
     update_voltage();
     float v = state.voltage_mv * 0.001f;
     float dist_m = 0;
-    float scaling = ranger._scaling[state.instance];
-    float offset  = ranger._offset[state.instance];
-    RangeFinder::RangeFinder_Function function = (RangeFinder::RangeFinder_Function)ranger._function[state.instance].get();
-    int16_t max_distance_cm = ranger._max_distance_cm[state.instance];
+    float scaling = state.scaling;
+    float offset  = state.offset;
+    RangeFinder::RangeFinder_Function function = (RangeFinder::RangeFinder_Function)state.function.get();
+    int16_t _max_distance_cm = state.max_distance_cm;
 
     switch (function) {
     case RangeFinder::FUNCTION_LINEAR:
@@ -106,8 +106,8 @@ void AP_RangeFinder_analog::update(void)
             dist_m = 0;
         }
         dist_m = scaling / (v - offset);
-        if (isinf(dist_m) || dist_m > max_distance_cm * 0.01f) {
-            dist_m = max_distance_cm * 0.01f;
+        if (isinf(dist_m) || dist_m > _max_distance_cm * 0.01f) {
+            dist_m = _max_distance_cm * 0.01f;
         }
         break;
     }

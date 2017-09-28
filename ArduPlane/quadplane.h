@@ -88,6 +88,9 @@ public:
     
     // check if we have completed transition
     bool tailsitter_transition_complete(void);
+
+    // user initiated takeoff for guided mode
+    bool do_user_takeoff(float takeoff_altitude);
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -273,6 +276,9 @@ private:
     // last throttle value when active
     float last_throttle;
 
+    // pitch when we enter loiter mode
+    int32_t loiter_initial_pitch_cd;
+    
     const float smoothing_gain = 6;
 
     // true if we have reached the airspeed threshold for transition
@@ -291,6 +297,9 @@ private:
 
     // true when in angle assist
     bool in_angle_assist:1;
+
+    // are we in a guided takeoff?
+    bool guided_takeoff:1;
 
     struct {
         // time when motors reached lower limit
@@ -399,6 +408,12 @@ private:
 
     void afs_terminate(void);
     bool guided_mode_enabled(void);
+
+    // set altitude target to current altitude
+    void set_alt_target_current(void);
+    
+    // adjust altitude target smoothly
+    void adjust_alt_target(float target_cm);
     
 public:
     void motor_test_output();

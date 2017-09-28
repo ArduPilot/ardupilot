@@ -26,7 +26,7 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static AP_RPM RPM;
+static AP_RPM RPM = AP_RPM::create();
 
 char sensor_state;
 

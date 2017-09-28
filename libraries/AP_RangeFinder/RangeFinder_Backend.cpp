@@ -24,10 +24,8 @@ extern const AP_HAL::HAL& hal;
   base class constructor. 
   This incorporates initialisation as well.
 */
-AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state, MAV_DISTANCE_SENSOR _sensor_type) :
-        ranger(_ranger),
-        state(_state),
-        sensor_type(_sensor_type)
+AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state) :
+        state(_state)
 {
     _sem = hal.util->new_semaphore();    
 }
@@ -36,9 +34,9 @@ AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder &_ranger, uint8_t ins
 void AP_RangeFinder_Backend::update_status()
 {
     // check distance
-    if ((int16_t)state.distance_cm > ranger._max_distance_cm[state.instance]) {
+    if ((int16_t)state.distance_cm > state.max_distance_cm) {
         set_status(RangeFinder::RangeFinder_OutOfRangeHigh);
-    } else if ((int16_t)state.distance_cm < ranger._min_distance_cm[state.instance]) {
+    } else if ((int16_t)state.distance_cm < state.min_distance_cm) {
         set_status(RangeFinder::RangeFinder_OutOfRangeLow);
     } else {
         set_status(RangeFinder::RangeFinder_Good);
@@ -46,16 +44,42 @@ void AP_RangeFinder_Backend::update_status()
 }
 
 // set status and update valid count
-void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status status)
+void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status _status)
 {
-    state.status = status;
+    state.status = _status;
 
     // update valid count
-    if (status == RangeFinder::RangeFinder_Good) {
+    if (_status == RangeFinder::RangeFinder_Good) {
         if (state.range_valid_count < 10) {
             state.range_valid_count++;
         }
     } else {
         state.range_valid_count = 0;
+    }
+}
+
+/*
+  set pre-arm checks to passed if the range finder has been exercised through a reasonable range of movement
+      max distance sensed is at least 50cm > min distance sensed
+      max distance < 200cm
+      min distance sensed is within 10cm of ground clearance or sensor's minimum distance
+ */
+void AP_RangeFinder_Backend::update_pre_arm_check()
+{
+    // return immediately if already passed or no sensor data
+    if (state.pre_arm_check || state.status == RangeFinder::RangeFinder_NotConnected || state.status == RangeFinder::RangeFinder_NoData) {
+        return;
+    }
+
+    // update min, max captured distances
+    state.pre_arm_distance_min = MIN(state.distance_cm, state.pre_arm_distance_min);
+    state.pre_arm_distance_max = MAX(state.distance_cm, state.pre_arm_distance_max);
+
+    // Check that the range finder has been exercised through a realistic range of movement
+    if (((state.pre_arm_distance_max - state.pre_arm_distance_min) > RANGEFINDER_PREARM_REQUIRED_CHANGE_CM) &&
+         (state.pre_arm_distance_max < RANGEFINDER_PREARM_ALT_MAX_CM) &&
+         ((int16_t)state.pre_arm_distance_min < (MAX(state.ground_clearance_cm,state.min_distance_cm) + 10)) &&
+         ((int16_t)state.pre_arm_distance_min > (MIN(state.ground_clearance_cm,state.min_distance_cm) - 10))) {
+        state.pre_arm_check = true;
     }
 }

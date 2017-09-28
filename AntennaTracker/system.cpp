@@ -1,13 +1,7 @@
 #include "Tracker.h"
-#include "version.h"
 
 // mission storage
 static const StorageAccess wp_storage(StorageManager::StorageMission);
-
-static void mavlink_snoop_static(const mavlink_message_t* msg)
-{
-    tracker.mavlink_snoop(msg);
-}
 
 static void mavlink_delay_cb_static()
 {
@@ -19,9 +13,9 @@ void Tracker::init_tracker()
     // initialise console serial port
     serial_manager.init_console();
 
-    hal.console->printf("\n\nInit " THISFIRMWARE
-                               "\n\nFree RAM: %u\n",
-                          hal.util->available_memory());
+    hal.console->printf("\n\nInit %s\n\nFree RAM: %u\n",
+                        fwver.fw_string,
+                        hal.util->available_memory());
 
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();
@@ -34,13 +28,16 @@ void Tracker::init_tracker()
     serial_manager.init();
 
     // setup first port early to allow BoardConfig to report errors
-    gcs_chan[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
     
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
 
     // initialise notify
     notify.init(false);
@@ -57,10 +54,7 @@ void Tracker::init_tracker()
     check_usb_mux();
 
     // setup telem slots with serial ports
-    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-        gcs_chan[i].set_snoop(mavlink_snoop_static);
-    }
+    gcs().setup_uarts(serial_manager);
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
@@ -103,7 +97,7 @@ void Tracker::init_tracker()
         current_loc.lat = g.start_latitude * 1.0e7f;
         current_loc.lng = g.start_longitude * 1.0e7f;
     } else {
-        gcs_send_text(MAV_SEVERITY_NOTICE, "Ignoring invalid START_LATITUDE or START_LONGITUDE parameter");
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Ignoring invalid START_LATITUDE or START_LONGITUDE parameter");
     }
 
     // see if EEPROM has a default location as well
@@ -113,7 +107,7 @@ void Tracker::init_tracker()
 
     init_capabilities();
 
-    gcs_send_text(MAV_SEVERITY_INFO,"Ready to track");
+    gcs().send_text(MAV_SEVERITY_INFO,"Ready to track");
     hal.scheduler->delay(1000); // Why????
 
     set_mode(AUTO); // tracking
@@ -170,7 +164,34 @@ void Tracker::set_home(struct Location temp)
 {
     set_home_eeprom(temp);
     current_loc = temp;
-    GCS_MAVLINK::send_home_all(temp);
+    gcs().send_home(temp);
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        gcs().send_ekf_origin(ekf_origin);
+    }
+}
+
+// sets ekf_origin if it has not been set.
+//  should only be used when there is no GPS to provide an absolute position
+void Tracker::set_ekf_origin(const Location& loc)
+{
+    // check location is valid
+    if (!check_latlng(loc)) {
+        return;
+    }
+
+    // check EKF origin has already been set
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        return;
+    }
+
+    if (!ahrs.set_origin(loc)) {
+        return;
+    }
+
+    // send ekf origin to GCS
+    gcs().send_ekf_origin(loc);
 }
 
 void Tracker::arm_servos()
@@ -221,23 +242,6 @@ void Tracker::set_mode(enum ControlMode mode)
 
 	// log mode change
 	DataFlash.Log_Write_Mode(control_mode);
-}
-
-/*
-  set_mode() wrapper for MAVLink SET_MODE
- */
-bool Tracker::mavlink_set_mode(uint8_t mode)
-{
-    switch (mode) {
-    case AUTO:
-    case MANUAL:
-    case SCAN:
-    case SERVO_TEST:
-    case STOP:
-        set_mode((enum ControlMode)mode);
-        return true;
-    }
-    return false;
 }
 
 void Tracker::check_usb_mux(void)

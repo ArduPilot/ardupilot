@@ -6,7 +6,7 @@
 
 [![Build Travis](https://travis-ci.org/ArduPilot/ardupilot.svg?branch=master)](https://travis-ci.org/ArduPilot/ardupilot)
 
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/5331/badge.svg)](https://scan.coverity.com/projects/diydrones-ardupilot)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/5331/badge.svg)](https://scan.coverity.com/projects/ardupilot-ardupilot)
 
 ## The ArduPilot project is made up of: ##
 
@@ -32,7 +32,9 @@
 
 - Main developer wiki: <http://dev.ardupilot.org>
 
-- Developer email group: drones-discuss@googlegroups.com
+- Developer discussion: <http://discuss.ardupilot.org>
+
+- Developer email group: drones-discuss@googlegroups.com. Deprecated November 2016. Included for historical reference.
 
 ## Contributors ##
 
@@ -80,12 +82,14 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Vehicle***: Plane
 - [Paul Riseborough](https://github.com/priseborough)
   - ***Subsystem***: AP_NavEKF2
+  - ***Subsystem***: AP_NavEKF3
 - [Lucas De Marchi](https://github.com/lucasdemarchi)
   - ***Subsystem***: Linux
 - [Peter Barker](https://github.com/peterbarker)
   - ***Subsystem***: DataFlash
   - ***Subsystem***: Tools
 - [Michael du Breuil](https://github.com/WickedShell)
+  - ***Subsystem***: SMBus Batteries
   - ***Subsystem***: GPS
 - [Francisco Ferreira](https://github.com/oxinarf)
   - ***Bug Master***
@@ -104,8 +108,6 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Board***: VRBrain
 - [Julien BERAUD](https://github.com/jberaud)
   - ***Board***: Bebop & Bebop 2
-- [Pritam Ghanghas](https://github.com/pritamghanghas)
-  - ***Board***: Raspilot
 - [Matt Lawrence](https://github.com/Pedals2Paddles)
   - ***Vehicle***: 3DR Solo & Solo based vehicles
 - [Gustavo José de Sousa](https://github.com/guludo)

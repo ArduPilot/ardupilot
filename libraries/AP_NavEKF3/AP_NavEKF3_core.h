@@ -61,6 +61,9 @@
 #define EKF_TARGET_DT_MS 12
 #define EKF_TARGET_DT    0.012f
 
+// mag fusion final reset altitude (using NED frame so altitude is negative)
+#define EKF3_MAG_FINAL_RESET_ALT 2.5f
+
 class AP_AHRS;
 
 class NavEKF3_core
@@ -219,6 +222,17 @@ public:
      * posOffset is the XYZ body frame position of the camera focal point (m)
     */
     void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
+
+    /*
+     * Write odometry data from a wheel encoder. The axis of rotation is assumed to be parallel to the vehicle body axis
+     *
+     * delAng is the measured change in angular position from the previous measurement where a positive rotation is produced by forward motion of the vehicle (rad)
+     * delTime is the time interval for the measurement of delAng (sec)
+     * timeStamp_ms is the time when the rotation was last measured (msec)
+     * posOffset is the XYZ body frame position of the wheel hub (m)
+     * radius is the effective rolling radius of the wheel (m)
+    */
+    void writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius);
 
     /*
      * Return data for debugging body frame odometry fusion:
@@ -476,11 +490,19 @@ private:
         const Vector3f *body_offset;// pointer to XYZ position of the optical flow sensor in body frame (m)
     };
 
-    struct bfodm_elements {
+    struct vel_odm_elements {
         Vector3f        vel;        // XYZ velocity measured in body frame (m/s)
         float           velErr;     // velocity measurement error 1-std (m/s)
         const Vector3f *body_offset;// pointer to XYZ position of the velocity sensor in body frame (m)
         Vector3f        angRate;    // angular rate estimated from odometry (rad/sec)
+        uint32_t        time_ms;    // measurement timestamp (msec)
+    };
+
+    struct wheel_odm_elements {
+        float           delAng;     // wheel rotation angle measured in body frame - positive is forward movement of vehicle (rad/s)
+        float           radius;     // wheel radius (m)
+        const Vector3f *hub_offset; // pointer to XYZ position of the wheel hub in body frame (m)
+        float           delTime;    // time interval that the measurement was accumulated over (sec)
         uint32_t        time_ms;    // measurement timestamp (msec)
     };
 
@@ -1044,10 +1066,9 @@ private:
     uint32_t terrainHgtStableSet_ms;        // system time at which terrainHgtStable was set
 
     // body frame odometry fusion
-    obs_ring_buffer_t<bfodm_elements> storedBodyOdm;    // body velocity data buffer
-    bfodm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
-    bfodm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
-    uint8_t bodyOdmStoreIndex;          // Body  frame odometry  data storage index
+    obs_ring_buffer_t<vel_odm_elements> storedBodyOdm;    // body velocity data buffer
+    vel_odm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
+    vel_odm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
     uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innovation consistency checks (msec)
     Vector3 bodyVelTestRatio;           // Innovation test ratios for body velocity XYZ measurements
     Vector3 varInnovBodyVel;            // Body velocity XYZ innovation variances (rad/sec)^2
@@ -1056,6 +1077,13 @@ private:
     uint32_t bodyOdmMeasTime_ms;        // time body velocity measurements were accepted for input to the data buffer (msec)
     bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
     bool bodyVelFusionActive;           // true when body frame velocity fusion is active
+
+    // wheel sensor fusion
+    uint32_t wheelOdmMeasTime_ms;       // time wheel odometry measurements were accepted for input to the data buffer (msec)
+    bool usingWheelSensors;             // true when the body frame velocity fusion method should take onbservation data from the wheel odometry buffer
+    obs_ring_buffer_t<wheel_odm_elements> storedWheelOdm;    // body velocity data buffer
+    wheel_odm_elements wheelOdmDataNew;       // Body frame odometry data at the current time horizon
+    wheel_odm_elements wheelOdmDataDelayed;   // Body  frame odometry data at the fusion time horizon
 
 
     // Range Beacon Sensor Fusion

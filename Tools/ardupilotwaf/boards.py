@@ -269,6 +269,12 @@ class linux(Board):
             'AP_HAL_Linux',
         ]
 
+    def build(self, bld):
+        super(linux, self).build(bld)
+        if bld.options.upload:
+            waflib.Options.commands.append('rsync')
+            # Avoid infinite recursion
+            bld.options.upload = False
 
 class minlure(linux):
     def configure_env(self, cfg, env):
@@ -317,6 +323,16 @@ class zynq(linux):
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ZYNQ',
+        )
+
+class ocpoc_zynq(linux):
+    toolchain = 'arm-linux-gnueabihf'
+
+    def configure_env(self, cfg, env):
+        super(ocpoc_zynq, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ',
         )
 
 class bbbmini(linux):
@@ -369,16 +385,6 @@ class disco(linux):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_DISCO',
         )
 
-class raspilot(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
-    def configure_env(self, cfg, env):
-        super(raspilot, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_RASPILOT',
-        )
-
 class erlebrain2(linux):
     toolchain = 'arm-linux-gnueabihf'
 
@@ -407,16 +413,6 @@ class dark(linux):
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_DARK',
-        )
-
-class urus(linux):
-    toolchain = 'arm-linux-gnueabihf'
-
-    def configure_env(self, cfg, env):
-        super(urus, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_URUS',
         )
 
 class pxfmini(linux):
@@ -489,6 +485,7 @@ class px4(Board):
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
             '-fsingle-precision-constant',
+            '-Wno-attributes',
             '-Wno-error=double-promotion',
             '-Wno-error=missing-declarations',
             '-Wno-error=float-equal',
@@ -560,6 +557,16 @@ class px4_v4(px4):
         self.romfs_exclude(['oreoled.bin'])
         self.with_uavcan = True
 
+class px4_v4pro(px4):
+    name = 'px4-v4pro'
+    def __init__(self):
+        super(px4_v4pro, self).__init__()
+        self.bootloader_name = 'px4fmuv4pro_bl.bin'
+        self.board_name = 'px4fmu-v4pro'
+        self.px4io_name = 'px4io-v2'
+        self.romfs_exclude(['oreoled.bin'])
+        self.with_uavcan = True		
+		
 class aerofc_v1(px4):
     name = 'aerofc-v1'
     def __init__(self):

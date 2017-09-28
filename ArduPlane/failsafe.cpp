@@ -82,14 +82,12 @@ void Plane::failsafe_check(void)
         // setup secondary output channels that do have
         // corresponding input channels
         SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);
-        SRV_Channels::copy_radio_in_out(SRV_Channel::k_aileron_with_input, true);
-        SRV_Channels::copy_radio_in_out(SRV_Channel::k_elevator_with_input, true);
         SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 0);
         SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 0);
 
-        servos_output();
-        
         // setup flaperons
         flaperon_update(0);
+
+        servos_output();
     }
 }

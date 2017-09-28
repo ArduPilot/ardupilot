@@ -86,6 +86,12 @@ bool DataFlash_Backend::WriteBlockCheckStartupMessages()
         return true;
     }
 
+    if (!_startup_messagewriter->finished() &&
+        !hal.scheduler->in_main_thread()) {
+        // only the main thread may write startup messages out
+        return false;
+    }
+
     // we're not writing startup messages, so this must be some random
     // caller hoping to write blocks out.  Push out log blocks - we
     // might end up clearing the buffer.....
@@ -260,12 +266,52 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
     return WritePrioritisedBlock(buffer, msg_len, is_critical);
 }
 
-bool DataFlash_Backend::WritesOK() const
+bool DataFlash_Backend::StartNewLogOK() const
+{
+    if (logging_started()) {
+        return false;
+    }
+    if (_front._log_bitmask == 0) {
+        return false;
+    }
+    if (_front.in_log_download()) {
+        return false;
+    }
+    if (!hal.scheduler->in_main_thread()) {
+        return false;
+    }
+    return true;
+}
+
+bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+{
+    if (!ShouldLog()) {
+        return false;
+    }
+    if (StartNewLogOK()) {
+        start_new_log();
+    }
+    if (!WritesOK()) {
+        return false;
+    }
+    return _WritePrioritisedBlock(pBuffer, size, is_critical);
+}
+
+bool DataFlash_Backend::ShouldLog() const
 {
     if (!_front.WritesEnabled()) {
         return false;
     }
     if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
+        return false;
+    }
+    if (!_initialised) {
+        return false;
+    }
+
+    if (!_startup_messagewriter->finished() &&
+        !hal.scheduler->in_main_thread()) {
+        // only the main thread may write startup messages out
         return false;
     }
 

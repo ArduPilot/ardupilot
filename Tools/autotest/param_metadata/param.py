@@ -47,6 +47,7 @@ known_units = {
              'ms'      : 'milliseconds'          ,
              'PWM'     : 'PWM in microseconds'   , # should be microseconds, this is NOT a SI unit, but follows https://github.com/ArduPilot/ardupilot/pull/5538#issuecomment-271943061
              'Hz'      : 'hertz'                 ,
+             'kHz'     : 'kilohertz'             ,
 # distance
              'km'      : 'kilometers'                , # metre is the SI unit name, meter is the american spelling of it
              'm'       : 'meters'                    , # metre is the SI unit name, meter is the american spelling of it

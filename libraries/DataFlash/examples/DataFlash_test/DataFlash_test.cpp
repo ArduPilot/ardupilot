@@ -5,7 +5,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
 #include <stdio.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -35,8 +35,8 @@ public:
 
 private:
 
-    AP_Int32 unused;
-    DataFlash_Class dataflash{"DF Test 0.1", unused};
+    AP_Int32 log_bitmask;
+    DataFlash_Class dataflash = DataFlash_Class::create("DF Test 0.1", log_bitmask);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 };
 
@@ -44,10 +44,12 @@ static DataFlashTest dataflashtest;
 
 void DataFlashTest::setup(void)
 {
+    hal.console->printf("Dataflash Log Test 1.0\n");
+
+    log_bitmask = (uint32_t)-1;
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
     dataflash.set_vehicle_armed(true);
-
-    hal.console->printf("Dataflash Log Test 1.0\n");
+    dataflash.Log_Write_Message("DataFlash Test");
 
     // Test
     hal.scheduler->delay(20);
@@ -55,7 +57,6 @@ void DataFlashTest::setup(void)
 
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
-    dataflash.StartUnstartedLogging();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
     hal.console->printf("After testing perform erase before using DataFlash for logging!\n");
@@ -129,12 +130,9 @@ void loop()
     dataflashtest.loop();
 }
 
-class GCS_Dataflash_test : public GCS
-{
-    void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) override {
-        ::fprintf(stderr, "GCS: %s\n", text);
-    }
+const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+    AP_GROUPEND
 };
-GCS_Dataflash_test _gcs;
+GCS_Dummy _gcs;
 
 AP_HAL_MAIN();

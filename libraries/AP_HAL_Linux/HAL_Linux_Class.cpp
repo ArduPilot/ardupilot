@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RCOutput_Tap.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
@@ -15,7 +16,6 @@
 #include "AnalogIn_ADS1115.h"
 #include "AnalogIn_IIO.h"
 #include "AnalogIn_Navio2.h"
-#include "AnalogIn_Raspilot.h"
 #include "GPIO.h"
 #include "I2CDevice.h"
 #include "OpticalFlow_Onboard.h"
@@ -25,22 +25,20 @@
 #include "RCInput_Navio2.h"
 #include "RCInput_PRU.h"
 #include "RCInput_RPI.h"
-#include "RCInput_Raspilot.h"
 #include "RCInput_SBUS.h"
+#include "RCInput_SoloLink.h"
 #include "RCInput_UART.h"
 #include "RCInput_UDP.h"
 #include "RCInput_115200.h"
 #include "RCInput_Multi.h"
-#include "RCOutput_AeroIO.h"
+#include "RCInput_ZYNQ.h"
 #include "RCOutput_AioPRU.h"
 #include "RCOutput_Bebop.h"
 #include "RCOutput_Disco.h"
 #include "RCOutput_PCA9685.h"
 #include "RCOutput_PRU.h"
-#include "RCOutput_Raspilot.h"
 #include "RCOutput_Sysfs.h"
 #include "RCOutput_ZYNQ.h"
-#include "RPIOUARTDriver.h"
 #include "SPIDevice.h"
 #include "SPIUARTDriver.h"
 #include "Scheduler.h"
@@ -53,11 +51,9 @@ using namespace Linux;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_URUS || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 static UtilRPI utilInstance;
 #else
@@ -66,18 +62,7 @@ static Util utilInstance;
 
 // 3 serial ports on Linux for now
 static UARTDriver uartADriver(true);
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-static SPIUARTDriver uartBDriver;
-#else
-static UARTDriver uartBDriver(false);
-#endif
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-static RPIOUARTDriver uartCDriver;
-#else
 static UARTDriver uartCDriver(false);
-#endif
 static UARTDriver uartDDriver(false);
 static UARTDriver uartEDriver(false);
 static UARTDriver uartFDriver(false);
@@ -86,12 +71,18 @@ static I2CDeviceManager i2c_mgr_instance;
 static SPIDeviceManager spi_mgr_instance;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+static SPIUARTDriver uartBDriver;
+#else
+static UARTDriver uartBDriver(false);
+#endif
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 static AnalogIn_ADS1115 analogIn;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-static AnalogIn_Raspilot analogIn;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
@@ -119,11 +110,9 @@ static GPIO_BBB gpioDriver;
  */
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_URUS || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 static GPIO_RPI gpioDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE || \
@@ -147,13 +136,16 @@ static RCInput_AioPRU rcinDriver;
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_URUS || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 static RCInput_RPI rcinDriver;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-static RCInput_Raspilot rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
 static RCInput_ZYNQ rcinDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ
+#if OCPOC_DEFAULT_RCIN_SBUS
+static RCInput_SBUS rcinDriver;
+#else
+static RCInput_ZYNQ rcinDriver;
+#endif
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static RCInput_UDP  rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
@@ -163,7 +155,7 @@ static RCInput_DSM rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 static RCInput_Multi rcinDriver{2, new RCInput_SBUS, new RCInput_115200("/dev/uart-sumd")};
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-static RCInput_SBUS rcinDriver;
+static RCInput_SoloLink rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
 static RCInput_Navio2 rcinDriver;
 #else
@@ -188,12 +180,8 @@ static RCOutput_PCA9685 rcoutDriver(i2c_mgr_instance.get_device(1, PCA9685_PRIMA
 static RCOutput_PCA9685 rcoutDriver(i2c_mgr_instance.get_device(1, PCA9685_QUATENARY_ADDRESS), false, 0, RPI_GPIO_4);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK
 static RCOutput_PCA9685 rcoutDriver(i2c_mgr_instance.get_device(1, PCA9685_QUINARY_ADDRESS), false, 0, RPI_GPIO_27);
-/*
- use the STM32 based RCOutput driver on Raspilot
- */
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-static RCOutput_Raspilot rcoutDriver;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ || \
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ
 static RCOutput_ZYNQ rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static RCOutput_Bebop rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_BEBOP_BLDC_I2C_BUS, HAL_RCOUT_BEBOP_BLDC_I2C_ADDR));
@@ -217,7 +205,7 @@ static RCOutput_Disco rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_DISCO_BL
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
 static RCOutput_Sysfs rcoutDriver(0, 0, 14);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-static RCOutput_AeroIO rcoutDriver;
+static ap::RCOutput_Tap rcoutDriver;
 #else
 static Empty::RCOutput rcoutDriver;
 #endif

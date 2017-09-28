@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 #define DEFAULT_GYRO_FILTER  20
-#define DEFAULT_ACCEL_FILTER 10
+#define DEFAULT_ACCEL_FILTER 20
 #define DEFAULT_STILL_THRESH 2.5f
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 #define DEFAULT_GYRO_FILTER  4
@@ -423,6 +423,12 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   0),
 
+    // @Param: NOTCH_
+    // @DisplayName: Notch filter
+    // @Description: Gyro notch filter
+    // @User: Advanced
+    AP_SUBGROUPINFO(_notch_filter, "NOTCH_",  37, AP_InertialSensor, NotchFilterVector3fParam),
+    
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -441,9 +447,9 @@ AP_InertialSensor::AP_InertialSensor() :
     _board_orientation(ROTATION_NONE),
     _primary_gyro(0),
     _primary_accel(0),
+    _log_raw_bit(-1),
     _hil_mode(false),
     _calibrating(false),
-    _log_raw_bit(-1),
     _backends_detected(false),
     _dataflash(nullptr),
     _accel_cal_requires_reboot(false),
@@ -638,6 +644,8 @@ AP_InertialSensor::init(uint16_t sample_rate)
 
     _sample_period_usec = 1000*1000UL / _sample_rate;
 
+    _notch_filter.init(sample_rate);
+    
     // establish the baseline time between samples
     _delta_time = 0;
     _next_sample_usec = 0;
@@ -726,6 +734,12 @@ AP_InertialSensor::detect_backends(void)
         _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_ROLL_180_YAW_90));
         break;
 
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
+        _fast_sampling_mask.set_default(3);
+        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_ICM20608_NAME), ROTATION_ROLL_180_YAW_90));
+        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_ROLL_180_YAW_90));
+        break;		
+
     case AP_BoardConfig::PX4_BOARD_PHMINI:
         // PHMINI uses ICM20608 on the ACCEL_MAG device and a MPU9250 on the old MPU6000 CS line
         _fast_sampling_mask.set_default(3);
@@ -765,12 +779,6 @@ AP_InertialSensor::detect_backends(void)
                  hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)));
 #elif HAL_INS_DEFAULT == HAL_INS_L3G4200D
     _add_backend(AP_InertialSensor_L3G4200D::probe(*this, hal.i2c_mgr->get_device(HAL_INS_L3G4200D_I2C_BUS, HAL_INS_L3G4200D_I2C_ADDR)));
-#elif HAL_INS_DEFAULT == HAL_INS_RASPILOT
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME)));
-    _add_backend(AP_InertialSensor_LSM9DS0::probe(*this,
-                                                  hal.spi->get_device(HAL_INS_LSM9DS0_G_NAME),
-                                                  hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME),
-                                                  ROTATION_NONE, ROTATION_YAW_90));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250_I2C
     _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU9250_I2C_BUS, HAL_INS_MPU9250_I2C_ADDR)));
 #elif HAL_INS_DEFAULT == HAL_INS_QFLIGHT
@@ -1260,6 +1268,9 @@ void AP_InertialSensor::update(void)
         }
     }
 
+    // apply notch filter to primary gyro
+    _gyro[_primary_gyro] = _notch_filter.apply(_gyro[_primary_gyro]);
+    
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;

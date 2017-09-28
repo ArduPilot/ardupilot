@@ -24,7 +24,7 @@
  # define Debug(fmt, args ...)
 #endif
 
-#include <GCS_MAVLink/GCS.h> // for send_statustext_all
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -160,7 +160,7 @@ void AP_GPS_Backend::broadcast_gps_type() const
 {
     char buffer[64];
     _detection_message(buffer, sizeof(buffer));
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, buffer);
+    gcs().send_text(MAV_SEVERITY_INFO, buffer);
 }
 
 void AP_GPS_Backend::Write_DataFlash_Log_Startup_messages() const

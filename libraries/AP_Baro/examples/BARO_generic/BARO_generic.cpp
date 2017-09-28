@@ -8,10 +8,11 @@
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
-static AP_Baro barometer;
+static AP_Baro barometer = AP_Baro::create();
 
 static uint32_t timer;
 static uint8_t counter;
+static AP_BoardConfig board_config = AP_BoardConfig::create();
 
 void setup();
 void loop();
@@ -20,7 +21,7 @@ void setup()
 {
     hal.console->printf("Barometer library test\n");
 
-    AP_BoardConfig{}.init();
+    board_config.init();
 
     hal.scheduler->delay(1000);
 

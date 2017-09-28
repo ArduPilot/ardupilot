@@ -17,8 +17,8 @@
  *  Wiki:           copter.ardupilot.org
  *  Creator:        Jason Short
  *  Lead Developer: Randy Mackay
- *  Lead Tester:    Marco Robustini 
- *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen, 
+ *  Lead Tester:    Marco Robustini
+ *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen,
                                                       Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
                                                       Jean-Louis Naudin, Mike Smith, and more
  *  Thanks to:	Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
@@ -64,6 +64,7 @@
  *  Roberto Navoni      :Library testing, Porting to VRBrain
  *  Sandro Benigno      :Camera support, MinimOSD
  *  Sandro Tognana      :PosHold flight mode
+ *  Sebastian Quilter   :SmartRTL
  *  ..and many more.
  *
  *  Code commit statistics can be found here: https://github.com/ArduPilot/ardupilot/graphs/contributors
@@ -100,6 +101,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(update_throttle_hover,100,     90),
+    SCHED_TASK(smart_rtl_save_position, 3,    100),
     SCHED_TASK(three_hz_loop,          3,     75),
     SCHED_TASK(compass_accumulate,   100,    100),
     SCHED_TASK(barometer_accumulate,  50,     90),
@@ -113,6 +115,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(update_notify,         50,     90),
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK(ekf_check,             10,     75),
+    SCHED_TASK(gpsglitch_check,       10,     50),
     SCHED_TASK(landinggear_update,    10,     75),
     SCHED_TASK(lost_vehicle_check,    10,     50),
     SCHED_TASK(gcs_check_input,      400,    180),
@@ -159,10 +162,8 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 };
 
 
-void Copter::setup() 
+void Copter::setup()
 {
-    cliSerial = hal.console;
-
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
 
@@ -192,11 +193,13 @@ void Copter::perf_update(void)
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
     if (scheduler.debug()) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
+        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
                           (unsigned)perf_info_get_num_long_running(),
                           (unsigned)perf_info_get_num_loops(),
                           (unsigned long)perf_info_get_max_time(),
-                          (unsigned long)perf_info_get_min_time());
+                          (unsigned long)perf_info_get_min_time(),
+                          (unsigned long)perf_info_get_avg_time(),
+                          (unsigned long)perf_info_get_stddev_time());
     }
     perf_info_reset();
     pmTest1 = 0;
@@ -239,8 +242,9 @@ void Copter::loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    uint32_t time_available = (timer + MAIN_LOOP_MICROS) - micros();
-    scheduler.run(time_available > MAIN_LOOP_MICROS ? 0u : time_available);
+    const uint32_t loop_us = scheduler.get_loop_period_us();
+    const uint32_t time_available = (timer + loop_us) - micros();
+    scheduler.run(time_available > loop_us ? 0u : time_available);
 }
 
 
@@ -249,7 +253,7 @@ void Copter::fast_loop()
 {
     // update INS immediately to get current gyro data populated
     ins.update();
-    
+
     // run low level rate controllers that only require IMU data
     attitude_control->rate_controller_run();
 
@@ -337,13 +341,7 @@ void Copter::update_mount()
 void Copter::update_trigger(void)
 {
 #if CAMERA == ENABLED
-    camera.trigger_pic_cleanup();
-    if (camera.check_trigger_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    }    
+    camera.update_trigger();
 #endif
 }
 
@@ -416,7 +414,7 @@ void Copter::twentyfive_hz_logging()
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     // HIL for a copter needs very fast update of the servo values
-    gcs_send_message(MSG_SERVO_OUTPUT_RAW);
+    gcs().send_message(MSG_SERVO_OUTPUT_RAW);
 #endif
 
 #if HIL_MODE == HIL_MODE_DISABLED
@@ -498,7 +496,7 @@ void Copter::one_hz_loop()
     terrain_logging();
 
     adsb.set_is_flying(!ap.land_complete);
-    
+
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
@@ -532,15 +530,9 @@ void Copter::update_GPS(void)
         // set system time if necessary
         set_system_time_from_GPS();
 
-        // checks to initialise home and take location based pictures
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-
 #if CAMERA == ENABLED
-            if (camera.update_location(current_loc, copter.ahrs) == true) {
-                do_take_picture();
-            }
+        camera.update();
 #endif
-        }
     }
 }
 

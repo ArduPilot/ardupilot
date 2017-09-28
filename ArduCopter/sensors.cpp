@@ -2,13 +2,13 @@
 
 void Copter::init_barometer(bool full_calibration)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
+    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     if (full_calibration) {
         barometer.calibrate();
     }else{
         barometer.update_calibration();
     }
-    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
+    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 
 // return barometric altitude in centimeters
@@ -106,7 +106,7 @@ void Copter::init_compass()
 
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
-        cliSerial->printf("COMPASS INIT ERROR\n");
+        hal.console->printf("COMPASS INIT ERROR\n");
         Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
         return;
     }
@@ -139,11 +139,6 @@ void Copter::compass_accumulate(void)
 void Copter::init_optflow()
 {
 #if OPTFLOW == ENABLED
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
     // initialise optical flow sensor
     optflow.init();
 #endif      // OPTFLOW == ENABLED
@@ -365,6 +360,7 @@ void Copter::update_sensor_status_flags(void)
     case POSHOLD:
     case BRAKE:
     case THROW:
+    case SMART_RTL:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
@@ -403,7 +399,7 @@ void Copter::update_sensor_status_flags(void)
     if (!g.compass_enabled || !compass.healthy() || !ahrs.use_compass()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (gps.status() == AP_GPS::NO_GPS) {
+    if (!gps.is_healthy()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_GPS;
     }
     if (!ap.rc_receiver_present || failsafe.radio) {

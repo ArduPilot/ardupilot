@@ -44,7 +44,7 @@ def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     return True
 
 
-def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
     """Fly QuadPlane in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -58,8 +58,8 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     if use_map:
         options += ' --map'
 
-    sitl = util.start_SITL(binary, model='quadplane', wipe=True, home=HOME_LOCATION, speedup=10,
-                          defaults_file=os.path.join(testdir, 'default_params/quadplane.parm'), valgrind=valgrind, gdb=gdb)
+    sitl = util.start_SITL(binary, model='quadplane', wipe=True, home=HOME_LOCATION, speedup=speedup,
+                          defaults_file=os.path.join(testdir, 'default_params/quadplane.parm'), valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
     mavproxy = util.start_MAVProxy_SITL('QuadPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)

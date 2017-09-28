@@ -43,13 +43,10 @@ extern "C" {
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-	AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_UNKNOWN),
-    _last_timestamp(0),
-    _last_pulse_time_ms(0),
-    _disable_time_ms(0),
-    _good_sample_count(0),
-    _last_sample_distance_cm(0)
+AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder::RangeFinder_State &_state, AP_Int16 &powersave_range, float &_estimated_terrain_height) :
+	AP_RangeFinder_Backend(_state),
+    _powersave_range(powersave_range),
+    estimated_terrain_height(_estimated_terrain_height)
 {
     _fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
     if (_fd == -1) {
@@ -83,7 +80,7 @@ AP_RangeFinder_PX4_PWM::~AP_RangeFinder_PX4_PWM()
 /* 
    see if the PX4 driver is available
 */
-bool AP_RangeFinder_PX4_PWM::detect(RangeFinder &_ranger, uint8_t instance)
+bool AP_RangeFinder_PX4_PWM::detect()
 {
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1) && \
     !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
@@ -109,7 +106,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
     struct pwm_input_s pwm;
     float sum_cm = 0;
     uint16_t count = 0;
-    const float scaling = ranger._scaling[state.instance];
+    const float scaling = state.scaling;
     uint32_t now = AP_HAL::millis();
 
     while (::read(_fd, &pwm, sizeof(pwm)) == sizeof(pwm)) {
@@ -120,10 +117,10 @@ void AP_RangeFinder_PX4_PWM::update(void)
         _last_pulse_time_ms = now;
 
         // setup for scaling in meters per millisecond
-        float distance_cm = pwm.pulse_width * 0.1f * scaling + ranger._offset[state.instance];
+        float _distance_cm = pwm.pulse_width * 0.1f * scaling + state.offset;
 
-        float distance_delta_cm = fabsf(distance_cm - _last_sample_distance_cm);
-        _last_sample_distance_cm = distance_cm;
+        float distance_delta_cm = fabsf(_distance_cm - _last_sample_distance_cm);
+        _last_sample_distance_cm = _distance_cm;
 
         if (distance_delta_cm > 100) {
             // varying by more than 1m in a single sample, which means
@@ -134,7 +131,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
 
         if (_good_sample_count > 1) {
             count++;
-            sum_cm += distance_cm;
+            sum_cm += _distance_cm;
             _last_timestamp = pwm.timestamp;
         } else {
             _good_sample_count++;
@@ -143,8 +140,8 @@ void AP_RangeFinder_PX4_PWM::update(void)
 
     // if we haven't received a pulse for 1 second then we may need to
     // reset the timer
-    int8_t stop_pin = ranger._stop_pin[state.instance];
-    uint16_t settle_time_ms = (uint16_t)ranger._settle_time_ms[state.instance];
+    int8_t stop_pin = state.stop_pin;
+    uint16_t settle_time_ms = (uint16_t)state.settle_time_ms;
 
     if (stop_pin != -1 && out_of_range()) {
         // we are above the power saving range. Disable the sensor

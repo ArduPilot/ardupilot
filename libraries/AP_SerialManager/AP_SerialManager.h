@@ -71,9 +71,7 @@
 
 
 class AP_SerialManager {
-
 public:
-
     enum SerialProtocol {
         SerialProtocol_None = -1,
         SerialProtocol_Console = 0, // unused
@@ -87,13 +85,18 @@ public:
         SerialProtocol_SToRM32 = 8,
         SerialProtocol_Lidar = 9,
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
-        SerialProtocol_Lidar360 = 11,                // Lightware SF40C or TeraRanger Tower
+        SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
         SerialProtocol_Beacon = 13
     };
 
-    // Constructor
-    AP_SerialManager();
+    static AP_SerialManager create() { return AP_SerialManager{}; }
+
+    constexpr AP_SerialManager(AP_SerialManager &&other) = default;
+
+    /* Do not allow copies */
+    AP_SerialManager(const AP_SerialManager &other) = delete;
+    AP_SerialManager &operator=(const AP_SerialManager&) = delete;
 
     // init_console - initialise console at default baud rate
     void init_console();
@@ -130,6 +133,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    AP_SerialManager();
 
     // array of uart info
     struct {

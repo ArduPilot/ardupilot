@@ -74,7 +74,7 @@ uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velIn
     velInnovVar.x = varInnovBodyVel[0];
     velInnovVar.y = varInnovBodyVel[1];
     velInnovVar.z = varInnovBodyVel[2];
-    return bodyOdmDataDelayed.time_ms;
+    return MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
 }
 
 // return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
@@ -283,8 +283,8 @@ bool NavEKF3_core::getPosD(float &posD) const
 {
     // The EKF always has a height estimate regardless of mode of operation
     // Correct for the IMU offset (EKF calculations are at the IMU)
-    // Correct for
-    if (frontend->_originHgtMode & (1<<2)) {
+    // Also correct for changes to the origin height
+    if ((frontend->_originHgtMode & (1<<2)) == 0) {
         // Any sensor height drift corrections relative to the WGS-84 reference are applied to the origin.
         posD = outputDataNew.position.z + posOffsetNED.z;
     } else {
@@ -381,7 +381,7 @@ bool NavEKF3_core::getOriginLLH(struct Location &loc) const
     if (validOrigin) {
         loc = EKF_origin;
         // report internally corrected reference height if enabled
-        if (frontend->_originHgtMode & (1<<2)) {
+        if ((frontend->_originHgtMode & (1<<2)) == 0) {
             loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);
         }
     }
@@ -404,6 +404,9 @@ void NavEKF3_core::getMagXYZ(Vector3f &magXYZ) const
 // return true if offsets are valid
 bool NavEKF3_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
+    if (!_ahrs->get_compass()) {
+        return false;
+    }
     // compass offsets are valid if we have finalised magnetic field initialisation, magnetic field learning is not prohibited,
     // primary compass is valid and state variances have converged
     const float maxMagVar = 5E-6f;

@@ -9,41 +9,22 @@ extern "C" typedef int (*main_fn_t)(int argc, char **);
 
 class AP_BoardConfig {
 public:
-    // constructor
-    AP_BoardConfig(void)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    };
+    static AP_BoardConfig create() { return AP_BoardConfig{}; }
+
+    constexpr AP_BoardConfig(AP_BoardConfig &&other) = default;
+
+    /* Do not allow copies */
+    AP_BoardConfig(const AP_BoardConfig &other) = delete;
+    AP_BoardConfig &operator=(const AP_BoardConfig&) = delete;
 
     void init(void);
     void init_safety(void);
 
     static const struct AP_Param::GroupInfo var_info[];
 
-#if HAL_WITH_UAVCAN
-    class CAN_var_info {
-        friend class AP_BoardConfig;
-
-    public:
-        CAN_var_info() : _uavcan(nullptr)
-        {
-            AP_Param::setup_object_defaults(this, var_info);
-        }
-        static const struct AP_Param::GroupInfo var_info[];
-
-    private:
-        AP_Int8 _can_enable;
-        AP_Int8 _can_debug;
-        AP_Int32 _can_bitrate;
-
-        AP_Int8 _uavcan_enable;
-
-        AP_UAVCAN *_uavcan;
-    };
-#endif
-
     // notify user of a fatal startup error related to available sensors. 
     static void sensor_config_error(const char *reason);
+
     // permit other libraries (in particular, GCS_MAVLink) to detect
     // that we're never going to boot properly:
     static bool in_sensor_config_error(void) { return _in_sensor_config_error; }
@@ -64,6 +45,7 @@ public:
         PX4_BOARD_PHMINI   = 5,
         PX4_BOARD_PH2SLIM  = 6,
         PX4_BOARD_AEROFC   = 13,
+        PX4_BOARD_PIXHAWK_PRO = 14,
         PX4_BOARD_AUAV21   = 20,
         PX4_BOARD_OLDDRIVERS = 100,
 #endif
@@ -87,28 +69,12 @@ public:
     }
 #endif
 
-    static int8_t get_can_enable()
-    {
-#if HAL_WITH_UAVCAN
-        return _st_can_enable;
-#else
-        return 0;
-#endif
-    }
-    static int8_t get_can_debug()
-    {
-#if HAL_WITH_UAVCAN
-        return _st_can_debug;
-#else
-        return 0;
-#endif
-    }
 private:
-    AP_Int16 vehicleSerialNumber;
+    AP_BoardConfig() {
+        AP_Param::setup_object_defaults(this, var_info);
+    };
 
-#if HAL_WITH_UAVCAN
-    CAN_var_info _var_info_can;
-#endif
+    AP_Int16 vehicleSerialNumber;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     struct {
@@ -126,11 +92,6 @@ private:
 
     static enum px4_board_type px4_configured_board;
 
-#if HAL_WITH_UAVCAN
-    static int8_t _st_can_enable;
-    static int8_t _st_can_debug;
-#endif
-
     void px4_drivers_start(void);
     void px4_setup(void);
     void px4_setup_pwm(void);
@@ -138,7 +99,6 @@ private:
     void px4_setup_safety_mask(void);
     void px4_setup_uart(void);
     void px4_setup_sbus(void);
-    void px4_setup_canbus(void);
     void px4_setup_drivers(void);
     void px4_setup_peripherals(void);
     void px4_setup_px4io(void);

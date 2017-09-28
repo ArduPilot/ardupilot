@@ -10,7 +10,7 @@ bool Sub::althold_init()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!ap.depth_sensor_present || failsafe.sensor_health) { // can't hold depth without a depth sensor, exit immediately.
-        gcs_send_text(MAV_SEVERITY_WARNING, "BAD DEPTH");
+        gcs().send_text(MAV_SEVERITY_WARNING, "BAD DEPTH");
         return false;
     }
 #endif

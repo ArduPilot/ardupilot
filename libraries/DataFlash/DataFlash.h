@@ -21,6 +21,7 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Beacon/AP_Beacon.h>
+#include <AP_Proximity/AP_Proximity.h>
 #include <stdint.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -49,22 +50,22 @@ class DataFlash_Class
 public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
-    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask) :
-        _firmware_string(firmware_string),
-        _log_bitmask(log_bitmask)
-        {
-            AP_Param::setup_object_defaults(this, var_info);
-            if (_instance != nullptr) {
-                AP_HAL::panic("DataFlash must be singleton");
-            }
-            _instance = this;
-        }
+
+    static DataFlash_Class create(const char *firmware_string, const AP_Int32 &log_bitmask) {
+        return DataFlash_Class{firmware_string, log_bitmask};
+    }
 
     // get singleton instance
     static DataFlash_Class *instance(void) {
         return _instance;
     }
-    
+
+    constexpr DataFlash_Class(DataFlash_Class &&other) = default;
+
+    /* Do not allow copies */
+    DataFlash_Class(const DataFlash_Class &other) = delete;
+    DataFlash_Class &operator=(const DataFlash_Class&) = delete;
+
     void set_mission(const AP_Mission *mission);
 
     // initialisation
@@ -72,15 +73,8 @@ public:
     bool CardInserted(void);
 
     // erase handling
-    bool NeedErase(void);
     void EraseAll();
 
-    // get a pointer to structures
-    const struct LogStructure *get_structures(uint8_t &num_types) {
-        num_types = _num_types;
-        return _structures;
-    }
-    
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
     /* Write an *important* block of data at current offset */
@@ -89,7 +83,6 @@ public:
     // high level interface
     uint16_t find_last_log() const;
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
-    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs(void);
     void LogReadProcess(uint16_t log_num,
                                 uint16_t start_page, uint16_t end_page, 
@@ -101,8 +94,7 @@ public:
 
     void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
 
-    /* poke backends to start if they're not already started */
-    void StartUnstartedLogging(void);
+    void PrepForArming();
 
     void EnableWrites(bool enable) { _writes_enabled = enable; }
     bool WritesEnabled() const { return _writes_enabled; }
@@ -123,7 +115,7 @@ public:
     void Log_Write_AHRS2(AP_AHRS &ahrs);
     void Log_Write_POS(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs);
 #endif
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
@@ -153,6 +145,8 @@ public:
     void Log_Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
     void Log_Write_AOA_SSA(AP_AHRS &ahrs);
     void Log_Write_Beacon(AP_Beacon &beacon);
+    void Log_Write_Proximity(AP_Proximity &proximity);
+    void Log_Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
 
@@ -228,6 +222,8 @@ protected:
                                bool is_critical);
 
 private:
+    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask);
+
     #define DATAFLASH_MAX_BACKENDS 2
     uint8_t _next_backend;
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
@@ -273,8 +269,8 @@ private:
     bool _armed;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
-    void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs);
+    void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs);
 #endif
 
     void backend_starting_new_log(const DataFlash_Backend *backend);
@@ -324,6 +320,8 @@ private:
     // start page of log data
     uint16_t _log_data_page;
 
+    int8_t _log_sending_chan = -1;
+
     bool should_handle_log_message();
     void handle_log_message(class GCS_MAVLINK &, mavlink_message_t *msg);
 
@@ -335,6 +333,9 @@ private:
     bool handle_log_send_data(class GCS_MAVLINK &);
 
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
+
+    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
+
     /* end support for retrieving logs via mavlink: */
 
 };

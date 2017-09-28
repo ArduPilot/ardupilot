@@ -1,5 +1,53 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5.3 21-Sep-2017 / Copter 3.5.3-rc1 12-Sep-2017
+Changes from 3.5.2
+1) Guided mode support yaw and yaw-rate fields from set-position-target message
+2) Optical Flow startup retries 10 times 
+3) Bug fixes:
+    a) Septentrio RTK GPS driver robustness improvements for long messages
+    b) dataflash not-logging checks if not initialised
+    c) fix reporting of relative-position-NE-to-home (most users will not notice this difference) 
+------------------------------------------------------------------
+Copter 3.5.2 14-Aug-2017 / Copter 3.5.2-rc1 05-Aug-2017
+Changes from 3.5.1
+1) GPS glitch arming check and notification (flashing blue-yellow LED, message on HUD)
+2) Arming check for minimum voltage (see ARMING_VOLT_MIN parameter)
+3) Landing Gear startup behaviour now configurable (see LGR_STARTUP parameter)
+4) Solo LED fix when using "boat" mode
+5) Intel Aero RTF gets one more I2C bus
+6) Bug fixes:
+    a) resolve barometer floating point exception when ground pressure set to be negative
+    b) resolve freeze if SERVOx_FUNCTION is set above 80   
+------------------------------------------------------------------
+Copter 3.5.1 31-July-2017 / 3.5.1-rc1 24-July-2017
+Changes from 3.5.0
+1) fix to RC input corruption when using Spektrum DSMx with Pixracer 
+------------------------------------------------------------------
+Copter 3.5.0 17-July-2017 / 3.5.0-rc11 12-July-2017
+Changes from 3.5-rc10
+1) GPS fixes:
+    a) Re-enable auto detection of NMEA GPS (revert change from -rc9)
+    b) Fix SBF race condition on start (this should resolve SBF GPS detection issues for some users)
+2) SF40c driver fix to ignore zero distances
+------------------------------------------------------------------
+Copter 3.5.0-rc10 08-July-2017
+Changes from 3.5-rc9
+1) Intel Aero build and default parameter updates
+2) EKF final yaw reset lowered from 5m to 2.5m to speed up bad compass detection after takeoff
+------------------------------------------------------------------
+Copter 3.5.0-rc9 03-July-2017
+Changes from 3.5-rc8
+1) AutoTune improvement when using position hold (twitches in body-frame instead of earth-frame)
+2) GPS fixes:
+    a) RTK GPS fix when large RTK correction messages are sent
+    b) auto-detection for NMEA disabled (NMEA users must explicitly set GPS_TYPE to 5)
+3) EKF bug fixes:
+    a) fix bug preventing use of optical flow for terrain height estimation
+    b) fix bug affecting accuracy of optical flow estimated height during climb/descent
+    c) fix range beacon fusion bugs
+4) return accel filter (INS_ACCEL_FILT) to 20hz (some users were seeing oscillations at 10hz)
+------------------------------------------------------------------
 Copter 3.5.0-rc8 15-Jun-2017
 Changes from 3.5-rc7
 1) Solo on Master:

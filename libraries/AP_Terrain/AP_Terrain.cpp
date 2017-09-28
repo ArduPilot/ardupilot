@@ -393,7 +393,7 @@ bool AP_Terrain::allocate(void)
     cache = (struct grid_cache *)calloc(TERRAIN_GRID_BLOCK_CACHE_SIZE, sizeof(cache[0]));
     if (cache == nullptr) {
         enable.set(0);
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Terrain: Allocation failed");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Terrain: Allocation failed");
         return false;
     }
     cache_size = TERRAIN_GRID_BLOCK_CACHE_SIZE;

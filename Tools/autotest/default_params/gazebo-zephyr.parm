@@ -1,4 +1,7 @@
-ELEVON_OUTPUT 4
+SERVO1_FUNCTION = 77
+SERVO2_FUNCTION = 78
+SERVO1_REVERSED = 1
+SERVO2_REVERSED = 1
 # we need small INS_ACC offsets so INS is recognised as being calibrated
 INS_ACCOFFS_X   0.001
 INS_ACCOFFS_Y   0.001

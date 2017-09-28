@@ -8,13 +8,6 @@
 // althold_init - initialise althold controller
 bool Copter::althold_init(bool ignore_checks)
 {
-#if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter Alt Hold if the Rotor Runup is not complete
-    if (!ignore_checks && !motors->rotor_runup_complete()){
-        return false;
-    }
-#endif
-
     // initialize vertical speeds and leash lengths
     pos_control->set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control->set_accel_z(g.pilot_accel_z);

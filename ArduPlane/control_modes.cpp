@@ -74,17 +74,17 @@ void Plane::read_control_switch()
             if (hal.util->get_soft_armed() || (last_mixer_crc != -1)) {
                 px4io_override_enabled = true;
                 // disable output channels to force PX4IO override
-                gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override enabled");
+                gcs().send_text(MAV_SEVERITY_WARNING, "PX4IO override enabled");
             } else {
                 // we'll let the one second loop reconfigure the mixer. The
                 // PX4IO code sometimes rejects a mixer, probably due to it
                 // being busy in some way?
-                gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override enable failed");
+                gcs().send_text(MAV_SEVERITY_WARNING, "PX4IO override enable failed");
             }
         } else if (!override_requested && px4io_override_enabled) {
             px4io_override_enabled = false;
             SRV_Channels::enable_aux_servos();
-            gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override disabled");
+            gcs().send_text(MAV_SEVERITY_WARNING, "PX4IO override disabled");
         }
         if (px4io_override_enabled && 
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED &&

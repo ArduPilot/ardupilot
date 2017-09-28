@@ -20,7 +20,6 @@ private:
     uint8_t  instance;
     Vector3f sum;
     uint32_t count;
-    uint64_t last_timestamp;
 };
 
 

@@ -23,6 +23,7 @@
 #include <AP_Math/AP_Math.h>
 #include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
+#include <Filter/NotchFilter.h>
 
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
@@ -45,7 +46,13 @@ class AP_InertialSensor : AP_AccelCal_Client
     friend class AP_InertialSensor_Backend;
 
 public:
-    AP_InertialSensor();
+    static AP_InertialSensor create() { return AP_InertialSensor{}; }
+
+    constexpr AP_InertialSensor(AP_InertialSensor &&other) = default;
+
+    /* Do not allow copies */
+    AP_InertialSensor(const AP_InertialSensor &other) = delete;
+    AP_InertialSensor &operator=(const AP_InertialSensor&) = delete;
 
     static AP_InertialSensor *get_instance();
 
@@ -136,7 +143,7 @@ public:
     // get observed sensor rates, including any internal sampling multiplier
     uint16_t get_gyro_rate_hz(uint8_t instance) const { return uint16_t(_gyro_raw_sample_rates[instance] * _gyro_over_sampling[instance]); }
     uint16_t get_accel_rate_hz(uint8_t instance) const { return uint16_t(_accel_raw_sample_rates[instance] * _accel_over_sampling[instance]); }
-    
+
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
     const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(_primary_accel); }
@@ -260,8 +267,9 @@ public:
 
     // return time in microseconds of last update() call
     uint32_t get_last_update_usec(void) const { return _last_update_usec; }
-    
+
 private:
+    AP_InertialSensor();
 
     // load backend drivers
     bool _add_backend(AP_InertialSensor_Backend *backend);
@@ -311,6 +319,9 @@ private:
     Vector3f _gyro_filtered[INS_MAX_INSTANCES];
     bool _new_accel_data[INS_MAX_INSTANCES];
     bool _new_gyro_data[INS_MAX_INSTANCES];
+
+    // optional notch filter on gyro
+    NotchFilterVector3fParam _notch_filter;
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];

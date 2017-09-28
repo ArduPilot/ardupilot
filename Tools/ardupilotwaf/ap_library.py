@@ -167,6 +167,7 @@ class ap_library_check_headers(Task.Task):
     def scan(self):
         r = []
         self.headers = []
+
         srcnode_path = self.generator.bld.srcnode.abspath()
 
         # force dependency scan, if necessary
@@ -196,6 +197,9 @@ class ap_library_check_headers(Task.Task):
 @after_method('process_source')
 def ap_library_register_for_check(self):
     if not hasattr(self, 'compiled_tasks'):
+        return
+
+    if self.env.DISABLE_HEADER_CHECKS:
         return
 
     for t in self.compiled_tasks:

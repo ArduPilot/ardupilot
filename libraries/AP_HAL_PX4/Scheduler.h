@@ -58,7 +58,7 @@ public:
     void     resume_timer_procs();
     void     reboot(bool hold_in_bootloader);
 
-    bool     in_timerprocess();
+    bool     in_main_thread() const override;
     void     system_initialized();
     void     hal_initialized() { _hal_initialized = true; }
 
@@ -89,6 +89,11 @@ private:
     pthread_t _storage_thread_ctx;
     pthread_t _uart_thread_ctx;
     pthread_t _uavcan_thread_ctx;
+
+    struct _uavcan_thread_arg {
+        PX4Scheduler *sched;
+        uint8_t uavcan_number;
+    };
 
     static void *_timer_thread(void *arg);
     static void *_io_thread(void *arg);

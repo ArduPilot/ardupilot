@@ -8,14 +8,20 @@ class AP_RangeFinder_LightWareSerial : public AP_RangeFinder_Backend
 
 public:
     // constructor
-    AP_RangeFinder_LightWareSerial(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state,
+    AP_RangeFinder_LightWareSerial(RangeFinder::RangeFinder_State &_state,
                                    AP_SerialManager &serial_manager);
 
     // static detection function
-    static bool detect(RangeFinder &ranger, uint8_t instance, AP_SerialManager &serial_manager);
+    static bool detect(AP_SerialManager &serial_manager);
 
     // update state
     void update(void);
+
+protected:
+
+    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_LASER;
+    }
 
 private:
     // get a reading

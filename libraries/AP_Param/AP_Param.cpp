@@ -165,6 +165,11 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             // great idx 0 as 63 for duplicates. See group_id()
             idx = 63;
         }
+        if (used_mask & (1ULL<<idx)) {
+            Debug("Duplicate group idx %u for %s", idx, group_info[i].name);
+            return false;
+        }
+        used_mask |= (1ULL<<idx);
         if (type == AP_PARAM_GROUP) {
             // a nested group
             if (group_shift + _group_level_shift >= _group_bits) {
@@ -180,11 +185,6 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             }
             continue;
         }
-        if (used_mask & (1ULL<<idx)) {
-            Debug("Duplicate group idx %u for %s", idx, group_info[i].name);
-            return false;
-        }
-        used_mask |= (1ULL<<idx);
         uint8_t size = type_size((enum ap_var_type)type);
         if (size == 0) {
             Debug("invalid type in %s", group_info[i].name);
@@ -1572,56 +1572,6 @@ float AP_Param::cast_to_float(enum ap_var_type type) const
         return ((AP_Float *)this)->cast_to_float();
     default:
         return NAN;
-    }
-}
-
-
-// print the value of all variables
-void AP_Param::show(const AP_Param *ap, const char *s,
-                    enum ap_var_type type, AP_HAL::BetterStream *port)
-{
-    switch (type) {
-    case AP_PARAM_INT8:
-        port->printf("%s: %d\n", s, (int)((AP_Int8 *)ap)->get());
-        break;
-    case AP_PARAM_INT16:
-        port->printf("%s: %d\n", s, (int)((AP_Int16 *)ap)->get());
-        break;
-    case AP_PARAM_INT32:
-        port->printf("%s: %ld\n", s, (long)((AP_Int32 *)ap)->get());
-        break;
-    case AP_PARAM_FLOAT:
-        port->printf("%s: %f\n", s, (double)((AP_Float *)ap)->get());
-        break;
-    default:
-        break;
-    }
-}
-
-// print the value of all variables
-void AP_Param::show(const AP_Param *ap, const ParamToken &token,
-                    enum ap_var_type type, AP_HAL::BetterStream *port)
-{
-    char s[AP_MAX_NAME_SIZE+1];
-    ap->copy_name_token(token, s, sizeof(s), true);
-    s[AP_MAX_NAME_SIZE] = 0;
-    show(ap, s, type, port);
-}
-
-// print the value of all variables
-void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
-{
-    ParamToken token;
-    AP_Param *ap;
-    enum ap_var_type type;
-
-    for (ap=AP_Param::first(&token, &type);
-         ap;
-         ap=AP_Param::next_scalar(&token, &type)) {
-        if (showKeyValues) {
-            port->printf("Key %i: Index %i: GroupElement %i  :  ", token.key, token.idx, token.group_element);
-        }
-        show(ap, token, type, port);
     }
 }
 

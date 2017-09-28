@@ -58,7 +58,7 @@ void Sub::update_turn_counter()
     uint32_t tnow = AP_HAL::millis();
     if (quarter_turn_count/4 != last_turn_count_printed  && tnow > last_turn_announce_ms + 2000) {
         last_turn_announce_ms = tnow;
-        gcs_send_text_fmt(MAV_SEVERITY_INFO,"Tether is turned %i turns %s",int32_t(abs(quarter_turn_count)/4),(quarter_turn_count>0)?"to the right":"to the left");
+        gcs().send_text(MAV_SEVERITY_INFO,"Tether is turned %i turns %s",int32_t(abs(quarter_turn_count)/4),(quarter_turn_count>0)?"to the right":"to the left");
         last_turn_count_printed = quarter_turn_count/4;
     }
     last_turn_state = turn_state;

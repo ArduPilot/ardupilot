@@ -27,7 +27,6 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Rally/AP_Rally.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 

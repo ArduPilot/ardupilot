@@ -26,8 +26,8 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_RangeFinder_Backend(_ranger, instance, _state, MAV_DISTANCE_SENSOR_LASER)
+AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+    : AP_RangeFinder_Backend(_state)
     , _dev(std::move(dev)) {}
 
 /*
@@ -35,10 +35,10 @@ AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder &_ranger, u
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     AP_RangeFinder_LightWareI2C *sensor
-        = new AP_RangeFinder_LightWareI2C(_ranger, instance, _state, std::move(dev));
+        = new AP_RangeFinder_LightWareI2C(_state, std::move(dev));
 
     if (!sensor) {
         delete sensor;
@@ -72,7 +72,7 @@ bool AP_RangeFinder_LightWareI2C::get_reading(uint16_t &reading_cm)
 {
     be16_t val;
 
-    if (ranger._address[state.instance] == 0) {
+    if (state.address == 0) {
         return false;
     }
 
