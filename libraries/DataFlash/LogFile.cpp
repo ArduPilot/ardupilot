@@ -366,56 +366,37 @@ void DataFlash_Class::Log_Write_RSSI(AP_RSSI &rssi)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write a BARO packet
-void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
+void DataFlash_Class::Log_Write_Baro_instance(AP_Baro &baro, uint64_t time_us, uint8_t baro_instance, enum LogMessages type)
 {
-    if (time_us == 0) {
-        time_us = AP_HAL::micros64();
-    }
     float climbrate = baro.get_climb_rate();
     float drift_offset = baro.get_baro_drift_offset();
     float ground_temp = baro.get_ground_temperature();
     struct log_BARO pkt = {
         LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
         time_us       : time_us,
-        altitude      : baro.get_altitude(0),
-        pressure      : baro.get_pressure(0),
-        temperature   : (int16_t)(baro.get_temperature(0) * 100 + 0.5f),
+        altitude      : baro.get_altitude(baro_instance),
+        pressure      : baro.get_pressure(baro_instance),
+        temperature   : (int16_t)(baro.get_temperature(baro_instance) * 100 + 0.5f),
         climbrate     : climbrate,
-        sample_time_ms: baro.get_last_update(0),
+        sample_time_ms: baro.get_last_update(baro_instance),
         drift_offset  : drift_offset,
         ground_temp   : ground_temp,
     };
     WriteBlock(&pkt, sizeof(pkt));
+}
 
-    if (baro.num_instances() > 1 && baro.healthy(1)) {
-        struct log_BARO pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_BAR2_MSG),
-            time_us       : time_us,
-            altitude      : baro.get_altitude(1),
-            pressure      : baro.get_pressure(1),
-            temperature   : (int16_t)(baro.get_temperature(1) * 100 + 0.5f),
-            climbrate     : climbrate,
-            sample_time_ms: baro.get_last_update(1),
-            drift_offset  : drift_offset,
-            ground_temp   : ground_temp,
-        };
-        WriteBlock(&pkt2, sizeof(pkt2));
+// Write a BARO packet
+void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
+{
+    if (time_us == 0) {
+        time_us = AP_HAL::micros64();
     }
-
+    Log_Write_Baro_instance(baro, time_us, 0, LOG_BARO_MSG);
+    if (baro.num_instances() > 1 && baro.healthy(1)) {
+        Log_Write_Baro_instance(baro, time_us, 1, LOG_BAR2_MSG);
+    }
     if (baro.num_instances() > 2 && baro.healthy(2)) {
-        struct log_BARO pkt3 = {
-            LOG_PACKET_HEADER_INIT(LOG_BAR3_MSG),
-            time_us       : time_us,
-            altitude      : baro.get_altitude(2),
-            pressure      : baro.get_pressure(2),
-            temperature   : (int16_t)(baro.get_temperature(2) * 100 + 0.5f),
-            climbrate     : climbrate,
-            sample_time_ms: baro.get_last_update(2),
-            drift_offset  : drift_offset,
-            ground_temp   : ground_temp,
-        };
-        WriteBlock(&pkt3, sizeof(pkt3));
+        Log_Write_Baro_instance(baro, time_us, 2, LOG_BAR3_MSG);
     }
 }
 
