@@ -273,6 +273,8 @@ private:
     void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs);
 #endif
 
+    void Log_Write_Baro_instance(AP_Baro &baro, uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
+
     void backend_starting_new_log(const DataFlash_Backend *backend);
 
 private:
