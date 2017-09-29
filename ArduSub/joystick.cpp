@@ -84,20 +84,21 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     buttons_prev = buttons;
 
-    // Set channels to override
-    if (!roll_pitch_flag) {
-        channels[0] = 1500 + pitchTrim; // pitch
-        channels[1] = 1500 + rollTrim;  // roll
-    } else {
-        // adjust roll and pitch with joystick input instead of forward and lateral
-        channels[0] = constrain_int16((x+pitchTrim)*rpyScale+rpyCenter,1100,1900);
-        channels[1] = constrain_int16((y+rollTrim)*rpyScale+rpyCenter,1100,1900);
+    // attitude mode:
+    if (roll_pitch_flag == 1) {
+    // adjust roll/pitch trim with joystick input instead of forward/lateral
+        pitchTrim = -x * rpyScale;
+        rollTrim  =  y * rpyScale;
     }
+
+    channels[0] = constrain_int16(pitchTrim + rpyCenter,1100,1900); // pitch
+    channels[1] = constrain_int16(rollTrim  + rpyCenter,1100,1900); // roll
 
     channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900); // throttle
     channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                 // yaw
 
-    if (!roll_pitch_flag) {
+    // maneuver mode:
+    if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
         channels[4] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900); // forward for ROV
         channels[5] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900); // lateral for ROV
