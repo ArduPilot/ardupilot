@@ -287,6 +287,10 @@ private:
                                     uint8_t battery_instance,
                                     enum LogMessages type,
                                     enum LogMessages celltype);
+    void Log_Write_IMUDT_instance(const AP_InertialSensor &ins,
+                                  uint64_t time_us,
+                                  uint8_t imu_instance,
+                                  enum LogMessages type);
 
     void backend_starting_new_log(const DataFlash_Backend *backend);
 
