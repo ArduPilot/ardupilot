@@ -285,7 +285,8 @@ private:
     void Log_Write_Current_instance(const AP_BattMonitor &battery,
                                     uint64_t time_us,
                                     uint8_t battery_instance,
-                                    enum LogMessages type);
+                                    enum LogMessages type,
+                                    enum LogMessages celltype);
 
     void backend_starting_new_log(const DataFlash_Backend *backend);
 
