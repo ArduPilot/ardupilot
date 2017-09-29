@@ -1529,7 +1529,8 @@ void DataFlash_Class::Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f 
 void DataFlash_Class::Log_Write_Current_instance(const AP_BattMonitor &battery,
                                                  const uint64_t time_us,
                                                  const uint8_t battery_instance,
-                                                 const enum LogMessages type)
+                                                 const enum LogMessages type,
+                                                 const enum LogMessages celltype)
 {
     float temp;
     bool has_temp = battery.get_temperature(temp, battery_instance);
@@ -1549,7 +1550,7 @@ void DataFlash_Class::Log_Write_Current_instance(const AP_BattMonitor &battery,
     if (battery.has_cell_voltages(battery_instance)) {
         const AP_BattMonitor::cells &cells = battery.get_cell_voltages(battery_instance);
         struct log_Current_Cells cell_pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_CURRENT_CELLS_MSG),
+            LOG_PACKET_HEADER_INIT(celltype),
             time_us             : time_us,
             voltage             : battery.voltage(battery_instance)
         };
@@ -1569,11 +1570,19 @@ void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery)
 {
     const uint64_t time_us = AP_HAL::micros64();
     if (battery.num_instances() >= 1) {
-        Log_Write_Current_instance(battery, time_us, 0, LOG_CURRENT_MSG);
+        Log_Write_Current_instance(battery,
+                                   time_us,
+                                   0,
+                                   LOG_CURRENT_MSG,
+                                   LOG_CURRENT_CELLS_MSG);
     }
 
     if (battery.num_instances() >= 2) {
-        Log_Write_Current_instance(battery, time_us, 1, LOG_CURRENT2_MSG);
+        Log_Write_Current_instance(battery,
+                                   time_us,
+                                   1,
+                                   LOG_CURRENT2_MSG,
+                                   LOG_CURRENT_CELLS2_MSG);
     }
 }
 
