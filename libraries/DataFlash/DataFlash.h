@@ -278,6 +278,10 @@ private:
                                 uint64_t time_us,
                                 uint8_t imu_instance,
                                 enum LogMessages type);
+    void Log_Write_Compass_instance(const Compass &compass,
+                                    uint64_t time_us,
+                                    uint8_t mag_instance,
+                                    enum LogMessages type);
 
     void backend_starting_new_log(const DataFlash_Backend *backend);
 
