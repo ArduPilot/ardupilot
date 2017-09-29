@@ -274,6 +274,10 @@ private:
 #endif
 
     void Log_Write_Baro_instance(AP_Baro &baro, uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
+    void Log_Write_IMU_instance(const AP_InertialSensor &ins,
+                                uint64_t time_us,
+                                uint8_t imu_instance,
+                                enum LogMessages type);
 
     void backend_starting_new_log(const DataFlash_Backend *backend);
 
