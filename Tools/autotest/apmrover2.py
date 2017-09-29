@@ -81,6 +81,7 @@ def drive_mission(mavproxy, mav, filename):
     progress("Mission OK")
     return True
 
+
 def do_get_banner(mavproxy, mav):
     mavproxy.send("long DO_SEND_BANNER 1\n")
     start = time.time()
@@ -152,7 +153,7 @@ def drive_brake(mavproxy, mav):
     set_parameter(mavproxy, 'CRUISE_SPEED', old_cruise_speed)
 
     delta = distance_without_brakes - distance_with_brakes
-    if delta < distance_without_brakes*0.05: # 5% isn't asking for much
+    if delta < distance_without_brakes * 0.05:  # 5% isn't asking for much
         progress("Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)" % (distance_with_brakes, distance_without_brakes, delta))
         return False
     else:
@@ -160,7 +161,9 @@ def drive_brake(mavproxy, mav):
 
     return True
 
+
 vinfo = vehicleinfo.VehicleInfo()
+
 
 def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None, gdbserver=False, speedup=10):
     """Drive APMrover2 in SITL.

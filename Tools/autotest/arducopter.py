@@ -456,12 +456,12 @@ def fly_fence_test(mavproxy, mav, timeout=180):
             mavproxy.send('switch 6\n')  # stabilize mode
             wait_mode(mav, 'STABILIZE')
             set_rc(mavproxy, mav, 3, 1000)
-            mavproxy.send('arm uncheck all\n') # remove if we ever clear battery failsafe flag on disarm
+            mavproxy.send('arm uncheck all\n')  # remove if we ever clear battery failsafe flag on disarm
             if not arm_vehicle(mavproxy, mav):
                 progress("Failed to re-arm")
-                mavproxy.send('arm check all\n') # remove if we ever clear battery failsafe flag on disarm
+                mavproxy.send('arm check all\n')  # remove if we ever clear battery failsafe flag on disarm
                 return False
-            mavproxy.send('arm check all\n') # remove if we ever clear battery failsafe flag on disarm
+            mavproxy.send('arm check all\n')  # remove if we ever clear battery failsafe flag on disarm
             progress("Reached home OK")
             return True
 

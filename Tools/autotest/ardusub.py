@@ -80,6 +80,7 @@ def dive_mission(mavproxy, mav, filename):
     progress("Mission OK")
     return True
 
+
 def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
     """Dive ArduSub in SITL.
 

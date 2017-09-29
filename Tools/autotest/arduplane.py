@@ -21,6 +21,7 @@ WIND = "0,180,0.2"  # speed,direction,variance
 
 homeloc = None
 
+
 def takeoff(mavproxy, mav):
     """Takeoff get to 30m altitude."""
 
@@ -538,7 +539,7 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
             progress("Failed CIRCLE")
             failed = True
             fail_list.append("LOITER")
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, "ap1.txt"), height_accuracy = 10,
+        if not fly_mission(mavproxy, mav, os.path.join(testdir, "ap1.txt"), height_accuracy=10,
                            target_altitude=homeloc.alt+100):
             progress("Failed mission")
             failed = True
