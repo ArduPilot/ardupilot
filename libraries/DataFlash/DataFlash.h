@@ -282,6 +282,10 @@ private:
                                     uint64_t time_us,
                                     uint8_t mag_instance,
                                     enum LogMessages type);
+    void Log_Write_Current_instance(const AP_BattMonitor &battery,
+                                    uint64_t time_us,
+                                    uint8_t battery_instance,
+                                    enum LogMessages type);
 
     void backend_starting_new_log(const DataFlash_Backend *backend);
 
