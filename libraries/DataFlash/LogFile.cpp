@@ -1594,17 +1594,13 @@ void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery)
     }
 }
 
-// Write a Compass packet
-void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint64_t time_us)
+void DataFlash_Class::Log_Write_Compass_instance(const Compass &compass, const uint64_t time_us, const uint8_t mag_instance, const enum LogMessages type)
 {
-    if (time_us == 0) {
-        time_us = AP_HAL::micros64();
-    }
-    const Vector3f &mag_field = compass.get_field(0);
-    const Vector3f &mag_offsets = compass.get_offsets(0);
-    const Vector3f &mag_motor_offsets = compass.get_motor_offsets(0);
+    const Vector3f &mag_field = compass.get_field(mag_instance);
+    const Vector3f &mag_offsets = compass.get_offsets(mag_instance);
+    const Vector3f &mag_motor_offsets = compass.get_motor_offsets(mag_instance);
     struct log_Compass pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
+        LOG_PACKET_HEADER_INIT(type),
         time_us         : time_us,
         mag_x           : (int16_t)mag_field.x,
         mag_y           : (int16_t)mag_field.y,
@@ -1615,53 +1611,26 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint64_t time_us
         motor_offset_x  : (int16_t)mag_motor_offsets.x,
         motor_offset_y  : (int16_t)mag_motor_offsets.y,
         motor_offset_z  : (int16_t)mag_motor_offsets.z,
-        health          : (uint8_t)compass.healthy(0),
-        SUS             : compass.last_update_usec(0)
+        health          : (uint8_t)compass.healthy(mag_instance),
+        SUS             : compass.last_update_usec(mag_instance)
     };
     WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write a Compass packet
+void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint64_t time_us)
+{
+    if (time_us == 0) {
+        time_us = AP_HAL::micros64();
+    }
+    Log_Write_Compass_instance(compass, time_us, 0, LOG_COMPASS_MSG);
 
     if (compass.get_count() > 1) {
-        const Vector3f &mag_field2 = compass.get_field(1);
-        const Vector3f &mag_offsets2 = compass.get_offsets(1);
-        const Vector3f &mag_motor_offsets2 = compass.get_motor_offsets(1);
-        struct log_Compass pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_COMPASS2_MSG),
-            time_us         : time_us,
-            mag_x           : (int16_t)mag_field2.x,
-            mag_y           : (int16_t)mag_field2.y,
-            mag_z           : (int16_t)mag_field2.z,
-            offset_x        : (int16_t)mag_offsets2.x,
-            offset_y        : (int16_t)mag_offsets2.y,
-            offset_z        : (int16_t)mag_offsets2.z,
-            motor_offset_x  : (int16_t)mag_motor_offsets2.x,
-            motor_offset_y  : (int16_t)mag_motor_offsets2.y,
-            motor_offset_z  : (int16_t)mag_motor_offsets2.z,
-            health          : (uint8_t)compass.healthy(1),
-            SUS             : compass.last_update_usec(1)
-        };
-        WriteBlock(&pkt2, sizeof(pkt2));
+        Log_Write_Compass_instance(compass, time_us, 1, LOG_COMPASS2_MSG);
     }
 
     if (compass.get_count() > 2) {
-        const Vector3f &mag_field3 = compass.get_field(2);
-        const Vector3f &mag_offsets3 = compass.get_offsets(2);
-        const Vector3f &mag_motor_offsets3 = compass.get_motor_offsets(2);
-        struct log_Compass pkt3 = {
-            LOG_PACKET_HEADER_INIT(LOG_COMPASS3_MSG),
-            time_us         : time_us,
-            mag_x           : (int16_t)mag_field3.x,
-            mag_y           : (int16_t)mag_field3.y,
-            mag_z           : (int16_t)mag_field3.z,
-            offset_x        : (int16_t)mag_offsets3.x,
-            offset_y        : (int16_t)mag_offsets3.y,
-            offset_z        : (int16_t)mag_offsets3.z,
-            motor_offset_x  : (int16_t)mag_motor_offsets3.x,
-            motor_offset_y  : (int16_t)mag_motor_offsets3.y,
-            motor_offset_z  : (int16_t)mag_motor_offsets3.z,
-            health          : (uint8_t)compass.healthy(2),
-            SUS             : compass.last_update_usec(2)
-        };
-        WriteBlock(&pkt3, sizeof(pkt3));
+        Log_Write_Compass_instance(compass, time_us, 2, LOG_COMPASS3_MSG);
     }
 }
 
