@@ -10,29 +10,10 @@ from pysim import util
 # messages. This keeps the output to stdout flowing
 expect_list = []
 
+
 class AutoTestTimeoutException(Exception):
     pass
 
-def wait_ready_to_arm(mav, timeout=None):
-    # wait for EKF checks to pass
-    return wait_ekf_happy(mav, timeout=timeout)
-
-def wait_ekf_happy(mav, timeout=30):
-    """Wait for EKF to be happy"""
-
-    tstart = get_sim_time(mav)
-    required_value = 831
-    progress("Waiting for EKF value %u" % (required_value))
-    while timeout is None or get_sim_time(mav) < tstart + timeout:
-        m = mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
-        current = m.flags
-        if (tstart - get_sim_time(mav)) % 5 == 0:
-            progress("Wait EKF.flags: required:%u current:%u" % (required_value, current))
-        if current == required_value:
-            progress("EKF Flags OK")
-            return
-    progress("Failed to get EKF.flags=%u" % required_value)
-    raise AutoTestTimeoutException()
 
 #################################################
 # GENERAL UTILITIES
@@ -202,7 +183,7 @@ def get_parameter(mavproxy, name):
 
 
 #################################################
-# NAVIGATION UTILITIES
+# UTILITIES
 #################################################
 def get_distance(loc1, loc2):
     """Get ground distance between two locations."""
@@ -219,6 +200,31 @@ def get_bearing(loc1, loc2):
     if bearing < 0:
         bearing += 360.00
     return bearing
+
+
+def do_get_autopilot_capabilities(mavproxy, mav):
+    mavproxy.send("long REQUEST_AUTOPILOT_CAPABILITIES 1\n")
+    m = mav.recv_match(type='AUTOPILOT_VERSION', blocking=True, timeout=10)
+    if m is None:
+        progress("AUTOPILOT_VERSION not received")
+        return False
+    progress("AUTOPILOT_VERSION received")
+    return True
+
+
+def do_set_mode_via_command_long(mavproxy, mav):
+    base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
+    custom_mode = 4  # hold
+    start = time.time()
+    while time.time() - start < 5:
+        mavproxy.send("long DO_SET_MODE %u %u\n" % (base_mode,custom_mode))
+        m = mav.recv_match(type='HEARTBEAT', blocking=True, timeout=10)
+        if m is None:
+            return False
+        if m.custom_mode == custom_mode:
+            return True
+        time.sleep(0.1)
+    return False
 
 
 #################################################
@@ -400,3 +406,26 @@ def wait_mode(mav, mode, timeout=None):
     mav.recv_match(condition='MAV.flightmode.upper()=="%s".upper()' % mode, timeout=timeout, blocking=True)
     progress("Got mode %s" % mode)
     return mav.flightmode
+
+
+def wait_ready_to_arm(mav, timeout=None):
+    # wait for EKF checks to pass
+    return wait_ekf_happy(mav, timeout=timeout)
+
+
+def wait_ekf_happy(mav, timeout=30):
+    """Wait for EKF to be happy"""
+
+    tstart = get_sim_time(mav)
+    required_value = 831
+    progress("Waiting for EKF value %u" % (required_value))
+    while timeout is None or get_sim_time(mav) < tstart + timeout:
+        m = mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
+        current = m.flags
+        if (tstart - get_sim_time(mav)) % 5 == 0:
+            progress("Wait EKF.flags: required:%u current:%u" % (required_value, current))
+        if current == required_value:
+            progress("EKF Flags OK")
+            return
+    progress("Failed to get EKF.flags=%u" % required_value)
+    raise AutoTestTimeoutException()

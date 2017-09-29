@@ -96,28 +96,6 @@ def do_get_banner(mavproxy, mav):
 
     return False
 
-def do_get_autopilot_capabilities(mavproxy, mav):
-    mavproxy.send("long REQUEST_AUTOPILOT_CAPABILITIES 1\n")
-    m = mav.recv_match(type='AUTOPILOT_VERSION', blocking=True, timeout=10)
-    if m is None:
-        progress("AUTOPILOT_VERSION not received")
-        return False
-    progress("AUTOPILOT_VERSION received")
-    return True;
-
-def do_set_mode_via_command_long(mavproxy, mav):
-    base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
-    custom_mode = 4 # hold
-    start = time.time()
-    while time.time() - start < 5:
-        mavproxy.send("long DO_SET_MODE %u %u\n" % (base_mode,custom_mode))
-        m = mav.recv_match(type='HEARTBEAT', blocking=True, timeout=10)
-        if m is None:
-            return False
-        if m.custom_mode == custom_mode:
-            return True
-        time.sleep(0.1)
-    return False
 
 def drive_brake_get_stopping_distance(mavproxy, mav, speed):
     # measure our stopping distance:
@@ -155,6 +133,7 @@ def drive_brake_get_stopping_distance(mavproxy, mav, speed):
     set_parameter(mavproxy, 'ATC_ACCEL_MAX', old_accel_max)
 
     return delta
+
 
 def drive_brake(mavproxy, mav):
     old_using_brake = get_parameter(mavproxy, 'ATC_BRAKE')
