@@ -444,17 +444,17 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 }
 
 // Write an accel/gyro delta time data packet
-void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t time_us, uint8_t imu_mask)
+void DataFlash_Class::Log_Write_IMUDT_instance(const AP_InertialSensor &ins, const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
 {
     float delta_t = ins.get_delta_time();
-    float delta_vel_t = ins.get_delta_velocity_dt(0);
-    float delta_ang_t = ins.get_delta_angle_dt(0);
+    float delta_vel_t = ins.get_delta_velocity_dt(imu_instance);
+    float delta_ang_t = ins.get_delta_angle_dt(imu_instance);
     Vector3f delta_angle, delta_velocity;
-    ins.get_delta_angle(0, delta_angle);
-    ins.get_delta_velocity(0, delta_velocity);
+    ins.get_delta_angle(imu_instance, delta_angle);
+    ins.get_delta_velocity(imu_instance, delta_velocity);
 
     struct log_IMUDT pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_IMUDT_MSG),
+        LOG_PACKET_HEADER_INIT(type),
         time_us : time_us,
         delta_time   : delta_t,
         delta_vel_dt : delta_vel_t,
@@ -466,64 +466,28 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t tim
         delta_vel_y  : delta_velocity.y,
         delta_vel_z  : delta_velocity.z
     };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t time_us, uint8_t imu_mask)
+{
     if (imu_mask & 1) {
-        WriteBlock(&pkt, sizeof(pkt));
+        Log_Write_IMUDT_instance(ins, time_us, 0, LOG_IMUDT_MSG);
     }
     if ((ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) || !ins.use_gyro(1)) {
         return;
     }
 
-    delta_vel_t = ins.get_delta_velocity_dt(1);
-    delta_ang_t = ins.get_delta_angle_dt(1);
-    if (!ins.get_delta_angle(1, delta_angle)) {
-        delta_angle.zero();
-    }
-    if (!ins.get_delta_velocity(1, delta_velocity)) {
-        delta_velocity.zero();
-    }
-    struct log_IMUDT pkt2 = {
-        LOG_PACKET_HEADER_INIT(LOG_IMUDT2_MSG),
-        time_us     : time_us,
-        delta_time   : delta_t,
-        delta_vel_dt : delta_vel_t,
-        delta_ang_dt : delta_ang_t,
-        delta_ang_x  : delta_angle.x,
-        delta_ang_y  : delta_angle.y,
-        delta_ang_z  : delta_angle.z,
-        delta_vel_x  : delta_velocity.x,
-        delta_vel_y  : delta_velocity.y,
-        delta_vel_z  : delta_velocity.z
-    };
     if (imu_mask & 2) {
-        WriteBlock(&pkt2, sizeof(pkt2));
+        Log_Write_IMUDT_instance(ins, time_us, 1, LOG_IMUDT2_MSG);
     }
 
     if ((ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) || !ins.use_gyro(2)) {
         return;
     }
-    delta_vel_t = ins.get_delta_velocity_dt(1);
-    delta_ang_t = ins.get_delta_angle_dt(2);
-    if (!ins.get_delta_angle(2, delta_angle)) {
-        delta_angle.zero();
-    }
-    if (!ins.get_delta_velocity(2, delta_velocity)) {
-        delta_velocity.zero();
-    }
-    struct log_IMUDT pkt3 = {
-        LOG_PACKET_HEADER_INIT(LOG_IMUDT3_MSG),
-        time_us     : time_us,
-        delta_time   : delta_t,
-        delta_vel_dt : delta_vel_t,
-        delta_ang_dt : delta_ang_t,
-        delta_ang_x  : delta_angle.x,
-        delta_ang_y  : delta_angle.y,
-        delta_ang_z  : delta_angle.z,
-        delta_vel_x  : delta_velocity.x,
-        delta_vel_y  : delta_velocity.y,
-        delta_vel_z  : delta_velocity.z
-    };
+
     if (imu_mask & 4) {
-        WriteBlock(&pkt3, sizeof(pkt3));
+        Log_Write_IMUDT_instance(ins, time_us, 2, LOG_IMUDT3_MSG);
     }
 }
 
