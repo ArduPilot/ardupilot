@@ -1,5 +1,6 @@
 from LogAnalyzer import Test,TestResult
 import DataflashLog
+from VehicleType import VehicleType
 
 import collections
 
