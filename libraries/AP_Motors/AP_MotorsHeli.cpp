@@ -181,6 +181,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 // init
 void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
+    // remember frame type
+    _frame_type = frame_type;
+    
     // set update rate
     set_update_rate(_speed_hz);
 
