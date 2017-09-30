@@ -165,13 +165,18 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
     // assume X quad layout, with motors at 45, 135, 225 and 315 degrees
     // order FrontRight, RearLeft, FrontLeft, RearLeft
     const float angles[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { 45, 225, 315, 135 };
-    const bool clockwise[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { false, false, true, true };
+    const bool x_clockwise[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { false, false, true, true };
     const float cos45 = cosf(radians(45));
     
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
+        bool clockwise = x_clockwise[i];
+        if (_frame_type == MOTOR_FRAME_TYPE_H) {
+            // reverse yaw for H frame
+            clockwise = !clockwise;
+        }
         _rollFactor[CH_1+i]       = -0.5*sinf(radians(angles[i]))/cos45;
         _pitchFactor[CH_1+i]      =  0.5*cosf(radians(angles[i]))/cos45;
-        _yawFactor[CH_1+i]        = clockwise[i]?-0.5:0.5;
+        _yawFactor[CH_1+i]        = clockwise?-0.5:0.5;
         _collectiveFactor[CH_1+i] = 1;
     }
 }
