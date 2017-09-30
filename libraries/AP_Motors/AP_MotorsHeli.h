@@ -213,4 +213,6 @@ protected:
     // internal variables
     float           _collective_mid_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
+
+    motor_frame_type _frame_type;
 };

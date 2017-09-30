@@ -30,7 +30,6 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     };
 
-
     // set_update_rate - set update rate to motors
     void set_update_rate( uint16_t speed_hz ) override;
 
