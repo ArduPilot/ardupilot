@@ -48,15 +48,19 @@ before_install:
 before_script:
   # Python 2.7
   - pip install --user flake8
-  # stop the build if there are Python syntax errors or undefined names
-  - flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics
+  # stop the build if there are Python syntax errors
+  - flake8 . --count --select=E901,E999,F822,F823 --show-source --statistics
+  # warn if there are undefined names
+  - flake8 . --count --exit-zero --select=F821 --show-source --statistics
   # exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide
   - time flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
   
   # Python 3
   - python3 -m pip install --user flake8
-  # stop the build if there are Python syntax errors or undefined names
-  - python3 -m flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics
+  # stop the build if there are Python syntax errors
+  - python3 -m flake8 . --count --select=E901,E999,F822,F823 --show-source --statistics
+  # warn if there are undefined names
+  - python3 -m flake8 . --count --exit-zero --select=F821 --show-source --statistics
 
 script:
   - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle APMrover2
