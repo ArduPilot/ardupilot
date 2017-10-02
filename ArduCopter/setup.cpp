@@ -53,6 +53,7 @@ void Copter::print_blanks(int16_t num)
     while(num > 0) {
         num--;
         hal.console->printf("\n");
+        hal.console->printf("BLANKS\n");
     }
 }
 
