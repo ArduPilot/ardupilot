@@ -511,6 +511,20 @@ bool Compass::_driver_enabled(enum DriverType driver_type)
 }
 
 /*
+  see if we already have probed a driver by bus type
+ */
+bool Compass::_have_driver(AP_HAL::Device::BusType bus_type, uint8_t bus_num, uint8_t address, uint8_t devtype) const
+{
+    uint32_t id = AP_HAL::Device::make_bus_id(bus_type, bus_num, address, devtype);
+    for (uint8_t i=0; i<_compass_count; i++) {
+        if (id == uint32_t(_state[i].dev_id.get())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
   detect available backends for this board
  */
 void Compass::_detect_backends(void)
@@ -609,13 +623,17 @@ void Compass::_detect_backends(void)
                                                               true, ROTATION_YAW_90),
                     AP_Compass_LIS3MDL::name, true);
         
-        // AK09916
-        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_AK09916_I2C_ADDR),
-                                                              true, ROTATION_YAW_270),
+        // AK09916. This can be found twice, due to the ICM20948 i2c bus pass-thru, so we need to be careful to avoid that
+        if (!_have_driver(AP_HAL::Device::BUS_TYPE_I2C, 1, HAL_COMPASS_AK09916_I2C_ADDR, AP_Compass_Backend::DEVTYPE_ICM20948)) {
+            ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_AK09916_I2C_ADDR),
+                                                                  true, ROTATION_YAW_270),
                     AP_Compass_AK09916::name, true);
-        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_AK09916_I2C_ADDR),
-                                                              both_i2c_external, both_i2c_external?ROTATION_YAW_270:ROTATION_NONE),
-                    AP_Compass_AK09916::name, both_i2c_external);
+        }
+        if (!_have_driver(AP_HAL::Device::BUS_TYPE_I2C, 0, HAL_COMPASS_AK09916_I2C_ADDR, AP_Compass_Backend::DEVTYPE_ICM20948)) {
+            ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_AK09916_I2C_ADDR),
+                                                                  both_i2c_external, both_i2c_external?ROTATION_YAW_270:ROTATION_NONE),
+                        AP_Compass_AK09916::name, both_i2c_external);
+        }
 
         // IST8310 on external and internal bus
         ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_IST8310_I2C_ADDR),
