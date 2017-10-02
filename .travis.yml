@@ -26,6 +26,8 @@ addons:
       - libxslt1-dev
       - python-pip
       - python-dev
+      - python3-pip
+      - python3-dev
       - zlib1g-dev
       - gcc-4.9
       - g++-4.9
@@ -44,11 +46,17 @@ before_install:
   - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then export CI_CRON_JOB=1 ; fi
 
 before_script:
+  # Python 2.7
   - pip install --user flake8
   # stop the build if there are Python syntax errors or undefined names
   - flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics
   # exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide
-  - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+  - time flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+  
+  # Python 3
+  - python3 -m pip install --user flake8
+  # stop the build if there are Python syntax errors or undefined names
+  - python3 -m flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics
 
 script:
   - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle APMrover2
