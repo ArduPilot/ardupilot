@@ -314,6 +314,9 @@ private:
     bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
     bool _auto_reboot() { return _compass_cal_autoreboot; }
 
+    // see if we already have probed a driver by bus type
+    bool _have_driver(AP_HAL::Device::BusType bus_type, uint8_t bus_num, uint8_t address, uint8_t devtype) const;
+
 
     //keep track of which calibrators have been saved
     bool _cal_saved[COMPASS_MAX_INSTANCES];
