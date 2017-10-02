@@ -62,6 +62,7 @@ void Copter::print_divider(void)
         hal.console->printf("-");
     }
     hal.console->printf("\n");
+    hal.console->printf("HELLO\n");
 }
 
 void Copter::print_enabled(bool b)
