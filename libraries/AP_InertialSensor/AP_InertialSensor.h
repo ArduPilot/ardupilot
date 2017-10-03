@@ -16,6 +16,8 @@
 #define INS_MAX_BACKENDS  6
 #define INS_VIBRATION_CHECK_INSTANCES 2
 
+#define DEFAULT_IMU_LOG_BAT_MASK 0
+
 #include <stdint.h>
 
 #include <AP_AccelCal/AP_AccelCal.h>
@@ -76,6 +78,9 @@ public:
     /// number
     uint8_t register_gyro(uint16_t raw_sample_rate_hz, uint32_t id);
     uint8_t register_accel(uint16_t raw_sample_rate_hz, uint32_t id);
+
+    // a function called by the main thread at the main loop rate:
+    void periodic();
 
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
@@ -271,6 +276,74 @@ public:
 
     // return time in microseconds of last update() call
     uint32_t get_last_update_usec(void) const { return _last_update_usec; }
+
+    enum IMU_SENSOR_TYPE {
+        IMU_SENSOR_TYPE_ACCEL = 0,
+        IMU_SENSOR_TYPE_GYRO = 1,
+    };
+
+    class BatchSampler {
+    public:
+        BatchSampler(const AP_InertialSensor &imu) :
+            type(IMU_SENSOR_TYPE_ACCEL),
+            _imu(imu) {
+            AP_Param::setup_object_defaults(this, var_info);
+        };
+
+        void init();
+        void sample(uint8_t instance, IMU_SENSOR_TYPE _type, uint64_t sample_us, const Vector3f &sample);
+
+        // a function called by the main thread at the main loop rate:
+        void periodic();
+
+        // class level parameters
+        static const struct AP_Param::GroupInfo var_info[];
+
+        // Parameters
+        AP_Int16 _required_count;
+        AP_Int8 _sensor_mask;
+        // end Parameters
+
+    private:
+
+        void rotate_to_next_sensor();
+
+        bool should_log(uint8_t instance, IMU_SENSOR_TYPE type);
+        void push_data_to_log();
+
+        uint64_t measurement_started_us;
+
+        bool initialised : 1;
+        bool isbh_sent : 1;
+        uint8_t instance : 3; // instance we are sending data for
+        AP_InertialSensor::IMU_SENSOR_TYPE type : 1;
+        uint16_t isb_seqnum;
+        int16_t *data_x;
+        int16_t *data_y;
+        int16_t *data_z;
+        uint16_t data_write_offset; // units: samples
+        uint16_t data_read_offset; // units: samples
+        uint32_t last_sent_ms;
+
+        // all samples are multiplied by this
+        static const uint16_t multiplier_accel = INT16_MAX/radians(2000);
+        static const uint16_t multiplier_gyro = INT16_MAX/(16*GRAVITY_MSS);
+        uint16_t multiplier = multiplier_accel;
+
+        // push blocks to DataFlash at regular intervals.  each
+        // message is ~ 108 bytes in size, so we use about 1kB/s of
+        // logging bandwidth with a 100ms interval.  If we are taking
+        // 1024 samples then we need to send 32 packets, so it will
+        // take ~3 seconds to push a complete batch to the log.  If
+        // you are running a on an FMU with three IMUs then you
+        // will loop back around to the first sensor after about
+        // twenty seconds.
+        const uint8_t push_interval_ms = 100;
+        const uint16_t samples_per_msg = 32;
+
+        const AP_InertialSensor &_imu;
+    };
+    BatchSampler batchsampler{*this};
 
 private:
     AP_InertialSensor();
