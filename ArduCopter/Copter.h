@@ -1160,6 +1160,7 @@ private:
     void log_init(void);
     void init_capabilities(void);
     void dataflash_periodic(void);
+    void ins_periodic();
     void accel_cal_update(void);
 
 public:
