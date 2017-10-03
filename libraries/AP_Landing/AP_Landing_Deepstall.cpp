@@ -136,6 +136,13 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ABORTALT", 15, AP_Landing_Deepstall, min_abort_alt, 0.0f),
 
+    // @Param: AIL_SCL
+    // @DisplayName: Aileron landing gain scalaing
+    // @Description: A scalar to reduce or increase the aileron control
+    // @Range: 0 2.0
+    // @User: Advanced
+    AP_GROUPINFO("AIL_SCL", 16, AP_Landing_Deepstall, aileron_scalar, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -329,15 +336,10 @@ bool AP_Landing_Deepstall::override_servos(void)
                                              0.5f, 1.0f);
 
         float output = constrain_float(pid, -travel_limit, travel_limit);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, output*4500);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input, output*4500);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, output*4500*aileron_scalar);
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, output*4500);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0); // this will normally be managed as part of landing,
                                                                      // but termination needs to set throttle control here
-    } else {
-        // allow the normal servo control of the channel
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input,
-                                        SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
     }
 
     // hand off rudder control to deepstall controlled
