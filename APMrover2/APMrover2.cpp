@@ -77,6 +77,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(compass_cal_update,     50,    100),
     SCHED_TASK(accel_cal_update,       10,    100),
     SCHED_TASK(dataflash_periodic,     50,    300),
+    SCHED_TASK(ins_periodic,           50,     50),
     SCHED_TASK(button_update,           5,    100),
     SCHED_TASK(stats_update,            1,    100),
     SCHED_TASK(crash_check,            10,   1000),
@@ -361,6 +362,11 @@ void Rover::one_second_loop(void)
 void Rover::dataflash_periodic(void)
 {
     DataFlash.periodic_tasks();
+}
+
+void Rover::ins_periodic()
+{
+    ins.periodic();
 }
 
 void Rover::update_GPS_50Hz(void)
