@@ -548,6 +548,12 @@ class px4_v3(px4):
         self.px4io_name = 'px4io-v2'
         self.with_uavcan = True
 
+class the_cube_green(px4_v3):
+    name = 'the-cube-green'
+    def __init__(self):
+        super(the_cube_green, self).__init__()
+        self.param_defaults = '../../../Tools/Frame_params/the-cube-green.param'
+
 class px4_v4(px4):
     name = 'px4-v4'
     def __init__(self):
