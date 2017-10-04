@@ -196,6 +196,7 @@ private:
     static const struct LogStructure log_structure[];
 
     void dataflash_periodic(void);
+    void ins_periodic();
     void one_second_loop();
     void ten_hz_logging_loop();
     void send_heartbeat(mavlink_channel_t chan);
