@@ -576,6 +576,7 @@ public:
     void failsafe_check();
 
     void dataflash_periodic(void);
+    void ins_periodic();
     void update_soft_armed();
     // Motor test
     void motor_test_output();
