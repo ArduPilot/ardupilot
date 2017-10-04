@@ -179,7 +179,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
 {
     switch (stage) {
     case DEEPSTALL_STAGE_FLY_TO_LANDING:
-        if (get_distance(current_loc, landing_point) > 2 * landing.aparm.loiter_radius) {
+        if (get_distance(current_loc, landing_point) > fabsf(2 * landing.aparm.loiter_radius)) {
             landing.nav_controller->update_waypoint(current_loc, landing_point);
             return false;
         }
@@ -188,7 +188,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         FALLTHROUGH;
     case DEEPSTALL_STAGE_ESTIMATE_WIND:
         {
-        landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, 1);
+        landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
         if (!landing.nav_controller->reached_loiter_target() || (fabsf(height) > DEEPSTALL_LOITER_ALT_TOLERANCE)) {
             // wait until the altitude is correct before considering a breakout
             return false;
@@ -196,13 +196,13 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         // only count loiter progress when within the target altitude
         int32_t target_bearing = landing.nav_controller->target_bearing_cd();
         int32_t delta = wrap_180_cd(target_bearing - last_target_bearing);
+        delta *= (landing_point.flags.loiter_ccw ? -1 : 1);
         if (delta > 0) { // only accumulate turns in the correct direction
             loiter_sum_cd += delta;
         }
         last_target_bearing = target_bearing;
         if (loiter_sum_cd < 36000) {
             // wait until we've done at least one complete loiter at the correct altitude
-            landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, 1);
             return false;
         }
         stage = DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT;
@@ -224,7 +224,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
                 loiter_sum_cd += delta;
             }
             last_target_bearing = target_bearing;
-            landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, 1);
+            landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
             return false;
         }
         stage = DEEPSTALL_STAGE_FLY_TO_ARC;
@@ -243,7 +243,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         if (!landing.nav_controller->reached_loiter_target() ||
             (fabsf(wrap_180(target_heading_deg -
                             degrees(atan2f(-groundspeed.y, -groundspeed.x) + M_PI))) >= 10.0f)) {
-            landing.nav_controller->update_loiter(arc, landing.aparm.loiter_radius, 1);
+            landing.nav_controller->update_loiter(arc, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
             return false;
         }
         stage = DEEPSTALL_STAGE_APPROACH;
@@ -444,17 +444,18 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
 
     float expected_travel_distance = predict_travel_distance(wind, landing_point.alt * 0.01f, false);
     float approach_extension_m = expected_travel_distance + approach_extension;
+    float loiter_radius_m_abs = fabsf(loiter_radius);
     // an approach extensions must be at least half the loiter radius, or the aircraft has a
     // decent chance to be misaligned on final approach
-    approach_extension_m = MAX(approach_extension_m, loiter_radius * 0.5f);
+    approach_extension_m = MAX(approach_extension_m, loiter_radius_m_abs * 0.5f);
 
     location_update(arc_exit, target_heading_deg + 180, approach_extension_m);
     memcpy(&arc, &arc_exit, sizeof(Location));
     memcpy(&arc_entry, &arc_exit, sizeof(Location));
 
-    // TODO: Support loitering on either side of the approach path
-    location_update(arc, target_heading_deg + 90.0, loiter_radius);
-    location_update(arc_entry, target_heading_deg + 90.0, loiter_radius * 2);
+    float arc_heading_deg = target_heading_deg + (landing_point.flags.loiter_ccw ? -90.0f : 90.0f);
+    location_update(arc, arc_heading_deg, loiter_radius_m_abs);
+    location_update(arc_entry, arc_heading_deg, loiter_radius_m_abs * 2);
 
 #ifdef DEBUG_PRINTS
     // TODO: Send this information via a MAVLink packet
