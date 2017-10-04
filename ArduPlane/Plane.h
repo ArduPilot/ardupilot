@@ -1073,6 +1073,7 @@ private:
     void notify_flight_mode(enum FlightMode mode);
     void log_init();
     void init_capabilities(void);
+    void ins_periodic();
     void dataflash_periodic(void);
     void parachute_check();
 #if PARACHUTE == ENABLED
