@@ -253,49 +253,55 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     steering_scaled = constrain_float(steering_scaled, -1.0f, 1.0f);
     throttle_scaled = constrain_float(throttle_scaled, -1.0f, 1.0f);
 
-    // check for saturation and scale back throttle and steering proportionally
-    const float saturation_value = fabsf(steering_scaled) + fabsf(throttle_scaled);
-    if (saturation_value > 1.0f) {
-        steering_scaled = steering_scaled / saturation_value;
-        throttle_scaled = throttle_scaled / saturation_value;
-        // set limits
-        if (is_negative(steering)) {
-            limit.steer_left = true;
-        } else {
-            limit.steer_right = true;
+    if (_use_skid_mixer) {
+        // check for saturation and scale back throttle and steering proportionally
+        const float saturation_value = fabsf(steering_scaled) + fabsf(throttle_scaled);
+        if (saturation_value > 1.0f) {
+            steering_scaled = steering_scaled / saturation_value;
+            throttle_scaled = throttle_scaled / saturation_value;
+            // set limits
+            if (is_negative(steering)) {
+                limit.steer_left = true;
+            } else {
+                limit.steer_right = true;
+            }
+            if (is_negative(throttle)) {
+                limit.throttle_lower = true;
+            } else {
+                limit.throttle_upper = true;
+            }
         }
-        if (is_negative(throttle)) {
-            limit.throttle_lower = true;
+
+        // add in throttle
+        float motor_left = throttle_scaled;
+        float motor_right = throttle_scaled;
+
+        // deal with case of turning on the spot
+        if (is_zero(throttle_scaled)) {
+            // steering output split evenly between left and right motors and compensated for friction
+            const float friction_comp = MAX(0.0f, 1.0f + (_skid_friction / 100.0f));
+            motor_left += steering_scaled * 0.5f * friction_comp;
+            motor_right -= steering_scaled * 0.5f * friction_comp;
         } else {
-            limit.throttle_upper = true;
+            // add in steering
+            const float dir = is_positive(throttle_scaled) ? 1.0f : -1.0f;
+            if (is_negative(steering_scaled)) {
+                // moving left all steering to right wheel
+                motor_right -= dir * steering_scaled;
+            } else {
+                // turning right, all steering to left wheel
+                motor_left += dir * steering_scaled;
+            }
         }
-    }
 
-    // add in throttle
-    float motor_left = throttle_scaled;
-    float motor_right = throttle_scaled;
-
-    // deal with case of turning on the spot
-    if (is_zero(throttle_scaled)) {
-        // steering output split evenly between left and right motors and compensated for friction
-        const float friction_comp = MAX(0.0f, 1.0f + (_skid_friction / 100.0f));
-        motor_left += steering_scaled * 0.5f * friction_comp;
-        motor_right -= steering_scaled * 0.5f * friction_comp;
+        // send pwm value to each motor
+        output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
+        output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right);
     } else {
-        // add in steering
-        const float dir = is_positive(throttle_scaled) ? 1.0f : -1.0f;
-        if (is_negative(steering_scaled)) {
-            // moving left all steering to right wheel
-            motor_right -= dir * steering_scaled;
-        } else {
-            // turning right, all steering to left wheel
-            motor_left += dir * steering_scaled;
-        }
+        // send pwm value to each motor directly, the radio do the mixing
+        output_throttle(SRV_Channel::k_throttleLeft, 100.0f * steering_scaled);
+        output_throttle(SRV_Channel::k_throttleRight, 100.0f * throttle_scaled);
     }
-
-    // send pwm value to each motor
-    output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
-    output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right);
 }
 
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100

@@ -22,6 +22,7 @@ void Mode::exit()
 bool Mode::enter()
 {
     g2.motors.slew_limit_throttle(false);
+    g2.motors.use_skid_mixer(true);
     return _enter();
 }
 

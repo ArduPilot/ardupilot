@@ -51,6 +51,9 @@ public:
     // set when to use slew rate limiter
     void slew_limit_throttle(bool value) { _use_slew_rate = value; }
 
+    // set when to use skid steering mixer
+    void use_skid_mixer(bool value) { _use_skid_mixer = value; }
+
     // test steering or throttle output as a percentage of the total (range -100 to +100)
     // used in response to DO_MOTOR_TEST mavlink command
     bool output_test_pct(motor_test_order motor_seq, float pct);
@@ -106,4 +109,5 @@ protected:
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _last_throttle;
     bool    _use_slew_rate; // true if we should slew limit the throttle for one interation
+    bool    _use_skid_mixer;
 };
