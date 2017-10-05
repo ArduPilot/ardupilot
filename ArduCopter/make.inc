@@ -64,3 +64,5 @@ LIBRARIES += AP_Beacon
 LIBRARIES += AP_Arming
 LIBRARIES += AP_VisualOdom
 LIBRARIES += AP_SmartRTL
+LIBRARIES += AP_Winch
+LIBRARIES += AP_WheelEncoder
