@@ -89,8 +89,4 @@ Ikumi Motoshige
 Hiroshi Iwamoto
 Cafoo
 Kieth Mine (cubicrootk)
-<<<<<<< HEAD
-Elshweikh
-=======
-elshwikh
->>>>>>> 92a523e1b7ae291251bc785af6f01971b5edc123
+ahmed elshweikh
