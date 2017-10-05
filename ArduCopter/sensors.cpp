@@ -526,3 +526,17 @@ void Copter::update_visual_odom()
     }
 #endif
 }
+
+// winch and wheel encoder initialisation
+void Copter::winch_init()
+{
+    g2.wheel_encoder.init();
+    g2.winch.init(&g2.wheel_encoder);
+}
+
+// winch and wheel encoder update
+void Copter::winch_update()
+{
+    g2.wheel_encoder.update();
+    g2.winch.update();
+}
