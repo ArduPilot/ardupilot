@@ -1199,6 +1199,39 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
 #endif
 
+        case MAV_CMD_DO_WINCH:
+            // param1 : winch number (ignored)
+            // param2 : action (0=relax, 1=relative length control, 2=rate control). See WINCH_ACTIONS enum.
+            if (!copter.g2.winch.enabled()) {
+                result = MAV_RESULT_FAILED;
+            } else {
+                result = MAV_RESULT_ACCEPTED;
+                switch ((uint8_t)packet.param2) {
+                    case WINCH_RELAXED:
+                        copter.g2.winch.relax();
+                        copter.Log_Write_Event(DATA_WINCH_RELAXED);
+                        break;
+                    case WINCH_RELATIVE_LENGTH_CONTROL: {
+                        copter.g2.winch.release_length(packet.param3, fabsf(packet.param4));
+                        copter.Log_Write_Event(DATA_WINCH_LENGTH_CONTROL);
+                        break;
+                    }
+                    case WINCH_RATE_CONTROL: {
+                        if (fabsf(packet.param4) < copter.g2.winch.get_rate_max()) {
+                            copter.g2.winch.set_desired_rate(packet.param4);
+                            copter.Log_Write_Event(DATA_WINCH_RATE_CONTROL);
+                        } else {
+                            result = MAV_RESULT_FAILED;
+                        }
+                        break;
+                    }
+                    default:
+                        result = MAV_RESULT_FAILED;
+                        break;
+                }
+            }
+            break;
+
         /* Solo user presses Fly button */
         case MAV_CMD_SOLO_BTN_FLY_CLICK: {
             result = MAV_RESULT_ACCEPTED;

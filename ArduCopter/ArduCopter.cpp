@@ -142,6 +142,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK(gripper_update,        10,     75),
 #endif
+    SCHED_TASK(winch_update,          10,     50),
 #ifdef USERHOOK_FASTLOOP
     SCHED_TASK(userhook_FastLoop,    100,     75),
 #endif
