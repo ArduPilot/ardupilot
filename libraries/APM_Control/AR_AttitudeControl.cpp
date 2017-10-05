@@ -218,7 +218,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     float p = _steer_rate_pid.get_p();
 
     // get i unless moving at low speed or steering output has hit a limit
-    float i = 0.0f;
+    float i = _steer_rate_pid.get_integrator();
     if (!low_speed && ((is_negative(rate_error) && !motor_limit_left) || (is_positive(rate_error) && !motor_limit_right))) {
         i = _steer_rate_pid.get_i();
     }
@@ -273,7 +273,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool skid_
     float p = _throttle_speed_pid.get_p();
 
     // get i unless moving at low speed or motors have hit a limit
-    float i = 0.0f;
+    float i = _throttle_speed_pid.get_integrator();
     if ((is_negative(speed_error) && !motor_limit_low && !_throttle_limit_low) || (is_positive(speed_error) && !motor_limit_high && !_throttle_limit_high)) {
         i = _throttle_speed_pid.get_i();
     }
