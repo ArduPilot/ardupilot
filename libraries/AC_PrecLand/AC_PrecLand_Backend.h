@@ -27,6 +27,9 @@ public:
     //  returns same as have_los_meas()
     virtual bool get_los_body(Vector3f& dir_body) = 0;
 
+    // returns timestmap in usec of los measurement for correlation with inertial history
+    virtual uint64_t get_los_timestamp() { return 0; };
+
     // returns system time in milliseconds of last los measurement
     virtual uint32_t los_meas_time_ms() = 0;
 

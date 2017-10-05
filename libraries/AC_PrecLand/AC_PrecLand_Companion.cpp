@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PrecLand_Companion.h"
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -35,6 +36,11 @@ bool AC_PrecLand_Companion::get_los_body(Vector3f& ret) {
         return true;
     }
     return false;
+}
+
+// returns sensor timestamp in microseconds of last los measurement
+uint64_t AC_PrecLand_Companion::get_los_timestamp() {
+    return _timestamp_us;
 }
 
 // returns system time in milliseconds of last los measurement
