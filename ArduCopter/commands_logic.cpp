@@ -160,6 +160,10 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+    case MAV_CMD_DO_WINCH:                             // Mission command to control winch
+        do_winch(cmd);
+        break;
+
     default:
         // do nothing with unrecognized MAVLink messages
         break;
@@ -269,6 +273,7 @@ bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_GRIPPER:
     case MAV_CMD_DO_GUIDED_LIMITS:
     case MAV_CMD_DO_FENCE_ENABLE:
+    case MAV_CMD_DO_WINCH:
         return true;
 
     default:
@@ -650,6 +655,29 @@ void Copter::do_guided_limits(const AP_Mission::Mission_Command& cmd)
                      cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
 }
 #endif
+
+// control winch based on mission command
+void Copter::do_winch(const AP_Mission::Mission_Command& cmd)
+{
+    // Note: we ignore the gripper num parameter because we only support one gripper
+    switch (cmd.content.winch.action) {
+        case WINCH_RELAXED:
+            g2.winch.relax();
+            Log_Write_Event(DATA_WINCH_RELAXED);
+            break;
+        case WINCH_RELATIVE_LENGTH_CONTROL:
+            g2.winch.release_length(cmd.content.winch.release_length, cmd.content.winch.release_rate);
+            Log_Write_Event(DATA_WINCH_LENGTH_CONTROL);
+            break;
+        case WINCH_RATE_CONTROL:
+            g2.winch.set_desired_rate(cmd.content.winch.release_rate);
+            Log_Write_Event(DATA_WINCH_RATE_CONTROL);
+            break;
+        default:
+            // do nothing
+            break;
+    }
+}
 
 /********************************************************************************/
 //	Verify Nav (Must) commands
