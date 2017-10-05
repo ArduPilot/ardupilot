@@ -77,6 +77,9 @@ void Copter::init_ardupilot()
     g2.gripper.init();
 #endif
 
+    // init winch and wheel encoder
+    winch_init();
+
     // initialise notify system
     notify.init(true);
     notify_flight_mode(control_mode);
