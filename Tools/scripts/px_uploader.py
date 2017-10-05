@@ -73,6 +73,10 @@ if sys.version_info[0] < 3:
 else:
     runningPython3 = True
 
+# list of tuples (bootloader boardID, firmware boardID, boardname)
+# designating firmware builds compatible with multiple boardIDs
+compatible_IDs = [(33, 9, 'AUAVX2.1')]
+
 class firmware(object):
     '''Loads a firmware file'''
 
@@ -490,13 +494,24 @@ class uploader(object):
     def upload(self, fw, force=False, boot_delay=None):
         # Make sure we are doing the right thing
         if self.board_type != fw.property('board_id'):
-            msg = "Firmware not suitable for this board (board_type=%u board_id=%u)" % (
-                self.board_type, fw.property('board_id'))
-            print("WARNING: %s" % msg)
-            if force:
-                print("FORCED WRITE, FLASHING ANYWAY!")
-            else:
-                raise IOError(msg)
+            # ID mismatch: check compatibility
+            incomp = True
+            for entry in compatible_IDs:
+                if (entry[0] == self.board_type) and (entry[1] == fw.property('board_id')):
+                     msg = "Target %s (board_id: %d) is compatible with firmware for board_id=%u)" % (
+                         entry[2], self.board_type, fw.property('board_id'))
+                     print("INFO: %s" % msg)
+                     incomp = False
+                     break
+            if incomp:                        
+                msg = "Firmware not suitable for this board (board_type=%u board_id=%u)" % (
+                    self.board_type, fw.property('board_id'))
+                print("WARNING: %s" % msg)
+                
+                if force:
+                    print("FORCED WRITE, FLASHING ANYWAY!")
+                else:
+                    raise IOError(msg)
         if self.fw_maxsize < fw.property('image_size'):
             raise RuntimeError("Firmware image is too large for this board")
 
