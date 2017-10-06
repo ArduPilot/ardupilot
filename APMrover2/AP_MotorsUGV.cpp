@@ -354,7 +354,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 void AP_MotorsUGV::slew_limit_throttle(float dt)
 {
     if (_use_slew_rate && (_slew_rate > 0)) {
-        float temp = _slew_rate * dt * 0.01f * 100.0f;  // TODO : get THROTTLE MIN and THROTTLE MAX
+        float temp = _slew_rate * dt * 0.01f * (_throttle_max - _throttle_min);
         if (temp < 1.0f) {
             temp = 1.0f;
         }
