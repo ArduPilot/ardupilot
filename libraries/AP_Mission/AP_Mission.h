@@ -184,6 +184,14 @@ public:
         uint8_t relative_angle; // 0 = absolute angle, 1 = relative angle
     };
 
+    // winch command structure
+    struct PACKED Winch_Command {
+        uint8_t num;            // winch number
+        uint8_t action;         // action (0 = relax, 1 = length control, 2 = rate control)
+        float release_length;   // cable distance to unwind in meters, negative numbers to wind in cable
+        float release_rate;     // release rate in meters/second
+    };
+
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -244,6 +252,9 @@ public:
 
         // navigation delay
         Set_Yaw_Speed set_yaw_speed;
+
+        // do-winch
+        Winch_Command winch;
 
         // location
         Location location;      // Waypoint location
