@@ -5,7 +5,6 @@
 #include "AC_PrecLand_IRLock.h"
 #include "AC_PrecLand_SITL_Gazebo.h"
 #include "AC_PrecLand_SITL.h"
-#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -185,7 +184,6 @@ void AC_PrecLand::inertial_buffer()
     // Create buffer if it doesn't exist or if latency parameter has changed
     if (_inertial_history == nullptr || _inertial_buffer_size != _inertial_history->size()) {
         // instantiate ring buffer to hold inertial history
-        printf("Creating inertial history buffer: %d\n", _inertial_buffer_size);
         _inertial_history = new ObjectArray<inertial_data_frame_s>(_inertial_buffer_size);
     }
 }
@@ -204,7 +202,6 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     inertial_data_newest.inertialNavVelocityValid = _inav.get_filter_status().flags.horiz_vel;
     inertial_data_newest.time_usec = AP_HAL::micros64();
     _inertial_history->push_force(inertial_data_newest);
-    // printf("Inertial history: x:%f, y:%f, dt:%f, time:%d\n", (*_inertial_history)[0]->correctedVehicleDeltaVelocityNED.x, (*_inertial_history)[0]->correctedVehicleDeltaVelocityNED.y, (*_inertial_history)[0]->dt, (*_inertial_history)[0]->time_usec);
 
     // update estimator of target position
     if (_backend != nullptr && _enabled) {
@@ -397,9 +394,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             // If the nearest timestamp delta is longer than a frame, it's after the last frame or before the first, so reject
             if (_nearest_timestamp < 1000000/400.0) {
                 inertial_data_delayed = (*_inertial_history)[_nearest_index];
-                printf("los_timestamp:%lu, ap_hal_micros:%lu, oldest_timestamp:%lu, _nearest_timestamp:%lu, _nearest_index:%lu, _delta:%lu\n", _los_timestamp, _current_micros, (*_inertial_history)[0]->time_usec, _nearest_timestamp, _nearest_index, _current_micros-_los_timestamp);
             } else {
-                printf("Too Old:: los_timestamp:%lu, oldest_timestamp: %lu, _nearest_timestamp: %lu\n", _los_timestamp, (*_inertial_history)[0]->time_usec, _nearest_timestamp);
                 return false;
             }
         } else {
