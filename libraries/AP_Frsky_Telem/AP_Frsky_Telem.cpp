@@ -123,9 +123,16 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 return;
             }
             if ((now - _passthrough.batt_timer) >= 1000) {
-                send_uint32(DIY_FIRST_ID+3, calc_batt());
+                send_uint32(DIY_FIRST_ID+3, calc_batt(0));
                 _passthrough.batt_timer = AP_HAL::millis();
                 return;
+            }
+            if (_battery.num_instances() > 1) {
+                if ((now - _passthrough.batt_timer2) >= 1000) {
+                    send_uint32(DIY_FIRST_ID+8, calc_batt(1));
+                    _passthrough.batt_timer2 = AP_HAL::millis();
+                    return;
+                }
             }
             if ((now - _passthrough.gps_status_timer) >= 1000) {
                 send_uint32(DIY_FIRST_ID+2, calc_gps_status());
@@ -652,16 +659,16 @@ uint32_t AP_Frsky_Telem::calc_gps_status(void)
  * prepare battery data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_batt(void)
+uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
 {
     uint32_t batt;
     
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
-    batt = (((uint16_t)roundf(_battery.voltage() * 10.0f)) & BATT_VOLTAGE_LIMIT);
+    batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
     // battery current draw in deciamps
-    batt |= prep_number(roundf(_battery.current_amps() * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET; 
+    batt |= prep_number(roundf(_battery.current_amps(instance) * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET; 
     // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
-    batt |= ((_battery.current_total_mah() < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.current_total_mah()) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
+    batt |= ((_battery.current_total_mah(instance) < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.current_total_mah(instance)) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
     return batt;
 }
 
