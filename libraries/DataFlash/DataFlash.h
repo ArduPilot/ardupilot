@@ -112,6 +112,7 @@ public:
                         AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
                         uint8_t instance,
                         uint16_t multiplier,
+                        uint16_t sample_count,
                         uint64_t sample_us,
                         float sample_rate_hz);
     bool Log_Write_ISBD(uint16_t isb_seqno,

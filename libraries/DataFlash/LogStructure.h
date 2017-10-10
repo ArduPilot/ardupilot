@@ -114,6 +114,7 @@ struct PACKED log_ISBH {
     uint8_t sensor_type; // e.g. GYRO or ACCEL
     uint8_t instance;
     uint16_t multiplier;
+    uint16_t sample_count;
     uint64_t sample_us;
     float sample_rate_hz;
 };
@@ -965,8 +966,8 @@ struct PACKED log_DSTL {
 #define IMT_LABELS "TimeUS,DelT,DelvT,DelaT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ"
 #define IMT_FMT    "Qfffffffff"
 
-#define ISBH_LABELS "TimeUS,N,type,instance,mul,SampleUS,smp_rate"
-#define ISBH_FMT    "QHBBHQf"
+#define ISBH_LABELS "TimeUS,N,type,instance,mul,smp_cnt,SampleUS,smp_rate"
+#define ISBH_FMT    "QHBBHHQf"
 
 #define ISBD_LABELS "TimeUS,N,seqno,x,y,z"
 #define ISBD_FMT    "QHHaaa"
