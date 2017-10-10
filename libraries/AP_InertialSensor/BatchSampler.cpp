@@ -145,6 +145,7 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
                                        type,
                                        instance,
                                        multiplier,
+                                       _required_count,
                                        measurement_started_us,
                                        sample_rate)) {
             // buffer full?
