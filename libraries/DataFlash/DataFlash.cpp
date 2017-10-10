@@ -711,6 +711,7 @@ bool DataFlash_Class::Log_Write_ISBH(const uint16_t seqno,
                                      const AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
                                      const uint8_t sensor_instance,
                                      const uint16_t multiplier,
+                                     const uint16_t sample_count,
                                      const uint64_t sample_us,
                                      const float sample_rate_hz)
 {
@@ -724,6 +725,7 @@ bool DataFlash_Class::Log_Write_ISBH(const uint16_t seqno,
         sensor_type    : (uint8_t)sensor_type,
         instance       : sensor_instance,
         multiplier     : multiplier,
+        sample_count   : sample_count,
         sample_us      : sample_us,
         sample_rate_hz : sample_rate_hz,
     };
