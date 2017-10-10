@@ -71,6 +71,9 @@ for FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
 for FrSky SPort Passthrough
 */
 // data bits preparation
+// for parameter data
+#define PARAM_ID_OFFSET             24
+#define PARAM_VALUE_LIMIT           0xFFFFFF
 // for gps status data
 #define GPS_SATS_LIMIT              0xF
 #define GPS_STATUS_LIMIT            0x3
