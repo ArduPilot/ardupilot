@@ -104,6 +104,15 @@ struct Vector2
     // check if all elements are zero
     bool is_zero(void) const { return (fabsf(x) < FLT_EPSILON) && (fabsf(y) < FLT_EPSILON); }
 
+    // allow a vector2 to be used as an array, 0 indexed
+    T & operator[](uint8_t i) {
+        T *_v = &x;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 2);
+#endif
+        return _v[i];
+    }
+
     const T & operator[](uint8_t i) const {
         const T *_v = &x;
 #if MATH_CHECK_INDEXES
@@ -111,7 +120,7 @@ struct Vector2
 #endif
         return _v[i];
     }
-
+    
     // zero the vector
     void zero()
     {
