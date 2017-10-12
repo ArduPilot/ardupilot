@@ -153,7 +153,8 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 void AP_Landing_Deepstall::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
     stage = DEEPSTALL_STAGE_FLY_TO_LANDING;
-    ds_PID.reset_I();
+    ds_PID.reset();
+    L1_xtrack_i = 0.0f;
     hold_level = false; // come out of yaw lock
 
     // load the landing point in, the rest of path building is deferred for a better wind estimate
@@ -408,12 +409,37 @@ const DataFlash_Class::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
     return ds_PID.get_pid_info();
 }
 
+void AP_Landing_Deepstall::log(void) const {
+    const DataFlash_Class::PID_Info& pid_info = ds_PID.get_pid_info();
+    struct log_DSTL pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_DSTL_MSG),
+        time_us          : AP_HAL::micros64(),
+        stage            : (uint8_t)stage,
+        target_heading   : target_heading_deg,
+        target_lat       : landing_point.lat,
+        target_lng       : landing_point.lng,
+        target_alt       : landing_point.alt,
+        crosstrack_error : (int16_t)(stage >= DEEPSTALL_STAGE_LAND ?
+                             constrain_float(crosstrack_error * 1e2f, (float)INT16_MIN, (float)INT16_MAX) : 0),
+        travel_distance  : (int16_t)(stage >= DEEPSTALL_STAGE_LAND ?
+                             constrain_float(predicted_travel_distance * 1e2f, (float)INT16_MIN, (float)INT16_MAX) : 0),
+        l1_i             : stage >= DEEPSTALL_STAGE_LAND ? L1_xtrack_i : 0.0f,
+        loiter_sum_cd    : stage >= DEEPSTALL_STAGE_ESTIMATE_WIND ? loiter_sum_cd : 0,
+        desired          : pid_info.desired,
+        P                : pid_info.P,
+        I                : pid_info.I,
+        D                : pid_info.D,
+    };
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+}
+
 // termination handling, expected to set the servo outputs
 bool AP_Landing_Deepstall::terminate(void) {
     // if we were not in a deepstall, mark us as being in one
     if(!landing.flags.in_progress || stage != DEEPSTALL_STAGE_LAND) {
         stall_entry_time = AP_HAL::millis();
-        ds_PID.reset_I();
+        ds_PID.reset();
+        L1_xtrack_i = 0.0f;
         landing.flags.in_progress = true;
         stage = DEEPSTALL_STAGE_LAND;
 
