@@ -34,13 +34,6 @@ void Plane::Log_Write_Attitude(void)
     DataFlash.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
     DataFlash.Log_Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
     DataFlash.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
-        const DataFlash_Class::PID_Info *landing_info;
-        landing_info = landing.get_pid_info();
-        if (landing_info != nullptr) { // only log LANDING PID's while in landing
-            DataFlash.Log_Write_PID(LOG_PIDL_MSG, *landing_info);
-        }
-    }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
     DataFlash.Log_Write_EKF(ahrs);
