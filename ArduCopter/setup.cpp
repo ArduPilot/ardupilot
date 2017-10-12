@@ -53,6 +53,7 @@ void Copter::print_blanks(int16_t num)
     while(num > 0) {
         num--;
         hal.console->printf("\n");
+        hal.console->printf("BLANKS\n");
     }
 }
 
@@ -62,6 +63,7 @@ void Copter::print_divider(void)
         hal.console->printf("-");
     }
     hal.console->printf("\n");
+    hal.console->printf("HELLO\n");
 }
 
 void Copter::print_enabled(bool b)
