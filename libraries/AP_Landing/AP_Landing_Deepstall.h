@@ -103,6 +103,7 @@ private:
     bool is_throttle_suppressed(void) const;
     bool is_flying_forward(void) const;
     bool terminate(void);
+    void log(void) const;
 
     bool send_deepstall_message(mavlink_channel_t chan) const;
 
