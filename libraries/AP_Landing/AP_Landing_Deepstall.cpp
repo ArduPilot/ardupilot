@@ -281,7 +281,6 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             // that will be handled within override_servos
             initial_elevator_pwm = elevator->get_output_pwm();
         }
-        L1_xtrack_i = 0; // reset the integrators
         }
         FALLTHROUGH;
     case DEEPSTALL_STAGE_LAND:
@@ -296,7 +295,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
 
 bool AP_Landing_Deepstall::override_servos(void)
 {
-    if (!(stage == DEEPSTALL_STAGE_LAND)) {
+    if (stage != DEEPSTALL_STAGE_LAND) {
         return false;
     }
 
@@ -304,8 +303,7 @@ bool AP_Landing_Deepstall::override_servos(void)
 
     if (elevator == nullptr) {
         // deepstalls are impossible without these channels, abort the process
-        gcs().send_text(MAV_SEVERITY_CRITICAL,
-                                         "Deepstall: Unable to find the elevator channels");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Deepstall: Unable to find the elevator channels");
         request_go_around();
         return false;
     }
@@ -314,7 +312,6 @@ bool AP_Landing_Deepstall::override_servos(void)
     float slew_progress = 1.0f;
     if (slew_speed > 0) {
         slew_progress  = (AP_HAL::millis() - stall_entry_time) / (100.0f * slew_speed);
-        slew_progress = constrain_float (slew_progress, 0.0f, 1.0f);
     }
 
     // mix the elevator to the correct value
