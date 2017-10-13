@@ -826,34 +826,26 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
             return MAV_MISSION_INVALID_PARAM7;
         }
 
+        if (copy_location) {
+            cmd.content.location.lat = packet.x;
+            cmd.content.location.lng = packet.y;
+        }
+
+        cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
+
         switch (packet.frame) {
 
         case MAV_FRAME_MISSION:
         case MAV_FRAME_GLOBAL:
-            if (copy_location) {
-                cmd.content.location.lat = packet.x;
-                cmd.content.location.lng = packet.y;
-            }
-            cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
             cmd.content.location.flags.relative_alt = 0;
             break;
 
         case MAV_FRAME_GLOBAL_RELATIVE_ALT:
-            if (copy_location) {
-                cmd.content.location.lat = packet.x;
-                cmd.content.location.lng = packet.y;
-            }
-            cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
             cmd.content.location.flags.relative_alt = 1;
             break;
 
 #if AP_TERRAIN_AVAILABLE
         case MAV_FRAME_GLOBAL_TERRAIN_ALT:
-            if (copy_location) {
-                cmd.content.location.lat = packet.x;
-                cmd.content.location.lng = packet.y;
-            }
-            cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
             // we mark it as a relative altitude, as it doesn't have
             // home alt added
             cmd.content.location.flags.relative_alt = 1;
