@@ -118,11 +118,11 @@ const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
 }
 
 /**
- * get_velocity_xy - returns the current horizontal velocity in cm/s
+ * get_speed_xy - returns the current horizontal speed in cm/s
  *
- * @returns the current horizontal velocity in cm/s
+ * @returns the current horizontal speed in cm/s
  */
-float AP_InertialNav_NavEKF::get_velocity_xy() const
+float AP_InertialNav_NavEKF::get_speed_xy() const
 {
     return norm(_velocity_cm.x, _velocity_cm.y);
 }
