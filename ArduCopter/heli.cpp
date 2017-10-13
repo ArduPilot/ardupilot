@@ -34,9 +34,9 @@ void Copter::check_dynamic_flight(void)
 
     // with GPS lock use inertial nav to determine if we are moving
     if (position_ok()) {
-        // get horizontal velocity
-        float velocity = inertial_nav.get_velocity_xy();
-        moving = (velocity >= HELI_DYNAMIC_FLIGHT_SPEED_MIN);
+        // get horizontal speed
+        const float speed = inertial_nav.get_speed_xy();
+        moving = (speed >= HELI_DYNAMIC_FLIGHT_SPEED_MIN);
     }else{
         // with no GPS lock base it on throttle and forward lean angle
         moving = (motors->get_throttle() > 0.8f || ahrs.pitch_sensor < -1500);
