@@ -304,6 +304,13 @@ enum DevOptions {
     DevOptionADSBMAVLink = 1,
 };
 
+// enum values for HOVER_WATT_LEARN parameter
+enum HoverWattLearn {
+    HOVER_WATT_LEARN_DISABLED = 0,
+    HOVER_WATT_LEARN_ONLY = 1,
+    HOVER_WATT_LEARN_AND_SAVE = 2
+};
+
 //  Logging parameters
 #define TYPE_AIRSTART_MSG               0x00
 #define TYPE_GROUNDSTART_MSG            0x01
@@ -329,6 +336,7 @@ enum DevOptions {
 #define LOG_PRECLAND_MSG                0x21
 #define LOG_GUIDEDTARGET_MSG            0x22
 #define LOG_THROW_MSG                   0x23
+#define LOG_FS_ENERGY_MSG               0x24
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)

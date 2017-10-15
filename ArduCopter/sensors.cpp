@@ -197,7 +197,7 @@ void Copter::read_battery(void)
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
     // we only check when we're not powered by USB to avoid false alarms during bench tests
-    if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
+    if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, rtl_mah_calc())) {
         failsafe_battery_event();
     }
 
@@ -206,6 +206,85 @@ void Copter::read_battery(void)
         Log_Write_Current();
     }
 }
+
+// Energy based battery failsafe calculations
+//  - Returns the legacy FS_BATT_MAH value if the FS_BATT_RESERVE parameter is 0 or RTL is not possible
+//  - Calculates watts to RTL based on estimated resting voltage and hover wattage values, adds reserve watts, returns calculated MAH
+float Copter::rtl_mah_calc(void)
+{
+    // If FS_BATT_RESERVE is disabled, or HOVER_WATT is 0, or no home position available, or EKF is bad, return the default MAH
+    if (!(g2.fs_batt_reserve) || !(g2.hover_watt) || ap.home_state == HOME_UNSET || !position_ok()) { 
+        return g.fs_batt_mah;
+    };
+
+    // Watts per second for the various phases of RTL and landing
+    float ws_hover = (g2.hover_watt) / 3600;
+    float ws_climb = (ws_hover * g2.fs_batt_mult_clm);
+    float ws_desc = (ws_hover * g2.fs_batt_mult_dsc);
+    float ws_cruise = (ws_hover * g2.fs_batt_mult_crs);
+
+    // Altitude calculations based vehicle altitude and RTL parameters
+    int32_t target_alt_cm = MAX(current_loc.alt + g.rtl_climb_min, g.rtl_altitude);         // Altitude copter will RTL at
+    int32_t climb_cm = target_alt_cm - current_loc.alt;                                     // vertical distance to climb
+    int32_t desc_cm = constrain_int32(target_alt_cm - LAND_START_ALT, 0, target_alt_cm);    // vertical distance to descend
+    int32_t final_desc_cm = LAND_START_ALT;                                                 // vertical distance for final landing phase
+    
+    // Time initialization
+    uint32_t sec_climb = 0;
+    uint32_t sec_cruise = 0;
+    uint32_t sec_hover = 0;
+    uint32_t sec_desc = 0;
+    uint32_t sec_final = 0;
+    uint32_t sec_total = 0;
+
+    // Watts and MAH initialization
+    float watts_climb = 0;
+    float watts_cruise = 0;
+    float watts_hover = 0;
+    float watts_desc = 0;
+    float watts_final = 0;
+    float watts_rtl_total = 0;
+    uint32_t mah_rtl_total = 0;
+    uint32_t mah_reserve = 0;
+    uint32_t mah_rtl_plus_reserve = 0;
+
+    // Calculate and add watts for climb and cruise, but only if the failsafe is RTL
+    if (g.failsafe_battery_enabled == FS_BATT_RTL) {
+
+        // Calculate climb time and watts
+        sec_climb = climb_cm / (wp_nav->get_speed_up());
+        watts_climb = sec_climb * ws_climb;
+
+        // Calculate cruise time and watts
+        sec_cruise = (home_distance) / ((g.rtl_speed_cms > 0) ? g.rtl_speed_cms : wp_nav->get_speed_xy());
+        watts_cruise = sec_cruise * ws_cruise;
+        
+        // Calculate hover time and watts
+        sec_hover = g.rtl_loiter_time / 1000;
+        watts_hover = sec_hover * ws_hover;
+    }
+
+    // Calculate and add descent energy to final approach altitude
+    sec_desc = desc_cm / (g.land_speed_high > 0) ? g.land_speed_high : wp_nav->get_speed_down();
+    watts_desc = sec_desc * ws_desc;
+
+    // Calculate and add final descent energy
+    sec_final = final_desc_cm / g.land_speed;
+    watts_final = sec_final * ws_hover;
+    
+    // RTL total watts, mah, and seconds
+    watts_rtl_total = watts_climb + watts_cruise + watts_hover + watts_desc + watts_final;
+    mah_rtl_total = 1000*(watts_rtl_total / battery.voltage_resting_estimate());
+    sec_total = sec_climb + sec_cruise + sec_hover + sec_desc + sec_final;
+    
+    // Calculate reserve and add to total mah
+    mah_reserve = (g2.fs_batt_reserve/100) * battery.pack_capacity_mah();
+    mah_rtl_plus_reserve = mah_rtl_total + mah_reserve;
+
+    Log_Write_FS_Energy(watts_climb, watts_cruise, watts_hover, watts_desc, watts_final, watts_rtl_total, mah_rtl_total, mah_rtl_plus_reserve, sec_total);
+    
+    return mah_rtl_plus_reserve;
+    }
 
 // read the receiver RSSI as an 8 bit number for MAVLink
 // RC_CHANNELS_SCALED message
