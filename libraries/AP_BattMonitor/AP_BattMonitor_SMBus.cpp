@@ -95,6 +95,25 @@ bool AP_BattMonitor_SMBus::read_serial_number(void) {
     return false;
 }
 
+// Watt caclulations for SMBUS smart batteries
+// Watts is calculated using current and estimated resting voltage
+void AP_BattMonitor_SMBus::calc_watts(void) {
+    // calculate time since last current read
+    uint32_t tnow = AP_HAL::micros();
+    float dt = tnow - _state.last_time_micros;
+
+    // Calculate watts as amps * estimated resting voltage
+    _state.watts = (_state.current_amps * _state.voltage_resting_estimate);
+
+    // update total watts since startup
+    if (_state.last_time_micros != 0 && dt < 2000000.0f) {
+        _state.watts_used += float(_state.watts/3600) * float(dt/1000000);
+    }
+
+    // record time
+    _state.last_time_micros = tnow;
+}
+
 // read word from register
 // returns true if read was successful, false if failed
 bool AP_BattMonitor_SMBus::read_word(uint8_t reg, uint16_t& data) const
