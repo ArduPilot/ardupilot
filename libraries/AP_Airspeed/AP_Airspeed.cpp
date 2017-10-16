@@ -27,6 +27,7 @@
 #include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
 #include "AP_Airspeed_MS5525.h"
+#include "AP_Airspeed_SDP3X.h"
 #include "AP_Airspeed_analog.h"
 
 extern const AP_HAL::HAL &hal;
@@ -47,13 +48,19 @@ extern const AP_HAL::HAL &hal;
 #define PSI_RANGE_DEFAULT 1.0f
 #endif
 
+#define CONSTANTS_ONE_G                                 9.80665f                /* m/s^2                */
+#define CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C             1.225f                  /* kg/m^3               */
+#define CONSTANTS_AIR_GAS_CONST                         287.1f                  /* J/(kg * K)           */
+#define CONSTANTS_ABSOLUTE_NULL_CELSIUS                 -273.15f                /* °C                   */
+#define CONSTANTS_RADIUS_OF_EARTH                       6371000                 /* meters (m)           */
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-SDP3X
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 0, AP_Airspeed, _type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
@@ -120,9 +127,10 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 };
 
 
-AP_Airspeed::AP_Airspeed()
+AP_Airspeed::AP_Airspeed(AP_Baro &barometer)
     : _EAS2TAS(1.0f)
     , _calibration()
+    , _baro(barometer)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -159,6 +167,9 @@ void AP_Airspeed::init()
         break;
     case TYPE_I2C_MS5525:
         sensor = new AP_Airspeed_MS5525(*this);
+        break;
+    case TYPE_I2C_SDP3X:
+        sensor = new AP_Airspeed_SDP3X(*this);
         break;
     }
     if (sensor && !sensor->init()) {
@@ -256,35 +267,69 @@ void AP_Airspeed::read(void)
     // remember raw pressure for logging
     _corrected_pressure = airspeed_pressure;
 
-    // filter before clamping positive
-    _filtered_pressure      = 0.7f * _filtered_pressure  +  0.3f * airspeed_pressure;
-
     /*
-      we support different pitot tube setups so user can choose if
-      they want to be able to detect pressure on the static port
-     */
-    switch ((enum pitot_tube_order)_tube_order.get()) {
-    case PITOT_TUBE_ORDER_NEGATIVE:
-        _last_pressure          = -airspeed_pressure;
-        _raw_airspeed           = sqrtf(MAX(-airspeed_pressure, 0) * _ratio);
-        _airspeed               = sqrtf(MAX(-_filtered_pressure, 0) * _ratio);
-        break;
-    case PITOT_TUBE_ORDER_POSITIVE:
-        _last_pressure          = airspeed_pressure;
-        _raw_airspeed           = sqrtf(MAX(airspeed_pressure, 0) * _ratio);
-        _airspeed               = sqrtf(MAX(_filtered_pressure, 0) * _ratio);
-        if (airspeed_pressure < -32) {
-            // we're reading more than about -8m/s. The user probably has
-            // the ports the wrong way around
-            _healthy = false;
-        }
-        break;
-    case PITOT_TUBE_ORDER_AUTO:
-    default:
-        _last_pressure          = fabsf(airspeed_pressure);
-        _raw_airspeed           = sqrtf(fabsf(airspeed_pressure) * _ratio);
-        _airspeed               = sqrtf(fabsf(_filtered_pressure) * _ratio);
-        break;
+    we support different pitot tube setups so used can choose if
+    they want to be able to detect pressure on the static port
+    */
+    switch ((enum pitot_tube_order)_tube_order.get())
+    {
+            case PITOT_TUBE_ORDER_NEGATIVE:
+                    airspeed_pressure = -airspeed_pressure;
+                    //FALLTHROUGH;
+            case PITOT_TUBE_ORDER_POSITIVE:
+                    if (airspeed_pressure < -32)
+                            // we're reading more than about -8m/s. The user probably has
+                            // the ports the wrong way around
+                            _healthy = false;
+                    break;
+            case PITOT_TUBE_ORDER_AUTO:
+            default:
+                    airspeed_pressure = fabsf(airspeed_pressure);
+                    break;
+    }
+    /*
+     * Complete sensor model imported from PX4
+     */ 
+    if (_type == TYPE_I2C_SDP3X) 
+    {
+	float tube_len = 0.2;
+	float temperature;
+	get_temperature(temperature);
+	
+	float rho_air = _baro.get_pressure() / (CONSTANTS_AIR_GAS_CONST * (temperature - CONSTANTS_ABSOLUTE_NULL_CELSIUS));
+	
+	// flow through sensor
+	float flow_SDP3X = (300.805f - 300.878f / (0.00344205f * (float)pow(airspeed_pressure, 0.68698f) + 1)) * 1.29f / rho_air;
+	if (flow_SDP3X < 0.0f)
+		flow_SDP3X = 0.0f;
+	
+	// diffential pressure through pitot tube
+	float dp_pitot = 28557670.0f - 28557670.0f / (1 + (float)pow((flow_SDP3X / 5027611.0f), 1.227924f));
+	
+	// pressure drop through tube
+	float dp_tube = flow_SDP3X * 0.000746124f * tube_len * rho_air;
+	
+	// speed at pitot-tube tip due to flow through sensor
+	float dv = 0.0331582f * flow_SDP3X;
+
+	// Calculate true airspeed from indicated airspeed.
+	dv *= sqrtf(CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C / rho_air);
+
+	// sum of all pressure drops
+	float dp_tot = airspeed_pressure + dp_tube + dp_pitot;
+
+	// computed airspeed without correction for inflow-speed at tip of pitot-tube
+	float airspeed_uncorrected = sqrtf(2 * dp_tot / CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C);
+
+	// corrected airspeed
+	_airspeed = airspeed_uncorrected + dv;
+    }
+    else
+    {
+    	airspeed_pressure       = MAX(airspeed_pressure, 0);
+    	_last_pressure          = airspeed_pressure;
+    	_raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
+    	_airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
     }
 
     _last_update_ms         = AP_HAL::millis();

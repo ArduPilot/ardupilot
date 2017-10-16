@@ -30,7 +30,8 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 float temperature;
 
-AP_Airspeed airspeed;
+AP_Baro baro_dummy;
+AP_Airspeed airspeed(baro_dummy);
 static AP_BoardConfig board_config = AP_BoardConfig::create();
 
 namespace {
