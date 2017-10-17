@@ -70,7 +70,7 @@ bool AP_Airspeed_SDP3X::init()
             printf("SDP3X: reset command failed\n");
 
 	// waiting 20ms to reset
-	usleep(20000);
+	hal.scheduler->delay_microseconds(20000);
 
 	// step 2 - configure
         uint8_t cmd[2] = {(SDP3X_CONT_MEAS_AVG_MODE & 0xFF00) >> 8, SDP3X_CONT_MEAS_AVG_MODE & 0xFF};
@@ -79,7 +79,7 @@ bool AP_Airspeed_SDP3X::init()
             printf("SDP3X: continued measure command failed\n");
 
 	// waiting again
-	usleep(20000);
+	hal.scheduler->delay_microseconds(20000);
 
 	// step 3 - get scale
 	uint8_t val[9];

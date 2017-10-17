@@ -69,7 +69,7 @@ public:
     AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3);
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
-    AP_Airspeed airspeed;
+    AP_Airspeed airspeed{barometer};
     AP_Int32 unused; // logging is magic for Replay; this is unused
     DataFlash_Class dataflash = DataFlash_Class::create("Replay v0.1", unused);
 
