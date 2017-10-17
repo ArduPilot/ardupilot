@@ -346,6 +346,13 @@
 /* HMC5843 can be an external compass */
 #define HAL_COMPASS_HMC5843_I2C_BUS 1
 #define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
+#define HAL_IMU_TEMP_DEFAULT 55
+#define HAL_HAVE_IMU_HEATER 1
+#define HAL_UTILS_HEAT HAL_LINUX_HEAT_PWM
+#define HAL_LINUX_HEAT_PWM_NUM  15
+#define HAL_LINUX_HEAT_KP 20000
+#define HAL_LINUX_HEAT_KI 6
+#define HAL_LINUX_HEAT_PERIOD_NS 2040816
 #else
 #error "no Linux board subtype set"
 #endif
