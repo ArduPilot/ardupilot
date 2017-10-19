@@ -172,7 +172,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: YAW_RATE_MAX
     // @DisplayName: Maximum yaw rate
-    // @Description: This is the maximum yaw rate in degrees/second
+    // @Description: This is the maximum yaw rate for pilot input on rudder stick in degrees/second
     // @Units: deg/s
     // @Range: 50 500
     // @Increment: 1
