@@ -1,7 +1,7 @@
 #include "Sub.h"
 
 // change flight mode and perform any necessary initialisation
-// returns true if mode was succesfully set
+// returns true if mode was successfully set
 bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 {
     // boolean to record if flight mode could be set

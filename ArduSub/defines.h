@@ -282,7 +282,7 @@ enum RTLState {
 
 // Leak failsafe definitions (FS_LEAK_ENABLE parameter)
 #define FS_LEAK_DISABLED    0 // Disabled
-#define FS_LEAK_WARN_ONLY   1 // Only send waring to gcs
+#define FS_LEAK_WARN_ONLY   1 // Only send warning to gcs
 #define FS_LEAK_SURFACE     2 // Switch to surface mode
 
 // Internal pressure failsafe threshold (FS_PRESS_MAX parameter)
