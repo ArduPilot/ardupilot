@@ -332,6 +332,18 @@
 #define HAL_GPIO_C_LED_PIN        16
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
+#define HAL_BOARD_LOG_DIRECTORY "/var/lib/ardupilot/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/var/lib/ardupilot/terrain"
+#define HAL_INS_DEFAULT HAL_INS_EDGE
+#define HAL_INS_MPU60x0_NAME "mpu60x0"
+#define HAL_INS_MPU60x0_NAME_EXT "mpu60x0ext"
+#define HAL_BARO_DEFAULT HAL_BARO_MS5611_SPI
+#define HAL_BARO_MS5611_NAME "ms5611"
+#define HAL_COMPASS_DEFAULT HAL_COMPASS_HIL
+/* HMC5843 can be an external compass */
+#define HAL_COMPASS_HMC5843_I2C_BUS 1
+#define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
 #else
 #error "no Linux board subtype set"
 #endif
