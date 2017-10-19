@@ -287,7 +287,7 @@ void Sub::failsafe_internal_temperature_check()
     }
 }
 
-// Check if we are leaking and perform appropiate action
+// Check if we are leaking and perform appropriate action
 void Sub::failsafe_leak_check()
 {
     bool status = leak_detector.get_status();
