@@ -48,6 +48,8 @@ public:
 
     bool is_healthy(void) const override;
 
+    bool prepare_for_arming(void) override;
+
 
 private:
 
@@ -73,6 +75,10 @@ private:
     uint32_t last_injected_data_ms = 0;
     uint32_t RxState;
     uint32_t RxError;
+
+    void mount_disk(void) const;
+    void unmount_disk(void) const;
+    bool _has_been_armed;
 
     enum sbf_ids {
         DOP = 4001,
