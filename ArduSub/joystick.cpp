@@ -320,10 +320,10 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         break;
     case JSButton::button_function_t::k_input_hold_set:
         if (!held) {
-            zTrim = z_last-500;
-            xTrim = x_last;
-            yTrim = y_last;
-            input_hold_engaged = abs(zTrim) > 20 || abs(xTrim) > 20 || abs(yTrim) > 20;
+            zTrim = abs(z_last-500) > 50 ? z_last-500 : 0;
+            xTrim = abs(x_last) > 50 ? x_last : 0;
+            yTrim = abs(y_last) > 50 ? y_last : 0;
+            input_hold_engaged = zTrim || xTrim || yTrim;
             gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
         }
         break;
