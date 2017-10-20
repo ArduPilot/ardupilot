@@ -393,6 +393,12 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 0 4
     // @Increment: 0.1
     AP_GROUPINFO("TAILSIT_VHPOW", 56, QuadPlane, tailsitter.vectored_hover_power, 2.5),
+
+    // @Param: MAV_TYPE
+    // @DisplayName: MAVLink type identifier
+    // @Description: This controls the mavlink type given in HEARTBEAT messages. For some GCS types a particular setting will be needed for correct operation.
+    // @Values: 0:AUTO,1:FIXED_WING,2:QUADROTOR,3:COAXIAL,4:HELICOPTER,7:AIRSHIP,8:FREE_BALLOON,9:ROCKET,10:GROUND_ROVER,11:SURFACE_BOAT,12:SUBMARINE,16:FLAPPING_WING,17:KITE,19:VTOL_DUOROTOR,20:VTOL_QUADROTOR,21:VTOL_TILTROTOR
+    AP_GROUPINFO("MAV_TYPE", 57, QuadPlane, mav_type, 0),
     
     AP_GROUPEND
 };
@@ -2399,4 +2405,15 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
     guided_start();
     guided_takeoff = true;
     return false;
+}
+
+/*
+  return mav_type for heartbeat
+ */
+uint8_t QuadPlane::get_mav_type(void) const
+{
+    if (mav_type.get() == 0) {
+        return MAV_TYPE_FIXED_WING;
+    }
+    return uint8_t(mav_type.get());
 }
