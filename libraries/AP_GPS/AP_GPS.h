@@ -413,6 +413,9 @@ public:
     bool is_healthy(uint8_t instance) const;
     bool is_healthy(void) const { return is_healthy(primary_instance); }
 
+    // returns true if all GPS instances have passed all final arming checks/state changes
+    bool prepare_for_arming(void);
+
 protected:
 
     // configuration parameters

@@ -132,8 +132,8 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: RAW_DATA
     // @DisplayName: Raw data logging
-    // @Description: Enable logging of RXM raw data from uBlox which includes carrier phase and pseudo range information. This allows for post processing of dataflash logs for more precise positioning. Note that this requires a raw capable uBlox such as the 6P or 6T.
-    // @Values: 0:Disabled,1:log every sample,5:log every 5 samples
+    // @Description: Handles logging raw data; on uBlox chips that support raw data this will log RXM messages into dataflash log; on Septentrio this will log on the equipment's SD card and when set to 2, the autopilot will try to stop logging after disarming and restart after arming
+    // @Values: 0:Ignore,1:Always log,2:Stop logging when disarmed (SBF only),5:Only log every five samples (uBlox only)
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("RAW_DATA", 9, AP_GPS, _raw_data, 0),
@@ -1501,4 +1501,14 @@ bool AP_GPS::is_healthy(uint8_t instance) const {
     return drivers[instance] != nullptr &&
            last_message_delta_time_ms(instance) < GPS_MAX_DELTA_MS &&
            drivers[instance]->is_healthy();
+}
+
+bool AP_GPS::prepare_for_arming(void) {
+    bool all_passed = true;
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        if (drivers[i] != nullptr) {
+            all_passed &= drivers[i]->prepare_for_arming();
+        }
+    }
+    return all_passed;
 }
