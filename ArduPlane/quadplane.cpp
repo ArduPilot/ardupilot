@@ -1216,7 +1216,7 @@ void QuadPlane::update_transition(void)
         assistance_needed(aspeed) &&
         !is_tailsitter() &&
         hal.util->get_soft_armed() &&
-        (plane.auto_throttle_mode ||
+        ((plane.auto_throttle_mode && !plane.throttle_suppressed) ||
          plane.channel_throttle->get_control_in()>0 ||
          plane.is_flying())) {
         // the quad should provide some assistance to the plane
