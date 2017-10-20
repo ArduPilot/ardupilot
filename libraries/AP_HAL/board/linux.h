@@ -375,3 +375,11 @@
 
 #define HAL_HAVE_BOARD_VOLTAGE 1
 #define HAL_HAVE_SAFETY_SWITCH 1
+
+#ifndef HAL_BOARD_LOG_DIRECTORY
+#define HAL_BOARD_LOG_DIRECTORY "/var/lib/ardupilot/logs"
+#endif
+
+#ifndef HAL_BOARD_TERRAIN_DIRECTORY
+#define HAL_BOARD_TERRAIN_DIRECTORY "/var/lib/ardupilot/terrain"
+#endif
