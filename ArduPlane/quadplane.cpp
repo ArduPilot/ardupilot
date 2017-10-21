@@ -1630,6 +1630,8 @@ bool QuadPlane::in_vtol_auto(void)
         return true;
     case MAV_CMD_NAV_LOITER_UNLIM:
     case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_LOITER_TURNS:
+    case MAV_CMD_NAV_LOITER_TO_ALT:
         return plane.auto_state.vtol_loiter;
     default:
         return false;
@@ -1813,8 +1815,19 @@ void QuadPlane::vtol_position_controller(void)
     // now height control
     switch (poscontrol.state) {
     case QPOS_POSITION1:
-    case QPOS_POSITION2:
-        if (plane.control_mode == QRTL || plane.control_mode == GUIDED) {
+    case QPOS_POSITION2: {
+        bool vtol_loiter_auto = false;
+        if (plane.control_mode == AUTO) {
+            switch (plane.mission.get_current_nav_cmd().id) {
+            case MAV_CMD_NAV_LOITER_UNLIM:
+            case MAV_CMD_NAV_LOITER_TIME:
+            case MAV_CMD_NAV_LOITER_TURNS:
+            case MAV_CMD_NAV_LOITER_TO_ALT:
+                vtol_loiter_auto = true;
+                break;
+            }
+        }
+        if (plane.control_mode == QRTL || plane.control_mode == GUIDED || vtol_loiter_auto) {
             plane.ahrs.get_position(plane.current_loc);
             float target_altitude = plane.next_WP_loc.alt;
             if (poscontrol.slow_descent) {
@@ -1831,6 +1844,7 @@ void QuadPlane::vtol_position_controller(void)
             pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false);
         }
         break;
+    }
 
     case QPOS_LAND_DESCEND: {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
@@ -1956,6 +1970,8 @@ void QuadPlane::control_auto(const Location &loc)
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LOITER_UNLIM:
     case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_LOITER_TURNS:
+    case MAV_CMD_NAV_LOITER_TO_ALT:
         vtol_position_controller();
         break;
     default:
