@@ -74,5 +74,6 @@ private:
 
     bool _initialized;
     uint64_t _stopped_clock_usec;
+    uint64_t _last_io_run;
 };
 #endif  // CONFIG_HAL_BOARD
