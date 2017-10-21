@@ -32,7 +32,7 @@
 #include <DataFlash/DataFlash.h>
 #include <AP_Param/AP_Param.h>
 
-namespace SITL {
+using namespace SITL;
 
 /*
   parent class for all simulator types
@@ -680,6 +680,9 @@ void Aircraft::smooth_sensors(void)
         return;
     }
     const float delta_time = (now - smoothing.last_update_us) * 1.0e-6f;
+    if (delta_time < 0 || delta_time > 0.1) {
+        return;
+    }
 
     // calculate required accel to get us to desired position and velocity in the time_constant
     const float time_constant = 0.1f;
@@ -773,4 +776,24 @@ float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx
     return filtered_idx(v, idx);
 }
 
-}  // namespace SITL
+// extrapolate sensors by a given delta time in seconds
+void Aircraft::extrapolate_sensors(float delta_time)
+{
+    Vector3f accel_earth = dcm * accel_body;
+    accel_earth.z += GRAVITY_MSS;
+
+    dcm.rotate(gyro * delta_time);
+    dcm.normalize();
+
+    // work out acceleration as seen by the accelerometers. It sees the kinematic
+    // acceleration (ie. real movement), plus gravity
+    accel_body = dcm.transposed() * (accel_earth + Vector3f(0,0,-GRAVITY_MSS));
+
+    // new velocity and position vectors
+    velocity_ef += accel_earth * delta_time;
+    position += velocity_ef * delta_time;
+    velocity_air_ef = velocity_ef + wind_ef;
+    velocity_air_bf = dcm.transposed() * velocity_air_ef;
+}
+
+
