@@ -178,7 +178,10 @@ __bin_names = {
 }
 
 def binary_path(step, debug=False):
-    vehicle = step.split(".")[1]
+    try:
+        vehicle = step.split(".")[1]
+    except Exception:
+        return None
 
     if vehicle in __bin_names:
         binary_name = __bin_names[vehicle]
