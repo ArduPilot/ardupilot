@@ -274,6 +274,9 @@ public:
     // get pwm output for the first channel of the given function type.
     static bool get_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t &value);
 
+    // get pwm output for the first channel of the given function type.
+    static bool get_all_outputs_pwm(uint16_t values[] ,uint8_t chan_num);
+
     // get normalised output (-1 to 1 for angle, 0 to 1 for range). Value is taken from pwm value
     // return zero on error.
     static float get_output_norm(SRV_Channel::Aux_servo_function_t function);
