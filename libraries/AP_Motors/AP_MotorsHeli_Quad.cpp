@@ -70,7 +70,7 @@ bool AP_MotorsHeli_Quad::init_outputs()
     }
 
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        _servo[i] = SRV_Channels::get_channel_for(SRV_Channel::Aux_servo_function_t(SRV_Channel::k_motor1+i), CH_1+i);
+        _servo[i] = SRV_Channels::get_channel_for(SRV_Channels::get_motor_function(i), CH_1+i);
         if (!_servo[i]) {
             return false;
         }
