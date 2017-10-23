@@ -2475,6 +2475,103 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_LAF(self):
+        """Setup parameters"""
+        self.context_push()
+        ex = None
+        try:
+            # configure fence parameters
+            self.set_parameter('FENCE_ENABLE', 1)
+            self.set_parameter('FENCE_ALT_MIN', 10) # 10m
+            self.set_parameter('FENCE_TYPE', 15)    # Activate all fences
+            self.set_parameter('FENCE_ACTION', 1)   # RTL or Land
+            self.set_parameter('FENCE_MARGIN', 1)   # 1m margin
+            # enable proximity avoidance
+            self.set_parameter('AVOID_ENABLE', 3)   # fences and proximity
+            self.set_parameter('AVOID_MARGIN', 1)   # 1m margin
+            # enable range finder
+            self.set_analog_rangefinder_parameters()
+            #self.set_parameter('RNGFND1_ORIENT', 25)
+            #self.set_parameter('SIM_SONAR_SCALE', 12.12)
+
+            #make sure all setting take effect
+            self.reboot_sitl()
+
+            # ensure we can get a global position:
+            self.poll_home_position(timeout=120)
+            home_pos = self.mav.location()
+
+            self.progress("Test LAF breach in LOITER mode")
+            self.takeoff(20, mode="LOITER", require_absolute=True)
+
+            # first aim south east
+            self.progress("Turn south east!")
+            self.set_rc(4, 1680)
+            self.wait_heading(170, timeout=20)
+            self.set_rc(4, 1500)
+
+            # fly south east 10m
+            self.progress("Fly south east 10m!")
+            self.set_rc(2, 1100)
+            self.wait_distance(10, timeout=20)
+            self.set_rc(2, 1500)
+
+            # wait for copter to slow moving
+            self.wait_groundspeed(0, 2)
+
+            self.progress("throttle down to breach fence floor")
+            self.set_rc(3, 1080)
+
+            # wait 15 seconds for fence breach (->RTL)
+            #tstart = self.get_sim_time();
+            #while self.get_sim_time() - tstart < 25:
+            #    pos = self.mav.location(relative_alt=True)
+            #    self.progress("At %fm altitude in loiter mode" % pos.alt)
+            #    if self.mode_is('RTL'):
+            #        self.progress("Low altitide fence on LOITER PASS")
+            #        break
+            #if not self.mode_is('RTL'):
+            #    raise NotAchievedException("Expected switched to RTL after breach")
+
+            # climb to 20m
+            self.progress("Climb to 20m!")
+            self.change_alt(20)
+
+            pose = self.mav.location()
+            self.progress("Test LAF breach in GUIDED mode")
+            self.change_mode('GUIDED')
+            self.mavproxy.send('guided -35.362938 149.165085 20\n')
+            home_distance = self.get_distance(home_pos, pose)
+            #if not self.wait_distance(home_distance, timeout=40):
+            #    raise NotAchievedException("Failed to reach distance of %u" % home_distance)
+            #self.progress("Went back home")
+            self.progress("Descend to 1m")
+            self.mavproxy.send('guided -35.362938 149.165085 584\n')
+            #if self.wait_altitude(-5, 5, 1):
+            #    raise NotAchievedException("Fence breached!")
+            self.progress("Fence not breached!")
+            self.progress("Low altitide fence breach on GUIDED PASS")
+
+            """Test LAF breach in STABILIZE mode"""
+            self.progress("Test LAF breach in STABILIZE mode")
+            self.set_rc(3, 1500)
+            self.change_mode('STABILIZE')
+            self.progress("Descend in stabilize mode; must trigger an RTL when altitude < FENCE_ALT_MIN (%fm)" % self.get_parameter('FENCE_ALT_MIN'))
+            self.set_rc(3, 1480)
+            self.wait_mode('RTL')
+            pos = self.mav.location(relative_alt=True)
+            self.progress("Low altitude fence breach at %fm altitude in stabilize mode caused RTL" % pos.alt)
+
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+        self.context_pop()
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def fly_rtl_speed(self):
         """Test RTL Speed parameters"""
         rtl_speed_ms = 7
@@ -6635,6 +6732,10 @@ class AutoTestCopter(AutoTest):
             ("GPSViconSwitching",
              "Fly GPS and Vicon Switching",
              self.fly_gps_vicon_switching),
+
+            ("LowAltitudeFence",
+             "Test low altitude fence",
+             self.fly_LAF), #32s
         ])
         return ret
 
