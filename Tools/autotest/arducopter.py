@@ -219,6 +219,102 @@ class AutoTestCopter(AutoTest):
             self.progress("Loiter FAILED")
         return success
 
+    def fly_LAF(mavproxy, mav):
+        progress("Test LAF")
+        mavproxy.send('param set FENCE_ENABLE 1\n')
+        mavproxy.send('param set AVOID_ENABLE 3\n')
+        mavproxy.send('param set AVOID_MARGIN 1\n')
+        mavproxy.send('param set FENCE_ALT_MIN 10\n')
+        mavproxy.send('param set FENCE_TYPE 15\n')
+        mavproxy.send('param set FENCE_ACTION 1\n')
+        mavproxy.send('param set FENCE_MARGIN 1\n')
+        #enable RGNF
+        mavproxy.send('param set RNGFND_TYPE 1\n')
+        mavproxy.send('param set RNGFND_SCALING 10\n')
+        mavproxy.send('param set RNGFND_PIN 0\n')
+        mavproxy.send('param set RNGFND_MAX_CM 5000\n')
+        mavproxy.send('param set RNGFND_OFFSET 0\n')
+        mavproxy.send('switch 5\n')  # loiter mode
+        wait_mode(mav, 'LOITER')
+
+        # first aim south east
+        progress("Turn south east!")
+        mavproxy.send('rc 4 1680\n')
+        if not wait_heading(mav, 170):
+            progress("LAF Error: Heading not reached")
+            return False
+        mavproxy.send('rc 4 1500\n')
+
+        #climb to 30m
+        progress("Climb to 30m!")
+        if not change_alt(mavproxy, mav, 30):
+            progress("LAF Error: Altitude not reached")
+            return False
+
+        # fly south east 10m
+        progress("Fly south east 10m!")
+        mavproxy.send('rc 2 1100\n')
+        if not wait_distance(mav, 10):
+            progress("LAF Error: Altitude not reached")
+            return False
+        mavproxy.send('rc 2 1500\n')
+
+        # wait for copter to slow moving
+        if not wait_groundspeed(mav, 0, 2):
+            progress("LAF Error: Groundspeed not reached")
+            return False
+
+        success = False
+        #descend to 1m
+        progress("descend to 1m")
+        if change_alt(mavproxy, mav, 1):
+            success = True
+
+        progress("LOITER PASS")
+        pose = mav.location()
+        progress("Test GUIDED")
+        # GUIDED mode
+        mavproxy.send('mode guided\n')
+        wait_mode(mav, 'GUIDED')
+        mavproxy.send('guided -35.362938 149.165085 20\n')
+        home_distance = get_distance(HOME, pose)
+        if not wait_distance(mav, home_distance):
+            progress("LAF Error: Failed to reach distance of %u" % home_distance)
+            success = False
+        progress("Went back home")
+        progress("Descend to 1m")
+        mavproxy.send('guided -35.362938 149.165085 584\n')
+        if wait_altitude(mav, -5, 5, 1):
+            progress("LAF Error: Fence breached!")
+            success = False
+        progress("Fence not breached!")
+        progress("GUIDED PASS!")
+        # switch to stabilize mode
+        mavproxy.send('rc 3 1500\n')
+        mavproxy.send('switch 6\n')
+        wait_mode(mav, 'STABILIZE')
+        #descend
+        progress("Descent in Stabilize!")
+        mavproxy.send('rc 3 1480\n')
+        if not wait_mode(mav, 'RTL'):
+             progress("Fence Breach not detected")
+             return False
+        progress("Fence Breach in Stabilize: Go RTL!")
+        if success:
+            progress("fly_LAF OK")
+            mavproxy.send('param set FENCE_ENABLE 0\n')
+            mavproxy.send('param set AVOID_ENABLE 0\n')
+            mavproxy.send('param set AVOID_MARGIN 0\n')
+            mavproxy.send('param set FENCE_ALT_MIN -10\n')
+            mavproxy.send('param set FENCE_TYPE 0\n')
+            mavproxy.send('param set FENCE_ACTION 0\n')
+            mavproxy.send('param set FENCE_MARGIN 0\n')
+            #disable RGNF
+            mavproxy.send('param set RNGFND_TYPE 0\n')
+        else:
+            progress("fly_LAF FAILED")
+        return success
+
     def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
         """Change altitude."""
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
@@ -1373,6 +1469,20 @@ class AutoTestCopter(AutoTest):
             if not self.fly_RTL():
                 failed_test_msg = "fly_RTL after circle failed"
                 self.progress(failed_test_msg)
+                failed = True
+
+            # Takeoff
+            progress("# Takeoff")
+            if not takeoff(mavproxy, mav, 10):
+                failed_test_msg = "takeoff failed"
+                progress(failed_test_msg)
+                failed = True
+
+            # fly LAF
+            progress("# fly LAF Test")
+            if not fly_LAF(mavproxy, mav):
+                failed_test_msg = "fly_LAF failed"
+                progress(failed_test_msg)
                 failed = True
 
             self.progress("# Fly copter mission")
