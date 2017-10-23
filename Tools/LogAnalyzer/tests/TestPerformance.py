@@ -1,8 +1,8 @@
 from __future__ import print_function
 
-from LogAnalyzer import Test,TestResult
+from LogAnalyzer import Test, TestResult
 import DataflashLog
-
+from VehicleType import VehicleType
 
 class TestPerformance(Test):
     '''check performance monitoring messages (PM) for issues with slow loops, etc'''
@@ -16,7 +16,7 @@ class TestPerformance(Test):
         self.result.status = TestResult.StatusType.GOOD
 
         # this test should be valid for all vehicle types, just need to figure out why PM logging data is different in each
-        if logdata.vehicleType != "ArduCopter":
+        if logdata.vehicleType != VehicleType.Copter:
             self.result.status = TestResult.StatusType.NA
             return
 

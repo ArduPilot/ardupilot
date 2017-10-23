@@ -189,28 +189,33 @@ private:
 template <class T>
 class ObjectArray {
 public:
-    ObjectArray(uint16_t _size) {
-        size = _size;
-        head = count = 0;
-        buffer = new T[size];
+    ObjectArray(uint16_t size_) {
+        _size = size_;
+        _head = _count = 0;
+        _buffer = new T[_size];
     }
     ~ObjectArray(void) {
-        delete[] buffer;
+        delete[] _buffer;
+    }
+
+    // return total number of objects
+    uint16_t size(void) const {
+        return _size;
     }
 
     // return number of objects available to be read
     uint16_t available(void) const {
-        return count;
+        return _count;
     }
 
     // return number of objects that could be written
     uint16_t space(void) const {
-        return size - count;
+        return _size - _count;
     }
 
     // true is available() == 0
     bool empty(void) const {
-        return count == 0;
+        return _count == 0;
     }
 
     // push one object
@@ -218,8 +223,8 @@ public:
         if (space() == 0) {
             return false;
         }
-        buffer[(head+count)%size] = object;
-        count++;
+        _buffer[(_head+_count)%_size] = object;
+        _count++;
         return true;
     }
 
@@ -230,15 +235,15 @@ public:
         if (empty()) {
             return false;
         }
-        head = (head+1) % size;
-        count--;
+        _head = (_head+1) % _size;
+        _count--;
         return true;
     }
 
     // Discards the buffer content, emptying it.
     void clear(void)
     {
-        head = count = 0;
+        _head = _count = 0;
     }
 
     /*
@@ -248,7 +253,7 @@ public:
         if (empty()) {
             return false;
         }
-        object = buffer[head];
+        object = _buffer[_head];
         return pop();
     }
 
@@ -268,12 +273,12 @@ public:
       remove the Nth element from the array. First element is zero
      */
     bool remove(uint16_t n) {
-        if (n >= count) {
+        if (n >= _count) {
             return false;
         }
-        if (n == count-1) {
+        if (n == _count-1) {
             // remove last element
-            count--;
+            _count--;
             return true;
         }
         if (n == 0) {
@@ -281,25 +286,25 @@ public:
             return pop();
         }
         // take advantage of the [] operator for simple shift of the array elements
-        for (uint16_t i=n; i<count-1; i++) {
+        for (uint16_t i=n; i<_count-1; i++) {
             *(*this)[i] = *(*this)[i+1];
         }
-        count--;
+        _count--;
         return true;
     }
 
     // allow array indexing, based on current head. Returns a pointer
     // to the object or nullptr
     T * operator[](uint16_t i) {
-        if (i >= count) {
+        if (i >= _count) {
             return nullptr;
         }
-        return &buffer[(head+i)%size];
+        return &_buffer[(_head+i)%_size];
     }
 
 private:
-    T *buffer;
-    uint16_t size;  // total buffer size
-    uint16_t count; // number in buffer now
-    uint16_t head;  // first element
+    T *_buffer;
+    uint16_t _size;  // total buffer size
+    uint16_t _count; // number in buffer now
+    uint16_t _head;  // first element
 };

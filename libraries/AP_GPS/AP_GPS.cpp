@@ -403,7 +403,7 @@ void AP_GPS::detect_instance(uint8_t instance)
 {
     AP_GPS_Backend *new_gps = nullptr;
     struct detect_state *dstate = &detect_state[instance];
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     state[instance].status = NO_GPS;
     state[instance].hdop = GPS_UNKNOWN_DOP;
@@ -501,12 +501,12 @@ void AP_GPS::detect_instance(uint8_t instance)
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
-        if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
+        if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
             send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
         }
     }
 
-    if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
+    if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
         send_blob_update(instance);
     }
 
@@ -612,7 +612,7 @@ void AP_GPS::update_instance(uint8_t instance)
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
-    uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::millis();
 
     // if we did not get a message, and the idle timer of 2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
@@ -624,6 +624,7 @@ void AP_GPS::update_instance(uint8_t instance)
             delete drivers[instance];
             drivers[instance] = nullptr;
             memset(&state[instance], 0, sizeof(state[instance]));
+            state[instance].instance = instance;
             state[instance].status = NO_GPS;
             state[instance].hdop = GPS_UNKNOWN_DOP;
             state[instance].vdop = GPS_UNKNOWN_DOP;
@@ -786,7 +787,7 @@ void AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms
     if (instance >= GPS_MAX_RECEIVERS) {
         return;
     }
-    uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::millis();
     GPS_State &istate = state[instance];
     istate.status = _status;
     istate.location = _location;
@@ -951,7 +952,7 @@ uint8_t AP_GPS::first_unconfigured_gps(void) const
 
 void AP_GPS::broadcast_first_configuration_failure_reason(void) const
 {
-    uint8_t unconfigured = first_unconfigured_gps();
+    const uint8_t unconfigured = first_unconfigured_gps();
     if (drivers[unconfigured] == nullptr) {
         gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
     } else {
@@ -1107,7 +1108,7 @@ const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
 
 /*
   returns the desired gps update rate in milliseconds
-  this does not provide any gurantee that the GPS is updating at the requested
+  this does not provide any guarantee that the GPS is updating at the requested
   rate it is simply a helper for use in the backends for determining what rate
   they should be configuring the GPS to run at
 */
@@ -1121,7 +1122,7 @@ uint16_t AP_GPS::get_rate_ms(uint8_t instance) const
 }
 
 /*
- calculate the weightings used to blend GPs location and velocity data
+ calculate the weightings used to blend GPSs location and velocity data
 */
 bool AP_GPS::calc_blend_weights(void)
 {
@@ -1498,4 +1499,10 @@ void AP_GPS::calc_blended_state(void)
     }
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = (uint32_t)temp_time_1;
     timing[GPS_BLENDED_INSTANCE].last_message_time_ms = (uint32_t)temp_time_2;
+}
+
+bool AP_GPS::is_healthy(uint8_t instance) const {
+    return drivers[instance] != nullptr &&
+           last_message_delta_time_ms(instance) < GPS_MAX_DELTA_MS &&
+           drivers[instance]->is_healthy();
 }

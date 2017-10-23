@@ -1,5 +1,4 @@
 #include "Sub.h"
-#include "version.h"
 
 #if LOGGING_ENABLED == ENABLED
 

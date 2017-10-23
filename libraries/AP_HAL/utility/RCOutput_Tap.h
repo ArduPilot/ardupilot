@@ -49,11 +49,9 @@
  */
 #pragma once
 
-#include "AP_HAL_PX4.h"
-#include <systemlib/perf_counter.h>
-#include <uORB/topics/actuator_armed.h>
+#include <AP_HAL/Util.h>
 
-namespace PX4 {
+namespace ap {
 
 struct EscPacket;
 
@@ -84,19 +82,21 @@ private:
 
     int _send_packet(EscPacket &p);
     bool _uart_open();
+    bool _uart_set_speed(int speed);
     void _uart_close();
 
-    perf_counter_t _perf_rcout;
+    AP_HAL::Util::perf_counter_t _perf_rcout;
 
     uint8_t _enabled_channels;
     bool _corking;
+    bool _led_on;
 
     uint8_t _channels_count = MAX_MOTORS;
-    uint8_t _next_channel_reply;
 
     uint16_t _period[MAX_MOTORS];
     uint16_t _esc_pwm_min;
     uint16_t _esc_pwm_max;
+    uint32_t _last_led_update_msec;
     int _uart_fd = -1;
 };
 

@@ -20,6 +20,7 @@ UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.9-base:i386 libstdc++5:i386 libstdc
 ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
 ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL"
+ARM_HF_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
 
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
@@ -31,7 +32,7 @@ usermod -a -G dialout $VAGRANT_USER
 apt-get -y remove modemmanager
 apt-get -y update
 apt-get -y install dos2unix g++-4.7 ccache python-lxml screen xterm gdb pkgconf
-apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS
+apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $ARM_HF_PKGS
 pip -q install $PYTHON_PKGS
 easy_install catkin_pkg
 

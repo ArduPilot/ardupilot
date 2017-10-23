@@ -6,7 +6,6 @@ The init_ardupilot function processes everything we need for an in - air restart
 *****************************************************************************/
 
 #include "Rover.h"
-#include "version.h"
 
 static void mavlink_delay_cb_static()
 {
@@ -122,7 +121,7 @@ void Rover::init_ardupilot()
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(&DataFlash, serial_manager);
+    camera_mount.init(serial_manager);
 #endif
 
     /*

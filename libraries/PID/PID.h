@@ -39,6 +39,10 @@ public:
     ///
     float        get_pid(float error, float scaler = 1.0);
 
+    /// Reset the whole PID state
+    //
+    void        reset();
+
     /// Reset the PID integrator
     ///
     void        reset_I();

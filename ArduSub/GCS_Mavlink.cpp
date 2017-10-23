@@ -1,5 +1,4 @@
 #include "Sub.h"
-#include "version.h"
 
 #include "GCS_Mavlink.h"
 
@@ -164,7 +163,7 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (gps.status() > AP_GPS::NO_GPS) {
+    if (gps.is_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED
@@ -1188,6 +1187,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
+            } else if (is_equal(packet.param5,4.0f)) {
+                // simple accel calibration
+                result = sub.ins.simple_accel_cal(sub.ahrs);
             } else if (is_equal(packet.param6,1.0f)) {
                 // compassmot calibration
                 //result = sub.mavlink_compassmot(chan);

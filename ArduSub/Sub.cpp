@@ -13,19 +13,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Sub.h"
+
+#define FORCE_VERSION_H_INCLUDE
 #include "version.h"
+#undef FORCE_VERSION_H_INCLUDE
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 /*
   constructor for main Sub class
  */
-Sub::Sub(void) :
-    DataFlash {fwver.fw_string, g.log_bitmask},
-          mission(ahrs,
-                  FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
-                  FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
-                  FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void)),
+Sub::Sub(void)
+    : DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask)),
           control_mode(MANUAL),
           motors(MAIN_LOOP_RATE),
           scaleLongDown(1),
@@ -52,30 +51,11 @@ Sub::Sub(void) :
           pos_control(ahrs_view, inertial_nav, motors, attitude_control,
                       g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                       g.p_pos_xy, g.pi_vel_xy),
-#if AVOIDANCE_ENABLED == ENABLED
-          avoid(ahrs, inertial_nav, fence, g2.proximity),
-#endif
           wp_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
           circle_nav(inertial_nav, ahrs_view, pos_control),
           pmTest1(0),
           fast_loopTimer(0),
           mainLoop_count(0),
-          ServoRelayEvents(relay),
-#if CAMERA == ENABLED
-          camera(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs),
-#endif
-#if MOUNT == ENABLED
-          camera_mount(ahrs, current_loc),
-#endif
-#if AC_FENCE == ENABLED
-          fence(ahrs, inertial_nav),
-#endif
-#if AC_RALLY == ENABLED
-          rally(ahrs),
-#endif
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-          terrain(ahrs, mission, rally),
-#endif
           in_mavlink_delay(false),
           param_loader(var_info),
           last_pilot_yaw_input_ms(0)

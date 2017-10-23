@@ -249,6 +249,10 @@ private:
     // ICEngine control on landing
     AP_Int8 land_icengine_cut;
 
+    // HEARTBEAT mav_type override
+    AP_Int8 mav_type;
+    uint8_t get_mav_type(void) const;
+    
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
 

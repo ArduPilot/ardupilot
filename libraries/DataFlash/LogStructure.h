@@ -622,6 +622,7 @@ struct PACKED log_Ubx1 {
     uint8_t  jamInd;
     uint8_t  aPower;
     uint16_t agcCnt;
+    uint32_t config;
 };
 
 struct PACKED log_Ubx2 {
@@ -898,6 +899,24 @@ struct PACKED log_SRTL {
     float D;
 };
 
+struct PACKED log_DSTL {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t stage;
+    float target_heading;
+    int32_t target_lat;
+    int32_t target_lng;
+    int32_t target_alt;
+    int16_t crosstrack_error;
+    int16_t travel_distance;
+    float l1_i;
+    int32_t loiter_sum_cd;
+    float desired;
+    float P;
+    float I;
+    float D;
+};
+
 // #endif // SBP_HW_LOGGING
 
 #define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
@@ -1096,11 +1115,11 @@ Format characters in the format string for binary log messages
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
-      "UBX1", "QBHBBH",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt" }, \
+      "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config" }, \
     { LOG_GPS_UBX2_MSG, sizeof(log_Ubx2), \
       "UBX2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ" }, \
     { LOG_GPS2_UBX1_MSG, sizeof(log_Ubx1), \
-      "UBY1", "QBHBBH",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt" }, \
+      "UBY1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config" }, \
     { LOG_GPS2_UBX2_MSG, sizeof(log_Ubx2), \
       "UBY2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ" }, \
     { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
@@ -1153,8 +1172,8 @@ Format characters in the format string for binary log messages
       "PIDA", PID_FMT,  PID_LABELS }, \
     { LOG_PIDS_MSG, sizeof(log_PID), \
       "PIDS", PID_FMT,  PID_LABELS }, \
-    { LOG_PIDL_MSG, sizeof(log_PID), \
-      "PIDL", PID_FMT,  PID_LABELS }, \
+    { LOG_DSTL_MSG, sizeof(log_DSTL), \
+      "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D" }, \
     { LOG_BAR2_MSG, sizeof(log_BARO), \
       "BAR2",  BARO_FMT, BARO_LABELS }, \
     { LOG_BAR3_MSG, sizeof(log_BARO), \
@@ -1264,7 +1283,7 @@ enum LogMessages {
     LOG_PIDY_MSG,
     LOG_PIDA_MSG,
     LOG_PIDS_MSG,
-    LOG_PIDL_MSG,
+    LOG_DSTL_MSG,
     LOG_VIBE_MSG,
     LOG_IMUDT_MSG,
     LOG_IMUDT2_MSG,

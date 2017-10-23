@@ -72,7 +72,7 @@ public:
 private:
 
     AP_Int32 log_bitmask;
-    DataFlash_Class dataflash{"DF AllTypes 0.1", log_bitmask};
+    DataFlash_Class dataflash = DataFlash_Class::create("DF AllTypes 0.1", log_bitmask);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
@@ -174,6 +174,9 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
                         -98239832498328,   // int64_t
                         3432345232233432   // uint64_t
         );
+
+    // emit a message which contains NaNs:
+    dataflash.Log_Write("NANS", "f,d,bf,bd", "fdfd",  dataflash.quiet_nanf(), dataflash.quiet_nan(), NAN, NAN);
 
     flush_dataflash(dataflash);
 

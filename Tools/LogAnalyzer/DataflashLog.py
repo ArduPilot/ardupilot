@@ -336,9 +336,14 @@ class DataflashLogHelper:
         if not "GPS" in logdata.channels:
             raise Exception("no GPS log data found")
         # older logs use 'TIme', newer logs use 'TimeMS'
-        timeLabel = "TimeMS"
-        if "Time" in logdata.channels["GPS"]:
-            timeLabel = "Time"
+        # even newer logs use TimeUS
+        timeLabel = None
+        for possible in "TimeMS", "Time", "TimeUS":
+            if possible in logdata.channels["GPS"]:
+                timeLabel = possible
+                break
+        if timeLabel is None:
+            raise Exception("Unable to get time label")
         while lineNumber <= logdata.lineCount:
             if lineNumber in logdata.channels["GPS"][timeLabel].dictData:
                 return logdata.channels["GPS"][timeLabel].dictData[lineNumber]
@@ -553,7 +558,12 @@ class DataflashLog(object):
                     13:'SPORT',
                     14:'FLIP',
                     15:'AUTOTUNE',
-                    16:'HYBRID',}
+                    16:'POSHOLD',
+                    17:'BRAKE',
+                    18:'THROW',
+                    19:'AVOID_ADSB',
+                    20:'GUIDED_NOGPS',
+                    21:'SMART_RTL'}
                 if hasattr(e, 'ThrCrs'):
                     self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ThrCrs)
                 else:
@@ -564,7 +574,8 @@ class DataflashLog(object):
                     self.modeChanges[lineNumber] = (e.Mode, e.ThrCrs)
                 else:
                     # assume it has ModeNum:
-                    self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
+                    print("Unknown mode=%u" % e.ModeNum)
+                    self.modeChanges[lineNumber] = (e.Mode, "mode=%u" % e.ModeNum)
         elif self.vehicleType in [VehicleType.Plane, VehicleType.Copter, VehicleType.Rover]:
             self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
         else:

@@ -39,13 +39,24 @@ do {                                            \
  # define Debug(fmt, args ...)
 #endif
 
+#define SBF_EXCESS_COMMAND_BYTES 5 // 2 start bytes + validity byte + space byte + endline byte
+
+#define RX_ERROR_MASK (SOFTWARE      | \
+                       CONGESTION    | \
+                       MISSEDEVENT   | \
+                       CPUOVERLOAD   | \
+                       INVALIDCONFIG | \
+                       OUTOFGEOFENCE)
+
+
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
 {
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
 
-    port->write((const uint8_t*)_initialisation_blob[0], strlen(_initialisation_blob[0]));
+    port->write((const uint8_t*)_port_enable, strlen(_port_enable));
+    _config_last_ack_time = AP_HAL::millis();
 }
 
 // Process all bytes available from the stream
@@ -55,18 +66,21 @@ AP_GPS_SBF::read(void)
 {
     uint32_t now = AP_HAL::millis();
 
-    if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
+    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
+        _init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
         const char *init_str = _initialisation_blob[_init_blob_index];
-        if (validcommand) {
-            _init_blob_index++;
-            validcommand = false;
-            _init_blob_time = 0;
-        }
 
         if (now > _init_blob_time) {
-            port->write((const uint8_t*)init_str, strlen(init_str));
-            // if this is too low a race condition on start occurs and the GPS isn't detected
-            _init_blob_time = now + 2000;
+            if (now > _config_last_ack_time + 2500) {
+                // try to enable input on the GPS port if we have not made progress on configuring it
+                Debug("SBF Sending port enable");
+                port->write((const uint8_t*)_port_enable, strlen(_port_enable));
+                _config_last_ack_time = now;
+            } else {
+                Debug("SBF sending init string: %s", init_str);
+                port->write((const uint8_t*)init_str, strlen(init_str));
+            }
+            _init_blob_time = now + 1000;
         }
     }
 
@@ -95,8 +109,8 @@ AP_GPS_SBF::parse(uint8_t temp)
             if (temp == SBF_PREAMBLE2) {
                 sbf_msg.sbf_state = sbf_msg_parser_t::CRC1;
             } else if (temp == 'R') {
-                validcommand = true;
-                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                Debug("SBF got a response\n");
+                sbf_msg.sbf_state = sbf_msg_parser_t::COMMAND_LINE;
             }
             else
             {
@@ -161,6 +175,44 @@ AP_GPS_SBF::parse(uint8_t temp)
                     Debug("crc fail\n");
                     crc_error_counter++;
                 }
+            }
+            break;
+        case sbf_msg_parser_t::COMMAND_LINE:
+            if (sbf_msg.read < (sizeof(sbf_msg.data) - 1)) {
+                sbf_msg.data.bytes[sbf_msg.read] = temp;
+            } else {
+                // we don't have enough buffer to compare the commands
+                // most probable cause is that a user injected a longer command then
+                // we have buffer for, or it could be a corruption, either way we
+                // simply ignore the result
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                break;
+            }
+            sbf_msg.read++;
+            if (temp == '\n') {
+                sbf_msg.data.bytes[sbf_msg.read] = 0;
+
+                // received the result, lets assess it
+                if (sbf_msg.data.bytes[0] == ':') {
+                    // valid command, determine if it was the one we were trying
+                    // to send in the configuration sequence
+                    if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
+                        if (!strncmp(_initialisation_blob[_init_blob_index], (char *)(sbf_msg.data.bytes + 2),
+                                     sbf_msg.read - SBF_EXCESS_COMMAND_BYTES)) {
+                            Debug("SBF Ack Command: %s\n", sbf_msg.data.bytes);
+                            _init_blob_index++;
+                            _config_last_ack_time = AP_HAL::millis();
+                        } else {
+                            Debug("SBF Ack command (unexpected): %s\n", sbf_msg.data.bytes);
+                        }
+                    }
+                } else {
+                    // rejected command, send it out as a debug
+                    Debug("SBF NACK Command: %s\n", sbf_msg.data.bytes);
+                }
+                // resume normal parsing
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                break;
             }
             break;
     }
@@ -303,6 +355,7 @@ AP_GPS_SBF::process_message(void)
     {
         const msg4014 &temp = sbf_msg.data.msg4014u;
         RxState = temp.RxState;
+        RxError = temp.RxError;
         break;
     }
     case VelCovGeodetic:
@@ -338,4 +391,20 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
             gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
         }
     }
+
+    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
+        _init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not fully configured (%d/%d)", state.instance + 1,
+                        _init_blob_index, ARRAY_SIZE(_initialisation_blob));
+    }
+}
+
+bool AP_GPS_SBF::is_configured (void) {
+    return (!gps._raw_data || (RxState & SBF_DISK_ACTIVITY)) &&
+            (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE ||
+             _init_blob_index >= ARRAY_SIZE(_initialisation_blob));
+}
+
+bool AP_GPS_SBF::is_healthy (void) const {
+    return (RxError & RX_ERROR_MASK) == 0;
 }

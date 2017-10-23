@@ -196,6 +196,7 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_AVOID_ADSB:
         case AUXSW_PRECISION_LOITER:
         case AUXSW_AVOID_PROXIMITY:
+        case AUXSW_INVERTED:
             do_aux_switch_function(ch_option, ch_flag);
             break;
     }
@@ -605,6 +606,23 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     reset_control_switch();
                 }
             }
+            break;
+            
+        case AUXSW_INVERTED:
+#if FRAME_CONFIG == HELI_FRAME
+            switch (ch_flag) {
+            case AUX_SWITCH_HIGH:
+                motors->set_inverted_flight(true);
+                attitude_control->set_inverted_flight(true);
+                heli_flags.inverted_flight = true;
+                break;
+            case AUX_SWITCH_LOW:
+                motors->set_inverted_flight(false);
+                attitude_control->set_inverted_flight(false);
+                heli_flags.inverted_flight = false;
+                break;
+            }
+#endif
             break;
     }
 }

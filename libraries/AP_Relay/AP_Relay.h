@@ -14,10 +14,16 @@
 #define AP_RELAY_NUM_RELAYS 4
 
 /// @class	AP_Relay
-/// @brief	Class to manage the APM relay
+/// @brief	Class to manage the ArduPilot relay
 class AP_Relay {
 public:
-    AP_Relay();
+    static AP_Relay create() { return AP_Relay{}; }
+
+    constexpr AP_Relay(AP_Relay &&other) = default;
+
+    /* Do not allow copies */
+    AP_Relay(const AP_Relay &other) = delete;
+    AP_Relay &operator=(const AP_Relay&) = delete;
 
     // setup the relay pin
     void        init();
@@ -37,6 +43,8 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
+    AP_Relay();
+
     AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
     AP_Int8 _default;
 };

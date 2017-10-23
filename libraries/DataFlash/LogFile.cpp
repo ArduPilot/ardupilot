@@ -366,67 +366,46 @@ void DataFlash_Class::Log_Write_RSSI(AP_RSSI &rssi)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write a BARO packet
-void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
+void DataFlash_Class::Log_Write_Baro_instance(AP_Baro &baro, uint64_t time_us, uint8_t baro_instance, enum LogMessages type)
 {
-    if (time_us == 0) {
-        time_us = AP_HAL::micros64();
-    }
     float climbrate = baro.get_climb_rate();
     float drift_offset = baro.get_baro_drift_offset();
     float ground_temp = baro.get_ground_temperature();
     struct log_BARO pkt = {
         LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
         time_us       : time_us,
-        altitude      : baro.get_altitude(0),
-        pressure      : baro.get_pressure(0),
-        temperature   : (int16_t)(baro.get_temperature(0) * 100 + 0.5f),
+        altitude      : baro.get_altitude(baro_instance),
+        pressure      : baro.get_pressure(baro_instance),
+        temperature   : (int16_t)(baro.get_temperature(baro_instance) * 100 + 0.5f),
         climbrate     : climbrate,
-        sample_time_ms: baro.get_last_update(0),
+        sample_time_ms: baro.get_last_update(baro_instance),
         drift_offset  : drift_offset,
         ground_temp   : ground_temp,
     };
     WriteBlock(&pkt, sizeof(pkt));
+}
 
-    if (baro.num_instances() > 1 && baro.healthy(1)) {
-        struct log_BARO pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_BAR2_MSG),
-            time_us       : time_us,
-            altitude      : baro.get_altitude(1),
-            pressure      : baro.get_pressure(1),
-            temperature   : (int16_t)(baro.get_temperature(1) * 100 + 0.5f),
-            climbrate     : climbrate,
-            sample_time_ms: baro.get_last_update(1),
-            drift_offset  : drift_offset,
-            ground_temp   : ground_temp,
-        };
-        WriteBlock(&pkt2, sizeof(pkt2));
+// Write a BARO packet
+void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
+{
+    if (time_us == 0) {
+        time_us = AP_HAL::micros64();
     }
-
+    Log_Write_Baro_instance(baro, time_us, 0, LOG_BARO_MSG);
+    if (baro.num_instances() > 1 && baro.healthy(1)) {
+        Log_Write_Baro_instance(baro, time_us, 1, LOG_BAR2_MSG);
+    }
     if (baro.num_instances() > 2 && baro.healthy(2)) {
-        struct log_BARO pkt3 = {
-            LOG_PACKET_HEADER_INIT(LOG_BAR3_MSG),
-            time_us       : time_us,
-            altitude      : baro.get_altitude(2),
-            pressure      : baro.get_pressure(2),
-            temperature   : (int16_t)(baro.get_temperature(2) * 100 + 0.5f),
-            climbrate     : climbrate,
-            sample_time_ms: baro.get_last_update(2),
-            drift_offset  : drift_offset,
-            ground_temp   : ground_temp,
-        };
-        WriteBlock(&pkt3, sizeof(pkt3));
+        Log_Write_Baro_instance(baro, time_us, 2, LOG_BAR3_MSG);
     }
 }
 
-// Write an raw accel/gyro data packet
-void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
+void DataFlash_Class::Log_Write_IMU_instance(const AP_InertialSensor &ins, const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
 {
-    uint64_t time_us = AP_HAL::micros64();
-    const Vector3f &gyro = ins.get_gyro(0);
-    const Vector3f &accel = ins.get_accel(0);
+    const Vector3f &gyro = ins.get_gyro(imu_instance);
+    const Vector3f &accel = ins.get_accel(imu_instance);
     struct log_IMU pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
+        LOG_PACKET_HEADER_INIT(type),
         time_us : time_us,
         gyro_x  : gyro.x,
         gyro_y  : gyro.y,
@@ -434,76 +413,48 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_x : accel.x,
         accel_y : accel.y,
         accel_z : accel.z,
-        gyro_error  : ins.get_gyro_error_count(0),
-        accel_error : ins.get_accel_error_count(0),
-        temperature : ins.get_temperature(0),
-        gyro_health : (uint8_t)ins.get_gyro_health(0),
-        accel_health : (uint8_t)ins.get_accel_health(0),
-        gyro_rate : ins.get_gyro_rate_hz(0),
-        accel_rate : ins.get_accel_rate_hz(0),
+        gyro_error  : ins.get_gyro_error_count(imu_instance),
+        accel_error : ins.get_accel_error_count(imu_instance),
+        temperature : ins.get_temperature(imu_instance),
+        gyro_health : (uint8_t)ins.get_gyro_health(imu_instance),
+        accel_health : (uint8_t)ins.get_accel_health(imu_instance),
+        gyro_rate : ins.get_gyro_rate_hz(imu_instance),
+        accel_rate : ins.get_accel_rate_hz(imu_instance),
     };
     WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write an raw accel/gyro data packet
+void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
+{
+    uint64_t time_us = AP_HAL::micros64();
+
+    Log_Write_IMU_instance(ins, time_us, 0, LOG_IMU_MSG);
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
         return;
     }
 
-    const Vector3f &gyro2 = ins.get_gyro(1);
-    const Vector3f &accel2 = ins.get_accel(1);
-    struct log_IMU pkt2 = {
-        LOG_PACKET_HEADER_INIT(LOG_IMU2_MSG),
-        time_us : time_us,
-        gyro_x  : gyro2.x,
-        gyro_y  : gyro2.y,
-        gyro_z  : gyro2.z,
-        accel_x : accel2.x,
-        accel_y : accel2.y,
-        accel_z : accel2.z,
-        gyro_error  : ins.get_gyro_error_count(1),
-        accel_error : ins.get_accel_error_count(1),
-        temperature : ins.get_temperature(1),
-        gyro_health : (uint8_t)ins.get_gyro_health(1),
-        accel_health : (uint8_t)ins.get_accel_health(1),
-        gyro_rate : ins.get_gyro_rate_hz(1),
-        accel_rate : ins.get_accel_rate_hz(1),
-    };
-    WriteBlock(&pkt2, sizeof(pkt2));
+    Log_Write_IMU_instance(ins, time_us, 1, LOG_IMU2_MSG);
+
     if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
         return;
     }
-    const Vector3f &gyro3 = ins.get_gyro(2);
-    const Vector3f &accel3 = ins.get_accel(2);
-    struct log_IMU pkt3 = {
-        LOG_PACKET_HEADER_INIT(LOG_IMU3_MSG),
-        time_us : time_us,
-        gyro_x  : gyro3.x,
-        gyro_y  : gyro3.y,
-        gyro_z  : gyro3.z,
-        accel_x : accel3.x,
-        accel_y : accel3.y,
-        accel_z : accel3.z,
-        gyro_error  : ins.get_gyro_error_count(2),
-        accel_error : ins.get_accel_error_count(2),
-        temperature : ins.get_temperature(2),
-        gyro_health : (uint8_t)ins.get_gyro_health(2),
-        accel_health : (uint8_t)ins.get_accel_health(2),
-        gyro_rate : ins.get_gyro_rate_hz(2),
-        accel_rate : ins.get_accel_rate_hz(2),
-    };
-    WriteBlock(&pkt3, sizeof(pkt3));
+
+    Log_Write_IMU_instance(ins, time_us, 2, LOG_IMU3_MSG);
 }
 
 // Write an accel/gyro delta time data packet
-void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t time_us, uint8_t imu_mask)
+void DataFlash_Class::Log_Write_IMUDT_instance(const AP_InertialSensor &ins, const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
 {
     float delta_t = ins.get_delta_time();
-    float delta_vel_t = ins.get_delta_velocity_dt(0);
-    float delta_ang_t = ins.get_delta_angle_dt(0);
+    float delta_vel_t = ins.get_delta_velocity_dt(imu_instance);
+    float delta_ang_t = ins.get_delta_angle_dt(imu_instance);
     Vector3f delta_angle, delta_velocity;
-    ins.get_delta_angle(0, delta_angle);
-    ins.get_delta_velocity(0, delta_velocity);
+    ins.get_delta_angle(imu_instance, delta_angle);
+    ins.get_delta_velocity(imu_instance, delta_velocity);
 
     struct log_IMUDT pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_IMUDT_MSG),
+        LOG_PACKET_HEADER_INIT(type),
         time_us : time_us,
         delta_time   : delta_t,
         delta_vel_dt : delta_vel_t,
@@ -515,64 +466,28 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t tim
         delta_vel_y  : delta_velocity.y,
         delta_vel_z  : delta_velocity.z
     };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t time_us, uint8_t imu_mask)
+{
     if (imu_mask & 1) {
-        WriteBlock(&pkt, sizeof(pkt));
+        Log_Write_IMUDT_instance(ins, time_us, 0, LOG_IMUDT_MSG);
     }
     if ((ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) || !ins.use_gyro(1)) {
         return;
     }
 
-    delta_vel_t = ins.get_delta_velocity_dt(1);
-    delta_ang_t = ins.get_delta_angle_dt(1);
-    if (!ins.get_delta_angle(1, delta_angle)) {
-        delta_angle.zero();
-    }
-    if (!ins.get_delta_velocity(1, delta_velocity)) {
-        delta_velocity.zero();
-    }
-    struct log_IMUDT pkt2 = {
-        LOG_PACKET_HEADER_INIT(LOG_IMUDT2_MSG),
-        time_us     : time_us,
-        delta_time   : delta_t,
-        delta_vel_dt : delta_vel_t,
-        delta_ang_dt : delta_ang_t,
-        delta_ang_x  : delta_angle.x,
-        delta_ang_y  : delta_angle.y,
-        delta_ang_z  : delta_angle.z,
-        delta_vel_x  : delta_velocity.x,
-        delta_vel_y  : delta_velocity.y,
-        delta_vel_z  : delta_velocity.z
-    };
     if (imu_mask & 2) {
-        WriteBlock(&pkt2, sizeof(pkt2));
+        Log_Write_IMUDT_instance(ins, time_us, 1, LOG_IMUDT2_MSG);
     }
 
     if ((ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) || !ins.use_gyro(2)) {
         return;
     }
-    delta_vel_t = ins.get_delta_velocity_dt(1);
-    delta_ang_t = ins.get_delta_angle_dt(2);
-    if (!ins.get_delta_angle(2, delta_angle)) {
-        delta_angle.zero();
-    }
-    if (!ins.get_delta_velocity(2, delta_velocity)) {
-        delta_velocity.zero();
-    }
-    struct log_IMUDT pkt3 = {
-        LOG_PACKET_HEADER_INIT(LOG_IMUDT3_MSG),
-        time_us     : time_us,
-        delta_time   : delta_t,
-        delta_vel_dt : delta_vel_t,
-        delta_ang_dt : delta_ang_t,
-        delta_ang_x  : delta_angle.x,
-        delta_ang_y  : delta_angle.y,
-        delta_ang_z  : delta_angle.z,
-        delta_vel_x  : delta_velocity.x,
-        delta_vel_y  : delta_velocity.y,
-        delta_vel_z  : delta_velocity.z
-    };
+
     if (imu_mask & 4) {
-        WriteBlock(&pkt3, sizeof(pkt3));
+        Log_Write_IMUDT_instance(ins, time_us, 2, LOG_IMUDT3_MSG);
     }
 }
 
@@ -679,7 +594,7 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
         lng            : loc.lng,
         alt            : loc.alt*1.0e-2f,
         rel_home_alt   : -home,
-        rel_origin_alt : ahrs.get_relative_position_D_origin(origin) ? -origin : nanf("ARDUPILOT")
+        rel_origin_alt : ahrs.get_relative_position_D_origin(origin) ? -origin : quiet_nanf(),
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
@@ -1575,85 +1490,73 @@ void DataFlash_Class::Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f 
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write an Current data packet
-void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery)
+void DataFlash_Class::Log_Write_Current_instance(const AP_BattMonitor &battery,
+                                                 const uint64_t time_us,
+                                                 const uint8_t battery_instance,
+                                                 const enum LogMessages type,
+                                                 const enum LogMessages celltype)
 {
-    if (battery.num_instances() >= 1) {
-        float temp;
-        bool has_temp = battery.get_temperature(temp, 0);
-        struct log_Current pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
-            time_us             : AP_HAL::micros64(),
-            voltage             : battery.voltage(0),
-            voltage_resting     : battery.voltage_resting_estimate(0),
-            current_amps        : battery.current_amps(0),
-            current_total       : battery.current_total_mah(0),
-            temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
-            resistance          : battery.get_resistance(0)
+    float temp;
+    bool has_temp = battery.get_temperature(temp, battery_instance);
+    struct log_Current pkt = {
+        LOG_PACKET_HEADER_INIT(type),
+        time_us             : time_us,
+        voltage             : battery.voltage(battery_instance),
+        voltage_resting     : battery.voltage_resting_estimate(battery_instance),
+        current_amps        : battery.current_amps(battery_instance),
+        current_total       : battery.current_total_mah(battery_instance),
+        temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
+        resistance          : battery.get_resistance(battery_instance)
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+
+    // individual cell voltages
+    if (battery.has_cell_voltages(battery_instance)) {
+        const AP_BattMonitor::cells &cells = battery.get_cell_voltages(battery_instance);
+        struct log_Current_Cells cell_pkt = {
+            LOG_PACKET_HEADER_INIT(celltype),
+            time_us             : time_us,
+            voltage             : battery.voltage(battery_instance)
         };
-        WriteBlock(&pkt, sizeof(pkt));
-
-        // individual cell voltages
-        if (battery.has_cell_voltages(0)) {
-            const AP_BattMonitor::cells &cells = battery.get_cell_voltages(0);
-            struct log_Current_Cells cell_pkt = {
-                LOG_PACKET_HEADER_INIT(LOG_CURRENT_CELLS_MSG),
-                time_us             : AP_HAL::micros64(),
-                voltage             : battery.voltage(0)
-            };
-            for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
-                cell_pkt.cell_voltages[i] = cells.cells[i] + 1;
-            }
-            WriteBlock(&cell_pkt, sizeof(cell_pkt));
-
-            // check battery structure can hold all cells
-            static_assert(ARRAY_SIZE(cells.cells) == (sizeof(cell_pkt.cell_voltages) / sizeof(cell_pkt.cell_voltages[0])),
-                          "Battery cell number doesn't match in library and log structure");
+        for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
+            cell_pkt.cell_voltages[i] = cells.cells[i] + 1;
         }
-    }
+        WriteBlock(&cell_pkt, sizeof(cell_pkt));
 
-    if (battery.num_instances() >= 2) {
-        float temp;
-        bool has_temp = battery.get_temperature(temp, 1);
-        struct log_Current pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_CURRENT2_MSG),
-            time_us             : AP_HAL::micros64(),
-            voltage             : battery.voltage(1),
-            voltage_resting     : battery.voltage_resting_estimate(1),
-            current_amps        : battery.current_amps(1),
-            current_total       : battery.current_total_mah(1),
-            temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
-            resistance          : battery.get_resistance(1)
-        };
-        WriteBlock(&pkt, sizeof(pkt));
-
-        // individual cell voltages
-        if (battery.has_cell_voltages(1)) {
-            const AP_BattMonitor::cells &cells = battery.get_cell_voltages(1);
-            struct log_Current_Cells cell_pkt = {
-                LOG_PACKET_HEADER_INIT(LOG_CURRENT_CELLS_MSG),
-                time_us             : AP_HAL::micros64(),
-                voltage             : battery.voltage(1)
-            };
-            for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
-                cell_pkt.cell_voltages[i] = cells.cells[i] + 1;
-            }
-            WriteBlock(&cell_pkt, sizeof(cell_pkt));
-        }
+        // check battery structure can hold all cells
+        static_assert(ARRAY_SIZE(cells.cells) == (sizeof(cell_pkt.cell_voltages) / sizeof(cell_pkt.cell_voltages[0])),
+                      "Battery cell number doesn't match in library and log structure");
     }
 }
 
-// Write a Compass packet
-void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint64_t time_us)
+// Write an Current data packet
+void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery)
 {
-    if (time_us == 0) {
-        time_us = AP_HAL::micros64();
+    const uint64_t time_us = AP_HAL::micros64();
+    if (battery.num_instances() >= 1) {
+        Log_Write_Current_instance(battery,
+                                   time_us,
+                                   0,
+                                   LOG_CURRENT_MSG,
+                                   LOG_CURRENT_CELLS_MSG);
     }
-    const Vector3f &mag_field = compass.get_field(0);
-    const Vector3f &mag_offsets = compass.get_offsets(0);
-    const Vector3f &mag_motor_offsets = compass.get_motor_offsets(0);
+
+    if (battery.num_instances() >= 2) {
+        Log_Write_Current_instance(battery,
+                                   time_us,
+                                   1,
+                                   LOG_CURRENT2_MSG,
+                                   LOG_CURRENT_CELLS2_MSG);
+    }
+}
+
+void DataFlash_Class::Log_Write_Compass_instance(const Compass &compass, const uint64_t time_us, const uint8_t mag_instance, const enum LogMessages type)
+{
+    const Vector3f &mag_field = compass.get_field(mag_instance);
+    const Vector3f &mag_offsets = compass.get_offsets(mag_instance);
+    const Vector3f &mag_motor_offsets = compass.get_motor_offsets(mag_instance);
     struct log_Compass pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
+        LOG_PACKET_HEADER_INIT(type),
         time_us         : time_us,
         mag_x           : (int16_t)mag_field.x,
         mag_y           : (int16_t)mag_field.y,
@@ -1664,53 +1567,26 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint64_t time_us
         motor_offset_x  : (int16_t)mag_motor_offsets.x,
         motor_offset_y  : (int16_t)mag_motor_offsets.y,
         motor_offset_z  : (int16_t)mag_motor_offsets.z,
-        health          : (uint8_t)compass.healthy(0),
-        SUS             : compass.last_update_usec(0)
+        health          : (uint8_t)compass.healthy(mag_instance),
+        SUS             : compass.last_update_usec(mag_instance)
     };
     WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write a Compass packet
+void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint64_t time_us)
+{
+    if (time_us == 0) {
+        time_us = AP_HAL::micros64();
+    }
+    Log_Write_Compass_instance(compass, time_us, 0, LOG_COMPASS_MSG);
 
     if (compass.get_count() > 1) {
-        const Vector3f &mag_field2 = compass.get_field(1);
-        const Vector3f &mag_offsets2 = compass.get_offsets(1);
-        const Vector3f &mag_motor_offsets2 = compass.get_motor_offsets(1);
-        struct log_Compass pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_COMPASS2_MSG),
-            time_us         : time_us,
-            mag_x           : (int16_t)mag_field2.x,
-            mag_y           : (int16_t)mag_field2.y,
-            mag_z           : (int16_t)mag_field2.z,
-            offset_x        : (int16_t)mag_offsets2.x,
-            offset_y        : (int16_t)mag_offsets2.y,
-            offset_z        : (int16_t)mag_offsets2.z,
-            motor_offset_x  : (int16_t)mag_motor_offsets2.x,
-            motor_offset_y  : (int16_t)mag_motor_offsets2.y,
-            motor_offset_z  : (int16_t)mag_motor_offsets2.z,
-            health          : (uint8_t)compass.healthy(1),
-            SUS             : compass.last_update_usec(1)
-        };
-        WriteBlock(&pkt2, sizeof(pkt2));
+        Log_Write_Compass_instance(compass, time_us, 1, LOG_COMPASS2_MSG);
     }
 
     if (compass.get_count() > 2) {
-        const Vector3f &mag_field3 = compass.get_field(2);
-        const Vector3f &mag_offsets3 = compass.get_offsets(2);
-        const Vector3f &mag_motor_offsets3 = compass.get_motor_offsets(2);
-        struct log_Compass pkt3 = {
-            LOG_PACKET_HEADER_INIT(LOG_COMPASS3_MSG),
-            time_us         : time_us,
-            mag_x           : (int16_t)mag_field3.x,
-            mag_y           : (int16_t)mag_field3.y,
-            mag_z           : (int16_t)mag_field3.z,
-            offset_x        : (int16_t)mag_offsets3.x,
-            offset_y        : (int16_t)mag_offsets3.y,
-            offset_z        : (int16_t)mag_offsets3.z,
-            motor_offset_x  : (int16_t)mag_motor_offsets3.x,
-            motor_offset_y  : (int16_t)mag_motor_offsets3.y,
-            motor_offset_z  : (int16_t)mag_motor_offsets3.z,
-            health          : (uint8_t)compass.healthy(2),
-            SUS             : compass.last_update_usec(2)
-        };
-        WriteBlock(&pkt3, sizeof(pkt3));
+        Log_Write_Compass_instance(compass, time_us, 2, LOG_COMPASS3_MSG);
     }
 }
 

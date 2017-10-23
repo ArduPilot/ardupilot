@@ -1,7 +1,6 @@
 #include "GCS_Mavlink.h"
 
 #include "Plane.h"
-#include "version.h"
 
 void Plane::send_heartbeat(mavlink_channel_t chan)
 {
@@ -91,10 +90,10 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(MAV_TYPE_FIXED_WING,
-                                            base_mode,
-                                            custom_mode,
-                                            system_status);
+    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(quadplane.get_mav_type(),
+                                                   base_mode,
+                                                   custom_mode,
+                                                   system_status);
 }
 
 void Plane::send_attitude(mavlink_channel_t chan)
@@ -1205,6 +1204,9 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
+            } else if (is_equal(packet.param5,4.0f)) {
+                // simple accel calibration
+                result = plane.ins.simple_accel_cal(plane.ahrs);
             }
             else {
                     send_text(MAV_SEVERITY_WARNING, "Unsupported preflight calibration");

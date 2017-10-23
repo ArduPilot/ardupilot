@@ -1,5 +1,4 @@
 #include "Sub.h"
-#include "version.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -136,7 +135,7 @@ void Sub::init_ardupilot()
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(&DataFlash, serial_manager);
+    camera_mount.init(serial_manager);
 #endif
 
 #ifdef USERHOOK_INIT
@@ -230,7 +229,7 @@ void Sub::startup_INS_ground()
     ahrs.reset();
 }
 
-// calibrate gyros - returns true if succesfully calibrated
+// calibrate gyros - returns true if successfully calibrated
 bool Sub::calibrate_gyros()
 {
     // gyro offset calibration

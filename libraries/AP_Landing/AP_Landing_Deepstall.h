@@ -68,6 +68,7 @@ private:
     AP_Float yaw_rate_limit;
     AP_Float time_constant;
     AP_Float min_abort_alt;
+    AP_Float aileron_scalar;
     int32_t loiter_sum_cd;         // used for tracking the progress on loitering
     deepstall_stage stage;
     Location landing_point;
@@ -102,6 +103,7 @@ private:
     bool is_throttle_suppressed(void) const;
     bool is_flying_forward(void) const;
     bool terminate(void);
+    void log(void) const;
 
     bool send_deepstall_message(mavlink_channel_t chan) const;
 

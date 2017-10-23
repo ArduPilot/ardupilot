@@ -44,9 +44,13 @@ class Compass
 {
 friend class AP_Compass_Backend;
 public:
-    /// Constructor
-    ///
-    Compass();
+    static Compass create() { return Compass{}; }
+
+    constexpr Compass(Compass &&other) = default;
+
+    /* Do not allow copies */
+    Compass(const Compass &other) = delete;
+    Compass &operator=(const Compass&) = delete;
 
     /// Initialize the compass device.
     ///
@@ -289,6 +293,8 @@ public:
     }
 
 private:
+    Compass();
+
     /// Register a new compas driver, allocating an instance number
     ///
     /// @return number of compass instances
@@ -307,6 +313,9 @@ private:
     bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
     bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
     bool _auto_reboot() { return _compass_cal_autoreboot; }
+
+    // see if we already have probed a driver by bus type
+    bool _have_driver(AP_HAL::Device::BusType bus_type, uint8_t bus_num, uint8_t address, uint8_t devtype) const;
 
 
     //keep track of which calibrators have been saved

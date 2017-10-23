@@ -11,11 +11,13 @@
 
 class AP_BoardConfig_CAN {
 public:
-    // constructor
-    AP_BoardConfig_CAN(void)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    };
+    static AP_BoardConfig_CAN create() { return AP_BoardConfig_CAN{}; }
+
+    constexpr AP_BoardConfig_CAN(AP_BoardConfig_CAN &&other) = default;
+
+    /* Do not allow copies */
+    AP_BoardConfig_CAN(const AP_BoardConfig_CAN &other) = delete;
+    AP_BoardConfig_CAN &operator=(const AP_BoardConfig_CAN&) = delete;
 
     void init(void);
 
@@ -96,5 +98,10 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     void px4_setup_canbus(void);
 #endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
+
+private:
+    AP_BoardConfig_CAN() {
+        AP_Param::setup_object_defaults(this, var_info);
+    };
 };
 #endif

@@ -36,7 +36,8 @@
 #define HAL_BOARD_SUBTYPE_LINUX_DARK       1016
 #define HAL_BOARD_SUBTYPE_LINUX_BLUE       1018
 #define HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ 1019
-#define HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ   1020
+#define HAL_BOARD_SUBTYPE_LINUX_EDGE       1020
+#define HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ   1021
 
 /* HAL PX4 sub-types, starting at 2000 */
 #define HAL_BOARD_SUBTYPE_PX4_V1           2000
@@ -72,7 +73,8 @@
 #define HAL_INS_BBBMINI     17
 #define HAL_INS_AERO        18
 #define HAL_INS_MPU6500     19
-#define HAL_INS_RST         20
+#define HAL_INS_EDGE        20
+#define HAL_INS_RST         21
 
 /* Barometer driver types */
 #define HAL_BARO_BMP085      1
@@ -87,6 +89,7 @@
 #define HAL_BARO_QURT       10
 #define HAL_BARO_BMP280_I2C 11
 #define HAL_BARO_BMP280_SPI 12
+#define HAL_BARO_LPS25H     13
 
 /* Compass driver types */
 #define HAL_COMPASS_HMC5843             1
@@ -105,7 +108,8 @@
 #define HAL_COMPASS_NAVIO              15
 #define HAL_COMPASS_AERO               16
 #define HAL_COMPASS_OCPOC_ZYNQ         17
-#define HAL_COMPASS_LIS3MDL            18
+#define HAL_COMPASS_EDGE               18
+#define HAL_COMPASS_LIS3MDL            19
 
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1
@@ -164,10 +168,6 @@
 
 #ifndef HAL_HAVE_IMU_HEATER
 #define HAL_HAVE_IMU_HEATER 0
-#endif
-
-#ifndef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
-#define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 1
 #endif
 
 #ifndef HAL_COMPASS_HMC5843_I2C_ADDR

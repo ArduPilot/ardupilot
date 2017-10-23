@@ -47,8 +47,6 @@ class AP_GPS_Backend;
 /// GPS driver main class
 class AP_GPS
 {
-public:
-
     friend class AP_GPS_ERB;
     friend class AP_GPS_GSOF;
     friend class AP_GPS_MAV;
@@ -65,8 +63,14 @@ public:
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
 
-    // constructor
-	AP_GPS();
+public:
+    static AP_GPS create() { return AP_GPS{}; }
+
+    constexpr AP_GPS(AP_GPS &&other) = default;
+
+    /* Do not allow copies */
+    AP_GPS(const AP_GPS &other) = delete;
+    AP_GPS &operator=(const AP_GPS&) = delete;
 
     // GPS driver types
     enum GPS_Type {
@@ -397,8 +401,9 @@ public:
     // indicate which bit in LOG_BITMASK indicates gps logging enabled
     void set_log_gps_bit(uint32_t bit) { _log_gps_bit = bit; }
 
-    // report if the gps is healthy (this is defined as having received an update at a rate greater than 4Hz)
-    bool is_healthy(uint8_t instance) const { return last_message_delta_time_ms(instance) < GPS_MAX_DELTA_MS; }
+    // report if the gps is healthy (this is defined as existing, an update at a rate greater than 4Hz,
+    // as well as any driver specific behaviour)
+    bool is_healthy(uint8_t instance) const;
     bool is_healthy(void) const { return is_healthy(primary_instance); }
 
 protected:
@@ -426,6 +431,8 @@ protected:
     uint32_t _log_gps_bit = -1;
 
 private:
+    AP_GPS();
+
     // returns the desired gps update rate in milliseconds
     // this does not provide any guarantee that the GPS is updating at the requested
     // rate it is simply a helper for use in the backends for determining what rate
@@ -463,9 +470,11 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
+#if !HAL_MINIMIZE_FEATURES
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
+#endif // !HAL_MINIMIZE_FEATURES
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
         struct SBP2_detect_state sbp2_detect_state;

@@ -1,7 +1,8 @@
 from __future__ import print_function
 
-from LogAnalyzer import Test,TestResult
+from LogAnalyzer import Test, TestResult
 import DataflashLog
+from VehicleType import VehicleType
 
 import numpy
 
@@ -17,7 +18,7 @@ class TestVibration(Test):
     def run(self, logdata, verbose):
         self.result = TestResult()
 
-        if logdata.vehicleType != "ArduCopter":
+        if logdata.vehicleType != VehicleType.Copter:
             self.result.status = TestResult.StatusType.NA
             return
 

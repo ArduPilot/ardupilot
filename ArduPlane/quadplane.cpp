@@ -172,7 +172,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: YAW_RATE_MAX
     // @DisplayName: Maximum yaw rate
-    // @Description: This is the maximum yaw rate in degrees/second
+    // @Description: This is the maximum yaw rate for pilot input on rudder stick in degrees/second
     // @Units: deg/s
     // @Range: 50 500
     // @Increment: 1
@@ -220,7 +220,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X or V)
     // @Description: Controls motor mixing for multicopter component
-    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B
+    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B, 11:Y6F
     // @User: Standard
     AP_GROUPINFO("FRAME_TYPE", 31, QuadPlane, frame_type, 1),
 
@@ -393,6 +393,12 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 0 4
     // @Increment: 0.1
     AP_GROUPINFO("TAILSIT_VHPOW", 56, QuadPlane, tailsitter.vectored_hover_power, 2.5),
+
+    // @Param: MAV_TYPE
+    // @DisplayName: MAVLink type identifier
+    // @Description: This controls the mavlink type given in HEARTBEAT messages. For some GCS types a particular setting will be needed for correct operation.
+    // @Values: 0:AUTO,1:FIXED_WING,2:QUADROTOR,3:COAXIAL,4:HELICOPTER,7:AIRSHIP,8:FREE_BALLOON,9:ROCKET,10:GROUND_ROVER,11:SURFACE_BOAT,12:SUBMARINE,16:FLAPPING_WING,17:KITE,19:VTOL_DUOROTOR,20:VTOL_QUADROTOR,21:VTOL_TILTROTOR
+    AP_GROUPINFO("MAV_TYPE", 57, QuadPlane, mav_type, 0),
     
     AP_GROUPEND
 };
@@ -1082,9 +1088,6 @@ void QuadPlane::set_armed(bool armed)
         return;
     }
     motors->armed(armed);
-    if (armed) {
-        motors->enable();
-    }
 }
 
 
@@ -1216,7 +1219,7 @@ void QuadPlane::update_transition(void)
         assistance_needed(aspeed) &&
         !is_tailsitter() &&
         hal.util->get_soft_armed() &&
-        (plane.auto_throttle_mode ||
+        ((plane.auto_throttle_mode && !plane.throttle_suppressed) ||
          plane.channel_throttle->get_control_in()>0 ||
          plane.is_flying())) {
         // the quad should provide some assistance to the plane
@@ -1625,6 +1628,8 @@ bool QuadPlane::in_vtol_auto(void)
         return true;
     case MAV_CMD_NAV_LOITER_UNLIM:
     case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_LOITER_TURNS:
+    case MAV_CMD_NAV_LOITER_TO_ALT:
         return plane.auto_state.vtol_loiter;
     default:
         return false;
@@ -1808,8 +1813,19 @@ void QuadPlane::vtol_position_controller(void)
     // now height control
     switch (poscontrol.state) {
     case QPOS_POSITION1:
-    case QPOS_POSITION2:
-        if (plane.control_mode == QRTL || plane.control_mode == GUIDED) {
+    case QPOS_POSITION2: {
+        bool vtol_loiter_auto = false;
+        if (plane.control_mode == AUTO) {
+            switch (plane.mission.get_current_nav_cmd().id) {
+            case MAV_CMD_NAV_LOITER_UNLIM:
+            case MAV_CMD_NAV_LOITER_TIME:
+            case MAV_CMD_NAV_LOITER_TURNS:
+            case MAV_CMD_NAV_LOITER_TO_ALT:
+                vtol_loiter_auto = true;
+                break;
+            }
+        }
+        if (plane.control_mode == QRTL || plane.control_mode == GUIDED || vtol_loiter_auto) {
             plane.ahrs.get_position(plane.current_loc);
             float target_altitude = plane.next_WP_loc.alt;
             if (poscontrol.slow_descent) {
@@ -1826,6 +1842,7 @@ void QuadPlane::vtol_position_controller(void)
             pos_control->set_alt_target_from_climb_rate(0, plane.G_Dt, false);
         }
         break;
+    }
 
     case QPOS_LAND_DESCEND: {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
@@ -1951,6 +1968,8 @@ void QuadPlane::control_auto(const Location &loc)
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LOITER_UNLIM:
     case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_LOITER_TURNS:
+    case MAV_CMD_NAV_LOITER_TO_ALT:
         vtol_position_controller();
         break;
     default:
@@ -2400,4 +2419,15 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
     guided_start();
     guided_takeoff = true;
     return true;
+}
+
+/*
+  return mav_type for heartbeat
+ */
+uint8_t QuadPlane::get_mav_type(void) const
+{
+    if (mav_type.get() == 0) {
+        return MAV_TYPE_FIXED_WING;
+    }
+    return uint8_t(mav_type.get());
 }

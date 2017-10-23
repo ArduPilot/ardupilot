@@ -136,6 +136,13 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ABORTALT", 15, AP_Landing_Deepstall, min_abort_alt, 0.0f),
 
+    // @Param: AIL_SCL
+    // @DisplayName: Aileron landing gain scalaing
+    // @Description: A scalar to reduce or increase the aileron control
+    // @Range: 0 2.0
+    // @User: Advanced
+    AP_GROUPINFO("AIL_SCL", 16, AP_Landing_Deepstall, aileron_scalar, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -146,7 +153,8 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 void AP_Landing_Deepstall::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
     stage = DEEPSTALL_STAGE_FLY_TO_LANDING;
-    ds_PID.reset_I();
+    ds_PID.reset();
+    L1_xtrack_i = 0.0f;
     hold_level = false; // come out of yaw lock
 
     // load the landing point in, the rest of path building is deferred for a better wind estimate
@@ -172,7 +180,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
 {
     switch (stage) {
     case DEEPSTALL_STAGE_FLY_TO_LANDING:
-        if (get_distance(current_loc, landing_point) > 2 * landing.aparm.loiter_radius) {
+        if (get_distance(current_loc, landing_point) > fabsf(2 * landing.aparm.loiter_radius)) {
             landing.nav_controller->update_waypoint(current_loc, landing_point);
             return false;
         }
@@ -181,7 +189,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         FALLTHROUGH;
     case DEEPSTALL_STAGE_ESTIMATE_WIND:
         {
-        landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, 1);
+        landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
         if (!landing.nav_controller->reached_loiter_target() || (fabsf(height) > DEEPSTALL_LOITER_ALT_TOLERANCE)) {
             // wait until the altitude is correct before considering a breakout
             return false;
@@ -189,13 +197,13 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         // only count loiter progress when within the target altitude
         int32_t target_bearing = landing.nav_controller->target_bearing_cd();
         int32_t delta = wrap_180_cd(target_bearing - last_target_bearing);
+        delta *= (landing_point.flags.loiter_ccw ? -1 : 1);
         if (delta > 0) { // only accumulate turns in the correct direction
             loiter_sum_cd += delta;
         }
         last_target_bearing = target_bearing;
         if (loiter_sum_cd < 36000) {
             // wait until we've done at least one complete loiter at the correct altitude
-            landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, 1);
             return false;
         }
         stage = DEEPSTALL_STAGE_WAIT_FOR_BREAKOUT;
@@ -217,7 +225,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
                 loiter_sum_cd += delta;
             }
             last_target_bearing = target_bearing;
-            landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, 1);
+            landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
             return false;
         }
         stage = DEEPSTALL_STAGE_FLY_TO_ARC;
@@ -236,7 +244,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         if (!landing.nav_controller->reached_loiter_target() ||
             (fabsf(wrap_180(target_heading_deg -
                             degrees(atan2f(-groundspeed.y, -groundspeed.x) + M_PI))) >= 10.0f)) {
-            landing.nav_controller->update_loiter(arc, landing.aparm.loiter_radius, 1);
+            landing.nav_controller->update_loiter(arc, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
             return false;
         }
         stage = DEEPSTALL_STAGE_APPROACH;
@@ -273,7 +281,6 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             // that will be handled within override_servos
             initial_elevator_pwm = elevator->get_output_pwm();
         }
-        L1_xtrack_i = 0; // reset the integrators
         }
         FALLTHROUGH;
     case DEEPSTALL_STAGE_LAND:
@@ -288,7 +295,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
 
 bool AP_Landing_Deepstall::override_servos(void)
 {
-    if (!(stage == DEEPSTALL_STAGE_LAND)) {
+    if (stage != DEEPSTALL_STAGE_LAND) {
         return false;
     }
 
@@ -296,8 +303,7 @@ bool AP_Landing_Deepstall::override_servos(void)
 
     if (elevator == nullptr) {
         // deepstalls are impossible without these channels, abort the process
-        gcs().send_text(MAV_SEVERITY_CRITICAL,
-                                         "Deepstall: Unable to find the elevator channels");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Deepstall: Unable to find the elevator channels");
         request_go_around();
         return false;
     }
@@ -306,7 +312,6 @@ bool AP_Landing_Deepstall::override_servos(void)
     float slew_progress = 1.0f;
     if (slew_speed > 0) {
         slew_progress  = (AP_HAL::millis() - stall_entry_time) / (100.0f * slew_speed);
-        slew_progress = constrain_float (slew_progress, 0.0f, 1.0f);
     }
 
     // mix the elevator to the correct value
@@ -329,15 +334,10 @@ bool AP_Landing_Deepstall::override_servos(void)
                                              0.5f, 1.0f);
 
         float output = constrain_float(pid, -travel_limit, travel_limit);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, output*4500);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input, output*4500);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, output*4500*aileron_scalar);
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, output*4500);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0); // this will normally be managed as part of landing,
                                                                      // but termination needs to set throttle control here
-    } else {
-        // allow the normal servo control of the channel
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input,
-                                        SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
     }
 
     // hand off rudder control to deepstall controlled
@@ -406,12 +406,37 @@ const DataFlash_Class::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
     return ds_PID.get_pid_info();
 }
 
+void AP_Landing_Deepstall::log(void) const {
+    const DataFlash_Class::PID_Info& pid_info = ds_PID.get_pid_info();
+    struct log_DSTL pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_DSTL_MSG),
+        time_us          : AP_HAL::micros64(),
+        stage            : (uint8_t)stage,
+        target_heading   : target_heading_deg,
+        target_lat       : landing_point.lat,
+        target_lng       : landing_point.lng,
+        target_alt       : landing_point.alt,
+        crosstrack_error : (int16_t)(stage >= DEEPSTALL_STAGE_LAND ?
+                             constrain_float(crosstrack_error * 1e2f, (float)INT16_MIN, (float)INT16_MAX) : 0),
+        travel_distance  : (int16_t)(stage >= DEEPSTALL_STAGE_LAND ?
+                             constrain_float(predicted_travel_distance * 1e2f, (float)INT16_MIN, (float)INT16_MAX) : 0),
+        l1_i             : stage >= DEEPSTALL_STAGE_LAND ? L1_xtrack_i : 0.0f,
+        loiter_sum_cd    : stage >= DEEPSTALL_STAGE_ESTIMATE_WIND ? loiter_sum_cd : 0,
+        desired          : pid_info.desired,
+        P                : pid_info.P,
+        I                : pid_info.I,
+        D                : pid_info.D,
+    };
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+}
+
 // termination handling, expected to set the servo outputs
 bool AP_Landing_Deepstall::terminate(void) {
     // if we were not in a deepstall, mark us as being in one
     if(!landing.flags.in_progress || stage != DEEPSTALL_STAGE_LAND) {
         stall_entry_time = AP_HAL::millis();
-        ds_PID.reset_I();
+        ds_PID.reset();
+        L1_xtrack_i = 0.0f;
         landing.flags.in_progress = true;
         stage = DEEPSTALL_STAGE_LAND;
 
@@ -442,17 +467,18 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
 
     float expected_travel_distance = predict_travel_distance(wind, landing_point.alt * 0.01f, false);
     float approach_extension_m = expected_travel_distance + approach_extension;
+    float loiter_radius_m_abs = fabsf(loiter_radius);
     // an approach extensions must be at least half the loiter radius, or the aircraft has a
     // decent chance to be misaligned on final approach
-    approach_extension_m = MAX(approach_extension_m, loiter_radius * 0.5f);
+    approach_extension_m = MAX(approach_extension_m, loiter_radius_m_abs * 0.5f);
 
     location_update(arc_exit, target_heading_deg + 180, approach_extension_m);
     memcpy(&arc, &arc_exit, sizeof(Location));
     memcpy(&arc_entry, &arc_exit, sizeof(Location));
 
-    // TODO: Support loitering on either side of the approach path
-    location_update(arc, target_heading_deg + 90.0, loiter_radius);
-    location_update(arc_entry, target_heading_deg + 90.0, loiter_radius * 2);
+    float arc_heading_deg = target_heading_deg + (landing_point.flags.loiter_ccw ? -90.0f : 90.0f);
+    location_update(arc, arc_heading_deg, loiter_radius_m_abs);
+    location_update(arc_entry, arc_heading_deg, loiter_radius_m_abs * 2);
 
 #ifdef DEBUG_PRINTS
     // TODO: Send this information via a MAVLink packet
@@ -484,7 +510,7 @@ float AP_Landing_Deepstall::predict_travel_distance(const Vector3f wind, const f
     float wind_length = MAX(wind_vec.length(), 0.05f); // always assume a slight wind to avoid divide by 0
     Vector2f course_vec(cosf(course), sinf(course));
 
-    float offset = course + atan2f(-wind.y, -wind.x) + M_PI;
+    float offset = course - atan2f(-wind.y, -wind.x);
 
     // estimator for how far the aircraft will travel while entering the stall
     float stall_distance = slope_a * wind_length * cosf(offset) + slope_b;

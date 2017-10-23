@@ -580,6 +580,8 @@ void AP_Landing::log(void) const
         type_slope_log();
         break;
     case TYPE_DEEPSTALL:
+        deepstall.log();
+        break;
     default:
         break;
     }

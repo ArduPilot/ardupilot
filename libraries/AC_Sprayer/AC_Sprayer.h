@@ -31,11 +31,16 @@
 /// @class  AC_Sprayer
 /// @brief  Object managing a crop sprayer comprised of a spinner and a pump both controlled by pwm
 class AC_Sprayer {
-
 public:
+    static AC_Sprayer create(const AP_InertialNav  *inav) {
+        return AC_Sprayer{inav};
+    }
 
-    /// Constructor
-    AC_Sprayer(const AP_InertialNav* inav);
+    constexpr AC_Sprayer(AC_Sprayer &&other) = default;
+
+    /* Do not allow copies */
+    AC_Sprayer(const AC_Sprayer &other) = delete;
+    AC_Sprayer &operator=(const AC_Sprayer&) = delete;
 
     /// run - allow or disallow spraying to occur
     void run(bool true_false);
@@ -60,6 +65,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    AC_Sprayer(const AP_InertialNav *inav);
+
     const AP_InertialNav* const _inav;      ///< pointers to other objects we depend upon
 
     // parameters

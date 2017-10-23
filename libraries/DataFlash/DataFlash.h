@@ -50,22 +50,22 @@ class DataFlash_Class
 public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
-    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask) :
-        _firmware_string(firmware_string),
-        _log_bitmask(log_bitmask)
-        {
-            AP_Param::setup_object_defaults(this, var_info);
-            if (_instance != nullptr) {
-                AP_HAL::panic("DataFlash must be singleton");
-            }
-            _instance = this;
-        }
+
+    static DataFlash_Class create(const char *firmware_string, const AP_Int32 &log_bitmask) {
+        return DataFlash_Class{firmware_string, log_bitmask};
+    }
 
     // get singleton instance
     static DataFlash_Class *instance(void) {
         return _instance;
     }
-    
+
+    constexpr DataFlash_Class(DataFlash_Class &&other) = default;
+
+    /* Do not allow copies */
+    DataFlash_Class(const DataFlash_Class &other) = delete;
+    DataFlash_Class &operator=(const DataFlash_Class&) = delete;
+
     void set_mission(const AP_Mission *mission);
 
     // initialisation
@@ -210,6 +210,9 @@ public:
     void handle_log_send(class GCS_MAVLINK &);
     bool in_log_download() const { return _in_log_download; }
 
+    float quiet_nanf() const { return nanf("0x4152"); } // "AR"
+    double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
+
 protected:
 
     const struct LogStructure *_structures;
@@ -222,6 +225,8 @@ protected:
                                bool is_critical);
 
 private:
+    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask);
+
     #define DATAFLASH_MAX_BACKENDS 2
     uint8_t _next_backend;
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
@@ -270,6 +275,25 @@ private:
     void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs);
     void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs);
 #endif
+
+    void Log_Write_Baro_instance(AP_Baro &baro, uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
+    void Log_Write_IMU_instance(const AP_InertialSensor &ins,
+                                uint64_t time_us,
+                                uint8_t imu_instance,
+                                enum LogMessages type);
+    void Log_Write_Compass_instance(const Compass &compass,
+                                    uint64_t time_us,
+                                    uint8_t mag_instance,
+                                    enum LogMessages type);
+    void Log_Write_Current_instance(const AP_BattMonitor &battery,
+                                    uint64_t time_us,
+                                    uint8_t battery_instance,
+                                    enum LogMessages type,
+                                    enum LogMessages celltype);
+    void Log_Write_IMUDT_instance(const AP_InertialSensor &ins,
+                                  uint64_t time_us,
+                                  uint8_t imu_instance,
+                                  enum LogMessages type);
 
     void backend_starting_new_log(const DataFlash_Backend *backend);
 
