@@ -97,7 +97,7 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
             pwm = 250;
         }
     }
-    SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)((uint8_t)SRV_Channel::k_motor1 + chan);
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
     SRV_Channels::set_output_pwm(function, pwm);
 }
 
@@ -133,7 +133,7 @@ uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
     for (uint8_t i=0; i<32; i++) {
         uint32_t bit = 1UL<<i;
         if (mask & bit) {
-            SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)((uint8_t)SRV_Channel::k_motor1 + i);
+            SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
             mask2 |= SRV_Channels::get_output_channel_mask(function);
         }
     }
@@ -184,12 +184,7 @@ void AP_Motors::add_motor_num(int8_t motor_num)
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
         uint8_t chan;
-        SRV_Channel::Aux_servo_function_t function;
-        if (motor_num < 8) {
-            function = (SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+motor_num);
-        } else {
-            function = (SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor9+(motor_num-8));
-        }
+        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
         if (!SRV_Channels::find_channel(function, chan)) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
