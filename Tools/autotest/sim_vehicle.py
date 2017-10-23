@@ -239,7 +239,7 @@ def check_jsbsim_version():
                                 # check below and produce a reasonable
                                 # error message
     try:
-        jsbsim_version.index(b"ArduPilot")
+        jsbsim_version.index("ArduPilot")
     except ValueError:
         print(r"""
 =========================================================
