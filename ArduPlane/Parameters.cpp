@@ -1120,10 +1120,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Landing/AP_Landing.cpp
     GOBJECT(landing, "LAND_", AP_Landing),
 
-    // @Group: Volz_
-	// @Path: ../libraries/AP_Volz_Protocol/AP_Volz_Protocol.cpp
-    GOBJECT(volz_protocol, "Volz_", AP_Volz_Protocol),
-
     AP_VAREND
 };
 
@@ -1189,6 +1185,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("HOME_RESET_ALT", 11, ParametersG2, home_reset_threshold, 0),
+
+	// @Group: Volz_
+	// @Path: ../libraries/AP_Volz_Protocol/AP_Volz_Protocol.cpp
+	AP_SUBGROUPINFO(volz_protocol, "Volz_", 12, ParametersG2, AP_Volz_Protocol),
 
     AP_GROUPEND
 };
