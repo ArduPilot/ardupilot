@@ -446,8 +446,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 
     adsb.set_is_auto_mode(auto_navigation_mode);
 
-    if (should_log(MASK_LOG_MODE))
-        DataFlash.Log_Write_Mode(control_mode);
+    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 
     // update notify with flight mode change
     notify_flight_mode(control_mode);
