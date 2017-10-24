@@ -884,10 +884,7 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
     }
 
     flight_stage = fs;
-
-    if (should_log(MASK_LOG_MODE)) {
-        Log_Write_Status();
-    }
+    Log_Write_Status();
 }
 
 void Plane::update_alt()
