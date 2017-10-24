@@ -25,8 +25,7 @@ def build(bld):
 	    'mmap',
             'pwm',
             'gpio',
-#	'AP_Hal',
-	'serial_ports',
+   	    'serial_ports',
             'other'
         ],
     )
