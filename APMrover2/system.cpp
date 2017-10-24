@@ -229,6 +229,9 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode->mode_number());
 #endif
+#if CAMERA == ENABLED
+    camera.set_is_auto_mode(control_mode->mode_number() == AUTO);
+#endif
 
     old_mode.exit();
 
