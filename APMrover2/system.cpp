@@ -232,10 +232,8 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 
     old_mode.exit();
 
-    if (should_log(MASK_LOG_MODE)) {
-        control_mode_reason = reason;
-        DataFlash.Log_Write_Mode(control_mode->mode_number(), reason);
-    }
+    control_mode_reason = reason;
+    DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
 
     notify_mode((enum mode)control_mode->mode_number());
     return true;
