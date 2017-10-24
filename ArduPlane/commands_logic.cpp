@@ -346,8 +346,7 @@ void Plane::do_RTL(int32_t rtl_altitude)
     setup_glide_slope();
     setup_turn_angle();
 
-    if (should_log(MASK_LOG_MODE))
-        DataFlash.Log_Write_Mode(control_mode);
+    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 }
 
 void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
