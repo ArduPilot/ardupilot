@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
+#include <cinttypes>
 
 #ifndef PRIu64
 #define PRIu64 "llu"
