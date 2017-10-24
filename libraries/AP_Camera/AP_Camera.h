@@ -68,6 +68,9 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
+    // set if vehicle is in AUTO mode
+    void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
+
 private:
     AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_GPS &_gps, const AP_AHRS &_ahrs)
         : _trigger_counter(0) // count of number of cycles shutter has been held open
@@ -88,6 +91,8 @@ private:
     AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
     uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
     AP_Relay       *_apm_relay;         // pointer to relay object from the base class Relay.
+    AP_Int8         _auto_mode_only;    // if 1: trigger by distance only if in AUTO mode.
+    bool            _is_in_auto_mode;   // true if in AUTO mode
 
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
