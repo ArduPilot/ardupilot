@@ -155,6 +155,9 @@ failed:
 #if FRSKY_TELEM_ENABLED == ENABLED
         frsky_telemetry.update_control_mode(control_mode);
 #endif
+#if CAMERA == ENABLED
+        camera.set_is_auto_mode(control_mode == AUTO);
+#endif
         
     } else {
         // Log error that we failed to enter desired flight mode
