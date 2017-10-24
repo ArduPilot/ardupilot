@@ -97,6 +97,7 @@ void Rover::update_visual_odom()
 // update wheel encoders
 void Rover::update_wheel_encoder()
 {
+	g2.wheel_encoder.num_sensors();
     // exit immediately if not enabled
     if (g2.wheel_encoder.num_sensors() == 0) {
         return;

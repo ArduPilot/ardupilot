@@ -15,7 +15,9 @@
 #include "SRV_Channel/SRV_Channel.h"
 #include "AP_MotorsUGV.h"
 #include "Rover.h"
-
+#include "stdio.h"
+#include "roboticscape/roboticscape.h"
+#include "AP_Arming/AP_Arming.h"
 extern const AP_HAL::HAL& hal;
 
 // parameters for the motor class
@@ -206,7 +208,7 @@ void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
     // output to throttle channels
     if (armed) {
         // handle armed case
-        output_throttle(SRV_Channel::k_throttle, throttle);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
     } else {
         // handle disarmed case
         if (_disarm_disable_pwm) {
@@ -220,10 +222,7 @@ void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
 // output to skid steering channels
 void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float throttle)
 {
-    if (!have_skid_steering()) {
-        return;
-    }
-
+	//hal.console->printf("output_skid_steering_call\n");
     // handle simpler disarmed case
     if (!armed) {
         if (_disarm_disable_pwm) {
@@ -284,8 +283,14 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     }
 
     // send pwm value to each motor
-    output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
-    output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right);
+    //output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
+    //output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right);
+
+    //send to inbuilt motor driver module of BBBlue
+    if(init_check==1){
+        rc_set_motor(2,motor_left);
+        rc_set_motor(3,-motor_right);
+    }
 }
 
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100

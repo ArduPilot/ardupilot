@@ -13,16 +13,31 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+#include <signal.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h> 			// for system()
+#include "roboticscape/rc_defs.h"
+#include "gpio/rc_gpio_setup.h"
+#include "mmap/rc_mmap_gpio_adc.h"	// used for fast gpio functions
+#include "mmap/rc_mmap_pwmss.h"		// used for fast pwm functions
+#include "other/rc_pru.h"
+#include "gpio/rc_buttons.h"
+#include "pwm/rc_motors.h"
+
+
 #include "AP_Arming.h"
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
-
+#include "roboticscape/roboticscape.h"
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
 #define AP_ARMING_BOARD_VOLTAGE_MIN     4.3f
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
+int init_check=0;
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
 extern const AP_HAL::HAL& hal;
@@ -539,6 +554,99 @@ bool AP_Arming::arm(uint8_t method)
         armed = true;
         arming_method = NONE;
         gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
+
+		//changes
+		FILE *fd; 
+		rc_bb_model_t model;
+		// ensure root privaleges until we sort out udev rules
+		if(geteuid()!=0){
+		fprintf(stderr,"ERROR: Robotics Cape library must be run as root\n");
+		return -1;
+		}
+
+		// check if another project was using resources
+		// kill that process cleanly with sigint if so
+	//	#ifdef DEBUG
+			printf("checking for existing PID_FILE\n");
+	//	#endif
+		rc_kill();
+
+		// whitelist blue, black, and black wireless only when RC device tree is in use
+		model = rc_get_bb_model();
+		if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
+			// also check uEnv.txt in case using older device tree
+			if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
+			//fprintf(stderr,"WARNING: RoboticsCape library should only be run on BB Blue, Black, and Black wireless when the 					roboticscape device tree is in use.\n");
+			hal.console->printf("WARNING: RoboticsCape library should only be run on BB Blue, Black, and Black wireless when the 				roboticscape device tree is in use.\n");
+		//	fprintf(stderr,"If you are on a BB Black or Black Wireless, please execute \"configure_robotics_dt.sh\" and reboot to 				enable the device tree\n");
+			}
+		}
+
+	
+		// start state as Uninitialized
+		rc_set_state(UNINITIALIZED);
+	
+		// Start Signal Handler
+		//hal.console->printf("Initializing exit signal handler\n");
+		//rc_enable_signal_handler();
+
+
+		// initialize pinmux
+		hal.console->printf("Initializing: PINMUX\n");
+		rc_set_default_pinmux();
+	
+		// initialize gpio pins
+		hal.console->printf("Initializing: GPIO\n");
+		if(configure_gpio_pins()<0){
+			hal.console->printf("ERROR: failed to configure GPIO\n");
+			return -1;
+		}
+
+		// now use mmap for fast gpio
+		hal.console->printf("Initializing: MMAP GPIO\n");
+		if(initialize_mmap_gpio()){
+			hal.console->printf("mmap_gpio_adc.c failed to initialize gpio\n");
+			return -1;
+		}
+		// motors
+		hal.console->printf("Initializing: Motors\n");
+		if(initialize_motors()){
+			fprintf(stderr,"WARNING: Failed to initialize motors\n");
+		}
+		hal.console->printf("Enabling Motors\n");
+		rc_enable_motors();
+
+		hal.console->printf("Setting Motor values\n");
+		hal.console->printf("Initializing: eQEP\n");
+		if(init_eqep(0)){
+			hal.console->printf("failed to initialize eQEP0\n");
+		}
+		if(init_eqep(1)){
+			hal.console->printf("failed to initialize eQEP1\n");
+		}
+		if(init_eqep(2)){
+			hal.console->printf("failed to initialize eQEP2\n");
+		}
+
+		// create new pid file with process id
+		hal.console->printf("opening PID_FILE\n");
+		fd = fopen(PID_FILE, "ab+");
+		if (fd == NULL) {
+	//		fprintf(stderr,"error opening PID_FILE for writing\n");
+	//			//printf(stderr,"error opening PID_FILE for writing\n");
+			return -1;
+		}
+		pid_t current_pid = getpid();
+		fprintf(fd,"%d",(int)current_pid);
+		fflush(fd);
+		fclose(fd);
+	
+		hal.console->printf("Process ID: %d\n", (int)current_pid); 
+ 		// wait to let threads start up
+		usleep(100000);
+		init_check=1;
+	//changes
+
         return true;
     }
 
@@ -573,7 +681,29 @@ bool AP_Arming::disarm()
     armed = false;
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
+	
+	//change	
+	// just in case the user forgot, set state to exiting
+	rc_set_state(EXITING);
 
+	// announce we are starting cleanup process
+	hal.console->printf("\nExiting Cleanly\n");
+
+	hal.console->printf("Turning off motors\n");
+	rc_disable_motors();
+
+	hal.console->printf("Deleting PID file\n");
+	FILE* fd;
+	// clean up the pid_file if it still exists
+	fd = fopen(PID_FILE, "r");
+	if (fd != NULL) {
+		// close and delete the old file
+		fclose(fd);
+		remove(PID_FILE);
+	}
+	init_check=0;
+	hal.console->printf("end of cleanup_cape\n");
+	//change
     //TODO: Log motor disarming to the dataflash
     //Can't do this from this class until there is a unified logging library.
 

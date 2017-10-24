@@ -21,6 +21,13 @@ def build(bld):
             'AP_VisualOdom',
             'AP_AdvancedFailsafe',
             'AP_WheelEncoder',
+            'roboticscape',
+	    'mmap',
+            'pwm',
+            'gpio',
+#	'AP_Hal',
+	'serial_ports',
+            'other'
         ],
     )
 
