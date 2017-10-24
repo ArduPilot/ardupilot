@@ -173,6 +173,7 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
   useful debugging macro for SITL
  */
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <stdio.h>
 #define SITL_printf(fmt, args ...) do { ::printf("%s(%u): " fmt, __FILE__, __LINE__, ##args); } while(0)
 #else
 #define SITL_printf(fmt, args ...)
