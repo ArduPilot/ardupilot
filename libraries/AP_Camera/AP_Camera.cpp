@@ -92,6 +92,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
     
+    // @Param: AUTO_ONLY
+    // @DisplayName: Distance-trigging in AUTO mode only
+    // @Description: When enabled, trigging by distance is done in AUTO mode only.
+    // @Values: 0:Always,1:Only when in AUTO
+    // @User: Standard
+    AP_GROUPINFO("AUTO_ONLY",  10, AP_Camera, _auto_mode_only, 0),
+
     AP_GROUPEND
 };
 
@@ -281,6 +288,10 @@ void AP_Camera::update()
 
     if (_max_roll > 0 && labs(ahrs.roll_sensor*1e-2) > _max_roll) {
         return;
+    }
+
+    if (_is_in_auto_mode != true && _auto_mode_only != 0) {
+            return;
     }
 
     uint32_t tnow = AP_HAL::millis();
