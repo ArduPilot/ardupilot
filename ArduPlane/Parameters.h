@@ -240,7 +240,7 @@ public:
         // Battery monitoring parameters
         //
         k_param_battery = 166,
-        k_param_volz_protocol,               // unused, replaced by rssi_ library parameters - 167
+		k_param_rssi_pin,               // unused, replaced by rssi_ library parameters - 167
         k_param_battery_volt_pin,       // unused - 168
         k_param_battery_curr_pin,       // unused - 169
 
@@ -544,6 +544,8 @@ public:
 
     // home reset altitude threshold
     AP_Int8 home_reset_threshold;
+
+    AP_Volz_Protocol volz_protocol = AP_Volz_Protocol::create();
 
 };
 

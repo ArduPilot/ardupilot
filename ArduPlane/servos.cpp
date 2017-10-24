@@ -744,5 +744,5 @@ void Plane::servos_auto_trim(void)
 }
 
 void Plane::update_volz(){
-	volz_protocol.update();
+	g2.volz_protocol.update();
 }

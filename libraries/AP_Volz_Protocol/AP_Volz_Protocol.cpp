@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AP_Volz_Protocol::var_info[] = {
 // Constructor
 AP_Volz_Protocol::AP_Volz_Protocol()
 {
-
+	AP_Param::setup_object_defaults(this, var_info);
 }
 
 AP_Volz_Protocol AP_Volz_Protocol::create(){
@@ -85,6 +85,8 @@ void AP_Volz_Protocol::init(const AP_SerialManager& serial_manager){
 }
 
 void AP_Volz_Protocol::update(){
+	gcs().send_text(MAV_SEVERITY_CRITICAL, "Volz PARAMS: %u %u %u %u", enabled, chan_bitmask, min_pwm, max_pwm);
+
 	if(_initialized != true)
 		return;
 

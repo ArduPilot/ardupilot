@@ -119,7 +119,7 @@ void Plane::init_ardupilot()
                          &g.fs_batt_voltage, &g.fs_batt_mah);
 #endif
 
-    volz_protocol.init(serial_manager);
+    g2.volz_protocol.init(serial_manager);
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
