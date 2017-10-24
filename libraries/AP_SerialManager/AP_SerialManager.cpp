@@ -224,10 +224,11 @@ void AP_SerialManager::init()
 
                 case SerialProtocol_Volz:
                     // Note baudrate is hardcoded to 115200
-                	state[i].baud = AP_SERIALMANAGER_VOLZ_BAUD / 1000;   // update baud param in case user looks at it
+                	state[i].baud = AP_SERIALMANAGER_VOLZ_BAUD;   // update baud param in case user looks at it
 					state[i].uart->begin(map_baudrate(state[i].baud),
 										 AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
 										 AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
+					break;
             }
         }
     }
