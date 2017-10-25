@@ -562,3 +562,7 @@ private:
     };
 
 };
+
+namespace AP {
+    AP_GPS &gps();
+};
