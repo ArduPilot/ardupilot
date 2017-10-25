@@ -339,7 +339,7 @@ bool AP_Arming::compass_checks(bool report)
 
 bool AP_Arming::gps_checks(bool report)
 {
-    const AP_GPS &gps = ahrs.get_gps();
+    const AP_GPS &gps = AP::gps();
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
         //GPS OK?
@@ -377,7 +377,7 @@ bool AP_Arming::gps_checks(bool report)
         }
 
         // check AHRS and GPS are within 10m of each other
-        Location gps_loc = ahrs.get_gps().location();
+        Location gps_loc = gps.location();
         Location ahrs_loc;
         if (ahrs.get_position(ahrs_loc)) {
             float distance = location_3d_diff_NED(gps_loc, ahrs_loc).length();
@@ -517,7 +517,7 @@ bool AP_Arming::arm_checks(uint8_t method)
     // ensure the GPS drivers are ready on any final changes
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
-        if (!AP_GPS::gps().prepare_for_arming()) {
+        if (!AP::gps().prepare_for_arming()) {
             return false;
         }
     }
