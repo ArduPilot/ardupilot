@@ -42,7 +42,7 @@ void Copter::heli_acro_run()
     if(motors->armed() && heli_flags.init_targets_on_arming) {
         attitude_control->set_attitude_target_to_current_attitude();
         attitude_control->reset_rate_controller_I_terms();
-        if (motors->rotor_speed_above_critical()) {
+        if (motors->get_interlock()) {
             heli_flags.init_targets_on_arming=false;
         }
     }   
