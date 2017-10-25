@@ -159,12 +159,14 @@ void SRV_Channels::setup_failsafe_trim_all(void)
 }
 
 // get pwm output for all channels
-bool SRV_Channels::get_all_outputs_pwm(uint16_t values[], uint8_t chan_num){
+bool SRV_Channels::get_all_outputs_pwm(SRV_Channel::ServoChannelData values[], uint8_t chan_num){
 	if(chan_num <= 0 || chan_num > NUM_SERVO_CHANNELS)
 		return false;
 
 	for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-		values[i] = channels[i].output_pwm;
+		values[i].pwm = channels[i].output_pwm;
+		values[i].min_pwm = channels[i].servo_min;
+		values[i].max_pwm = channels[i].servo_max;
 	}
 
 	return true;

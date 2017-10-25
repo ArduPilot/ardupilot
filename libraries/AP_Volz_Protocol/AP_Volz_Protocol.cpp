@@ -27,20 +27,6 @@ const AP_Param::GroupInfo AP_Volz_Protocol::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BITMASK", 0, AP_Volz_Protocol, chan_bitmask,  0),
 
-    // @Param: MIN_PWM
-    // @DisplayName: Minimum PWM Mapping
-    // @Description: Enable of volz servo protocol to specific channels
-	// @Values: 0,1....
-    // @User: Standard
-    AP_GROUPINFO("MIN_PWM", 1, AP_Volz_Protocol, min_pwm,  900),
-
-    // @Param: MAX_PWM
-    // @DisplayName: Miximum PWM Mapping
-    // @Description: Enable of volz servo protocol to specific channels
-	// @Values: 0,1....
-    // @User: Standard
-    AP_GROUPINFO("MAX_PWM", 2, AP_Volz_Protocol, max_pwm,  2100),
-
 
     AP_GROUPEND
 };
@@ -56,52 +42,37 @@ AP_Volz_Protocol AP_Volz_Protocol::create(){
 }
 
 void AP_Volz_Protocol::init(const AP_SerialManager& serial_manager){
-	if(min_pwm < 900)
-		_min_pwm = 900;
-	else
-		_min_pwm = min_pwm;
-
-	if(max_pwm > 2100)
-		_max_pwm = 2100;
-	else
-		_max_pwm = max_pwm;
-
-	_pwm_range = (_max_pwm - _min_pwm);
-	_chan_bitmask = chan_bitmask;
-
-	if((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Volz,0))){
-		_initialized = true;
-	}
+	_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Volz,0);
 }
 
 void AP_Volz_Protocol::update(){
-	if(_initialized != true)
+	if(_port == nullptr)
 		return;
 
-	uint16_t pwm_values[16];
+	SRV_Channel::ServoChannelData servo_data[NUM_SERVO_CHANNELS];
 
-	if(!SRV_Channels::get_all_outputs_pwm(pwm_values,16)){
+	if(!SRV_Channels::get_all_outputs_pwm(servo_data,NUM_SERVO_CHANNELS)){
 		gcs().send_text(MAV_SEVERITY_CRITICAL, "Volz Protocol failed to get pwm values, don't fly.");
 		return;
 	}
 
-
 	uint8_t i;
 
+
 	// loop for all 16 channels
-	for (i=0;i<16;i++){
+	for (i=0;i<NUM_SERVO_CHANNELS;i++){
 		// check if current channel is needed for Volz protocol
-		if((_chan_bitmask >> i) & 0x0001){
+		if((chan_bitmask >> i) & 0x0001){
 			uint16_t value;
 			// check if current channel PWM is within range
-			if(pwm_values[i] - _min_pwm < 0)
+			if(servo_data[i].pwm - servo_data[i].min_pwm < 0)
 				value = 0;
 			else
-				value = pwm_values[i] - _min_pwm;
+				value = servo_data[i].pwm - servo_data[i].min_pwm;
 
 			// scale the PWM value to Volz value
 			value = value + VOLZ_EXTENDED_POSITION_MIN;
-			value = value * VOLZ_SCALE_VALUE / _pwm_range;
+			value = value * VOLZ_SCALE_VALUE / (servo_data[i].max_pwm - servo_data[i].min_pwm);
 
 			// make sure value stays in range
 			if(value > VOLZ_EXTENDED_POSITION_MAX)
@@ -122,7 +93,6 @@ void AP_Volz_Protocol::update(){
 }
 
 void AP_Volz_Protocol::send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]){
-	uint8_t cmd[VOLZ_DATA_FRAME_SIZE + 2];
 	uint8_t i,j;
 	uint16_t crc = 0xFFFF;
 
@@ -130,9 +100,7 @@ void AP_Volz_Protocol::send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]){
 	for(i=0;i<4;i++){
 
 		// take input data into message that will be transmitted.
-		cmd[i] = data[i];
-
-		crc = ((cmd[i] << 8) ^ crc);
+		crc = ((data[i] << 8) ^ crc);
 
 		for(j=0;j<8;j++){
 
@@ -144,8 +112,8 @@ void AP_Volz_Protocol::send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]){
 	}
 
 	// add CRC result to the message
-	cmd[4] = HIGHBYTE(crc);
-	cmd[5] = LOWBYTE(crc);
-	_port->write(cmd, VOLZ_DATA_FRAME_SIZE + 2);
+	data[4] = HIGHBYTE(crc);
+	data[5] = LOWBYTE(crc);
+	_port->write(data, VOLZ_DATA_FRAME_SIZE);
 }
 
