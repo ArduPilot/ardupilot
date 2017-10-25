@@ -136,6 +136,13 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Values: -1:Reversed,1:Normal
     // @User: Standard
     AP_GROUPINFO("RSC_PWM_REV", 18, AP_MotorsHeli_Single, _main_rotor._pwm_rev, 1),
+	
+	// @Param: SWASH_CTRL_DIR
+    // @DisplayName: Swash Control Direction
+    // @Description: Swash Control Direction - Used to set the rotor head control direction. 1 for Leading Edge Control. 2 for Trailing Edge Control
+    // @Values: 1: Leading Edge, 2: Trailing Edge
+    // @User: Standard
+    AP_GROUPINFO("SWASH_CTRL_DIR", 19, AP_MotorsHeli_Single, _swash_direction, AP_MOTORS_HELI_SINGLE_SWASH_DIRECTION_LEADING),
     
     // parameters up to and including 29 are reserved for tradheli
 
@@ -440,7 +447,11 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
 
     // swashplate servos
     float collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
-    float coll_out_scaled = collective_out * collective_scalar + (_collective_min - 1000)/1000.0f;
+	float coll_out_scaled = collective_out * collective_scalar + (_collective_min - 1000)/1000.0f;
+    // if using trailing edge control, reverse collective output. Swash moves up for negative collective pitch, down for positive collective pitch
+    if (_swash_direction == AP_MOTORS_HELI_SINGLE_SWASH_DIRECTION_TRAILING){
+        coll_out_scaled = 1-coll_out_scaled;
+    }
     float servo1_out = ((_rollFactor[CH_1] * roll_out) + (_pitchFactor[CH_1] * pitch_out))*0.45f + _collectiveFactor[CH_1] * coll_out_scaled;
     float servo2_out = ((_rollFactor[CH_2] * roll_out) + (_pitchFactor[CH_2] * pitch_out))*0.45f + _collectiveFactor[CH_2] * coll_out_scaled;
     if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_H1) {
