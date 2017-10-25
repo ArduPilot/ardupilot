@@ -26,7 +26,7 @@
 #ifdef __CYGWIN__
 #include <windows.h>
 #include <time.h>
-#include <Mmsystem.h>
+#include <mmsystem.h>
 #endif
 
 #include <DataFlash/DataFlash.h>
