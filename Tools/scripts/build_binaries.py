@@ -567,6 +567,15 @@ is bob we will attempt to checkout bob-AVR'''
                                  (str(self.tags)))
             self.dirty = True
 
+    def pollute_env_from_file(self, filepath):
+        with open(filepath) as f:
+            for line in f:
+                (name, value) = str.split(line, "=")
+                value = value.rstrip()
+                self.progress("%s: %s=%s" % (filepath, name,value))
+                os.environ[name] = value
+        sys.exit(1)
+
     def run(self):
         self.validate()
 
@@ -606,7 +615,7 @@ is bob we will attempt to checkout bob-AVR'''
 
         if os.path.exists("config.mk"):
             # FIXME: narrow exception
-            raise Exception("config.mk unimplemented")
+            self.pollute_env_from_file("config.mk")
 
         if not self.dirty:
             self.run_git_update_submodules()
