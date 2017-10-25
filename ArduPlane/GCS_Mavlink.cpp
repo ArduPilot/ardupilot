@@ -1930,11 +1930,6 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_
     }
 }
 
-AP_GPS *GCS_MAVLINK_Plane::get_gps() const
-{
-    return &plane.gps;
-}
-
 AP_Camera *GCS_MAVLINK_Plane::get_camera() const
 {
 #if CAMERA == ENABLED
