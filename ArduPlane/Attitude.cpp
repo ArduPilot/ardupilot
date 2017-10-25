@@ -661,8 +661,8 @@ void Plane::update_load_factor(void)
         // limit to 85 degrees to prevent numerical errors
         demanded_roll = 85;
     }
-    aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
-
+    aerodynamic_load_factor = safe_sqrt(1.0f / cosf(radians(demanded_roll))); // limited to ~11.5g at 85 deg
+        // actually stall factor, not load factor: stall speed increases with sqrt of aerodynamic load factor
     if (!aparm.stall_prevention) {
         // stall prevention is disabled
         return;
@@ -677,23 +677,17 @@ void Plane::update_load_factor(void)
     }
        
 
-    float max_load_factor = smoothed_airspeed / aparm.airspeed_min;
-    if (max_load_factor <= 1) {
-        // our airspeed is below the minimum airspeed. Limit roll to
-        // 25 degrees
+        float stall_ratio = smoothed_airspeed / (aparm.airspeed_min * aerodynamic_load_factor); // airspeed / corrected stall speed
+    if (stall_ratio <= 1.1) { //conditions for stall plus 10% margin.
+        //We always allow at least 25 degrees of roll however, to ensure the
+        // aircraft can be maneuvered with a bad airspeed estimate. At
+        // 25 degrees the stall ratio is 1.1 (10%)
         nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
         roll_limit_cd = constrain_int32(roll_limit_cd, -2500, 2500);
-    } else if (max_load_factor < aerodynamic_load_factor) {
-        // the demanded nav_roll would take us past the aerodymamic
-        // load limit. Limit our roll to a bank angle that will keep
-        // the load within what the airframe can handle. We always
-        // allow at least 25 degrees of roll however, to ensure the
-        // aircraft can be maneuvered with a bad airspeed estimate. At
-        // 25 degrees the load factor is 1.1 (10%)
-        int32_t roll_limit = degrees(acosf(sq(1.0f / max_load_factor)))*100;
-        if (roll_limit < 2500) {
-            roll_limit = 2500;
-        }
+    } else if (stall_ratio > 1.1) {
+        // Flight envelope protection to limit our roll to a bank angle that will keep
+        // the aircraft above stall at turn entry speed.
+        int32_t roll_limit = degrees(acosf(sq(1.0f / stall_ratio)))*100;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
         roll_limit_cd = constrain_int32(roll_limit_cd, -roll_limit, roll_limit);
     }    
