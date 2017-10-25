@@ -84,6 +84,11 @@ def build_binaries():
     copy = util.reltopdir('./build_binaries.py')
     shutil.copy2(orig, copy)
 
+    # also copy generate_manifest library:
+    orig_gm = util.reltopdir('Tools/scripts/generate_manifest.py')
+    copy_gm = util.reltopdir('./generate_manifest.py')
+    shutil.copy2(orig_gm, copy_gm)
+
     if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
         print("Failed build_binaries.py")
         return False
