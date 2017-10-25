@@ -72,6 +72,10 @@ public:
     AP_GPS(const AP_GPS &other) = delete;
     AP_GPS &operator=(const AP_GPS&) = delete;
 
+    static AP_GPS &gps() {
+        return *_singleton;
+    }
+
     // GPS driver types
     enum GPS_Type {
         GPS_TYPE_NONE  = 0,
@@ -442,6 +446,8 @@ protected:
 
 private:
     AP_GPS();
+
+    static AP_GPS *_singleton;
 
     // returns the desired gps update rate in milliseconds
     // this does not provide any guarantee that the GPS is updating at the requested
