@@ -1539,6 +1539,11 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         // don't do this if the earth field has already been learned
         if (!magFieldLearned) {
             initQuat.rotation_matrix(Tbn);
+            /*
+              start by initialising the earth field using the
+              declination tables and the observed field from the
+              sensor
+            */
             stateStruct.earth_magfield = Tbn * magDataDelayed.mag;
 
             // set the NE earth magnetic field states using the published declination
@@ -1580,6 +1585,44 @@ void NavEKF2_core::zeroAttCovOnly()
     for (uint8_t index=0; index<=2; index++) {
         P[index][index] = varTemp[index];
     }
+}
+
+/*
+  setup earth field state from full declination, inclination and intensity tables
+  Called when we get 3D GPS lock if enabled
+ */
+void NavEKF2_core::setEarthFieldFromTables(void)
+{
+    float field_intensity, declination_deg, inclination_deg;
+    const Location &loc = AP::gps().location();
+    if (!AP_Declination::get_mag_field_ef(loc.lat*1.0e-7, loc.lng*1.0e-7,
+                                          field_intensity, declination_deg, inclination_deg)) {
+        return;
+    }
+
+    /*
+      we are initialising the full earth field using the tables
+    */
+    Vector3f mag_ef(field_intensity, 0.0f, 0.0f);
+    Matrix3f R;
+    R.from_euler(0.0f, -ToRad(inclination_deg), ToRad(declination_deg));
+    mag_ef = R * mag_ef;
+    stateStruct.earth_magfield = mag_ef;
+
+    /*
+      set small initial variances for the earth field states
+    */
+    setDiagonal(P,16,18,1.0e-6);
+    zeroRows(P,19,21);
+    zeroCols(P,19,21);
+    stateStruct.body_magfield.zero();
+    setDiagonal(P,19,21,2*sq(frontend->_magNoise));
+
+    /*
+      note that we don't need to add to the yaw reset angle as we
+      should be using the same declination for the existing earth
+      field, so the yaw is the same
+     */
 }
 
 #endif // HAL_CPU_CLASS

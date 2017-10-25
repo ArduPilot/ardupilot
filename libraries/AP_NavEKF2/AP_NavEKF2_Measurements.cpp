@@ -538,6 +538,14 @@ void NavEKF2_core::readGpsData()
                 gpsNotAvailable = false;
             }
 
+            // if we are initialising earth field from tables and we
+            // haven't done that yet then do it now that we have a
+            // position
+            if (!doneFieldFromTables && frontend->_mag_ef_type == 1) {
+                doneFieldFromTables = true;
+                setEarthFieldFromTables();
+            }
+            
             frontend->logging.log_gps = true;
 
         } else {

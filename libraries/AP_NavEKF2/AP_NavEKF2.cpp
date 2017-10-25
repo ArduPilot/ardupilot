@@ -544,6 +544,13 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("OGN_HGT_MASK", 49, NavEKF2, _originHgtMode, 0),
 
+    // @Param: MAG_EF_TYPE
+    // @DisplayName: Mag earth-field type
+    // @Description: This sets the source of the earth field vector for magnetometer fusion. When set to MeasuredField the declination is obtained from the declination tables and the inclination and intensity comes from the current sensor value. When set to Tables all 3 components of the earth-field come from the world magnetic model tables.
+    // @Values: 0:MeasuredField,1:Tables
+    // @User: Advanced
+    AP_GROUPINFO("MAG_EF_TYPE", 50, NavEKF2, _mag_ef_type, 0),
+    
     AP_GROUPEND
 };
 

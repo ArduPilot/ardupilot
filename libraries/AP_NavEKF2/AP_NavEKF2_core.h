@@ -621,6 +621,9 @@ private:
     // and return attitude quaternion
     Quaternion calcQuatAndFieldStates(float roll, float pitch);
 
+    // set earth magnetic field states from intensity, inclination and declination tables
+    void setEarthFieldFromTables(void);
+    
     // zero stored variables
     void InitialiseVariables();
 
@@ -1104,6 +1107,8 @@ private:
     bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
     bool extNavYawResetRequest;         // true when a reset of vehicle yaw using the external nav data is requested
 
+    bool doneFieldFromTables;       // have we initialised earth field from tables
+    
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
         bool bad_xmag:1;
