@@ -430,6 +430,7 @@ public:
     static bool upgrade_parameters(const uint8_t old_keys[14], uint16_t aux_channel_mask, RCMapper *rcmap);
     static void upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors_idx, uint8_t new_channel);
 
+<<<<<<< HEAD
     // given a zero-based motor channel, return the k_motor function for that channel
     static SRV_Channel::Aux_servo_function_t get_motor_function(uint8_t channel) {
         if (channel < 8) {
@@ -443,6 +444,13 @@ public:
 
     // Startup initialisation
     void init_serial(const AP_SerialManager& serial_manager);
+=======
+    // Startup initialisation.
+    void init_serial(const AP_SerialManager& serial_manager);
+
+    // Update servo output
+    void update_volz(void);
+>>>>>>> branch 'volz' of https://github.com/EViationGuy/ardupilot
 
 private:
     struct {
