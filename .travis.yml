@@ -84,7 +84,6 @@ matrix:
     - compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest"
     - language: python
-      cpp:
       compiler:
       python: 2.7
       install:
