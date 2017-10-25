@@ -1351,6 +1351,14 @@ void NavEKF2_core::zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last)
     }
 }
 
+// set a diagonal range to a value
+void NavEKF2_core::setDiagonal(Matrix24 &covMat, uint8_t first, uint8_t last, float value)
+{
+    for (uint8_t i=first; i<=last; i++) {
+        covMat[i][i] = value;
+    }
+}
+
 // reset the output data to the current EKF state
 void NavEKF2_core::StoreOutputReset()
 {
@@ -1537,14 +1545,11 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
             // and set the corresponding variances and covariances
             alignMagStateDeclination();
 
-            // set the remaining variances and covariances
+            // set the remaining variances and covariances. elements
+            // 16 and 17 are set in alignMagStateDeclination()
             zeroRows(P,18,21);
             zeroCols(P,18,21);
-            P[18][18] = sq(frontend->_magNoise);
-            P[19][19] = P[18][18];
-            P[20][20] = P[18][18];
-            P[21][21] = P[18][18];
-
+            setDiagonal(P,18,21,sq(frontend->_magNoise));
         }
 
         // record the fact we have initialised the magnetic field states
