@@ -86,7 +86,7 @@ matrix:
     - language: python
       compiler:
       python: 2.7
-      install:
+      before_install:
         - pip install flake8
       script:
         # stop the build if there are Python syntax errors
@@ -96,7 +96,7 @@ matrix:
     - language: python
       compiler:
       python: 3.6
-      install:
+      before_install:
         - pip install flake8
       script:
         # stop the build if there are Python syntax errors
