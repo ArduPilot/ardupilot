@@ -438,11 +438,11 @@ public:
         return SRV_Channel::Aux_servo_function_t((SRV_Channel::k_motor9+(channel-8)));
     }
     
-    // Startup initialisation.
-    void init_serial(const AP_SerialManager& serial_manager);
-
     // Update servo output
     void update_volz(void);
+
+    // Startup initialisation
+    void init_serial(const AP_SerialManager& serial_manager);
 
 private:
     struct {
