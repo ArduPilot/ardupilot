@@ -202,7 +202,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
         scaler = 1.0f / fabsf(speed);
     }
 
-    // Calculate the steering rate error (deg/sec) and apply gain scaler
+    // Calculate the steering rate error (rad/sec) and apply gain scaler
     // We do this in earth frame to allow for rover leaning over in hard corners
     float yaw_rate_earth = _ahrs.get_yaw_rate_earth();
     // check if reversing
