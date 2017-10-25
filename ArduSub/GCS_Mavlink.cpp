@@ -1628,11 +1628,6 @@ AP_Mission *GCS_MAVLINK_Sub::get_mission()
     return &sub.mission;
 }
 
-AP_GPS *GCS_MAVLINK_Sub::get_gps() const
-{
-    return &sub.gps;
-}
-
 AP_Camera *GCS_MAVLINK_Sub::get_camera() const
 {
 #if CAMERA == ENABLED
