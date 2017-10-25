@@ -1769,11 +1769,6 @@ Compass *GCS_MAVLINK_Copter::get_compass() const
     return &copter.compass;
 }
 
-AP_GPS *GCS_MAVLINK_Copter::get_gps() const
-{
-    return &copter.gps;
-}
-
 AP_Camera *GCS_MAVLINK_Copter::get_camera() const
 {
 #if CAMERA == ENABLED
