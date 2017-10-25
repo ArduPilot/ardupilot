@@ -1,23 +1,13 @@
 #pragma once
 
-#include <pthread.h>
-
-#include <AP_HAL/AP_HAL_Boards.h>
-
 #include "AP_HAL_Linux.h"
+#include "AP_HAL/POSIXSemaphores.h"
 
 namespace Linux {
 
-class Semaphore : public AP_HAL::Semaphore {
+class Semaphore : public AP_HAL::POSIXSemaphore {
 public:
-    Semaphore() {
-        pthread_mutex_init(&_lock, nullptr);
-    }
-    bool give();
-    bool take(uint32_t timeout_ms);
-    bool take_nonblocking();
 private:
-    pthread_mutex_t _lock;
 };
 
 }
