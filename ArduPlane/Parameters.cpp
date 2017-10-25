@@ -1186,10 +1186,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HOME_RESET_ALT", 11, ParametersG2, home_reset_threshold, 0),
 
-	// @Group: VOLZ_
-	// @Path: ../libraries/AP_Volz_Protocol/AP_Volz_Protocol.cpp
-	AP_SUBGROUPINFO(volz_protocol, "VOLZ_", 12, ParametersG2, AP_Volz_Protocol),
-
     AP_GROUPEND
 };
 

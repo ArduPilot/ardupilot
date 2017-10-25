@@ -60,7 +60,6 @@
 #include <APM_Control/AP_AutoTune.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
-#include <AP_Volz_Protocol/AP_Volz_Protocol.h>
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
@@ -398,8 +397,6 @@ private:
     // FrSky telemetry support
     AP_Frsky_Telem frsky_telemetry = AP_Frsky_Telem::create(ahrs, battery, rangefinder);
 #endif
-
-    AP_Volz_Protocol volz_protocol = AP_Volz_Protocol::create();
 
     // Variables for extended status MAVLink messages
     uint32_t control_sensors_present;

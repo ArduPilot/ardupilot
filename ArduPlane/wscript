@@ -33,7 +33,6 @@ def build(bld):
             'AP_Beacon',
             'PID',
             'AP_Soaring',
-            'AP_Volz_Protocol',
         ],
     )
 

@@ -544,9 +544,6 @@ public:
 
     // home reset altitude threshold
     AP_Int8 home_reset_threshold;
-
-    AP_Volz_Protocol volz_protocol = AP_Volz_Protocol::create();
-
 };
 
 extern const AP_Param::Info var_info[];
