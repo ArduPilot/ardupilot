@@ -1,32 +1,10 @@
-/*
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <stdlib.h> 			// for system()
-#include "roboticscape/rc_defs.h"
-#include "gpio/rc_gpio_setup.h"
-#include "mmap/rc_mmap_gpio_adc.h"	// used for fast gpio functions
+#include <stdlib.h>
 #include "mmap/rc_mmap_pwmss.h"		// used for fast pwm functions
-#include "other/rc_pru.h"
-#include "gpio/rc_buttons.h"
-#include "pwm/rc_motors.h"
-
-
+#include "roboticscape/rc_motors.h"
 #include "AP_Arming.h"
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
@@ -557,7 +535,7 @@ bool AP_Arming::arm(uint8_t method)
 
 		//changes
 		FILE *fd; 
-		rc_bb_model_t model;
+
 		// ensure root privaleges until we sort out udev rules
 		if(geteuid()!=0){
 		fprintf(stderr,"ERROR: Robotics Cape library must be run as root\n");
@@ -571,29 +549,8 @@ bool AP_Arming::arm(uint8_t method)
 	//	#endif
 		rc_kill();
 
-		// whitelist blue, black, and black wireless only when RC device tree is in use
-		model = rc_get_bb_model();
-		if(model!=BB_BLACK_RC && model!=BB_BLACK_W_RC && model!=BB_BLUE){
-			// also check uEnv.txt in case using older device tree
-			if(system("grep -q roboticscape /boot/uEnv.txt")!=0){
-			//fprintf(stderr,"WARNING: RoboticsCape library should only be run on BB Blue, Black, and Black wireless when the 					roboticscape device tree is in use.\n");
-			hal.console->printf("WARNING: RoboticsCape library should only be run on BB Blue, Black, and Black wireless when the 				roboticscape device tree is in use.\n");
-		//	fprintf(stderr,"If you are on a BB Black or Black Wireless, please execute \"configure_robotics_dt.sh\" and reboot to 				enable the device tree\n");
-			}
-		}
-
-	
 		// start state as Uninitialized
 		rc_set_state(UNINITIALIZED);
-	
-		// Start Signal Handler
-		//hal.console->printf("Initializing exit signal handler\n");
-		//rc_enable_signal_handler();
-
-
-		// initialize pinmux
-		hal.console->printf("Initializing: PINMUX\n");
-		rc_set_default_pinmux();
 	
 		// initialize gpio pins
 		hal.console->printf("Initializing: GPIO\n");
@@ -602,12 +559,7 @@ bool AP_Arming::arm(uint8_t method)
 			return -1;
 		}
 
-		// now use mmap for fast gpio
-		hal.console->printf("Initializing: MMAP GPIO\n");
-		if(initialize_mmap_gpio()){
-			hal.console->printf("mmap_gpio_adc.c failed to initialize gpio\n");
-			return -1;
-		}
+
 		// motors
 		hal.console->printf("Initializing: Motors\n");
 		if(initialize_motors()){
@@ -632,8 +584,7 @@ bool AP_Arming::arm(uint8_t method)
 		hal.console->printf("opening PID_FILE\n");
 		fd = fopen(PID_FILE, "ab+");
 		if (fd == NULL) {
-	//		fprintf(stderr,"error opening PID_FILE for writing\n");
-	//			//printf(stderr,"error opening PID_FILE for writing\n");
+
 			return -1;
 		}
 		pid_t current_pid = getpid();

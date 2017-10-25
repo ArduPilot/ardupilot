@@ -23,12 +23,8 @@ def build(bld):
             'AP_Beacon',
             'AP_TemperatureSensor',
             'AP_Arming',
- 'roboticscape',
-            'mmap',
-            'pwm',
-            'gpio',
-        'serial_ports',
-            'other'
+            'roboticscape',
+            'mmap'  
         ],
     )
 

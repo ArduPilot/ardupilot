@@ -5,15 +5,12 @@
 #include "rc_mmap_pwmss.h"
 #include "rc_tipwmss.h"
 #include "roboticscape/preprocessor_macros.h"
-
 #include <stdio.h>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdint.h>
 #include <sys/mman.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <math.h>
 #include <errno.h>
 
