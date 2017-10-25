@@ -111,6 +111,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
 
+    // @Param: CHAN_BITMASK
+    // @DisplayName: Channel Bitmask
+    // @Description: Enable of volz servo protocol to specific channels
+	// @Values: 0,1....
+    // @User: Standard
+    AP_GROUPINFO("_VOLZ_MASK", 19, SRV_Channels, volz_chan_bitmask,  0),
+
     AP_GROUPEND
 };
 
@@ -189,3 +196,83 @@ void SRV_Channels::set_output_pwm_chan(uint8_t chan, uint16_t value)
         channels[chan].set_output_pwm(value);
     }
 }
+
+// init the serial port for volz servos
+void SRV_Channels::init_serial(const AP_SerialManager& serial_manager){
+	_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Volz,0);
+}
+
+// calculate and send set extended position command to volz servos over serial port
+void SRV_Channels::update_volz(){
+	if(_port == nullptr)
+		return;
+
+	SRV_Channel::ServoChannelData servo_data[NUM_SERVO_CHANNELS];
+
+	if(!SRV_Channels::get_all_outputs_pwm(servo_data,NUM_SERVO_CHANNELS)){
+//		gcs().send_text(MAV_SEVERITY_CRITICAL, "Volz Protocol failed to get pwm values, don't fly.");
+		return;
+	}
+
+	uint8_t i;
+
+
+	// loop for all 16 channels
+	for (i=0;i<NUM_SERVO_CHANNELS;i++){
+		// check if current channel is needed for Volz protocol
+		if((volz_chan_bitmask >> i) & 0x0001){
+			uint16_t value;
+			// check if current channel PWM is within range
+			if(servo_data[i].pwm - servo_data[i].min_pwm < 0)
+				value = 0;
+			else
+				value = servo_data[i].pwm - servo_data[i].min_pwm;
+
+			// scale the PWM value to Volz value
+			value = value + VOLZ_EXTENDED_POSITION_MIN;
+			value = value * VOLZ_SCALE_VALUE / (servo_data[i].max_pwm - servo_data[i].min_pwm);
+
+			// make sure value stays in range
+			if(value > VOLZ_EXTENDED_POSITION_MAX)
+				value = VOLZ_EXTENDED_POSITION_MAX;
+
+			// prepare Volz protocol data.
+			uint8_t data[VOLZ_DATA_FRAME_SIZE];
+
+			data[0] = VOLZ_SET_EXTENDED_POSITION_CMD;
+			data[1] = i + 1;		// send actuator id as 1 based index so ch1 will have id 1, ch2 will have id 2 ....
+			data[2] = HIGHBYTE(value);
+			data[3] = LOWBYTE(value);
+
+			send_command(data);
+		}// end if
+	}// end for
+
+}
+
+// calculate CRC for volz serial protocol and send the data.
+void SRV_Channels::send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]){
+	uint8_t i,j;
+	uint16_t crc = 0xFFFF;
+
+	// calculate Volz CRC value according to protocol definition
+	for(i=0;i<4;i++){
+
+		// take input data into message that will be transmitted.
+		crc = ((data[i] << 8) ^ crc);
+
+		for(j=0;j<8;j++){
+
+			if(crc & 0x8000)
+				crc = (crc << 1) ^ 0x8005;
+			else
+				crc = crc << 1;
+		}
+	}
+
+	// add CRC result to the message
+	data[4] = HIGHBYTE(crc);
+	data[5] = LOWBYTE(crc);
+	_port->write(data, VOLZ_DATA_FRAME_SIZE);
+}
+
