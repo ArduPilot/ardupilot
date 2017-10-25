@@ -303,11 +303,11 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool skid_
     // protect against reverse output being sent to the motors unless braking has been enabled
     if (!_brake_enable) {
         // if both desired speed and actual speed are positive, do not allow negative values
-        if (is_positive(speed) && is_positive(desired_speed) && !is_positive(throttle_out)) {
+        if ((desired_speed >= 0.0f) && (throttle_out <= 0.0f)) {
             throttle_out = 0.0f;
             _throttle_limit_low = true;
         }
-        if (is_negative(speed) && is_negative(desired_speed) && !is_negative(throttle_out)) {
+        if ((desired_speed <= 0.0f) && (throttle_out >= 0.0f)) {
             throttle_out = 0.0f;
             _throttle_limit_high = true;
         }
