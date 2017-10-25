@@ -75,6 +75,10 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
         // update notify object
         notify_flight_mode(control_mode);
 
+#if CAMERA == ENABLED
+        camera.set_is_auto_mode(control_mode == AUTO);
+#endif
+
 #if AC_FENCE == ENABLED
         // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
         // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
