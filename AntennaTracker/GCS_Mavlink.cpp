@@ -771,11 +771,6 @@ void Tracker::gcs_retry_deferred(void)
     gcs().retry_deferred();
 }
 
-AP_GPS *GCS_MAVLINK_Tracker::get_gps() const
-{
-    return &tracker.gps;
-}
-
 Compass *GCS_MAVLINK_Tracker::get_compass() const
 {
     return &tracker.compass;
