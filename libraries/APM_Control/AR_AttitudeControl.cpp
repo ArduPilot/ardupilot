@@ -211,6 +211,9 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     }
     float rate_error = (desired_rate - yaw_rate_earth) * scaler;
 
+    // record desired rate for logging purposes only
+    _steer_rate_pid.set_desired_rate(desired_rate);
+
     // pass error to PID controller
     _steer_rate_pid.set_input_filter_all(rate_error);
 
@@ -268,6 +271,9 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool skid_
     // calculate speed error and pass to PID controller
     float speed_error = desired_speed - speed;
     _throttle_speed_pid.set_input_filter_all(speed_error);
+
+    // record desired speed for logging purposes only
+    _throttle_speed_pid.set_desired_rate(desired_speed);
 
     // get p
     float p = _throttle_speed_pid.get_p();
