@@ -1519,3 +1519,12 @@ bool AP_GPS::prepare_for_arming(void) {
     }
     return all_passed;
 }
+
+namespace AP {
+
+AP_GPS &gps()
+{
+    return AP_GPS::gps();
+}
+
+};
