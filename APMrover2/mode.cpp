@@ -121,8 +121,8 @@ float Mode::calc_speed_nudge(float target_speed, float cruise_speed, float cruis
     // return immediately if pilot is not attempting to nudge speed
     // pilot can nudge up speed if throttle (in range -100 to +100) is above 50% of center in direction of travel
     const int16_t pilot_throttle = constrain_int16(rover.channel_throttle->get_control_in(), -100, 100);
-    if ((pilot_throttle <= 50 && is_positive(target_speed)) ||
-        (pilot_throttle >= -50 && is_negative(target_speed))) {
+    if (((pilot_throttle <= 50) && (target_speed >= 0.0f)) ||
+        ((pilot_throttle >= -50) && (target_speed <= 0.0f))) {
         return target_speed;
     }
 
