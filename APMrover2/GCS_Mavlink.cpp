@@ -1391,11 +1391,6 @@ bool GCS_MAVLINK_Rover::accept_packet(const mavlink_status_t &status, mavlink_me
     return (msg.sysid == rover.g.sysid_my_gcs);
 }
 
-AP_GPS *GCS_MAVLINK_Rover::get_gps() const
-{
-    return &rover.gps;
-}
-
 AP_Camera *GCS_MAVLINK_Rover::get_camera() const
 {
 #if CAMERA == ENABLED
