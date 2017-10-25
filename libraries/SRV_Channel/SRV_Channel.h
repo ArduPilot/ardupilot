@@ -33,6 +33,12 @@ public:
     // constructor
     SRV_Channel(void);
 
+    struct ServoChannelData{
+    	uint16_t pwm;
+    	uint16_t min_pwm;
+    	uint16_t max_pwm;
+    };
+
     static const struct AP_Param::GroupInfo var_info[];
 
     typedef enum
@@ -275,7 +281,7 @@ public:
     static bool get_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t &value);
 
     // get pwm output for the first channel of the given function type.
-    static bool get_all_outputs_pwm(uint16_t values[] ,uint8_t chan_num);
+    static bool get_all_outputs_pwm(SRV_Channel::ServoChannelData values[] ,uint8_t chan_num);
 
     // get normalised output (-1 to 1 for angle, 0 to 1 for range). Value is taken from pwm value
     // return zero on error.
