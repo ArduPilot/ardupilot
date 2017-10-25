@@ -61,6 +61,8 @@ const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9
 // right mode
 const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
 
+AP_GPS *AP_GPS::_singleton;
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
@@ -267,6 +269,11 @@ AP_GPS::AP_GPS()
                     "GPS initilisation blob is to large to be completely sent before the baud rate changes");
 
     AP_Param::setup_object_defaults(this, var_info);
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_GPS must be singleton");
+    }
+    _singleton = this;
 }
 
 /// Startup initialisation.
