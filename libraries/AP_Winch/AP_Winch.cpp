@@ -113,7 +113,7 @@ void AP_Winch::release_length(float length, float rate)
     if (is_zero(rate)) {
         config.rate_desired = config.rate_max;
     } else {
-        config.rate_desired = constrain_float(fabsf(rate), -config.rate_max, config.rate_max);
+        config.rate_desired = constrain_float(fabsf(rate), -get_rate_max(), get_rate_max());
     }
 }
 

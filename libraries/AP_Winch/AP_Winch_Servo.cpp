@@ -40,9 +40,8 @@ void AP_Winch_Servo::update()
     float distance = _wheel_encoder->get_distance(0);
     float rate = 0.0f;
     if (is_positive(dt)) {
-        rate = (distance - _last_distance) / dt;
+        rate = (distance - config.length_curr) / dt;
     }
-    _last_distance = distance;
 
     // update distance from wheel encoder
     config.length_curr = distance;
