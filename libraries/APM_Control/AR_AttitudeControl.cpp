@@ -222,9 +222,9 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     // get p
     float p = _steer_rate_pid.get_p();
 
-    // get i unless moving at low speed or steering output has hit a limit
+    // get i unless non-skid-steering rover at low speed or steering output has hit a limit
     float i = _steer_rate_pid.get_integrator();
-    if (!low_speed && ((is_negative(rate_error) && !motor_limit_left) || (is_positive(rate_error) && !motor_limit_right))) {
+    if ((!low_speed || skid_steering) && ((is_negative(rate_error) && !motor_limit_left) || (is_positive(rate_error) && !motor_limit_right))) {
         i = _steer_rate_pid.get_i();
     }
 
