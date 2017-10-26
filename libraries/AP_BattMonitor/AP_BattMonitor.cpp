@@ -246,10 +246,6 @@ bool AP_BattMonitor::healthy(uint8_t instance) const {
     return instance < _num_instances && _BattMonitor_STATE(instance).healthy;
 }
 
-bool AP_BattMonitor::is_powering_off(uint8_t instance) const {
-    return instance < _num_instances && _BattMonitor_STATE(instance).is_powering_off;
-}
-
 /// has_current - returns true if battery monitor instance provides current info
 bool AP_BattMonitor::has_current(uint8_t instance) const
 {
