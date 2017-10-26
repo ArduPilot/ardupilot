@@ -570,11 +570,14 @@ is bob we will attempt to checkout bob-AVR'''
     def pollute_env_from_file(self, filepath):
         with open(filepath) as f:
             for line in f:
-                (name, value) = str.split(line, "=")
+                try:
+                    (name, value) = str.split(line, "=")
+                except ValueError as e:
+                    self.progress("%s: split failed: %s" % (filepath, str(e)))
+                    continue
                 value = value.rstrip()
                 self.progress("%s: %s=%s" % (filepath, name,value))
                 os.environ[name] = value
-        sys.exit(1)
 
     def run(self):
         self.validate()
