@@ -75,12 +75,12 @@ env:
 matrix:
   fast_finish: true
   include:
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="sitl minlure linux navio2 bebop"
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v2 px4-v4"
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v3"
+    #- compiler: "gcc"
+    #  env: CI_BUILD_TARGET="sitl minlure linux navio2 bebop"
+    #- compiler: "gcc"
+    #  env: CI_BUILD_TARGET="px4-v2 px4-v4"
+    #- compiler: "gcc"
+    #  env: CI_BUILD_TARGET="px4-v3"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest"
     - language: python
@@ -93,7 +93,7 @@ matrix:
         - flake8 . --count --select=E901,E999,F822,F823 --show-source --statistics
         # warn only if there are undefined names
         - flake8 . --count --exit-zero --select=F821 --show-source --statistics
-  allow_failures:
+    allow_failures:
     - language: python
       compiler:
       python: 3.6
