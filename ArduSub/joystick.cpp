@@ -201,10 +201,11 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             RC_Channel* chan = RC_Channels::rc_channel(8);
             uint16_t min = chan->get_radio_min();
             uint16_t max = chan->get_radio_max();
+            uint16_t step = (max - min) / g.lights_steps;
             if (increasing) {
-                lights1 = constrain_float(lights1+g.lights_step, min, max);
+                lights1 = constrain_float(lights1 + step, min, max);
             } else {
-                lights1 = constrain_float(lights1-g.lights_step, min, max);
+                lights1 = constrain_float(lights1 - step, min, max);
             }
             if (lights1 >= max || lights1 <= min) {
                 increasing = !increasing;
@@ -216,7 +217,8 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             RC_Channel* chan = RC_Channels::rc_channel(8);
             uint16_t min = chan->get_radio_min();
             uint16_t max = chan->get_radio_max();
-            lights1 = constrain_float(lights1+g.lights_step, min, max);
+            uint16_t step = (max - min) / g.lights_steps;
+            lights1 = constrain_float(lights1 + step, min, max);
         }
         break;
     case JSButton::button_function_t::k_lights1_dimmer:
@@ -224,7 +226,8 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             RC_Channel* chan = RC_Channels::rc_channel(8);
             uint16_t min = chan->get_radio_min();
             uint16_t max = chan->get_radio_max();
-            lights1 = constrain_float(lights1-g.lights_step, min, max);
+            uint16_t step = (max - min) / g.lights_steps;
+            lights1 = constrain_float(lights1 - step, min, max);
         }
         break;
     case JSButton::button_function_t::k_lights2_cycle:
@@ -233,10 +236,11 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             RC_Channel* chan = RC_Channels::rc_channel(9);
             uint16_t min = chan->get_radio_min();
             uint16_t max = chan->get_radio_max();
+            uint16_t step = (max - min) / g.lights_steps;
             if (increasing) {
-                lights2 = constrain_float(lights2+g.lights_step, min, max);
+                lights2 = constrain_float(lights2 + step, min, max);
             } else {
-                lights2 = constrain_float(lights2-g.lights_step, min, max);
+                lights2 = constrain_float(lights2 - step, min, max);
             }
             if (lights2 >= max || lights2 <= min) {
                 increasing = !increasing;
@@ -248,7 +252,8 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             RC_Channel* chan = RC_Channels::rc_channel(9);
             uint16_t min = chan->get_radio_min();
             uint16_t max = chan->get_radio_max();
-            lights2 = constrain_float(lights2+g.lights_step, min, max);
+            uint16_t step = (max - min) / g.lights_steps;
+            lights2 = constrain_float(lights2 + step, min, max);
         }
         break;
     case JSButton::button_function_t::k_lights2_dimmer:
@@ -256,7 +261,8 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             RC_Channel* chan = RC_Channels::rc_channel(9);
             uint16_t min = chan->get_radio_min();
             uint16_t max = chan->get_radio_max();
-            lights2 = constrain_float(lights2-g.lights_step, min, max);
+            uint16_t step = (max - min) / g.lights_steps;
+            lights2 = constrain_float(lights2 - step, min, max);
         }
         break;
     case JSButton::button_function_t::k_gain_toggle:

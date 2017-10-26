@@ -302,13 +302,13 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 1 10
     GSCALAR(numGainSettings, "JS_GAIN_STEPS", 4),
 
-    // @Param: JS_LIGHTS_STEP
-    // @DisplayName: Lights step size
-    // @Description: Size of PWM increment in microseconds on lights servo
+    // @Param: JS_LIGHTS_STEPS
+    // @DisplayName: Lights brightness steps
+    // @Description: Number of steps in brightness between minimum and maximum brightness
     // @User: Standard
-    // @Range: 30 400
+    // @Range: 1 10
     // @Units: PWM
-    GSCALAR(lights_step, "JS_LIGHTS_STEP", 100),
+    GSCALAR(lights_steps, "JS_LIGHTS_STEPS", 8),
 
     // @Param: JS_THR_GAIN
     // @DisplayName: Throttle gain scalar
