@@ -28,6 +28,8 @@ public:
     // all smart batteries are expected to provide current
     bool has_current() const override { return true; }
 
+    void init(void) override;
+
 protected:
 
     void read(void) override;
@@ -64,6 +66,8 @@ protected:
     uint16_t _full_charge_capacity; // full charge capacity, used to stash the value before setting the parameter
 
     bool _has_cell_voltages;        // smbus backends flag this as true once they have recieved a valid cell voltage report
+
+    virtual void timer(void) = 0;   // timer function to read from the battery
 
 };
 
