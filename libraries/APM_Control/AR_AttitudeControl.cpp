@@ -173,9 +173,11 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     float dt = (now - _steer_turn_last_ms) / 1000.0f;
     if (_steer_turn_last_ms == 0 || dt > 0.1) {
         dt = 0.0f;
+        _steer_rate_pid.reset_filter();
+    } else {
+        _steer_rate_pid.set_dt(dt);
     }
     _steer_turn_last_ms = now;
-    _steer_rate_pid.set_dt(dt);
 
     // get speed forward
     float speed;
@@ -252,6 +254,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool skid_
     float dt = (now - _speed_last_ms) / 1000.0f;
     if (_speed_last_ms == 0 || dt > 0.1) {
         dt = 0.0f;
+        _throttle_speed_pid.reset_filter();
     }
     _speed_last_ms = now;
 
