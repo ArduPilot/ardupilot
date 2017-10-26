@@ -30,6 +30,9 @@ void Sub::init_joystick()
 {
     default_js_buttons();
 
+    lights1 = RC_Channels::rc_channel(8)->get_radio_min();
+    lights2 = RC_Channels::rc_channel(9)->get_radio_min();
+
     set_mode(MANUAL, MODE_REASON_TX_COMMAND); // Initialize flight mode
 
     if (g.numGainSettings < 1) {
@@ -195,47 +198,65 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     case JSButton::button_function_t::k_lights1_cycle:
         if (!held) {
             static bool increasing = true;
+            RC_Channel* chan = RC_Channels::rc_channel(8);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
             if (increasing) {
-                lights1 = constrain_float(lights1+g.lights_step,1100,1900);
+                lights1 = constrain_float(lights1+g.lights_step, min, max);
             } else {
-                lights1 = constrain_float(lights1-g.lights_step,1100,1900);
+                lights1 = constrain_float(lights1-g.lights_step, min, max);
             }
-            if (lights1 >= 1900 || lights1 <= 1100) {
+            if (lights1 >= max || lights1 <= min) {
                 increasing = !increasing;
             }
         }
         break;
     case JSButton::button_function_t::k_lights1_brighter:
         if (!held) {
-            lights1 = constrain_float(lights1+g.lights_step,1100,1900);
+            RC_Channel* chan = RC_Channels::rc_channel(8);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
+            lights1 = constrain_float(lights1+g.lights_step, min, max);
         }
         break;
     case JSButton::button_function_t::k_lights1_dimmer:
         if (!held) {
-            lights1 = constrain_float(lights1-g.lights_step,1100,1900);
+            RC_Channel* chan = RC_Channels::rc_channel(8);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
+            lights1 = constrain_float(lights1-g.lights_step, min, max);
         }
         break;
     case JSButton::button_function_t::k_lights2_cycle:
         if (!held) {
             static bool increasing = true;
+            RC_Channel* chan = RC_Channels::rc_channel(9);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
             if (increasing) {
-                lights2 = constrain_float(lights2+g.lights_step,1100,1900);
+                lights2 = constrain_float(lights2+g.lights_step, min, max);
             } else {
-                lights2 = constrain_float(lights2-g.lights_step,1100,1900);
+                lights2 = constrain_float(lights2-g.lights_step, min, max);
             }
-            if (lights2 >= 1900 || lights2 <= 1100) {
+            if (lights2 >= max || lights2 <= min) {
                 increasing = !increasing;
             }
         }
         break;
     case JSButton::button_function_t::k_lights2_brighter:
         if (!held) {
-            lights2 = constrain_float(lights2+g.lights_step,1100,1900);
+            RC_Channel* chan = RC_Channels::rc_channel(9);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
+            lights2 = constrain_float(lights2+g.lights_step, min, max);
         }
         break;
     case JSButton::button_function_t::k_lights2_dimmer:
         if (!held) {
-            lights2 = constrain_float(lights2-g.lights_step,1100,1900);
+            RC_Channel* chan = RC_Channels::rc_channel(9);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
+            lights2 = constrain_float(lights2-g.lights_step, min, max);
         }
         break;
     case JSButton::button_function_t::k_gain_toggle:
