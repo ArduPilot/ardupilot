@@ -128,8 +128,34 @@ void Copter::update_throttle_hover()
     if (throttle > 0.0f && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
+        
+        // Learn the wattage required to hover based on current and estimated resting voltage
+        if (g2.hover_watt_learn != HOVER_WATT_LEARN_DISABLED) {
+            g2.hover_watt = calc_hover_watts();
+        }
+
     }
 #endif
+}
+
+float Copter::calc_hover_watts()
+{
+    // init the variables
+    static uint16_t loop_count = 0;
+    static uint16_t watts_avg = 0;
+    static uint16_t watts_running_total = 0;
+    
+    // Running average watts calculation
+    watts_running_total += battery.watts();
+    loop_count ++;
+    watts_avg = watts_running_total / loop_count;
+    
+    // Calculate the average watts over the course of 5 seconds (500 loops @ 100hz)
+    if (loop_count > 500) {
+        loop_count = 1;
+        watts_running_total = watts_avg;       
+    }
+    return watts_avg;
 }
 
 // set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared

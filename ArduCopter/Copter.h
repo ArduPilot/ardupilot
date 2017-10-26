@@ -754,6 +754,7 @@ private:
     void Log_Write_Proximity();
     void Log_Write_Beacon();
     void Log_Write_Vehicle_Startup_Messages();
+    void Log_Write_FS_Energy(float wClm, float wCrs, float wHov, float wDesc, float wFin, float wRTL, uint32_t mahRTL, uint32_t mahWR, uint32_t secRTL);
     void load_parameters(void);
     void convert_pid_parameters(void);
     void userhook_init();
@@ -1024,6 +1025,7 @@ private:
     void init_disarm_motors();
     void motors_output();
     void lost_vehicle_check();
+    void save_params_on_disarm();
     void run_nav_updates(void);
     void calc_distance_and_bearing();
     void calc_wp_distance();
@@ -1065,6 +1067,8 @@ private:
     void init_precland();
     void update_precland();
     void read_battery(void);
+    float rtl_mah_calc(void);
+    float calc_hover_watts(void);
     void read_receiver_rssi(void);
     void epm_update();
     void gripper_update();

@@ -80,6 +80,8 @@ public:
         uint32_t    temperature_time;   // timestamp of the last recieved temperature message
         float       voltage_resting_estimate; // voltage with sag removed based on current and resistance estimate
         float       resistance;         // resistance calculated by comparing resting voltage vs in flight voltage
+        float       watts;              // watts based on current * estimated resting voltage
+        float       watts_used;         // total watts used
     };
 
     // Return the number of battery monitor instances
@@ -160,6 +162,14 @@ public:
     // get battery resistance estimate in ohms
     float get_resistance() const { return get_resistance(AP_BATT_PRIMARY_INSTANCE); }
     float get_resistance(uint8_t instance) const { return state[instance].resistance; }
+    
+    // watts
+    float watts(uint8_t instance) const;
+    float watts() const { return watts(AP_BATT_PRIMARY_INSTANCE); }
+    
+    // watts used
+    float watts_used(uint8_t instance) const;
+    float watts_used() const { return watts_used(AP_BATT_PRIMARY_INSTANCE); }
 
     static const struct AP_Param::GroupInfo var_info[];
 

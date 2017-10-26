@@ -413,3 +413,21 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
         return (AP_HAL::millis() - state[instance].temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
     }
 }
+
+/// watts - returns current watthour consumption
+float AP_BattMonitor::watts(uint8_t instance) const {
+    if (instance < _num_instances) {
+        return _BattMonitor_STATE(instance).watts;
+    } else {
+        return 0.0f;
+    }
+}
+
+/// watts_used - returns total watts since start-up
+float AP_BattMonitor::watts_used(uint8_t instance) const {
+    if (instance < _num_instances) {
+        return _BattMonitor_STATE(instance).watts_used;
+    } else {
+        return 0.0f;
+    }
+}

@@ -629,6 +629,39 @@ void Copter::Log_Write_Beacon()
     DataFlash.Log_Write_Beacon(g2.beacon);
 }
 
+struct PACKED log_FS_Energy {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float watts_climb;
+    float watts_cruise;
+    float watts_hover;
+    float watts_desc;
+    float watts_final;
+    float watts_rtl_total;
+    uint32_t mah_rtl_total;
+    uint32_t mah_rtl_plus_res;
+    uint32_t sec_total;
+};
+
+// Failsage Energy Packet
+void Copter::Log_Write_FS_Energy(float wClm, float wCrs, float wHov, float wDesc, float wFin, float wRTL, uint32_t mahRTL, uint32_t mahWR, uint32_t secRTL)
+{
+    struct log_FS_Energy pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_FS_ENERGY_MSG),
+        time_us             : AP_HAL::micros64(),
+        watts_climb         : wClm,
+        watts_cruise        : wCrs,
+        watts_hover         : wHov,
+        watts_desc          : wDesc,
+        watts_final         : wFin,
+        watts_rtl_total     : wRTL,
+        mah_rtl_total       : mahRTL,
+        mah_rtl_plus_res    : mahWR,
+        sec_total           : secRTL
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 const struct LogStructure Copter::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
@@ -671,6 +704,8 @@ const struct LogStructure Copter::log_structure[] = {
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
     { LOG_THROW_MSG, sizeof(log_Throw),
       "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk" },
+    { LOG_FS_ENERGY_MSG, sizeof(log_FS_Energy), \
+      "FSEN", "QffffffIII","wClm,wCrs,wHov,wDesc,wFin,wRTL,mahRTL,mahWR,secRTL" }, \
 };
 
 void Copter::Log_Write_Vehicle_Startup_Messages()
@@ -721,6 +756,7 @@ void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocit
 void Copter::Log_Write_Proximity() {}
 void Copter::Log_Write_Beacon() {}
 void Copter::Log_Write_Vehicle_Startup_Messages() {}
+void Copter::Log_Write_FS_Energy(float wClm, float wCrs, float wHov, float wDesc, float wFin, float wRTL, uint32_t mahRTL, uint32_t mahWR, uint32_t secRTL){}
 
 #if FRAME_CONFIG == HELI_FRAME
 void Copter::Log_Write_Heli() {}

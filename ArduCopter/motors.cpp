@@ -249,6 +249,9 @@ void Copter::init_disarm_motors()
     autotune_save_tuning_gains();
 #endif
 
+    // save copter parameters on disarm
+    save_params_on_disarm();
+
     // we are not in the air
     set_land_complete(true);
     set_land_complete_maybe(true);
@@ -344,5 +347,12 @@ void Copter::lost_vehicle_check()
         if (AP_Notify::flags.vehicle_lost == true) {
             AP_Notify::flags.vehicle_lost = false;
         }
+    }
+}
+
+void Copter::save_params_on_disarm()
+{
+    if (g2.hover_watt_learn == HOVER_WATT_LEARN_AND_SAVE) {
+        g2.hover_watt.save();
     }
 }

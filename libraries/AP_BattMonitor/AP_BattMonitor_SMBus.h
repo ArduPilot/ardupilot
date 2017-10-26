@@ -50,6 +50,8 @@ protected:
     // reads the serial number if it's not already known
     // returns true if the read was successful, or the number was already known
     bool read_serial_number(void);
+    
+    void calc_watts(void);
 
      // read word from register
      // returns true if read was successful, false if failed

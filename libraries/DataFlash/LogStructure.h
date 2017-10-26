@@ -550,6 +550,8 @@ struct PACKED log_Current {
     float    current_total;
     int16_t  temperature; // degrees C * 100
     float    resistance;
+    float    watts;
+    float    watts_used;
 };
 
 struct PACKED log_Current_Cells {
@@ -954,8 +956,8 @@ struct PACKED log_DSTL {
 #define QUAT_LABELS "TimeUS,Q1,Q2,Q3,Q4"
 #define QUAT_FMT    "Qffff"
 
-#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,Temp,Res"
-#define CURR_FMT    "Qffffcf"
+#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,Temp,Res,Watts,WattsTot"
+#define CURR_FMT    "Qffffcfff"
 
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"

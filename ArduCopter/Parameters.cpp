@@ -1010,6 +1010,54 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_SmartRTL/AP_SmartRTL.cpp
     AP_SUBGROUPINFO(smart_rtl, "SRTL_", 21, ParametersG2, AP_SmartRTL),
 
+    //ID 22 & 23 reserved for FS Land mode PR
+
+    // @Param: HOVER_WATT
+    // @DisplayName: Hover Watts
+    // @Description: The watts required to hover
+    // @Range: 0 2000
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("HOVER_WATT", 24, ParametersG2, hover_watt, 0),
+
+    // @Param: HOVER_WATT_LEARN
+    // @DisplayName: Hover Watts Learning
+    // @Description: Enable/Disable automatic learning of hover wattage
+    // @Values: 0:Disabled, 1:Learn, 2:LearnAndSave
+    // @User: Advanced
+    AP_GROUPINFO("HOVER_WATT_LEARN", 25, ParametersG2, hover_watt_learn, HOVER_WATT_LEARN_DISABLED),
+
+    // @Param: FS_BATT_RESERVE
+    // @DisplayName: Battery reserve % remaining on landing
+    // @Description: Sets the desired battery percent remaining on landing after a battery failsafe, and enables the energy based battery failsafe. When not zero, ArduCopter will calculate the watts requried to RTL based on distance and altitude, then calculate a live MAH value for the battery failsafe and low battery alarm to use. This will be used instead of the traditional FS_BATT_MAH value.
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("FS_BATT_RESERVE", 26, ParametersG2, fs_batt_reserve, 0),
+
+    // @Param:FS_BATT_MULT_CLM
+    // @DisplayName: Climb power multiplier
+    // @Description: Multiplier for power required to climb compared to hover. Default is a climb using 20% more power than hovering, for a value of 1.2.
+    // @Range: 0.1 2
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("FS_BATT_MULT_CLM", 27, ParametersG2, fs_batt_mult_clm, 1.2),
+
+    // @Param:FS_BATT_MULT_DSC
+    // @DisplayName: Desent power multiplier
+    // @Description: Multiplier for power required to descend compared to hover. Default is a descent using 10% less power than hovering, for a value of 0.9.
+    // @Range: 0.1 2
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("FS_BATT_MULT_DSC", 28, ParametersG2, fs_batt_mult_dsc, 0.9),
+
+    // @Param:FS_BATT_MULT_CRS
+    // @DisplayName: Cruise power multiplier
+    // @Description: Multiplier for power required in level cruise compared to hover. Default is cruise using 10% more power than hovering, for a value of 1.1.
+    // @Range: 0.1 2
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("FS_BATT_MULT_CRS", 29, ParametersG2, fs_batt_mult_crs, 1.1),
+
     AP_GROUPEND
 };
 

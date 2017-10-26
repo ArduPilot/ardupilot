@@ -38,11 +38,15 @@ AP_BattMonitor_Analog::read()
 
         // read current
         _state.current_amps = (_curr_pin_analog_source->voltage_average()-_mon._curr_amp_offset[_state.instance])*_mon._curr_amp_per_volt[_state.instance];
+        
+        // Calculate watts_used as amps * estimated resting voltage
+        _state.watts = (_state.current_amps * _state.voltage_resting_estimate);
 
-        // update total current drawn since startup
+        // update total current and watts used since startup
         if (_state.last_time_micros != 0 && dt < 2000000.0f) {
             // .0002778 is 1/3600 (conversion to hours)
             _state.current_total_mah += _state.current_amps * dt * 0.0000002778f;
+            _state.watts_used += (_state.watts/3600) * (dt/1000000);
         }
 
         // record time

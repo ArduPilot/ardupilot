@@ -89,6 +89,8 @@ void AP_BattMonitor_SMBus_Maxell::timer()
     read_temp();
 
     read_serial_number();
+    
+    calc_watts();
 }
 
 // read_block - returns number of characters read if successful, zero if unsuccessful

@@ -1506,7 +1506,9 @@ void DataFlash_Class::Log_Write_Current_instance(const AP_BattMonitor &battery,
         current_amps        : battery.current_amps(battery_instance),
         current_total       : battery.current_total_mah(battery_instance),
         temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
-        resistance          : battery.get_resistance(battery_instance)
+        resistance          : battery.get_resistance(battery_instance),
+        watts               : battery.watts(battery_instance),
+        watts_used          : battery.watts_used(battery_instance)
     };
     WriteBlock(&pkt, sizeof(pkt));
 

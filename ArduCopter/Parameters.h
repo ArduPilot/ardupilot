@@ -568,8 +568,16 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
-    // Safe RTL library
+    // Smart RTL library
     AP_SmartRTL smart_rtl;
+    
+    // Energy based battery failsafe
+    AP_Int16 hover_watt;
+    AP_Int16 hover_watt_learn;
+    AP_Int16 fs_batt_reserve;
+    AP_Float fs_batt_mult_clm;
+    AP_Float fs_batt_mult_dsc;
+    AP_Float fs_batt_mult_crs;
 };
 
 extern const AP_Param::Info        var_info[];

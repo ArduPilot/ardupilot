@@ -75,6 +75,7 @@ void AP_BattMonitor_SMBus_Solo::timer()
 
     read_full_charge_capacity();
     read_remaining_capacity();
+    calc_watts();
 
     // read the button press indicator
     if (read_block(BATTMONITOR_SMBUS_SOLO_MANUFACTURE_DATA, buff, 6, false) == 6) {
