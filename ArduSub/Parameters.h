@@ -272,9 +272,7 @@ public:
     AP_Float        minGain;
     AP_Int8         numGainSettings;
     AP_Float        throttle_gain;
-    AP_Int16        cam_tilt_center;
 
-    AP_Int16        cam_tilt_step;
     AP_Int16        lights_step;
 
     // Joystick button parameters
@@ -315,7 +313,6 @@ public:
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
 
-    AP_Float cam_slew_limit;
     // Note: keep initializers here in the same order as they are declared
     // above.
     Parameters() :
