@@ -358,6 +358,28 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             relay.toggle(1);
         }
         break;
+    case JSButton::button_function_t::k_relay_3_on:
+        relay.on(2);
+        break;
+    case JSButton::button_function_t::k_relay_3_off:
+        relay.off(2);
+        break;
+    case JSButton::button_function_t::k_relay_3_toggle:
+        if (!held) {
+            relay.toggle(2);
+        }
+        break;
+    case JSButton::button_function_t::k_relay_4_on:
+        relay.on(3);
+        break;
+    case JSButton::button_function_t::k_relay_4_off:
+        relay.off(3);
+        break;
+    case JSButton::button_function_t::k_relay_4_toggle:
+        if (!held) {
+            relay.toggle(3);
+        }
+        break;
 
     ////////////////////////////////////////////////
     // Servo functions
