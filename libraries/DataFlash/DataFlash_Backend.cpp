@@ -285,7 +285,7 @@ bool DataFlash_Backend::StartNewLogOK() const
 
 bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-    if (!ShouldLog()) {
+    if (!ShouldLog(is_critical)) {
         return false;
     }
     if (StartNewLogOK()) {
@@ -297,12 +297,9 @@ bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
 }
 
-bool DataFlash_Backend::ShouldLog() const
+bool DataFlash_Backend::ShouldLog(bool is_critical)
 {
     if (!_front.WritesEnabled()) {
-        return false;
-    }
-    if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
         return false;
     }
     if (!_initialised) {
@@ -315,5 +312,20 @@ bool DataFlash_Backend::ShouldLog() const
         return false;
     }
 
+    if (is_critical && have_logged_armed && !_front._params.file_disarm_rot) {
+        // if we have previously logged while armed then we log all
+        // critical messages from then on. That fixes a problem where
+        // logs show the wrong flight mode if you disarm then arm again
+        return true;
+    }
+    
+    if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
+        return false;
+    }
+
+    if (_front.vehicle_is_armed()) {
+        have_logged_armed = true;
+    }
+    
     return true;
 }
