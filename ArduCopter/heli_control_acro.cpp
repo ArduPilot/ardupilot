@@ -35,12 +35,14 @@ void Copter::heli_acro_run()
     
     if(!motors->armed()) {
         heli_flags.init_targets_on_arming=true;
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->set_attitude_target_to_current_attitude();
+        attitude_control->reset_rate_controller_I_terms();
     }
     
     if(motors->armed() && heli_flags.init_targets_on_arming) {
-        attitude_control->set_yaw_target_to_current_heading();
-        if (motors->rotor_speed_above_critical()) {
+        attitude_control->set_attitude_target_to_current_attitude();
+        attitude_control->reset_rate_controller_I_terms();
+        if (motors->get_interlock()) {
             heli_flags.init_targets_on_arming=false;
         }
     }   
