@@ -93,6 +93,7 @@ matrix:
         - flake8 . --count --select=E901,E999,F822,F823 --show-source --statistics
         # warn only if there are undefined names
         - flake8 . --count --exit-zero --select=F821 --show-source --statistics
+  allow_failures:
     - language: python
       compiler:
       python: 3.6
