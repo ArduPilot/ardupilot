@@ -59,28 +59,23 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     int16_t throttleBase = 1500-500*throttleScale;
 
     bool shift = false;
-    static uint32_t buttonDebounce;
 
-    // Debouncing timer
-    if (tnow_ms - buttonDebounce > 100) {
-        // Detect if any shift button is pressed
-        for (uint8_t i = 0 ; i < 16 ; i++) {
-            if ((buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift) {
-                shift = true;
-            }
+    // Detect if any shift button is pressed
+    for (uint8_t i = 0 ; i < 16 ; i++) {
+        if ((buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift) {
+            shift = true;
         }
-
-        // Act if button is pressed
-        // Only act upon pressing button and ignore holding. This provides compatibility with Taranis as joystick.
-        for (uint8_t i = 0 ; i < 16 ; i++) {
-            if ((buttons & (1 << i))) {
-                handle_jsbutton_press(i,shift,(buttons_prev & (1 << i)));
-                buttonDebounce = tnow_ms;
-            }
-        }
-
-        buttons_prev = buttons;
     }
+
+    // Act if button is pressed
+    // Only act upon pressing button and ignore holding. This provides compatibility with Taranis as joystick.
+    for (uint8_t i = 0 ; i < 16 ; i++) {
+        if ((buttons & (1 << i))) {
+            handle_jsbutton_press(i,shift,(buttons_prev & (1 << i)));
+        }
+    }
+
+    buttons_prev = buttons;
 
     // Set channels to override
     if (!roll_pitch_flag) {
