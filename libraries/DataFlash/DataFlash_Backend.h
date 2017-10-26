@@ -136,7 +136,7 @@ protected:
                           print_mode_fn print_mode,
                           AP_HAL::BetterStream *port);
 
-    bool ShouldLog() const;
+    bool ShouldLog(bool is_critical);
     virtual bool WritesOK() const = 0;
     virtual bool StartNewLogOK() const;
 
@@ -166,5 +166,5 @@ private:
 
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
-
+    bool have_logged_armed;
 };
