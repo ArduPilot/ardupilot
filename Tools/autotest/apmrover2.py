@@ -96,8 +96,18 @@ def drive_mission(mavproxy, mav, filename):
 
 def do_get_banner(mavproxy, mav):
     mavproxy.send("long DO_SEND_BANNER 1\n")
-    mavproxy.expect("APM:Rover")
-    return True;
+    start = time.time()
+    while True:
+        m = mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+        if m is not None and "APM:Rover" in m.text:
+            print("banner received: %s" % (m.text))
+            return True
+        if time.time() - start > 10:
+            break
+
+    print("banner not received")
+
+    return False
 
 def do_get_autopilot_capabilities(mavproxy, mav):
     mavproxy.send("long REQUEST_AUTOPILOT_CAPABILITIES 1\n")
@@ -295,10 +305,12 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         # function may bite you.
         print("Getting banner")
         if not do_get_banner(mavproxy, mav):
+            print("FAILED: get banner")
             failed = True
 
         print("Getting autopilot capabilities")
         if not do_get_autopilot_capabilities(mavproxy, mav):
+            print("FAILED: get capabilities")
             failed = True
 
         print("Setting mode via MAV_COMMAND_DO_SET_MODE")
