@@ -392,9 +392,6 @@ public:
         disabled_passthrough = disable;
     }
 
-    // constrain to output min/max for function
-    static void constrain_pwm(SRV_Channel::Aux_servo_function_t function);
-
     // calculate PWM for all channels
     static void calc_pwm(void);
 

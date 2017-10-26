@@ -50,6 +50,9 @@ void SRV_Channel::output_ch(void)
             }
         }
     }
+
+    output_pwm = constrain_int16(output_pwm, servo_min, servo_max);
+
     hal.rcout->write(ch_num, output_pwm);
 }
 
@@ -641,17 +644,6 @@ void SRV_Channels::set_range(SRV_Channel::Aux_servo_function_t function, uint16_
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function == function) {
             channels[i].set_range(range);
-        }
-    }
-}
-
-// constrain to output min/max for function
-void SRV_Channels::constrain_pwm(SRV_Channel::Aux_servo_function_t function)
-{
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        SRV_Channel &ch = channels[i];
-        if (ch.function == function) {
-            ch.output_pwm = constrain_int16(ch.output_pwm, ch.servo_min, ch.servo_max);
         }
     }
 }
