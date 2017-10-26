@@ -83,3 +83,23 @@ matrix:
       env: CI_BUILD_TARGET="px4-v3"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest"
+    - language: python
+      compiler:
+      python: 2.7
+      before_install:
+        - pip install flake8
+      script:
+        # stop the build if there are Python syntax errors
+        - flake8 . --count --select=E901,E999,F822,F823 --show-source --statistics
+        # warn only if there are undefined names
+        - flake8 . --count --exit-zero --select=F821 --show-source --statistics
+    - language: python
+      compiler:
+      python: 3.6
+      before_install:
+        - pip install flake8
+      script:
+        # warn only if there are Python syntax errors
+        - flake8 . --count --exit-zero --select=E901,E999,F822,F823 --show-source --statistics
+        # warn only if there are undefined names
+        - flake8 . --count --exit-zero --select=F821 --show-source --statistics
