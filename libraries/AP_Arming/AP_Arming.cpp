@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include "mmap/rc_mmap_pwmss.h"		// used for fast pwm functions
-#include "roboticscape/rc_motors.h"
 #include "AP_Arming.h"
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
