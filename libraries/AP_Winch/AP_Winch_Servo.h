@@ -34,7 +34,6 @@ private:
     // external reference
     const AP_WheelEncoder* _wheel_encoder;
 
-    float _last_distance;       // wheel encoder total distance from previous iteration (used to calculate rate)
     uint32_t last_update_ms;    // last time update was called
     bool limit_high;            // output hit limit on last iteration
     bool limit_low;             // output hit lower limit on last iteration
