@@ -302,13 +302,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 1 10
     GSCALAR(numGainSettings, "JS_GAIN_STEPS", 4),
 
-    // @Param: JS_CAM_TILT_STEP
-    // @DisplayName: Camera tilt step size
-    // @Description: Size of PWM increment on camera tilt servo
-    // @User: Standard
-    // @Range: 30 400
-    GSCALAR(cam_tilt_step, "JS_CAM_TILT_STEP", 50),
-
     // @Param: JS_LIGHTS_STEP
     // @DisplayName: Lights step size
     // @Description: Size of PWM increment on lights servo
@@ -322,13 +315,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     // @Range: 0.5 4.0
     GSCALAR(throttle_gain, "JS_THR_GAIN", 1.0f),
-
-    // @Param: CAM_CENTER
-    // @DisplayName: Camera tilt mount center
-    // @Description: Servo PWM at camera center position
-    // @User: Standard
-    // @Range: 1000 2000
-    GSCALAR(cam_tilt_center, "CAM_CENTER", 1500),
 
     // @Param: FRAME_CONFIG
     // @DisplayName: Frame configuration
@@ -718,8 +704,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 
-    GSCALAR(cam_slew_limit, "CAM_SLEW_LIMIT", 30.0),
-
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -808,6 +792,8 @@ void Sub::load_parameters(void)
     AP_Param::set_default_by_name("RC3_TRIM", 1100);
     AP_Param::set_default_by_name("COMPASS_OFFS_MAX", 1000);
     AP_Param::set_default_by_name("INS_GYR_CAL", 0);
+    AP_Param::set_default_by_name("MNT_DEFLT_MODE", MAV_MOUNT_MODE_RC_TARGETING);
+    AP_Param::set_default_by_name("MNT_JSTICK_SPD", 100);
 }
 
 void Sub::convert_old_parameters(void)
