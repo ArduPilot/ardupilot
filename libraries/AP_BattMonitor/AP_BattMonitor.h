@@ -67,7 +67,6 @@ public:
     struct BattMonitor_State {
         uint8_t     instance;           // the instance number of this monitor
         bool        healthy;            // battery monitor is communicating correctly
-        bool        is_powering_off;    // true if the battery is about to power off
         float       voltage;            // voltage in volts
         float       current_amps;       // current in amperes
         float       current_total_mah;  // total current draw since start-up
@@ -94,9 +93,6 @@ public:
     // healthy - returns true if monitor is functioning
     bool healthy(uint8_t instance) const;
     bool healthy() const { return healthy(AP_BATT_PRIMARY_INSTANCE); }
-
-    bool is_powering_off(uint8_t instance) const;
-    bool is_powering_off() const { return is_powering_off(AP_BATT_PRIMARY_INSTANCE); }
 
     /// has_current - returns true if battery monitor instance provides current info
     bool has_current(uint8_t instance) const;
@@ -137,9 +133,6 @@ public:
 
     /// set_monitoring - sets the monitor type (used for example sketch only)
     void set_monitoring(uint8_t instance, uint8_t mon) { _monitoring[instance].set(mon); }
-
-    bool get_watt_max() { return get_watt_max(AP_BATT_PRIMARY_INSTANCE); }
-    bool get_watt_max(uint8_t instance) { return _watt_max[instance]; }
 
     /// true when (voltage * current) > watt_max
     bool overpower_detected() const;
