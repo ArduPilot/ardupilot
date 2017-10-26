@@ -51,6 +51,9 @@ public:
     // set when to use slew rate limiter
     void slew_limit_throttle(bool value) { _use_slew_rate = value; }
 
+    // set when to use skid steering mixer
+    void use_skid_mixer(bool value) { _use_skid_mixer = value; }
+
     // test steering or throttle output as a percentage of the total (range -100 to +100)
     // used in response to DO_MOTOR_TEST mavlink command
     bool output_test_pct(motor_test_order motor_seq, float pct);
@@ -99,10 +102,12 @@ protected:
     AP_Int8 _slew_rate; // slew rate expressed as a percentage / second
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
+    AP_Float _skid_friction;    // skid steering vehicle motor output compensation for friction while stopped
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _last_throttle;
     bool    _use_slew_rate; // true if we should slew limit the throttle for one interation
+    bool    _use_skid_mixer;
 };

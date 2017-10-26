@@ -21,7 +21,7 @@ extern const AP_HAL::HAL& hal;
 // parameters for the motor class
 const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Param: PWM_TYPE
-    // @DisplayName: Output PWM type
+    // @DisplayName: Motor Output PWM type
     // @Description: This selects the output PWM type as regular PWM, OneShot, Brushed motor support using PWM (duty cycle) with separated direction signal, Brushed motor support with separate throttle and direction PWM (duty cyle)
     // @Values: 0:Normal,1:OneShot,2:OneShot125,3:BrushedWithRelay,4:BrushedBiPolar
     // @User: Advanced
@@ -29,8 +29,8 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     AP_GROUPINFO("PWM_TYPE", 1, AP_MotorsUGV, _pwm_type, PWM_TYPE_NORMAL),
 
     // @Param: PWM_FREQ
-    // @DisplayName: Output PWM freq for brushed motors
-    // @Description: Output PWM freq for brushed motors
+    // @DisplayName: Motor Output PWM freq for brushed motors
+    // @Description: Motor Output PWM freq for brushed motors
     // @Units: kHz
     // @Range: 1 20
     // @Increment: 1
@@ -71,6 +71,15 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("THR_MAX", 6, AP_MotorsUGV, _throttle_max, 100),
+
+    // @Param: SKID_FRIC
+    // @DisplayName: Motor skid steering friction compensation
+    // @Description: Motor output for skid steering vehicles will be increased by this percentage to overcome friction when stopped
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SKID_FRIC", 7, AP_MotorsUGV, _skid_friction, 0.0f),
 
     AP_GROUPEND
 };
@@ -244,48 +253,55 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     steering_scaled = constrain_float(steering_scaled, -1.0f, 1.0f);
     throttle_scaled = constrain_float(throttle_scaled, -1.0f, 1.0f);
 
-    // check for saturation and scale back throttle and steering proportionally
-    const float saturation_value = fabsf(steering_scaled) + fabsf(throttle_scaled);
-    if (saturation_value > 1.0f) {
-        steering_scaled = steering_scaled / saturation_value;
-        throttle_scaled = throttle_scaled / saturation_value;
-        // set limits
-        if (is_negative(steering)) {
-            limit.steer_left = true;
-        } else {
-            limit.steer_right = true;
+    if (_use_skid_mixer) {
+        // check for saturation and scale back throttle and steering proportionally
+        const float saturation_value = fabsf(steering_scaled) + fabsf(throttle_scaled);
+        if (saturation_value > 1.0f) {
+            steering_scaled = steering_scaled / saturation_value;
+            throttle_scaled = throttle_scaled / saturation_value;
+            // set limits
+            if (is_negative(steering)) {
+                limit.steer_left = true;
+            } else {
+                limit.steer_right = true;
+            }
+            if (is_negative(throttle)) {
+                limit.throttle_lower = true;
+            } else {
+                limit.throttle_upper = true;
+            }
         }
-        if (is_negative(throttle)) {
-            limit.throttle_lower = true;
+
+        // add in throttle
+        float motor_left = throttle_scaled;
+        float motor_right = throttle_scaled;
+
+        // deal with case of turning on the spot
+        if (is_zero(throttle_scaled)) {
+            // steering output split evenly between left and right motors and compensated for friction
+            const float friction_comp = MAX(0.0f, 1.0f + (_skid_friction / 100.0f));
+            motor_left += steering_scaled * 0.5f * friction_comp;
+            motor_right -= steering_scaled * 0.5f * friction_comp;
         } else {
-            limit.throttle_upper = true;
+            // add in steering
+            const float dir = is_positive(throttle_scaled) ? 1.0f : -1.0f;
+            if (is_negative(steering_scaled)) {
+                // moving left all steering to right wheel
+                motor_right -= dir * steering_scaled;
+            } else {
+                // turning right, all steering to left wheel
+                motor_left += dir * steering_scaled;
+            }
         }
-    }
 
-    // add in throttle
-    float motor_left = throttle_scaled;
-    float motor_right = throttle_scaled;
-
-    // deal with case of turning on the spot
-    if (is_zero(throttle_scaled)) {
-        // full possible range is not used to keep response equivalent to non-zero throttle case
-        motor_left += steering_scaled * 0.5f;
-        motor_right -= steering_scaled * 0.5f;
+        // send pwm value to each motor
+        output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
+        output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right);
     } else {
-        // add in steering
-        const float dir = is_positive(throttle_scaled) ? 1.0f : -1.0f;
-        if (is_negative(steering_scaled)) {
-            // moving left all steering to right wheel
-            motor_right -= dir * steering_scaled;
-        } else {
-            // turning right, all steering to left wheel
-            motor_left += dir * steering_scaled;
-        }
+        // send pwm value to each motor directly, the radio do the mixing
+        output_throttle(SRV_Channel::k_throttleLeft, 100.0f * steering_scaled);
+        output_throttle(SRV_Channel::k_throttleRight, 100.0f * throttle_scaled);
     }
-
-    // send pwm value to each motor
-    output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
-    output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right);
 }
 
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100
@@ -344,7 +360,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 void AP_MotorsUGV::slew_limit_throttle(float dt)
 {
     if (_use_slew_rate && (_slew_rate > 0)) {
-        float temp = _slew_rate * dt * 0.01f * 100.0f;  // TODO : get THROTTLE MIN and THROTTLE MAX
+        float temp = _slew_rate * dt * 0.01f * (_throttle_max - _throttle_min);
         if (temp < 1.0f) {
             temp = 1.0f;
         }

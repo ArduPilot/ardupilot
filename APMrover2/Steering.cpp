@@ -6,7 +6,7 @@
 bool Rover::use_pivot_steering(float yaw_error_cd)
 {
     // check cases where we clearly cannot use pivot steering
-    if (control_mode->is_autopilot_mode() || !g2.motors.have_skid_steering() || g.pivot_turn_angle <= 0) {
+    if (!g2.motors.have_skid_steering() || g.pivot_turn_angle <= 0) {
         pivot_steering_active = false;
         return false;
     }
