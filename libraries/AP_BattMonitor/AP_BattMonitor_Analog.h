@@ -101,6 +101,8 @@ public:
     /// returns true if battery monitor provides current info
     bool has_current() const override;
 
+    void init(void) override {}
+
 protected:
 
     AP_HAL::AnalogSource *_volt_pin_analog_source;

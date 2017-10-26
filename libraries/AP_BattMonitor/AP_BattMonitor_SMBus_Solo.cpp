@@ -33,7 +33,6 @@ AP_BattMonitor_SMBus_Solo::AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon,
     : AP_BattMonitor_SMBus(mon, mon_state, std::move(dev))
 {
     _pec_supported = true;
-    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_Solo::timer, void));
 }
 
 void AP_BattMonitor_SMBus_Solo::timer()

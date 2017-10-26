@@ -17,7 +17,7 @@ public:
 
 private:
 
-    void timer(void);
+    void timer(void) override;
 
     // check if PEC supported with the version value in SpecificationInfo() function
     // returns true once PEC is confirmed as working or not working
