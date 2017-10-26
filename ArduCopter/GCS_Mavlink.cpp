@@ -1217,7 +1217,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                         break;
                     }
                     case WINCH_RATE_CONTROL: {
-                        if (fabsf(packet.param4) < copter.g2.winch.get_rate_max()) {
+                        if (fabsf(packet.param4) <= copter.g2.winch.get_rate_max()) {
                             copter.g2.winch.set_desired_rate(packet.param4);
                             copter.Log_Write_Event(DATA_WINCH_RATE_CONTROL);
                         } else {
