@@ -149,8 +149,16 @@ public:
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
 
         // all the following fields must only all be filled by RTK capable backend drivers
+        uint32_t rtk_time_week_ms;         ///< GPS Time of Week of last baseline in milliseconds
+        uint16_t rtk_week_number;          ///< GPS Week Number of last baseline
         uint32_t rtk_age_ms;               ///< GPS age of last baseline correction in milliseconds  (0 when no corrections, 0xFFFFFFFF indicates overflow)
         uint8_t  rtk_num_sats;             ///< Current number of satellites used for RTK calculation
+        uint8_t  rtk_baseline_coords_type; ///< Coordinate system of baseline. 0 == ECEF, 1 == NED
+        int32_t  rtk_baseline_x_mm;        ///< Current baseline in ECEF x or NED north component in mm
+        int32_t  rtk_baseline_y_mm;        ///< Current baseline in ECEF y or NED east component in mm
+        int32_t  rtk_baseline_z_mm;        ///< Current baseline in ECEF z or NED down component in mm
+        uint32_t rtk_accuracy;             ///< Current estimate of 3D baseline accuracy (receiver dependent, typical 0 to 9999)
+        int32_t  rtk_iar_num_hypotheses;   ///< Current number of integer ambiguity hypotheses
     };
 
     /// Startup initialisation.
@@ -363,8 +371,7 @@ public:
     void send_mavlink_gps_raw(mavlink_channel_t chan);
     void send_mavlink_gps2_raw(mavlink_channel_t chan);
 
-    void send_mavlink_gps_rtk(mavlink_channel_t chan);
-    void send_mavlink_gps2_rtk(mavlink_channel_t chan);
+    void send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst);
 
     // Returns the index of the first unconfigured GPS (returns GPS_ALL_CONFIGURED if all instances report as being configured)
     uint8_t first_unconfigured_gps(void) const;
