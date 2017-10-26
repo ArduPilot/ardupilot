@@ -216,8 +216,9 @@ void Sub::failsafe_pilot_input_check()
     Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
     gcs_send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
 
+    set_neutral_controls();
+
     if(g.failsafe_pilot_input == FS_PILOT_INPUT_DISARM) {
-        set_neutral_controls();
         init_disarm_motors();
     }
 #endif
