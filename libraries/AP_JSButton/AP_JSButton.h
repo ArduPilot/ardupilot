@@ -57,7 +57,11 @@ public:
         k_relay_2_on            = 54,           ///< trigger relay on
         k_relay_2_off           = 55,           ///< trigger relay off
         k_relay_2_toggle        = 56,           ///< trigger relay toggle
-        // 57-60 reserved for future functions
+        k_relay_3_on            = 57,           ///< trigger relay on
+        k_relay_3_off           = 58,           ///< trigger relay off
+        k_relay_3_toggle        = 59,           ///< trigger relay toggle
+
+        // 60 reserved for future function
         k_servo_1_inc           = 61,           ///< increase servo output
         k_servo_1_dec           = 62,           ///< decrease servo output
         k_servo_1_min           = 63,           ///< center servo
@@ -83,7 +87,11 @@ public:
         k_custom_4              = 94,           ///< custom user button 4
         k_custom_5              = 95,           ///< custom user button 5
         k_custom_6              = 96,           ///< custom user button 6
-        // 97+ reserved for future functions
+        // 97-100 reserved for future functions
+        k_relay_4_on            = 101,           ///< trigger relay on
+        k_relay_4_off           = 102,           ///< trigger relay off
+        k_relay_4_toggle        = 103,           ///< trigger relay toggle
+        // 104+ reserved for future functions
         k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } button_function_t;
 
