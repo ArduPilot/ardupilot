@@ -60,6 +60,9 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     bool shift = false;
 
+    // Neutralize camera tilt speed setpoint
+    cam_tilt = 1500;
+
     // Detect if any shift button is pressed
     for (uint8_t i = 0 ; i < 16 ; i++) {
         if ((buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift) {
@@ -158,38 +161,16 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         break;
 
     case JSButton::button_function_t::k_mount_center:
-        cam_tilt = g.cam_tilt_center;
+        camera_mount.set_angle_targets(0, 0, 0);
+        // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
+        camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
         break;
-    case JSButton::button_function_t::k_mount_tilt_up: {
-        uint8_t i;
-
-        // Find the first aux channel configured as mount tilt, if any
-        if (SRV_Channels::find_channel(SRV_Channel::k_mount_tilt, i)) {
-
-            // Get the channel output limits
-            SRV_Channel *ch = SRV_Channels::srv_channel(i);
-            uint16_t min = ch->get_output_min();
-            uint16_t max = ch->get_output_max();
-
-            cam_tilt = constrain_int16(cam_tilt-g.cam_tilt_step,min,max);
-        }
-    }
-    break;
-    case JSButton::button_function_t::k_mount_tilt_down: {
-        uint8_t i;
-
-        // Find the first aux channel configured as mount tilt, if any
-        if (SRV_Channels::find_channel(SRV_Channel::k_mount_tilt, i)) {
-
-            // Get the channel output limits
-            SRV_Channel *ch = SRV_Channels::srv_channel(i);
-            uint16_t min = ch->get_output_min();
-            uint16_t max = ch->get_output_max();
-
-            cam_tilt = constrain_int16(cam_tilt+g.cam_tilt_step,min,max);
-        }
-    }
-    break;
+    case JSButton::button_function_t::k_mount_tilt_up:
+        cam_tilt = 1900;
+        break;
+    case JSButton::button_function_t::k_mount_tilt_down:
+        cam_tilt = 1100;
+        break;
     case JSButton::button_function_t::k_camera_trigger:
         break;
     case JSButton::button_function_t::k_camera_source_toggle:
