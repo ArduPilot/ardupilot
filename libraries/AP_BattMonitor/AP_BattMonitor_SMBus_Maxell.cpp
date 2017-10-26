@@ -40,9 +40,7 @@ AP_BattMonitor_SMBus_Maxell::AP_BattMonitor_SMBus_Maxell(AP_BattMonitor &mon,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_BattMonitor_SMBus(mon, mon_state, std::move(dev))
-{
-    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_Maxell::timer, void));
-}
+{}
 
 void AP_BattMonitor_SMBus_Maxell::timer()
 {
