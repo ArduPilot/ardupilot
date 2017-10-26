@@ -239,8 +239,10 @@ class ManifestGenerator():
                     tag = firstlevel
                     if tag not in self.known_release_types:
                         print("Unknown tag (%s) in directory (%s)" %
-                              (tag, vdir), file=sys.stderr)
+                              (tag, os.path.join(vdir)), file=sys.stderr)
                     tag_path = os.path.join(basedir, vehicletype, tag)
+                    if not os.path.isdir(tag_path):
+                        continue
                     self.add_firmware_data_from_dir(tag_path, xfirmwares, vehicletype, releasetype=tag)
 
         firmwares = self.xfirmwares_to_firmwares(xfirmwares)
