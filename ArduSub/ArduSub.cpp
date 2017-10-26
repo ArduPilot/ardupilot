@@ -209,12 +209,8 @@ void Sub::fifty_hz_loop()
 
     failsafe_sensors_check();
 
-    // Update servo output
+    // Update rc input/output
     RC_Channels::set_pwm_all();
-    // wait for outputs to initialize: TODO find a better way to do this
-    if (millis() > 10000) {
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, g.cam_slew_limit, 0.02f);
-    }
     SRV_Channels::output_ch_all();
 }
 
