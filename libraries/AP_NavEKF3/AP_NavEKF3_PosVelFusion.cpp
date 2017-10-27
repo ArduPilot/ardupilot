@@ -1579,10 +1579,10 @@ void NavEKF3_core::SelectBodyOdomFusion()
     } else if (storedWheelOdm.recall(wheelOdmDataDelayed, imuDataDelayed.time_ms)) {
 
         // check if the delta time is too small to calculate a velocity
-        if (wheelOdmDataNew.delTime > EKF_TARGET_DT) {
+        if (wheelOdmDataDelayed.delTime > EKF_TARGET_DT) {
 
             // get the forward velocity
-            float fwdSpd = wheelOdmDataNew.delAng * wheelOdmDataNew.radius * (1.0f / wheelOdmDataNew.delTime);
+            float fwdSpd = wheelOdmDataDelayed.delAng * wheelOdmDataDelayed.radius * (1.0f / wheelOdmDataDelayed.delTime);
 
             // get the unit vector from the projection of the X axis onto the horizontal
             Vector3f unitVec;
@@ -1598,7 +1598,7 @@ void NavEKF3_core::SelectBodyOdomFusion()
             // TODO write a dedicated observation model for wheel encoders
             usingWheelSensors = true;
             bodyOdmDataDelayed.vel = prevTnb * velNED;
-            bodyOdmDataDelayed.body_offset = wheelOdmDataNew.hub_offset;
+            bodyOdmDataDelayed.body_offset = wheelOdmDataDelayed.hub_offset;
             bodyOdmDataDelayed.velErr = frontend->_wencOdmVelErr;
 
             // Fuse data into the main filter
