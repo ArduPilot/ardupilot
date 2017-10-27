@@ -22,7 +22,7 @@ class AP_BattMonitor_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-    AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state);
+    AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params);
 
     // we declare a virtual destructor so that BattMonitor driver can
     // override with a custom destructor if need be
@@ -43,15 +43,13 @@ public:
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
 
-    /// get capacity for this instance
-    int32_t get_capacity() const;
-
     // update battery resistance estimate and voltage_resting_estimate
     void update_resistance_estimate();
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)
+    AP_BattMonitor_Params               &_params;   // reference to this instances parameters (held in the front-end)
 
 private:
     // resistance estimate

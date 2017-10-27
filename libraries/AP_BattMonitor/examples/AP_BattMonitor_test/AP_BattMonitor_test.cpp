@@ -18,7 +18,7 @@ void setup() {
     hal.console->printf("Battery monitor library test\n");
 
     // set battery monitor to smbus
-    battery_mon.set_monitoring(0, AP_BattMonitor::BattMonitor_TYPE_SOLO);
+    battery_mon.set_monitoring(0, AP_BattMonitor_Params::BattMonitor_TYPE_SOLO);
 
     // initialise the battery monitor
     battery_mon.init();

@@ -13,6 +13,7 @@ public:
     // Constructor
     AP_BattMonitor_SMBus_Maxell(AP_BattMonitor &mon,
                              AP_BattMonitor::BattMonitor_State &mon_state,
+                             AP_BattMonitor_Params &params,
                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
 private:
