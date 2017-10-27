@@ -162,6 +162,8 @@ static RCInput_SoloLink rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
 static RCInput_Navio2 rcinDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
+static RCInput_SBUS rcinDriver;
 #else
 static RCInput rcinDriver;
 #endif
@@ -212,6 +214,8 @@ static RCOutput_Sysfs rcoutDriver(0, 0, 14);
 static ap::RCOutput_Tap rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
 static RCOutput_Sysfs rcoutDriver(0, 0, 15);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
+static RCOutput_Sysfs rcoutDriver(0, 0, 8);
 #else
 static Empty::RCOutput rcoutDriver;
 #endif
