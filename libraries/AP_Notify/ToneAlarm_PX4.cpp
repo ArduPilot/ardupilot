@@ -277,8 +277,12 @@ void ToneAlarm_PX4::update()
         flags.pre_arm_check = AP_Notify::flags.pre_arm_check;
         if (flags.pre_arm_check) {
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_READY_OR_FINISHED);
+            _have_played_ready_tone = true;
         } else {
-            play_tone(AP_NOTIFY_PX4_TONE_QUIET_NOT_READY_OR_NOT_FINISHED);
+            // only play sad tone if we've ever played happy tone:
+            if (_have_played_ready_tone) {
+                play_tone(AP_NOTIFY_PX4_TONE_QUIET_NOT_READY_OR_NOT_FINISHED);
+            }
         }
     }
 
