@@ -191,7 +191,7 @@ void Copter::read_battery(void)
     }
 
     // update motors with voltage and current
-    if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
+    if (battery.get_type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
         motors->set_voltage(battery.voltage());
         AP_Notify::flags.battery_voltage = battery.voltage();
     }
