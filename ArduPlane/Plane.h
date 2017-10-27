@@ -945,7 +945,7 @@ private:
     void init_rc_out_aux();
     void rudder_arm_disarm_check();
     void read_radio();
-    void control_failsafe(uint16_t pwm);
+    void control_failsafe();
     void trim_control_surfaces();
     void trim_radio();
     bool rc_failsafe_active(void);
