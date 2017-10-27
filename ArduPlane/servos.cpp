@@ -359,7 +359,7 @@ void Plane::set_servos_controlled(void)
                 control_mode == ACRO ||
                 control_mode == FLY_BY_WIRE_A ||
                 control_mode == AUTOTUNE) &&
-               !failsafe.ch3_counter) {
+               !failsafe.throttle_counter) {
         // manual pass through of throttle while in FBWA or
         // STABILIZE mode with THR_PASS_STAB set
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
@@ -392,7 +392,7 @@ void Plane::set_servos_flaps(void)
 
     // work out any manual flap input
     RC_Channel *flapin = RC_Channels::rc_channel(g.flapin_channel-1);
-    if (flapin != nullptr && !failsafe.ch3_failsafe && failsafe.ch3_counter == 0) {
+    if (flapin != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
         flapin->input();
         manual_flap_percent = flapin->percent_input();
     }
