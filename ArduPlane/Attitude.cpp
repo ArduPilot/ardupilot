@@ -49,7 +49,7 @@ bool Plane::stick_mixing_enabled(void)
         }
     }
 
-    if (failsafe.ch3_failsafe && g.short_fs_action == 2) {
+    if (failsafe.rc_failsafe && g.short_fs_action == 2) {
         // don't do stick mixing in FBWA glide mode
         return false;
     }
