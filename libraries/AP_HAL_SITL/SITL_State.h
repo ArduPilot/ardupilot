@@ -36,7 +36,8 @@ public:
     enum vehicle_type {
         ArduCopter,
         APMrover2,
-        ArduPlane
+        ArduPlane,
+        ArduSub
     };
 
     int gps_pipe(void);
