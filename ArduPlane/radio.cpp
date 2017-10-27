@@ -176,7 +176,7 @@ void Plane::read_radio()
         return;
     }
 
-    if(!failsafe.ch3_failsafe)
+    if(!failsafe.rc_failsafe)
     {
         failsafe.AFS_last_valid_rc_ms = millis();
     }
@@ -264,27 +264,27 @@ void Plane::control_failsafe(uint16_t pwm)
         if (rc_failsafe_active()) {
             // we detect a failsafe from radio
             // throttle has dropped below the mark
-            failsafe.ch3_counter++;
-            if (failsafe.ch3_counter == 10) {
+            failsafe.throttle_counter++;
+            if (failsafe.throttle_counter == 10) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe on %u", (unsigned)pwm);
-                failsafe.ch3_failsafe = true;
+                failsafe.rc_failsafe = true;
                 AP_Notify::flags.failsafe_radio = true;
             }
-            if (failsafe.ch3_counter > 10) {
-                failsafe.ch3_counter = 10;
+            if (failsafe.throttle_counter > 10) {
+                failsafe.throttle_counter = 10;
             }
 
-        }else if(failsafe.ch3_counter > 0) {
+        }else if(failsafe.throttle_counter > 0) {
             // we are no longer in failsafe condition
             // but we need to recover quickly
-            failsafe.ch3_counter--;
-            if (failsafe.ch3_counter > 3) {
-                failsafe.ch3_counter = 3;
+            failsafe.throttle_counter--;
+            if (failsafe.throttle_counter > 3) {
+                failsafe.throttle_counter = 3;
             }
-            if (failsafe.ch3_counter == 1) {
+            if (failsafe.throttle_counter == 1) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe off %u", (unsigned)pwm);
-            } else if(failsafe.ch3_counter == 0) {
-                failsafe.ch3_failsafe = false;
+            } else if(failsafe.throttle_counter == 0) {
+                failsafe.rc_failsafe = false;
                 AP_Notify::flags.failsafe_radio = false;
             }
         }
