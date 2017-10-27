@@ -1064,7 +1064,7 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
 // get pilot desired climb rate in cm/s
 float QuadPlane::get_pilot_desired_climb_rate_cms(void)
 {
-    if (plane.failsafe.ch3_failsafe || plane.failsafe.ch3_counter > 0) {
+    if (plane.failsafe.rc_failsafe || plane.failsafe.throttle_counter > 0) {
         // descend at 0.5m/s for now
         return -50;
     }
@@ -1461,8 +1461,8 @@ void QuadPlane::update(void)
     // disable throttle_wait when throttle rises above 10%
     if (throttle_wait &&
         (plane.channel_throttle->get_control_in() > 10 ||
-         plane.failsafe.ch3_failsafe ||
-         plane.failsafe.ch3_counter>0)) {
+         plane.failsafe.rc_failsafe ||
+         plane.failsafe.throttle_counter>0)) {
         throttle_wait = false;
     }
 

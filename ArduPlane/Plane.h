@@ -323,7 +323,7 @@ private:
     struct {
         // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
         // RC receiver should be set up to output a low throttle value when signal is lost
-        uint8_t ch3_failsafe:1;
+        uint8_t rc_failsafe:1;
 
         // has the saved mode for failsafe been set?
         uint8_t saved_mode_set:1;
@@ -341,14 +341,14 @@ private:
         // Used for failsafe based on loss of RC signal or GCS signal
         int16_t state;
 
-        // number of low ch3 values
-        uint8_t ch3_counter;
+        // number of low throttle values
+        uint8_t throttle_counter;
 
         // the time when the last HEARTBEAT message arrived from a GCS
         uint32_t last_heartbeat_ms;
         
         // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
-        uint32_t ch3_timer_ms;
+        uint32_t short_timer_ms;
         
         uint32_t last_valid_rc_ms;
 
