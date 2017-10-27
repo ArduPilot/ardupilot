@@ -22,8 +22,8 @@ class AP_BattMonitor_Bebop :public AP_BattMonitor_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-    AP_BattMonitor_Bebop(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state):
-        AP_BattMonitor_Backend(mon, mon_state),
+    AP_BattMonitor_Bebop(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params):
+        AP_BattMonitor_Backend(mon, mon_state, params),
         _prev_vbat_raw(0.0f),
         _prev_vbat(0.0f),
         _battery_voltage_max(0.0f)

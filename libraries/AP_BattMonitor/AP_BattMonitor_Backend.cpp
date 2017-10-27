@@ -22,27 +22,23 @@
   base class constructor.
   This incorporates initialisation as well.
 */
-AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state) :
+AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state,
+                                               AP_BattMonitor_Params &params) :
         _mon(mon),
-        _state(mon_state)
+        _state(mon_state),
+        _params(params)
 {
 }
 
 /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
 uint8_t AP_BattMonitor_Backend::capacity_remaining_pct() const
 {
-    float mah_remaining = _mon._pack_capacity[_state.instance] - _state.current_total_mah;
-    if ( _mon._pack_capacity[_state.instance] > 10 ) { // a very very small battery
-        return (100 * (mah_remaining) / _mon._pack_capacity[_state.instance]);
+    float mah_remaining = _params._pack_capacity - _state.current_total_mah;
+    if ( _params._pack_capacity > 10 ) { // a very very small battery
+        return (100 * (mah_remaining) / _params._pack_capacity);
     } else {
         return 0;
     }
-}
-
-/// get capacity for this instance
-int32_t AP_BattMonitor_Backend::get_capacity() const
-{
-    return _mon.pack_capacity_mah(_state.instance);
 }
 
 // update battery resistance estimate

@@ -208,7 +208,7 @@ void AP_BattMonitor_Bebop::read(void)
 
     /* compute remaining battery percent and get battery capacity */
     remaining = _compute_battery_percentage(vbat);
-    capacity = (float) get_capacity();
+    capacity = (float) _params._pack_capacity;
 
     /* fillup battery state */
     _state.voltage = vbat;
