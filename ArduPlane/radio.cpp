@@ -172,7 +172,7 @@ void Plane::rudder_arm_disarm_check()
 void Plane::read_radio()
 {
     if (!hal.rcin->new_input()) {
-        control_failsafe(channel_throttle->get_radio_in());
+        control_failsafe();
         return;
     }
 
@@ -204,7 +204,7 @@ void Plane::read_radio()
         channel_pitch->set_pwm(pwm_pitch);
     }
 
-    control_failsafe(channel_throttle->get_radio_in());
+    control_failsafe();
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
 
@@ -240,7 +240,7 @@ void Plane::read_radio()
     tuning.check_input(control_mode);
 }
 
-void Plane::control_failsafe(uint16_t pwm)
+void Plane::control_failsafe()
 {
     if (millis() - failsafe.last_valid_rc_ms > 1000 || rc_failsafe_active()) {
         // we do not have valid RC input. Set all primary channel
@@ -266,7 +266,7 @@ void Plane::control_failsafe(uint16_t pwm)
             // throttle has dropped below the mark
             failsafe.throttle_counter++;
             if (failsafe.throttle_counter == 10) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe on %u", (unsigned)pwm);
+                gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe on");
                 failsafe.rc_failsafe = true;
                 AP_Notify::flags.failsafe_radio = true;
             }
@@ -282,7 +282,7 @@ void Plane::control_failsafe(uint16_t pwm)
                 failsafe.throttle_counter = 3;
             }
             if (failsafe.throttle_counter == 1) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe off %u", (unsigned)pwm);
+                gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe off");
             } else if(failsafe.throttle_counter == 0) {
                 failsafe.rc_failsafe = false;
                 AP_Notify::flags.failsafe_radio = false;
