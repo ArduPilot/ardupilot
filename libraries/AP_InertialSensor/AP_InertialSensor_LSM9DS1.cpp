@@ -175,6 +175,7 @@ extern const AP_HAL::HAL& hal;
 #define LSM9DS1XG_FIFO_SRC                              0x2F
 #   define LSM9DS1XG_FIFO_SRC_FTH                 (0x1 << 7)
 #   define LSM9DS1XG_FIFO_SRC_OVRN                (0x1 << 6)
+#   define LSM9DS1XG_FIFO_SRC_UNREAD_SAMPLES            0x3F
 #define LSM9DS1XG_INT_GEN_CFG_G                         0x30
 #   define LSM9DS1XG_INT_GEN_CFG_G_AOI_G          (0x1 << 7)
 #   define LSM9DS1XG_INT_GEN_CFG_G_LIR_G          (0x1 << 6)
@@ -215,12 +216,12 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS1::probe(AP_InertialSensor &_
     if (!dev) {
         return nullptr;
     }
+
     AP_InertialSensor_LSM9DS1 *sensor =
         new AP_InertialSensor_LSM9DS1(_imu,std::move(dev),
                                       LSM9DS1_DRY_XG_PIN,
                                       rotation);
     if (!sensor || !sensor->_init_sensor()) {
-
         delete sensor;
         return nullptr;
     }
@@ -267,17 +268,19 @@ bool AP_InertialSensor_LSM9DS1::_hardware_init()
     _dev->set_read_flag(0x80);
 
 
-    whoami = _register_read_xg(LSM9DS1XG_WHO_AM_I);
+    whoami = _register_read(LSM9DS1XG_WHO_AM_I);
     if (whoami != WHO_AM_I) {
         hal.console->printf("LSM9DS1: unexpected acc/gyro WHOAMI 0x%x\n", whoami);
         goto fail_whoami;
     }
 
+    _fifo_reset();
+
+
 
     for (tries = 0; tries < 5; tries++) {
-        _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
-        _dev->write_register(LSM9DS1XG_CTRL_REG9,LSM9DS1XG_CTRL_REG9_I2C_DISABLE);
+        _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
         _gyro_init();
         _accel_init();
@@ -285,7 +288,11 @@ bool AP_InertialSensor_LSM9DS1::_hardware_init()
         _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
         hal.scheduler->delay(10);
-        if (_accel_data_ready() && _gyro_data_ready()) {
+
+        int samples = _register_read(LSM9DS1XG_FIFO_SRC);
+
+        //if samples == 0 -> FIFO empty
+        if (samples > 1) {
             break;
         }
 
@@ -299,7 +306,6 @@ bool AP_InertialSensor_LSM9DS1::_hardware_init()
     }
 
     _spi_sem->give();
-
     return true;
 
 fail_tries:
@@ -309,6 +315,34 @@ fail_whoami:
 }
 
 
+void AP_InertialSensor_LSM9DS1::_fifo_reset()
+{
+    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+
+    //Disable FIFO
+    int reg_9 = _register_read(LSM9DS1XG_CTRL_REG9);
+    _dev->write_register(LSM9DS1XG_CTRL_REG9, reg_9 & ~0x02);
+
+    //Enable Bypass for reset FIFO
+    _dev->write_register(LSM9DS1XG_FIFO_CTRL, LSM9DS1XG_FIFO_CTRL_FMODE_BYPASS);
+
+    //Enable FIFO and Disable I2C
+    _dev->write_register(LSM9DS1XG_CTRL_REG9,LSM9DS1XG_CTRL_REG9_FIFO_EN | LSM9DS1XG_CTRL_REG9_I2C_DISABLE);
+
+    //Enable block data update, allow auto-increment during multiple byte read
+    _dev->write_register(LSM9DS1XG_CTRL_REG8, LSM9DS1XG_CTRL_REG8_BDU | LSM9DS1XG_CTRL_REG8_IF_ADD_INC);
+    hal.scheduler->delay_microseconds(1);
+
+    //Enable FIFO stream mode and set watermark at 32 samples
+    _dev->write_register(LSM9DS1XG_FIFO_CTRL, 0x1F | LSM9DS1XG_FIFO_CTRL_FMODE_FIFO);
+    hal.scheduler->delay_microseconds(1);
+
+    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+
+    notify_accel_fifo_reset(_accel_instance);
+    notify_gyro_fifo_reset(_gyro_instance);
+}
+
 /*
   start the sensor going
  */
@@ -316,7 +350,6 @@ void AP_InertialSensor_LSM9DS1::start(void)
 {
     _gyro_instance = _imu.register_gyro(952, _dev->get_bus_id_devtype(DEVTYPE_GYR_LSM9DS1));
     _accel_instance = _imu.register_accel(952, _dev->get_bus_id_devtype(DEVTYPE_ACC_LSM9DS1));
-
 
     set_accel_orientation(_accel_instance, _rotation);
     set_gyro_orientation(_gyro_instance, _rotation);
@@ -329,7 +362,7 @@ void AP_InertialSensor_LSM9DS1::start(void)
 }
 
 
-uint8_t AP_InertialSensor_LSM9DS1::_register_read_xg(uint8_t reg)
+uint8_t AP_InertialSensor_LSM9DS1::_register_read(uint8_t reg)
 {
     uint8_t val = 0;
 
@@ -415,12 +448,24 @@ void AP_InertialSensor_LSM9DS1::_set_accel_scale(accel_scale scale)
  */
 void AP_InertialSensor_LSM9DS1::_poll_data()
 {
-    if (_gyro_data_ready()) {
-        _read_data_transaction_g();
+    uint16_t samples = _register_read(LSM9DS1XG_FIFO_SRC);
+
+
+    samples = samples & LSM9DS1XG_FIFO_SRC_UNREAD_SAMPLES;
+    if (samples > 1)
+    {
+
+    _read_data_transaction_g(samples);
+
+    _read_data_transaction_x(samples);
+
     }
-    if (_accel_data_ready()) {
-        _read_data_transaction_x();
+
+    if (samples == 32)
+    {
+        _fifo_reset();
     }
+
 
     // check next register value for correctness
     if (!_dev->check_next_register()) {
@@ -428,37 +473,32 @@ void AP_InertialSensor_LSM9DS1::_poll_data()
     }
 }
 
-bool AP_InertialSensor_LSM9DS1::_accel_data_ready()
-{
-    if (_drdy_pin_xg != nullptr) {
-        return _drdy_pin_xg->read() != 0;
-    }
-
-    uint8_t status = _register_read_xg(LSM9DS1XG_STATUS_REG);
-    return status & LSM9DS1XG_STATUS_REG_XLDA;
-
-}
-
-bool AP_InertialSensor_LSM9DS1::_gyro_data_ready()
-{
-    if (_drdy_pin_xg != nullptr) {
-        return _drdy_pin_xg->read() != 0;
-    }
-
-    uint8_t status = _register_read_xg(LSM9DS1XG_STATUS_REG);
-    return status & LSM9DS1XG_STATUS_REG_GDA;
-
-}
-
-void AP_InertialSensor_LSM9DS1::_read_data_transaction_x()
+void AP_InertialSensor_LSM9DS1::_read_data_transaction_x(uint16_t _samples)
 {
     struct sensor_raw_data raw_data = { };
-    const uint8_t reg = LSM9DS1XG_OUT_X_L_XL | 0x80;
+    int32_t _accel_bias[3] = {0, 0, 0};
 
-    if (!_dev->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data))) {
-        hal.console->printf("LSM9DS1: error reading accelerometer\n");
-        return;
+    const uint8_t _reg = LSM9DS1XG_OUT_X_L_XL | 0x80;
+
+    // Read the accel data stored in the FIFO
+    for (int i = 0; i < _samples; i++)
+    {
+        struct sensor_raw_data raw_data_temp = { };
+
+        if (!_dev->transfer(&_reg, 1, (uint8_t *) &raw_data_temp, sizeof(raw_data_temp))) {
+            hal.console->printf("LSM9DS1: error reading accelerometer\n");
+            return;
+        }
+
+        _accel_bias[0] += (int32_t) raw_data_temp.x; // Sum individual signed 16-bit biases to get accumulated signed 32-bit biases
+        _accel_bias[1] += (int32_t) raw_data_temp.y;
+        _accel_bias[2] += (int32_t) raw_data_temp.z;
     }
+
+    raw_data.x = _accel_bias[0] / _samples; // average the data
+    raw_data.y = _accel_bias[1] / _samples;
+    raw_data.z = _accel_bias[2] / _samples;
+
 
     Vector3f accel_data(raw_data.x, raw_data.y, -raw_data.z);
     accel_data *= _accel_scale;
@@ -470,15 +510,32 @@ void AP_InertialSensor_LSM9DS1::_read_data_transaction_x()
 /*
  *  read from the data registers and update filtered data
  */
-void AP_InertialSensor_LSM9DS1::_read_data_transaction_g()
+void AP_InertialSensor_LSM9DS1::_read_data_transaction_g(uint16_t _samples)
 {
     struct sensor_raw_data raw_data = { };
-    const uint8_t reg = LSM9DS1XG_OUT_X_L_G |  0x80;
+    int32_t _gyro_bias[3] = {0, 0, 0};
 
-    if (!_dev->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data))) {
-        hal.console->printf("LSM9DS1: error reading gyroscope\n");
-        return;
+    const uint8_t _reg = LSM9DS1XG_OUT_X_L_G |  0x80;
+
+    // Read the gyro data stored in the FIFO
+    for (int i = 0; i < _samples; i++)
+    {
+        struct sensor_raw_data raw_data_temp = { };
+
+        if (!_dev->transfer(&_reg, 1, (uint8_t *) &raw_data_temp, sizeof(raw_data_temp))) {
+            hal.console->printf("LSM9DS1: error reading gyroscope\n");
+            return;
+        }
+
+        _gyro_bias[0] += (int32_t) raw_data_temp.x; // Sum individual signed 16-bit biases to get accumulated signed 32-bit biases
+        _gyro_bias[1] += (int32_t) raw_data_temp.y;
+        _gyro_bias[2] += (int32_t) raw_data_temp.z;
     }
+
+    raw_data.x = _gyro_bias[0] / _samples; // average the data
+    raw_data.y = _gyro_bias[1] / _samples;
+    raw_data.z = _gyro_bias[2] / _samples;
+
     Vector3f gyro_data(raw_data.x, raw_data.y, -raw_data.z);
     gyro_data *= _gyro_scale;
 
@@ -514,4 +571,3 @@ void AP_InertialSensor_LSM9DS1::_dump_registers(void)
     hal.console->println();
 }
 #endif
-

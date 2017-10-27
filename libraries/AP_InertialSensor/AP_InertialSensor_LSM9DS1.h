@@ -3,7 +3,6 @@
 
 #include <cstdio>
 
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/SPIDevice.h>
 
@@ -18,7 +17,6 @@
 
 class AP_InertialSensor_LSM9DS1 : public AP_InertialSensor_Backend
 {
-
 public:
     virtual ~AP_InertialSensor_LSM9DS1() { }
     void start(void) override;
@@ -57,11 +55,8 @@ private:
         A_SCALE_16G
     };
 
-
-    bool _accel_data_ready();
-    bool _gyro_data_ready();
-
     void _poll_data();
+    void _fifo_reset();
 
     bool _init_sensor();
     bool _hardware_init();
@@ -72,11 +67,11 @@ private:
     void _set_gyro_scale(gyro_scale scale);
     void _set_accel_scale(accel_scale scale);
 
-    uint8_t _register_read_xg(uint8_t reg);
+    uint8_t _register_read(uint8_t reg);
     void _register_write_xg(uint8_t reg, uint8_t val, bool checked=false);
 
-    void _read_data_transaction_x();
-    void _read_data_transaction_g();
+    void _read_data_transaction_x(uint16_t samples);
+    void _read_data_transaction_g(uint16_t samples);
     //
 
     #if LSM9DS1_DEBUG
@@ -93,10 +88,10 @@ private:
     int _drdy_pin_num_xg;
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
-
     enum Rotation _rotation;
 
 };
+
 
 
 #endif /* __AP_INERTIAL_SENSOR_LSM9DS1_H__ */
