@@ -1,5 +1,14 @@
 APMrover2 Release Notes:
 ========================
+APM:Rover V3.2.0-rc2 28-Oct-2017
+Changes from 3.2.0-rc1:
+1) MOT_SKID_FRIC parameter allows increasing power for skid-steer vehicle pivot-turns
+2) Bug Fixes:
+    a) speed nudging fix in AUTO mode
+    b) throttle slew range fix (was slightly incorrect when output range was not 1100 ~ 1900)
+    c) PID desired and achieved reported to GCS when GCS_PID_MASK param set to non-zero value
+    d) use-pivot fix to use absolute angle error
+========================
 APM:Rover V3.2.0-rc1 25-Aug-2017
 Changes from 3.1.2:
 1) Skid-steering vehicle support added (i.e. tank track or R2D2 style vehicles)
