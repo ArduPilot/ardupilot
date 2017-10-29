@@ -1374,6 +1374,15 @@ void QuadPlane::update(void)
         return;
     }
 
+    if (!hal.util->get_soft_armed()) {
+        /*
+          make sure we don't have any residual control from previous flight stages
+         */
+        attitude_control->relax_attitude_controllers();
+        attitude_control->reset_rate_controller_I_terms();
+        pos_control->relax_alt_hold_controllers(0);
+    }
+    
     check_yaw_reset();
     
     if (!in_vtol_mode()) {
