@@ -399,6 +399,12 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Description: This controls the mavlink type given in HEARTBEAT messages. For some GCS types a particular setting will be needed for correct operation.
     // @Values: 0:AUTO,1:FIXED_WING,2:QUADROTOR,3:COAXIAL,4:HELICOPTER,7:AIRSHIP,8:FREE_BALLOON,9:ROCKET,10:GROUND_ROVER,11:SURFACE_BOAT,12:SUBMARINE,16:FLAPPING_WING,17:KITE,19:VTOL_DUOROTOR,20:VTOL_QUADROTOR,21:VTOL_TILTROTOR
     AP_GROUPINFO("MAV_TYPE", 57, QuadPlane, mav_type, 0),
+
+    // @Param: OPTIONS
+    // @DisplayName: quadplane options
+    // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight. If AllowFWTakeoff is disabled then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand is disabled then fixed wing land on quadplanes will instead perform a VTOL land.
+    // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand
+    AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
     
     AP_GROUPEND
 };
@@ -1465,7 +1471,7 @@ void QuadPlane::check_throttle_suppression(void)
     }
 
     // allow for takeoff
-    if (plane.control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_TAKEOFF) {
+    if (plane.control_mode == AUTO && is_vtol_takeoff(plane.mission.get_current_nav_cmd().id)) {
         return;
     }
     
@@ -1633,7 +1639,8 @@ bool QuadPlane::in_vtol_auto(void)
     if (plane.auto_state.vtol_mode) {
         return true;
     }
-    switch (plane.mission.get_current_nav_cmd().id) {
+    uint16_t id = plane.mission.get_current_nav_cmd().id;
+    switch (id) {
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         return true;
@@ -1642,6 +1649,10 @@ bool QuadPlane::in_vtol_auto(void)
     case MAV_CMD_NAV_LOITER_TURNS:
     case MAV_CMD_NAV_LOITER_TO_ALT:
         return plane.auto_state.vtol_loiter;
+    case MAV_CMD_NAV_TAKEOFF:
+        return is_vtol_takeoff(id);
+    case MAV_CMD_NAV_LAND:
+        return is_vtol_land(id);
     default:
         return false;
     }
@@ -1972,9 +1983,18 @@ void QuadPlane::control_auto(const Location &loc)
 
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    switch (plane.mission.get_current_nav_cmd().id) {
+    uint16_t id = plane.mission.get_current_nav_cmd().id;
+    switch (id) {
     case MAV_CMD_NAV_VTOL_TAKEOFF:
-        takeoff_controller();
+    case MAV_CMD_NAV_TAKEOFF:
+        if (is_vtol_takeoff(id)) {
+            takeoff_controller();
+        }
+        break;
+    case MAV_CMD_NAV_LAND:
+        if (is_vtol_land(id)) {
+            vtol_position_controller();
+        }
         break;
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LOITER_UNLIM:
@@ -2441,4 +2461,44 @@ uint8_t QuadPlane::get_mav_type(void) const
         return MAV_TYPE_FIXED_WING;
     }
     return uint8_t(mav_type.get());
+}
+
+/*
+  return true if current mission item is a vtol takeoff
+*/
+bool QuadPlane::is_vtol_takeoff(uint16_t id) const
+{
+    if (id == MAV_CMD_NAV_VTOL_TAKEOFF) {
+        return true;
+    }
+    if (id == MAV_CMD_NAV_TAKEOFF && available() && (options & OPTION_ALLOW_FW_TAKEOFF) == 0) {
+        // treat fixed wing takeoff as VTOL takeoff
+        return true;
+    }
+    return false;
+}
+
+/*
+  return true if current mission item is a vtol land
+*/
+bool QuadPlane::is_vtol_land(uint16_t id) const
+{
+    if (id == MAV_CMD_NAV_VTOL_LAND) {
+        return true;
+    }
+    if (id == MAV_CMD_NAV_LAND && available() && (options & OPTION_ALLOW_FW_LAND) == 0) {
+        // treat fixed wing land as VTOL land
+        return true;
+    }
+    return false;
+}
+
+/*
+  return true if we are in a transition to fwd flight from hover
+ */
+bool QuadPlane::in_transition(void) const
+{
+    return available() && assisted_flight &&
+        (transition_state == TRANSITION_AIRSPEED_WAIT ||
+         transition_state == TRANSITION_TIMER);
 }
