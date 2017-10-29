@@ -463,7 +463,8 @@ void Plane::exit_mode(enum FlightMode mode)
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
 
-            if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND)
+            if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND &&
+                !quadplane.is_vtol_land(mission.get_current_nav_cmd().id))
             {
                 landing.restart_landing_sequence();
             }
