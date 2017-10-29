@@ -663,6 +663,15 @@ void Plane::update_load_factor(void)
     }
     aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
 
+    if (quadplane.in_transition() &&
+        (quadplane.options & QuadPlane::OPTION_LEVEL_TRANSITION)) {
+        /*
+          the user has asked for transitions to be kept level to
+          within LEVEL_ROLL_LIMIT
+         */
+        roll_limit_cd = MIN(roll_limit_cd, g.level_roll_limit*100);
+    }
+    
     if (!aparm.stall_prevention) {
         // stall prevention is disabled
         return;

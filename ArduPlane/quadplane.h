@@ -49,6 +49,11 @@ public:
     bool in_assisted_flight(void) const {
         return available() && assisted_flight;
     }
+
+    /*
+      return true if we are in a transition to fwd flight from hover
+    */
+    bool in_transition(void) const;
     
     bool handle_do_vtol_transition(enum MAV_VTOL_STATE state);
 
@@ -304,7 +309,7 @@ private:
 
     // are we in a guided takeoff?
     bool guided_takeoff:1;
-
+    
     struct {
         // time when motors reached lower limit
         uint32_t lower_limit_start_ms;
@@ -418,6 +423,24 @@ private:
     
     // adjust altitude target smoothly
     void adjust_alt_target(float target_cm);
+
+    // additional options
+    AP_Int32 options;
+    enum {
+        OPTION_LEVEL_TRANSITION=(1<<0),
+        OPTION_ALLOW_FW_TAKEOFF=(1<<1),
+        OPTION_ALLOW_FW_LAND=(1<<2),
+    };
+
+    /*
+      return true if current mission item is a vtol takeoff
+     */
+    bool is_vtol_takeoff(uint16_t id) const;
+
+    /*
+      return true if current mission item is a vtol landing
+     */
+    bool is_vtol_land(uint16_t id) const;
     
 public:
     void motor_test_output();
