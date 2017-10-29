@@ -448,6 +448,11 @@ bool PX4Scheduler::in_timerprocess()
     return getpid() != _main_task_pid;
 }
 
+bool PX4Scheduler::in_main_thread() const
+{
+    return getpid() == _main_task_pid;
+}
+
 void PX4Scheduler::system_initialized()
 {
     if (_initialized) {
