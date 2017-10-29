@@ -31,7 +31,17 @@ bool QuadPlane::is_tailsitter(void)
  */
 bool QuadPlane::tailsitter_active(void)
 {
-    return is_tailsitter() && in_vtol_mode();
+    if (!is_tailsitter()) {
+        return false;
+    }
+    if (in_vtol_mode()) {
+        return true;
+    }
+    // check if we are in ANGLE_WAIT transition
+    if (transition_state == TRANSITION_ANGLE_WAIT) {
+        return true;
+    }
+    return false;
 }
 
 /*
