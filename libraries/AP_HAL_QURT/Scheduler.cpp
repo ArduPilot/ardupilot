@@ -266,6 +266,11 @@ bool Scheduler::in_timerprocess()
     return getpid() != _main_task_pid;
 }
 
+bool Scheduler::in_main_thread() const
+{
+    return getpid() == _main_task_pid;
+}
+
 void Scheduler::system_initialized() {
     if (_initialized) {
         AP_HAL::panic("PANIC: scheduler::system_initialized called"
