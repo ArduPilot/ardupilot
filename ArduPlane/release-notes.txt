@@ -1,3 +1,44 @@
+Release 3.8.3beta1, 29th October 2017
+-------------------------------------
+
+This is a minor release with a number of important bug fixes and some
+small feature additions.
+
+ - allow vertical takeoffs in GUIDED mode with Q_GUIDED_MODE=0
+
+ - fixed a bug in implementation of MANUAL_RCMASK
+
+ - eliminate airspeed positive bias after offset zero
+
+ - prevent quadplane controller windup on the ground
+
+ - added Q_MAV_TYPE for setup of VTOL vehicle type for QGC
+
+ - improved performance of FlightAxis SITL
+
+ - support LOITER_TO_ALT in quadplanes
+
+ - fixed a bug in TECS related to descending quadplane transitions
+
+ - added Q_OPTIONS for controlling roll during transitions and
+   allowing for fixed wing takeoff and landing
+
+ - fixed a race condition in IMU logging
+
+ - fixed a race in i2c device probing
+
+ - log critical messages while disarmed
+
+ - added IST8310 compass on FMUv3 I2C
+
+ - probe for QMC5883 by default
+
+ - avoid double detection of AK09916 compass
+
+ - smooth out tailsitter transitions in both directions
+
+ - fixed use of RTL_RADIUS for QRTL threshold
+
 Release 3.8.2, 11th September 2017
 ----------------------------------
 
