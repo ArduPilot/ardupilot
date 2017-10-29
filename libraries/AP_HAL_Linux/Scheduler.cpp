@@ -83,6 +83,8 @@ void Scheduler::init()
         SCHED_THREAD(io, IO),
     };
 
+    _main_ctx = pthread_self();
+
 #if !APM_BUILD_TYPE(APM_BUILD_Replay)
     // we don't run Replay in real-time...
     mlockall(MCL_CURRENT|MCL_FUTURE);
