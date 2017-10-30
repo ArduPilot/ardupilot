@@ -364,15 +364,25 @@ void Plane::stabilize()
     }
     float speed_scaler = get_speed_scaler();
 
+    if (quadplane.in_tailsitter_vtol_transition()) {
+        /*
+          during transition to vtol in a tailsitter try to raise the
+          nose rapidly while keeping the wings level
+         */
+        nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
+        nav_roll_cd = 0;
+    }
+    
     if (control_mode == TRAINING) {
         stabilize_training(speed_scaler);
     } else if (control_mode == ACRO) {
         stabilize_acro(speed_scaler);
-    } else if (control_mode == QSTABILIZE ||
-               control_mode == QHOVER ||
-               control_mode == QLOITER ||
-               control_mode == QLAND ||
-               control_mode == QRTL) {
+    } else if ((control_mode == QSTABILIZE ||
+                control_mode == QHOVER ||
+                control_mode == QLOITER ||
+                control_mode == QLAND ||
+                control_mode == QRTL) &&
+               !quadplane.in_tailsitter_vtol_transition()) {
         quadplane.control_run();
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != STABILIZE) {
