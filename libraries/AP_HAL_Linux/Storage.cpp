@@ -26,6 +26,8 @@ using namespace Linux;
 #define STORAGE_DIR "/var/lib/ardupilot"
 #elif APM_BUILD_TYPE(APM_BUILD_Replay)
 #define STORAGE_DIR "."
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
+#define STORAGE_DIR "/mnt/APM"
 #else
 #define STORAGE_DIR "/var/APM"
 #endif
