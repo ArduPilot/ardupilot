@@ -1,6 +1,25 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.5.2 31-October-2017
+
+Changes from 3.5.1:
+
+- Bugfix output conflicts between motors and servo channel function assignments
+- Bugfix Notify leak flag logic
+- Bugfix COMPASS_OFFS_MAX should default to 1000
+- Don't emit tether turn status via audible STATUSTEXT messages
+- Increase threshold for input hold engaged flag
+- Announce input hold engaged/disengaged
+- Force correct GND_EXT_BUS parameter at boot for Pixhawk 1 and 2
+- Rework camera tilt input and slew limiting. This fixes mount stabilization.
+- Clear and disable input hold when disarmed
+- Allow adjusting PWM output range for lights channels
+- Always neutralize control inputs during pilot input failsafe
+- Add joystick button functions for relays 3 and 4
+- Clear roll/pitch inputs when switching to manual or acro mode
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 3.5.1 12-September-2017 / Sub 3.5.1beta1 29-August-2017
 
 Changes from 3.5:
