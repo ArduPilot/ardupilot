@@ -23,10 +23,6 @@
 
 #pragma once
 
-#define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID 0x0001
-#define AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID 0x0002
-#define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID 0x0011
-#define AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID 0x0012
 #define AP_BEACON_MARVELMIND_BUF_SIZE 255
 
 #include "AP_Beacon_Backend.h"
@@ -72,12 +68,12 @@ private:
 
     struct MarvelmindHedge
     {
+        MarvelmindHedge();
+        ~MarvelmindHedge();
         uint8_t max_buffered_positions;   // maximum count of measurements of coordinates stored in buffer, default: 3
         PositionValue * position_buffer;  // buffer of measurements
         StationaryBeaconsPositions positions_beacons;
-        bool verbose;   // verbose flag which activate console output, default: False
         bool pause;     //  pause flag. If True, class would not read serial data
-        bool termination_required;  //  If True, thread would exit from main loop and stop
         void (*receive_data_callback)(PositionValue position); //  receive_data_callback is callback function to receive data
 
         uint8_t _last_values_count;
@@ -103,8 +99,6 @@ private:
     void process_beacons_positions_highres_datagram();
     void process_position_highres_datagram(PositionValue &p);
     void process_position_datagram(PositionValue &p);
-    void create_marvelmind_hedge();
-    void start_marvelmind_hedge();
     void set_stationary_beacons_positions_and_distances();
     void order_stationary_beacons();
 
