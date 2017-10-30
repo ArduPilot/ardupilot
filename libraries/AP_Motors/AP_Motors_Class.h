@@ -166,7 +166,7 @@ protected:
     virtual uint32_t    rc_map_mask(uint32_t mask) const;
 
     // add a motor to the motor map
-    void add_motor_num(int8_t motor_num);
+    bool add_motor_num(int8_t motor_num);
     
     // update the throttle input filter
     virtual void update_throttle_filter() = 0;
