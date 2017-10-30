@@ -793,6 +793,10 @@ void Plane::update_navigation()
     // ------------------------------------------------------------------------
 
     uint16_t radius = 0;
+    uint16_t qrtl_radius = abs(g.rtl_radius);
+    if (qrtl_radius == 0) {
+        qrtl_radius = abs(aparm.loiter_radius);
+    }
     
     switch(control_mode) {
     case AUTO:
@@ -805,7 +809,7 @@ void Plane::update_navigation()
         if (quadplane.available() && quadplane.rtl_mode == 1 &&
             (nav_controller->reached_loiter_target() ||
              location_passed_point(current_loc, prev_WP_loc, next_WP_loc) ||
-             auto_state.wp_distance < (uint16_t)g.rtl_radius) &&
+             auto_state.wp_distance < qrtl_radius) &&
             AP_HAL::millis() - last_mode_change_ms > 1000) {
             set_mode(QRTL, MODE_REASON_UNKNOWN);
             break;
