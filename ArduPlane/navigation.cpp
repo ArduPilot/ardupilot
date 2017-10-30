@@ -156,9 +156,11 @@ void Plane::calc_gndspeed_undershoot()
 	    Vector2f gndVel = ahrs.groundspeed_vector();
 		const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
 		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
-		yawVect.normalize();
-		float gndSpdFwd = yawVect * gndVel;
-        groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
+        if (!yawVect.is_zero()) {
+            yawVect.normalize();
+            float gndSpdFwd = yawVect * gndVel;
+            groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
+        }
     }
 }
 
