@@ -1,13 +1,14 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-ArduHeli 3.5.3 21-Oct-2017
+ArduHeli 3.5.3 29-Oct-2017
 1) EKF Updates with origin height mask
 2) Swashplate behavior updates
 3) Change default ACCEL_Z_P for helicopters
 4) Add swash control direction for leading/trailing edge
 5) Bug fixes:
-    a) resolve issue 5396 for swashplate behavior in Acro flight mode
+    a) resolve issue #5396 for swashplate behavior in Acro flight mode
     b) DDFP tail rotor won't start without Motor Interlock raised and armed state = true
+    c) resolve issue #6964 for no collective pitch response in servo_test routine
 ------------------------------------------------------------------
 Copter 3.5.3 21-Sep-2017 / Copter 3.5.3-rc1 12-Sep-2017
 Changes from 3.5.2
