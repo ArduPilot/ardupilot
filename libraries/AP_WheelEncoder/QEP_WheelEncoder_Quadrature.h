@@ -19,35 +19,17 @@
 #include <Filter/Filter.h>
 #include <AP_Math/AP_Math.h>
 
-class AP_WheelEncoder_Quadrature : public AP_WheelEncoder_Backend
+class QEP_WheelEncoder_Quadrature : public AP_WheelEncoder_Backend
 {
 public:
     // constructor
-    AP_WheelEncoder_Quadrature(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state);
+    QEP_WheelEncoder_Quadrature(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state);
+    //void encoder_count(uint8_t instance);
 
     // update state
     void update(void);
 
 private:
-
-    // gpio interrupt handlers
-    static int irq_handler0_pina(int irq, void *context);   // instance 0's pin_a handler
-    static int irq_handler0_pinb(int irq, void *context);   // instance 0's pin_b handler
-    static int irq_handler1_pina(int irq, void *context);   // instance 1's pin_a handler
-    static int irq_handler1_pinb(int irq, void *context);   // instance 1's pin_b handler
-    static void irq_handler(uint8_t instance, bool pin_a);  // combined irq handler
-
-    static void irq_handler(uint8_t instance);  // combined irq handler
-
-
-    // get gpio id from pin number
-    static uint32_t get_gpio(uint8_t pin_number);
-
-    // convert pin a and b status to phase
-    static uint8_t pin_ab_to_phase(bool pin_a, bool pin_b);
-
-    // update phase, distance_count and error count using pin a and b's latest state
-    static void update_phase_and_error_count(bool pin_a_now, bool pin_b_now, uint8_t &phase, int32_t &distance_count, uint32_t &total_count, uint32_t &error_count);
 
     struct IrqState {
         uint32_t last_gpio_a;       // gpio used for pin a
@@ -60,7 +42,5 @@ private:
     };
     static struct IrqState irq_state[WHEELENCODER_MAX_INSTANCES];
 
-    // private members
-    uint8_t last_pin_a;
-    uint8_t last_pin_b;
+
 };
