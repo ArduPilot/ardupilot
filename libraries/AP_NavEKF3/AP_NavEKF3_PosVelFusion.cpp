@@ -1589,7 +1589,7 @@ void NavEKF3_core::SelectBodyOdomFusion()
             unitVec.x = prevTnb.a.x;
             unitVec.y = prevTnb.a.y;
             unitVec.z = 0.0f;
-            unitVec.normalized();
+            unitVec.normalize();
 
             // multiply by forward speed to get velocity vector measured by wheel encoders
             Vector3f velNED = unitVec * fwdSpd;
