@@ -22,6 +22,8 @@ using namespace Linux;
 // card for ArduCopter and ArduPlane
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 #define STORAGE_DIR "."
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
+#define STORAGE_DIR "/mnt/APM"
 #else
 #define STORAGE_DIR HAL_BOARD_STORAGE_DIRECTORY
 #endif
