@@ -486,6 +486,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_GIMBAL_REPORT:
     case MSG_RPM:
     case MSG_POSITION_TARGET_GLOBAL_INT:
+    case MSG_NAMED_FLOAT:
         break;  // just here to prevent a warning
     }
     return true;

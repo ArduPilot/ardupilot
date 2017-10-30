@@ -583,6 +583,8 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_BATTERY_STATUS:
         send_battery_status(copter.battery);
         break;
+    case MSG_NAMED_FLOAT:
+        break;
     }
 
     return true;
