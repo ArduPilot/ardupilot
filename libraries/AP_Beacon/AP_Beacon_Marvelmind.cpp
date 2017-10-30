@@ -22,6 +22,11 @@
 
 #include "AP_Beacon_Marvelmind.h"
 
+#define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID 0x0001
+#define AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID 0x0002
+#define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID 0x0011
+#define AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID 0x0012
+
 extern const AP_HAL::HAL& hal;
 
 AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager &serial_manager) :
@@ -32,14 +37,12 @@ AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Beacon, 0));
         hedge = new MarvelmindHedge();
         last_update_ms = 0;
-        if (hedge) {
-            create_marvelmind_hedge();
+        if (hedge && hedge->position_buffer != nullptr) {
             parse_state = RECV_HDR; // current state of receive data
             num_bytes_in_block_received = 0; // bytes received
             data_id = 0;
-            start_marvelmind_hedge();
         } else {
-            // initialising beacon failed
+            hal.console->printf("MarvelMind: MarvelmindHedge failed\n");
         }
     }
 }
@@ -213,7 +216,7 @@ void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
 
 void AP_Beacon_Marvelmind::update(void)
 {
-    if (uart == nullptr) {
+    if (uart == nullptr || hedge == nullptr || hedge->position_buffer == nullptr) {
         return;
     }
     // read any available characters
@@ -329,37 +332,32 @@ void AP_Beacon_Marvelmind::update(void)
 //////////////////////////////////////////////////////////////////////////////
 // Create and initialize MarvelmindHedge structure
 //////////////////////////////////////////////////////////////////////////////
-void AP_Beacon_Marvelmind::create_marvelmind_hedge()
+AP_Beacon_Marvelmind::MarvelmindHedge::MarvelmindHedge() :
+    max_buffered_positions{3},
+    position_buffer{nullptr},
+    positions_beacons{},
+    pause{false},
+    receive_data_callback{nullptr},
+    _last_values_count{0},
+    _last_values_next{0},
+    _have_new_values{false}
 {
-    hedge->max_buffered_positions = 3;
-    hedge->position_buffer = nullptr;
-    hedge->verbose = false;
-    hedge->receive_data_callback = nullptr;
-    hedge->_last_values_count = 0;
-    hedge->_last_values_next = 0;
-    hedge->_have_new_values = false;
-    hedge->termination_required = false;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Initialize and start work
-//////////////////////////////////////////////////////////////////////////////
-void AP_Beacon_Marvelmind::start_marvelmind_hedge()
-{
-    hedge->position_buffer = (PositionValue*) malloc(sizeof(struct PositionValue) * hedge->max_buffered_positions);
-    if (hedge->position_buffer == nullptr) {
-        if (hedge->verbose) {
-            hal.console->printf("MarvelMind: Not enough memory");
-        }
-        hedge->termination_required = true;
+    position_buffer = new PositionValue[max_buffered_positions];
+    if (position_buffer == nullptr) {
+        hal.console->printf("MarvelMind: Not enough memory\n");
         return;
     }
-    for (uint8_t i = 0; i < hedge->max_buffered_positions; i++) {
-        hedge->position_buffer[i].ready = false;
-        hedge->position_buffer[i].processed = false;
+    for (uint8_t i = 0; i < max_buffered_positions; i++) {
+        position_buffer[i].ready = false;
+        position_buffer[i].processed = false;
     }
-    hedge->positions_beacons.num_beacons = 0;
-    hedge->positions_beacons.updated = false;
+    positions_beacons.num_beacons = 0;
+    positions_beacons.updated = false;
+}
+
+AP_Beacon_Marvelmind::MarvelmindHedge::~MarvelmindHedge() {
+    if (position_buffer != nullptr)
+        delete[] position_buffer;
 }
 
 bool AP_Beacon_Marvelmind::healthy()
