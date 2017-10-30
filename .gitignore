@@ -89,3 +89,6 @@ status.txt
 tags
 terrain/
 test.ArduCopter/*
+GPATH
+GRTAGS
+GTAGS
