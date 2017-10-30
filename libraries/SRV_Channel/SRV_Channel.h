@@ -454,10 +454,11 @@ private:
 
     SRV_Channel::servo_mask_t trimmed_mask;
 
-    AP_Int32         volz_chan_bitmask;
+    AP_Int32     volz_chan_bitmask;
+    uint64_t		last_volz_update_sent_us;
 
-	AP_HAL::UARTDriver *_port;
-	void send_command(uint8_t* data);
+    AP_HAL::UARTDriver *_port;
+    void send_volz_command(uint8_t* data);
 
     static Bitmask function_mask;
     static bool initialised;
@@ -486,6 +487,8 @@ private:
 
 
 /*
+ * Volz servo protocol
+ *
  * Baud-Rate: 115.200 bits per second
  * Number of Data bits: 8
  * Number of Stop bits: 1

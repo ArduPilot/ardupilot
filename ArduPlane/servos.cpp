@@ -742,7 +742,3 @@ void Plane::servos_auto_trim(void)
     }
     
 }
-
-void Plane::update_volz(){
-	g2.servo_channels.update_volz();
-}

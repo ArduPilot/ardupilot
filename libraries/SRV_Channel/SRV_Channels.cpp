@@ -20,6 +20,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 #include "SRV_Channel.h"
 
 extern const AP_HAL::HAL& hal;
@@ -200,22 +201,32 @@ void SRV_Channels::set_output_pwm_chan(uint8_t chan, uint16_t value)
 // init the serial port for volz servos
 void SRV_Channels::init_serial(const AP_SerialManager& serial_manager){
 	_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Volz,0);
+
+	last_volz_update_sent_us = 0;
 }
 
 // calculate and send set extended position command to volz servos over serial port
 void SRV_Channels::update_volz(){
-	if(_port == nullptr)
+	// check if protocol is enabled.
+	if(_port == nullptr){
+//		if(volz_chan_bitmask == 0){
+//			gcs().send_text(MAV_SEVERITY_CRITICAL, "Volz Protocol bitmaks have some channels included but failed to find volz serial output, don't fly.");
+//		}
+		return;
+	}
+
+	// limit update of volz servos to 50hz
+	if(AP_HAL::micros64() - last_volz_update_sent_us < 20000)
 		return;
 
 	SRV_Channel::ServoChannelData servo_data[NUM_SERVO_CHANNELS];
 
 	if(!SRV_Channels::get_all_outputs_pwm(servo_data,NUM_SERVO_CHANNELS)){
-//		gcs().send_text(MAV_SEVERITY_CRITICAL, "Volz Protocol failed to get pwm values, don't fly.");
+		gcs().send_text(MAV_SEVERITY_CRITICAL, "Volz Protocol failed to get pwm values, don't fly.");
 		return;
 	}
 
 	uint8_t i;
-
 
 	// loop for all 16 channels
 	for (i=0;i<NUM_SERVO_CHANNELS;i++){
@@ -244,14 +255,14 @@ void SRV_Channels::update_volz(){
 			data[2] = HIGHBYTE(value);
 			data[3] = LOWBYTE(value);
 
-			send_command(data);
+			send_volz_command(data);
 		}// end if
 	}// end for
 
 }
 
 // calculate CRC for volz serial protocol and send the data.
-void SRV_Channels::send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]){
+void SRV_Channels::send_volz_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]){
 	uint8_t i,j;
 	uint16_t crc = 0xFFFF;
 
@@ -273,6 +284,9 @@ void SRV_Channels::send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]){
 	// add CRC result to the message
 	data[4] = HIGHBYTE(crc);
 	data[5] = LOWBYTE(crc);
+
+	last_volz_update_sent_us = AP_HAL::micros64();
+
 	_port->write(data, VOLZ_DATA_FRAME_SIZE);
 }
 

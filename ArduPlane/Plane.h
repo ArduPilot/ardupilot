@@ -1006,7 +1006,6 @@ private:
     void stabilize();
     void set_servos_idle(void);
     void set_servos();
-    void update_volz();
     void set_servos_manual_passthrough(void);
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
