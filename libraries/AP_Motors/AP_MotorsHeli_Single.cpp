@@ -507,10 +507,6 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
         } else {
             write_aux(_ext_gyro_gain_std/1000.0f);
         }
-    } else if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH && _main_rotor.get_desired_speed() > 0.0f) {
-        // output yaw servo to tail rsc
-        // To-Do: fix this messy calculation
-        write_aux(yaw_out*0.5f+1.0f);
     }
 }
 
