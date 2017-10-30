@@ -803,7 +803,9 @@ void Plane::update_navigation()
             
     case RTL:
         if (quadplane.available() && quadplane.rtl_mode == 1 &&
-            nav_controller->reached_loiter_target() &&
+            (nav_controller->reached_loiter_target() ||
+             location_passed_point(current_loc, prev_WP_loc, next_WP_loc) ||
+             auto_state.wp_distance < (uint16_t)g.rtl_radius) &&
             AP_HAL::millis() - last_mode_change_ms > 1000) {
             set_mode(QRTL, MODE_REASON_UNKNOWN);
             break;
