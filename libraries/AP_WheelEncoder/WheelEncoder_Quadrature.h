@@ -37,6 +37,9 @@ private:
     static int irq_handler1_pinb(int irq, void *context);   // instance 1's pin_b handler
     static void irq_handler(uint8_t instance, bool pin_a);  // combined irq handler
 
+    static void irq_handler(uint8_t instance);  // combined irq handler
+
+
     // get gpio id from pin number
     static uint32_t get_gpio(uint8_t pin_number);
 
@@ -46,10 +49,14 @@ private:
     // update phase, distance_count and error count using pin a and b's latest state
     static void update_phase_and_error_count(bool pin_a_now, bool pin_b_now, uint8_t &phase, int32_t &distance_count, uint32_t &total_count, uint32_t &error_count);
 
+   static void update_phase_and_error_count_new(int32_t &phase, int32_t &distance_count, uint32_t &total_count, uint32_t &error_count);
+   static void new_update(int8_t instance);
+
+
     struct IrqState {
         uint32_t last_gpio_a;       // gpio used for pin a
         uint32_t last_gpio_b;       // gpio used for pin b
-        uint8_t  phase;             // current phase of encoder (from 0 to 3)
+        int32_t  phase;             // current phase of encoder (from 0 to 3)
         int32_t  distance_count;    // distance measured by cumulative steps forward or backwards
         uint32_t total_count;       // total number of successful readings from sensor (used for sensor quality calcs)
         uint32_t error_count;       // total number of errors reading from sensor (used for sensor quality calcs)

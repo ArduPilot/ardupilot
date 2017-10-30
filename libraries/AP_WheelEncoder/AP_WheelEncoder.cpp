@@ -14,8 +14,10 @@
  */
 
 #include "AP_WheelEncoder.h"
-#include "WheelEncoder_Quadrature.h"
+//#include "WheelEncoder_Quadrature.h"
 
+#include "QEP_WheelEncoder_Quadrature.h"
+#include "roboticscape/roboticscape.h"
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -157,13 +159,15 @@ void AP_WheelEncoder::init(void)
         return;
     }
     for (uint8_t i=0; i<WHEELENCODER_MAX_INSTANCES; i++) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         uint8_t type = _type[num_instances];
         uint8_t instance = num_instances;
 
         if (type == WheelEncoder_TYPE_QUADRATURE) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_WheelEncoder_Quadrature(*this, instance, state[instance]);
+            //drivers[instance] = new AP_WheelEncoder_Quadrature(*this, instance, state[instance]);
+            //new driver for QEP module
+            drivers[instance] = new QEP_WheelEncoder_Quadrature(*this, instance, state[instance]);
         }
 #endif
 

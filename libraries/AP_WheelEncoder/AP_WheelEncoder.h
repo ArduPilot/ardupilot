@@ -31,6 +31,8 @@ class AP_WheelEncoder
 public:
     friend class AP_WheelEncoder_Backend;
     friend class AP_WheelEncoder_Quadrature;
+    //new qep class for wheelencoder in BBBlue
+    friend class QEP_WheelEncoder_Quadrature;
 
     AP_WheelEncoder(void);
 

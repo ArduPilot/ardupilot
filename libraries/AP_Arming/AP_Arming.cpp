@@ -1,28 +1,20 @@
-/*
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
+#include <signal.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include "mmap/rc_mmap_pwmss.h"		// used for fast pwm functions
 #include "AP_Arming.h"
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
-
+#include "roboticscape/roboticscape.h"
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
 #define AP_ARMING_BOARD_VOLTAGE_MIN     4.3f
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
+int init_check=0;
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
 extern const AP_HAL::HAL& hal;
@@ -539,6 +531,72 @@ bool AP_Arming::arm(uint8_t method)
         armed = true;
         arming_method = NONE;
         gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
+
+		//changes
+		FILE *fd; 
+
+		// ensure root privaleges until we sort out udev rules
+		if(geteuid()!=0){
+		fprintf(stderr,"ERROR: Robotics Cape library must be run as root\n");
+		return -1;
+		}
+
+		// check if another project was using resources
+		// kill that process cleanly with sigint if so
+	//	#ifdef DEBUG
+			printf("checking for existing PID_FILE\n");
+	//	#endif
+		rc_kill();
+
+		// start state as Uninitialized
+		rc_set_state(UNINITIALIZED);
+	
+		// initialize gpio pins
+		hal.console->printf("Initializing: GPIO\n");
+		if(configure_gpio_pins()<0){
+			hal.console->printf("ERROR: failed to configure GPIO\n");
+			return -1;
+		}
+
+
+		// motors
+		hal.console->printf("Initializing: Motors\n");
+		if(initialize_motors()){
+			fprintf(stderr,"WARNING: Failed to initialize motors\n");
+		}
+		hal.console->printf("Enabling Motors\n");
+		rc_enable_motors();
+
+		hal.console->printf("Setting Motor values\n");
+		hal.console->printf("Initializing: eQEP\n");
+		if(init_eqep(0)){
+			hal.console->printf("failed to initialize eQEP0\n");
+		}
+		if(init_eqep(1)){
+			hal.console->printf("failed to initialize eQEP1\n");
+		}
+		if(init_eqep(2)){
+			hal.console->printf("failed to initialize eQEP2\n");
+		}
+
+		// create new pid file with process id
+		hal.console->printf("opening PID_FILE\n");
+		fd = fopen(PID_FILE, "ab+");
+		if (fd == NULL) {
+
+			return -1;
+		}
+		pid_t current_pid = getpid();
+		fprintf(fd,"%d",(int)current_pid);
+		fflush(fd);
+		fclose(fd);
+	
+		hal.console->printf("Process ID: %d\n", (int)current_pid); 
+ 		// wait to let threads start up
+		usleep(100000);
+		init_check=1;
+	//changes
+
         return true;
     }
 
@@ -573,7 +631,29 @@ bool AP_Arming::disarm()
     armed = false;
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
+	
+	//change	
+	// just in case the user forgot, set state to exiting
+	rc_set_state(EXITING);
 
+	// announce we are starting cleanup process
+	hal.console->printf("\nExiting Cleanly\n");
+
+	hal.console->printf("Turning off motors\n");
+	rc_disable_motors();
+
+	hal.console->printf("Deleting PID file\n");
+	FILE* fd;
+	// clean up the pid_file if it still exists
+	fd = fopen(PID_FILE, "r");
+	if (fd != NULL) {
+		// close and delete the old file
+		fclose(fd);
+		remove(PID_FILE);
+	}
+	init_check=0;
+	hal.console->printf("end of cleanup_cape\n");
+	//change
     //TODO: Log motor disarming to the dataflash
     //Can't do this from this class until there is a unified logging library.
 
