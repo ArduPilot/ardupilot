@@ -194,6 +194,9 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new DiscoLED());
     ADD_BACKEND(new ToneAlarm_Linux());
 
+  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
+    ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
+
   #else // other linux
     ADD_BACKEND(new AP_BoardLED());
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
