@@ -30,6 +30,7 @@
 #include <unistd.h>
 
 #include "Heat_Pwm.h"
+#include "GPIO.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -42,8 +43,8 @@ HeatPwm::HeatPwm(uint8_t pwm_num, float Kp, float Ki, uint32_t period_ns) :
 {
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
     _pwm = new PWM_Sysfs(0, pwm_num);
-    hal.gpio->pinMode(26, HAL_GPIO_OUTPUT);
-    hal.gpio->write(26, 1);
+    hal.gpio->pinMode(EDGE_GPIO_HEAT_ENABLE, HAL_GPIO_OUTPUT);
+    hal.gpio->write(EDGE_GPIO_HEAT_ENABLE, 1);
 #else
     _pwm = new PWM_Sysfs_Bebop(pwm_num);
 #endif
