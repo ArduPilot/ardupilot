@@ -1,15 +1,12 @@
 APM:Heli Release Notes:
 ------------------------------------------------------------------
-Heli 2.0-beta 16-Sep-2017
+ArduHeli 3.3.3 16-Sep-2017
 1) remove multirotor aircraft as build targets
 2) add yaw reset to Loiter when on ground or disarmed
 3) add enhancements and safety features for RC and radio failsafe
 4) add a vertical velocity check to landing detector
 5) disable Position Hold, Drift and Sport flight modes for helicopter
 6) disable helicopter crash checking to prevent in-flight shutdown
-------------------------------------------------------------------
-Heli 1.0.0 17-Aug-2017
-1) fork ArduHeli from ArduCopter 3.3.3
 ------------------------------------------------------------------
 Copter 3.3.3 24-Feb-2016 / 3.3.3-rc2 27-Jan-2016
 Changes from 3.3.3-rc1
