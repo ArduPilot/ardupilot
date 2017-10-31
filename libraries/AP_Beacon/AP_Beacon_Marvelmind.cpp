@@ -19,7 +19,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-
 #include "AP_Beacon_Marvelmind.h"
 
 extern const AP_HAL::HAL& hal;
@@ -32,14 +31,12 @@ AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Beacon, 0));
         hedge = new MarvelmindHedge();
         last_update_ms = 0;
-        if (hedge) {
-            create_marvelmind_hedge();
+        if (hedge && hedge->position_buffer != nullptr) {
             parse_state = RECV_HDR; // current state of receive data
             num_bytes_in_block_received = 0; // bytes received
             data_id = 0;
-            start_marvelmind_hedge();
         } else {
-            // initialising beacon failed
+            hal.console->printf("MarvelMind: MarvelmindHedge failed\n");
         }
     }
 }
@@ -86,20 +83,28 @@ uint8_t AP_Beacon_Marvelmind::mark_position_ready()
     return ind_cur;
 }
 
+uint32_t parse_uint32_le(uint8_t* buffer)
+{
+    return (buffer[0]
+            | (((uint32_t) buffer[1]) << 8)
+            | (((uint32_t) buffer[2]) << 16)
+            | (((uint32_t) buffer[3]) << 24));
+}
+
+uint16_t parse_uint16_le(uint8_t* buffer)
+{
+    return (buffer[0]
+            | (((uint32_t) buffer[1]) << 8));
+}
+
 void AP_Beacon_Marvelmind::process_position_datagram(AP_Beacon_Marvelmind::PositionValue &p)
 {
     uint8_t ind = hedge->_last_values_next;
     hedge->position_buffer[ind].address = input_buffer[16];
-    hedge->position_buffer[ind].timestamp = input_buffer[5]
-            | (((uint32_t) input_buffer[6]) << 8)
-            | (((uint32_t) input_buffer[7]) << 16)
-            | (((uint32_t) input_buffer[8]) << 24);
-    const int16_t vx = input_buffer[9] | (((uint16_t) input_buffer[10]) << 8);
-    hedge->position_buffer[ind].x = vx * 10; // centimeters -> millimeters
-    const int16_t vy = input_buffer[11] | (((uint16_t) input_buffer[12]) << 8);
-    hedge->position_buffer[ind].y = vy * 10; // centimeters -> millimeters
-    const int16_t vz = input_buffer[13] | (((uint16_t) input_buffer[14]) << 8);
-    hedge->position_buffer[ind].z = vz * 10; // centimeters -> millimeters
+    hedge->position_buffer[ind].timestamp = parse_uint32_le(&input_buffer[5]);
+    hedge->position_buffer[ind].x = parse_uint16_le(&input_buffer[9]) * 10; // centimeters -> millimeters
+    hedge->position_buffer[ind].y = parse_uint16_le(&input_buffer[11]) * 10; // centimeters -> millimeters
+    hedge->position_buffer[ind].z = parse_uint16_le(&input_buffer[13]) * 10; // centimeters -> millimeters
     hedge->position_buffer[ind].high_resolution = false;
     ind = mark_position_ready();
     p = hedge->position_buffer[ind];
@@ -109,22 +114,10 @@ void AP_Beacon_Marvelmind::process_position_highres_datagram(AP_Beacon_Marvelmin
 {
     uint8_t ind = hedge->_last_values_next;
     hedge->position_buffer[ind].address = input_buffer[22];
-    hedge->position_buffer[ind].timestamp = input_buffer[5]
-            | (((uint32_t) input_buffer[6]) << 8)
-            | (((uint32_t) input_buffer[7]) << 16)
-            | (((uint32_t) input_buffer[8]) << 24);
-    const int32_t vx = input_buffer[9] | (((uint32_t) input_buffer[10]) << 8)
-            | (((uint32_t) input_buffer[11]) << 16)
-            | (((uint32_t) input_buffer[12]) << 24);
-    hedge->position_buffer[ind].x = vx;
-    const int32_t vy = input_buffer[13] | (((uint32_t) input_buffer[14]) << 8)
-            | (((uint32_t) input_buffer[15]) << 16)
-            | (((uint32_t) input_buffer[16]) << 24);
-    hedge->position_buffer[ind].y = vy;
-    const int32_t vz = input_buffer[17] | (((uint32_t) input_buffer[18]) << 8)
-            | (((uint32_t) input_buffer[19]) << 16)
-            | (((uint32_t) input_buffer[20]) << 24);
-    hedge->position_buffer[ind].z = vz;
+    hedge->position_buffer[ind].timestamp = parse_uint32_le(&input_buffer[5]);
+    hedge->position_buffer[ind].x = parse_uint32_le(&input_buffer[9]);
+    hedge->position_buffer[ind].y =  parse_uint32_le(&input_buffer[13]);
+    hedge->position_buffer[ind].z = parse_uint32_le(&input_buffer[17]);
     hedge->position_buffer[ind].high_resolution = true;
     ind = mark_position_ready();
     p = hedge->position_buffer[ind];
@@ -156,19 +149,15 @@ void AP_Beacon_Marvelmind::process_beacons_positions_datagram()
     }
     for (uint8_t i = 0; i < n; i++) {
         const uint8_t ofs = 6 + i * 8;
-        const uint8_t address = input_buffer[ofs];
-        const int16_t x = input_buffer[ofs + 1]
-                | (((uint16_t) input_buffer[ofs + 2]) << 8);
-        const int16_t y = input_buffer[ofs + 3]
-                | (((uint16_t) input_buffer[ofs + 4]) << 8);
-        const int16_t z = input_buffer[ofs + 5]
-                | (((uint16_t) input_buffer[ofs + 6]) << 8);
-        stationary_beacon = get_or_alloc_beacon(address);
+        stationary_beacon = get_or_alloc_beacon(input_buffer[ofs]);
         if (stationary_beacon != nullptr) {
-            stationary_beacon->address = address; //The instance and the address are the same
-            stationary_beacon->x = x * 10; // centimeters -> millimeters
-            stationary_beacon->y = y * 10; // centimeters -> millimeters
-            stationary_beacon->z = z * 10; // centimeters -> millimeters
+            stationary_beacon->address = input_buffer[ofs]; //The instance and the address are the same
+
+            // centimeters -> millimeters
+            stationary_beacon->x = parse_uint16_le(&input_buffer[ofs + 1]) * 10;
+            stationary_beacon->y = parse_uint16_le(&input_buffer[ofs + 3]) * 10;
+            stationary_beacon->z = parse_uint16_le(&input_buffer[ofs + 5]) * 10;
+
             stationary_beacon->high_resolution = false;
             hedge->positions_beacons.updated = true;
         }
@@ -185,35 +174,97 @@ void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
     }
     for (uint8_t i = 0; i < n; i++) {
         const uint8_t ofs = 6 + i * 14;
-        const uint8_t address = input_buffer[ofs];
-        const int32_t x = input_buffer[ofs + 1]
-                | (((uint32_t) input_buffer[ofs + 2]) << 8)
-                | (((uint32_t) input_buffer[ofs + 3]) << 16)
-                | (((uint32_t) input_buffer[ofs + 4]) << 24);
-        const int32_t y = input_buffer[ofs + 5]
-                | (((uint32_t) input_buffer[ofs + 6]) << 8)
-                | (((uint32_t) input_buffer[ofs + 7]) << 16)
-                | (((uint32_t) input_buffer[ofs + 8]) << 24);
-        const int32_t z = input_buffer[ofs + 9]
-                | (((uint32_t) input_buffer[ofs + 10]) << 8)
-                | (((uint32_t) input_buffer[ofs + 11]) << 16)
-                | (((uint32_t) input_buffer[ofs + 12]) << 24);
-        stationary_beacon = get_or_alloc_beacon(address);
+        stationary_beacon = get_or_alloc_beacon(input_buffer[ofs]);
         if (stationary_beacon != nullptr) {
-            stationary_beacon->address = address; //The instance and the address are the same
-            stationary_beacon->x = x; // millimeters
-            stationary_beacon->y = y; // millimeters
-            stationary_beacon->z = z; // millimeters
+            stationary_beacon->address = input_buffer[ofs]; //The instance and the address are the same
+
+            // millimeters
+            stationary_beacon->x =  parse_uint32_le(&input_buffer[ofs + 1]);
+            stationary_beacon->y =  parse_uint32_le(&input_buffer[ofs + 5]);
+            stationary_beacon->z =  parse_uint32_le(&input_buffer[ofs + 9]);
+
             stationary_beacon->high_resolution = true;
             hedge->positions_beacons.updated = true;
         }
     }
     order_stationary_beacons();
 }
+bool AP_Beacon_Marvelmind::parse_message_header(uint8_t received_char) {
+    bool good_byte = false;
+    switch (num_bytes_in_block_received) {
+    case 0:
+        //start of packet
+        good_byte = (received_char == 0xff);
+        break;
+    case 1:
+        good_byte = (received_char == STREAM_FROM_HEDGE);
+        break;
+    case 2:
+        good_byte = true;
+        break;
+    case 3:
+        data_id = (((uint16_t)received_char) << 8) + input_buffer[2];
+        good_byte = (data_id == POSITION_DATAGRAM_ID)
+          || (data_id == ALL_POSITIONS_DATAGRAM_ID)
+          || (data_id == POSITION_DATAGRAM_HIGHRES_ID)
+          || (data_id == ALL_POSITIONS_DATAGRAM_HIGHRES_ID);
+        break;
+     case 4:
+        switch (data_id) {
+        case POSITION_DATAGRAM_ID:
+            good_byte = (received_char == 0x10);
+            break;
+        case ALL_POSITIONS_DATAGRAM_ID:
+        case ALL_POSITIONS_DATAGRAM_HIGHRES_ID:
+            good_byte = true;
+            break;
+        case POSITION_DATAGRAM_HIGHRES_ID:
+            good_byte = (received_char == 0x16);
+            break;
+        }
 
+        if (good_byte)
+            parse_state = RECV_DGRAM;
+        break;
+    }
+    return good_byte;
+}
+
+void AP_Beacon_Marvelmind::parse_payload() {
+    // parse dgram
+    uint16_t block_crc = calc_crc_modbus(input_buffer, num_bytes_in_block_received);
+    if (block_crc == 0) {
+        switch (data_id) {
+        case POSITION_DATAGRAM_ID:
+            // add to position_buffer
+            process_position_datagram(cur_position);
+            vehicle_position_initialized = true;
+            set_stationary_beacons_positions_and_distances();
+            break;
+        case ALL_POSITIONS_DATAGRAM_ID:
+            process_beacons_positions_datagram();
+            beacon_position_initialized = true;
+            set_stationary_beacons_positions_and_distances();
+            break;
+        case POSITION_DATAGRAM_HIGHRES_ID:
+            process_position_highres_datagram(cur_position);
+            vehicle_position_initialized = true;
+            set_stationary_beacons_positions_and_distances();
+            break;
+        case ALL_POSITIONS_DATAGRAM_HIGHRES_ID:
+            process_beacons_positions_highres_datagram();
+            beacon_position_initialized = true;
+            set_stationary_beacons_positions_and_distances();
+            break;
+        }
+    }
+    // and repeat
+    parse_state = RECV_HDR;
+    num_bytes_in_block_received = 0;
+}
 void AP_Beacon_Marvelmind::update(void)
 {
-    if (uart == nullptr) {
+    if (uart == nullptr || hedge == nullptr || hedge->position_buffer == nullptr) {
         return;
     }
     // read any available characters
@@ -223,50 +274,11 @@ void AP_Beacon_Marvelmind::update(void)
         return;
     }
     while (num_bytes_read-- > 0) {
-        bool good_byte = false;
         received_char = uart->read();
         input_buffer[num_bytes_in_block_received] = received_char;
         switch (parse_state) {
         case RECV_HDR:
-            switch (num_bytes_in_block_received) {
-            case 0:
-                good_byte = (received_char == 0xff);
-                break;
-            case 1:
-                good_byte = (received_char == 0x47);
-                break;
-            case 2:
-                good_byte = true;
-                break;
-            case 3:
-                data_id = (((uint16_t)received_char) << 8) + input_buffer[2];
-                good_byte = (data_id == AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID)
-                         || (data_id == AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID)
-                         || (data_id == AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID)
-                         || (data_id == AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID);
-                break;
-            case 4: {
-                switch (data_id) {
-                case AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID: {
-                    good_byte = (received_char == 0x10);
-                    break;
-                }
-                case AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID:
-                case AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID:
-                    good_byte = true;
-                    break;
-                case AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID: {
-                    good_byte = (received_char == 0x16);
-                    break;
-                }
-                }
-                if (good_byte) {
-                    parse_state = RECV_DGRAM;
-                }
-                break;
-            }
-            }
-            if (good_byte) {
+            if (parse_message_header(received_char)) {
                 // correct header byte
                 num_bytes_in_block_received++;
             } else {
@@ -275,51 +287,10 @@ void AP_Beacon_Marvelmind::update(void)
                 num_bytes_in_block_received = 0;
             }
             break;
-
         case RECV_DGRAM:
             num_bytes_in_block_received++;
             if (num_bytes_in_block_received >= 7 + input_buffer[4]) {
-                // parse dgram
-                uint16_t block_crc = calc_crc_modbus(input_buffer, num_bytes_in_block_received);
-                if (block_crc == 0) {
-                    switch (data_id) {
-                        case AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID:
-                        {
-                            // add to position_buffer
-                            process_position_datagram(cur_position);
-                            vehicle_position_initialized = true;
-                            set_stationary_beacons_positions_and_distances();
-                            break;
-                        }
-
-                        case AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID:
-                        {
-                            process_beacons_positions_datagram();
-                            beacon_position_initialized = true;
-                            set_stationary_beacons_positions_and_distances();
-                            break;
-                        }
-
-                        case AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID:
-                        {
-                            process_position_highres_datagram(cur_position);
-                            vehicle_position_initialized = true;
-                            set_stationary_beacons_positions_and_distances();
-                            break;
-                        }
-
-                        case AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID:
-                        {
-                            process_beacons_positions_highres_datagram();
-                            beacon_position_initialized = true;
-                            set_stationary_beacons_positions_and_distances();
-                            break;
-                        }
-                    }
-                }
-                // and repeat
-                parse_state = RECV_HDR;
-                num_bytes_in_block_received = 0;
+                parse_payload();
             }
             break;
         }
@@ -329,37 +300,32 @@ void AP_Beacon_Marvelmind::update(void)
 //////////////////////////////////////////////////////////////////////////////
 // Create and initialize MarvelmindHedge structure
 //////////////////////////////////////////////////////////////////////////////
-void AP_Beacon_Marvelmind::create_marvelmind_hedge()
+AP_Beacon_Marvelmind::MarvelmindHedge::MarvelmindHedge() :
+    max_buffered_positions{3},
+    position_buffer{nullptr},
+    positions_beacons{},
+    pause{false},
+    receive_data_callback{nullptr},
+    _last_values_count{0},
+    _last_values_next{0},
+    _have_new_values{false}
 {
-    hedge->max_buffered_positions = 3;
-    hedge->position_buffer = nullptr;
-    hedge->verbose = false;
-    hedge->receive_data_callback = nullptr;
-    hedge->_last_values_count = 0;
-    hedge->_last_values_next = 0;
-    hedge->_have_new_values = false;
-    hedge->termination_required = false;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Initialize and start work
-//////////////////////////////////////////////////////////////////////////////
-void AP_Beacon_Marvelmind::start_marvelmind_hedge()
-{
-    hedge->position_buffer = (PositionValue*) malloc(sizeof(struct PositionValue) * hedge->max_buffered_positions);
-    if (hedge->position_buffer == nullptr) {
-        if (hedge->verbose) {
-            hal.console->printf("MarvelMind: Not enough memory");
-        }
-        hedge->termination_required = true;
+    position_buffer = new PositionValue[max_buffered_positions];
+    if (position_buffer == nullptr) {
+        hal.console->printf("MarvelMind: Not enough memory\n");
         return;
     }
-    for (uint8_t i = 0; i < hedge->max_buffered_positions; i++) {
-        hedge->position_buffer[i].ready = false;
-        hedge->position_buffer[i].processed = false;
+    for (uint8_t i = 0; i < max_buffered_positions; i++) {
+        position_buffer[i].ready = false;
+        position_buffer[i].processed = false;
     }
-    hedge->positions_beacons.num_beacons = 0;
-    hedge->positions_beacons.updated = false;
+    positions_beacons.num_beacons = 0;
+    positions_beacons.updated = false;
+}
+
+AP_Beacon_Marvelmind::MarvelmindHedge::~MarvelmindHedge() {
+    if (position_buffer != nullptr)
+        delete[] position_buffer;
 }
 
 bool AP_Beacon_Marvelmind::healthy()
