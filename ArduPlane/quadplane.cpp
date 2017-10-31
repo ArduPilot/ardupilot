@@ -402,7 +402,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: quadplane options
-    // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight. If AllowFWTakeoff is disabled then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand is disabled then fixed wing land on quadplanes will instead perform a VTOL land.
+    // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight. If AllowFWTakeoff bit is not set then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand bit is not set then fixed wing land on quadplanes will instead perform a VTOL land.
     // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
     
