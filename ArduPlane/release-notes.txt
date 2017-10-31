@@ -1,4 +1,4 @@
-Release 3.8.3beta1, 29th October 2017
+Release 3.8.3beta2, 29th October 2017
 -------------------------------------
 
 This is a minor release with a number of important bug fixes and some
