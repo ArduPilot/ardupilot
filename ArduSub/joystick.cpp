@@ -600,6 +600,10 @@ void Sub::set_neutral_controls()
     }
 
     hal.rcin->set_overrides(channels, 10);
+
+    // Clear pitch/roll trim settings
+    pitchTrim = 0;
+    rollTrim  = 0;
 }
 
 void Sub::clear_input_hold()
