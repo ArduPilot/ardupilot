@@ -207,6 +207,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     float dt = (now - _last_update_waypoint_us) * 1.0e-6f;
     if (dt > 0.1) {
         dt = 0.1;
+        _L1_xtrack_i = 0.0f;
     }
     _last_update_waypoint_us = now;
 
