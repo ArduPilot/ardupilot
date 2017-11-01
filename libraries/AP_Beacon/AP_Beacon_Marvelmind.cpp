@@ -27,6 +27,8 @@
 #define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID 0x0011
 #define AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID 0x0012
 
+#define MAX_BUFFERED_POSITIONS 3
+
 extern const AP_HAL::HAL& hal;
 
 AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager &serial_manager) :
@@ -78,10 +80,10 @@ uint8_t AP_Beacon_Marvelmind::mark_position_ready()
     hedge->position_buffer[ind].ready = true;
     hedge->position_buffer[ind].processed = false;
     ind++;
-    if (ind >= hedge->max_buffered_positions) {
+    if (ind >= MAX_BUFFERED_POSITIONS) {
         ind = 0;
     }
-    if (hedge->_last_values_count < hedge->max_buffered_positions) {
+    if (hedge->_last_values_count < MAX_BUFFERED_POSITIONS) {
         hedge->_last_values_count++;
     }
     hedge->_have_new_values = true;
@@ -333,7 +335,6 @@ void AP_Beacon_Marvelmind::update(void)
 // Create and initialize MarvelmindHedge structure
 //////////////////////////////////////////////////////////////////////////////
 AP_Beacon_Marvelmind::MarvelmindHedge::MarvelmindHedge() :
-    max_buffered_positions{3},
     position_buffer{nullptr},
     positions_beacons{},
     pause{false},
@@ -342,12 +343,12 @@ AP_Beacon_Marvelmind::MarvelmindHedge::MarvelmindHedge() :
     _last_values_next{0},
     _have_new_values{false}
 {
-    position_buffer = new PositionValue[max_buffered_positions];
+    position_buffer = new PositionValue[MAX_BUFFERED_POSITIONS];
     if (position_buffer == nullptr) {
         hal.console->printf("MarvelMind: Not enough memory\n");
         return;
     }
-    for (uint8_t i = 0; i < max_buffered_positions; i++) {
+    for (uint8_t i = 0; i < MAX_BUFFERED_POSITIONS; i++) {
         position_buffer[i].ready = false;
         position_buffer[i].processed = false;
     }
