@@ -34,13 +34,6 @@
 */
 bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, float &intensity_gauss, float &declination_deg, float &inclination_deg)
 {
-    /* set this always to the sampling in degrees for the table below */
-    const float SAMPLING_RES = 10.0f;
-    const float SAMPLING_MIN_LAT = -60.0f;
-    const float SAMPLING_MAX_LAT = 60.0f;
-    const float SAMPLING_MIN_LON = -180.0f;
-    const float SAMPLING_MAX_LON = 180.0f;
-
     bool valid_input_data = true;
 
     /* round down to nearest sampling resolution */
