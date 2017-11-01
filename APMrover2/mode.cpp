@@ -205,10 +205,9 @@ void Mode::calc_lateral_acceleration(const struct Location &origin, const struct
         _yaw_error_cd = wrap_180_cd(rover.nav_controller->target_bearing_cd() - ahrs.yaw_sensor);
     }
     if (rover.use_pivot_steering(_yaw_error_cd)) {
-        if (is_positive(_yaw_error_cd)) {
+        if (_yaw_error_cd >= 0.0f) {
             lateral_acceleration = g.turn_max_g * GRAVITY_MSS;
-        }
-        if (is_negative(_yaw_error_cd)) {
+        } else {
             lateral_acceleration = -g.turn_max_g * GRAVITY_MSS;
         }
     }
