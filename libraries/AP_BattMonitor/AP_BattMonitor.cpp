@@ -2,6 +2,9 @@
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
+#if HAL_WITH_UAVCAN
+#include "AP_BattMonitor_UAVCAN.h"
+#endif
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
