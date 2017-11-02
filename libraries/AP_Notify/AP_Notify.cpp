@@ -155,6 +155,7 @@ void AP_Notify::add_backends(void)
 // Notify devices for linux boards    
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+    ADD_BACKEND(new AP_BoardLED());
     ADD_BACKEND(new NavioLED_I2C());
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
