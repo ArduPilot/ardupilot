@@ -70,10 +70,6 @@ void Plane::update_is_flying_5Hz(void)
                 crash_state.impact_detected = false;
             }
 
-            if (landing.is_on_approach() && fabsf(auto_state.sink_rate) > 0.2f) {
-                is_flying_bool = true;
-            }
-
             switch (flight_stage)
             {
             case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
@@ -91,6 +87,12 @@ void Plane::update_is_flying_5Hz(void)
 
             case AP_Vehicle::FixedWing::FLIGHT_VTOL:
                 // TODO: detect ground impacts
+                break;
+
+            case AP_Vehicle::FixedWing::FLIGHT_LAND:
+                if (landing.is_on_approach() && fabsf(auto_state.sink_rate) > 0.2f) {
+                    is_flying_bool = true;
+                }
                 break;
 
             case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
