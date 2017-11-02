@@ -53,4 +53,9 @@ public:
 
     /* execute receiver bind */
     virtual bool rc_bind(int dsmMode) { return false; }
+
+//OW
+// https://github.com/ArduPilot/ardupilot/issues/6096
+    virtual bool in_failsafe(void) { return false; }
+//OWEND
 };

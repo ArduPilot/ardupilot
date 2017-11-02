@@ -15,8 +15,13 @@
 #include <AP_GPS/GPS_Backend.h>
 #include <AP_Baro/AP_Baro_Backend.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_BattMonitor/AP_BattMonitor_Backend.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
+//OW
+#include <uavcan/storm32/NodeSpecific.hpp>
+#include <AP_Mount/AP_Mount_STorM32_UAVCAN.h>
+//OWEND
 
 #ifndef UAVCAN_NODE_POOL_SIZE
 #define UAVCAN_NODE_POOL_SIZE 8192
@@ -34,6 +39,8 @@
 #define AP_UAVCAN_MAX_GPS_NODES 4
 #define AP_UAVCAN_MAX_MAG_NODES 4
 #define AP_UAVCAN_MAX_BARO_NODES 4
+#define AP_UAVCAN_MAX_CS_NUMBER 32
+#define AP_UAVCAN_MAX_BI_NUMBER 4
 
 #define AP_UAVCAN_SW_VERS_MAJOR 1
 #define AP_UAVCAN_SW_VERS_MINOR 0
@@ -94,9 +101,67 @@ public:
     uint8_t register_mag_listener_to_node(AP_Compass_Backend* new_listener, uint8_t node);
     void update_mag_state(uint8_t node);
 
+    struct CircuitStatus_Info {
+        float voltage;
+        float current;
+        uint8_t error_flags;
+    };
+
+    uint8_t register_BM_cs_listener_to_id(AP_BattMonitor_Backend* new_listener, uint16_t id);
+    void remove_BM_cs_listener(AP_BattMonitor_Backend* rem_listener);
+    CircuitStatus_Info *find_cs_id(uint16_t id);
+    uint8_t find_smallest_free_cs_id();
+    void update_cs_state(uint16_t id);
+
+    struct BatteryInfo_Info {
+        float temperature;
+        float voltage;
+        float current;
+        float remaining_capacity_wh;
+        float full_charge_capacity_wh;
+        uint8_t status_flags;
+    };
+
+    uint8_t register_BM_bi_listener_to_id(AP_BattMonitor_Backend* new_listener, uint8_t id);
+    void remove_BM_bi_listener(AP_BattMonitor_Backend* rem_listener);
+    BatteryInfo_Info *find_bi_id(uint8_t id);
+    uint8_t find_smallest_free_bi_id();
+    void update_bi_state(uint8_t id);
+
     // synchronization for RC output
     bool rc_out_sem_take();
     void rc_out_sem_give();
+
+//OW
+    struct GenericBatteryInfo_Data {
+        float voltage; //float16
+        float current; //float16
+        float charge_consumed_mAh; //float16
+        uint8_t status_flags;
+    };
+
+    uint8_t register_gbi_listener_to_id(AP_BattMonitor_Backend* new_listener, uint8_t id);
+    void remove_gbi_listener(AP_BattMonitor_Backend* rem_listener);
+    uint8_t find_smallest_free_gbi_id();
+    GenericBatteryInfo_Data* getptrto_gbi_data(uint8_t id);
+    void update_gbi_data(uint8_t id);
+
+    struct STorM32Status_Data {
+        float pitch_deg; //float32
+        float roll_deg; //float32
+        float yaw_deg; //float32
+    };
+
+    uint8_t register_storm32status_listener_to_node(AP_Mount_STorM32_UAVCAN* new_listener, uint8_t node);
+    void remove_storm32status_listener(AP_Mount_STorM32_UAVCAN* rem_listener);
+    uint8_t find_smallest_free_storm32status_node();
+    STorM32Status_Data* getptrto_storm32status_data(uint8_t node);
+    void update_storm32status_data(uint8_t node);
+
+    bool storm32_nodespecific_out_sem_take();
+    void storm32_nodespecific_out_sem_give();
+    void storm32_nodespecific_send(uint8_t* payload, uint8_t payload_len, uint8_t priority);
+//OWEND
 
 private:
     // ------------------------- GPS
@@ -126,6 +191,20 @@ private:
     uint8_t _mag_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
     AP_Compass_Backend* _mag_listeners[AP_UAVCAN_MAX_LISTENERS];
 
+    // ------------------------- CircuitStatus
+    uint16_t _cs_id[AP_UAVCAN_MAX_CS_NUMBER];
+    uint16_t _cs_id_taken[AP_UAVCAN_MAX_CS_NUMBER];
+    CircuitStatus_Info _cs_id_state[AP_UAVCAN_MAX_CS_NUMBER];
+    uint16_t _cs_BM_listener_to_id[AP_UAVCAN_MAX_CS_NUMBER];
+    AP_BattMonitor_Backend* _cs_BM_listeners[AP_UAVCAN_MAX_CS_NUMBER];
+
+    // ------------------------- BatteryInfo
+    uint16_t _bi_id[AP_UAVCAN_MAX_BI_NUMBER];
+    uint16_t _bi_id_taken[AP_UAVCAN_MAX_BI_NUMBER];
+    BatteryInfo_Info _bi_id_state[AP_UAVCAN_MAX_BI_NUMBER];
+    uint16_t _bi_BM_listener_to_id[AP_UAVCAN_MAX_LISTENERS]; //OW ??? BUG? should be uint8_t ??
+    AP_BattMonitor_Backend* _bi_BM_listeners[AP_UAVCAN_MAX_LISTENERS];
+
     struct {
         uint16_t pulse;
         uint16_t safety_pulse;
@@ -138,6 +217,30 @@ private:
     uint8_t _rco_safety;
 
     AP_HAL::Semaphore *_rc_out_sem;
+
+//OW
+    // ------------------------- GenericBatteryInfo
+    uint16_t _gbi_id[AP_UAVCAN_MAX_BI_NUMBER]; //for GBI we use the same max number as is used for BI
+    uint16_t _gbi_id_taken[AP_UAVCAN_MAX_BI_NUMBER];
+    GenericBatteryInfo_Data _gbi_data[AP_UAVCAN_MAX_BI_NUMBER];
+    uint16_t _gbi_listener_to_id[AP_UAVCAN_MAX_LISTENERS];
+    AP_BattMonitor_Backend* _gbi_listeners[AP_UAVCAN_MAX_LISTENERS];
+
+    uint8_t _storm32status_nodes[1]; //we allow for only one STorM32 gimbal
+    uint8_t _storm32status_node_taken[1];
+    STorM32Status_Data _storm32status_data[1];
+    uint8_t _storm32status_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
+    AP_Mount_STorM32_UAVCAN* _storm32status_listeners[AP_UAVCAN_MAX_LISTENERS];
+
+    struct {
+        uavcan::storm32::NodeSpecific nodespecific_msg;
+        uavcan::TransferPriority nodespecific_priority;
+        bool nodespecific_to_send;
+    } _storm32_out;
+    AP_HAL::Semaphore *_storm32_nodespecific_out_sem;
+
+    void storm32_do_cyclic(uint64_t current_time_ms);
+//OWEND
 
     class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
         SystemClock()

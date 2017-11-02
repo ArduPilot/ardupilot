@@ -218,6 +218,32 @@ AP_BattMonitor::init()
                 _num_instances++;
 #endif
                 break;
+            case BattMonitor_TYPE_UAVCAN_CircuitStatus:
+#if HAL_WITH_UAVCAN
+                state[instance].instance = instance;
+                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_CIRCUIT_STATUS);
+
+                _num_instances++;
+#endif
+                break;
+            case BattMonitor_TYPE_UAVCAN_BatteryInfo:
+#if HAL_WITH_UAVCAN
+                state[instance].instance = instance;
+                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO);
+
+                _num_instances++;
+#endif
+                break;
+//OW
+            case BattMonitor_TYPE_UAVCAN_GenericBatteryInfo:
+#if HAL_WITH_UAVCAN
+                state[instance].instance = instance;
+                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_GENERIC_BATTERY_INFO);
+
+                _num_instances++;
+#endif
+                break;
+//OWEND
         }
 
         // call init function for each backend

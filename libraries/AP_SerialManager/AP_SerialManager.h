@@ -105,7 +105,7 @@ public:
     static AP_SerialManager *get_instance(void) {
         return _instance;
     }
-    
+
     static AP_SerialManager create() { return AP_SerialManager{}; }
 
     constexpr AP_SerialManager(AP_SerialManager &&other) = default;
@@ -152,7 +152,7 @@ private:
     AP_SerialManager();
 
     static AP_SerialManager *_instance;
-    
+
     // array of uart info
     struct {
         AP_Int8 protocol;

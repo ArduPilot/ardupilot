@@ -31,6 +31,11 @@ public:
 
     bool rc_bind(int dsmMode) override;
 
+//OW
+// https://github.com/ArduPilot/ardupilot/issues/6096
+    bool in_failsafe(void) override { return (_rcin.rc_failsafe) ? true : false; }
+//OWEND
+
 private:
     /* override state */
     uint16_t _override[RC_INPUT_MAX_CHANNELS];
