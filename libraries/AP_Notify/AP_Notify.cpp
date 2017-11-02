@@ -31,6 +31,7 @@
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
 #include <stdio.h>
+#include <AP_HAL_Linux/GPIO.h>
 
 AP_Notify *AP_Notify::_instance;
 
@@ -159,7 +160,7 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    ADD_BACKEND(new DiscreteRGBLed(4, 27, 6, false));
+    ADD_BACKEND(new DiscreteRGBLed(NAVIO2_GPIO_RED, NAVIO2_GPIO_GREEN, NAVIO2_GPIO_BLUE, false));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
 
