@@ -694,6 +694,9 @@ void NavEKF2_core::FuseMagnetometer()
             statesArray[j] = statesArray[j] - Kfusion[j] * innovMag[obsIndex];
         }
 
+        // rotate the attitude error vector into NED frame and accumulate D axis component;
+        magFuseYawSum += prevTnb.a.z*stateStruct.angErr.x + prevTnb.b.z*stateStruct.angErr.y + prevTnb.c.z*stateStruct.angErr.z;
+
         // the first 3 states represent the angular misalignment vector. This is
         // is used to correct the estimated quaternion on the current time step
         stateStruct.quat.rotate(stateStruct.angErr);
@@ -934,6 +937,9 @@ void NavEKF2_core::fuseEulerYaw()
             statesArray[i] -= Kfusion[i] * innovation;
         }
 
+        // rotate the attitude error vector into NED frame and accumulate D axis component;
+        magFuseYawSum += prevTnb.a.z*stateStruct.angErr.x + prevTnb.b.z*stateStruct.angErr.y + prevTnb.c.z*stateStruct.angErr.z;
+
         // the first 3 states represent the angular misalignment vector. This is
         // is used to correct the estimated quaternion on the current time step
         stateStruct.quat.rotate(stateStruct.angErr);
@@ -1061,6 +1067,9 @@ void NavEKF2_core::FuseDeclination(float declErr)
         for (uint8_t j= 0; j<=stateIndexLim; j++) {
             statesArray[j] = statesArray[j] - Kfusion[j] * innovation;
         }
+
+        // rotate the attitude error vector into NED frame and accumulate D axis component;
+        magFuseYawSum += prevTnb.a.z*stateStruct.angErr.x + prevTnb.b.z*stateStruct.angErr.y + prevTnb.c.z*stateStruct.angErr.z;
 
         // the first 3 states represent the angular misalignment vector. This is
         // is used to correct the estimated quaternion on the current time step

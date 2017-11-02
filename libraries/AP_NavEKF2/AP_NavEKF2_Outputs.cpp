@@ -614,4 +614,10 @@ void NavEKF2_core::getOutputTrackingError(Vector3f &error) const
     error = outputTrackError;
 }
 
+// publish the accumulated change in yaw due to magnetometer ameasurements
+void NavEKF2_core::getYawDrift(float &yaw) const
+{
+    yaw = magFuseYawSum;
+}
+
 #endif // HAL_CPU_CLASS

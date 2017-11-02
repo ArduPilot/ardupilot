@@ -300,6 +300,9 @@ public:
     // publish output observer angular, velocity and position tracking error
     void getOutputTrackingError(Vector3f &error) const;
 
+    // publish the accumulated change in yaw due to magnetometer measurements
+    void getYawDrift(float &yaw) const;
+
     // get the IMU index
     uint8_t getIMUIndex(void) const { return imu_index; }
 
@@ -893,6 +896,7 @@ private:
     Vector3f outputTrackError;      // attitude (rad), velocity (m/s) and position (m) tracking error magnitudes from the output observer
     Vector3f velOffsetNED;          // This adds to the earth frame velocity estimate at the IMU to give the velocity at the body origin (m/s)
     Vector3f posOffsetNED;          // This adds to the earth frame position estimate at the IMU to give the position at the body origin (m)
+    float magFuseYawSum;            // This is the cumulative change in vehicle attitude due to magnetometer and yaw meaaurement fusion (rad)
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.

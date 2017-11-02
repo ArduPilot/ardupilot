@@ -1087,6 +1087,16 @@ void NavEKF2::getOutputTrackingError(int8_t instance, Vector3f &error) const
     }
 }
 
+// Publish the accumulated change in yaw due to magnetometer measurements for the specified instance
+// An out of range instance (eg -1) returns data for the the primary instance
+void NavEKF2::getYawDrift(int8_t instance, float &yaw) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        core[instance].getYawDrift(yaw);
+    }
+}
+
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
 void NavEKF2::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset)
 {
