@@ -30,6 +30,11 @@ public:
     AP_Baro(const AP_Baro &other) = delete;
     AP_Baro &operator=(const AP_Baro&) = delete;
 
+    // get singleton
+    static AP_Baro *get_instance(void) {
+        return _instance;
+    }
+
     // barometer types
     typedef enum {
         BARO_TYPE_AIR,
@@ -164,6 +169,9 @@ public:
     void set_pressure_correction(uint8_t instance, float p_correction);
 
 private:
+    // singleton
+    static AP_Baro *_instance;
+    
     // how many drivers do we have?
     uint8_t _num_drivers;
     AP_Baro_Backend *drivers[BARO_MAX_DRIVERS];
