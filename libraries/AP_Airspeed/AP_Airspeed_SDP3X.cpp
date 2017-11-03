@@ -19,6 +19,7 @@
   with thanks to https://github.com/PX4/Firmware/blob/master/src/drivers/sdp3x_airspeed
  */
 #include "AP_Airspeed_SDP3X.h"
+#include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
 
@@ -35,14 +36,10 @@
 #define SDP3X_SCALE_PRESSURE_SDP32	240
 #define SDP3X_SCALE_PRESSURE_SDP33	20
 
-#define CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C             1.225f                  /* kg/m^3               */
-#define CONSTANTS_AIR_GAS_CONST                         287.1f                  /* J/(kg * K)           */
-#define CONSTANTS_ABSOLUTE_NULL_CELSIUS                 -273.15f                /* °C                   */
-
 extern const AP_HAL::HAL &hal;
 
-AP_Airspeed_SDP3X::AP_Airspeed_SDP3X(AP_Airspeed &_frontend) :
-    AP_Airspeed_Backend(_frontend)
+AP_Airspeed_SDP3X::AP_Airspeed_SDP3X(AP_Airspeed &_frontend, uint8_t _instance) :
+    AP_Airspeed_Backend(_frontend, _instance)
 {
 }
 
@@ -77,9 +74,16 @@ bool AP_Airspeed_SDP3X::init()
         // lots of retries during probe
         _dev->set_retries(10);
 
-        // stop any precending measurements
+        // stop continuous average mode
         if (!_send_command(SDP3X_CONT_MEAS_STOP)) {
             _dev->get_semaphore()->give();
+            continue;
+        }
+
+        // these delays are needed for reliable operation
+        _dev->get_semaphore()->give();
+        hal.scheduler->delay_microseconds(20000);
+        if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
             continue;
         }
 
@@ -89,7 +93,12 @@ bool AP_Airspeed_SDP3X::init()
             continue;
         }
 
+        // these delays are needed for reliable operation
+        _dev->get_semaphore()->give();
         hal.scheduler->delay_microseconds(20000);
+        if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+            continue;
+        }
 
         // step 3 - get scale
         uint8_t val[9];
@@ -134,7 +143,7 @@ bool AP_Airspeed_SDP3X::init()
     /*
       this sensor uses zero offset and skips cal
      */
-    set_allow_zero_offset();
+    set_use_zero_offset();
     set_skip_cal();
     set_offset(0);
     
@@ -168,13 +177,8 @@ void AP_Airspeed_SDP3X::_timer()
     int16_t P = (((int16_t)val[0]) << 8) | val[1];
     int16_t temp = (((int16_t)val[3]) << 8) | val[4];
 
-    float P_float = (float)P;
-    float temp_float = (float)temp;
-
-    float scale_float = (float)_scale;
-
-    float diff_press_pa = P_float / scale_float;
-    float temperature = temp_float / (float)SDP3X_SCALE_TEMPERATURE;
+    float diff_press_pa = float(P) / float(_scale);
+    float temperature = float(temp) / SDP3X_SCALE_TEMPERATURE;
 
     if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _press_sum += diff_press_pa;
@@ -193,7 +197,6 @@ void AP_Airspeed_SDP3X::_timer()
  */
 float AP_Airspeed_SDP3X::_correct_pressure(float press)
 {
-    const float tube_len = 0.2;
     float temperature;
     AP_Baro *baro = AP_Baro::get_instance();
 
@@ -201,26 +204,47 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
         return press;
     }
 
+    float sign = 1;
+    
     // fix for tube order
     AP_Airspeed::pitot_tube_order tube_order = get_tube_order();
     switch (tube_order) {
     case AP_Airspeed::PITOT_TUBE_ORDER_NEGATIVE:
         press = -press;
+        sign = -1;
     //FALLTHROUGH;
     case AP_Airspeed::PITOT_TUBE_ORDER_POSITIVE:
         break;
     case AP_Airspeed::PITOT_TUBE_ORDER_AUTO:
     default:
-        press = fabsf(press);
+        if (press < 0) {
+            sign = -1;
+            press = -press;
+        }
         break;
     }
+
     if (press <= 0) {
         return 0;
     }
 
     get_temperature(temperature);
-    float rho_air = baro->get_pressure() / (CONSTANTS_AIR_GAS_CONST * (temperature - CONSTANTS_ABSOLUTE_NULL_CELSIUS));
+    float rho_air = baro->get_pressure() / (ISA_GAS_CONSTANT * (temperature + C_TO_KELVIN));
 
+    /*
+      the constants in the code below come from a calibrated test of
+      the drotek pitot tube by Sensiron. They are specific to the droktek pitot tube 
+
+      At 25m/s, the rough proportions of each pressure correction are:
+
+       - dp_pitot: 5%
+       - press_correction: 14%
+       - press: 81%
+
+       dp_tube has been removed from the Sensiron model as it is
+       insignificant (less than 0.02% over the supported speed ranges)
+     */
+    
     // flow through sensor
     float flow_SDP3X = (300.805f - 300.878f / (0.00344205f * (float)powf(press, 0.68698f) + 1)) * 1.29f / rho_air;
     if (flow_SDP3X < 0.0f) {
@@ -230,11 +254,8 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
     // diffential pressure through pitot tube
     float dp_pitot = 28557670.0f - 28557670.0f / (1 + (float)powf((flow_SDP3X / 5027611.0f), 1.227924f));
 
-    // pressure drop through tube
-    float dp_tube = flow_SDP3X * 0.000746124f * tube_len * rho_air;
-
     // uncorrected pressure
-    float press_uncorrected = (press + dp_tube + dp_pitot) / CONSTANTS_AIR_DENSITY_SEA_LEVEL_15C;
+    float press_uncorrected = (press + dp_pitot) / AIR_DENSITY_SEA_LEVEL;
 
     // correction for speed at pitot-tube tip due to flow through sensor
     float dv = 0.0331582 * flow_SDP3X;
@@ -242,10 +263,13 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
     // airspeed ratio
     float ratio = get_airspeed_ratio();
 
-    // calculate equivalent pressure correction
+    // calculate equivalent pressure correction. This formula comes
+    // from turning the dv correction above into an equivalent
+    // pressure correction. We need to do this so the airspeed ratio
+    // calibrator can work, as it operates on pressure values
     float press_correction = sq(sqrtf(press_uncorrected*ratio)+dv)/ratio - press_uncorrected;
 
-    return press_uncorrected + press_correction;
+    return (press_uncorrected + press_correction) * sign;
 }
 
 // return the current differential_pressure in Pascal

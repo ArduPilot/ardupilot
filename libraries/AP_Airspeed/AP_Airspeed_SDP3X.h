@@ -34,7 +34,7 @@
 class AP_Airspeed_SDP3X : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_SDP3X(AP_Airspeed &frontend);
+    AP_Airspeed_SDP3X(AP_Airspeed &frontend, uint8_t _instance);
     ~AP_Airspeed_SDP3X(void) {}
 
     // probe and initialise the sensor
@@ -47,11 +47,8 @@ public:
     bool get_temperature(float &temperature) override;
 
 private:
-    void _collect();
     void _timer();
     bool _send_command(uint16_t cmd);
-    float _get_pressure(int16_t dp_raw) const;
-    float _get_temperature(int16_t dT_raw) const;
     bool _crc(const uint8_t data[], unsigned size, uint8_t checksum);
     float _correct_pressure(float press);
 
