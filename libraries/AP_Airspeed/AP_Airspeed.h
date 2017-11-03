@@ -4,8 +4,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Baro/AP_Baro.h>
 
-#include "AP_Airspeed_Backend.h"
+class AP_Airspeed_Backend;
 
 class Airspeed_Calibration {
 public:
@@ -125,7 +126,7 @@ public:
 	void log_mavlink_send(mavlink_channel_t chan, const Vector3f &vground);
 
     // return health status of sensor
-    bool healthy(void) const { return _healthy && fabsf(_offset) > 0 && enabled(); }
+    bool healthy(void) const { return _healthy && (fabsf(_offset) > 0 || _allow_zero_offset) && enabled(); }
 
     void setHIL(float pressure) { _healthy=_hil_set=true; _hil_pressure=pressure; }
 
@@ -147,6 +148,7 @@ public:
         TYPE_I2C_MS5525=3,
         TYPE_I2C_MS5525_ADDRESS_1=4,
         TYPE_I2C_MS5525_ADDRESS_2=5,
+        TYPE_I2C_SDP3X=6,
     };
     
 private:
@@ -187,4 +189,7 @@ private:
     void update_calibration(float raw_pressure);
 
     AP_Airspeed_Backend *sensor;
+
+    // some sensors can have zero offset and be healthy
+    bool _allow_zero_offset;
 };
