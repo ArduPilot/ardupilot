@@ -698,6 +698,8 @@ struct PACKED log_AIRSPEED {
     float   rawpressure;
     float   offset;
     bool    use;
+    bool    healthy;
+    uint8_t primary;
 };
 
 struct PACKED log_ACCEL {
@@ -916,6 +918,9 @@ struct PACKED log_Proximity {
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"
 
+#define ARSP_LABELS "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U,Health,Primary"
+#define ARSP_FMT "QffcffBBB"
+
 /*
 Format characters in the format string for binary log messages
   b   : int8_t
@@ -980,9 +985,9 @@ Format characters in the format string for binary log messages
     { LOG_TRIGGER_MSG, sizeof(log_Camera), \
       "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
-      "ARSP",  "QffcffB",  "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U" }, \
+      "ARSP",  ARSP_FMT,  ARSP_LABELS }, \
     { LOG_ASP2_MSG, sizeof(log_AIRSPEED), \
-      "ASP2",  "QffcffB",  "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U" }, \
+      "ASP2",  ARSP_FMT,  ARSP_LABELS }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
       "BAT", CURR_FMT,CURR_LABELS }, \
     { LOG_CURRENT2_MSG, sizeof(log_Current), \
