@@ -981,6 +981,8 @@ Format characters in the format string for binary log messages
       "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
       "ARSP",  "QffcffB",  "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U" }, \
+    { LOG_ASP2_MSG, sizeof(log_AIRSPEED), \
+      "ASP2",  "QffcffB",  "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
       "BAT", CURR_FMT,CURR_LABELS }, \
     { LOG_CURRENT2_MSG, sizeof(log_Current), \
@@ -1295,6 +1297,7 @@ enum LogMessages {
     LOG_AOA_SSA_MSG,
     LOG_BEACON_MSG,
     LOG_PROXIMITY_MSG,
+    LOG_ASP2_MSG,
 };
 
 enum LogOriginType {
