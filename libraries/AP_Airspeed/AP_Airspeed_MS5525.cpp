@@ -51,8 +51,8 @@ extern const AP_HAL::HAL &hal;
 #define REG_CONVERT_PRESSURE    REG_CONVERT_D1_OSR_1024
 #define REG_CONVERT_TEMPERATURE REG_CONVERT_D2_OSR_1024
 
-AP_Airspeed_MS5525::AP_Airspeed_MS5525(AP_Airspeed &_frontend, MS5525_ADDR address) :
-    AP_Airspeed_Backend(_frontend)
+AP_Airspeed_MS5525::AP_Airspeed_MS5525(AP_Airspeed &_frontend, uint8_t _instance, MS5525_ADDR address) :
+    AP_Airspeed_Backend(_frontend, _instance)
 {
     _address = address;
 }

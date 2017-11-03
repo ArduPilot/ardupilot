@@ -24,7 +24,7 @@
 
 class AP_Airspeed_Backend {
 public:
-    AP_Airspeed_Backend(AP_Airspeed &frontend);
+    AP_Airspeed_Backend(AP_Airspeed &frontend, uint8_t instance);
     virtual ~AP_Airspeed_Backend();
     
     // probe and initialise the sensor
@@ -42,31 +42,32 @@ protected:
     uint8_t get_bus(void) const;
 
     AP_Airspeed::pitot_tube_order get_tube_order(void) const {
-        return AP_Airspeed::pitot_tube_order(frontend._tube_order.get());
+        return AP_Airspeed::pitot_tube_order(frontend.param[instance].tube_order.get());
     }
     
     // semaphore for access to shared frontend data
     AP_HAL::Semaphore *sem;
 
     float get_airspeed_ratio(void) const {
-        return frontend.get_airspeed_ratio();
+        return frontend.get_airspeed_ratio(instance);
     }
 
-    // some sensors allow zero offsets while healthy
-    void set_allow_zero_offset(void) {
-        frontend._allow_zero_offset = true;
+    // some sensors use zero offsets
+    void set_use_zero_offset(void) {
+        frontend.state[instance].use_zero_offset = true;
     }
 
     // set to no zero cal, which makes sense for some sensors
     void set_skip_cal(void) {
-        frontend._skip_cal.set(1);
+        frontend.param[instance].skip_cal.set(1);
     }
 
     // set zero offset
     void set_offset(float ofs) {
-        frontend._offset.set(ofs);
+        frontend.param[instance].offset.set(ofs);
     }
     
 private:
     AP_Airspeed &frontend;
+    uint8_t instance;
 };
