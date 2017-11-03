@@ -69,6 +69,10 @@
 #define AP_SERIALMANAGER_ULANDING_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_ULANDING_BUFSIZE_TX     128
 
+#define AP_SERIALMANAGER_VOLZ_BAUD           115
+#define AP_SERIALMANAGER_VOLZ_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_VOLZ_BUFSIZE_TX     128
+
 
 class AP_SerialManager {
 public:
@@ -87,9 +91,15 @@ public:
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
         SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
-        SerialProtocol_Beacon = 13
+        SerialProtocol_Beacon = 13,
+        SerialProtocol_Volz = 14,                    // Volz servo protocol
     };
 
+    // get singleton instance
+    static AP_SerialManager *get_instance(void) {
+        return _instance;
+    }
+    
     static AP_SerialManager create() { return AP_SerialManager{}; }
 
     constexpr AP_SerialManager(AP_SerialManager &&other) = default;
@@ -135,6 +145,8 @@ public:
 private:
     AP_SerialManager();
 
+    static AP_SerialManager *_instance;
+    
     // array of uart info
     struct {
         AP_Int8 protocol;
