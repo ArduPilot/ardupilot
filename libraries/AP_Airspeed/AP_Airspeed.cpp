@@ -27,7 +27,9 @@
 #include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
 #include "AP_Airspeed_MS5525.h"
+#include "AP_Airspeed_SDP3X.h"
 #include "AP_Airspeed_analog.h"
+#include "AP_Airspeed_Backend.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -53,7 +55,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77)
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 0, AP_Airspeed, _type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
@@ -112,7 +114,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: BUS
     // @DisplayName: Airspeed I2C bus
     // @Description: The bus number of the I2C bus to look for the sensor on
-    // @Values: 0:Bus0,1:Bus1
+    // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxillary)
     // @User: Advanced
     AP_GROUPINFO("BUS",  9, AP_Airspeed, _bus, 1),
     
@@ -165,6 +167,9 @@ void AP_Airspeed::init()
         break;
     case TYPE_I2C_MS5525_ADDRESS_2:
         sensor = new AP_Airspeed_MS5525(*this, AP_Airspeed_MS5525::MS5525_ADDR_2);
+        break;
+    case TYPE_I2C_SDP3X:
+        sensor = new AP_Airspeed_SDP3X(*this);
         break;
     }
     if (sensor && !sensor->init()) {
