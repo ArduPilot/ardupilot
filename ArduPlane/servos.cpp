@@ -525,7 +525,7 @@ void Plane::set_servos(void)
     // start with output corked. the cork is released when we run
     // servos_output(), which is run from all code paths in this
     // function
-    hal.rcout->cork();
+    SRV_Channels::cork();
     
     // this is to allow the failsafe module to deliberately crash 
     // the plane. Only used in extreme circumstances to meet the
@@ -657,7 +657,7 @@ void Plane::set_servos(void)
  */
 void Plane::servos_output(void)
 {
-    hal.rcout->cork();
+    SRV_Channels::cork();
 
     // support twin-engine aircraft
     servos_twin_engine_mix();
@@ -680,7 +680,7 @@ void Plane::servos_output(void)
 
     SRV_Channels::output_ch_all();
     
-    hal.rcout->push();
+    SRV_Channels::push();
 
     if (g2.servo_channels.auto_trim_enabled()) {
         servos_auto_trim();
