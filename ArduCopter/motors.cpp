@@ -293,7 +293,7 @@ void Copter::motors_output()
     SRV_Channels::calc_pwm();
 
     // cork now, so that all channel outputs happen at once
-    hal.rcout->cork();
+    SRV_Channels::cork();
 
     // update output on any aux channels, for manual passthru
     SRV_Channels::output_ch_all();
@@ -316,7 +316,7 @@ void Copter::motors_output()
     }
 
     // push all channels
-    hal.rcout->push();
+    SRV_Channels::push();
 }
 
 // check for pilot stick input to trigger lost vehicle alarm
