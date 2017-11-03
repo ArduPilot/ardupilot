@@ -130,11 +130,16 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     AP_GROUPEND
 };
 
+// singleton instance
+AP_Baro *AP_Baro::_instance;
+
 /*
   AP_Baro constructor
  */
 AP_Baro::AP_Baro()
 {
+    _instance = this;
+    
     AP_Param::setup_object_defaults(this, var_info);
 }
 
