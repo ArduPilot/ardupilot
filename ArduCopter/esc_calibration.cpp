@@ -116,9 +116,9 @@ void Copter::esc_calibration_passthrough()
         delay(3);
 
         // pass through to motors
-        hal.rcout->cork();
+        SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
-        hal.rcout->push();
+        SRV_Channels::push();
     }
 #endif  // FRAME_CONFIG != HELI_FRAME
 }
@@ -163,9 +163,9 @@ void Copter::esc_calibration_auto()
             gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
             printed_msg = true;
         }
-        hal.rcout->cork();
+        SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(1.0f);
-        hal.rcout->push();
+        SRV_Channels::push();
         esc_calibration_notify();
         delay(3);
     }
