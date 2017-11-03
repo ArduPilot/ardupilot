@@ -90,7 +90,7 @@ void Plane::init_rc_out_aux()
     update_aux();
     SRV_Channels::enable_aux_servos();
 
-    hal.rcout->cork();
+    SRV_Channels::cork();
     
     // Initialization of servo outputs
     SRV_Channels::output_trim_all();
