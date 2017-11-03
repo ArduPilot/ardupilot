@@ -129,9 +129,13 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPEND
 };
 
+// singleton instance
+AP_SerialManager *AP_SerialManager::_instance;
+
 // Constructor
 AP_SerialManager::AP_SerialManager()
 {
+    _instance = this;
     // setup parameter defaults
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -221,6 +225,14 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_ULANDING_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ULANDING_BUFSIZE_TX);
                     break;
+
+                case SerialProtocol_Volz:
+                                    // Note baudrate is hardcoded to 115200
+                                    state[i].baud = AP_SERIALMANAGER_VOLZ_BAUD;   // update baud param in case user looks at it
+                                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                    		AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
+											AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
+                                    break;
             }
         }
     }
