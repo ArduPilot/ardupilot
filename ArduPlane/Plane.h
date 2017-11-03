@@ -49,6 +49,7 @@
 #include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>       // APM relay
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
+#include <AP_Camera/AP_Camera_Vision.h>   // Machine vision camera
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
@@ -274,7 +275,7 @@ private:
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera = AP_Camera::create(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs);
+    AP_Camera_Vision camera = AP_Camera_Vision::create(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs);
 #endif
 
 #if OPTFLOW == ENABLED
