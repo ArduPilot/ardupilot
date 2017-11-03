@@ -271,7 +271,7 @@ def _build_dynamic_sources(bld):
     if bld.get_board().with_uavcan:
         bld(
             features='uavcangen',
-            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/uavcan/**/*.uavcan'),
+            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/uavcan/**/*.uavcan libraries/AP_UAVCAN/dsdl/**/*.uavcan'),
             output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
             name='uavcan',
             export_includes=[

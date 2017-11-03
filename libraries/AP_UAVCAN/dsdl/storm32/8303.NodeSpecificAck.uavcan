@@ -1,0 +1,7 @@
+#
+# Node Specific Ack
+#
+
+uint8 initiator_node_id
+
+uint8[<=64] payload

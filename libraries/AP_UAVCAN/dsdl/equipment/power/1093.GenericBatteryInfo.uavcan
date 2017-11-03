@@ -1,0 +1,15 @@
+#
+# Generic battery info.
+#
+
+uint16 battery_id
+
+float16 voltage
+float16 current
+float16 charge_consumed_mAh
+
+uint8 STATUS_FLAG_ERROR_OVERVOLTAGE  = 1
+uint8 STATUS_FLAG_ERROR_UNDERVOLTAGE = 2
+uint8 STATUS_FLAG_ERROR_OVERCURRENT  = 4
+uint8 STATUS_FLAG_ERROR_UNDERCURRENT = 8
+uint8 status_flags

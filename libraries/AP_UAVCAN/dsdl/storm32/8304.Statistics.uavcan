@@ -1,0 +1,9 @@
+uint32 tx_count
+uint32 rx_count
+uint32 error_count
+uint32 rx_overflow_count
+
+uint8 memory_pool_usage
+uint8 memory_pool_capacity
+uint8 rxbuffer_usage
+uint8 rxbuffer_capacity
