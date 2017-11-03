@@ -35,7 +35,7 @@ public:
                             uint32_t _log_camera_bit,
                             const struct Location &_loc,
                             const AP_GPS &_gps,
-                            const AP_AHRS &_ahrs) {
+                            AP_AHRS &_ahrs) {
         return AP_Camera{obj_relay, _log_camera_bit, _loc, _gps, _ahrs};
     }
 
@@ -68,8 +68,8 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
-private:
-    AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_GPS &_gps, const AP_AHRS &_ahrs)
+protected:
+    AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_GPS &_gps, AP_AHRS &_ahrs)
         : _trigger_counter(0) // count of number of cycles shutter has been held open
         , _image_index(0)
         , log_camera_bit(_log_camera_bit)
@@ -119,7 +119,7 @@ private:
     uint32_t log_camera_bit;
     const struct Location &current_loc;
     const AP_GPS &gps;
-    const AP_AHRS &ahrs;
+    AP_AHRS &ahrs;
 
     // entry point to trip local shutter (e.g. by relay or servo)
     void trigger_pic();
