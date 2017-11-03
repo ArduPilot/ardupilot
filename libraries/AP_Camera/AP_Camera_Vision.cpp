@@ -141,6 +141,7 @@ void AP_Camera_Vision::read_ahrs_summary(void) {
     } else {
         // the AHRS summary was not ready to read
         _ahrs_data_good = false;
+        ahrs.summary.increment_read_error();
     }
     // release the summary for writing
     _current_summary->set_ready_to_write(true);
