@@ -136,11 +136,13 @@ bool AP_Arming::airspeed_checks(bool report)
             // not an airspeed capable vehicle
             return true;
         }
-        if (airspeed->enabled() && airspeed->use() && !airspeed->healthy()) {
-            if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Airspeed not healthy");
+        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+            if (airspeed->enabled(i) && airspeed->use(i) && !airspeed->healthy(i)) {
+                if (report) {
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Airspeed[%u] not healthy", i);
+                }
+                return false;
             }
-            return false;
         }
     }
 
