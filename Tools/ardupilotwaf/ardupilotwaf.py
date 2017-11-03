@@ -62,6 +62,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_FlashStorage',
     'AP_Relay',
     'AP_ServoRelayEvents',
+    'AP_Volz_Protocol',
 ]
 
 def get_legacy_defines(sketch_name):
