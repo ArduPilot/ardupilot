@@ -200,9 +200,9 @@ void AP_MotorsUGV::output(bool armed, float dt)
 
     // send values to the PWM timers for output
     SRV_Channels::calc_pwm();
-    hal.rcout->cork();
+    SRV_Channels::cork();
     SRV_Channels::output_ch_all();
-    hal.rcout->push();
+    SRV_Channels::push();
     _last_throttle = _throttle;
 }
 
@@ -442,9 +442,9 @@ bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
             return false;
     }
     SRV_Channels::calc_pwm();
-    hal.rcout->cork();
+    SRV_Channels::cork();
     SRV_Channels::output_ch_all();
-    hal.rcout->push();
+    SRV_Channels::push();
     return true;
 }
 
@@ -488,8 +488,8 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
             return false;
     }
     SRV_Channels::calc_pwm();
-    hal.rcout->cork();
+    SRV_Channels::cork();
     SRV_Channels::output_ch_all();
-    hal.rcout->push();
+    SRV_Channels::push();
     return true;
 }
