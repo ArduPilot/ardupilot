@@ -20,8 +20,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-
-class AP_Airspeed;
+#include "AP_Airspeed.h"
 
 class AP_Airspeed_Backend {
 public:
@@ -42,8 +41,31 @@ protected:
     float get_psi_range(void) const;
     uint8_t get_bus(void) const;
 
+    AP_Airspeed::pitot_tube_order get_tube_order(void) const {
+        return AP_Airspeed::pitot_tube_order(frontend._tube_order.get());
+    }
+    
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *sem;    
+    AP_HAL::Semaphore *sem;
+
+    float get_airspeed_ratio(void) const {
+        return frontend.get_airspeed_ratio();
+    }
+
+    // some sensors allow zero offsets while healthy
+    void set_allow_zero_offset(void) {
+        frontend._allow_zero_offset = true;
+    }
+
+    // set to no zero cal, which makes sense for some sensors
+    void set_skip_cal(void) {
+        frontend._skip_cal.set(1);
+    }
+
+    // set zero offset
+    void set_offset(float ofs) {
+        frontend._offset.set(ofs);
+    }
     
 private:
     AP_Airspeed &frontend;
