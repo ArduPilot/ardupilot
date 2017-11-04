@@ -142,9 +142,14 @@ void AP_Volz_Protocol::update_volz_bitmask(uint32_t new_bitmask)
         }
     }
 
+    // have a safety margin of 20% to allow for not having full uart
+    // utilisation. We really don't want to start filling the uart
+    // buffer or we'll end up with servo lag
+    const float safety = 1.3;
+
     // each channel take about 425.347us to transmit so total time will be ~ number of channels * 450us
     // rounded to 450 to make sure we don't go over the baud rate.
-    uint64_t channels_micros = count * 450;
+    uint32_t channels_micros = count * 450 * safety;
 
     // limit the minimum to 2500 will result a max refresh frequency of 400hz.
     if (channels_micros < 2500) {
