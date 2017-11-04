@@ -211,3 +211,22 @@ uint16_t get_random16(void)
     return ((m_z << 16) + m_w) & 0xFFFF;
 }
 
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// generate a random float between -1 and 1, for use in SITL
+float rand_float(void)
+{
+    return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
+}
+
+Vector3f rand_vec3f(void)
+{
+    Vector3f v = Vector3f(rand_float(),
+                          rand_float(),
+                          rand_float());
+    if (v.length() != 0.0f) {
+        v.normalize();
+    }
+    return v;
+}
+#endif

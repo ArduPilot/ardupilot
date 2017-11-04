@@ -243,3 +243,5 @@ float linear_interpolate(float low_output, float high_output,
 /* simple 16 bit random number generator */
 uint16_t get_random16(void);
 
+// generate a random Vector3f of size 1
+Vector3f rand_vec3f(void);
