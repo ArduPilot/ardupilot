@@ -101,6 +101,9 @@ public:
 
     // check if we have completed transition to vtol
     bool tailsitter_transition_vtol_complete(void) const;
+
+    // account for surface speed scaling in hover
+    void tailsitter_speed_scaling(void);
     
     // user initiated takeoff for guided mode
     bool do_user_takeoff(float takeoff_altitude);
