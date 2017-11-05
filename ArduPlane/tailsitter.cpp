@@ -151,7 +151,7 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
     }
     if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle*100 ||
         roll_cd > tailsitter.transition_angle*100 ||
-        AP_HAL::millis() - transition_start_ms > transition_time_ms) {
+        AP_HAL::millis() - transition_start_ms > uint32_t(transition_time_ms)) {
         return true;
     }
     // still waiting
