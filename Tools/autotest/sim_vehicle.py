@@ -296,7 +296,8 @@ def find_root_dir():
 
 def wait_unlimited():
     """Wait until signal received"""
-    time.sleep(987654321987654321)
+    while True:
+        time.sleep(600)
 
 
 vinfo = vehicleinfo.VehicleInfo()
