@@ -22,6 +22,25 @@ class uavcangen(Task.Task):
         src = self.env.get_flat('SRC')
         dsdlc = self.env.get_flat("DSDL_COMPILER")
         input_dir = os.path.dirname(self.inputs[0].abspath())
+        print('\nuavcangen dsdl compiler: {}'.format(dsdlc))
+        print('\ninput_dir: {}'.format(input_dir))
+        ret = self.exec_command('{} {} {} -O{}'.format(
+                                python, dsdlc, input_dir, out))
+
+        if ret != 0:
+            # ignore if there was a signal to the interpreter rather
+            # than a real error in the script. Some environments use a
+            # signed and some an unsigned return for this
+            if ret > 128 or ret < 0:
+                Logs.warn('uavcangen crashed with code: {}'.format(ret))
+                ret = 0
+            else:
+                Logs.error('uavcangen returned {} error code'.format(ret))
+            return ret
+
+        input_dir = os.path.abspath('libraries/AP_UAVCAN/dsdl/uavcan')
+        print('\nuavcangen dsdl compiler: {}'.format(dsdlc))
+        print('\ninput_dir: {}'.format(input_dir))
         ret = self.exec_command('{} {} {} -O{}'.format(
                                 python, dsdlc, input_dir, out))
 
