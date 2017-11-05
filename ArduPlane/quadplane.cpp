@@ -1017,11 +1017,11 @@ void QuadPlane::control_loiter()
     plane.nav_pitch_cd = wp_nav->get_pitch();
 
     uint32_t now = AP_HAL::millis();
-    if (now - last_pidz_init_ms < (uint32_t)transition_time_ms && !is_tailsitter()) {
+    if (now - last_pidz_init_ms < (uint32_t)transition_time_ms*2 && !is_tailsitter()) {
         // we limit pitch during initial transition
         float pitch_limit_cd = linear_interpolate(loiter_initial_pitch_cd, aparm.angle_max,
                                                   now,
-                                                  last_pidz_init_ms, last_pidz_init_ms+transition_time_ms);
+                                                  last_pidz_init_ms, last_pidz_init_ms+transition_time_ms*2);
         if (plane.nav_pitch_cd > pitch_limit_cd) {
             plane.nav_pitch_cd = pitch_limit_cd;
             pos_control->set_limit_accel_xy();            
