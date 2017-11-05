@@ -23,6 +23,7 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo var_info2[];
 
     void control_run(void);
     void control_auto(const Location &loc);
@@ -220,9 +221,15 @@ private:
 
     void setup_defaults(void);
     void setup_defaults_table(const struct defaults_struct *defaults, uint8_t count);
+
+    // calculate a stopping distance for fixed-wing to vtol transitions
+    float stopping_distance(void);
     
     AP_Int16 transition_time_ms;
 
+    // transition deceleration, m/s/s
+    AP_Float transition_decel;
+    
     AP_Int16 rc_speed;
 
     // min and max PWM for throttle

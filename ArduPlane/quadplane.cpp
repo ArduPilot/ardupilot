@@ -405,7 +405,24 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight. If AllowFWTakeoff is disabled then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand is disabled then fixed wing land on quadplanes will instead perform a VTOL land.
     // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
+
+    AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
     
+    AP_GROUPEND
+};
+
+// second table of user settable parameters for quadplanes, this
+// allows us to go beyond the 64 parameter limit
+const AP_Param::GroupInfo QuadPlane::var_info2[] = {
+    // @Param: TRANS_DECEL
+    // @DisplayName: Transition deceleration
+    // @Description: This is deceleration rate that will be used in calculating the stopping distance when transitioning from fixed wing flight to multicopter flight.
+    // @Units: m/s/s
+    // @Increment: 0.1
+    // @Range: 0.2 5
+    // @User: Standard
+    AP_GROUPINFO("TRANS_DECEL", 1, QuadPlane, transition_decel, 2.0),
+
     AP_GROUPEND
 };
 
@@ -446,6 +463,7 @@ QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
     ahrs(_ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info2);
 }
 
 
@@ -845,8 +863,19 @@ void QuadPlane::control_hover(void)
 
 void QuadPlane::init_loiter(void)
 {
-    // set target to current position
-    wp_nav->init_loiter_target();
+    /*
+      calculate stopping point based on Q_TRANS_DECEL. This allows the
+      user to setup for a more or less agressive stop when entering
+      QLOITER
+     */
+    Vector3f stopping_point = inertial_nav.get_position();
+    Vector3f vel = inertial_nav.get_velocity();
+    if (!vel.is_zero()) {
+        vel.z = 0;
+        stopping_point += vel.normalized() * stopping_distance() * 100;
+    }
+    
+    wp_nav->init_loiter_target(stopping_point);
 
     // initialize vertical speed and acceleration
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
@@ -860,6 +889,9 @@ void QuadPlane::init_loiter(void)
 
     // remember initial pitch
     loiter_initial_pitch_cd = MAX(plane.ahrs.pitch_sensor, 0);
+
+    // prevent re-init of target position
+    last_loiter_ms = AP_HAL::millis();
 }
 
 void QuadPlane::init_land(void)
@@ -2558,4 +2590,15 @@ bool QuadPlane::in_transition(void) const
     return available() && assisted_flight &&
         (transition_state == TRANSITION_AIRSPEED_WAIT ||
          transition_state == TRANSITION_TIMER);
+}
+
+/*
+  calculate current stopping distance for a quadplane in fixed wing flight
+ */
+float QuadPlane::stopping_distance(void)
+{
+    // use v^2/(2*accel). This is only quite approximate as the drag
+    // varies with pitch, but it gives something for the user to
+    // control the transition distance in a reasonable way
+    return plane.ahrs.groundspeed_vector().length_squared() / (2 * transition_decel);
 }
