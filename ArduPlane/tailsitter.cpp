@@ -80,11 +80,17 @@ void QuadPlane::tailsitter_output(void)
         }
         return;
     }
-
+    
     motors_output();
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
 
+    if (hal.util->get_soft_armed()) {
+        // scale surfaces for throttle
+        tailsitter_speed_scaling();
+    }
+
+    
     if (tailsitter.vectored_hover_gain > 0) {
         // thrust vectoring VTOL modes
         float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
@@ -194,3 +200,30 @@ bool QuadPlane::in_tailsitter_vtol_transition(void) const
 {
     return is_tailsitter() && in_vtol_mode() && transition_state == TRANSITION_ANGLE_WAIT_VTOL;
 }
+
+/*
+  account for speed scaling of control surfaces in hover
+*/
+void QuadPlane::tailsitter_speed_scaling(void)
+{
+    const float hover_throttle = motors->get_throttle_hover();
+    const float throttle = motors->get_throttle();
+    const float scaling_max = 5;
+    float scaling = 1;
+    if (is_zero(throttle)) {
+        scaling = scaling_max;
+    } else {
+        scaling = constrain_float(hover_throttle / throttle, 1/scaling_max, scaling_max);
+    }
+    const SRV_Channel::Aux_servo_function_t functions[3] = {
+        SRV_Channel::Aux_servo_function_t::k_aileron,
+        SRV_Channel::Aux_servo_function_t::k_elevator,
+        SRV_Channel::Aux_servo_function_t::k_rudder};
+    for (uint8_t i=0; i<ARRAY_SIZE(functions); i++) {
+        int32_t v = SRV_Channels::get_output_scaled(functions[i]);
+        v *= scaling;
+        v = constrain_int32(v, -SERVO_MAX, SERVO_MAX);
+        SRV_Channels::set_output_scaled(functions[i], v);
+    }
+}
+    
