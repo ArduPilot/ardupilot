@@ -25,6 +25,9 @@ void AP_MotorsHeli_RSC::init_servo()
 {
     // setup RSC on specified channel by default
     SRV_Channels::set_aux_channel_default(_aux_fn, _default_channel);
+    _pwm_min = SRV_Channels::srv_channel(_default_channel)->get_output_min();
+    _pwm_max = SRV_Channels::srv_channel(_default_channel)->get_output_max();
+    _pwm_rev = SRV_Channels::srv_channel(_default_channel)->get_reversed();
 }
 
 // set_power_output_range
