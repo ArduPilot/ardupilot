@@ -151,7 +151,7 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
     }
     if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle*100 ||
         roll_cd > tailsitter.transition_angle*100 ||
-        AP_HAL::millis() - transition_start_ms > 2000) {
+        AP_HAL::millis() - transition_start_ms > transition_time_ms) {
         return true;
     }
     // still waiting
@@ -174,6 +174,7 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
         return true;
     }
     // still waiting
+    attitude_control->reset_rate_controller_I_terms();
     return false;
 }
 

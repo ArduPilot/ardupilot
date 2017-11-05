@@ -338,7 +338,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @DisplayName: Tailsitter transition angle
     // @Description: This is the angle at which tailsitter aircraft will change from VTOL control to fixed wing control.
     // @Range: 5 80
-    AP_GROUPINFO("TAILSIT_ANGLE", 48, QuadPlane, tailsitter.transition_angle, 30),
+    AP_GROUPINFO("TAILSIT_ANGLE", 48, QuadPlane, tailsitter.transition_angle, 45),
 
     // @Param: TILT_RATE_DN
     // @DisplayName: Tiltrotor downwards tilt rate
@@ -439,6 +439,7 @@ static const struct defaults_struct defaults_table_tailsitter[] = {
     { "LIM_PITCH_MIN",    -3000 },
     { "MIXING_GAIN",      1.0 },
     { "RUDD_DT_GAIN",      10 },
+    { "Q_TRANSITION_MS",   2000 },
 };
 
 QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
@@ -1333,7 +1334,12 @@ void QuadPlane::update_transition(void)
     case TRANSITION_ANGLE_WAIT_FW: {
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         assisted_flight = true;
-        plane.nav_pitch_cd = constrain_float(-(tailsitter.transition_angle+5)*100, -8500, -2500);
+        // calculate transition rate in degrees per
+        // millisecond. Assume we want to get to the transition angle
+        // in half the transition time
+        float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
+        uint32_t dt = AP_HAL::millis() - transition_start_ms;
+        plane.nav_pitch_cd = constrain_float((-transition_rate * dt)*100, -8500, 0);
         plane.nav_roll_cd = 0;
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd, 
                                                                       plane.nav_pitch_cd,
