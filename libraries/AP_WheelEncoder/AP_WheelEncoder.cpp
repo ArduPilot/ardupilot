@@ -224,12 +224,12 @@ float AP_WheelEncoder::get_wheel_radius(uint8_t instance) const
     return _wheel_radius[instance];
 }
 
-// get the total distance travelled in meters
-Vector3f AP_WheelEncoder::get_position(uint8_t instance) const
+// return a 3D vector defining the position offset of the center of the wheel in meters relative to the body frame origin
+const Vector3f &AP_WheelEncoder::get_pos_offset(uint8_t instance) const
 {
     // for invalid instances return zero vector
     if (instance >= WHEELENCODER_MAX_INSTANCES) {
-        return Vector3f();
+        return pos_offset_zero;
     }
     return _pos_offset[instance];
 }
