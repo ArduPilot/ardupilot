@@ -102,11 +102,11 @@ void Rover::update_wheel_encoder()
         // calculate delta time
         float delta_time;
         const uint32_t latest_sensor_update_ms = g2.wheel_encoder.get_last_reading_ms(i);
-        const uint32_t sensor_diff_ms = latest_sensor_update_ms - wheel_encoder_last_update_ms[i];
+        const int32_t sensor_diff_ms = latest_sensor_update_ms - wheel_encoder_last_update_ms[i];
 
         // if we have not received any sensor updates, or time difference is too high then use time since last update to the ekf
         // check for old or insane sensor update times
-        if (sensor_diff_ms == 0 || sensor_diff_ms > 100) {
+        if (sensor_diff_ms <= 0 || sensor_diff_ms > 100) {
             delta_time = system_dt;
             wheel_encoder_last_update_ms[i] = wheel_encoder_last_ekf_update_ms;
         } else {
