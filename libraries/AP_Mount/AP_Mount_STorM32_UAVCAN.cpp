@@ -1,6 +1,6 @@
 #include "AP_Mount_STorM32_UAVCAN.h"
 #include <AP_HAL/AP_HAL.h>
-#include "../ArduCopter/Copter.h"
+//#include "../ArduCopter/Copter.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -94,10 +94,11 @@ void AP_Mount_STorM32_UAVCAN::update()
                     send_cmd_getdatafields(LIVEDATA_FLAGS); //0.6ms
                 }
 
-                if( copter.letmeget_trigger_pic() ){
-                    copter.letmeset_trigger_pic(false);
-                    if (_bitmask & SEND_CMD_DOCAMERA) send_cmd_docamera(1); //1.0ms
-                }
+//OW
+//                if( copter.letmeget_trigger_pic() ){
+//                    copter.letmeset_trigger_pic(false);
+//                    if (_bitmask & SEND_CMD_DOCAMERA) send_cmd_docamera(1); //1.0ms
+//                }
 
                 break;
             case 2:
@@ -452,13 +453,14 @@ void AP_Mount_STorM32_UAVCAN::find_gimbal(void)
 
 void AP_Mount_STorM32_UAVCAN::send_startupbanner(void)
 {
-    if ((_startupbanner_status == 1) && copter.letmeget_initialised()) {
-        _startupbanner_status = 2;
-        gcs().send_text(MAV_SEVERITY_INFO, "  STorM32: found and initialized");
-        char s[64];
-        strcpy(s, "  STorM32: " ); strcat(s, versionstr ); strcat(s, ", " );  strcat(s, boardstr );
-        gcs().send_text(MAV_SEVERITY_INFO, s);
-    }
+//OW
+//    if ((_startupbanner_status == 1) && copter.letmeget_initialised()) {
+//        _startupbanner_status = 2;
+//        gcs().send_text(MAV_SEVERITY_INFO, "  STorM32: found and initialized");
+//        char s[64];
+//        strcpy(s, "  STorM32: " ); strcat(s, versionstr ); strcat(s, ", " );  strcat(s, boardstr );
+//        gcs().send_text(MAV_SEVERITY_INFO, s);
+//    }
 }
 
 

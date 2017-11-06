@@ -12,7 +12,7 @@
 #include <unistd.h>
 #endif
 //OW
-#include "../ArduCopter/Copter.h"
+//#include "../ArduCopter/Copter.h"
 //extern Copter copter; //not needed then Copter.h is included
 //OWEND
 
@@ -155,7 +155,7 @@ void AP_Camera::trigger_pic()
     }
 
 //OW
-    copter.letmeset_trigger_pic(true);
+//    copter.letmeset_trigger_pic(true);
 //OWEND
 
     log_picture();
