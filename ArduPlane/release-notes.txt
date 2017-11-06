@@ -1,4 +1,4 @@
-Release 3.8.3beta2, 30th October 2017
+Release 3.8.3beta4, 5th November 2017
 -------------------------------------
 
 This is a minor release with a number of important bug fixes and some
@@ -37,7 +37,7 @@ small feature additions.
 
  - smooth out tailsitter transitions in both directions
 
- - fixed use of RTL_RADIUS for QRTL threshold
+ - fixed use of RTL_RADIUS for QRTL threshold and added Q_TRANS_DECEL
 
 Release 3.8.2, 11th September 2017
 ----------------------------------
@@ -96,6 +96,7 @@ to users who have multiple serial devices (such as rangefinders) they
 want to connect and have run out of UARTs.
 
 Happy flying!
+
 
 Release 3.8.0, 5th August 2017
 ------------------------------

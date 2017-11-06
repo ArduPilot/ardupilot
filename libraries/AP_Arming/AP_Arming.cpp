@@ -509,6 +509,14 @@ bool AP_Arming::pre_arm_checks(bool report)
 
 bool AP_Arming::arm_checks(uint8_t method)
 {
+    // ensure the GPS drivers are ready on any final changes
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
+        if (!AP_GPS::gps().prepare_for_arming()) {
+            return false;
+        }
+    }
+
     // note that this will prepare DataFlash to start logging
     // so should be the last check to be done before arming
     if ((checks_to_perform & ARMING_CHECK_ALL) ||

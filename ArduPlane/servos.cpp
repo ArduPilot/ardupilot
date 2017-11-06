@@ -148,6 +148,14 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
     // reversal as needed
     float in1 = SRV_Channels::get_output_scaled(func1_in);
     float in2 = SRV_Channels::get_output_scaled(func2_in);
+
+    // apply MIXING_OFFSET to input channels
+    if (g.mixing_offset < 0) {
+        in2 *= (100 - g.mixing_offset) * 0.01;
+    } else if (g.mixing_offset > 0) {
+        in1 *= (100 + g.mixing_offset) * 0.01;
+    }
+    
     float out1 = constrain_float((in2 - in1) * g.mixing_gain, -4500, 4500);
     float out2 = constrain_float((in2 + in1) * g.mixing_gain, -4500, 4500);
     SRV_Channels::set_output_scaled(func1_out, out1);
@@ -191,7 +199,8 @@ void Plane::dspoiler_update(void)
     }
     float elevon_left = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_left);
     float elevon_right = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_right);
-    float rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
+    float rudder_rate = g.dspoiler_rud_rate * 0.01f;
+    float rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) * rudder_rate;
     float dspoiler1_left = elevon_left;
     float dspoiler2_left = elevon_left;
     float dspoiler1_right = elevon_right;
@@ -359,7 +368,7 @@ void Plane::set_servos_controlled(void)
                 control_mode == ACRO ||
                 control_mode == FLY_BY_WIRE_A ||
                 control_mode == AUTOTUNE) &&
-               !failsafe.ch3_counter) {
+               !failsafe.throttle_counter) {
         // manual pass through of throttle while in FBWA or
         // STABILIZE mode with THR_PASS_STAB set
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
@@ -392,7 +401,7 @@ void Plane::set_servos_flaps(void)
 
     // work out any manual flap input
     RC_Channel *flapin = RC_Channels::rc_channel(g.flapin_channel-1);
-    if (flapin != nullptr && !failsafe.ch3_failsafe && failsafe.ch3_counter == 0) {
+    if (flapin != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
         flapin->input();
         manual_flap_percent = flapin->percent_input();
     }

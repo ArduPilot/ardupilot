@@ -686,7 +686,7 @@ void Plane::update_flight_mode(void)
         if (fly_inverted()) {
             nav_pitch_cd = -nav_pitch_cd;
         }
-        if (failsafe.ch3_failsafe && g.short_fs_action == 2) {
+        if (failsafe.rc_failsafe && g.short_fs_action == 2) {
             // FBWA failsafe glide
             nav_roll_cd = 0;
             nav_pitch_cd = 0;
@@ -813,8 +813,13 @@ void Plane::update_navigation()
         if (quadplane.available() && quadplane.rtl_mode == 1 &&
             (nav_controller->reached_loiter_target() ||
              location_passed_point(current_loc, prev_WP_loc, next_WP_loc) ||
-             auto_state.wp_distance < qrtl_radius) &&
+             auto_state.wp_distance < MAX(qrtl_radius, quadplane.stopping_distance())) &&
             AP_HAL::millis() - last_mode_change_ms > 1000) {
+            /*
+              for a quadplane in RTL mode we switch to QRTL when we
+              are within the maximum of the stopping distance and the
+              RTL_RADIUS
+             */
             set_mode(QRTL, MODE_REASON_UNKNOWN);
             break;
         } else if (g.rtl_autoland == 1 &&

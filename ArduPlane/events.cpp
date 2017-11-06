@@ -4,7 +4,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
 {
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
-    failsafe.ch3_timer_ms = millis();
+    failsafe.short_timer_ms = millis();
     gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%u/reason=%u", fstype, reason);
     switch(control_mode)
     {
