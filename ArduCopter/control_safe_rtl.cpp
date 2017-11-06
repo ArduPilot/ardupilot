@@ -52,7 +52,7 @@ void Copter::smart_rtl_run()
             rtl_descent_run(); // Re-using the descend method from normal rtl mode.
             break;
         case SmartRTL_Land:
-            rtl_land_run(); // Re-using the land method from normal rtl mode.
+            rtl_land_run(true); // Re-using the land method from normal rtl mode.
             break;
     }
 }
