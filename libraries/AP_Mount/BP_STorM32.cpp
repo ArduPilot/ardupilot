@@ -1,9 +1,9 @@
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
 #include <AP_Mount/BP_STorM32.h>
 
-#include "../ArduCopter/Copter.h"
-
-extern Copter copter;
+//OW
+//#include "../ArduCopter/Copter.h"
+//extern Copter copter;
 
 
 //******************************************************
@@ -42,10 +42,10 @@ void BP_STorM32::send_attitude(const AP_AHRS_TYPE &ahrs)
     //it seems these two states are exclusive, see e.g. AP_Module::call_hook_AHRS_update()
     if (!ahrs.initialised()) status |= 0x01; //is initialising
     if (!ahrs.healthy())     status |= 0x02; //is unhealthy
-    if (!copter.letmeget_ekf_filter_status()) status |= 0x04;
-
-    if (copter.letmeget_pream_check()) status |= 0x40;
-    if (copter.letmeget_motors_armed()) status |= 0x80;
+//OW
+//    if (!copter.letmeget_ekf_filter_status()) status |= 0x04;
+//    if (copter.letmeget_pream_check()) status |= 0x40;
+//    if (copter.letmeget_motors_armed()) status |= 0x80;
 
     tSTorM32Link t;
     t.stx = 0xF9;

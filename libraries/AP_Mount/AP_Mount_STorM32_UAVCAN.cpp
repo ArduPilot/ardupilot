@@ -1,14 +1,12 @@
-#include "AP_Mount_STorM32_UAVCAN.h"
 #include <AP_HAL/AP_HAL.h>
+#if HAL_WITH_UAVCAN
+#include "AP_Mount_STorM32_UAVCAN.h"
 //#include "../ArduCopter/Copter.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
-
 extern const AP_HAL::HAL& hal;
-//extern Copter copter; //not needed then Copter.h is included
-
 
 AP_Mount_STorM32_UAVCAN::AP_Mount_STorM32_UAVCAN(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
@@ -560,8 +558,4 @@ bool AP_Mount_STorM32_UAVCAN::is_failsafe(void)
 
     return false;
 }
-
-
-
-
-
+#endif
