@@ -71,8 +71,8 @@ public:
     // get the wheel radius in meters
     float get_wheel_radius(uint8_t instance) const;
 
-    // get the position of the wheel associated with the wheel encoder
-    Vector3f get_position(uint8_t instance) const;
+    // return a 3D vector defining the position offset of the center of the wheel in meters relative to the body frame origin
+    const Vector3f &get_pos_offset(uint8_t instance) const;
 
     // get total delta angle (in radians) measured by the wheel encoder
     float get_delta_angle(uint8_t instance) const;
