@@ -21,7 +21,9 @@ class uavcangen(Task.Task):
         out = self.env.get_flat('OUTPUT_DIR')
         src = self.env.get_flat('SRC')
         dsdlc = self.env.get_flat("DSDL_COMPILER")
-        input_dir = os.path.dirname(self.inputs[0].abspath())
+        dir = os.path.dirname(self.inputs[0].abspath())
+        root_dir = dir.rfind('uavcan')
+        input_dir = dir[0:root_dir+6]
         ret = self.exec_command('{} {} {} -O{}'.format(
                                 python, dsdlc, input_dir, out))
 

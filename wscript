@@ -271,11 +271,24 @@ def _build_dynamic_sources(bld):
     if bld.get_board().with_uavcan:
         bld(
             features='uavcangen',
+            # standard uavcan datatypes
             source=bld.srcnode.ant_glob('modules/uavcan/dsdl/uavcan/**/*.uavcan'),
             output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
             name='uavcan',
             export_includes=[
                 bld.bldnode.make_node('modules/uavcan/libuavcan/include/dsdlc_generated').abspath(),
+                bld.bldnode.make_node('libraries/AP_UAVCAN/include/dsdlc_generated').abspath(),
+            ]
+        )
+        bld(
+            features='uavcangen',
+            # vendor-specific datatypes
+            source=bld.srcnode.ant_glob('libraries/AP_UAVCAN/dsdl/ap_uavcan/**/*.uavcan'),
+            output_dir='libraries/AP_UAVCAN/include/dsdlc_generated',
+            name='uavcan',
+            export_includes=[
+                bld.bldnode.make_node('modules/uavcan/libuavcan/include/dsdlc_generated').abspath(),
+                bld.bldnode.make_node('libraries/AP_UAVCAN/include/dsdlc_generated').abspath(),
             ]
         )
 
