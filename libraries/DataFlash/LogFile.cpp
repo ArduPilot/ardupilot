@@ -1448,6 +1448,52 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
     Log_Write_CameraInfo(LOG_CAMERA_MSG, ahrs, gps, current_loc);
 }
 
+// Write a Camera Vision packet 1
+void DataFlash_Class::Log_Write_Camera_Vision1(const AP_AHRS::AHRS_Summary &ahrs_summary, const uint8_t &flags, const uint64_t &feedback_time, const uint16_t &image_index )
+{
+    struct log_Camera_Vision1 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CAMERA_VISION_MSG1),
+        time_us         : AP_HAL::micros64(),
+        feedback_time_us: (uint64_t)feedback_time,
+        ahrs_time_us    : (uint64_t)ahrs_summary.ahrs_update_time,
+        feedback_flags  : (uint8_t)flags,
+        image_index     : (uint16_t)image_index,
+        latitude        : ahrs_summary.location.lat,
+        longitude       : ahrs_summary.location.lng,
+        altitude        : ahrs_summary.location.alt,
+        north_rel_home  : ahrs_summary.ned_pos_rel_home.x,
+        east_rel_home   : ahrs_summary.ned_pos_rel_home.y,
+        down_rel_home   : ahrs_summary.ned_pos_rel_home.z,
+        home_latitude   : ahrs_summary.home.lat,
+        home_longitude  : ahrs_summary.home.lng,
+        home_altitude   : ahrs_summary.home.alt
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write a Camera Vision packet 2
+void DataFlash_Class::Log_Write_Camera_Vision2(const AP_AHRS::AHRS_Summary &ahrs_summary, const uint8_t &flags, const uint64_t &feedback_time, const uint16_t &image_index )
+{
+    struct log_Camera_Vision2 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CAMERA_VISION_MSG2),
+        time_us         : AP_HAL::micros64(),
+        feedback_time_us: (uint64_t)feedback_time,
+        feedback_flags  : (uint8_t)flags,
+        image_index     : (uint16_t)image_index,
+        north_velocity  : ahrs_summary.velocity.x,
+        east_velocity   : ahrs_summary.velocity.y,
+        down_velocity   : ahrs_summary.velocity.z,
+        q1              : ahrs_summary.quat.q1,
+        q2              : ahrs_summary.quat.q2,
+        q3              : ahrs_summary.quat.q3,
+        q4              : ahrs_summary.quat.q4,
+        ekf_type        : ahrs_summary.ekf_type,
+        read_errors     : ahrs_summary.read_errors,
+        write_errors    : ahrs_summary.write_errors
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 // Write a Trigger packet
 void DataFlash_Class::Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc)
 {

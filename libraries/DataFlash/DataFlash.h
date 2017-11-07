@@ -137,6 +137,8 @@ public:
     void Log_Write_MessageF(const char *fmt, ...);
     void Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
+    void Log_Write_Camera_Vision1(const AP_AHRS::AHRS_Summary &ahrs_summary, const uint8_t &flags, const uint64_t &feedback_time, const uint16_t &image_index);
+    void Log_Write_Camera_Vision2(const AP_AHRS::AHRS_Summary &ahrs_summary, const uint8_t &flags, const uint64_t &feedback_time, const uint16_t &image_index);
     void Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);    
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);

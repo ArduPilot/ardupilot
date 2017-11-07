@@ -913,8 +913,8 @@ const AP_Param::Info Plane::var_info[] = {
 
 #if CAMERA == ENABLED
     // @Group: CAM_
-    // @Path: ../libraries/AP_Camera/AP_Camera.cpp
-    GOBJECT(camera,                  "CAM_", AP_Camera),
+    // @Path: ../libraries/AP_Camera/AP_Camera.cpp,../libraries/AP_Camera/AP_Camera_Vision.cpp
+    GOBJECT(camera,                  "CAM_", AP_Camera_Vision),
 #endif
 
     // @Group: ARMING_

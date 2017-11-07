@@ -40,6 +40,8 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gp
     _ekf_flags(flags)
 {
     _dcm_matrix.identity();
+    // create three entries in the summary list
+    summary.create_nodes(3);
 }
 
 // return the smoothed gyro vector corrected for drift
@@ -113,6 +115,63 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
         // update optional alternative attitude view
         _view->update(skip_ins_update);
     }
+
+    update_summary();
+}
+
+void AP_AHRS_NavEKF::update_summary(void) {
+    for (uint8_t i = 0; i < summary.get_node_count(); i++) {
+        AP_AHRS::AHRS_Summary *active_summary = summary.active_summary;
+        // stop the consumer from reading this node
+        // this has no effect if the consumer is already reading this node
+        active_summary->set_ready_to_read(false);
+        // check to see if this node is ready to write / is not being read from currently
+        if (active_summary->get_ready_to_write()) {
+            // node is ready to be updated
+            // update the active summary with the latest values
+            active_summary->ahrs_update_time = AP_HAL::micros64();
+            active_summary->healthy = healthy();
+            active_summary->have_inertial_nav = have_inertial_nav();
+            active_summary->roll = roll;
+            active_summary->pitch = pitch;
+            active_summary->yaw = yaw;
+            active_summary->ekf_type = active_EKF_type();
+            get_location(active_summary->location);
+            if (active_summary->have_inertial_nav) {
+                get_relative_position_NED_home(active_summary->ned_pos_rel_home);
+                get_velocity_NED(active_summary->velocity);
+                active_summary->home = get_home();
+            }
+            switch (active_EKF_type()) {
+                case EKF_TYPE_NONE:
+                    active_summary->quat.from_rotation_matrix(AP_AHRS_DCM::get_rotation_body_to_ned());
+                case EKF_TYPE2:
+                    EKF2.getQuaternion(-1, active_summary->quat);
+                case EKF_TYPE3:
+                    EKF3.getQuaternion(-1, active_summary->quat);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                case EKF_TYPE_SITL:
+                    active_summary->quat.from_rotation_matrix(AP_AHRS_DCM::get_rotation_body_to_ned());
+#endif
+            }
+            active_summary->write_errors = summary.get_write_error_count();
+            active_summary->read_errors = summary.get_read_error_count();
+            // node update is complete, allow the consumer to read
+            active_summary->set_ready_to_read(true);
+            // update the consumer index to point to this buffer
+            // the consumer now 'sees' this entry
+            summary.current_summary = active_summary;
+            summary.next();
+            return;
+        } else {
+            // summary node was not ready to be updated
+            // allow the consumer to read
+            active_summary->set_ready_to_read(true);
+            summary.next();
+        }
+    }
+    // the AHRS was unable to write into any of the summary nodes
+    summary.increment_write_error();
 }
 
 void AP_AHRS_NavEKF::update_DCM(bool skip_ins_update)

@@ -560,6 +560,132 @@ public:
 
     virtual void update_AOA_SSA(void);
 
+    // struct containing key AHRS states
+    struct AHRS_Summary {
+        uint64_t ahrs_update_time;
+        bool healthy;
+        bool have_inertial_nav;
+        float roll;
+        float pitch;
+        float yaw;
+        Location location;
+        Vector3f velocity;
+        Location home;
+        Vector3f ned_pos_rel_home;
+        Quaternion quat;
+        int8_t ekf_type;
+        uint8_t write_errors;
+        uint8_t read_errors;
+
+        AHRS_Summary *next;
+
+        // set the ready to write flag for this summary
+        // only modified by the consumer
+        void set_ready_to_write(bool status) {
+            this->_ready_to_write = status;
+        }
+
+        // set the ready to read flag for this summary
+        // only modified by the producer
+        void set_ready_to_read(bool status) {
+            this->_ready_to_read = status;
+        }
+
+        // return if this summary is ready to be read from
+        bool get_ready_to_write(void) {
+            return this->_ready_to_write;
+        }
+
+        // return if this summary is ready to be written to
+        bool get_ready_to_read(void) {
+            return this->_ready_to_read;
+        }
+
+    private:
+        // read / write flags
+        volatile bool _ready_to_read = false; // only modified by the producer
+        volatile bool _ready_to_write = true; // only modified by the consumer
+    };
+
+    class AHRS_SummaryList {
+    public:
+        AHRS_Summary *current_summary;
+        AHRS_Summary *active_summary;
+
+        AHRS_SummaryList() {
+            _head = nullptr;
+            _tail = nullptr;
+            _node_count = 0;
+            _write_error_count = 0;
+            _read_error_count = 0;
+            current_summary = nullptr;
+        }
+
+        // create n buffer nodes in the summary list
+        void create_nodes(uint8_t count) {
+            for (uint8_t i = 0; i < count; i++) {
+                create_node();
+            }
+        }
+
+        // increment the active_summary to target the next node
+        void next(void) {
+            active_summary = active_summary->next;
+        }
+
+        // increase write error count, called by producer
+        void increment_write_error(void) {
+            _write_error_count++;
+        }
+
+        // increase read error count, called by consumer
+        void increment_read_error(void) {
+            _read_error_count++;
+        }
+
+        // return the number of nodes in the summary list
+        uint8_t get_node_count(void) {
+            return _node_count;
+        }
+
+        // return the current number of write
+        uint8_t get_write_error_count(void) {
+            return _write_error_count;
+        }
+
+        // return the current number of read errors
+        uint8_t get_read_error_count(void) {
+            return _read_error_count;
+        }
+
+    private:
+        AHRS_Summary *_head, *_tail;
+        uint8_t _node_count;
+        uint8_t _write_error_count;
+        uint8_t _read_error_count;
+
+        void create_node(void) {
+            AHRS_Summary *temp = new AHRS_Summary;
+            if (_head == nullptr) {
+                // add the first node to the summary list
+                _head = temp; // this node is the head of the summary list
+                _tail = temp; // this node is also the tail of the summary list
+                temp->next = _head; // set the next pointer of this node to the head of the summary list (back to this node)
+                active_summary = temp; // set this node to be filled by AHRS first
+                temp = NULL;
+            } else {
+                // add a node onto the end of the summary list
+                _tail->next = temp; // set the next pointer of the prior node to this node
+                _tail = temp; // this node is now the tail of the summary list
+                _tail->next = _head; // set the next pointer of this node to the head of the summary list
+            }
+            _node_count++;
+        }
+    };
+
+    // create an AHRS summary list
+    AHRS_SummaryList summary;
+
 protected:
     AHRS_VehicleClass _vehicle_class;
 

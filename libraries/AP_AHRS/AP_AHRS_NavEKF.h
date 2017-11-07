@@ -292,6 +292,9 @@ private:
     void update_EKF2(void);
     void update_EKF3(void);
 
+    // attempt to update the AHRS summary
+    void update_summary(void);
+
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;
     
