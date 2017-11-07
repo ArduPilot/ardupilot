@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @DisplayName: Throttle slew rate
     // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. A value of zero means no limit. A value of 100 means the throttle can change over its full range in one second. Note that for some NiMH powered rovers setting a lower value like 40 or 50 may be worthwhile as the sudden current demand on the battery of a big rise in throttle may cause a brownout.
     // @Units: %/s
-    // @Range: 0 100
+    // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SLEWRATE", 4, AP_MotorsUGV, _slew_rate, 100),
