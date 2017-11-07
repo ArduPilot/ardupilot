@@ -29,6 +29,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -64,7 +65,6 @@ void setup()
     motors.set_throttle_range(1000,2000);
     motors.set_throttle_avg_max(0.5f);
 #endif
-    motors.enable();
     motors.output_min();
 
     // setup radio
@@ -138,6 +138,7 @@ void stability_test()
     // arm motors
     motors.armed(true);
     motors.set_interlock(true);
+    SRV_Channels::enable_aux_servos();
 
 #if NUM_OUTPUTS <= 4
     hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,AvgOut,LimRP,LimY,LimThD,LimThU\n");                       // quad

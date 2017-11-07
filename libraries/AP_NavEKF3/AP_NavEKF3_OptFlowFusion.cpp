@@ -148,9 +148,8 @@ void NavEKF3_core::EstimateTerrainOffset()
             // calculate the innovation consistency test ratio
             auxRngTestRatio = sq(innovRng) / (sq(MAX(0.01f * (float)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
 
-            // Check the innovation for consistency and don't fuse if > 5Sigma
-            if ((sq(innovRng)*SK_RNG) < 25.0f)
-            {
+            // Check the innovation test ratio and don't fuse if too large
+            if (auxRngTestRatio < 1.0f) {
                 // correct the state
                 terrainState -= K_RNG * innovRng;
 
@@ -188,10 +187,10 @@ void NavEKF3_core::EstimateTerrainOffset()
 
             // divide velocity by range, subtract body rates and apply scale factor to
             // get predicted sensed angular optical rates relative to X and Y sensor axes
-            losPred =   relVelSensor.length()/flowRngPred;
+            losPred =   norm(relVelSensor.x, relVelSensor.y)/flowRngPred;
 
             // calculate innovations
-            auxFlowObsInnov = losPred - sqrtf(sq(flowRadXYcomp[0]) + sq(flowRadXYcomp[1]));
+            auxFlowObsInnov = losPred - norm(ofDataDelayed.flowRadXYcomp.x, ofDataDelayed.flowRadXYcomp.y);
 
             // calculate observation jacobian
             float t3 = sq(q0);
@@ -237,7 +236,7 @@ void NavEKF3_core::EstimateTerrainOffset()
             auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar);
 
             // don't fuse if optical flow data is outside valid range
-            if (MAX(flowRadXY[0],flowRadXY[1]) < frontend->_maxFlowRate) {
+            if (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) < frontend->_maxFlowRate) {
 
                 // correct the state
                 terrainState -= K_OPT * auxFlowObsInnov;
@@ -455,19 +454,25 @@ void NavEKF3_core::FuseOptFlow()
             Kfusion[7] = t78*(P[7][0]*t2*t5-P[7][4]*t2*t7+P[7][1]*t2*t15+P[7][6]*t2*t10+P[7][2]*t2*t19-P[7][3]*t2*t22+P[7][5]*t2*t27);
             Kfusion[8] = t78*(P[8][0]*t2*t5-P[8][4]*t2*t7+P[8][1]*t2*t15+P[8][6]*t2*t10+P[8][2]*t2*t19-P[8][3]*t2*t22+P[8][5]*t2*t27);
             Kfusion[9] = t78*(P[9][0]*t2*t5-P[9][4]*t2*t7+P[9][1]*t2*t15+P[9][6]*t2*t10+P[9][2]*t2*t19-P[9][3]*t2*t22+P[9][5]*t2*t27);
-            Kfusion[10] = t78*(P[10][0]*t2*t5-P[10][4]*t2*t7+P[10][1]*t2*t15+P[10][6]*t2*t10+P[10][2]*t2*t19-P[10][3]*t2*t22+P[10][5]*t2*t27);
-            Kfusion[11] = t78*(P[11][0]*t2*t5-P[11][4]*t2*t7+P[11][1]*t2*t15+P[11][6]*t2*t10+P[11][2]*t2*t19-P[11][3]*t2*t22+P[11][5]*t2*t27);
-            Kfusion[12] = t78*(P[12][0]*t2*t5-P[12][4]*t2*t7+P[12][1]*t2*t15+P[12][6]*t2*t10+P[12][2]*t2*t19-P[12][3]*t2*t22+P[12][5]*t2*t27);
-            Kfusion[13] = t78*(P[13][0]*t2*t5-P[13][4]*t2*t7+P[13][1]*t2*t15+P[13][6]*t2*t10+P[13][2]*t2*t19-P[13][3]*t2*t22+P[13][5]*t2*t27);
-            Kfusion[14] = t78*(P[14][0]*t2*t5-P[14][4]*t2*t7+P[14][1]*t2*t15+P[14][6]*t2*t10+P[14][2]*t2*t19-P[14][3]*t2*t22+P[14][5]*t2*t27);
-            Kfusion[15] = t78*(P[15][0]*t2*t5-P[15][4]*t2*t7+P[15][1]*t2*t15+P[15][6]*t2*t10+P[15][2]*t2*t19-P[15][3]*t2*t22+P[15][5]*t2*t27);
-            if (!inhibitWindStates) {
-                Kfusion[22] = t78*(P[22][0]*t2*t5-P[22][4]*t2*t7+P[22][1]*t2*t15+P[22][6]*t2*t10+P[22][2]*t2*t19-P[22][3]*t2*t22+P[22][5]*t2*t27);
-                Kfusion[23] = t78*(P[23][0]*t2*t5-P[23][4]*t2*t7+P[23][1]*t2*t15+P[23][6]*t2*t10+P[23][2]*t2*t19-P[23][3]*t2*t22+P[23][5]*t2*t27);
+
+            if (!inhibitDelAngBiasStates) {
+                Kfusion[10] = t78*(P[10][0]*t2*t5-P[10][4]*t2*t7+P[10][1]*t2*t15+P[10][6]*t2*t10+P[10][2]*t2*t19-P[10][3]*t2*t22+P[10][5]*t2*t27);
+                Kfusion[11] = t78*(P[11][0]*t2*t5-P[11][4]*t2*t7+P[11][1]*t2*t15+P[11][6]*t2*t10+P[11][2]*t2*t19-P[11][3]*t2*t22+P[11][5]*t2*t27);
+                Kfusion[12] = t78*(P[12][0]*t2*t5-P[12][4]*t2*t7+P[12][1]*t2*t15+P[12][6]*t2*t10+P[12][2]*t2*t19-P[12][3]*t2*t22+P[12][5]*t2*t27);
             } else {
-                Kfusion[22] = 0.0f;
-                Kfusion[23] = 0.0f;
+                // zero indexes 10 to 12 = 3*4 bytes
+                memset(&Kfusion[10], 0, 12);
             }
+
+            if (!inhibitDelVelBiasStates) {
+                Kfusion[13] = t78*(P[13][0]*t2*t5-P[13][4]*t2*t7+P[13][1]*t2*t15+P[13][6]*t2*t10+P[13][2]*t2*t19-P[13][3]*t2*t22+P[13][5]*t2*t27);
+                Kfusion[14] = t78*(P[14][0]*t2*t5-P[14][4]*t2*t7+P[14][1]*t2*t15+P[14][6]*t2*t10+P[14][2]*t2*t19-P[14][3]*t2*t22+P[14][5]*t2*t27);
+                Kfusion[15] = t78*(P[15][0]*t2*t5-P[15][4]*t2*t7+P[15][1]*t2*t15+P[15][6]*t2*t10+P[15][2]*t2*t19-P[15][3]*t2*t22+P[15][5]*t2*t27);
+            } else {
+                // zero indexes 13 to 15 = 3*4 bytes
+                memset(&Kfusion[13], 0, 12);
+            }
+
             if (!inhibitMagStates) {
                 Kfusion[16] = t78*(P[16][0]*t2*t5-P[16][4]*t2*t7+P[16][1]*t2*t15+P[16][6]*t2*t10+P[16][2]*t2*t19-P[16][3]*t2*t22+P[16][5]*t2*t27);
                 Kfusion[17] = t78*(P[17][0]*t2*t5-P[17][4]*t2*t7+P[17][1]*t2*t15+P[17][6]*t2*t10+P[17][2]*t2*t19-P[17][3]*t2*t22+P[17][5]*t2*t27);
@@ -476,9 +481,16 @@ void NavEKF3_core::FuseOptFlow()
                 Kfusion[20] = t78*(P[20][0]*t2*t5-P[20][4]*t2*t7+P[20][1]*t2*t15+P[20][6]*t2*t10+P[20][2]*t2*t19-P[20][3]*t2*t22+P[20][5]*t2*t27);
                 Kfusion[21] = t78*(P[21][0]*t2*t5-P[21][4]*t2*t7+P[21][1]*t2*t15+P[21][6]*t2*t10+P[21][2]*t2*t19-P[21][3]*t2*t22+P[21][5]*t2*t27);
             } else {
-                for (uint8_t i = 16; i <= 21; i++) {
-                    Kfusion[i] = 0.0f;
-                }
+                // zero indexes 16 to 21 = 6*4 bytes
+                memset(&Kfusion[16], 0, 24);
+            }
+
+            if (!inhibitWindStates) {
+                Kfusion[22] = t78*(P[22][0]*t2*t5-P[22][4]*t2*t7+P[22][1]*t2*t15+P[22][6]*t2*t10+P[22][2]*t2*t19-P[22][3]*t2*t22+P[22][5]*t2*t27);
+                Kfusion[23] = t78*(P[23][0]*t2*t5-P[23][4]*t2*t7+P[23][1]*t2*t15+P[23][6]*t2*t10+P[23][2]*t2*t19-P[23][3]*t2*t22+P[23][5]*t2*t27);
+            } else {
+                // zero indexes 22 to 23 = 2*4 bytes
+                memset(&Kfusion[22], 0, 8);
             }
 
         } else {
@@ -614,19 +626,25 @@ void NavEKF3_core::FuseOptFlow()
             Kfusion[7] = -t78*(P[7][0]*t2*t5+P[7][5]*t2*t8-P[7][6]*t2*t10+P[7][1]*t2*t16-P[7][2]*t2*t19+P[7][3]*t2*t22+P[7][4]*t2*t27);
             Kfusion[8] = -t78*(P[8][0]*t2*t5+P[8][5]*t2*t8-P[8][6]*t2*t10+P[8][1]*t2*t16-P[8][2]*t2*t19+P[8][3]*t2*t22+P[8][4]*t2*t27);
             Kfusion[9] = -t78*(P[9][0]*t2*t5+P[9][5]*t2*t8-P[9][6]*t2*t10+P[9][1]*t2*t16-P[9][2]*t2*t19+P[9][3]*t2*t22+P[9][4]*t2*t27);
-            Kfusion[10] = -t78*(P[10][0]*t2*t5+P[10][5]*t2*t8-P[10][6]*t2*t10+P[10][1]*t2*t16-P[10][2]*t2*t19+P[10][3]*t2*t22+P[10][4]*t2*t27);
-            Kfusion[11] = -t78*(P[11][0]*t2*t5+P[11][5]*t2*t8-P[11][6]*t2*t10+P[11][1]*t2*t16-P[11][2]*t2*t19+P[11][3]*t2*t22+P[11][4]*t2*t27);
-            Kfusion[12] = -t78*(P[12][0]*t2*t5+P[12][5]*t2*t8-P[12][6]*t2*t10+P[12][1]*t2*t16-P[12][2]*t2*t19+P[12][3]*t2*t22+P[12][4]*t2*t27);
-            Kfusion[13] = -t78*(P[13][0]*t2*t5+P[13][5]*t2*t8-P[13][6]*t2*t10+P[13][1]*t2*t16-P[13][2]*t2*t19+P[13][3]*t2*t22+P[13][4]*t2*t27);
-            Kfusion[14] = -t78*(P[14][0]*t2*t5+P[14][5]*t2*t8-P[14][6]*t2*t10+P[14][1]*t2*t16-P[14][2]*t2*t19+P[14][3]*t2*t22+P[14][4]*t2*t27);
-            Kfusion[15] = -t78*(P[15][0]*t2*t5+P[15][5]*t2*t8-P[15][6]*t2*t10+P[15][1]*t2*t16-P[15][2]*t2*t19+P[15][3]*t2*t22+P[15][4]*t2*t27);
-            if (!inhibitWindStates) {
-                Kfusion[22] = -t78*(P[22][0]*t2*t5+P[22][5]*t2*t8-P[22][6]*t2*t10+P[22][1]*t2*t16-P[22][2]*t2*t19+P[22][3]*t2*t22+P[22][4]*t2*t27);
-                Kfusion[23] = -t78*(P[23][0]*t2*t5+P[23][5]*t2*t8-P[23][6]*t2*t10+P[23][1]*t2*t16-P[23][2]*t2*t19+P[23][3]*t2*t22+P[23][4]*t2*t27);
+
+            if (!inhibitDelAngBiasStates) {
+                Kfusion[10] = -t78*(P[10][0]*t2*t5+P[10][5]*t2*t8-P[10][6]*t2*t10+P[10][1]*t2*t16-P[10][2]*t2*t19+P[10][3]*t2*t22+P[10][4]*t2*t27);
+                Kfusion[11] = -t78*(P[11][0]*t2*t5+P[11][5]*t2*t8-P[11][6]*t2*t10+P[11][1]*t2*t16-P[11][2]*t2*t19+P[11][3]*t2*t22+P[11][4]*t2*t27);
+                Kfusion[12] = -t78*(P[12][0]*t2*t5+P[12][5]*t2*t8-P[12][6]*t2*t10+P[12][1]*t2*t16-P[12][2]*t2*t19+P[12][3]*t2*t22+P[12][4]*t2*t27);
             } else {
-                Kfusion[22] = 0.0f;
-                Kfusion[23] = 0.0f;
+                // zero indexes 10 to 12 = 3*4 bytes
+                memset(&Kfusion[10], 0, 12);
             }
+
+            if (!inhibitDelVelBiasStates) {
+                Kfusion[13] = -t78*(P[13][0]*t2*t5+P[13][5]*t2*t8-P[13][6]*t2*t10+P[13][1]*t2*t16-P[13][2]*t2*t19+P[13][3]*t2*t22+P[13][4]*t2*t27);
+                Kfusion[14] = -t78*(P[14][0]*t2*t5+P[14][5]*t2*t8-P[14][6]*t2*t10+P[14][1]*t2*t16-P[14][2]*t2*t19+P[14][3]*t2*t22+P[14][4]*t2*t27);
+                Kfusion[15] = -t78*(P[15][0]*t2*t5+P[15][5]*t2*t8-P[15][6]*t2*t10+P[15][1]*t2*t16-P[15][2]*t2*t19+P[15][3]*t2*t22+P[15][4]*t2*t27);
+            } else {
+                // zero indexes 13 to 15 = 3*4 bytes
+                memset(&Kfusion[13], 0, 12);
+            }
+
             if (!inhibitMagStates) {
                 Kfusion[16] = -t78*(P[16][0]*t2*t5+P[16][5]*t2*t8-P[16][6]*t2*t10+P[16][1]*t2*t16-P[16][2]*t2*t19+P[16][3]*t2*t22+P[16][4]*t2*t27);
                 Kfusion[17] = -t78*(P[17][0]*t2*t5+P[17][5]*t2*t8-P[17][6]*t2*t10+P[17][1]*t2*t16-P[17][2]*t2*t19+P[17][3]*t2*t22+P[17][4]*t2*t27);
@@ -635,9 +653,16 @@ void NavEKF3_core::FuseOptFlow()
                 Kfusion[20] = -t78*(P[20][0]*t2*t5+P[20][5]*t2*t8-P[20][6]*t2*t10+P[20][1]*t2*t16-P[20][2]*t2*t19+P[20][3]*t2*t22+P[20][4]*t2*t27);
                 Kfusion[21] = -t78*(P[21][0]*t2*t5+P[21][5]*t2*t8-P[21][6]*t2*t10+P[21][1]*t2*t16-P[21][2]*t2*t19+P[21][3]*t2*t22+P[21][4]*t2*t27);
             } else {
-                for (uint8_t i = 16; i <= 21; i++) {
-                    Kfusion[i] = 0.0f;
-                }
+                // zero indexes 16 to 21 = 6*4 bytes
+                memset(&Kfusion[16], 0, 24);
+            }
+
+            if (!inhibitWindStates) {
+                Kfusion[22] = -t78*(P[22][0]*t2*t5+P[22][5]*t2*t8-P[22][6]*t2*t10+P[22][1]*t2*t16-P[22][2]*t2*t19+P[22][3]*t2*t22+P[22][4]*t2*t27);
+                Kfusion[23] = -t78*(P[23][0]*t2*t5+P[23][5]*t2*t8-P[23][6]*t2*t10+P[23][1]*t2*t16-P[23][2]*t2*t19+P[23][3]*t2*t22+P[23][4]*t2*t27);
+            } else {
+                // zero indexes 22 to 23 = 2*4 bytes
+                memset(&Kfusion[22], 0, 8);
             }
         }
 
@@ -651,7 +676,7 @@ void NavEKF3_core::FuseOptFlow()
             // notify first time only
             if (!flowFusionActive) {
                 flowFusionActive = true;
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing optical flow",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing optical flow",(unsigned)imu_index);
             }
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the

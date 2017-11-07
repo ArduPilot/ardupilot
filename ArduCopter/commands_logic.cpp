@@ -117,10 +117,10 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
 #if AC_FENCE == ENABLED
         if (cmd.p1 == 0) { //disable
             copter.fence.enable(false);
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Fence Disabled");
+            gcs().send_text(MAV_SEVERITY_INFO, "Fence Disabled");
         } else { //enable fence
             copter.fence.enable(true);
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Fence Enabled");
+            gcs().send_text(MAV_SEVERITY_INFO, "Fence Enabled");
         }
 #endif //AC_FENCE == ENABLED
         break;
@@ -160,6 +160,10 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+    case MAV_CMD_DO_WINCH:                             // Mission command to control winch
+        do_winch(cmd);
+        break;
+
     default:
         // do nothing with unrecognized MAVLink messages
         break;
@@ -182,7 +186,7 @@ bool Copter::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 
         // send message to GCS
         if (cmd_complete) {
-            gcs_send_mission_item_reached_message(cmd.index);
+            gcs().send_mission_item_reached_message(cmd.index);
         }
 
         return cmd_complete;
@@ -269,11 +273,12 @@ bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_GRIPPER:
     case MAV_CMD_DO_GUIDED_LIMITS:
     case MAV_CMD_DO_FENCE_ENABLE:
+    case MAV_CMD_DO_WINCH:
         return true;
 
     default:
         // error message
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
+        gcs().send_text(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
@@ -593,7 +598,7 @@ void Copter::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         // absolute delay to utc time
         nav_delay_time_max = hal.util->get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
 }
 
 #if PARACHUTE == ENABLED
@@ -650,6 +655,29 @@ void Copter::do_guided_limits(const AP_Mission::Mission_Command& cmd)
                      cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
 }
 #endif
+
+// control winch based on mission command
+void Copter::do_winch(const AP_Mission::Mission_Command& cmd)
+{
+    // Note: we ignore the gripper num parameter because we only support one gripper
+    switch (cmd.content.winch.action) {
+        case WINCH_RELAXED:
+            g2.winch.relax();
+            Log_Write_Event(DATA_WINCH_RELAXED);
+            break;
+        case WINCH_RELATIVE_LENGTH_CONTROL:
+            g2.winch.release_length(cmd.content.winch.release_length, cmd.content.winch.release_rate);
+            Log_Write_Event(DATA_WINCH_LENGTH_CONTROL);
+            break;
+        case WINCH_RATE_CONTROL:
+            g2.winch.set_desired_rate(cmd.content.winch.release_rate);
+            Log_Write_Event(DATA_WINCH_RATE_CONTROL);
+            break;
+        default:
+            // do nothing
+            break;
+    }
+}
 
 /********************************************************************************/
 //	Verify Nav (Must) commands
@@ -727,7 +755,7 @@ bool Copter::verify_payload_place()
         case PayloadPlaceStateType_Calibrating_Hover:
         case PayloadPlaceStateType_Descending_Start:
         case PayloadPlaceStateType_Descending:
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "NAV_PLACE: landed");
+            gcs().send_text(MAV_SEVERITY_INFO, "NAV_PLACE: landed");
             nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
             break;
         case PayloadPlaceStateType_Releasing_Start:
@@ -748,14 +776,14 @@ bool Copter::verify_payload_place()
         // we're there; set loiter target
         auto_payload_place_start(wp_nav->get_wp_destination());
         nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
-        // no break
+        FALLTHROUGH;
     case PayloadPlaceStateType_Calibrating_Hover_Start:
         // hover for 1 second to get an idea of what our hover
         // throttle looks like
         debug("Calibrate start");
         nav_payload_place.hover_start_timestamp = now;
         nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover;
-        // no break
+        FALLTHROUGH;
     case PayloadPlaceStateType_Calibrating_Hover: {
         if (now - nav_payload_place.hover_start_timestamp < hover_throttle_calibrate_time) {
             // still calibrating...
@@ -765,23 +793,23 @@ bool Copter::verify_payload_place()
         // we have a valid calibration.  Hopefully.
         nav_payload_place.hover_throttle_level = current_throttle_level;
         const float hover_throttle_delta = fabsf(nav_payload_place.hover_throttle_level - motors->get_throttle_hover());
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "hover throttle delta: %f", static_cast<double>(hover_throttle_delta));
+        gcs().send_text(MAV_SEVERITY_INFO, "hover throttle delta: %f", static_cast<double>(hover_throttle_delta));
         nav_payload_place.state = PayloadPlaceStateType_Descending_Start;
         }
-        // no break
+        FALLTHROUGH;
     case PayloadPlaceStateType_Descending_Start:
         nav_payload_place.descend_start_timestamp = now;
         nav_payload_place.descend_start_altitude = inertial_nav.get_altitude();
         nav_payload_place.descend_throttle_level = 0;
         nav_payload_place.state = PayloadPlaceStateType_Descending;
-        // no break
+        FALLTHROUGH;
     case PayloadPlaceStateType_Descending:
         // make sure we don't descend too far:
         debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()), nav_payload_place.descend_max);
         if (!is_zero(nav_payload_place.descend_max) &&
             nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()  > nav_payload_place.descend_max) {
             nav_payload_place.state = PayloadPlaceStateType_Ascending;
-            gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Reached maximum descent");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Reached maximum descent");
             return false; // we'll do any cleanups required next time through the loop
         }
         // see if we've been descending long enough to calibrate a descend-throttle-level:
@@ -808,22 +836,22 @@ bool Copter::verify_payload_place()
             return false;
         }
         nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
-        // no break
+        FALLTHROUGH;
     case PayloadPlaceStateType_Releasing_Start:
 #if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid()) {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Releasing the gripper");
+            gcs().send_text(MAV_SEVERITY_INFO, "Releasing the gripper");
             g2.gripper.release();
         } else {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Gripper not valid");
+            gcs().send_text(MAV_SEVERITY_INFO, "Gripper not valid");
             nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
             break;
         }
 #else
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Gripper code disabled");
+        gcs().send_text(MAV_SEVERITY_INFO, "Gripper code disabled");
 #endif
         nav_payload_place.state = PayloadPlaceStateType_Releasing;
-        // no break
+        FALLTHROUGH;
     case PayloadPlaceStateType_Releasing:
 #if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid() && !g2.gripper.released()) {
@@ -831,24 +859,24 @@ bool Copter::verify_payload_place()
         }
 #endif
         nav_payload_place.state = PayloadPlaceStateType_Released;
-        // no break
+        FALLTHROUGH;
     case PayloadPlaceStateType_Released: {
         nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
         }
-        // no break
+        FALLTHROUGH;
     case PayloadPlaceStateType_Ascending_Start: {
         Location_Class target_loc = inertial_nav.get_position();
         target_loc.alt = nav_payload_place.descend_start_altitude;
         auto_wp_start(target_loc);
         nav_payload_place.state = PayloadPlaceStateType_Ascending;
         }
-        // no break
+        FALLTHROUGH;
     case PayloadPlaceStateType_Ascending:
         if (!wp_nav->reached_wp_destination()) {
             return false;
         }
         nav_payload_place.state = PayloadPlaceStateType_Done;
-        // no break
+        FALLTHROUGH;
     case PayloadPlaceStateType_Done:
         return true;
     default:
@@ -879,7 +907,7 @@ bool Copter::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }else{
         return false;
@@ -961,7 +989,7 @@ bool Copter::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }else{
         return false;
@@ -1014,7 +1042,7 @@ void Copter::do_yaw(const AP_Mission::Mission_Command& cmd)
 		cmd.content.yaw.angle_deg,
 		cmd.content.yaw.turn_rate_dps,
 		cmd.content.yaw.direction,
-		cmd.content.yaw.relative_angle);
+		cmd.content.yaw.relative_angle > 0);
 }
 
 
@@ -1102,9 +1130,9 @@ void Copter::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void Copter::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if(cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
-        set_home_to_current_location();
+        set_home_to_current_location(false);
     } else {
-        set_home(cmd.content.location);
+        set_home(cmd.content.location, false);
     }
 }
 
@@ -1134,36 +1162,12 @@ void Copter::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 // do_digicam_control Send Digicam Control message with the camera library
 void Copter::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
-    if (camera.control(cmd.content.digicam_control.session,
-                       cmd.content.digicam_control.zoom_pos,
-                       cmd.content.digicam_control.zoom_step,
-                       cmd.content.digicam_control.focus_lock,
-                       cmd.content.digicam_control.shooting_cmd,
-                       cmd.content.digicam_control.cmd_id)) {
-        log_picture();
-    }
-}
-
-// do_take_picture - take a picture with the camera library
-void Copter::do_take_picture()
-{
-    camera.trigger_pic(true);
-    log_picture();
-}
-
-// log_picture - log picture taken and send feedback to GCS
-void Copter::log_picture()
-{
-    if (!camera.using_feedback_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    } else {
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
-        }      
-    }
+    camera.control(cmd.content.digicam_control.session,
+                   cmd.content.digicam_control.zoom_pos,
+                   cmd.content.digicam_control.zoom_step,
+                   cmd.content.digicam_control.focus_lock,
+                   cmd.content.digicam_control.shooting_cmd,
+                   cmd.content.digicam_control.cmd_id);
 }
 
 #endif

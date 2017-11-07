@@ -103,16 +103,16 @@ TEST(MathTest, Square)
 
 TEST(MathTest, Norm)
 {
-    float norm_1 = norm(1);
+    float norm_1 = norm(1, 4.2);
     float norm_2 = norm(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1);
-    float norm_3 = norm(0);
+    float norm_3 = norm(0, 5.3);
     float norm_4 = norm(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
     float norm_5 = norm(3,4);
     float norm_6 = norm(4,3,12);
 
-    EXPECT_EQ(norm_1, 1.f);
+    EXPECT_FLOAT_EQ(norm_1, 4.3174066f);
     EXPECT_EQ(norm_2, 4.f);
-    EXPECT_EQ(norm_3, 0.f);
+    EXPECT_EQ(norm_3, 5.3f);
     EXPECT_EQ(norm_4, 0.f);
     EXPECT_EQ(norm_5, 5.f);
     EXPECT_EQ(norm_6, 13.f);

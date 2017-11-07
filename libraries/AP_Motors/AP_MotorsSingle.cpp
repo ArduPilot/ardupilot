@@ -42,7 +42,7 @@ void AP_MotorsSingle::init(motor_frame_class frame_class, motor_frame_type frame
     _servo3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
     _servo4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
     if (!_servo1 || !_servo2 || !_servo3 || !_servo4) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "MotorsSingle: unable to setup output channels");
+        gcs().send_text(MAV_SEVERITY_ERROR, "MotorsSingle: unable to setup output channels");
         // don't set initialised_ok
         return;
     }
@@ -76,18 +76,6 @@ void AP_MotorsSingle::set_update_rate( uint16_t speed_hz )
         1U << AP_MOTORS_MOT_5 |
         1U << AP_MOTORS_MOT_6 ;
     rc_set_freq(mask, _speed_hz);
-}
-
-// enable - starts allowing signals to be sent to motors
-void AP_MotorsSingle::enable()
-{
-    // enable output channels
-    rc_enable_ch(AP_MOTORS_MOT_1);
-    rc_enable_ch(AP_MOTORS_MOT_2);
-    rc_enable_ch(AP_MOTORS_MOT_3);
-    rc_enable_ch(AP_MOTORS_MOT_4);
-    rc_enable_ch(AP_MOTORS_MOT_5);
-    rc_enable_ch(AP_MOTORS_MOT_6);
 }
 
 void AP_MotorsSingle::output_to_motors()

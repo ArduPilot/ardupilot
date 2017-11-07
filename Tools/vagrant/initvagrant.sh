@@ -9,7 +9,7 @@ echo "Initial setup of SITL-vagrant instance."
 
 BASE_PKGS="gawk make git arduino-core curl"
 SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk3.0 python-scipy python-opencv python-numpy python-empy python-pyparsing ccache"
-PYTHON_PKGS="pymavlink MAVProxy droneapi future"
+PYTHON_PKGS="pymavlink MAVProxy droneapi future pexpect"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
           zip genromfs cmake"
@@ -20,6 +20,7 @@ UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.9-base:i386 libstdc++5:i386 libstdc
 ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
 ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL"
+ARM_HF_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
 
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
@@ -30,8 +31,8 @@ usermod -a -G dialout $VAGRANT_USER
 
 apt-get -y remove modemmanager
 apt-get -y update
-apt-get -y install dos2unix g++-4.7 ccache python-lxml screen xterm gdb
-apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS
+apt-get -y install dos2unix g++-4.7 ccache python-lxml screen xterm gdb pkgconf
+apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $ARM_HF_PKGS
 pip -q install $PYTHON_PKGS
 easy_install catkin_pkg
 
@@ -66,6 +67,7 @@ source /vagrant/Tools/vagrant/shellinit.sh
 # It is only marginally less efficient on Linux
 export PX4_WINTOOL=y
 export PATH=\$PATH:\$HOME/jsbsim/src
+export BUILDLOGS=/tmp/buildlogs
 "
 
 echo "$PROFILE_TEXT" | sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DOT_PROFILE
@@ -73,8 +75,11 @@ sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER
 
 # build JSB sim
 apt-get install -y libtool libtool-bin automake autoconf libexpat1-dev
-sudo -u $VAGRANT_USER sh <<"EOF"
-cd $HOME
+sudo -u $VAGRANT_USER -H bash <<"EOF"
+set -e
+set -x
+
+cd
 rm -rf jsbsim
 git clone https://github.com/tridge/jsbsim.git
 cd jsbsim

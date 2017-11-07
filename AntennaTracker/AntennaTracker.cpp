@@ -18,7 +18,10 @@
  */
 
 #include "Tracker.h"
+
+#define FORCE_VERSION_H_INCLUDE
 #include "version.h"
+#undef FORCE_VERSION_H_INCLUDE
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(Tracker, &tracker, func, _interval_ticks, _max_time_micros)
 
@@ -41,6 +44,7 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(barometer_accumulate,   50,    900),
     SCHED_TASK(ten_hz_logging_loop,    10,    300),
     SCHED_TASK(dataflash_periodic,     50,    300),
+    SCHED_TASK(ins_periodic,           50,     50),
     SCHED_TASK(update_notify,          50,    100),
     SCHED_TASK(check_usb_mux,          10,    300),
     SCHED_TASK(gcs_retry_deferred,     50,   1000),
@@ -82,10 +86,15 @@ void Tracker::dataflash_periodic(void)
     DataFlash.periodic_tasks();
 }
 
+void Tracker::ins_periodic()
+{
+    ins.periodic();
+}
+
 void Tracker::one_second_loop()
 {
     // send a heartbeat
-    gcs_send_message(MSG_HEARTBEAT);
+    gcs().send_message(MSG_HEARTBEAT);
 
     // make it possible to change orientation at runtime
     ahrs.set_orientation();
@@ -125,7 +134,7 @@ void Tracker::ten_hz_logging_loop()
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Tracker::Tracker(void)
-    : DataFlash{FIRMWARE_STRING}
+    : DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask))
 {
     memset(&current_loc, 0, sizeof(current_loc));
     memset(&vehicle, 0, sizeof(vehicle));

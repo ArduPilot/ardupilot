@@ -21,7 +21,7 @@ void Plane::update_soaring() {
     case FLY_BY_WIRE_B:
     case CRUISE:
         if (!g2.soaring_controller.suppress_throttle()) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Soaring: forcing RTL");
+            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: forcing RTL");
             set_mode(RTL, MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING);
         }
         break;
@@ -48,7 +48,7 @@ void Plane::update_soaring() {
         g2.soaring_controller.update_cruising();
 
         if (g2.soaring_controller.check_thermal_criteria()) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering loiter");
+            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering loiter");
             set_mode(LOITER, MODE_REASON_SOARING_THERMAL_DETECTED);
         }
         break;
@@ -61,14 +61,14 @@ void Plane::update_soaring() {
             // Exit as soon as thermal state estimate deteriorates
             switch (previous_mode) {
             case FLY_BY_WIRE_B:
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Soaring: Thermal ended, entering RTL");
+                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, entering RTL");
                 set_mode(RTL, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 break;
 
             case CRUISE: {
                 // return to cruise with old ground course
                 CruiseState cruise = cruise_state;
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring CRUISE");
+                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring CRUISE");
                 set_mode(CRUISE, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 cruise_state = cruise;
                 set_target_altitude_current();
@@ -76,7 +76,7 @@ void Plane::update_soaring() {
             }
 
             case AUTO:
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring AUTO");
+                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring AUTO");
                 set_mode(AUTO, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 break;
 

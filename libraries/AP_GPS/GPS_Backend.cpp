@@ -24,7 +24,7 @@
  # define Debug(fmt, args ...)
 #endif
 
-#include <GCS_MAVLink/GCS.h> // for send_statustext_all
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -105,8 +105,8 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     ret -= 272764785UL;
 
     // get GPS week and time
-    state.time_week = ret / SEC_PER_WEEK;
-    state.time_week_ms = (ret % SEC_PER_WEEK) * MSEC_PER_SEC;
+    state.time_week = ret / AP_SEC_PER_WEEK;
+    state.time_week_ms = (ret % AP_SEC_PER_WEEK) * AP_MSEC_PER_SEC;
     state.time_week_ms += msec;
 }
 
@@ -141,7 +141,7 @@ void AP_GPS_Backend::_detection_message(char *buffer, const uint8_t buflen) cons
     const uint8_t instance = state.instance;
     const struct AP_GPS::detect_state dstate = gps.detect_state[instance];
 
-    if (dstate.detect_started_ms > 0) {
+    if (dstate.auto_detected_baud) {
         hal.util->snprintf(buffer, buflen,
                  "GPS %d: detected as %s at %d baud",
                  instance + 1,
@@ -160,12 +160,69 @@ void AP_GPS_Backend::broadcast_gps_type() const
 {
     char buffer[64];
     _detection_message(buffer, sizeof(buffer));
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, buffer);
+    gcs().send_text(MAV_SEVERITY_INFO, buffer);
 }
 
 void AP_GPS_Backend::Write_DataFlash_Log_Startup_messages() const
 {
     char buffer[64];
     _detection_message(buffer, sizeof(buffer));
-    gps._DataFlash->Log_Write_Message(buffer);
+    DataFlash_Class::instance()->Log_Write_Message(buffer);
 }
+
+bool AP_GPS_Backend::should_df_log() const
+{
+    DataFlash_Class *instance = DataFlash_Class::instance();
+    if (instance == nullptr) {
+        return false;
+    }
+    if (gps._log_gps_bit == (uint32_t)-1) {
+        return false;
+    }
+    if (!instance->should_log(gps._log_gps_bit)) {
+        return false;
+    }
+    return true;
+}
+
+
+void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
+{
+    const uint8_t instance = state.instance;
+    // send status
+    switch (instance) {
+        case 0:
+            mavlink_msg_gps_rtk_send(chan,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_week_number,
+                                 state.rtk_time_week_ms,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_num_sats,
+                                 state.rtk_baseline_coords_type,
+                                 state.rtk_baseline_x_mm,
+                                 state.rtk_baseline_y_mm,
+                                 state.rtk_baseline_z_mm,
+                                 state.rtk_accuracy,
+                                 state.rtk_iar_num_hypotheses);
+            break;
+        case 1:
+            mavlink_msg_gps2_rtk_send(chan,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_week_number,
+                                 state.rtk_time_week_ms,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_num_sats,
+                                 state.rtk_baseline_coords_type,
+                                 state.rtk_baseline_x_mm,
+                                 state.rtk_baseline_y_mm,
+                                 state.rtk_baseline_z_mm,
+                                 state.rtk_accuracy,
+                                 state.rtk_iar_num_hypotheses);
+            break;
+    }
+}
+

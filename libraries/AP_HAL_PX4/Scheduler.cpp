@@ -104,9 +104,17 @@ void PX4Scheduler::create_uavcan_thread()
     (void) pthread_attr_setschedparam(&thread_attr, &param);
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
-    pthread_create(&_uavcan_thread_ctx, &thread_attr, &PX4Scheduler::_uavcan_thread, this);
+    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+        if (hal.can_mgr[i] != nullptr) {
+            if (hal.can_mgr[i]->get_UAVCAN() != nullptr) {
+                _uavcan_thread_arg *arg = new _uavcan_thread_arg;
+                arg->sched = this;
+                arg->uavcan_number = i;
 
-    printf("UAVCAN thread started\n\r");
+                pthread_create(&_uavcan_thread_ctx, &thread_attr, &PX4Scheduler::_uavcan_thread, arg);
+            }
+        }
+    }
 #endif
 }
 
@@ -165,7 +173,7 @@ void PX4Scheduler::delay_microseconds_boost(uint16_t usec)
 
 void PX4Scheduler::delay(uint16_t ms)
 {
-    if (in_timerprocess()) {
+    if (!in_main_thread()) {
         ::printf("ERROR: delay() from timer process\n");
         return;
     }
@@ -408,18 +416,21 @@ void *PX4Scheduler::_storage_thread(void *arg)
 #if HAL_WITH_UAVCAN
 void *PX4Scheduler::_uavcan_thread(void *arg)
 {
-    PX4Scheduler *sched = (PX4Scheduler *) arg;
+    PX4Scheduler *sched = ((_uavcan_thread_arg *) arg)->sched;
+    uint8_t uavcan_number = ((_uavcan_thread_arg *) arg)->uavcan_number;
 
-    pthread_setname_np(pthread_self(), "apm_uavcan");
+    char name[15];
+    snprintf(name, sizeof(name), "apm_uavcan:%u", uavcan_number);
+    pthread_setname_np(pthread_self(), name);
 
     while (!sched->_hal_initialized) {
         poll(nullptr, 0, 1);
     }
 
     while (!_px4_thread_should_exit) {
-        if (((PX4CANManager *)hal.can_mgr)->is_initialized()) {
-            if (((PX4CANManager *)hal.can_mgr)->get_UAVCAN() != nullptr) {
-                (((PX4CANManager *)hal.can_mgr)->get_UAVCAN())->do_cyclic();
+        if (((PX4CANManager *)hal.can_mgr[uavcan_number])->is_initialized()) {
+            if (((PX4CANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN() != nullptr) {
+                (((PX4CANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN())->do_cyclic();
             } else {
                 sched->delay_microseconds_semaphore(10000);
             }
@@ -427,13 +438,14 @@ void *PX4Scheduler::_uavcan_thread(void *arg)
             sched->delay_microseconds_semaphore(10000);
         }
     }
+
     return nullptr;
 }
 #endif
 
-bool PX4Scheduler::in_timerprocess()
+bool PX4Scheduler::in_main_thread() const
 {
-    return getpid() != _main_task_pid;
+    return getpid() == _main_task_pid;
 }
 
 void PX4Scheduler::system_initialized()

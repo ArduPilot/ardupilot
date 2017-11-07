@@ -5,6 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <RC_Channel/RC_Channel.h>
 
 class AP_Arming {
 public:
@@ -37,9 +38,6 @@ public:
         YES_ZERO_PWM = 2
     };
 
-    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-              const AP_BattMonitor &battery);
-
     // these functions should not be used by Copter which holds the armed state in the motors library
     ArmingRequired arming_required();
     virtual bool arm(uint8_t method);
@@ -63,6 +61,9 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
+    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
+              const AP_BattMonitor &battery);
+
     // Parameters
     AP_Int8                 require;
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
@@ -103,5 +104,7 @@ protected:
     bool manual_transmitter_checks(bool report);
 
     virtual enum HomeState home_status() const = 0;
+
+    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4], const bool check_min_max = true) const;
 
 };

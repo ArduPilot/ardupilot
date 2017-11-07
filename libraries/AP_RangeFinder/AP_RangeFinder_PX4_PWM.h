@@ -21,16 +21,22 @@ class AP_RangeFinder_PX4_PWM : public AP_RangeFinder_Backend
 {
 public:
     // constructor
-    AP_RangeFinder_PX4_PWM(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state);
+    AP_RangeFinder_PX4_PWM(RangeFinder::RangeFinder_State &_state, AP_Int16 &powersave_range, float &_estimated_terrain_height);
 
     // destructor
     ~AP_RangeFinder_PX4_PWM(void);
     
     // static detection function
-    static bool detect(RangeFinder &ranger, uint8_t instance);
+    static bool detect();
 
     // update state
     void update(void);
+
+protected:
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_UNKNOWN;
+    }
 
 private:
     int _fd;
@@ -39,4 +45,13 @@ private:
     uint32_t _disable_time_ms;
     uint32_t _good_sample_count;
     float _last_sample_distance_cm;
+
+    AP_Int16 &_powersave_range;
+    float &estimated_terrain_height;
+
+    // return true if we are beyond the power saving range
+    bool out_of_range(void) const {
+        return _powersave_range > 0 && estimated_terrain_height > _powersave_range;
+    }
+
 };

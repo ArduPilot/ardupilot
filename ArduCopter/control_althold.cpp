@@ -8,13 +8,6 @@
 // althold_init - initialise althold controller
 bool Copter::althold_init(bool ignore_checks)
 {
-#if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter Alt Hold if the Rotor Runup is not complete
-    if (!ignore_checks && !motors->rotor_runup_complete()){
-        return false;
-    }
-#endif
-
     // initialize vertical speeds and leash lengths
     pos_control->set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control->set_accel_z(g.pilot_accel_z);
@@ -81,18 +74,24 @@ void Copter::althold_run()
 
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_yaw_target_to_current_heading();
 #if FRAME_CONFIG == HELI_FRAME    
         // force descent rate and call position controller
         pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
+        heli_flags.init_targets_on_arming=true;
 #else
-        attitude_control->reset_rate_controller_I_terms();
-        attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
 #endif
         pos_control->update_z_controller();
         break;
 
     case AltHold_Takeoff:
+#if FRAME_CONFIG == HELI_FRAME    
+        if (heli_flags.init_targets_on_arming) {
+            heli_flags.init_targets_on_arming=false;
+        }
+#endif
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
@@ -128,8 +127,18 @@ void Copter::althold_run()
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
 
+#if FRAME_CONFIG == HELI_FRAME    
+        if (heli_flags.init_targets_on_arming) {
+            attitude_control->reset_rate_controller_I_terms();
+            attitude_control->set_yaw_target_to_current_heading();
+            if (motors->get_interlock()) {
+                heli_flags.init_targets_on_arming=false;
+            }
+        }
+#else
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
+#endif
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         pos_control->update_z_controller();

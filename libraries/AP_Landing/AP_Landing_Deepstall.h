@@ -20,12 +20,13 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_Navigation/AP_Navigation.h>
+#include <GCS_MAVLink/GCS.h>
 #include <PID/PID.h>
 
 class AP_Landing;
 
-/// @class  AP_Landing
-/// @brief  Class managing ArduPlane landing methods
+/// @class  AP_Landing_Deepstall
+/// @brief  Class managing Plane Deepstall landing methods
 class AP_Landing_Deepstall
 {
 private:
@@ -66,6 +67,8 @@ private:
     AP_Float L1_i;
     AP_Float yaw_rate_limit;
     AP_Float time_constant;
+    AP_Float min_abort_alt;
+    AP_Float aileron_scalar;
     int32_t loiter_sum_cd;         // used for tracking the progress on loitering
     deepstall_stage stage;
     Location landing_point;
@@ -81,6 +84,9 @@ private:
     float L1_xtrack_i;             // L1 integrator for navigation
     PID ds_PID;
     int32_t last_target_bearing;   // used for tracking the progress on loitering
+    float crosstrack_error; // current crosstrack error
+    float predicted_travel_distance; // distance the aircraft is perdicted to travel during deepstall
+    bool hold_level; // locks the target yaw rate of the aircraft to 0, serves to hold the aircraft level at all times
 
     //public AP_Landing interface
     void do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
@@ -95,12 +101,18 @@ private:
     bool get_target_altitude_location(Location &location);
     int32_t get_target_airspeed_cm(void) const;
     bool is_throttle_suppressed(void) const;
+    bool is_flying_forward(void) const;
+    bool is_on_approach(void) const;
+    bool terminate(void);
+    void log(void) const;
+
+    bool send_deepstall_message(mavlink_channel_t chan) const;
 
     const DataFlash_Class::PID_Info& get_pid_info(void) const;
 
     //private helpers
-    void build_approach_path();
-    float predict_travel_distance(const Vector3f wind, const float height) const;
+    void build_approach_path(bool use_current_heading);
+    float predict_travel_distance(const Vector3f wind, const float height, const bool print);
     bool verify_breakout(const Location &current_loc, const Location &target_loc, const float height_error) const;
     float update_steering(void);
 

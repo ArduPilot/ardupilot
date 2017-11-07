@@ -22,6 +22,7 @@
 #include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <utility>
 #include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
@@ -58,8 +59,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: USE
     // @DisplayName: Airspeed use
-    // @Description: use airspeed for flight control
-    // @Values: 1:Use,0:Don't Use
+    // @Description: use airspeed for flight control. When set to 0 airspeed sensor can be logged and displayed on a GCS but won't be used for flight. When set to 1 it will be logged and used. When set to 2 it will be only used when the throttle is zero, which can be useful in gliders with airspeed sensors behind a propeller
+    // @Values: 0:Don't Use,1:use,2:UseWhenZeroThrottle
     // @User: Standard
     AP_GROUPINFO("USE",    1, AP_Airspeed, _use, 0),
 
@@ -161,7 +162,7 @@ void AP_Airspeed::init()
         break;
     }
     if (sensor && !sensor->init()) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed init failed");
+        gcs().send_text(MAV_SEVERITY_INFO, "Airspeed init failed");
         delete sensor;
         sensor = nullptr;
     }
@@ -222,9 +223,9 @@ void AP_Airspeed::update_calibration(float raw_pressure)
     if (AP_HAL::millis() - _cal.start_ms >= 1000 &&
         _cal.read_count > 15) {
         if (_cal.count == 0) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor unhealthy");
+            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed sensor unhealthy");
         } else {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Airspeed sensor calibrated");
+            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed sensor calibrated");
             _offset.set_and_save(_cal.sum / _cal.count);
         }
         _cal.start_ms = 0;
@@ -255,15 +256,23 @@ void AP_Airspeed::read(void)
     // remember raw pressure for logging
     _corrected_pressure = airspeed_pressure;
 
+    // filter before clamping positive
+    _filtered_pressure      = 0.7f * _filtered_pressure  +  0.3f * airspeed_pressure;
+
     /*
-      we support different pitot tube setups so used can choose if
+      we support different pitot tube setups so user can choose if
       they want to be able to detect pressure on the static port
      */
     switch ((enum pitot_tube_order)_tube_order.get()) {
     case PITOT_TUBE_ORDER_NEGATIVE:
-        airspeed_pressure = -airspeed_pressure;
-        // no break
+        _last_pressure          = -airspeed_pressure;
+        _raw_airspeed           = sqrtf(MAX(-airspeed_pressure, 0) * _ratio);
+        _airspeed               = sqrtf(MAX(-_filtered_pressure, 0) * _ratio);
+        break;
     case PITOT_TUBE_ORDER_POSITIVE:
+        _last_pressure          = airspeed_pressure;
+        _raw_airspeed           = sqrtf(MAX(airspeed_pressure, 0) * _ratio);
+        _airspeed               = sqrtf(MAX(_filtered_pressure, 0) * _ratio);
         if (airspeed_pressure < -32) {
             // we're reading more than about -8m/s. The user probably has
             // the ports the wrong way around
@@ -272,13 +281,12 @@ void AP_Airspeed::read(void)
         break;
     case PITOT_TUBE_ORDER_AUTO:
     default:
-        airspeed_pressure = fabsf(airspeed_pressure);
+        _last_pressure          = fabsf(airspeed_pressure);
+        _raw_airspeed           = sqrtf(fabsf(airspeed_pressure) * _ratio);
+        _airspeed               = sqrtf(fabsf(_filtered_pressure) * _ratio);
         break;
     }
-    airspeed_pressure       = MAX(airspeed_pressure, 0);
-    _last_pressure          = airspeed_pressure;
-    _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
-    _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
+
     _last_update_ms         = AP_HAL::millis();
 }
 
@@ -291,4 +299,18 @@ void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
     _hil_pressure = diff_pressure;
     _hil_set = true;
     _healthy = true;
+}
+
+bool AP_Airspeed::use(void) const
+{
+    if (!enabled() || !_use) {
+        return false;
+    }
+    if (_use == 2 && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != 0) {
+        // special case for gliders with airspeed sensors behind the
+        // propeller. Allow airspeed to be disabled when throttle is
+        // running
+        return false;
+    }
+    return true;
 }

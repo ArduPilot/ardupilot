@@ -212,5 +212,17 @@ void Copter::tuning() {
      case TUNING_RATE_YAW_FILT:
          attitude_control->get_rate_yaw_pid().filt_hz(tuning_value);
          break;
-    }
+
+     case TUNING_WINCH: {
+         float desired_rate = 0.0f;
+         if (v > 0.6f) {
+             desired_rate = g2.winch.get_rate_max() * (v - 0.6f) / 0.4f;
+         }
+         if (v < 0.4f) {
+             desired_rate = g2.winch.get_rate_max() * (v - 0.4) / 0.4f;
+         }
+         g2.winch.set_desired_rate(desired_rate);
+         break;
+         }
+     }
 }

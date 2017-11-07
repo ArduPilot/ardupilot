@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file   AP_MotorsHeli_Dual.h
 /// @brief  Motor control class for dual heli (tandem or transverse)
 /// @author Fredrik Hedberg
@@ -55,9 +53,6 @@ public:
 
     // set_update_rate - set update rate to motors
     void set_update_rate( uint16_t speed_hz ) override;
-
-    // enable - starts allowing signals to be sent to motors
-    void enable() override;
 
     // output_test - spin a motor at the pwm value specified
     void output_test(uint8_t motor_seq, int16_t pwm) override;

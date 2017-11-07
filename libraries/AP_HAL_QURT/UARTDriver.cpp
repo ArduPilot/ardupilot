@@ -206,7 +206,7 @@ int16_t UARTDriver::read()
     if (!initialised) {
         return -1;
     }
-    if (!lock.take(0)) {
+    if (!lock.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return 0;
     }
     if (readbuf->empty()) {
@@ -224,7 +224,7 @@ size_t UARTDriver::write(uint8_t c)
     if (!initialised) {
         return 0;
     }
-    if (!lock.take(0)) {
+    if (!lock.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return 0;
     }
 
@@ -257,7 +257,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
-    if (!lock.take(0)) {
+    if (!lock.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return 0;
     }
     size_t ret = writebuf->write(buffer, size);

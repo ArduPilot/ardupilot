@@ -35,12 +35,18 @@
 class AC_Fence
 {
 public:
+    static AC_Fence create(const AP_AHRS &ahrs, const AP_InertialNav &inav) {
+        return AC_Fence{ahrs, inav};
+    }
 
-    /// Constructor
-    AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav);
+    constexpr AC_Fence(AC_Fence &&other) = default;
+
+    /* Do not allow copies */
+    AC_Fence(const AC_Fence &other) = delete;
+    AC_Fence &operator=(const AC_Fence&) = delete;
 
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
-    void enable(bool true_false) { _enabled = true_false; }
+    void enable(bool value);
 
     /// enabled - returns true if fence is enabled
     bool enabled() const { return _enabled; }
@@ -112,11 +118,12 @@ public:
     bool boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points) const;
 
     /// handler for polygon fence messages with GCS
-    void handle_msg(mavlink_channel_t chan, mavlink_message_t* msg);
+    void handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg);
 
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    AC_Fence(const AP_AHRS &ahrs, const AP_InertialNav &inav);
 
     /// record_breach - update breach bitmask, time and count
     void record_breach(uint8_t fence_type);

@@ -107,6 +107,7 @@ void Submarine::update(const struct sitl_input &input)
 
     // update lat/lon/altitude
     update_position();
+    time_advance();
 
     // update magnetic field
     update_mag_field_bf();

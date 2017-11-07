@@ -25,12 +25,11 @@
 #include <unistd.h>
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_mag_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig::get_can_debug()) { hal.console->printf(fmt, ##args); }} while (0)
-
-// There is limitation to use only one UAVCAN magnetometer now.
+#define debug_mag_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { printf(fmt, ##args); }} while (0)
 
 /*
   constructor - registers instance at top Compass driver
@@ -38,57 +37,95 @@ extern const AP_HAL::HAL& hal;
 AP_Compass_UAVCAN::AP_Compass_UAVCAN(Compass &compass):
     AP_Compass_Backend(compass)
 {
-    if (hal.can_mgr != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            // Give time to receive some packets from CAN if baro sensor is present
-            // This way it will get calibrated correctly
-            _instance = register_compass();
-            hal.scheduler->delay(1000);
-            uint8_t listener_channel = ap_uavcan->register_mag_listener(this, 1);
-
-            struct DeviceStructure {
-                uint8_t bus_type : 3;
-                uint8_t bus: 5;
-                uint8_t address;
-                uint8_t devtype;
-            };
-            union DeviceId {
-                struct DeviceStructure devid_s;
-                uint32_t devid;
-            };
-            union DeviceId d;
-
-            d.devid_s.bus_type = 3;
-            d.devid_s.bus = 0;
-            d.devid_s.address = listener_channel;
-            d.devid_s.devtype = 0;
-
-            set_dev_id(_instance, d.devid);
-            set_external(_instance, true);
-
-            _sum.zero();
-            _count = 0;
-
-            accumulate();
-
-            debug_mag_uavcan(2, "AP_Compass_UAVCAN loaded\n\r");
-        }
-    }
-
     _mag_baro = hal.util->new_semaphore();
 }
 
 AP_Compass_UAVCAN::~AP_Compass_UAVCAN()
 {
-    if (hal.can_mgr != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            ap_uavcan->remove_mag_listener(this);
+    if (_initialized)
+    {
+        if (hal.can_mgr[_manager] != nullptr) {
+            AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
+            if (ap_uavcan != nullptr) {
+                ap_uavcan->remove_mag_listener(this);
 
-            debug_mag_uavcan(2, "AP_Compass_UAVCAN destructed\n\r");
+                debug_mag_uavcan(2, "AP_Compass_UAVCAN destructed\n\r");
+            }
         }
     }
+}
+
+AP_Compass_Backend *AP_Compass_UAVCAN::probe(Compass &compass)
+{
+    AP_Compass_UAVCAN *sensor = nullptr;
+
+    if (AP_BoardConfig_CAN::get_can_num_ifaces() != 0) {
+        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+            if (hal.can_mgr[i] != nullptr) {
+                AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
+                if (uavcan != nullptr) {
+                    uint8_t freemag = uavcan->find_smallest_free_mag_node();
+                    if (freemag != UINT8_MAX) {
+                        sensor = new AP_Compass_UAVCAN(compass);
+                        if (sensor->register_uavcan_compass(i, freemag)) {
+                            debug_mag_uavcan(2, "AP_Compass_UAVCAN probed, drv: %d, node: %d\n\r", i, freemag);
+                            return sensor;
+                        } else {
+                            delete sensor;
+                            sensor = nullptr;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return sensor;
+}
+
+bool AP_Compass_UAVCAN::register_uavcan_compass(uint8_t mgr, uint8_t node)
+{
+    if (hal.can_mgr[mgr] != nullptr) {
+        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+        if (ap_uavcan != nullptr) {
+            _manager = mgr;
+
+            if (ap_uavcan->register_mag_listener_to_node(this, node)) {
+                _instance = register_compass();
+
+                struct DeviceStructure {
+                    uint8_t bus_type : 3;
+                    uint8_t bus: 5;
+                    uint8_t address;
+                    uint8_t devtype;
+                };
+                union DeviceId {
+                    struct DeviceStructure devid_s;
+                    uint32_t devid;
+                };
+                union DeviceId d;
+
+                d.devid_s.bus_type = 3;
+                d.devid_s.bus = mgr;
+                d.devid_s.address = node;
+                d.devid_s.devtype = 1;
+
+                set_dev_id(_instance, d.devid);
+                set_external(_instance, true);
+
+                _sum.zero();
+                _count = 0;
+
+                accumulate();
+
+                debug_mag_uavcan(2, "AP_Compass_UAVCAN loaded\n\r");
+
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void AP_Compass_UAVCAN::read(void)
@@ -98,7 +135,7 @@ void AP_Compass_UAVCAN::read(void)
         return;
     }
 
-    if (_mag_baro->take(0)) {
+    if (_mag_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _sum /= _count;
 
         publish_filtered_field(_sum, _instance);
@@ -116,14 +153,13 @@ void AP_Compass_UAVCAN::handle_mag_msg(Vector3f &mag)
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _instance);
 
-    _last_timestamp = AP_HAL::micros64();
     // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, (uint32_t) _last_timestamp, _instance);
+    publish_raw_field(raw_field, _instance);
 
     // correct raw_field for known errors
     correct_field(raw_field, _instance);
 
-    if (_mag_baro->take(0)) {
+    if (_mag_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         // accumulate into averaging filter
         _sum += raw_field;
         _count++;

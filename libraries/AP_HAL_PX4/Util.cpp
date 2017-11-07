@@ -99,8 +99,8 @@ enum PX4Util::safety_state PX4Util::safety_switch_state(void)
 void PX4Util::set_system_clock(uint64_t time_utc_usec)
 {
     timespec ts;
-    ts.tv_sec = time_utc_usec/1.0e6f;
-    ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
+    ts.tv_sec = time_utc_usec/1000000ULL;
+    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
     clock_settime(CLOCK_REALTIME, &ts);    
 }
 
@@ -120,6 +120,8 @@ bool PX4Util::get_system_id(char buf[40])
     const char *board_type = "PX4v2";
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     const char *board_type = "PX4v4";
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
+    const char *board_type = "PX4v4PRO";
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     const char *board_type = "AEROFCv1";
 #else

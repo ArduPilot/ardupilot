@@ -160,7 +160,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
+    gcs().send_text(MAV_SEVERITY_INFO, "Arming motors");
 #endif
 
     // Remember Orientation
@@ -175,9 +175,12 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
         Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location();
+        set_home_to_current_location(false);
     }
     calc_distance_and_bearing();
+
+    // Reset SmartRTL return location. If activated, SmartRTL will ultimately try to land at this point
+    g2.smart_rtl.reset_path(position_ok());
 
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
@@ -228,7 +231,7 @@ void Copter::init_disarm_motors()
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
+    gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
     // save compass offsets learned by the EKF if enabled
@@ -259,10 +262,6 @@ void Copter::init_disarm_motors()
     // reset the mission
     mission.reset();
 
-    // suspend logging
-    if (!DataFlash.log_while_disarmed()) {
-        DataFlash.EnableWrites(false);
-    }
     DataFlash_Class::instance()->set_vehicle_armed(false);
 
     // disable gps velocity based centrefugal force compensation
@@ -276,7 +275,7 @@ void Copter::init_disarm_motors()
 void Copter::motors_output()
 {
 #if ADVANCED_FAILSAFE == ENABLED
-    // this is to allow the failsafe module to deliberately crash 
+    // this is to allow the failsafe module to deliberately crash
     // the vehicle. Only used in extreme circumstances to meet the
     // OBC rules
     if (g2.afs.should_crash_vehicle()) {
@@ -295,10 +294,10 @@ void Copter::motors_output()
 
     // cork now, so that all channel outputs happen at once
     hal.rcout->cork();
-    
+
     // update output on any aux channels, for manual passthru
     SRV_Channels::output_ch_all();
-    
+
     // check if we are performing the motor test
     if (ap.motor_test) {
         motor_test_output();
@@ -335,7 +334,7 @@ void Copter::lost_vehicle_check()
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;
-                gcs_send_text(MAV_SEVERITY_NOTICE,"Locate Copter alarm");
+                gcs().send_text(MAV_SEVERITY_NOTICE,"Locate Copter alarm");
             }
         } else {
             soundalarm_counter++;

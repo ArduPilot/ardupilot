@@ -54,7 +54,7 @@ protected:
     void output_armed_stabilizing_vectored_6dof();
 
     // Parameters
-    AP_Int8             _motor_reverse[8];
+    AP_Int8             _motor_reverse[AP_MOTORS_MAX_NUM_MOTORS];
     AP_Float            _forwardVerticalCouplingFactor;
 
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)

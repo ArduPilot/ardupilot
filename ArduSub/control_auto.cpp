@@ -659,7 +659,7 @@ bool Sub::auto_terrain_recover_start()
     pos_control.set_alt_target(inertial_nav.get_altitude());
     pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
-    gcs_send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
+    gcs().send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
     return true;
 }
 
@@ -704,7 +704,7 @@ void Sub::auto_terrain_recover_run()
 
             // 1.5 seconds of healthy rangefinder means we can resume mission with terrain enabled
             if (AP_HAL::millis() > rangefinder_recovery_ms + 1500) {
-                gcs_send_text(MAV_SEVERITY_INFO, "Terrain failsafe recovery successful!");
+                gcs().send_text(MAV_SEVERITY_INFO, "Terrain failsafe recovery successful!");
                 failsafe_terrain_set_status(true); // Reset failsafe timers
                 failsafe.terrain = false; // Clear flag
                 auto_mode = Auto_Loiter; // Switch back to loiter for next iteration
@@ -719,7 +719,7 @@ void Sub::auto_terrain_recover_run()
     default:
         // Terrain failsafe recovery has failed, terrain data is not available
         // and rangefinder is not connected, or has stopped responding
-        gcs_send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");
         failsafe_terrain_act();
         rangefinder_recovery_ms = 0;
         return;
@@ -728,7 +728,7 @@ void Sub::auto_terrain_recover_run()
     // exit on failure (timeout)
     if (AP_HAL::millis() > fs_terrain_recover_start_ms + FS_TERRAIN_RECOVER_TIMEOUT_MS) {
         // Recovery has failed, revert to failsafe action
-        gcs_send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery timeout!");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery timeout!");
         failsafe_terrain_act();
     }
 

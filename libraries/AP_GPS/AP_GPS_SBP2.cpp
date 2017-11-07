@@ -51,7 +51,7 @@ do {                                            \
 #if SBP_INFOREPORTING
  # define Info(fmt, args ...)                                               \
 do {                                                                        \
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, fmt "\n", ## args); \
+    gcs().send_text(MAV_SEVERITY_INFO, fmt "\n", ## args); \
 } while(0) 
 #else
  # define Info(fmt, args ...)
@@ -178,24 +178,29 @@ AP_GPS_SBP2::_sbp_process_message() {
     //Here, we copy messages into local structs.
     switch (parser_state.msg_type) {
         case SBP_HEARTBEAT_MSGTYPE:
-            last_heartbeat = *((struct sbp_heartbeat_t*)parser_state.msg_buff);
+            memcpy(&last_heartbeat, parser_state.msg_buff, sizeof(struct sbp_heartbeat_t));
             last_heartbeat_received_ms = AP_HAL::millis();
             break;
 
         case SBP_GPS_TIME_MSGTYPE:
-            last_gps_time = *((struct sbp_gps_time_t*)parser_state.msg_buff);
+            memcpy(&last_gps_time, parser_state.msg_buff, sizeof(struct sbp_gps_time_t));
             break;
 
         case SBP_VEL_NED_MSGTYPE:
-            last_vel_ned = *((struct sbp_vel_ned_t*)parser_state.msg_buff);
+            memcpy(&last_vel_ned, parser_state.msg_buff, sizeof(struct sbp_vel_ned_t));
             break;
 
         case SBP_POS_LLH_MSGTYPE:
-            last_pos_llh = *((struct sbp_pos_llh_t*)parser_state.msg_buff);
+            memcpy(&last_pos_llh, parser_state.msg_buff, sizeof(struct sbp_pos_llh_t));
             break;
 
         case SBP_DOPS_MSGTYPE:
-            last_dops = *((struct sbp_dops_t*)parser_state.msg_buff);
+            memcpy(&last_dops, parser_state.msg_buff, sizeof(struct sbp_dops_t));
+            break;
+
+        case SBP_EXT_EVENT_MSGTYPE:
+            memcpy(&last_event, parser_state.msg_buff, sizeof(struct sbp_ext_event_t));
+            logging_ext_event();
             break;
 
         default:
@@ -203,7 +208,7 @@ AP_GPS_SBP2::_sbp_process_message() {
     }
 
     // send all messages we receive to log, even if it's an unsupported message,
-    // so we can do annditional post-processing from Dataflash logs.
+    // so we can do additional post-processing from Dataflash logs.
     // The log mask will be used to adjust or suppress logging
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
 }
@@ -252,8 +257,8 @@ AP_GPS_SBP2::_attempt_state_update()
         return false;
 
     } else if (last_pos_llh.tow == last_vel_ned.tow
-            && (distMod(last_gps_time.tow, last_vel_ned.tow, MSEC_PER_WEEK) < 10000)
-            && (distMod(last_dops.tow, last_vel_ned.tow, MSEC_PER_WEEK) < 60000)
+            && (distMod(last_gps_time.tow, last_vel_ned.tow, AP_MSEC_PER_WEEK) < 10000)
+            && (distMod(last_dops.tow, last_vel_ned.tow, AP_MSEC_PER_WEEK) < 60000)
             && (last_vel_ned.tow > last_full_update_tow || (last_gps_time.wn > last_full_update_wn && last_vel_ned.tow < last_full_update_tow))) {
 
         //We have an aligned VEL and LLH, and a recent DOPS and TIME.
@@ -304,7 +309,7 @@ AP_GPS_SBP2::_attempt_state_update()
         state.vertical_accuracy     = (float) last_pos_llh.v_accuracy * 1.0e-3f;
 
         //
-        // Set flags appropriartely
+        // Set flags appropriately
         //
         state.have_vertical_velocity   = true;
         state.have_speed_accuracy      = !is_zero(state.speed_accuracy);
@@ -427,7 +432,7 @@ AP_GPS_SBP2::_detect(struct SBP2_detect_state &state, uint8_t data)
 void
 AP_GPS_SBP2::logging_log_full_update()
 {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
       return;
     }
 
@@ -441,7 +446,7 @@ AP_GPS_SBP2::logging_log_full_update()
         last_injected_data_ms      : last_injected_data_ms,
         last_iar_num_hypotheses    : 0,
     };
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 };
 
 void
@@ -449,7 +454,7 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
         uint16_t sender_id,
         uint8_t msg_len,
         uint8_t *msg_buff) {
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
+    if (!should_df_log()) {
       return;
     }
 
@@ -459,24 +464,53 @@ AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
     }
 
     uint64_t time_us = AP_HAL::micros64();
+    uint8_t pages = 1;
 
-    struct log_SbpRAW1 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW1),
+    if (msg_len > 48) {
+        pages += (msg_len - 48) / 104 + 1;
+    }
+
+    struct log_SbpRAWH pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWH),
         time_us         : time_us,
         msg_type        : msg_type,
         sender_id       : sender_id,
+        index           : 1,
+        pages           : pages,
         msg_len         : msg_len,
     };
-    memcpy(pkt.data1, msg_buff, MIN(msg_len,64));
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    memcpy(pkt.data, msg_buff, MIN(msg_len, 48));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 
-    if (msg_len > 64) {
-        struct log_SbpRAW2 pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW2),
+    for (uint8_t i = 0; i < pages - 1; i++) {
+        struct log_SbpRAWM pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWM),
             time_us         : time_us,
             msg_type        : msg_type,
+            sender_id       : sender_id,
+            index           : uint8_t(i + 2),
+            pages           : pages,
+            msg_len         : msg_len,
         };
-        memcpy(pkt2.data2, &msg_buff[64], MIN(msg_len - 64,192));
-        gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
+        memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
+        DataFlash_Class::instance()->WriteBlock(&pkt2, sizeof(pkt2));
     }
+};
+
+void
+AP_GPS_SBP2::logging_ext_event() {
+    if (!should_df_log()) {
+      return;
+    }
+
+    struct log_SbpEvent pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPEVENT),
+        time_us            : AP_HAL::micros64(),
+        wn                 : last_event.wn,
+        tow                : last_event.tow,
+        ns_residual        : last_event.ns_residual,
+        level              : last_event.flags.level,
+        quality            : last_event.flags.quality,
+    };
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 };

@@ -53,6 +53,17 @@ bool RCOutputRGBLed::hw_init()
     return true;
 }
 
+uint16_t RCOutputRGBLed::get_duty_cycle_for_color(const uint8_t color, const uint16_t usec_period) const
+{
+    return  usec_period * color / _led_bright;
+}
+
+uint16_t RCOutputRGBLedInverted::get_duty_cycle_for_color(const uint8_t color, const uint16_t usec_period) const
+{
+    return  usec_period * (255 - color) / _led_bright;
+}
+
+
 bool RCOutputRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     const uint16_t freq_motor = hal.rcout->get_freq(0);
@@ -69,20 +80,13 @@ bool RCOutputRGBLed::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
         hal.rcout->set_freq(mask, freq_motor);
     }
 
-    /*
-     * Not calling push() to have a better performance on RCOutput's that
-     * implements cork()/push(), so this changes will be committed together
-     * with the motors.
-     */
-    hal.rcout->cork();
-
-    uint16_t usec_duty = usec_period * red / _led_bright;
+    uint16_t usec_duty = get_duty_cycle_for_color(red, usec_period);
     SRV_Channels::set_output_pwm_chan(_red_channel, usec_duty);
 
-    usec_duty = usec_period * green / _led_bright;
+    usec_duty = get_duty_cycle_for_color(green, usec_period);
     SRV_Channels::set_output_pwm_chan(_green_channel, usec_duty);
 
-    usec_duty = usec_period * blue / _led_bright;
+    usec_duty = get_duty_cycle_for_color(blue, usec_period);
     SRV_Channels::set_output_pwm_chan(_blue_channel, usec_duty);
 
     return true;

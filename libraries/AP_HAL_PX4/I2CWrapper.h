@@ -1,3 +1,5 @@
+#pragma once
+
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -21,9 +23,15 @@ public:
     }
 
     uint8_t map_bus_number(uint8_t bus) const;
+
+    // setup instance_lock
+    static void init_lock(void) {
+        pthread_mutex_init(&instance_lock, nullptr);
+    }
     
 private:
     static uint8_t instance;
+    static pthread_mutex_t instance_lock;
     bool init_done;
     bool init_ok;
     char devname[10];

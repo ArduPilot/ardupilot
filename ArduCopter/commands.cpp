@@ -20,7 +20,7 @@ void Copter::update_home_from_EKF()
         set_home_to_current_location_inflight();
     } else {
         // move home to current ekf location (this will set home_state to HOME_SET)
-        set_home_to_current_location();
+        set_home_to_current_location(false);
     }
 }
 
@@ -31,37 +31,16 @@ void Copter::set_home_to_current_location_inflight() {
     if (inertial_nav.get_location(temp_loc)) {
         const struct Location &ekf_origin = inertial_nav.get_origin();
         temp_loc.alt = ekf_origin.alt;
-        set_home(temp_loc);
+        set_home(temp_loc, false);
     }
 }
 
 // set_home_to_current_location - set home to current GPS location
-bool Copter::set_home_to_current_location() {
+bool Copter::set_home_to_current_location(bool lock) {
     // get current location from EKF
     Location temp_loc;
     if (inertial_nav.get_location(temp_loc)) {
-        return set_home(temp_loc);
-    }
-    return false;
-}
-
-// set_home_to_current_location_and_lock - set home to current location and lock so it cannot be moved
-bool Copter::set_home_to_current_location_and_lock()
-{
-    if (set_home_to_current_location()) {
-        set_home_state(HOME_SET_AND_LOCKED);
-        return true;
-    }
-    return false;
-}
-
-// set_home_and_lock - sets ahrs home (used for RTL) to specified location and locks so it cannot be moved
-//  unless this function is called again
-bool Copter::set_home_and_lock(const Location& loc)
-{
-    if (set_home(loc)) {
-        set_home_state(HOME_SET_AND_LOCKED);
-        return true;
+        return set_home(temp_loc, lock);
     }
     return false;
 }
@@ -69,18 +48,17 @@ bool Copter::set_home_and_lock(const Location& loc)
 // set_home - sets ahrs home (used for RTL) to specified location
 //  initialises inertial nav and compass on first call
 //  returns true if home location set successfully
-bool Copter::set_home(const Location& loc)
+bool Copter::set_home(const Location& loc, bool lock)
 {
     // check location is valid
     if (loc.lat == 0 && loc.lng == 0) {
         return false;
     }
 
-    // set EKF origin to home if it hasn't been set yet and vehicle is disarmed
-    // this is required to allowing flying in AUTO and GUIDED with only an optical flow
+    // check EKF origin has been set
     Location ekf_origin;
-    if (!motors->armed() && !ahrs.get_origin(ekf_origin)) {
-        ahrs.set_origin(loc);
+    if (!ahrs.get_origin(ekf_origin)) {
+        return false;
     }
 
     // check home is close to EKF origin
@@ -93,10 +71,6 @@ bool Copter::set_home(const Location& loc)
 
     // init inav and compass declination
     if (ap.home_state == HOME_UNSET) {
-        // Set compass declination automatically
-        if (g.compass_enabled) {
-            compass.set_initial_location(gps.location().lat, gps.location().lng);
-        }
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
         scaleLongDown = longitude_scale(loc);
         // record home is set
@@ -111,14 +85,46 @@ bool Copter::set_home(const Location& loc)
         }
     }
 
+    // lock home position
+    if (lock) {
+        set_home_state(HOME_SET_AND_LOCKED);
+    }
+
     // log ahrs home and ekf origin dataflash
     Log_Write_Home_And_Origin();
 
-    // send new home location to GCS
-    GCS_MAVLINK::send_home_all(loc);
+    // send new home and ekf origin to GCS
+    gcs().send_home(loc);
+    gcs().send_ekf_origin(ekf_origin);
 
     // return success
     return true;
+}
+
+// sets ekf_origin if it has not been set.
+//  should only be used when there is no GPS to provide an absolute position
+void Copter::set_ekf_origin(const Location& loc)
+{
+    // check location is valid
+    if (!check_latlng(loc)) {
+        return;
+    }
+
+    // check EKF origin has already been set
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        return;
+    }
+
+    if (!ahrs.set_origin(loc)) {
+        return;
+    }
+
+    // log ahrs home and ekf origin dataflash
+    Log_Write_Home_And_Origin();
+
+    // send ekf origin to GCS
+    gcs().send_ekf_origin(loc);
 }
 
 // far_from_EKF_origin - checks if a location is too far from the EKF origin

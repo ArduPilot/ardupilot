@@ -39,6 +39,7 @@ private:
     uint32_t _last_position_request_ms;
     uint8_t _step;
     accel_cal_status_t _status;
+    accel_cal_status_t _last_result;
 
     static uint8_t _num_clients;
     static AP_AccelCal_Client* _clients[AP_ACCELCAL_MAX_NUM_CLIENTS];

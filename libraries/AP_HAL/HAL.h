@@ -34,7 +34,11 @@ public:
         AP_HAL::Scheduler*  _scheduler,
         AP_HAL::Util*       _util,
         AP_HAL::OpticalFlow *_opticalflow,
-        AP_HAL::CANManager* _can_mgr)
+#if HAL_WITH_UAVCAN
+        AP_HAL::CANManager* _can_mgr[MAX_NUMBER_OF_CAN_DRIVERS])
+#else
+        AP_HAL::CANManager** _can_mgr)
+#endif
         :
         uartA(_uartA),
         uartB(_uartB),
@@ -52,9 +56,18 @@ public:
         rcout(_rcout),
         scheduler(_scheduler),
         util(_util),
-        opticalflow(_opticalflow),
-        can_mgr(_can_mgr)
+        opticalflow(_opticalflow)
     {
+#if HAL_WITH_UAVCAN
+        if (_can_mgr == nullptr) {
+            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++)
+                can_mgr[i] = nullptr;
+        } else {
+            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++)
+                can_mgr[i] = _can_mgr[i];
+        }
+#endif
+
         AP_HAL::init();
     }
 
@@ -93,5 +106,9 @@ public:
     AP_HAL::Scheduler*  scheduler;
     AP_HAL::Util        *util;
     AP_HAL::OpticalFlow *opticalflow;
-    AP_HAL::CANManager* can_mgr;
+#if HAL_WITH_UAVCAN
+    AP_HAL::CANManager* can_mgr[MAX_NUMBER_OF_CAN_DRIVERS];
+#else
+    AP_HAL::CANManager** can_mgr;
+#endif
 };

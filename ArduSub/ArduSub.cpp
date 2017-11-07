@@ -50,6 +50,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
     SCHED_TASK(dataflash_periodic,    400,    300),
+    SCHED_TASK(ins_periodic,          400,    50),
     SCHED_TASK(perf_update,           0.1,    75),
 #if RPM_ENABLED == ENABLED
     SCHED_TASK(rpm_update,            10,    200),
@@ -94,16 +95,6 @@ void Sub::setup()
 }
 
 /*
-  if the compass is enabled then try to accumulate a reading
- */
-void Sub::compass_accumulate(void)
-{
-    if (g.compass_enabled) {
-        compass.accumulate();
-    }
-}
-
-/*
   try to accumulate a baro reading
  */
 void Sub::barometer_accumulate(void)
@@ -117,7 +108,7 @@ void Sub::perf_update(void)
         Log_Write_Performance();
     }
     if (scheduler.debug()) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
+        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
                           (unsigned)perf_info_get_num_long_running(),
                           (unsigned)perf_info_get_num_loops(),
                           (unsigned long)perf_info_get_max_time(),
@@ -156,8 +147,9 @@ void Sub::loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    uint32_t time_available = (timer + MAIN_LOOP_MICROS) - micros();
-    scheduler.run(time_available);
+    const uint32_t loop_us = scheduler.get_loop_period_us();
+    const uint32_t time_available = (timer + loop_us) - micros();
+    scheduler.run(time_available > loop_us ? 0u : time_available);
 }
 
 
@@ -218,12 +210,8 @@ void Sub::fifty_hz_loop()
 
     failsafe_sensors_check();
 
-    // Update servo output
+    // Update rc input/output
     RC_Channels::set_pwm_all();
-    // wait for outputs to initialize: TODO find a better way to do this
-    if (millis() > 10000) {
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, g.cam_slew_limit, 0.02f);
-    }
     SRV_Channels::output_ch_all();
 }
 
@@ -248,13 +236,7 @@ void Sub::update_mount()
 // update camera trigger
 void Sub::update_trigger(void)
 {
-    camera.trigger_pic_cleanup();
-    if (camera.check_trigger_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    }
+    camera.update_trigger();
 }
 #endif
 
@@ -337,6 +319,11 @@ void Sub::dataflash_periodic(void)
     DataFlash.periodic_tasks();
 }
 
+void Sub::ins_periodic()
+{
+    ins.periodic();
+}
+
 // three_hz_loop - 3.3hz loop
 void Sub::three_hz_loop()
 {
@@ -388,9 +375,6 @@ void Sub::one_hz_loop()
     // update position controller alt limits
     update_poscon_alt_max();
 
-    // enable/disable raw gyro/accel logging
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-
     // log terrain data
     terrain_logging();
 }
@@ -421,15 +405,9 @@ void Sub::update_GPS(void)
         // set system time if necessary
         set_system_time_from_GPS();
 
-        // checks to initialise home and take location based pictures
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-
 #if CAMERA == ENABLED
-            if (camera.update_location(current_loc, sub.ahrs) == true) {
-                do_take_picture();
-            }
+        camera.update();
 #endif
-        }
     }
 }
 

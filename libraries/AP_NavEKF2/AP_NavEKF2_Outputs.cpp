@@ -279,18 +279,27 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
     return false;
 }
 
-// Write the last calculated D position of the body frame origin relative to the reference point (m).
+// Write the last calculated D position of the body frame origin relative to the EKF origin (m).
 // Return true if the estimate is valid
 bool NavEKF2_core::getPosD(float &posD) const
 {
     // The EKF always has a height estimate regardless of mode of operation
-    // correct for the IMU offset (EKF calculations are at the IMU)
-    posD = outputDataNew.position.z + posOffsetNED.z;
+    // Correct for the IMU offset in body frame (EKF calculations are at the IMU)
+    // Also correct for changes to the origin height
+    if ((frontend->_originHgtMode & (1<<2)) == 0) {
+        // Any sensor height drift corrections relative to the WGS-84 reference are applied to the origin.
+        posD = outputDataNew.position.z + posOffsetNED.z;
+    } else {
+        // The origin height is static and corrections are applied to the local vertical position
+        // so that height returned by getLLH() = height returned by getOriginLLH - posD
+        posD = outputDataNew.position.z + posOffsetNED.z + 0.01f * (float)EKF_origin.alt - (float)ekfGpsRefHgt;
+    }
 
     // Return the current height solution status
     return filterStatus.flags.vert_pos;
 
 }
+
 // return the estimated height of body frame origin above ground level
 bool NavEKF2_core::getHAGL(float &HAGL) const
 {
@@ -308,7 +317,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
 {
     if(validOrigin) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-        loc.alt = EKF_origin.alt - outputDataNew.position.z*100;
+        loc.alt =  100 * (int32_t)(ekfGpsRefHgt - (double)outputDataNew.position.z);
         loc.flags.relative_alt = 0;
         loc.flags.terrain_alt = 0;
 
@@ -370,6 +379,10 @@ bool NavEKF2_core::getOriginLLH(struct Location &loc) const
 {
     if (validOrigin) {
         loc = EKF_origin;
+        // report internally corrected reference height if enabled
+        if ((frontend->_originHgtMode & (1<<2)) == 0) {
+            loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);
+        }
     }
     return validOrigin;
 }
@@ -390,6 +403,10 @@ void NavEKF2_core::getMagXYZ(Vector3f &magXYZ) const
 // return true if offsets are valid
 bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
+    if (!_ahrs->get_compass()) {
+        return false;
+    }
+
     // compass offsets are valid if we have finalised magnetic field initialisation, magnetic field learning is not prohibited,
     // primary compass is valid and state variances have converged
     const float maxMagVar = 5E-6f;

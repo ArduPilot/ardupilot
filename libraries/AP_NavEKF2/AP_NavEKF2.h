@@ -34,13 +34,23 @@
 class NavEKF2_core;
 class AP_AHRS;
 
-class NavEKF2
-{
-public:
+class NavEKF2 {
     friend class NavEKF2_core;
-    static const struct AP_Param::GroupInfo var_info[];
 
-    NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
+public:
+    static NavEKF2 create(const AP_AHRS *ahrs,
+                          AP_Baro &baro,
+                          const RangeFinder &rng) {
+        return NavEKF2{ahrs, baro, rng};
+    }
+
+    constexpr NavEKF2(NavEKF2 &&other) = default;
+
+    /* Do not allow copies */
+    NavEKF2(const NavEKF2 &other) = delete;
+    NavEKF2 &operator=(const NavEKF2&) = delete;
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     // allow logging to determine the number of active cores
     uint8_t activeCores(void) const {
@@ -122,6 +132,10 @@ public:
     // Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
     uint8_t setInhibitGPS(void);
 
+    // Set the argument to true to prevent the EKF using the GPS vertical velocity
+    // This can be used for situations where GPS velocity errors are causing problems with height accuracy
+    void setGpsVertVelUse(const bool varIn) { inhibitGpsVertVelUse = varIn; };
+
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
@@ -156,10 +170,11 @@ public:
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
     bool getLLH(struct Location &loc) const;
 
-    // return the latitude and longitude and height used to set the NED origin
+    // Return the latitude and longitude and height used to set the NED origin for the specified instance
+    // An out of range instance (eg -1) returns data for the the primary instance
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(struct Location &loc) const;
+    bool getOriginLLH(int8_t instance, struct Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
@@ -313,8 +328,10 @@ public:
 
     // get timing statistics structure
     void getTimingStatistics(int8_t instance, struct ekf_timing &timing);
-    
+
 private:
+    NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
+
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF2_core *core = nullptr;
@@ -324,7 +341,7 @@ private:
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
-    
+
     // EKF Mavlink Tuneable Parameters
     AP_Int8  _enable;               // zero to disable EKF2
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
@@ -374,6 +391,7 @@ private:
     AP_Int8  _rngBcnDelay_ms;       // effective average delay of range beacon measurements rel to IMU (msec)
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
     AP_Int8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
+    AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -436,6 +454,8 @@ private:
     } pos_down_reset_data;
 
     bool runCoreSelection; // true when the primary core has stabilised and the core selection logic can be started
+
+    bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
 
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary

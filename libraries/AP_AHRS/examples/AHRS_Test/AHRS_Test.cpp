@@ -6,41 +6,41 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
 
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-// INS and Baro declaration
-AP_InertialSensor ins;
 
-Compass compass;
+static AP_BoardConfig board_config = AP_BoardConfig::create();
+static AP_InertialSensor ins = AP_InertialSensor::create();
 
-AP_GPS gps;
-AP_Baro barometer;
-AP_SerialManager serial_manager;
+static Compass compass = Compass::create();
+
+static AP_GPS gps = AP_GPS::create();
+static AP_Baro barometer = AP_Baro::create();
+static AP_SerialManager serial_manager = AP_SerialManager::create();
 
 class DummyVehicle {
 public:
-    RangeFinder sonar {serial_manager, ROTATION_PITCH_270};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF2, EKF3,
-                        AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
-    NavEKF2 EKF2{&ahrs, barometer, sonar};
-    NavEKF3 EKF3{&ahrs, barometer, sonar};
+    RangeFinder sonar = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
+    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, sonar);
+    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, sonar);
+    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3,
+                                                 AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF);
 };
 
 static DummyVehicle vehicle;
 
 // choose which AHRS system to use
-// AP_AHRS_DCM  ahrs(ins, baro, gps);
-AP_AHRS_NavEKF ahrs(vehicle.ahrs);
+// AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, barometer, gps);
+AP_AHRS_NavEKF &ahrs = vehicle.ahrs;
 
 void setup(void)
 {
-    AP_BoardConfig{}.init();
-
+    board_config.init();
     ins.init(100);
     ahrs.init();
     serial_manager.init();
@@ -51,7 +51,7 @@ void setup(void)
     } else {
         hal.console->printf("No compass detected\n");
     }
-    gps.init(nullptr, serial_manager);
+    gps.init(serial_manager);
 }
 
 void loop(void)
@@ -95,6 +95,9 @@ void loop(void)
     }
 }
 
-GCS _gcs;
+const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+    AP_GROUPEND
+};
+GCS_Dummy _gcs;
 
 AP_HAL_MAIN();

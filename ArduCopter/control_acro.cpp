@@ -100,12 +100,16 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
     // calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
 
     if (g.acro_trainer != ACRO_TRAINER_DISABLED) {
+
+        // get attitude targets
+        const Vector3f att_target = attitude_control->get_att_target_euler_cd();
+
         // Calculate trainer mode earth frame rate command for roll
-        int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
+        int32_t roll_angle = wrap_180_cd(att_target.x);
         rate_ef_level.x = -constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
 
         // Calculate trainer mode earth frame rate command for pitch
-        int32_t pitch_angle = wrap_180_cd(ahrs.pitch_sensor);
+        int32_t pitch_angle = wrap_180_cd(att_target.y);
         rate_ef_level.y = -constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
 
         // Calculate trainer mode earth frame rate command for yaw

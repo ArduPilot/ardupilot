@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @DisplayName: Roll Time Constant
 	// @Description: This controls the time constant in seconds from demanded to achieved bank angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
 	// @Range: 0.4 1.0
-	// @Units: seconds
+	// @Units: s
 	// @Increment: 0.1
 	// @User: Advanced
 	AP_GROUPINFO("TCONST",      0, AP_RollController, gains.tau,       0.5f),
@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @DisplayName: Maximum Roll Rate
 	// @Description: This sets the maximum roll rate that the controller will demand (degrees/sec). Setting it to zero disables the limit. If this value is set too low, then the roll can't keep up with the navigation demands and the plane will start weaving. If it is set too high (or disabled by setting to zero) then ailerons will get large inputs at the start of turns. A limit of 60 degrees/sec is a good default.
 	// @Range: 0 180
-	// @Units: degrees/second
+	// @Units: deg/s
 	// @Increment: 1
 	// @User: Advanced
 	AP_GROUPINFO("RMAX",   4, AP_RollController, gains.rmax,       0),

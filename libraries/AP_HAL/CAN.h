@@ -29,6 +29,9 @@
 #include <uavcan/driver/can.hpp>
 #include <uavcan/time.hpp>
 
+#define MAX_NUMBER_OF_CAN_INTERFACES    2
+#define MAX_NUMBER_OF_CAN_DRIVERS       2
+
 class AP_UAVCAN;
 
 /**
@@ -108,6 +111,7 @@ public:
      true - CAN manager is initialized
      */
     virtual bool is_initialized() = 0;
+    virtual void initialized(bool val);
 
     virtual AP_UAVCAN *get_UAVCAN(void);
     virtual void set_UAVCAN(AP_UAVCAN *uavcan);

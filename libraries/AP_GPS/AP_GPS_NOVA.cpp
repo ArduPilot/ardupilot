@@ -206,6 +206,8 @@ AP_GPS_NOVA::process_message(void)
         state.vertical_accuracy = (float) bestposu.hgtsdev;
         state.have_horizontal_accuracy = true;
         state.have_vertical_accuracy = true;
+        state.rtk_age_ms = bestposu.diffage * 1000;
+        state.rtk_num_sats = bestposu.svsused;
 
         if (bestposu.solstat == 0) // have a solution
         {

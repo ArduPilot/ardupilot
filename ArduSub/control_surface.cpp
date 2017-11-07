@@ -4,8 +4,8 @@
 bool Sub::surface_init()
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    if (!sensor_health.depth) { // can't hold depth without a depth sensor, exit immediately.
-        gcs_send_text(MAV_SEVERITY_WARNING, "BAD DEPTH");
+    if (!ap.depth_sensor_present || failsafe.sensor_health) { // can't hold depth without a depth sensor, exit immediately.
+        gcs().send_text(MAV_SEVERITY_WARNING, "BAD DEPTH");
         return false;
     }
 #endif

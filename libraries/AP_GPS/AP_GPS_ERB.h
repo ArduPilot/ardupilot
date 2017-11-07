@@ -34,6 +34,8 @@ public:
 
     AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
+    bool supports_mavlink_gps_rtk_message() { return true; }
+
     static bool _detect(struct ERB_detect_state &state, uint8_t data);
 
     const char *name() const override { return "ERB"; }
@@ -46,42 +48,52 @@ private:
         uint16_t length;
     };
     struct PACKED erb_ver {
-        uint32_t time;
+        uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
         uint8_t ver_high;
         uint8_t ver_medium;
         uint8_t ver_low;
     };
     struct PACKED erb_pos {
-        uint32_t time;
+        uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
         double longitude;
         double latitude;
-        double altitude_ellipsoid;
-        double altitude_msl;
-        uint32_t horizontal_accuracy;
-        uint32_t vertical_accuracy;
+        double altitude_ellipsoid;    ///< Height above ellipsoid [m]
+        double altitude_msl;          ///< Height above mean sea level [m]
+        uint32_t horizontal_accuracy; ///< Horizontal accuracy estimate [mm]
+        uint32_t vertical_accuracy;   ///< Vertical accuracy estimate [mm]
     };
     struct PACKED erb_stat {
-        uint32_t time;
+        uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
         uint16_t week;
-        uint8_t fix_type;
+        uint8_t fix_type;   ///< see erb_fix_type enum
         uint8_t fix_status;
         uint8_t satellites;
     };
     struct PACKED erb_dops {
-        uint32_t time;
-        uint16_t gDOP;
-        uint16_t pDOP;
-        uint16_t vDOP;
-        uint16_t hDOP;
+        uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
+        uint16_t gDOP;      ///< Geometric DOP
+        uint16_t pDOP;      ///< Position DOP
+        uint16_t vDOP;      ///< Vertical DOP
+        uint16_t hDOP;      ///< Horizontal DOP
     };
     struct PACKED erb_vel {
-        uint32_t time;
-        int32_t vel_north;
-        int32_t vel_east;
-        int32_t vel_down;
-        uint32_t speed_2d;
-        int32_t heading_2d;
-        uint32_t speed_accuracy;
+        uint32_t time;      ///< GPS time of week of the navigation epoch [ms]
+        int32_t vel_north;  ///< North velocity component [cm/s]
+        int32_t vel_east;   ///< East velocity component [cm/s]
+        int32_t vel_down;   ///< Down velocity component [cm/s]
+        uint32_t speed_2d;  ///< Ground speed (2-D) [cm/s]
+        int32_t heading_2d; ///< Heading of motion 2-D [1e5 deg]
+        uint32_t speed_accuracy; ///< Speed accuracy Estimate [cm/s]
+    };
+    struct PACKED erb_rtk {
+        uint8_t base_num_sats;       ///< Current number of satellites used for RTK calculation
+        uint16_t age_cs;             ///< Age of the corrections in centiseconds (0 when no corrections, 0xFFFF indicates overflow)
+        int32_t baseline_N_mm;       ///< distance between base and rover along the north axis in millimeters
+        int32_t baseline_E_mm;       ///< distance between base and rover along the east axis in millimeters
+        int32_t baseline_D_mm;       ///< distance between base and rover along the down axis in millimeters
+        uint16_t ar_ratio;           ///< AR ratio multiplied by 10
+        uint16_t base_week_number;   ///< GPS Week Number of last baseline
+        uint32_t base_time_week_ms;  ///< GPS Time of Week of last baseline in milliseconds
     };
 
     // Receive buffer
@@ -92,6 +104,7 @@ private:
         erb_stat stat;
         erb_dops dops;
         erb_vel vel;
+        erb_rtk rtk;
     } _buffer;
 
     enum erb_protocol_bytes {
@@ -102,6 +115,7 @@ private:
         MSG_STAT = 0x03,
         MSG_DOPS = 0x04,
         MSG_VEL = 0x05,
+        MSG_RTK = 0x07,
     };
 
     enum erb_fix_type {

@@ -19,17 +19,22 @@ class AP_RangeFinder_PulsedLightLRF : public AP_RangeFinder_Backend
 
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(uint8_t bus, RangeFinder &ranger, uint8_t instance,
+    static AP_RangeFinder_Backend *detect(uint8_t bus,
                                           RangeFinder::RangeFinder_State &_state,
                                           RangeFinder::RangeFinder_Type rftype);
 
     // update state
     void update(void) override {}
 
+protected:
+
+    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_LASER;
+    }
 
 private:
     // constructor
-    AP_RangeFinder_PulsedLightLRF(uint8_t bus, RangeFinder &ranger, uint8_t instance,
+    AP_RangeFinder_PulsedLightLRF(uint8_t bus,
                                   RangeFinder::RangeFinder_State &_state,
                                   RangeFinder::RangeFinder_Type rftype);
 

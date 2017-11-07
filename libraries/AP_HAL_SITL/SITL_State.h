@@ -70,7 +70,7 @@ public:
         "tcp:2",
         "tcp:3",
         "GPS2",
-        "tcp:4",
+        "tcp:5",
     };
     
 private:
@@ -83,9 +83,7 @@ private:
     void _setup_adc(void);
 
     void set_height_agl(void);
-    void _update_barometer(float height);
-    void _update_compass(void);
-
+    void _update_rangefinder(float range_value);
     void _set_signal_handlers(void) const;
 
     struct gps_data {
@@ -123,7 +121,7 @@ private:
 
     void _update_gps(double latitude, double longitude, float altitude,
                      double speedN, double speedE, double speedD, bool have_lock);
-    void _update_ins(float airspeed);
+    void _update_airspeed(float airspeed);
     void _update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *d, uint8_t instance);
     void _check_rc_input(void);
     void _fdm_input_local(void);
@@ -132,8 +130,6 @@ private:
     void _simulator_output(bool synthetic_clock_mode);
     uint16_t _airspeed_sensor(float airspeed);
     uint16_t _ground_sonar();
-    float _rand_float(void);
-    Vector3f _rand_vec3f(void);
     void _fdm_input_step(void);
 
     void wait_clock(uint64_t wait_time_usec);
@@ -173,7 +169,6 @@ private:
     // delay buffer variables
     static const uint8_t mag_buffer_length = 250;
     static const uint8_t wind_buffer_length = 50;
-    static const uint8_t baro_buffer_length = 50;
 
     // magnetometer delay buffer variables
     struct readings_mag {
@@ -196,17 +191,6 @@ private:
     VectorN<readings_wind,wind_buffer_length> buffer_wind;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
-
-    // barometer delay buffer variables
-    struct readings_baro {
-        uint32_t time;
-        float data;
-    };
-    uint8_t store_index_baro;
-    uint32_t last_store_time_baro;
-    VectorN<readings_baro,baro_buffer_length> buffer_baro;
-    uint32_t time_delta_baro;
-    uint32_t delayed_time_baro;
 
     // internal SITL model
     SITL::Aircraft *sitl_model;

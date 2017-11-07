@@ -34,9 +34,9 @@ enum control_mode_t {
     STABILIZE =     0,  // manual angle with manual depth/throttle
     ACRO =          1,  // manual body-frame angular rate with manual depth/throttle
     ALT_HOLD =      2,  // manual angle with automatic depth/throttle
-    AUTO =          3,  // not implemented in sub // fully automatic waypoint control using mission commands
-    GUIDED =        4,  // not implemented in sub // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-    CIRCLE =        7,  // not implemented in sub // automatic circular flight with automatic throttle
+    AUTO =          3,  // fully automatic waypoint control using mission commands
+    GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+    CIRCLE =        7,  // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
     MANUAL =       19   // Pass-through input with no stabilization
@@ -282,7 +282,7 @@ enum RTLState {
 
 // Leak failsafe definitions (FS_LEAK_ENABLE parameter)
 #define FS_LEAK_DISABLED    0 // Disabled
-#define FS_LEAK_WARN_ONLY   1 // Only send waring to gcs
+#define FS_LEAK_WARN_ONLY   1 // Only send warning to gcs
 #define FS_LEAK_SURFACE     2 // Switch to surface mode
 
 // Internal pressure failsafe threshold (FS_PRESS_MAX parameter)

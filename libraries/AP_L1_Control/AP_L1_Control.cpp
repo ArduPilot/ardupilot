@@ -8,7 +8,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Param: PERIOD
     // @DisplayName: L1 control period
     // @Description: Period in seconds of L1 tracking loop. This parameter is the primary control for agressiveness of turns in auto mode. This needs to be larger for less responsive airframes. The default of 20 is quite conservative, but for most RC aircraft will lead to reasonable flight. For smaller more agile aircraft a value closer to 15 is appropriate, or even as low as 10 for some very agile aircraft. When tuning, change this value in small increments, as a value that is much too small (say 5 or 10 below the right value) can lead to very radical turns, and a risk of stalling.
-    // @Units: seconds
+    // @Units: s
     // @Range: 1 60
     // @Increment: 1
     // @User: Standard
@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Param: LIM_BANK
     // @DisplayName: Loiter Radius Bank Angle Limit
     // @Description: The sealevel bank angle limit for a continous loiter. (Used to calculate airframe loading limits at higher altitudes). Setting to 0, will instead just scale the loiter radius directly
-    // @Units: degrees
+    // @Units: deg
     // @Range: 0 89
     // @User: Advanced
     AP_GROUPINFO_FRAME("LIM_BANK",   3, AP_L1_Control, _loiter_bank_limit, 0.0f, AP_PARAM_FRAME_PLANE),
@@ -158,8 +158,14 @@ float AP_L1_Control::loiter_radius(const float radius) const
         return radius * eas2tas_sq;
     } else {
         float sea_level_radius = sq(nominal_velocity_sea_level) / lateral_accel_sea_level;
-        // select the requested radius, or the required altitude scale, whichever is safer
-        return MAX(sea_level_radius * eas2tas_sq, radius);
+        if (sea_level_radius > radius) {
+            // If we've told the plane that its sea level radius is unachievable fallback to
+            // straight altitude scaling
+            return radius * eas2tas_sq;
+        } else {
+            // select the requested radius, or the required altitude scale, whichever is safer
+            return MAX(sea_level_radius * eas2tas_sq, radius);
+        }
     }
 }
 
@@ -201,6 +207,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     float dt = (now - _last_update_waypoint_us) * 1.0e-6f;
     if (dt > 0.1) {
         dt = 0.1;
+        _L1_xtrack_i = 0.0f;
     }
     _last_update_waypoint_us = now;
 
@@ -310,7 +317,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     _prevent_indecision(Nu);
     _last_Nu = Nu;
 
-    //Limit Nu to +-pi
+    //Limit Nu to +-(pi/2)
     Nu = constrain_float(Nu, -1.5708f, +1.5708f);
     _latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
 

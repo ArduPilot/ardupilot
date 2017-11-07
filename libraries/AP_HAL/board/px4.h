@@ -13,6 +13,13 @@
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V1
 #define HAL_STORAGE_SIZE            8192
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V3)
+// check for V3 before V2 as V3 also defines V2
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V3
+#define HAL_STORAGE_SIZE            16384
+#define HAL_HAVE_IMU_HEATER         1 // for Pixhawk2
+#define HAL_IMU_TEMP_DEFAULT       -1 // disabled
+#define HAL_WITH_UAVCAN             1
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V2
 #define HAL_STORAGE_SIZE            16384
@@ -20,22 +27,22 @@
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
 #define HAL_WITH_UAVCAN             1
 #define HAL_MINIMIZE_FEATURES       1
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V3)
-#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V3
-#define HAL_STORAGE_SIZE            16384
-#define HAL_HAVE_IMU_HEATER         1 // for Pixhawk2
-#define HAL_IMU_TEMP_DEFAULT       -1 // disabled
-#define HAL_WITH_UAVCAN             1
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V4
 #define HAL_STORAGE_SIZE            16384
-#define HAL_WITH_UAVCAN             1
+#define HAL_WITH_UAVCAN				1
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V4PRO
+#define HAL_STORAGE_SIZE            16384
+#define HAL_WITH_UAVCAN				1
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_AEROFC_V1
 #define HAL_STORAGE_SIZE            16384
 #define USE_FLASH_STORAGE           1
+#define HAL_RCOUTPUT_TAP_DEVICE "/dev/ttyS0"
 // we don't have any sdcard
-#undef HAL_OS_POSIX_IO
+#undef HAL_BOARD_LOG_DIRECTORY
+#undef HAL_BOARD_TERRAIN_DIRECTORY
 #else
 #error "Unknown PX4 board type"
 #endif
@@ -69,6 +76,7 @@
 #define HAL_INS_ICM20608_EXT_NAME "icm20608_ext"
 
 #define HAL_COMPASS_HMC5843_NAME "hmc5843"
+#define HAL_COMPASS_LIS3MDL_NAME "lis3mdl"
 
 /* px4fmu-v1 */
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
@@ -89,7 +97,7 @@
 #define HAL_BARO_MS5607_I2C_BUS  0
 #define HAL_COMPASS_IST8310_I2C_ADDR 0x0E
 #define HAL_COMPASS_IST8310_I2C_BUS 1
-#define HAL_SERIAL0_BAUD_DEFAULT 460800
+#define HAL_SERIAL0_BAUD_DEFAULT 921600
 
 #define HAL_HAVE_BOARD_VOLTAGE 0
 #define HAL_HAVE_SAFETY_SWITCH 0

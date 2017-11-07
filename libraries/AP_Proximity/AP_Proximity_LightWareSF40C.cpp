@@ -411,7 +411,7 @@ bool AP_Proximity_LightWareSF40C::process_reply()
             if (convert_angle_to_sector(angle_deg, sector)) {
                 _angle[sector] = angle_deg;
                 _distance[sector] = distance_m;
-                _distance_valid[sector] = true;
+                _distance_valid[sector] = is_positive(distance_m);
                 _last_distance_received_ms = AP_HAL::millis();
                 success = true;
                 // update boundary used for avoidance

@@ -22,6 +22,7 @@
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -39,7 +40,6 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _batt_voltage(0.0f),
     _batt_current(0.0f),
     _air_density_ratio(1.0f),
-    _motor_map_mask(0),
     _motor_fast_mask(0)
 {
     // init other flags
@@ -83,10 +83,6 @@ void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float
  */
 void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 {
-    if (_motor_map_mask & (1U<<chan)) {
-        // we have a mapped motor number for this channel
-        chan = _motor_map[chan];
-    }
     if (_pwm_type == PWM_TYPE_ONESHOT125 && (_motor_fast_mask & (1U<<chan))) {
         // OneShot125 uses a PWM range from 125 to 250 usec
         pwm /= 8;
@@ -101,7 +97,8 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
             pwm = 250;
         }
     }
-    hal.rcout->write(chan, pwm);
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
+    SRV_Channels::set_output_pwm(function, pwm);
 }
 
 /*
@@ -109,10 +106,10 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
  */
 void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
 {
-    mask = rc_map_mask(mask);
     if (freq_hz > 50) {
         _motor_fast_mask |= mask;
     }
+    mask = rc_map_mask(mask);
     hal.rcout->set_freq(mask, freq_hz);
     if ((_pwm_type == PWM_TYPE_ONESHOT ||
          _pwm_type == PWM_TYPE_ONESHOT125) &&
@@ -120,22 +117,15 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
         mask != 0) {
         // tell HAL to do immediate output
         hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_ONESHOT);
-    } else if (_pwm_type == PWM_TYPE_BRUSHED16kHz) {
-        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_BRUSHED16KHZ);
+    } else if (_pwm_type == PWM_TYPE_BRUSHED) {
+        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_BRUSHED);
     }
-}
-
-void AP_Motors::rc_enable_ch(uint8_t chan)
-{
-    if (_motor_map_mask & (1U<<chan)) {
-        // we have a mapped motor number for this channel
-        chan = _motor_map[chan];
-    }
-    hal.rcout->enable_ch(chan);
 }
 
 /*
-  map an internal motor mask to real motor mask
+  map an internal motor mask to real motor mask, accounting for
+  SERVOn_FUNCTION mappings, and allowing for multiple outputs per
+  motor number
  */
 uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
 {
@@ -143,12 +133,8 @@ uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
     for (uint8_t i=0; i<32; i++) {
         uint32_t bit = 1UL<<i;
         if (mask & bit) {
-            if ((i < AP_MOTORS_MAX_NUM_MOTORS) && (_motor_map_mask & bit)) {
-                // we have a mapped motor number for this channel
-                mask2 |= (1UL << _motor_map[i]);
-            } else {
-                mask2 |= bit;
-            }
+            SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+            mask2 |= SRV_Channels::get_output_channel_mask(function);
         }
     }
     return mask2;
@@ -191,19 +177,17 @@ int16_t AP_Motors::calc_pwm_output_0to1(float input, const SRV_Channel *servo)
 }
 
 /*
-  add a motor, setting up _motor_map and _motor_map_mask as needed
+  add a motor, setting up default output function as needed
  */
 void AP_Motors::add_motor_num(int8_t motor_num)
 {
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
         uint8_t chan;
-        SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+motor_num);
+        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
-        if (SRV_Channels::find_channel((SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+motor_num),
-                                       chan) && chan != motor_num) {
-            _motor_map[motor_num] = chan;
-            _motor_map_mask |= 1U<<motor_num;
+        if (!SRV_Channels::find_channel(function, chan)) {
+            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
         }
     }
 }

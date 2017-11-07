@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RSSI Type
     // @Description: Radio Receiver RSSI type. If your radio receiver supports RSSI of some kind, set it here, then set its associated RSSI_XXXXX parameters, if any.
-    // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue
+    // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue,3:ReceiverProtocol
     // @User: Standard
     AP_GROUPINFO("TYPE", 0, AP_RSSI, rssi_type,  BOARD_RSSI_DEFAULT),
 
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: PIN_LOW
     // @DisplayName: Receiver RSSI voltage low
     // @Description: This is the voltage value that the radio receiver will put on the RSSI_ANA_PIN when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_PIN_HIGH. 
-    // @Units: Volt
+    // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
     // @User: Standard
@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: PIN_HIGH
     // @DisplayName: Receiver RSSI voltage high
     // @Description: This is the voltage value that the radio receiver will put on the RSSI_ANA_PIN when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_PIN_LOW. 
-    // @Units: Volt
+    // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
     // @User: Standard
@@ -72,16 +72,16 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: CHAN_LOW
     // @DisplayName: Receiver RSSI PWM low value
-    // @Description: This is the PWM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_CHAN_HIGH. 
-    // @Units: Microseconds
+    // @Description: This is the PWM value in microseconds that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_CHAN_HIGH.
+    // @Units: PWM
     // @Range: 0 2000
     // @User: Standard
     AP_GROUPINFO("CHAN_LOW", 5, AP_RSSI, rssi_channel_low_pwm_value,  1000),
 
     // @Param: CHAN_HIGH
     // @DisplayName: Receiver RSSI PWM high value
-    // @Description: This is the PWM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_CHAN_LOW. 
-    // @Units: Microseconds
+    // @Description: This is the PWM value in microseconds that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_CHAN_LOW.
+    // @Units: PWM
     // @Range: 0 2000
     // @User: Standard
     AP_GROUPINFO("CHAN_HIGH", 6, AP_RSSI, rssi_channel_high_pwm_value,  2000),
@@ -128,6 +128,13 @@ float AP_RSSI::read_receiver_rssi()
         case RssiType::RSSI_RC_CHANNEL_VALUE :
             receiver_rssi = read_channel_rssi();
             break;
+        case RssiType::RSSI_RECEIVER : {
+            int16_t rssi = hal.rcin->get_rssi();
+            if (rssi != -1) {
+                receiver_rssi = rssi / 255.0;
+            }
+            break;
+        }
         default :   
             receiver_rssi = 0.0f;
             break;

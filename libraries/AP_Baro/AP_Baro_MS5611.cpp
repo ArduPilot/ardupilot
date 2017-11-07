@@ -98,6 +98,7 @@ bool AP_Baro_MS56XX::_init()
     switch (_ms56xx_type) {
     case BARO_MS5607:
         name = "MS5607";
+        FALLTHROUGH;
     case BARO_MS5611:
         prom_read_ok = _read_prom_5611(prom);
         break;
@@ -144,7 +145,7 @@ bool AP_Baro_MS56XX::_init()
     _dev->get_semaphore()->give();
 
     /* Request 100Hz update */
-    _dev->register_periodic_callback(10 * USEC_PER_MSEC,
+    _dev->register_periodic_callback(10 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void));
     return true;
 }

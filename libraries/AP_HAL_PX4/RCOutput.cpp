@@ -16,6 +16,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #if HAL_WITH_UAVCAN
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #endif
 
@@ -73,6 +74,7 @@ void PX4RCOutput::init()
     // ensure not to write zeros to disabled channels
     for (uint8_t i=0; i < PX4_NUM_OUTPUT_CHANNELS; i++) {
         _period[i] = PWM_IGNORE_THIS_CHANNEL;
+        _last_sent[i] = PWM_IGNORE_THIS_CHANNEL;
     }
 }
 
@@ -100,8 +102,10 @@ void PX4RCOutput::_init_alt_channels(void)
  */
 void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_t &rate_mask) 
 {
-    if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
-        freq_hz = 2000; // this maps to 16kHz due to 8MHz clock
+    if (_output_mode == MODE_PWM_BRUSHED) {
+        freq_hz /= 8; // divide by 8 for 8MHz clock
+        // remember max period
+        _period_max = 1000000UL/freq_hz;
     }
     
     // we can't set this per channel
@@ -163,7 +167,7 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_
         hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)rate_mask);
     }
 
-    if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
+    if (_output_mode == MODE_PWM_BRUSHED) {
         ioctl(fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
     }    
 }
@@ -186,7 +190,7 @@ void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     
     // greater than 400 doesn't give enough room at higher periods for
     // the down pulse
-    if (freq_hz > 400 && _output_mode != MODE_PWM_BRUSHED16KHZ) {
+    if (freq_hz > 400 && _output_mode != MODE_PWM_BRUSHED) {
         freq_hz = 400;
     }
     uint32_t primary_mask = chmask & ((1UL<<_servo_count)-1);
@@ -227,6 +231,7 @@ void PX4RCOutput::enable_ch(uint8_t ch)
     _enabled_channels |= (1U<<ch);
     if (_period[ch] == PWM_IGNORE_THIS_CHANNEL) {
         _period[ch] = 0;
+        _last_sent[ch] = 0;
     }
 }
 
@@ -327,18 +332,20 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
         _max_channel = ch + 1;
     }
 
-    if (_output_mode == MODE_PWM_BRUSHED16KHZ) {
+    // keep unscaled value
+    _last_sent[ch] = period_us;
+        
+    if (_output_mode == MODE_PWM_BRUSHED) {
         // map from the PWM range to 0 t0 100% duty cycle. For 16kHz
         // this ends up being 0 to 500 pulse width in units of
         // 125usec.
-        const uint32_t period_max = 1000000UL/(16000/8);
         if (period_us <= _esc_pwm_min) {
             period_us = 0;
         } else if (period_us >= _esc_pwm_max) {
-            period_us = period_max;
+            period_us = _period_max;
         } else {
             uint32_t pdiff = period_us - _esc_pwm_min;
-            period_us = pdiff*period_max/(_esc_pwm_max - _esc_pwm_min);
+            period_us = pdiff*_period_max/(_esc_pwm_max - _esc_pwm_min);
         }
     }
     
@@ -385,7 +392,7 @@ uint16_t PX4RCOutput::read_last_sent(uint8_t ch)
         return 0;
     }
 
-    return _period[ch];
+    return _last_sent[ch];
 }
 
 void PX4RCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
@@ -483,34 +490,35 @@ void PX4RCOutput::_send_outputs(void)
             }
         }
 
-        if(AP_BoardConfig::get_can_enable() >= 1)
-        {
 #if HAL_WITH_UAVCAN
-
-            if(hal.can_mgr != nullptr)
-            {
-                AP_UAVCAN *ap_uc = hal.can_mgr->get_UAVCAN();
-                if(ap_uc != nullptr)
+        if (AP_BoardConfig_CAN::get_can_num_ifaces() >= 1)
+        {
+            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+                if (hal.can_mgr[i] != nullptr)
                 {
-                    if(ap_uc->rc_out_sem_take())
+                    AP_UAVCAN *ap_uc = hal.can_mgr[i]->get_UAVCAN();
+                    if (ap_uc != nullptr)
                     {
-                        for(uint8_t i = 0; i < _max_channel; i++)
+                        if (ap_uc->rc_out_sem_take())
                         {
-                            ap_uc->rco_write(_period[i], i);
-                        }
+                            for (uint8_t j = 0; j < _max_channel; j++)
+                            {
+                                ap_uc->rco_write(_period[j], j);
+                            }
 
-                        if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-                            ap_uc->rco_arm_actuators(true);
-                        } else {
-                            ap_uc->rco_arm_actuators(false);
-                        }
+                            if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+                                ap_uc->rco_arm_actuators(true);
+                            } else {
+                                ap_uc->rco_arm_actuators(false);
+                            }
 
-                        ap_uc->rc_out_sem_give();
+                            ap_uc->rc_out_sem_give();
+                        }
                     }
                 }
             }
-#endif // HAL_WITH_UAVCAN
         }
+#endif // HAL_WITH_UAVCAN
 
         perf_end(_perf_rcout);
         _last_output = now;
@@ -622,7 +630,7 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
             ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 0);
         }
         break;
-    case MODE_PWM_BRUSHED16KHZ:
+    case MODE_PWM_BRUSHED:
         // setup an 8MHz clock. This has the effect of scaling all outputs by 8x
         ioctl(_pwm_fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
         if (_alt_fd != -1) {
@@ -632,5 +640,19 @@ void PX4RCOutput::set_output_mode(enum output_mode mode)
     }
 }
 
+
+// set default output update rate
+void PX4RCOutput::set_default_rate(uint16_t rate_hz)
+{
+    if (rate_hz != _default_rate_hz) {
+        // set servo update rate for first 8 pwm channels
+        ioctl(_pwm_fd, PWM_SERVO_SET_DEFAULT_UPDATE_RATE, rate_hz);
+        if (_alt_fd != -1) {
+            // set servo update rate for auxiliary channels
+            ioctl(_alt_fd, PWM_SERVO_SET_DEFAULT_UPDATE_RATE, rate_hz);
+        }
+        _default_rate_hz = rate_hz;
+    }
+}
 
 #endif // CONFIG_HAL_BOARD

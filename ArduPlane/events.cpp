@@ -4,8 +4,8 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
 {
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
-    failsafe.ch3_timer_ms = millis();
-    gcs_send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on, ");
+    failsafe.short_timer_ms = millis();
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%u/reason=%u", fstype, reason);
     switch(control_mode)
     {
     case MANUAL:
@@ -55,13 +55,13 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     default:
         break;
     }
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode);
+    gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode);
 }
 
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason)
 {
     // This is how to handle a long loss of control signal failsafe.
-    gcs_send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event on, ");
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event on: type=%u/reason=%u", fstype, reason);
     //  If the GCS is locked up we allow control to revert to RC
     hal.rcin->clear_overrides();
     failsafe.state = fstype;
@@ -114,16 +114,13 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     default:
         break;
     }
-    if (fstype == FAILSAFE_GCS) {
-        gcs_send_text(MAV_SEVERITY_CRITICAL, "No GCS heartbeat");
-    }
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode);
+    gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode);
 }
 
 void Plane::failsafe_short_off_event(mode_reason_t reason)
 {
     // We're back in radio contact
-    gcs_send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off");
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off: reason=%u", reason);
     failsafe.state = FAILSAFE_NONE;
 
     // re-read the switch so we can return to our preferred mode
@@ -134,12 +131,19 @@ void Plane::failsafe_short_off_event(mode_reason_t reason)
     }
 }
 
+void Plane::failsafe_long_off_event(mode_reason_t reason)
+{
+    // We're back in radio contact
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event off: reason=%u", reason);
+    failsafe.state = FAILSAFE_NONE;
+}
+
 void Plane::low_battery_event(void)
 {
     if (failsafe.low_battery) {
         return;
     }
-    gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Low battery %.2fV used %.0f mAh",
+    gcs().send_text(MAV_SEVERITY_WARNING, "Low battery %.2fV used %.0f mAh",
                       (double)battery.voltage(), (double)battery.current_total_mah());
     if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
     	set_mode(RTL, MODE_REASON_BATTERY_FAILSAFE);

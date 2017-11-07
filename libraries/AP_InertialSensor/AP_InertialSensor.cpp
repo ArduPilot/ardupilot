@@ -8,6 +8,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_BMI160.h"
@@ -423,6 +424,18 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   0),
 
+    // @Param: NOTCH_
+    // @DisplayName: Notch filter
+    // @Description: Gyro notch filter
+    // @User: Advanced
+    AP_SUBGROUPINFO(_notch_filter, "NOTCH_",  37, AP_InertialSensor, NotchFilterVector3fParam),
+
+    // @Param: LOG_
+    // @DisplayName: Log Settings
+    // @Description: Log Settings
+    // @User: Advanced
+    AP_SUBGROUPINFO(batchsampler, "LOG_",  39, AP_InertialSensor, AP_InertialSensor::BatchSampler),
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -441,11 +454,10 @@ AP_InertialSensor::AP_InertialSensor() :
     _board_orientation(ROTATION_NONE),
     _primary_gyro(0),
     _primary_accel(0),
+    _log_raw_bit(-1),
     _hil_mode(false),
     _calibrating(false),
-    _log_raw_data(false),
     _backends_detected(false),
-    _dataflash(nullptr),
     _accel_cal_requires_reboot(false),
     _startup_error_counts_set(false),
     _startup_ms(0)
@@ -638,11 +650,16 @@ AP_InertialSensor::init(uint16_t sample_rate)
 
     _sample_period_usec = 1000*1000UL / _sample_rate;
 
+    _notch_filter.init(sample_rate);
+    
     // establish the baseline time between samples
     _delta_time = 0;
     _next_sample_usec = 0;
     _last_sample_usec = 0;
     _have_sample = false;
+
+    // initialise IMU batch logging
+    batchsampler.init();
 }
 
 bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
@@ -726,6 +743,12 @@ AP_InertialSensor::detect_backends(void)
         _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_ROLL_180_YAW_90));
         break;
 
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
+        _fast_sampling_mask.set_default(3);
+        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_ICM20608_NAME), ROTATION_ROLL_180_YAW_90));
+        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), ROTATION_ROLL_180_YAW_90));
+        break;		
+
     case AP_BoardConfig::PX4_BOARD_PHMINI:
         // PHMINI uses ICM20608 on the ACCEL_MAG device and a MPU9250 on the old MPU6000 CS line
         _fast_sampling_mask.set_default(3);
@@ -759,18 +782,28 @@ AP_InertialSensor::detect_backends(void)
     _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), HAL_INS_DEFAULT_ROTATION));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250_SPI
     _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME)));
+#elif HAL_INS_DEFAULT == HAL_INS_EDGE
+    AP_InertialSensor_Backend *backend = AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_YAW_90);
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("First IMU detected\n");
+    } else {
+        hal.console->printf("First IMU not detected\n");
+    }
+
+    backend = AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME_EXT), ROTATION_YAW_90);
+    if (backend) {
+        _add_backend(backend);
+        hal.console->printf("Second IMU detected\n");
+    } else {
+        hal.console->printf("Second IMU not detected\n");
+    }
 #elif HAL_INS_DEFAULT == HAL_INS_LSM9DS0
     _add_backend(AP_InertialSensor_LSM9DS0::probe(*this,
                  hal.spi->get_device(HAL_INS_LSM9DS0_G_NAME),
                  hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME)));
 #elif HAL_INS_DEFAULT == HAL_INS_L3G4200D
     _add_backend(AP_InertialSensor_L3G4200D::probe(*this, hal.i2c_mgr->get_device(HAL_INS_L3G4200D_I2C_BUS, HAL_INS_L3G4200D_I2C_ADDR)));
-#elif HAL_INS_DEFAULT == HAL_INS_RASPILOT
-    _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME)));
-    _add_backend(AP_InertialSensor_LSM9DS0::probe(*this,
-                                                  hal.spi->get_device(HAL_INS_LSM9DS0_G_NAME),
-                                                  hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME),
-                                                  ROTATION_NONE, ROTATION_YAW_90));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250_I2C
     _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU9250_I2C_BUS, HAL_INS_MPU9250_I2C_ADDR)));
 #elif HAL_INS_DEFAULT == HAL_INS_QFLIGHT
@@ -809,6 +842,14 @@ AP_InertialSensor::detect_backends(void)
         AP_HAL::panic("No INS backends available");
     }
 }
+
+// Armed, Copter, PixHawk:
+// ins_periodic: 57500 events, 0 overruns, 208754us elapsed, 3us avg, min 1us max 218us 40.662us rms
+void AP_InertialSensor::periodic()
+{
+    batchsampler.periodic();
+}
+
 
 /*
   _calculate_trim - calculates the x and y trim angles. The
@@ -970,11 +1011,6 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
         }
         // exactly 0.0 offset is extremely unlikely
         if (_accel_offset[i].get().is_zero()) {
-            return false;
-        }
-        // exactly 1.0 scaling is extremely unlikely
-        const Vector3f &scaling = _accel_scale[i].get();
-        if (is_equal(scaling.x,1.0f) && is_equal(scaling.y,1.0f) && is_equal(scaling.z,1.0f)) {
             return false;
         }
         // zero scaling also indicates not calibrated
@@ -1260,6 +1296,9 @@ void AP_InertialSensor::update(void)
         }
     }
 
+    // apply notch filter to primary gyro
+    _gyro[_primary_gyro] = _notch_filter.apply(_gyro[_primary_gyro]);
+    
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;
@@ -1734,4 +1773,165 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
     ret = avg;
     ret.rotate(_board_orientation);
     return true;
+}
+
+/*
+  perform a simple 1D accel calibration, returning mavlink result code
+ */
+uint8_t AP_InertialSensor::simple_accel_cal(AP_AHRS &ahrs)
+{
+    uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
+    Vector3f last_average[INS_MAX_INSTANCES];
+    Vector3f new_accel_offset[INS_MAX_INSTANCES];
+    Vector3f saved_offsets[INS_MAX_INSTANCES];
+    Vector3f saved_scaling[INS_MAX_INSTANCES];
+    bool converged[INS_MAX_INSTANCES];
+    const float accel_convergence_limit = 0.05;
+    Vector3f rotated_gravity(0, 0, -GRAVITY_MSS);
+    
+    // exit immediately if calibration is already in progress
+    if (_calibrating) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+    // record we are calibrating
+    _calibrating = true;
+
+    // flash leds to tell user to keep the IMU still
+    AP_Notify::flags.initialising = true;
+
+    hal.console->printf("Simple accel cal");
+
+    /*
+      we do the accel calibration with no board rotation. This avoids
+      having to rotate readings during the calibration
+    */
+    enum Rotation saved_orientation = _board_orientation;
+    _board_orientation = ROTATION_NONE;
+
+    // get the rotated gravity vector which will need to be applied to the offsets
+    rotated_gravity.rotate_inverse(saved_orientation);
+    
+    // save existing accel offsets
+    for (uint8_t k=0; k<num_accels; k++) {
+        saved_offsets[k] = _accel_offset[k];
+        saved_scaling[k] = _accel_scale[k];
+    }
+    
+    // remove existing accel offsets and scaling
+    for (uint8_t k=0; k<num_accels; k++) {
+        _accel_offset[k].set(Vector3f());
+        _accel_scale[k].set(Vector3f(1,1,1));
+        new_accel_offset[k].zero();
+        last_average[k].zero();
+        converged[k] = false;
+    }
+
+    for (uint8_t c = 0; c < 5; c++) {
+        hal.scheduler->delay(5);
+        update();
+    }
+
+    // the strategy is to average 50 points over 0.5 seconds, then do it
+    // again and see if the 2nd average is within a small margin of
+    // the first
+
+    uint8_t num_converged = 0;
+
+    // we try to get a good calibration estimate for up to 10 seconds
+    // if the accels are stable, we should get it in 1 second
+    for (int16_t j = 0; j <= 10*4 && num_converged < num_accels; j++) {
+        Vector3f accel_sum[INS_MAX_INSTANCES], accel_avg[INS_MAX_INSTANCES], accel_diff[INS_MAX_INSTANCES];
+        float diff_norm[INS_MAX_INSTANCES];
+        uint8_t i;
+
+        memset(diff_norm, 0, sizeof(diff_norm));
+
+        hal.console->printf("*");
+
+        for (uint8_t k=0; k<num_accels; k++) {
+            accel_sum[k].zero();
+        }
+        for (i=0; i<50; i++) {
+            update();
+            for (uint8_t k=0; k<num_accels; k++) {
+                accel_sum[k] += get_accel(k);
+            }
+            hal.scheduler->delay(5);
+        }
+
+        for (uint8_t k=0; k<num_accels; k++) {
+            accel_avg[k] = accel_sum[k] / i;
+            accel_diff[k] = last_average[k] - accel_avg[k];
+            diff_norm[k] = accel_diff[k].length();
+        }
+
+        for (uint8_t k=0; k<num_accels; k++) {
+            if (j > 0 && diff_norm[k] < accel_convergence_limit) {
+                last_average[k] = (accel_avg[k] * 0.5f) + (last_average[k] * 0.5f);
+                if (!converged[k] || last_average[k].length() < new_accel_offset[k].length()) {
+                    new_accel_offset[k] = last_average[k];
+                }
+                if (!converged[k]) {
+                    converged[k] = true;
+                    num_converged++;
+                }
+            } else {
+                last_average[k] = accel_avg[k];
+            }
+        }
+    }
+
+    uint8_t result = MAV_RESULT_ACCEPTED;
+
+    // see if we've passed
+    for (uint8_t k=0; k<num_accels; k++) {
+        if (!converged[k]) {
+            result = MAV_RESULT_FAILED;
+        }
+    }
+
+    // restore orientation
+    _board_orientation = saved_orientation;
+
+    if (result == MAV_RESULT_ACCEPTED) {
+        hal.console->printf("\nPASSED\n");
+        for (uint8_t k=0; k<num_accels; k++) {
+            // remove rotated gravity
+            new_accel_offset[k] -= rotated_gravity;
+            _accel_offset[k].set_and_save(new_accel_offset[k]);
+            _accel_scale[k].save();
+            _accel_id[k].save();
+            _accel_id_ok[k] = true;
+        }
+
+        // force trim to zero
+        ahrs.set_trim(Vector3f(0, 0, 0));
+    } else {
+        hal.console->printf("\nFAILED\n");
+        // restore old values
+        for (uint8_t k=0; k<num_accels; k++) {
+            _accel_offset[k] = saved_offsets[k];
+            _accel_scale[k] = saved_scaling[k];
+        }
+    }
+
+    // record calibration complete
+    _calibrating = false;
+
+    // throw away any existing samples that may have the wrong
+    // orientation. We do this by throwing samples away for 0.5s,
+    // which is enough time for the filters to settle
+    uint32_t start_ms = AP_HAL::millis();
+    while (AP_HAL::millis() - start_ms < 500) {
+        update();
+    }
+
+    // and reset state estimators
+    ahrs.reset();
+        
+    // stop flashing leds
+    AP_Notify::flags.initialising = false;
+
+    return result;
 }

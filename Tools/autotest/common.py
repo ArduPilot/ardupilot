@@ -10,6 +10,29 @@ from pysim import util
 # messages. This keeps the output to stdout flowing
 expect_list = []
 
+class AutoTestTimeoutException(Exception):
+    pass
+
+def wait_ready_to_arm(mav, timeout=None):
+    # wait for EKF checks to pass
+    return wait_ekf_happy(mav, timeout=timeout)
+
+def wait_ekf_happy(mav, timeout=30):
+    """Wait for EKF to be happy"""
+
+    tstart = get_sim_time(mav)
+    required_value = 831
+    print("Waiting for EKF value %u" % (required_value))
+    while timeout is None or get_sim_time(mav) < tstart + timeout:
+        m = mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
+        current = m.flags
+        if (tstart - get_sim_time(mav)) % 5 == 0:
+            print("Wait EKF.flags: required:%u current:%u" % (required_value, current))
+        if current == required_value:
+            print("EKF Flags OK")
+            return
+    print("Failed to get EKF.flags=%u" % required_value)
+    raise AutoTestTimeoutException()
 
 def expect_list_clear():
     """clear the expect list."""
@@ -73,6 +96,21 @@ def get_sim_time(mav):
     m = mav.recv_match(type='SYSTEM_TIME', blocking=True)
     return m.time_boot_ms * 1.0e-3
 
+def set_parameter(mavproxy, name ,value):
+    for i in range(1,10):
+        mavproxy.send("param set %s %s\n" % (name, str(value)))
+        mavproxy.send("param fetch %s\n" % (name))
+        mavproxy.expect("%s = (.*)" % (name,))
+        returned_value = mavproxy.match.group(1)
+        if float(returned_value) == float(value):
+            # yes, exactly equal.
+            break
+        print("Param fetch returned incorrect value (%s) vs (%s)" % (returned_value, value))
+
+def get_parameter(mavproxy, name):
+    mavproxy.send("param fetch %s\n" % (name))
+    mavproxy.expect("%s = (.*)" % (name,))
+    return float(mavproxy.match.group(1))
 
 def wait_altitude(mav, alt_min, alt_max, timeout=30):
     """Wait for a given altitude range."""

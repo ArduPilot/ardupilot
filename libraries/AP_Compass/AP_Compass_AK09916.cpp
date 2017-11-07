@@ -37,8 +37,17 @@
 #define REG_CNTL2           0x31
 #define REG_CNTL3           0x32
 
+#define REG_ICM_WHOAMI      0x00
+#define REG_ICM_PWR_MGMT_1  0x06
+#define REG_ICM_INT_PIN_CFG 0x0f
+
+#define ICM_WHOAMI_VAL      0xEA
+
 extern const AP_HAL::HAL &hal;
 
+/*
+  probe for AK09916 directly on I2C
+ */
 AP_Compass_Backend *AP_Compass_AK09916::probe(Compass &compass,
                                               AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                               bool force_external,
@@ -47,7 +56,33 @@ AP_Compass_Backend *AP_Compass_AK09916::probe(Compass &compass,
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_AK09916 *sensor = new AP_Compass_AK09916(compass, std::move(dev), force_external, rotation);
+    AP_Compass_AK09916 *sensor = new AP_Compass_AK09916(compass, std::move(dev), nullptr,
+                                                        force_external,
+                                                        rotation, AK09916_I2C);
+    if (!sensor || !sensor->init()) {
+        delete sensor;
+        return nullptr;
+    }
+
+    return sensor;
+}
+
+
+/*
+  probe for AK09916 connected via an ICM20948
+ */
+AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(Compass &compass,
+                                                       AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                                       AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
+                                                       bool force_external,
+                                                       enum Rotation rotation)
+{
+    if (!dev) {
+        return nullptr;
+    }
+    AP_Compass_AK09916 *sensor = new AP_Compass_AK09916(compass, std::move(dev), std::move(dev_icm),
+                                                        force_external,
+                                                        rotation, AK09916_ICM20948_I2C);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -58,10 +93,14 @@ AP_Compass_Backend *AP_Compass_AK09916::probe(Compass &compass,
 
 AP_Compass_AK09916::AP_Compass_AK09916(Compass &compass,
                                        AP_HAL::OwnPtr<AP_HAL::Device> _dev,
+                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev_icm,
                                        bool _force_external,
-                                       enum Rotation _rotation)
+                                       enum Rotation _rotation,
+                                       enum bus_type _bus_type)
     : AP_Compass_Backend(compass)
+    , bus_type(_bus_type)
     , dev(std::move(_dev))
+    , dev_icm(std::move(_dev_icm))
     , force_external(_force_external)
     , rotation(_rotation)
 {
@@ -71,6 +110,26 @@ bool AP_Compass_AK09916::init()
 {
     if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
+    }
+
+    if (bus_type == AK09916_ICM20948_I2C && dev_icm) {
+        uint8_t rval;
+        if (!dev_icm->read_registers(REG_ICM_WHOAMI, &rval, 1) ||
+            rval != ICM_WHOAMI_VAL) {
+            // not an ICM_WHOAMI
+            goto fail;
+        }
+        // see if ICM20948 is sleeping
+        if (!dev_icm->read_registers(REG_ICM_PWR_MGMT_1, &rval, 1)) {
+            goto fail;
+        }
+        if (rval & 0x40) {
+            // bring out of sleep mode, use internal oscillator
+            dev_icm->write_register(REG_ICM_PWR_MGMT_1, 0x00);
+            hal.scheduler->delay(10);
+        }
+        // enable i2c bypass
+        dev_icm->write_register(REG_ICM_INT_PIN_CFG, 0x02);
     }
 
     uint16_t whoami;
@@ -98,7 +157,7 @@ bool AP_Compass_AK09916::init()
         set_external(compass_instance, true);
     }
     
-    dev->set_device_type(DEVTYPE_AK09916);
+    dev->set_device_type(bus_type == AK09916_ICM20948_I2C?DEVTYPE_ICM20948:DEVTYPE_AK09916);
     set_dev_id(compass_instance, dev->get_bus_id());
 
     // call timer() at 100Hz
@@ -142,7 +201,7 @@ void AP_Compass_AK09916::timer()
     rotate_field(field, compass_instance);
 
     /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, AP_HAL::micros(), compass_instance);
+    publish_raw_field(field, compass_instance);
 
     /* correct raw_field for known errors */
     correct_field(field, compass_instance);

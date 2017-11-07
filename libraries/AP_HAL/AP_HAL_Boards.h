@@ -25,7 +25,6 @@
 #define HAL_BOARD_SUBTYPE_LINUX_ZYNQ       1004
 #define HAL_BOARD_SUBTYPE_LINUX_BBBMINI    1005
 #define HAL_BOARD_SUBTYPE_LINUX_BEBOP      1006
-#define HAL_BOARD_SUBTYPE_LINUX_RASPILOT   1007
 #define HAL_BOARD_SUBTYPE_LINUX_MINLURE    1008
 #define HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 1009
 #define HAL_BOARD_SUBTYPE_LINUX_BH         1010
@@ -35,8 +34,9 @@
 #define HAL_BOARD_SUBTYPE_LINUX_DISCO      1014
 #define HAL_BOARD_SUBTYPE_LINUX_AERO       1015
 #define HAL_BOARD_SUBTYPE_LINUX_DARK       1016
-#define HAL_BOARD_SUBTYPE_LINUX_URUS       1017
 #define HAL_BOARD_SUBTYPE_LINUX_BLUE       1018
+#define HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ 1019
+#define HAL_BOARD_SUBTYPE_LINUX_EDGE       1020
 
 /* HAL PX4 sub-types, starting at 2000 */
 #define HAL_BOARD_SUBTYPE_PX4_V1           2000
@@ -44,6 +44,7 @@
 #define HAL_BOARD_SUBTYPE_PX4_V4           2002
 #define HAL_BOARD_SUBTYPE_PX4_V3           2003
 #define HAL_BOARD_SUBTYPE_PX4_AEROFC_V1    2004
+#define HAL_BOARD_SUBTYPE_PX4_V4PRO        2005
 
 /* HAL VRBRAIN sub-types, starting at 4000 */
 #define HAL_BOARD_SUBTYPE_VRBRAIN_V45      4000
@@ -64,7 +65,6 @@
 #define HAL_INS_MPU9250_SPI  9
 #define HAL_INS_L3GD20      10
 #define HAL_INS_LSM9DS0     11
-#define HAL_INS_RASPILOT    12
 #define HAL_INS_MPU9250_I2C 13
 #define HAL_INS_BH          14
 #define HAL_INS_QFLIGHT     15
@@ -72,6 +72,7 @@
 #define HAL_INS_BBBMINI     17
 #define HAL_INS_AERO        18
 #define HAL_INS_MPU6500     19
+#define HAL_INS_EDGE        20
 
 /* Barometer driver types */
 #define HAL_BARO_BMP085      1
@@ -86,6 +87,7 @@
 #define HAL_BARO_QURT       10
 #define HAL_BARO_BMP280_I2C 11
 #define HAL_BARO_BMP280_SPI 12
+#define HAL_BARO_LPS25H     13
 
 /* Compass driver types */
 #define HAL_COMPASS_HMC5843             1
@@ -95,7 +97,6 @@
 #define HAL_COMPASS_AK8963_MPU9250      5
 #define HAL_COMPASS_AK8963_I2C          6
 #define HAL_COMPASS_HMC5843_MPU6000     7
-#define HAL_COMPASS_RASPILOT            8
 #define HAL_COMPASS_AK8963_MPU9250_I2C  9
 #define HAL_COMPASS_BH                 10
 #define HAL_COMPASS_QFLIGHT            11
@@ -104,6 +105,8 @@
 #define HAL_COMPASS_NAVIO2             14
 #define HAL_COMPASS_NAVIO              15
 #define HAL_COMPASS_AERO               16
+#define HAL_COMPASS_OCPOC_ZYNQ         17
+#define HAL_COMPASS_EDGE               18
 
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1
@@ -162,10 +165,6 @@
 
 #ifndef HAL_HAVE_IMU_HEATER
 #define HAL_HAVE_IMU_HEATER 0
-#endif
-
-#ifndef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
-#define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 1
 #endif
 
 #ifndef HAL_COMPASS_HMC5843_I2C_ADDR

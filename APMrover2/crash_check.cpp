@@ -13,7 +13,7 @@ void Rover::crash_check()
   static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
 
   // return immediately if disarmed, or crash checking disabled or in HOLD mode
-  if (!arming.is_armed() || g.fs_crash_check == FS_CRASH_DISABLE || (control_mode != GUIDED && control_mode != AUTO)) {
+  if (!arming.is_armed() || g.fs_crash_check == FS_CRASH_DISABLE || (!control_mode->is_autopilot_mode())) {
     crash_counter = 0;
     return;
   }
@@ -23,7 +23,7 @@ void Rover::crash_check()
 
   if ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
       (fabsf(ahrs.get_gyro().z) >= CRASH_CHECK_VEL_MIN) ||  // Check turn speed
-      ((100 * fabsf(SRV_Channels::get_output_norm(SRV_Channel::k_throttle))) < CRASH_CHECK_THROTTLE_MIN)) {
+      (fabsf(g2.motors.get_throttle()) < CRASH_CHECK_THROTTLE_MIN)) {
     crash_counter = 0;
     return;
   }
@@ -36,9 +36,9 @@ void Rover::crash_check()
     // log an error in the dataflash
     Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
     // send message to gcs
-    gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash: Going to HOLD");
+    gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash: Going to HOLD");
     // change mode to hold and disarm
-    set_mode(HOLD);
+    set_mode(mode_hold, MODE_REASON_CRASH_FAILSAFE);
     if (g.fs_crash_check == FS_CRASH_HOLD_AND_DISARM) {
       disarm_motors();
     }

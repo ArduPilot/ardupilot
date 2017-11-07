@@ -3,7 +3,7 @@
 Emit docs in a form acceptable to the old Ardupilot wordpress docs site
 """
 
-from param import known_param_fields
+from param import known_param_fields, known_units
 from emit import Emit
 import cgi
 
@@ -71,6 +71,11 @@ DO NOT EDIT
                             v = value.split(':')
                             t += "<tr><td>%s</td><td>%s</td></tr>\n" % (v[0], v[1])
                         t += "</table>\n"
+                    elif field == 'Units':
+                        abreviated_units = param.__dict__[field]
+                        if abreviated_units != '':
+                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abreviated unit into a full textual one
+                            t += "<li>%s: %s</li>\n" % (field, cgi.escape(units))
                     else:
                         t += "<li>%s: %s</li>\n" % (field, cgi.escape(param.__dict__[field]))
             t += "</ul>\n"

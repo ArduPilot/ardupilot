@@ -3,8 +3,6 @@
 // enable_motor_output() - enable and output lowest possible value to motors
 void Sub::enable_motor_output()
 {
-    // enable motors
-    motors.enable();
     motors.output_min();
 }
 
@@ -12,7 +10,6 @@ void Sub::enable_motor_output()
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
 bool Sub::init_arm_motors(bool arming_from_gcs)
 {
-    start_logging();
     static bool in_arm_motors = false;
 
     // exit immediately if already in this function
@@ -42,7 +39,7 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
+    gcs().send_text(MAV_SEVERITY_INFO, "Arming motors");
 #endif
 
     initial_armed_bearing = ahrs.yaw_sensor;
@@ -55,7 +52,7 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
         // Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location();
+        set_home_to_current_location(false);
     }
 	
     // enable gps velocity based centrefugal force compensation
@@ -96,7 +93,7 @@ void Sub::init_disarm_motors()
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
+    gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
     // save compass offsets learned by the EKF if enabled
@@ -120,15 +117,12 @@ void Sub::init_disarm_motors()
 
     DataFlash_Class::instance()->set_vehicle_armed(false);
 
-    if (DataFlash.log_while_disarmed()) {
-        start_logging(); // create a new log if necessary
-    } else {
-        DataFlash.EnableWrites(false); // suspend logging
-    }
-
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
+
+    // clear input holds
+    clear_input_hold();
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos

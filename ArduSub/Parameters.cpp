@@ -31,6 +31,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: SURFACE_DEPTH
     // @DisplayName: Depth reading at surface
     // @Description: The depth the external pressure sensor will read when the vehicle is considered at the surface (in centimeters)
+    // @Units: cm
     // @Range: -100 0
     // @User: Standard
     GSCALAR(surface_depth, "SURFACE_DEPTH", SURFACE_DEPTH_DEFAULT),
@@ -60,7 +61,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: SYSID_MYGCS
     // @DisplayName: My ground station number
     // @Description: Allows restricting radio overrides to only come from my ground station
-    // @Values: 255:Mission Planner and DroidPlanner, 252: AP Planner 2
     // @User: Advanced
     GSCALAR(sysid_my_gcs,   "SYSID_MYGCS",     255),
 
@@ -103,7 +103,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_BATT_VOLTAGE
     // @DisplayName: Failsafe battery voltage
     // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe.
-    // @Units: Volts
+    // @Units: V
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", FS_BATT_VOLTAGE_DEFAULT),
@@ -111,7 +111,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_BATT_MAH
     // @DisplayName: Failsafe battery milliAmpHours
     // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe.
-    // @Units: mAh
+    // @Units: mA.h
     // @Increment: 50
     // @User: Standard
     GSCALAR(fs_batt_mah,            "FS_BATT_MAH", FS_BATT_MAH_DEFAULT),
@@ -147,14 +147,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_PRESS_MAX
     // @DisplayName: Internal Pressure Failsafe Threshold
     // @Description: The maximum internal pressure allowed before triggering failsafe. Failsafe action is determined by FS_PRESS_ENABLE parameter
-    // @Units: Pascal
+    // @Units: Pa
     // @User: Standard
     GSCALAR(failsafe_pressure_max, "FS_PRESS_MAX", FS_PRESS_MAX_DEFAULT),
 
     // @Param: FS_TEMP_MAX
     // @DisplayName: Internal Temperature Failsafe Threshold
     // @Description: The maximum internal temperature allowed before triggering failsafe. Failsafe action is determined by FS_TEMP_ENABLE parameter.
-    // @Units: Degrees Centigrade
+    // @Units: degC
     // @User: Standard
     GSCALAR(failsafe_temperature_max, "FS_TEMP_MAX", FS_TEMP_MAX_DEFAULT),
 
@@ -175,10 +175,10 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_PILOT_TIMEOUT
     // @DisplayName: Timeout for activation of pilot input failsafe
     // @Description: Controls the maximum interval between received pilot inputs before the failsafe action is triggered
-    // @Units: Seconds
-    // @Range 0.1 3.0
+    // @Units: s
+    // @Range: 0.1 3.0
     // @User: Standard
-    GSCALAR(failsafe_pilot_input_timeout, "FS_PILOT_TIMEOUT", 1.0f),
+    GSCALAR(failsafe_pilot_input_timeout, "FS_PILOT_TIMEOUT", 3.0f),
 
     // @Param: XTRACK_ANG_LIM
     // @DisplayName: Crosstrack correction angle limit
@@ -197,14 +197,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: WP_YAW_BEHAVIOR
     // @DisplayName: Yaw behaviour during missions
     // @Description: Determines how the autopilot controls the yaw during missions and RTL
-    // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL, 3:Face along GPS course
+    // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL, 3:Face along GPS course, 4:Correct crosstrack error
     // @User: Standard
     GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
 
     // @Param: PILOT_VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
-    // @Units: Centimeters/Second
+    // @Units: cm/s
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
@@ -221,10 +221,10 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: THR_DZ
     // @DisplayName: Throttle deadzone
-    // @Description: The deadzone above and below mid throttle.  Used in AltHold, Loiter, PosHold flight modes
+    // @Description: The PWM deadzone in microseconds above and below mid throttle. Used in AltHold, Loiter, PosHold flight modes
     // @User: Standard
     // @Range: 0 300
-    // @Units: pwm
+    // @Units: PWM
     // @Increment: 1
     GSCALAR(throttle_deadzone,  "THR_DZ",    THR_DZ_DEFAULT),
 
@@ -239,7 +239,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
-    // @Units: Centi-degrees
+    // @Units: cdeg
     // @Range: 1000 8000
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
@@ -256,7 +256,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
     // @Description: Controls the action that will be taken when an EKF failsafe is invoked
-    // @Values: 1:Disabled
+    // @Values: 0:Disabled, 1:Warn only, 2:Disarm
     // @User: Advanced
     GSCALAR(fs_ekf_action, "FS_EKF_ACTION",    FS_EKF_ACTION_DEFAULT),
 
@@ -302,19 +302,13 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 1 10
     GSCALAR(numGainSettings, "JS_GAIN_STEPS", 4),
 
-    // @Param: JS_CAM_TILT_STEP
-    // @DisplayName: Camera tilt step size
-    // @Description: Size of PWM increment on camera tilt servo
+    // @Param: JS_LIGHTS_STEPS
+    // @DisplayName: Lights brightness steps
+    // @Description: Number of steps in brightness between minimum and maximum brightness
     // @User: Standard
-    // @Range: 30 400
-    GSCALAR(cam_tilt_step, "JS_CAM_TILT_STEP", 50),
-
-    // @Param: JS_LIGHTS_STEP
-    // @DisplayName: Lights step size
-    // @Description: Size of PWM increment on lights servo
-    // @User: Standard
-    // @Range: 30 400
-    GSCALAR(lights_step, "JS_LIGHTS_STEP", 100),
+    // @Range: 1 10
+    // @Units: PWM
+    GSCALAR(lights_steps, "JS_LIGHTS_STEPS", 8),
 
     // @Param: JS_THR_GAIN
     // @DisplayName: Throttle gain scalar
@@ -322,13 +316,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     // @Range: 0.5 4.0
     GSCALAR(throttle_gain, "JS_THR_GAIN", 1.0f),
-
-    // @Param: CAM_CENTER
-    // @DisplayName: Camera tilt mount center
-    // @Description: Servo PWM at camera center position
-    // @User: Standard
-    // @Range: 1000 2000
-    GSCALAR(cam_tilt_center, "CAM_CENTER", 1500),
 
     // @Param: FRAME_CONFIG
     // @DisplayName: Frame configuration
@@ -510,7 +497,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Throttle acceleration controller I gain maximum
     // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 1000
-    // @Units: Percent*10
+    // @Units: d%
     // @User: Standard
 
     // @Param: ACCEL_Z_D
@@ -581,19 +568,19 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs_chan[0],  gcs0,       "SR0_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[0],  gcs0,       "SR0_",     GCS_MAVLINK),
 
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs_chan[1],  gcs1,       "SR1_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs_chan[2],  gcs2,       "SR2_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[2],  gcs2,       "SR2_",     GCS_MAVLINK),
 
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs_chan[3],  gcs3,       "SR3_",     GCS_MAVLINK),
+    GOBJECTN(_gcs._chan[3],  gcs3,       "SR3_",     GCS_MAVLINK),
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
@@ -620,6 +607,12 @@ const AP_Param::Info Sub::var_info[] = {
     // @Group: BRD_
     // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
     GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
+
+#if HAL_WITH_UAVCAN
+    // @Group: CAN_
+    // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig_CAN.cpp
+    GOBJECT(BoardConfig_CAN,        "CAN_",       AP_BoardConfig_CAN),
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     GOBJECT(sitl, "SIM_", SITL::SITL),
@@ -718,8 +711,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 
-    GSCALAR(cam_slew_limit, "CAM_SLEW_LIMIT", 30.0),
-
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -799,18 +790,17 @@ void Sub::load_parameters(void)
     convert_old_parameters();
 
     AP_Param::set_default_by_name("BRD_SAFETYENABLE", 0);
-    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
     AP_Param::set_default_by_name("ARMING_CHECK",
-            AP_Arming::ARMING_CHECK_BARO |
-            AP_Arming::ARMING_CHECK_COMPASS |
-            AP_Arming::ARMING_CHECK_INS |
             AP_Arming::ARMING_CHECK_RC |
             AP_Arming::ARMING_CHECK_VOLTAGE |
-            AP_Arming::ARMING_CHECK_BATTERY |
-            AP_Arming::ARMING_CHECK_LOGGING);
+            AP_Arming::ARMING_CHECK_BATTERY);
     AP_Param::set_default_by_name("CIRCLE_RATE", 2.0f);
     AP_Param::set_default_by_name("ATC_ACCEL_Y_MAX", 110000.0f);
     AP_Param::set_default_by_name("RC3_TRIM", 1100);
+    AP_Param::set_default_by_name("COMPASS_OFFS_MAX", 1000);
+    AP_Param::set_default_by_name("INS_GYR_CAL", 0);
+    AP_Param::set_default_by_name("MNT_DEFLT_MODE", MAV_MOUNT_MODE_RC_TARGETING);
+    AP_Param::set_default_by_name("MNT_JSTICK_SPD", 100);
 }
 
 void Sub::convert_old_parameters(void)

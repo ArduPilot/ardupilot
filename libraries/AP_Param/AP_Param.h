@@ -93,6 +93,9 @@
 // an object
 #define AP_SUBGROUPINFO(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET }
 
+// declare a second parameter table for the same object
+#define AP_SUBGROUPEXTENSION(name, idx, clazz, vinfo) { AP_PARAM_GROUP, idx, name, 0, { group_info : clazz::vinfo }, AP_PARAM_FLAG_NESTED_OFFSET }
+
 // declare a pointer subgroup entry in a group var_info
 #define AP_SUBGROUPPTR(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_POINTER }
 
@@ -237,6 +240,20 @@ public:
     /// @return                 true if the variable is found
     static bool set_default_by_name(const char *name, float value);
     
+    /// set a value by name
+    ///
+    /// @param  name            The full name of the variable to be found.
+    /// @param  value           The new value
+    /// @return                 true if the variable is found
+    static bool set_by_name(const char *name, float value);
+
+    /// set and save a value by name
+    ///
+    /// @param  name            The full name of the variable to be found.
+    /// @param  value           The new value
+    /// @return                 true if the variable is found
+    static bool set_and_save_by_name(const char *name, float value);
+
     /// Find a variable by index.
     ///
     ///
@@ -340,21 +357,6 @@ public:
     /// Erase all variables in EEPROM.
     ///
     static void         erase_all(void);
-
-    /// print the value of all variables
-    static void         show_all(AP_HAL::BetterStream *port, bool showKeyValues=false);
-
-    /// print the value of one variable
-    static void         show(const AP_Param *param, 
-                             const char *name,
-                             enum ap_var_type ptype, 
-                             AP_HAL::BetterStream *port);
-
-    /// print the value of one variable
-    static void         show(const AP_Param *param, 
-                             const ParamToken &token,
-                             enum ap_var_type ptype, 
-                             AP_HAL::BetterStream *port);
 
     /// Returns the first variable
     ///

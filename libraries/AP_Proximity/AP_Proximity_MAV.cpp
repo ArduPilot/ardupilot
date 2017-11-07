@@ -65,9 +65,9 @@ void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
         uint8_t sector = packet.orientation;
         _angle[sector] = sector * 45;
         _distance[sector] = packet.current_distance / 100.0f;
-        _distance_valid[sector] = true;
         _distance_min = packet.min_distance / 100.0f;
         _distance_max = packet.max_distance / 100.0f;
+        _distance_valid[sector] = (_distance[sector] >= _distance_min) && (_distance[sector] <= _distance_max);
         _last_update_ms = AP_HAL::millis();
         update_boundary_for_sector(sector);
     }

@@ -191,12 +191,13 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_MISSION_RESET:
         case AUXSW_ATTCON_FEEDFWD:
         case AUXSW_ATTCON_ACCEL_LIM:
-        case AUXSW_LANDING_GEAR:
         case AUXSW_MOTOR_ESTOP:
         case AUXSW_MOTOR_INTERLOCK:
         case AUXSW_AVOID_ADSB:
         case AUXSW_PRECISION_LOITER:
         case AUXSW_AVOID_PROXIMITY:
+        case AUXSW_INVERTED:
+        case AUXSW_WINCH_ENABLE:
             do_aux_switch_function(ch_option, ch_flag);
             break;
     }
@@ -299,7 +300,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         case AUXSW_CAMERA_TRIGGER:
 #if CAMERA == ENABLED
             if (ch_flag == AUX_SWITCH_HIGH) {
-                do_take_picture();
+                camera.take_picture();
             }
 #endif
             break;
@@ -492,13 +493,10 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
        case AUXSW_LANDING_GEAR:
             switch (ch_flag) {
                 case AUX_SWITCH_LOW:
-                    landinggear.set_cmd_mode(LandingGear_Deploy);
-                    break;
-                case AUX_SWITCH_MIDDLE:
-                    landinggear.set_cmd_mode(LandingGear_Auto);
+                    landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
                     break;
                 case AUX_SWITCH_HIGH:
-                    landinggear.set_cmd_mode(LandingGear_Retract);
+                    landinggear.set_position(AP_LandingGear::LandingGear_Retract);
                     break;
             }
             break;
@@ -598,6 +596,67 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 break;
             }
             break;
+
+        case AUXSW_SMART_RTL:
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                // engage SmartRTL (if not possible we remain in current flight mode)
+                set_mode(SMART_RTL, MODE_REASON_TX_COMMAND);
+            } else {
+                // return to flight mode switch's flight mode if we are currently in RTL
+                if (control_mode == SMART_RTL) {
+                    reset_control_switch();
+                }
+            }
+            break;
+            
+        case AUXSW_INVERTED:
+#if FRAME_CONFIG == HELI_FRAME
+            switch (ch_flag) {
+            case AUX_SWITCH_HIGH:
+                motors->set_inverted_flight(true);
+                attitude_control->set_inverted_flight(true);
+                heli_flags.inverted_flight = true;
+                break;
+            case AUX_SWITCH_LOW:
+                motors->set_inverted_flight(false);
+                attitude_control->set_inverted_flight(false);
+                heli_flags.inverted_flight = false;
+                break;
+            }
+#endif
+            break;
+
+        case AUXSW_WINCH_ENABLE:
+            switch (ch_flag) {
+                case AUX_SWITCH_HIGH:
+                    // high switch maintains current position
+                    g2.winch.release_length(0.0f);
+                    Log_Write_Event(DATA_WINCH_LENGTH_CONTROL);
+                    break;
+                default:
+                    // all other position relax winch
+                    g2.winch.relax();
+                    Log_Write_Event(DATA_WINCH_RELAXED);
+                    break;
+                }
+            break;
+
+        case AUXSW_WINCH_CONTROL:
+            switch (ch_flag) {
+                case AUX_SWITCH_LOW:
+                    // raise winch at maximum speed
+                    g2.winch.set_desired_rate(-g2.winch.get_rate_max());
+                    break;
+                case AUX_SWITCH_HIGH:
+                    // lower winch at maximum speed
+                    g2.winch.set_desired_rate(g2.winch.get_rate_max());
+                    break;
+                case AUX_SWITCH_MIDDLE:
+                default:
+                    g2.winch.set_desired_rate(0.0f);
+                    break;
+                }
+            break;
     }
 }
 
@@ -609,7 +668,7 @@ void Copter::save_trim()
     float pitch_trim = ToRad((float)channel_pitch->get_control_in()/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
     Log_Write_Event(DATA_SAVE_TRIM);
-    gcs_send_text(MAV_SEVERITY_INFO, "Trim saved");
+    gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
 }
 
 // auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions

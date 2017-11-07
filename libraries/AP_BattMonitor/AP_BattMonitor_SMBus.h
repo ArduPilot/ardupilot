@@ -23,6 +23,12 @@ public:
     // virtual destructor to reduce compiler warnings
     virtual ~AP_BattMonitor_SMBus() {}
 
+    bool has_cell_voltages() const override { return _has_cell_voltages; }
+
+    // all smart batteries are expected to provide current
+    bool has_current() const override { return true; }
+
+    void init(void) override;
 
 protected:
 
@@ -31,6 +37,11 @@ protected:
     // reads the pack full charge capacity
     // returns true if the read was successful, or if we already knew the pack capacity
     bool read_full_charge_capacity(void);
+
+    // reads the remaining capacity
+    // returns true if the read was succesful, which is only considered to be the
+    // we know the full charge capacity
+    bool read_remaining_capacity(void);
 
     // reads the temperature word from the battery
     // returns true if the read was successful
@@ -53,6 +64,10 @@ protected:
 
     int32_t _serial_number = -1;    // battery serial number
     uint16_t _full_charge_capacity; // full charge capacity, used to stash the value before setting the parameter
+
+    bool _has_cell_voltages;        // smbus backends flag this as true once they have recieved a valid cell voltage report
+
+    virtual void timer(void) = 0;   // timer function to read from the battery
 
 };
 

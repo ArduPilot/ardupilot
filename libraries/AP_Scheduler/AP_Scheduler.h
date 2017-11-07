@@ -51,9 +51,14 @@
 class AP_Scheduler
 {
 public:
-    // constructor
-    AP_Scheduler(void);
-    
+    static AP_Scheduler create() { return AP_Scheduler{}; }
+
+    constexpr AP_Scheduler(AP_Scheduler &&other) = default;
+
+    /* Do not allow copies */
+    AP_Scheduler(const AP_Scheduler &other) = delete;
+    AP_Scheduler &operator=(const AP_Scheduler&) = delete;
+
     FUNCTOR_TYPEDEF(task_fn_t, void);
 
     struct Task {
@@ -83,25 +88,31 @@ public:
     // return load average, as a number between 0 and 1. 1 means
     // 100% load. Calculated from how much spare time we have at the
     // end of a run()
-    float load_average(uint32_t tick_time_usec) const;
+    float load_average() const;
 
     // get the configured main loop rate
     uint16_t get_loop_rate_hz(void) const {
         return _loop_rate_hz;
     }
-    
+    // get the time-allowed-per-loop:
+    uint32_t get_loop_period_us() const {
+        return 1000000UL / _loop_rate_hz;
+    }
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // current running task, or -1 if none. Used to debug stuck tasks
     static int8_t current_task;
 
 private:
+    AP_Scheduler();
+
     // used to enable scheduler debugging
     AP_Int8 _debug;
 
     // overall scheduling rate in Hz
     AP_Int16 _loop_rate_hz;  // The value of this variable can be changed with the non-initialization. (Ex. Tuning by GDB)
-    
+
     // progmem list of tasks to run
     const struct Task *_tasks;
 

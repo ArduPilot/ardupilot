@@ -39,6 +39,17 @@
 #define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
 #define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
 
+#ifdef __has_cpp_attribute
+#  if __has_cpp_attribute(fallthrough)
+#    define FALLTHROUGH [[fallthrough]]
+#  elif __has_cpp_attribute(gnu::fallthrough)
+#    define FALLTHROUGH [[gnu::fallthrough]]
+#  endif
+#endif
+#ifndef FALLTHROUGH
+#  define FALLTHROUGH
+#endif
+
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
 
@@ -162,6 +173,7 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
   useful debugging macro for SITL
  */
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <stdio.h>
 #define SITL_printf(fmt, args ...) do { ::printf("%s(%u): " fmt, __FILE__, __LINE__, ##args); } while(0)
 #else
 #define SITL_printf(fmt, args ...)

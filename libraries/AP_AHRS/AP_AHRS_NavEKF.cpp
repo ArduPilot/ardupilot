@@ -30,7 +30,7 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng, NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags) :
+AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags) :
     AP_AHRS_DCM(ins, baro, gps),
     EKF2(_EKF2),
     EKF3(_EKF3),
@@ -192,6 +192,10 @@ void AP_AHRS_NavEKF::update_EKF2(void)
                 }
             }
             _accel_ef_ekf_blended = _accel_ef_ekf[primary_imu>=0?primary_imu:_ins.get_primary_accel()];
+            nav_filter_status filt_state;
+            EKF2.getFilterStatus(-1,filt_state);
+            AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
+            AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
         }
     }
 }
@@ -260,6 +264,10 @@ void AP_AHRS_NavEKF::update_EKF3(void)
                 }
             }
             _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
+            nav_filter_status filt_state;
+            EKF3.getFilterStatus(-1,filt_state);
+            AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
+            AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
         }
     }
 }
@@ -293,9 +301,10 @@ void AP_AHRS_NavEKF::update_SITL(void)
                                   radians(fdm.yawRate));
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            _accel_ef_ekf[i] = Vector3f(fdm.xAccel,
-                                        fdm.yAccel,
-                                        fdm.zAccel);
+            Vector3f accel(fdm.xAccel,
+                           fdm.yAccel,
+                           fdm.zAccel);
+            _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
         }
         _accel_ef_ekf_blended = _accel_ef_ekf[0];
 
@@ -379,7 +388,7 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
         return AP_AHRS_DCM::get_position(loc);
 
     case EKF_TYPE2:
-        if (EKF2.getLLH(loc) && EKF2.getPosD(-1,ned_pos.z) && EKF2.getOriginLLH(origin)) {
+        if (EKF2.getLLH(loc) && EKF2.getPosD(-1,ned_pos.z) && EKF2.getOriginLLH(-1,origin)) {
             // fixup altitude using relative position from EKF origin
             loc.alt = origin.alt - ned_pos.z*100;
             return true;
@@ -387,7 +396,7 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
         break;
 
     case EKF_TYPE3:
-        if (EKF3.getLLH(loc) && EKF3.getPosD(-1,ned_pos.z) && EKF3.getOriginLLH(origin)) {
+        if (EKF3.getLLH(loc) && EKF3.getPosD(-1,ned_pos.z) && EKF3.getOriginLLH(-1,origin)) {
             // fixup altitude using relative position from EKF origin
             loc.alt = origin.alt - ned_pos.z*100;
             return true;
@@ -586,6 +595,14 @@ bool AP_AHRS_NavEKF::set_origin(const Location &loc)
     case EKF_TYPE3:
         return ret3;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKF_TYPE_SITL: {
+        struct SITL::sitl_fdm &fdm = _sitl->state;
+        fdm.home = loc;
+        return true;
+    }
+#endif
+
     default:
         return false;
     }
@@ -782,8 +799,8 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_home(Vector3f &vec) const
 
     Vector3f offset = location_3d_diff_NED(originLLH, _home);
 
-    vec.x = originNED.x + offset.x;
-    vec.y = originNED.y + offset.y;
+    vec.x = originNED.x - offset.x;
+    vec.y = originNED.y - offset.y;
     vec.z = originNED.z - offset.z;
     return true;
 }
@@ -831,8 +848,8 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_home(Vector2f &posNE) const
 
     Vector2f offset = location_diff(originLLH, _home);
 
-    posNE.x = originNE.x + offset.x;
-    posNE.y = originNE.y + offset.y;
+    posNE.x = originNE.x - offset.x;
+    posNE.y = originNE.y - offset.y;
     return true;
 }
 
@@ -988,7 +1005,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
             return EKF_TYPE_NONE;
         }
         if (!filt_state.flags.horiz_vel ||
-            !filt_state.flags.horiz_pos_abs) {
+            (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel)) {
             if ((!_compass || !_compass->use_for_yaw()) &&
                 _gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
                 _gps.ground_speed() < 2) {
@@ -1364,7 +1381,7 @@ bool AP_AHRS_NavEKF::resetHeightDatum(void)
 // send a EKF_STATUS_REPORT for current EKF
 void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan)
 {
-    switch (active_EKF_type()) {
+    switch (ekf_type()) {
     case EKF_TYPE_NONE:
         // send zero status report
         mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0);
@@ -1397,21 +1414,22 @@ bool AP_AHRS_NavEKF::get_origin(Location &ret) const
 
     case EKF_TYPE2:
     default:
-        if (!EKF2.getOriginLLH(ret)) {
+        if (!EKF2.getOriginLLH(-1,ret)) {
             return false;
         }
         return true;
 
     case EKF_TYPE3:
-        if (!EKF3.getOriginLLH(ret)) {
+        if (!EKF3.getOriginLLH(-1,ret)) {
             return false;
         }
         return true;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
-        ret = get_home();
-        return ret.lat != 0 || ret.lng != 0;
+        const struct SITL::sitl_fdm &fdm = _sitl->state;
+        ret = fdm.home;
+        return true;
 #endif
     }
 }

@@ -99,13 +99,11 @@ SPIDesc SPIDeviceManager::_device[] = {
     SPIDesc("mpu9250ext", 1, 0, SPI_MODE_3, 8, SPI_CS_KERNEL,  1*MHZ, 11*MHZ),
     SPIDesc("ms5611",     2, 1, SPI_MODE_3, 8, SPI_CS_KERNEL,  10*MHZ,10*MHZ),
 };
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ
 SPIDesc SPIDeviceManager::_device[] = {
-    SPIDesc("mpu6000",    0, 0, SPI_MODE_3, 8, RPI_GPIO_25,  1*MHZ, 11*MHZ),
-    SPIDesc("ms5611",     0, 0, SPI_MODE_3, 8, RPI_GPIO_23,  10*MHZ, 10*MHZ),
-    SPIDesc("lsm9ds0_am", 0, 0, SPI_MODE_3, 8, RPI_GPIO_22,  10*MHZ, 10*MHZ),
-    SPIDesc("lsm9ds0_g",  0, 0, SPI_MODE_3, 8, RPI_GPIO_12,  10*MHZ, 10*MHZ),
-    SPIDesc("raspio",     0, 0, SPI_MODE_3, 8, RPI_GPIO_7,   10*MHZ, 10*MHZ),
+    /* MPU9250 is restricted to 1MHz for non-data and interrupt registers */
+    SPIDesc("mpu9250",    1, 0,  SPI_MODE_3, 8, SPI_CS_KERNEL,  1*MHZ, 10*MHZ),
+    SPIDesc("ms5611",     1, 1,  SPI_MODE_3, 8, SPI_CS_KERNEL,  1*MHZ, 10*MHZ),
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 SPIDesc SPIDeviceManager::_device[] = {
@@ -124,6 +122,12 @@ SPIDesc SPIDeviceManager::_device[] = {
 SPIDesc SPIDeviceManager::_device[] = {
     SPIDesc("aeroio", 1, 1, SPI_MODE_0, 8, SPI_CS_KERNEL,  10*MHZ, 10*MHZ),
     SPIDesc("bmi160", 3, 0, SPI_MODE_3, 8, SPI_CS_KERNEL, 1*MHZ, 10*MHZ),
+};
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
+SPIDesc SPIDeviceManager::_device[] = {
+    SPIDesc("mpu60x0",    0, 1, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 11*MHZ),
+    SPIDesc("mpu60x0ext",    0, 2, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 11*MHZ),
+    SPIDesc("ms5611",     0, 0, SPI_MODE_0, 8, SPI_CS_KERNEL,  10*MHZ,10*MHZ),
 };
 #else
 // empty device table

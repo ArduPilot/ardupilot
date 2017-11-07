@@ -18,13 +18,12 @@ enum autopilot_yaw_mode {
     AUTO_YAW_LOOK_AT_HEADING =  3,  // point towards a particular angle (not pilot input accepted)
     AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
     AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
+    AUTO_YAW_RATE =             6,  // turn at a specified rate (held in auto_yaw_rate)
 };
 
 // Ch6... Ch12 aux switch control
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
 #define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
-#define CH6_PWM_TRIGGER_HIGH    1800
-#define CH6_PWM_TRIGGER_LOW     1200
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliary switch is in the low position (pwm <1200)
@@ -71,6 +70,10 @@ enum aux_sw_func {
     AUXSW_PRECISION_LOITER =    39,  // enable precision loiter
     AUXSW_AVOID_PROXIMITY =     40,  // enable object avoidance using proximity sensors (ie. horizontal lidar)
     AUXSW_ARMDISARM =           41,  // arm or disarm vehicle
+    AUXSW_SMART_RTL =           42, // change to SmartRTL flight mode
+    AUXSW_INVERTED  =           43,  // enable inverted flight
+    AUXSW_WINCH_ENABLE =        44, // winch enable/disable
+    AUXSW_WINCH_CONTROL =       45, // winch control
     AUXSW_SWITCH_MAX,
 };
 
@@ -103,6 +106,7 @@ enum control_mode_t {
     THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
     AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
     GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
+    SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
 };
 
 enum mode_reason_t {
@@ -123,6 +127,7 @@ enum mode_reason_t {
     MODE_REASON_AVOIDANCE,
     MODE_REASON_AVOIDANCE_RECOVERY,
     MODE_REASON_THROW_COMPLETE,
+    MODE_REASON_TERMINATE,
 };
 
 // Tuning enumeration
@@ -166,7 +171,8 @@ enum tuning_func {
     TUNING_RATE_ROLL_FF =               53, // body frame roll rate controller FF term
     TUNING_RATE_YAW_FF =                54, // body frame yaw rate controller FF term
     TUNING_RATE_MOT_YAW_HEADROOM =      55, // motors yaw headroom minimum
-    TUNING_RATE_YAW_FILT =              56  // yaw rate input filter
+    TUNING_RATE_YAW_FILT =              56, // yaw rate input filter
+    TUNING_WINCH =                      57  // winch control (not actually a value to be tuned)
 };
 
 // Acro Trainer types
@@ -217,6 +223,15 @@ enum RTLState {
     RTL_LoiterAtHome,
     RTL_FinalDescent,
     RTL_Land
+};
+
+// Safe RTL states
+enum SmartRTLState {
+    SmartRTL_WaitForPathCleanup,
+    SmartRTL_PathFollow,
+    SmartRTL_PreLandPosition,
+    SmartRTL_Descend,
+    SmartRTL_Land
 };
 
 // Alt_Hold states
@@ -317,7 +332,6 @@ enum DevOptions {
 #define LOG_PRECLAND_MSG                0x21
 #define LOG_GUIDEDTARGET_MSG            0x22
 #define LOG_THROW_MSG                   0x23
-#define LOG_PROXIMITY_MSG               0x24
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -393,6 +407,9 @@ enum DevOptions {
 #define DATA_AVOIDANCE_PROXIMITY_ENABLE     65
 #define DATA_AVOIDANCE_PROXIMITY_DISABLE    66
 #define DATA_GPS_PRIMARY_CHANGED            67
+#define DATA_WINCH_RELAXED                  68
+#define DATA_WINCH_LENGTH_CONTROL           69
+#define DATA_WINCH_RATE_CONTROL             70
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -408,7 +425,7 @@ enum DevOptions {
 #define ERROR_SUBSYSTEM_FAILSAFE_GCS        8
 #define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
 #define ERROR_SUBSYSTEM_FLIGHT_MODE         10
-#define ERROR_SUBSYSTEM_GPS                 11  // not used
+#define ERROR_SUBSYSTEM_GPS                 11
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
 #define ERROR_SUBSYSTEM_FLIP                13
 #define ERROR_SUBSYSTEM_AUTOTUNE            14
@@ -456,17 +473,8 @@ enum DevOptions {
 #define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
 // Baro specific error codes
 #define ERROR_CODE_BARO_GLITCH              2
-
-// Arming Check Enable/Disable bits
-#define ARMING_CHECK_NONE                   0x00
-#define ARMING_CHECK_ALL                    0x01
-#define ARMING_CHECK_BARO                   0x02
-#define ARMING_CHECK_COMPASS                0x04
-#define ARMING_CHECK_GPS                    0x08
-#define ARMING_CHECK_INS                    0x10
-#define ARMING_CHECK_PARAMETERS             0x20
-#define ARMING_CHECK_RC                     0x40
-#define ARMING_CHECK_VOLTAGE                0x80
+// GPS specific error coces
+#define ERROR_CODE_GPS_GLITCH               2
 
 // Radio failsafe definitions (FS_THR parameter)
 #define FS_THR_DISABLED                    0

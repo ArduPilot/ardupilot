@@ -29,12 +29,6 @@ extern const AP_HAL::HAL &hal;
 
 #define MS4525D0_I2C_ADDR 0x28
 
-#ifdef HAL_AIRSPEED_MS4515DO_I2C_BUS
-#define MS4525D0_I2C_BUS HAL_AIRSPEED_MS4515DO_I2C_BUS
-#else
-#define MS4525D0_I2C_BUS 1
-#endif
-
 AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend) :
     AP_Airspeed_Backend(_frontend)
 {
@@ -49,6 +43,7 @@ bool AP_Airspeed_MS4525::init()
     } addresses[] = {
         { 1, MS4525D0_I2C_ADDR },
         { 0, MS4525D0_I2C_ADDR },
+        { 2, MS4525D0_I2C_ADDR },
     };
     bool found = false;
     for (uint8_t i=0; i<ARRAY_SIZE(addresses); i++) {

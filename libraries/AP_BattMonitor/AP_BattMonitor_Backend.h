@@ -29,10 +29,16 @@ public:
     virtual ~AP_BattMonitor_Backend(void) {}
 
     // initialise
-    virtual void init() {}
+    virtual void init() = 0;
 
     // read the latest battery voltage
     virtual void read() = 0;
+
+    /// returns true if battery monitor instance provides current info
+    virtual bool has_current() const = 0;
+
+    // returns true if battery monitor provides individual cell voltages
+    virtual bool has_cell_voltages() const { return false; }
 
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
@@ -40,7 +46,19 @@ public:
     /// get capacity for this instance
     int32_t get_capacity() const;
 
+    // update battery resistance estimate and voltage_resting_estimate
+    void update_resistance_estimate();
+
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)
+
+private:
+    // resistance estimate
+    uint32_t    _resistance_timer_ms;    // system time of last resistance estimate update
+    float       _voltage_filt;           // filtered voltage
+    float       _current_max_amps;       // maximum current since start-up
+    float       _current_filt_amps;      // filtered current
+    float       _resistance_voltage_ref; // voltage used for maximum resistance calculation
+    float       _resistance_current_ref; // current used for maximum resistance calculation
 };

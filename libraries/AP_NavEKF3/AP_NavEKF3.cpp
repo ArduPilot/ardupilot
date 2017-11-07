@@ -119,6 +119,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This enables EKF3. Enabling EKF3 only makes the maths run, it does not mean it will be used for flight control. To use it for flight control set AHRS_EKF_TYPE=3. A reboot or restart will need to be performed after changing the value of EK3_ENABLE for it to take effect.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF3, _enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // GPS measurement parameters
@@ -193,6 +194,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK3_GPS_TYPE = 3). Setting 2 uses GPS. Setting 3 uses the range beacon data. NOTE - the EK3_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
     // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("ALT_SOURCE", 9, NavEKF3, _altSource, 0),
 
     // @Param: ALT_M_NSE
@@ -219,7 +221,8 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Increment: 10
     // @RebootRequired: True
     // @User: Advanced
-    // @Units: milliseconds
+    // @Units: ms
+    // @RebootRequired: True
     AP_GROUPINFO("HGT_DELAY", 12, NavEKF3, _hgtDelay_ms, 60),
 
     // Magnetometer measurement parameters
@@ -230,7 +233,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Range: 0.01 0.5
     // @Increment: 0.01
     // @User: Advanced
-    // @Units: gauss
+    // @Units: Gauss
     AP_GROUPINFO("MAG_M_NSE", 13, NavEKF3, _magNoise, MAG_M_NSE_DEFAULT),
 
     // @Param: MAG_CAL
@@ -238,6 +241,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This determines when the filter will use the 3-axis magnetometer fusion model that estimates both earth and body fixed magnetic field states and when it will use a simpler magnetic heading fusion model that does not use magnetic field states. The 3-axis magnetometer fusion is only suitable for use when the external magnetic field environment is stable. EK3_MAG_CAL = 0 uses heading fusion on ground, 3-axis fusion in-flight, and is the default setting for Plane users. EK3_MAG_CAL = 1 uses 3-axis fusion only when manoeuvring. EK3_MAG_CAL = 2 uses heading fusion at all times, is recommended if the external magnetic field is varying and is the default for rovers. EK3_MAG_CAL = 3 uses heading fusion on the ground and 3-axis fusion after the first in-air field and yaw reset has completed, and is the default for copters. EK3_MAG_CAL = 4 uses 3-axis fusion at all times. NOTE : Use of simple heading magnetometer fusion makes vehicle compass calibration and alignment errors harder for the EKF to detect which reduces the sensitivity of the Copter EKF failsafe algorithm. NOTE: The fusion mode can be forced to 2 for specific EKF cores using the EK3_MAG_MASK parameter.
     // @Values: 0:When flying,1:When manoeuvring,2:Never,3:After first climb yaw reset,4:Always
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("MAG_CAL", 14, NavEKF3, _magCal, MAG_CAL_DEFAULT),
 
     // @Param: MAG_I_GATE
@@ -321,7 +325,8 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Increment: 10
     // @RebootRequired: True
     // @User: Advanced
-    // @Units: milliseconds
+    // @Units: ms
+    // @RebootRequired: True
     AP_GROUPINFO("FLOW_DELAY", 23, NavEKF3, _flowDelay_ms, FLOW_MEAS_DELAY),
 
     // State and Covariance Predition Parameters
@@ -393,6 +398,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: 1 byte bitmap of IMUs to use in EKF3. A separate instance of EKF3 will be started for each IMU selected. Set to 1 to use the first IMU only (default), set to 2 to use the second IMU only, set to 3 to use the first and second IMU. Additional IMU's can be used up to a maximum of 6 if memory and processing resources permit. There may be insufficient memory and processing resources to run multiple instances. If this occurs EKF3 will fail to start.
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("IMU_MASK",     33, NavEKF3, _imuMask, 3),
     
     // @Param: CHECK_SCALE
@@ -416,6 +422,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This sets the IMU mask of sensors to do full logging for
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("LOG_MASK", 36, NavEKF3, _logging_mask, 1),
 
     // control of magentic yaw angle fusion
@@ -451,7 +458,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This state process noise controls the growth of earth magnetic field state error estimates. Increasing it makes earth magnetic field estimation faster and noisier.
     // @Range: 0.00001 0.01
     // @User: Advanced
-    // @Units: gauss/s
+    // @Units: Gauss/s
     AP_GROUPINFO("MAGE_P_NSE", 40, NavEKF3, _magEarthProcessNoise, MAGE_P_NSE_DEFAULT),
 
     // @Param: MAGB_P_NSE
@@ -459,7 +466,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This state process noise controls the growth of body magnetic field state error estimates. Increasing it makes magnetometer bias error estimation faster and noisier.
     // @Range: 0.00001 0.01
     // @User: Advanced
-    // @Units: gauss/s
+    // @Units: Gauss/s
     AP_GROUPINFO("MAGB_P_NSE", 41, NavEKF3, _magBodyProcessNoise, MAGB_P_NSE_DEFAULT),
 
     // @Param: RNG_USE_HGT
@@ -503,7 +510,8 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Increment: 10
     // @RebootRequired: True
     // @User: Advanced
-    // @Units: milliseconds
+    // @Units: ms
+    // @RebootRequired: True
     AP_GROUPINFO("BCN_DELAY", 46, NavEKF3, _rngBcnDelay_ms, 50),
 
     // @Param: RNG_USE_SPD
@@ -529,7 +537,43 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: 1 byte bitmap of EKF cores that will disable magnetic field states and use simple magnetic heading fusion at all times. This parameter enables specified cores to be used as a backup for flight into an environment with high levels of external magnetic interference which may degrade the EKF attitude estimate when using 3-axis magnetometer fusion. NOTE : Use of a different magnetometer fusion algorithm on different cores makes unwanted EKF core switches due to magnetometer errors more likely.
     // @Bitmask: 0:FirstEKF,1:SecondEKF,2:ThirdEKF,3:FourthEKF,4:FifthEKF,5:SixthEKF
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("MAG_MASK", 49, NavEKF3, _magMask, 0),
+
+    // @Param: OGN_HGT_MASK
+    // @DisplayName: Bitmask control of EKF reference height correction
+    // @Description: When a height sensor other than GPS is used as the primary height source by the EKF, the position of the zero height datum is defined by that sensor and its frame of reference. If a GPS height measurement is also available, then the height of the WGS-84 height datum used by the EKF can be corrected so that the height returned by the getLLH() function is compensated for primary height sensor drift and change in datum over time. The first two bit positions control when the height datum will be corrected. Correction is performed using a Bayes filter and only operates when GPS quality permits. The third bit position controls where the corrections to the GPS reference datum are applied. Corrections can be applied to the local vertical position or to the reported EKF origin height (default).
+    // @Bitmask: 0:Correct when using Baro height,1:Correct when using range finder height,2:Apply corrections to local position
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("OGN_HGT_MASK", 50, NavEKF3, _originHgtMode, 0),
+
+    // @Param: VIS_VERR_MIN
+    // @DisplayName: Visual odometry minimum velocity error
+    // @Description: This is the 1-STD odometry velocity observation error that will be assumed when maximum quality is reported by the sensor. When quality is between max and min, the error will be calculated using linear interpolation between VIS_VERR_MIN and VIS_VERR_MAX.
+    // @Range: 0.05 0.5
+    // @Increment: 0.05
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("VIS_VERR_MIN", 51, NavEKF3, _visOdmVelErrMin, 0.1f),
+
+    // @Param: VIS_VERR_MAX
+    // @DisplayName: Visual odometry maximum velocity error
+    // @Description: This is the 1-STD odometry velocity observation error that will be assumed when minimum quality is reported by the sensor. When quality is between max and min, the error will be calculated using linear interpolation between VIS_VERR_MIN and VIS_VERR_MAX.
+    // @Range: 0.5 5.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("VIS_VERR_MAX", 52, NavEKF3, _visOdmVelErrMax, 0.9f),
+
+    // @Param: WENC_VERR
+    // @DisplayName: Wheel odometry velocity error
+    // @Description: This is the 1-STD odometry velocity observation error that will be assumed when wheel encoder data is being fused.
+    // @Range: 0.01 1.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("WENC_VERR", 53, NavEKF3, _wencOdmVelErr, 0.1f),
 
     AP_GROUPEND
 };
@@ -565,7 +609,9 @@ NavEKF3::NavEKF3(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gndGradientSigma(50),           // RMS terrain gradient percentage assumed by the terrain height estimation
     fusionTimeStep_ms(10),          // The minimum number of msec between covariance prediction and fusion operations
     sensorIntervalMin_ms(50),       // The minimum allowed time between measurements from any non-IMU sensor (msec)
-    runCoreSelection(false)         // true when the default primary core has stabilised after startup and core selection can run
+    runCoreSelection(false),        // true when the default primary core has stabilised after startup and core selection can run
+    inhibitGpsVertVelUse(false)     // true when GPS vertical velocity use is prohibited
+
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -647,7 +693,7 @@ bool NavEKF3::InitialiseFilter(void)
 
         // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF3: not enough memory");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: not enough memory");
             _enable.set(0);
             return false;
         }
@@ -656,7 +702,7 @@ bool NavEKF3::InitialiseFilter(void)
         core = new NavEKF3_core[num_cores];
         if (core == nullptr) {
             _enable.set(0);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF3: allocation failed");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: allocation failed");
             return false;
         }
 
@@ -994,15 +1040,17 @@ bool NavEKF3::getLLH(struct Location &loc) const
     return core[primary].getLLH(loc);
 }
 
-// return the latitude and longitude and height used to set the NED origin
+// Return the latitude and longitude and height used to set the NED origin for the specified instance
+// An out of range instance (eg -1) returns data for the the primary instance
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF3::getOriginLLH(struct Location &loc) const
+bool NavEKF3::getOriginLLH(int8_t instance, struct Location &loc) const
 {
+    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[primary].getOriginLLH(loc);
+    return core[instance].getOriginLLH(loc);
 }
 
 // set the latitude and longitude and height used to set the NED origin
@@ -1080,6 +1128,15 @@ void NavEKF3::getVariances(int8_t instance, float &velVar, float &posVar, float 
     }
 }
 
+// return the diagonals from the covariance matrix for the specified instance
+void NavEKF3::getStateVariances(int8_t instance, float stateVar[24])
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        core[instance].getStateVariances(stateVar);
+    }
+}
+
 // should we use the compass? This is public so it can be used for
 // reporting via ahrs.use_compass()
 bool NavEKF3::use_compass(void) const
@@ -1131,6 +1188,23 @@ void NavEKF3::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Ve
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
             core[i].writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, posOffset);
+        }
+    }
+}
+
+/*
+ * Write odometry data from a wheel encoder. The axis of rotation is assumed to be parallel to the vehicle body axis
+ *
+ * delAng is the measured change in angular position from the previous measurement where a positive rotation is produced by forward motion of the vehicle (rad)
+ * delTime is the time interval for the measurement of delAng (sec)
+ * timeStamp_ms is the time when the rotation was last measured (msec)
+ * posOffset is the XYZ body frame position of the wheel hub (m)
+*/
+void NavEKF3::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].writeWheelOdom(delAng, delTime, timeStamp_ms, posOffset, radius);
         }
     }
 }

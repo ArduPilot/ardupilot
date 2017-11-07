@@ -25,6 +25,7 @@ class AP_MotorsHeli_RSC {
 public:
     friend class AP_MotorsHeli_Single;
     friend class AP_MotorsHeli_Dual;
+    friend class AP_MotorsHeli_Quad;
     
     AP_MotorsHeli_RSC(SRV_Channel::Aux_servo_function_t aux_fn,
                       uint8_t default_channel) :

@@ -32,6 +32,7 @@ void Copter::calc_wp_distance()
 
     case AUTO:
     case RTL:
+    case SMART_RTL:
         wp_distance = wp_nav->get_wp_distance_to_destination();
         break;
 
@@ -40,7 +41,7 @@ void Copter::calc_wp_distance()
             wp_distance = wp_nav->get_wp_distance_to_destination();
             break;
         }
-        // no break
+        FALLTHROUGH;
     default:
         wp_distance = 0;
         break;
@@ -59,6 +60,7 @@ void Copter::calc_wp_bearing()
 
     case AUTO:
     case RTL:
+    case SMART_RTL:
         wp_bearing = wp_nav->get_wp_bearing_to_destination();
         break;
 
@@ -67,7 +69,7 @@ void Copter::calc_wp_bearing()
             wp_bearing = wp_nav->get_wp_bearing_to_destination();
             break;
         }
-        // no break
+        FALLTHROUGH;
     default:
         wp_bearing = 0;
         break;

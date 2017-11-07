@@ -17,28 +17,11 @@ AP_AdvancedFailsafe_Rover::AP_AdvancedFailsafe_Rover(AP_Mission &_mission, AP_Ba
  */
 void AP_AdvancedFailsafe_Rover::terminate_vehicle(void)
 {
-    // stop motors
-    SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, 0);
-    SRV_Channels::set_output_pwm(SRV_Channel::k_steering, 0);
-    rover.lateral_acceleration = 0;
-
     // disarm as well
     rover.disarm_motors();
 
     // Set to HOLD mode
-    rover.set_mode(HOLD);
-    // and set all aux channels
-    SRV_Channels::set_output_limit(SRV_Channel::k_manual, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-    SRV_Channels::set_output_limit(SRV_Channel::k_none, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-
-    SRV_Channels::output_ch_all();
-}
-
-void AP_AdvancedFailsafe_Rover::setup_IO_failsafe(void)
-{
-    // setup failsafe for all aux channels
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_manual, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_none, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    rover.set_mode(rover.mode_hold, MODE_REASON_CRASH_FAILSAFE);
 }
 
 /*
@@ -46,13 +29,8 @@ void AP_AdvancedFailsafe_Rover::setup_IO_failsafe(void)
  */
 AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Rover::afs_mode(void)
 {
-    switch (rover.control_mode) {
-    case AUTO:
-    case GUIDED:
-    case RTL:
+    if (rover.control_mode->is_autopilot_mode()) {
         return AP_AdvancedFailsafe::AFS_AUTO;
-    default:
-        break;
     }
     return AP_AdvancedFailsafe::AFS_STABILIZED;
 }

@@ -33,7 +33,7 @@ public:
 
     // initialisation
     void Init() override;
-    bool CardInserted(void) override;
+    bool CardInserted(void) const override;
 
     // erase handling
     void EraseAll() override;
@@ -43,7 +43,7 @@ public:
     void Prep() override;
 
     /* Write a block of data at current offset */
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) override;
+    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) override;
     uint32_t bufferspace_available() override;
 
     // high level interface
@@ -71,7 +71,16 @@ public:
     bool logging_enabled() const override;
     bool logging_failed() const override;
 
+    bool logging_started(void) const override { return _write_fd != -1; }
+
     void vehicle_was_disarmed() override;
+
+    virtual void PrepForArming() override;
+
+protected:
+
+    bool WritesOK() const override;
+    bool StartNewLogOK() const override;
 
 private:
     int _write_fd;
@@ -79,7 +88,6 @@ private:
     uint16_t _read_fd_log_num;
     uint32_t _read_offset;
     uint32_t _write_offset;
-    volatile bool _initialised;
     volatile bool _open_error;
     const char *_log_directory;
 
@@ -157,13 +165,35 @@ private:
     const uint32_t _free_space_check_interval = 1000UL; // milliseconds
     const uint32_t _free_space_min_avail = 8388608; // bytes
 
+    // semaphore mediates access to the ringbuffer
     AP_HAL::Semaphore *semaphore;
+    // write_fd_semaphore mediates access to write_fd so the frontend
+    // can open/close files without causing the backend to write to a
+    // bad fd
+    AP_HAL::Semaphore *write_fd_semaphore;
     
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_write;
     AP_HAL::Util::perf_counter_t  _perf_fsync;
     AP_HAL::Util::perf_counter_t  _perf_errors;
     AP_HAL::Util::perf_counter_t  _perf_overruns;
+
+    const char *last_io_operation = "";
+
+    struct df_stats {
+        uint16_t blocks;
+        uint32_t bytes;
+        uint32_t buf_space_min;
+        uint32_t buf_space_max;
+        uint32_t buf_space_sigma;
+    };
+    struct df_stats stats;
+
+    void Log_Write_DataFlash_Stats_File(const struct df_stats &_stats);
+    void df_stats_gather(uint16_t bytes_written);
+    void df_stats_log();
+    void df_stats_clear();
+
 };
 
 #endif // HAL_OS_POSIX_IO

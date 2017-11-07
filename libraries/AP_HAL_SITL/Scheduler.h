@@ -27,10 +27,9 @@ public:
     void suspend_timer_procs();
     void resume_timer_procs();
 
-    bool in_timerprocess();
-
     void register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
 
+    bool in_main_thread() const override { return !_in_timer_proc && !_in_io_proc; };
     void system_initialized();
 
     void reboot(bool hold_in_bootloader);
@@ -74,5 +73,6 @@ private:
 
     bool _initialized;
     uint64_t _stopped_clock_usec;
+    uint64_t _last_io_run;
 };
 #endif  // CONFIG_HAL_BOARD

@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
@@ -86,7 +84,7 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
         // capable of giving a vertical velocity
         if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             frontend->_fusionModeGPS.set(1);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EK3: Changed EK3_GPS_TYPE to 1");
+            gcs().send_text(MAV_SEVERITY_WARNING, "EK3: Changed EK3_GPS_TYPE to 1");
         }
     } else {
         gpsVertVelFail = false;
@@ -358,14 +356,22 @@ void NavEKF3_core::detectFlight()
             onGround = true;
         }
 
-        // If height has increased since exiting on-ground, then we definitely are flying
-        if (!onGround && ((stateStruct.position.z - posDownAtTakeoff) < -1.5f)) {
-            inFlight = true;
-        }
+        if (!onGround) {
+            // If height has increased since exiting on-ground, then we definitely are flying
+            if ((stateStruct.position.z - posDownAtTakeoff) < -1.5f) {
+                inFlight = true;
+            }
 
-        // If rangefinder has increased since exiting on-ground, then we definitely are flying
-        if (!onGround && ((rangeDataNew.rng - rngAtStartOfFlight) > 0.5f)) {
-            inFlight = true;
+            // If rangefinder has increased since exiting on-ground, then we definitely are flying
+            if ((rangeDataNew.rng - rngAtStartOfFlight) > 0.5f) {
+                inFlight = true;
+            }
+
+            // If more than 5 seconds since likely_flying was set
+            // true, then set inFlight true
+            if (_ahrs->get_time_flying_ms() > 5000) {
+                inFlight = true;
+            }
         }
 
     }

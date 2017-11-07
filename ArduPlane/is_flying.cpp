@@ -70,10 +70,6 @@ void Plane::update_is_flying_5Hz(void)
                 crash_state.impact_detected = false;
             }
 
-            if (landing.is_on_approach() && fabsf(auto_state.sink_rate) > 0.2f) {
-                is_flying_bool = true;
-            }
-
             switch (flight_stage)
             {
             case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
@@ -91,6 +87,12 @@ void Plane::update_is_flying_5Hz(void)
 
             case AP_Vehicle::FixedWing::FLIGHT_VTOL:
                 // TODO: detect ground impacts
+                break;
+
+            case AP_Vehicle::FixedWing::FLIGHT_LAND:
+                if (landing.is_on_approach() && fabsf(auto_state.sink_rate) > 0.2f) {
+                    is_flying_bool = true;
+                }
                 break;
 
             case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
@@ -152,9 +154,10 @@ void Plane::update_is_flying_5Hz(void)
 
     crash_detection_update();
 
-    if (should_log(MASK_LOG_MODE)) {
-        Log_Write_Status();
-    }
+    Log_Write_Status();
+
+    // tell AHRS flying state
+    ahrs.set_likely_flying(new_is_flying);
 }
 
 /*
@@ -277,9 +280,9 @@ void Plane::crash_detection_update(void)
 
         if (aparm.crash_detection_enable == CRASH_DETECT_ACTION_BITMASK_DISABLED) {
             if (crashed_near_land_waypoint) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected. No action taken");
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected. No action taken");
             } else {
-                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash detected. No action taken");
+                gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash detected. No action taken");
             }
         }
         else {
@@ -287,9 +290,9 @@ void Plane::crash_detection_update(void)
                 disarm_motors();
             }
             if (crashed_near_land_waypoint) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");
             } else {
-                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash detected");
+                gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash detected");
             }
         }
     }
@@ -302,7 +305,8 @@ bool Plane::in_preLaunch_flight_stage(void) {
     return (control_mode == AUTO &&
             throttle_suppressed &&
             flight_stage == AP_Vehicle::FixedWing::FLIGHT_NORMAL &&
-            mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF);
+            mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF &&
+            !quadplane.is_vtol_takeoff(mission.get_current_nav_cmd().id));
 }
 
 

@@ -69,6 +69,7 @@
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
@@ -80,6 +81,7 @@
 #include "GCS_Mavlink.h"
 #include "Parameters.h"
 #include "AP_Arming_Sub.h"
+#include "GCS_Sub.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if OPTFLOW == ENABLED
@@ -121,6 +123,7 @@
 class Sub : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Sub;
+    friend class GCS_Sub;
     friend class Parameters;
     friend class ParametersG2;
     friend class AP_Arming_Sub;
@@ -132,6 +135,8 @@ public:
     void loop() override;
 
 private:
+    static const AP_FWVersion fwver;
+
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
 
@@ -140,13 +145,10 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler scheduler = AP_Scheduler::create();
 
     // AP_Notify instance
-    AP_Notify notify;
-
-    // has a log download started?
-    bool in_log_download;
+    AP_Notify notify = AP_Notify::create();
 
     // primary input control channels
     RC_Channel *channel_roll;
@@ -159,16 +161,16 @@ private:
     // Dataflash
     DataFlash_Class DataFlash;
 
-    AP_GPS gps;
+    AP_GPS gps = AP_GPS::create();
 
-    AP_LeakDetector leak_detector;
+    AP_LeakDetector leak_detector = AP_LeakDetector::create();
 
     TSYS01 celsius;
-    AP_Baro barometer;
-    Compass compass;
-    AP_InertialSensor ins;
+    AP_Baro barometer = AP_Baro::create();
+    Compass compass = Compass::create();
+    AP_InertialSensor ins = AP_InertialSensor::create();
 
-    RangeFinder rangefinder {serial_manager, ROTATION_PITCH_270};
+    RangeFinder rangefinder = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
     struct {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
@@ -178,24 +180,27 @@ private:
     } rangefinder_state = { false, false, 0, 0 };
 
 #if RPM_ENABLED == ENABLED
-    AP_RPM rpm_sensor;
+    AP_RPM rpm_sensor = AP_RPM::create();
 #endif
 
     // Inertial Navigation EKF
-    NavEKF2 EKF2 {&ahrs, barometer, rangefinder};
-    NavEKF3 EKF3 {&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, rangefinder);
+    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, rangefinder);
+    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
 #endif
 
     // Mission library
-    AP_Mission mission;
+    AP_Mission mission = AP_Mission::create(ahrs,
+            FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void));
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
-    OpticalFlow optflow {ahrs};
+    OpticalFlow optflow = OpticalFlow::create(ahrs);
 #endif
 
     // gnd speed limit required to observe optical flow sensor limits
@@ -207,13 +212,11 @@ private:
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms = 0;
 
-    // GCS selection
-    AP_SerialManager serial_manager;
-    static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
+    AP_SerialManager serial_manager = AP_SerialManager::create();
 
-    GCS_MAVLINK_Sub gcs_chan[MAVLINK_COMM_NUM_BUFFERS];
-    GCS _gcs; // avoid using this; use gcs()
-    GCS &gcs() { return _gcs; }
+    // GCS selection
+    GCS_Sub _gcs; // avoid using this; use gcs()
+    GCS_Sub &gcs() { return _gcs; }
 
     // User variables
 #ifdef USERHOOK_VARIABLES
@@ -233,6 +236,8 @@ private:
             enum HomeState home_state   : 2; // home status (unset, set, locked)
             uint8_t at_bottom           : 1; // true if we are at the bottom
             uint8_t at_surface          : 1; // true if we are at the surface
+            uint8_t depth_sensor_present: 1; // true if there is a depth sensor detected at boot
+            uint8_t compass_init_location:1; // true when the compass's initial location has been set
         };
         uint32_t value;
     } ap;
@@ -246,11 +251,16 @@ private:
     mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
 
 #if RCMAP_ENABLED == ENABLED
-    RCMapper rcmap;
+    RCMapper rcmap = RCMapper::create();
 #endif
 
     // board specific config
-    AP_BoardConfig BoardConfig;
+    AP_BoardConfig BoardConfig = AP_BoardConfig::create();
+
+#if HAL_WITH_UAVCAN
+    // board specific config for CAN bus
+    AP_BoardConfig_CAN BoardConfig_CAN = AP_BoardConfig_CAN::create();
+#endif
 
     // Failsafe
     struct {
@@ -316,9 +326,9 @@ private:
     uint32_t nav_delay_time_start;
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery = AP_BattMonitor::create();
 
-    AP_Arming_Sub arming {ahrs, barometer, compass, battery};
+    AP_Arming_Sub arming = AP_Arming_Sub::create(ahrs, barometer, compass, battery);
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
@@ -328,6 +338,12 @@ private:
     // Turn counter
     int32_t quarter_turn_count;
     uint8_t last_turn_state;
+
+    // Input gain
+    float gain;
+
+    // Flag indicating if we are currently using input hold
+    bool input_hold_engaged;
 
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
@@ -374,10 +390,6 @@ private:
 
     AC_PosControl_Sub pos_control;
 
-#if AVOIDANCE_ENABLED == ENABLED
-    AC_Avoid avoid;
-#endif
-
     AC_WPNav wp_nav;
     AC_Circle circle_nav;
 
@@ -392,42 +404,43 @@ private:
     uint16_t mainLoop_count;
 
     // Reference to the relay object
-    AP_Relay relay;
+    AP_Relay relay = AP_Relay::create();
 
     // handle repeated servo and relay events
-    AP_ServoRelayEvents ServoRelayEvents;
+    AP_ServoRelayEvents ServoRelayEvents = AP_ServoRelayEvents::create(relay);
 
-    // Reference to the camera object (it uses the relay object inside it)
+    // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera;
+    AP_Camera camera = AP_Camera::create(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs);
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
-    AP_Mount camera_mount;
+    AP_Mount camera_mount = AP_Mount::create(ahrs, current_loc);
 #endif
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence    fence;
+    AC_Fence fence = AC_Fence::create(ahrs, inertial_nav);
+#endif
+
+#if AVOIDANCE_ENABLED == ENABLED
+    AC_Avoid avoid = AC_Avoid::create(ahrs, inertial_nav, fence, g2.proximity, &g2.beacon);
 #endif
 
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally rally;
+    AP_Rally rally = AP_Rally::create(ahrs);
 #endif
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    AP_Terrain terrain;
+    AP_Terrain terrain = AP_Terrain::create(ahrs, mission, rally);
 #endif
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
-
-    // true if we are out of time in our event timeslice
-    bool gcs_out_of_time;
 
     // Top-level logic
     // setup the var_info table
@@ -478,22 +491,17 @@ private:
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
-    void send_hwstatus(mavlink_channel_t chan);
     void send_radio_out(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
-    void send_current_waypoint(mavlink_channel_t chan);
-    void send_rangefinder(mavlink_channel_t chan);
 #if RPM_ENABLED == ENABLED
     void send_rpm(mavlink_channel_t chan);
     void rpm_update();
 #endif
     void send_temperature(mavlink_channel_t chan);
+    bool send_info(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
-    void gcs_send_message(enum ap_message id);
-    void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
-    void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void do_erase_logs(void);
     void Log_Write_Current();
     void Log_Write_Optflow();
@@ -514,7 +522,6 @@ private:
     void Log_Sensor_Health();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
-    void start_logging() ;
     void load_parameters(void);
     void userhook_init();
     void userhook_FastLoop();
@@ -524,10 +531,9 @@ private:
     void userhook_SuperSlowLoop();
     void update_home_from_EKF();
     void set_home_to_current_location_inflight();
-    bool set_home_to_current_location();
-    bool set_home_to_current_location_and_lock();
-    bool set_home_and_lock(const Location& loc);
-    bool set_home(const Location& loc);
+    bool set_home_to_current_location(bool lock);
+    bool set_home(const Location& loc, bool lock);
+    void set_ekf_origin(const Location& loc);
     bool far_from_EKF_origin(const Location& loc);
     void set_system_time_from_GPS();
     void exit_mission();
@@ -603,9 +609,6 @@ private:
     void fence_check();
     void fence_send_mavlink_status(mavlink_channel_t chan);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
-    bool gcs_set_mode(uint8_t mode) {
-        return set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
-    }
     void update_flight_mode();
     void exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode);
     bool mode_requires_GPS(control_mode_t mode);
@@ -640,6 +643,7 @@ private:
     void handle_jsbutton_press(uint8_t button,bool shift=false,bool held=false);
     JSButton* get_button(uint8_t index);
     void default_js_buttons(void);
+    void clear_input_hold();
     void init_barometer(bool save);
     void read_barometer(void);
     void init_rangefinder(void);
@@ -664,7 +668,6 @@ private:
     bool ekf_position_ok();
     bool optflow_position_ok();
     bool should_log(uint32_t mask);
-    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
@@ -692,8 +695,6 @@ private:
 #if CAMERA == ENABLED
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-    void do_take_picture();
-    void log_picture();
     void update_trigger();
 #endif
 
@@ -715,6 +716,7 @@ private:
     void log_init(void);
     void init_capabilities(void);
     void dataflash_periodic(void);
+    void ins_periodic();
     void accel_cal_update(void);
 
     void failsafe_leak_check();

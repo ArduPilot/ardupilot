@@ -41,7 +41,6 @@
 // run at 400Hz on all systems
 # define MAIN_LOOP_RATE    400
 # define MAIN_LOOP_SECONDS 0.0025f
-# define MAIN_LOOP_MICROS  2500
 
 #ifndef SURFACE_DEPTH_DEFAULT
 # define SURFACE_DEPTH_DEFAULT -10.0f // pressure sensor reading 10cm depth means craft is considered surfaced
@@ -159,35 +158,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// RADIO CONFIGURATION
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-// FLIGHT_MODE
-//
-
-#ifndef FLIGHT_MODE_1
-# define FLIGHT_MODE_1                  MANUAL
-#endif
-#ifndef FLIGHT_MODE_2
-# define FLIGHT_MODE_2                  STABILIZE
-#endif
-#ifndef FLIGHT_MODE_3
-# define FLIGHT_MODE_3                  ALT_HOLD
-#endif
-#ifndef FLIGHT_MODE_4
-# define FLIGHT_MODE_4                  STABILIZE
-#endif
-#ifndef FLIGHT_MODE_5
-# define FLIGHT_MODE_5                  STABILIZE
-#endif
-#ifndef FLIGHT_MODE_6
-# define FLIGHT_MODE_6                  STABILIZE
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
 //
 #ifndef CAMERA
@@ -233,7 +203,7 @@
 
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
-# define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
+# define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_CORRECT_XTRACK
 #endif
 
 #ifndef AUTO_YAW_SLEW_RATE

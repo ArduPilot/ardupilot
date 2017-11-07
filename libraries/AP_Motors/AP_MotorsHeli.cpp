@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MIN
     // @DisplayName: Collective Pitch Minimum
-    // @Description: Lowest possible servo position for the swashplate
+    // @Description: Lowest possible servo position in PWM microseconds for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MAX
     // @DisplayName: Collective Pitch Maximum
-    // @Description: Highest possible servo position for the swashplate
+    // @Description: Highest possible servo position in PWM microseconds for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MID
     // @DisplayName: Collective Pitch Mid-Point
-    // @Description: Swash servo position corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
+    // @Description: Swash servo position in PWM microseconds corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: RSC_SETPOINT
     // @DisplayName: External Motor Governor Setpoint
-    // @Description: PWM passed to the external motor governor when external governor is enabled
+    // @Description: PWM in microseconds passed to the external motor governor when external governor is enabled
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 10
@@ -83,9 +83,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: LAND_COL_MIN
     // @DisplayName: Landing Collective Minimum
-    // @Description: Minimum collective position while landed or landing
+    // @Description: Minimum collective position in PWM microseconds while landed or landing
     // @Range: 0 500
-    // @Units: pwm
+    // @Units: PWM
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("LAND_COL_MIN", 9, AP_MotorsHeli, _land_collective_min, AP_MOTORS_HELI_LAND_COLLECTIVE_MIN),
@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: RSC Ramp Time
     // @Description: Time in seconds for the output to the main rotor's ESC to reach full speed
     // @Range: 0 60
-    // @Units: Seconds
+    // @Units: s
     // @User: Standard
     AP_GROUPINFO("RSC_RAMP_TIME", 10, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
 
@@ -102,7 +102,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: RSC Runup Time
     // @Description: Time in seconds for the main rotor to reach full speed.  Must be longer than RSC_RAMP_TIME
     // @Range: 0 60
-    // @Units: Seconds
+    // @Units: s
     // @User: Standard
     AP_GROUPINFO("RSC_RUNUP_TIME", 11, AP_MotorsHeli, _rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
 
@@ -142,7 +142,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: Cyclic Pitch Angle Max
     // @Description: Maximum pitch angle of the swash plate
     // @Range: 0 18000
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Increment: 100
     // @User: Advanced
     AP_GROUPINFO("CYC_MAX", 16, AP_MotorsHeli, _cyclic_max, AP_MOTORS_HELI_SWASH_CYCLIC_MAX),
@@ -181,6 +181,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 // init
 void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
+    // remember frame type
+    _frame_type = frame_type;
+    
     // set update rate
     set_update_rate(_speed_hz);
 
@@ -336,7 +339,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if _rsc_setpoint is not higher than _rsc_critical as this would not allow rotor_runup_complete to ever return true
     if (_rsc_critical >= _rsc_setpoint) {
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL too large");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL too large");
         }
         return false;
     }
@@ -344,7 +347,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if RSC Mode is not set to a valid control mode
     if (_rsc_mode <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _rsc_mode > (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
         }
         return false;
     }
@@ -352,7 +355,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
     if (_rsc_runup_time <= _rsc_ramp_time){
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
         }
         return false;
     }
@@ -360,7 +363,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if idle output is higher than critical rotor speed as this could block runup_complete from going false
     if ( _rsc_idle_output >=  _rsc_critical){
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE too large");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE too large");
         }
         return false;
     }

@@ -17,7 +17,7 @@
   # define AC_ATC_MULTI_RATE_RP_D           0.0036f
 #endif
 #ifndef AC_ATC_MULTI_RATE_RP_IMAX
- # define AC_ATC_MULTI_RATE_RP_IMAX         0.444f
+ # define AC_ATC_MULTI_RATE_RP_IMAX         0.5f
 #endif
 #ifndef AC_ATC_MULTI_RATE_RP_FILT_HZ
  # define AC_ATC_MULTI_RATE_RP_FILT_HZ      20.0f
@@ -32,10 +32,10 @@
  # define AC_ATC_MULTI_RATE_YAW_D           0.0f
 #endif
 #ifndef AC_ATC_MULTI_RATE_YAW_IMAX
- # define AC_ATC_MULTI_RATE_YAW_IMAX        0.222f
+ # define AC_ATC_MULTI_RATE_YAW_IMAX        0.5f
 #endif
 #ifndef AC_ATC_MULTI_RATE_YAW_FILT_HZ
- # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     5.0f
+ # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     2.5f
 #endif
 
 

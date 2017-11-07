@@ -39,18 +39,18 @@ void Copter::throw_run()
         throw_state.stage = Throw_Disarmed;
 
     } else if (throw_state.stage == Throw_Disarmed && motors->armed()) {
-        gcs_send_text(MAV_SEVERITY_INFO,"waiting for throw");
+        gcs().send_text(MAV_SEVERITY_INFO,"waiting for throw");
         throw_state.stage = Throw_Detecting;
 
     } else if (throw_state.stage == Throw_Detecting && throw_detected()){
-        gcs_send_text(MAV_SEVERITY_INFO,"throw detected - uprighting");
+        gcs().send_text(MAV_SEVERITY_INFO,"throw detected - uprighting");
         throw_state.stage = Throw_Uprighting;
 
         // Cancel the waiting for throw tone sequence
         AP_Notify::flags.waiting_for_throw = false;
 
     } else if (throw_state.stage == Throw_Uprighting && throw_attitude_good()) {
-        gcs_send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
+        gcs().send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
         throw_state.stage = Throw_HgtStabilise;
 
         // initialize vertical speed and acceleration limits
@@ -74,7 +74,7 @@ void Copter::throw_run()
         set_auto_armed(true);
 
     } else if (throw_state.stage == Throw_HgtStabilise && throw_height_good()) {
-        gcs_send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
+        gcs().send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
         throw_state.stage = Throw_PosHold;
 
         // initialise the loiter target to the curent position and velocity

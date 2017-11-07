@@ -49,9 +49,7 @@
 #define MAGNETOMETER ENABLED
 
 // run at 400Hz on all systems
-# define MAIN_LOOP_RATE    400
 # define MAIN_LOOP_SECONDS 0.0025f
-# define MAIN_LOOP_MICROS  2500
 
 #ifndef ARMING_DELAY_SEC
     # define ARMING_DELAY_SEC 2.0f
@@ -71,6 +69,7 @@
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
   # define THR_MIN_DEFAULT                      0
   # define AUTOTUNE_ENABLED                     DISABLED
+  # define ACCEL_Z_P                            0.30f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -636,11 +635,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
-
-// use this to completely disable the CLI
-#ifndef CLI_ENABLED
-  #  define CLI_ENABLED           ENABLED
-#endif
 
 //use this to completely disable FRSKY TELEM
 #ifndef FRSKY_TELEM_ENABLED

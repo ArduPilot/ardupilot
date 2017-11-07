@@ -11,7 +11,7 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-AP_BattMonitor battery_mon;
+static AP_BattMonitor battery_mon = AP_BattMonitor::create();
 uint32_t timer;
 
 void setup() {

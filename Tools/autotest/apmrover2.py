@@ -8,6 +8,7 @@ from pymavlink import mavutil
 
 from common import *
 from pysim import util
+from pysim import vehicleinfo
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -18,17 +19,21 @@ HOME = mavutil.location(40.071374969556928, -105.22978898137808, 1583.702759, 24
 homeloc = None
 
 
-def wait_ready_to_arm(mavproxy):
-    # wait for EKF and GPS checks to pass
-    mavproxy.expect('IMU0 is using GPS')
-
 def arm_rover(mavproxy, mav):
-    wait_ready_to_arm(mavproxy);
+    wait_ready_to_arm(mav);
 
     mavproxy.send('arm throttle\n')
     mavproxy.expect('ARMED')
 
     print("ROVER ARMED")
+    return True
+
+
+def disarm_rover(mavproxy, mav):
+    mavproxy.send('disarm\n')
+    mavproxy.expect('DISARMED')
+
+    print("ROVER DISARMED")
     return True
 
 
@@ -89,14 +94,118 @@ def drive_mission(mavproxy, mav, filename):
     print("Mission OK")
     return True
 
+def do_get_banner(mavproxy, mav):
+    mavproxy.send("long DO_SEND_BANNER 1\n")
+    start = time.time()
+    while True:
+        m = mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+        if m is not None and "APM:Rover" in m.text:
+            print("banner received: %s" % (m.text))
+            return True
+        if time.time() - start > 10:
+            break
 
-def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+    print("banner not received")
+
+    return False
+
+def do_get_autopilot_capabilities(mavproxy, mav):
+    mavproxy.send("long REQUEST_AUTOPILOT_CAPABILITIES 1\n")
+    m = mav.recv_match(type='AUTOPILOT_VERSION', blocking=True, timeout=10)
+    if m is None:
+        print("AUTOPILOT_VERSION not received")
+        return False
+    print("AUTOPILOT_VERSION received")
+    return True;
+
+def do_set_mode_via_command_long(mavproxy, mav):
+    base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
+    custom_mode = 4 # hold
+    start = time.time()
+    while time.time() - start < 5:
+        mavproxy.send("long DO_SET_MODE %u %u\n" % (base_mode,custom_mode))
+        m = mav.recv_match(type='HEARTBEAT', blocking=True, timeout=10)
+        if m is None:
+            return False
+        if m.custom_mode == custom_mode:
+            return True
+        time.sleep(0.1)
+    return False
+
+def drive_brake_get_stopping_distance(mavproxy, mav, speed):
+    # measure our stopping distance:
+    old_cruise_speed = get_parameter(mavproxy, 'CRUISE_SPEED')
+    old_accel_max = get_parameter(mavproxy, 'ATC_ACCEL_MAX')
+
+    # controller tends not to meet cruise speed (max of ~14 when 15
+    # set), thus *1.2
+    set_parameter(mavproxy, 'CRUISE_SPEED', speed*1.2)
+    # at time of writing, the vehicle is only capable of 10m/s/s accel
+    set_parameter(mavproxy, 'ATC_ACCEL_MAX', 15)
+    mavproxy.send("mode STEERING\n")
+    wait_mode(mav, 'STEERING')
+    mavproxy.send('rc 3 2000\n')
+    wait_groundspeed(mav, 15, 100)
+    initial = mav.location()
+    initial_time = time.time()
+    while time.time() - initial_time < 2:
+        # wait for a position update from the autopilot
+        start = mav.location()
+        if start != initial:
+            break
+    mavproxy.send('rc 3 1500\n')
+    wait_groundspeed(mav, 0, 0.2) # why do we not stop?!
+    initial = mav.location()
+    initial_time = time.time()
+    while time.time() - initial_time < 2:
+        # wait for a position update from the autopilot
+        stop = mav.location()
+        if stop != initial:
+            break
+    delta = get_distance(start, stop)
+
+    set_parameter(mavproxy, 'CRUISE_SPEED', old_cruise_speed)
+    set_parameter(mavproxy, 'ATC_ACCEL_MAX', old_accel_max)
+
+    return delta
+
+def drive_brake(mavproxy, mav):
+    old_using_brake = get_parameter(mavproxy, 'ATC_BRAKE')
+    old_cruise_speed = get_parameter(mavproxy, 'CRUISE_SPEED')
+
+    set_parameter(mavproxy, 'CRUISE_SPEED', 15)
+    set_parameter(mavproxy, 'ATC_BRAKE', 0)
+
+    distance_without_brakes = drive_brake_get_stopping_distance(mavproxy, mav, 15)
+
+    # brakes on:
+    set_parameter(mavproxy, 'ATC_BRAKE', 1)
+    distance_with_brakes = drive_brake_get_stopping_distance(mavproxy, mav, 15)
+    # revert state:
+    set_parameter(mavproxy, 'ATC_BRAKE', old_using_brake)
+    set_parameter(mavproxy, 'CRUISE_SPEED', old_cruise_speed)
+
+    delta = distance_without_brakes - distance_with_brakes
+    if delta < distance_without_brakes*0.05: # 5% isn't asking for much
+        print("Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)" % (distance_with_brakes, distance_without_brakes, delta))
+        return False
+    else:
+        print("Brakes work (with=%0.2fm without=%0.2fm delta=%0.2fm)" % (distance_with_brakes, distance_without_brakes, delta))
+
+    return True
+
+vinfo = vehicleinfo.VehicleInfo()
+
+def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None, gdbserver=False, speedup=10):
     """Drive APMrover2 in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the mission in real time
     """
     global homeloc
+
+    if frame is None:
+        frame = 'rover'
 
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
     if viewerip:
@@ -105,24 +214,28 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         options += ' --map'
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    sitl = util.start_SITL(binary, wipe=True, model='rover', home=home, speedup=10)
+    sitl = util.start_SITL(binary, wipe=True, model=frame, home=home, speedup=speedup)
     mavproxy = util.start_MAVProxy_SITL('APMrover2', options=options)
 
     print("WAITING FOR PARAMETERS")
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send("param load %s/default_params/rover.parm\n" % testdir)
-    mavproxy.expect('Loaded [0-9]+ parameters')
-    mavproxy.send("param set LOG_REPLAY 1\n")
-    mavproxy.send("param set LOG_DISARMED 1\n")
-    time.sleep(3)
+    if params is None:
+        params = vinfo.options["APMrover2"]["frames"][frame]["default_params_filename"]
+    if not isinstance(params, list):
+        params = [params]
+    for x in params:
+        mavproxy.send("param load %s\n" % os.path.join(testdir, x))
+        mavproxy.expect('Loaded [0-9]+ parameters')
+    set_parameter(mavproxy, 'LOG_REPLAY', 1)
+    set_parameter(mavproxy, 'LOG_DISARMED', 1)
 
     # restart with new parms
     util.pexpect_close(mavproxy)
     util.pexpect_close(sitl)
 
-    sitl = util.start_SITL(binary, model='rover', home=home, speedup=10, valgrind=valgrind, gdb=gdb)
+    sitl = util.start_SITL(binary, model='rover', home=home, speedup=speedup, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
     mavproxy = util.start_MAVProxy_SITL('APMrover2', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
@@ -172,6 +285,12 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         if not drive_mission(mavproxy, mav, os.path.join(testdir, "rover1.txt")):
             print("Failed mission")
             failed = True
+        if not drive_brake(mavproxy, mav):
+            print("Failed brake")
+            failed = True
+        if not disarm_rover(mavproxy, mav):
+            print("Failed to DISARM")
+            failed = True
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/APMrover2-log.bin")):
             print("Failed log download")
             failed = True
@@ -181,6 +300,23 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
 #        if not drive_RTL(mavproxy, mav):
 #            print("Failed RTL")
 #            failed = True
+
+        # do not move this to be the first test.  MAVProxy's dedupe
+        # function may bite you.
+        print("Getting banner")
+        if not do_get_banner(mavproxy, mav):
+            print("FAILED: get banner")
+            failed = True
+
+        print("Getting autopilot capabilities")
+        if not do_get_autopilot_capabilities(mavproxy, mav):
+            print("FAILED: get capabilities")
+            failed = True
+
+        print("Setting mode via MAV_COMMAND_DO_SET_MODE")
+        if not do_set_mode_via_command_long(mavproxy, mav):
+            failed = True
+
     except pexpect.TIMEOUT as e:
         print("Failed with timeout")
         failed = True

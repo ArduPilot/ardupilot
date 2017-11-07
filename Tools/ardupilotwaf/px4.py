@@ -200,6 +200,9 @@ def _process_romfs(self):
         board_rc = 'init.d/rc.%s' % bld.env.get_flat('PX4_BOARD_NAME')
         file_list.append((board_rc, 'init.d/rc.board'))
 
+    if bld.env.PX4_PARAM_DEFAULTS:
+        file_list.append((bld.env.PX4_PARAM_DEFAULTS, 'defaults.parm'))
+
     romfs_src = bld.srcnode.find_dir(bld.env.PX4_ROMFS_SRC)
     romfs_bld = bld.bldnode.make_node(bld.env.PX4_ROMFS_BLD)
 

@@ -31,8 +31,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_HAL_Linux/GPIO.h>
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
 #define INVENSENSE_DRDY_PIN BBB_P8_14
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-#define INVENSENSE_DRDY_PIN RPI_GPIO_24
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #define INVENSENSE_DRDY_PIN MINNOW_GPIO_I2S_CLK
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
@@ -1119,4 +1117,10 @@ int AP_Invensense_AuxiliaryBus::_configure_periodic_read(AuxiliaryBusSlave *slav
     _ext_sens_data += size;
 
     return 0;
+}
+
+AP_HAL::Device::PeriodicHandle AP_Invensense_AuxiliaryBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
+{
+    auto &backend = AP_InertialSensor_Invensense::from(_ins_backend);
+    return backend._dev->register_periodic_callback(period_usec, cb);
 }

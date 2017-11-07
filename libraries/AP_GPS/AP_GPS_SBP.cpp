@@ -289,6 +289,7 @@ AP_GPS_SBP::_attempt_state_update()
 
         last_full_update_tow = last_vel_ned.tow;
         last_full_update_cpu_ms = now;
+        state.rtk_iar_num_hypotheses = last_iar_num_hypotheses;
 
         logging_log_full_update();
         ret = true;
@@ -393,8 +394,8 @@ void
 AP_GPS_SBP::logging_log_full_update()
 {
 
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
-      return;
+    if (!should_df_log()) {
+        return;
     }
 
     struct log_SbpHealth pkt = {
@@ -404,8 +405,8 @@ AP_GPS_SBP::logging_log_full_update()
         last_injected_data_ms      : last_injected_data_ms,
         last_iar_num_hypotheses    : last_iar_num_hypotheses,
     };
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 };
 
 void
@@ -413,9 +414,8 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         uint16_t sender_id,
         uint8_t msg_len,
         uint8_t *msg_buff) {
-
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
-      return;
+    if (!should_df_log()) {
+        return;
     }
 
     //MASK OUT MESSAGES WE DON'T WANT TO LOG
@@ -424,30 +424,37 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
     }
 
     uint64_t time_us = AP_HAL::micros64();
+    uint8_t pages = 1;
 
-    struct log_SbpRAW1 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW1),
+    if (msg_len > 48) {
+        pages += (msg_len - 48) / 104 + 1;
+    }
+
+    struct log_SbpRAWH pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWH),
         time_us         : time_us,
         msg_type        : msg_type,
         sender_id       : sender_id,
+        index           : 1,
+        pages           : pages,
         msg_len         : msg_len,
     };
-    memcpy(pkt.data1, msg_buff, MIN(msg_len,64));
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    memcpy(pkt.data, msg_buff, MIN(msg_len, 48));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 
-    if (msg_len > 64) {
-
-        struct log_SbpRAW2 pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW2),
+    for (uint8_t i = 0; i < pages - 1; i++) {
+        struct log_SbpRAWM pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWM),
             time_us         : time_us,
             msg_type        : msg_type,
+            sender_id       : sender_id,
+            index           : uint8_t(i + 2),
+            pages           : pages,
+            msg_len         : msg_len,
         };
-        memcpy(pkt2.data2, &msg_buff[64], msg_len - 64);
-        gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));
-
+        memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
+        DataFlash_Class::instance()->WriteBlock(&pkt2, sizeof(pkt2));
     }
-
 };
-
 
 #endif // SBP_HW_LOGGING

@@ -20,8 +20,13 @@ public:
     void     push(void) override;
 
 private:
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ
+    static const int TICK_PER_US=50;
+    static const int TICK_PER_S=50000000;
+#else
     static const int TICK_PER_US=100;
     static const int TICK_PER_S=100000000;
+#endif
 
     // Period|Hi 32 bits each
     struct s_period_hi {

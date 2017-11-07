@@ -2,13 +2,13 @@
 
 void Copter::init_barometer(bool full_calibration)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
+    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     if (full_calibration) {
         barometer.calibrate();
     }else{
         barometer.update_calibration();
     }
-    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
+    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 
 // return barometric altitude in centimeters
@@ -100,24 +100,45 @@ void Copter::rpm_update(void)
 // initialise compass
 void Copter::init_compass()
 {
+    if (!g.compass_enabled) {
+        return;
+    }
+
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
-        cliSerial->printf("COMPASS INIT ERROR\n");
+        hal.console->printf("COMPASS INIT ERROR\n");
         Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
         return;
     }
     ahrs.set_compass(&compass);
 }
 
+/*
+  if the compass is enabled then try to accumulate a reading
+  also update initial location used for declination
+ */
+void Copter::compass_accumulate(void)
+{
+    if (!g.compass_enabled) {
+        return;
+    }
+
+    compass.accumulate();
+
+    // update initial location used for declination
+    if (!ap.compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            ap.compass_init_location = true;
+        }
+    }
+}
+
 // initialise optical flow sensor
 void Copter::init_optflow()
 {
 #if OPTFLOW == ENABLED
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
     // initialise optical flow sensor
     optflow.init();
 #endif      // OPTFLOW == ENABLED
@@ -170,6 +191,8 @@ void Copter::read_battery(void)
     }
     if (battery.has_current()) {
         motors->set_current(battery.current_amps());
+        motors->set_resistance(battery.get_resistance());
+        motors->set_voltage_resting_estimate(battery.voltage_resting_estimate());
     }
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
@@ -337,6 +360,7 @@ void Copter::update_sensor_status_flags(void)
     case POSHOLD:
     case BRAKE:
     case THROW:
+    case SMART_RTL:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
@@ -375,7 +399,7 @@ void Copter::update_sensor_status_flags(void)
     if (!g.compass_enabled || !compass.healthy() || !ahrs.use_compass()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (gps.status() == AP_GPS::NO_GPS) {
+    if (!gps.is_healthy()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_GPS;
     }
     if (!ap.rc_receiver_present || failsafe.radio) {
@@ -501,4 +525,18 @@ void Copter::update_visual_odom()
                                        g2.visual_odom.get_confidence());
     }
 #endif
+}
+
+// winch and wheel encoder initialisation
+void Copter::winch_init()
+{
+    g2.wheel_encoder.init();
+    g2.winch.init(&g2.wheel_encoder);
+}
+
+// winch and wheel encoder update
+void Copter::winch_update()
+{
+    g2.wheel_encoder.update();
+    g2.winch.update();
 }

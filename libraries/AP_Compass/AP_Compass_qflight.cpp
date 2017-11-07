@@ -80,7 +80,6 @@ void AP_Compass_QFLIGHT::timer_update(void)
     if (ret != 0) {
         return;
     }
-    uint64_t time_us = AP_HAL::micros64();
     for (uint16_t i=0; i<magbuf->num_samples; i++) {
         DSPBuffer::MAG::BUF &b = magbuf->buf[i];
         
@@ -91,7 +90,7 @@ void AP_Compass_QFLIGHT::timer_update(void)
         rotate_field(raw_field, instance);
 
         // publish raw_field (uncorrected point sample) for calibration use
-        publish_raw_field(raw_field, time_us, instance);
+        publish_raw_field(raw_field, instance);
 
         // correct raw_field for known errors
         correct_field(raw_field, instance);

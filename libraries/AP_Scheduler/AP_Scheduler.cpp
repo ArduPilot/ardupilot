@@ -189,11 +189,12 @@ uint16_t AP_Scheduler::time_available_usec(void)
 /*
   calculate load average as a number from 0 to 1
  */
-float AP_Scheduler::load_average(uint32_t tick_time_usec) const
+float AP_Scheduler::load_average() const
 {
     if (_spare_ticks == 0) {
         return 0.0f;
     }
-    uint32_t used_time = tick_time_usec - (_spare_micros/_spare_ticks);
-    return used_time / (float)tick_time_usec;
+    const uint32_t loop_us = get_loop_period_us();
+    const uint32_t used_time = loop_us - (_spare_micros/_spare_ticks);
+    return used_time / (float)loop_us;
 }

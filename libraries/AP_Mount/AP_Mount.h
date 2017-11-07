@@ -55,6 +55,16 @@ class AP_Mount
     friend class AP_Mount_SToRM32_serial;
 
 public:
+    static AP_Mount create(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc) {
+        return AP_Mount{ahrs, current_loc};
+    }
+
+    constexpr AP_Mount(AP_Mount &&other) = default;
+
+    /* Do not allow copies */
+    AP_Mount(const AP_Mount &other) = delete;
+    AP_Mount &operator=(const AP_Mount&) = delete;
+
 
     // Enums
     enum MountType {
@@ -66,11 +76,8 @@ public:
         Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
     };
 
-    // Constructor
-    AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc);
-
     // init - detect and initialise all mounts
-    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
+    void init(const AP_SerialManager& serial_manager);
 
     // update - give mount opportunity to update servos.  should be called at 10hz or higher
     void update();
@@ -136,6 +143,7 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
+    AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc);
 
     // private members
     const AP_AHRS_TYPE     &_ahrs;

@@ -37,6 +37,9 @@ public:
     // read the latest battery voltage
     void read() override;
 
+    // bebop provides current info
+    bool has_current() const override { return true; };
+
 private:
     float _prev_vbat_raw;
     float _prev_vbat;

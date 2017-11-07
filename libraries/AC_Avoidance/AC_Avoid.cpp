@@ -5,14 +5,15 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Avoidance control enable/disable
     // @Description: Enabled/disable stopping at fence
-    // @Values: 0:None,1:StopAtFence,2:UseProximitySensor,3:All
-    // @Bitmask: 0:StopAtFence,1:UseProximitySensor
+    // @Values: 0:None,1:StopAtFence,2:UseProximitySensor,3:StopAtFence and UseProximitySensor,4:StopAtBeaconFence,7:All
+    // @Bitmask: 0:StopAtFence,1:UseProximitySensor,2:StopAtBeaconFence
     // @User: Standard
-    AP_GROUPINFO("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_ALL),
+    AP_GROUPINFO("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_DEFAULT),
 
     // @Param: ANGLE_MAX
     // @DisplayName: Avoidance max lean angle in non-GPS flight modes
     // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
+    // @Units: cdeg
     // @Range: 0 4500
     // @User: Standard
     AP_GROUPINFO("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000),
@@ -20,7 +21,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
     // @Description: Distance from object at which obstacle avoidance will begin in non-GPS modes
-    // @Units: meters
+    // @Units: m
     // @Range: 3 30
     // @User: Standard
     AP_GROUPINFO("DIST_MAX", 3,  AC_Avoid, _dist_max, AC_AVOID_NONGPS_DIST_MAX_DEFAULT),
@@ -28,7 +29,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Param: MARGIN
     // @DisplayName: Avoidance distance margin in GPS modes
     // @Description: Vehicle will attempt to stay at least this distance (in meters) from objects while in GPS modes
-    // @Units: meters
+    // @Units: m
     // @Range: 1 10
     // @User: Standard
     AP_GROUPINFO("MARGIN", 4, AC_Avoid, _margin, 2.0f),
@@ -37,11 +38,12 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
 };
 
 /// Constructor
-AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity)
+AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon)
     : _ahrs(ahrs),
       _inav(inav),
       _fence(fence),
-      _proximity(proximity)
+      _proximity(proximity),
+      _beacon(beacon)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -59,6 +61,10 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel
     if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
         adjust_velocity_circle_fence(kP, accel_cmss_limited, desired_vel);
         adjust_velocity_polygon_fence(kP, accel_cmss_limited, desired_vel);
+    }
+
+    if ((_enabled & AC_AVOID_STOP_AT_BEACON_FENCE) > 0) {
+        adjust_velocity_beacon_fence(kP, accel_cmss_limited, desired_vel);
     }
 
     if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0 && _proximity_enabled) {
@@ -251,6 +257,32 @@ void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2
     Vector2f* boundary = _fence.get_polygon_points(num_points);
 
     // adjust velocity using polygon
+    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, true, _fence.get_margin());
+}
+
+/*
+ * Adjusts the desired velocity for the beacon fence.
+ */
+void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel)
+{
+    // exit if the beacon is not present
+    if (_beacon == nullptr) {
+        return;
+    }
+
+    // exit immediately if no desired velocity
+    if (desired_vel.is_zero()) {
+        return;
+    }
+
+    // get boundary from beacons
+    uint16_t num_points;
+    const Vector2f* boundary = _beacon->get_boundary_points(num_points);
+    if (boundary == nullptr || num_points == 0) {
+        return;
+    }
+
+    // adjust velocity using beacon
     adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, true, _fence.get_margin());
 }
 

@@ -22,6 +22,7 @@
 namespace PX4 {
 
 uint8_t PX4::PX4_I2C::instance;
+pthread_mutex_t PX4::PX4_I2C::instance_lock;
 
 DeviceBus I2CDevice::businfo[I2CDevice::num_buses];
 
@@ -53,7 +54,13 @@ uint8_t PX4_I2C::map_bus_number(uint8_t bus) const
 #else
         return 1;
 #endif
-        
+    case 2:
+        // map to expansion bus 2
+#ifdef PX4_I2C_BUS_EXPANSION1
+        return PX4_I2C_BUS_EXPANSION1;
+#else
+        return 2;
+#endif
     }
     // default to bus 1
     return 1;
@@ -66,14 +73,19 @@ bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_le
 {
     set_address(address);
     if (!init_done) {
+        if (pthread_mutex_lock(&instance_lock) != 0) {
+            return false;
+        }
         init_done = true;
         // we do late init() so we can setup the device paths
+        
         snprintf(devname, sizeof(devname), "AP_I2C_%u", instance);
         snprintf(devpath, sizeof(devpath), "/dev/api2c%u", instance);
         init_ok = (init() == OK);
         if (init_ok) {
             instance++;
         }
+        pthread_mutex_unlock(&instance_lock);
     }
     if (!init_ok) {
         return false;

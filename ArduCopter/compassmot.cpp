@@ -38,9 +38,11 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         interference_pct[i] = 0.0f;
     }
 
+    GCS_MAVLINK_Copter &gcs_chan = gcs().chan(chan-MAVLINK_COMM_0);
+
     // check compass is enabled
     if (!g.compass_enabled) {
-        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Compass disabled");
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Compass disabled");
         ap.compass_mot = false;
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
@@ -49,16 +51,15 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     compass.read();
     for (uint8_t i=0; i<compass.get_count(); i++) {
         if (!compass.healthy(i)) {
-            gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Check compass");
+            gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Check compass");
             ap.compass_mot = false;
             return MAV_RESULT_TEMPORARILY_REJECTED;
         }
     }
 
     // check if radio is calibrated
-    arming.pre_arm_rc_checks(true);
-    if (!ap.pre_arm_rc_check) {
-        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "RC not calibrated");
+    if (!arming.rc_calibration_checks(true)) {
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "RC not calibrated");
         ap.compass_mot = false;
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
@@ -66,14 +67,14 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     // check throttle is at zero
     read_radio();
     if (channel_throttle->get_control_in() != 0) {
-        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Throttle not zero");
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Throttle not zero");
         ap.compass_mot = false;
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
     // check we are landed
     if (!ap.land_complete) {
-        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Not landed");
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Not landed");
         ap.compass_mot = false;
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
@@ -98,13 +99,13 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     AP_Notify::flags.esc_calibration = true;
 
     // warn user we are starting calibration
-    gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "Starting calibration");
+    gcs_chan.send_text(MAV_SEVERITY_INFO, "Starting calibration");
 
     // inform what type of compensation we are attempting
     if (comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
-        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "Current");
+        gcs_chan.send_text(MAV_SEVERITY_INFO, "Current");
     } else{
-        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "Throttle");
+        gcs_chan.send_text(MAV_SEVERITY_INFO, "Throttle");
     }
 
     // disable throttle and battery failsafe
@@ -155,7 +156,9 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         read_radio();
         
         // pass through throttle to motors
+        hal.rcout->cork();
         motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
+        hal.rcout->push();
         
         // read some compass values
         compass.read();
@@ -248,10 +251,10 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         }
         compass.save_motor_compensation();
         // display success message
-        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "Calibration successful");
+        gcs_chan.send_text(MAV_SEVERITY_INFO, "Calibration successful");
     } else {
         // compensation vector never updated, report failure
-        gcs_chan[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_NOTICE, "Failed");
+        gcs_chan.send_text(MAV_SEVERITY_NOTICE, "Failed");
         compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
     }
 

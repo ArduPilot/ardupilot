@@ -19,14 +19,10 @@ WIND = "0,180,0.2"  # speed,direction,variance
 
 homeloc = None
 
-def wait_ready_to_arm(mavproxy):
-    # wait for EKF and GPS checks to pass
-    mavproxy.expect('IMU0 is using GPS')
-
 def takeoff(mavproxy, mav):
     """Takeoff get to 30m altitude."""
 
-    wait_ready_to_arm(mavproxy)
+    wait_ready_to_arm(mav)
 
     mavproxy.send('arm throttle\n')
     mavproxy.expect('ARMED')
@@ -435,11 +431,12 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
         return False
     if not wait_groundspeed(mav, 0, 0.5, timeout=60):
         return False
+    mavproxy.expect("Auto disarmed")
     print("Mission OK")
     return True
 
 
-def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
     """Fly ArduPlane in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -453,8 +450,8 @@ def fly_ArduPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     if use_map:
         options += ' --map'
 
-    sitl = util.start_SITL(binary, model='plane-elevrev', home=HOME_LOCATION, speedup=10,
-                          valgrind=valgrind, gdb=gdb,
+    sitl = util.start_SITL(binary, model='plane-elevrev', home=HOME_LOCATION, speedup=speedup,
+                          valgrind=valgrind, gdb=gdb, gdbserver=gdbserver,
                           defaults_file=os.path.join(testdir, 'default_params/plane-jsbsim.parm'))
     mavproxy = util.start_MAVProxy_SITL('ArduPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')

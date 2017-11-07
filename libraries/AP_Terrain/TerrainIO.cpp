@@ -171,16 +171,26 @@ void AP_Terrain::open_file(void)
     }
     snprintf(p, 13, "/%c%02u%c%03u.DAT",
              block.lat_degrees<0?'S':'N',
-             abs(block.lat_degrees),
+             abs((int32_t)block.lat_degrees),
              block.lon_degrees<0?'W':'E',
-             abs(block.lon_degrees));
+             abs((int32_t)block.lon_degrees));
 
     // create directory if need be
     if (!directory_created) {
         *p = 0;
-        mkdir(file_path, 0755);
-        directory_created = true;
+        directory_created = !mkdir(file_path, 0755);
         *p = '/';
+
+        if (!directory_created) {
+            if (errno == EEXIST) {
+                // directory already existed
+                directory_created = true;
+            } else {
+                // if we didn't succeed at making the directory, then IO failed
+                io_failure = true;
+                return;
+            }
+        }
     }
 
     if (fd != -1) {

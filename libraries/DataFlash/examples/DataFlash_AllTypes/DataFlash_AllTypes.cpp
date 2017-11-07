@@ -4,6 +4,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
+#include <stdio.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -11,6 +13,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 struct PACKED log_TYP1 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    int16_t    a[32];
     int8_t     b;
     uint8_t    B;
     int16_t    h;
@@ -23,6 +26,7 @@ struct PACKED log_TYP1 {
     char       N[16];
     char       Z[64];
 };
+static_assert(sizeof(log_TYP1) < 256, "log_TYP1 is oversize");
 
 struct PACKED log_TYP2 {
     LOG_PACKET_HEADER;
@@ -45,7 +49,7 @@ enum MyLogMessages {
 
 static const struct LogStructure log_structure[] = {
     { LOG_TYP1_MSG, sizeof(log_TYP1),
-      "TYP1", "QbBhHiIfdnNZ",        "TimeUS,b,B,h,H,i,I,f,d,n,N,Z" },
+      "TYP1", "QabBhHiIfdnNZ",        "TimeUS,a,b,B,h,H,i,I,f,d,n,N,Z" },
     { LOG_TYP2_MSG, sizeof(log_TYP2),
       "TYP2", "QcCeELMqQ",        "TimeUS,c,C,e,E,L,M,q,Q" },
     { LOG_MESSAGE_MSG, sizeof(log_Message),
@@ -55,7 +59,7 @@ static const struct LogStructure log_structure[] = {
 // these are identical to the entries in the above log-structure.  Not
 // shared to maintain the visual similarity between the above
 // structure and that in LogStructure.h
-#define TYP1_FMT "QbBhHiIfdnNZ"
+#define TYP1_FMT "QabBhHiIfdnNZ"
 #define TYP1_LBL "TimeUS,b,B,h,H,i,I,f,d,n,N,Z"
 #define TYP2_FMT "QcCeELMqQ"
 #define TYP2_LBL "TimeUS,c,C,e,E,L,M,q,Q"
@@ -69,7 +73,8 @@ public:
 
 private:
 
-    DataFlash_Class dataflash{"DF AllTypes 0.1"};
+    AP_Int32 log_bitmask;
+    DataFlash_Class dataflash = DataFlash_Class::create("DF AllTypes 0.2", log_bitmask);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
@@ -94,13 +99,13 @@ void DataFlashTest_AllTypes::flush_dataflash(DataFlash_Class &_dataflash)
 
 void DataFlashTest_AllTypes::Log_Write_TypeMessages()
 {
-    dataflash.StartNewLog();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
 
     struct log_TYP1 typ1 = {
         LOG_PACKET_HEADER_INIT(LOG_TYP1_MSG),
         time_us : AP_HAL::micros64(),
+        a : { -32768, 32767, 1, -1, 0, 17 }, // int16[32]
         b : -17, // int8_t
         B : 42,  // uint8_t
         h : -12372,  // int16_t
@@ -141,7 +146,6 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages()
 
 void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 {
-    dataflash.StartNewLog();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number for Log_Write %u\n", log_num);
 
@@ -174,6 +178,9 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
                         3432345232233432   // uint64_t
         );
 
+    // emit a message which contains NaNs:
+    dataflash.Log_Write("NANS", "f,d,bf,bd", "fdfd",  dataflash.quiet_nanf(), dataflash.quiet_nan(), NAN, NAN);
+
     flush_dataflash(dataflash);
 
     dataflash.StopLogging();
@@ -183,16 +190,14 @@ void DataFlashTest_AllTypes::setup(void)
 {
     hal.console->printf("Dataflash All Types 1.0\n");
 
+    log_bitmask = (uint32_t)-1;
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
+    dataflash.set_vehicle_armed(true);
+    dataflash.Log_Write_Message("DataFlash Test");
 
     // Test
     hal.scheduler->delay(20);
     dataflash.ShowDeviceInfo(hal.console);
-
-    if (dataflash.NeedPrep()) {
-        hal.console->printf("Preparing dataflash...\n");
-        dataflash.Prep();
-    }
 
     Log_Write_TypeMessages();
     Log_Write_TypeMessages_Log_Write();
@@ -205,6 +210,12 @@ void DataFlashTest_AllTypes::loop(void)
     hal.console->printf("all done\n");
     hal.scheduler->delay(1000);
 }
+
+const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+    AP_GROUPEND
+};
+GCS_Dummy _gcs;
+
 
 static DataFlashTest_AllTypes dataflashtest;
 

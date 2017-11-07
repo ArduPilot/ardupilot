@@ -14,13 +14,13 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 
     // target alt must be negative (underwater)
     if (target_loc.alt > 0.0f) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "BAD NAV ALT %0.2f", (double)target_loc.alt);
+        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT %0.2f", (double)target_loc.alt);
         return true;
     }
 
     // only tested/supported alt frame so far is ALT_FRAME_ABOVE_HOME, where Home alt is always water's surface ie zero depth
     if (target_loc.get_alt_frame() != Location_Class::ALT_FRAME_ABOVE_HOME) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "BAD NAV ALT_FRAME %d", (int8_t)target_loc.get_alt_frame());
+        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT_FRAME %d", (int8_t)target_loc.get_alt_frame());
         return true;
     }
 
@@ -163,7 +163,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 // Verify command Handlers
 /********************************************************************************/
 
-// check to see if current command goal has been acheived
+// check to see if current command goal has been achieved
 // called by mission library in mission.update()
 bool Sub::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
@@ -172,7 +172,7 @@ bool Sub::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 
         // send message to GCS
         if (cmd_complete) {
-            gcs_send_mission_item_reached_message(cmd.index);
+            gcs().send_mission_item_reached_message(cmd.index);
         }
 
         return cmd_complete;
@@ -248,7 +248,7 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
 
     default:
         // error message
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
+        gcs().send_text(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
@@ -528,7 +528,7 @@ void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         // absolute delay to utc time
         nav_delay_time_max = hal.util->get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
 }
 
 #if GRIPPER_ENABLED == ENABLED
@@ -585,7 +585,7 @@ bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     } else {
         return false;
@@ -700,7 +700,7 @@ bool Sub::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     } else {
         return false;
@@ -840,10 +840,10 @@ void Sub::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
-        set_home_to_current_location();
+        set_home_to_current_location(false);
     } else {
         if (!far_from_EKF_origin(cmd.content.location)) {
-            set_home(cmd.content.location);
+            set_home(cmd.content.location, false);
         }
     }
 }
@@ -873,37 +873,14 @@ void Sub::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 // do_digicam_control Send Digicam Control message with the camera library
 void Sub::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
-    if (camera.control(cmd.content.digicam_control.session,
-                       cmd.content.digicam_control.zoom_pos,
-                       cmd.content.digicam_control.zoom_step,
-                       cmd.content.digicam_control.focus_lock,
-                       cmd.content.digicam_control.shooting_cmd,
-                       cmd.content.digicam_control.cmd_id)) {
-        log_picture();
-    }
+    camera.control(cmd.content.digicam_control.session,
+                   cmd.content.digicam_control.zoom_pos,
+                   cmd.content.digicam_control.zoom_step,
+                   cmd.content.digicam_control.focus_lock,
+                   cmd.content.digicam_control.shooting_cmd,
+                   cmd.content.digicam_control.cmd_id);
 }
 
-// do_take_picture - take a picture with the camera library
-void Sub::do_take_picture()
-{
-    camera.trigger_pic(true);
-    log_picture();
-}
-
-// log_picture - log picture taken and send feedback to GCS
-void Sub::log_picture()
-{
-    if (!camera.using_feedback_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    } else {
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
-        }
-    }
-}
 #endif
 
 // point the camera to a specified angle

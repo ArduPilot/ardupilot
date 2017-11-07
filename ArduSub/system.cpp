@@ -1,5 +1,4 @@
 #include "Sub.h"
-#include "version.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -23,17 +22,41 @@ void Sub::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    hal.console->printf("\n\nInit " FIRMWARE_STRING
-                      "\n\nFree RAM: %u\n",
-                      (unsigned)hal.util->available_memory());
+    hal.console->printf("\n\nInit %s"
+                        "\n\nFree RAM: %u\n",
+                        fwver.fw_string,
+                        (unsigned)hal.util->available_memory());
 
     // load parameters from EEPROM
     load_parameters();
 
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // Detection won't work until after BoardConfig.init()
+    switch (AP_BoardConfig::get_board_type()) {
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
+        AP_Param::set_by_name("GND_EXT_BUS", 0);
+        break;
+    default:
+        AP_Param::set_by_name("GND_EXT_BUS", 1);
+        break;
+    }
+#else
+    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+#endif
+
+    // identify ourselves correctly with the ground station
+    mavlink_system.sysid = g.sysid_this_mav;
+    
     // initialise serial port
     serial_manager.init();
+
+    // setup first port early to allow BoardConfig to report errors
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
@@ -56,12 +79,7 @@ void Sub::init_ardupilot()
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     // setup telem slots with serial ports
-    for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-    }
-
-    // identify ourselves correctly with the ground station
-    mavlink_system.sysid = g.sysid_this_mav;
+    gcs().setup_uarts(serial_manager);
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
@@ -85,7 +103,8 @@ void Sub::init_ardupilot()
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
     // Do GPS init
-    gps.init(&DataFlash, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     if (g.compass_enabled) {
         init_compass();
@@ -116,15 +135,14 @@ void Sub::init_ardupilot()
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(&DataFlash, serial_manager);
+    camera_mount.init(serial_manager);
 #endif
 
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif
 
-    // read Baro pressure at ground
-    //-----------------------------
+    // Init baro and determine if we have external (depth) pressure sensor
     init_barometer(false);
     barometer.update();
 
@@ -132,12 +150,13 @@ void Sub::init_ardupilot()
         if (barometer.get_type(i) == AP_Baro::BARO_TYPE_WATER) {
             barometer.set_primary_baro(i);
             depth_sensor_idx = i;
-            sensor_health.depth = barometer.healthy(i);
-            break;
+            ap.depth_sensor_present = true;
+            sensor_health.depth = barometer.healthy(depth_sensor_idx); // initialize health flag
+            break; // Go with the first one we find
         }
     }
 
-    if (!sensor_health.depth) {
+    if (!ap.depth_sensor_present) {
         // We only have onboard baro
         // No external underwater depth sensor detected
         barometer.set_primary_baro(0);
@@ -179,15 +198,10 @@ void Sub::init_ardupilot()
     // enable CPU failsafe
     mainloop_failsafe_enable();
 
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);
+    ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // init vehicle capabilties
     init_capabilities();
-
-    if (DataFlash.log_while_disarmed()) {
-        start_logging(); // create a new log if necessary
-    }
 
     // disable safety if requested
     BoardConfig.init_safety();    
@@ -215,7 +229,7 @@ void Sub::startup_INS_ground()
     ahrs.reset();
 }
 
-// calibrate gyros - returns true if succesfully calibrated
+// calibrate gyros - returns true if successfully calibrated
 bool Sub::calibrate_gyros()
 {
     // gyro offset calibration
@@ -291,11 +305,8 @@ bool Sub::optflow_position_ok()
 bool Sub::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
-        return false;
-    }
-    bool ret = DataFlash.logging_started() && (motors.armed() || DataFlash.log_while_disarmed());
-    return ret;
+    ap.logging_started = DataFlash.logging_started();
+    return DataFlash.should_log(mask);
 #else
     return false;
 #endif
