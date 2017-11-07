@@ -715,8 +715,7 @@ void Plane::update_flight_mode(void)
           roll when heading is locked. Heading becomes unlocked on
           any aileron or rudder input
         */
-        if ((channel_roll->get_control_in() != 0 ||
-             rudder_input != 0)) {                
+        if (channel_roll->get_control_in() != 0 || channel_rudder->get_control_in() != 0) {
             cruise_state.locked_heading = false;
             cruise_state.lock_timer_ms = 0;
         }                 
