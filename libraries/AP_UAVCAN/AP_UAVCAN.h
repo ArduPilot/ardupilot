@@ -94,6 +94,17 @@ public:
     uint8_t register_mag_listener_to_node(AP_Compass_Backend* new_listener, uint8_t node);
     void update_mag_state(uint8_t node);
 
+    struct Example_Data {
+        float value;
+        uint8_t error_flags;
+    };
+
+    uint8_t register_example_listener_to_id(AP_Example_Backend* new_listener, uint8_t id);
+    void remove_example_listener(AP_BattMonitor_Backend* rem_listener);
+    uint8_t find_smallest_free_example_id();
+    GenericBatteryInfo_Data* getptrto_example_data(uint8_t id);
+    void update_example_data(uint8_t id);
+
     // synchronization for RC output
     bool rc_out_sem_take();
     void rc_out_sem_give();
@@ -125,6 +136,13 @@ private:
     Mag_Info _mag_node_state[AP_UAVCAN_MAX_MAG_NODES];
     uint8_t _mag_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
     AP_Compass_Backend* _mag_listeners[AP_UAVCAN_MAX_LISTENERS];
+
+    // ------------------------- EXAMPLE
+    uint8_t _example_nodes[AP_UAVCAN_MAX_EXAMPLE_NODES];
+    uint8_t _example_node_taken[AP_UAVCAN_MAX_EXAMPLE_NODES];
+    Example_Info _example_node_state[AP_UAVCAN_MAX_EXAMPLE_NODES];
+    uint8_t _example_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
+    AP_Example_Backend* _example_listeners[AP_UAVCAN_MAX_LISTENERS];
 
     struct {
         uint16_t pulse;

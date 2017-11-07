@@ -1,0 +1,9 @@
+#
+# Generic device example
+#
+
+uint16 device_id
+
+float16 value
+
+uint8 error_flags

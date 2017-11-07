@@ -26,6 +26,9 @@
 #include <uavcan/equipment/actuator/Status.hpp>
 #include <uavcan/equipment/esc/RawCommand.hpp>
 
+// vendor-specific devices
+#include <ap_uavcan/Example.hpp>
+
 extern const AP_HAL::HAL& hal;
 
 #define debug_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { hal.console->printf(fmt, ##args); }} while (0)
@@ -274,6 +277,25 @@ static void air_data_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equipmen
 static void (*air_data_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticTemperature>& msg)
         = { air_data_st_cb0, air_data_st_cb1 };
 
+static void example_st_cb(const uavcan::ReceivedDataStructure<ap_uavcan::Example>& msg, uint8_t mgr)
+{
+    if (hal.can_mgr[mgr] != nullptr) {
+        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+        if (ap_uavcan != nullptr) {
+            AP_UAVCAN::Example_Data *data = ap_uavcan->getptrto_example_data((uint16_t) msg.example_id);
+
+            if (data != nullptr) {
+                data->value = msg.value;
+                data->error_flags = msg.error_flags;
+
+                ap_uavcan->update_example_data((uint16_t) msg.example_id);
+            }
+        }
+    }
+}
+
+X_CREATE_CB_ARR( example_st, ap_uavcan::Example)
+
 // publisher interfaces
 static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[MAX_NUMBER_OF_CAN_DRIVERS];
@@ -417,6 +439,14 @@ bool AP_UAVCAN::try_init(void)
                     esc_raw[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*node);
                     esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
                     esc_raw[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+                    uavcan::Subscriber<ap_uavcan::Example> *example_st;
+                    example_st = new uavcan::Subscriber<ap_uavcan::Example>(*node);
+                    const int example_start_res = example_st->start(example_st_cb_arr[_uavcan_i]);
+                    if (example_start_res < 0) {
+                        debug_uavcan(1, "AP_UAVCAN Example subscriber start problem\n\r");
+                        return false;
+                    }
 
                     /*
                      * Informing other nodes that we're ready to work.
@@ -1029,6 +1059,93 @@ void AP_UAVCAN::update_mag_state(uint8_t node)
             for (uint8_t j = 0; j < AP_UAVCAN_MAX_LISTENERS; j++) {
                 if (_mag_listener_to_node[j] == i) {
                     _mag_listeners[j]->handle_mag_msg(_mag_node_state[i].mag_vector);
+                }
+            }
+        }
+    }
+}
+
+uint8_t AP_UAVCAN::register_example_listener_to_id(AP_Example_Backend* new_listener, uint8_t id)
+{
+    uint8_t sel_place = UINT8_MAX, ret = 0;
+
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
+        if (_example_listeners[i] == nullptr) {
+            sel_place = i;
+            break;
+        }
+    }
+
+    if (sel_place != UINT8_MAX) {
+        for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) { //for example we use the same max number as is used for BI
+            if (_example_id[i] == id) {
+                _example_listeners[sel_place] = new_listener;
+                _example_listener_to_id[sel_place] = i;
+                _example_id_taken[i]++;
+                ret = i + 1;
+                debug_uavcan(2, "reg_example place:%d, chan: %d\n\r", sel_place, i);
+                break;
+            }
+        }
+    }
+
+    return ret;
+}
+
+void AP_UAVCAN::remove_example_listener(AP_Example_Backend* rem_listener)
+{
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
+       if (_example_listeners[i] == rem_listener) {
+           _example_listeners[i] = nullptr;
+           if (_example_id_taken[_example_listener_to_id[i]] > 0) {
+               _example_id_taken[_example_listener_to_id[i]]--;
+           }
+           _example_listener_to_id[i] = UINT8_MAX;
+       }
+    }
+}
+
+uint8_t AP_UAVCAN::find_smallest_free_example_id()
+{
+    uint8_t ret = UINT8_MAX;
+
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
+        if (_example_id_taken[i] == 0) {
+            ret = MIN(ret, _example_id[i]);
+        }
+    }
+
+    return ret;
+}
+
+AP_UAVCAN::Example_Data* AP_UAVCAN::getptrto_example_data(uint8_t id)
+{
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
+        if (_example_id[i] == id) {
+            return &_example_data[i];
+        }
+    }
+
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
+        if (_example_id[i] == UINT8_MAX) {
+            _example_id[i] = id;
+            return &_example_data[i];
+        }
+    }
+
+    return nullptr;
+}
+
+void AP_UAVCAN::update_example_data(uint8_t id)
+{
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
+        if (_example_id[i] == id) {
+            for (uint8_t j = 0; j < AP_UAVCAN_MAX_LISTENERS; j++) {
+                if (_example_listener_to_id[j] == i) {
+                    _example_listeners[j]->handle_example_msg(
+                            _example_data[i].voltage,
+                            _example_data[i].current,
+                            _example_data[i].charge_consumed_mAh);
                 }
             }
         }
