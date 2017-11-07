@@ -90,7 +90,7 @@ void Plane::update_is_flying_5Hz(void)
                 break;
 
             case AP_Vehicle::FixedWing::FLIGHT_LAND:
-                if (landing.is_on_approach() && fabsf(auto_state.sink_rate) > 0.2f) {
+                if (landing.is_on_approach() && auto_state.sink_rate > 0.2f) {
                     is_flying_bool = true;
                 }
                 break;
