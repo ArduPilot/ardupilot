@@ -196,7 +196,7 @@ void AP_MotorsUGV::output(bool armed, float dt)
     output_regular(armed, _steering, _throttle);
 
     // output for skid steering style frames
-    output_skid_steering(armed, _steering, _throttle);
+    output_skid_steering(armed, _steering, _throttle, dt);
 
     // send values to the PWM timers for output
     SRV_Channels::calc_pwm();
@@ -227,7 +227,7 @@ void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
 }
 
 // output to skid steering channels
-void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float throttle)
+void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float throttle, float dt)
 {
     if (!have_skid_steering()) {
         return;
@@ -292,6 +292,8 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
             motor_left += dir * steering_scaled;
         }
     }
+
+    slew_limit_skid_throttle(dt, motor_left, motor_right);
 
     // send pwm value to each motor
     output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
@@ -359,6 +361,24 @@ void AP_MotorsUGV::slew_limit_throttle(float dt)
             temp = 1.0f;
         }
         _throttle = constrain_int16(_throttle, _last_throttle - temp, _last_throttle + temp);
+    }
+}
+
+// slew limit skid steer motor throttle for one iteration
+void AP_MotorsUGV::slew_limit_skid_throttle(float dt, float& motor_left, float& motor_right)
+{
+    if (_use_slew_rate && (_slew_rate > 0)) {
+        // motor outputs are scaled from -1 to 1, but slew rate and throttle are from 0 to 100
+        float temp = _slew_rate * 0.01f * dt * 0.01f * (_throttle_max - _throttle_min);
+        if (temp < 0.01f) {
+            temp = 0.01f;
+        }
+
+        motor_left = constrain_float(motor_left, _last_motor_left - temp, _last_motor_left + temp);
+        motor_right = constrain_float(motor_right, _last_motor_right - temp, _last_motor_right + temp);
+
+        _last_motor_left = motor_left;
+        _last_motor_right = motor_right;
     }
 }
 

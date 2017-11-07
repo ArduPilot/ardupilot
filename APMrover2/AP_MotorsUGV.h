@@ -78,13 +78,15 @@ protected:
     void output_regular(bool armed, float steering, float throttle);
 
     // output to skid steering channels
-    void output_skid_steering(bool armed, float steering, float throttle);
+    void output_skid_steering(bool armed, float steering, float throttle, float dt);
 
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle);
 
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
+
+    void slew_limit_skid_throttle(float dt, float& motor_left, float& motor_right);
 
     // set limits based on steering and throttle input
     void set_limits_from_input(bool armed, float steering, float throttle);
@@ -105,5 +107,7 @@ protected:
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _last_throttle;
+    float   _last_motor_left;
+    float   _last_motor_right;
     bool    _use_slew_rate; // true if we should slew limit the throttle for one interation
 };
