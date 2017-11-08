@@ -1162,6 +1162,8 @@ private:
     void dataflash_periodic(void);
     void ins_periodic();
     void accel_cal_update(void);
+    
+    uint16_t get_pilot_speed_dn();    
 
 public:
     void mavlink_delay_cb();
