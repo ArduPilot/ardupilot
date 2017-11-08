@@ -33,26 +33,26 @@ class AR_AttitudeControl {
 public:
 
     // constructor
-	AR_AttitudeControl(AP_AHRS &ahrs);
+    AR_AttitudeControl(AP_AHRS &ahrs);
 
-	//
-	// steering controller
-	//
+    //
+    // steering controller
+    //
 
     // return a steering servo output from -1.0 to +1.0 given a desired lateral acceleration rate in m/s/s.
     // positive lateral acceleration is to the right.
-	float get_steering_out_lat_accel(float desired_accel, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reverse);
+    float get_steering_out_lat_accel(float desired_accel, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reverse);
 
     // return a steering servo output from -1 to +1 given a yaw error in radians
     float get_steering_out_angle_error(float angle_err, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed);
 
-	// return a steering servo output from -1 to +1 given a
+    // return a steering servo output from -1 to +1 given a
     // desired yaw rate in radians/sec. Positive yaw is to the right.
-	float get_steering_out_rate(float desired_rate, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reverse);
+    float get_steering_out_rate(float desired_rate, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reverse);
 
-	//
-	// throttle / speed controller
-	//
+    //
+    // throttle / speed controller
+    //
 
     // set limits used by throttle controller
     //   forward/back acceleration max in m/s/s
@@ -89,11 +89,11 @@ private:
 
     // parameters
     AC_P     _steer_angle_p;        // steering angle controller
-	AC_PID   _steer_rate_pid;       // steering rate controller
-	AC_PID   _throttle_speed_pid;   // throttle speed controller
-	AP_Float _throttle_accel_max;   // speed/throttle control acceleration (and deceleration) maximum in m/s/s.  0 to disable limits
-	AP_Int8  _brake_enable;         // speed control brake enable/disable. if set to 1 a reversed output to the motors to slow the vehicle.
-	AP_Float _stop_speed;           // speed control stop speed.  Motor outputs to zero once vehicle speed falls below this value
+    AC_PID   _steer_rate_pid;       // steering rate controller
+    AC_PID   _throttle_speed_pid;   // throttle speed controller
+    AP_Float _throttle_accel_max;   // speed/throttle control acceleration (and deceleration) maximum in m/s/s.  0 to disable limits
+    AP_Int8  _brake_enable;         // speed control brake enable/disable. if set to 1 a reversed output to the motors to slow the vehicle.
+    AP_Float _stop_speed;           // speed control stop speed.  Motor outputs to zero once vehicle speed falls below this value
 
     // steering control
     uint32_t _steer_turn_last_ms;   // system time of last call to steering rate controller

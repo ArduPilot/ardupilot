@@ -117,7 +117,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_STOP_SPEED", 5, AR_AttitudeControl, _stop_speed, AR_ATTCONTROL_STOP_SPEED_DEFAULT),
 
-	AP_GROUPEND
+    AP_GROUPEND
 };
 
 AR_AttitudeControl::AR_AttitudeControl(AP_AHRS &ahrs) :
