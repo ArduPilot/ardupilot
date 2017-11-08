@@ -204,101 +204,107 @@ void DataFlash_Class::dump_structures(const struct LogStructure *logstructures, 
 #endif
 }
 
+bool DataFlash_Class::validate_structure(const struct LogStructure *logstructure, const int16_t offset)
+{
+    bool passed = true;
+
+#if DEBUG_LOG_STRUCTURES
+    Debug("offset=%d ID=%d NAME=%s\n", i, logstructure->msg_type, logstructure->name);
+#endif
+
+    // names must be null-terminated
+    if (logstructure->name[4] != '\0') {
+        Debug("Message name not NULL-terminated");
+        passed = false;
+    }
+
+    // ensure each message ID is only used once
+    if (seen_ids[logstructure->msg_type]) {
+        Debug("ID %d used twice (LogStructure offset=%d)", logstructure->msg_type, offset);
+        passed = false;
+    }
+    seen_ids[logstructure->msg_type] = true;
+
+    // ensure we have enough labels to cover columns
+    uint8_t fieldcount = strlen(logstructure->format);
+    uint8_t labelcount = count_commas(logstructure->labels)+1;
+    if (fieldcount != labelcount) {
+        Debug("fieldcount=%u does not match labelcount=%u",
+              fieldcount, labelcount);
+        passed = false;
+    }
+
+    // check that the structure is of an appropriate length to take fields
+    const int16_t msg_len = Log_Write_calc_msg_len(logstructure->format);
+    if (msg_len != logstructure->msg_len) {
+        Debug("Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
+        passed = false;
+    }
+
+    // ensure we have units for each field:
+    if (strlen(logstructure->units) != fieldcount) {
+        Debug("fieldcount=%u does not match unitcount=%lu",
+              fieldcount, strlen(logstructure->units));
+        passed = false;
+    }
+
+    // ensure we have multipliers for each field
+    if (strlen(logstructure->multipliers) != fieldcount) {
+        Debug("fieldcount=%u does not match multipliercount=%lu",
+              fieldcount, strlen(logstructure->multipliers));
+        passed = false;
+    }
+
+    // ensure the FMTU messages reference valid units
+    for (uint8_t j=0; j<strlen(logstructure->units); j++) {
+        char logunit = logstructure->units[j];
+        uint8_t k;
+        for (k=0; k<_num_units; k++) {
+            if (logunit == _units[k].ID) {
+                // found this one
+                break;
+            }
+        }
+        if (k == _num_units) {
+            Debug("invalid unit=%c", logunit);
+            passed = false;
+        }
+    }
+
+    // ensure the FMTU messages reference valid units
+    for (uint8_t j=0; j<strlen(logstructure->multipliers); j++) {
+        char logmultiplier = logstructure->multipliers[j];
+        uint8_t k;
+        for (k=0; k<_num_multipliers; k++) {
+            if (logmultiplier == '-') {
+                // no sensible multiplier
+                break;
+            }
+            if (logmultiplier == '?') {
+                // currently unknown multiplier....
+                break;
+            }
+            if (logmultiplier == _multipliers[k].ID) {
+                // found this one
+                break;
+            }
+        }
+        if (k == _num_multipliers) {
+            Debug("invalid multiplier=%c", logmultiplier);
+            passed = false;
+        }
+    }
+    return passed;
+}
+
 void DataFlash_Class::validate_structures(const struct LogStructure *logstructures, const uint8_t num_types)
 {
     Debug("Validating structures");
     bool passed = true;
 
-    bool seen_ids[256] = { };
     for (uint16_t i=0; i<num_types; i++) {
         const struct LogStructure *logstructure = &logstructures[i];
-
-#if DEBUG_LOG_STRUCTURES
-        Debug("offset=%d ID=%d NAME=%s\n", i, logstructure->msg_type, logstructure->name);
-#endif
-
-        // names must be null-terminated
-        if (logstructure->name[4] != '\0') {
-            Debug("Message name not NULL-terminated");
-            passed = false;
-        }
-
-        // ensure each message ID is only used once
-        if (seen_ids[logstructure->msg_type]) {
-            Debug("ID %d used twice (LogStructure offset=%d)", logstructure->msg_type, i);
-            passed = false;
-        }
-        seen_ids[logstructure->msg_type] = true;
-
-        // ensure we have enough labels to cover columns
-        uint8_t fieldcount = strlen(logstructure->format);
-        uint8_t labelcount = count_commas(logstructure->labels)+1;
-        if (fieldcount != labelcount) {
-            Debug("fieldcount=%u does not match labelcount=%u",
-                  fieldcount, labelcount);
-            passed = false;
-        }
-
-        // check that the structure is of an appropriate length to take fields
-        const int16_t msg_len = Log_Write_calc_msg_len(logstructure->format);
-        if (msg_len != logstructure->msg_len) {
-            Debug("Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
-            passed = false;
-        }
-
-        // ensure we have units for each field:
-        if (strlen(logstructure->units) != fieldcount) {
-            Debug("fieldcount=%u does not match unitcount=%lu",
-                  fieldcount, strlen(logstructure->units));
-            passed = false;
-        }
-
-        // ensure we have multipliers for each field
-        if (strlen(logstructure->multipliers) != fieldcount) {
-            Debug("fieldcount=%u does not match multipliercount=%lu",
-                  fieldcount, strlen(logstructure->multipliers));
-            passed = false;
-        }
-
-        // ensure the FMTU messages reference valid units
-        for (uint8_t j=0; j<strlen(logstructure->units); j++) {
-            char logunit = logstructure->units[j];
-            uint8_t k;
-            for (k=0; k<_num_units; k++) {
-                if (logunit == _units[k].ID) {
-                    // found this one
-                    break;
-                }
-            }
-            if (k == _num_units) {
-                Debug("invalid unit=%c", logunit);
-                passed = false;
-            }
-        }
-
-        // ensure the FMTU messages reference valid units
-        for (uint8_t j=0; j<strlen(logstructure->multipliers); j++) {
-            char logmultiplier = logstructure->multipliers[j];
-            uint8_t k;
-            for (k=0; k<_num_multipliers; k++) {
-                if (logmultiplier == '-') {
-                    // no sensible multiplier
-                    break;
-                }
-                if (logmultiplier == '?') {
-                    // currently unknown multiplier....
-                    break;
-                }
-                if (logmultiplier == _multipliers[k].ID) {
-                    // found this one
-                    break;
-                }
-            }
-            if (k == _num_multipliers) {
-                Debug("invalid multiplier=%c", logmultiplier);
-                passed = false;
-            }
-        }
+        passed = validate_structure(logstructure, i) && passed;
     }
     if (!passed) {
         Debug("Log structures are invalid");

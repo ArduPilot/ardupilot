@@ -319,11 +319,15 @@ private:
 private:
     static DataFlash_Class *_instance;
 
+    bool validate_structure(const struct LogStructure *logstructure, int16_t offset);
     void validate_structures(const struct LogStructure *logstructures, const uint8_t num_types);
     void dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum);
     void dump_structures(const struct LogStructure *logstructures, const uint8_t num_types);
     const char* unit_name(const uint8_t unit_id);
     double multiplier_name(const uint8_t multiplier_id);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    bool seen_ids[256] = { };
+#endif
 
     void Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
 
