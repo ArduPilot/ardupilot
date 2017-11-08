@@ -556,8 +556,24 @@ void DataFlash_Class::internal_error() const {
 void DataFlash_Class::Log_Write(const char *name, const char *labels, const char *fmt, ...)
 {
     va_list arg_list;
-    
-    struct log_write_fmt *f = msg_fmt_for_name(name, labels, fmt);
+
+    va_start(arg_list, fmt);
+    Log_WriteV(name, labels, nullptr, nullptr, fmt, arg_list);
+    va_end(arg_list);
+}
+
+void DataFlash_Class::Log_Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    Log_WriteV(name, labels, units, mults, fmt, arg_list);
+    va_end(arg_list);
+}
+
+void DataFlash_Class::Log_WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list)
+{
+    struct log_write_fmt *f = msg_fmt_for_name(name, labels, units, mults, fmt);
     if (f == nullptr) {
         // unable to map name to a messagetype; could be out of
         // msgtypes, could be out of slots, ...
@@ -572,14 +588,15 @@ void DataFlash_Class::Log_Write(const char *name, const char *labels, const char
             }
             f->sent_mask |= (1U<<i);
         }
-        va_start(arg_list, fmt);
-        backends[i]->Log_Write(f->msg_type, arg_list);
-        va_end(arg_list);
+        va_list arg_copy;
+        va_copy(arg_copy, arg_list);
+        backends[i]->Log_Write(f->msg_type, arg_copy);
+        va_end(arg_copy);
     }
 }
 
 
-DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *name, const char *labels, const char *fmt)
+DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt)
 {
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
@@ -603,6 +620,8 @@ DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *na
     f->name = name;
     f->fmt = fmt;
     f->labels = labels;
+    f->units = units;
+    f->mults = mults;
 
     int16_t tmp = Log_Write_calc_msg_len(fmt);
     if (tmp == -1) {
@@ -670,6 +689,24 @@ bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct
     strncpy((char*)logstruct.name, f->name, sizeof(logstruct.name)); /* cast away the "const" (*gulp*) */
     strncpy((char*)logstruct.format, f->fmt, sizeof(logstruct.format));
     strncpy((char*)logstruct.labels, f->labels, sizeof(logstruct.labels));
+    if (f->units != nullptr) {
+        strncpy((char*)logstruct.units, f->units, sizeof(logstruct.units));
+    } else {
+        memset((char*)logstruct.units, '\0', sizeof(logstruct.units));
+        memset((char*)logstruct.units, '?', strlen(logstruct.format));
+    }
+    if (f->mults != nullptr) {
+        strncpy((char*)logstruct.multipliers, f->mults, sizeof(logstruct.multipliers));
+    } else {
+        memset((char*)logstruct.multipliers, '\0', sizeof(logstruct.multipliers));
+        memset((char*)logstruct.multipliers, '?', strlen(logstruct.format));
+        // special magic to set units/mults for TimeUS, by far and
+        // away the most common first field
+        if (!strncmp(logstruct.labels, "TimeUS,", MIN(strlen(logstruct.labels), strlen("TimeUS,")))) {
+            ((char*)(logstruct.units))[0] = 's';
+            ((char*)(logstruct.multipliers))[0] = 'F';
+        }
+    }
     logstruct.msg_len = f->msg_len;
     return true;
 }
