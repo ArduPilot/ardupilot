@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: _MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Maxell
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Maxell,8:Xray,9:Endurance
     // @User: Standard
     AP_GROUPINFO("_MONITOR", 0, AP_BattMonitor, _monitoring[0], BattMonitor_TYPE_NONE),
 
@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: 2_MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Maxell
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Maxell,8:SUI
     // @User: Standard
     AP_GROUPINFO("2_MONITOR", 11, AP_BattMonitor, _monitoring[1], BattMonitor_TYPE_NONE),
 
@@ -202,6 +202,18 @@ AP_BattMonitor::init()
             case BattMonitor_TYPE_SOLO:
                 state[instance].instance = instance;
                 drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance],
+                                                                 hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
+                _num_instances++;
+                break;
+            case BattMonitor_TYPE_XRAY:
+                state[instance].instance = instance;
+                drivers[instance] = new AP_BattMonitor_SMBus_Xray(*this, state[instance],
+                                                                 hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
+                _num_instances++;
+                break;
+            case BattMonitor_TYPE_ENDURANCE:
+                state[instance].instance = instance;
+                drivers[instance] = new AP_BattMonitor_SMBus_Endurance(*this, state[instance],
                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR));
                 _num_instances++;
                 break;
