@@ -228,6 +228,6 @@ void Mode::calc_nav_steer(bool reversed)
     lateral_acceleration = constrain_float(lateral_acceleration, -g.turn_max_g * GRAVITY_MSS, g.turn_max_g * GRAVITY_MSS);
 
     // send final steering command to motor library
-    float steering_out = attitude_control.get_steering_out_lat_accel(lateral_acceleration, g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right);
+    float steering_out = attitude_control.get_steering_out_lat_accel(lateral_acceleration, g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right, reversed);
     g2.motors.set_steering(steering_out * 4500.0f);
 }
