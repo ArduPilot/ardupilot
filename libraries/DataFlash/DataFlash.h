@@ -163,6 +163,8 @@ public:
     void Log_Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
 
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
+    void Log_Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+    void Log_WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list);
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
@@ -271,11 +273,13 @@ private:
         const char *name;
         const char *fmt;
         const char *labels;
+        const char *units;
+        const char *mults;
     } *log_write_fmts;
 
     // return (possibly allocating) a log_write_fmt for a name
-    struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *fmt);
-    
+    struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt);
+
     // returns true if msg_type is associated with a message
     bool msg_type_in_use(uint8_t msg_type) const;
 
