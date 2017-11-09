@@ -137,6 +137,10 @@ void Copter::guided_posvel_control_start()
     pos_control->set_xy_target(curr_pos.x, curr_pos.y);
     pos_control->set_desired_velocity_xy(curr_vel.x, curr_vel.y);
 
+    // initialise position and desired velocity
+    pos_control->set_alt_target(inertial_nav.get_altitude());
+    pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+
     // set vertical speed and acceleration
     pos_control->set_speed_z(wp_nav->get_speed_down(), wp_nav->get_speed_up());
     pos_control->set_accel_z(wp_nav->get_accel_z());
@@ -573,6 +577,16 @@ void Copter::guided_posvel_control_run()
 
         // run position controller
         pos_control->update_xy_controller(AC_PosControl::XY_MODE_POS_AND_VEL_FF, ekfNavVelGainScaler, false);
+    }
+
+    // run altitude controller
+    if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+        // if sonar is ok, use surface tracking
+        float temp_surface_tracking_climbrate = get_surface_tracking_climb_rate((int)posvel_vel_target_cms.z, posvel_pos_target_cm.z, G_Dt);
+        pos_control.set_alt_target_from_climb_rate_ff(temp_surface_tracking_climbrate, G_Dt, false);
+    }
+    else{
+        pos_control.set_alt_target_from_climb_rate_ff(posvel_vel_target_cms.z, G_Dt, false);
     }
 
     pos_control->update_z_controller();
