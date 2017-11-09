@@ -329,9 +329,6 @@ private:
         // has the saved mode for failsafe been set?
         bool saved_mode_set:1;
 
-        // flag to hold whether battery low voltage threshold has been breached
-        bool low_battery:1;
-
         // true if an adsb related failsafe has occurred
         bool adsb:1;
 
@@ -392,7 +389,9 @@ private:
     int32_t altitude_error_cm;
 
     // Battery Sensors
-    AP_BattMonitor battery{MASK_LOG_CURRENT};
+    AP_BattMonitor battery{MASK_LOG_CURRENT,
+                           FUNCTOR_BIND_MEMBER(&Plane::handle_battery_failsafe, void, const char*, const int8_t),
+                           _failsafe_priorities};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
@@ -879,7 +878,7 @@ private:
     void failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason);
     void failsafe_short_off_event(mode_reason_t reason);
     void failsafe_long_off_event(mode_reason_t reason);
-    void low_battery_event(void);
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
     void update_events(void);
     uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);
@@ -932,7 +931,6 @@ private:
     void read_rangefinder(void);
     void read_airspeed(void);
     void zero_airspeed(bool in_startup);
-    void read_battery(void);
     void read_receiver_rssi(void);
     void rpm_update(void);
     void button_update(void);
@@ -1064,6 +1062,24 @@ private:
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);
     void avoid_adsb_run();
+
+    enum Failsafe_Action {
+        Failsafe_Action_None      = 0,
+        Failsafe_Action_RTL       = 1,
+        Failsafe_Action_Land      = 2,
+        Failsafe_Action_Terminate = 3
+    };
+
+    // list of priorities, highest priority first
+    static constexpr int8_t _failsafe_priorities[] = {
+                                                      Failsafe_Action_Terminate,
+                                                      Failsafe_Action_Land,
+                                                      Failsafe_Action_RTL,
+                                                      Failsafe_Action_None,
+                                                      -1 // the priority list must end with a sentinel of -1
+                                                     };
+    static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
+                  "_failsafe_priorities is missing the sentinel");
 
 public:
     void mavlink_delay_cb();

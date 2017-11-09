@@ -272,8 +272,8 @@ public:
         k_param_throttle_suppress_manual,
         k_param_throttle_passthru_stabilize,
         k_param_rc_12_old,
-        k_param_fs_batt_voltage,
-        k_param_fs_batt_mah,
+        k_param_fs_batt_voltage, // unused - moved to AP_BattMonitor
+        k_param_fs_batt_mah,     // unused - moved to AP_BattMonitor
         k_param_fs_timeout_short,
         k_param_fs_timeout_long,
         k_param_rc_13_old,
@@ -430,8 +430,6 @@ public:
     AP_Float fs_timeout_short;
     AP_Float fs_timeout_long;
     AP_Int8 gcs_heartbeat_fs_enabled;
-    AP_Float fs_batt_voltage;
-    AP_Float fs_batt_mah;
 
     // Flight modes
     //

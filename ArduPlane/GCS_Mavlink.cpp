@@ -8,7 +8,7 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
     uint8_t system_status;
     uint32_t custom_mode = control_mode;
     
-    if (failsafe.state != FAILSAFE_NONE || failsafe.low_battery || failsafe.adsb) {
+    if (failsafe.state != FAILSAFE_NONE || battery.has_failsafed() || failsafe.adsb) {
         system_status = MAV_STATE_CRITICAL;
     } else if (plane.crash_state.is_crashed) {
         system_status = MAV_STATE_EMERGENCY;

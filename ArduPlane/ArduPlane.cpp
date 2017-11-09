@@ -52,7 +52,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(gcs_update,             50,    500),
     SCHED_TASK(gcs_data_stream_send,   50,    500),
     SCHED_TASK(update_events,          50,    150),
-    SCHED_TASK(read_battery,           10,    300),
+    SCHED_TASK_CLASS(AP_BattMonitor, &plane.battery, read, 10, 300),
     SCHED_TASK(compass_accumulate,     50,    200),
     SCHED_TASK(barometer_accumulate,   50,    150),
     SCHED_TASK(update_notify,          50,    300),
@@ -90,6 +90,8 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Gripper, &plane.g2.gripper, update, 10, 75),
 #endif
 };
+
+constexpr int8_t Plane::_failsafe_priorities[5];
 
 #if STATS_ENABLED == ENABLED
 /*
