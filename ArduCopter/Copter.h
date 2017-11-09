@@ -761,6 +761,7 @@ private:
     bool set_home_to_current_location_and_lock();
     bool set_home_and_lock(const Location& loc);
     bool set_home(const Location& loc);
+    void set_ekf_origin(const Location& loc);
     bool far_from_EKF_origin(const Location& loc);
     void set_system_time_from_GPS();
     void exit_mission();

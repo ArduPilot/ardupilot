@@ -58,8 +58,8 @@ static PX4::SPIDeviceManager spi_mgr_instance;
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
 #define UARTD_DEFAULT_DEVICE "/dev/ttyS2"
 #define UARTE_DEFAULT_DEVICE "/dev/ttyS6"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+#define UARTF_DEFAULT_DEVICE "/dev/ttyS5"
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
@@ -154,6 +154,9 @@ static int main_loop(int argc, char **argv)
     hal.uartE->begin(57600);
     hal.scheduler->init();
 
+    // init the I2C wrapper class
+    PX4_I2C::init_lock();
+    
     /*
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run

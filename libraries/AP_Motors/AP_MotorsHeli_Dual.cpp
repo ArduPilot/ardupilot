@@ -527,12 +527,12 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     _rotor.set_motor_load(fabsf(collective_out - _collective_mid_pct));
 
     // swashplate servos
-    float servo1_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out + _yawFactor[CH_1] * yaw_out)/0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
-    float servo2_out = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out + _yawFactor[CH_2] * yaw_out)/0.45f + _collectiveFactor[CH_2] * collective_out_scaled;
-    float servo3_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out + _yawFactor[CH_3] * yaw_out)/0.45f + _collectiveFactor[CH_3] * collective_out_scaled;
-    float servo4_out = (_rollFactor[CH_4] * roll_out + _pitchFactor[CH_4] * pitch_out + _yawFactor[CH_4] * yaw_out)/0.45f + _collectiveFactor[CH_4] * collective2_out_scaled;
-    float servo5_out = (_rollFactor[CH_5] * roll_out + _pitchFactor[CH_5] * pitch_out + _yawFactor[CH_5] * yaw_out)/0.45f + _collectiveFactor[CH_5] * collective2_out_scaled;
-    float servo6_out = (_rollFactor[CH_6] * roll_out + _pitchFactor[CH_6] * pitch_out + _yawFactor[CH_6] * yaw_out)/0.45f + _collectiveFactor[CH_6] * collective2_out_scaled;
+    float servo1_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out + _yawFactor[CH_1] * yaw_out)*0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
+    float servo2_out = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out + _yawFactor[CH_2] * yaw_out)*0.45f + _collectiveFactor[CH_2] * collective_out_scaled;
+    float servo3_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out + _yawFactor[CH_3] * yaw_out)*0.45f + _collectiveFactor[CH_3] * collective_out_scaled;
+    float servo4_out = (_rollFactor[CH_4] * roll_out + _pitchFactor[CH_4] * pitch_out + _yawFactor[CH_4] * yaw_out)*0.45f + _collectiveFactor[CH_4] * collective2_out_scaled;
+    float servo5_out = (_rollFactor[CH_5] * roll_out + _pitchFactor[CH_5] * pitch_out + _yawFactor[CH_5] * yaw_out)*0.45f + _collectiveFactor[CH_5] * collective2_out_scaled;
+    float servo6_out = (_rollFactor[CH_6] * roll_out + _pitchFactor[CH_6] * pitch_out + _yawFactor[CH_6] * yaw_out)*0.45f + _collectiveFactor[CH_6] * collective2_out_scaled;
 
     // rescale from -1..1, so we can use the pwm calc that includes trim
     servo1_out = 2*servo1_out - 1;
@@ -574,10 +574,10 @@ void AP_MotorsHeli_Dual::servo_test()
         _pitch_test -= (1.0f / (_loop_rate/2));
         _oscillate_angle += 8 * M_PI / _loop_rate;
     } else if (_servo_test_cycle_time >= 5.0f && _servo_test_cycle_time < 6.0f){                              // Raise swash to top
-        _collective_test += (1.0f / _loop_rate);
+        _collective_test = 1.0f;
         _oscillate_angle += 2 * M_PI / _loop_rate;
     } else if (_servo_test_cycle_time >= 11.0f && _servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
-        _collective_test -= (1.0f / _loop_rate);
+        _collective_test = 0.0f;
         _oscillate_angle += 2 * M_PI / _loop_rate;
     } else {                                                                                                  // reset cycle
         _servo_test_cycle_time = 0.0f;
@@ -593,7 +593,7 @@ void AP_MotorsHeli_Dual::servo_test()
 
     // over-ride servo commands to move servos through defined ranges
 
-    _throttle_in = _collective_test;
+    _throttle_filter.reset(_collective_test);
     _roll_in = _roll_test;
     _pitch_in = _pitch_test;
 }

@@ -24,6 +24,15 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return true;
     }
 
+
+#if FRAME_CONFIG == HELI_FRAME
+    // do not allow helis to enter a non-manual throttle mode if the
+    // rotor runup is not complete
+    if (!ignore_checks && !mode_has_manual_throttle(mode) && !motors->rotor_runup_complete()){
+        goto failed;
+    }
+#endif
+
     switch (mode) {
         case ACRO:
             #if FRAME_CONFIG == HELI_FRAME
@@ -114,6 +123,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
     }
 
+#if FRAME_CONFIG == HELI_FRAME
+failed:
+#endif
+    
     // update flight mode
     if (success) {
         // perform any cleanup required by previous flight mode

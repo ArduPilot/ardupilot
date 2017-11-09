@@ -33,7 +33,7 @@ bool UARTDevice::close()
 
 bool UARTDevice::open()
 {
-    _fd = ::open(_device_path, O_RDWR | O_CLOEXEC);
+    _fd = ::open(_device_path, O_RDWR | O_CLOEXEC | O_NOCTTY);
 
     if (_fd < 0) {
         ::fprintf(stderr, "Failed to open UART device %s - %s\n",

@@ -49,7 +49,7 @@
 extern const AP_HAL::HAL &hal;
 
 AP_Compass_Backend *AP_Compass_LIS3MDL::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
@@ -98,7 +98,7 @@ bool AP_Compass_LIS3MDL::init()
 
     dev->setup_checked_registers(5);
 
-    dev->write_register(ADDR_CTRL_REG1, 0x62, true); // 155Hz, UHP
+    dev->write_register(ADDR_CTRL_REG1, 0xFC, true); // 80Hz, UHP
     dev->write_register(ADDR_CTRL_REG2, 0, true); // 4Ga range
     dev->write_register(ADDR_CTRL_REG3, 0, true); // continuous
     dev->write_register(ADDR_CTRL_REG4, 0x0C, true); // z-axis ultra high perf
@@ -124,7 +124,7 @@ bool AP_Compass_LIS3MDL::init()
     set_dev_id(compass_instance, dev->get_bus_id());
 
     // call timer() at 155Hz
-    dev->register_periodic_callback(1000000U/155U,
+    dev->register_periodic_callback(1000000U/80U,
                                     FUNCTOR_BIND_MEMBER(&AP_Compass_LIS3MDL::timer, void));
 
     return true;

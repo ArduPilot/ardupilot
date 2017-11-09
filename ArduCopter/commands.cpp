@@ -76,11 +76,10 @@ bool Copter::set_home(const Location& loc)
         return false;
     }
 
-    // set EKF origin to home if it hasn't been set yet and vehicle is disarmed
-    // this is required to allowing flying in AUTO and GUIDED with only an optical flow
+    // check EKF origin has been set
     Location ekf_origin;
-    if (!motors->armed() && !ahrs.get_origin(ekf_origin)) {
-        ahrs.set_origin(loc);
+    if (!ahrs.get_origin(ekf_origin)) {
+        return false;
     }
 
     // check home is close to EKF origin
@@ -114,11 +113,38 @@ bool Copter::set_home(const Location& loc)
     // log ahrs home and ekf origin dataflash
     Log_Write_Home_And_Origin();
 
-    // send new home location to GCS
+    // send new home and ekf origin to GCS
     GCS_MAVLINK::send_home_all(loc);
+    GCS_MAVLINK::send_ekf_origin_all(ekf_origin);
 
     // return success
     return true;
+}
+
+// sets ekf_origin if it has not been set.
+//  should only be used when there is no GPS to provide an absolute position
+void Copter::set_ekf_origin(const Location& loc)
+{
+    // check location is valid
+    if (!check_latlng(loc)) {
+        return;
+    }
+
+    // check EKF origin has already been set
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        return;
+    }
+
+    if (!ahrs.set_origin(loc)) {
+        return;
+    }
+
+    // log ahrs home and ekf origin dataflash
+    Log_Write_Home_And_Origin();
+
+    // send ekf origin to GCS
+    GCS_MAVLINK::send_ekf_origin_all(loc);
 }
 
 // far_from_EKF_origin - checks if a location is too far from the EKF origin

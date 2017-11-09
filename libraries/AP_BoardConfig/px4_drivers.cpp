@@ -318,6 +318,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
     case PX4_BOARD_AUAV21:
     case PX4_BOARD_PH2SLIM:
     case PX4_BOARD_AEROFC:
+    case PX4_BOARD_PIXHAWK_PRO:
         break;
     default:
         sensor_config_error("Unknown board type");
@@ -485,6 +486,10 @@ void AP_BoardConfig::validate_board_type(void)
         hal.console->printf("Forced PIXHAWK2\n");
     }
 #endif
+
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
+	// Nothing to do for the moment
+#endif
 }
 
 /*
@@ -534,6 +539,10 @@ void AP_BoardConfig::px4_autodetect(void)
     // only one choice
     px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
     hal.console->printf("Detected Pixracer\n");
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
+    // only one choice
+    px4.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
+    hal.console->printf("Detected Pixhawk Pro\n");	
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     px4.board_type.set_and_notify(PX4_BOARD_AEROFC);
     hal.console->printf("Detected Aero FC\n");

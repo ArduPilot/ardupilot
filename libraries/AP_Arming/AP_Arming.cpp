@@ -23,6 +23,7 @@
 #define AP_ARMING_BOARD_VOLTAGE_MIN     4.3f
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
+#define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
 extern const AP_HAL::HAL& hal;
 
@@ -380,6 +381,19 @@ bool AP_Arming::gps_checks(bool report)
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: GPS blending unhealthy");
             }
             return false;
+        }
+
+        // check AHRS and GPS are within 10m of each other
+        Location gps_loc = ahrs.get_gps().location();
+        Location ahrs_loc;
+        if (ahrs.get_position(ahrs_loc)) {
+            float distance = location_3d_diff_NED(gps_loc, ahrs_loc).length();
+            if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
+                if (report) {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: GPS and AHRS differ by %4.1fm", (double)distance);
+                }
+                return false;
+            }
         }
     }
 

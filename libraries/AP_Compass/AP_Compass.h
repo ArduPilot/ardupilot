@@ -122,7 +122,7 @@ public:
     /*
       handle an incoming MAG_CAL command
     */
-    uint8_t handle_mag_cal_command(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_mag_cal_command(const mavlink_command_long_t &packet);
 
     void send_mag_cal_progress(mavlink_channel_t chan);
     void send_mag_cal_report(mavlink_channel_t chan);
@@ -261,6 +261,9 @@ public:
     uint32_t last_update_usec(void) const { return _state[get_primary()].last_update_usec; }
     uint32_t last_update_usec(uint8_t i) const { return _state[i].last_update_usec; }
 
+    uint32_t last_update_ms(void) const { return _state[get_primary()].last_update_ms; }
+    uint32_t last_update_ms(uint8_t i) const { return _state[i].last_update_ms; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
     // HIL variables
@@ -286,7 +289,7 @@ public:
     uint16_t get_offsets_max(void) const {
         return (uint16_t)_offset_max.get();
     }
-    
+
 private:
     /// Register a new compas driver, allocating an instance number
     ///
@@ -307,6 +310,9 @@ private:
     bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
     bool _auto_reboot() { return _compass_cal_autoreboot; }
 
+    // see if we already have probed a driver by bus type
+    bool _have_driver(AP_HAL::Device::BusType bus_type, uint8_t bus_num, uint8_t address, uint8_t devtype) const;
+
 
     //keep track of which calibrators have been saved
     bool _cal_saved[COMPASS_MAX_INSTANCES];
@@ -317,6 +323,26 @@ private:
     bool _cal_complete_requires_reboot;
     bool _cal_has_run;
 
+    // enum of drivers for COMPASS_TYPEMASK
+    enum DriverType {
+        DRIVER_HMC5883  =0,
+        DRIVER_LSM303D  =1,
+        DRIVER_AK8963   =2,
+        DRIVER_BMM150   =3,
+        DRIVER_LSM9DS1  =4,
+        DRIVER_LIS3MDL  =5,
+        DRIVER_AK09916  =6,
+        DRIVER_IST8310  =7,
+        DRIVER_ICM20948 =8,
+        DRIVER_MMC3416  =9,
+        DRIVER_QFLIGHT  =10,
+        DRIVER_UAVCAN   =11,
+        DRIVER_QMC5883  =12,
+        DRIVER_SITL     =13,
+    };
+
+    bool _driver_enabled(enum DriverType driver_type);
+    
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;
@@ -388,11 +414,14 @@ private:
     } _state[COMPASS_MAX_INSTANCES];
 
     AP_Int16 _offset_max;
-    
+
     CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];
 
     // if we want HIL only
     bool _hil_mode:1;
 
     AP_Float _calibration_threshold;
+
+    // mask of driver types to not load. Bit positions match DEVTYPE_ in backend
+    AP_Int32 _driver_type_mask;
 };
