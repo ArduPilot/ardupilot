@@ -63,7 +63,7 @@ bool Copter::ModeAuto::init(bool ignore_checks)
         // start/resume the mission (based on MIS_RESTART parameter)
         copter.mission.start_or_resume();
         return true;
-    }else{
+    } else {
         return false;
     }
 }
@@ -281,7 +281,7 @@ void Copter::ModeAuto::wp_run()
     if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
-    }else{
+    } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(),true, get_smoothing_gain());
     }
@@ -346,7 +346,7 @@ void Copter::ModeAuto::spline_run()
     if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
-    }else{
+    } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(), true, get_smoothing_gain());
     }
@@ -593,7 +593,7 @@ uint8_t Copter::get_default_auto_yaw_mode(bool rtl)
         case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
             if (rtl) {
                 return AUTO_YAW_HOLD;
-            }else{
+            } else {
                 return AUTO_YAW_LOOK_AT_NEXT_WP;
             }
 
@@ -670,7 +670,7 @@ void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, 
     if (is_zero(turn_rate_dps)) {
         // default to regular auto slew rate
         yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
-    }else{
+    } else {
         int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / turn_rate_dps;
         yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
     }
@@ -694,7 +694,7 @@ void Copter::set_auto_yaw_roi(const Location &roi_location)
             camera_mount.set_mode_to_default();
         }
 #endif  // MOUNT == ENABLED
-    }else{
+    } else {
 #if MOUNT == ENABLED
         // check if mount type requires us to rotate the quad
         if(!camera_mount.has_pan_control()) {
