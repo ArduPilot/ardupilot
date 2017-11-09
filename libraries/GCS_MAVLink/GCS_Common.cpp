@@ -1680,7 +1680,7 @@ MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_long_t &
 
     bool should_terminate = packet.param1 > 0.5f;
 
-    if (failsafe->gcs_terminate(should_terminate)) {
+    if (failsafe->gcs_terminate(should_terminate, "GCS request")) {
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
