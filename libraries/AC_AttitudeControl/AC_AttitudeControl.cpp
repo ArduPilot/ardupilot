@@ -481,6 +481,10 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
 
     heading_quat.to_axis_angle(rotation);
     att_diff_angle.z = rotation.z;
+
+    // Todo: Limit roll an pitch error based on output saturation and maximum error.
+
+    // Limit Yaw Error based on maximum acceleration - Update to include output saturation and maximum error.
     if(!is_zero(_p_angle_yaw.kP()) && fabsf(att_diff_angle.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP()){
         att_diff_angle.z = constrain_float(wrap_PI(att_diff_angle.z), -AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP(), AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP());
         heading_quat.from_axis_angle(Vector3f(0.0f,0.0f,att_diff_angle.z));
@@ -501,6 +505,20 @@ float AC_AttitudeControl::input_shaping_angle(float error_angle, float smoothing
         return constrain_float(ang_vel, target_ang_vel-delta_ang_vel, target_ang_vel+delta_ang_vel);
     } else {
         return ang_vel;
+    }
+}
+
+// calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
+// This function can be used to predict the delay associated with angle requests.
+void AC_AttitudeControl::input_shaping_rate_predictor(Vector2f error_angle, Vector2f& target_ang_vel, float dt) const
+{
+    if (_rate_bf_ff_enabled & _use_ff_and_input_shaping) {
+        // translate the roll pitch and yaw acceleration limits to the euler axis
+        target_ang_vel.x = input_shaping_angle(wrap_PI(error_angle.x), _smoothing_gain, get_accel_roll_max_radss(), target_ang_vel.x, dt);
+        target_ang_vel.y = input_shaping_angle(wrap_PI(error_angle.y), _smoothing_gain, get_accel_pitch_max_radss(), target_ang_vel.y, dt);
+    } else {
+        target_ang_vel.x =  _p_angle_roll.get_p(wrap_PI(error_angle.x));
+        target_ang_vel.y =  _p_angle_pitch.get_p(wrap_PI(error_angle.y));
     }
 }
 
@@ -588,6 +606,7 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(Vector3f attit
     }else{
         rate_target_ang_vel.x = _p_angle_roll.kP() * attitude_error_rot_vec_rad.x;
     }
+    // todo: Add Angular Velocity Limit
 
     // Compute the pitch angular velocity demand from the roll angle error
     if (_use_ff_and_input_shaping) {
@@ -595,6 +614,7 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(Vector3f attit
     }else{
         rate_target_ang_vel.y = _p_angle_pitch.kP() * attitude_error_rot_vec_rad.y;
     }
+    // todo: Add Angular Velocity Limit
 
     // Compute the yaw angular velocity demand from the roll angle error
     if (_use_ff_and_input_shaping) {
@@ -602,6 +622,7 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(Vector3f attit
     }else{
         rate_target_ang_vel.z = _p_angle_yaw.kP() * attitude_error_rot_vec_rad.z;
     }
+    // todo: Add Angular Velocity Limit
     return rate_target_ang_vel;
 }
 
