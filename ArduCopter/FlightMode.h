@@ -27,7 +27,8 @@ public:
         takeoff_state(_copter.takeoff_state),
         ekfGndSpdLimit(_copter.ekfGndSpdLimit),
         ekfNavVelGainScaler(_copter.ekfNavVelGainScaler),
-        auto_yaw_mode(_copter.auto_yaw_mode)
+        auto_yaw_mode(_copter.auto_yaw_mode),
+        heli_flags(_copter.heli_flags)
         { };
 
 protected:
@@ -75,6 +76,8 @@ protected:
     // Navigation Yaw control
     // auto flight mode's yaw mode
     uint8_t &auto_yaw_mode;
+
+    heli_flags_t &heli_flags;
 
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the FlightMode base
