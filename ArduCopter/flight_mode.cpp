@@ -65,11 +65,9 @@ Copter::FlightMode *Copter::flightmode_for_mode(const uint8_t mode)
             break;
 #endif
 
-#if POSHOLD_ENABLED == ENABLED
         case POSHOLD:
             ret = &flightmode_poshold;
             break;
-#endif
 
         case BRAKE:
             ret = &flightmode_brake;

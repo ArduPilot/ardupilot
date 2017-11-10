@@ -499,9 +499,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // PosHold parameter defaults
 //
-#ifndef POSHOLD_ENABLED
- # define POSHOLD_ENABLED               ENABLED // PosHold flight mode enabled by default
-#endif
 #ifndef POSHOLD_BRAKE_RATE_DEFAULT
  # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
 #endif
