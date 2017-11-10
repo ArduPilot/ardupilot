@@ -973,9 +973,7 @@ private:
 
     Copter::FlightMode_Loiter flightmode_loiter{*this};
 
-#if POSHOLD_ENABLED == ENABLED
     Copter::FlightMode_PosHold flightmode_poshold{*this};
-#endif
 
     Copter::FlightMode_RTL flightmode_rtl{*this};
 

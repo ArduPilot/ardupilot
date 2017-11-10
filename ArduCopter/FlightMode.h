@@ -767,7 +767,6 @@ private:
 };
 
 
-#if POSHOLD_ENABLED == ENABLED
 class FlightMode_PosHold : public FlightMode {
 
 public:
@@ -800,7 +799,6 @@ private:
     void poshold_pitch_controller_to_pilot_override();
 
 };
-#endif
 
 
 class FlightMode_RTL : public FlightMode {
