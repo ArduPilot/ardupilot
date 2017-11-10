@@ -21,7 +21,7 @@ struct PACKED log_AutoTune {
 };
 
 // Write an Autotune data packet
-void Copter::FlightMode_AUTOTUNE::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
+void Copter::FlightMode_AutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
 {
     struct log_AutoTune pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
@@ -47,7 +47,7 @@ struct PACKED log_AutoTuneDetails {
 };
 
 // Write an Autotune data packet
-void Copter::FlightMode_AUTOTUNE::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
+void Copter::FlightMode_AutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 {
     struct log_AutoTuneDetails pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),

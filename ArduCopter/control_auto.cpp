@@ -18,7 +18,7 @@
  */
 
 // auto_init - initialise auto controller
-bool Copter::FlightMode_AUTO::init(bool ignore_checks)
+bool Copter::FlightMode_Auto::init(bool ignore_checks)
 {
     if ((_copter.position_ok() && mission.num_commands() > 1) || ignore_checks) {
         _mode = Auto_Loiter;
@@ -52,7 +52,7 @@ bool Copter::FlightMode_AUTO::init(bool ignore_checks)
 // auto_run - runs the auto controller
 //      should be called at 100hz or more
 //      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
-void Copter::FlightMode_AUTO::run()
+void Copter::FlightMode_Auto::run()
 {
     // call the correct auto controller
     switch (_mode) {
@@ -99,7 +99,7 @@ void Copter::FlightMode_AUTO::run()
 }
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
-void Copter::FlightMode_AUTO::takeoff_start(const Location& dest_loc)
+void Copter::FlightMode_Auto::takeoff_start(const Location& dest_loc)
 {
     _mode = Auto_TakeOff;
 
@@ -147,7 +147,7 @@ void Copter::FlightMode_AUTO::takeoff_start(const Location& dest_loc)
 
 // auto_takeoff_run - takeoff in auto mode
 //      called by auto_run at 100hz or more
-void Copter::FlightMode_AUTO::takeoff_run()
+void Copter::FlightMode_Auto::takeoff_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
@@ -200,7 +200,7 @@ void Copter::FlightMode_AUTO::takeoff_run()
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void Copter::FlightMode_AUTO::wp_start(const Vector3f& destination)
+void Copter::FlightMode_Auto::wp_start(const Vector3f& destination)
 {
     _mode = Auto_WP;
 
@@ -215,7 +215,7 @@ void Copter::FlightMode_AUTO::wp_start(const Vector3f& destination)
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void Copter::FlightMode_AUTO::wp_start(const Location_Class& dest_loc)
+void Copter::FlightMode_Auto::wp_start(const Location_Class& dest_loc)
 {
     _mode = Auto_WP;
 
@@ -235,7 +235,7 @@ void Copter::FlightMode_AUTO::wp_start(const Location_Class& dest_loc)
 
 // auto_wp_run - runs the auto waypoint controller
 //      called by auto_run at 100hz or more
-void Copter::FlightMode_AUTO::wp_run()
+void Copter::FlightMode_Auto::wp_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
@@ -285,7 +285,7 @@ void Copter::FlightMode_AUTO::wp_run()
 
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
 //  seg_end_type can be SEGMENT_END_STOP, SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE.  If Straight or Spline the next_destination should be provided
-void Copter::FlightMode_AUTO::spline_start(const Location_Class& destination, bool stopped_at_start,
+void Copter::FlightMode_Auto::spline_start(const Location_Class& destination, bool stopped_at_start,
                                AC_WPNav::spline_segment_end_type seg_end_type, 
                                const Location_Class& next_destination)
 {
@@ -307,7 +307,7 @@ void Copter::FlightMode_AUTO::spline_start(const Location_Class& destination, bo
 
 // auto_spline_run - runs the auto spline controller
 //      called by auto_run at 100hz or more
-void Copter::FlightMode_AUTO::spline_run()
+void Copter::FlightMode_Auto::spline_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
@@ -356,7 +356,7 @@ void Copter::FlightMode_AUTO::spline_run()
 }
 
 // auto_land_start - initialises controller to implement a landing
-void Copter::FlightMode_AUTO::land_start()
+void Copter::FlightMode_Auto::land_start()
 {
     // set target to stopping point
     Vector3f stopping_point;
@@ -367,7 +367,7 @@ void Copter::FlightMode_AUTO::land_start()
 }
 
 // auto_land_start - initialises controller to implement a landing
-void Copter::FlightMode_AUTO::land_start(const Vector3f& destination)
+void Copter::FlightMode_Auto::land_start(const Vector3f& destination)
 {
     _mode = Auto_Land;
 
@@ -386,7 +386,7 @@ void Copter::FlightMode_AUTO::land_start(const Vector3f& destination)
 
 // auto_land_run - lands in auto mode
 //      called by auto_run at 100hz or more
-void Copter::FlightMode_AUTO::land_run()
+void Copter::FlightMode_Auto::land_run()
 {
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
@@ -411,7 +411,7 @@ void Copter::FlightMode_AUTO::land_run()
     _copter.land_run_vertical_control();
 }
 
-bool Copter::FlightMode_AUTO::landing_gear_should_be_deployed()
+bool Copter::FlightMode_Auto::landing_gear_should_be_deployed()
 {
     switch(_mode) {
     case Auto_Land:
@@ -433,7 +433,7 @@ bool Copter::FlightMode_AUTO::landing_gear_should_be_deployed()
 }
 
 // auto_rtl_start - initialises RTL in AUTO flight mode
-void Copter::FlightMode_AUTO::rtl_start()
+void Copter::FlightMode_Auto::rtl_start()
 {
     _mode = Auto_RTL;
 
@@ -443,7 +443,7 @@ void Copter::FlightMode_AUTO::rtl_start()
 
 // auto_rtl_run - rtl in AUTO flight mode
 //      called by auto_run at 100hz or more
-void Copter::FlightMode_AUTO::rtl_run()
+void Copter::FlightMode_Auto::rtl_run()
 {
     // call regular rtl flight mode run function
     _copter.flightmode_rtl.run(false);
@@ -451,7 +451,7 @@ void Copter::FlightMode_AUTO::rtl_run()
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
 //  we assume the caller has performed all required GPS_ok checks
-void Copter::FlightMode_AUTO::circle_movetoedge_start(const Location_Class &circle_center, float radius_m)
+void Copter::FlightMode_Auto::circle_movetoedge_start(const Location_Class &circle_center, float radius_m)
 {
     // convert location to vector from ekf origin
     Vector3f circle_center_neu;
@@ -505,7 +505,7 @@ void Copter::FlightMode_AUTO::circle_movetoedge_start(const Location_Class &circ
 
 // auto_circle_start - initialises controller to fly a circle in AUTO flight mode
 //   assumes that circle_nav object has already been initialised with circle center and radius
-void Copter::FlightMode_AUTO::circle_start()
+void Copter::FlightMode_Auto::circle_start()
 {
     _mode = Auto_Circle;
 
@@ -515,7 +515,7 @@ void Copter::FlightMode_AUTO::circle_start()
 
 // auto_circle_run - circle in AUTO flight mode
 //      called by auto_run at 100hz or more
-void Copter::FlightMode_AUTO::circle_run()
+void Copter::FlightMode_Auto::circle_run()
 {
     // call circle controller
     circle_nav->update();
@@ -529,7 +529,7 @@ void Copter::FlightMode_AUTO::circle_run()
 
 #if NAV_GUIDED == ENABLED
 // auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
-void Copter::FlightMode_AUTO::nav_guided_start()
+void Copter::FlightMode_Auto::nav_guided_start()
 {
     _mode = Auto_NavGuided;
 
@@ -542,7 +542,7 @@ void Copter::FlightMode_AUTO::nav_guided_start()
 
 // auto_nav_guided_run - allows control by external navigation controller
 //      called by auto_run at 100hz or more
-void Copter::FlightMode_AUTO::nav_guided_run()
+void Copter::FlightMode_Auto::nav_guided_run()
 {
     // call regular guided flight mode run function
     _copter.flightmode_guided.run();
@@ -551,7 +551,7 @@ void Copter::FlightMode_AUTO::nav_guided_run()
 
 // auto_loiter_start - initialises loitering in auto mode
 //  returns success/failure because this can be called by exit_mission
-bool Copter::FlightMode_AUTO::loiter_start()
+bool Copter::FlightMode_Auto::loiter_start()
 {
     // return failure if GPS is bad
     if (!_copter.position_ok()) {
@@ -574,7 +574,7 @@ bool Copter::FlightMode_AUTO::loiter_start()
 
 // auto_loiter_run - loiter in AUTO flight mode
 //      called by auto_run at 100hz or more
-void Copter::FlightMode_AUTO::loiter_run()
+void Copter::FlightMode_Auto::loiter_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
@@ -792,7 +792,7 @@ float Copter::get_auto_yaw_rate_cds(void)
 }
 
 // auto_payload_place_start - initialises controller to implement a placing
-void Copter::FlightMode_AUTO::payload_place_start()
+void Copter::FlightMode_Auto::payload_place_start()
 {
     // set target to stopping point
     Vector3f stopping_point;
@@ -804,7 +804,7 @@ void Copter::FlightMode_AUTO::payload_place_start()
 }
 
 // auto_payload_place_start - initialises controller to implement placement of a load
-void Copter::FlightMode_AUTO::payload_place_start(const Vector3f& destination)
+void Copter::FlightMode_Auto::payload_place_start(const Vector3f& destination)
 {
     _mode = Auto_NavPayloadPlace;
     _copter.nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
@@ -822,7 +822,7 @@ void Copter::FlightMode_AUTO::payload_place_start(const Vector3f& destination)
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
-bool Copter::FlightMode_AUTO::payload_place_run_should_run()
+bool Copter::FlightMode_Auto::payload_place_run_should_run()
 {
     // muts be armed
     if (!motors->armed()) {
@@ -846,7 +846,7 @@ bool Copter::FlightMode_AUTO::payload_place_run_should_run()
 
 // auto_payload_place_run - places an object in auto mode
 //      called by auto_run at 100hz or more
-void Copter::FlightMode_AUTO::payload_place_run()
+void Copter::FlightMode_Auto::payload_place_run()
 {
     if (!payload_place_run_should_run()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
@@ -884,7 +884,7 @@ void Copter::FlightMode_AUTO::payload_place_run()
     }
 }
 
-void Copter::FlightMode_AUTO::payload_place_run_loiter()
+void Copter::FlightMode_Auto::payload_place_run_loiter()
 {
     // loiter...
     _copter.land_run_horizontal_control();
@@ -900,7 +900,7 @@ void Copter::FlightMode_AUTO::payload_place_run_loiter()
     pos_control->update_z_controller();
 }
 
-void Copter::FlightMode_AUTO::payload_place_run_descend()
+void Copter::FlightMode_Auto::payload_place_run_descend()
 {
     _copter.land_run_horizontal_control();
     _copter.land_run_vertical_control();
