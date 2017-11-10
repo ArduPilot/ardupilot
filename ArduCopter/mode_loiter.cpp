@@ -69,6 +69,8 @@ void Copter::ModeLoiter::precision_loiter_xy()
 void Copter::ModeLoiter::run()
 {
     LoiterModeState loiter_state;
+
+    float target_roll, target_pitch;
     float target_yaw_rate = 0.0f;
     float target_climb_rate = 0.0f;
     float takeoff_climb_rate = 0.0f;
@@ -85,8 +87,12 @@ void Copter::ModeLoiter::run()
         // apply SIMPLE mode transform to pilot inputs
         update_simple_mode();
 
+        // convert pilot input to lean angles
+        // ToDo: convert get_pilot_desired_lean_angles to return angles as floats
+        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, wp_nav->get_loiter_angle_max_cd());
+
         // process pilot's roll and pitch input
-        wp_nav->set_pilot_desired_acceleration(channel_roll->get_control_in(), channel_pitch->get_control_in());
+        wp_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
