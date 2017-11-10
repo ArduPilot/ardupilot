@@ -6,7 +6,7 @@ public:
         Copter::FlightMode_GUIDED(copter)        { }
 
     bool init(bool ignore_checks) override;
-    void run() override; // should be called at 100hz or more
+    void run() override;
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
