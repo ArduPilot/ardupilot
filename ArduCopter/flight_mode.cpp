@@ -119,7 +119,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 
     bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
 
-    if (! new_flightmode->init(ignore_checks)) {
+    if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
         return false;
@@ -142,20 +142,20 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     control_mode_reason = reason;
     DataFlash.Log_Write_Mode(control_mode);
 
-        adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
+    adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
 
 #if AC_FENCE == ENABLED
-        // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
-        // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
-        // but it should be harmless to disable the fence temporarily in these situations as well
+    // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
+    // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
+    // but it should be harmless to disable the fence temporarily in these situations as well
     fence.manual_recovery_start();
 #endif
-        
+
 #if FRSKY_TELEM_ENABLED == ENABLED
-        frsky_telemetry.update_control_mode(control_mode);
+    frsky_telemetry.update_control_mode(control_mode);
 #endif
 #if CAMERA == ENABLED
-        camera.set_is_auto_mode(control_mode == AUTO);
+    camera.set_is_auto_mode(control_mode == AUTO);
 #endif
 
     // update notify object
