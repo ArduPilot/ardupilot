@@ -43,13 +43,6 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev_gyro;//i3g4250d
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev_accel;//iis328dq
-    AP_HAL::Semaphore *_gyro_spi_sem;
-    AP_HAL::Semaphore *_accel_spi_sem;
-
-    // gyro whoami
-    uint8_t _gyro_whoami;
-    // accel whoami
-    uint8_t _accel_whoami;
 
     float _gyro_scale;
     float _accel_scale;
