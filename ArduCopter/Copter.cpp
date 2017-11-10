@@ -26,7 +26,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 Copter::Copter(void)
     : DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask)),
     flight_modes(&g.flight_mode1),
-    flightmode(&flightmode_stabilize),
     control_mode(STABILIZE),
     scaleLongDown(1),
     simple_cos_yaw(1.0f),
@@ -57,7 +56,8 @@ Copter::Copter(void)
     mainLoop_count(0),
     auto_trim_counter(0),
     in_mavlink_delay(false),
-    param_loader(var_info)
+    param_loader(var_info),
+    flightmode(&flightmode_stabilize)
 {
     memset(&current_loc, 0, sizeof(current_loc));
 
