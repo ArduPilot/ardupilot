@@ -111,7 +111,7 @@ protected:
     virtual void        update_throttle_filter();
 
     // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
-    float               get_current_limit_max_throttle();
+    virtual float       get_current_limit_max_throttle();
 
     // apply_thrust_curve_and_volt_scaling - returns throttle in the range 0 ~ 1
     float               apply_thrust_curve_and_volt_scaling(float thrust) const;
