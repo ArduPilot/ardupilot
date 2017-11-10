@@ -5,7 +5,7 @@
  */
 
 // brake_init - initialise brake controller
-bool Copter::FlightMode_BRAKE::init(bool ignore_checks)
+bool Copter::FlightMode_Brake::init(bool ignore_checks)
 {
     if (_copter.position_ok() || ignore_checks) {
 
@@ -35,7 +35,7 @@ bool Copter::FlightMode_BRAKE::init(bool ignore_checks)
 
 // brake_run - runs the brake controller
 // should be called at 100hz or more
-void Copter::FlightMode_BRAKE::run()
+void Copter::FlightMode_Brake::run()
 {
     // if not auto armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
@@ -85,7 +85,7 @@ void Copter::FlightMode_BRAKE::run()
     }
 }
 
-void Copter::FlightMode_BRAKE::timeout_to_loiter_ms(uint32_t timeout_ms)
+void Copter::FlightMode_Brake::timeout_to_loiter_ms(uint32_t timeout_ms)
 {
     _timeout_start = millis();
     _timeout_ms = timeout_ms;

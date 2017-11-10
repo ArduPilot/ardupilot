@@ -6,7 +6,7 @@
  */
 
 // althold_init - initialise althold controller
-bool Copter::FlightMode_ALTHOLD::init(bool ignore_checks)
+bool Copter::FlightMode_AltHold::init(bool ignore_checks)
 {
     // initialize vertical speeds and leash lengths
     pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
@@ -26,7 +26,7 @@ bool Copter::FlightMode_ALTHOLD::init(bool ignore_checks)
 
 // althold_run - runs the althold controller
 // should be called at 100hz or more
-void Copter::FlightMode_ALTHOLD::run()
+void Copter::FlightMode_AltHold::run()
 {
     AltHoldModeState althold_state;
     float takeoff_climb_rate = 0.0f;

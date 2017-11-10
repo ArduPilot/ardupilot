@@ -1,9 +1,9 @@
-class FlightMode_AVOID_ADSB : protected FlightMode_GUIDED {
+class FlightMode_Avoid_ADSB : protected FlightMode_Guided {
 
 public:
 
-    FlightMode_AVOID_ADSB(Copter &copter) :
-        Copter::FlightMode_GUIDED(copter)        { }
+    FlightMode_Avoid_ADSB(Copter &copter) :
+        Copter::FlightMode_Guided(copter)        { }
 
     bool init(bool ignore_checks) override;
     void run() override;
