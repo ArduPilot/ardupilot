@@ -5,7 +5,7 @@
  */
 
 // stabilize_init - initialise stabilize controller
-bool Copter::FlightMode_STABILIZE::init(bool ignore_checks)
+bool Copter::FlightMode_Stabilize::init(bool ignore_checks)
 {
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
     if (motors->armed() && ap.land_complete && !_copter.flightmode->has_manual_throttle() &&
@@ -20,7 +20,7 @@ bool Copter::FlightMode_STABILIZE::init(bool ignore_checks)
 
 // stabilize_run - runs the main stabilize controller
 // should be called at 100hz or more
-void Copter::FlightMode_STABILIZE::run()
+void Copter::FlightMode_Stabilize::run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate;

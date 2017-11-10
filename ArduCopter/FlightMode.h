@@ -166,11 +166,11 @@ protected:
 };
 
 
-class FlightMode_ACRO : public FlightMode {
+class FlightMode_Acro : public FlightMode {
 
 public:
 
-    FlightMode_ACRO(Copter &copter) :
+    FlightMode_Acro(Copter &copter) :
         Copter::FlightMode(copter)
         { }
     virtual bool init(bool ignore_checks) override;
@@ -193,12 +193,12 @@ private:
 };
 
 #if FRAME_CONFIG == HELI_FRAME
-class FlightMode_ACRO_Heli : public FlightMode_ACRO {
+class FlightMode_Acro_Heli : public FlightMode_Acro {
 
 public:
 
-    FlightMode_ACRO_Heli(Copter &copter) :
-        Copter::FlightMode_ACRO(copter)
+    FlightMode_Acro_Heli(Copter &copter) :
+        Copter::FlightMode_Acro(copter)
         { }
 
     bool init(bool ignore_checks) override;
@@ -211,11 +211,11 @@ private:
 
 
 
-class FlightMode_ALTHOLD : public FlightMode {
+class FlightMode_AltHold : public FlightMode {
 
 public:
 
-    FlightMode_ALTHOLD(Copter &copter) :
+    FlightMode_AltHold(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -238,11 +238,11 @@ private:
 
 
 
-class FlightMode_STABILIZE : public FlightMode {
+class FlightMode_Stabilize : public FlightMode {
 
 public:
 
-    FlightMode_STABILIZE(Copter &copter) :
+    FlightMode_Stabilize(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -264,16 +264,16 @@ private:
 };
 
 #if FRAME_CONFIG == HELI_FRAME
-class FlightMode_STABILIZE_Heli : public FlightMode_STABILIZE {
+class FlightMode_Stabilize_Heli : public FlightMode_Stabilize {
 
 public:
 
-    FlightMode_STABILIZE_Heli(Copter &copter) :
-        Copter::FlightMode_STABILIZE(copter)
+    FlightMode_Stabilize_Heli(Copter &copter) :
+        Copter::FlightMode_Stabilize(copter)
         { }
 
     bool init(bool ignore_checks) override;
-    void run() override; // should be called at 100hz or more
+    void run() override;
 
 protected:
 
@@ -284,11 +284,11 @@ private:
 
 
 
-class FlightMode_AUTO : public FlightMode {
+class FlightMode_Auto : public FlightMode {
 
 public:
 
-    FlightMode_AUTO(Copter &copter, AP_Mission &_mission, AC_Circle *& _circle_nav) :
+    FlightMode_Auto(Copter &copter, AP_Mission &_mission, AC_Circle *& _circle_nav) :
         Copter::FlightMode(copter),
         mission(_mission),
         circle_nav(_circle_nav)
@@ -363,11 +363,11 @@ private:
 
 
 
-class FlightMode_CIRCLE : public FlightMode {
+class FlightMode_Circle : public FlightMode {
 
 public:
 
-    FlightMode_CIRCLE(Copter &copter, AC_Circle *& _circle_nav) :
+    FlightMode_Circle(Copter &copter, AC_Circle *& _circle_nav) :
         Copter::FlightMode(copter),
         circle_nav(_circle_nav)
         { }
@@ -402,11 +402,11 @@ private:
 
 
 
-class FlightMode_LOITER : public FlightMode {
+class FlightMode_Loiter : public FlightMode {
 
 public:
 
-    FlightMode_LOITER(Copter &copter) :
+    FlightMode_Loiter(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -449,11 +449,11 @@ private:
 
 
 
-class FlightMode_GUIDED : public FlightMode {
+class FlightMode_Guided : public FlightMode {
 
 public:
 
-    FlightMode_GUIDED(Copter &copter) :
+    FlightMode_Guided(Copter &copter) :
         Copter::FlightMode(copter)        { }
 
     bool init(bool ignore_checks) override;
@@ -514,11 +514,11 @@ private:
 
 
 
-class FlightMode_LAND : public FlightMode {
+class FlightMode_Land : public FlightMode {
 
 public:
 
-    FlightMode_LAND(Copter &copter) :
+    FlightMode_Land(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -626,11 +626,11 @@ private:
 
 
 
-class FlightMode_DRIFT : public FlightMode {
+class FlightMode_Drift : public FlightMode {
 
 public:
 
-    FlightMode_DRIFT(Copter &copter) :
+    FlightMode_Drift(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -655,11 +655,11 @@ private:
 
 
 
-class FlightMode_SPORT : public FlightMode {
+class FlightMode_Sport : public FlightMode {
 
 public:
 
-    FlightMode_SPORT(Copter &copter) :
+    FlightMode_Sport(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -682,11 +682,11 @@ private:
 
 
 
-class FlightMode_FLIP : public FlightMode {
+class FlightMode_Flip : public FlightMode {
 
 public:
 
-    FlightMode_FLIP(Copter &copter) :
+    FlightMode_Flip(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -713,11 +713,11 @@ private:
 
 
 #if AUTOTUNE_ENABLED == ENABLED
-class FlightMode_AUTOTUNE : public FlightMode {
+class FlightMode_AutoTune : public FlightMode {
 
 public:
 
-    FlightMode_AUTOTUNE(Copter &copter) :
+    FlightMode_AutoTune(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -867,11 +867,11 @@ private:
 
 
 #if POSHOLD_ENABLED == ENABLED
-class FlightMode_POSHOLD : public FlightMode {
+class FlightMode_PosHold : public FlightMode {
 
 public:
 
-    FlightMode_POSHOLD(Copter &copter) :
+    FlightMode_PosHold(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -903,11 +903,11 @@ private:
 
 
 
-class FlightMode_BRAKE : public FlightMode {
+class FlightMode_Brake : public FlightMode {
 
 public:
 
-    FlightMode_BRAKE(Copter &copter) :
+    FlightMode_Brake(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -935,12 +935,12 @@ private:
 
 
 
-class FlightMode_AVOID_ADSB : public FlightMode_GUIDED {
+class FlightMode_Avoid_ADSB : public FlightMode_Guided {
 
 public:
 
-    FlightMode_AVOID_ADSB(Copter &copter) :
-        Copter::FlightMode_GUIDED(copter)        { }
+    FlightMode_Avoid_ADSB(Copter &copter) :
+        Copter::FlightMode_Guided(copter)        { }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -963,11 +963,11 @@ private:
 
 
 
-class FlightMode_THROW : public FlightMode {
+class FlightMode_Throw : public FlightMode {
 
 public:
 
-    FlightMode_THROW(Copter &copter) :
+    FlightMode_Throw(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
@@ -1003,12 +1003,12 @@ private:
 
 
 
-class FlightMode_GUIDED_NOGPS : public FlightMode_GUIDED {
+class FlightMode_Guided_NoGPS : public FlightMode_Guided {
 
 public:
 
-    FlightMode_GUIDED_NOGPS(Copter &copter) :
-        Copter::FlightMode_GUIDED(copter)        { }
+    FlightMode_Guided_NoGPS(Copter &copter) :
+        Copter::FlightMode_Guided(copter)        { }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1033,12 +1033,12 @@ private:
 };
 
 
-class FlightMode_SMARTRTL : public FlightMode_RTL {
+class FlightMode_SmartRTL : public FlightMode_RTL {
 
 public:
 
-    FlightMode_SMARTRTL(Copter &copter) :
-        FlightMode_SMARTRTL::FlightMode_RTL(copter)
+    FlightMode_SmartRTL(Copter &copter) :
+        FlightMode_SmartRTL::FlightMode_RTL(copter)
         { }
 
     bool init(bool ignore_checks) override;

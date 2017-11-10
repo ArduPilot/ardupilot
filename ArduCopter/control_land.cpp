@@ -7,7 +7,7 @@ static uint32_t land_start_time;
 static bool land_pause;
 
 // land_init - initialise land controller
-bool Copter::FlightMode_LAND::init(bool ignore_checks)
+bool Copter::FlightMode_Land::init(bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
     land_with_gps = _copter.position_ok();
@@ -40,7 +40,7 @@ bool Copter::FlightMode_LAND::init(bool ignore_checks)
 
 // land_run - runs the land controller
 // should be called at 100hz or more
-void Copter::FlightMode_LAND::run()
+void Copter::FlightMode_Land::run()
 {
     if (land_with_gps) {
         gps_run();
@@ -52,7 +52,7 @@ void Copter::FlightMode_LAND::run()
 // land_gps_run - runs the land controller
 //      horizontal position controlled with loiter controller
 //      should be called at 100hz or more
-void Copter::FlightMode_LAND::gps_run()
+void Copter::FlightMode_Land::gps_run()
 {
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
@@ -89,7 +89,7 @@ void Copter::FlightMode_LAND::gps_run()
 // land_nogps_run - runs the land controller
 //      pilot controls roll and pitch angles
 //      should be called at 100hz or more
-void Copter::FlightMode_LAND::nogps_run()
+void Copter::FlightMode_Land::nogps_run()
 {
     float target_roll = 0.0f, target_pitch = 0.0f;
     float target_yaw_rate = 0;
@@ -150,7 +150,7 @@ void Copter::FlightMode_LAND::nogps_run()
 /*
   get a height above ground estimate for landing
  */
-int32_t Copter::FlightMode_LAND::get_alt_above_ground(void)
+int32_t Copter::FlightMode_Land::get_alt_above_ground(void)
 {
     int32_t alt_above_ground;
     if (_copter.rangefinder_alt_ok()) {
@@ -303,7 +303,7 @@ void Copter::land_run_horizontal_control()
 // do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
 //  called during GPS failsafe to ensure that if we were already in LAND mode that we do not use the GPS
 //  has no effect if we are not already in LAND mode
-void Copter::FlightMode_LAND::do_not_use_GPS()
+void Copter::FlightMode_Land::do_not_use_GPS()
 {
     land_with_gps = false;
 }
