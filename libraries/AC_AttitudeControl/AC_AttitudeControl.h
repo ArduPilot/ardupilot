@@ -235,6 +235,10 @@ public:
     // deceleration limits including basic jerk limiting using smoothing_gain
     static float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float dt);
 
+    // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
+    // This function can be used to predict the delay associated with angle requests.
+    void input_shaping_rate_predictor(Vector2f error_angle, Vector2f& target_ang_vel, float dt) const;
+
     // limits the acceleration and deceleration of a velocity request
     float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max);
 
