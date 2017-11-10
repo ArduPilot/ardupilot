@@ -20,31 +20,31 @@ homeloc = None
 
 
 def dive_manual(mavproxy, mav):
-    mavproxy.send('rc 3 1600\n')
-    mavproxy.send('rc 5 1600\n')
-    mavproxy.send('rc 6 1550\n')
+    set_rc(mavproxy, mav, 3, 1600)
+    set_rc(mavproxy, mav, 5, 1600)
+    set_rc(mavproxy, mav, 6, 1550)
 
     if not wait_distance(mav, 50, accuracy=7, timeout=200):
         return False
     
-    mavproxy.send('rc 4 1550\n')
+    set_rc(mavproxy, mav, 4, 1550)
     
     if not wait_heading(mav, 0):
         return False
     
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 4, 1500)
     
     if not wait_distance(mav, 50, accuracy=7, timeout=100):
         return False
     
-    mavproxy.send('rc 4 1550\n')
+    set_rc(mavproxy, mav, 4, 1550)
     
     if not wait_heading(mav, 0):
         return False
     
-    mavproxy.send('rc 4 1500\n')
-    mavproxy.send('rc 5 1500\n')
-    mavproxy.send('rc 6 1100\n')
+    set_rc(mavproxy, mav, 4, 1500)
+    set_rc(mavproxy, mav, 5, 1500)
+    set_rc(mavproxy, mav, 6, 1100)
     
     if not wait_distance(mav, 75, accuracy=7, timeout=100):
         return False

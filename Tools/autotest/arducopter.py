@@ -44,7 +44,7 @@ def takeoff(mavproxy, mav, alt_min=30, takeoff_throttle=1700):
     """Takeoff get to 30m altitude."""
     mavproxy.send('switch 6\n')  # stabilize mode
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 %u\n' % takeoff_throttle)
+    set_rc(mavproxy, mav, 3, takeoff_throttle)
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if (m.alt < alt_min):
         wait_altitude(mav, alt_min, (alt_min + 5))
@@ -65,7 +65,7 @@ def land(mavproxy, mav, timeout=60):
 
 
 def hover(mavproxy, mav, hover_throttle=1500):
-    mavproxy.send('rc 3 %u\n' % hover_throttle)
+    set_rc(mavproxy, mav, 3, hover_throttle)
     return True
 
 
@@ -77,16 +77,16 @@ def loiter(mavproxy, mav, holdtime=10, maxaltchange=5, maxdistchange=5):
 
     # first aim south east
     progress("turn south east")
-    mavproxy.send('rc 4 1580\n')
+    set_rc(mavproxy, mav, 4, 1580)
     if not wait_heading(mav, 170):
         return False
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 4, 1500)
 
     # fly south east 50m
-    mavproxy.send('rc 2 1100\n')
+    set_rc(mavproxy, mav, 2, 1100)
     if not wait_distance(mav, 50):
         return False
-    mavproxy.send('rc 2 1500\n')
+    set_rc(mavproxy, mav, 2, 1500)
 
     # wait for copter to slow moving
     if not wait_groundspeed(mav, 0, 2):
@@ -123,11 +123,11 @@ def change_alt(mavproxy, mav, alt_min, climb_throttle=1920, descend_throttle=108
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if(m.alt < alt_min):
         progress("Rise to alt:%u from %u" % (alt_min, m.alt))
-        mavproxy.send('rc 3 %u\n' % climb_throttle)
+        set_rc(mavproxy, mav, 3, climb_throttle)
         wait_altitude(mav, alt_min, (alt_min + 5))
     else:
         progress("Lower to alt:%u from %u" % (alt_min, m.alt))
-        mavproxy.send('rc 3 %u\n' % descend_throttle)
+        set_rc(mavproxy, mav, 3, descend_throttle)
         wait_altitude(mav, (alt_min - 5), alt_min)
     hover(mavproxy, mav)
     return True
@@ -143,10 +143,10 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
     success = True
 
     # ensure all sticks in the middle
-    mavproxy.send('rc 1 1500\n')
-    mavproxy.send('rc 2 1500\n')
-    mavproxy.send('rc 3 1500\n')
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 1, 1500)
+    set_rc(mavproxy, mav, 2, 1500)
+    set_rc(mavproxy, mav, 3, 1500)
+    set_rc(mavproxy, mav, 4, 1500)
 
     # switch to loiter mode temporarily to stop us from rising
     mavproxy.send('switch 5\n')
@@ -154,11 +154,11 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
 
     # first aim north
     progress("turn right towards north")
-    mavproxy.send('rc 4 1580\n')
+    set_rc(mavproxy, mav, 4, 1580)
     if not wait_heading(mav, 10):
         progress("Failed to reach heading")
         success = False
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 4, 1500)
     mav.recv_match(condition='RC_CHANNELS.chan4_raw==1500', blocking=True)
 
     # save bottom left corner of box as waypoint
@@ -166,17 +166,17 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
     save_wp(mavproxy, mav)
 
     # switch back to stabilize mode
-    mavproxy.send('rc 3 1500\n')
+    set_rc(mavproxy, mav, 3, 1500)
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
 
     # pitch forward to fly north
     progress("Going north %u meters" % side)
-    mavproxy.send('rc 2 1300\n')
+    set_rc(mavproxy, mav, 2, 1300)
     if not wait_distance(mav, side):
         progress("Failed to reach distance of %u" % side)
         success = False
-    mavproxy.send('rc 2 1500\n')
+    set_rc(mavproxy, mav, 2, 1500)
 
     # save top left corner of square as waypoint
     progress("Save WP 3")
@@ -184,11 +184,11 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
 
     # roll right to fly east
     progress("Going east %u meters" % side)
-    mavproxy.send('rc 1 1700\n')
+    set_rc(mavproxy, mav, 1, 1700)
     if not wait_distance(mav, side):
         progress("Failed to reach distance of %u" % side)
         success = False
-    mavproxy.send('rc 1 1500\n')
+    set_rc(mavproxy, mav, 1, 1500)
 
     # save top right corner of square as waypoint
     progress("Save WP 4")
@@ -196,11 +196,11 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
 
     # pitch back to fly south
     progress("Going south %u meters" % side)
-    mavproxy.send('rc 2 1700\n')
+    set_rc(mavproxy, mav, 2, 1700)
     if not wait_distance(mav, side):
         progress("Failed to reach distance of %u" % side)
         success = False
-    mavproxy.send('rc 2 1500\n')
+    set_rc(mavproxy, mav, 2, 1500)
 
     # save bottom right corner of square as waypoint
     progress("Save WP 5")
@@ -208,11 +208,11 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
 
     # roll left to fly west
     progress("Going west %u meters" % side)
-    mavproxy.send('rc 1 1300\n')
+    set_rc(mavproxy, mav, 1, 1300)
     if not wait_distance(mav, side):
         progress("Failed to reach distance of %u" % side)
         success = False
-    mavproxy.send('rc 1 1500\n')
+    set_rc(mavproxy, mav, 1, 1500)
 
     # save bottom left corner of square (should be near home) as waypoint
     progress("Save WP 6")
@@ -222,7 +222,7 @@ def fly_square(mavproxy, mav, side=50, timeout=300):
     progress("Descend to 10m in Loiter")
     mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
-    mavproxy.send('rc 3 1300\n')
+    set_rc(mavproxy, mav, 3, 1300)
     time_left = timeout - (get_sim_time(mav) - tstart)
     progress("timeleft = %u" % time_left)
     if time_left < 20:
@@ -259,13 +259,13 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
 
     # first aim east
     progress("turn east")
-    mavproxy.send('rc 4 1580\n')
+    set_rc(mavproxy, mav, 4, 1580)
     if not wait_heading(mav, 135):
         return False
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 4, 1500)
 
     # raise throttle slightly to avoid hitting the ground
-    mavproxy.send('rc 3 1600\n')
+    set_rc(mavproxy, mav, 3, 1600)
 
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
@@ -274,14 +274,14 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
 
     # fly east 60 meters
     progress("# Going forward %u meters" % side)
-    mavproxy.send('rc 2 1350\n')
+    set_rc(mavproxy, mav, 2, 1350)
     if not wait_distance(mav, side, 5, 60):
         return False
-    mavproxy.send('rc 2 1500\n')
+    set_rc(mavproxy, mav, 2, 1500)
 
     # pull throttle low
     progress("# Enter Failsafe")
-    mavproxy.send('rc 3 900\n')
+    set_rc(mavproxy, mav, 3, 900)
 
     tstart = get_sim_time(mav)
     while get_sim_time(mav) < tstart + timeout:
@@ -292,7 +292,7 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
         # check if we've reached home
         if m.alt <= 1 and home_distance < 10:
             # reduce throttle
-            mavproxy.send('rc 3 1100\n')
+            set_rc(mavproxy, mav, 3, 1100)
             # switch back to stabilize
             mavproxy.send('switch 2\n')  # land mode
             wait_mode(mav, 'LAND')
@@ -301,14 +301,14 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
             progress("Reached failsafe home OK")
             mavproxy.send('switch 6\n')  # stabilize mode
             wait_mode(mav, 'STABILIZE')
-            mavproxy.send('rc 3 1000\n')
+            set_rc(mavproxy, mav, 3, 1000)
             if not arm_vehicle(mavproxy, mav):
                 progress("Failed to re-arm")
                 return False
             return True
     progress("Failed to land on failsafe RTL - timed out after %u seconds" % timeout)
     # reduce throttle
-    mavproxy.send('rc 3 1100\n')
+    set_rc(mavproxy, mav, 3, 1100)
     # switch back to stabilize mode
     mavproxy.send('switch 2\n')  # land mode
     wait_mode(mav, 'LAND')
@@ -357,16 +357,16 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
 
     # first south
     progress("turn south")
-    mavproxy.send('rc 4 1580\n')
+    set_rc(mavproxy, mav, 4, 1580)
     if not wait_heading(mav, 180):
         return False
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 4, 1500)
 
     # fly west 80m
-    mavproxy.send('rc 2 1100\n')
+    set_rc(mavproxy, mav, 2, 1100)
     if not wait_distance(mav, 80):
         return False
-    mavproxy.send('rc 2 1500\n')
+    set_rc(mavproxy, mav, 2, 1500)
 
     # wait for copter to slow moving
     if not wait_groundspeed(mav, 0, 2):
@@ -420,14 +420,14 @@ def fly_fence_test(mavproxy, mav, timeout=180):
 
     # first east
     progress("turn east")
-    mavproxy.send('rc 4 1580\n')
+    set_rc(mavproxy, mav, 4, 1580)
     if not wait_heading(mav, 160):
         return False
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 4, 1500)
 
     # fly forward (east) at least 20m
     pitching_forward = True
-    mavproxy.send('rc 2 1100\n')
+    set_rc(mavproxy, mav, 2, 1100)
     if not wait_distance(mav, 20):
         return False
 
@@ -441,12 +441,12 @@ def fly_fence_test(mavproxy, mav, timeout=180):
         # recenter pitch sticks once we reach home so we don't fly off again
         if pitching_forward and home_distance < 10:
             pitching_forward = False
-            mavproxy.send('rc 2 1500\n')
+            set_rc(mavproxy, mav, 2, 1500)
             # disable fence
             mavproxy.send('param set FENCE_ENABLE 0\n')
         if m.alt <= 1 and home_distance < 10:
             # reduce throttle
-            mavproxy.send('rc 3 1000\n')
+            set_rc(mavproxy, mav, 3, 1000)
             # switch mode to stabilize
             mavproxy.send('switch 2\n')  # land mode
             wait_mode(mav, 'LAND')
@@ -455,7 +455,7 @@ def fly_fence_test(mavproxy, mav, timeout=180):
             progress("Reached home OK")
             mavproxy.send('switch 6\n')  # stabilize mode
             wait_mode(mav, 'STABILIZE')
-            mavproxy.send('rc 3 1000\n')
+            set_rc(mavproxy, mav, 3, 1000)
             mavproxy.send('arm uncheck all\n') # remove if we ever clear battery failsafe flag on disarm
             if not arm_vehicle(mavproxy, mav):
                 progress("Failed to re-arm")
@@ -470,7 +470,7 @@ def fly_fence_test(mavproxy, mav, timeout=180):
     mavproxy.send('param set AVOID_ENABLE 1\n')
 
     # reduce throttle
-    mavproxy.send('rc 3 1000\n')
+    set_rc(mavproxy, mav, 3, 1000)
     # switch mode to stabilize
     mavproxy.send('switch 2\n')  # land mode
     wait_mode(mav, 'LAND')
@@ -501,20 +501,20 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, use_map=False, timeout=30, max_dis
 
     # turn south east
     progress("turn south east")
-    mavproxy.send('rc 4 1580\n')
+    set_rc(mavproxy, mav, 4, 1580)
     if not wait_heading(mav, 150):
         if (use_map):
             show_gps_and_sim_positions(mavproxy, False)
         return False
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 4, 1500)
 
     # fly forward (south east) at least 60m
-    mavproxy.send('rc 2 1100\n')
+    set_rc(mavproxy, mav, 2, 1100)
     if not wait_distance(mav, 60):
         if (use_map):
             show_gps_and_sim_positions(mavproxy, False)
         return False
-    mavproxy.send('rc 2 1500\n')
+    set_rc(mavproxy, mav, 2, 1500)
 
     # wait for copter to slow down
     if not wait_groundspeed(mav, 0, 1):
@@ -608,7 +608,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, use_map=False, timeout=120):
     # switch into AUTO mode and raise throttle
     mavproxy.send('switch 4\n')  # auto mode
     wait_mode(mav, 'AUTO')
-    mavproxy.send('rc 3 1500\n')
+    set_rc(mavproxy, mav, 3, 1500)
 
     # wait until 100m from home
     if not wait_distance(mav, 100, 5, 60):
@@ -685,41 +685,41 @@ def fly_simple(mavproxy, mav, side=50, timeout=120):
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1500\n')
+    set_rc(mavproxy, mav, 3, 1500)
 
     # fly south 50m
     progress("# Flying south %u meters" % side)
-    mavproxy.send('rc 1 1300\n')
+    set_rc(mavproxy, mav, 1, 1300)
     if not wait_distance(mav, side, 5, 60):
         failed = True
-    mavproxy.send('rc 1 1500\n')
+    set_rc(mavproxy, mav, 1, 1500)
 
     # fly west 8 seconds
     progress("# Flying west for 8 seconds")
-    mavproxy.send('rc 2 1300\n')
+    set_rc(mavproxy, mav, 2, 1300)
     tstart = get_sim_time(mav)
     while get_sim_time(mav) < (tstart + 8):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         delta = (get_sim_time(mav) - tstart)
         # progress("%u" % delta)
-    mavproxy.send('rc 2 1500\n')
+    set_rc(mavproxy, mav, 2, 1500)
 
     # fly north 25 meters
     progress("# Flying north %u meters" % (side/2.0))
-    mavproxy.send('rc 1 1700\n')
+    set_rc(mavproxy, mav, 1, 1700)
     if not wait_distance(mav, side/2, 5, 60):
         failed = True
-    mavproxy.send('rc 1 1500\n')
+    set_rc(mavproxy, mav, 1, 1500)
 
     # fly east 8 seconds
     progress("# Flying east for 8 seconds")
-    mavproxy.send('rc 2 1700\n')
+    set_rc(mavproxy, mav, 2, 1700)
     tstart = get_sim_time(mav)
     while get_sim_time(mav) < (tstart + 8):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         delta = (get_sim_time(mav) - tstart)
         # progress("%u" % delta)
-    mavproxy.send('rc 2 1500\n')
+    set_rc(mavproxy, mav, 2, 1500)
 
     # restore to default
     mavproxy.send('param set SIMPLE 0\n')
@@ -740,10 +740,10 @@ def fly_super_simple(mavproxy, mav, timeout=45):
 
     # fly forward 20m
     progress("# Flying forward 20 meters")
-    mavproxy.send('rc 2 1300\n')
+    set_rc(mavproxy, mav, 2, 1300)
     if not wait_distance(mav, 20, 5, 60):
         failed = True
-    mavproxy.send('rc 2 1500\n')
+    set_rc(mavproxy, mav, 2, 1500)
 
     # set SUPER SIMPLE mode for all flight modes
     mavproxy.send('param set SUPER_SIMPLE 63\n')
@@ -751,22 +751,22 @@ def fly_super_simple(mavproxy, mav, timeout=45):
     # switch to stabilize mode
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1500\n')
+    set_rc(mavproxy, mav, 3, 1500)
 
     # start copter yawing slowly
-    mavproxy.send('rc 4 1550\n')
+    set_rc(mavproxy, mav, 4, 1550)
 
     # roll left for timeout seconds
     progress("# rolling left from pilot's point of view for %u seconds" % timeout)
-    mavproxy.send('rc 1 1300\n')
+    set_rc(mavproxy, mav, 1, 1300)
     tstart = get_sim_time(mav)
     while get_sim_time(mav) < (tstart + timeout):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         delta = (get_sim_time(mav) - tstart)
 
     # stop rolling and yawing
-    mavproxy.send('rc 1 1500\n')
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 1, 1500)
+    set_rc(mavproxy, mav, 4, 1500)
 
     # restore simple mode parameters to default
     mavproxy.send('param set SUPER_SIMPLE 0\n')
@@ -785,21 +785,21 @@ def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=36):
 
     # face west
     progress("turn west")
-    mavproxy.send('rc 4 1580\n')
+    set_rc(mavproxy, mav, 4, 1580)
     if not wait_heading(mav, 270):
         return False
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 4, 1500)
 
     # set CIRCLE radius
     mavproxy.send('param set CIRCLE_RADIUS 3000\n')
 
     # fly forward (east) at least 100m
-    mavproxy.send('rc 2 1100\n')
+    set_rc(mavproxy, mav, 2, 1100)
     if not wait_distance(mav, 100):
         return False
 
     # return pitch stick back to middle
-    mavproxy.send('rc 2 1500\n')
+    set_rc(mavproxy, mav, 2, 1500)
 
     # set CIRCLE mode
     mavproxy.send('switch 1\n')  # circle mode
@@ -838,7 +838,7 @@ def fly_auto_test(mavproxy, mav):
     # switch into AUTO mode and raise throttle
     mavproxy.send('switch 4\n')  # auto mode
     wait_mode(mav, 'AUTO')
-    mavproxy.send('rc 3 1500\n')
+    set_rc(mavproxy, mav, 3, 1500)
 
     # fly the mission
     ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
@@ -848,7 +848,7 @@ def fly_auto_test(mavproxy, mav):
         land(mavproxy, mav)
 
     # set throttle to minimum
-    mavproxy.send('rc 3 1000\n')
+    set_rc(mavproxy, mav, 3, 1000)
 
     # wait for disarm
     mav.motors_disarmed_wait()
@@ -881,13 +881,13 @@ def fly_avc_test(mavproxy, mav):
     # switch into AUTO mode and raise throttle
     mavproxy.send('switch 4\n')  # auto mode
     wait_mode(mav, 'AUTO')
-    mavproxy.send('rc 3 1500\n')
+    set_rc(mavproxy, mav, 3, 1500)
 
     # fly the mission
     ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
 
     # set throttle to minimum
-    mavproxy.send('rc 3 1000\n')
+    set_rc(mavproxy, mav, 3, 1000)
 
     # wait for disarm
     mav.motors_disarmed_wait()
@@ -997,7 +997,7 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
         mav.wait_heartbeat()
         progress("Setting up RC parameters")
         set_rc_default(mavproxy)
-        mavproxy.send('rc 3 1000\n')
+        set_rc(mavproxy, mav, 3, 1000)
         homeloc = mav.location()
 
         progress("Home location: %s" % homeloc)
@@ -1360,11 +1360,11 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     try:
         mav.wait_heartbeat()
         set_rc_default(mavproxy)
-        mavproxy.send('rc 3 1000\n')
+        set_rc(mavproxy, mav, 3, 1000)
         homeloc = mav.location()
 
         progress("Lowering rotor speed")
-        mavproxy.send('rc 8 1000\n')
+        set_rc(mavproxy, mav, 8, 1000)
 
         mavproxy.send('switch 6\n')  # stabilize mode
         wait_mode(mav, 'STABILIZE')
@@ -1378,7 +1378,7 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
             failed = True
 
         progress("Raising rotor speed")
-        mavproxy.send('rc 8 2000\n')
+        set_rc(mavproxy, mav, 8, 2000)
 
         progress("# Fly AVC mission")
         if not fly_avc_test(mavproxy, mav):
@@ -1389,7 +1389,7 @@ def fly_CopterAVC(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
             progress("Flew AVC mission OK")
 
         progress("Lowering rotor speed")
-        mavproxy.send('rc 8 1000\n')
+        set_rc(mavproxy, mav, 8, 1000)
 
         # mission includes disarm at end so should be ok to download logs now
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/CopterAVC-log.bin")):

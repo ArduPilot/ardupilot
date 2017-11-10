@@ -148,6 +148,19 @@ def set_rc_default(mavproxy):
         mavproxy.send('rc %u 1500\n' % chan)
 
 
+def set_rc(mavproxy, mav, chan, pwm, timeout=2):
+    """Setup a simulated RC control to a PWM value"""
+    tstart = get_sim_time(mav)
+    while get_sim_time(mav) < tstart + timeout:
+        mavproxy.send('rc %u %u\n' % (chan, pwm))
+        m = mav.recv_match(type='RC_CHANNELS', blocking=True)
+        chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
+        if chan_pwm == pwm:
+            return True
+    progress("Failed to send RC commands")
+    return False
+
+
 def arm_vehicle(mavproxy, mav):
     """Arm vehicle with mavlink arm message."""
     mavproxy.send('arm throttle\n')

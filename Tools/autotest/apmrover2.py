@@ -32,21 +32,21 @@ def drive_left_circuit(mavproxy, mav):
     """Drive a left circuit, 50m on a side."""
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'MANUAL')
-    mavproxy.send('rc 3 2000\n')
+    set_rc(mavproxy, mav, 3, 2000)
 
     progress("Driving left circuit")
     # do 4 turns
     for i in range(0, 4):
         # hard left
         progress("Starting turn %u" % i)
-        mavproxy.send('rc 1 1000\n')
+        set_rc(mavproxy, mav, 1, 1000)
         if not wait_heading(mav, 270 - (90*i), accuracy=10):
             return False
-        mavproxy.send('rc 1 1500\n')
+        set_rc(mavproxy, mav, 1, 1500)
         progress("Starting leg %u" % i)
         if not wait_distance(mav, 50, accuracy=7):
             return False
-    mavproxy.send('rc 3 1500\n')
+    set_rc(mavproxy, mav, 3, 1500)
     progress("Circuit complete")
     return True
 
@@ -73,7 +73,7 @@ def drive_mission(mavproxy, mav, filename):
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 4\n')  # auto mode
-    mavproxy.send('rc 3 1500\n')
+    set_rc(mavproxy, mav, 3, 1500)
     wait_mode(mav, 'AUTO')
     if not wait_waypoint(mav, 1, 4, max_dist=5):
         return False
@@ -109,7 +109,7 @@ def drive_brake_get_stopping_distance(mavproxy, mav, speed):
     set_parameter(mavproxy, 'ATC_ACCEL_MAX', 15)
     mavproxy.send("mode STEERING\n")
     wait_mode(mav, 'STEERING')
-    mavproxy.send('rc 3 2000\n')
+    set_rc(mavproxy, mav, 3, 2000)
     wait_groundspeed(mav, 15, 100)
     initial = mav.location()
     initial_time = time.time()
@@ -118,8 +118,8 @@ def drive_brake_get_stopping_distance(mavproxy, mav, speed):
         start = mav.location()
         if start != initial:
             break
-    mavproxy.send('rc 3 1500\n')
-    wait_groundspeed(mav, 0, 0.2) # why do we not stop?!
+    set_rc(mavproxy, mav, 3, 1500)
+    wait_groundspeed(mav, 0, 0.2)  # why do we not stop?!
     initial = mav.location()
     initial_time = time.time()
     while time.time() - initial_time < 2:
@@ -241,7 +241,7 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         mav.wait_heartbeat()
         progress("Setting up RC parameters")
         set_rc_default(mavproxy)
-        mavproxy.send('rc 8 1800\n')
+        set_rc(mavproxy, mav, 8, 1800)
         progress("Waiting for GPS fix")
         mav.wait_gps_fix()
         homeloc = mav.location()
