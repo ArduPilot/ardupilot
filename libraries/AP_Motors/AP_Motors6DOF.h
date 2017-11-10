@@ -45,6 +45,8 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
+    // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
+    float               get_current_limit_max_throttle() final;
 
     //Override MotorsMatrix method
     void add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, float lat_fac, uint8_t testing_order);
