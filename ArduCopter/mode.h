@@ -36,7 +36,7 @@ protected:
     virtual bool in_guided_mode() const { return false; }
 
     // pilot input processing
-    void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
+    static void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max, float angle_limit);
 
     // takeoff support
     bool takeoff_triggered(float target_climb_rate) const;
