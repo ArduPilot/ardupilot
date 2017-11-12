@@ -89,7 +89,7 @@ void Copter::ModeLoiter::run()
 
         // convert pilot input to lean angles
         // ToDo: convert get_pilot_desired_lean_angles to return angles as floats
-        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, wp_nav->get_loiter_angle_max_cd());
+        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, wp_nav->get_loiter_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
 
         // process pilot's roll and pitch input
         wp_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
