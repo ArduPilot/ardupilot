@@ -825,6 +825,9 @@ void AC_PosControl::init_vel_controller_xyz()
     const Vector3f& curr_vel = _inav.get_velocity();
     set_desired_velocity(curr_vel);
 
+    // set vehicle acceleration to zero
+    set_desired_accel_xy(0.0f,0.0f);
+
     // initialise ekf reset handlers
     init_ekf_xy_reset();
     init_ekf_z_reset();
