@@ -690,7 +690,7 @@ private:
     void update_using_interlock();
     void set_motor_emergency_stop(bool b);
     float get_smoothing_gain();
-    void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
+    void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max, float angle_limit);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     void check_ekf_reset();
     float get_roi_yaw();
