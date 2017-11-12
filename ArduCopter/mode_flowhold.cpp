@@ -269,7 +269,8 @@ void Copter::ModeFlowHold::run()
     float angle_max = copter.attitude_control->get_althold_lean_angle_max();
     get_pilot_desired_lean_angles(roll_in, pitch_in,
                                          bf_angles.x, bf_angles.y,
-                                         angle_max);
+                                         angle_max,
+                                         attitude_control->get_althold_lean_angle_max());
     
     if (quality_filtered >= flow_min_quality &&
         AP_HAL::millis() - copter.arm_time_ms > 3000) {
