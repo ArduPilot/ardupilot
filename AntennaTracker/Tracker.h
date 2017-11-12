@@ -106,7 +106,7 @@ private:
 
     AP_GPS gps;
 
-    AP_Baro barometer;
+    AP_Baro barometer{gps};
 
     Compass compass;
 

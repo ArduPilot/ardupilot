@@ -222,7 +222,7 @@ private:
     // flight modes convenience array
     AP_Int8 *flight_modes;
 
-    AP_Baro barometer;
+    AP_Baro barometer{gps};
     Compass compass;
     AP_InertialSensor ins;
 

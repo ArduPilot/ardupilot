@@ -22,7 +22,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 class DummyVehicle {
 public:
     AP_GPS gps;
-    AP_Baro barometer;
+    AP_Baro barometer{gps};
     Compass compass;
     AP_InertialSensor ins;
     AP_SerialManager serial_manager;

@@ -168,7 +168,7 @@ private:
     AP_LeakDetector leak_detector;
 
     TSYS01 celsius;
-    AP_Baro barometer;
+    AP_Baro barometer{gps};
     Compass compass;
     AP_InertialSensor ins;
 
