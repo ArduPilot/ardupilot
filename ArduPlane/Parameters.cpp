@@ -436,7 +436,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate
-    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second.
+    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. Note that the minimum throttle change is 1 microsecond per loop, which provides a lower limit on the throttle slew rate, especially for quadplanes that run at 300 loops per second by default.
     // @Units: %/s
     // @Range: 0 127
     // @Increment: 1
