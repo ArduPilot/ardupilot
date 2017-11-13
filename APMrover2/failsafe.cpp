@@ -20,9 +20,9 @@ void Rover::failsafe_check()
     static uint32_t last_timestamp;
     const uint32_t tnow = AP_HAL::micros();
 
-    if (mainLoop_count != last_mainLoop_count) {
+    if (perf.mainLoop_count != last_mainLoop_count) {
         // the main loop is running, all is OK
-        last_mainLoop_count = mainLoop_count;
+        last_mainLoop_count = perf.mainLoop_count;
         last_timestamp = tnow;
         return;
     }

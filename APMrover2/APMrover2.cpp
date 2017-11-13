@@ -115,20 +115,28 @@ void Rover::setup()
  */
 void Rover::loop()
 {
+    uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
     // wait for an INS sample
     ins.wait_for_sample();
 
     const uint32_t timer = AP_HAL::micros();
 
-    delta_us_fast_loop  = timer - fast_loopTimer_us;
-    G_Dt                = delta_us_fast_loop * 1.0e-6f;
-    fast_loopTimer_us   = timer;
-
-    if (delta_us_fast_loop > G_Dt_max) {
-        G_Dt_max = delta_us_fast_loop;
+    perf.delta_us_fast_loop  = timer - perf.fast_loopTimer_us;
+    G_Dt = perf.delta_us_fast_loop * 1.0e-6f;
+    if (perf.delta_us_fast_loop > loop_us + 500) {
+        perf.num_long++;
     }
 
-    mainLoop_count++;
+    if (perf.delta_us_fast_loop > perf.G_Dt_max && perf.fast_loopTimer_us != 0) {
+        perf.G_Dt_max = perf.delta_us_fast_loop;
+    }
+
+    if (perf.delta_us_fast_loop < perf.G_Dt_min || perf.G_Dt_min == 0) {
+        perf.G_Dt_min = perf.delta_us_fast_loop;
+    }
+    perf.fast_loopTimer_us = timer;
+
+    perf.mainLoop_count++;
 
     // tell the scheduler one tick has passed
     scheduler.tick();
@@ -138,11 +146,7 @@ void Rover::loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    uint32_t remaining = (timer + 20000) - micros();
-    if (remaining > 19500) {
-        remaining = 19500;
-    }
-    scheduler.run(remaining);
+    scheduler.run(loop_us);
 }
 
 void Rover::update_soft_armed()
@@ -327,14 +331,7 @@ void Rover::one_second_loop(void)
 
     // write perf data every 20s
     if (counter % 10 == 0) {
-        if (scheduler.debug() != 0) {
-            hal.console->printf("G_Dt_max=%u\n", G_Dt_max);
-        }
-        if (should_log(MASK_LOG_PM)) {
-            Log_Write_Performance();
-        }
-        G_Dt_max = 0;
-        resetPerfData();
+        log_perf_info();
     }
 
     // save compass offsets once a minute
