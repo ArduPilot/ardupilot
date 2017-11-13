@@ -97,15 +97,7 @@ void Sub::perf_update(void)
     if (should_log(MASK_LOG_PM)) {
         Log_Write_Performance();
     }
-    if (scheduler.debug()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
-                          (unsigned)scheduler.perf_info.get_num_long_running(),
-                          (unsigned)scheduler.perf_info.get_num_loops(),
-                          (unsigned long)scheduler.perf_info.get_max_time(),
-                          (unsigned long)scheduler.perf_info.get_min_time(),
-                          (unsigned long)scheduler.perf_info.get_avg_time(),
-                          (unsigned long)scheduler.perf_info.get_stddev_time());
-    }
+    scheduler.update_logging();
     scheduler.perf_info.reset();
     pmTest1 = 0;
 }
