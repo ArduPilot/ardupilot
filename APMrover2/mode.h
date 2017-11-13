@@ -298,6 +298,10 @@ public:
 
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeInitializing : public Mode

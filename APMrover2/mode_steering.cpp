@@ -1,6 +1,12 @@
 #include "mode.h"
 #include "Rover.h"
 
+bool ModeSteering::_enter()
+{
+    g2.motors.slew_limit_throttle(true);
+    return true;
+}
+
 void ModeSteering::update()
 {
     // convert pilot throttle input to desired speed (up to twice the cruise speed)
