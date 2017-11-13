@@ -78,6 +78,7 @@
 #include <AC_Fence/AC_Fence.h>           // Arducopter Fence library
 #include <AC_Avoidance/AC_Avoid.h>           // Arducopter stop at fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
+#include <AP_Scheduler/PerfInfo.h>       // loop perf monitoring
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
@@ -474,6 +475,9 @@ private:
 
     // filtered pilot's throttle input used to cancel landing if throttle held high
     LowPassFilterFloat rc_throttle_control_in_filter;
+
+    // loop performance monitoring:
+    AP::PerfInfo perf_info = AP::PerfInfo::create();
 
     // 3D Location vectors
     // Current location of the copter (altitude is relative to home)
@@ -1032,16 +1036,6 @@ private:
     void calc_wp_bearing();
     void calc_home_distance_and_bearing();
     void run_autopilot();
-    void perf_info_reset();
-    void perf_ignore_this_loop();
-    void perf_info_check_loop_time(uint32_t time_in_micros);
-    uint16_t perf_info_get_num_loops();
-    uint32_t perf_info_get_max_time();
-    uint32_t perf_info_get_min_time();
-    uint16_t perf_info_get_num_long_running();
-    uint32_t perf_info_get_num_dropped();
-    uint32_t perf_info_get_avg_time();
-    uint32_t perf_info_get_stddev_time();
     Vector3f pv_location_to_vector(const Location& loc);
     float pv_alt_above_origin(float alt_above_home_cm);
     float pv_alt_above_home(float alt_above_origin_cm);
