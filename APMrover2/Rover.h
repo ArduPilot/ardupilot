@@ -59,7 +59,6 @@
 #include <AP_Relay/AP_Relay.h>                      // APM relay
 #include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
-#include <AP_Scheduler/PerfInfo.h>                  // loop perf monitoring
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Stats/AP_Stats.h>                      // statistics library
@@ -213,9 +212,6 @@ private:
 
     AP_ServoRelayEvents ServoRelayEvents{relay};
 
-    // loop performance monitoring:
-    AP::PerfInfo perf_info;
-
     // The rover's current location
     struct Location current_loc;
 
@@ -333,10 +329,6 @@ private:
     // The main loop execution time.  Seconds
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
     float G_Dt;
-
-    // System Timers
-    // Time in microseconds of start of main control loop.
-    uint32_t fast_loopTimer_us;
 
     // set if we are driving backwards
     bool in_reverse;

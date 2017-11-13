@@ -116,10 +116,6 @@ void Rover::setup()
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
-
-    // setup initial performance counters
-    perf_info.set_loop_rate(scheduler.get_loop_rate_hz());
-    perf_info.reset();
 }
 
 /*
@@ -127,30 +123,8 @@ void Rover::setup()
  */
 void Rover::loop()
 {
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    const uint32_t timer = AP_HAL::micros();
-
-    // check loop time
-    perf_info.check_loop_time(timer - fast_loopTimer_us);
-
-    G_Dt                = (timer - fast_loopTimer_us) * 1.0e-6f;
-    fast_loopTimer_us   = timer;
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    // run all the tasks that are due to run. Note that we only
-    // have to call this once per loop, as the tasks are scheduled
-    // in multiples of the main loop tick. So if they don't run on
-    // the first call to the scheduler they won't run on a later
-    // call until scheduler.tick() is called again
-    uint32_t remaining = (timer + 20000) - micros();
-    if (remaining > 19500) {
-        remaining = 19500;
-    }
-    scheduler.run(remaining);
+    scheduler.loop();
+    G_Dt = scheduler.last_loop_time;
 }
 
 void Rover::update_soft_armed()
