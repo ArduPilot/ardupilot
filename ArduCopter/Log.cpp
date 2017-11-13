@@ -199,13 +199,13 @@ void Copter::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us          : AP_HAL::micros64(),
-        num_long_running : perf_info.get_num_long_running(),
-        num_loops        : perf_info.get_num_loops(),
-        max_time         : perf_info.get_max_time(),
+        num_long_running : scheduler.perf_info.get_num_long_running(),
+        num_loops        : scheduler.perf_info.get_num_loops(),
+        max_time         : scheduler.perf_info.get_max_time(),
         pm_test          : pmTest1,
         i2c_lockup_count : 0,
         ins_error_count  : ins.error_count(),
-        log_dropped      : DataFlash.num_dropped() - perf_info.get_num_dropped(),
+        log_dropped      : DataFlash.num_dropped() - scheduler.perf_info.get_num_dropped(),
         hal.util->available_memory()
     };
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
