@@ -138,9 +138,6 @@ void Rover::loop()
     G_Dt                = (timer - fast_loopTimer_us) * 1.0e-6f;
     fast_loopTimer_us   = timer;
 
-    // for mainloop failure monitoring
-    mainLoop_count++;
-
     // tell the scheduler one tick has passed
     scheduler.tick();
 
