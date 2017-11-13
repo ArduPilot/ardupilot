@@ -87,6 +87,7 @@ private:
     float crosstrack_error; // current crosstrack error
     float predicted_travel_distance; // distance the aircraft is perdicted to travel during deepstall
     bool hold_level; // locks the target yaw rate of the aircraft to 0, serves to hold the aircraft level at all times
+    float approach_alt_offset;     // approach altitude offset
 
     //public AP_Landing interface
     void do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);

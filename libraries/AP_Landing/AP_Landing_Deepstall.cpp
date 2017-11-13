@@ -159,6 +159,13 @@ void AP_Landing_Deepstall::do_land(const AP_Mission::Mission_Command& cmd, const
 
     // load the landing point in, the rest of path building is deferred for a better wind estimate
     memcpy(&landing_point, &cmd.content.location, sizeof(Location));
+
+    if (!landing_point.flags.relative_alt && !landing_point.flags.terrain_alt) {
+        approach_alt_offset = cmd.p1;
+        landing_point.alt += approach_alt_offset * 100;
+    } else {
+        approach_alt_offset = 0.0f;
+    }
 }
 
 // currently identical to the slope aborts
@@ -190,7 +197,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
     case DEEPSTALL_STAGE_ESTIMATE_WIND:
         {
         landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
-        if (!landing.nav_controller->reached_loiter_target() || (fabsf(height) > DEEPSTALL_LOITER_ALT_TOLERANCE)) {
+        if (!landing.nav_controller->reached_loiter_target() || (fabsf(height - approach_alt_offset) > DEEPSTALL_LOITER_ALT_TOLERANCE)) {
             // wait until the altitude is correct before considering a breakout
             return false;
         }
@@ -218,7 +225,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         if (loiter_sum_cd < 36000) {
             build_approach_path(false);
         }
-        if (!verify_breakout(current_loc, arc_entry, height)) {
+        if (!verify_breakout(current_loc, arc_entry, height - approach_alt_offset)) {
             int32_t target_bearing = landing.nav_controller->target_bearing_cd();
             int32_t delta = wrap_180_cd(target_bearing - last_target_bearing);
             if (delta > 0) { // only accumulate turns in the correct direction
@@ -255,10 +262,20 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         Location entry_point;
         landing.nav_controller->update_waypoint(arc_exit, extended_approach);
 
-        float relative_alt_D;
-        landing.ahrs.get_relative_position_D_home(relative_alt_D);
+        float height_above_target;
+        if (is_zero(approach_alt_offset)) {
+            landing.ahrs.get_relative_position_D_home(height_above_target);
+            height_above_target = -height_above_target;
+        } else {
+            Location position;
+            if (landing.ahrs.get_position(position)) {
+                height_above_target = (position.alt - landing_point.alt + approach_alt_offset * 100) * 1e-2f;
+            } else {
+                height_above_target = approach_alt_offset;
+            }
+        }
 
-        const float travel_distance = predict_travel_distance(landing.ahrs.wind_estimate(), -relative_alt_D, false);
+        const float travel_distance = predict_travel_distance(landing.ahrs.wind_estimate(), height_above_target, false);
 
         memcpy(&entry_point, &landing_point, sizeof(Location));
         location_update(entry_point, target_heading_deg + 180.0, travel_distance);
@@ -270,7 +287,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             }
             return false;
         }
-        predict_travel_distance(landing.ahrs.wind_estimate(), -relative_alt_D, true);
+        predict_travel_distance(landing.ahrs.wind_estimate(), height_above_target, true);
         stage = DEEPSTALL_STAGE_LAND;
         stall_entry_time = AP_HAL::millis();
 
@@ -470,7 +487,8 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
     //extend the approach point to 1km away so that there is always a navigational target
     location_update(extended_approach, target_heading_deg, 1000.0);
 
-    float expected_travel_distance = predict_travel_distance(wind, landing_point.alt * 0.01f, false);
+    float expected_travel_distance = predict_travel_distance(wind, is_zero(approach_alt_offset) ?  landing_point.alt * 0.01f : approach_alt_offset,
+                                                             false);
     float approach_extension_m = expected_travel_distance + approach_extension;
     float loiter_radius_m_abs = fabsf(loiter_radius);
     // an approach extensions must be at least half the loiter radius, or the aircraft has a
