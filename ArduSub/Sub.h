@@ -405,8 +405,6 @@ private:
     // --------------
     // Time in microseconds of main control loop
     uint32_t fast_loopTimer;
-    // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-    uint16_t mainLoop_count;
 
     // Reference to the relay object
     AP_Relay relay;
