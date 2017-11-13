@@ -738,12 +738,6 @@ private:
     // loop performance monitoring:
     AP::PerfInfo perf_info;
     struct {
-        // System Timers
-        // Time in microseconds of start of main control loop
-        uint32_t fast_loopTimer_us;
-    } perf;
-
-    struct {
         uint32_t last_trim_check;
         uint32_t last_trim_save;
     } auto_trim;

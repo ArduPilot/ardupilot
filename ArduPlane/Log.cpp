@@ -72,11 +72,11 @@ void Plane::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us         : AP_HAL::micros64(),
-        num_long        : perf_info.get_num_long_running(),
-        main_loop_count : perf_info.get_num_loops(),
-        g_dt_max        : perf_info.get_max_time(),
-        g_dt_min        : perf_info.get_min_time(),
-        log_dropped     : DataFlash.num_dropped() - perf_info.get_num_dropped(),
+        num_long        : scheduler.perf_info.get_num_long_running(),
+        main_loop_count : scheduler.perf_info.get_num_loops(),
+        g_dt_max        : scheduler.perf_info.get_max_time(),
+        g_dt_min        : scheduler.perf_info.get_min_time(),
+        log_dropped     : DataFlash.num_dropped() - scheduler.perf_info.get_num_dropped(),
         hal.util->available_memory()
     };
     last_log_dropped = dropped;
