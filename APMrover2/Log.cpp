@@ -7,9 +7,9 @@
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint32_t loop_time;
-    uint16_t main_loop_count;
-    uint32_t g_dt_max;
+    uint16_t num_long_running;
+    uint16_t num_loops;
+    uint32_t max_time;
     int16_t  gyro_drift_x;
     int16_t  gyro_drift_y;
     int16_t  gyro_drift_z;
@@ -24,9 +24,9 @@ void Rover::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us         : AP_HAL::micros64(),
-        loop_time       : millis()- perf_mon_timer,
-        main_loop_count : mainLoop_count,
-        g_dt_max        : G_Dt_max,
+        num_long_running : perf_info.get_num_long_running(),
+        num_loops        : perf_info.get_num_loops(),
+        max_time         : perf_info.get_max_time(),
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
         gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
         gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),
