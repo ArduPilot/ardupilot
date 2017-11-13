@@ -741,9 +741,6 @@ private:
         // System Timers
         // Time in microseconds of start of main control loop
         uint32_t fast_loopTimer_us;
-        
-        // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-        uint16_t mainLoop_count;
     } perf;
 
     struct {
