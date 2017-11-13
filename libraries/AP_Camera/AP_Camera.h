@@ -34,9 +34,8 @@ public:
     static AP_Camera create(AP_Relay *obj_relay,
                             uint32_t _log_camera_bit,
                             const struct Location &_loc,
-                            const AP_GPS &_gps,
                             const AP_AHRS &_ahrs) {
-        return AP_Camera{obj_relay, _log_camera_bit, _loc, _gps, _ahrs};
+        return AP_Camera{obj_relay, _log_camera_bit, _loc, _ahrs};
     }
 
     constexpr AP_Camera(AP_Camera &&other) = default;
@@ -72,12 +71,11 @@ public:
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
 
 private:
-    AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_GPS &_gps, const AP_AHRS &_ahrs)
+    AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_AHRS &_ahrs)
         : _trigger_counter(0) // count of number of cycles shutter has been held open
         , _image_index(0)
         , log_camera_bit(_log_camera_bit)
         , current_loc(_loc)
-        , gps(_gps)
         , ahrs(_ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);
@@ -123,7 +121,6 @@ private:
 
     uint32_t log_camera_bit;
     const struct Location &current_loc;
-    const AP_GPS &gps;
     const AP_AHRS &ahrs;
 
     // entry point to trip local shutter (e.g. by relay or servo)
