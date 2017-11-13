@@ -73,6 +73,9 @@ public:
     // call when one tick has passed
     void tick(void);
 
+    // return current tick counter
+    uint16_t ticks() const { return _tick_counter; }
+
     // run the tasks. Call this once per 'tick'.
     // time_available is the amount of time available to run
     // tasks in microseconds
