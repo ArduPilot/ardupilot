@@ -178,7 +178,7 @@ void Copter::setup()
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 
     // setup initial performance counters
-    perf_info_reset();
+    perf_info.reset();
     fast_loopTimer = AP_HAL::micros();
 }
 
@@ -196,14 +196,14 @@ void Copter::perf_update(void)
         Log_Write_Performance();
     if (scheduler.debug()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
-                          (unsigned)perf_info_get_num_long_running(),
-                          (unsigned)perf_info_get_num_loops(),
-                          (unsigned long)perf_info_get_max_time(),
-                          (unsigned long)perf_info_get_min_time(),
-                          (unsigned long)perf_info_get_avg_time(),
-                          (unsigned long)perf_info_get_stddev_time());
+                          (unsigned)perf_info.get_num_long_running(),
+                          (unsigned)perf_info.get_num_loops(),
+                          (unsigned long)perf_info.get_max_time(),
+                          (unsigned long)perf_info.get_min_time(),
+                          (unsigned long)perf_info.get_avg_time(),
+                          (unsigned long)perf_info.get_stddev_time());
     }
-    perf_info_reset();
+    perf_info.reset();
     pmTest1 = 0;
 }
 
@@ -223,7 +223,7 @@ void Copter::loop()
     uint32_t timer = micros();
 
     // check loop time
-    perf_info_check_loop_time(timer - fast_loopTimer);
+    perf_info.check_loop_time(timer - fast_loopTimer);
 
     // used by PI Loops
     G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.0f;
