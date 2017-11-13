@@ -24,9 +24,9 @@ void Rover::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us         : AP_HAL::micros64(),
-        num_long_running : perf_info.get_num_long_running(),
-        num_loops        : perf_info.get_num_loops(),
-        max_time         : perf_info.get_max_time(),
+        num_long_running : scheduler.perf_info.get_num_long_running(),
+        num_loops        : scheduler.perf_info.get_num_loops(),
+        max_time         : scheduler.perf_info.get_max_time(),
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
         gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
         gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),
