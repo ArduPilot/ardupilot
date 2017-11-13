@@ -108,11 +108,13 @@ void Sub::perf_update(void)
         Log_Write_Performance();
     }
     if (scheduler.debug()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
+        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
                           (unsigned)perf_info.get_num_long_running(),
                           (unsigned)perf_info.get_num_loops(),
                           (unsigned long)perf_info.get_max_time(),
-                          (unsigned long)perf_info.get_min_time());
+                          (unsigned long)perf_info.get_min_time(),
+                          (unsigned long)perf_info.get_avg_time(),
+                          (unsigned long)perf_info.get_stddev_time());
     }
     perf_info.reset();
     pmTest1 = 0;
