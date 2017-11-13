@@ -92,7 +92,8 @@ void Sub::setup()
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 
     // setup initial performance counters
-    perf_info.reset(scheduler.get_loop_rate_hz());
+    perf_info.set_loop_rate(scheduler.get_loop_rate_hz());
+    perf_info.reset();
     fast_loopTimer = AP_HAL::micros();
 }
 
