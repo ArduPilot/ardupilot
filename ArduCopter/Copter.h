@@ -545,7 +545,7 @@ private:
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera = AP_Camera::create(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs);
+    AP_Camera camera = AP_Camera::create(&relay, MASK_LOG_CAMERA, current_loc, ahrs);
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
