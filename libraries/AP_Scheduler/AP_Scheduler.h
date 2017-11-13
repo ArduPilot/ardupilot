@@ -23,6 +23,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/Util.h>
 #include <AP_Math/AP_Math.h>
+#include "PerfInfo.h"       // loop perf monitoring
 
 #define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
 
@@ -52,7 +53,10 @@
 class AP_Scheduler
 {
 public:
-    AP_Scheduler();
+
+    FUNCTOR_TYPEDEF(scheduler_fastloop_fn_t, void);
+
+    AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn = nullptr);
 
     /* Do not allow copies */
     AP_Scheduler(const AP_Scheduler &other) = delete;
@@ -69,6 +73,10 @@ public:
 
     // initialise scheduler
     void init(const Task *tasks, uint8_t num_tasks);
+
+    // called by vehicle's main loop - which should be the only thing
+    // that function does
+    void loop();
 
     // call when one tick has passed
     void tick(void);
@@ -119,7 +127,16 @@ public:
     // current running task, or -1 if none. Used to debug stuck tasks
     static int8_t current_task;
 
+    // loop performance monitoring:
+    AP::PerfInfo perf_info;
+
+    // time taken for previous loop (in seconds):
+    float last_loop_time;
+
 private:
+    // function that is called before anything in the scheduler table:
+    scheduler_fastloop_fn_t _fastloop_fn;
+
     // used to enable scheduler debugging
     AP_Int8 _debug;
 
@@ -159,6 +176,9 @@ private:
 
     // number of ticks that _spare_micros is counted over
     uint8_t _spare_ticks;
+
+    // timestamp of loop start:
+    uint32_t loop_start;
 
     // performance counters
     AP_HAL::Util::perf_counter_t *_perf_counters;

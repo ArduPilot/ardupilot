@@ -6,8 +6,12 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <DataFlash/DataFlash.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+AP_Int32 log_bitmask;
+DataFlash_Class DataFlash{"Bob", log_bitmask};
 
 class SchedTest {
 public:
@@ -17,7 +21,7 @@ public:
 private:
 
     AP_InertialSensor ins;
-    AP_Scheduler scheduler;
+    AP_Scheduler scheduler{nullptr};
 
     uint32_t ins_counter;
     static const AP_Scheduler::Task scheduler_tasks[];
@@ -52,19 +56,13 @@ void SchedTest::setup(void)
     ins.init(scheduler.get_loop_rate_hz());
 
     // initialise the scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), (uint32_t)-1);
 }
 
 void SchedTest::loop(void)
 {
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    // run all tasks that fit in 20ms
-    scheduler.run(20000);
+    // run all tasks
+    scheduler.loop();
 }
 
 /*

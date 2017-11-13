@@ -23,6 +23,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <DataFlash/DataFlash.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <stdio.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -57,7 +59,8 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 };
 
 // constructor
-AP_Scheduler::AP_Scheduler(void)
+AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
+    _fastloop_fn(fastloop_fn)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -77,6 +80,11 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks)
     _last_run = new uint16_t[_num_tasks];
     memset(_last_run, 0, sizeof(_last_run[0]) * _num_tasks);
     _tick_counter = 0;
+
+    // setup initial performance counters
+    perf_info.set_loop_rate(get_loop_rate_hz());
+    perf_info.reset();
+    loop_start = AP_HAL::micros();
 }
 
 // one tick has passed
@@ -194,4 +202,37 @@ float AP_Scheduler::load_average()
     const uint32_t loop_us = get_loop_period_us();
     const uint32_t used_time = loop_us - (_spare_micros/_spare_ticks);
     return used_time / (float)loop_us;
+}
+
+void AP_Scheduler::loop()
+{
+    // wait for an INS sample
+    AP::ins().wait_for_sample();
+
+    const uint32_t timer = AP_HAL::micros();
+
+    // check loop time
+    perf_info.check_loop_time(timer - loop_start);
+
+    // used by PI Loops
+    last_loop_time          = (float)(timer - loop_start) / 1000000.0f;
+    loop_start              = timer;
+
+    // Execute the fast loop
+    // ---------------------
+    if (_fastloop_fn) {
+        _fastloop_fn();
+    }
+
+    // tell the scheduler one tick has passed
+    tick();
+
+    // run all the tasks that are due to run. Note that we only
+    // have to call this once per loop, as the tasks are scheduled
+    // in multiples of the main loop tick. So if they don't run on
+    // the first call to the scheduler they won't run on a later
+    // call until scheduler.tick() is called again
+    const uint32_t loop_us = get_loop_period_us();
+    const uint32_t time_available = (timer + loop_us) - AP_HAL::micros();
+    run(time_available > loop_us ? 0u : time_available);
 }
