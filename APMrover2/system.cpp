@@ -262,13 +262,6 @@ void Rover::startup_INS_ground(void)
     ahrs.reset();
 }
 
-void Rover::resetPerfData(void) {
-    mainLoop_count = 0;
-    G_Dt_max = 0;
-    perf_mon_timer = millis();
-}
-
-
 void Rover::check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();

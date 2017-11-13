@@ -85,6 +85,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,       10,    100),
     SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
     SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,       50,   50),
+    SCHED_TASK(perf_update,           0.1,     75),
     SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  100),
     SCHED_TASK(stats_update,            1,    100),
     SCHED_TASK(crash_check,            10,   1000),
@@ -115,6 +116,10 @@ void Rover::setup()
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
+
+    // setup initial performance counters
+    perf_info.set_loop_rate(scheduler.get_loop_rate_hz());
+    perf_info.reset();
 }
 
 /*
@@ -127,14 +132,13 @@ void Rover::loop()
 
     const uint32_t timer = AP_HAL::micros();
 
-    delta_us_fast_loop  = timer - fast_loopTimer_us;
-    G_Dt                = delta_us_fast_loop * 1.0e-6f;
+    // check loop time
+    perf_info.check_loop_time(timer - fast_loopTimer_us);
+
+    G_Dt                = (timer - fast_loopTimer_us) * 1.0e-6f;
     fast_loopTimer_us   = timer;
 
-    if (delta_us_fast_loop > G_Dt_max) {
-        G_Dt_max = delta_us_fast_loop;
-    }
-
+    // for mainloop failure monitoring
     mainLoop_count++;
 
     // tell the scheduler one tick has passed
@@ -277,6 +281,23 @@ void Rover::update_aux(void)
     SRV_Channels::enable_aux_servos();
 }
 
+void Rover::perf_update()
+{
+    if (should_log(MASK_LOG_PM)) {
+        Log_Write_Performance();
+    }
+    if (scheduler.debug()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
+                          (unsigned)perf_info.get_num_long_running(),
+                          (unsigned)perf_info.get_num_loops(),
+                          (unsigned long)perf_info.get_max_time(),
+                          (unsigned long)perf_info.get_min_time(),
+                          (unsigned long)perf_info.get_avg_time(),
+                          (unsigned long)perf_info.get_stddev_time());
+    }
+    perf_info.reset();
+}
+
 /*
   once a second events
  */
@@ -304,18 +325,6 @@ void Rover::one_second_loop(void)
     static uint8_t counter;
 
     counter++;
-
-    // write perf data every 20s
-    if (counter % 10 == 0) {
-        if (scheduler.debug() != 0) {
-            hal.console->printf("G_Dt_max=%u\n", G_Dt_max);
-        }
-        if (should_log(MASK_LOG_PM)) {
-            Log_Write_Performance();
-        }
-        G_Dt_max = 0;
-        resetPerfData();
-    }
 
     // save compass offsets once a minute
     if (counter >= 60) {
