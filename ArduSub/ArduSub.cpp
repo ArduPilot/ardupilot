@@ -90,11 +90,6 @@ void Sub::setup()
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
-
-    // setup initial performance counters
-    perf_info.set_loop_rate(scheduler.get_loop_rate_hz());
-    perf_info.reset();
-    fast_loopTimer = AP_HAL::micros();
 }
 
 void Sub::perf_update(void)
@@ -104,46 +99,21 @@ void Sub::perf_update(void)
     }
     if (scheduler.debug()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
-                          (unsigned)perf_info.get_num_long_running(),
-                          (unsigned)perf_info.get_num_loops(),
-                          (unsigned long)perf_info.get_max_time(),
-                          (unsigned long)perf_info.get_min_time(),
-                          (unsigned long)perf_info.get_avg_time(),
-                          (unsigned long)perf_info.get_stddev_time());
+                          (unsigned)scheduler.perf_info.get_num_long_running(),
+                          (unsigned)scheduler.perf_info.get_num_loops(),
+                          (unsigned long)scheduler.perf_info.get_max_time(),
+                          (unsigned long)scheduler.perf_info.get_min_time(),
+                          (unsigned long)scheduler.perf_info.get_avg_time(),
+                          (unsigned long)scheduler.perf_info.get_stddev_time());
     }
-    perf_info.reset(scheduler.get_loop_rate_hz());
+    scheduler.perf_info.reset();
     pmTest1 = 0;
 }
 
 void Sub::loop()
 {
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    uint32_t timer = micros();
-
-    // check loop time
-    perf_info.check_loop_time(timer - fast_loopTimer);
-
-    // used by PI Loops
-    G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.0f;
-    fast_loopTimer          = timer;
-
-    // Execute the fast loop
-    // ---------------------
-    fast_loop();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    // run all the tasks that are due to run. Note that we only
-    // have to call this once per loop, as the tasks are scheduled
-    // in multiples of the main loop tick. So if they don't run on
-    // the first call to the scheduler they won't run on a later
-    // call until scheduler.tick() is called again
-    const uint32_t loop_us = scheduler.get_loop_period_us();
-    const uint32_t time_available = (timer + loop_us) - micros();
-    scheduler.run(time_available > loop_us ? 0u : time_available);
+    scheduler.loop();
+    G_Dt = scheduler.last_loop_time;
 }
 
 
