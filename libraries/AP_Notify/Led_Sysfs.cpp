@@ -17,28 +17,20 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include "Navio2Led.h"
+#include "Led_Sysfs.h"
 
 #include <AP_HAL_Linux/Led_Sysfs.h>
 
-#define NAVIO2_LED_LOW    0x00
-#define NAVIO2_LED_MEDIUM 0x00
-#define NAVIO2_LED_HIGH   0x00
-#define NAVIO2_LED_OFF    0xFF
-
-#define NAVIO2_LED_RED_NAME   "rgb_led0"
-#define NAVIO2_LED_GREEN_NAME "rgb_led2"
-#define NAVIO2_LED_BLUE_NAME  "rgb_led1"
-
-Navio2Led::Navio2Led():
-    RGBLed(NAVIO2_LED_OFF, NAVIO2_LED_HIGH, NAVIO2_LED_MEDIUM, NAVIO2_LED_LOW),
-    red_led(NAVIO2_LED_RED_NAME),
-    green_led(NAVIO2_LED_GREEN_NAME),
-    blue_led(NAVIO2_LED_BLUE_NAME)
+Led_Sysfs::Led_Sysfs(const char *red, const char *green, const char *blue,
+                    uint8_t off_brightness, uint8_t low_brightness, uint8_t medium_brightness, uint8_t high_brightness):
+    RGBLed(off_brightness, high_brightness, medium_brightness, low_brightness),
+    red_led(red),
+    green_led(green),
+    blue_led(blue)
 {
 }
 
-bool Navio2Led::hw_init()
+bool Led_Sysfs::hw_init()
 {
     if (red_led.init() && green_led.init() && blue_led.init()) {
         return true;
@@ -47,7 +39,7 @@ bool Navio2Led::hw_init()
     return false;
 }
 
-bool Navio2Led::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
+bool Led_Sysfs::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     red_led.set_brightness(red);
     green_led.set_brightness(green);

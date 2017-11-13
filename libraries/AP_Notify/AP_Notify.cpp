@@ -30,7 +30,7 @@
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
-#include "Navio2Led.h"
+#include "Led_Sysfs.h"
 #include <stdio.h>
 
 AP_Notify *AP_Notify::_instance;
@@ -161,7 +161,7 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    ADD_BACKEND(new Navio2Led());
+    ADD_BACKEND(new Led_Sysfs("rgb_led0", "rgb_led2", "rgb_led1"));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
 

@@ -23,10 +23,12 @@
 
 #include "RGBLed.h"
 
-class Navio2Led: public RGBLed
+class Led_Sysfs: public RGBLed
 {
 public:
-    Navio2Led();
+    Led_Sysfs(const char *red, const char *green, const char *blue,
+              uint8_t off_brightness = 0xff , uint8_t low_brightness = 0x00,
+              uint8_t medium_brightness = 0x00, uint8_t high_brightness = 0x00);
 
 protected:
     bool hw_init(void) override;
