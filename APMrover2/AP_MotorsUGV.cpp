@@ -45,9 +45,9 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_DISARM", 3, AP_MotorsUGV, _disarm_disable_pwm, 0),
 
-    // @Param: THR_SLEWRATE
-    // @DisplayName: Throttle slew rate
-    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. A value of zero means no limit. A value of 100 means the throttle can change over its full range in one second. Note that for some NiMH powered rovers setting a lower value like 40 or 50 may be worthwhile as the sudden current demand on the battery of a big rise in throttle may cause a brownout.
+    // @Param: SLEWRATE
+    // @DisplayName: Motors slew rate
+    // @Description: maximum percentage change in output per second. A setting of 10 means to not change the output by more than 10% of the full output range in one second. A value of zero means no limit. A value of 100 means the output can change over its full range in one second. Note that for some NiMH powered rovers setting a lower value like 40 or 50 may be worthwhile as the sudden current demand on the battery of a big rise in ouput may cause a brownout.
     // @Units: %/s
     // @Range: 0 100
     // @Increment: 1
@@ -187,8 +187,6 @@ void AP_MotorsUGV::output(bool armed, float dt)
         armed = false;
     }
 
-    slew_limit_throttle(dt);
-
     // clear and set limits based on input (limit flags may be set again by output_regular or output_skid_steering methods)
     set_limits_from_input(armed, _steering, _throttle);
 
@@ -200,10 +198,17 @@ void AP_MotorsUGV::output(bool armed, float dt)
 
     // send values to the PWM timers for output
     SRV_Channels::calc_pwm();
+    if (_use_slew_rate && (_slew_rate > 0)) {
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_steering, _slew_rate, dt);
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, _slew_rate, dt);
+
+        // skid steering left/right throttle as -1000 to 1000 values
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttleLeft, _slew_rate, dt);
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttleRight, _slew_rate, dt);
+    }
     hal.rcout->cork();
     SRV_Channels::output_ch_all();
     hal.rcout->push();
-    _last_throttle = _throttle;
 }
 
 // output to regular steering and throttle channels
@@ -347,18 +352,6 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
         default:
             // do nothing
             break;
-    }
-}
-
-// slew limit throttle for one iteration
-void AP_MotorsUGV::slew_limit_throttle(float dt)
-{
-    if (_use_slew_rate && (_slew_rate > 0)) {
-        float temp = _slew_rate * dt * 0.01f * (_throttle_max - _throttle_min);
-        if (temp < 1.0f) {
-            temp = 1.0f;
-        }
-        _throttle = constrain_int16(_throttle, _last_throttle - temp, _last_throttle + temp);
     }
 }
 
