@@ -257,15 +257,7 @@ void Rover::perf_update()
     if (should_log(MASK_LOG_PM)) {
         Log_Write_Performance();
     }
-    if (scheduler.debug()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
-                          (unsigned)perf_info.get_num_long_running(),
-                          (unsigned)perf_info.get_num_loops(),
-                          (unsigned long)perf_info.get_max_time(),
-                          (unsigned long)perf_info.get_min_time(),
-                          (unsigned long)perf_info.get_avg_time(),
-                          (unsigned long)perf_info.get_stddev_time());
-    }
+    scheduler.update_logging();
     perf_info.reset();
 }
 
