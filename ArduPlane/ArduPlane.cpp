@@ -115,19 +115,19 @@ void Plane::setup()
 
 void Plane::loop()
 {
-    uint32_t loop_us = 1000000UL / scheduler.get_loop_rate_hz();
-
     // wait for an INS sample
     ins.wait_for_sample();
 
     uint32_t timer = micros();
 
     // check loop time
-    perf_info.check_loop_time(timer - fast_loopTimer);
-    G_Dt = (float)(timer - fast_loopTimer) * 1.0e-6;
-    fast_loopTimer = timer;
+    perf_info.check_loop_time(timer - perf.fast_loopTimer_us);
 
-    mainLoop_count++;
+    G_Dt                     = (timer - perf.fast_loopTimer_us) * 1.0e-6f;
+    perf.fast_loopTimer_us   = timer;
+
+    // for mainloop failure monitoring
+    perf.mainLoop_count++;
 
     // tell the scheduler one tick has passed
     scheduler.tick();
@@ -137,7 +137,9 @@ void Plane::loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    scheduler.run(loop_us);
+    const uint32_t loop_us = scheduler.get_loop_period_us();
+    const uint32_t time_available = (timer + loop_us) - micros();
+    scheduler.run(time_available);
 }
 
 void Plane::update_soft_armed()
@@ -359,19 +361,23 @@ void Plane::one_second_loop()
 
 void Plane::log_perf_info()
 {
+    if (scheduler.debug() != 0) {
+        gcs().send_text(MAV_SEVERITY_INFO,
+                        "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu Log=%u",
+                        (unsigned)perf_info.get_num_long_running(),
+                        (unsigned)perf_info.get_num_loops(),
+                        (unsigned long)perf_info.get_max_time(),
+                        (unsigned long)perf_info.get_min_time(),
+                        (unsigned long)perf_info.get_avg_time(),
+                        (unsigned long)perf_info.get_stddev_time(),
+                        (unsigned)(DataFlash.num_dropped() - perf_info.get_num_dropped()));
+    }
+
     if (should_log(MASK_LOG_PM)) {
         Log_Write_Performance();
     }
-    if (scheduler.debug()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
-                          (unsigned)perf_info.get_num_long_running(),
-                          (unsigned)perf_info.get_num_loops(),
-                          (unsigned long)perf_info.get_max_time(),
-                          (unsigned long)perf_info.get_min_time(),
-                          (unsigned long)perf_info.get_avg_time(),
-                          (unsigned long)perf_info.get_stddev_time());
-    }
-    perf_info.reset(scheduler.get_loop_rate_hz());
+
+    perf_info.reset();
 }
 
 void Plane::compass_save()
