@@ -115,28 +115,8 @@ void Plane::setup()
 
 void Plane::loop()
 {
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    uint32_t timer = micros();
-
-    // check loop time
-    perf_info.check_loop_time(timer - perf.fast_loopTimer_us);
-
-    G_Dt                     = (timer - perf.fast_loopTimer_us) * 1.0e-6f;
-    perf.fast_loopTimer_us   = timer;
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    // run all the tasks that are due to run. Note that we only
-    // have to call this once per loop, as the tasks are scheduled
-    // in multiples of the main loop tick. So if they don't run on
-    // the first call to the scheduler they won't run on a later
-    // call until scheduler.tick() is called again
-    const uint32_t loop_us = scheduler.get_loop_period_us();
-    const uint32_t time_available = (timer + loop_us) - micros();
-    scheduler.run(time_available);
+    scheduler.loop();
+    G_Dt = scheduler.last_loop_time;
 }
 
 void Plane::update_soft_armed()
@@ -361,20 +341,20 @@ void Plane::log_perf_info()
     if (scheduler.debug() != 0) {
         gcs().send_text(MAV_SEVERITY_INFO,
                         "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu Log=%u",
-                        (unsigned)perf_info.get_num_long_running(),
-                        (unsigned)perf_info.get_num_loops(),
-                        (unsigned long)perf_info.get_max_time(),
-                        (unsigned long)perf_info.get_min_time(),
-                        (unsigned long)perf_info.get_avg_time(),
-                        (unsigned long)perf_info.get_stddev_time(),
-                        (unsigned)(DataFlash.num_dropped() - perf_info.get_num_dropped()));
+                        (unsigned)scheduler.perf_info.get_num_long_running(),
+                        (unsigned)scheduler.perf_info.get_num_loops(),
+                        (unsigned long)scheduler.perf_info.get_max_time(),
+                        (unsigned long)scheduler.perf_info.get_min_time(),
+                        (unsigned long)scheduler.perf_info.get_avg_time(),
+                        (unsigned long)scheduler.perf_info.get_stddev_time(),
+                        (unsigned)(DataFlash.num_dropped() - scheduler.perf_info.get_num_dropped()));
     }
 
     if (should_log(MASK_LOG_PM)) {
         Log_Write_Performance();
     }
 
-    perf_info.reset();
+    scheduler.perf_info.reset();
 }
 
 void Plane::compass_save()
