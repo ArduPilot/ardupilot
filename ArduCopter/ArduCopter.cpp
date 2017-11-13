@@ -226,9 +226,6 @@ void Copter::loop()
     G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.0f;
     fast_loopTimer          = timer;
 
-    // for mainloop failure monitoring
-    mainLoop_count++;
-
     // Execute the fast loop
     // ---------------------
     fast_loop();
