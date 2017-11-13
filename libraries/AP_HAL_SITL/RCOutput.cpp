@@ -46,6 +46,8 @@ void RCOutput::disable_ch(uint8_t ch)
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
     _sitlState->output_ready = true;
+    // keep unscaled value
+    _last_sent[ch] = period_us;
     if (ch < SITL_NUM_CHANNELS && (_enable_mask & (1U<<ch))) {
         if (_output_mode == MODE_PWM_BRUSHED) {
             // Calculate the duty cycle
@@ -76,6 +78,21 @@ uint16_t RCOutput::read(uint8_t ch)
 void RCOutput::read(uint16_t* period_us, uint8_t len)
 {
     memcpy(period_us, _sitlState->pwm_output, len * sizeof(uint16_t));
+}
+
+uint16_t RCOutput::read_last_sent(uint8_t ch)
+{
+    if (ch >= SITL_NUM_CHANNELS) {
+        return 0;
+    }
+    return _last_sent[ch];
+}
+
+void RCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
+{
+    for (uint8_t i=0; i < len; i++) {
+        period_us[i] = read_last_sent(i);
+    }
 }
 
 void RCOutput::cork(void)
