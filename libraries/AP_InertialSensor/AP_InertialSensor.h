@@ -563,3 +563,7 @@ private:
     bool _startup_error_counts_set;
     uint32_t _startup_ms;
 };
+
+namespace AP {
+    AP_InertialSensor &ins();
+};
