@@ -16,13 +16,14 @@
  */
 void Rover::failsafe_check()
 {
-    static uint16_t last_mainLoop_count;
+    static uint16_t last_ticks;
     static uint32_t last_timestamp;
     const uint32_t tnow = AP_HAL::micros();
 
-    if (mainLoop_count != last_mainLoop_count) {
+    const uint16_t ticks = scheduler.ticks();
+    if (ticks != last_ticks) {
         // the main loop is running, all is OK
-        last_mainLoop_count = mainLoop_count;
+        last_ticks = ticks;
         last_timestamp = tnow;
         return;
     }
