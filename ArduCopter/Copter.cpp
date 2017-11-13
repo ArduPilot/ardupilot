@@ -48,7 +48,6 @@ Copter::Copter(void)
     inertial_nav(ahrs),
     pmTest1(0),
     fast_loopTimer(0),
-    mainLoop_count(0),
     auto_trim_counter(0),
     in_mavlink_delay(false),
     param_loader(var_info),
