@@ -28,6 +28,8 @@ public:
         overtime_threshold_micros = 1000000/rate_hz * 1.2f;
     }
 
+    void update_logging();
+
 private:
     uint16_t overtime_threshold_micros;
     uint16_t loop_count;

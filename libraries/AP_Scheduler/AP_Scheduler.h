@@ -78,6 +78,9 @@ public:
     // that function does
     void loop();
 
+    // call to update any logging the scheduler might do; call at 1Hz
+    void update_logging();
+
     // call when one tick has passed
     void tick(void);
 

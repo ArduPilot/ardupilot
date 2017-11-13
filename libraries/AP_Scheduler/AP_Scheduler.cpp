@@ -240,3 +240,10 @@ void AP_Scheduler::loop()
 #endif
     perf_info.check_loop_time(AP_HAL::micros() - loop_start);
 }
+
+void AP_Scheduler::update_logging()
+{
+    if (debug()) {
+        perf_info.update_logging();
+    }
+}

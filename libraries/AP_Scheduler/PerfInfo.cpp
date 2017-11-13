@@ -1,6 +1,7 @@
 #include "PerfInfo.h"
 
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS.h>
 
 //
 //  high level performance monitoring
@@ -92,4 +93,16 @@ uint32_t AP::PerfInfo::get_avg_time() const
 uint32_t AP::PerfInfo::get_stddev_time() const
 {
     return sqrt((sigmasquared_time - (sigma_time*sigma_time)/loop_count) / loop_count);
+}
+
+void AP::PerfInfo::update_logging()
+{
+    gcs().send_text(MAV_SEVERITY_WARNING,
+                    "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
+                    (unsigned)get_num_long_running(),
+                    (unsigned)get_num_loops(),
+                    (unsigned long)get_max_time(),
+                    (unsigned long)get_min_time(),
+                    (unsigned long)get_avg_time(),
+                    (unsigned long)get_stddev_time());
 }
