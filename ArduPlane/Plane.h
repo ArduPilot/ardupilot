@@ -64,6 +64,7 @@
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
+#include <AP_Scheduler/PerfInfo.h>                  // loop perf monitoring
 
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_L1_Control/AP_L1_Control.h>
@@ -95,7 +96,6 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_ICEngine/AP_ICEngine.h>
 #include <AP_Landing/AP_Landing.h>
-#include <AP_Scheduler/PerfInfo.h>       // loop perf monitoring
 
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
@@ -737,9 +737,14 @@ private:
 
     // loop performance monitoring:
     AP::PerfInfo perf_info;
-    uint32_t mainLoop_count;
-    uint32_t fast_loopTimer;
-    uint32_t last_log_dropped;
+    struct {
+        // System Timers
+        // Time in microseconds of start of main control loop
+        uint32_t fast_loopTimer_us;
+        
+        // Counter of main loop executions.  Used for performance monitoring and failsafe processing
+        uint16_t mainLoop_count;
+    } perf;
 
     struct {
         uint32_t last_trim_check;
