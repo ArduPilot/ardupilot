@@ -73,10 +73,10 @@ void Plane::Log_Write_Performance()
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us         : AP_HAL::micros64(),
         num_long        : perf_info.get_num_long_running(),
-        main_loop_count : (uint16_t)mainLoop_count,
+        main_loop_count : perf_info.get_num_loops(),
         g_dt_max        : perf_info.get_max_time(),
         g_dt_min        : perf_info.get_min_time(),
-        log_dropped     : dropped - last_log_dropped,
+        log_dropped     : DataFlash.num_dropped() - perf_info.get_num_dropped(),
         hal.util->available_memory()
     };
     last_log_dropped = dropped;
