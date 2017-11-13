@@ -16,9 +16,18 @@ void ModeSteering::update()
         return;
     }
 
-    // in steering mode we control lateral acceleration directly. We first calculate the maximum lateral
-    // acceleration at full steering lock for this speed. That is V^2/R where R is the radius of turn.
-    float max_g_force = speed * speed / MAX(g2.turn_radius, 0.1f);
+    // determine if pilot is requesting pivot turn
+    bool is_pivot_turning = g2.motors.have_skid_steering() && is_zero(target_speed) && (channel_steer->get_control_in() != 0);
+
+    // In steering mode we control lateral acceleration directly.
+    // For pivot steering vehicles we use the TURN_MAX_G parameter
+    // For regular steering vehicles we use the maximum lateral acceleration at full steering lock for this speed: V^2/R where R is the radius of turn.
+    float max_g_force;
+    if (is_pivot_turning) {
+        max_g_force = g.turn_max_g * GRAVITY_MSS;
+    } else {
+        max_g_force = speed * speed / MAX(g2.turn_radius, 0.1f);
+    }
 
     // constrain to user set TURN_MAX_G
     max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
@@ -37,7 +46,7 @@ void ModeSteering::update()
     rover.set_reverse(reversed);
 
     // run speed to throttle output controller
-    if (is_zero(target_speed)) {
+    if (is_zero(target_speed) && !is_pivot_turning) {
         stop_vehicle();
     } else {
         // run steering controller
