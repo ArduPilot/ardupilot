@@ -21,7 +21,7 @@ void Mode::exit()
 
 bool Mode::enter()
 {
-    g2.motors.slew_limit_throttle(false);
+    g2.motors.slew_limit_motors(false);
     return _enter();
 }
 

@@ -49,7 +49,7 @@ public:
     void output(bool armed, float dt);
 
     // set when to use slew rate limiter
-    void slew_limit_throttle(bool value) { _use_slew_rate = value; }
+    void slew_limit_motors(bool value) { _use_slew_rate = value; }
 
     // test steering or throttle output as a percentage of the total (range -100 to +100)
     // used in response to DO_MOTOR_TEST mavlink command

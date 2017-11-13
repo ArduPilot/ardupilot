@@ -14,7 +14,7 @@ bool ModeRTL::_enter()
     // RTL never reverses
     rover.set_reverse(false);
 
-    g2.motors.slew_limit_throttle(true);
+    g2.motors.slew_limit_motors(true);
     return true;
 }
 

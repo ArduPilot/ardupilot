@@ -3,7 +3,7 @@
 
 bool ModeSteering::_enter()
 {
-    g2.motors.slew_limit_throttle(true);
+    g2.motors.slew_limit_motors(true);
     return true;
 }
 
