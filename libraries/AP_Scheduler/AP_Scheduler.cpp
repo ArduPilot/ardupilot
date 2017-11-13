@@ -211,9 +211,6 @@ void AP_Scheduler::loop()
 
     const uint32_t timer = AP_HAL::micros();
 
-    // check loop time
-    perf_info.check_loop_time(timer - loop_start);
-
     // used by PI Loops
     last_loop_time          = (float)(timer - loop_start) / 1000000.0f;
     loop_start              = timer;
@@ -235,4 +232,11 @@ void AP_Scheduler::loop()
     const uint32_t loop_us = get_loop_period_us();
     const uint32_t time_available = (timer + loop_us) - AP_HAL::micros();
     run(time_available > loop_us ? 0u : time_available);
+
+    // check loop time
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // move result of AP_HAL::micros() forward:
+    hal.scheduler->delay_microseconds(1);
+#endif
+    perf_info.check_loop_time(AP_HAL::micros() - loop_start);
 }
