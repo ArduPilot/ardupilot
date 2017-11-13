@@ -126,9 +126,6 @@ void Plane::loop()
     G_Dt                     = (timer - perf.fast_loopTimer_us) * 1.0e-6f;
     perf.fast_loopTimer_us   = timer;
 
-    // for mainloop failure monitoring
-    perf.mainLoop_count++;
-
     // tell the scheduler one tick has passed
     scheduler.tick();
 
