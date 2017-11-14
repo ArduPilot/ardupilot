@@ -261,7 +261,7 @@ void NavEKF3_core::SelectMagFusion()
     magFusePerformed = false;
 
     // Handle case where we are using an external yaw sensor instead of a magnetomer
-    if ((frontend->_magCal == 5) && !use_compass()) {
+    if ((frontend->_magCal == 5)) {
         if (storedYawAng.recall(yawAngDataDelayed,imuDataDelayed.time_ms)) {
             if (tiltAlignComplete && !yawAlignComplete) {
                 alignYawAngle();
