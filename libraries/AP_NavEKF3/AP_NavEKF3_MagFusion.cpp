@@ -218,7 +218,7 @@ void NavEKF3_core::alignYawAngle()
     if (yawAngDataDelayed.type == 2) {
         Vector3f euler321;
         stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
-        stateStruct.quat.to_euler(euler321.x, euler321.y, yawAngDataDelayed.yawAng);
+        stateStruct.quat.from_euler(euler321.x, euler321.y, yawAngDataDelayed.yawAng);
     } else if (yawAngDataDelayed.type == 1) {
         Vector3f euler312 = stateStruct.quat.to_vector312();
         stateStruct.quat.from_vector312(euler312.x, euler312.y, yawAngDataDelayed.yawAng);
@@ -925,10 +925,10 @@ void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
     float innovation;
     if (!usePredictedYaw) {
         if (!useExternalYawSensor) {
-        // Use the difference between the horizontal projection and declination to give the measured yaw
-        // rotate measured mag components into earth frame
-        Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
-        float yawAngMeasured = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+            // Use the difference between the horizontal projection and declination to give the measured yaw
+            // rotate measured mag components into earth frame
+            Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+            float yawAngMeasured = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
             innovation = wrap_PI(yawAngPredicted - yawAngMeasured);
         } else {
             // use the external yaw sensor data
