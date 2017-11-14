@@ -45,7 +45,7 @@
 class AP_FlashStorage {
 private:
     static const uint8_t block_size = 8;
-    static const uint16_t num_blocks = 2048;
+    static const uint16_t num_blocks = HAL_STORAGE_SIZE / block_size;
     static const uint8_t max_write = 64;
 
 public:
