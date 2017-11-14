@@ -26,7 +26,7 @@ def arm_sub(mavproxy, mav):
     mavproxy.send('arm throttle\n')
     mavproxy.expect('ARMED')
 
-    print("SUB ARMED")
+    progress("SUB ARMED")
     return True
 
 def dive_manual(mavproxy, mav):
@@ -65,19 +65,19 @@ def dive_manual(mavproxy, mav):
 
     # wait for disarm
     mav.motors_disarmed_wait()
-    print("Manual dive OK")
+    progress("Manual dive OK")
     return True
 
 def dive_mission(mavproxy, mav, filename):
     
-    print("Executing mission %s" % filename)
+    progress("Executing mission %s" % filename)
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Saved [0-9]+ waypoints')
     
     if not arm_sub(mavproxy, mav):
-        print("Failed to ARM")
+        progress("Failed to ARM")
         return False
     
     mavproxy.send('mode auto\n')
@@ -91,7 +91,7 @@ def dive_mission(mavproxy, mav, filename):
     # wait for disarm
     mav.motors_disarmed_wait()
 
-    print("Mission OK")
+    progress("Mission OK")
     return True
 
 def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
@@ -127,10 +127,10 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
     mavproxy = util.start_MAVProxy_SITL('ArduSub', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
-    print("LOGFILE %s" % logfile)
+    progress("LOGFILE %s" % logfile)
 
     buildlog = util.reltopdir("../buildlogs/ArduSub-test.tlog")
-    print("buildlog=%s" % buildlog)
+    progress("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
     try:
@@ -145,13 +145,13 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
     expect_list_clear()
     expect_list_extend([sitl, mavproxy])
 
-    print("Started simulator")
+    progress("Started simulator")
 
     # get a mavlink connection going
     try:
         mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
     except Exception as msg:
-        print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+        progress("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
         raise
     mav.message_hooks.append(message_hook)
     mav.idle_hooks.append(idle_hook)
@@ -159,30 +159,30 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
     failed = False
     e = 'None'
     try:
-        print("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
+        progress("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
         mav.wait_heartbeat()
-        print("Waiting for GPS fix")
+        progress("Waiting for GPS fix")
         mav.wait_gps_fix()
         
         # wait for EKF and GPS checks to pass
         mavproxy.expect('IMU0 is using GPS')
         
         homeloc = mav.location()
-        print("Home location: %s" % homeloc)
+        progress("Home location: %s" % homeloc)
         if not arm_sub(mavproxy, mav):
-            print("Failed to ARM")
+            progress("Failed to ARM")
             failed = True
         if not dive_manual(mavproxy, mav):
-            print("Failed manual dive")
+            progress("Failed manual dive")
             failed = True
         if not dive_mission(mavproxy, mav, os.path.join(testdir, "sub_mission.txt")):
-            print("Failed auto mission")
+            progress("Failed auto mission")
             failed = True
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduSub-log.bin")):
-            print("Failed log download")
+            progress("Failed log download")
             failed = True
     except pexpect.TIMEOUT as e:
-        print("Failed with timeout")
+        progress("Failed with timeout")
         failed = True
 
     mav.close()
@@ -195,6 +195,6 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
         shutil.copy(valgrind_log, util.reltopdir("../buildlogs/APMrover2-valgrind.log"))
 
     if failed:
-        print("FAILED: %s" % e)
+        progress("FAILED: %s" % e)
         return False
     return True
