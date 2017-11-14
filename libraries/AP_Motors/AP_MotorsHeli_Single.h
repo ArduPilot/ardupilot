@@ -33,8 +33,6 @@
 
 // default direct-drive variable pitch tail defaults
 #define AP_MOTORS_HELI_SINGLE_DDVPT_SPEED_DEFAULT              500
-#define AP_MOTORS_HELI_SINGLE_DDVPT_RAMP_TIME                  2
-#define AP_MOTORS_HELI_SINGLE_DDVPT_RUNUP_TIME                 3
 
 // default external gyro gain
 #define AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN                    350

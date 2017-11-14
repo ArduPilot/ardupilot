@@ -170,6 +170,22 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("RSC_SLEWRATE", 19, AP_MotorsHeli, _rsc_slewrate, 0),
+
+    // @Param: RSC_DDVP_RAMP
+    // @DisplayName: DDVP Drive Ramp Time
+    // @Description: Time in seconds for the output to the DDVP rotor's ESC to reach full speed
+    // @Range: 0 60
+    // @Units: Seconds
+    // @User: Standard
+    AP_GROUPINFO("RSC_DDVP_RAMP", 20, AP_MotorsHeli, _rsc_ddvp_ramp_time, AP_MOTORS_HELI_RSC_DDVP_RAMP_TIME),
+
+    // @Param: RSC_DDVP_RUNUP
+    // @DisplayName: DDVP Drive Runup Time
+    // @Description: Time in seconds for the DDVP rotor to reach full speed.  Must be longer than RSC_DDVP_RAMP
+    // @Range: 0 60
+    // @Units: Seconds
+    // @User: Standard
+    AP_GROUPINFO("RSC_DDVP_RUNUP", 21, AP_MotorsHeli, _rsc_ddvp_runup_time, AP_MOTORS_HELI_RSC_DDVP_RUNUP_TIME),
     
     AP_GROUPEND
 };

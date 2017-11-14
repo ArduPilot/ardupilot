@@ -279,8 +279,8 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // send setpoints to tail rotor controller and trigger recalculation of scalars
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SPEED_SETPOINT);
-        _tail_rotor.set_ramp_time(_rsc_ramp_time);
-        _tail_rotor.set_runup_time(_rsc_runup_time);
+        _tail_rotor.set_ramp_time(_rsc_ddvp_ramp_time);
+        _tail_rotor.set_runup_time(_rsc_ddvp_runup_time);
         _tail_rotor.set_critical_speed(_rsc_critical/1000.0f);
         _tail_rotor.set_idle_output(_rsc_idle_output/1000.0f);
     } else {
