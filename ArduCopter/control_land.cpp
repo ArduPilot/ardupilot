@@ -48,7 +48,7 @@ void Copter::land_run()
     }
 }
 
-// land_run - runs the land controller
+// land_gps_run - runs the land controller
 //      horizontal position controlled with loiter controller
 //      should be called at 100hz or more
 void Copter::land_gps_run()
