@@ -62,4 +62,5 @@ private:
     const AP_InertialSensor &_ins;
     const AP_AHRS_NavEKF &_ahrs_navekf;
 
+    void parameter_checks_pid_warning_message(bool display_failure, const char *error_msg);
 };
