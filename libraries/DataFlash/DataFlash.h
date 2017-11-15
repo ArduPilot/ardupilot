@@ -319,6 +319,7 @@ private:
 private:
     static DataFlash_Class *_instance;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     bool validate_structure(const struct LogStructure *logstructure, int16_t offset);
     void validate_structures(const struct LogStructure *logstructures, const uint8_t num_types);
     void dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum);
@@ -331,7 +332,6 @@ private:
                                   const char *fmt) const;
     const char* unit_name(const uint8_t unit_id);
     double multiplier_name(const uint8_t multiplier_id);
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     bool seen_ids[256] = { };
 #endif
 

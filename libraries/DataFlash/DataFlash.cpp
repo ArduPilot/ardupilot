@@ -314,21 +314,6 @@ void DataFlash_Class::validate_structures(const struct LogStructure *logstructur
     }
 }
 
-#else
-
-void DataFlash_Class::dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum)
-{
-}
-
-void DataFlash_Class::dump_structures(const struct LogStructure *logstructures, const uint8_t num_types)
-{
-}
-
-void DataFlash_Class::validate_structures(const struct LogStructure *logstructures, const uint8_t num_types)
-{
-    return;
-}
-
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 const struct LogStructure *DataFlash_Class::structure(uint16_t num) const
