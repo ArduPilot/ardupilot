@@ -20,6 +20,11 @@ void ModeSteering::update()
     // acceleration at full steering lock for this speed. That is V^2/R where R is the radius of turn.
     float max_g_force = speed * speed / MAX(g2.turn_radius, 0.1f);
 
+    // pivot turn
+    if (is_zero(target_speed)) {
+        max_g_force = g.turn_max_g * GRAVITY_MSS;
+    }
+
     // constrain to user set TURN_MAX_G
     max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
 
@@ -36,8 +41,9 @@ void ModeSteering::update()
     // mark us as in_reverse when using a negative throttle
     rover.set_reverse(reversed);
 
+    bool is_pivot_turning = is_zero(target_speed) && g2.motors.have_skid_steering() && !is_zero(lateral_acceleration);
     // run speed to throttle output controller
-    if (is_zero(target_speed)) {
+    if (is_zero(target_speed) && !is_pivot_turning) {
         stop_vehicle();
     } else {
         // run steering controller
