@@ -188,11 +188,14 @@ void AP_MotorsHeli_RSC::write_rsc(float servo_out)
         return;
     } else {
         // calculate PWM value based on H_RSC_PWM_MIN, H_RSC_PWM_MAX and H_RSC_PWM_REV
+        _pwm_min = SRV_Channels::srv_channel(_default_channel)->get_output_min();
+        _pwm_max = SRV_Channels::srv_channel(_default_channel)->get_output_max();
+        _pwm_rev = SRV_Channels::srv_channel(_default_channel)->get_reversed();
         uint16_t pwm = servo_out * (_pwm_max - _pwm_min);
-        if (_pwm_rev >= 0) {
-            pwm = _pwm_min + pwm;
-        } else {
+        if (_pwm_rev == 1) {
             pwm = _pwm_max - pwm;
+        } else {
+            pwm = _pwm_min + pwm;
         }
         SRV_Channels::set_output_pwm(_aux_fn, pwm);
     }
