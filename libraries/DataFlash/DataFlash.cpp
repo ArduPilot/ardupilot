@@ -48,6 +48,8 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     AP_GROUPEND
 };
 
+#define streq(x, y) (!strcmp(x, y))
+
 DataFlash_Class::DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask)
     : _firmware_string(firmware_string)
     , _log_bitmask(log_bitmask)
@@ -679,12 +681,62 @@ void DataFlash_Class::Log_WriteV(const char *name, const char *labels, const cha
 }
 
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+void DataFlash_Class::assert_same_fmt_for_name(const DataFlash_Class::log_write_fmt *f,
+                                               const char *name,
+                                               const char *labels,
+                                               const char *units,
+                                               const char *mults,
+                                               const char *fmt) const
+{
+    bool passed = true;
+    if (!streq(f->name, name)) {
+        // why exactly were we called?!
+        Debug("format names differ (%s) != (%s)", f->name, name);
+        passed = false;
+    }
+    if (!streq(f->labels, labels)) {
+        Debug("format labels differ (%s) vs (%s)", f->labels, labels);
+        passed = false;
+    }
+    if ((f->units != nullptr && units == nullptr) ||
+        (f->units == nullptr && units != nullptr) ||
+        (units !=nullptr && !streq(f->units, units))) {
+        Debug("format units differ (%s) vs (%s)",
+              (f->units ? f->units : "nullptr"),
+              (units ? units : "nullptr"));
+        passed = false;
+    }
+    if ((f->mults != nullptr && mults == nullptr) ||
+        (f->mults == nullptr && mults != nullptr) ||
+        (mults != nullptr && !streq(f->mults, mults))) {
+        Debug("format mults differ (%s) vs (%s)",
+              (f->mults ? f->mults : "nullptr"),
+              (mults ? mults : "nullptr"));
+        passed = false;
+    }
+    if (!streq(f->fmt, fmt)) {
+        Debug("format fmt differ (%s) vs (%s)",
+              (f->fmt ? f->fmt : "nullptr"),
+              (fmt ? fmt : "nullptr"));
+        passed = false;
+    }
+    if (!passed) {
+        Debug("Format definition must be consistent for every call of Log_Write");
+        abort();
+    }
+}
+#endif
+
 DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt)
 {
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
         if (f->name == name) { // ptr comparison
             // already have an ID for this name:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            assert_same_fmt_for_name(f, name, labels, units, mults, fmt);
+#endif
             return f;
         }
     }
@@ -717,6 +769,34 @@ DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *na
     // add to front of list
     f->next = log_write_fmts;
     log_write_fmts = f;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    struct LogStructure ls = {
+        f->msg_type,
+        f->msg_len,
+        "",
+        "",
+        "",
+        "",
+        ""
+    };
+    memcpy((char*)ls.name, f->name, MIN(sizeof(ls.name), strlen(f->name)));
+    memcpy((char*)ls.format, f->fmt, MIN(sizeof(ls.format), strlen(f->fmt)));
+    memcpy((char*)ls.labels, f->labels, MIN(sizeof(ls.labels), strlen(f->labels)));
+    if (f->units != nullptr) {
+        memcpy((char*)ls.units, f->units, MIN(sizeof(ls.units), strlen(f->units)));
+    } else {
+        memset((char*)ls.units, '\0', sizeof(ls.units));
+        memset((char*)ls.units, '?', strlen(ls.format));
+    }
+    if (f->mults != nullptr) {
+        memcpy((char*)ls.multipliers, f->mults, MIN(sizeof(ls.multipliers), strlen(f->mults)));
+    } else {
+        memset((char*)ls.multipliers, '\0', sizeof(ls.multipliers));
+        memset((char*)ls.multipliers, '?', strlen(ls.format));
+    }
+    validate_structure(&ls, (int16_t)-1);
+#endif
 
     return f;
 }
