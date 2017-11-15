@@ -235,12 +235,15 @@ public:
     // deceleration limits including basic jerk limiting using smoothing_gain
     static float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float dt);
 
+    // limits the acceleration and deceleration of a velocity request
+    static float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max, float dt);
+
     // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
     // This function can be used to predict the delay associated with angle requests.
     void input_shaping_rate_predictor(Vector2f error_angle, Vector2f& target_ang_vel, float dt) const;
 
-    // limits the acceleration and deceleration of a velocity request
-    float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max);
+    // translates body frame acceleration limits to the euler axis
+    void ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_max, float ang_vel_pitch_max, float ang_vel_yaw_max) const;
 
     // translates body frame acceleration limits to the euler axis
     Vector3f euler_accel_limit(Vector3f euler_rad, Vector3f euler_accel);
@@ -315,6 +318,11 @@ protected:
 
     // Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
     AP_Float            _slew_yaw;
+
+    // Maximum angular velocity (in degrees/second) for earth-frame roll, pitch and yaw axis
+    AP_Float            _ang_vel_roll_max;
+    AP_Float            _ang_vel_pitch_max;
+    AP_Float            _ang_vel_yaw_max;
 
     // Maximum rotation acceleration for earth-frame roll axis
     AP_Float            _accel_roll_max;
