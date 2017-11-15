@@ -584,8 +584,7 @@ void Copter::guided_posvel_control_run()
         // if sonar is ok, use surface tracking
         float temp_surface_tracking_climbrate = get_surface_tracking_climb_rate((int)posvel_vel_target_cms.z, posvel_pos_target_cm.z, G_Dt);
         pos_control.set_alt_target_from_climb_rate_ff(temp_surface_tracking_climbrate, G_Dt, false);
-    }
-    else{
+    } else {
         pos_control.set_alt_target_from_climb_rate_ff(posvel_vel_target_cms.z, G_Dt, false);
     }
 
