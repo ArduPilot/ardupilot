@@ -436,6 +436,19 @@ void Copter::guided_pos_control_run()
     // run waypoint controller
     failsafe_terrain_set_status(wp_nav->update_wpnav());
 
+    float temp_surface_tracking_climbrate = 0;
+    // adjust climb rate using rangefinder
+    if (rangefinder_alt_ok()) {
+        // if rangefinder is ok, use surface tracking
+        temp_surface_tracking_climbrate = get_surface_tracking_climb_rate(0, pos_control->get_alt_target(), G_Dt);
+    }
+
+    // get avoidance adjusted climb rate
+    temp_surface_tracking_climbrate = get_avoidance_adjusted_climbrate(temp_surface_tracking_climbrate);
+
+    // update altitude target and call position controller
+    pos_control->set_alt_target_from_climb_rate_ff(temp_surface_tracking_climbrate, G_Dt, false);
+
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->update_z_controller();
 
@@ -495,6 +508,15 @@ void Copter::guided_vel_control_run()
             set_auto_yaw_rate(0.0f);
         }
     } else {
+        // adjust climb rate using rangefinder
+
+    	if (rangefinder_alt_ok()) {
+	    // if sonar is ok, use surface tracking
+            guided_vel_target_cms.z = get_surface_tracking_climb_rate((int)guided_vel_target_cms.z, pos_control->get_alt_target(), G_Dt);
+    	}
+        // get avoidance adjusted climb rate
+        guided_vel_target_cms.z = get_avoidance_adjusted_climbrate((int)guided_vel_target_cms.z);
+
         guided_set_desired_velocity_with_accel_and_fence_limits(guided_vel_target_cms);
     }
 
@@ -580,12 +602,18 @@ void Copter::guided_posvel_control_run()
     }
 
     // run altitude controller
-    if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+    if (rangefinder_alt_ok()) {
         // if sonar is ok, use surface tracking
-        float temp_surface_tracking_climbrate = get_surface_tracking_climb_rate((int)posvel_vel_target_cms.z, posvel_pos_target_cm.z, G_Dt);
-        pos_control.set_alt_target_from_climb_rate_ff(temp_surface_tracking_climbrate, G_Dt, false);
+        float temp_surface_tracking_climbrate = get_surface_tracking_climb_rate((int)guided_vel_target_cms.z, guided_pos_target_cm.z, G_Dt);
+	// get avoidance adjusted climb rate
+        temp_surface_tracking_climbrate = get_avoidance_adjusted_climbrate(temp_surface_tracking_climbrate);
+
+        pos_control->set_alt_target_from_climb_rate_ff(temp_surface_tracking_climbrate, G_Dt, false);
     } else {
-        pos_control.set_alt_target_from_climb_rate_ff(posvel_vel_target_cms.z, G_Dt, false);
+	// get avoidance adjusted climb rate
+        guided_vel_target_cms.z = get_avoidance_adjusted_climbrate((int)guided_vel_target_cms.z);
+
+        pos_control->set_alt_target_from_climb_rate_ff(guided_vel_target_cms.z, G_Dt, false);
     }
 
     pos_control->update_z_controller();
