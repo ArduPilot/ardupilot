@@ -54,35 +54,6 @@ void Plane::Log_Write_Fast(void)
 }
 
 
-struct PACKED log_Performance {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint16_t num_long;
-    uint16_t main_loop_count;
-    uint32_t g_dt_max;
-    uint32_t g_dt_min;
-    uint32_t log_dropped;
-    uint32_t mem_avail;
-};
-
-// Write a performance monitoring packet. Total length : 19 bytes
-void Plane::Log_Write_Performance()
-{
-    uint32_t dropped = DataFlash.num_dropped();
-    struct log_Performance pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
-        time_us         : AP_HAL::micros64(),
-        num_long        : scheduler.perf_info.get_num_long_running(),
-        main_loop_count : scheduler.perf_info.get_num_loops(),
-        g_dt_max        : scheduler.perf_info.get_max_time(),
-        g_dt_min        : scheduler.perf_info.get_min_time(),
-        log_dropped     : DataFlash.num_dropped() - scheduler.perf_info.get_num_dropped(),
-        hal.util->available_memory()
-    };
-    last_log_dropped = dropped;
-    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
-}
-
 struct PACKED log_Startup {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -364,8 +335,6 @@ void Plane::Log_Write_Home_And_Origin()
 // units and "Format characters" for field type information
 const struct LogStructure Plane::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-    { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHIIII",  "TimeUS,NLon,NLoop,MaxT,MinT,LogDrop,Mem", "ss----b", "FC----0" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "QBH",         "TimeUS,SType,CTot", "s--", "F--" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
