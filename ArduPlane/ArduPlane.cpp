@@ -338,23 +338,7 @@ void Plane::one_second_loop()
 
 void Plane::log_perf_info()
 {
-    if (scheduler.debug() != 0) {
-        gcs().send_text(MAV_SEVERITY_INFO,
-                        "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu Log=%u",
-                        (unsigned)scheduler.perf_info.get_num_long_running(),
-                        (unsigned)scheduler.perf_info.get_num_loops(),
-                        (unsigned long)scheduler.perf_info.get_max_time(),
-                        (unsigned long)scheduler.perf_info.get_min_time(),
-                        (unsigned long)scheduler.perf_info.get_avg_time(),
-                        (unsigned long)scheduler.perf_info.get_stddev_time(),
-                        (unsigned)(DataFlash.num_dropped() - scheduler.perf_info.get_num_dropped()));
-    }
-
-    if (should_log(MASK_LOG_PM)) {
-        Log_Write_Performance();
-    }
-
-    scheduler.perf_info.reset();
+    scheduler.update_logging(should_log(MASK_LOG_PM));
 }
 
 void Plane::compass_save()

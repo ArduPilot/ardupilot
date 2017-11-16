@@ -121,7 +121,6 @@ typedef enum GeofenceEnableReason {
 enum log_messages {
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
-    LOG_PERFORMANCE_MSG,
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,
