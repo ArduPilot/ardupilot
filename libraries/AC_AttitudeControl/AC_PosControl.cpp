@@ -196,14 +196,12 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _accel_z_cms(POSCONTROL_ACCEL_Z),
     _accel_last_z_cms(0.0f),
     _accel_cms(POSCONTROL_ACCEL_XY),
-    _jerk_cmsss(POSCONTROL_JERK_LIMIT_CMSSS),
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_down_z(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_up_z(POSCONTROL_LEASH_LENGTH_MIN),
     _roll_target(0.0f),
     _pitch_target(0.0f),
     _distance_to_target(0.0f),
-    _accel_target_jerk_limited(0.0f,0.0f),
     _accel_target_filter(POSCONTROL_ACCEL_FILTER_HZ)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -212,11 +210,9 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _flags.recalc_leash_z = true;
     _flags.recalc_leash_xy = true;
     _flags.reset_desired_vel_to_pos = true;
-    _flags.reset_rate_to_accel_xy = true;
     _flags.reset_accel_to_lean_xy = true;
     _flags.reset_rate_to_accel_z = true;
     _flags.reset_accel_to_throttle = true;
-    _flags.freeze_ff_xy = true;
     _flags.freeze_ff_z = true;
     _flags.use_desvel_ff_z = true;
     _limit.pos_up = true;
@@ -384,7 +380,7 @@ void AC_PosControl::relax_alt_hold_controllers(float throttle_setting)
     _flags.use_desvel_ff_z = false;
     _vel_target.z = _inav.get_velocity_z();
     _vel_last.z = _inav.get_velocity_z();
-    _accel_feedforward.z = 0.0f;
+    _accel_desired.z = 0.0f;
     _accel_last_z_cms = 0.0f;
     _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
     _flags.reset_accel_to_throttle = true;
@@ -567,13 +563,13 @@ void AC_PosControl::rate_to_accel_z()
     // feed forward desired acceleration calculation
     if (_dt > 0.0f) {
     	if (!_flags.freeze_ff_z) {
-    		_accel_feedforward.z = (_vel_target.z - _vel_last.z)/_dt;
+    	    _accel_desired.z = (_vel_target.z - _vel_last.z)/_dt;
         } else {
     		// stop the feed forward being calculated during a known discontinuity
     		_flags.freeze_ff_z = false;
     	}
     } else {
-    	_accel_feedforward.z = 0.0f;
+        _accel_desired.z = 0.0f;
     }
 
     // store this iteration's velocities for the next iteration
@@ -594,7 +590,7 @@ void AC_PosControl::rate_to_accel_z()
     p = _p_vel_z.kP() * _vel_error.z;
 
     // consolidate and constrain target acceleration
-    _accel_target.z = _accel_feedforward.z + p;
+    _accel_target.z = _accel_desired.z + p;
 
     // set target for accel based throttle controller
     accel_to_throttle(_accel_target.z);
@@ -700,11 +696,6 @@ void AC_PosControl::shift_pos_xy_target(float x_cm, float y_cm)
     // move pos controller target
     _pos_target.x += x_cm;
     _pos_target.y += y_cm;
-
-    // disable feed forward
-    if (!is_zero(x_cm) || !is_zero(y_cm)) {
-        freeze_ff_xy();
-    }
 }
 
 /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
@@ -797,12 +788,11 @@ void AC_PosControl::init_xy_controller(bool reset_I)
     if (reset_I) {
         // reset last velocity if this controller has just been engaged or dt is zero
         lean_angles_to_accel(_accel_target.x, _accel_target.y);
-        _pid_vel_xy.set_integrator(_accel_target);
+        _pid_vel_xy.set_integrator(_accel_target-_accel_desired);
     }
 
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
-    _flags.reset_rate_to_accel_xy = true;
     _flags.reset_accel_to_lean_xy = true;
 
     // initialise ekf xy reset handler
@@ -810,7 +800,7 @@ void AC_PosControl::init_xy_controller(bool reset_I)
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
-void AC_PosControl::update_xy_controller(xy_mode mode, float ekfNavVelGainScaler, bool use_althold_lean_angle)
+void AC_PosControl::update_xy_controller(float ekfNavVelGainScaler, bool use_althold_lean_angle)
 {
     // compute dt
     uint32_t now = AP_HAL::millis();
@@ -832,7 +822,7 @@ void AC_PosControl::update_xy_controller(xy_mode mode, float ekfNavVelGainScaler
     desired_vel_to_pos(dt);
 
     // run position controller's position error to desired velocity step
-    pos_to_rate_xy(mode, dt, ekfNavVelGainScaler);
+    pos_to_rate_xy(dt, ekfNavVelGainScaler);
 
     // run position controller's velocity to acceleration step
     rate_to_accel_xy(dt, ekfNavVelGainScaler);
@@ -860,7 +850,6 @@ void AC_PosControl::init_vel_controller_xyz()
 
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
-    _flags.reset_rate_to_accel_xy = true;
     _flags.reset_accel_to_lean_xy = true;
 
     // set target position
@@ -901,10 +890,11 @@ void AC_PosControl::update_vel_controller_xy(float ekfNavVelGainScaler)
         calc_leash_length_xy();
 
         // apply desired velocity request to position target
+        // TODO: this will need to be removed and added to the calling function.
         desired_vel_to_pos(dt);
 
         // run position controller's position error to desired velocity step
-        pos_to_rate_xy(XY_MODE_POS_LIMITED_AND_VEL_FF, dt, ekfNavVelGainScaler);
+        pos_to_rate_xy(dt, ekfNavVelGainScaler);
 
         // run velocity to acceleration step
         rate_to_accel_xy(dt, ekfNavVelGainScaler);
@@ -952,6 +942,23 @@ void AC_PosControl::calc_leash_length_xy()
     }
 }
 
+/// move velocity target using desired acceleration
+void AC_PosControl::desired_accel_to_vel(float nav_dt)
+{
+    // range check nav_dt
+    if (nav_dt < 0) {
+        return;
+    }
+
+    // update target velocity
+    if (_flags.reset_desired_vel_to_pos) {
+        _flags.reset_desired_vel_to_pos = false;
+    } else {
+        _vel_desired.x += _accel_desired.x * nav_dt;
+        _vel_desired.y += _accel_desired.y * nav_dt;
+    }
+}
+
 /// desired_vel_to_pos - move position target using desired velocities
 void AC_PosControl::desired_vel_to_pos(float nav_dt)
 {
@@ -974,10 +981,9 @@ void AC_PosControl::desired_vel_to_pos(float nav_dt)
 ///     when use_desired_rate is set to true:
 ///         desired velocity (_vel_desired) is combined into final target velocity and
 ///         velocity due to position error is reduce to a maximum of 1m/s
-void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainScaler)
+void AC_PosControl::pos_to_rate_xy(float dt, float ekfNavVelGainScaler)
 {
     Vector3f curr_pos = _inav.get_position();
-    float linear_distance;      // the distance we swap between linear and sqrt velocity response
     float kP = ekfNavVelGainScaler * _p_pos_xy.kP(); // scale gains to compensate for noisy optical flow measurement in the EKF
 
     // avoid divide by zero
@@ -989,75 +995,29 @@ void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainSc
         _pos_error.x = _pos_target.x - curr_pos.x;
         _pos_error.y = _pos_target.y - curr_pos.y;
 
-        // constrain target position to within reasonable distance of current location
+        // Constrain _pos_error and target position
+        // Constrain the maximum length of _vel_target to the maximum position correction velocity
+        // TODO: replace the leash length with a user definable maximum position correction
+        if (limit_vector_length(_pos_error.x, _pos_error.y, _leash))
+        {
+            _pos_target.x = curr_pos.x + _pos_error.x;
+            _pos_target.y = curr_pos.y + _pos_error.y;
+        }
         _distance_to_target = norm(_pos_error.x, _pos_error.y);
-        if (_distance_to_target > _leash && _distance_to_target > 0.0f) {
-            _pos_target.x = curr_pos.x + _leash * _pos_error.x/_distance_to_target;
-            _pos_target.y = curr_pos.y + _leash * _pos_error.y/_distance_to_target;
-            // re-calculate distance error
-            _pos_error.x = _pos_target.x - curr_pos.x;
-            _pos_error.y = _pos_target.y - curr_pos.y;
-            _distance_to_target = _leash;
-        }
 
-        // calculate the distance at which we swap between linear and sqrt velocity response
-        linear_distance = _accel_cms/(2.0f*kP*kP);
-
-        if (_distance_to_target > 2.0f*linear_distance) {
-            // velocity response grows with the square root of the distance
-            float vel_sqrt = safe_sqrt(2.0f*_accel_cms*(_distance_to_target-linear_distance));
-            _vel_target.x = vel_sqrt * _pos_error.x/_distance_to_target;
-            _vel_target.y = vel_sqrt * _pos_error.y/_distance_to_target;
-        }else{
-            // velocity response grows linearly with the distance
-            _vel_target.x = kP * _pos_error.x;
-            _vel_target.y = kP * _pos_error.y;
-        }
-
-        if (mode == XY_MODE_POS_LIMITED_AND_VEL_FF) {
-            // this mode is for loiter - rate-limiting the position correction
-            // allows the pilot to always override the position correction in
-            // the event of a disturbance
-
-            // scale velocity within limit
-            float vel_total = norm(_vel_target.x, _vel_target.y);
-            if (vel_total > POSCONTROL_VEL_XY_MAX_FROM_POS_ERR) {
-                _vel_target.x = POSCONTROL_VEL_XY_MAX_FROM_POS_ERR * _vel_target.x/vel_total;
-                _vel_target.y = POSCONTROL_VEL_XY_MAX_FROM_POS_ERR * _vel_target.y/vel_total;
-            }
-
-            // add velocity feed-forward
-            _vel_target.x += _vel_desired.x;
-            _vel_target.y += _vel_desired.y;
-        } else {
-            if (mode == XY_MODE_POS_AND_VEL_FF) {
-                // add velocity feed-forward
-                _vel_target.x += _vel_desired.x;
-                _vel_target.y += _vel_desired.y;
-            }
-
-            // scale velocity within speed limit
-            float vel_total = norm(_vel_target.x, _vel_target.y);
-            if (vel_total > _speed_cms) {
-                _vel_target.x = _speed_cms * _vel_target.x/vel_total;
-                _vel_target.y = _speed_cms * _vel_target.y/vel_total;
-            }
-        }
+        _vel_target = sqrt_controller(_pos_error, kP, _accel_cms);
     }
+
+    // add velocity feed-forward
+    _vel_target.x += _vel_desired.x;
+    _vel_target.y += _vel_desired.y;
 }
 
 /// rate_to_accel_xy - horizontal desired rate to desired acceleration
 ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
 void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 {
-    Vector2f vel_xy_p, vel_xy_i, vel_xy_d;
-
-    // reset last velocity target to current target
-    if (_flags.reset_rate_to_accel_xy) {
-        _vel_last.x = _vel_target.x;
-        _vel_last.y = _vel_target.y;
-        _flags.reset_rate_to_accel_xy = false;
-    }
+    Vector2f accel_target, vel_xy_p, vel_xy_i, vel_xy_d;
 
     // check if vehicle velocity is being overridden
     if (_flags.vehicle_horiz_vel_override) {
@@ -1067,27 +1027,10 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
         _vehicle_horiz_vel.y = _inav.get_velocity().y;
     }
 
-    // feed forward desired acceleration calculation
-    if (dt > 0.0f) {
-    	if (!_flags.freeze_ff_xy) {
-    		_accel_feedforward.x = (_vel_target.x - _vel_last.x)/dt;
-    		_accel_feedforward.y = (_vel_target.y - _vel_last.y)/dt;
-        } else {
-    		// stop the feed forward being calculated during a known discontinuity
-    		_flags.freeze_ff_xy = false;
-    	}
-    } else {
-    	_accel_feedforward.x = 0.0f;
-    	_accel_feedforward.y = 0.0f;
-    }
-
-    // store this iteration's velocities for the next iteration
-    _vel_last.x = _vel_target.x;
-    _vel_last.y = _vel_target.y;
-
     // calculate velocity error
     _vel_error.x = _vel_target.x - _vehicle_horiz_vel.x;
     _vel_error.y = _vel_target.y - _vehicle_horiz_vel.y;
+    // TODO: constrain velocity error and velocity target
 
     // call pi controller
     _pid_vel_xy.set_input(_vel_error);
@@ -1096,6 +1039,7 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
     vel_xy_p = _pid_vel_xy.get_p();
 
     // update i term if we have not hit the accel or throttle limits OR the i term will reduce
+    // TODO: move limit handling into the PI and PID controller
     if (!_limit.accel_xy && !_motors.limit.throttle_upper) {
         vel_xy_i = _pid_vel_xy.get_i();
     } else {
@@ -1105,68 +1049,49 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
     // get d
     vel_xy_d = _pid_vel_xy.get_d();
 
-    // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
-    _accel_target.x = _accel_feedforward.x + (vel_xy_p.x + vel_xy_i.x + vel_xy_d.x) * ekfNavVelGainScaler;
-    _accel_target.y = _accel_feedforward.y + (vel_xy_p.y + vel_xy_i.y + vel_xy_d.y) * ekfNavVelGainScaler;
+
+    // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
+    accel_target.x = (vel_xy_p.x + vel_xy_i.x + vel_xy_d.x) * ekfNavVelGainScaler;
+    accel_target.y = (vel_xy_p.y + vel_xy_i.y + vel_xy_d.y) * ekfNavVelGainScaler;
+
+    // reset accel to current desired acceleration
+     if (_flags.reset_accel_to_lean_xy) {
+         _accel_target_filter.reset(Vector2f(accel_target.x, accel_target.y));
+         _flags.reset_accel_to_lean_xy = false;
+     }
+
+    // filter correction acceleration
+    _accel_target_filter.set_cutoff_frequency(MIN(_accel_xy_filt_hz, 5.0f*ekfNavVelGainScaler));
+    _accel_target_filter.apply(accel_target, dt);
+
+    // pass the correction acceleration to the target acceleration output
+    _accel_target.x = _accel_target_filter.get().x;
+    _accel_target.y = _accel_target_filter.get().y;
+
+    // Add feed forward into the target acceleration output
+    _accel_target.x += _accel_desired.x;
+    _accel_target.y += _accel_desired.y;
 }
 
 /// accel_to_lean_angles - horizontal desired acceleration to lean angles
 ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
 void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler, bool use_althold_lean_angle)
 {
-    float accel_total;                          // total acceleration in cm/s/s
     float accel_right, accel_forward;
-    float lean_angle_max = _attitude_control.lean_angle_max();
-    float accel_max = POSCONTROL_ACCEL_XY_MAX;
 
-    // limit acceleration if necessary
-    if (use_althold_lean_angle) {
-        accel_max = MIN(accel_max, GRAVITY_MSS * 100.0f * tanf(ToRad(constrain_float(_attitude_control.get_althold_lean_angle_max(),1000,8000)/100.0f)));
-    }
-
-    // scale desired acceleration if it's beyond acceptable limit
-    accel_total = norm(_accel_target.x, _accel_target.y);
-    if (accel_total > accel_max && accel_total > 0.0f) {
-        _accel_target.x = accel_max * _accel_target.x/accel_total;
-        _accel_target.y = accel_max * _accel_target.y/accel_total;
-        _limit.accel_xy = true;     // unused
-    } else {
-        // reset accel limit flag
-        _limit.accel_xy = false;
-    }
-
-    // reset accel to current desired acceleration
-    if (_flags.reset_accel_to_lean_xy) {
-        _accel_target_jerk_limited.x = _accel_target.x;
-        _accel_target_jerk_limited.y = _accel_target.y;
-        _accel_target_filter.reset(Vector2f(_accel_target.x, _accel_target.y));
-        _flags.reset_accel_to_lean_xy = false;
-    }
-
-    // apply jerk limit of 17 m/s^3 - equates to a worst case of about 100 deg/sec/sec
-    float max_delta_accel = dt * _jerk_cmsss;
-
-    Vector2f accel_in(_accel_target.x, _accel_target.y);
-    Vector2f accel_change = accel_in-_accel_target_jerk_limited;
-    float accel_change_length = accel_change.length();
-
-    if(accel_change_length > max_delta_accel) {
-        accel_change *= max_delta_accel/accel_change_length;
-    }
-    _accel_target_jerk_limited += accel_change;
-
-    // lowpass filter on NE accel
-    _accel_target_filter.set_cutoff_frequency(MIN(_accel_xy_filt_hz, 5.0f*ekfNavVelGainScaler));
-    Vector2f accel_target_filtered = _accel_target_filter.apply(_accel_target_jerk_limited, dt);
+    // limit acceleration using maximum lean angles
+    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max(), _attitude_control.lean_angle_max());
+    float accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f));
+    _limit.accel_xy = limit_vector_length(_accel_target.x, _accel_target.y, accel_max);
 
     // rotate accelerations into body forward-right frame
-    accel_forward = accel_target_filtered.x*_ahrs.cos_yaw() + accel_target_filtered.y*_ahrs.sin_yaw();
-    accel_right = -accel_target_filtered.x*_ahrs.sin_yaw() + accel_target_filtered.y*_ahrs.cos_yaw();
+    accel_forward = _accel_target.x*_ahrs.cos_yaw() + _accel_target.y*_ahrs.sin_yaw();
+    accel_right = -_accel_target.x*_ahrs.sin_yaw() + _accel_target.y*_ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
-    _pitch_target = constrain_float(atanf(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
+    _pitch_target = atanf(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);
     float cos_pitch_target = cosf(_pitch_target*M_PI/18000);
-    _roll_target = constrain_float(atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
+    _roll_target = atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
@@ -1244,5 +1169,36 @@ void AC_PosControl::check_for_ekf_z_reset()
     if (reset_ms != _ekf_z_reset_ms) {
         shift_alt_target(-alt_shift * 100.0f);
         _ekf_z_reset_ms = reset_ms;
+    }
+}
+
+
+/// limit vector to a given length, returns true if vector was limited
+bool AC_PosControl::limit_vector_length(float& vector_x, float& vector_y, float max_length)
+{
+    float vector_length = norm(vector_x, vector_y);
+    if ((vector_length > max_length) && is_positive(max_length)) {
+        vector_x *= (max_length / vector_length);
+        vector_y *= (max_length / vector_length);
+        return true;
+    }
+    return false;
+}
+
+
+/// Proportional controller with piecewise sqrt sections to constrain second derivative
+Vector3f AC_PosControl::sqrt_controller(const Vector3f& error, float p, float second_ord_lim)
+{
+    if (second_ord_lim < 0.0f || is_zero(second_ord_lim) || is_zero(p)) {
+        return Vector3f(error.x*p, error.y*p, error.z);
+    }
+
+    float linear_dist = second_ord_lim/sq(p);
+    float error_length = norm(error.x, error.y);
+    if (error_length > linear_dist) {
+        float first_order_scale = safe_sqrt(2.0f*second_ord_lim*(error_length-(linear_dist/2.0f)))/error_length;
+        return Vector3f(error.x*first_order_scale, error.y*first_order_scale, error.z);
+    } else {
+        return Vector3f(error.x*p, error.y*p, error.z);
     }
 }
