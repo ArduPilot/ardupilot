@@ -395,9 +395,6 @@ private:
     AC_WPNav wp_nav;
     AC_Circle circle_nav;
 
-    // Performance monitoring
-    int16_t pmTest1;
-
     // Reference to the relay object
     AP_Relay relay;
 

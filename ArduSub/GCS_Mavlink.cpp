@@ -872,7 +872,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             break;
         }
         sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
-        sub.pmTest1++;
         break;
     }
 
