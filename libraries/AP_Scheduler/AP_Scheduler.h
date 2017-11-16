@@ -79,7 +79,10 @@ public:
     void loop();
 
     // call to update any logging the scheduler might do; call at 1Hz
-    void update_logging();
+    void update_logging(bool log_to_dataflash);
+
+    // write out PERF message to dataflash
+    void Log_Write_Performance();
 
     // call when one tick has passed
     void tick(void);

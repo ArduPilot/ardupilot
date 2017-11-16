@@ -10,7 +10,7 @@
 //
 
 // reset - reset all records of loop time to zero
-void AP::PerfInfo::reset(uint16_t loop_rate_hz)
+void AP::PerfInfo::reset()
 {
     loop_count = 0;
     max_time = 0;
@@ -19,8 +19,6 @@ void AP::PerfInfo::reset(uint16_t loop_rate_hz)
     log_dropped = DataFlash_Class::instance()->num_dropped();
     sigma_time = 0;
     sigmasquared_time = 0;
-    // 500us threshold for overtime
-    overtime_threshold_us = (1000000UL / loop_rate_hz) + 500;
 }
 
 // ignore_loop - ignore this loop from performance measurements (used to reduce false positive when arming)
