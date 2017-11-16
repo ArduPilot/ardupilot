@@ -254,11 +254,7 @@ void Rover::update_aux(void)
 
 void Rover::perf_update()
 {
-    if (should_log(MASK_LOG_PM)) {
-        Log_Write_Performance();
-    }
-    scheduler.update_logging();
-    perf_info.reset();
+    scheduler.update_logging(should_log(MASK_LOG_PM));
 }
 
 /*
