@@ -468,9 +468,6 @@ private:
     AC_WPNav *wp_nav;
     AC_Circle *circle_nav;
 
-    // Performance monitoring
-    int16_t pmTest1;
-
     // System Timers
     // --------------
     // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.
