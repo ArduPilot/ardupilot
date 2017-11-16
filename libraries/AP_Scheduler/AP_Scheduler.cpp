@@ -25,6 +25,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <DataFlash/DataFlash.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+
 #include <stdio.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -241,9 +242,29 @@ void AP_Scheduler::loop()
     perf_info.check_loop_time(AP_HAL::micros() - loop_start);
 }
 
-void AP_Scheduler::update_logging()
+void AP_Scheduler::update_logging(const bool log_to_dataflash)
 {
     if (debug()) {
         perf_info.update_logging();
     }
+    if (log_to_dataflash) {
+        Log_Write_Performance();
+    }
+    perf_info.set_loop_rate(get_loop_rate_hz());
+    perf_info.reset();
+}
+
+// Write a performance monitoring packet
+void AP_Scheduler::Log_Write_Performance()
+{
+    struct log_Performance pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
+        time_us          : AP_HAL::micros64(),
+        num_long_running : perf_info.get_num_long_running(),
+        num_loops        : perf_info.get_num_loops(),
+        max_time         : perf_info.get_max_time(),
+        ins_error_count  : AP::ins().error_count(),
+        mem_avail        : hal.util->available_memory()
+    };
+    DataFlash_Class::instance()->WriteCriticalBlock(&pkt, sizeof(pkt));
 }
