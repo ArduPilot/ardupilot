@@ -144,6 +144,7 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
 
     // sanity check some parameters
     _loiter_speed_cms = MAX(_loiter_speed_cms, WPNAV_LOITER_SPEED_MIN);
+    _wp_accel_cms = MIN(_wp_accel_cms, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max() * 0.01f)));
     _wp_radius_cm = MAX(_wp_radius_cm, WPNAV_WP_RADIUS_MIN);
 }
 
@@ -387,14 +388,6 @@ void AC_WPNav::wp_and_spline_init()
     // check _wp_accel_cms is reasonable
     if (_wp_accel_cms <= 0) {
         _wp_accel_cms.set_and_save(WPNAV_ACCELERATION);
-    }
-
-    // also limit the accel using the maximum lean angle. This
-    // prevents the navigation controller from trying to move the
-    // target point at an unachievable rate
-    float accel_limit_cms = GRAVITY_MSS * 100 * tanf(radians(_attitude_control.lean_angle_max()*0.01f));
-    if (_wp_accel_cms > accel_limit_cms) {
-        _wp_accel_cms.set(accel_limit_cms);
     }
 
     // initialise position controller
