@@ -12,7 +12,7 @@ public:
     PerfInfo(const PerfInfo &other) = delete;
     PerfInfo &operator=(const PerfInfo&) = delete;
 
-    void reset(uint16_t loop_rate_hz);
+    void reset();
     void ignore_this_loop();
     void check_loop_time(uint32_t time_in_micros);
     uint16_t get_num_loops() const;
