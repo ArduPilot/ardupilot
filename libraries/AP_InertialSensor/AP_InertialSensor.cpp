@@ -1262,10 +1262,10 @@ void AP_InertialSensor::update(void)
         bool have_zero_accel_error_count = false;
         bool have_zero_gyro_error_count = false;
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _accel_error_count[i] <= _accel_startup_error_count[i]) {
+            if (_accel_healthy[i] && _accel_startup_error_count[i] != 0) {
                 have_zero_accel_error_count = true;
             }
-            if (_gyro_healthy[i] && _gyro_error_count[i] <= _gyro_startup_error_count[i]) {
+            if (_gyro_healthy[i] && _gyro_startup_error_count[i] != 0) {
                 have_zero_gyro_error_count = true;
             }
         }
