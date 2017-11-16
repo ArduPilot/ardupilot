@@ -192,12 +192,7 @@ void Copter::setup()
 
 void Copter::perf_update(void)
 {
-    if (should_log(MASK_LOG_PM)) {
-        Log_Write_Performance();
-    }
-    scheduler.update_logging();
-    scheduler.perf_info.reset();
-    pmTest1 = 0;
+    scheduler.update_logging(should_log(MASK_LOG_PM));
 }
 
 void Copter::loop()
