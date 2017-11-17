@@ -18,7 +18,6 @@
 #define WPNAV_LOITER_SPEED_MIN           20.0f      // minimum loiter speed in cm/s
 #define WPNAV_LOITER_ACCEL_MAX          750.0f      // default acceleration in loiter mode
 #define WPNAV_LOITER_ACCEL_MIN          250.0f      // minimum acceleration in loiter mode
-#define WPNAV_LOITER_JERK_MAX_DEFAULT  1000.0f      // maximum jerk in cm/s/s/s in loiter mode
 #define WPNAV_LOITER_BREAK_START_DELAY    0.0f      // delay (in seconds) before loiter breaking begins after sticks are released
 #define WPNAV_LOITER_BREAK_TRANS_TIME     0.5f      // time (in seconds) over which loiter breaking transitions to maximum
 #define WPNAV_LOITER_VEL_CORRECTION_MAX 200.0f      // max speed used to correct position errors in loiter
@@ -336,7 +335,6 @@ protected:
     // parameters
     AP_Float    _loiter_angle_max;      // maximum pilot commanded angle in degrees. Set to zero for 2/3 Angle Max
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
-    AP_Float    _loiter_jerk_max_cmsss; // maximum jerk in cm/s/s/s while in loiter
     AP_Float    _loiter_accel_cmss;     // loiter's max acceleration in cm/s/s
     AP_Float    _loiter_accel_min_cmss; // loiter's min acceleration in cm/s/s
     AP_Float    _loiter_break_delay;    // delay (in seconds) before loiter breaking begins after sticks are released
