@@ -104,10 +104,9 @@ void Copter::ModeGuided::vel_control_start()
     // set guided_mode to velocity controller
     guided_mode = Guided_Velocity;
 
-    // initialise horizontal speed, acceleration and jerk
+    // initialise horizontal speed, acceleration
     pos_control->set_speed_xy(wp_nav->get_speed_xy());
     pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
-    pos_control->set_jerk_xy_to_default();
 
     // initialize vertical speeds and acceleration
     pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
@@ -128,7 +127,6 @@ void Copter::ModeGuided::posvel_control_start()
     // set speed and acceleration from wpnav's speed and acceleration
     pos_control->set_speed_xy(wp_nav->get_speed_xy());
     pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
-    pos_control->set_jerk_xy_to_default();
 
     const Vector3f& curr_pos = inertial_nav.get_position();
     const Vector3f& curr_vel = inertial_nav.get_velocity();

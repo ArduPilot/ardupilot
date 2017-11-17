@@ -13,7 +13,6 @@ bool Copter::ModeCircle::init(bool ignore_checks)
         // initialize speeds and accelerations
         pos_control->set_speed_xy(wp_nav->get_speed_xy());
         pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
-        pos_control->set_jerk_xy_to_default();
         pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
         pos_control->set_accel_z(g.pilot_accel_z);
 
