@@ -16,7 +16,6 @@ bool Sub::circle_init()
     // initialize speeds and accelerations
     pos_control.set_speed_xy(wp_nav.get_speed_xy());
     pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
-    pos_control.set_jerk_xy_to_default();
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
