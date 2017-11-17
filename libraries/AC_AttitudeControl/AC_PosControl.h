@@ -136,9 +136,6 @@ public:
 
     /// get_alt_error - returns altitude error in cm
     float get_alt_error() const;
-    
-    // returns horizontal error in cm
-    float get_horizontal_error() const;
 
     /// set_target_to_stopping_point_z - sets altitude target to reasonable stopping altitude in cm above home
     void set_target_to_stopping_point_z();
@@ -172,7 +169,7 @@ public:
     ///     this does not update the xy target
     void init_xy_controller(bool reset_I = true);
 
-    /// set_accel_xy - set horizontal acceleration in cm/s/s
+    /// set_accel_xy - set horizontal acceleration maximum in cm/s/s
     ///     leash length will be recalculated the next time update_xy_controller() is called
     void set_accel_xy(float accel_cmss);
     float get_accel_xy() const { return _accel_cms; }
@@ -248,6 +245,9 @@ public:
 
     /// get_distance_to_target - get horizontal distance to position target in cm (used for reporting)
     float get_distance_to_target() const;
+
+    // returns horizontal error in cm
+    float get_horizontal_error() const;
 
     /// xyz velocity controller
 
@@ -406,7 +406,6 @@ protected:
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
     float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
-
     LowPassFilterVector2f _accel_target_filter; // acceleration target filter
 
     // ekf reset handling
