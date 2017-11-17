@@ -285,6 +285,11 @@ AP_GPS_SBF::process_message(void)
 
         state.last_gps_time_ms = AP_HAL::millis();
 
+        // Update COG (don't use −2·10^10)
+        if (temp.COG > -200000) {
+            state.ground_course = (float)temp.COG;
+         }
+
         // Update velocity state (don't use −2·10^10)
         if (temp.Vn > -200000) {
             state.velocity.x = (float)(temp.Vn);
@@ -296,7 +301,6 @@ AP_GPS_SBF::process_message(void)
             float ground_vector_sq = state.velocity[0] * state.velocity[0] + state.velocity[1] * state.velocity[1];
             state.ground_speed = (float)safe_sqrt(ground_vector_sq);
 
-            state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
             state.rtk_age_ms = temp.MeanCorrAge * 10;
 
             // value is expressed as twice the rms error = int16 * 0.01/2
