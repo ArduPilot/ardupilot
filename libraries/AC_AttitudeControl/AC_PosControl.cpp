@@ -870,6 +870,12 @@ void AC_PosControl::run_xy_controller(float dt, float ekfNavVelGainScaler)
     accel_target.x = (vel_xy_p.x + vel_xy_i.x) * ekfNavVelGainScaler;
     accel_target.y = (vel_xy_p.y + vel_xy_i.y) * ekfNavVelGainScaler;
 
+    // reset accel to current desired acceleration
+     if (_flags.reset_accel_to_lean_xy) {
+         _accel_target_filter.reset(Vector2f(accel_target.x, accel_target.y));
+         _flags.reset_accel_to_lean_xy = false;
+     }
+
     // filter correction acceleration
     _accel_target_filter.set_cutoff_frequency(MIN(_accel_xy_filt_hz, 5.0f*ekfNavVelGainScaler));
     _accel_target_filter.apply(accel_target, dt);
