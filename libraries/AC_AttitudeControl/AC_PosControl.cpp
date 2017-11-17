@@ -827,6 +827,7 @@ void AC_PosControl::run_xy_controller(float dt, float ekfNavVelGainScaler)
             _pos_target.x = curr_pos.x + _pos_error.x;
             _pos_target.y = curr_pos.y + _pos_error.y;
         }
+        _distance_to_target = norm(_pos_error.x, _pos_error.y);
 
         _vel_target = sqrt_controller(_pos_error, kP, _accel_cms);
     }
