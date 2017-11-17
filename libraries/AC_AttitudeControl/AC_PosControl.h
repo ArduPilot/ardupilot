@@ -20,7 +20,6 @@
                                                         // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
 #define POSCONTROL_STOPPING_DIST_UP_MAX         300.0f  // max stopping distance (in cm) vertically while climbing
 #define POSCONTROL_STOPPING_DIST_DOWN_MAX       200.0f  // max stopping distance (in cm) vertically while descending
-#define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // default jerk limit on horizontal acceleration (unit: m/s/s/s)
 
 #define POSCONTROL_SPEED                        500.0f  // default horizontal speed in cm/s
 #define POSCONTROL_SPEED_DOWN                  -150.0f  // default descent rate in cm/s
@@ -38,7 +37,6 @@
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0f    // low-pass filter on velocity error (unit: hz)
 #define POSCONTROL_THROTTLE_CUTOFF_FREQ         2.0f    // low-pass filter on accel error (unit: hz)
 #define POSCONTROL_ACCEL_FILTER_HZ              2.0f    // low-pass filter on acceleration (unit: hz)
-#define POSCONTROL_ACCEL_JERK                   100.0f  // XY Jerk limit (unit: m/s^3)
 #define POSCONTROL_JERK_RATIO                   1.0f    // Defines the time it takes to reach the requested acceleration
 
 #define POSCONTROL_OVERSPEED_GAIN_Z             2.0f    // gain controlling rate at which z-axis speed is brought back within SPEED_UP and SPEED_DOWN range
@@ -184,10 +182,6 @@ public:
     void set_speed_xy(float speed_cms);
     float get_speed_xy() const { return _speed_cms; }
 
-    /// set_jerk_xy - set max horizontal jerk in cm/s/s/s
-    void set_jerk_xy(float jerk_cmsss) { _jerk_cmsss = jerk_cmsss; }
-    void set_jerk_xy_to_default() { _jerk_cmsss = POSCONTROL_JERK_LIMIT_CMSSS; }
-
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
     void set_limit_accel_xy(void) { _limit.accel_xy = true; }
@@ -301,7 +295,6 @@ protected:
             uint16_t recalc_leash_z     : 1;    // 1 if we should recalculate the z axis leash length
             uint16_t recalc_leash_xy    : 1;    // 1 if we should recalculate the xy axis leash length
             uint16_t reset_desired_vel_to_pos   : 1;    // 1 if we should reset the rate_to_accel_xy step
-            uint16_t reset_rate_to_accel_xy     : 1;    // 1 if we should reset the rate_to_accel_xy step
             uint16_t reset_accel_to_lean_xy     : 1;    // 1 if we should reset the accel to lean angle step
             uint16_t reset_rate_to_accel_z      : 1;    // 1 if we should reset the rate_to_accel_z step
             uint16_t reset_accel_to_throttle    : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
@@ -393,7 +386,6 @@ protected:
     float       _accel_z_cms;           // max vertical acceleration in cm/s/s
     float       _accel_last_z_cms;      // max vertical acceleration in cm/s/s
     float       _accel_cms;             // max horizontal acceleration in cm/s/s
-    float       _jerk_cmsss;            // max horizontal jerk in cm/s/s/s
     float       _leash;                 // horizontal leash length in cm.  target will never be further than this distance from the vehicle
     float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
     float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle

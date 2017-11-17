@@ -46,7 +46,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _accel_z_cms(POSCONTROL_ACCEL_Z),
     _accel_last_z_cms(0.0f),
     _accel_cms(POSCONTROL_ACCEL_XY),
-    _jerk_cmsss(POSCONTROL_JERK_LIMIT_CMSSS),
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_down_z(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_up_z(POSCONTROL_LEASH_LENGTH_MIN),
@@ -61,7 +60,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _flags.recalc_leash_z = true;
     _flags.recalc_leash_xy = true;
     _flags.reset_desired_vel_to_pos = true;
-    _flags.reset_rate_to_accel_xy = true;
     _flags.reset_accel_to_lean_xy = true;
     _flags.reset_rate_to_accel_z = true;
     _flags.reset_accel_to_throttle = true;
@@ -628,7 +626,6 @@ void AC_PosControl::init_xy_controller(bool reset_I)
 
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
-    _flags.reset_rate_to_accel_xy = true;
     _flags.reset_accel_to_lean_xy = true;
 
     // initialise ekf xy reset handler
@@ -680,7 +677,6 @@ void AC_PosControl::init_vel_controller_xyz()
 
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
-    _flags.reset_rate_to_accel_xy = true;
     _flags.reset_accel_to_lean_xy = true;
 
     // set target position
