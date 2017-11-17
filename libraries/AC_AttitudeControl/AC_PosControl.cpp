@@ -1036,7 +1036,7 @@ void AC_PosControl::run_xy_controller(float dt, float ekfNavVelGainScaler)
 
     // limit acceleration using maximum lean angles
     float angle_max = MIN(_attitude_control.get_althold_lean_angle_max(), _attitude_control.lean_angle_max());
-    float accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f));
+    float accel_max = MIN(GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f)), POSCONTROL_ACCEL_XY_MAX);
     _limit.accel_xy = limit_vector_length(_accel_target.x, _accel_target.y, accel_max);
 
     // rotate accelerations into body forward-right frame
