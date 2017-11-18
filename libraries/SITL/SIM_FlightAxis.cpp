@@ -90,7 +90,9 @@ void *FlightAxis::update_thread(void *arg)
 {
     FlightAxis *flightaxis = (FlightAxis *)arg;
 
+#ifndef __CYGWIN__
     pthread_setname_np(pthread_self(), "ardupilot-flightaxis");
+#endif
     
     flightaxis->update_loop();
     return nullptr;
