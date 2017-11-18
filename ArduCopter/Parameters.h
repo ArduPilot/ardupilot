@@ -577,6 +577,9 @@ public:
 
     // Additional pilot velocity items
     AP_Int16    pilot_speed_dn;
+    
+    // Continune land mode on radio failsafe
+    AP_Int8 fs_land_continue;
 };
 
 extern const AP_Param::Info        var_info[];
