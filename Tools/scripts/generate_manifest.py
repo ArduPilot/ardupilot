@@ -139,10 +139,12 @@ class ManifestGenerator():
 
                 if not firmware_format in firmware_data[vehicletype][file_platform][git_sha]:
                     firmware_data[vehicletype][file_platform][git_sha][firmware_format] = dict()
-                if not frame in firmware_data[vehicletype][file_platform][git_sha][firmware_format]:
-                    firmware_data[vehicletype][file_platform][git_sha][firmware_format][frame] = Firmware()
+                if not releasetype in firmware_data[vehicletype][file_platform][git_sha][firmware_format]:
+                    firmware_data[vehicletype][file_platform][git_sha][firmware_format][releasetype] = dict()
+                if not frame in firmware_data[vehicletype][file_platform][git_sha][firmware_format][releasetype]:
+                    firmware_data[vehicletype][file_platform][git_sha][firmware_format][releasetype][frame] = Firmware()
 
-                firmware = firmware_data[vehicletype][file_platform][git_sha][firmware_format][frame]
+                firmware = firmware_data[vehicletype][file_platform][git_sha][firmware_format][releasetype][frame]
 
                 # translate from supplied "release type" into both a
                 # "latest" flag andan actual release type.  Also sort
