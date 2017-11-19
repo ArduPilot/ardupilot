@@ -15,7 +15,7 @@ bool Sub::poshold_init()
     }
 
     // initialize vertical speeds and acceleration
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // initialise position and desired velocity
@@ -110,7 +110,7 @@ void Sub::poshold_run()
 
     // get pilot desired climb rate
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // adjust climb rate using rangefinder
     if (rangefinder_alt_ok()) {

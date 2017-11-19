@@ -17,7 +17,7 @@ bool Sub::althold_init()
 
     // initialize vertical speeds and leash lengths
     // sets the maximum speed up and down returned by position controller
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // initialise position and desired velocity
@@ -36,7 +36,7 @@ void Sub::althold_run()
     uint32_t tnow = AP_HAL::millis();
 
     // initialize vertical speeds and acceleration
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_accel_z(g.pilot_accel_z);
 
     if (!motors.armed()) {
