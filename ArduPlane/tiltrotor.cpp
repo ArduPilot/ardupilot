@@ -111,7 +111,14 @@ void QuadPlane::tiltrotor_continuous_update(void)
     */
     if (plane.control_mode == QSTABILIZE ||
         plane.control_mode == QHOVER) {
-        tiltrotor_slew(0);
+        // bias motor tilt to allow countering wind without changing pitch attitude
+        // motor tilt is [0-1] over the full range with vertical being tilt.tilt_yaw_angle/(90+tilt.tilt_yaw_angle)
+        // and 1 being full forward
+        float zero_tilt = tilt.tilt_yaw_angle/(90+tilt.tilt_yaw_angle);
+        // TODO: this is temporarily hardwired to RC channel 10 (and configured as the right slider on TX)
+        float des_tilt = constrain_float(zero_tilt + 0.5f * RC_Channels::rc_channel(9)->norm_input(), 0, 1);
+//        printf("des_tilt: %f\n", des_tilt);
+        tiltrotor_slew(des_tilt);
         return;
     }
 
