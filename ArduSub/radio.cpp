@@ -50,7 +50,7 @@ void Sub::init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
     motors.set_loop_rate(scheduler.get_loop_rate_hz());
-    motors.init((AP_Motors::motor_frame_class)g.frame_configuration.get(), (AP_Motors::motor_frame_type)0);
+    motors.init((AP_Motors::motor_frame_class)g.frame_configuration.get(), AP_Motors::motor_frame_type::MOTOR_FRAME_TYPE_PLUS);
     motors.set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 
     // enable output to motors
