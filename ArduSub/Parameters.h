@@ -180,7 +180,7 @@ public:
         k_param_rangefinder_gain,
         k_param_wp_yaw_behavior = 170,
         k_param_xtrack_angle_limit, // Angle limit for crosstrack correction in Auto modes (degrees)
-        k_param_pilot_velocity_z_max,
+        k_param_pilot_speed_up,     // renamed from k_param_pilot_velocity_z_max
         k_param_pilot_accel_z,
         k_param_compass_enabled,
         k_param_surface_depth,
@@ -210,6 +210,7 @@ public:
 
         k_param_cam_slew_limit = 237, // deprecated
         k_param_lights_steps,
+        k_param_pilot_speed_dn,
 
     };
 
@@ -248,7 +249,8 @@ public:
 
     // Waypoints
     //
-    AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
+    AP_Int16        pilot_speed_up;        // maximum vertical ascending velocity the pilot may request
+    AP_Int16        pilot_speed_dn;        // maximum vertical descending velocity the pilot may request
     AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
 
     // Throttle

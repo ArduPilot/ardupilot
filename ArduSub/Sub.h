@@ -729,6 +729,8 @@ private:
     bool surface_init(void);
     void surface_run();
 
+    uint16_t get_pilot_speed_dn();
+
     void convert_old_parameters(void);
 
 public:
