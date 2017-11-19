@@ -37,6 +37,41 @@ using namespace SITL;
 // the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
 
+static const struct {
+    const char *name;
+    float value;
+} sim_defaults[] = {
+    { "AHRS_EKF_TYPE", 10 },
+    { "INS_GYR_CAL", 0 },
+    { "SERVO1_MIN", 1000 },
+    { "SERVO1_MAX", 2000 },
+    { "SERVO2_MIN", 1000 },
+    { "SERVO2_MAX", 2000 },
+    { "SERVO3_MIN", 1000 },
+    { "SERVO3_MAX", 2000 },
+    { "SERVO4_MIN", 1000 },
+    { "SERVO4_MAX", 2000 },
+    { "SERVO5_MIN", 1000 },
+    { "SERVO5_MAX", 2000 },
+    { "SERVO6_MIN", 1000 },
+    { "SERVO6_MAX", 2000 },
+    { "SERVO6_MIN", 1000 },
+    { "SERVO6_MAX", 2000 },
+    { "INS_ACC2OFFS_X",    0.001 },
+    { "INS_ACC2OFFS_Y",    0.001 },
+    { "INS_ACC2OFFS_Z",    0.001 },
+    { "INS_ACC2SCAL_X",    1.001 },
+    { "INS_ACC2SCAL_Y",    1.001 },
+    { "INS_ACC2SCAL_Z",    1.001 },
+    { "INS_ACCOFFS_X",     0.001 },
+    { "INS_ACCOFFS_Y",     0.001 },
+    { "INS_ACCOFFS_Z",     0.001 },
+    { "INS_ACCSCAL_X",     1.001 },
+    { "INS_ACCSCAL_Y",     1.001 },
+    { "INS_ACCSCAL_Z",     1.001 },
+};
+
+
 FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str)
 {
@@ -48,9 +83,9 @@ FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
     if (colon) {
         controller_ip = colon+1;
     }
-    // FlightAxis sensor data is not good enough for EKF. Use fake EKF by default
-    AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
-    AP_Param::set_default_by_name("INS_GYR_CAL", 0);
+    for (uint8_t i=0; i<ARRAY_SIZE(sim_defaults); i++) {
+        AP_Param::set_default_by_name(sim_defaults[i].name, sim_defaults[i].value);
+    }
 
     if (strstr(frame_str, "pitch270")) {
         // rotate tailsitter airframes for fixed wing view

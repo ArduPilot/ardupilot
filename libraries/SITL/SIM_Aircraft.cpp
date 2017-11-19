@@ -114,6 +114,14 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
     loc.lng = static_cast<int32_t>(strtof(lon_s, nullptr) * 1.0e7f);
     loc.alt = static_cast<int32_t>(strtof(alt_s, nullptr) * 1.0e2f);
 
+    if (loc.lat == 0 && loc.lng == 0) {
+        // default to CMAC instead of middle of the ocean. This makes
+        // SITL in MissionPlanner a bit more useful
+        loc.lat = -35.363261*1e7;
+        loc.lng = 149.165230*1e7;
+        loc.alt = 584*100;
+    }
+
     yaw_degrees = strtof(yaw_s, nullptr);
     free(s);
 
