@@ -1249,6 +1249,11 @@ void QuadPlane::update_transition(void)
 
     float aspeed;
     bool have_airspeed = ahrs.airspeed_estimate(&aspeed);
+
+    // tailsitters use angle wait, not airspeed wait
+    if (is_tailsitter() && transition_state == TRANSITION_AIRSPEED_WAIT) {
+        transition_state = TRANSITION_ANGLE_WAIT_FW;
+    }
     
     /*
       see if we should provide some assistance
@@ -2199,7 +2204,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     if (plane.current_loc.alt < plane.next_WP_loc.alt) {
         return false;
     }
-    transition_state = TRANSITION_AIRSPEED_WAIT;
+    transition_state = is_tailsitter() ? TRANSITION_ANGLE_WAIT_FW : TRANSITION_AIRSPEED_WAIT;
     plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
     set_alt_target_current();
 
