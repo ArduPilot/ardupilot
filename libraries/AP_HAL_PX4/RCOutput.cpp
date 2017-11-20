@@ -558,6 +558,9 @@ void PX4RCOutput::push()
             _send_outputs();
         }
     }
+
+    // send SBUS1 servo outputs
+    hal.rcout->sbus1_out(_period, PX4_NUM_OUTPUT_CHANNELS);
 }
 
 void PX4RCOutput::timer_tick(void)
@@ -574,7 +577,7 @@ void PX4RCOutput::timer_tick(void)
 /*
   enable sbus output
  */
-bool PX4RCOutput::enable_sbus_out(uint16_t rate_hz)
+bool PX4RCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
 {
     int fd = open("/dev/px4io", 0);
     if (fd == -1) {
