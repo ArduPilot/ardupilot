@@ -88,11 +88,11 @@ void Copter::tuning() {
         break;
 
     case TUNING_VEL_XY_KP:
-        g.pi_vel_xy.kP(tuning_value);
+        pos_control->get_vel_xy_pid().kP(tuning_value);
         break;
 
     case TUNING_VEL_XY_KI:
-        g.pi_vel_xy.kI(tuning_value);
+        pos_control->get_vel_xy_pid().kI(tuning_value);
         break;
 
     case TUNING_WP_SPEED:
