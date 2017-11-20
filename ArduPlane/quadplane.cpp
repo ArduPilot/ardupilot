@@ -45,29 +45,6 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(p_pos_xy,   "PXY_", 13, QuadPlane, AC_P),
 
-    // @Param: VXY_P
-    // @DisplayName: Velocity (horizontal) P gain
-    // @Description: Velocity (horizontal) P gain.  Converts the difference between desired velocity to a target acceleration
-    // @Range: 0.1 6.0
-    // @Increment: 0.1
-    // @User: Advanced
-
-    // @Param: VXY_I
-    // @DisplayName: Velocity (horizontal) I gain
-    // @Description: Velocity (horizontal) I gain.  Corrects long-term difference in desired velocity to a target acceleration
-    // @Range: 0.02 1.00
-    // @Increment: 0.01
-    // @User: Advanced
-
-    // @Param: VXY_IMAX
-    // @DisplayName: Velocity (horizontal) integrator maximum
-    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: cm/s/s
-    // @User: Advanced
-    AP_SUBGROUPINFO(pi_vel_xy, "VXY_",  14, QuadPlane, AC_PI_2D),
-
     // @Param: VZ_P
     // @DisplayName: Velocity (vertical) P gain
     // @Description: Velocity (vertical) P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
@@ -595,8 +572,7 @@ bool QuadPlane::setup(void)
     }
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control,
-                                    p_alt_hold, p_vel_z, pid_accel_z,
-                                    p_pos_xy, pi_vel_xy);
+                                    p_alt_hold, p_vel_z, pid_accel_z, p_pos_xy);
     if (!pos_control) {
         hal.console->printf("%s pos_control\n", strUnableToAllocate);
         goto failed;
@@ -2168,7 +2144,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     attitude_control->get_rate_pitch_pid().reset_I();
     attitude_control->get_rate_yaw_pid().reset_I();
     pid_accel_z.reset_I();
-    pi_vel_xy.reset_I();
+    pos_control->get_vel_xy_pid().reset_I();
     
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
