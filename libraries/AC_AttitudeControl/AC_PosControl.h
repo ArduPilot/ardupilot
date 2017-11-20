@@ -3,9 +3,10 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AC_PID/AC_PID.h>             // PID library
-#include <AC_PID/AC_PI_2D.h>           // PID library (2-axis)
 #include <AC_PID/AC_P.h>               // P library
+#include <AC_PID/AC_PID.h>             // PID library
+#include <AC_PID/AC_PI_2D.h>           // PI library (2-axis)
+#include <AC_PID/AC_PID_2D.h>          // PID library (2-axis)
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include "AC_AttitudeControl.h" // Attitude control library
 #include <AP_Motors/AP_Motors.h>          // motors library
@@ -41,6 +42,13 @@
 
 #define POSCONTROL_OVERSPEED_GAIN_Z             2.0f    // gain controlling rate at which z-axis speed is brought back within SPEED_UP and SPEED_DOWN range
 
+#define POSCONTROL_VEL_XY_P                     2.0f    // velocity controller P gain default
+#define POSCONTROL_VEL_XY_I                     1.0f    // velocity controller I gain default
+#define POSCONTROL_VEL_XY_D                     1.0f    // velocity controller D gain default
+#define POSCONTROL_VEL_XY_IMAX                  1000.0f // velocity controller IMAX gain default
+#define POSCONTROL_VEL_XY_FILT_HZ               5.0f    // velocity controller input filter
+#define POSCONTROL_VEL_XY_FILT_D_HZ             5.0f    // velocity controller input filter for D
+
 class AC_PosControl
 {
 public:
@@ -49,7 +57,7 @@ public:
     AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                   AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
-                  AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);
+                  AC_P& p_pos_xy);
 
     ///
     /// initialisation functions
@@ -276,6 +284,9 @@ public:
     /// get_pos_xy_kP - returns xy position controller's kP gain
     float get_pos_xy_kP() const { return _p_pos_xy.kP(); }
 
+    /// get horizontal pid controller
+    AC_PID_2D& get_vel_xy_pid() { return _pid_vel_xy; }
+
     /// accessors for reporting
     const Vector3f& get_vel_target() const { return _vel_target; }
     const Vector3f& get_accel_target() const { return _accel_target; }
@@ -369,10 +380,10 @@ protected:
     AC_P&       _p_vel_z;
     AC_PID&     _pid_accel_z;
     AC_P&       _p_pos_xy;
-    AC_PI_2D&   _pi_vel_xy;
 
     // parameters
     AP_Float    _accel_xy_filt_hz;      // XY acceleration filter cutoff frequency
+    AC_PID_2D   _pid_vel_xy;
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
