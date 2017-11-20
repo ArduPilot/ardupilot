@@ -51,4 +51,8 @@ private:
     MAV_MODE base_mode() const override;
     uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
+
+    int16_t vfr_hud_throttle() const override;
+    bool vfr_hud_make_alt_relative() const override { return true; }
+
 };
