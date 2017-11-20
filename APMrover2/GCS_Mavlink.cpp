@@ -143,24 +143,27 @@ void Rover::send_nav_controller_output(mavlink_channel_t chan)
 
 void Rover::send_servo_out(mavlink_channel_t chan)
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    // normalized values scaled to -10000 to 10000
-    // This is used for HIL.  Do not change without discussing with
-    // HIL maintainers
+    float motor1, motor3;
+    if (g2.motors.have_skid_steering()) {
+        motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) / 1000.0f);
+        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) / 1000.0f);
+    } else {
+        motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_steering) / 4500.0f);
+        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0f);
+    }
     mavlink_msg_rc_channels_scaled_send(
         chan,
         millis(),
         0,  // port 0
-        10000 * channel_steer->norm_output(),
+        motor1,
         0,
-        g2.motors.get_throttle(),
+        motor3,
         0,
         0,
         0,
         0,
         0,
         receiver_rssi);
-#endif
 }
 
 void Rover::send_vfr_hud(mavlink_channel_t chan)
