@@ -18,6 +18,22 @@
 #include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_Common/Bitmask.h>
 
+//#include <AP_HAL/AP_HAL.h>
+//#include <AP_Common/AP_Common.h>
+//#include <GCS_MAVLink/GCS.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+
+
+#define VOLZ_SCALE_VALUE 					(uint16_t)(VOLZ_EXTENDED_POSITION_MAX - VOLZ_EXTENDED_POSITION_MIN)	// Extended Position Data Format defines 100 as 0x0F80, which results in 1920 steps for +100 deg and 1920 steps for -100 degs meaning if you take movement a scaled between -1 ... 1 and multiply by 1920 you get the travel from center
+#define VOLZ_SET_EXTENDED_POSITION_CMD 		0xDC
+#define VOLZ_SET_EXTENDED_POSITION_RSP 		0x2C
+#define VOLZ_DATA_FRAME_SIZE		 		6
+
+#define VOLZ_EXTENDED_POSITION_MIN 			0x0080	// Extended Position Data Format defines -100 as 0x0080 decimal 128
+#define VOLZ_EXTENDED_POSITION_CENTER 		0x0800	// Extended Position Data Format defines 0 as 0x0800 - decimal 2048
+#define VOLZ_EXTENDED_POSITION_MAX 			0x0F80	// Extended Position Data Format defines +100 as 0x0F80 decimal 3968 -> full range decimal 3840
+
+
 #define NUM_SERVO_CHANNELS 16
 
 class SRV_Channels;
@@ -32,6 +48,12 @@ public:
     friend class SRV_Channels;
     // constructor
     SRV_Channel(void);
+
+    struct ServoChannelData{
+    	uint16_t pwm;
+    	uint16_t min_pwm;
+    	uint16_t max_pwm;
+    };
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -275,6 +297,9 @@ public:
     // get pwm output for the first channel of the given function type.
     static bool get_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t &value);
 
+    // get pwm output for the first channel of the given function type.
+    static bool get_all_outputs_pwm(SRV_Channel::ServoChannelData values[] ,uint8_t chan_num);
+
     // get normalised output (-1 to 1 for angle, 0 to 1 for range). Value is taken from pwm value
     // return zero on error.
     static float get_output_norm(SRV_Channel::Aux_servo_function_t function);
@@ -414,6 +439,13 @@ public:
         return SRV_Channel::Aux_servo_function_t((SRV_Channel::k_motor9+(channel-8)));
     }
     
+    // Update servo output
+    void update_volz(void);
+
+    // Startup initialisation
+    void init_serial(const AP_SerialManager& serial_manager);
+    // Startup initialisation.
+
 private:
     struct {
         bool k_throttle_reversible:1;
@@ -422,6 +454,12 @@ private:
     static bool disabled_passthrough;
 
     SRV_Channel::servo_mask_t trimmed_mask;
+
+    AP_Int32     volz_chan_bitmask;
+    uint64_t		last_volz_update_sent_us;
+
+    AP_HAL::UARTDriver *_port;
+    void send_volz_command(uint8_t* data);
 
     static Bitmask function_mask;
     static bool initialised;
@@ -447,3 +485,34 @@ private:
         return disabled_passthrough;
     }
 };
+
+
+/*
+ * Volz servo protocol
+ *
+ * Baud-Rate: 115.200 bits per second
+ * Number of Data bits: 8
+ * Number of Stop bits: 1
+ * Parity: None
+ * Half/Full Duplex: Half Duplex
+ *
+ * Volz Command and Response are all 6 bytes
+ *
+ * Command
+ * byte	|	Communication Type
+ * 1		Command Code
+ * 2		Actuator ID
+ * 3		Argument 1
+ * 4		Argument 2
+ * 5		CRC High-byte
+ * 6		CRC	Low-Byte
+ *
+ * byte	|	Communication Type
+ * 1		Response Code
+ * 2		Actuator ID
+ * 3		Argument 1
+ * 4		Argument 2
+ * 5		CRC High-byte
+ * 6		CRC	Low-Byte
+ *
+ */

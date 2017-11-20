@@ -119,6 +119,8 @@ void Plane::init_ardupilot()
                          &g.fs_batt_voltage, &g.fs_batt_mah);
 #endif
 
+    g2.servo_channels.init_serial(serial_manager);
+
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif

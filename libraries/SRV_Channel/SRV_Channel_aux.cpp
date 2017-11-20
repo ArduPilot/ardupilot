@@ -61,6 +61,8 @@ void SRV_Channels::output_ch_all(void)
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         channels[i].output_ch();
     }
+
+    instance->update_volz();
 }
 
 /*
