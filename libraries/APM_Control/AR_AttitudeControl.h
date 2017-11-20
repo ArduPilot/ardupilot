@@ -22,9 +22,6 @@
 // throttle/speed control maximum acceleration/deceleration (in m/s) (_ACCEL_MAX parameter default)
 #define AR_ATTCONTROL_THR_ACCEL_MAX     5.00f
 
-// minimum speed in m/s
-#define AR_ATTCONTROL_STEER_SPEED_MIN   1.0f
-
 // speed (in m/s) at or below which vehicle is considered stopped (_STOP_SPEED parameter default)
 #define AR_ATTCONTROL_STOP_SPEED_DEFAULT    0.1f
 

@@ -145,8 +145,8 @@ float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool s
     speed = fabsf(speed);
 
     // enforce minimum speed to stop oscillations when first starting to move
-    if (speed < AR_ATTCONTROL_STEER_SPEED_MIN) {
-        speed = AR_ATTCONTROL_STEER_SPEED_MIN;
+    if (speed < _stop_speed) {
+        speed = _stop_speed;
     }
 
     // Calculate the desired steering rate given desired_accel and speed
@@ -197,9 +197,9 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
 
     // enforce minimum speed to stop oscillations when first starting to move
     bool low_speed = false;
-    if (speed < AR_ATTCONTROL_STEER_SPEED_MIN) {
+    if (speed < _stop_speed) {
         low_speed = true;
-        speed = AR_ATTCONTROL_STEER_SPEED_MIN;
+        speed = _stop_speed;
     }
 
     // scaler to linearize output because turn rate increases as vehicle speed increases on non-skid steering vehicles
