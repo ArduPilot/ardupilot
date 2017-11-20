@@ -358,7 +358,7 @@ public:
         k_param_acro_yaw_p,
         k_param_autotune_axis_bitmask,
         k_param_autotune_aggressiveness,
-        k_param_pi_vel_xy,
+        k_param_pi_vel_xy,              // remove
         k_param_fs_ekf_action,
         k_param_rtl_climb_min,
         k_param_rpm_sensor,
@@ -469,8 +469,6 @@ public:
     AP_Float                acro_rp_expo;
 
     // PI/D controllers
-    AC_PI_2D                pi_vel_xy;
-
     AC_P                    p_vel_z;
     AC_PID                  pid_accel_z;
 
@@ -487,8 +485,6 @@ public:
     Parameters() :
         // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
         //---------------------------------------------------------------------------------------------------------------------------------
-        pi_vel_xy               (VEL_XY_P,        VEL_XY_I,                         VEL_XY_IMAX,        VEL_XY_FILT_HZ,     WPNAV_LOITER_UPDATE_TIME),
-
         p_vel_z                 (VEL_Z_P),
         pid_accel_z             (ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    0),
 
