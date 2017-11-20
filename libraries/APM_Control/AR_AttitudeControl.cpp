@@ -251,7 +251,12 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
         // on failure to get speed we do not attempt to steer
         return 0.0f;
     }
-
+    if (fabsf(speed) <= fabsf(_stop_speed)) {
+        speed = 0.0f;
+    }
+    if (fabsf(desired_speed) <= fabsf(_stop_speed)) {
+        desired_speed = 0.0f;
+    }
     // calculate dt
     const uint32_t now = AP_HAL::millis();
     float dt = (now - _speed_last_ms) / 1000.0f;
@@ -306,6 +311,10 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     _throttle_limit_low = false;
     _throttle_limit_high = false;
 
+    // throttle under 1% are noise
+    if (fabsf(throttle_out) <= 0.01f) {
+        throttle_out = 0.0f;
+    }
     // protect against reverse output being sent to the motors unless braking has been enabled
     if (!_brake_enable) {
         // if both desired speed and actual speed are positive, do not allow negative values
