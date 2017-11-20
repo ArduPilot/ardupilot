@@ -232,22 +232,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Velocity (horizontal) gains
-//
-#ifndef VEL_XY_P
-# define VEL_XY_P              1.0f
-#endif
-#ifndef VEL_XY_I
-# define VEL_XY_I              0.5f
-#endif
-#ifndef VEL_XY_IMAX
-# define VEL_XY_IMAX           1000
-#endif
-#ifndef VEL_XY_FILT_HZ
-# define VEL_XY_FILT_HZ        5.0f
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // PosHold parameter defaults
 //
 #ifndef POSHOLD_ENABLED

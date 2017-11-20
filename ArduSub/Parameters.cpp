@@ -451,37 +451,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     GSCALAR(acro_expo,  "ACRO_EXPO",    ACRO_EXPO_DEFAULT),
 
-    // @Param: VEL_XY_P
-    // @DisplayName: Velocity (horizontal) P gain
-    // @Description: Velocity (horizontal) P gain.  Converts the difference between desired velocity to a target acceleration
-    // @Range: 0.1 6.0
-    // @Increment: 0.1
-    // @User: Advanced
-
-    // @Param: VEL_XY_I
-    // @DisplayName: Velocity (horizontal) I gain
-    // @Description: Velocity (horizontal) I gain.  Corrects long-term difference in desired velocity to a target acceleration
-    // @Range: 0.02 1.00
-    // @Increment: 0.01
-    // @User: Advanced
-
-    // @Param: VEL_XY_IMAX
-    // @DisplayName: Velocity (horizontal) integrator maximum
-    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: cm/s/s
-    // @User: Advanced
-
-    // @Param: VEL_XY_FILT_HZ
-    // @DisplayName: Velocity (horizontal) integrator maximum
-    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: cm/s/s
-    // @User: Advanced
-    GGROUP(pi_vel_xy,   "VEL_XY_",  AC_PI_2D),
-
     // @Param: VEL_Z_P
     // @DisplayName: Velocity (vertical) P gain
     // @Description: Velocity (vertical) P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
