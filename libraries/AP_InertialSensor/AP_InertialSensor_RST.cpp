@@ -168,7 +168,8 @@ const extern AP_HAL::HAL &hal;
 #define GYRO_FIFO_CTRL_STREAM_TO_FIFO_MODE      (3<<5)
 #define GYRO_FIFO_CTRL_BYPASS_TO_STREAM_MODE    (1<<7)
 
-#define GYRO_DEFAULT_RATE               800 //data output frequency
+//data output frequency
+#define GYRO_DEFAULT_RATE               800 
 #define GYRO_DEFAULT_RANGE_DPS          2000
 #define GYRO_DEFAULT_FILTER_FREQ        35
 #define GYRO_TEMP_OFFSET_CELSIUS        40
@@ -219,10 +220,10 @@ AP_InertialSensor_Backend *AP_InertialSensor_RST::probe(AP_InertialSensor &imu,
  */
 bool AP_InertialSensor_RST::_init_gyro(void)
 {
+    // gyro whoami
+    uint8_t _gyro_whoami;
 
-    _gyro_spi_sem = _dev_gyro->get_semaphore();
-
-    if (!_gyro_spi_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev_gyro->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
@@ -247,11 +248,13 @@ bool AP_InertialSensor_RST::_init_gyro(void)
 
     _dev_gyro->write_register(GYRO_CTRL_REG1, 
                               GYRO_REG1_POWER_NORMAL | GYRO_REG1_Z_ENABLE | GYRO_REG1_X_ENABLE | GYRO_REG1_Y_ENABLE | RATE_800HZ_LP_50HZ);
-
-    _dev_gyro->write_register(GYRO_CTRL_REG2, 0);        /* disable high-pass filters */
-    _dev_gyro->write_register(GYRO_CTRL_REG3, 0x0);        /* DRDY disable */
+    /* disable high-pass filters */
+    _dev_gyro->write_register(GYRO_CTRL_REG2, 0);        
+    /* DRDY disable */
+    _dev_gyro->write_register(GYRO_CTRL_REG3, 0x0);        
     _dev_gyro->write_register(GYRO_CTRL_REG4, RANGE_2000DPS);
-    _dev_gyro->write_register(GYRO_CTRL_REG5, GYRO_REG5_FIFO_ENABLE);        /* disable wake-on-interrupt */
+    /* disable wake-on-interrupt */
+    _dev_gyro->write_register(GYRO_CTRL_REG5, GYRO_REG5_FIFO_ENABLE);        
 
     /* disable FIFO. This makes things simpler and ensures we
      * aren't getting stale data. It means we must run the hrt
@@ -262,12 +265,12 @@ bool AP_InertialSensor_RST::_init_gyro(void)
 
     hal.scheduler->delay(100);
 
-    _gyro_spi_sem->give();
+    _dev_gyro->get_semaphore()->give();
 
     return true;
 
 fail_whoami:
-    _gyro_spi_sem->give();
+    _dev_gyro->get_semaphore()->give();
     return false;
 
 
@@ -278,9 +281,10 @@ fail_whoami:
  */
 bool AP_InertialSensor_RST::_init_accel(void)
 {
-    _accel_spi_sem = _dev_accel->get_semaphore();
+    // accel whoami
+    uint8_t _accel_whoami;
 
-    if (!_accel_spi_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev_accel->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
@@ -297,18 +301,20 @@ bool AP_InertialSensor_RST::_init_accel(void)
 
     _dev_accel->write_register(ACCEL_CTRL_REG1,
                                ACCEL_REG1_POWER_NORMAL | ACCEL_REG1_Z_ENABLE | ACCEL_REG1_Y_ENABLE | ACCEL_REG1_X_ENABLE | RATE_1000HZ_LP_780HZ);
-    _dev_accel->write_register(ACCEL_CTRL_REG2, 0);        /* disable high-pass filters */
-    _dev_accel->write_register(ACCEL_CTRL_REG3, 0x02);        /* DRDY enable */
+    /* disable high-pass filters */
+    _dev_accel->write_register(ACCEL_CTRL_REG2, 0);        
+    /* DRDY enable */
+    _dev_accel->write_register(ACCEL_CTRL_REG3, 0x02);        
     _dev_accel->write_register(ACCEL_CTRL_REG4, ACCEL_REG4_BDU | ACCEL_REG4_FULL_SCALE_8G);
 
     _accel_scale = 0.244e-3f * ACCEL_ONE_G;
 
-    _accel_spi_sem->give();
+    _dev_accel->get_semaphore()->give();
 
     return true;
 
 fail_whoami:
-    _accel_spi_sem->give();
+    _dev_accel->get_semaphore()->give();
     return false;
 
 
