@@ -226,6 +226,14 @@ void Rover::send_wheel_encoder(mavlink_channel_t chan)
     }
 }
 
+void Rover::send_wheel_encoder_distance(mavlink_channel_t chan)
+{
+    // send wheel encoder data using wheel_distance message
+    if (g2.wheel_encoder.num_sensors() > 0) {
+        mavlink_msg_wheel_distance_send(chan, 1000UL * wheel_encoder_last_ekf_update_ms, g2.wheel_encoder.num_sensors(), wheel_encoder_last_distance_m);
+    }
+}
+
 uint8_t GCS_MAVLINK_Rover::sysid_my_gcs() const
 {
     return rover.g.sysid_my_gcs;
@@ -287,6 +295,11 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_RPM:
         CHECK_PAYLOAD_SIZE(RPM);
         rover.send_wheel_encoder(chan);
+        break;
+
+    case MSG_WHEEL_DISTANCE:
+        CHECK_PAYLOAD_SIZE(WHEEL_DISTANCE);
+        rover.send_wheel_encoder_distance(chan);
         break;
 
     case MSG_MOUNT_STATUS:
