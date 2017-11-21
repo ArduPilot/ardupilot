@@ -452,11 +452,11 @@ private:
         // should we fly inverted?
         bool inverted_flight:1;
 
-        // should we disable cross-tracking for the next waypoint?
-        bool next_wp_no_crosstrack:1;
+        // should we enable cross-tracking for the next waypoint?
+        bool next_wp_crosstrack:1;
 
         // should we use cross-tracking for this waypoint?
-        bool no_crosstrack:1;
+        bool crosstrack:1;
 
         // in FBWA taildragger takeoff mode
         bool fbwa_tdrag_takeoff_mode:1;

@@ -270,7 +270,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     auto_state.inverted_flight = false;
 
     // don't cross-track when starting a mission
-    auto_state.next_wp_no_crosstrack = true;
+    auto_state.next_wp_crosstrack = false;
 
     // reset landing check
     auto_state.checked_for_autoland = false;
