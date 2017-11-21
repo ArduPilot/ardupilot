@@ -344,8 +344,8 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
 void Plane::do_RTL(int32_t rtl_altitude)
 {
-    auto_state.next_wp_no_crosstrack = true;
-    auto_state.no_crosstrack = true;
+    auto_state.next_wp_crosstrack = false;
+    auto_state.crosstrack = false;
     prev_WP_loc = current_loc;
     next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, rtl_altitude);
     setup_terrain_target_alt(next_WP_loc);
@@ -575,7 +575,7 @@ bool Plane::verify_takeoff()
 
         // don't cross-track on completion of takeoff, as otherwise we
         // can end up doing too sharp a turn
-        auto_state.next_wp_no_crosstrack = true;
+        auto_state.next_wp_crosstrack = false;
         return true;
     } else {
         return false;
@@ -608,10 +608,10 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         }
     }
 
-    if (auto_state.no_crosstrack) {
-        nav_controller->update_waypoint(current_loc, flex_next_WP_loc);
-    } else {
+    if (auto_state.crosstrack) {
         nav_controller->update_waypoint(prev_WP_loc, flex_next_WP_loc);
+    } else {
+        nav_controller->update_waypoint(current_loc, flex_next_WP_loc);
     }
 
     // see if the user has specified a maximum distance to waypoint

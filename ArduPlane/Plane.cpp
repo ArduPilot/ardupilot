@@ -28,8 +28,6 @@ Plane::Plane(void)
 {
     // C++11 doesn't allow in-class initialisation of bitfields
     auto_state.takeoff_complete = true;
-    auto_state.next_wp_no_crosstrack = true;
-    auto_state.no_crosstrack = true;
 }
 
 Plane plane;
