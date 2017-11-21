@@ -215,6 +215,14 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     if (reversed) {
         yaw_rate_earth *= -1.0f;
     }
+    // limit calculated noise by cutting off unachievable value.
+    if (fabsf(yaw_rate_earth) < 0.01f) {
+        yaw_rate_earth = 0.0f;
+    }
+    if (fabsf(desired_rate) < 0.01f) {
+        desired_rate = 0.0f;
+    }
+
     const float rate_error = (desired_rate - yaw_rate_earth) * scaler;
 
     // record desired rate for logging purposes only
