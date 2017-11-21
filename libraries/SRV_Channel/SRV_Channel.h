@@ -420,8 +420,6 @@ public:
 
     static void push();
 
-    AP_Int16 sbus_rate;
-
 private:
     struct {
         bool k_throttle_reversible:1;
