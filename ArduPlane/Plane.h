@@ -906,7 +906,7 @@ private:
     void update_events(void);
     uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);
-    void set_fence_point_with_index(Vector2l &point, unsigned i);
+    void set_fence_point_with_index(const Vector2l &point, unsigned i);
     void geofence_load(void);
     bool geofence_present(void);
     void geofence_update_pwm_enabled_state();
@@ -919,6 +919,7 @@ private:
     bool geofence_stickmixing(void);
     void geofence_send_status(mavlink_channel_t chan);
     bool geofence_breached(void);
+    void geofence_disable_and_send_error_msg(const char *errorMsg);
     void disarm_if_autoland_complete();
     float tecs_hgt_afe(void);
     void set_nav_controller(void);
