@@ -253,7 +253,7 @@ void Copter::send_pid_tuning(mavlink_channel_t chan)
         }
     }
     if (g.gcs_pid_mask & 8) {
-        const DataFlash_Class::PID_Info &pid_info = g.pid_accel_z.get_pid_info();
+        const DataFlash_Class::PID_Info &pid_info = copter.pos_control->get_accel_z_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ, 
                                     pid_info.desired*0.01f,
                                     -(ahrs.get_accel_ef_blended().z + GRAVITY_MSS),

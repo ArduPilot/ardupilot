@@ -283,7 +283,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 float Copter::get_avoidance_adjusted_climbrate(float target_rate)
 {
 #if AC_AVOID_ENABLED == ENABLED
-    avoid.adjust_velocity_z(pos_control->get_pos_z_kP(), pos_control->get_accel_z(), target_rate, G_Dt);
+    avoid.adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_accel_z(), target_rate, G_Dt);
     return target_rate;
 #else
     return target_rate;
@@ -296,7 +296,7 @@ void Copter::set_accel_throttle_I_from_pilot_throttle()
     // get last throttle input sent to attitude controller
     float pilot_throttle = constrain_float(attitude_control->get_throttle_in(), 0.0f, 1.0f);
     // shift difference between pilot's throttle and hover throttle into accelerometer I
-    g.pid_accel_z.set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0f);
+    pos_control->get_accel_z_pid().set_integrator((pilot_throttle-motors->get_throttle_hover()) * 1000.0f);
 }
 
 // rotate vector from vehicle's perspective to North-East frame
