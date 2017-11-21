@@ -131,11 +131,6 @@ private:
 
     AP_InertialNav_NavEKF inertial_nav{ahrs};
 
-    AC_P                    p_pos_xy{0.7};
-    AC_P                    p_alt_hold{1};
-    AC_P                    p_vel_z{5};
-    AC_PID                  pid_accel_z{0.3, 1, 0, 800, 10, 0.02};
-
     AP_Int8 frame_class;
     AP_Int8 frame_type;
     
