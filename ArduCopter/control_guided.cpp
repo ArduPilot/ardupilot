@@ -686,7 +686,7 @@ void Copter::guided_set_desired_velocity_with_accel_and_fence_limits(const Vecto
 
 #if AC_AVOID_ENABLED
     // limit the velocity to prevent fence violations
-    avoid.adjust_velocity(pos_control->get_pos_xy_kP(), pos_control->get_accel_xy(), curr_vel_des);
+    avoid.adjust_velocity(pos_control->get_pos_xy_p().kP(), pos_control->get_accel_xy(), curr_vel_des);
 #endif
 
     // update position controller with new target
