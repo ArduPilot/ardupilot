@@ -653,7 +653,7 @@ void Copter::ModeGuided::set_desired_velocity_with_accel_and_fence_limits(const 
 
 #if AC_AVOID_ENABLED
     // limit the velocity to prevent fence violations
-    _copter.avoid.adjust_velocity(pos_control->get_pos_xy_kP(), pos_control->get_accel_xy(), curr_vel_des, G_Dt);
+    _copter.avoid.adjust_velocity(pos_control->get_pos_xy_p().kP(), pos_control->get_accel_xy(), curr_vel_des, G_Dt);
     // get avoidance adjusted climb rate
     curr_vel_des.z = get_avoidance_adjusted_climbrate(curr_vel_des.z);    
 #endif

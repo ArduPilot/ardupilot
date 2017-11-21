@@ -340,19 +340,19 @@ public:
         k_param_p_stabilize_roll,   // remove
         k_param_p_stabilize_pitch,  // remove
         k_param_p_stabilize_yaw,    // remove
-        k_param_p_pos_xy,
+        k_param_p_pos_xy,           // remove
         k_param_p_loiter_lon,       // remove
         k_param_pid_loiter_rate_lat,    // remove
         k_param_pid_loiter_rate_lon,    // remove
         k_param_pid_nav_lat,        // remove
         k_param_pid_nav_lon,        // remove
-        k_param_p_alt_hold,
-        k_param_p_vel_z,
+        k_param_p_alt_hold,             // remove
+        k_param_p_vel_z,                // remove
         k_param_pid_optflow_roll,       // remove
         k_param_pid_optflow_pitch,      // remove
         k_param_acro_balance_roll_old,  // remove
         k_param_acro_balance_pitch_old, // remove
-        k_param_pid_accel_z,
+        k_param_pid_accel_z,            // remove
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
         k_param_acro_yaw_p,
@@ -468,13 +468,6 @@ public:
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
 
-    // PI/D controllers
-    AC_P                    p_vel_z;
-    AC_PID                  pid_accel_z;
-
-    AC_P                    p_pos_xy;
-    AC_P                    p_alt_hold;
-
     // Autotune
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
@@ -482,17 +475,7 @@ public:
 
     // Note: keep initializers here in the same order as they are declared
     // above.
-    Parameters() :
-        // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
-        //---------------------------------------------------------------------------------------------------------------------------------
-        p_vel_z                 (VEL_Z_P),
-        pid_accel_z             (ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    0),
-
-        // P controller	        initial P
-        //----------------------------------------------------------------------
-        p_pos_xy                (POS_XY_P),
-
-        p_alt_hold              (ALT_HOLD_P)
+    Parameters()
     {
     }
 };
