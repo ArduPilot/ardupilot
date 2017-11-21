@@ -411,3 +411,13 @@ bool AP_SerialManager::protocol_match(enum SerialProtocol protocol1, enum Serial
 
     return false;
 }
+
+
+namespace AP {
+
+AP_SerialManager &serialmanager()
+{
+    return *AP_SerialManager::get_instance();
+}
+
+}
