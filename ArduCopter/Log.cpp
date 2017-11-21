@@ -231,7 +231,7 @@ void Copter::Log_Write_Attitude()
         DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
         DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
         DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info() );
+        DataFlash.Log_Write_PID(LOG_PIDA_MSG, pos_control->get_accel_z_pid().get_pid_info() );
     }
 }
 

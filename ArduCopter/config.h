@@ -461,13 +461,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Loiter position control gains
-//
-#ifndef POS_XY_P
- # define POS_XY_P             	1.0f
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Stop mode defaults
 //
 #ifndef BRAKE_MODE_SPEED_Z
@@ -488,37 +481,11 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Throttle control gains
+// Throttle control defaults
 //
 
 #ifndef THR_DZ_DEFAULT
 # define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
-#endif
-
-#ifndef ALT_HOLD_P
- # define ALT_HOLD_P            1.0f
-#endif
-
-// Velocity (vertical) control gains
-#ifndef VEL_Z_P
- # define VEL_Z_P       5.0f
-#endif
-
-// Accel (vertical) control gains
-#ifndef ACCEL_Z_P
- # define ACCEL_Z_P     0.50f
-#endif
-#ifndef ACCEL_Z_I
- # define ACCEL_Z_I     1.00f
-#endif
-#ifndef ACCEL_Z_D
- # define ACCEL_Z_D     0.0f
-#endif
-#ifndef ACCEL_Z_IMAX
- # define ACCEL_Z_IMAX  800
-#endif
-#ifndef ACCEL_Z_FILT_HZ
- # define ACCEL_Z_FILT_HZ   20.0f
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
