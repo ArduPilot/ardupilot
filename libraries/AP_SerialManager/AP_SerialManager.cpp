@@ -126,6 +126,14 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // index 11 used by 0_PROTOCOL
     
+    // @Param: SBUS_RATE
+    // @DisplayName: SBUS default output rate
+    // @Description: This sets the SBUS output frame rate in Hz.
+    // @Range: 25 250
+    // @User: Advanced
+    // @Units: Hz
+    AP_GROUPINFO("_SBUS_RATE",  12, AP_SerialManager, sbus_rate, 50),
+
     AP_GROUPEND
 };
 

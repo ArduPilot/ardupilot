@@ -78,7 +78,6 @@
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_TX     32
 
-
 class AP_SerialManager {
 public:
     enum SerialProtocol {
@@ -159,6 +158,9 @@ private:
         AP_Int32 baud;
         AP_HAL::UARTDriver* uart;
     } state[SERIALMANAGER_NUM_PORTS];
+
+    // frame rate for SBUS1 output port
+    AP_Int16 sbus_rate;
 
     uint32_t map_baudrate(int32_t rate) const;
 
