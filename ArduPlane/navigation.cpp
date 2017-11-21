@@ -187,7 +187,7 @@ void Plane::update_loiter(uint16_t radius)
         }
     } else if ((loiter.start_time_ms == 0 &&
                 control_mode == AUTO &&
-                !auto_state.no_crosstrack &&
+                auto_state.crosstrack &&
                 get_distance(current_loc, next_WP_loc) > radius*3) ||
                (control_mode == RTL && quadplane.available() && quadplane.rtl_mode == 1)) {
         /*
