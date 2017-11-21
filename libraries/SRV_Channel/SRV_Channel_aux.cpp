@@ -128,6 +128,9 @@ void SRV_Channel::aux_servo_function_setup(void)
 /// setup the output range types of all functions
 void SRV_Channels::update_aux_servo_function(void)
 {
+    if (!channels) {
+        return;
+    }
     function_mask.clearall();
 
     for (uint8_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
