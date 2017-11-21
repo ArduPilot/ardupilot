@@ -190,7 +190,7 @@ void Plane::update_loiter(uint16_t radius)
             quadplane.guided_start();
         }
     } else if ((loiter.start_time_ms == 0 &&
-                control_mode == AUTO &&
+                (control_mode == AUTO || control_mode == GUIDED) &&
                 auto_state.crosstrack &&
                 get_distance(current_loc, next_WP_loc) > radius*3) ||
                (control_mode == RTL && quadplane.available() && quadplane.rtl_mode == 1)) {

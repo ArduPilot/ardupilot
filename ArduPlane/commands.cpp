@@ -91,6 +91,9 @@ void Plane::set_guided_WP(void)
     setup_glide_slope();
     setup_turn_angle();
 
+    // disable crosstrack, head directly to the point
+    auto_state.crosstrack = false;
+
     // reset loiter start time.
     loiter.start_time_ms = 0;
 
