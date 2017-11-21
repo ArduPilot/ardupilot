@@ -30,7 +30,10 @@ void setup(void)
 {
     /*
       start all UARTs at 57600 with default buffer sizes
-     */
+    */
+
+    hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
+
     setup_uart(hal.uartA, "uartA");  // console
     setup_uart(hal.uartB, "uartB");  // 1st GPS
     setup_uart(hal.uartC, "uartC");  // telemetry 1
