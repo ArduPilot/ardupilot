@@ -348,8 +348,8 @@ def fly_battery_failsafe(mavproxy, mav, timeout=30):
     return success
 
 
-# fly_stability_patch - fly south, then hold loiter within 5m position and altitude and reduce 1 motor to 60% efficiency
-def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchange=10):
+# fly_motorfailure_test - fly south, then hold loiter within 5m position and altitude and reduce 1 motor to 60% efficiency
+def fly_motorfailure_test(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchange=12):
     """Hold loiter position."""
     mavproxy.send('switch 5\n')  # loiter mode
     wait_mode(mav, 'LOITER')
@@ -400,9 +400,9 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
     mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
 
     if success:
-        progress("Stability patch and Loiter OK for %u seconds" % holdtime)
+        progress("Motor Failure test OK for %u seconds" % holdtime)
     else:
-        progress("Stability Patch FAILED")
+        progress("Motor Failure test FAILED")
 
     return success
 
@@ -1112,12 +1112,12 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
             progress(failed_test_msg)
             failed = True
 
-        # Stability patch
+        # Motor Failure test
         progress("#")
-        progress("########## Test Stability Patch ##########")
+        progress("########## Test Motor Failure ##########")
         progress("#")
-        if not fly_stability_patch(mavproxy, mav, 30):
-            failed_test_msg = "fly_stability_patch failed"
+        if not fly_motorfailure_test(mavproxy, mav, 30):
+            failed_test_msg = "fly_motorfailure_test failed"
             progress(failed_test_msg)
             failed = True
 
