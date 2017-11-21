@@ -1276,7 +1276,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
                 }
                 if (plane.landing.request_go_around()) {
-                    plane.auto_state.next_wp_no_crosstrack = true;
+                    plane.auto_state.next_wp_crosstrack = false;
                     result = MAV_RESULT_ACCEPTED;
                 }
             }
@@ -1923,7 +1923,7 @@ AP_Mission *GCS_MAVLINK_Plane::get_mission()
 
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg)
 {
-    plane.auto_state.next_wp_no_crosstrack = true;
+    plane.auto_state.next_wp_crosstrack = false;
     GCS_MAVLINK::handle_mission_set_current(mission, msg);
     if (plane.control_mode == AUTO && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
