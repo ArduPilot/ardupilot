@@ -31,11 +31,8 @@ AP_Volz_Protocol::AP_Volz_Protocol(void)
 
 void AP_Volz_Protocol::init(void)
 {
-    AP_SerialManager *serial_manager = AP_SerialManager::get_instance();
-    if (!serial_manager) {
-        return;
-    }
-    port = serial_manager->find_serial(AP_SerialManager::SerialProtocol_Volz,0);
+    AP_SerialManager &serial_manager = AP::serialmanager();
+    port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Volz,0);
     update_volz_bitmask(bitmask);
 }
 
