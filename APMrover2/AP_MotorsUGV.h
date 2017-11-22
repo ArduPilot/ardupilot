@@ -80,8 +80,8 @@ protected:
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle);
 
-    // slew limit throttle for one iteration
-    void slew_limit_throttle(float dt);
+    // slew limit throttle and steering
+    void slew_limit_throttle_and_steering(float dt);
 
     // set limits based on steering and throttle input
     void set_limits_from_input(bool armed, float steering, float throttle);
@@ -101,5 +101,6 @@ protected:
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
-    float   _last_throttle;
+    float   _throttle_prev; // throttle input from previous iteration
+    float   _steering_prev; // steering input from previous iteration
 };
