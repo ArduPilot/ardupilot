@@ -672,11 +672,6 @@ void Copter::guided_set_desired_velocity_with_accel_and_fence_limits(const Vecto
     // get current desired velocity
     Vector3f curr_vel_des = pos_control->get_desired_velocity();
 
-    // exit immediately if already equal
-    if (curr_vel_des == vel_des) {
-        return;
-    }
-
     // get change in desired velocity
     Vector3f vel_delta = vel_des - curr_vel_des;
 
@@ -697,6 +692,8 @@ void Copter::guided_set_desired_velocity_with_accel_and_fence_limits(const Vecto
 #if AC_AVOID_ENABLED
     // limit the velocity to prevent fence violations
     avoid.adjust_velocity(pos_control->get_pos_xy_kP(), pos_control->get_accel_xy(), curr_vel_des);
+    // get avoidance adjusted climb rate
+    curr_vel_des.z = get_avoidance_adjusted_climbrate(curr_vel_des.z);    
 #endif
 
     // update position controller with new target
