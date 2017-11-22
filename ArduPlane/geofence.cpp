@@ -290,7 +290,7 @@ void Plane::geofence_check(bool altitude_check_only)
         // switch back to the chosen control mode if still in
         // GUIDED to the return point
         if (geofence_state != nullptr &&
-            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS || g.fence_action == FENCE_ACTION_RTL) &&
+            (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS || g.fence_action == FENCE_ACTION_RTL || g.fence_action == FENCE_ACTION_GUIDED_THROUGH_HOME) &&
             (control_mode == GUIDED || control_mode == AVOID_ADSB) &&
             geofence_present() &&
             geofence_state->boundary_uptodate &&
@@ -380,6 +380,7 @@ void Plane::geofence_check(bool altitude_check_only)
         break;
 
     case FENCE_ACTION_GUIDED:
+    case FENCE_ACTION_GUIDED_THROUGH_HOME:
     case FENCE_ACTION_GUIDED_THR_PASS:
     case FENCE_ACTION_RTL:
         // make sure we don't auto trim the surfaces on this mode change
@@ -394,6 +395,39 @@ void Plane::geofence_check(bool altitude_check_only)
 
         if (g.fence_ret_rally != 0 || g.fence_action == FENCE_ACTION_RTL) { //return to a rally point
             guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
+
+        } else if (g.fence_action == FENCE_ACTION_GUIDED_THROUGH_HOME) { // fly to, and through, HOME
+            // in this case we will fly back home but instead of an RTL loiter
+            // we will continue and eventually bounce off the fence on the other side.
+            // Instead of calculating the distance to the point on the fence in that direction,
+            // we create a point just outside the fence in that direction
+
+            // in the rare case that the geofence gets disabled while navigating to this waypoint outside the fence,
+            // lets not move the point tooo far away. Start with x2.25 distance to home (puts you just outside of boundry
+            // on other side of home if radius were equal) and increase by x1.5 each time. If it reaches 100km then assume
+            // something is wrong and loiter home. Worst case iteration count is <15 but usually just once or twice.
+
+            Location loc_head_towards = home;
+            // if home is outside the fence, use the fence's "return point" which is garenteed inside
+            if (Polygon_outside(Vector2l(loc_head_towards.lat,loc_head_towards.lng), &geofence_state->boundary[1], geofence_state->num_points-1)) {
+                loc_head_towards.lat = geofence_state->boundary[0].x;
+                loc_head_towards.lng = geofence_state->boundary[0].y;
+            }
+
+            float distance = get_distance(current_loc, loc_head_towards) * 1.5;
+            const float bearing_to_target = get_bearing_cd(current_loc, loc_head_towards)*0.01f;
+
+            do {
+                distance *= 1.5 ;
+                location_update(loc_head_towards, bearing_to_target, distance);
+
+                outside = Polygon_outside(Vector2l(loc_head_towards.lat,loc_head_towards.lng), &geofence_state->boundary[1], geofence_state->num_points-1);
+            } while (!outside && distance < 100E3);
+
+            guided_WP_loc.options = 0;
+            guided_WP_loc.alt = current_loc.alt;
+            guided_WP_loc.lat = loc_head_towards.lat;
+            guided_WP_loc.lng = loc_head_towards.lng;
 
         } else { //return to fence return point, not a rally point
             guided_WP_loc = {};
@@ -418,6 +452,13 @@ void Plane::geofence_check(bool altitude_check_only)
         if (g.fence_action != FENCE_ACTION_RTL) { //not needed for RTL mode
             setup_terrain_target_alt(guided_WP_loc);
             set_guided_WP();
+
+            if (g.fence_action == FENCE_ACTION_GUIDED_THROUGH_HOME) {
+                // this enforces crosstrack from the point it calculated from to
+                // ensure we fly directly over home. This flag is cleared in
+                // set_guided_WP() so it must be set afterwards
+                auto_state.crosstrack = true;
+            }
         }
 
         if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
