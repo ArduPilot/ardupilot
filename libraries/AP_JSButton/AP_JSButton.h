@@ -91,7 +91,12 @@ public:
         k_relay_4_on            = 101,           ///< trigger relay on
         k_relay_4_off           = 102,           ///< trigger relay off
         k_relay_4_toggle        = 103,           ///< trigger relay toggle
-        // 104+ reserved for future functions
+
+        k_relay_1_momentary     = 104,           ///< relay toggle when button is pushed, and again when released
+        k_relay_2_momentary     = 105,
+        k_relay_3_momentary     = 106,
+        k_relay_4_momentary     = 107,
+        // 106+ reserved for future functions
         k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } button_function_t;
 
