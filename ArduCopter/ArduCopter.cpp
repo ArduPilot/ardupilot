@@ -182,14 +182,6 @@ void Copter::setup()
     fast_loopTimer = AP_HAL::micros();
 }
 
-/*
-  try to accumulate a baro reading
- */
-void Copter::barometer_accumulate(void)
-{
-    barometer.accumulate();
-}
-
 void Copter::perf_update(void)
 {
     if (should_log(MASK_LOG_PM))
