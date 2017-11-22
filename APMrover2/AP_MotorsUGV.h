@@ -48,9 +48,6 @@ public:
     // output to motors and steering servos
     void output(bool armed, float dt);
 
-    // set when to use slew rate limiter
-    void slew_limit_throttle(bool value) { _use_slew_rate = value; }
-
     // test steering or throttle output as a percentage of the total (range -100 to +100)
     // used in response to DO_MOTOR_TEST mavlink command
     bool output_test_pct(motor_test_order motor_seq, float pct);
@@ -105,5 +102,4 @@ protected:
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _last_throttle;
-    bool    _use_slew_rate; // true if we should slew limit the throttle for one interation
 };
