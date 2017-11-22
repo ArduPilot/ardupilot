@@ -37,7 +37,6 @@ void Rover::set_servos(void)
 {
     // send output signals to motors
     if (motor_test) {
-        g2.motors.slew_limit_throttle(false);
         motor_test_output();
     } else {
         g2.motors.output(arming.is_armed() && hal.util->get_soft_armed(), G_Dt);
