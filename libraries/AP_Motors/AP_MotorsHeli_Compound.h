@@ -1,55 +1,56 @@
-/// @file	AP_MotorsHeli_Single.h
+/// @file	AP_MotorsHeli_Compound.h
 /// @brief	Motor control class for traditional heli
-#pragma once
+#ifndef __AP_MOTORS_HELI_COMPOUND_H__
+#define __AP_MOTORS_HELI_COMPOUND_H__
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <SRV_Channel/SRV_Channel.h>
+#include <RC_Channel/RC_Channel.h>
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsHeli_RSC.h"
 
 // rsc and aux function output channels
-#define AP_MOTORS_HELI_SINGLE_RSC                              CH_8
-#define AP_MOTORS_HELI_SINGLE_AUX                              CH_7
+#define AP_MOTORS_HELI_COMPOUND_RSC                              CH_8
+#define AP_MOTORS_HELI_COMPOUND_AUX                              CH_7
 
 // servo position defaults
-#define AP_MOTORS_HELI_SINGLE_SERVO1_POS                       -60
-#define AP_MOTORS_HELI_SINGLE_SERVO2_POS                       60
-#define AP_MOTORS_HELI_SINGLE_SERVO3_POS                       180
+#define AP_MOTORS_HELI_COMPOUND_SERVO1_POS                       -60
+#define AP_MOTORS_HELI_COMPOUND_SERVO2_POS                       60
+#define AP_MOTORS_HELI_COMPOUND_SERVO3_POS                       180
 
 // swash type definitions
-#define AP_MOTORS_HELI_SINGLE_SWASH_CCPM                       0
-#define AP_MOTORS_HELI_SINGLE_SWASH_H1                         1
+#define AP_MOTORS_HELI_COMPOUND_SWASH_CCPM                       0
+#define AP_MOTORS_HELI_COMPOUND_SWASH_H1                         1
 
 // tail types
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO                   0
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO           1
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH    2
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH  3
+#define AP_MOTORS_HELI_COMPOUND_TAILTYPE_SERVO                   0
+#define AP_MOTORS_HELI_COMPOUND_TAILTYPE_SERVO_EXTGYRO           1
+#define AP_MOTORS_HELI_COMPOUND_TAILTYPE_DIRECTDRIVE_VARPITCH    2
+#define AP_MOTORS_HELI_COMPOUND_TAILTYPE_DIRECTDRIVE_FIXEDPITCH  3
 
 // default direct-drive variable pitch tail defaults
-#define AP_MOTORS_HELI_SINGLE_DDVPT_SPEED_DEFAULT              500
-#define AP_MOTORS_HELI_SINGLE_DDVPT_RAMP_TIME                  2
-#define AP_MOTORS_HELI_SINGLE_DDVPT_RUNUP_TIME                 3
+#define AP_MOTORS_HELI_COMPOUND_DDVPT_SPEED_DEFAULT              500
+#define AP_MOTORS_HELI_COMPOUND_DDVPT_RAMP_TIME                  2
+#define AP_MOTORS_HELI_COMPOUND_DDVPT_RUNUP_TIME                 3
 
 // default external gyro gain
-#define AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN                    350
+#define AP_MOTORS_HELI_COMPOUND_EXT_GYRO_GAIN                    350
 
 // COLYAW parameter min and max values
-#define AP_MOTORS_HELI_SINGLE_COLYAW_RANGE             10.0f
+#define AP_MOTORS_HELI_COMPOUND_COLYAW_RANGE             10.0f
 
 // maximum number of swashplate servos
-#define AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS    3
+#define AP_MOTORS_HELI_COMPOUND_NUM_SWASHPLATE_SERVOS    3
 
-/// @class      AP_MotorsHeli_Single
-class AP_MotorsHeli_Single : public AP_MotorsHeli {
+/// @class      AP_MotorsHeli_Compound
+class AP_MotorsHeli_Compound : public AP_MotorsHeli {
 public:
     // constructor
-    AP_MotorsHeli_Single(uint16_t       loop_rate,
+    AP_MotorsHeli_Compound(uint16_t       loop_rate,
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
-        _main_rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC),
-        _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_AUX)
+        _main_rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_COMPOUND_RSC),
+        _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_COMPOUND_AUX)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -91,13 +92,13 @@ public:
     bool has_flybar() const  override { return _flybar_mode; }
 
     // supports_yaw_passthrought - returns true if we support yaw passthrough
-    bool supports_yaw_passthrough() const override { return _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO; }
+    bool supports_yaw_passthrough() const override { return _tail_type == AP_MOTORS_HELI_COMPOUND_TAILTYPE_SERVO_EXTGYRO; }
 
     void set_acro_tail(bool set) override { _acro_tail = set; }
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     bool parameter_check(bool display_msg) const override;
-
+    
     // set_boost - engage the booster
     void set_boost(float boost_in) override { _boost_in = boost_in;}
     
@@ -151,19 +152,23 @@ protected:
     AP_Float        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
+    AP_Float        _yaw_offset;                // constant offset instead of mechanically adjusting for yaw in hover
+    AP_Float        _boost_flat_pitch;          // flat pitch point for propellers
 
     SRV_Channel    *_swash_servo_1;
     SRV_Channel    *_swash_servo_2;
     SRV_Channel    *_swash_servo_3;
-    SRV_Channel    *_yaw_servo;
+    SRV_Channel    *_yaw_servo_1;
+    SRV_Channel    *_yaw_servo_2;    
     SRV_Channel    *_servo_aux;
     
     bool            _acro_tail = false;
-    float           _rollFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
-    float           _pitchFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
-    float           _collectiveFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
+    float           _rollFactor[AP_MOTORS_HELI_COMPOUND_NUM_SWASHPLATE_SERVOS];
+    float           _pitchFactor[AP_MOTORS_HELI_COMPOUND_NUM_SWASHPLATE_SERVOS];
+    float           _collectiveFactor[AP_MOTORS_HELI_COMPOUND_NUM_SWASHPLATE_SERVOS];
 
 private:
     float _boost_in;
 
 };
+#endif  // AP_MotorsHeli_Compound
