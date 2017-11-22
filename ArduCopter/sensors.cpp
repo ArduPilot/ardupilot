@@ -24,6 +24,12 @@ void Copter::read_barometer(void)
     motors->set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
+// try to accumulate a baro reading
+void Copter::barometer_accumulate(void)
+{
+    barometer.accumulate();
+}
+
 void Copter::init_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
