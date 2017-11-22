@@ -73,6 +73,17 @@ static struct {
 // poshold_init - initialise PosHold controller
 bool Copter::ModePosHold::init(bool ignore_checks)
 {
+#if FRAME_CONFIG == HELI_FRAME
+    // do not allow helis to enter Pos Hold if the Rotor Runup is not complete
+    if (!ignore_checks && !motors->rotor_runup_complete()){
+        return false;
+    }
+    //keep compound-heli from using this mode
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
+        return false;
+    }
+#endif
+
     // fail to initialise PosHold mode if no GPS lock
     if (!_copter.position_ok() && !ignore_checks) {
         return false;

@@ -20,6 +20,13 @@
 // auto_init - initialise auto controller
 bool Copter::ModeAuto::init(bool ignore_checks)
 {
+#if FRAME_CONFIG == HELI_FRAME
+    //keep compound-heli from using this mode
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
+        return false;
+    }
+#endif
+
     if ((_copter.position_ok() && mission.num_commands() > 1) || ignore_checks) {
         _mode = Auto_Loiter;
 

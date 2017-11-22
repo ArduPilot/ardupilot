@@ -86,6 +86,11 @@ void Copter::ModeAcro_Heli::run()
             yaw_in = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         }
 
+    //get pilot desired boost
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
+        motors->set_boost((float)RC_Channels::rc_channel(CH_7)->get_control_in() * 0.001f);
+    }
+
         // run attitude controller
         attitude_control->passthrough_bf_roll_pitch_rate_yaw(roll_in, pitch_in, yaw_in);
     }
