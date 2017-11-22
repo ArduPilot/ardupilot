@@ -152,7 +152,7 @@ void AP_SBusOut::init() {
     uint16_t rate = sbus_rate.get();
 
 #if SBUS_DEBUG
-    ::printf("AP_SBusOut: init %d Hz\n", rate);
+    hal.console->printf("AP_SBusOut: init %d Hz\n", rate);
 #endif
 
     // subtract 500msec from requested frame interval to allow for latency

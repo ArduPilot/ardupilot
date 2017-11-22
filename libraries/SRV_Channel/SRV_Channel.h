@@ -18,6 +18,7 @@
 #include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_Common/Bitmask.h>
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>
+#include <AP_SBusOut/AP_SBusOut.h>
 
 #define NUM_SERVO_CHANNELS 16
 
@@ -439,6 +440,10 @@ private:
     // support for Volz protocol
     AP_Volz_Protocol volz = AP_Volz_Protocol::create();
     static AP_Volz_Protocol *volz_ptr;
+
+    // support for SBUS protocol
+    AP_SBusOut sbus = AP_SBusOut::create();
+    static AP_SBusOut *sbus_ptr;
 
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
