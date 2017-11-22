@@ -283,7 +283,7 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
 
     // search for serial ports with gps protocol
     _port[0] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 0);
-    _port[1] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 1);
+    _port[1] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS2, 0);
     _last_instance_swap_ms = 0;
 
     // Initialise class variables used to do GPS blending

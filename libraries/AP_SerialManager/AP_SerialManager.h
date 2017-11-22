@@ -158,4 +158,7 @@ private:
 
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
+
+    // true when there is a GPS2 protocol port configured
+    bool have_gps2;
 };
