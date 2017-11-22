@@ -94,14 +94,6 @@ void Sub::setup()
     fast_loopTimer = AP_HAL::micros();
 }
 
-/*
-  try to accumulate a baro reading
- */
-void Sub::barometer_accumulate(void)
-{
-    barometer.accumulate();
-}
-
 void Sub::perf_update(void)
 {
     if (should_log(MASK_LOG_PM)) {
