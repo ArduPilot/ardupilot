@@ -101,5 +101,5 @@ protected:
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
-    float   _last_throttle;
+    float   _throttle_prev; // throttle input from previous iteration
 };
