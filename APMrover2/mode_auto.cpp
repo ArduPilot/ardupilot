@@ -1,6 +1,12 @@
 #include "mode.h"
 #include "Rover.h"
 
+// constructor
+ModeAuto::ModeAuto(ModeRTL& mode_rtl) :
+    _mode_rtl(mode_rtl)
+{
+}
+
 bool ModeAuto::_enter()
 {
     // fail to enter auto if no mission commands
@@ -75,6 +81,10 @@ void ModeAuto::update()
             }
             break;
         }
+
+        case Auto_RTL:
+            _mode_rtl.update();
+            break;
     }
 }
 
@@ -93,6 +103,9 @@ bool ModeAuto::reached_destination()
 {
     if (_submode == Auto_WP) {
         return _reached_destination;
+    }
+    if (_submode == Auto_RTL) {
+        return _mode_rtl.reached_destination();
     }
     // we should never reach here but just in case, return true to allow missions to continue
     return true;
@@ -116,6 +129,14 @@ bool ModeAuto::reached_heading()
     }
     // we should never reach here but just in case, return true to allow missions to continue
     return true;
+}
+
+// start RTL (within auto)
+void ModeAuto::start_RTL()
+{
+    if (_mode_rtl.enter()) {
+        _submode = Auto_RTL;
+    }
 }
 
 // execute the mission in reverse (i.e. backing up)
