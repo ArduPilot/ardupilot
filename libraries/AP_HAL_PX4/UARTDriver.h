@@ -39,6 +39,10 @@ public:
     void set_flow_control(enum flow_control flow_control);
     enum flow_control get_flow_control(void) { return _flow_control; }
 
+    void configure_parity(uint8_t v);
+    void set_stop_bits(int n);
+    bool set_unbuffered_writes(bool on);
+
 private:
     const char *_devpath;
     int _fd;
@@ -47,6 +51,7 @@ private:
     volatile bool _in_timer;
 
     bool _nonblocking_writes;
+    bool _unbuffered_writes;
 
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop

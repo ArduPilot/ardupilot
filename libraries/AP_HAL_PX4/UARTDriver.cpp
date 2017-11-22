@@ -28,7 +28,8 @@ PX4UARTDriver::PX4UARTDriver(const char *devpath, const char *perf_name) :
     _in_timer(false),
     _perf_uart(perf_alloc(PC_ELAPSED, perf_name)),
     _os_start_auto_space(-1),
-    _flow_control(FLOW_CONTROL_DISABLE)
+    _flow_control(FLOW_CONTROL_DISABLE),
+    _unbuffered_writes(false)
 {
 }
 
@@ -153,6 +154,44 @@ void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
     _flow_control = fcontrol;
 }
 
+void PX4UARTDriver::configure_parity(uint8_t v) {
+    if (_fd == -1) {
+        return;
+    }
+    struct termios t;
+    tcgetattr(_fd, &t);
+    if (v != 0) {
+        // enable parity
+        t.c_cflag |= PARENB;
+        if (v == 1) {
+            t.c_cflag |= PARODD;
+        } else {
+            t.c_cflag &= ~PARODD;
+        }
+    }
+    else {
+        // disable parity
+        t.c_cflag &= ~PARENB;
+    }
+    tcsetattr(_fd, TCSANOW, &t);
+}
+
+void PX4UARTDriver::set_stop_bits(int n) {
+    if (_fd == -1) {
+        return;
+    }
+    struct termios t;
+    tcgetattr(_fd, &t);
+    if (n > 1) t.c_cflag |= CSTOPB;
+    else t.c_cflag &= ~CSTOPB;
+    tcsetattr(_fd, TCSANOW, &t);
+}
+
+bool PX4UARTDriver::set_unbuffered_writes(bool on) {
+    _unbuffered_writes = on;
+    return _unbuffered_writes;
+}
+
 void PX4UARTDriver::begin(uint32_t b)
 {
 	begin(b, 0, 0);
@@ -256,7 +295,7 @@ int16_t PX4UARTDriver::read()
 }
 
 /*
-   write one byte to the buffer
+   write one byte
  */
 size_t PX4UARTDriver::write(uint8_t c)
 {
@@ -266,6 +305,11 @@ size_t PX4UARTDriver::write(uint8_t c)
     if (!_initialised) {
         try_initialise();
         return 0;
+    }
+
+    if (_unbuffered_writes) {
+        // write one byte to the file descriptor
+        return _write_fd(&c, 1);
     }
 
     while (_writebuf.space() == 0) {
@@ -278,31 +322,30 @@ size_t PX4UARTDriver::write(uint8_t c)
 }
 
 /*
-  write size bytes to the write buffer
+ * write size bytes
  */
 size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
 {
-    if (_uart_owner_pid != getpid()){
-        return 0;
-    }
-	if (!_initialised) {
-        try_initialise();
-		return 0;
-	}
-
-    if (!_nonblocking_writes) {
-        /*
-          use the per-byte delay loop in write() above for blocking writes
-         */
-        size_t ret = 0;
-        while (size--) {
-            if (write(*buffer++) != 1) break;
-            ret++;
+    size_t ret = 0;
+    if (_uart_owner_pid == getpid()) {
+        if (!_initialised) {
+            try_initialise();
+        } else {
+            if (_unbuffered_writes) {
+                //  write buffer straight to the file descriptor
+                ret = _write_fd(buffer, size);
+            } else if (_nonblocking_writes) {
+                ret = _writebuf.write(buffer, size);
+            } else {
+                // use the per-byte delay loop in write() above for blocking writes
+                while (size--) {
+                    if (write(*buffer++) != 1) break;
+                    ret++;
+                }
+            }
         }
-        return ret;
     }
-
-    return _writebuf.write(buffer, size);
+    return ret;
 }
 
 /*
