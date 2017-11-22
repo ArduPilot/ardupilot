@@ -27,6 +27,7 @@ extern const AP_HAL::HAL& hal;
 SRV_Channel *SRV_Channels::channels;
 SRV_Channels *SRV_Channels::instance;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
+AP_SBusOut *SRV_Channels::sbus_ptr;
 
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
@@ -117,6 +118,10 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Path: ../AP_Volz_Protocol/AP_Volz_Protocol.cpp
     AP_SUBGROUPINFO(volz, "_VOLZ_",  19, SRV_Channels, AP_Volz_Protocol),
 
+    // @Group: SBUS_
+    // @Path: ../AP_SBusOut/AP_SBusOut.cpp
+    AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
+
     AP_GROUPEND
 };
 
@@ -137,6 +142,7 @@ SRV_Channels::SRV_Channels(void)
     }
 
     volz_ptr = &volz;
+    sbus_ptr = &sbus;
 }
 
 /*
@@ -201,4 +207,7 @@ void SRV_Channels::push()
 
     // give volz library a chance to update
     volz_ptr->update();
+
+    // give sbus library a chance to update
+    sbus_ptr->update();
 }
