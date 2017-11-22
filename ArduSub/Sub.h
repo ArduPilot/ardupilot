@@ -460,7 +460,6 @@ private:
 
     void compass_accumulate(void);
     void compass_cal_update(void);
-    void barometer_accumulate(void);
     void perf_update(void);
     void fast_loop();
     void fifty_hz_loop();
@@ -642,6 +641,7 @@ private:
     void clear_input_hold();
     void init_barometer(bool save);
     void read_barometer(void);
+    void barometer_accumulate(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
     bool rangefinder_alt_ok(void);
