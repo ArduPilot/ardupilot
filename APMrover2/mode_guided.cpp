@@ -13,7 +13,6 @@ bool ModeGuided::_enter()
     // guided mode never travels in reverse
     rover.set_reverse(false);
 
-    g2.motors.slew_limit_throttle(true);
     return true;
 }
 

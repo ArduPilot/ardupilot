@@ -20,7 +20,6 @@ bool ModeAuto::_enter()
 
     // other initialisation
     auto_triggered = false;
-    g2.motors.slew_limit_throttle(true);
 
     // initialise reversed to be false
     set_reversed(false);
