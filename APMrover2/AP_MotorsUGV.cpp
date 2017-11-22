@@ -187,10 +187,11 @@ void AP_MotorsUGV::output(bool armed, float dt)
         armed = false;
     }
 
-    slew_limit_throttle(dt);
-
     // clear and set limits based on input (limit flags may be set again by output_regular or output_skid_steering methods)
     set_limits_from_input(armed, _steering, _throttle);
+
+    // slew limit throttle
+    slew_limit_throttle(dt);
 
     // output for regular steering/throttle style frames
     output_regular(armed, _steering, _throttle);
@@ -203,7 +204,6 @@ void AP_MotorsUGV::output(bool armed, float dt)
     SRV_Channels::cork();
     SRV_Channels::output_ch_all();
     SRV_Channels::push();
-    _last_throttle = _throttle;
 }
 
 // output to regular steering and throttle channels
@@ -354,12 +354,17 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 void AP_MotorsUGV::slew_limit_throttle(float dt)
 {
     if (_slew_rate > 0) {
-        float temp = _slew_rate * dt * 0.01f * (_throttle_max - _throttle_min);
-        if (temp < 1.0f) {
-            temp = 1.0f;
+        // slew throttle
+        const float throttle_change_max = MAX(1.0f, _slew_rate * dt * 0.01f * (_throttle_max - _throttle_min));
+        if (_throttle > _throttle_prev + throttle_change_max) {
+            _throttle = _throttle_prev + throttle_change_max;
+            limit.throttle_upper = true;
+        } else if (_throttle < _throttle_prev - throttle_change_max) {
+            _throttle = _throttle_prev - throttle_change_max;
+            limit.throttle_lower = true;
         }
-        _throttle = constrain_int16(_throttle, _last_throttle - temp, _last_throttle + temp);
     }
+    _throttle_prev = _throttle;
 }
 
 // set limits based on steering and throttle input
