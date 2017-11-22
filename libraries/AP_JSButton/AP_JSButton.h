@@ -80,7 +80,16 @@ public:
         k_servo_3_max           = 74,
         k_servo_3_center        = 75,
 
-        // 76-90 reserved for future functions
+        k_servo_1_min_momentary = 76,          ///< set servo output to minimum (SERVOn_MIN) until released
+        k_servo_1_max_momentary = 77,          ///< set servo output to minimum (SERVOn_MAX) until released
+        // 78-79 reserved for future functions
+        k_servo_2_min_momentary = 80,
+        k_servo_2_max_momentary = 81,
+        // 82-83 reserved for future functions
+        k_servo_3_min_momentary = 84,
+        k_servo_3_max_momentary = 85,
+
+        // 86-90 reserved for future functions
         k_custom_1              = 91,           ///< custom user button 1
         k_custom_2              = 92,           ///< custom user button 2
         k_custom_3              = 93,           ///< custom user button 3
@@ -96,7 +105,8 @@ public:
         k_relay_2_momentary     = 105,
         k_relay_3_momentary     = 106,
         k_relay_4_momentary     = 107,
-        // 106+ reserved for future functions
+
+        // 108+ reserved for future functions
         k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } button_function_t;
 
