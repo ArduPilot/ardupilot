@@ -246,7 +246,7 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_SBUS1_BUFSIZE_RX,
                                          AP_SERIALMANAGER_SBUS1_BUFSIZE_TX);
                     // enable SBUS output on this uart
-                    hal.rcout->enable_sbus_out(state[i].uart, 200); //g2.servo_channels.sbus_rate.get());
+                    hal.rcout->enable_sbus_out(state[i].uart, sbus_rate.get());
                     break;
             }
         }
