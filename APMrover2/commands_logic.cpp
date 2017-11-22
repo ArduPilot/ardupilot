@@ -211,7 +211,8 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 
 void Rover::do_RTL(void)
 {
-    set_mode(mode_rtl, MODE_REASON_MISSION_COMMAND);
+    // start rtl in auto mode
+    mode_auto.start_RTL();
 }
 
 void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_at_dest)
@@ -307,7 +308,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Rover::verify_RTL()
 {
-    return mode_rtl.reached_destination();
+    return mode_auto.reached_destination();
 }
 
 bool Rover::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
