@@ -6,6 +6,9 @@
 
 #define MODE_NEXT_HEADING_UNKNOWN   99999.0f    // used to indicate to set_desired_location method that next leg's heading is unknown
 
+// pre-define ModeRTL so Auto can appear higher in this file
+class ModeRTL;
+
 class Mode
 {
 public:
@@ -142,6 +145,9 @@ class ModeAuto : public Mode
 {
 public:
 
+    // constructor
+    ModeAuto(ModeRTL& mode_rtl);
+
     uint32_t mode_number() const override { return AUTO; }
 
     // methods that affect movement of the vehicle in this mode
@@ -164,6 +170,9 @@ public:
     void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
     bool reached_heading();
 
+    // start RTL (within auto)
+    void start_RTL();
+
     // execute the mission in reverse (i.e. backing up)
     void set_reversed(bool value);
 
@@ -174,12 +183,16 @@ protected:
 
     enum AutoSubMode {
         Auto_WP,                // drive to a given location
-        Auto_HeadingAndSpeed    // turn to a given heading
+        Auto_HeadingAndSpeed,   // turn to a given heading
+        Auto_RTL                // perform RTL within auto mode
     } _submode;
 
 private:
 
     bool check_trigger(void);
+
+    // references
+    ModeRTL& _mode_rtl;
 
     // this is set to true when auto has been triggered to start
     bool auto_triggered;
