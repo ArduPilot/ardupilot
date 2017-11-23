@@ -2,7 +2,7 @@
 
 #include "ap_version.h"
 
-#define THISFIRMWARE "ArduHeli V3.5.4"
+#define THISFIRMWARE "ArduHeli V3.5.4-dev"
 #define FIRMWARE_VERSION 3,5,4,FIRMWARE_VERSION_TYPE_BETA
 
 #ifndef GIT_VERSION
