@@ -1093,7 +1093,15 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         // update target position and velocity from spline calculator
         calc_spline_pos_vel(_spline_time, target_pos, target_vel);
 
-        _pos_delta_unit = target_vel/target_vel.length();
+        // if target velocity is zero the origin and destination must be the same
+        // so flag reached destination (and protect against divide by zero)
+        float target_vel_length = target_vel.length();
+        if (is_zero(target_vel_length)) {
+            _flags.reached_destination = true;
+            return true;
+        }
+
+        _pos_delta_unit = target_vel / target_vel_length;
         calculate_wp_leash_length();
 
         // get current location
@@ -1149,10 +1157,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         _spline_vel_scaler = constrain_float(_spline_vel_scaler, 0.0f, vel_limit);
 
         // scale the spline_time by the velocity we've calculated vs the velocity that came out of the spline calculator
-        float target_vel_length = target_vel.length();
-        if (!is_zero(target_vel_length)) {
-            _spline_time_scale = _spline_vel_scaler/target_vel_length;
-        }
+        _spline_time_scale = _spline_vel_scaler / target_vel_length;
 
         // update target position
         target_pos.z += terr_offset;
