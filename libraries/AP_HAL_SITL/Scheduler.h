@@ -50,6 +50,8 @@ public:
 
     uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
 
+    static void _run_io_procs(bool called_from_isr);
+    
 private:
     SITL_State *_sitlState;
     uint8_t _nested_atomic_ctr;
@@ -58,7 +60,6 @@ private:
     static AP_HAL::Proc _failsafe;
 
     static void _run_timer_procs(bool called_from_isr);
-    static void _run_io_procs(bool called_from_isr);
 
     static volatile bool _timer_suspended;
     static volatile bool _timer_event_missed;
