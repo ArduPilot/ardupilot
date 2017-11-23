@@ -164,8 +164,9 @@ protected:
     bool use_time_sync = true;
     float last_speedup = -1.0f;
 
-    enum Rotation imu_rotation = ROTATION_NONE;
-
+    // allow for AHRS_ORIENTATION
+    AP_Int8 *ahrs_orientation;
+    
     enum {
         GROUND_BEHAVIOR_NONE = 0,
         GROUND_BEHAVIOR_NO_MOVEMENT,
