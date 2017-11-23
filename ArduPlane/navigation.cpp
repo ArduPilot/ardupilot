@@ -288,8 +288,7 @@ void Plane::update_fbwb_speed_height(void)
         target_altitude.last_elevator_input = elevator_input;
     }
     
-    // check for FBWB altitude limit
-    check_minimum_altitude();
+    check_fbwb_minimum_altitude();
 
     altitude_error_cm = calc_altitude_error_cm();
     
