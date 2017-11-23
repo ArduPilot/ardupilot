@@ -1447,10 +1447,14 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // send request
         if (!pos_ignore && !vel_ignore && acc_ignore) {
             copter.guided_set_destination_posvel(pos_vector, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            result = MAV_RESULT_ACCEPTED;
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             copter.guided_set_velocity(vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            result = MAV_RESULT_ACCEPTED;
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            if (!copter.guided_set_destination(pos_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative)) {
+            if (copter.guided_set_destination(pos_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
                 result = MAV_RESULT_FAILED;
             }
         } else {
@@ -1518,7 +1522,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 case MAV_FRAME_GLOBAL:
                 case MAV_FRAME_GLOBAL_INT:
                 default:
-                    // Copter does not support navigation to absolute altitudes. This convert the WGS84 altitude
+                    // Copter does not support navigation to absolute altitudes. This converts the WGS84 altitude
                     // to a home-relative altitude before passing it to the navigation controller
                     loc.alt -= copter.ahrs.get_home().alt;
                     loc.flags.relative_alt = true;
@@ -1542,10 +1546,14 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {
             copter.guided_set_destination_posvel(pos_ned, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            result = MAV_RESULT_ACCEPTED;
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             copter.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            result = MAV_RESULT_ACCEPTED;
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            if (!copter.guided_set_destination(pos_ned, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative)) {
+            if (copter.guided_set_destination(pos_ned, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
                 result = MAV_RESULT_FAILED;
             }
         } else {
