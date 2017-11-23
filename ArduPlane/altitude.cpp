@@ -312,7 +312,7 @@ int32_t Plane::calc_altitude_error_cm(void)
 /*
   check for FBWB_min_altitude_cm violation
  */
-void Plane::check_minimum_altitude(void)
+void Plane::check_fbwb_minimum_altitude(void)
 {
     if (g.FBWB_min_altitude_cm == 0) {
         return;

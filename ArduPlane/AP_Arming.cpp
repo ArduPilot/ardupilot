@@ -35,7 +35,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
     // Check airspeed sensor
     ret &= AP_Arming::airspeed_checks(report);
 
-    if (plane.g.long_fs_timeout < plane.g.short_fs_timeout) {
+    if (plane.g.long_fs_timeout < plane.g.short_fs_timeout && plane.g.short_fs_action != SHORT_FS_ACTION_DISABLED) {
         if (report) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: FS_LONG_TIMEOUT < FS_SHORT_TIMEOUT");
         }
