@@ -116,27 +116,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
 
-    // @Param: RSC_PWM_MIN
-    // @DisplayName: RSC PWM output miniumum
-    // @Description: This sets the PWM output on RSC channel for maximum rotor speed
-    // @Range: 0 2000
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_MIN", 16, AP_MotorsHeli_Single, _main_rotor._pwm_min, 1000),
-
-    // @Param: RSC_PWM_MAX
-    // @DisplayName: RSC PWM output maxiumum
-    // @Description: This sets the PWM output on RSC channel for miniumum rotor speed
-    // @Range: 0 2000
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_MAX", 17, AP_MotorsHeli_Single, _main_rotor._pwm_max, 2000),
-
-    // @Param: RSC_PWM_REV
-    // @DisplayName: RSC PWM reversal
-    // @Description: This controls reversal of the RSC channel output
-    // @Values: -1:Reversed,1:Normal
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_REV", 18, AP_MotorsHeli_Single, _main_rotor._pwm_rev, 1),
-    
     // parameters up to and including 29 are reserved for tradheli
 
     AP_GROUPEND
@@ -165,9 +144,16 @@ bool AP_MotorsHeli_Single::init_outputs()
         _swash_servo_2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
         _swash_servo_3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
         _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
-        _servo_aux = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, CH_7);
-        if (!_swash_servo_1 || !_swash_servo_2 || !_swash_servo_3 || !_yaw_servo || !_servo_aux) {
-            return false;
+        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
+            _tail_rotor.init_servo();
+            if (!_swash_servo_1 || !_swash_servo_2 || !_swash_servo_3 || !_yaw_servo) {
+                return false;
+            }
+        } else {
+            _servo_aux = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, CH_7);
+            if (!_swash_servo_1 || !_swash_servo_2 || !_swash_servo_3 || !_yaw_servo || !_servo_aux) {
+                return false;
+            }
         }
     }
 
