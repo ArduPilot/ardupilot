@@ -1694,3 +1694,48 @@ bool AP_Mission::jump_to_landing_sequence(void)
     gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
     return false;
 }
+
+const char *AP_Mission::Mission_Command::type() const {
+    switch(id) {
+    case MAV_CMD_NAV_WAYPOINT:
+        return "WP";
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        return "RTL";
+    case MAV_CMD_NAV_LOITER_UNLIM:
+        return "LoitUnlim";
+    case MAV_CMD_NAV_LOITER_TIME:
+        return "LoitTime";
+    case MAV_CMD_NAV_SET_YAW_SPEED:
+        return "SetYawSpd";
+    case MAV_CMD_CONDITION_DELAY:
+        return "CondDelay";
+    case MAV_CMD_CONDITION_DISTANCE:
+        return "CondDist";
+    case MAV_CMD_DO_CHANGE_SPEED:
+        return "ChangeSpeed";
+    case MAV_CMD_DO_SET_HOME:
+        return "SetHome";
+    case MAV_CMD_DO_SET_SERVO:
+        return "SetServo";
+    case MAV_CMD_DO_SET_RELAY:
+        return "SetRelay";
+    case MAV_CMD_DO_REPEAT_SERVO:
+        return "RepeatServo";
+    case MAV_CMD_DO_REPEAT_RELAY:
+        return "RepeatRelay";
+    case MAV_CMD_DO_CONTROL_VIDEO:
+        return "CtrlVideo";
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        return "DigiCamCfg";
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+        return "DigiCamCtrl";
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        return "SetCamTrigDst";
+    case MAV_CMD_DO_SET_ROI:
+        return "SetROI";
+    case MAV_CMD_DO_SET_REVERSE:
+        return "SetReverse";
+    default:
+        return "?";
+    }
+}

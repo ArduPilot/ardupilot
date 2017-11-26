@@ -270,7 +270,11 @@ public:
         uint16_t id;                // mavlink command id
         uint16_t p1;                // general purpose parameter 1
         Content content;
+
+        // return a human-readable interpretation of the ID stored in this command
+        const char *type() const;
     };
+
 
     // main program function pointers
     FUNCTOR_TYPEDEF(mission_cmd_fn_t, bool, const Mission_Command&);
