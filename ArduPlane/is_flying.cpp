@@ -23,7 +23,7 @@ void Plane::update_is_flying_5Hz(void)
                                     (gps.ground_speed_cm() >= ground_speed_thresh_cm);
 
     // airspeed at least 75% of stall speed?
-    bool airspeed_movement = ahrs.airspeed_estimate(&aspeed) && (aspeed >= (aparm.airspeed_min*0.75f));
+    bool airspeed_movement = ahrs.airspeed_estimate(&aspeed) && (aspeed >= (MAX(aparm.airspeed_min,2)*0.75f));
 
 
     if (quadplane.is_flying()) {
