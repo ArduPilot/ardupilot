@@ -37,6 +37,11 @@ bool AC_PrecLand_Companion::get_los_body(Vector3f& ret) {
     return false;
 }
 
+// returns sensor timestamp in microseconds of last los measurement
+uint64_t AC_PrecLand_Companion::get_los_timestamp() {
+    return _timestamp_us;
+}
+
 // returns system time in milliseconds of last los measurement
 uint32_t AC_PrecLand_Companion::los_meas_time_ms() {
     return _los_meas_time_ms;

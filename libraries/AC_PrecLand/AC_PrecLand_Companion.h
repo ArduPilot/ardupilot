@@ -25,6 +25,9 @@ public:
     //  returns same as have_los_meas()
     bool get_los_body(Vector3f& ret) override;
 
+    // provides a timestamp of the sensor measurement, if available
+    uint64_t get_los_timestamp() override;
+    
     // returns system time in milliseconds of last los measurement
     uint32_t los_meas_time_ms() override;
 
@@ -42,6 +45,7 @@ private:
     float               _distance_to_target;    // distance from the camera to target in meters
 
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
+    uint64_t            _los_timestamp;         // timestamp in usec of measurement
     bool                _have_los_meas;         // true if there is a valid measurement from the camera
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
 };
