@@ -20,7 +20,8 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Executing command ID #%i", cmd.id);
+    gcs().send_text(MAV_SEVERITY_INFO, "Executing %s(ID=%i)",
+                    cmd.type(), cmd.id);
 
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
