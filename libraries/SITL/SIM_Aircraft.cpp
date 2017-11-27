@@ -781,3 +781,24 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         precland->update(get_location(), get_position());
     }
 }
+
+void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
+{
+    const uint32_t now = AP_HAL::millis();
+
+    if (sitl->shove.t == 0) {
+        return;
+    }
+    if (sitl->shove.start_ms == 0) {
+        sitl->shove.start_ms = now;
+    }
+    if (now - sitl->shove.start_ms < uint32_t(sitl->shove.t)) {
+        // FIXME: can we get a vector operation here instead?
+        body_accel.x += sitl->shove.x;
+        body_accel.y += sitl->shove.y;
+        body_accel.z += sitl->shove.z;
+    } else {
+        sitl->shove.start_ms = 0;
+        sitl->shove.t = 0;
+    }
+}
