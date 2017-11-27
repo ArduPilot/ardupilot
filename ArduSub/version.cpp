@@ -13,8 +13,6 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Sub.h"
-
 #define FORCE_VERSION_H_INCLUDE
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
@@ -28,14 +26,24 @@ const AP_FWVersion AP_FWVersion::fwver{
     .fw_type = FW_TYPE,
 #ifndef GIT_VERSION
     .fw_string = THISFIRMWARE,
+    .fw_hash_str = "",
 #else
     .fw_string = THISFIRMWARE " (" GIT_VERSION ")",
     .fw_hash_str = GIT_VERSION,
 #endif
-#ifdef CHIBIOS_GIT_VERSION
     .middleware_name = nullptr,
     .middleware_hash_str = nullptr,
+#ifdef CHIBIOS_GIT_VERSION
     .os_name = "ChibiOS",
     .os_hash_str = CHIBIOS_GIT_VERSION,
+#else
+    .os_name = nullptr,
+    .os_hash_str = nullptr,
+#endif
+#ifdef BUILD_DATE_YEAR
+    // encode build date in os_sw_version
+   .os_sw_version = (BUILD_DATE_YEAR*100*100) + (BUILD_DATE_MONTH*100) + BUILD_DATE_DAY,
+#else
+   .os_sw_version = 0,
 #endif
 };
