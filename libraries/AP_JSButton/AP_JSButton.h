@@ -82,14 +82,20 @@ public:
 
         k_servo_1_min_momentary = 76,          ///< set servo output to minimum (SERVOn_MIN) until released
         k_servo_1_max_momentary = 77,          ///< set servo output to minimum (SERVOn_MAX) until released
-        // 78-79 reserved for future functions
+        k_servo_1_min_toggle    = 78,          ///< toggle servo output btwn trim (SERVOn_TRIM) and min (SERVOn_MIN)
+        k_servo_1_max_toggle    = 79,          ///< toggle servo output btwn trim (SERVOn_TRIM) and max (SERVOn_MAX)
+
         k_servo_2_min_momentary = 80,
         k_servo_2_max_momentary = 81,
-        // 82-83 reserved for future functions
+        k_servo_2_min_toggle    = 82,
+        k_servo_2_max_toggle    = 83,
+
         k_servo_3_min_momentary = 84,
         k_servo_3_max_momentary = 85,
+        k_servo_3_min_toggle    = 86,
+        k_servo_3_max_toggle    = 87,
 
-        // 86-90 reserved for future functions
+        // 88-90 reserved for future functions
         k_custom_1              = 91,           ///< custom user button 1
         k_custom_2              = 92,           ///< custom user button 2
         k_custom_3              = 93,           ///< custom user button 3
