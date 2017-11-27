@@ -263,7 +263,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
 
     // acceleration limit desired speed
     if (is_positive(_throttle_accel_max)) {
-        // on first iteration stay at current current speed (although enforced 20ms delay may upset drag racers)
+        // reset desired speed to current speed on first iteration
         if (!is_positive(dt)) {
             desired_speed = speed;
         } else {
