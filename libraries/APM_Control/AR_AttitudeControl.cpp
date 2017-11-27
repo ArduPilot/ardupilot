@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Steering control angle P gain.  Converts the error between the desired heading/yaw (in radians) and actual heading/yaw to a desired turn rate (in rad/sec)
     // @Range: 1.000 10.000
     // @User: Standard
-    AP_SUBGROUPINFO(_steer_angle_p, "_STR_ANG_", 0, AR_AttitudeControl, AC_P),
+    AP_SUBGROUPINFO(_steer_angle_p, "_STR_ANG_", 1, AR_AttitudeControl, AC_P),
 
     // @Param: _STR_RATE_P
     // @DisplayName: Steering control rate P gain
@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Range: 1.000 100.000
     // @Units: Hz
     // @User: Standard
-    AP_SUBGROUPINFO(_steer_rate_pid, "_STR_RAT_", 1, AR_AttitudeControl, AC_PID),
+    AP_SUBGROUPINFO(_steer_rate_pid, "_STR_RAT_", 2, AR_AttitudeControl, AC_PID),
 
     // @Param: _SPEED_P
     // @DisplayName: Speed control P gain
@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Range: 1.000 100.000
     // @Units: Hz
     // @User: Standard
-    AP_SUBGROUPINFO(_throttle_speed_pid, "_SPEED_", 2, AR_AttitudeControl, AC_PID),
+    AP_SUBGROUPINFO(_throttle_speed_pid, "_SPEED_", 3, AR_AttitudeControl, AC_PID),
 
     // @Param: _ACCEL_MAX
     // @DisplayName: Speed control acceleration (and deceleration) maximum in m/s/s
@@ -99,14 +99,14 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.1
     // @Units: m/s/s
     // @User: Standard
-    AP_GROUPINFO("_ACCEL_MAX", 3, AR_AttitudeControl, _throttle_accel_max, AR_ATTCONTROL_THR_ACCEL_MAX),
+    AP_GROUPINFO("_ACCEL_MAX", 4, AR_AttitudeControl, _throttle_accel_max, AR_ATTCONTROL_THR_ACCEL_MAX),
 
     // @Param: _BRAKE
     // @DisplayName: Speed control brake enable/disable
     // @Description: Speed control brake enable/disable. Allows sending a reversed output to the motors to slow the vehicle.
     // @Values: 0:Disable,1:Enable
     // @User: Standard
-    AP_GROUPINFO("_BRAKE", 4, AR_AttitudeControl, _brake_enable, 0),
+    AP_GROUPINFO("_BRAKE", 5, AR_AttitudeControl, _brake_enable, 0),
 
     // @Param: _STOP_SPEED
     // @DisplayName: Speed control stop speed
@@ -115,7 +115,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.01
     // @Units: m/s
     // @User: Standard
-    AP_GROUPINFO("_STOP_SPEED", 5, AR_AttitudeControl, _stop_speed, AR_ATTCONTROL_STOP_SPEED_DEFAULT),
+    AP_GROUPINFO("_STOP_SPEED", 6, AR_AttitudeControl, _stop_speed, AR_ATTCONTROL_STOP_SPEED_DEFAULT),
 
     AP_GROUPEND
 };
