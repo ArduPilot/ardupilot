@@ -150,6 +150,9 @@ private:
     AP_BoardConfig_CAN BoardConfig_CAN = AP_BoardConfig_CAN::create();
 #endif
 
+    // Battery Sensors
+    AP_BattMonitor battery = AP_BattMonitor::create();
+
     struct Location current_loc;
 
     enum ControlMode control_mode  = INITIALISING;
@@ -201,6 +204,7 @@ private:
     void ten_hz_logging_loop();
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
+    void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
@@ -222,6 +226,7 @@ private:
     void update_barometer(void);
     void update_ahrs();
     void update_compass(void);
+    void update_battery(void);
     void compass_accumulate(void);
     void accel_cal_update(void);
     void barometer_accumulate(void);

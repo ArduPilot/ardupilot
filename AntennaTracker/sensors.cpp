@@ -46,6 +46,11 @@ void Tracker::update_compass(void)
     }
 }
 
+void Tracker::update_battery()
+{
+    battery.read();
+}
+
 /*
   if the compass is enabled then try to accumulate a reading
  */
