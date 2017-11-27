@@ -30,8 +30,7 @@ void ModeGuided::update()
                     rover.gcs().send_mission_item_reached_message(0);
                 }
                 // drive towards destination
-                calc_lateral_acceleration(_origin, _destination);
-                calc_nav_steer();
+                calc_steering_to_waypoint(_origin, _destination);
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true);
             } else {
                 stop_vehicle();
