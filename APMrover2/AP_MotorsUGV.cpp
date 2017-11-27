@@ -63,15 +63,6 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("THR_MAX", 6, AP_MotorsUGV, _throttle_max, 100),
 
-    // @Param: SKID_FRIC
-    // @DisplayName: Motor skid steering friction compensation
-    // @Description: Motor output for skid steering vehicles will be increased by this percentage to overcome friction when stopped
-    // @Units: %
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("SKID_FRIC", 7, AP_MotorsUGV, _skid_friction, 0.0f),
-
     // @Param: SLEWRATE
     // @DisplayName: Throttle slew rate
     // @Description: Throttle slew rate as a percentage of total range per second. A value of 100 allows the motor to change over its full range in one second.  A value of zero disables the limit.  Note some NiMH powered rovers require a lower setting of 40 to reduce current demand to avoid brownouts.
@@ -389,27 +380,12 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
         throttle_scaled = throttle_scaled / saturation_value;
     }
 
-    // add in throttle
-    float motor_left = throttle_scaled;
-    float motor_right = throttle_scaled;
+    // reverse steering direction if throttle is negative to mimic regular rovers
+    const float steering_dir = is_negative(throttle_scaled) ? -1.0f : 1.0f;
 
-    // deal with case of turning on the spot
-    if (is_zero(throttle_scaled)) {
-        // steering output split evenly between left and right motors and compensated for friction
-        const float friction_comp = MAX(0.0f, 1.0f + (_skid_friction * 0.01f));
-        motor_left += steering_scaled * 0.5f * friction_comp;
-        motor_right -= steering_scaled * 0.5f * friction_comp;
-    } else {
-        // add in steering
-        const float dir = is_positive(throttle_scaled) ? 1.0f : -1.0f;
-        if (is_negative(steering_scaled)) {
-            // moving left all steering to right wheel
-            motor_right -= dir * steering_scaled;
-        } else {
-            // turning right, all steering to left wheel
-            motor_left += dir * steering_scaled;
-        }
-    }
+    // add in throttle and steering
+    const float motor_left = throttle_scaled + (steering_dir * steering_scaled);
+    const float motor_right = throttle_scaled - (steering_dir * steering_scaled);
 
     // send pwm value to each motor
     output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
