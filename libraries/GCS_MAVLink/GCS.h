@@ -277,7 +277,7 @@ protected:
     void handle_common_message(mavlink_message_t *msg);
     void handle_set_gps_global_origin(const mavlink_message_t *msg);
     void handle_setup_signing(const mavlink_message_t *msg);
-    uint8_t handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
+    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
