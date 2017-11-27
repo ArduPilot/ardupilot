@@ -92,10 +92,10 @@ protected:
     virtual void _exit() { return; }
 
     // calculate steering angle given a desired lateral acceleration
-    void calc_nav_steer(bool reversed = false);
+    void calc_steering_from_lateral_acceleration(bool reversed = false);
 
-    // calculate desired lateral acceleration
-    void calc_lateral_acceleration(const struct Location &origin, const struct Location &destination, bool reversed = false);
+    // calculate steering output to drive along line from origin to destination waypoint
+    void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
 
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
@@ -114,7 +114,7 @@ protected:
     float calc_speed_nudge(float target_speed, float cruise_speed, float cruise_throttle);
 
     // calculated a reduced speed(in m/s) based on yaw error and lateral acceleration and/or distance to a waypoint
-    // should be called after calc_lateral_acceleration and before calc_throttle
+    // should be called after calc_steering_to_waypoint and before calc_throttle
     // relies on these internal members being updated: lateral_acceleration, _yaw_error_cd, _distance_to_destination
     float calc_reduced_speed_for_turn_or_distance(float desired_speed);
 

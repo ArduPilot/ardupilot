@@ -190,7 +190,7 @@ float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
 
 // calculate the lateral acceleration target to cause the vehicle to drive along the path from origin to destination
 // this function update lateral_acceleration and _yaw_error_cd members
-void Mode::calc_lateral_acceleration(const struct Location &origin, const struct Location &destination, bool reversed)
+void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed)
 {
     // Calculate the required turn of the wheels
     // negative error = left turn
@@ -210,12 +210,15 @@ void Mode::calc_lateral_acceleration(const struct Location &origin, const struct
             lateral_acceleration = -g.turn_max_g * GRAVITY_MSS;
         }
     }
+
+    // call lateral acceleration to steering controller
+    calc_steering_from_lateral_acceleration(reversed);
 }
 
 /*
-    calculate steering angle given lateral_acceleration
+    calculate steering output given lateral_acceleration
 */
-void Mode::calc_nav_steer(bool reversed)
+void Mode::calc_steering_from_lateral_acceleration(bool reversed)
 {
     // add obstacle avoidance response to lateral acceleration target
     if (!reversed) {

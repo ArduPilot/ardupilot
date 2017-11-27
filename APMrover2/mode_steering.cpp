@@ -49,8 +49,8 @@ void ModeSteering::update()
     if (is_zero(target_speed) && !is_pivot_turning) {
         stop_vehicle();
     } else {
-        // run steering controller
-        calc_nav_steer(reversed);
+        // run lateral acceleration to steering controller
+        calc_steering_from_lateral_acceleration(false);
         calc_throttle(target_speed, false);
     }
 }

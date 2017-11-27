@@ -54,8 +54,7 @@ void ModeAuto::update()
             bool active_at_destination = _reached_destination && _stay_active_at_dest && (_distance_to_destination > rover.g.waypoint_radius);
             if (!_reached_destination || active_at_destination) {
                 // continue driving towards destination
-                calc_lateral_acceleration(active_at_destination ? rover.current_loc : _origin, _destination, _reversed);
-                calc_nav_steer(_reversed);
+                calc_steering_to_waypoint(active_at_destination ? rover.current_loc : _origin, _destination, _reversed);
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true);
             } else {
                 // we have reached the destination so stop
