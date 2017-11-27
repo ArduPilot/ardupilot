@@ -2394,7 +2394,6 @@ void GCS_MAVLINK::send_autopilot_version() const
 {
     uint32_t flight_sw_version;
     uint32_t middleware_sw_version = 0;
-    uint32_t os_sw_version = 0;
     uint32_t board_version = 0;
     char flight_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_FLIGHT_CUSTOM_VERSION_LEN]{};
     char middleware_custom_version[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_MIDDLEWARE_CUSTOM_VERSION_LEN]{};
@@ -2430,7 +2429,7 @@ void GCS_MAVLINK::send_autopilot_version() const
         capabilities(),
         flight_sw_version,
         middleware_sw_version,
-        os_sw_version,
+        version.os_sw_version,
         board_version,
         (uint8_t *)flight_custom_version,
         (uint8_t *)middleware_custom_version,
