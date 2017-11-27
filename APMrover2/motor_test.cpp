@@ -110,7 +110,7 @@ bool Rover::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint
 
 // mavlink_motor_test_start - start motor test - spin a single motor at a specified pwm
 // returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
-uint8_t Rover::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec)
+MAV_RESULT Rover::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec)
 {
     // if test has not started try to start it
     if (!motor_test) {
