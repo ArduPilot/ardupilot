@@ -17,6 +17,7 @@ public:
     const char *middleware_hash_str;
     const char *os_name;
     const char *os_hash_str;
+    const uint32_t os_sw_version;
 
     static const AP_FWVersion &get_fwverz() { return fwver; }
 
