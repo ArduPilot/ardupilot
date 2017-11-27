@@ -80,8 +80,8 @@ protected:
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle);
 
-    // slew limit throttle for one iteration
-    void slew_limit_throttle(float dt);
+    // slew limit throttle and steering
+    void slew_limit_throttle_and_steering(float dt);
 
     // set limits based on steering and throttle input
     void set_limits_from_input(bool armed, float steering, float throttle);
@@ -93,7 +93,7 @@ protected:
     AP_Int8 _pwm_type;  // PWM output type
     AP_Int8 _pwm_freq;  // PWM output freq for brushed motors
     AP_Int8 _disarm_disable_pwm;    // disable PWM output while disarmed
-    AP_Int8 _slew_rate; // slew rate expressed as a percentage / second
+    AP_Int16 _slew_rate; // throttle and steering slew rate expressed as a percentage / second
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
     AP_Float _skid_friction;    // skid steering vehicle motor output compensation for friction while stopped
@@ -101,5 +101,6 @@ protected:
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
-    float   _last_throttle;
+    float   _throttle_prev; // throttle input from previous iteration
+    float   _steering_prev; // steering input from previous iteration
 };
