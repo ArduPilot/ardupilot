@@ -243,6 +243,8 @@ protected:
     // update external payload/sensor dynamic
     void update_external_payload(const struct sitl_input &input);
 
+    void add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel);
+
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;
