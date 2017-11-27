@@ -278,6 +278,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
 
 bool AP_Mission::start_command(const Mission_Command& cmd)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
     switch (cmd.id) {
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);
@@ -1864,6 +1865,10 @@ const char *AP_Mission::Mission_Command::type() const {
         return "LoitTime";
     case MAV_CMD_NAV_GUIDED_ENABLE:
         return "GuidedEnable";
+    case MAV_CMD_NAV_LOITER_TURNS:
+        return "LoitTurns";
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+        return "LoitAltitude";
     case MAV_CMD_NAV_SET_YAW_SPEED:
         return "SetYawSpd";
     case MAV_CMD_CONDITION_DELAY:
@@ -1896,7 +1901,45 @@ const char *AP_Mission::Mission_Command::type() const {
         return "SetReverse";
     case MAV_CMD_DO_GUIDED_LIMITS:
         return "GuidedLimits";
+    case MAV_CMD_NAV_TAKEOFF:
+        return "Takeoff";
+    case MAV_CMD_NAV_LAND:
+        return "Land";
+    case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
+        return "ContinueAndChangeAlt";
+    case MAV_CMD_NAV_ALTITUDE_WAIT:
+        return "AltitudeWait";
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        return "VTOLTakeoff";
+    case MAV_CMD_NAV_VTOL_LAND:
+        return "VTOLLand";
+    case MAV_CMD_DO_INVERTED_FLIGHT:
+        return "InvertedFlight";
+    case MAV_CMD_DO_FENCE_ENABLE:
+        return "FenceEnable";
+    case MAV_CMD_DO_AUTOTUNE_ENABLE:
+        return "AutoTuneEnable";
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        return "VTOLTransition";
+    case MAV_CMD_DO_ENGINE_CONTROL:
+        return "EngineControl";
+    case MAV_CMD_CONDITION_YAW:
+        return "CondYaw";
+    case MAV_CMD_DO_LAND_START:
+        return "LandStart";
+    case MAV_CMD_NAV_DELAY:
+        return "Delay";
+    case MAV_CMD_DO_GRIPPER:
+        return "Gripper";
+    case MAV_CMD_NAV_PAYLOAD_PLACE:
+        return "PayloadPlace";
+    case MAV_CMD_DO_PARACHUTE:
+        return "Parachute";
+
     default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Mission command with ID %u has no string", id);
+#endif
         return "?";
     }
 }
