@@ -41,8 +41,6 @@ void Tracker::update_compass(void)
         if (should_log(MASK_LOG_COMPASS)) {
             DataFlash.Log_Write_Compass(compass);
         }
-    } else {
-        ahrs.set_compass(nullptr);
     }
 }
 
