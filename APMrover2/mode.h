@@ -91,6 +91,10 @@ protected:
     // subclasses override this to perform any required cleanup when exiting the mode
     virtual void _exit() { return; }
 
+    // decode pilot steering held in channel_steer, channel_throttle and return in steer_out and throttle_out arguments
+    // steering_out is in the range -4500 ~ +4500, throttle_out is in the range -100 ~ +100
+    void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out);
+
     // calculate steering angle given a desired lateral acceleration
     void calc_steering_from_lateral_acceleration(bool reversed = false);
 

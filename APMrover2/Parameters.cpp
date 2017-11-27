@@ -142,12 +142,12 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(throttle_cruise,        "CRUISE_THROTTLE",    50),
 
-    // @Param: SKID_STEER_IN
-    // @DisplayName: Skid steering input
+    // @Param: PILOT_STEER_TYPE
+    // @DisplayName: Pilot input steering type
     // @Description: Set this to 1 for skid steering input rovers (tank track style in RC controller). When enabled, servo1 is used for the left track control, servo3 is used for right track control
-    // @Values: 0:Disabled, 1:SkidSteeringInput
+    // @Values: 0:Default,1:Two Paddles Input,2:Direction reversed when backing up,3:Direction unchanged when backing up
     // @User: Standard
-    GSCALAR(skid_steer_in,           "SKID_STEER_IN",     0),
+    GSCALAR(pilot_steer_type, "PILOT_STEER_TYPE", 0),
 
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action

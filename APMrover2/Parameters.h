@@ -129,7 +129,7 @@ public:
         k_param_throttle_cruise,
         k_param_throttle_slewrate_old,  // unused
         k_param_throttle_reduction,     // unused
-        k_param_skid_steer_in,
+        k_param_pilot_steer_type,
         k_param_skid_steer_out_old, // unused
 
         // failsafe control
@@ -238,7 +238,7 @@ public:
     // Throttle
     //
     AP_Int8     throttle_cruise;
-    AP_Int8     skid_steer_in;
+    AP_Int8     pilot_steer_type;
 
     // failsafe control
     AP_Int8     fs_action;
