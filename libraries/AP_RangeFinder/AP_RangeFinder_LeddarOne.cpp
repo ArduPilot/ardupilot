@@ -164,11 +164,10 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
     -----------------------------------------------
       0: slave address (LEDDARONE_DEFAULT_ADDRESS)
       1: functions code
-      2: ?
-3-4-5-6: timestamp
+      2: byte count
+5-6-3-4: timestamp
     7-8: internal temperature
-      9: ?
-     10: number of detections
+   9-10: number of detections
   11-12: first distance
   13-14: first amplitude
   15-16: second distance
