@@ -113,43 +113,6 @@ void Rover::read_radio()
     // check that RC value are valid
     control_failsafe(channel_throttle->get_radio_in());
 
-    // apply RC skid steer mixing
-    if (g.skid_steer_in) {
-        // convert the two radio_in values from skid steering values
-        /*
-          mixing rule:
-          steering = motor1 - motor2
-          throttle = 0.5*(motor1 + motor2)
-          motor1 = throttle + 0.5*steering
-          motor2 = throttle - 0.5*steering
-        */          
-
-        const float left_input = channel_steer->norm_input();
-        const float right_input = channel_throttle->norm_input();
-        const float throttle_scaled = 0.5f * (left_input + right_input);
-        float steering_scaled = constrain_float(left_input - right_input, -1.0f, 1.0f);
-
-        // flip the steering direction if requesting the vehicle reverse (to be consistent with separate steering-throttle frames)
-        if (is_negative(throttle_scaled)) {
-            steering_scaled = -steering_scaled;
-        }
-
-        int16_t steer = channel_steer->get_radio_trim();
-        int16_t thr   = channel_throttle->get_radio_trim();
-        if (steering_scaled > 0.0f) {
-            steer += steering_scaled * (channel_steer->get_radio_max() - channel_steer->get_radio_trim());
-        } else {
-            steer += steering_scaled * (channel_steer->get_radio_trim() - channel_steer->get_radio_min());
-        }
-        if (throttle_scaled > 0.0f) {
-            thr += throttle_scaled * (channel_throttle->get_radio_max() - channel_throttle->get_radio_trim());
-        } else {
-            thr += throttle_scaled * (channel_throttle->get_radio_trim() - channel_throttle->get_radio_min());
-        }
-        channel_steer->set_pwm(steer);
-        channel_throttle->set_pwm(thr);
-    }
-
     // check if we try to do RC arm/disarm
     rudder_arm_disarm_check();
 }
