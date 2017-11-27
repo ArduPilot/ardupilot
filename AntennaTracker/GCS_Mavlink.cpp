@@ -480,7 +480,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
         mavlink_command_long_t packet;
         mavlink_msg_command_long_decode(msg, &packet);
         
-        uint8_t result = MAV_RESULT_UNSUPPORTED;
+        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
         
         // do command
         send_text(MAV_SEVERITY_INFO,"Command received: ");
@@ -625,7 +625,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
     {
         // decode
         mavlink_mission_item_t packet;
-        uint8_t result = MAV_MISSION_ACCEPTED;
+        MAV_MISSION_RESULT result = MAV_MISSION_ACCEPTED;
 
         mavlink_msg_mission_item_decode(msg, &packet);
 
