@@ -293,15 +293,6 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         if not disarm_rover(mavproxy, mav):
             progress("Failed to DISARM")
             failed = True
-        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/APMrover2-log.bin")):
-            progress("Failed log download")
-            failed = True
-#        if not drive_left_circuit(mavproxy, mav):
-#            progress("Failed left circuit")
-#            failed = True
-#        if not drive_RTL(mavproxy, mav):
-#            progress("Failed RTL")
-#            failed = True
 
         # do not move this to be the first test.  MAVProxy's dedupe
         # function may bite you.
@@ -318,6 +309,16 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         progress("Setting mode via MAV_COMMAND_DO_SET_MODE")
         if not do_set_mode_via_command_long(mavproxy, mav):
             failed = True
+
+        if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/APMrover2-log.bin")):
+            progress("Failed log download")
+            failed = True
+#        if not drive_left_circuit(mavproxy, mav):
+#            progress("Failed left circuit")
+#            failed = True
+#        if not drive_RTL(mavproxy, mav):
+#            progress("Failed RTL")
+#            failed = True
 
     except pexpect.TIMEOUT as e:
         progress("Failed with timeout")
