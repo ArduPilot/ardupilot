@@ -1790,7 +1790,7 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
 /*
   perform a simple 1D accel calibration, returning mavlink result code
  */
-uint8_t AP_InertialSensor::simple_accel_cal(AP_AHRS &ahrs)
+MAV_RESULT AP_InertialSensor::simple_accel_cal(AP_AHRS &ahrs)
 {
     uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES];
@@ -1894,7 +1894,7 @@ uint8_t AP_InertialSensor::simple_accel_cal(AP_AHRS &ahrs)
         }
     }
 
-    uint8_t result = MAV_RESULT_ACCEPTED;
+    MAV_RESULT result = MAV_RESULT_ACCEPTED;
 
     // see if we've passed
     for (uint8_t k=0; k<num_accels; k++) {
