@@ -248,7 +248,7 @@ public:
     AP_Int8     fs_gcs_enabled;
     AP_Int8     fs_crash_check;
 
-    // obstacle control
+    // obstacle avoidance control
     AP_Int16    rangefinder_trigger_cm;
     AP_Float    rangefinder_turn_angle;
     AP_Float    rangefinder_turn_time;
