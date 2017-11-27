@@ -99,7 +99,6 @@ protected:
     AP_Int16 _slew_rate; // slew rate expressed as a percentage / second
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
-    AP_Float _skid_friction;    // skid steering vehicle motor output compensation for friction while stopped
     AP_Float _thrust_curve_expo; // thrust curve exponent from -1 to +1 with 0 being linear
 
     // internal variables
