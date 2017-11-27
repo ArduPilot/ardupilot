@@ -37,6 +37,7 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(update_tracking,        50,   1000),
     SCHED_TASK(update_GPS,             10,   4000),
     SCHED_TASK(update_compass,         10,   1500),
+    SCHED_TASK(update_battery,         10,   1500),
     SCHED_TASK(update_barometer,       10,   1500),
     SCHED_TASK(gcs_update,             50,   1700),
     SCHED_TASK(gcs_data_stream_send,   50,   3000),
