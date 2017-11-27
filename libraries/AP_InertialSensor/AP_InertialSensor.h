@@ -270,8 +270,8 @@ public:
     void acal_update();
 
     // simple accel calibration
-    uint8_t simple_accel_cal(AP_AHRS &ahrs);
-    
+    MAV_RESULT simple_accel_cal(AP_AHRS &ahrs);
+
     bool accel_cal_requires_reboot() const { return _accel_cal_requires_reboot; }
 
     // return time in microseconds of last update() call
