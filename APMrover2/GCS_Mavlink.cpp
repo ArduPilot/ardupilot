@@ -655,7 +655,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         // decode packet
         mavlink_command_int_t packet;
         mavlink_msg_command_int_decode(msg, &packet);
-        uint8_t result = MAV_RESULT_UNSUPPORTED;
+        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
 
         switch (packet.command) {
 
@@ -749,7 +749,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             mavlink_command_long_t packet;
             mavlink_msg_command_long_decode(msg, &packet);
 
-            uint8_t result = MAV_RESULT_UNSUPPORTED;
+            MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
 
             // do command
 
