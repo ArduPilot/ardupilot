@@ -262,6 +262,9 @@ public:
     /// get_distance_to_target - get horizontal distance to position target in cm (used for reporting)
     float get_distance_to_target() const;
 
+    /// get_bearing_to_target - get bearing to target position in centi-degrees
+    int32_t get_bearing_to_target() const;
+
     /// xyz velocity controller
 
     /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
