@@ -1522,8 +1522,8 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 case MAV_FRAME_GLOBAL:
                 case MAV_FRAME_GLOBAL_INT:
                 default:
-                    // Copter does not support navigation to absolute altitudes. This converts the WGS84 altitude
-                    // to a home-relative altitude before passing it to the navigation controller
+                    // pv_location_to_vector does not support absolute altitudes.
+                    // Convert the absolute altitude to a home-relative altitude before calling pv_location_to_vector
                     loc.alt -= copter.ahrs.get_home().alt;
                     loc.flags.relative_alt = true;
                     loc.flags.terrain_alt = false;
