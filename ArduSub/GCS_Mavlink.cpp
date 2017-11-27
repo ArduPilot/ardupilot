@@ -871,7 +871,7 @@ void GCS_MAVLINK_Sub::handle_change_alt_request(AP_Mission::Mission_Command &cmd
 
 void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 {
-    uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
+    MAV_RESULT result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
 
     switch (msg->msgid) {
 
