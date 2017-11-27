@@ -21,13 +21,6 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
-    // @Param: _STR_ANG_P
-    // @DisplayName: Steering control angle P gain
-    // @Description: Steering control angle P gain.  Converts the error between the desired heading/yaw (in radians) and actual heading/yaw to a desired turn rate (in rad/sec)
-    // @Range: 1.000 10.000
-    // @User: Standard
-    AP_SUBGROUPINFO(_steer_angle_p, "_STR_ANG_", 0, AR_AttitudeControl, AC_P),
-
     // @Param: _STR_RATE_P
     // @DisplayName: Steering control rate P gain
     // @Description: Steering control rate P gain.  Converts the turn rate error (in radians/sec) to a steering control output (in the range -1 to +1)
@@ -116,6 +109,13 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Units: m/s
     // @User: Standard
     AP_GROUPINFO("_STOP_SPEED", 5, AR_AttitudeControl, _stop_speed, AR_ATTCONTROL_STOP_SPEED_DEFAULT),
+
+    // @Param: _STR_ANG_P
+    // @DisplayName: Steering control angle P gain
+    // @Description: Steering control angle P gain.  Converts the error between the desired heading/yaw (in radians) and actual heading/yaw to a desired turn rate (in rad/sec)
+    // @Range: 1.000 10.000
+    // @User: Standard
+    AP_SUBGROUPINFO(_steer_angle_p, "_STR_ANG_", 6, AR_AttitudeControl, AC_P),
 
     AP_GROUPEND
 };
