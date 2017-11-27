@@ -3,8 +3,11 @@
 
 void ModeSteering::update()
 {
+    float desired_steering, desired_throttle;
+    get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
+
     // convert pilot throttle input to desired speed (up to twice the cruise speed)
-    float target_speed = channel_throttle->get_control_in() * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
+    float target_speed = desired_steering * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
 
     // get speed forward
     float speed;
@@ -17,7 +20,7 @@ void ModeSteering::update()
     }
 
     // determine if pilot is requesting pivot turn
-    bool is_pivot_turning = g2.motors.have_skid_steering() && is_zero(target_speed) && (channel_steer->get_control_in() != 0);
+    bool is_pivot_turning = g2.motors.have_skid_steering() && is_zero(target_speed) && (!is_zero(desired_steering));
 
     // In steering mode we control lateral acceleration directly.
     // For pivot steering vehicles we use the TURN_MAX_G parameter
@@ -33,7 +36,7 @@ void ModeSteering::update()
     max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
 
     // convert pilot steering input to desired lateral acceleration
-    lateral_acceleration = max_g_force * (channel_steer->get_control_in() / 4500.0f);
+    lateral_acceleration = max_g_force * (desired_steering / 4500.0f);
 
     // reverse target lateral acceleration if backing up
     bool reversed = false;
