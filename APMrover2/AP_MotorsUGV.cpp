@@ -354,6 +354,26 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 void AP_MotorsUGV::slew_limit_throttle_and_steering(float dt)
 {
     if (_slew_rate > 0) {
+
+    	// only enter or leave pivot turning mode once both motors fully stopped
+    	if(have_skid_steering()) {
+			if(!is_zero(_throttle_prev) /* we were not in pivot turning mode */
+				&& is_zero(_throttle) && !is_zero(_steering)) { /* we wan to enter pivot turning mode */
+
+				// fully stop before entering pivot mode
+				_throttle = 0;
+				_steering = 0;
+    		}
+
+    		if(is_zero(_throttle_prev) && !is_zero(_steering_prev) /* we were in pivot turning mode*/
+    			&& !is_zero(_throttle)) { /* we want to leave pivot turning mode*/
+
+    			// fully stop before leaving pivot mode
+    			_throttle = 0;
+    			_steering = 0;
+    		}
+    	}
+
         // slew throttle
         const float throttle_change_max = MAX(1.0f, _slew_rate * dt * 0.01f * (_throttle_max - _throttle_min));
         if (_throttle > _throttle_prev + throttle_change_max) {
