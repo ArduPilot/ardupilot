@@ -466,9 +466,9 @@ private:
     
 public:
     void motor_test_output();
-    uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
-                                     uint16_t throttle_value, float timeout_sec,
-                                     uint8_t motor_count);
+    MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
+                                        uint16_t throttle_value, float timeout_sec,
+                                        uint8_t motor_count);
 private:
     void motor_test_stop();
 };
