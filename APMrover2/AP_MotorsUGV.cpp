@@ -45,15 +45,6 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_DISARM", 3, AP_MotorsUGV, _disarm_disable_pwm, 0),
 
-    // @Param: SLEWRATE
-    // @DisplayName: Throttle slew rate
-    // @Description: maximum percentage change in throttle per second. A setting of 10 means to not change the throttle by more than 10% of the full throttle range in one second. A value of zero means no limit. A value of 100 means the throttle can change over its full range in one second. Note that for some NiMH powered rovers setting a lower value like 40 or 50 may be worthwhile as the sudden current demand on the battery of a big rise in throttle may cause a brownout.
-    // @Units: %/s
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("SLEWRATE", 4, AP_MotorsUGV, _slew_rate, 100),
-
     // @Param: THR_MIN
     // @DisplayName: Throttle minimum
     // @Description: Throttle minimum percentage the autopilot will apply. This is mostly useful for rovers with internal combustion motors, to prevent the motor from cutting out in auto mode.
@@ -80,6 +71,15 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SKID_FRIC", 7, AP_MotorsUGV, _skid_friction, 0.0f),
+
+    // @Param: SLEWRATE
+    // @DisplayName: Motor slew rate
+    // @Description: Motor slew rate as a percentage of total range per second. A value of 100 allows the motor to change over its full range in one second.  A value of zero disables the limit.  Note some NiMH powered rovers require a lower setting of 40 to reduce current demand to avoid brownouts.
+    // @Units: %/s
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SLEWRATE", 8, AP_MotorsUGV, _slew_rate, 100),
 
     AP_GROUPEND
 };
@@ -187,10 +187,11 @@ void AP_MotorsUGV::output(bool armed, float dt)
         armed = false;
     }
 
-    slew_limit_throttle(dt);
-
     // clear and set limits based on input (limit flags may be set again by output_regular or output_skid_steering methods)
     set_limits_from_input(armed, _steering, _throttle);
+
+    // limit throttle and steering
+    slew_limit_throttle_and_steering(dt);
 
     // output for regular steering/throttle style frames
     output_regular(armed, _steering, _throttle);
@@ -203,7 +204,6 @@ void AP_MotorsUGV::output(bool armed, float dt)
     SRV_Channels::cork();
     SRV_Channels::output_ch_all();
     SRV_Channels::push();
-    _last_throttle = _throttle;
 }
 
 // output to regular steering and throttle channels
@@ -351,14 +351,77 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 }
 
 // slew limit throttle for one iteration
-void AP_MotorsUGV::slew_limit_throttle(float dt)
+void AP_MotorsUGV::slew_limit_throttle_and_steering(float dt)
 {
     if (_slew_rate > 0) {
-        float temp = _slew_rate * dt * 0.01f * (_throttle_max - _throttle_min);
-        if (temp < 1.0f) {
-            temp = 1.0f;
+
+    	// only enter or leave pivot turning mode once both motors fully stopped
+    	if(have_skid_steering()) {
+			if(!is_zero(_throttle_prev) /* we were not in pivot turning mode */
+				&& is_zero(_throttle) && !is_zero(_steering)) { /* we wan to enter pivot turning mode */
+
+				// fully stop before entering pivot mode
+				_throttle = 0;
+				_steering = 0;
+    		}
+
+    		if(is_zero(_throttle_prev) && !is_zero(_steering_prev) /* we were in pivot turning mode*/
+    			&& !is_zero(_throttle)) { /* we want to leave pivot turning mode*/
+
+    			// fully stop before leaving pivot mode
+    			_throttle = 0;
+    			_steering = 0;
+    		}
+    	}
+
+        // slew throttle
+        const float throttle_change_max = MAX(1.0f, _slew_rate * dt * 0.01f * (_throttle_max - _throttle_min));
+        if (_throttle > _throttle_prev + throttle_change_max) {
+            _throttle = _throttle_prev + throttle_change_max;
+            limit.throttle_upper = true;
+        } else if (_throttle < _throttle_prev - throttle_change_max) {
+            _throttle = _throttle_prev - throttle_change_max;
+            limit.throttle_lower = true;
         }
-        _throttle = constrain_int16(_throttle, _last_throttle - temp, _last_throttle + temp);
+
+        // skid-steering slew steering and handles transition from forward to reverse
+        if (have_skid_steering()) {
+            // calc maximum steering change
+            const float steering_change_max = _slew_rate * dt * 0.01f * 9000.0f;
+            // if throttle has reversed, slew throttle and steering towards zero
+            if (is_negative(_throttle) != is_negative(_throttle_prev)) {
+                if (_steering >= 0) {
+                    _steering = MIN(_steering, _steering_prev);
+                    _steering = MAX(0.0f, _steering - steering_change_max);
+                    limit.steer_right = true;
+                } else {
+                    _steering = MAX(_steering, _steering_prev);
+                    _steering = MIN(0.0f, _steering + steering_change_max);
+                    limit.steer_left = true;
+                }
+                // hold throttle at zero during the transition
+                if (is_zero(_steering)) {
+                    _throttle_prev = _throttle;
+                } else {
+                    _throttle = 0.0f;
+                }
+                _steering_prev = _steering;
+            } else {
+                // if throttle has not reversed, simply apply slew to steering
+                if (_steering > _steering_prev + steering_change_max) {
+                    _steering = _steering_prev + steering_change_max;
+                    limit.steer_right = true;
+                } else if (_steering < _steering_prev - steering_change_max) {
+                    _steering = _steering_prev - steering_change_max;
+                    limit.steer_left = true;
+                }
+                _throttle_prev = _throttle;
+                _steering_prev = _steering;
+            }
+        }
+    } else {
+        _throttle_prev = _throttle;
+        _steering_prev = _steering;
     }
 }
 
