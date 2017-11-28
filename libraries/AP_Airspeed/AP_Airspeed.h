@@ -145,6 +145,8 @@ public:
         TYPE_I2C_MS4525=1,
         TYPE_ANALOG=2,
         TYPE_I2C_MS5525=3,
+        TYPE_I2C_MS5525_ADDRESS_1=4,
+        TYPE_I2C_MS5525_ADDRESS_2=5,
     };
     
 private:
