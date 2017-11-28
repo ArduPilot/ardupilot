@@ -290,6 +290,9 @@ void Rover::notify_mode(enum mode new_mode)
     case MANUAL:
         notify.set_flight_mode_str("MANU");
         break;
+    case ACRO:
+        notify.set_flight_mode_str("ACRO");
+        break;
     case STEERING:
         notify.set_flight_mode_str("STER");
         break;
