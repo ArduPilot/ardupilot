@@ -292,9 +292,6 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         rover.logger.Write_Mission_Cmd(mission, cmd);
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Executing %s(ID=%i)",
-                    cmd.type(), cmd.id);
-
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
         do_nav_wp(cmd, false);
