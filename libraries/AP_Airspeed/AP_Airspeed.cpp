@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77)
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 0, AP_Airspeed, _type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
@@ -158,7 +158,13 @@ void AP_Airspeed::init()
         sensor = new AP_Airspeed_Analog(*this);
         break;
     case TYPE_I2C_MS5525:
-        sensor = new AP_Airspeed_MS5525(*this);
+        sensor = new AP_Airspeed_MS5525(*this, AP_Airspeed_MS5525::MS5525_ADDR_AUTO);
+        break;
+    case TYPE_I2C_MS5525_ADDRESS_1:
+        sensor = new AP_Airspeed_MS5525(*this, AP_Airspeed_MS5525::MS5525_ADDR_1);
+        break;
+    case TYPE_I2C_MS5525_ADDRESS_2:
+        sensor = new AP_Airspeed_MS5525(*this, AP_Airspeed_MS5525::MS5525_ADDR_2);
         break;
     }
     if (sensor && !sensor->init()) {
