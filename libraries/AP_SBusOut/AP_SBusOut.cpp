@@ -155,7 +155,7 @@ void AP_SBusOut::init() {
     hal.console->printf("AP_SBusOut: init %d Hz\n", rate);
 #endif
 
-    // subtract 500msec from requested frame interval to allow for latency
+    // subtract 500usec from requested frame interval to allow for latency
     sbus_frame_interval = (1000UL * 1000UL) / rate - 500;
     // at 100,000 bps, a 300 bit sbus frame takes 3msec to transfer
     // require a minimum 700usec interframe gap
