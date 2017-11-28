@@ -331,8 +331,8 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
     }
     if (!_initialised) {
         try_initialise();
-		return 0;
-	}
+        return 0;
+    }
 
     if (!_nonblocking_writes) {
         /*
