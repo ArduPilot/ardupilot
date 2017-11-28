@@ -43,27 +43,32 @@
  */
 
 // a nested offset is for subgroups that are not subclasses
-#define AP_PARAM_FLAG_NESTED_OFFSET 1
+#define AP_PARAM_FLAG_NESTED_OFFSET (1<<0)
 
 // a pointer variable is for dynamically allocated objects
-#define AP_PARAM_FLAG_POINTER       2
+#define AP_PARAM_FLAG_POINTER       (1<<1)
 
 // an enable variable allows a whole subtree of variables to be made
 // invisible
-#define AP_PARAM_FLAG_ENABLE        4
+#define AP_PARAM_FLAG_ENABLE        (1<<2)
 
 // don't shift index 0 to index 63. Use this when you know there will be
 // no conflict with the parent
-#define AP_PARAM_NO_SHIFT           8
+#define AP_PARAM_NO_SHIFT           (1<<3)
 
 // the var_info is a pointer, allowing for dynamic definition of the var_info tree
-#define AP_PARAM_FLAG_INFO_POINTER  16
+#define AP_PARAM_FLAG_INFO_POINTER  (1<<4)
+
+// ignore the enable parameter on this group
+#define AP_PARAM_FLAG_IGNORE_ENABLE (1<<5)
+
+// keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   5
+#define AP_PARAM_FRAME_TYPE_SHIFT   6
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -99,6 +104,7 @@
 // declare a subgroup entry in a group var_info. This is for having another arbitrary object as a member of the parameter list of
 // an object
 #define AP_SUBGROUPINFO(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET }
+#define AP_SUBGROUPINFO_FLAGS(element, name, idx, thisclazz, elclazz, flags) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET | flags }
 
 // declare a second parameter table for the same object
 #define AP_SUBGROUPEXTENSION(name, idx, clazz, vinfo) { AP_PARAM_GROUP, idx, name, 0, { group_info : clazz::vinfo }, AP_PARAM_FLAG_NESTED_OFFSET }
