@@ -28,6 +28,7 @@ enum ch7_option {
 // ----------------
 enum mode {
     MANUAL       = 0,
+    ACRO         = 1,
     STEERING     = 3,
     HOLD         = 4,
     AUTO         = 10,

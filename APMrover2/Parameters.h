@@ -316,6 +316,9 @@ public:
 
     // turn radius of vehicle (only used in steering mode)
     AP_Float turn_radius;
+
+    // acro mode turn rate maximum
+    AP_Float acro_turn_rate;
 };
 
 extern const AP_Param::Info var_info[];
