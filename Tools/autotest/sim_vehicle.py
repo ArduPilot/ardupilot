@@ -455,7 +455,20 @@ def run_in_terminal_window(autotest, name, cmd):
         out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
         import re
         p = re.compile('tab 1 of window id (.*)')
-        windowID.append(p.findall(out)[0])
+                        
+        tstart = time.time()
+        while time.time() - tstart < 5:
+            tabs = p.findall(out)
+            
+            if len(tabs) > 0:
+                break
+
+            time.sleep(0.1)
+
+        if len(tabs) > 0:
+            windowID.append(tabs[0])
+        else:
+            progress("Cannot find %s process terminal" % name )
     else:
         p = subprocess.Popen(runme)
 
