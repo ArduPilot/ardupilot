@@ -104,6 +104,7 @@ public:
 #endif
     friend class GCS_Rover;
     friend class Mode;
+    friend class ModeAcro;
     friend class ModeAuto;
     friend class ModeGuided;
     friend class ModeHold;
@@ -378,6 +379,7 @@ private:
     ModeInitializing mode_initializing;
     ModeHold mode_hold;
     ModeManual mode_manual;
+    ModeAcro mode_acro;
     ModeGuided mode_guided;
     ModeAuto mode_auto;
     ModeSteering mode_steering;

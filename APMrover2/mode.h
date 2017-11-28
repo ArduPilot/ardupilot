@@ -145,6 +145,20 @@ protected:
 };
 
 
+class ModeAcro : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return ACRO; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    // attributes for mavlink system status reporting
+    bool has_manual_input() const override { return true; }
+};
+
+
 class ModeAuto : public Mode
 {
 public:
