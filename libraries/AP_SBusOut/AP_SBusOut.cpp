@@ -43,7 +43,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define SBUS_DEBUG 1
+#define SBUS_DEBUG 0
 
 // SBUS1 constant definitions
 // pulse widths measured using FrSky Sbus/PWM converter
