@@ -51,9 +51,10 @@ extern const AP_HAL::HAL &hal;
 #define REG_CONVERT_PRESSURE    REG_CONVERT_D1_OSR_1024
 #define REG_CONVERT_TEMPERATURE REG_CONVERT_D2_OSR_1024
 
-AP_Airspeed_MS5525::AP_Airspeed_MS5525(AP_Airspeed &_frontend) :
+AP_Airspeed_MS5525::AP_Airspeed_MS5525(AP_Airspeed &_frontend, MS5525_ADDR address) :
     AP_Airspeed_Backend(_frontend)
 {
+    _address = address;
 }
 
 // probe and initialise the sensor
@@ -62,6 +63,9 @@ bool AP_Airspeed_MS5525::init()
     const uint8_t addresses[] = { MS5525D0_I2C_ADDR_1, MS5525D0_I2C_ADDR_2 };
     bool found = false;
     for (uint8_t i=0; i<ARRAY_SIZE(addresses); i++) {
+        if (_address != MS5525_ADDR_AUTO && i != (uint8_t)_address) {
+            continue;
+        }
         dev = hal.i2c_mgr->get_device(get_bus(), addresses[i]);
         if (!dev) {
             continue;
