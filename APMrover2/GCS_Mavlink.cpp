@@ -222,7 +222,7 @@ void Rover::send_rangefinder(mavlink_channel_t chan)
 void Rover::send_pid_tuning(mavlink_channel_t chan)
 {
     const DataFlash_Class::PID_Info *pid_info;
-    if (g.gcs_pid_mask & 1) {
+    if ((g.gcs_pid_mask & 1) && (!control_mode->manual_steering())) {
         pid_info = &g2.attitude_control.get_steering_rate_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_STEER,
                                     degrees(pid_info->desired),
@@ -235,7 +235,7 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
             return;
         }
     }
-    if (g.gcs_pid_mask & 2) {
+    if ((g.gcs_pid_mask & 2) && (control_mode->auto_throttle())) {
         pid_info = &g2.attitude_control.get_throttle_speed_pid().get_pid_info();
         float speed = 0.0f;
         g2.attitude_control.get_forward_speed(speed);
@@ -591,9 +591,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
-        if (rover.control_mode->is_autopilot_mode()) {
-            send_message(MSG_PID_TUNING);
-        }
+        send_message(MSG_PID_TUNING);
     }
 
     if (gcs().out_of_time()) {
