@@ -210,7 +210,10 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             return false;
         }
         if (prefix_length + strlen(group_info[i].name) > 16) {
-            Debug("suffix is too long in %s", group_info[i].name);
+            Debug("suffix is too long in %s (%ld+%d > 16)",
+                  group_info[i].name,
+                  prefix_length,
+                  strlen(group_info[i].name));
             return false;
         }
         (*total_size) += size + sizeof(struct Param_header);
