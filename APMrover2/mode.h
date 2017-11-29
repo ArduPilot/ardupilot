@@ -62,6 +62,9 @@ public:
     // true if heading is controlled
     virtual bool attitude_stabilized() const { return true; }
 
+    // true if mode requires GPS:
+    virtual bool requires_gps() const { return true; }
+
     //
     // navigation methods
     //
@@ -145,6 +148,9 @@ protected:
     float _desired_speed;       // desired speed in m/s
     float _desired_speed_final; // desired speed in m/s when we reach the destination
     float _speed_error;         // ground speed error in m/s
+
+    bool enter_gps_checks() const;
+
 };
 
 
@@ -301,6 +307,9 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+    bool requires_gps() const override { return false; }
+
 };
 
 
