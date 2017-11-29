@@ -58,7 +58,7 @@ void Rover::init_ardupilot()
     // initialise notify system
     notify.init(false);
     AP_Notify::flags.failsafe_battery = false;
-    notify_mode((enum mode)control_mode->mode_number());
+    notify_mode(control_mode);
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
@@ -238,7 +238,7 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     control_mode_reason = reason;
     DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
 
-    notify_mode((enum mode)control_mode->mode_number());
+    notify_mode(control_mode);
     return true;
 }
 
@@ -282,39 +282,10 @@ void Rover::check_usb_mux(void)
 }
 
 // update notify with mode change
-void Rover::notify_mode(enum mode new_mode)
+void Rover::notify_mode(const Mode *mode)
 {
-    notify.flags.flight_mode = new_mode;
-
-    switch (new_mode) {
-    case MANUAL:
-        notify.set_flight_mode_str("MANU");
-        break;
-    case ACRO:
-        notify.set_flight_mode_str("ACRO");
-        break;
-    case STEERING:
-        notify.set_flight_mode_str("STER");
-        break;
-    case HOLD:
-        notify.set_flight_mode_str("HOLD");
-        break;
-    case AUTO:
-        notify.set_flight_mode_str("AUTO");
-        break;
-    case RTL:
-        notify.set_flight_mode_str("RTL");
-        break;
-    case GUIDED:
-        notify.set_flight_mode_str("GUID");
-        break;
-    case INITIALISING:
-        notify.set_flight_mode_str("INIT");
-        break;
-    default:
-        notify.set_flight_mode_str("----");
-        break;
-    }
+    notify.flags.flight_mode = mode->mode_number();
+    notify.set_flight_mode_str(mode->name4());
 }
 
 /*
