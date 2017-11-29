@@ -159,8 +159,8 @@ void Rover::read_aux_switch()
                 return;
             }
 
-            // record the waypoint if in manual, acro or steering mode
-            if (control_mode == &mode_manual || control_mode == &mode_acro ||control_mode == &mode_steering) {
+            // record the waypoint if not in auto mode
+            if (control_mode != &mode_auto) {
                 // create new mission command
                 AP_Mission::Mission_Command cmd = {};
 
