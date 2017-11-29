@@ -25,6 +25,9 @@ public:
     // returns a unique number specific to this mode
     virtual uint32_t mode_number() const = 0;
 
+    // returns short text name (up to 4 bytes)
+    virtual const char *name4() const = 0;
+
     //
     // methods that sub classes should override to affect movement of the vehicle in this mode
     //
@@ -150,6 +153,7 @@ class ModeAcro : public Mode
 public:
 
     uint32_t mode_number() const override { return ACRO; }
+    const char *name4() const override { return "ACRO"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -167,6 +171,7 @@ public:
     ModeAuto(ModeRTL& mode_rtl);
 
     uint32_t mode_number() const override { return AUTO; }
+    const char *name4() const override { return "AUTO"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -226,6 +231,7 @@ class ModeGuided : public Mode
 public:
 
     uint32_t mode_number() const override { return GUIDED; }
+    const char *name4() const override { return "GUID"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -269,6 +275,7 @@ class ModeHold : public Mode
 public:
 
     uint32_t mode_number() const override { return HOLD; }
+    const char *name4() const override { return "HOLD"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -283,6 +290,7 @@ class ModeManual : public Mode
 public:
 
     uint32_t mode_number() const override { return MANUAL; }
+    const char *name4() const override { return "MANU"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -301,6 +309,7 @@ class ModeRTL : public Mode
 public:
 
     uint32_t mode_number() const override { return RTL; }
+    const char *name4() const override { return "RTL"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -323,6 +332,7 @@ class ModeSteering : public Mode
 public:
 
     uint32_t mode_number() const override { return STEERING; }
+    const char *name4() const override { return "STER"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -336,6 +346,7 @@ class ModeInitializing : public Mode
 public:
 
     uint32_t mode_number() const override { return INITIALISING; }
+    const char *name4() const override { return "INIT"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override { }
