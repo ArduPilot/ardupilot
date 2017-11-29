@@ -26,6 +26,13 @@ bool Mode::enter()
 
 void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out)
 {
+    // no RC input means no throttle and centered steering
+    if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
+        steering_out = 0;
+        throttle_out = 0;
+        return;
+    }
+
     // apply RC skid steer mixing
     switch ((enum pilot_steer_type_t)rover.g.pilot_steer_type.get())
     {
