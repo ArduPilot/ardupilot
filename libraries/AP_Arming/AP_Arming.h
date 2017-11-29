@@ -117,6 +117,9 @@ protected:
     AP_Int8                 _rudder_arming;
     AP_Int32                 _required_mission_items;
 
+    AP_Int16                offboard_auth_interval;
+    AP_Int16                offboard_auth_maxt;
+
     // internal members
     bool                    armed;
     uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
@@ -190,7 +193,10 @@ private:
         MIS_ITEM_CHECK_VTOL_TAKEOFF  = (1 << 4),
         MIS_ITEM_CHECK_RALLY         = (1 << 5),
         MIS_ITEM_CHECK_MAX
+
     };
+
+    bool offboard_authorization_ok(bool display_failure);
 };
 
 namespace AP {

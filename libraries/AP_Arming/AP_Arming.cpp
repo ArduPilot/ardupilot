@@ -119,6 +119,22 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
+    // @Param: OBAUTHINT
+    // @DisplayName: Off-Board Authorization Interval
+    // @Description: Interval at which to request Off-Board authorization
+    // @User: Advanced
+    // @Units: s
+    // @Increment: 1
+    AP_GROUPINFO("OBAUTHINT",     9,     AP_Arming,  offboard_auth_interval,  10),
+
+    // @Param: OBDUTHTMX
+    // @DisplayName: Offboard Authorization Time Max
+    // @Description: Time authorization is assumed valid for; 0 to disable
+    // @User: Advanced
+    // @Units: s
+    // @Increment: 1
+    AP_GROUPINFO("OBAUTHTMX",     10,     AP_Arming,  offboard_auth_maxt,  0),
+
     AP_GROUPEND
 };
 
@@ -888,6 +904,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  system_checks(report)
         &  can_checks(report)
         &  proximity_checks(report)
+        &  offboard_authorization_ok(report)
         &  camera_checks(report);
 }
 
@@ -1033,6 +1050,35 @@ void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
     AP::logger().Write_Event(LogEvent::ARMED);
+}
+
+// expected to be called at some rate to do offboard auth as required
+bool AP_Arming::offboard_authorization_ok(bool display_failure)
+{
+    if (offboard_auth_maxt <= 0) {
+        // disabled
+        return true;
+    }
+
+    const uint32_t now = AP_HAL::millis();
+
+    const uint32_t last_authorized_ms = gcs().last_offboard_authorization_time();
+    if (last_authorized_ms == 0) {
+        check_failed(ARMING_CHECK_NONE, display_failure, "Offboard authorization never received");
+        return false;
+    }
+
+    const int32_t time_since_auth_ms = now - last_authorized_ms;
+    if (time_since_auth_ms >= offboard_auth_interval*1000) {
+        gcs().request_offboard_authorization();
+    }
+
+    if (time_since_auth_ms > offboard_auth_maxt*1000) {
+        check_failed(ARMING_CHECK_NONE, display_failure, "Offboard authorization stale");
+        return false;
+    }
+
+    return true;
 }
 
 void AP_Arming::Log_Write_Disarm(const AP_Arming::Method method)
