@@ -152,6 +152,20 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
     }
 }
 
+// set desired location as an offset from the EKF origin in NED frame
+bool Mode::set_desired_location_NED(const Vector3f& destination, float next_leg_bearing_cd)
+{
+    Location destination_ned;
+    // initialise destination to ekf origin
+    if (!ahrs.get_origin(destination_ned)) {
+        return false;
+    }
+    // apply offset
+    location_offset(destination_ned, destination.x, destination.y);
+    set_desired_location(destination_ned, next_leg_bearing_cd);
+    return true;
+}
+
 // set desired heading and speed
 void Mode::set_desired_heading_and_speed(float yaw_angle_cd, float target_speed)
 {
