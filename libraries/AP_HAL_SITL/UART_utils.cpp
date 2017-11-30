@@ -15,11 +15,16 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(__CYGWIN__)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "UARTDriver.h"
 
+#ifdef __CYGWIN__
 #include <termios.h>
+#else
+#include <asm/termbits.h>
+#endif
+
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -27,86 +32,102 @@
 
 bool HALSITL::UARTDriver::set_speed(int speed)
 {
-    struct termios2 tc;
-
     if (_fd < 0) {
         return false;
     }
-
+#ifdef __CYGWIN__
+    struct termios t;
+    tcgetattr(_fd, &t);
+    cfsetspeed(&t, speed);
+    tcsetattr(_fd, TCSANOW, &t);
+#else
+    struct termios2 tc;
     memset(&tc, 0, sizeof(tc));
     if (ioctl(_fd, TCGETS2, &tc) == -1) {
         return false;
     }
-
+    
     /* speed is configured by c_[io]speed */
     tc.c_cflag &= ~CBAUD;
     tc.c_cflag |= BOTHER;
     tc.c_ispeed = speed;
     tc.c_ospeed = speed;
-
     if (ioctl(_fd, TCSETS2, &tc) == -1) {
         return false;
     }
-
     if (ioctl(_fd, TCFLSH, TCIOFLUSH) == -1) {
         return false;
     }
+#endif
 
     return true;
 }
 
-void HALSITL::UARTDriver::configure_parity(uint8_t v) {
+void HALSITL::UARTDriver::configure_parity(uint8_t v)
+{
     if (_fd < 0) {
         return;
     }
-    struct termios2 tc;
+#ifdef __CYGWIN__
+    struct termios t;
 
-    memset(&tc, 0, sizeof(tc));
-    if (ioctl(_fd, TCGETS2, &tc) == -1) {
+    tcgetattr(_fd, &t);
+#else
+    struct termios2 t;
+    memset(&t, 0, sizeof(t));
+    if (ioctl(_fd, TCGETS2, &t) == -1) {
         return;
     }
+#endif
     if (v != 0) {
         // enable parity
-        tc.c_cflag |= PARENB;
+        t.c_cflag |= PARENB;
         if (v == 1) {
-            tc.c_cflag |= PARODD;
+            t.c_cflag |= PARODD;
         } else {
-            tc.c_cflag &= ~PARODD;
+            t.c_cflag &= ~PARODD;
         }
     }
     else {
         // disable parity
-        tc.c_cflag &= ~PARENB;
-    }
-    if (ioctl(_fd, TCSETS2, &tc) == -1) {
-        return;
+        t.c_cflag &= ~PARENB;
     }
 
-    if (ioctl(_fd, TCFLSH, TCIOFLUSH) == -1) {
-        return;
-    }
+#ifdef __CYGWIN__
+    tcsetattr(_fd, TCSANOW, &t);
+#else
+    ioctl(_fd, TCSETS2, &t);
+#endif
 }
 
-void HALSITL::UARTDriver::set_stop_bits(int n) {
+void HALSITL::UARTDriver::set_stop_bits(int n)
+{
     if (_fd < 0) {
         return;
     }
-    struct termios2 tc;
+#ifdef __CYGWIN__
+    struct termios t;
 
-    memset(&tc, 0, sizeof(tc));
-    if (ioctl(_fd, TCGETS2, &tc) == -1) {
+    tcgetattr(_fd, &t);
+#else
+    struct termios2 t;
+    memset(&t, 0, sizeof(t));
+    if (ioctl(_fd, TCGETS2, &t) == -1) {
         return;
     }
-    if (n > 1) tc.c_cflag |= CSTOPB;
-    else tc.c_cflag &= ~CSTOPB;
+#endif
 
-    if (ioctl(_fd, TCSETS2, &tc) == -1) {
-        return;
+    if (n > 1) {
+        t.c_cflag |= CSTOPB;
+    } else {
+        t.c_cflag &= ~CSTOPB;
     }
 
-    if (ioctl(_fd, TCFLSH, TCIOFLUSH) == -1) {
-        return;
-    }
+#ifdef __CYGWIN__
+    tcsetattr(_fd, TCSANOW, &t);
+#else
+    ioctl(_fd, TCSETS2, &t);
+#endif
 }
 
 #endif
