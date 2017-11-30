@@ -3006,8 +3006,23 @@ void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
     log_vision_position_estimate_data(m.time_usec, timestamp_ms, m.x, m.y, m.z, roll, pitch, yaw);
 }
 
+void GCS_MAVLINK::handle_command_ack_arm_authorization_request(const mavlink_command_ack_t &packet)
+{
+    gcs().received_offboard_authorization((MAV_RESULT)packet.result);
+}
+
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 {
+    mavlink_command_ack_t packet;
+    mavlink_msg_command_ack_decode(msg, &packet);
+    switch(packet.command) {
+    case MAV_CMD_ARM_AUTHORIZATION_REQUEST:
+        handle_command_ack_arm_authorization_request(packet);
+        break;
+    default:
+        break;
+    }
+
     AP_AccelCal *accelcal = AP::ins().get_acal();
     if (accelcal != nullptr) {
         accelcal->handleMessage(msg);

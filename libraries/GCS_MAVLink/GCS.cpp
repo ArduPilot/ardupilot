@@ -106,6 +106,30 @@ bool GCS::install_alternative_protocol(mavlink_channel_t c, GCS_MAVLINK::protoco
     return true;
 }
 
+void GCS::request_offboard_authorization()
+{
+    const mavlink_command_long_t packet{
+        0,
+        0,
+        MAV_CMD_ARM_AUTHORIZATION_REQUEST,
+        0, // confirmation
+        (float)mavlink_system.sysid,
+        0, 0, 0, 0, 0, 0
+    };
+    send_to_active_channels(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&packet);
+}
+
+void GCS::received_offboard_authorization(MAV_RESULT result)
+{
+    switch (result) {
+    case MAV_RESULT_ACCEPTED:
+        _last_offboard_authorization_time = AP_HAL::millis();
+        break;
+    default:
+        _last_offboard_authorization_time = 0;
+    }
+}
+
 void GCS::update_sensor_status_flags()
 {
     control_sensors_present = 0;
