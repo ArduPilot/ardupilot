@@ -395,7 +395,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     }
 
     float voltage = 0.0f;
-    _current = 0;
+    float current = 0;
 
     if (_sitl != nullptr) {
         if (_sitl->state.battery_voltage <= 0) {
@@ -409,7 +409,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
                     voltage -= fraction * 0.5f;
 
                     const float draw = fraction * 15.0f;
-                    _current += draw;
+                    current += draw;
                 }
             } else {
                 // simulate simple battery setup
@@ -418,18 +418,18 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
                 voltage = _sitl->batt_voltage - 0.7f * fabsf(throttle);
 
                 // assume 50A at full throttle
-                _current = 50.0f * fabsf(throttle);
+                current = 50.0f * fabsf(throttle);
             }
         } else {
             // FDM provides voltage and current
             voltage = _sitl->state.battery_voltage;
-            _current = _sitl->state.battery_current;
+            current = _sitl->state.battery_current;
         }
     }
 
     // assume 3DR power brick
     voltage_pin_value = ((voltage / 10.1f) / 5.0f) * 1024;
-    current_pin_value = ((_current / 17.0f) / 5.0f) * 1024;
+    current_pin_value = ((current / 17.0f) / 5.0f) * 1024;
 }
 
 void SITL_State::init(int argc, char * const argv[])
