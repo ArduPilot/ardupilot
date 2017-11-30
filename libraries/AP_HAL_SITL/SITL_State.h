@@ -41,7 +41,6 @@ public:
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
     bool output_ready = false;
     bool new_rc_input;
-    void loop_hook(void);
     uint16_t base_port(void) const {
         return _base_port;
     }
@@ -75,8 +74,6 @@ private:
     void _usage(void);
     void _sitl_setup(const char *home_str);
     void _setup_fdm(void);
-    void _setup_timer(void);
-    void _setup_adc(void);
 
     void set_height_agl(void);
     void _update_rangefinder(float range_value);
@@ -123,9 +120,6 @@ private:
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
     void _simulator_servos(SITL::Aircraft::sitl_input &input);
-    void _simulator_output(bool synthetic_clock_mode);
-    uint16_t _airspeed_sensor(float airspeed);
-    uint16_t _ground_sonar();
     void _fdm_input_step(void);
 
     void wait_clock(uint64_t wait_time_usec);
@@ -163,19 +157,7 @@ private:
     const char *_fdm_address;
 
     // delay buffer variables
-    static const uint8_t MAG_BUFFER_LENGTH = 250;
     static const uint8_t WIND_BUFFER_LENGTH = 50;
-
-    // magnetometer delay buffer variables
-    struct readings_mag {
-        uint32_t time;
-        Vector3f data;
-    };
-    uint8_t store_index_mag;
-    uint32_t last_store_time_mag;
-    VectorN<readings_mag, MAG_BUFFER_LENGTH> buffer_mag;
-    uint32_t time_delta_mag;
-    uint32_t delayed_time_mag;
 
     // airspeed sensor delay buffer variables
     struct readings_wind {
