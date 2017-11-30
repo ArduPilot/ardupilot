@@ -24,7 +24,7 @@ private:
     SITL_State *_sitlState;
 
     /* override state */
-    uint16_t _override[SITL_RC_INPUT_CHANNELS];
+    uint16_t _override[SITL_RC_INPUT_CHANNELS]{};
 };
 
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
