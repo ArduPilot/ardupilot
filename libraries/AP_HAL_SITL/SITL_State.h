@@ -55,9 +55,6 @@ public:
     uint16_t voltage_pin_value;   // pin 13
     uint16_t current_pin_value;   // pin 12
 
-    // return TCP client address for uartC
-    const char *get_client_address(void) const { return _client_address; }
-
     // paths for UART devices
     const char *_uart_path[6] {
         "tcp:0:wait",
@@ -134,9 +131,7 @@ private:
     uint32_t _update_count;
 
     AP_Baro *_barometer;
-    AP_InertialSensor *_ins;
     Scheduler *_scheduler;
-    Compass *_compass;
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain *_terrain;
 #endif
@@ -182,9 +177,6 @@ private:
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
-
-    // TCP address to connect uartC to
-    const char *_client_address;
 
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 

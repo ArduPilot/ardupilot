@@ -131,7 +131,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     // default to CMAC
     const char *home_str = "-35.363261,149.165230,584,353";
     const char *model_str = nullptr;
-    _client_address = nullptr;
     _use_fg_view = true;
     char *autotest_dir = nullptr;
     _fdm_address = "127.0.0.1";
@@ -154,8 +153,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _irlock_port = IRLOCK_PORT;
 
     enum long_options {
-        CMDLINE_CLIENT = 0,
-        CMDLINE_GIMBAL,
+        CMDLINE_GIMBAL = 0,
         CMDLINE_FGVIEW,
         CMDLINE_AUTOTESTDIR,
         CMDLINE_DEFAULTS,
@@ -188,7 +186,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
         {"fdm",             false,  0, 'F'},
-        {"client",          true,   0, CMDLINE_CLIENT},
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
         {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
@@ -278,9 +275,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 'F':
             _fdm_address = gopt.optarg;
-            break;
-        case CMDLINE_CLIENT:
-            _client_address = gopt.optarg;
             break;
         case CMDLINE_GIMBAL:
             enable_gimbal = true;
