@@ -50,10 +50,10 @@ public:
     }
 
     // simulated airspeed, sonar and battery monitor
-    uint16_t sonar_pin_value;     // pin 0
-    uint16_t airspeed_pin_value;  // pin 1
-    float voltage_pin_value;   // pin 13
-    float current_pin_value;   // pin 12
+    uint16_t _sonar_pin_value;     // pin 0
+    uint16_t _airspeed_pin_value;  // pin 1
+    float _voltage_pin_value;   // pin 13
+    float _current_pin_value;   // pin 12
 
     // paths for UART devices
     const char *_uart_path[6] {

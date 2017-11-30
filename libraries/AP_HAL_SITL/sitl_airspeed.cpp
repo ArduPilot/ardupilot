@@ -47,7 +47,7 @@ void SITL_State::_update_airspeed(float airspeed)
 
     float airspeed_raw = airspeed_pressure + airspeed_offset;
     if (airspeed_raw / 4 > 0xFFFF) {
-        airspeed_pin_value = 0xFFFF;
+        _airspeed_pin_value = 0xFFFF;
         return;
     }
     // add delay
@@ -83,7 +83,7 @@ void SITL_State::_update_airspeed(float airspeed)
         airspeed_raw = buffer_wind[best_index_wind].data;
     }
 
-    airspeed_pin_value = airspeed_raw / 4;
+    _airspeed_pin_value = airspeed_raw / 4;
 }
 
 #endif

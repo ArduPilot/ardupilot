@@ -30,16 +30,16 @@ float ADCSource::read_latest() {
         return 1023.0f;
 
     case 0:
-        return _sitlState->sonar_pin_value;
+        return _sitlState->_sonar_pin_value;
 
     case 1:
-        return _sitlState->airspeed_pin_value;
+        return _sitlState->_airspeed_pin_value;
 
     case 12:
-        return _sitlState->current_pin_value;
+        return _sitlState->_current_pin_value;
 
     case 13:
-        return _sitlState->voltage_pin_value;
+        return _sitlState->_voltage_pin_value;
 
     case ANALOG_INPUT_NONE:
     default:
