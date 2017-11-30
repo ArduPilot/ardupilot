@@ -174,37 +174,37 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     };
 
     const struct GetOptLong::option options[] = {
-        {"help",            false,  0, 'h'},
-        {"wipe",            false,  0, 'w'},
-        {"unhide-groups",   false,  0, 'u'},
-        {"speedup",         true,   0, 's'},
-        {"rate",            true,   0, 'r'},
-        {"console",         false,  0, 'C'},
-        {"instance",        true,   0, 'I'},
-        {"param",           true,   0, 'P'},
-        {"synthetic-clock", false,  0, 'S'},
-        {"home",            true,   0, 'O'},
-        {"model",           true,   0, 'M'},
-        {"fdm",             false,  0, 'F'},
-        {"gimbal",          false,  0, CMDLINE_GIMBAL},
-        {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
-        {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
-        {"defaults",        true,   0, CMDLINE_DEFAULTS},
-        {"uartA",           true,   0, CMDLINE_UARTA},
-        {"uartB",           true,   0, CMDLINE_UARTB},
-        {"uartC",           true,   0, CMDLINE_UARTC},
-        {"uartD",           true,   0, CMDLINE_UARTD},
-        {"uartE",           true,   0, CMDLINE_UARTE},
-        {"uartF",           true,   0, CMDLINE_UARTF},
-        {"rtscts",          false,  0, CMDLINE_RTSCTS},
-        {"base-port",       true,   0, CMDLINE_BASE_PORT},
-        {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
-        {"rc-out-port",     true,   0, CMDLINE_RCOUT_PORT},
-        {"sim-address",     true,   0, CMDLINE_SIM_ADDRESS},
-        {"sim-port-in",     true,   0, CMDLINE_SIM_PORT_IN},
-        {"sim-port-out",    true,   0, CMDLINE_SIM_PORT_OUT},
-        {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
-        {0, false, 0, 0}
+        {"help",            false,  nullptr, 'h'},
+        {"wipe",            false,  nullptr, 'w'},
+        {"unhide-groups",   false,  nullptr, 'u'},
+        {"speedup",         true,   nullptr, 's'},
+        {"rate",            true,   nullptr, 'r'},
+        {"console",         false,  nullptr, 'C'},
+        {"instance",        true,   nullptr, 'I'},
+        {"param",           true,   nullptr, 'P'},
+        {"synthetic-clock", false,  nullptr, 'S'},
+        {"home",            true,   nullptr, 'O'},
+        {"model",           true,   nullptr, 'M'},
+        {"fdm",             false,  nullptr, 'F'},
+        {"gimbal",          false,  nullptr, CMDLINE_GIMBAL},
+        {"disable-fgview",  false,  nullptr, CMDLINE_FGVIEW},
+        {"autotest-dir",    true,   nullptr, CMDLINE_AUTOTESTDIR},
+        {"defaults",        true,   nullptr, CMDLINE_DEFAULTS},
+        {"uartA",           true,   nullptr, CMDLINE_UARTA},
+        {"uartB",           true,   nullptr, CMDLINE_UARTB},
+        {"uartC",           true,   nullptr, CMDLINE_UARTC},
+        {"uartD",           true,   nullptr, CMDLINE_UARTD},
+        {"uartE",           true,   nullptr, CMDLINE_UARTE},
+        {"uartF",           true,   nullptr, CMDLINE_UARTF},
+        {"rtscts",          false,  nullptr, CMDLINE_RTSCTS},
+        {"base-port",       true,   nullptr, CMDLINE_BASE_PORT},
+        {"rc-in-port",      true,   nullptr, CMDLINE_RCIN_PORT},
+        {"rc-out-port",     true,   nullptr, CMDLINE_RCOUT_PORT},
+        {"sim-address",     true,   nullptr, CMDLINE_SIM_ADDRESS},
+        {"sim-port-in",     true,   nullptr, CMDLINE_SIM_PORT_IN},
+        {"sim-port-out",    true,   nullptr, CMDLINE_SIM_PORT_OUT},
+        {"irlock-port",     true,   nullptr, CMDLINE_IRLOCK_PORT},
+        {nullptr, false, nullptr, 0}
     };
 
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
@@ -212,8 +212,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     }
     _set_signal_handlers();
 
-    setvbuf(stdout, (char *)0, _IONBF, 0);
-    setvbuf(stderr, (char *)0, _IONBF, 0);
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    setvbuf(stderr, nullptr, _IONBF, 0);
 
     GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:",
                     options);
