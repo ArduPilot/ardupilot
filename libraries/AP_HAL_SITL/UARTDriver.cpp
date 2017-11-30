@@ -160,7 +160,12 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         DataFlash_Class::instance()->Log_Write("SBUS", "TimeUS,ToD", "QQ",
                                                AP_HAL::micros64(), time);
         // write buffer straight to the file descriptor
-        ::write(_fd, buffer, size);
+        ssize_t nwritten = ::write(_fd, buffer, size);
+        if (nwritten == -1 && errno != EAGAIN && _uart_path) {
+            close(_fd);
+            _fd = -1;
+            _connected = false;
+        }
         // these have no effect
         tcdrain(_fd);
     } else {
