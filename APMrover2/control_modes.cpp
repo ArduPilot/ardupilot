@@ -24,6 +24,9 @@ Mode *Rover::control_mode_from_num(const enum mode num)
     case RTL:
         ret = &mode_rtl;
         break;
+    case SMART_RTL:
+        ret = &mode_smartrtl;
+        break;
     case GUIDED:
        ret = &mode_guided;
         break;
