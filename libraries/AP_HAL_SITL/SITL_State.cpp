@@ -103,7 +103,7 @@ void SITL_State::_sitl_setup(const char *home_str)
 /*
   setup a SITL FDM listening UDP port
  */
-void SITL_State::_setup_fdm(void)
+void SITL_State::_setup_fdm()
 {
     if (!_sitl_rc_in.bind("0.0.0.0", _rcin_port)) {
         fprintf(stderr, "SITL: socket bind failed on RC in port : %d - %s\n", _rcin_port, strerror(errno));
@@ -119,7 +119,7 @@ void SITL_State::_setup_fdm(void)
 /*
   step the FDM by one time step
  */
-void SITL_State::_fdm_input_step(void)
+void SITL_State::_fdm_input_step()
 {
     static uint32_t last_pwm_input = 0;
 
@@ -184,7 +184,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
 /*
   check for a SITL RC input packet
  */
-void SITL_State::_check_rc_input(void)
+void SITL_State::_check_rc_input()
 {
     struct pwm_packet {
         uint16_t pwm[SITL_RC_INPUT_CHANNELS];
@@ -215,7 +215,7 @@ void SITL_State::_check_rc_input(void)
 /*
   output current state to flightgear
  */
-void SITL_State::_output_to_flightgear(void)
+void SITL_State::_output_to_flightgear()
 {
     SITL::FGNetFDM fdm {};
     const SITL::sitl_fdm &sfdm = _sitl->state;
@@ -250,7 +250,7 @@ void SITL_State::_output_to_flightgear(void)
 /*
   get FDM input from a local model
  */
-void SITL_State::_fdm_input_local(void)
+void SITL_State::_fdm_input_local()
 {
     SITL::Aircraft::sitl_input input;
 
@@ -448,7 +448,7 @@ void SITL_State::init(int argc, char * const argv[])
 /*
   set height above the ground in meters
  */
-void SITL_State::set_height_agl(void)
+void SITL_State::set_height_agl()
 {
     static float home_alt = -1.0f;
 

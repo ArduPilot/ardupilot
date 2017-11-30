@@ -34,7 +34,7 @@ public:
 
     void reboot(bool hold_in_bootloader);
 
-    bool interrupts_are_blocked(void) {
+    bool interrupts_are_blocked() {
         return _nested_atomic_ctr != 0;
     }
 

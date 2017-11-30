@@ -53,7 +53,7 @@ ssize_t SITL_State::gps_read(int fd, void *buf, size_t count)
 /*
   setup GPS input pipe
  */
-int SITL_State::gps_pipe(void)
+int SITL_State::gps_pipe()
 {
     int fd[2];
     if (gps_state.client_fd != 0) {
@@ -71,7 +71,7 @@ int SITL_State::gps_pipe(void)
 /*
   setup GPS2 input pipe
  */
-int SITL_State::gps2_pipe(void)
+int SITL_State::gps2_pipe()
 {
     int fd[2];
     if (gps2_state.client_fd != 0) {

@@ -64,7 +64,7 @@ bool GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
     return true;
 }
 
-bool GPIO::usb_connected(void)
+bool GPIO::usb_connected()
 {
     return false;
 }

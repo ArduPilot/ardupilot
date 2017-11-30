@@ -57,14 +57,14 @@ public:
 
     bool _unbuffered_writes;
 
-    enum flow_control get_flow_control(void) { return FLOW_CONTROL_ENABLE; }
+    enum flow_control get_flow_control() { return FLOW_CONTROL_ENABLE; }
 
     virtual bool set_speed(int speed);
     virtual void configure_parity(uint8_t v);
     virtual void set_stop_bits(int n);
     bool set_unbuffered_writes(bool on);
 
-    void _timer_tick(void);
+    void _timer_tick();
 
 private:
     uint8_t _portNumber;
@@ -80,10 +80,10 @@ private:
     uint32_t _uart_baudrate;
 
     void _tcp_start_connection(uint16_t port, bool wait_for_connection);
-    void _uart_start_connection(void);
+    void _uart_start_connection();
     void _check_reconnect();
     void _tcp_start_client(const char *address, uint16_t port);
-    void _check_connection(void);
+    void _check_connection();
     static bool _select_check(int fd);
     static void _set_nonblocking(int fd);
 

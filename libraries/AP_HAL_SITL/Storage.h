@@ -16,6 +16,6 @@ public:
 
 private:
     int _eeprom_fd;
-    void _eeprom_open(void);
+    void _eeprom_open();
 };
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

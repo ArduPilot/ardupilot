@@ -18,13 +18,13 @@ public:
     /**
        how much free memory do we have in bytes. 
      */
-    uint32_t available_memory(void) override {
+    uint32_t available_memory() override {
         // SITL is assumed to always have plenty of memory. Return 128k for now
         return 0x20000;
     }
 
     // create a new semaphore
-    AP_HAL::Semaphore *new_semaphore(void) override { return new HALSITL::Semaphore; }
+    AP_HAL::Semaphore *new_semaphore() override { return new HALSITL::Semaphore; }
 
     // get path to custom defaults file for AP_Param
     const char* get_custom_defaults_file() const override {

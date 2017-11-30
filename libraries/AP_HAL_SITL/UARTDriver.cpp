@@ -87,7 +87,7 @@ void UARTDriver::end()
 {
 }
 
-uint32_t UARTDriver::available(void)
+uint32_t UARTDriver::available()
 {
     _check_connection();
 
@@ -98,7 +98,7 @@ uint32_t UARTDriver::available(void)
     return _readbuffer.available();
 }
 
-uint32_t UARTDriver::txspace(void)
+uint32_t UARTDriver::txspace()
 {
     _check_connection();
     if (!_connected) {
@@ -107,7 +107,7 @@ uint32_t UARTDriver::txspace(void)
     return _writebuffer.space();
 }
 
-int16_t UARTDriver::read(void)
+int16_t UARTDriver::read()
 {
     if (available() <= 0) {
         return -1;
@@ -117,7 +117,7 @@ int16_t UARTDriver::read(void)
     return c;
 }
 
-void UARTDriver::flush(void)
+void UARTDriver::flush()
 {
 }
 
@@ -296,7 +296,7 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 /*
   start a UART connection for the serial port
  */
-void UARTDriver::_uart_start_connection(void)
+void UARTDriver::_uart_start_connection()
 {
     struct termios t {};
     if (!_connected) {
@@ -340,7 +340,7 @@ void UARTDriver::_uart_start_connection(void)
 /*
   see if a new connection is coming in
  */
-void UARTDriver::_check_connection(void)
+void UARTDriver::_check_connection()
 {
     if (_connected) {
         // we only want 1 connection at a time
@@ -402,7 +402,7 @@ bool UARTDriver::set_unbuffered_writes(bool on) {
     return _unbuffered_writes;
 }
 
-void UARTDriver::_check_reconnect(void)
+void UARTDriver::_check_reconnect()
 {
     if (!_uart_path) {
         return;
@@ -410,7 +410,7 @@ void UARTDriver::_check_reconnect(void)
     _uart_start_connection();
 }
 
-void UARTDriver::_timer_tick(void)
+void UARTDriver::_timer_tick()
 {
     if (!_connected) {
         _check_reconnect();

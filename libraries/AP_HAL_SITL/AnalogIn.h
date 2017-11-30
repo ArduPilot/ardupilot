@@ -36,7 +36,7 @@ public:
     explicit AnalogIn(SITL_State *sitlState): _sitlState(sitlState) {}
     void init();
     AP_HAL::AnalogSource* channel(int16_t pin);
-    float board_voltage(void) {
+    float board_voltage() {
         return 5.0f;
     }
 private:

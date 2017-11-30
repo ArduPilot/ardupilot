@@ -36,7 +36,7 @@ static void _sig_fpe(int signum)
     abort();
 }
 
-void SITL_State::_usage(void)
+void SITL_State::_usage()
 {
     printf("Options:\n"
            "\t--help|-h                display this help information\n"
@@ -107,7 +107,7 @@ static const struct {
     { "vectored",           Submarine::create },
 };
 
-void SITL_State::_set_signal_handlers(void) const
+void SITL_State::_set_signal_handlers() const
 {
     struct sigaction sa_fpe = {};
 

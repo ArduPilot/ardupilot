@@ -23,7 +23,7 @@ public:
             uint8_t mode);
 
     /* return true if USB cable is connected */
-    bool usb_connected(void);
+    bool usb_connected();
 
 private:
     SITL_State *_sitlState;

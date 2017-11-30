@@ -8,7 +8,7 @@
 
 using namespace HALSITL;
 
-void EEPROMStorage::_eeprom_open(void)
+void EEPROMStorage::_eeprom_open()
 {
     if (_eeprom_fd == -1) {
         _eeprom_fd = open("eeprom.bin", O_RDWR|O_CREAT|O_CLOEXEC, 0777);
