@@ -258,17 +258,6 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     if (saturation_value > 1.0f) {
         steering_scaled = steering_scaled / saturation_value;
         throttle_scaled = throttle_scaled / saturation_value;
-        // set limits
-        if (is_negative(steering)) {
-            limit.steer_left = true;
-        } else {
-            limit.steer_right = true;
-        }
-        if (is_negative(throttle)) {
-            limit.throttle_lower = true;
-        } else {
-            limit.throttle_upper = true;
-        }
     }
 
     // add in throttle
