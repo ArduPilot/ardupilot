@@ -338,6 +338,40 @@ protected:
     bool _enter() override;
 };
 
+class ModeSmartRTL : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return SMART_RTL; }
+    const char *name4() const override { return "SRTL"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    // attributes of the mode
+    bool is_autopilot_mode() const override { return true; }
+    bool failsafe_throttle_suppress() const override { return false; }
+
+    float get_distance_to_destination() const override { return _distance_to_destination; }
+    bool reached_destination() override { return smart_rtl_state == SmartRTL_StopAtHome; }
+
+    // save current position for use by the smart_rtl flight mode
+    void save_position(bool save_pos);
+
+protected:
+
+    // Safe RTL states
+    enum SmartRTLState {
+        SmartRTL_WaitForPathCleanup,
+        SmartRTL_PathFollow,
+        SmartRTL_StopAtHome,
+        SmartRTL_Failure
+    } smart_rtl_state;
+
+    bool _enter() override;
+    bool _load_point;
+};
+
 
 class ModeSteering : public Mode
 {
