@@ -19,7 +19,7 @@
 
 #include "UARTDriver.h"
 
-#include <asm/termbits.h>
+#include <termios.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
