@@ -21,6 +21,7 @@ def build(bld):
             'AP_VisualOdom',
             'AP_AdvancedFailsafe',
             'AP_WheelEncoder',
+            'AP_SmartRTL',
         ],
     )
 
