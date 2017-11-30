@@ -33,6 +33,7 @@ enum mode {
     HOLD         = 4,
     AUTO         = 10,
     RTL          = 11,
+    SMART_RTL    = 12,
     GUIDED       = 15,
     INITIALISING = 16
 };

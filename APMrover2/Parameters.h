@@ -319,6 +319,9 @@ public:
 
     // acro mode turn rate maximum
     AP_Float acro_turn_rate;
+
+    // Safe RTL library
+    AP_SmartRTL smart_rtl;
 };
 
 extern const AP_Param::Info var_info[];

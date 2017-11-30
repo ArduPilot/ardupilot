@@ -67,6 +67,7 @@
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <APM_Control/AR_AttitudeControl.h>
+#include <AP_SmartRTL/AP_SmartRTL.h>
 #include <DataFlash/DataFlash.h>
 #include <Filter/AverageFilter.h>                   // Mode Filter from Filter library
 #include <Filter/Butter.h>                          // Filter library - butterworth filter
@@ -111,6 +112,7 @@ public:
     friend class ModeSteering;
     friend class ModeManual;
     friend class ModeRTL;
+    friend class ModeSmartRTL;
 
     Rover(void);
 
@@ -384,6 +386,7 @@ private:
     ModeAuto mode_auto;
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
+    ModeSmartRTL mode_smartrtl;
 
     // cruise throttle and speed learning
     struct {
@@ -568,6 +571,7 @@ private:
     void change_arm_state(void);
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
+    void smart_rtl_update();
 
     // test.cpp
     void print_hit_enter();

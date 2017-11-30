@@ -133,6 +133,8 @@ void Rover::init_ardupilot()
     // give AHRS the range beacon sensor
     ahrs.set_beacon(&g2.beacon);
 
+    // initialize SmartRTL
+    g2.smart_rtl.init();
 
     init_capabilities();
 
@@ -332,6 +334,9 @@ bool Rover::arm_motors(AP_Arming::ArmingMethod method)
         return false;
     }
 
+    // Reset SmartRTL return location. If activated, SmartRTL will ultimately try to land at this point
+    g2.smart_rtl.reset_path(true);
+
     change_arm_state();
     return true;
 }
@@ -353,4 +358,11 @@ bool Rover::disarm_motors(void)
     change_arm_state();
 
     return true;
+}
+
+// save current position for use by the smart_rtl mode
+void Rover::smart_rtl_update()
+{
+    const bool save_position = hal.util->get_soft_armed() && (control_mode != &mode_smartrtl);
+    mode_smartrtl.save_position(save_position);
 }
