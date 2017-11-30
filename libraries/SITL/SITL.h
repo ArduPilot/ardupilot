@@ -55,9 +55,6 @@ public:
 
     struct sitl_fdm state;
 
-    // loop update rate in Hz
-    uint16_t update_rate_hz;
-
     // true when motors are active
     bool motors_on;
 
