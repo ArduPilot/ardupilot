@@ -7,7 +7,7 @@ void ModeSteering::update()
     get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
 
     // convert pilot throttle input to desired speed (up to twice the cruise speed)
-    float target_speed = desired_steering * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
+    const float target_speed = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
 
     // get speed forward
     float speed;
