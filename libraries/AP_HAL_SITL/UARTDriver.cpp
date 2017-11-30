@@ -154,11 +154,6 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         return 0;
     }
     if (_unbuffered_writes) {
-        struct timeval tp;
-        gettimeofday(&tp, nullptr);
-        uint64_t time = 1.0e6 * (tp.tv_sec + (tp.tv_usec * 1.0e-6));
-        DataFlash_Class::instance()->Log_Write("SBUS", "TimeUS,ToD", "QQ",
-                                               AP_HAL::micros64(), time);
         // write buffer straight to the file descriptor
         ssize_t nwritten = ::write(_fd, buffer, size);
         if (nwritten == -1 && errno != EAGAIN && _uart_path) {
