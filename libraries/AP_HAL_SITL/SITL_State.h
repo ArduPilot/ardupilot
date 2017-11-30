@@ -55,6 +55,8 @@ public:
     float _voltage_pin_value;   // pin 13
     float _current_pin_value;   // pin 12
 
+    float _home_alt;
+
     // paths for UART devices
     const char *_uart_path[6] {
         "tcp:0:wait",
