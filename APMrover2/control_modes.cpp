@@ -198,6 +198,78 @@ void Rover::read_aux_switch()
             disarm_motors();
         }
         break;
+
+    // set mode to Manual
+    case CH7_MANUAL:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_manual, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_manual)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Acro
+    case CH7_ACRO:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_acro, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_acro)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Steering
+    case CH7_STEERING:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_steering, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_steering)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Hold
+    case CH7_HOLD:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_hold, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_hold)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Auto
+    case CH7_AUTO:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_auto, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_auto)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to RTL
+    case CH7_RTL:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_rtl, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_rtl)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to SmartRTL
+    case CH7_SMART_RTL:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_smartrtl, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_smartrtl)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Guided
+    case CH7_GUIDED:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_guided, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_guided)) {
+            reset_control_switch();
+        }
+        break;
     }
 }
 
