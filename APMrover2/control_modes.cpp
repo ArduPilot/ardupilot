@@ -189,6 +189,15 @@ void Rover::read_aux_switch()
             cruise_learn_complete();
         }
         break;
+
+    // arm or disarm the motors
+    case CH7_ARM_DISARM:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            arm_motors(AP_Arming::RUDDER);
+        } else if (aux_ch7 == AUX_SWITCH_LOW) {
+            disarm_motors();
+        }
+        break;
     }
 }
 

@@ -17,7 +17,8 @@
 enum ch7_option {
     CH7_DO_NOTHING      = 0,
     CH7_SAVE_WP         = 1,
-    CH7_LEARN_CRUISE    = 2
+    CH7_LEARN_CRUISE    = 2,
+    CH7_ARM_DISARM      = 3
 };
 
 // HIL enumerations
