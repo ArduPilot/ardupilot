@@ -331,6 +331,7 @@ void Rover::change_arm_state(void)
 bool Rover::arm_motors(AP_Arming::ArmingMethod method)
 {
     if (!arming.arm(method)) {
+        AP_Notify::events.arming_failed = true;
         return false;
     }
 
