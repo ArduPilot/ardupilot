@@ -28,9 +28,8 @@ uint8_t JSButton::function(bool shift) const
 {
     if (shift) {
         return _sfunction;
-    } else {
-        return _function;
     }
+    return _function;
 }
 
 void JSButton::set_default(button_function_t f, button_function_t sf)
