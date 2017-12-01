@@ -53,7 +53,7 @@ public:
     friend class AP_AHRS_View;
     
     // Constructor
-    AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
+    AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro) :
         roll(0.0f),
         pitch(0.0f),
         yaw(0.0f),
@@ -68,7 +68,6 @@ public:
         _compass_last_update(0),
         _ins(ins),
         _baro(baro),
-        _gps(gps),
         _cos_roll(1.0f),
         _cos_pitch(1.0f),
         _cos_yaw(1.0f),
@@ -199,10 +198,6 @@ public:
 
     const AP_Beacon *get_beacon(void) const {
         return _beacon;
-    }
-
-    const AP_GPS &get_gps() const {
-        return _gps;
     }
 
     const AP_InertialSensor &get_ins() const {
@@ -628,7 +623,6 @@ protected:
     //       IMU under us without our noticing.
     AP_InertialSensor   &_ins;
     AP_Baro             &_baro;
-    const AP_GPS        &_gps;
 
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;

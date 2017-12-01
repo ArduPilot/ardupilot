@@ -44,7 +44,7 @@ public:
     };
 
     // Constructor
-    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps,
+    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro,
                    NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
 
     /* Do not allow copies */
