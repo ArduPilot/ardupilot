@@ -125,7 +125,11 @@ void *FlightAxis::update_thread(void *arg)
 {
     FlightAxis *flightaxis = (FlightAxis *)arg;
 
-#ifndef __CYGWIN__
+#ifdef __CYGWIN__
+    //Cygwin doesn't support pthread_setname_np
+#elif defined(__APPLE__) && defined(__MACH__)
+    pthread_setname_np("ardupilot-flightaxis");
+#else
     pthread_setname_np(pthread_self(), "ardupilot-flightaxis");
 #endif
     
