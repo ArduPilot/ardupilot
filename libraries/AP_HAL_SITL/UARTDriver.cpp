@@ -155,7 +155,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     }
     if (_unbuffered_writes) {
         // write buffer straight to the file descriptor
-        ssize_t nwritten = ::write(_fd, buffer, size);
+        const ssize_t nwritten = ::write(_fd, buffer, size);
         if (nwritten == -1 && errno != EAGAIN && _uart_path) {
             close(_fd);
             _fd = -1;
