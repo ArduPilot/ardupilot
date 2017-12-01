@@ -81,6 +81,13 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SLEWRATE", 8, AP_MotorsUGV, _slew_rate, 100),
 
+    // @Param: THST_EXPO
+    // @DisplayName: Thrust Curve Expo
+    // @Description: Thrust curve exponent (-1 to +1 with 0 being linear)
+    // @Range: -1.0 1.0
+    // @User: Advanced
+    AP_GROUPINFO("THST_EXPO", 9, AP_MotorsUGV, _thrust_curve_expo, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -417,8 +424,8 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
         return;
     }
 
-    // constrain output
-    throttle = constrain_float(throttle, -100.0f, 100.0f);
+    // constrain and scale output
+    throttle = get_scaled_throttle(throttle);
 
     // set relay if necessary
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
@@ -486,4 +493,18 @@ void AP_MotorsUGV::set_limits_from_input(bool armed, float steering, float throt
     limit.steer_right = !armed || (steering >= 4500.0f);
     limit.throttle_lower = !armed || (throttle <= -_throttle_max);
     limit.throttle_upper = !armed || (throttle >= _throttle_max);
+}
+
+// scale a throttle using the _thrust_curve_expo parameter.  throttle should be in the range -100 to +100
+float AP_MotorsUGV::get_scaled_throttle(float throttle) const
+{
+    // return immediatley if no scaling
+    if (is_zero(_thrust_curve_expo) || (_thrust_curve_expo > 1.0f) || (_thrust_curve_expo < -1.0f)) {
+        return throttle;
+    }
+
+    // calculate scaler
+    const float sign = (throttle < 0.0f) ? -1.0f : 1.0f;
+    const float throttle_pct = constrain_float(throttle, -100.0f, 100.0f) / 100.0f;
+    return 100.0f * sign * ((_thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - _thrust_curve_expo) * (1.0f - _thrust_curve_expo) + 4.0f * _thrust_curve_expo * fabsf(throttle_pct))) / (2.0f * _thrust_curve_expo);
 }
