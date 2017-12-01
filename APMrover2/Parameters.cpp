@@ -129,7 +129,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: CH7_OPTION
     // @DisplayName: Channel 7 option
     // @Description: What to do use channel 7 for
-    // @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed
+    // @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm
     // @User: Standard
     GSCALAR(ch7_option,             "CH7_OPTION",          CH7_OPTION),
 
