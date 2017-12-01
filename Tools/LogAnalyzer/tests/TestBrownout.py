@@ -30,11 +30,15 @@ class TestBrownout(Test):
 			self.result.statusMessage = "No CTUN log data"
 			return
 
-		# check for relative altitude at end
-		if "CTUN" in logdata.channels and "BarAlt" in logdata.channels["CTUN"]:
-			(finalAlt,finalAltLine) = logdata.channels["CTUN"]["BarAlt"].getNearestValue(logdata.lineCount, lookForwards=False)
+		if "BarAlt" in logdata.channels['CTUN']:
+			self.ctun_baralt_att = 'BarAlt'
+		else:
+			self.ctun_baralt_att = 'BAlt'
 
-			finalAltMax = 3.0   # max alt offset that we'll still consider to be on the ground
-			if isArmed and finalAlt > finalAltMax:
-				self.result.status = TestResult.StatusType.FAIL
-				self.result.statusMessage = "Truncated Log? Ends while armed at altitude %.2fm" % finalAlt
+		# check for relative altitude at end
+		(finalAlt,finalAltLine) = logdata.channels["CTUN"][self.ctun_baralt_att].getNearestValue(logdata.lineCount, lookForwards=False)
+
+		finalAltMax = 3.0   # max alt offset that we'll still consider to be on the ground
+		if isArmed and finalAlt > finalAltMax:
+			self.result.status = TestResult.StatusType.FAIL
+			self.result.statusMessage = "Truncated Log? Ends while armed at altitude %.2fm" % finalAlt

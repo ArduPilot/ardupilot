@@ -27,6 +27,16 @@ class TestPitchRollCoupling(Test):
             self.result.statusMessage = "No ATT log data"
             return
 
+        if not "CTUN" in logdata.channels:
+            self.result.status = TestResult.StatusType.UNKNOWN
+            self.result.statusMessage = "No CTUN log data"
+            return
+
+        if "BarAlt" in logdata.channels['CTUN']:
+            self.ctun_baralt_att = 'BarAlt'
+        else:
+            self.ctun_baralt_att = 'BAlt'
+
         # figure out where each mode begins and ends, so we can treat auto and manual modes differently and ignore acro/tune modes
         autoModes   = ["RTL",
                        "AUTO",
@@ -104,7 +114,7 @@ class TestPitchRollCoupling(Test):
                 lit = DataflashLog.LogIterator(logdata, startLine)
                 assert(lit.currentLine == startLine)
                 while lit.currentLine <= endLine:
-                    relativeAlt = lit["CTUN"]["BarAlt"]
+                    relativeAlt = lit["CTUN"][self.ctun_baralt_att]
                     if relativeAlt > minAltThreshold:
                         roll  = lit["ATT"]["Roll"]
                         pitch = lit["ATT"]["Pitch"]
