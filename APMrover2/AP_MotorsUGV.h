@@ -86,6 +86,9 @@ protected:
     // set limits based on steering and throttle input
     void set_limits_from_input(bool armed, float steering, float throttle);
 
+    // scale a throttle using the _thrust_curve_expo parameter.  throttle should be in the range -100 to +100
+    float get_scaled_throttle(float throttle) const;
+
     // external references
     AP_ServoRelayEvents &_relayEvents;
 
@@ -97,6 +100,7 @@ protected:
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
     AP_Float _skid_friction;    // skid steering vehicle motor output compensation for friction while stopped
+    AP_Float _thrust_curve_expo; // thrust curve exponent from -1 to +1 with 0 being linear
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
