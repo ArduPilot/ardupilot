@@ -489,10 +489,10 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     if (!locations_are_same(prev_WP_loc, next_WP_loc)) {
         // use waypoint based bearing, this is the usual case
         steer_state.hold_course_cd = -1;
-    } else if (ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+    } else if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
         // use gps ground course based bearing hold
         steer_state.hold_course_cd = -1;
-        bearing = ahrs.get_gps().ground_course_cd() * 0.01f;
+        bearing = AP::gps().ground_course_cd() * 0.01f;
         location_update(next_WP_loc, bearing, 1000); // push it out 1km
     } else {
         // use yaw based bearing hold
