@@ -462,7 +462,7 @@ void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
 
 void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
 {
-    const AP_GPS &gps = _ahrs.get_gps();
+    const AP_GPS &gps = AP::gps();
     const Vector3f &gps_velocity = gps.velocity();
 
     int32_t latitude = _my_loc.lat;
@@ -578,7 +578,7 @@ uint32_t AP_ADSB::genICAO(const Location_Class &loc)
 {
     // gps_time is not seconds since UTC midnight, but it is an equivalent random number
     // TODO: use UTC time instead of GPS time
-    const AP_GPS &gps = _ahrs.get_gps();
+    const AP_GPS &gps = AP::gps();
     const uint64_t gps_time = gps.time_epoch_usec();
 
     uint32_t timeSum = 0;
