@@ -48,10 +48,6 @@ public:
     // returns true if the throttle is controlled automatically
     virtual bool auto_throttle() { return is_autopilot_mode(); }
 
-    // return true if throttle should be supressed in event of a
-    // FAILSAFE_EVENT_THROTTLE
-    virtual bool failsafe_throttle_suppress() const { return true; }
-
     //
     // attributes for mavlink system status reporting
     //
@@ -188,7 +184,6 @@ public:
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
-    bool failsafe_throttle_suppress() const override { return false; }
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
@@ -247,7 +242,6 @@ public:
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
-    bool failsafe_throttle_suppress() const override { return false; }
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override;
@@ -328,7 +322,6 @@ public:
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
-    bool failsafe_throttle_suppress() const override { return false; }
 
     float get_distance_to_destination() const override { return _distance_to_destination; }
     bool reached_destination() override { return _reached_destination; }
@@ -350,7 +343,6 @@ public:
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
-    bool failsafe_throttle_suppress() const override { return false; }
 
     float get_distance_to_destination() const override { return _distance_to_destination; }
     bool reached_destination() override { return smart_rtl_state == SmartRTL_StopAtHome; }
