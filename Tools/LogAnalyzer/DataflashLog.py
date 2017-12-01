@@ -609,7 +609,7 @@ class DataflashLog(object):
                 try:
                     self.set_vehicleType_from_MSG_vehicle(tokens[0]);
                 except ValueError:
-                    pass
+                    return
                 self.backPatchModeChanges()
                 self.firmwareVersion = tokens[1]
                 if len(tokens) == 3:
