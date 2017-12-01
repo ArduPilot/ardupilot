@@ -64,7 +64,7 @@ void Rover::rudder_arm_disarm_check()
             const uint32_t now = millis();
 
             if (rudder_arm_timer == 0 ||
-                now - rudder_arm_timer < 3000) {
+                now - rudder_arm_timer < ARM_DELAY_MS) {
                 if (rudder_arm_timer == 0) {
                     rudder_arm_timer = now;
                 }
@@ -83,7 +83,7 @@ void Rover::rudder_arm_disarm_check()
             const uint32_t now = millis();
 
             if (rudder_arm_timer == 0 ||
-                now - rudder_arm_timer < 3000) {
+                now - rudder_arm_timer < ARM_DELAY_MS) {
                 if (rudder_arm_timer == 0) {
                     rudder_arm_timer = now;
                 }
