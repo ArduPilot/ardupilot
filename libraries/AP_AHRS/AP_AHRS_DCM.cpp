@@ -364,7 +364,7 @@ AP_AHRS_DCM::_yaw_gain(void) const
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void) const
 {
-    if (_gps.status() <= AP_GPS::NO_FIX || !_gps_use) {
+    if (AP::gps().status() <= AP_GPS::NO_FIX || !_gps_use) {
         return false;
     }
     return true;
@@ -395,7 +395,7 @@ bool AP_AHRS_DCM::use_compass(void)
         // we don't have any alterative to the compass
         return true;
     }
-    if (_gps.ground_speed() < GPS_SPEED_MIN) {
+    if (AP::gps().ground_speed() < GPS_SPEED_MIN) {
         // we are not going fast enough to use the GPS
         return true;
     }
@@ -404,8 +404,8 @@ bool AP_AHRS_DCM::use_compass(void)
     // degrees and the estimated wind speed is less than 80% of the
     // ground speed, then switch to GPS navigation. This will help
     // prevent flyaways with very bad compass offsets
-    const int32_t error = abs(wrap_180_cd(yaw_sensor - _gps.ground_course_cd()));
-    if (error > 4500 && _wind.length() < _gps.ground_speed()*0.8f) {
+    const int32_t error = abs(wrap_180_cd(yaw_sensor - AP::gps().ground_course_cd()));
+    if (error > 4500 && _wind.length() < AP::gps().ground_speed()*0.8f) {
         if (AP_HAL::millis() - _last_consistent_heading > 2000) {
             // start using the GPS for heading if the compass has been
             // inconsistent with the GPS for 2 seconds
@@ -428,6 +428,8 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     bool new_value = false;
     float yaw_error;
     float yaw_deltat;
+
+    const AP_GPS &_gps = AP::gps();
 
     if (AP_AHRS_DCM::use_compass()) {
         /*
@@ -606,6 +608,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // keep a sum of the deltat values, so we know how much time
     // we have integrated over
     _ra_deltat += deltat;
+
+    const AP_GPS &_gps = AP::gps();
 
     if (!have_gps() ||
             _gps.status() < AP_GPS::GPS_OK_FIX_3D ||
@@ -956,6 +960,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     loc.flags.relative_alt = 0;
     loc.flags.terrain_alt = 0;
     location_offset(loc, _position_offset_north, _position_offset_east);
+    const AP_GPS &_gps = AP::gps();
     if (_flags.fly_forward && _have_position) {
         float gps_delay_sec = 0;
         _gps.get_lag(gps_delay_sec);
@@ -983,10 +988,10 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
         ret = true;
     }
 
-    if (ret && _wind_max > 0 && _gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
+    if (ret && _wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
         // constrain the airspeed by the ground speed
         // and AHRS_WIND_MAX
-        const float gnd_speed = _gps.ground_speed();
+        const float gnd_speed = AP::gps().ground_speed();
         float true_airspeed = *airspeed_ret * get_EAS2TAS();
         true_airspeed = constrain_float(true_airspeed,
                                         gnd_speed - _wind_max,

@@ -30,8 +30,12 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags) :
-    AP_AHRS_DCM(ins, baro, gps),
+AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins,
+                               AP_Baro &baro,
+                               NavEKF2 &_EKF2,
+                               NavEKF3 &_EKF3,
+                               Flags flags) :
+    AP_AHRS_DCM(ins, baro),
     EKF2(_EKF2),
     EKF3(_EKF3),
     _ekf2_started(false),
@@ -991,7 +995,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
             get_filter_status(filt_state);
 #endif
         }
-        if (hal.util->get_soft_armed() && !filt_state.flags.using_gps && _gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if (hal.util->get_soft_armed() && !filt_state.flags.using_gps && AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             // if the EKF is not fusing GPS and we have a 3D lock, then
             // plane and rover would prefer to use the GPS position from
             // DCM. This is a safety net while some issues with the EKF
@@ -1009,8 +1013,8 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
         if (!filt_state.flags.horiz_vel ||
             (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel)) {
             if ((!_compass || !_compass->use_for_yaw()) &&
-                _gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
-                _gps.ground_speed() < 2) {
+                AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
+                AP::gps().ground_speed() < 2) {
                 /*
                   special handling for non-compass mode when sitting
                   still. The EKF may not yet have aligned its yaw. We

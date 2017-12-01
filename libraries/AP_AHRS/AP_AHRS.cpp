@@ -143,10 +143,10 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
 {
     if (airspeed_sensor_enabled()) {
         *airspeed_ret = _airspeed->get_airspeed();
-        if (_wind_max > 0 && _gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
+        if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
             // constrain the airspeed by the ground speed
             // and AHRS_WIND_MAX
-            const float gnd_speed = _gps.ground_speed();
+            const float gnd_speed = AP::gps().ground_speed();
             float true_airspeed = *airspeed_ret * get_EAS2TAS();
             true_airspeed = constrain_float(true_airspeed,
                                             gnd_speed - _wind_max,
@@ -193,7 +193,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     Vector2f gndVelGPS;
     float airspeed;
     const bool gotAirspeed = airspeed_estimate_true(&airspeed);
-    const bool gotGPS = (_gps.status() >= AP_GPS::GPS_OK_FIX_2D);
+    const bool gotGPS = (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D);
     if (gotAirspeed) {
         const Vector3f wind = wind_estimate();
         const Vector2f wind2d(wind.x, wind.y);
@@ -203,8 +203,8 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 
     // Generate estimate of ground speed vector using GPS
     if (gotGPS) {
-        const float cog = radians(_gps.ground_course_cd()*0.01f);
-        gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * _gps.ground_speed();
+        const float cog = radians(AP::gps().ground_course_cd()*0.01f);
+        gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * AP::gps().ground_speed();
     }
     // If both ADS and GPS data is available, apply a complementary filter
     if (gotAirspeed && gotGPS) {
