@@ -451,9 +451,8 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t
 void Copter::Log_Write_Home_And_Origin()
 {
     // log ekf origin if set
-    Location ekf_orig;
-    if (ahrs.get_origin(ekf_orig)) {
-        DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+    if (ahrs_state.has_ekf_origin) {
+        DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_origin);
     }
 
     // log ahrs home if set

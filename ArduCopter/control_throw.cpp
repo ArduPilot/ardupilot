@@ -207,11 +207,10 @@ void Copter::FlightMode_THROW::run()
 bool Copter::FlightMode_THROW::throw_detected()
 {
     // Check that we have a valid navigation solution
-    nav_filter_status filt_status;
-    if (!ahrs.get_filter_status(filt_status)) {
+    if (!_copter.ahrs_state.has_filt_status) {
         return false;
     }
-    if (!filt_status.flags.attitude || !filt_status.flags.horiz_pos_abs || !filt_status.flags.vert_pos) {
+    if (!_copter.filt_status.flags.attitude || !_copter.filt_status.flags.horiz_pos_abs || !_copter.filt_status.flags.vert_pos) {
         return false;
     }
 

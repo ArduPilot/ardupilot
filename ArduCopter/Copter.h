@@ -430,6 +430,14 @@ private:
     Location ekf_origin;
     Vector3f current_pos;
     Vector3f current_vel;
+    nav_filter_status filt_status;
+    struct {
+        bool has_ekf_origin;
+        bool has_current_loc;
+        bool has_relative_pos;
+        bool has_current_vel;
+        bool has_filt_status;
+    } ahrs_state;
 
     // Navigation Yaw control
     // auto flight mode's yaw mode

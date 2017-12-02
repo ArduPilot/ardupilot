@@ -188,8 +188,7 @@ void Copter::failsafe_terrain_on_event()
 void Copter::gpsglitch_check()
 {
     // get filter status
-    nav_filter_status filt_status;
-    if (!ahrs.get_filter_status(filt_status)) {
+    if (!ahrs_state.has_filt_status) {
         return;
     }
     bool gps_glitching = filt_status.flags.gps_glitching;

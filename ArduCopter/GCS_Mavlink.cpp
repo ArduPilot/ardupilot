@@ -1102,9 +1102,8 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_GET_HOME_POSITION:
             if (copter.ap.home_state != HOME_UNSET) {
                 send_home(copter.ahrs.get_home());
-                Location origin;
-                if (copter.ahrs.get_origin(origin)) {
-                    send_ekf_origin(origin);
+                if (copter.ahrs_state.has_ekf_origin) {
+                    send_ekf_origin(copter.ekf_origin);
                 }
                 result = MAV_RESULT_ACCEPTED;
             } else {
