@@ -18,7 +18,7 @@ private:
     AP_Baro baro;
     AP_GPS  gps;
     Compass compass;
-    AP_AHRS_DCM ahrs{ins, baro, gps};
+    AP_AHRS_DCM ahrs{ins, baro};
 
     // global constants that control how many verify calls must be made for a command before it completes
     uint8_t verify_nav_cmd_iterations_to_complete = 3;
