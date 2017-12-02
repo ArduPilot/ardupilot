@@ -4,7 +4,7 @@
 
 class AC_PosControl_Sub : public AC_PosControl {
 public:
-    AC_PosControl_Sub(const AP_AHRS_View & ahrs, const AP_InertialNav& inav,
+    AC_PosControl_Sub(AP_AHRS_NavEKF& ahrs, const AP_AHRS_View & ahrs_view,
                       const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                       AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
                       AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);

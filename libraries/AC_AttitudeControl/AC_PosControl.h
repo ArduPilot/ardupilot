@@ -6,7 +6,6 @@
 #include <AC_PID/AC_PID.h>             // PID library
 #include <AC_PID/AC_PI_2D.h>           // PID library (2-axis)
 #include <AC_PID/AC_P.h>               // P library
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include "AC_AttitudeControl.h" // Attitude control library
 #include <AP_Motors/AP_Motors.h>          // motors library
 #include <AP_Vehicle/AP_Vehicle.h>         // common vehicle parameters
@@ -48,7 +47,7 @@ class AC_PosControl
 public:
 
     /// Constructor
-    AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
+    AC_PosControl(AP_AHRS_NavEKF& ahrs, const AP_AHRS_View& ahrs_view,
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                   AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
                   AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);
@@ -131,7 +130,7 @@ public:
     void add_takeoff_climb_rate(float climb_rate_cms, float dt);
 
     /// set_alt_target_to_current_alt - set altitude target to current altitude
-    void set_alt_target_to_current_alt() { _pos_target.z = _inav.get_altitude(); }
+    void set_alt_target_to_current_alt();
 
     /// shift altitude target (positive means move altitude up)
     void shift_alt_target(float z_cm);
@@ -382,8 +381,8 @@ protected:
     void check_for_ekf_z_reset();
 
     // references to inertial nav and ahrs libraries
-    const AP_AHRS_View &        _ahrs;
-    const AP_InertialNav&       _inav;
+    const AP_AHRS_View &        _ahrs_view;
+    AP_AHRS_NavEKF&             _ahrs;
     const AP_Motors&            _motors;
     AC_AttitudeControl&         _attitude_control;
 
