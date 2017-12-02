@@ -257,7 +257,7 @@ void AP_Frsky_Telem::send_SPort(void)
                 case SENSOR_ID_SP2UR:
                     switch (_SPort.various_call) {
                         case 0 :
-                            send_uint32(DATA_ID_TEMP2, (uint16_t)(_ahrs.get_gps().num_sats() * 10 + _ahrs.get_gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
+                            send_uint32(DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
                             break;
                         case 1:
                             send_uint32(DATA_ID_TEMP1, _ap.control_mode); // send flight mode
@@ -283,7 +283,7 @@ void AP_Frsky_Telem::send_D(void)
     // send frame1 every 200ms
     if (now - _D.last_200ms_frame >= 200) {
         _D.last_200ms_frame = now;
-        send_uint16(DATA_ID_TEMP2, (uint16_t)(_ahrs.get_gps().num_sats() * 10 + _ahrs.get_gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
+        send_uint16(DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
         send_uint16(DATA_ID_TEMP1, _ap.control_mode); // send flight mode
         send_uint16(DATA_ID_FUEL, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining
         send_uint16(DATA_ID_VFAS, (uint16_t)roundf(_battery.voltage() * 10.0f)); // send battery voltage
@@ -297,7 +297,7 @@ void AP_Frsky_Telem::send_D(void)
         _D.last_1000ms_frame = now;
         send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)((_ahrs.yaw_sensor / 100) % 360)); // send heading in degree based on AHRS and not GPS
         calc_gps_position();
-        if (_ahrs.get_gps().status() >= 3) {
+        if (AP::gps().status() >= 3) {
             send_uint16(DATA_ID_GPS_LAT_BP, _gps.latdddmm); // send gps lattitude degree and minute integer part
             send_uint16(DATA_ID_GPS_LAT_AP, _gps.latmmmm); // send gps lattitude minutes decimal part
             send_uint16(DATA_ID_GPS_LAT_NS, _gps.lat_ns); // send gps North / South information
@@ -612,7 +612,7 @@ uint32_t AP_Frsky_Telem::calc_param(void)
 uint32_t AP_Frsky_Telem::calc_gps_latlng(bool *send_latitude)
 {
     uint32_t latlng;
-    const Location &loc = _ahrs.get_gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
+    const Location &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
 
     // alternate between latitude and longitude
     if ((*send_latitude) == true) {
@@ -639,18 +639,20 @@ uint32_t AP_Frsky_Telem::calc_gps_latlng(bool *send_latitude)
  */
 uint32_t AP_Frsky_Telem::calc_gps_status(void)
 {
+    const AP_GPS &gps = AP::gps();
+
     uint32_t gps_status;
 
     // number of GPS satellites visible (limit to 15 (0xF) since the value is stored on 4 bits)
-    gps_status = (_ahrs.get_gps().num_sats() < GPS_SATS_LIMIT) ? _ahrs.get_gps().num_sats() : GPS_SATS_LIMIT;
+    gps_status = (gps.num_sats() < GPS_SATS_LIMIT) ? gps.num_sats() : GPS_SATS_LIMIT;
     // GPS receiver status (limit to 0-3 (0x3) since the value is stored on 2 bits: NO_GPS = 0, NO_FIX = 1, GPS_OK_FIX_2D = 2, GPS_OK_FIX_3D or GPS_OK_FIX_3D_DGPS or GPS_OK_FIX_3D_RTK_FLOAT or GPS_OK_FIX_3D_RTK_FIXED = 3)
-    gps_status |= ((_ahrs.get_gps().status() < GPS_STATUS_LIMIT) ? _ahrs.get_gps().status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
+    gps_status |= ((gps.status() < GPS_STATUS_LIMIT) ? gps.status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
     // GPS horizontal dilution of precision in dm
-    gps_status |= prep_number(roundf(_ahrs.get_gps().get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET; 
+    gps_status |= prep_number(roundf(gps.get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET; 
     // GPS receiver advanced status (0: no advanced fix, 1: GPS_OK_FIX_3D_DGPS, 2: GPS_OK_FIX_3D_RTK_FLOAT, 3: GPS_OK_FIX_3D_RTK_FIXED)
-    gps_status |= ((_ahrs.get_gps().status() > GPS_STATUS_LIMIT) ? _ahrs.get_gps().status()-GPS_STATUS_LIMIT : 0)<<GPS_ADVSTATUS_OFFSET;
+    gps_status |= ((gps.status() > GPS_STATUS_LIMIT) ? gps.status()-GPS_STATUS_LIMIT : 0)<<GPS_ADVSTATUS_OFFSET;
     // Altitude MSL in dm
-    const Location &loc = _ahrs.get_gps().location();
+    const Location &loc = gps.location();
     gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET; 
     return gps_status;
 }
@@ -873,8 +875,8 @@ void AP_Frsky_Telem::calc_gps_position(void)
     float alt;
     float speed;
 
-    if (_ahrs.get_gps().status() >= 3) {
-        const Location &loc = _ahrs.get_gps().location(); //get gps instance 0
+    if (AP::gps().status() >= 3) {
+        const Location &loc = AP::gps().location(); //get gps instance 0
         lat = format_gps(fabsf(loc.lat/10000000.0f));
         _gps.latdddmm = lat;
         _gps.latmmmm = (lat - _gps.latdddmm) * 10000;
@@ -889,7 +891,7 @@ void AP_Frsky_Telem::calc_gps_position(void)
         _gps.alt_gps_meters = (int16_t)alt;
         _gps.alt_gps_cm = (alt - _gps.alt_gps_meters) * 100;
 
-        speed = _ahrs.get_gps().ground_speed();
+        speed = AP::gps().ground_speed();
         _gps.speed_in_meter = speed;
         _gps.speed_in_centimeter = (speed - _gps.speed_in_meter) * 100;
     } else {
