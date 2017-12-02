@@ -238,7 +238,7 @@ void NavEKF2_core::SelectVelPosFusion()
     // Determine if we need to fuse position and velocity data on this time step
     if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
         // correct GPS data for position offset of antenna phase centre relative to the IMU
-        Vector3f posOffsetBody = _ahrs->get_gps().get_antenna_offset(gpsDataDelayed.sensor_idx) - accelPosOffset;
+        Vector3f posOffsetBody = AP::gps().get_antenna_offset(gpsDataDelayed.sensor_idx) - accelPosOffset;
         if (!posOffsetBody.is_zero()) {
             if (fuseVelData) {
                 // TODO use a filtered angular rate with a group delay that matches the GPS delay
