@@ -1216,9 +1216,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_GET_HOME_POSITION:
             if (sub.ap.home_state != HOME_UNSET) {
                 send_home(sub.ahrs.get_home());
-                Location ekf_origin;
-                if (sub.ahrs.get_origin(ekf_origin)) {
-                    send_ekf_origin(ekf_origin);
+                Location origin;
+                if (sub.ahrs.get_origin(origin)) {
+                    send_ekf_origin(origin);
                 }
                 result = MAV_RESULT_ACCEPTED;
             }

@@ -63,8 +63,8 @@ bool Sub::set_home(const Location& loc, bool lock)
     }
 
     // check if EKF origin has been set
-    Location ekf_origin;
-    if (!ahrs.get_origin(ekf_origin)) {
+    Location origin;
+    if (!ahrs.get_origin(origin)) {
         return false;
     }
 
@@ -113,8 +113,8 @@ void Sub::set_ekf_origin(const Location& loc)
     }
 
     // check if EKF origin has already been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
+    Location origin;
+    if (ahrs.get_origin(origin)) {
         return;
     }
 
