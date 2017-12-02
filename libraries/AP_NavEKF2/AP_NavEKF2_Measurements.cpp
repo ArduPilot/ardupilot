@@ -411,8 +411,9 @@ void NavEKF2_core::readGpsData()
 {
     // check for new GPS data
     // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
-    if (_ahrs->get_gps().last_message_time_ms() - lastTimeGpsReceived_ms > 70) {
-        if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+    const AP_GPS &gps = AP::gps();
+    if (gps.last_message_time_ms() - lastTimeGpsReceived_ms > 70) {
+        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             // report GPS fix status
             gpsCheckStatus.bad_fix = false;
 
@@ -420,7 +421,7 @@ void NavEKF2_core::readGpsData()
             secondLastGpsTime_ms = lastTimeGpsReceived_ms;
 
             // get current fix time
-            lastTimeGpsReceived_ms = _ahrs->get_gps().last_message_time_ms();
+            lastTimeGpsReceived_ms = gps.last_message_time_ms();
 
             // estimate when the GPS fix was valid, allowing for GPS processing and other delays
             // ideally we should be using a timing signal from the GPS receiver to set this time
@@ -433,17 +434,17 @@ void NavEKF2_core::readGpsData()
             gpsDataNew.time_ms = MAX(gpsDataNew.time_ms,imuDataDelayed.time_ms);
 
             // Get which GPS we are using for position information
-            gpsDataNew.sensor_idx = _ahrs->get_gps().primary_sensor();
+            gpsDataNew.sensor_idx = gps.primary_sensor();
 
             // read the NED velocity from the GPS
-            gpsDataNew.vel = _ahrs->get_gps().velocity();
+            gpsDataNew.vel = gps.velocity();
 
             // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
             // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
             float alpha = constrain_float(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
             gpsSpdAccuracy *= (1.0f - alpha);
             float gpsSpdAccRaw;
-            if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {
+            if (!gps.speed_accuracy(gpsSpdAccRaw)) {
                 gpsSpdAccuracy = 0.0f;
             } else {
                 gpsSpdAccuracy = MAX(gpsSpdAccuracy,gpsSpdAccRaw);
@@ -451,7 +452,7 @@ void NavEKF2_core::readGpsData()
             }
             gpsPosAccuracy *= (1.0f - alpha);
             float gpsPosAccRaw;
-            if (!_ahrs->get_gps().horizontal_accuracy(gpsPosAccRaw)) {
+            if (!gps.horizontal_accuracy(gpsPosAccRaw)) {
                 gpsPosAccuracy = 0.0f;
             } else {
                 gpsPosAccuracy = MAX(gpsPosAccuracy,gpsPosAccRaw);
@@ -459,7 +460,7 @@ void NavEKF2_core::readGpsData()
             }
             gpsHgtAccuracy *= (1.0f - alpha);
             float gpsHgtAccRaw;
-            if (!_ahrs->get_gps().vertical_accuracy(gpsHgtAccRaw)) {
+            if (!gps.vertical_accuracy(gpsHgtAccRaw)) {
                 gpsHgtAccuracy = 0.0f;
             } else {
                 gpsHgtAccuracy = MAX(gpsHgtAccuracy,gpsHgtAccRaw);
@@ -467,16 +468,16 @@ void NavEKF2_core::readGpsData()
             }
 
             // check if we have enough GPS satellites and increase the gps noise scaler if we don't
-            if (_ahrs->get_gps().num_sats() >= 6 && (PV_AidingMode == AID_ABSOLUTE)) {
+            if (gps.num_sats() >= 6 && (PV_AidingMode == AID_ABSOLUTE)) {
                 gpsNoiseScaler = 1.0f;
-            } else if (_ahrs->get_gps().num_sats() == 5 && (PV_AidingMode == AID_ABSOLUTE)) {
+            } else if (gps.num_sats() == 5 && (PV_AidingMode == AID_ABSOLUTE)) {
                 gpsNoiseScaler = 1.4f;
             } else { // <= 4 satellites or in constant position mode
                 gpsNoiseScaler = 2.0f;
             }
 
             // Check if GPS can output vertical velocity, if it is allowed to be used, and set GPS fusion mode accordingly
-            if (_ahrs->get_gps().have_vertical_velocity() && frontend->_fusionModeGPS == 0 && !frontend->inhibitGpsVertVelUse) {
+            if (gps.have_vertical_velocity() && frontend->_fusionModeGPS == 0 && !frontend->inhibitGpsVertVelUse) {
                 useGpsVertVel = true;
             } else {
                 useGpsVertVel = false;
@@ -494,7 +495,7 @@ void NavEKF2_core::readGpsData()
             calcGpsGoodForFlight();
 
             // Read the GPS locaton in WGS-84 lat,long,height coordinates
-            const struct Location &gpsloc = _ahrs->get_gps().location();
+            const struct Location &gpsloc = gps.location();
 
             // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
             if (gpsGoodToAlign && !validOrigin) {

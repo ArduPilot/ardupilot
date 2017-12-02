@@ -420,7 +420,7 @@ bool NavEKF2_core::setOriginLLH(const Location &loc)
 void NavEKF2_core::setOrigin()
 {
     // assume origin at current GPS location (no averaging)
-    EKF_origin = _ahrs->get_gps().location();
+    EKF_origin = AP::gps().location();
     // if flying, correct for height change from takeoff so that the origin is at field elevation
     if (inFlight) {
         EKF_origin.alt += (int32_t)(100.0f * stateStruct.position.z);
