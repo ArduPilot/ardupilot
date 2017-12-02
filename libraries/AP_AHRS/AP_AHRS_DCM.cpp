@@ -155,9 +155,8 @@ AP_AHRS_DCM::reset(bool recover_eulers)
         // roll and pitch estimate
 
         // Get body frame accel vector
-        Vector3f initAccVec;
+        Vector3f initAccVec = _ins.get_accel();
         uint8_t counter = 0;
-        initAccVec = _ins.get_accel();
 
         // the first vector may be invalid as the filter starts up
         while ((initAccVec.length() < 9.0f || initAccVec.length() > 11) && counter++ < 20) {
@@ -226,8 +225,6 @@ AP_AHRS_DCM::check_matrix(void)
 bool
 AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
 {
-    float renorm_val;
-
     // numerical errors will slowly build up over time in DCM,
     // causing inaccuracies. We can keep ahead of those errors
     // using the renormalization technique from the DCM IMU paper
@@ -246,7 +243,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
     // we don't want to compound the error by making DCM less
     // accurate.
 
-    renorm_val = 1.0f / a.length();
+    const float renorm_val = 1.0f / a.length();
 
     // keep the average for reporting
     _renorm_val_sum += renorm_val;
@@ -282,14 +279,11 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
 void
 AP_AHRS_DCM::normalize(void)
 {
-    float error;
-    Vector3f t0, t1, t2;
+    const float error = _dcm_matrix.a * _dcm_matrix.b;                                 // eq.18
 
-    error = _dcm_matrix.a * _dcm_matrix.b;                                              // eq.18
-
-    t0 = _dcm_matrix.a - (_dcm_matrix.b * (0.5f * error));              // eq.19
-    t1 = _dcm_matrix.b - (_dcm_matrix.a * (0.5f * error));              // eq.19
-    t2 = t0 % t1;                                                       // c= a x b // eq.20
+    const Vector3f t0 = _dcm_matrix.a - (_dcm_matrix.b * (0.5f * error));              // eq.19
+    const Vector3f t1 = _dcm_matrix.b - (_dcm_matrix.a * (0.5f * error));              // eq.19
+    const Vector3f t2 = t0 % t1;                                                       // c= a x b // eq.20
 
     if (!renorm(t0, _dcm_matrix.a) ||
             !renorm(t1, _dcm_matrix.b) ||
@@ -589,9 +583,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
               each sensor, which prevents an aliasing effect
              */
             Vector3f delta_velocity;
-            float delta_velocity_dt;
             _ins.get_delta_velocity(i, delta_velocity);
-            delta_velocity_dt = _ins.get_delta_velocity_dt(i);
+            const float delta_velocity_dt = _ins.get_delta_velocity_dt(i);
             if (delta_velocity_dt > 0) {
                 _accel_ef[i] = _dcm_matrix * (delta_velocity / delta_velocity_dt);
                 // integrate the accel vector in the earth frame between GPS readings
@@ -689,8 +682,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     // equation 9: get the corrected acceleration vector in earth frame. Units
     // are m/s/s
-    Vector3f GA_e;
-    GA_e = Vector3f(0, 0, -1.0f);
+    Vector3f GA_e(0.0f, 0.0f, -1.0f);
 
     if (_ra_deltat <= 0) {
         // waiting for more data
