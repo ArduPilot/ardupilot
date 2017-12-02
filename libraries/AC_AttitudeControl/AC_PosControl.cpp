@@ -729,6 +729,12 @@ void AC_PosControl::init_vel_controller_xyz()
     init_ekf_z_reset();
 }
 
+/// init_vel_controller_z - initialise the Z velocity controller
+void AC_PosControl::init_vel_controller_z(float velocity_z) {
+    set_alt_target_to_current_alt();
+    set_desired_velocity_z(velocity_z);
+}
+
 /// update_velocity_controller_xy - run the velocity controller - should be called at 100hz or higher
 ///     velocity targets should we set using set_desired_velocity_xy() method
 ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
