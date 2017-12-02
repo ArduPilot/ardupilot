@@ -302,7 +302,7 @@ public:
     virtual bool get_position(struct Location &loc) const = 0;
 
     // return a wind estimation vector, in m/s
-    virtual Vector3f wind_estimate(void) = 0;
+    virtual Vector3f wind_estimate(void) const = 0;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
@@ -448,17 +448,17 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // return secondary attitude solution if available, as eulers in radians
-    virtual bool get_secondary_attitude(Vector3f &eulers) {
+    virtual bool get_secondary_attitude(Vector3f &eulers) const {
         return false;
     }
 
     // return secondary attitude solution if available, as quaternion
-    virtual bool get_secondary_quaternion(Quaternion &quat) {
+    virtual bool get_secondary_quaternion(Quaternion &quat) const {
         return false;
     }
     
     // return secondary position solution if available
-    virtual bool get_secondary_position(struct Location &loc) {
+    virtual bool get_secondary_position(struct Location &loc) const {
         return false;
     }
 
