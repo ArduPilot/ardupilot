@@ -434,7 +434,7 @@ float AP_AHRS_NavEKF::get_error_yaw(void) const
 }
 
 // return a wind estimation vector, in m/s
-Vector3f AP_AHRS_NavEKF::wind_estimate(void)
+Vector3f AP_AHRS_NavEKF::wind_estimate(void) const
 {
     Vector3f wind;
     switch (active_EKF_type()) {
@@ -489,7 +489,7 @@ bool AP_AHRS_NavEKF::use_compass(void)
 
 
 // return secondary attitude solution if available, as eulers in radians
-bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
+bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers) const
 {
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
@@ -510,7 +510,7 @@ bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
 
 
 // return secondary attitude solution if available, as quaternion
-bool AP_AHRS_NavEKF::get_secondary_quaternion(Quaternion &quat)
+bool AP_AHRS_NavEKF::get_secondary_quaternion(Quaternion &quat) const
 {
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
@@ -530,7 +530,7 @@ bool AP_AHRS_NavEKF::get_secondary_quaternion(Quaternion &quat)
 }
 
 // return secondary position solution if available
-bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc)
+bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc) const
 {
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
@@ -690,7 +690,7 @@ bool AP_AHRS_NavEKF::get_mag_field_correction(Vector3f &vec) const
 
 // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
 // This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
-bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity)
+bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity) const
 {
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
@@ -1175,7 +1175,7 @@ uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
 }
 
 // get speed limit
-void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler)
+void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
     switch (ekf_type()) {
     case 0:
@@ -1200,7 +1200,7 @@ void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVel
 
 // get compass offset estimates
 // true if offsets are valid
-bool AP_AHRS_NavEKF::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets)
+bool AP_AHRS_NavEKF::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
     switch (ekf_type()) {
     case 0:
@@ -1381,7 +1381,7 @@ bool AP_AHRS_NavEKF::resetHeightDatum(void)
 }
 
 // send a EKF_STATUS_REPORT for current EKF
-void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan)
+void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan) const
 {
     switch (ekf_type()) {
     case EKF_TYPE_NONE:
@@ -1556,7 +1556,7 @@ void AP_AHRS_NavEKF::setTouchdownExpected(bool val)
     }
 }
 
-bool AP_AHRS_NavEKF::getGpsGlitchStatus()
+bool AP_AHRS_NavEKF::getGpsGlitchStatus() const
 {
     nav_filter_status ekf_status {};
     if (!get_filter_status(ekf_status)) {

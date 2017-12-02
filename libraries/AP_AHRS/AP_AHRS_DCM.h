@@ -99,7 +99,7 @@ public:
     }
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate() override {
+    Vector3f wind_estimate() const override {
         return _wind;
     }
 
