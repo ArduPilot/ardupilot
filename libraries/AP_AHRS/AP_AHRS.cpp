@@ -195,9 +195,9 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     const bool gotAirspeed = airspeed_estimate_true(&airspeed);
     const bool gotGPS = (_gps.status() >= AP_GPS::GPS_OK_FIX_2D);
     if (gotAirspeed) {
-        Vector3f wind = wind_estimate();
-        Vector2f wind2d = Vector2f(wind.x, wind.y);
-        Vector2f airspeed_vector = Vector2f(cosf(yaw), sinf(yaw)) * airspeed;
+        const Vector3f wind = wind_estimate();
+        const Vector2f wind2d(wind.x, wind.y);
+        const Vector2f airspeed_vector(cosf(yaw) * airspeed, sinf(yaw) * airspeed);
         gndVelADS = airspeed_vector - wind2d;
     }
 
@@ -245,16 +245,14 @@ void AP_AHRS::calc_trig(const Matrix3f &rot,
                         float &cr, float &cp, float &cy,
                         float &sr, float &sp, float &sy) const
 {
-    Vector2f yaw_vector;
+    Vector2f yaw_vector(rot.a.x, rot.b.x);
 
-    yaw_vector.x = rot.a.x;
-    yaw_vector.y = rot.b.x;
     if (fabsf(yaw_vector.x) > 0 ||
         fabsf(yaw_vector.y) > 0) {
         yaw_vector.normalize();
     }
-    sy = constrain_float(yaw_vector.y, -1.0, 1.0);
-    cy = constrain_float(yaw_vector.x, -1.0, 1.0);
+    sy = constrain_float(yaw_vector.y, -1.0f, 1.0f);
+    cy = constrain_float(yaw_vector.x, -1.0f, 1.0f);
 
     // sanity checks
     if (yaw_vector.is_inf() || yaw_vector.is_nan()) {
@@ -270,8 +268,8 @@ void AP_AHRS::calc_trig(const Matrix3f &rot,
         cp = safe_sqrt(1 - cx2);
         cr = rot.c.z / cp;
     }
-    cp = constrain_float(cp, 0, 1.0);
-    cr = constrain_float(cr, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing
+    cp = constrain_float(cp, 0.0f, 1.0f);
+    cr = constrain_float(cr, -1.0f, 1.0f); // this relies on constrain_float() of infinity doing the right thing
 
     sp = -rot.c.x;
 
