@@ -440,9 +440,6 @@ private:
     void afs_terminate(void);
     bool guided_mode_enabled(void);
 
-    // set altitude target to current altitude
-    void set_alt_target_current(void);
-    
     // adjust altitude target smoothly
     void adjust_alt_target(float target_cm);
 

@@ -778,7 +778,9 @@ void QuadPlane::run_z_controller(void)
     if (now - last_pidz_active_ms > 2000) {
         // set alt target to current height on transition. This
         // starts the Z controller off with the right values
-        gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)inertial_nav.get_altitude() / 100);
+        float alt = 0;
+        ahrs.get_relative_position_D_origin(alt);
+        gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)(alt * -1.0f));
         Vector3f vel;
         ahrs.get_velocity_NED(vel);
         pos_control->init_vel_controller_z(vel.z * -100.0f);  // NED m/s to NEU cm/s
@@ -2198,8 +2200,8 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     target.x = diff2d.x * 100;
     target.y = diff2d.y * 100;
     target.z = plane.next_WP_loc.alt - origin.alt;
-    set_alt_target_current();
-    
+    pos_control->set_alt_target_to_current_alt();
+
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
     return true;
@@ -2218,7 +2220,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     }
     transition_state = is_tailsitter() ? TRANSITION_ANGLE_WAIT_FW : TRANSITION_AIRSPEED_WAIT;
     plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
-    set_alt_target_current();
+    pos_control->set_alt_target_to_current_alt();
 
     plane.complete_auto_takeoff();
     
@@ -2241,7 +2243,9 @@ void QuadPlane::check_land_complete(void)
         landing_detect.land_start_ms = 0;
         return;
     }
-    float height = inertial_nav.get_altitude()*0.01f;
+    float height = 0;
+    ahrs.get_relative_position_D_origin(height);
+    height = height  * -1.0f;
     if (landing_detect.land_start_ms == 0) {
         landing_detect.land_start_ms = now;
         landing_detect.vpos_start_m = height;
@@ -2293,6 +2297,9 @@ bool QuadPlane::verify_vtol_land(void)
     float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
     if (poscontrol.state == QPOS_LAND_DESCEND && height_above_ground < land_final_alt) {
         poscontrol.state = QPOS_LAND_FINAL;
+        float alt = 0;
+        ahrs.get_relative_position_D_origin(alt);
+        pos_control->set_alt_target(alt * -100.0f);
 
         // cut IC engine if enabled
         if (land_icengine_cut != 0) {
@@ -2312,13 +2319,15 @@ void QuadPlane::Log_Write_QControl_Tuning()
     const Vector3f &accel_target = pos_control->get_accel_target();
     Vector3f vel;
     ahrs.get_velocity_NED(vel);
+    float alt = 0;
+    ahrs.get_relative_position_D_origin(alt);
     struct log_QControl_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_QTUN_MSG),
         time_us             : AP_HAL::micros64(),
         angle_boost         : attitude_control->angle_boost(),
         throttle_out        : motors->get_throttle(),
         desired_alt         : pos_control->get_alt_target() / 100.0f,
-        inav_alt            : inertial_nav.get_altitude() / 100.0f,
+        inav_alt            : -alt,  // NED to NEU
         desired_climb_rate  : (int16_t)pos_control->get_vel_target_z(),
         climb_rate          : (int16_t)(vel.z * -100.0f),  // NED m/s to NEU cm/s
         dvx                 : desired_velocity.x*0.01f,
@@ -2514,21 +2523,15 @@ bool QuadPlane::guided_mode_enabled(void)
 }
 
 /*
-  set altitude target to current altitude
- */
-void QuadPlane::set_alt_target_current(void)
-{
-    pos_control->set_alt_target(inertial_nav.get_altitude());
-}
-
-/*
   adjust the altitude target to the given target, moving it slowly
  */
 void QuadPlane::adjust_alt_target(float altitude_cm)
 {
-    float current_alt = inertial_nav.get_altitude();
+    float current_alt = 0;
+    ahrs.get_relative_position_D_origin(current_alt);
+    current_alt = current_alt * -100.0f;
     // don't let it get beyond 50cm from current altitude
-    float target_cm = constrain_float(altitude_cm, current_alt-50, current_alt+50);
+    const float target_cm = constrain_float(altitude_cm, current_alt - 50.0f, current_alt + 50.0f);
     pos_control->set_alt_target(target_cm);
 }
 
