@@ -670,6 +670,10 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
                                                               false, ROTATION_PITCH_180),
                     AP_Compass_HMC5843::name, false);
+        // R15 has LIS3MDL on spi bus instead of HMC; same CS pin
+        ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME),
+                                                              false, ROTATION_NONE),
+                    AP_Compass_LIS3MDL::name, false);
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                     AP_Compass_AK8963::name, false);
         break;
