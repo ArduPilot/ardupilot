@@ -83,8 +83,8 @@ void Copter::calc_home_distance_and_bearing()
     if (position_ok()) {
         Vector3f home = pv_location_to_vector(ahrs.get_home());
         Vector3f curr = inertial_nav.get_position();
-        home_distance = pv_get_horizontal_distance_cm(curr, home);
-        home_bearing = pv_get_bearing_cd(curr,home);
+        home_distance = get_horizontal_distance_cm(curr, home);
+        home_bearing = get_bearing_cd(curr,home);
 
         // update super simple bearing (if required) because it relies on home_bearing
         update_super_simple_bearing(false);
