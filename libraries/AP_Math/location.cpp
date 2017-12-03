@@ -51,7 +51,7 @@ int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2)
 {
     int32_t off_x = loc2.lng - loc1.lng;
     int32_t off_y = (loc2.lat - loc1.lat) / longitude_scale(loc2);
-    int32_t bearing = 9000 + atan2f(-off_y, off_x) * 5729.57795f;
+    int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
     if (bearing < 0) bearing += 36000;
     return bearing;
 }
