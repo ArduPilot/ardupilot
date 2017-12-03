@@ -757,7 +757,7 @@ bool Copter::guided_limit_check()
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        float horiz_move = pv_get_horizontal_distance_cm(guided_limit.start_pos, curr_pos);
+        float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos, curr_pos);
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }
