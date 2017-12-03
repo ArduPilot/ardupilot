@@ -13,7 +13,8 @@
 #define LEDDARONE_READ_BUFFER_SIZE 25
 
 #define LEDDARONE_DETECTIONS_MAX 3
-#define LEDDARONE_DETECTION_DATA_NUMBER_INDEX 10
+#define LEDDARONE_DETECTION_DATA_NUMBER_HIGH_INDEX 9
+#define LEDDARONE_DETECTION_DATA_NUMBER_LOW_INDEX  10
 #define LEDDARONE_DETECTION_DATA_INDEX_OFFSET 11
 #define LEDDARONE_DETECTION_DATA_OFFSET 4
 
@@ -65,7 +66,7 @@ private:
     bool CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck);
 
     // parse a response message from ModBus
-    LeddarOne_Status parse_response(uint8_t &number_detections);
+    LeddarOne_Status parse_response(uint16_t &number_detections);
 
     AP_HAL::UARTDriver *uart = nullptr;
     uint32_t last_reading_ms;

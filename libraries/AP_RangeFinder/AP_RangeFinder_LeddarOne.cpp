@@ -47,7 +47,7 @@ bool AP_RangeFinder_LeddarOne::detect(AP_SerialManager &serial_manager)
 // read - return last value measured by sensor
 bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 {
-    uint8_t number_detections;
+    uint16_t number_detections;
     LeddarOne_Status leddarone_status;
 
     if (uart == nullptr) {
@@ -186,7 +186,7 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
      24: CRC High
     -----------------------------------------------
   */
-LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detections)
+LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint16_t &number_detections)
 {
     uint8_t index;
     uint8_t index_offset = LEDDARONE_DETECTION_DATA_INDEX_OFFSET;
@@ -219,8 +219,8 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
         return LEDDARONE_STATE_ERR_BAD_CRC;
     }
 
-    // number of detections (index:10)
-    number_detections = read_buffer[LEDDARONE_DETECTION_DATA_NUMBER_INDEX];
+    // number of detections (index:9, 10)
+    number_detections = static_cast<uint16_t>(read_buffer[LEDDARONE_DETECTION_DATA_NUMBER_HIGH_INDEX]) << 8 | read_buffer[LEDDARONE_DETECTION_DATA_NUMBER_LOW_INDEX];
 
     // if the number of detection is over or zero , it is false
     if (number_detections > LEDDARONE_DETECTIONS_MAX || number_detections == 0) {
