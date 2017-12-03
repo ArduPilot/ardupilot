@@ -1398,11 +1398,18 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 
         // send request
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            sub.guided_set_destination_posvel(pos_vector, vel_vector);
+            if (sub.guided_set_destination_posvel(pos_vector, vel_vector)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             sub.guided_set_velocity(vel_vector);
+            result = MAV_RESULT_ACCEPTED;
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            if (!sub.guided_set_destination(pos_vector)) {
+            if (sub.guided_set_destination(pos_vector)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
                 result = MAV_RESULT_FAILED;
             }
         } else {
@@ -1443,7 +1450,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
          * bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
          */
 
-        Vector3f pos_ned;
+        Vector3f pos_neu_cm;  // position (North, East, Up coordinates) in centimeters
 
         if (!pos_ignore) {
             // sanity check location
@@ -1473,15 +1480,22 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 loc.flags.terrain_alt = false;
                 break;
             }
-            pos_ned = sub.pv_location_to_vector(loc);
+            pos_neu_cm = sub.pv_location_to_vector(loc);
         }
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            sub.guided_set_destination_posvel(pos_ned, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+            if (sub.guided_set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f))) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             sub.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+            result = MAV_RESULT_ACCEPTED;
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            if (!sub.guided_set_destination(pos_ned)) {
+            if (sub.guided_set_destination(pos_neu_cm)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
                 result = MAV_RESULT_FAILED;
             }
         } else {
