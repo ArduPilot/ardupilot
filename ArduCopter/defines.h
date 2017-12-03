@@ -411,9 +411,6 @@ enum DevOptions {
 #define DATA_WINCH_LENGTH_CONTROL           69
 #define DATA_WINCH_RATE_CONTROL             70
 
-// Centi-degrees to radians
-#define DEGX100 5729.57795f
-
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
 #define ERROR_SUBSYSTEM_RADIO               2
