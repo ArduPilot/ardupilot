@@ -161,7 +161,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             update_trig();
 
             // Use the primary EKF to select the primary gyro
-            int8_t primary_imu = EKF2.getPrimaryCoreIMUIndex();
+            const int8_t primary_imu = EKF2.getPrimaryCoreIMUIndex();
 
             // get gyro bias for primary EKF and change sign to give gyro drift
             // Note sign convention used by EKF is bias = measurement - truth
@@ -231,7 +231,7 @@ void AP_AHRS_NavEKF::update_EKF3(void)
             update_trig();
 
             // Use the primary EKF to select the primary gyro
-            int8_t primary_imu = EKF3.getPrimaryCoreIMUIndex();
+            const int8_t primary_imu = EKF3.getPrimaryCoreIMUIndex();
 
             // get gyro bias for primary EKF and change sign to give gyro drift
             // Note sign convention used by EKF is bias = measurement - truth
@@ -303,7 +303,7 @@ void AP_AHRS_NavEKF::update_SITL(void)
                                   radians(fdm.yawRate));
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            Vector3f accel(fdm.xAccel,
+            const Vector3f accel(fdm.xAccel,
                            fdm.yAccel,
                            fdm.zAccel);
             _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
@@ -328,8 +328,8 @@ void AP_AHRS_NavEKF::update_SITL(void)
             // rotate earth velocity into body frame and calculate delta position
             Matrix3f Tbn;
             Tbn.from_euler(radians(fdm.rollDeg),radians(fdm.pitchDeg),radians(fdm.yawDeg));
-            Vector3f earth_vel = Vector3f(fdm.speedN,fdm.speedE,fdm.speedD);
-            Vector3f delPos = Tbn.transposed() * (earth_vel * delTime);
+            const Vector3f earth_vel = Vector3f(fdm.speedN,fdm.speedE,fdm.speedD);
+            const Vector3f delPos = Tbn.transposed() * (earth_vel * delTime);
             // write to EKF
             EKF3.writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, posOffset);
         }
@@ -586,8 +586,8 @@ void AP_AHRS_NavEKF::set_home(const Location &loc)
 // from which to decide the origin on its own
 bool AP_AHRS_NavEKF::set_origin(const Location &loc)
 {
-    bool ret2 = EKF2.setOriginLLH(loc);
-    bool ret3 = EKF3.setOriginLLH(loc);
+    const bool ret2 = EKF2.setOriginLLH(loc);
+    const bool ret3 = EKF3.setOriginLLH(loc);
 
     // return success if active EKF's origin was set
     switch (active_EKF_type()) {
@@ -778,7 +778,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
     case EKF_TYPE_SITL: {
         Location loc;
         get_position(loc);
-        Vector2f diff2d = location_diff(get_home(), loc);
+        const Vector2f diff2d = location_diff(get_home(), loc);
         const struct SITL::sitl_fdm &fdm = _sitl->state;
         vec = Vector3f(diff2d.x, diff2d.y,
                        -(fdm.altitude - get_home().alt*0.01f));
@@ -799,7 +799,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_home(Vector3f &vec) const
         return false;
     }
 
-    Vector3f offset = location_3d_diff_NED(originLLH, _home);
+    const Vector3f offset = location_3d_diff_NED(originLLH, _home);
 
     vec.x = originNED.x - offset.x;
     vec.y = originNED.y - offset.y;
@@ -848,7 +848,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NE_home(Vector2f &posNE) const
         return false;
     }
 
-    Vector2f offset = location_diff(originLLH, _home);
+    const Vector2f offset = location_diff(originLLH, _home);
 
     posNE.x = originNE.x - offset.x;
     posNE.y = originNE.y - offset.y;
@@ -1223,7 +1223,7 @@ bool AP_AHRS_NavEKF::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 // Retrieves the NED delta velocity corrected
 void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 {
-    EKF_TYPE type = active_EKF_type();
+    const EKF_TYPE type = active_EKF_type();
     if (type == EKF_TYPE2 || type == EKF_TYPE3) {
         int8_t imu_idx = 0;
         Vector3f accel_bias;
