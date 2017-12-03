@@ -170,9 +170,6 @@ enum RTLState {
 #define DATA_BOTTOMED                       65
 #define DATA_NOT_BOTTOMED                   66
 
-// Centi-degrees to radians
-#define DEGX100 5729.57795f
-
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
 #define ERROR_SUBSYSTEM_INPUT               2
