@@ -134,7 +134,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
 Vector3f AP_AHRS::get_gyro_latest(void) const
 {
-    uint8_t primary_gyro = get_primary_gyro_index();
+    const uint8_t primary_gyro = get_primary_gyro_index();
     return get_ins().get_gyro(primary_gyro) + get_gyro_drift();
 }
 
@@ -146,7 +146,7 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
         if (_wind_max > 0 && _gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
             // constrain the airspeed by the ground speed
             // and AHRS_WIND_MAX
-            float gnd_speed = _gps.ground_speed();
+            const float gnd_speed = _gps.ground_speed();
             float true_airspeed = *airspeed_ret * get_EAS2TAS();
             true_airspeed = constrain_float(true_airspeed,
                                             gnd_speed - _wind_max,
@@ -192,8 +192,8 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     Vector2f gndVelADS;
     Vector2f gndVelGPS;
     float airspeed;
-    bool gotAirspeed = airspeed_estimate_true(&airspeed);
-    bool gotGPS = (_gps.status() >= AP_GPS::GPS_OK_FIX_2D);
+    const bool gotAirspeed = airspeed_estimate_true(&airspeed);
+    const bool gotGPS = (_gps.status() >= AP_GPS::GPS_OK_FIX_2D);
     if (gotAirspeed) {
         Vector3f wind = wind_estimate();
         Vector2f wind2d = Vector2f(wind.x, wind.y);
@@ -203,7 +203,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 
     // Generate estimate of ground speed vector using GPS
     if (gotGPS) {
-        float cog = radians(_gps.ground_course_cd()*0.01f);
+        const float cog = radians(_gps.ground_course_cd()*0.01f);
         gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * _gps.ground_speed();
     }
     // If both ADS and GPS data is available, apply a complementary filter
@@ -261,8 +261,8 @@ void AP_AHRS::calc_trig(const Matrix3f &rot,
         sy = 0.0f;
         cy = 1.0f;
     }
-    
-    float cx2 = rot.c.x * rot.c.x;
+
+    const float cx2 = rot.c.x * rot.c.x;
     if (cx2 >= 1.0f) {
         cp = 0;
         cr = 1.0f;
@@ -343,7 +343,7 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation)
 void AP_AHRS::update_AOA_SSA(void)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _last_AOA_update_ms < 50) {
         // don't update at more than 20Hz
         return;
@@ -366,7 +366,7 @@ void AP_AHRS::update_AOA_SSA(void)
 
     // calculate relative velocity in body coordinates
     aoa_velocity = aoa_velocity - aoa_wind;
-    float vel_len = aoa_velocity.length();
+    const float vel_len = aoa_velocity.length();
 
     // do not calculate if speed is too low
     if (vel_len < 2.0) {
