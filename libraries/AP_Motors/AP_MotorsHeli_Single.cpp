@@ -116,7 +116,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
 
-	// @Param: SWASH_CTRL_DIR
+    // @Param: SWASH_CTRL_DIR
     // @DisplayName: Swash Control Direction
     // @Description: Swash Control Direction - Used to set the rotor head control direction. 1 for Leading Edge Control. 2 for Trailing Edge Control
     // @Values: 1: Leading Edge, 2: Trailing Edge
@@ -278,8 +278,8 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // send setpoints to tail rotor controller and trigger recalculation of scalars
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SPEED_SETPOINT);
-        _tail_rotor.set_ramp_time(AP_MOTORS_HELI_SINGLE_DDVPT_RAMP_TIME);
-        _tail_rotor.set_runup_time(AP_MOTORS_HELI_SINGLE_DDVPT_RUNUP_TIME);
+        _tail_rotor.set_ramp_time(_rsc_ddvp_ramp_time);
+        _tail_rotor.set_runup_time(_rsc_ddvp_runup_time);
         _tail_rotor.set_critical_speed(_rsc_critical/1000.0f);
         _tail_rotor.set_idle_output(_rsc_idle_output/1000.0f);
     } else {

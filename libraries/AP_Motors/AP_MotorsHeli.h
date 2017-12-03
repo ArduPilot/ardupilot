@@ -38,6 +38,10 @@
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to full power (most people use exterrnal govenors so we can ramp up quickly)
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
 
+// default DDVP rotor ramp time in seconds
+#define AP_MOTORS_HELI_RSC_DDVP_RAMP_TIME       2       // 2 seconds to ramp output to DDVP drives
+#define AP_MOTORS_HELI_RSC_DDVP_RUNUP_TIME      3       // 3 seconds for DDVP rotor to reach full speed
+
 // flybar types
 #define AP_MOTORS_HELI_NOFLYBAR                 0
 
@@ -197,6 +201,8 @@ protected:
     AP_Int8         _rsc_mode;                  // Which main rotor ESC control mode is active
     AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach full speed
     AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
+    AP_Int8         _rsc_ddvp_ramp_time;        // Time in seconds for the output to the DDVPT rotor's ESC to reach full speed
+    AP_Int8         _rsc_ddvp_runup_time;       // Time in seconds for the DDVPT rotor to reach full speed.  Must be longer than _rsc_ddvp_ramp_time
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int16        _rsc_critical;              // Rotor speed below which flight is not possible
     AP_Int16        _rsc_idle_output;           // Rotor control output while at idle
