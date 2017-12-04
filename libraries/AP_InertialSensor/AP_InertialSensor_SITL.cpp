@@ -136,6 +136,13 @@ void AP_InertialSensor_SITL::generate_gyro(uint8_t instance)
 void AP_InertialSensor_SITL::timer_update(void)
 {
     uint64_t now = AP_HAL::micros64();
+#if 0
+    // insert a 1s pause in IMU data. This triggers a pause in EK2
+    // processing that leads to some interesting issues
+    if (now > 5e6 && now < 6e6) {
+        return;
+    }
+#endif
     for (uint8_t i=0; i<INS_SITL_INSTANCES; i++) {
         if (now >= next_accel_sample[i]) {
             generate_accel(i);
