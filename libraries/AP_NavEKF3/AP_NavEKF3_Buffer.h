@@ -147,8 +147,16 @@ public:
         buffer[_youngest].element = element;
         // set oldest data index
         _oldest = (_youngest+1)%_size;
+        if (_oldest == 0) {
+            _filled = true;
+        }
     }
 
+    // return true if the buffer has been filled at least once
+    inline bool is_filled(void) const {
+        return _filled;
+    }
+    
     // retrieve the oldest data from the ring buffer tail
     inline element_type pop_oldest_element() {
         element_type ret = buffer[_oldest].element;
@@ -185,4 +193,5 @@ public:
     }
 private:
     uint8_t _size,_oldest,_youngest;
+    bool _filled;
 };
