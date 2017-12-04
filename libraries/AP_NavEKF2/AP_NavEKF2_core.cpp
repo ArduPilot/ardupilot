@@ -341,6 +341,17 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
         return false;
     }
 
+    if (statesInitialised) {
+        // we are initialised, but we don't return true until the IMU
+        // buffer has been filled. This prevents a timing
+        // vulnerability with a pause in IMU data during filter startup
+        readIMUData();
+        readMagData();
+        readGpsData();
+        readBaroData();
+        return storedIMU.is_filled();
+    }
+
     // set re-used variables to zero
     InitialiseVariables();
 
@@ -410,7 +421,8 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     // set to true now that states have be initialised
     statesInitialised = true;
 
-    return true;
+    // we initially return false to wait for the IMU buffer to fill
+    return false;
 }
 
 // initialise the covariance matrix
