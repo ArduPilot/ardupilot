@@ -212,6 +212,10 @@ class VehicleInfo(object):
                 "waf_target": "bin/ardusub",
                 "default_params_filename": "default_params/sub.parm",
             },
+            "gazebo-bluerov2": {
+                "waf_target": "bin/ardusub",
+                "default_params_filename": "default_params/sub.parm",
+            },
         },
     },
     "AntennaTracker": {
