@@ -302,11 +302,10 @@ void NavEKF2_core::readIMUData()
 
     // Get delta angle data from primary gyro or primary if not available
     if (ins.use_gyro(imu_index)) {
-        readDeltaAngle(imu_index, imuDataNew.delAng);
+        readDeltaAngle(imu_index, imuDataNew.delAng, imuDataNew.delAngDT);
     } else {
-        readDeltaAngle(ins.get_primary_gyro(), imuDataNew.delAng);
+        readDeltaAngle(ins.get_primary_gyro(), imuDataNew.delAng, imuDataNew.delAngDT);
     }
-    imuDataNew.delAngDT = MAX(ins.get_delta_angle_dt(imu_index),1.0e-4f);
 
     // Get current time stamp
     imuDataNew.time_ms = imuSampleTime_ms;
@@ -397,6 +396,7 @@ bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
     if (ins_index < ins.get_accel_count()) {
         ins.get_delta_velocity(ins_index,dVel);
         dVel_dt = MAX(ins.get_delta_velocity_dt(ins_index),1.0e-4f);
+        dVel_dt = MIN(ins.get_delta_velocity_dt(ins_index),1.0e-1f);
         return true;
     }
     return false;
@@ -532,12 +532,14 @@ void NavEKF2_core::readGpsData()
 
 // read the delta angle and corresponding time interval from the IMU
 // return false if data is not available
-bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
+bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng_dt) {
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     if (ins_index < ins.get_gyro_count()) {
         ins.get_delta_angle(ins_index,dAng);
         frontend->logging.log_imu = true;
+        dAng_dt = MAX(ins.get_delta_angle_dt(imu_index),1.0e-4f);
+        dAng_dt = MIN(dt,1.0e-1f);
         return true;
     }
     return false;
