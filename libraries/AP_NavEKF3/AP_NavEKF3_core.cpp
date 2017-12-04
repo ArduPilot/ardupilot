@@ -408,6 +408,13 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     readGpsData();
     readBaroData();
 
+    if (statesInitialised) {
+        // we are initialised, but we don't return true until the IMU
+        // buffer has been filled. This prevents a timing
+        // vulnerability with a pause in IMU data during filter startup
+        return storedIMU.is_filled();
+    }
+
     // accumulate enough sensor data to fill the buffers
     if (firstInitTime_ms == 0) {
         firstInitTime_ms = imuSampleTime_ms;
@@ -469,7 +476,8 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     statesInitialised = true;
     gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
 
-    return true;
+    // we initially return false to wait for the IMU buffer to fill
+    return false;
 }
 
 // initialise the covariance matrix
