@@ -46,6 +46,9 @@ void Copter::drift_run()
     float target_yaw_rate;
     float pilot_throttle_scaled;
 
+    // initialize smoothing gain
+    attitude_control->set_smoothing_gain(get_smoothing_gain());
+
     // if landed and throttle at zero, set throttle to zero and exit immediately
     if (!motors->armed() || !motors->get_interlock() || (ap.land_complete && ap.throttle_zero)) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -59,7 +62,7 @@ void Copter::drift_run()
     }
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max, aparm.angle_max);
 
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
@@ -101,7 +104,7 @@ void Copter::drift_run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // output pilot's throttle with angle boost
     attitude_control->set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true, g.throttle_filt);

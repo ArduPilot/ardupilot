@@ -41,6 +41,9 @@ bool Copter::land_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::land_run()
 {
+    // initialize smoothing gain
+    attitude_control->set_smoothing_gain(get_smoothing_gain());
+
     if (land_with_gps) {
         land_gps_run();
     }else{
@@ -57,7 +60,7 @@ void Copter::land_gps_run()
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0);
         attitude_control->set_throttle_out(0,false,g.throttle_filt);
 #else
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -106,7 +109,7 @@ void Copter::land_nogps_run()
             update_simple_mode();
 
             // get pilot desired lean angles
-            get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
+            get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max, attitude_control->get_althold_lean_angle_max());
         }
 
         // get pilot's desired yaw rate
@@ -117,7 +120,7 @@ void Copter::land_nogps_run()
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
         attitude_control->set_throttle_out(0,false,g.throttle_filt);
 #else
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -136,7 +139,7 @@ void Copter::land_nogps_run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // pause before beginning land descent
     if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
@@ -191,7 +194,7 @@ void Copter::land_run_vertical_control(bool pause_descent)
         max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
 
         // Compute a vertical velocity demand such that the vehicle approaches LAND_START_ALT. Without the below constraint, this would cause the vehicle to hover at LAND_START_ALT.
-        cmb_rate = AC_AttitudeControl::sqrt_controller(LAND_START_ALT-alt_above_ground, g.p_alt_hold.kP(), pos_control->get_accel_z());
+        cmb_rate = AC_AttitudeControl::sqrt_controller(LAND_START_ALT-alt_above_ground, pos_control->get_pos_z_p().kP(), pos_control->get_accel_z(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
@@ -296,7 +299,7 @@ void Copter::land_run_horizontal_control()
 
     
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
 }
 
 // land_do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch

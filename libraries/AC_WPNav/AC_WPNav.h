@@ -14,11 +14,13 @@
 #define WPNAV_ACCELERATION              100.0f      // defines the default velocity vs distant curve.  maximum acceleration in cm/s/s that position controller asks for from acceleration controller
 #define WPNAV_ACCELERATION_MIN           50.0f      // minimum acceleration in cm/s/s - used for sanity checking _wp_accel parameter
 
-#define WPNAV_LOITER_SPEED              500.0f      // default loiter speed in cm/s
+#define WPNAV_LOITER_SPEED             1250.0f      // default loiter speed in cm/s
 #define WPNAV_LOITER_SPEED_MIN           20.0f      // minimum loiter speed in cm/s
-#define WPNAV_LOITER_ACCEL              250.0f      // default acceleration in loiter mode
-#define WPNAV_LOITER_ACCEL_MIN           25.0f      // minimum acceleration in loiter mode
-#define WPNAV_LOITER_JERK_MAX_DEFAULT  1000.0f      // maximum jerk in cm/s/s/s in loiter mode
+#define WPNAV_LOITER_ACCEL_MAX          750.0f      // default acceleration in loiter mode
+#define WPNAV_LOITER_ACCEL_MIN          250.0f      // minimum acceleration in loiter mode
+#define WPNAV_LOITER_BREAK_START_DELAY    0.0f      // delay (in seconds) before loiter breaking begins after sticks are released
+#define WPNAV_LOITER_BREAK_TRANS_TIME     0.5f      // time (in seconds) over which loiter breaking transitions to maximum
+#define WPNAV_LOITER_VEL_CORRECTION_MAX 200.0f      // max speed used to correct position errors in loiter
 
 #define WPNAV_WP_SPEED                  500.0f      // default horizontal speed between waypoints in cm/s
 #define WPNAV_WP_SPEED_MIN               20.0f      // minimum horizontal speed between waypoints in cm/s
@@ -88,9 +90,9 @@ public:
     void set_pilot_desired_acceleration(float control_roll, float control_pitch);
     /// get_pilot_desired_acceleration - gets pilot desired
     /// acceleration, body frame, [forward,right]
-    Vector2f get_pilot_desired_acceleration() const { return Vector2f(_pilot_accel_fwd_cms, _pilot_accel_rgt_cms); }
+    Vector2f get_pilot_desired_acceleration() const { return Vector2f(_loiter_desired_accel.x, _loiter_desired_accel.y); }
     /// clear_pilot_desired_acceleration - clear pilot desired acceleration
-    void clear_pilot_desired_acceleration() { _pilot_accel_fwd_cms = 0.0f; _pilot_accel_rgt_cms = 0.0f; }
+    void clear_pilot_desired_acceleration() { _loiter_desired_accel.x = 0.0f; _loiter_desired_accel.y = 0.0f; }
 
     /// get_stopping_point - returns vector to stopping point based on a horizontal position and velocity
     void get_loiter_stopping_point_xy(Vector3f& stopping_point) const;
@@ -103,6 +105,9 @@ public:
 
     /// get_loiter_target - returns loiter target position
     const Vector3f& get_loiter_target() const { return _pos_control.get_pos_target(); }
+
+    /// get_loiter_angle_max - returns the maximum pilot commanded angle in degrees
+    float get_loiter_angle_max_cd() const;
 
     /// update_loiter - run the loiter controller - should be called at 10hz
     void update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler);
@@ -328,10 +333,12 @@ protected:
     AC_Avoid                *_avoid = nullptr;
 
     // parameters
+    AP_Float    _loiter_angle_max;      // maximum pilot commanded angle in degrees. Set to zero for 2/3 Angle Max
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
-    AP_Float    _loiter_jerk_max_cmsss; // maximum jerk in cm/s/s/s while in loiter
     AP_Float    _loiter_accel_cmss;     // loiter's max acceleration in cm/s/s
     AP_Float    _loiter_accel_min_cmss; // loiter's min acceleration in cm/s/s
+    AP_Float    _loiter_break_delay;    // delay (in seconds) before loiter breaking begins after sticks are released
+    AP_Float    _loiter_break_transition; // time (in seconds) over which loiter breaking transitions to maximum
     AP_Float    _wp_speed_cms;          // maximum horizontal speed in cm/s during missions
     AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
@@ -340,9 +347,11 @@ protected:
     AP_Float    _wp_accel_z_cms;        // vertical acceleration in cm/s/s during missions
 
     // loiter controller internal variables
-    int16_t     _pilot_accel_fwd_cms; 	// pilot's desired acceleration forward (body-frame)
-    int16_t     _pilot_accel_rgt_cms;   // pilot's desired acceleration right (body-frame)
     Vector2f    _loiter_desired_accel;  // slewed pilot's desired acceleration in lat/lon frame
+    Vector2f    _loiter_predicted_accel;//
+    Vector2f    _loiter_predicted_euler_angle;//
+    Vector2f    _loiter_predicted_euler_rate; //
+    float       _break_timer;           //
 
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call

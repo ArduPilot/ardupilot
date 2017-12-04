@@ -76,7 +76,7 @@ void QuadPlane::tailsitter_output(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
-            pid_accel_z.set_integrator(throttle*10);
+            pos_control->get_accel_z_pid().set_integrator(throttle*10);
         }
         return;
     }

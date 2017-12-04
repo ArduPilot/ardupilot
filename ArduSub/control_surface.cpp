@@ -27,6 +27,9 @@ void Sub::surface_run()
     float target_roll, target_pitch;
     float target_yaw_rate;
 
+    // initialize smoothing gain
+    attitude_control.set_smoothing_gain(get_smoothing_gain());
+
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
         motors.output_min();
@@ -48,7 +51,7 @@ void Sub::surface_run()
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // set target climb rate
     float cmb_rate = constrain_float(abs(wp_nav.get_speed_up()), 1, pos_control.get_speed_up());
