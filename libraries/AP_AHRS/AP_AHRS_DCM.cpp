@@ -160,7 +160,7 @@ AP_AHRS_DCM::reset(bool recover_eulers)
         initAccVec = _ins.get_accel();
 
         // the first vector may be invalid as the filter starts up
-        while (initAccVec.length() <= 5.0f && counter++ < 10) {
+        while ((initAccVec.length() < 9.0f || initAccVec.length() > 11) && counter++ < 20) {
             _ins.wait_for_sample();
             _ins.update();
             initAccVec = _ins.get_accel();
