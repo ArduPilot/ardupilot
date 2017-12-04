@@ -396,7 +396,7 @@ bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
     if (ins_index < ins.get_accel_count()) {
         ins.get_delta_velocity(ins_index,dVel);
         dVel_dt = MAX(ins.get_delta_velocity_dt(ins_index),1.0e-4f);
-        dVel_dt = MIN(ins.get_delta_velocity_dt(ins_index),1.0e-1f);
+        dVel_dt = MIN(dVel_dt,1.0e-1f);
         return true;
     }
     return false;
@@ -539,7 +539,7 @@ bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng
         ins.get_delta_angle(ins_index,dAng);
         frontend->logging.log_imu = true;
         dAng_dt = MAX(ins.get_delta_angle_dt(imu_index),1.0e-4f);
-        dAng_dt = MIN(dt,1.0e-1f);
+        dAng_dt = MIN(dAng_dt,1.0e-1f);
         return true;
     }
     return false;
