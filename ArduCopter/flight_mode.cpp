@@ -130,7 +130,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
-    if (!ignore_checks && !mode_has_manual_throttle(mode) && !motors->rotor_runup_complete()){
+    if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()){
         return false;
     }
 #endif
@@ -229,18 +229,6 @@ void Copter::exit_mode(Copter::FlightMode *&old_flightmode,
         }
     }
 #endif //HELI_FRAME
-}
-
-// mode_has_manual_throttle - returns true if the flight mode has a manual throttle (i.e. pilot directly controls throttle)
-bool Copter::mode_has_manual_throttle(control_mode_t mode)
-{
-    switch (mode) {
-        case ACRO:
-        case STABILIZE:
-            return true;
-        default:
-            return false;
-    }
 }
 
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device

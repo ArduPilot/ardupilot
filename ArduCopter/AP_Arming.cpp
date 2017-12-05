@@ -668,7 +668,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
                 return false;
             }
             // in manual modes throttle must be at zero
-            if ((copter.mode_has_manual_throttle(control_mode) || control_mode == DRIFT) && copter.channel_throttle->get_control_in() > 0) {
+            if ((copter.flightmode->has_manual_throttle() || control_mode == DRIFT) && copter.channel_throttle->get_control_in() > 0) {
                 if (display_failure) {
                     #if FRAME_CONFIG == HELI_FRAME
                     gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: Collective too high");

@@ -8,7 +8,7 @@
 bool Copter::FlightMode_STABILIZE::init(bool ignore_checks)
 {
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-    if (motors->armed() && ap.land_complete && !_copter.mode_has_manual_throttle(_copter.control_mode) &&
+    if (motors->armed() && ap.land_complete && !_copter.flightmode->has_manual_throttle() &&
             (get_pilot_desired_throttle(channel_throttle->get_control_in()) > get_non_takeoff_throttle())) {
         return false;
     }

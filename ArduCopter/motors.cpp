@@ -46,7 +46,7 @@ void Copter::arm_motors_check()
 
     // full left
     }else if (tmp < -4000) {
-        if (!mode_has_manual_throttle(control_mode) && !ap.land_complete) {
+        if (!flightmode->has_manual_throttle() && !ap.land_complete) {
             arming_counter = 0;
             return;
         }
@@ -98,7 +98,7 @@ void Copter::auto_disarm_check()
     } else {
         bool sprung_throttle_stick = (g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0;
         bool thr_low;
-        if (mode_has_manual_throttle(control_mode) || !sprung_throttle_stick) {
+        if (flightmode->has_manual_throttle() || !sprung_throttle_stick) {
             thr_low = ap.throttle_zero;
         } else {
             float deadband_top = channel_throttle->get_control_mid() + g.throttle_deadzone;
