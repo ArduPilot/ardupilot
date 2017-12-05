@@ -39,6 +39,7 @@ struct Guided_Limit {
 bool Copter::guided_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
+        guided_reached_notified = false;
         // initialise yaw
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         // start in position control mode
@@ -321,6 +322,31 @@ void Copter::guided_set_angle(const Quaternion &q, float climb_rate_cms, bool us
                            Vector3f(0.0f, 0.0f, guided_angle_state.climb_rate_cms));
 }
 
+// guided_reached_destination_notify - notify if we've reached the destination
+// on guided mode - if we're taking off we consider altitude
+void Copter::guided_reached_destination_notify(bool check_altitude)
+{
+    bool reached_alt = true;
+
+    if (guided_prev_mode != guided_mode) {
+        guided_reached_notified = false;
+    }
+
+    if (check_altitude) {
+        const Vector3f& curr_pos = inertial_nav.get_position();
+        const Vector3f& target_pos = wp_nav.get_wp_destination();
+
+        if (curr_pos.z < target_pos.z) {
+            reached_alt = false;
+        }
+    }
+
+    if (reached_alt && wp_nav.reached_wp_destination() && !guided_reached_notified) {
+        gcs_send_mission_item_reached_message(0);
+        guided_reached_notified = true;
+    }
+}
+
 // guided_run - runs the guided controller
 // should be called at 100hz or more
 void Copter::guided_run()
@@ -331,11 +357,13 @@ void Copter::guided_run()
     case Guided_TakeOff:
         // run takeoff controller
         guided_takeoff_run();
+        guided_reached_destination_notify(true);
         break;
 
     case Guided_WP:
         // run position controller
         guided_pos_control_run();
+        guided_reached_destination_notify(false);
         break;
 
     case Guided_Velocity:
@@ -353,6 +381,8 @@ void Copter::guided_run()
         guided_angle_control_run();
         break;
     }
+
+    guided_prev_mode = guided_mode;
  }
 
 // guided_takeoff_run - takeoff in guided mode

@@ -394,6 +394,8 @@ private:
 
     // Guided
     GuidedMode guided_mode;  // controls which controller is run (pos or vel)
+    GuidedMode guided_prev_mode;
+    bool guided_reached_notified; // has guided reached destination been notified?
 
     // RTL
     RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
@@ -885,6 +887,7 @@ private:
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void guided_run();
     void guided_takeoff_run();
+    void guided_reached_destination_notify(bool check_altitude);
     void guided_pos_control_run();
     void guided_vel_control_run();
     void guided_posvel_control_run();
