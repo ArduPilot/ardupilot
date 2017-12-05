@@ -136,7 +136,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 #endif
 
     // perform any cleanup required by previous flight mode
-    exit_mode(control_mode, mode);
+    exit_mode(flightmode, new_flightmode);
 
     // update flight mode
     flightmode = new_flightmode;
@@ -178,16 +178,17 @@ void Copter::update_flight_mode()
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
-void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_control_mode)
+void Copter::exit_mode(Copter::FlightMode *&old_flightmode,
+                       Copter::FlightMode *&new_flightmode)
 {
 #if AUTOTUNE_ENABLED == ENABLED
-    if (old_control_mode == AUTOTUNE) {
+    if (old_flightmode == &flightmode_autotune) {
         flightmode_autotune.autotune_stop();
     }
 #endif
 
     // stop mission when we leave auto mode
-    if (old_control_mode == AUTO) {
+    if (old_flightmode == &flightmode_auto) {
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
         }
@@ -197,7 +198,7 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
     }
 
     // smooth throttle transition when switching from manual to automatic flight modes
-    if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && motors->armed() && !ap.land_complete) {
+    if (old_flightmode->has_manual_throttle() && !new_flightmode->has_manual_throttle() && motors->armed() && !ap.land_complete) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
         set_accel_throttle_I_from_pilot_throttle();
     }
@@ -206,13 +207,13 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
     takeoff_stop();
 
     // call smart_rtl cleanup
-    if (old_control_mode == SMART_RTL) {
+    if (old_flightmode == &flightmode_smartrtl) {
         flightmode_smartrtl.exit();
     }
 
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
-    if (old_control_mode == ACRO) {
+    if (old_flightmode == &flightmode_acro) {
         attitude_control->use_flybar_passthrough(false, false);
         motors->set_acro_tail(false);
     }
@@ -220,10 +221,10 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
     // if we are changing from a mode that did not use manual throttle,
     // stab col ramp value should be pre-loaded to the correct value to avoid a twitch
     // heli_stab_col_ramp should really only be active switching between Stabilize and Acro modes
-    if (!mode_has_manual_throttle(old_control_mode)){
-        if (new_control_mode == STABILIZE){
+    if (!old_flightmode->has_manual_throttle()){
+        if (new_flightmode == &flightmode_stabilize){
             input_manager.set_stab_col_ramp(1.0);
-        } else if (new_control_mode == ACRO){
+        } else if (new_flightmode == &flightmode_acro){
             input_manager.set_stab_col_ramp(0.0);
         }
     }
