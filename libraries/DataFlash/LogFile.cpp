@@ -1562,6 +1562,7 @@ void DataFlash_Class::Log_Write_Current_instance(const uint64_t time_us,
         voltage_resting     : battery.voltage_resting_estimate(battery_instance),
         current_amps        : battery.current_amps(battery_instance),
         current_total       : battery.current_total_mah(battery_instance),
+        consumed_wh         : battery.consumed_wh(battery_instance),
         temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
         resistance          : battery.get_resistance(battery_instance)
     };
