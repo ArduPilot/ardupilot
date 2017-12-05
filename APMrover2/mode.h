@@ -285,6 +285,9 @@ public:
 
     // attributes for mavlink system status reporting
     bool attitude_stabilized() const override { return false; }
+
+    // hold mode does not require GPS
+    bool requires_gps() const override { return false; }
 };
 
 
@@ -305,8 +308,8 @@ public:
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
 
+    // manual mode does not require GPS
     bool requires_gps() const override { return false; }
-
 };
 
 
