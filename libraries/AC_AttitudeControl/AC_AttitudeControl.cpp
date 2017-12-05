@@ -586,7 +586,7 @@ void AC_AttitudeControl::input_shaping_rate_predictor(Vector2f error_angle, Vect
 // limits angular velocity
 void AC_AttitudeControl::ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_max, float ang_vel_pitch_max, float ang_vel_yaw_max) const
 {
-    if (is_zero(ang_vel_pitch_max) || is_zero(ang_vel_pitch_max)) {
+    if (is_zero(ang_vel_roll_max) || is_zero(ang_vel_pitch_max)) {
         if (!is_zero(ang_vel_roll_max)) {
             euler_rad.x = constrain_float(euler_rad.x, -ang_vel_roll_max, ang_vel_roll_max);
         }
