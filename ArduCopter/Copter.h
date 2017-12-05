@@ -803,7 +803,6 @@ private:
     void update_sensor_status_flags(void);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     void update_flight_mode();
-    bool mode_has_manual_throttle(control_mode_t mode);
     void notify_flight_mode();
     void heli_init();
     void check_dynamic_flight(void);
