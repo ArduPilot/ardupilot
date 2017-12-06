@@ -183,7 +183,7 @@ void Copter::exit_mode(Copter::FlightMode *&old_flightmode,
 {
 #if AUTOTUNE_ENABLED == ENABLED
     if (old_flightmode == &flightmode_autotune) {
-        flightmode_autotune.autotune_stop();
+        flightmode_autotune.stop();
     }
 #endif
 

@@ -156,16 +156,6 @@ public:
     void setup() override;
     void loop() override;
 
-    enum AUTOTUNE_LEVEL_ISSUE {
-        AUTOTUNE_LEVEL_ISSUE_NONE,
-        AUTOTUNE_LEVEL_ISSUE_ANGLE_ROLL,
-        AUTOTUNE_LEVEL_ISSUE_ANGLE_PITCH,
-        AUTOTUNE_LEVEL_ISSUE_ANGLE_YAW,
-        AUTOTUNE_LEVEL_ISSUE_RATE_ROLL,
-        AUTOTUNE_LEVEL_ISSUE_RATE_PITCH,
-        AUTOTUNE_LEVEL_ISSUE_RATE_YAW,
-    };
-
 private:
     static const AP_FWVersion fwver;
 
