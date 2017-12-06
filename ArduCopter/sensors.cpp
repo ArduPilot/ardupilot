@@ -11,6 +11,11 @@ void Copter::read_barometer(void)
     motors->set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
+void Copter::init_landing_proximity()
+{
+    landing_proximity.init();
+}
+
 void Copter::init_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED

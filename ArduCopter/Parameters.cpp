@@ -732,6 +732,8 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
     GOBJECT(precland, "PLND_", AC_PrecLand),
 #endif
+    
+    GOBJECT(landing_proximity, "LPRO_", AP_LandingProximity),
 
 #if RPM_ENABLED == ENABLED
     // @Group: RPM

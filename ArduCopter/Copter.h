@@ -84,6 +84,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
+#include <AP_LandingProximity/AP_LandingProximity.h>
 
 // Configuration
 #include "defines.h"
@@ -248,6 +249,8 @@ private:
 #if RPM_ENABLED == ENABLED
     AP_RPM rpm_sensor;
 #endif
+
+    AP_LandingProximity landing_proximity;
 
     // Inertial Navigation EKF
     NavEKF2 EKF2{&ahrs, rangefinder};
@@ -815,6 +818,7 @@ private:
     void Log_Write_Heli(void);
 #endif
     void Log_Write_Precland();
+    void Log_Write_LandProx();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
     void log_init(void);
@@ -875,6 +879,7 @@ private:
     // sensors.cpp
     void read_barometer(void);
     void init_rangefinder(void);
+    void init_landing_proximity();
     void read_rangefinder(void);
     bool rangefinder_alt_ok();
     void rpm_update();

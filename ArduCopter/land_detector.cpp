@@ -83,6 +83,11 @@ void Copter::update_land_detector()
             // we've sensed movement up or down so reset land_detector
             land_detector_count = 0;
         }
+
+        if ((control_mode == LAND || control_mode == RTL || (control_mode == AUTO && (mode_auto.mode() == Auto_Land || mode_auto.mode() == Auto_RTL)))
+            && landing_proximity.proximity && rangefinder_check) {
+             set_land_complete(true);
+         }
     }
 
     set_land_complete_maybe(ap.land_complete || (land_detector_count >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*scheduler.get_loop_rate_hz()));

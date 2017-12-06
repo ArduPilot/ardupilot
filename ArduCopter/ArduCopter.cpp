@@ -361,6 +361,7 @@ void Copter::ten_hz_logging_loop()
 #if FRAME_CONFIG == HELI_FRAME
     Log_Write_Heli();
 #endif
+    Log_Write_LandProx();
 }
 
 // twentyfive_hz_logging - should be run at 25hz

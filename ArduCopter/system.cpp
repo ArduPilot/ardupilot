@@ -221,6 +221,8 @@ void Copter::init_ardupilot()
     // initialise rangefinder
     init_rangefinder();
 
+    init_landing_proximity();
+
     // init proximity sensor
     init_proximity();
 
