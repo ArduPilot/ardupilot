@@ -82,7 +82,7 @@ public:
     virtual void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed);
 
     // get speed error in m/s, returns zero for modes that do not control speed
-    float speed_error() { return _speed_error; }
+    float speed_error() const { return _speed_error; }
 
     // Navigation control variables
     // The instantaneous desired lateral acceleration in m/s/s
