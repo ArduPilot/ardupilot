@@ -268,7 +268,8 @@ void Rover::do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd)
     }
 
     // set auto target
-    mode_auto.set_desired_heading_and_speed(desired_heading_cd, constrain_float(cmd.content.set_yaw_speed.speed, -g.speed_cruise, g.speed_cruise));
+    const float speed_max = control_mode->get_speed_default();
+    mode_auto.set_desired_heading_and_speed(desired_heading_cd, constrain_float(cmd.content.set_yaw_speed.speed, -speed_max, speed_max));
 }
 
 /********************************************************************************/
@@ -378,14 +379,10 @@ bool Rover::verify_within_distance()
 
 void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.content.speed.target_ms > 0.0f) {
-        g.speed_cruise.set(cmd.content.speed.target_ms);
-        gcs().send_text(MAV_SEVERITY_INFO, "Cruise speed: %.1f m/s", static_cast<double>(g.speed_cruise.get()));
-    }
-
-    if (cmd.content.speed.throttle_pct > 0.0f && cmd.content.speed.throttle_pct <= 100.0f) {
-        g.throttle_cruise.set(cmd.content.speed.throttle_pct);
-        gcs().send_text(MAV_SEVERITY_INFO, "Cruise throttle: %.1f", static_cast<double>(g.throttle_cruise.get()));
+    // set speed for active mode
+    if ((cmd.content.speed.target_ms >= 0.0f) && (cmd.content.speed.target_ms <= rover.control_mode->get_speed_default())) {
+        control_mode->set_desired_speed(cmd.content.speed.target_ms);
+        gcs().send_text(MAV_SEVERITY_INFO, "speed: %.1f m/s", static_cast<double>(cmd.content.speed.target_ms));
     }
 }
 

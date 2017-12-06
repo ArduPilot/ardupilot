@@ -517,6 +517,24 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_SmartRTL/AP_SmartRTL.cpp
     AP_SUBGROUPINFO(smart_rtl, "SRTL_", 13, ParametersG2, AP_SmartRTL),
 
+    // @Param: WP_SPEED
+    // @DisplayName: Waypoint speed default
+    // @Description: Waypoint speed default.  If zero use CRUISE_SPEED.
+    // @Units: m/s
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("WP_SPEED", 14, ParametersG2, wp_speed, 0.0f),
+
+    // @Param: RTL_SPEED
+    // @DisplayName: Return-to-Launch speed default
+    // @Description: Return-to-Launch speed default.  If zero use WP_SPEED or CRUISE_SPEED.
+    // @Units: m/s
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("RTL_SPEED", 15, ParametersG2, rtl_speed, 0.0f),
+
     AP_GROUPEND
 };
 

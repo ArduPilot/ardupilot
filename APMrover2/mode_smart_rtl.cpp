@@ -14,6 +14,9 @@ bool ModeSmartRTL::_enter()
         return false;
     }
 
+    // initialise waypoint speed
+    set_desired_speed_to_default(true);
+
     // RTL never reverses
     rover.set_reverse(false);
 

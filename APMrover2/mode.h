@@ -84,6 +84,17 @@ public:
     // get speed error in m/s, returns zero for modes that do not control speed
     float speed_error() const { return _speed_error; }
 
+    // get default speed for this mode (held in CRUISE_SPEED, WP_SPEED or RTL_SPEED)
+    // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
+    float get_speed_default(bool rtl = false) const;
+
+    // set desired speed
+    void set_desired_speed(float speed) { _desired_speed = speed; }
+
+    // restore desired speed to default from parameter values (CRUISE_SPEED or WP_SPEED)
+    // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
+    void set_desired_speed_to_default(bool rtl = false);
+
     // Navigation control variables
     // The instantaneous desired lateral acceleration in m/s/s
     float lateral_acceleration;

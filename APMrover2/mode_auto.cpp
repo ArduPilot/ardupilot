@@ -15,6 +15,9 @@ bool ModeAuto::_enter()
         return false;
     }
 
+    // initialise waypoint speed
+    set_desired_speed_to_default();
+
     // init location target
     set_desired_location(rover.current_loc);
 
