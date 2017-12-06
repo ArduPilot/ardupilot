@@ -589,16 +589,26 @@ void Copter::update_simple_mode(void)
 // should be called after home_bearing has been updated
 void Copter::update_super_simple_bearing(bool force_update)
 {
-    // check if we are in super simple mode and at least 10m from home
-    if(force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
-        // check the bearing to home has changed by at least 5 degrees
-        if (labs(super_simple_last_bearing - home_bearing) > 500) {
-            super_simple_last_bearing = home_bearing;
-            float angle_rad = radians((super_simple_last_bearing+18000)/100);
-            super_simple_cos_yaw = cosf(angle_rad);
-            super_simple_sin_yaw = sinf(angle_rad);
+    if (!force_update) {
+        if (ap.simple_mode != 2) {
+            return;
+        }
+        if (home_distance() < SUPER_SIMPLE_RADIUS) {
+            return;
         }
     }
+
+    const int32_t bearing = home_bearing();
+
+    // check the bearing to home has changed by at least 5 degrees
+    if (labs(super_simple_last_bearing - bearing) < 500) {
+        return;
+    }
+
+    super_simple_last_bearing = bearing;
+    const float angle_rad = radians((super_simple_last_bearing+18000)/100);
+    super_simple_cos_yaw = cosf(angle_rad);
+    super_simple_sin_yaw = sinf(angle_rad);
 }
 
 void Copter::read_AHRS(void)
