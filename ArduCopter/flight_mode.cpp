@@ -236,3 +236,9 @@ void Copter::notify_flight_mode() {
     AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
     notify.set_flight_mode_str(flightmode->name4());
 }
+
+void Copter::FlightMode::update_navigation()
+{
+    // run autopilot to make high level decisions about control modes
+    run_autopilot();
+}
