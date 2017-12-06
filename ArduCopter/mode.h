@@ -42,6 +42,9 @@ protected:
     virtual bool requires_GPS() const = 0;
     virtual bool has_manual_throttle() const = 0;
     virtual bool allows_arming(bool from_gcs) const = 0;
+
+    virtual bool landing_gear_should_be_deployed() const { return false; }
+
     virtual const char *name() const = 0;
 
     // returns a string for this flightmode, exactly 4 bytes
@@ -270,7 +273,7 @@ public:
     void spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
     void nav_guided_start();
 
-    bool landing_gear_should_be_deployed();
+    bool landing_gear_should_be_deployed() const override;
 
     void payload_place_start();
 
@@ -780,6 +783,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return true; }
+    bool landing_gear_should_be_deployed() const override { return true; };
 
     float get_land_descent_speed();
     bool landing_with_GPS();
@@ -903,7 +907,7 @@ public:
     // this should probably not be exposed
     bool state_complete() { return _state_complete; }
 
-    bool landing_gear_should_be_deployed();
+    bool landing_gear_should_be_deployed() const override;
 
     void restart_without_terrain();
 

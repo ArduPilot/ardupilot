@@ -356,7 +356,7 @@ void Copter::ModeRTL::land_start()
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
-bool Copter::ModeRTL::landing_gear_should_be_deployed()
+bool Copter::ModeRTL::landing_gear_should_be_deployed() const
 {
     switch(_state) {
     case RTL_LoiterAtHome:
