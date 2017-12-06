@@ -926,7 +926,8 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             }
 
             // send yaw change and target speed to guided mode controller
-            float target_speed = constrain_float(packet.param2 * rover.g.speed_cruise, -rover.g.speed_cruise, rover.g.speed_cruise);
+            const float speed_max = rover.control_mode->get_speed_default();
+            const float target_speed = constrain_float(packet.param2 * speed_max, -speed_max, speed_max);
             rover.mode_guided.set_desired_heading_delta_and_speed(packet.param1, target_speed);
             result = MAV_RESULT_ACCEPTED;
             break;
@@ -1043,7 +1044,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 
             // convert thrust to ground speed
             packet.thrust = constrain_float(packet.thrust, -1.0f, 1.0f);
-            float target_speed = rover.g.speed_cruise * packet.thrust;
+            const float target_speed = rover.control_mode->get_speed_default() * packet.thrust;
 
             // if the body_yaw_rate field is ignored, convert quaternion to heading
             if ((packet.type_mask & MAVLINK_SET_ATT_TYPE_MASK_YAW_RATE_IGNORE) != 0) {
@@ -1114,8 +1115,9 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 
             // consume velocity and convert to target speed and heading
             if (!vel_ignore) {
+                const float speed_max = rover.control_mode->get_speed_default();
                 // convert vector length into a speed
-                target_speed = constrain_float(safe_sqrt(sq(packet.vx) + sq(packet.vy)), -rover.g.speed_cruise, rover.g.speed_cruise);
+                target_speed = constrain_float(safe_sqrt(sq(packet.vx) + sq(packet.vy)), -speed_max, speed_max);
                 // convert vector direction to target yaw
                 target_yaw_cd = degrees(atan2f(packet.vy, packet.vx)) * 100.0f;
 
@@ -1215,8 +1217,9 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 
             // consume velocity and convert to target speed and heading
             if (!vel_ignore) {
+                const float speed_max = rover.control_mode->get_speed_default();
                 // convert vector length into a speed
-                target_speed = constrain_float(safe_sqrt(sq(packet.vx) + sq(packet.vy)), -rover.g.speed_cruise, rover.g.speed_cruise);
+                target_speed = constrain_float(safe_sqrt(sq(packet.vx) + sq(packet.vy)), -speed_max, speed_max);
                 // convert vector direction to target yaw
                 target_yaw_cd = degrees(atan2f(packet.vy, packet.vx)) * 100.0f;
 

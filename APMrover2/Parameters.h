@@ -322,6 +322,10 @@ public:
 
     // Safe RTL library
     AP_SmartRTL smart_rtl;
+
+    // default speeds for auto, rtl
+    AP_Float wp_speed;
+    AP_Float rtl_speed;
 };
 
 extern const AP_Param::Info var_info[];

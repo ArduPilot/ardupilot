@@ -3,10 +3,10 @@
 
 bool ModeGuided::_enter()
 {
-    /*
-      when entering guided mode we set the target as the current
-      location. This matches the behaviour of the copter code.
-    */
+    // initialise waypoint speed
+    set_desired_speed_to_default();
+
+    // when entering guided mode we set the target as the current location.
     lateral_acceleration = 0.0f;
     set_desired_location(rover.current_loc);
 

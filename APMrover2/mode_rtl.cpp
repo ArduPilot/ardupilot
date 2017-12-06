@@ -8,6 +8,9 @@ bool ModeRTL::_enter()
         return false;
     }
 
+    // initialise waypoint speed
+    set_desired_speed_to_default(true);
+
     // set destination
     set_desired_location(rover.home);
 
