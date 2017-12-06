@@ -50,6 +50,12 @@ protected:
     // returns a string for this flightmode, exactly 4 bytes
     virtual const char *name4() const = 0;
 
+    // navigation support functions:
+    void update_navigation();
+    virtual void run_autopilot() {}
+    virtual uint32_t wp_distance() const { return 0; }
+    virtual int32_t wp_bearing() const { return 0; }
+
     Copter &_copter;
 
     // convenience references to avoid code churn in conversion:
@@ -297,7 +303,7 @@ public:
     virtual bool allows_arming(bool from_gcs) const override { return false; };
 
     // Auto
-    AutoMode mode() { return _mode; }
+    AutoMode mode() const { return _mode; }
 
     bool loiter_start();
     void rtl_start();
@@ -320,6 +326,14 @@ protected:
 
     const char *name() const override { return "AUTO"; }
     const char *name4() const override { return "AUTO"; }
+
+    uint32_t wp_distance() const override {
+        return wp_nav->get_wp_distance_to_destination();
+    }
+    int32_t wp_bearing() const override {
+        return wp_nav->get_wp_bearing_to_destination();
+    }
+    void run_autopilot() override { mission.update(); }
 
 //    void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
 
@@ -371,6 +385,13 @@ protected:
     const char *name() const override { return "CIRCLE"; }
     const char *name4() const override { return "CIRC"; }
 
+    uint32_t wp_distance() const override {
+        return wp_nav->get_loiter_distance_to_target();
+    }
+    int32_t wp_bearing() const override {
+        return wp_nav->get_loiter_bearing_to_target();
+    }
+
 private:
 
     // Circle
@@ -405,6 +426,13 @@ protected:
 
     const char *name() const override { return "LOITER"; }
     const char *name4() const override { return "LOIT"; }
+
+    uint32_t wp_distance() const override {
+        return wp_nav->get_loiter_distance_to_target();
+    }
+    int32_t wp_bearing() const override {
+        return wp_nav->get_loiter_bearing_to_target();
+    }
 
 #if PRECISION_LANDING == ENABLED
     bool do_precision_loiter();
@@ -454,7 +482,7 @@ public:
 
     bool takeoff_start(float final_alt_above_home);
 
-    GuidedMode mode() { return guided_mode; }
+    GuidedMode mode() const { return guided_mode; }
 
     void angle_control_start();
     void angle_control_run();
@@ -463,6 +491,9 @@ protected:
 
     const char *name() const override { return "GUIDED"; }
     const char *name4() const override { return "GUID"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
 
 private:
 
@@ -550,6 +581,13 @@ protected:
 
     const char *name() const override { return "RTL"; }
     const char *name4() const override { return "RTL "; }
+
+    uint32_t wp_distance() const override {
+        return wp_nav->get_wp_distance_to_destination();
+    }
+    int32_t wp_bearing() const override {
+        return wp_nav->get_wp_bearing_to_destination();
+    }
 
     void descent_start();
     void descent_run();
@@ -1020,6 +1058,13 @@ protected:
 
     const char *name() const override { return "SMARTRTL"; }
     const char *name4() const override { return "SRTL"; }
+
+    uint32_t wp_distance() const override {
+        return wp_nav->get_wp_distance_to_destination();
+    }
+    int32_t wp_bearing() const override {
+        return wp_nav->get_wp_bearing_to_destination();
+    }
 
 private:
 
