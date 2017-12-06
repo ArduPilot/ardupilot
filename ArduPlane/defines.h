@@ -31,11 +31,18 @@ enum gcs_failsafe {
                                  // while in AUTO mode
 };
 
-enum short_failsafe_action {
-    SHORT_FS_ACTION_BESTGUESS = 0,
-    SHORT_FS_ACTION_CIRCLE = 1,
-    SHORT_FS_ACTION_FBWA = 2,
-    SHORT_FS_ACTION_DISABLED = 3,
+enum failsafe_action_short {
+    FS_ACTION_SHORT_BESTGUESS = 0,      // CIRCLE/no change(if already in AUTO|GUIDED|LOITER)
+    FS_ACTION_SHORT_CIRCLE = 1,
+    FS_ACTION_SHORT_FBWA = 2,
+    FS_ACTION_SHORT_DISABLED = 3,
+};
+
+enum failsafe_action_long {
+    FS_ACTION_LONG_CONTINUE = 0,
+    FS_ACTION_LONG_RTL = 1,
+    FS_ACTION_LONG_GLIDE = 2,
+    FS_ACTION_LONG_PARACHUTE = 3,
 };
 
 enum FlightMode {

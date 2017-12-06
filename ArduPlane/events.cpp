@@ -17,8 +17,8 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case CRUISE:
     case TRAINING:
         failsafe.saved_mode = control_mode;
-        failsafe.saved_mode_set = 1;
-        if(g.short_fs_action == 2) {
+        failsafe.saved_mode_set = true;
+        if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
             set_mode(FLY_BY_WIRE_A, reason);
         } else {
             set_mode(CIRCLE, reason);
@@ -29,7 +29,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case QLOITER:
     case QHOVER:
         failsafe.saved_mode = control_mode;
-        failsafe.saved_mode_set = 1;
+        failsafe.saved_mode_set = true;
         set_mode(QLAND, reason);
         break;
         
@@ -37,10 +37,10 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case AVOID_ADSB:
     case GUIDED:
     case LOITER:
-        if(g.short_fs_action != 0) {
+        if(g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) {
             failsafe.saved_mode = control_mode;
-            failsafe.saved_mode_set = 1;
-            if(g.short_fs_action == 2) {
+            failsafe.saved_mode_set = true;
+            if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
                 set_mode(FLY_BY_WIRE_A, reason);
             } else {
                 set_mode(CIRCLE, reason);
@@ -76,11 +76,11 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     case CRUISE:
     case TRAINING:
     case CIRCLE:
-        if(g.long_fs_action == 3) {
+        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
 #endif
-        } else if (g.long_fs_action == 2) {
+        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             set_mode(FLY_BY_WIRE_A, reason);
         } else {
             set_mode(RTL, reason);
@@ -97,13 +97,13 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     case AVOID_ADSB:
     case GUIDED:
     case LOITER:
-        if(g.long_fs_action == 3) {
+        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
 #endif
-        } else if (g.long_fs_action == 2) {
+        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             set_mode(FLY_BY_WIRE_A, reason);
-        } else if (g.long_fs_action == 1) {
+        } else if (g.fs_action_long == FS_ACTION_LONG_RTL) {
             set_mode(RTL, reason);
         }
         break;
@@ -126,7 +126,7 @@ void Plane::failsafe_short_off_event(mode_reason_t reason)
     // re-read the switch so we can return to our preferred mode
     // --------------------------------------------------------
     if (control_mode == CIRCLE && failsafe.saved_mode_set) {
-        failsafe.saved_mode_set = 0;
+        failsafe.saved_mode_set = false;
         set_mode(failsafe.saved_mode, reason);
     }
 }
