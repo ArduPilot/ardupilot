@@ -361,14 +361,10 @@ private:
     // Sometimes we need to remove the scaling for distance calcs
     float scaleLongDown;
 
-    // Location & Navigation
-    int32_t wp_bearing;
     // The location of home in relation to the vehicle in centi-degrees
     int32_t home_bearing;
     // distance between vehicle and home in cm
     int32_t home_distance;
-    // distance between vehicle and next waypoint in cm.
-    uint32_t wp_distance;
     LandStateType land_state = LandStateType_FlyToLocation; // records state of land (flying to location, descending)
 
     struct {
@@ -818,11 +814,7 @@ private:
     void motors_output();
     void lost_vehicle_check();
     void run_nav_updates(void);
-    void calc_distance_and_bearing();
-    void calc_wp_distance();
-    void calc_wp_bearing();
     void calc_home_distance_and_bearing();
-    void run_autopilot();
     Vector3f pv_location_to_vector(const Location& loc);
     float pv_alt_above_origin(float alt_above_home_cm);
     float pv_alt_above_home(float alt_above_origin_cm);

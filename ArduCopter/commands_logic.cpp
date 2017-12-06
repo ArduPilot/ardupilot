@@ -1060,9 +1060,7 @@ bool Copter::verify_wait_delay()
 
 bool Copter::verify_within_distance()
 {
-    // update distance calculation
-    calc_wp_distance();
-    if (wp_distance < (uint32_t)MAX(condition_value,0)) {
+    if (flightmode->wp_distance() < (uint32_t)MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }

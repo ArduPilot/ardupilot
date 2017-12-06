@@ -774,3 +774,32 @@ bool Copter::FlightMode_GUIDED::limit_check()
     // if we got this far we must be within limits
     return false;
 }
+
+
+uint32_t Copter::FlightMode_GUIDED::wp_distance() const
+{
+    switch(mode()) {
+    case Guided_WP:
+        return wp_nav->get_wp_distance_to_destination();
+        break;
+    case Guided_PosVel:
+        return pos_control->get_distance_to_target();
+        break;
+    default:
+        return 0;
+    }
+}
+
+int32_t Copter::FlightMode_GUIDED::wp_bearing() const
+{
+    switch(mode()) {
+    case Guided_WP:
+        return wp_nav->get_wp_bearing_to_destination();
+        break;
+    case Guided_PosVel:
+        return pos_control->get_bearing_to_target();
+        break;
+    default:
+        return 0;
+    }
+}
