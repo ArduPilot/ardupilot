@@ -265,8 +265,8 @@ public:
         k_param_throttle_fs_value,
         k_param_throttle_cruise,
 
-        k_param_short_fs_action,
-        k_param_long_fs_action,
+        k_param_fs_action_short,
+        k_param_fs_action_long,
         k_param_gcs_heartbeat_fs_enabled,
         k_param_throttle_slewrate,
         k_param_throttle_suppress_manual,
@@ -274,8 +274,8 @@ public:
         k_param_rc_12_old,
         k_param_fs_batt_voltage,
         k_param_fs_batt_mah,
-        k_param_short_fs_timeout,
-        k_param_long_fs_timeout,
+        k_param_fs_timeout_short,
+        k_param_fs_timeout_long,
         k_param_rc_13_old,
         k_param_rc_14_old,
         k_param_tuning,
@@ -425,10 +425,10 @@ public:
     AP_Int16 use_reverse_thrust;
 
     // Failsafe
-    AP_Int8 short_fs_action;
-    AP_Int8 long_fs_action;
-    AP_Float short_fs_timeout;
-    AP_Float long_fs_timeout;
+    AP_Int8 fs_action_short;
+    AP_Int8 fs_action_long;
+    AP_Float fs_timeout_short;
+    AP_Float fs_timeout_long;
     AP_Int8 gcs_heartbeat_fs_enabled;
     AP_Float fs_batt_voltage;
     AP_Float fs_batt_mah;

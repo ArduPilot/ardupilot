@@ -323,16 +323,16 @@ private:
     struct {
         // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
         // RC receiver should be set up to output a low throttle value when signal is lost
-        uint8_t rc_failsafe:1;
+        bool rc_failsafe:1;
 
         // has the saved mode for failsafe been set?
-        uint8_t saved_mode_set:1;
+        bool saved_mode_set:1;
 
         // flag to hold whether battery low voltage threshold has been breached
-        uint8_t low_battery:1;
+        bool low_battery:1;
 
         // true if an adsb related failsafe has occurred
-        uint8_t adsb:1;
+        bool adsb:1;
 
         // saved flight mode
         enum FlightMode saved_mode;
