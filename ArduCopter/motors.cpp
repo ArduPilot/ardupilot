@@ -177,7 +177,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location(false);
     }
-    calc_distance_and_bearing();
+    calc_home_distance_and_bearing();
 
     // Reset SmartRTL return location. If activated, SmartRTL will ultimately try to land at this point
     g2.smart_rtl.reset_path(position_ok());
