@@ -411,7 +411,7 @@ void Copter::ModeAuto::land_run()
     _copter.land_run_vertical_control();
 }
 
-bool Copter::ModeAuto::landing_gear_should_be_deployed()
+bool Copter::ModeAuto::landing_gear_should_be_deployed() const
 {
     switch(_mode) {
     case Auto_Land:
