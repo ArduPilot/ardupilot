@@ -367,3 +367,10 @@ void Rover::smart_rtl_update()
     const bool save_position = hal.util->get_soft_armed() && (control_mode != &mode_smartrtl);
     mode_smartrtl.save_position(save_position);
 }
+
+// returns true if vehicle is a boat
+// this affects whether the vehicle tries to maintain position after reaching waypoints
+bool Rover::is_boat() const
+{
+    return ((enum frame_class)g2.frame_class.get() == FRAME_BOAT);
+}
