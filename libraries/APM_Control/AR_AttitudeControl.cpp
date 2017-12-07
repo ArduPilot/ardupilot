@@ -133,6 +133,10 @@ AR_AttitudeControl::AR_AttitudeControl(AP_AHRS &ahrs) :
 // positive lateral acceleration is to the right.
 float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed)
 {
+    // record desired accel for reporting purposes
+    _steer_lat_accel_last_ms = AP_HAL::millis();
+    _desired_lat_accel = desired_accel;
+
     // get speed forward
     float speed;
     if (!get_forward_speed(speed)) {
@@ -173,10 +177,13 @@ float AR_AttitudeControl::get_steering_out_angle_error(float angle_err, bool ski
 // desired yaw rate in radians/sec. Positive yaw is to the right.
 float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed)
 {
+    // record desired turn rate for reporting purposes
+    _desired_turn_rate = desired_rate;
+
     // calculate dt
     const uint32_t now = AP_HAL::millis();
     float dt = (now - _steer_turn_last_ms) / 1000.0f;
-    if (_steer_turn_last_ms == 0 || dt > 0.1f) {
+    if (_steer_turn_last_ms == 0 || dt > AR_ATTCONTROL_TIMEOUT) {
         dt = 0.0f;
         _steer_rate_pid.reset_filter();
     } else {
@@ -237,6 +244,37 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
 
     // constrain and return final output
     return constrain_float(p + i + d, -1.0f, 1.0f);
+}
+
+// get latest desired turn rate in rad/sec (recorded during calls to get_steering_out_rate)
+float AR_AttitudeControl::get_desired_turn_rate() const
+{
+    // return zero if no recent calls to turn rate controller
+    if ((_steer_turn_last_ms == 0) || ((AP_HAL::millis() - _steer_turn_last_ms) > AR_ATTCONTROL_TIMEOUT)) {
+        return 0.0f;
+    }
+    return _desired_turn_rate;
+}
+
+// get latest desired lateral acceleration in m/s/s (recorded during calls to get_steering_out_lat_accel)
+float AR_AttitudeControl::get_desired_lat_accel() const
+{
+    // return zero if no recent calls to lateral acceleration controller
+    if ((_steer_lat_accel_last_ms == 0) || ((AP_HAL::millis() - _steer_lat_accel_last_ms) > AR_ATTCONTROL_TIMEOUT)) {
+        return 0.0f;
+    }
+    return _desired_lat_accel;
+}
+
+// get actual lateral acceleration in m/s/s.  returns true on success
+bool AR_AttitudeControl::get_lat_accel(float &lat_accel) const
+{
+    float speed;
+    if (!get_forward_speed(speed)) {
+        return false;
+    }
+    lat_accel = speed * _ahrs.get_yaw_rate_earth();
+    return true;
 }
 
 // return a throttle output from -1 to +1 given a desired speed in m/s (use negative speeds to travel backwards)
@@ -380,4 +418,14 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
     // calculate forward speed velocity into body frame
     speed = velocity.x*_ahrs.cos_yaw() + velocity.y*_ahrs.sin_yaw();
     return true;
+}
+
+// get latest desired speed recorded during call to get_throttle_out_speed.  For reporting purposes only
+float AR_AttitudeControl::get_desired_speed() const
+{
+    // return zero if no recent calls to speed controller
+    if ((_speed_last_ms == 0) || ((AP_HAL::millis() - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT)) {
+        return 0.0f;
+    }
+    return _desired_speed;
 }
