@@ -563,6 +563,11 @@ public:
 
     virtual void update_AOA_SSA(void);
 
+    // get_hgt_ctrl_limit - get maximum height to be observed by the
+    // control loops in meters and a validity flag.  It will return
+    // false when no limiting is required
+    virtual bool get_hgt_ctrl_limit(float &limit) const { return false; };
+
 protected:
     AHRS_VehicleClass _vehicle_class;
 
