@@ -225,8 +225,10 @@ public:
     // it will return invalid when no limiting is required
     bool get_hgt_ctrl_limit(float &limit) const override;
 
-    // get_llh - updates the provided location with the latest calculated location including absolute altitude
-    //  returns true on success (i.e. the EKF knows it's latest position), false on failure
+    // get_location - updates the provided location with the latest
+    // calculated location including absolute altitude
+    // returns true on success (i.e. the EKF knows it's latest
+    // position), false on failure
     bool get_location(struct Location &loc) const;
 
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
