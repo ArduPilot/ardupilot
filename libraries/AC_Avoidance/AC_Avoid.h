@@ -28,7 +28,7 @@
  */
 class AC_Avoid {
 public:
-    static AC_Avoid create(const AP_AHRS_NavEKF& ahrs,
+    static AC_Avoid create(const AP_AHRS& ahrs,
                            const AC_Fence& fence,
                            const AP_Proximity& proximity,
                            const AP_Beacon* beacon = nullptr) {
@@ -64,7 +64,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AC_Avoid(const AP_AHRS_NavEKF& ahrs, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
+    AC_Avoid(const AP_AHRS& ahrs, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
 
     /*
      * Adjusts the desired velocity for the circular fence.
@@ -124,7 +124,7 @@ private:
     void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
 
     // external references
-    const AP_AHRS_NavEKF& _ahrs;
+    const AP_AHRS& _ahrs;
     const AC_Fence& _fence;
     const AP_Proximity& _proximity;
     const AP_Beacon* _beacon;
