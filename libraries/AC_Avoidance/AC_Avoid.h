@@ -103,12 +103,6 @@ private:
     void limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance) const;
 
     /*
-     * Gets the current position or altitude, relative to home (not relative to EKF origin) in cm
-     */
-    Vector2f get_position() const;
-    float get_alt_above_home() const;
-
-    /*
      * Computes the speed such that the stopping distance
      * of the vehicle will be exactly the input distance.
      */

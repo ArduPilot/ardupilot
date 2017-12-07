@@ -102,8 +102,10 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     // calculate distance below fence
     if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && (_fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
         // calculate distance from vehicle to safe altitude
-        float veh_alt = get_alt_above_home();
-        alt_diff_cm = _fence.get_safe_alt_max() * 100.0f - veh_alt;
+        float veh_alt;
+        _ahrs.get_relative_position_D_home(veh_alt);
+        // _fence.get_safe_alt_max() is UP, veh_alt is DOWN:
+        alt_diff_cm = (_fence.get_safe_alt_max() + veh_alt) * 100.0f;
         limit_alt = true;
     }
 
@@ -208,8 +210,13 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
         return;
     }
 
-    // get position as a 2D offset in cm from ahrs home
-    const Vector2f position_xy = get_position();
+    // get position as a 2D offset from ahrs home
+    Vector2f position_xy;
+    if (!_ahrs.get_relative_position_NE_home(position_xy)) {
+        // we have no idea where we are....
+        return;
+    }
+    position_xy *= 100.0f; // m -> cm
 
     float speed = desired_vel.length();
     // get the fence radius in cm
@@ -396,26 +403,6 @@ void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel,
         // subtract difference between desired speed and maximum acceptable speed
         desired_vel += limit_direction*(max_speed - speed);
     }
-}
-
-/*
- * Gets the current xy-position, relative to home (not relative to EKF origin)
- */
-Vector2f AC_Avoid::get_position() const
-{
-    Vector2f position_xy;
-    _ahrs.get_relative_position_NE_home(position_xy);
-    return position_xy * 100.0f;
-}
-
-/*
- * Gets the altitude above home in cm
- */
-float AC_Avoid::get_alt_above_home() const
-{
-    float alt;
-    _ahrs.get_relative_position_D_home(alt);
-    return (alt * -100.0f);
 }
 
 /*
