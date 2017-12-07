@@ -535,6 +535,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RTL_SPEED", 15, ParametersG2, rtl_speed, 0.0f),
 
+    // @Param: FRAME_CLASS
+    // @DisplayName: Frame Class
+    // @Description: Frame Class
+    // @Values: 0:Undefined,1:Rover,2:Boat
+    // @User: Standard
+    AP_GROUPINFO("FRAME_CLASS", 16, ParametersG2, frame_class, 1),
+
     AP_GROUPEND
 };
 

@@ -572,6 +572,7 @@ private:
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
     void smart_rtl_update();
+    bool is_boat() const;
 
     // test.cpp
     void print_hit_enter();
