@@ -501,7 +501,7 @@ private:
     void Log_Write_Steering();
     void Log_Write_Beacon();
     void Log_Write_Startup(uint8_t type);
-    void Log_Write_Control_Tuning();
+    void Log_Write_Throttle();
     void Log_Write_Nav_Tuning();
     void Log_Write_Attitude();
     void Log_Write_Rangefinder();
