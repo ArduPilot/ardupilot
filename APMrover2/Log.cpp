@@ -94,27 +94,29 @@ void Rover::Log_Write_Startup(uint8_t type)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_Control_Tuning {
+struct PACKED log_Throttle {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    int16_t steer_out;
-    int16_t roll;
-    int16_t pitch;
-    int16_t throttle_out;
+    int16_t throttle_in;
+    float throttle_out;
+    float desired_speed;
+    float speed;
     float accel_y;
 };
 
-// Write a control tuning packet. Total length : 22 bytes
-void Rover::Log_Write_Control_Tuning()
+// Write a throttle control packet
+void Rover::Log_Write_Throttle()
 {
     const Vector3f accel = ins.get_accel();
-    struct log_Control_Tuning pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
+    float speed = DataFlash.quiet_nanf();
+    g2.attitude_control.get_forward_speed(speed);
+    struct log_Throttle pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_THR_MSG),
         time_us         : AP_HAL::micros64(),
-        steer_out       : (int16_t)g2.motors.get_steering(),
-        roll            : (int16_t)ahrs.roll_sensor,
-        pitch           : (int16_t)ahrs.pitch_sensor,
-        throttle_out    : (int16_t)g2.motors.get_throttle(),
+        throttle_in     : channel_throttle->get_control_in(),
+        throttle_out    : g2.motors.get_throttle(),
+        desired_speed   : g2.attitude_control.get_desired_speed(),
+        speed           : speed,
         accel_y         : accel.y
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -348,8 +350,8 @@ const LogStructure Rover::log_structure[] = {
       "PM",  "QIHIhhhBHI", "TimeUS,LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr,Mem", "ss-------b", "FC-------0" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),
       "STRT", "QBH",        "TimeUS,SType,CTot", "s--", "F--" },
-    { LOG_CTUN_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qhcchf",     "TimeUS,Steer,Roll,Pitch,ThrOut,AccY", "s-dd-o", "F-BB-0" },
+    { LOG_THR_MSG, sizeof(log_Throttle),
+      "THR", "Qhffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccY", "s--nno", "F--000" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
       "NTUN", "QHfHHbf",    "TimeUS,Yaw,WpDist,TargBrg,NavBrg,Thr,XT", "sdmdd-m", "FB0BB-0" },
     { LOG_RANGEFINDER_MSG, sizeof(log_Rangefinder),
@@ -387,7 +389,7 @@ void Rover::Log_Write_Startup(uint8_t type) {}
 void Rover::Log_Write_Current() {}
 void Rover::Log_Write_Nav_Tuning() {}
 void Rover::Log_Write_Performance() {}
-void Rover::Log_Write_Control_Tuning() {}
+void Rover::Log_Write_Throttle() {}
 void Rover::Log_Write_Rangefinder() {}
 void Rover::Log_Write_Attitude() {}
 void Rover::Log_Write_RC(void) {}
