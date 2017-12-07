@@ -253,8 +253,8 @@ void Copter::land_run_horizontal_control()
     if (doing_precision_landing) {
         Vector2f target_pos, target_vel_rel;
         if (!precland.get_target_position_cm(target_pos)) {
-            target_pos.x = inertial_nav.get_position().x;
-            target_pos.y = inertial_nav.get_position().y;
+            target_pos.x = current_pos.x;
+            target_pos.y = current_pos.y;
         }
         if (!precland.get_target_velocity_relative_cms(target_vel_rel)) {
             target_vel_rel.x = -inertial_nav.get_velocity().x;

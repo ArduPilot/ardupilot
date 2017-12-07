@@ -130,11 +130,10 @@ void Copter::FlightMode_GUIDED::posvel_control_start()
     pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
     pos_control->set_jerk_xy_to_default();
 
-    const Vector3f& curr_pos = inertial_nav.get_position();
     const Vector3f& curr_vel = inertial_nav.get_velocity();
 
     // set target position and velocity to current position and velocity
-    pos_control->set_xy_target(curr_pos.x, curr_pos.y);
+    pos_control->set_xy_target(_copter.current_pos.x, _copter.current_pos.y);
     pos_control->set_desired_velocity_xy(curr_vel.x, curr_vel.y);
 
     // set vertical speed and acceleration
@@ -528,7 +527,7 @@ void Copter::FlightMode_GUIDED::posvel_control_run()
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
         // set target position and velocity to current position and velocity
-        pos_control->set_pos_target(inertial_nav.get_position());
+        pos_control->set_pos_target(_copter.current_pos);
         pos_control->set_desired_velocity(Vector3f(0,0,0));
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
@@ -738,7 +737,7 @@ void Copter::FlightMode_GUIDED::limit_init_time_and_pos()
     guided_limit.start_time = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos = inertial_nav.get_position();
+    guided_limit.start_pos = _copter.current_pos;
 }
 
 // guided_limit_check - returns true if guided mode has breached a limit
@@ -750,22 +749,19 @@ bool Copter::FlightMode_GUIDED::limit_check()
         return true;
     }
 
-    // get current location
-    const Vector3f& curr_pos = inertial_nav.get_position();
-
     // check if we have gone below min alt
-    if (!is_zero(guided_limit.alt_min_cm) && (curr_pos.z < guided_limit.alt_min_cm)) {
+    if (!is_zero(guided_limit.alt_min_cm) && (_copter.current_pos.z < guided_limit.alt_min_cm)) {
         return true;
     }
 
     // check if we have gone above max alt
-    if (!is_zero(guided_limit.alt_max_cm) && (curr_pos.z > guided_limit.alt_max_cm)) {
+    if (!is_zero(guided_limit.alt_max_cm) && (_copter.current_pos.z > guided_limit.alt_max_cm)) {
         return true;
     }
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos, curr_pos);
+        float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos, _copter.current_pos);
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }

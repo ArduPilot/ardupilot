@@ -122,7 +122,6 @@ void Copter::Log_Write_Nav_Tuning()
     const Vector3f &pos_target = pos_control->get_pos_target();
     const Vector3f &vel_target = pos_control->get_vel_target();
     const Vector3f &accel_target = pos_control->get_accel_target();
-    const Vector3f &position = inertial_nav.get_position();
     const Vector3f &velocity = inertial_nav.get_velocity();
 
     struct log_Nav_Tuning pkt = {
@@ -130,8 +129,8 @@ void Copter::Log_Write_Nav_Tuning()
         time_us         : AP_HAL::micros64(),
         desired_pos_x   : pos_target.x,
         desired_pos_y   : pos_target.y,
-        pos_x           : position.x,
-        pos_y           : position.y,
+        pos_x           : current_pos.x,
+        pos_y           : current_pos.y,
         desired_vel_x   : vel_target.x,
         desired_vel_y   : vel_target.y,
         vel_x           : velocity.x,

@@ -457,7 +457,7 @@ void Copter::FlightMode_AUTO::circle_movetoedge_start(const Location_Class &circ
     Vector3f circle_center_neu;
     if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
         // default to current position and log error
-        circle_center_neu = inertial_nav.get_position();
+        circle_center_neu = _copter.current_pos;
         _copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_CIRCLE_INIT);
     }
     circle_nav->set_center(circle_center_neu);
@@ -470,7 +470,7 @@ void Copter::FlightMode_AUTO::circle_movetoedge_start(const Location_Class &circ
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
     circle_nav->get_closest_point_on_circle(circle_edge_neu);
-    float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
+    const float dist_to_edge = (_copter.current_pos - circle_edge_neu).length();
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
@@ -490,8 +490,7 @@ void Copter::FlightMode_AUTO::circle_movetoedge_start(const Location_Class &circ
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        const Vector3f &curr_pos = inertial_nav.get_position();
-        float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
+        const float dist_to_center = norm(circle_center_neu.x - _copter.current_pos.x, circle_center_neu.y - _copter.current_pos.y);
         if (dist_to_center > circle_nav->get_radius() && dist_to_center > 500) {
             set_auto_yaw_mode(_copter.get_default_auto_yaw_mode(false));
         } else {

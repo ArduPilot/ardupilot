@@ -416,7 +416,7 @@ void Copter::FlightMode_POSHOLD::run()
             poshold.pitch_mode = POSHOLD_BRAKE_TO_LOITER;
             poshold.brake_to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
             // init loiter controller
-            wp_nav->init_loiter_target(inertial_nav.get_position(), poshold.loiter_reset_I); // (false) to avoid I_term reset. In original code, velocity(0,0,0) was used instead of current velocity: wp_nav->init_loiter_target(inertial_nav.get_position(), Vector3f(0,0,0));
+            wp_nav->init_loiter_target(_copter.current_pos, poshold.loiter_reset_I); // (false) to avoid I_term reset. In original code, velocity(0,0,0) was used instead of current velocity: wp_nav->init_loiter_target(inertial_nav.get_position(), Vector3f(0,0,0));
             // at this stage, we are going to run update_loiter that will reset I_term once. From now, we ensure next time that we will enter loiter and update it, I_term won't be reset anymore
             poshold.loiter_reset_I = false;
             // set delay to start of wind compensation estimate updates
