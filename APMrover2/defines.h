@@ -53,7 +53,7 @@ enum mode {
 #define FAILSAFE_EVENT_RC       (1<<2)
 
 //  Logging parameters
-#define LOG_CTUN_MSG            0x01
+#define LOG_THR_MSG             0x01
 #define LOG_NTUN_MSG            0x02
 #define LOG_PERFORMANCE_MSG     0x03
 #define LOG_STARTUP_MSG         0x06
@@ -71,7 +71,7 @@ enum mode {
 #define MASK_LOG_ATTITUDE_MED   (1<<1)
 #define MASK_LOG_GPS            (1<<2)
 #define MASK_LOG_PM             (1<<3)
-#define MASK_LOG_CTUN           (1<<4)
+#define MASK_LOG_THR            (1<<4)
 #define MASK_LOG_NTUN           (1<<5)
 //#define MASK_LOG_MODE         (1<<6) // no longer used
 #define MASK_LOG_IMU            (1<<7)

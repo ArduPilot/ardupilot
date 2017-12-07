@@ -253,8 +253,8 @@ void Rover::update_logging1(void)
         Log_Write_Attitude();
     }
 
-    if (should_log(MASK_LOG_CTUN)) {
-        Log_Write_Control_Tuning();
+    if (should_log(MASK_LOG_THR)) {
+        Log_Write_Throttle();
         Log_Write_Beacon();
     }
 
