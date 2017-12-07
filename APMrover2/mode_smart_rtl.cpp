@@ -17,6 +17,9 @@ bool ModeSmartRTL::_enter()
     // initialise waypoint speed
     set_desired_speed_to_default(true);
 
+    // init location target
+    set_desired_location(rover.current_loc);
+
     // RTL never reverses
     rover.set_reverse(false);
 
@@ -53,6 +56,7 @@ void ModeSmartRTL::update()
                 _load_point = false;
                 // set target destination to new point
                 if (!set_desired_location_NED(next_point)) {
+                    // this failure should never happen but we add it just in case
                     gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
                     smart_rtl_state = SmartRTL_Failure;
                 }
@@ -70,7 +74,14 @@ void ModeSmartRTL::update()
         case SmartRTL_StopAtHome:
         case SmartRTL_Failure:
             _reached_destination = true;
-            stop_vehicle();
+            if (rover.is_boat()) {
+                // boats attempt to hold position at home
+                calc_steering_to_waypoint(rover.current_loc, _destination);
+                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true);
+            } else {
+                // rovers stop
+                stop_vehicle();
+            }
             break;
     }
 }
