@@ -107,19 +107,18 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         limit_alt = true;
     }
 
-    // calculate distance to optical flow altitude limit
-    float ekf_alt_limit_cm;
-    if (_ahrs.get_hgt_ctrl_limit(ekf_alt_limit_cm)) {
-        // convert height from m to cm
-        ekf_alt_limit_cm *= 100.0f;
-        float curr_alt{};
-        _ahrs.get_relative_position_D_origin(curr_alt);
-        curr_alt = curr_alt * -100.0f;
-        const float ekf_alt_diff_cm = ekf_alt_limit_cm - curr_alt;
-        if (!limit_alt || ekf_alt_diff_cm < alt_diff_cm) {
-            alt_diff_cm = ekf_alt_diff_cm;
+    // calculate distance to (e.g.) optical flow altitude limit
+    // AHRS values are always in metres
+    float alt_limit;
+    float curr_alt;
+    if (_ahrs.get_hgt_ctrl_limit(alt_limit) &&
+        _ahrs.get_relative_position_D_origin(curr_alt)) {
+        // alt_limit is UP, curr_alt is DOWN:
+        const float ctrl_alt_diff_cm = (alt_limit + curr_alt)*100;
+        if (!limit_alt || ctrl_alt_diff_cm < alt_diff_cm) {
+            alt_diff_cm = ctrl_alt_diff_cm;
+            limit_alt = true;
         }
-        limit_alt = true;
     }
 
     // get distance from proximity sensor (in meters, convert to cm)
@@ -324,7 +323,11 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     // do not adjust velocity if vehicle is outside the polygon fence
     Vector2f position_xy;
     if (earth_frame) {
-        _ahrs.get_relative_position_NE_origin(position_xy);
+        if (!_ahrs.get_relative_position_NE_origin(position_xy)) {
+            // boundary is in earth frame but we have no idea
+            // where we are
+            return;
+        }
         position_xy = position_xy * 100.0f;  // m to cm
     }
 
