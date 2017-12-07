@@ -200,8 +200,7 @@ public:
     float get_distance_to_destination() const override { return _distance_to_destination; }
 
     // set desired location, heading and speed
-    // set stay_active_at_dest if the vehicle should attempt to maintain it's position at the destination (mostly for boats)
-    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN, bool stay_active_at_dest = false);
+    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN);
     bool reached_destination() override;
 
     // heading and speed control
@@ -236,7 +235,6 @@ private:
     bool auto_triggered;
 
     bool _reached_heading;      // true when vehicle has reached desired heading in TurnToHeading sub mode
-    bool _stay_active_at_dest;  // true when we should actively maintain position even after reaching the destination
     bool _reversed;             // execute the mission by backing up
 };
 

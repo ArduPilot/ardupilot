@@ -32,12 +32,9 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         do_RTL();
         break;
 
-    case MAV_CMD_NAV_LOITER_UNLIM:              // Loiter indefinitely
-        do_loiter_unlimited(cmd);
-        break;
-
-    case MAV_CMD_NAV_LOITER_TIME:
-        do_loiter_time(cmd);
+    case MAV_CMD_NAV_LOITER_UNLIM:  // Loiter indefinitely
+    case MAV_CMD_NAV_LOITER_TIME:   // Loiter for specified time
+        do_nav_wp(cmd, true);
         break;
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
@@ -216,7 +213,7 @@ void Rover::do_RTL(void)
     mode_auto.start_RTL();
 }
 
-void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_at_dest)
+void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination)
 {
     // just starting so we haven't previously reached the waypoint
     previously_reached_wp = false;
@@ -230,27 +227,14 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_a
     // get heading to following waypoint (auto mode reduces speed to allow corning without large overshoot)
     // in case of non-zero loiter duration, we provide heading-unknown to signal we should stop at the point
     float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN;
-    if (loiter_duration == 0) {
+    if (!always_stop_at_destination && loiter_duration == 0) {
         next_leg_bearing_cd = mission.get_next_ground_course_cd(MODE_NEXT_HEADING_UNKNOWN);
     }
 
     // retrieve and sanitize target location
     Location cmdloc = cmd.content.location;
     location_sanitize(current_loc, cmdloc);
-    mode_auto.set_desired_location(cmdloc, next_leg_bearing_cd, stay_active_at_dest);
-}
-
-void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
-{
-    do_nav_wp(cmd, true);
-}
-
-// do_loiter_time - initiate loitering at a point for a given time period
-// if the vehicle is moved off the loiter point (i.e. a boat in a current)
-// then the vehicle will actively return to the loiter coords.
-void Rover::do_loiter_time(const AP_Mission::Mission_Command& cmd)
-{
-    do_nav_wp(cmd, true);
+    mode_auto.set_desired_location(cmdloc, next_leg_bearing_cd);
 }
 
 // do_set_yaw_speed - turn to a specified heading and achieve and given speed

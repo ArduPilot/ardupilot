@@ -53,11 +53,9 @@ void ModeAuto::update()
                     _reached_destination = true;
                 }
             }
-            // stay active at destination if caller requested this behaviour and outside the waypoint radius
-            bool active_at_destination = _reached_destination && _stay_active_at_dest && (_distance_to_destination > rover.g.waypoint_radius);
-            if (!_reached_destination || active_at_destination) {
+            if (!_reached_destination || rover.is_boat()) {
                 // continue driving towards destination
-                calc_steering_to_waypoint(active_at_destination ? rover.current_loc : _origin, _destination, _reversed);
+                calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination, _reversed);
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true);
             } else {
                 // we have reached the destination so stop
@@ -90,13 +88,12 @@ void ModeAuto::update()
 }
 
 // set desired location to drive to
-void ModeAuto::set_desired_location(const struct Location& destination, float next_leg_bearing_cd, bool stay_active_at_dest)
+void ModeAuto::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
     // call parent
     Mode::set_desired_location(destination, next_leg_bearing_cd);
 
     _submode = Auto_WP;
-    _stay_active_at_dest = stay_active_at_dest;
 }
 
 // return true if vehicle has reached or even passed destination
