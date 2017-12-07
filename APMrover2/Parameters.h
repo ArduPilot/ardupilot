@@ -326,6 +326,9 @@ public:
     // default speeds for auto, rtl
     AP_Float wp_speed;
     AP_Float rtl_speed;
+
+    // frame class for vehicle
+    AP_Int8 frame_class;
 };
 
 extern const AP_Param::Info var_info[];

@@ -139,5 +139,12 @@ enum pilot_steer_type_t {
     PILOT_STEER_TYPE_DIR_UNCHANGED_WHEN_REVERSING = 3,
 };
 
+// frame class enum used for FRAME_CLASS parameter
+enum frame_class {
+    FRAME_UNDEFINED = 0,
+    FRAME_ROVER = 1,
+    FRAME_BOAT = 2
+};
+
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
 #define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
