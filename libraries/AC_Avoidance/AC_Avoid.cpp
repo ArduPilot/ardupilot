@@ -97,7 +97,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
     bool limit_alt = false;
-    float alt_diff_cm = 0.0f;   // distance from altitude limit to vehicle in cm (positive means vehicle is below limit)
+    float alt_diff = 0.0f;   // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
 
     // calculate distance below fence
     if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && (_fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
@@ -105,7 +105,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         float veh_alt;
         _ahrs.get_relative_position_D_home(veh_alt);
         // _fence.get_safe_alt_max() is UP, veh_alt is DOWN:
-        alt_diff_cm = (_fence.get_safe_alt_max() + veh_alt) * 100.0f;
+        alt_diff = _fence.get_safe_alt_max() + veh_alt;
         limit_alt = true;
     }
 
@@ -116,33 +116,33 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     if (_ahrs.get_hgt_ctrl_limit(alt_limit) &&
         _ahrs.get_relative_position_D_origin(curr_alt)) {
         // alt_limit is UP, curr_alt is DOWN:
-        const float ctrl_alt_diff_cm = (alt_limit + curr_alt)*100;
-        if (!limit_alt || ctrl_alt_diff_cm < alt_diff_cm) {
-            alt_diff_cm = ctrl_alt_diff_cm;
+        const float ctrl_alt_diff = alt_limit + curr_alt;
+        if (!limit_alt || ctrl_alt_diff < alt_diff) {
+            alt_diff = ctrl_alt_diff;
             limit_alt = true;
         }
     }
 
-    // get distance from proximity sensor (in meters, convert to cm)
-    float proximity_alt_diff_m;
-    if (_proximity.get_upward_distance(proximity_alt_diff_m)) {
-        float proximity_alt_diff_cm = (proximity_alt_diff_m - _margin) * 100.0f;
-        if (!limit_alt || proximity_alt_diff_cm < alt_diff_cm) {
-            alt_diff_cm = proximity_alt_diff_cm;
+    // get distance from proximity sensor
+    float proximity_alt_diff;
+    if (_proximity.get_upward_distance(proximity_alt_diff)) {
+        proximity_alt_diff -= _margin;
+        if (!limit_alt || proximity_alt_diff < alt_diff) {
+            alt_diff = proximity_alt_diff;
+            limit_alt = true;
         }
-        limit_alt = true;
     }
 
     // limit climb rate
     if (limit_alt) {
         // do not allow climbing if we've breached the safe altitude
-        if (alt_diff_cm <= 0.0f) {
+        if (alt_diff <= 0.0f) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
             return;
         }
 
         // limit climb rate
-        const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_diff_cm);
+        const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_diff*100.0f);
         climb_rate_cms = MIN(max_speed, climb_rate_cms);
     }
 }
