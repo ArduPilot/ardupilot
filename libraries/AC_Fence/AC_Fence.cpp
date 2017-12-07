@@ -130,15 +130,15 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         return false;
     }
 
-    // if we have horizontal limits enabled, check inertial nav position is ok
-    nav_filter_status filt_status;
-    if (!_ahrs.get_filter_status(filt_status)) {
-        fail_msg = "AHRS status not available";
-        return false;
-    }
-    if ((_enabled_fences & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON))>0 && !filt_status.flags.horiz_pos_abs && !filt_status.flags.pred_horiz_pos_abs) {
-        fail_msg = "fence requires position";
-        return false;
+    // if we have horizontal limits enabled, check we can get a
+    // relative position from the EKF
+    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE) ||
+        (_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
+        Vector2f position;
+        if (!_ahrs.get_relative_position_NE_origin(position)) {
+            fail_msg = "fence requires position";
+            return false;
+        }
     }
 
     // if we got this far everything must be ok
