@@ -131,7 +131,7 @@ void Rover::send_nav_controller_output(mavlink_channel_t chan)
 {
     mavlink_msg_nav_controller_output_send(
         chan,
-        control_mode->lateral_acceleration,  // use nav_roll to hold demanded Y accel
+        g2.attitude_control.get_desired_lat_accel(),
         ahrs.groundspeed() * ins.get_gyro().z,  // use nav_pitch to hold actual Y accel
         nav_controller->nav_bearing_cd() * 0.01f,
         nav_controller->target_bearing_cd() * 0.01f,
