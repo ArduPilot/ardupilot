@@ -122,9 +122,8 @@ void Sub::compass_accumulate(void)
 
     // update initial location used for declination
     if (!ap.compass_init_location) {
-        Location loc;
-        if (ahrs.get_position(loc)) {
-            compass.set_initial_location(loc.lat, loc.lng);
+        if (ahrs_state.has_current_loc) {
+            compass.set_initial_location(current_loc.lat, current_loc.lng);
             ap.compass_init_location = true;
         }
     }

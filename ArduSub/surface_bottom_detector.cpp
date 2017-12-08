@@ -18,11 +18,9 @@ void Sub::update_surface_and_bottom_detector()
         return;
     }
 
-    Vector3f velocity;
-    ahrs.get_velocity_NED(velocity);
 
     // check that we are not moving up or down
-    bool vel_stationary = velocity.z > -0.05 && velocity.z < 0.05;
+    bool vel_stationary = current_vel.z > -0.05 && current_vel.z < 0.05;
 
     if (ap.depth_sensor_present && sensor_health.depth) { // we can use the external pressure sensor for a very accurate and current measure of our z axis position
         current_depth = barometer.get_altitude(); // cm
