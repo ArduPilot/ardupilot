@@ -40,18 +40,28 @@ void Rover::Log_Write_Performance()
 struct PACKED log_Steering {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    float demanded_accel;
-    float achieved_accel;
+    int16_t steering_in;
+    float steering_out;
+    float desired_lat_accel;
+    float lat_accel;
+    float desired_turn_rate;
+    float turn_rate;
 };
 
 // Write a steering packet
 void Rover::Log_Write_Steering()
 {
+    float lat_accel = DataFlash.quiet_nanf();
+    g2.attitude_control.get_lat_accel(lat_accel);
     struct log_Steering pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STEERING_MSG),
         time_us        : AP_HAL::micros64(),
-        demanded_accel : control_mode->lateral_acceleration,
-        achieved_accel : ahrs.groundspeed() * ins.get_gyro().z,
+        steering_in        : channel_steer->get_control_in(),
+        steering_out       : g2.motors.get_steering(),
+        desired_lat_accel  : g2.attitude_control.get_desired_lat_accel(),
+        lat_accel          : lat_accel,
+        desired_turn_rate  : degrees(g2.attitude_control.get_desired_turn_rate()),
+        turn_rate          : degrees(ahrs.get_yaw_rate_earth())
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -347,7 +357,7 @@ const LogStructure Rover::log_structure[] = {
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
       "ARM", "QBH", "TimeUS,ArmState,ArmChecks", "s--", "F--" },
     { LOG_STEERING_MSG, sizeof(log_Steering),
-      "STER", "Qff",   "TimeUS,Demanded,Achieved", "so?", "F0?" },
+      "STER", "Qhfffff",   "TimeUS,SteerIn,SteerOut,DesLatAcc,LatAcc,DesTurnRate,TurnRate", "s--ookk", "F--0000" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
     { LOG_ERROR_MSG, sizeof(log_Error),
