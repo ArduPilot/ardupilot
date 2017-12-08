@@ -127,6 +127,9 @@ private:
     /// check_fence_polygon - true if polygon fence has been newly breached
     bool check_fence_polygon();
 
+    /// check_fence_circle - true if circle fence has been newly breached
+    bool check_fence_circle();
+
     /// record_breach - update breach bitmask, time and count
     void record_breach(uint8_t fence_type);
 

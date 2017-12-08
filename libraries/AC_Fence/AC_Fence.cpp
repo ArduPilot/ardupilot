@@ -192,6 +192,43 @@ bool AC_Fence::check_fence_polygon()
     return false;
 }
 
+bool AC_Fence::check_fence_circle()
+{
+    if (!(_enabled_fences & AC_FENCE_TYPE_CIRCLE)) {
+        // not enabled; no breach
+        return false;
+    }
+
+    // check if we are outside the fence
+    if (_home_distance >= _circle_radius) {
+
+        // record distance outside the fence
+        _circle_breach_distance = _home_distance - _circle_radius;
+
+        // check for a new breach or a breach of the backup fence
+        if (!(_breached_fences & AC_FENCE_TYPE_CIRCLE) ||
+            (!is_zero(_circle_radius_backup) && _home_distance >= _circle_radius_backup)) {
+            // new breach
+            // create a backup fence 20m further out
+            record_breach(AC_FENCE_TYPE_CIRCLE);
+            _circle_radius_backup = _home_distance + AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE;
+            return true;
+        }
+        return false;
+    }
+
+    // not currently breached
+
+    // clear circle breach if present
+    if (_breached_fences & AC_FENCE_TYPE_CIRCLE) {
+        clear_breach(AC_FENCE_TYPE_CIRCLE);
+        _circle_radius_backup = 0.0f;
+        _circle_breach_distance = 0.0f;
+    }
+
+    return false;
+}
+
 
 /// check_fence - returns the fence type that has been breached (if any)
 ///     curr_alt is the altitude above home in meters
@@ -245,32 +282,8 @@ uint8_t AC_Fence::check_fence(float curr_alt)
     }
 
     // circle fence check
-    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE) != 0 ) {
-
-        // check if we are outside the fence
-        if (_home_distance >= _circle_radius) {
-
-            // record distance outside the fence
-            _circle_breach_distance = _home_distance - _circle_radius;
-
-            // check for a new breach or a breach of the backup fence
-            if ((_breached_fences & AC_FENCE_TYPE_CIRCLE) == 0 || (!is_zero(_circle_radius_backup) && _home_distance >= _circle_radius_backup)) {
-
-                // record that we have breached the circular distance limit
-                record_breach(AC_FENCE_TYPE_CIRCLE);
-                ret |= AC_FENCE_TYPE_CIRCLE;
-
-                // create a backup fence 20m further out
-                _circle_radius_backup = _home_distance + AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE;
-            }
-        }else{
-            // clear circle breach if present
-            if ((_breached_fences & AC_FENCE_TYPE_CIRCLE) != 0) {
-                clear_breach(AC_FENCE_TYPE_CIRCLE);
-                _circle_radius_backup = 0.0f;
-                _circle_breach_distance = 0.0f;
-            }
-        }
+    if (check_fence_circle()) {
+        ret |= AC_FENCE_TYPE_CIRCLE;
     }
 
     // polygon fence check
