@@ -426,7 +426,7 @@ private:
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence fence = AC_Fence::create(ahrs, inertial_nav);
+    AC_Fence fence = AC_Fence::create(ahrs);
 #endif
 
 #if AVOIDANCE_ENABLED == ENABLED
