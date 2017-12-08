@@ -124,6 +124,9 @@ public:
 private:
     AC_Fence(const AP_AHRS_NavEKF &ahrs);
 
+    /// check_fence_polygon - true if polygon fence has been newly breached
+    bool check_fence_polygon();
+
     /// record_breach - update breach bitmask, time and count
     void record_breach(uint8_t fence_type);
 

@@ -145,6 +145,54 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     return true;
 }
 
+// check_fence_polygon - returns true if the polygon fence is freshly breached
+bool AC_Fence::check_fence_polygon()
+{
+    if (!(_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
+        // not enabled; no breach
+        return false;
+    }
+
+    // check consistency of number of points
+    if (_boundary_num_points != _total) {
+        // we have no idea where the fence is.  Can't breach it?!
+        _boundary_loaded = false;
+        load_polygon_from_eeprom();
+        return false;
+    }
+    if (!_boundary_valid) {
+        // fence isn't valid - can't breach it?!
+        return false;
+    }
+
+    // check if vehicle is outside the polygon fence
+    Vector2f position;
+    if (!_ahrs.get_relative_position_NE_origin(position)) {
+        // we have no idea where we are; can't breach the fence
+        return false;
+    }
+
+    position = position * 100.0f;  // m to cm
+    if (_poly_loader.boundary_breached(position, _boundary_num_points, _boundary, true)) {
+        // check if this is a new breach
+        if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
+            // not a new breach
+            return false;
+        }
+        // record that we have breached the polygon
+        record_breach(AC_FENCE_TYPE_POLYGON);
+        return true;
+    }
+
+    // inside boundary; clear breach if present
+    if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
+        clear_breach(AC_FENCE_TYPE_POLYGON);
+    }
+
+    return false;
+}
+
+
 /// check_fence - returns the fence type that has been breached (if any)
 ///     curr_alt is the altitude above home in meters
 uint8_t AC_Fence::check_fence(float curr_alt)
@@ -226,34 +274,8 @@ uint8_t AC_Fence::check_fence(float curr_alt)
     }
 
     // polygon fence check
-    if ((_enabled_fences & AC_FENCE_TYPE_POLYGON) != 0 ) {
-        // check consistency of number of points
-        if (_boundary_num_points != _total) {
-            _boundary_loaded = false;
-        }
-        // load fence if necessary
-        if (!_boundary_loaded) {
-            load_polygon_from_eeprom();
-        } else if (_boundary_valid) {
-            // check if vehicle is outside the polygon fence
-            Vector2f position;
-            if (_ahrs.get_relative_position_NE_origin(position)) {  // don't check polyfence in case of bad position
-                position = position * 100.0f;  // m to cm
-                if (_poly_loader.boundary_breached(position, _boundary_num_points, _boundary, true)) {
-                    // check if this is a new breach
-                    if ((_breached_fences & AC_FENCE_TYPE_POLYGON) == 0) {
-                        // record that we have breached the polygon
-                        record_breach(AC_FENCE_TYPE_POLYGON);
-                        ret |= AC_FENCE_TYPE_POLYGON;
-                    }
-                } else {
-                    // clear breach if present
-                    if ((_breached_fences & AC_FENCE_TYPE_POLYGON) != 0) {
-                        clear_breach(AC_FENCE_TYPE_POLYGON);
-                    }
-                }
-            }
-        }
+    if (check_fence_polygon()) {
+        ret |= AC_FENCE_TYPE_POLYGON;
     }
 
     // return any new breaches that have occurred
