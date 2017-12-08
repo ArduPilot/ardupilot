@@ -145,6 +145,48 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     return true;
 }
 
+bool AC_Fence::check_fence_alt_max(const float curr_alt)
+{
+    // altitude fence check
+    if (!(_enabled_fences & AC_FENCE_TYPE_ALT_MAX)) {
+        // not enabled; no breach
+        return false;
+    }
+
+    // check if we are over the altitude fence
+    if( curr_alt >= _alt_max ) {
+
+        // record distance above breach
+        _alt_max_breach_distance = curr_alt - _alt_max;
+
+        // check for a new breach or a breach of the backup fence
+        if (!(_breached_fences & AC_FENCE_TYPE_ALT_MAX) ||
+            (!is_zero(_alt_max_backup) && curr_alt >= _alt_max_backup)) {
+
+            // new breach
+            record_breach(AC_FENCE_TYPE_ALT_MAX);
+
+            // create a backup fence 20m higher up
+            _alt_max_backup = curr_alt + AC_FENCE_ALT_MAX_BACKUP_DISTANCE;
+            // new breach:
+            return true;
+        }
+        // old breach:
+        return false;
+    }
+
+    // not breached
+
+    // clear alt breach if present
+    if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
+        clear_breach(AC_FENCE_TYPE_ALT_MAX);
+        _alt_max_backup = 0.0f;
+        _alt_max_breach_distance = 0.0f;
+    }
+
+    return false;
+}
+
 // check_fence_polygon - returns true if the polygon fence is freshly breached
 bool AC_Fence::check_fence_polygon()
 {
@@ -252,33 +294,9 @@ uint8_t AC_Fence::check_fence(float curr_alt)
         }
     }
 
-    // altitude fence check
-    if ((_enabled_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
-
-        // check if we are over the altitude fence
-        if( curr_alt >= _alt_max ) {
-
-            // record distance above breach
-            _alt_max_breach_distance = curr_alt - _alt_max;
-
-            // check for a new breach or a breach of the backup fence
-            if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) == 0 || (!is_zero(_alt_max_backup) && curr_alt >= _alt_max_backup)) {
-
-                // record that we have breached the upper limit
-                record_breach(AC_FENCE_TYPE_ALT_MAX);
-                ret |= AC_FENCE_TYPE_ALT_MAX;
-
-                // create a backup fence 20m higher up
-                _alt_max_backup = curr_alt + AC_FENCE_ALT_MAX_BACKUP_DISTANCE;
-            }
-        }else{
-            // clear alt breach if present
-            if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
-                clear_breach(AC_FENCE_TYPE_ALT_MAX);
-                _alt_max_backup = 0.0f;
-                _alt_max_breach_distance = 0.0f;
-            }
-        }
+    // maximum altitude fence check
+    if (check_fence_alt_max(curr_alt)) {
+        ret |= AC_FENCE_TYPE_ALT_MAX;
     }
 
     // circle fence check
