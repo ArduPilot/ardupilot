@@ -269,9 +269,7 @@ void Rover::update_logging1(void)
 void Rover::update_logging2(void)
 {
     if (should_log(MASK_LOG_STEERING)) {
-        if (!control_mode->manual_steering()) {
-            Log_Write_Steering();
-        }
+        Log_Write_Steering();
     }
 
     if (should_log(MASK_LOG_RC)) {
