@@ -480,6 +480,57 @@ def fly_fence_test(mavproxy, mav, timeout=180):
     return False
 
 
+# fly_alt_fence_test - fly up until you hit the fence
+def fly_alt_max_fence_test(mavproxy, mav, timeout=180):
+    """Hold loiter position."""
+    mavproxy.send('switch 5\n')  # loiter mode
+    wait_mode(mav, 'LOITER')
+
+    # enable fence, disable avoidance
+    set_parameter(mavproxy, 'FENCE_ENABLE', 1)
+    set_parameter(mavproxy, 'AVOID_ENABLE', 0)
+    set_parameter(mavproxy, 'FENCE_TYPE', 1)
+
+    if not change_alt(mavproxy, mav, 10):
+        failed_test_msg = "change_alt climb failed"
+        progress(failed_test_msg)
+        return False
+
+    # first east
+    progress("turn east")
+    set_rc(mavproxy, mav, 4, 1580)
+    if not wait_heading(mav, 160):
+        return False
+    set_rc(mavproxy, mav, 4, 1500)
+
+    # fly forward (east) at least 20m
+    set_rc(mavproxy, mav, 2, 1100)
+    if not wait_distance(mav, 20):
+        return False
+
+    # stop flying forward and start flying up:
+    set_rc(mavproxy, mav, 2, 1500)
+    set_rc(mavproxy, mav, 3, 1800)
+
+    # wait for fence to trigger
+    wait_mode(mav, 'RTL')
+
+    progress("Waiting for disarm")
+    mav.motors_disarmed_wait()
+
+    set_rc(mavproxy, mav, 3, 1000)
+
+    mavproxy.send('switch 6\n')  # stabilize mode
+    wait_mode(mav, 'STABILIZE')
+    mavproxy.send('arm uncheck all\n')  # remove if we ever clear battery failsafe flag on disarm
+    if not arm_vehicle(mavproxy, mav):
+        progress("Failed to re-arm")
+        mavproxy.send('arm check all\n')  # remove if we ever clear battery failsafe flag on disarm
+        return False
+    mavproxy.send('arm check all\n')  # remove if we ever clear battery failsafe flag on disarm
+
+    return True
+
 def fly_gps_glitch_loiter_test(mavproxy, mav, use_map=False, timeout=30, max_distance=20):
     """fly_gps_glitch_loiter_test.
 
@@ -1103,6 +1154,15 @@ def fly_ArduCopter(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fal
         progress("#")
         if not fly_fence_test(mavproxy, mav, 180):
             failed_test_msg = "fly_fence_test failed"
+            progress(failed_test_msg)
+            failed = True
+
+        # Fence test
+        progress("#")
+        progress("########## Test Max Alt Fence ##########")
+        progress("#")
+        if not fly_alt_max_fence_test(mavproxy, mav, 180):
+            failed_test_msg = "fly_alt_max_fence_test failed"
             progress(failed_test_msg)
             failed = True
 
