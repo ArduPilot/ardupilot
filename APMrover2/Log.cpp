@@ -180,7 +180,7 @@ void Rover::Log_Write_Rangefinder()
     struct log_Rangefinder pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RANGEFINDER_MSG),
         time_us               : AP_HAL::micros64(),
-        lateral_accel         : control_mode->lateral_acceleration,
+        lateral_accel         : g2.attitude_control.get_desired_lat_accel(),
         rangefinder1_distance : s0 ? s0->distance_cm() : (uint16_t)0,
         rangefinder2_distance : s1 ? s1->distance_cm() : (uint16_t)0,
         detected_count        : obstacle.detected_count,
