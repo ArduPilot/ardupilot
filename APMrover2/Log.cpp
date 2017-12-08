@@ -129,7 +129,6 @@ struct PACKED log_Nav_Tuning {
     float    wp_distance;
     uint16_t target_bearing_cd;
     uint16_t nav_bearing_cd;
-    int8_t   throttle;
     float xtrack_error;
 };
 
@@ -143,7 +142,6 @@ void Rover::Log_Write_Nav_Tuning()
         wp_distance         : control_mode->get_distance_to_destination(),
         target_bearing_cd   : static_cast<uint16_t>(abs(nav_controller->target_bearing_cd())),
         nav_bearing_cd      : static_cast<uint16_t>(abs(nav_controller->nav_bearing_cd())),
-        throttle            : int8_t(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)),
         xtrack_error        : nav_controller->crosstrack_error()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -353,7 +351,7 @@ const LogStructure Rover::log_structure[] = {
     { LOG_THR_MSG, sizeof(log_Throttle),
       "THR", "Qhffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccY", "s--nno", "F--000" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
-      "NTUN", "QHfHHbf",    "TimeUS,Yaw,WpDist,TargBrg,NavBrg,Thr,XT", "sdmdd-m", "FB0BB-0" },
+      "NTUN", "QHfHHf", "TimeUS,Yaw,WpDist,TargBrg,NavBrg,XT", "sdmddm", "FB0BB0" },
     { LOG_RANGEFINDER_MSG, sizeof(log_Rangefinder),
       "RGFD", "QfHHHbHCb",  "TimeUS,LatAcc,R1Dist,R2Dist,DCnt,TAng,TTim,Spd,Thr", "somm-hsm-", "F0BB-0CB-" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
