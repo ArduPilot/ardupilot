@@ -23,6 +23,7 @@ import ardusub
 from pysim import util
 from pymavlink import mavutil
 from pymavlink.generator import mavtemplate
+from apmrover2 import drive_apmrover2
 
 def buildlogs_dirpath():
     return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
@@ -271,7 +272,8 @@ def run_step(step):
         return quadplane.fly_QuadPlane(binary, **fly_opts)
 
     if step == 'drive.APMrover2':
-        return apmrover2.drive_APMrover2(binary, frame=opts.frame, **fly_opts)
+        rovertest = drive_apmrover2(binary, frame=opts.frame, **fly_opts)
+        return rovertest.run()
 
     if step == 'dive.ArduSub':
         return ardusub.dive_ArduSub(binary, **fly_opts)
