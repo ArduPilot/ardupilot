@@ -95,10 +95,6 @@ public:
     // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
     void set_desired_speed_to_default(bool rtl = false);
 
-    // Navigation control variables
-    // The instantaneous desired lateral acceleration in m/s/s
-    float lateral_acceleration;
-
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -153,6 +149,7 @@ protected:
     Location _destination;      // destination Location when in Guided_WP
     float _distance_to_destination; // distance from vehicle to final destination in meters
     bool _reached_destination;  // true once the vehicle has reached the destination
+    float _desired_lat_accel;   // desired lateral acceleration in m/s/s
     float _desired_yaw_cd;      // desired yaw in centi-degrees
     float _yaw_error_cd;        // error between desired yaw and actual yaw in centi-degrees
     float _desired_speed;       // desired speed in m/s
