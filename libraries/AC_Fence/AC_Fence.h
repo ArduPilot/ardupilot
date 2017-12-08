@@ -124,6 +124,9 @@ public:
 private:
     AC_Fence(const AP_AHRS_NavEKF &ahrs);
 
+    /// check_fence_alt_max - true if alt fence has been newly breached
+    bool check_fence_alt_max(float curr_alt);
+
     /// check_fence_polygon - true if polygon fence has been newly breached
     bool check_fence_polygon();
 
