@@ -69,3 +69,8 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
     // call parent gps checks
     return AP_Arming::gps_checks(display_failure);
 }
+
+bool AP_Arming_Rover::pre_arm_checks(bool report)
+{
+    return rover.g2.motors.pre_arm_check(report) & AP_Arming::pre_arm_checks(report);
+}

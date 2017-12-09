@@ -18,6 +18,7 @@ public:
     AP_Arming_Rover(const AP_Arming_Rover &other) = delete;
     AP_Arming_Rover &operator=(const AP_Baro&) = delete;
 
+    bool pre_arm_checks(bool report) override;
     bool pre_arm_rc_checks(const bool display_failure);
     bool gps_checks(bool display_failure) override;
 
