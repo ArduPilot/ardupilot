@@ -26,10 +26,10 @@ PX4UARTDriver::PX4UARTDriver(const char *devpath, const char *perf_name) :
     _baudrate(57600),
     _initialised(false),
     _in_timer(false),
+    _unbuffered_writes(false),
     _perf_uart(perf_alloc(PC_ELAPSED, perf_name)),
     _os_start_auto_space(-1),
-    _flow_control(FLOW_CONTROL_DISABLE),
-    _unbuffered_writes(false)
+    _flow_control(FLOW_CONTROL_DISABLE)
 {
 }
 
