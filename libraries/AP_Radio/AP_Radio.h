@@ -70,6 +70,7 @@ public:
     enum ap_radio_type {
         RADIO_TYPE_NONE=0,
         RADIO_TYPE_CYRF6936=1,
+        RADIO_TYPE_CC2500=2,
     };
     
     enum ap_radio_protocol {
