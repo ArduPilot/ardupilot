@@ -183,7 +183,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     // calculate dt
     const uint32_t now = AP_HAL::millis();
     float dt = (now - _steer_turn_last_ms) / 1000.0f;
-    if (_steer_turn_last_ms == 0 || dt > AR_ATTCONTROL_TIMEOUT) {
+    if ((_steer_turn_last_ms == 0) || (dt > AR_ATTCONTROL_TIMEOUT_MS)) {
         dt = 0.0f;
         _steer_rate_pid.reset_filter();
     } else {
@@ -250,7 +250,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
 float AR_AttitudeControl::get_desired_turn_rate() const
 {
     // return zero if no recent calls to turn rate controller
-    if ((_steer_turn_last_ms == 0) || ((AP_HAL::millis() - _steer_turn_last_ms) > AR_ATTCONTROL_TIMEOUT)) {
+    if ((_steer_turn_last_ms == 0) || ((AP_HAL::millis() - _steer_turn_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
         return 0.0f;
     }
     return _desired_turn_rate;
@@ -260,7 +260,7 @@ float AR_AttitudeControl::get_desired_turn_rate() const
 float AR_AttitudeControl::get_desired_lat_accel() const
 {
     // return zero if no recent calls to lateral acceleration controller
-    if ((_steer_lat_accel_last_ms == 0) || ((AP_HAL::millis() - _steer_lat_accel_last_ms) > AR_ATTCONTROL_TIMEOUT)) {
+    if ((_steer_lat_accel_last_ms == 0) || ((AP_HAL::millis() - _steer_lat_accel_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
         return 0.0f;
     }
     return _desired_lat_accel;
@@ -424,7 +424,7 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
 float AR_AttitudeControl::get_desired_speed() const
 {
     // return zero if no recent calls to speed controller
-    if ((_speed_last_ms == 0) || ((AP_HAL::millis() - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT)) {
+    if ((_speed_last_ms == 0) || ((AP_HAL::millis() - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
         return 0.0f;
     }
     return _desired_speed;
