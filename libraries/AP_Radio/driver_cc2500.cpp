@@ -21,11 +21,9 @@ void Radio_CC2500::ReadFifo(uint8_t *dpbuffer, uint8_t len)
     (void)dev->read_registers(CC2500_3F_RXFIFO | CC2500_READ_BURST, dpbuffer, len);
 }
 
-void Radio_CC2500::WriteFifo(uint8_t *dpbuffer, uint8_t len)
+void Radio_CC2500::WriteFifo(const uint8_t *dpbuffer, uint8_t len)
 {
-    Strobe(CC2500_SFTX); // 0x3B SFTX
     WriteRegisterMulti(CC2500_3F_TXFIFO | CC2500_WRITE_BURST, dpbuffer, len);
-    Strobe(CC2500_STX); // 0x35
 }
 
 void Radio_CC2500::ReadRegisterMulti(uint8_t address, uint8_t *data, uint8_t length)
@@ -33,7 +31,7 @@ void Radio_CC2500::ReadRegisterMulti(uint8_t address, uint8_t *data, uint8_t len
     (void)dev->read_registers(address, data, length);
 }
 
-void Radio_CC2500::WriteRegisterMulti(uint8_t address, uint8_t *data, uint8_t length)
+void Radio_CC2500::WriteRegisterMulti(uint8_t address, const uint8_t *data, uint8_t length)
 {
     uint8_t buf[length+1];
     buf[0] = address;
@@ -44,13 +42,15 @@ void Radio_CC2500::WriteRegisterMulti(uint8_t address, uint8_t *data, uint8_t le
 uint8_t Radio_CC2500::ReadReg(uint8_t reg)
 {
     uint8_t ret = 0;
-    (void)dev->read_registers(reg | 0x80, &ret, 1);
+    (void)dev->read_registers(reg | CC2500_READ_SINGLE, &ret, 1);
     return ret;
 }
 
-void Radio_CC2500::Strobe(uint8_t address)
+uint8_t Radio_CC2500::Strobe(uint8_t address)
 {
-    (void)dev->transfer(&address, 1, nullptr, 0);
+    uint8_t status=0;
+    (void)dev->transfer(&address, 1, &status, 1);
+    return status;
 }
 
 void Radio_CC2500::WriteReg(uint8_t address, uint8_t data)
@@ -84,4 +84,17 @@ bool Radio_CC2500::Reset(void)
     // RX_EN_off;//off tx
     // TX_EN_off;//off rx
     return ReadReg(CC2500_0E_FREQ1) == 0xC4; // check if reset
+}
+
+/*
+  write register with up to 5 retries
+ */
+void Radio_CC2500::WriteRegCheck(uint8_t address, uint8_t data)
+{
+    uint8_t tries=5;
+    while (--tries) {
+        dev->write_register(address, data);
+        uint8_t v = ReadReg(address);
+        if (v == data) break;
+    }
 }
