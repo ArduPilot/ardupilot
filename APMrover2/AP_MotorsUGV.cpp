@@ -299,6 +299,36 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
     return true;
 }
 
+//  returns true if checks pass, false if they fail.  report should be true to send text messages to GCS
+bool AP_MotorsUGV::pre_arm_check(bool report) const
+{
+    // check if both regular and skid steering functions have been defined
+    if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_throttleRight) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_throttle) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: regular AND skid steering configured");
+        }
+        return false;
+    }
+    // check if only one of skid-steering output has been configured
+    if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) != SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check skid steering config");
+        }
+        return false;
+    }
+    // check if only one of throttle or steering outputs has been configured
+    if (SRV_Channels::function_assigned(SRV_Channel::k_throttle) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
+        }
+        return false;
+    }
+    return true;
+}
+
 // setup pwm output type
 void AP_MotorsUGV::setup_pwm_type()
 {
