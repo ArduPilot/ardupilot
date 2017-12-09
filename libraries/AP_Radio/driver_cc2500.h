@@ -142,19 +142,20 @@ public:
     Radio_CC2500(AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev);
 
     void ReadFifo(uint8_t *dpbuffer, uint8_t len);
-    void WriteFifo(uint8_t *dpbuffer, uint8_t len);
+    void WriteFifo(const uint8_t *dpbuffer, uint8_t len);
 
     void ReadRegisterMulti(uint8_t address, uint8_t *data, uint8_t length);
-    void WriteRegisterMulti(uint8_t address, uint8_t *data, uint8_t length);
+    void WriteRegisterMulti(uint8_t address, const uint8_t *data, uint8_t length);
 
     uint8_t ReadReg(uint8_t reg);
-    void Strobe(uint8_t address);
+    uint8_t Strobe(uint8_t address);
     void WriteReg(uint8_t address, uint8_t data);
+    void WriteRegCheck(uint8_t address, uint8_t data);
     void SetPower(uint8_t power);
     bool Reset(void);
 
     bool lock_bus(void) {
-        return dev->get_semaphore()->take(0);
+        return dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER);
     }
     void unlock_bus(void) {
         dev->get_semaphore()->give();
