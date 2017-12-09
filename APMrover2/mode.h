@@ -194,7 +194,7 @@ public:
     bool is_autopilot_mode() const override { return true; }
 
     // return distance (in meters) to destination
-    float get_distance_to_destination() const override { return _distance_to_destination; }
+    float get_distance_to_destination() const override;
 
     // set desired location, heading and speed
     void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN);
