@@ -31,7 +31,7 @@ static THD_WORKING_AREA(_irq_handler_wa, 512);
 #endif
 
 #ifndef CYRF_SPI_DEVICE
-# define CYRF_SPI_DEVICE "cypress"
+# define CYRF_SPI_DEVICE "radio"
 #endif
 
 #ifndef CYRF_IRQ_INPUT
