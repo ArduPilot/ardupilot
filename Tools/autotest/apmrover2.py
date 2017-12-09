@@ -165,6 +165,44 @@ def drive_brake(mavproxy, mav):
 vinfo = vehicleinfo.VehicleInfo()
 
 
+def drive_rtl_mission(mavproxy, mav):
+    mission_filepath = os.path.join(testdir, "ArduRover-Missions", "rtl.txt")
+    mavproxy.send('wp load %s\n' % mission_filepath)
+    mavproxy.expect('Flight plan received')
+    mavproxy.send('switch 4\n')  # auto mode
+    set_rc(mavproxy, mav, 3, 1500)
+    wait_mode(mav, 'AUTO')
+    mavproxy.expect('Executing RTL')
+
+    m = mav.recv_match(type='NAV_CONTROLLER_OUTPUT',
+                       blocking=True,
+                       timeout=0.1)
+    if m is None:
+        progress("Did not receive NAV_CONTROLLER_OUTPUT message")
+        return False
+
+    wp_dist_min = 5
+    if m.wp_dist < wp_dist_min:
+        progress("Did not start at least 5 metres from destination")
+        return False
+
+    progress("NAV_CONTROLLER_OUTPUT.wp_dist looks good (%u >= %u)" %
+             (m.wp_dist, wp_dist_min,))
+
+    wait_mode(mav, 'HOLD')
+
+    pos = mav.location()
+    home_distance = get_distance(HOME, pos)
+    home_distance_max = 5
+    if home_distance > home_distance_max:
+        progress("Did not get home (%u metres distant > %u)" %
+              (home_distance,home_distance_max))
+        return False
+    mavproxy.send('switch 6\n')
+    wait_mode(mav, 'MANUAL')
+    progress("RTL Mission OK")
+    return True
+
 def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, frame=None, params=None, gdbserver=False, speedup=10):
     """Drive APMrover2 in SITL.
 
@@ -256,6 +294,15 @@ def drive_APMrover2(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fa
         if not arm_vehicle(mavproxy, mav):
             progress("Failed to ARM")
             failed = True
+
+        progress("#")
+        progress("########## Drive an RTL mission  ##########")
+        progress("#")
+        # Drive a square in learning mode
+        if not drive_rtl_mission(mavproxy, mav):
+            progress("Failed RTL mission")
+            failed = True
+
         progress("#")
         progress("########## Drive a square and save WPs with CH7 switch  ##########")
         progress("#")
