@@ -5,6 +5,7 @@
 #include "AP_Radio.h"
 #include "AP_Radio_backend.h"
 #include "AP_Radio_cypress.h"
+#include "AP_Radio_cc2500.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -150,6 +151,9 @@ bool AP_Radio::init(void)
     switch (radio_type) {
     case RADIO_TYPE_CYRF6936:
         driver = new AP_Radio_cypress(*this);
+        break;
+    case RADIO_TYPE_CC2500:
+        driver = new AP_Radio_cc2500(*this);
         break;
     default:
         break;
