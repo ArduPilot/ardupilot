@@ -87,6 +87,15 @@ void ModeAuto::update()
     }
 }
 
+// return distance (in meters) to destination
+float ModeAuto::get_distance_to_destination() const
+{
+    if (_submode == Auto_RTL) {
+        return _mode_rtl.get_distance_to_destination();
+    }
+    return _distance_to_destination;
+}
+
 // set desired location to drive to
 void ModeAuto::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
