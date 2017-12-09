@@ -21,21 +21,21 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
-    // @Param: _STR_RATE_P
+    // @Param: _STR_RAT_P
     // @DisplayName: Steering control rate P gain
     // @Description: Steering control rate P gain.  Converts the turn rate error (in radians/sec) to a steering control output (in the range -1 to +1)
     // @Range: 0.100 2.000
     // @Increment: 0.01
     // @User: Standard
 
-    // @Param: _STR_RATE_I
+    // @Param: _STR_RAT_I
     // @DisplayName: Steering control I gain
     // @Description: Steering control I gain.  Corrects long term error between the desired turn rate (in rad/s) and actual
     // @Range: 0.000 2.000
     // @Increment: 0.01
     // @User: Standard
 
-    // @Param: _STR_RATE_IMAX
+    // @Param: _STR_RAT_IMAX
     // @DisplayName: Steering control I gain maximum
     // @Description: Steering control I gain maximum.  Constraings the steering output (range -1 to +1) that the I term will generate
     // @Range: 0.000 1.000
@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: _STR_RATE_FILT
+    // @Param: _STR_RAT_FILT
     // @DisplayName: Steering control filter frequency
     // @Description: Steering control input filter.  Lower values reduce noise but add delay.
     // @Range: 1.000 100.000
