@@ -807,7 +807,7 @@ void Copter::ModeAuto::payload_place_start()
 void Copter::ModeAuto::payload_place_start(const Vector3f& destination)
 {
     _mode = Auto_NavPayloadPlace;
-    _copter.nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
+    nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
 
     // initialise loiter target destination
     wp_nav->init_loiter_target(destination);
@@ -866,7 +866,7 @@ void Copter::ModeAuto::payload_place_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    switch (_copter.nav_payload_place.state) {
+    switch (nav_payload_place.state) {
     case PayloadPlaceStateType_FlyToLocation:
     case PayloadPlaceStateType_Calibrating_Hover_Start:
     case PayloadPlaceStateType_Calibrating_Hover:
