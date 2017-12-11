@@ -425,16 +425,12 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   0),
 
-    // @Param: NOTCH_
-    // @DisplayName: Notch filter
-    // @Description: Gyro notch filter
-    // @User: Advanced
+    // @Group: NOTCH_
+    // @Path: ../Filter/NotchFilter.cpp
     AP_SUBGROUPINFO(_notch_filter, "NOTCH_",  37, AP_InertialSensor, NotchFilterVector3fParam),
 
-    // @Param: LOG_
-    // @DisplayName: Log Settings
-    // @Description: Log Settings
-    // @User: Advanced
+    // @Group: LOG_
+    // @Path: ../AP_InertialSensor/BatchSampler.cpp
     AP_SUBGROUPINFO(batchsampler, "LOG_",  39, AP_InertialSensor, AP_InertialSensor::BatchSampler),
 
     /*
