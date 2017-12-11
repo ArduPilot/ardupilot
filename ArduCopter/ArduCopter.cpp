@@ -537,7 +537,7 @@ void Copter::update_GPS(void)
 
 void Copter::smart_rtl_save_position()
 {
-    flightmode_smartrtl.save_position();
+    mode_smartrtl.save_position();
 }
 
 void Copter::init_simple_bearing()

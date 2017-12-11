@@ -24,7 +24,7 @@ void Copter::heli_init()
 void Copter::check_dynamic_flight(void)
 {
     if (!motors->armed() || !motors->rotor_runup_complete() ||
-        control_mode == LAND || (control_mode==RTL && flightmode_rtl.state() == RTL_Land) || (control_mode == AUTO && flightmode_auto.mode() == Auto_Land)) {
+        control_mode == LAND || (control_mode==RTL && mode_rtl.state() == RTL_Land) || (control_mode == AUTO && mode_auto.mode() == Auto_Land)) {
         heli_dynamic_flight_counter = 0;
         heli_flags.dynamic_flight = false;
         return;
@@ -109,7 +109,7 @@ void Copter::heli_update_landing_swash()
 
         case RTL:
         case SMART_RTL:
-            if (flightmode_rtl.state() == RTL_Land) {
+            if (mode_rtl.state() == RTL_Land) {
                 motors->set_collective_for_landing(true);
             }else{
                 motors->set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
@@ -117,7 +117,7 @@ void Copter::heli_update_landing_swash()
             break;
 
         case AUTO:
-            if (flightmode_auto.mode() == Auto_Land) {
+            if (mode_auto.mode() == Auto_Land) {
                 motors->set_collective_for_landing(true);
             }else{
                 motors->set_collective_for_landing(!heli_flags.dynamic_flight || ap.land_complete || !ap.auto_armed);
