@@ -57,7 +57,7 @@ Copter::Copter(void)
     auto_trim_counter(0),
     in_mavlink_delay(false),
     param_loader(var_info),
-    flightmode(&flightmode_stabilize)
+    flightmode(&mode_stabilize)
 {
     memset(&current_loc, 0, sizeof(current_loc));
 

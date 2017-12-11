@@ -246,7 +246,7 @@ void Copter::init_disarm_motors()
 
 #if AUTOTUNE_ENABLED == ENABLED
     // save auto tuned parameters
-    flightmode_autotune.save_tuning_gains();
+    mode_autotune.save_tuning_gains();
 #endif
 
     // we are not in the air

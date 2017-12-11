@@ -177,7 +177,7 @@ void Copter::land_run_vertical_control(bool pause_descent)
     // compute desired velocity
     const float precland_acceptable_error = 15.0f;
     const float precland_min_descent_speed = 10.0f;
-    int32_t alt_above_ground = flightmode_land.get_alt_above_ground();
+    int32_t alt_above_ground = mode_land.get_alt_above_ground();
 
     float cmb_rate = 0;
     if (!pause_descent) {
@@ -281,7 +281,7 @@ void Copter::land_run_horizontal_control()
         // there is any position estimate drift after touchdown. We
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
-        int alt_above_ground = flightmode_land.get_alt_above_ground();
+        int alt_above_ground = mode_land.get_alt_above_ground();
         float attitude_limit_cd = linear_interpolate(700, aparm.angle_max, alt_above_ground,
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
         float total_angle_cd = norm(nav_roll, nav_pitch);
