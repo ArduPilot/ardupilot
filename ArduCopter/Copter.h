@@ -221,6 +221,16 @@ private:
             FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)};
 
+    bool start_command(const AP_Mission::Mission_Command& cmd) {
+        return mode_auto.start_command(cmd);
+    }
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd) {
+        return mode_auto.verify_command_callback(cmd);
+    }
+    void exit_mission() {
+        mode_auto.exit_mission();
+    }
+
     // Arming/Disarming mangement class
     AP_Arming_Copter arming{ahrs, barometer, compass, battery, inertial_nav, ins};
 
@@ -369,20 +379,6 @@ private:
     int32_t _home_bearing;
     uint32_t _home_distance;
 
-    LandStateType land_state = LandStateType_FlyToLocation; // records state of land (flying to location, descending)
-
-
-    struct {
-        PayloadPlaceStateType state = PayloadPlaceStateType_Calibrating_Hover_Start; // records state of place (descending, releasing, released, ...)
-        uint32_t hover_start_timestamp; // milliseconds
-        float hover_throttle_level;
-        uint32_t descend_start_timestamp; // milliseconds
-        uint32_t place_start_timestamp; // milliseconds
-        float descend_throttle_level;
-        float descend_start_altitude;
-        float descend_max; // centimetres
-    } nav_payload_place;
-
     // SIMPLE Mode
     // Used to track the orientation of the vehicle for Simple mode. This value is reset at each arming
     // or in SuperSimple mode when the vehicle leaves a 20m radius from home.
@@ -394,14 +390,6 @@ private:
 
     // Stores initial bearing when armed - initial simple bearing is modified in super simple mode so not suitable
     int32_t initial_armed_bearing;
-
-    // Loiter control
-    uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
-    uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
-
-    // Delay the next navigation command
-    int32_t nav_delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
-    uint32_t nav_delay_time_start;
 
     // Battery Sensors
     AP_BattMonitor battery;
@@ -455,10 +443,6 @@ private:
 
     // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
     float auto_yaw_rate_cds;
-
-    // Delay Mission Scripting Command
-    int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
-    uint32_t condition_start;
 
     // IMU variables
     // Integration time (in seconds) for the gyros (DCM algorithm)
@@ -727,21 +711,9 @@ private:
     void set_ekf_origin(const Location& loc);
     bool far_from_EKF_origin(const Location& loc);
     void set_system_time_from_GPS();
-    void exit_mission();
-    void do_RTL(void);
-    bool verify_takeoff();
-    bool verify_land();
-    bool verify_payload_place();
-    bool verify_loiter_unlimited();
-    bool verify_loiter_time();
-    bool verify_RTL();
-    bool verify_wait_delay();
-    bool verify_within_distance();
-    bool verify_yaw();
     MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
     void delay(uint32_t ms);
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
-    void do_payload_place(const AP_Mission::Mission_Command& cmd);
     uint8_t get_default_auto_yaw_mode(bool rtl);
     void set_auto_yaw_mode(uint8_t yaw_mode);
     void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle);
@@ -887,52 +859,6 @@ private:
     void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     void print_hit_enter();
     void tuning();
-    bool start_command(const AP_Mission::Mission_Command& cmd);
-    bool verify_command(const AP_Mission::Mission_Command& cmd);
-    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-
-    Location_Class terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
-
-    bool do_guided(const AP_Mission::Mission_Command& cmd);
-    void do_takeoff(const AP_Mission::Mission_Command& cmd);
-    void do_nav_wp(const AP_Mission::Mission_Command& cmd);
-    void do_land(const AP_Mission::Mission_Command& cmd);
-    void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
-    void do_circle(const AP_Mission::Mission_Command& cmd);
-    void do_loiter_time(const AP_Mission::Mission_Command& cmd);
-    void do_spline_wp(const AP_Mission::Mission_Command& cmd);
-#if NAV_GUIDED == ENABLED
-    void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
-    void do_guided_limits(const AP_Mission::Mission_Command& cmd);
-#endif
-    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
-    void do_wait_delay(const AP_Mission::Mission_Command& cmd);
-    void do_within_distance(const AP_Mission::Mission_Command& cmd);
-    void do_yaw(const AP_Mission::Mission_Command& cmd);
-    void do_change_speed(const AP_Mission::Mission_Command& cmd);
-    void do_set_home(const AP_Mission::Mission_Command& cmd);
-    void do_roi(const AP_Mission::Mission_Command& cmd);
-    void do_mount_control(const AP_Mission::Mission_Command& cmd);
-#if CAMERA == ENABLED
-    void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
-    void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-#endif
-#if PARACHUTE == ENABLED
-    void do_parachute(const AP_Mission::Mission_Command& cmd);
-#endif
-#if GRIPPER_ENABLED == ENABLED
-    void do_gripper(const AP_Mission::Mission_Command& cmd);
-#endif
-    void do_winch(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-    bool verify_circle(const AP_Mission::Mission_Command& cmd);
-    bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
-#if NAV_GUIDED == ENABLED
-    bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
-#endif
-    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
-
-    void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
     void log_init(void);
     void init_capabilities(void);
     void dataflash_periodic(void);
