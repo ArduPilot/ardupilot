@@ -85,6 +85,7 @@ known_units = {
              '%'       : 'percent'               ,
              '%/s'     : 'percent per second'    ,
              'd%'      : 'decipercent'           , # decipercent is strange, but "per-mille" is even more exotic
+             'dB'      : 'decibel'               ,
 # compound
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
