@@ -6,6 +6,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 #include "AP_Airspeed_Backend.h"
+#include <AP_Baro/AP_Baro.h>
 
 class Airspeed_Calibration {
 public:
@@ -35,7 +36,7 @@ public:
     friend class AP_Airspeed_Backend;
     
     // constructor
-    AP_Airspeed();
+    AP_Airspeed(AP_Baro &barometer);
 
     void init(void);
 
@@ -145,6 +146,7 @@ public:
         TYPE_I2C_MS4525=1,
         TYPE_ANALOG=2,
         TYPE_I2C_MS5525=3,
+        TYPE_I2C_SDP3X=4, 
     };
     
 private:
@@ -161,7 +163,6 @@ private:
     float           _raw_airspeed;
     float           _airspeed;
     float			_last_pressure;
-    float           _filtered_pressure;
     float			_corrected_pressure;
     float           _EAS2TAS;
     bool		    _healthy:1;
@@ -185,4 +186,5 @@ private:
     void update_calibration(float raw_pressure);
 
     AP_Airspeed_Backend *sensor;
+    AP_Baro &_baro;
 };
