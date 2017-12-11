@@ -42,10 +42,17 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.01
     // @User: Standard
 
-    // @Param: _STR_RATE_D
+    // @Param: _STR_RAT_D
     // @DisplayName: Steering control D gain
     // @Description: Steering control D gain.  Compensates for short-term change in desired turn rate vs actual
     // @Range: 0.000 0.400
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: _STR_RAT_FF
+    // @DisplayName: Steering control feed forward
+    // @Description: Steering control feed forward
+    // @Range: 0 0.5
     // @Increment: 0.001
     // @User: Standard
 
@@ -82,6 +89,13 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @DisplayName: Speed control D gain
     // @Description: Speed control D gain.  Compensates for short-term change in desired speed vs actual
     // @Range: 0.000 0.400
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: _SPEED_FF
+    // @DisplayName: Speed control feed forward
+    // @Description: Speed control feed forward
+    // @Range: 0 0.5
     // @Increment: 0.001
     // @User: Standard
 
