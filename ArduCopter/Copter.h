@@ -941,7 +941,7 @@ private:
     
     uint16_t get_pilot_speed_dn();    
 
-#include "FlightMode.h"
+#include "mode.h"
 
     Copter::Mode *flightmode;
 
