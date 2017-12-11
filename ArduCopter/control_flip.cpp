@@ -38,7 +38,7 @@ int8_t    flip_roll_dir;            // roll direction (-1 = roll left, 1 = roll 
 int8_t    flip_pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
 
 // flip_init - initialise flip controller
-bool Copter::FlightMode_Flip::init(bool ignore_checks)
+bool Copter::ModeFlip::init(bool ignore_checks)
 {
     // only allow flip from ACRO, Stabilize, AltHold or Drift flight modes
     if (_copter.control_mode != ACRO && _copter.control_mode != STABILIZE && _copter.control_mode != ALT_HOLD) {
@@ -94,7 +94,7 @@ bool Copter::FlightMode_Flip::init(bool ignore_checks)
 
 // flip_run - runs the flip controller
 // should be called at 100hz or more
-void Copter::FlightMode_Flip::run()
+void Copter::ModeFlip::run()
 {
     float throttle_out;
     float recovery_angle;

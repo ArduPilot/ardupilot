@@ -7,7 +7,7 @@
  * Once the copter is close to home, it will run a standard land controller.
  */
 
-bool Copter::FlightMode_SmartRTL::init(bool ignore_checks)
+bool Copter::ModeSmartRTL::init(bool ignore_checks)
 {
     if ((copter.position_ok() || ignore_checks) && g2.smart_rtl.is_active()) {
         // initialise waypoint and spline controller
@@ -31,12 +31,12 @@ bool Copter::FlightMode_SmartRTL::init(bool ignore_checks)
 }
 
 // perform cleanup required when leaving smart_rtl
-void Copter::FlightMode_SmartRTL::exit()
+void Copter::ModeSmartRTL::exit()
 {
     g2.smart_rtl.cancel_request_for_thorough_cleanup();
 }
 
-void Copter::FlightMode_SmartRTL::run()
+void Copter::ModeSmartRTL::run()
 {
     switch (smart_rtl_state) {
         case SmartRTL_WaitForPathCleanup:
@@ -57,7 +57,7 @@ void Copter::FlightMode_SmartRTL::run()
     }
 }
 
-void Copter::FlightMode_SmartRTL::wait_cleanup_run()
+void Copter::ModeSmartRTL::wait_cleanup_run()
 {
     // hover at current target position
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
@@ -71,7 +71,7 @@ void Copter::FlightMode_SmartRTL::wait_cleanup_run()
     }
 }
 
-void Copter::FlightMode_SmartRTL::path_follow_run()
+void Copter::ModeSmartRTL::path_follow_run()
 {
     // if we are close to current target point, switch the next point to be our target.
     if (wp_nav->reached_wp_destination()) {
@@ -108,7 +108,7 @@ void Copter::FlightMode_SmartRTL::path_follow_run()
     }
 }
 
-void Copter::FlightMode_SmartRTL::pre_land_position_run()
+void Copter::ModeSmartRTL::pre_land_position_run()
 {
     // if we are close to 2m above start point, we are ready to land.
     if (wp_nav->reached_wp_destination()) {
@@ -131,7 +131,7 @@ void Copter::FlightMode_SmartRTL::pre_land_position_run()
 }
 
 // save current position for use by the smart_rtl flight mode
-void Copter::FlightMode_SmartRTL::save_position()
+void Copter::ModeSmartRTL::save_position()
 {
     const bool should_save_position = motors->armed() && (copter.control_mode != SMART_RTL);
 

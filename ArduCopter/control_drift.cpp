@@ -27,7 +27,7 @@
 #endif
 
 // drift_init - initialise drift controller
-bool Copter::FlightMode_Drift::init(bool ignore_checks)
+bool Copter::ModeDrift::init(bool ignore_checks)
 {
     if (_copter.position_ok() || ignore_checks) {
         return true;
@@ -38,7 +38,7 @@ bool Copter::FlightMode_Drift::init(bool ignore_checks)
 
 // drift_run - runs the drift controller
 // should be called at 100hz or more
-void Copter::FlightMode_Drift::run()
+void Copter::ModeDrift::run()
 {
     static float breaker = 0.0f;
     static float roll_input = 0.0f;
@@ -108,7 +108,7 @@ void Copter::FlightMode_Drift::run()
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and z-axis velocity
-float Copter::FlightMode_Drift::get_throttle_assist(float velz, float pilot_throttle_scaled)
+float Copter::ModeDrift::get_throttle_assist(float velz, float pilot_throttle_scaled)
 {
     // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
     //      Only active when pilot's throttle is between 213 ~ 787

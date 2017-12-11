@@ -6,9 +6,9 @@
  */
 
 // return the static controller object corresponding to supplied mode
-Copter::FlightMode *Copter::flightmode_for_mode(const uint8_t mode)
+Copter::Mode *Copter::flightmode_for_mode(const uint8_t mode)
 {
-    Copter::FlightMode *ret = nullptr;
+    Copter::Mode *ret = nullptr;
 
     switch (mode) {
         case ACRO:
@@ -110,7 +110,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return true;
     }
 
-    Copter::FlightMode *new_flightmode = flightmode_for_mode(mode);
+    Copter::Mode *new_flightmode = flightmode_for_mode(mode);
     if (new_flightmode == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
@@ -176,8 +176,8 @@ void Copter::update_flight_mode()
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
-void Copter::exit_mode(Copter::FlightMode *&old_flightmode,
-                       Copter::FlightMode *&new_flightmode)
+void Copter::exit_mode(Copter::Mode *&old_flightmode,
+                       Copter::Mode *&new_flightmode)
 {
 #if AUTOTUNE_ENABLED == ENABLED
     if (old_flightmode == &flightmode_autotune) {
@@ -235,7 +235,7 @@ void Copter::notify_flight_mode() {
     notify.set_flight_mode_str(flightmode->name4());
 }
 
-void Copter::FlightMode::update_navigation()
+void Copter::Mode::update_navigation()
 {
     // run autopilot to make high level decisions about control modes
     run_autopilot();
