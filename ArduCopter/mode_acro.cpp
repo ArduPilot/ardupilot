@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#include "FlightMode.h"
+#include "mode.h"
 
 /*
  * Init and run calls for acro flight mode
