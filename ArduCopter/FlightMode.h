@@ -210,7 +210,6 @@ private:
 #endif
 
 
-
 class FlightMode_AltHold : public FlightMode {
 
 public:
@@ -235,53 +234,6 @@ protected:
 private:
 
 };
-
-
-
-class FlightMode_Stabilize : public FlightMode {
-
-public:
-
-    FlightMode_Stabilize(Copter &copter) :
-        Copter::FlightMode(copter)
-        { }
-
-    virtual bool init(bool ignore_checks) override;
-    virtual void run() override;
-
-    virtual bool requires_GPS() const override { return false; }
-    virtual bool has_manual_throttle() const override { return true; }
-    virtual bool allows_arming(bool from_gcs) const override { return true; };
-    virtual bool is_autopilot() const override { return false; }
-
-protected:
-
-    const char *name() const override { return "STABILIZE"; }
-    const char *name4() const override { return "STAB"; }
-
-private:
-
-};
-
-#if FRAME_CONFIG == HELI_FRAME
-class FlightMode_Stabilize_Heli : public FlightMode_Stabilize {
-
-public:
-
-    FlightMode_Stabilize_Heli(Copter &copter) :
-        Copter::FlightMode_Stabilize(copter)
-        { }
-
-    bool init(bool ignore_checks) override;
-    void run() override;
-
-protected:
-
-private:
-
-};
-#endif
-
 
 
 class FlightMode_Auto : public FlightMode {
@@ -360,356 +312,6 @@ private:
     AP_Mission &mission;
     AC_Circle *&circle_nav;
 };
-
-
-
-class FlightMode_Circle : public FlightMode {
-
-public:
-
-    FlightMode_Circle(Copter &copter, AC_Circle *& _circle_nav) :
-        Copter::FlightMode(copter),
-        circle_nav(_circle_nav)
-        { }
-
-    bool init(bool ignore_checks) override;
-    void run() override;
-
-    bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
-    bool is_autopilot() const override { return true; }
-
-protected:
-
-    const char *name() const override { return "CIRCLE"; }
-    const char *name4() const override { return "CIRC"; }
-
-    uint32_t wp_distance() const override {
-        return wp_nav->get_loiter_distance_to_target();
-    }
-    int32_t wp_bearing() const override {
-        return wp_nav->get_loiter_bearing_to_target();
-    }
-
-private:
-
-    // Circle
-    bool pilot_yaw_override = false; // true if pilot is overriding yaw
-    AC_Circle *&circle_nav;
-
-};
-
-
-
-class FlightMode_Loiter : public FlightMode {
-
-public:
-
-    FlightMode_Loiter(Copter &copter) :
-        Copter::FlightMode(copter)
-        { }
-
-    bool init(bool ignore_checks) override;
-    void run() override;
-
-    bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
-    bool is_autopilot() const override { return false; }
-
-#if PRECISION_LANDING == ENABLED
-    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
-#endif
-
-protected:
-
-    const char *name() const override { return "LOITER"; }
-    const char *name4() const override { return "LOIT"; }
-
-    uint32_t wp_distance() const override {
-        return wp_nav->get_loiter_distance_to_target();
-    }
-    int32_t wp_bearing() const override {
-        return wp_nav->get_loiter_bearing_to_target();
-    }
-
-#if PRECISION_LANDING == ENABLED
-    bool do_precision_loiter();
-    void precision_loiter_xy();
-#endif
-
-private:
-
-#if PRECISION_LANDING == ENABLED
-    bool _precision_loiter_enabled;
-#endif
-
-};
-
-
-
-class FlightMode_Guided : public FlightMode {
-
-public:
-
-    FlightMode_Guided(Copter &copter) :
-        Copter::FlightMode(copter)        { }
-
-    bool init(bool ignore_checks) override;
-    void run() override;
-
-    bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override {
-        if (from_gcs) {
-            return true;
-        }
-        return false;
-    };
-    bool is_autopilot() const override { return true; }
-
-    void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
-    bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    bool set_destination(const Location_Class& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-
-    void limit_clear();
-    void limit_init_time_and_pos();
-    void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
-    bool limit_check();
-
-    bool takeoff_start(float final_alt_above_home);
-
-    GuidedMode mode() const { return guided_mode; }
-
-    void angle_control_start();
-    void angle_control_run();
-
-protected:
-
-    const char *name() const override { return "GUIDED"; }
-    const char *name4() const override { return "GUID"; }
-
-    uint32_t wp_distance() const override;
-    int32_t wp_bearing() const override;
-
-private:
-
-    void pos_control_start();
-    void vel_control_start();
-    void posvel_control_start();
-    void takeoff_run();
-    void pos_control_run();
-    void vel_control_run();
-    void posvel_control_run();
-    void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
-    void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
-
-    // controls which controller is run (pos or vel):
-    GuidedMode guided_mode = Guided_TakeOff;
-
-};
-
-
-
-class FlightMode_Land : public FlightMode {
-
-public:
-
-    FlightMode_Land(Copter &copter) :
-        Copter::FlightMode(copter)
-        { }
-
-    bool init(bool ignore_checks) override;
-    void run() override;
-
-    bool requires_GPS() const override { return false; }
-    bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
-    bool is_autopilot() const override { return true; }
-
-    float get_land_descent_speed();
-    bool landing_with_GPS();
-    void do_not_use_GPS();
-
-    int32_t get_alt_above_ground(void);
-
-protected:
-
-    const char *name() const override { return "LAND"; }
-    const char *name4() const override { return "LAND"; }
-
-private:
-
-    void gps_run();
-    void nogps_run();
-};
-
-
-
-class FlightMode_RTL : public FlightMode {
-
-public:
-
-    FlightMode_RTL(Copter &copter) :
-        Copter::FlightMode(copter)
-        { }
-
-    bool init(bool ignore_checks) override;
-    void run() override {
-        return run(true);
-    }
-    void run(bool disarm_on_land);
-
-    bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
-    bool is_autopilot() const override { return true; }
-
-    RTLState state() { return _state; }
-
-    // this should probably not be exposed
-    bool state_complete() { return _state_complete; }
-
-    bool landing_gear_should_be_deployed();
-
-    void restart_without_terrain();
-
-protected:
-
-    const char *name() const override { return "RTL"; }
-    const char *name4() const override { return "RTL "; }
-
-    uint32_t wp_distance() const override {
-        return wp_nav->get_wp_distance_to_destination();
-    }
-    int32_t wp_bearing() const override {
-        return wp_nav->get_wp_bearing_to_destination();
-    }
-
-    void descent_start();
-    void descent_run();
-    void land_start();
-    void land_run(bool disarm_on_land);
-
-    void set_descent_target_alt(uint32_t alt) { rtl_path.descent_target.alt = alt; }
-
-private:
-
-    void climb_start();
-    void return_start();
-    void climb_return_run();
-    void loiterathome_start();
-    void loiterathome_run();
-    void build_path(bool terrain_following_allowed);
-    void compute_return_target(bool terrain_following_allowed);
-
-    // RTL
-    RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
-    bool _state_complete = false; // set to true if the current state is completed
-
-    struct {
-        // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
-        Location_Class origin_point;
-        Location_Class climb_target;
-        Location_Class return_target;
-        Location_Class descent_target;
-        bool land;
-        bool terrain_used;
-    } rtl_path;
-
-    // Loiter timer - Records how long we have been in loiter
-    uint32_t _loiter_start_time = 0;
-};
-
-
-
-class FlightMode_Drift : public FlightMode {
-
-public:
-
-    FlightMode_Drift(Copter &copter) :
-        Copter::FlightMode(copter)
-        { }
-
-    virtual bool init(bool ignore_checks) override;
-    virtual void run() override;
-
-    virtual bool requires_GPS() const override { return true; }
-    virtual bool has_manual_throttle() const override { return false; }
-    virtual bool allows_arming(bool from_gcs) const override { return true; };
-    virtual bool is_autopilot() const override { return false; }
-
-protected:
-
-    const char *name() const override { return "DRIFT"; }
-    const char *name4() const override { return "DRIF"; }
-
-private:
-
-    float get_throttle_assist(float velz, float pilot_throttle_scaled);
-
-};
-
-
-
-class FlightMode_Sport : public FlightMode {
-
-public:
-
-    FlightMode_Sport(Copter &copter) :
-        Copter::FlightMode(copter)
-        { }
-
-    virtual bool init(bool ignore_checks) override;
-    virtual void run() override;
-
-    virtual bool requires_GPS() const override { return false; }
-    virtual bool has_manual_throttle() const override { return false; }
-    virtual bool allows_arming(bool from_gcs) const override { return true; };
-    virtual bool is_autopilot() const override { return false; }
-
-protected:
-
-    const char *name() const override { return "SPORT"; }
-    const char *name4() const override { return "SPRT"; }
-
-private:
-
-};
-
-
-
-class FlightMode_Flip : public FlightMode {
-
-public:
-
-    FlightMode_Flip(Copter &copter) :
-        Copter::FlightMode(copter)
-        { }
-
-    virtual bool init(bool ignore_checks) override;
-    virtual void run() override;
-
-    virtual bool requires_GPS() const override { return false; }
-    virtual bool has_manual_throttle() const override { return false; }
-    virtual bool allows_arming(bool from_gcs) const override { return false; };
-    virtual bool is_autopilot() const override { return false; }
-
-protected:
-
-    const char *name() const override { return "FLIP"; }
-    const char *name4() const override { return "FLIP"; }
-
-private:
-
-    // Flip
-    Vector3f flip_orig_attitude;         // original vehicle attitude before flip
-
-};
-
 
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -865,6 +467,305 @@ private:
 #endif
 
 
+class FlightMode_Brake : public FlightMode {
+
+public:
+
+    FlightMode_Brake(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return false; }
+
+    void timeout_to_loiter_ms(uint32_t timeout_ms);
+
+protected:
+
+    const char *name() const override { return "BRAKE"; }
+    const char *name4() const override { return "BRAK"; }
+
+private:
+
+    uint32_t _timeout_start;
+    uint32_t _timeout_ms;
+
+};
+
+
+class FlightMode_Circle : public FlightMode {
+
+public:
+
+    FlightMode_Circle(Copter &copter, AC_Circle *& _circle_nav) :
+        Copter::FlightMode(copter),
+        circle_nav(_circle_nav)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "CIRCLE"; }
+    const char *name4() const override { return "CIRC"; }
+
+    uint32_t wp_distance() const override {
+        return wp_nav->get_loiter_distance_to_target();
+    }
+    int32_t wp_bearing() const override {
+        return wp_nav->get_loiter_bearing_to_target();
+    }
+
+private:
+
+    // Circle
+    bool pilot_yaw_override = false; // true if pilot is overriding yaw
+    AC_Circle *&circle_nav;
+
+};
+
+
+class FlightMode_Drift : public FlightMode {
+
+public:
+
+    FlightMode_Drift(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override;
+
+    virtual bool requires_GPS() const override { return true; }
+    virtual bool has_manual_throttle() const override { return false; }
+    virtual bool allows_arming(bool from_gcs) const override { return true; };
+    virtual bool is_autopilot() const override { return false; }
+
+protected:
+
+    const char *name() const override { return "DRIFT"; }
+    const char *name4() const override { return "DRIF"; }
+
+private:
+
+    float get_throttle_assist(float velz, float pilot_throttle_scaled);
+
+};
+
+
+class FlightMode_Flip : public FlightMode {
+
+public:
+
+    FlightMode_Flip(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override;
+
+    virtual bool requires_GPS() const override { return false; }
+    virtual bool has_manual_throttle() const override { return false; }
+    virtual bool allows_arming(bool from_gcs) const override { return false; };
+    virtual bool is_autopilot() const override { return false; }
+
+protected:
+
+    const char *name() const override { return "FLIP"; }
+    const char *name4() const override { return "FLIP"; }
+
+private:
+
+    // Flip
+    Vector3f flip_orig_attitude;         // original vehicle attitude before flip
+
+};
+
+
+class FlightMode_Guided : public FlightMode {
+
+public:
+
+    FlightMode_Guided(Copter &copter) :
+        Copter::FlightMode(copter)        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override {
+        if (from_gcs) {
+            return true;
+        }
+        return false;
+    };
+    bool is_autopilot() const override { return true; }
+
+    void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
+    bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    bool set_destination(const Location_Class& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+
+    void limit_clear();
+    void limit_init_time_and_pos();
+    void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
+    bool limit_check();
+
+    bool takeoff_start(float final_alt_above_home);
+
+    GuidedMode mode() const { return guided_mode; }
+
+    void angle_control_start();
+    void angle_control_run();
+
+protected:
+
+    const char *name() const override { return "GUIDED"; }
+    const char *name4() const override { return "GUID"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+
+private:
+
+    void pos_control_start();
+    void vel_control_start();
+    void posvel_control_start();
+    void takeoff_run();
+    void pos_control_run();
+    void vel_control_run();
+    void posvel_control_run();
+    void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
+    void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
+
+    // controls which controller is run (pos or vel):
+    GuidedMode guided_mode = Guided_TakeOff;
+
+};
+
+
+class FlightMode_Guided_NoGPS : public FlightMode_Guided {
+
+public:
+
+    FlightMode_Guided_NoGPS(Copter &copter) :
+        Copter::FlightMode_Guided(copter)        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override {
+        if (from_gcs) {
+            return true;
+        }
+        return false;
+    }
+    bool is_autopilot() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "GUIDED_NOGPS"; }
+    const char *name4() const override { return "GNGP"; }
+
+private:
+
+};
+
+
+class FlightMode_Land : public FlightMode {
+
+public:
+
+    FlightMode_Land(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return true; }
+
+    float get_land_descent_speed();
+    bool landing_with_GPS();
+    void do_not_use_GPS();
+
+    int32_t get_alt_above_ground(void);
+
+protected:
+
+    const char *name() const override { return "LAND"; }
+    const char *name4() const override { return "LAND"; }
+
+private:
+
+    void gps_run();
+    void nogps_run();
+};
+
+
+class FlightMode_Loiter : public FlightMode {
+
+public:
+
+    FlightMode_Loiter(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
+
+#if PRECISION_LANDING == ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+#endif
+
+protected:
+
+    const char *name() const override { return "LOITER"; }
+    const char *name4() const override { return "LOIT"; }
+
+    uint32_t wp_distance() const override {
+        return wp_nav->get_loiter_distance_to_target();
+    }
+    int32_t wp_bearing() const override {
+        return wp_nav->get_loiter_bearing_to_target();
+    }
+
+#if PRECISION_LANDING == ENABLED
+    bool do_precision_loiter();
+    void precision_loiter_xy();
+#endif
+
+private:
+
+#if PRECISION_LANDING == ENABLED
+    bool _precision_loiter_enabled;
+#endif
+
+};
+
 
 #if POSHOLD_ENABLED == ENABLED
 class FlightMode_PosHold : public FlightMode {
@@ -902,134 +803,79 @@ private:
 #endif
 
 
-
-class FlightMode_Brake : public FlightMode {
+class FlightMode_RTL : public FlightMode {
 
 public:
 
-    FlightMode_Brake(Copter &copter) :
+    FlightMode_RTL(Copter &copter) :
         Copter::FlightMode(copter)
         { }
 
     bool init(bool ignore_checks) override;
-    void run() override;
-
-    bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
-    bool is_autopilot() const override { return false; }
-
-    void timeout_to_loiter_ms(uint32_t timeout_ms);
-
-protected:
-
-    const char *name() const override { return "BRAKE"; }
-    const char *name4() const override { return "BRAK"; }
-
-private:
-
-    uint32_t _timeout_start;
-    uint32_t _timeout_ms;
-
-};
-
-
-
-class FlightMode_Avoid_ADSB : public FlightMode_Guided {
-
-public:
-
-    FlightMode_Avoid_ADSB(Copter &copter) :
-        Copter::FlightMode_Guided(copter)        { }
-
-    bool init(bool ignore_checks) override;
-    void run() override;
-
-    bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; }
-    bool is_autopilot() const override { return true; }
-
-    bool set_velocity(const Vector3f& velocity_neu);
-
-protected:
-
-    const char *name() const override { return "AVOID_ADSB"; }
-    const char *name4() const override { return "AVOI"; }
-
-private:
-
-};
-
-
-
-class FlightMode_Throw : public FlightMode {
-
-public:
-
-    FlightMode_Throw(Copter &copter) :
-        Copter::FlightMode(copter)
-        { }
-
-    bool init(bool ignore_checks) override;
-    void run() override;
+    void run() override {
+        return run(true);
+    }
+    void run(bool disarm_on_land);
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
-    bool is_autopilot() const override { return false; }
-
-
-protected:
-
-    const char *name() const override { return "THROW"; }
-    const char *name4() const override { return "THRW"; }
-
-private:
-
-    bool throw_detected();
-    bool throw_position_good();
-    bool throw_height_good();
-    bool throw_attitude_good();
-
-    ThrowModeStage stage = Throw_Disarmed;
-    ThrowModeStage prev_stage = Throw_Disarmed;
-    uint32_t last_log_ms;
-    bool nextmode_attempted;
-    uint32_t free_fall_start_ms;    // system time free fall was detected
-    float free_fall_start_velz;     // vertical velocity when free fall was detected
-
-};
-
-
-
-class FlightMode_Guided_NoGPS : public FlightMode_Guided {
-
-public:
-
-    FlightMode_Guided_NoGPS(Copter &copter) :
-        Copter::FlightMode_Guided(copter)        { }
-
-    bool init(bool ignore_checks) override;
-    void run() override;
-
-    bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override {
-        if (from_gcs) {
-            return true;
-        }
-        return false;
-    }
     bool is_autopilot() const override { return true; }
 
+    RTLState state() { return _state; }
+
+    // this should probably not be exposed
+    bool state_complete() { return _state_complete; }
+
+    bool landing_gear_should_be_deployed();
+
+    void restart_without_terrain();
+
 protected:
 
-    const char *name() const override { return "GUIDED_NOGPS"; }
-    const char *name4() const override { return "GNGP"; }
+    const char *name() const override { return "RTL"; }
+    const char *name4() const override { return "RTL "; }
+
+    uint32_t wp_distance() const override {
+        return wp_nav->get_wp_distance_to_destination();
+    }
+    int32_t wp_bearing() const override {
+        return wp_nav->get_wp_bearing_to_destination();
+    }
+
+    void descent_start();
+    void descent_run();
+    void land_start();
+    void land_run(bool disarm_on_land);
+
+    void set_descent_target_alt(uint32_t alt) { rtl_path.descent_target.alt = alt; }
 
 private:
 
+    void climb_start();
+    void return_start();
+    void climb_return_run();
+    void loiterathome_start();
+    void loiterathome_run();
+    void build_path(bool terrain_following_allowed);
+    void compute_return_target(bool terrain_following_allowed);
+
+    // RTL
+    RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
+    bool _state_complete = false; // set to true if the current state is completed
+
+    struct {
+        // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
+        Location_Class origin_point;
+        Location_Class climb_target;
+        Location_Class return_target;
+        Location_Class descent_target;
+        bool land;
+        bool terrain_used;
+    } rtl_path;
+
+    // Loiter timer - Records how long we have been in loiter
+    uint32_t _loiter_start_time = 0;
 };
 
 
@@ -1073,5 +919,142 @@ private:
     void pre_land_position_run();
     void land();
     SmartRTLState smart_rtl_state = SmartRTL_PathFollow;
+
+};
+
+
+class FlightMode_Sport : public FlightMode {
+
+public:
+
+    FlightMode_Sport(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override;
+
+    virtual bool requires_GPS() const override { return false; }
+    virtual bool has_manual_throttle() const override { return false; }
+    virtual bool allows_arming(bool from_gcs) const override { return true; };
+    virtual bool is_autopilot() const override { return false; }
+
+protected:
+
+    const char *name() const override { return "SPORT"; }
+    const char *name4() const override { return "SPRT"; }
+
+private:
+
+};
+
+
+class FlightMode_Stabilize : public FlightMode {
+
+public:
+
+    FlightMode_Stabilize(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override;
+
+    virtual bool requires_GPS() const override { return false; }
+    virtual bool has_manual_throttle() const override { return true; }
+    virtual bool allows_arming(bool from_gcs) const override { return true; };
+    virtual bool is_autopilot() const override { return false; }
+
+protected:
+
+    const char *name() const override { return "STABILIZE"; }
+    const char *name4() const override { return "STAB"; }
+
+private:
+
+};
+
+#if FRAME_CONFIG == HELI_FRAME
+class FlightMode_Stabilize_Heli : public FlightMode_Stabilize {
+
+public:
+
+    FlightMode_Stabilize_Heli(Copter &copter) :
+        Copter::FlightMode_Stabilize(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+protected:
+
+private:
+
+};
+#endif
+
+
+class FlightMode_Throw : public FlightMode {
+
+public:
+
+    FlightMode_Throw(Copter &copter) :
+        Copter::FlightMode(copter)
+        { }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
+
+
+protected:
+
+    const char *name() const override { return "THROW"; }
+    const char *name4() const override { return "THRW"; }
+
+private:
+
+    bool throw_detected();
+    bool throw_position_good();
+    bool throw_height_good();
+    bool throw_attitude_good();
+
+    ThrowModeStage stage = Throw_Disarmed;
+    ThrowModeStage prev_stage = Throw_Disarmed;
+    uint32_t last_log_ms;
+    bool nextmode_attempted;
+    uint32_t free_fall_start_ms;    // system time free fall was detected
+    float free_fall_start_velz;     // vertical velocity when free fall was detected
+
+};
+
+
+class FlightMode_Avoid_ADSB : public FlightMode_Guided {
+
+public:
+
+    FlightMode_Avoid_ADSB(Copter &copter) :
+        Copter::FlightMode_Guided(copter) { }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; }
+    bool is_autopilot() const override { return true; }
+
+    bool set_velocity(const Vector3f& velocity_neu);
+
+protected:
+
+    const char *name() const override { return "AVOID_ADSB"; }
+    const char *name4() const override { return "AVOI"; }
+
+private:
 
 };
