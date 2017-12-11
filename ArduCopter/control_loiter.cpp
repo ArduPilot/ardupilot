@@ -5,7 +5,7 @@
  */
 
 // loiter_init - initialise loiter controller
-bool Copter::FlightMode_Loiter::init(bool ignore_checks)
+bool Copter::ModeLoiter::init(bool ignore_checks)
 {
     if (_copter.position_ok() || ignore_checks) {
 
@@ -29,7 +29,7 @@ bool Copter::FlightMode_Loiter::init(bool ignore_checks)
 }
 
 #if PRECISION_LANDING == ENABLED
-bool Copter::FlightMode_Loiter::do_precision_loiter()
+bool Copter::ModeLoiter::do_precision_loiter()
 {
     if (!_precision_loiter_enabled) {
         return false;
@@ -47,7 +47,7 @@ bool Copter::FlightMode_Loiter::do_precision_loiter()
     return true;
 }
 
-void Copter::FlightMode_Loiter::precision_loiter_xy()
+void Copter::ModeLoiter::precision_loiter_xy()
 {
     wp_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel_rel;
@@ -66,7 +66,7 @@ void Copter::FlightMode_Loiter::precision_loiter_xy()
 
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
-void Copter::FlightMode_Loiter::run()
+void Copter::ModeLoiter::run()
 {
     LoiterModeState loiter_state;
     float target_yaw_rate = 0.0f;

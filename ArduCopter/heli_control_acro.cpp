@@ -6,7 +6,7 @@
  */
 
 // heli_acro_init - initialise acro controller
-bool Copter::FlightMode_Acro_Heli::init(bool ignore_checks)
+bool Copter::ModeAcro_Heli::init(bool ignore_checks)
 {
     // if heli is equipped with a flybar, then tell the attitude controller to pass through controls directly to servos
     attitude_control->use_flybar_passthrough(motors->has_flybar(), motors->supports_yaw_passthrough());
@@ -22,7 +22,7 @@ bool Copter::FlightMode_Acro_Heli::init(bool ignore_checks)
 
 // heli_acro_run - runs the acro controller
 // should be called at 100hz or more
-void Copter::FlightMode_Acro_Heli::run()
+void Copter::ModeAcro_Heli::run()
 {
     float target_roll, target_pitch, target_yaw;
     float pilot_throttle_scaled;
