@@ -50,9 +50,8 @@ bool Mode::enter_gps_checks() const
 
     // check AHRS and GPS are within 10m of each other
     const Location gps_loc = gps.location();
-    Location ahrs_loc;
-    if (ahrs.get_position(ahrs_loc)) {
-        float distance = location_3d_diff_NED(gps_loc, ahrs_loc).length();
+    if (rover.ahrs_state.has_current_loc) {
+        float distance = location_3d_diff_NED(gps_loc, rover.current_loc).length();
         if (distance > MODE_AHRS_GPS_ERROR_MAX) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS and AHRS differ by %4.1fm", (double)distance);
             return false;
@@ -154,11 +153,11 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
 // set desired location as an offset from the EKF origin in NED frame
 bool Mode::set_desired_location_NED(const Vector3f& destination, float next_leg_bearing_cd)
 {
-    Location destination_ned;
     // initialise destination to ekf origin
-    if (!ahrs.get_origin(destination_ned)) {
+    if (!rover.ahrs_state.has_ekf_origin) {
         return false;
     }
+    Location destination_ned = rover.ekf_origin;
     // apply offset
     location_offset(destination_ned, destination.x, destination.y);
     set_desired_location(destination_ned, next_leg_bearing_cd);

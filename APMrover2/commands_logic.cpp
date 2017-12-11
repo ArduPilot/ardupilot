@@ -385,7 +385,7 @@ void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 
 void Rover::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.p1 == 1 && have_position) {
+    if (cmd.p1 == 1 && ahrs_state.has_current_loc) {
         set_home_to_current_location(false);
     } else {
         set_home(cmd.content.location, false);

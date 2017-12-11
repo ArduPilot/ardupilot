@@ -263,9 +263,6 @@ private:
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
 
-    // true if we have a position estimate from AHRS
-    bool have_position;
-
     // receiver RSSI
     uint8_t receiver_rssi;
 
@@ -397,6 +394,18 @@ private:
         LowPassFilterFloat speed_filt = LowPassFilterFloat(2.0f);
         LowPassFilterFloat throttle_filt = LowPassFilterFloat(2.0f);
     } cruise_learn;
+
+    Location ekf_origin;
+    Vector3f current_pos;
+    Vector3f current_vel;
+    nav_filter_status filt_status;
+    struct {
+        bool has_ekf_origin;
+        bool has_current_loc;
+        bool has_relative_pos;
+        bool has_current_vel;
+        bool has_filt_status;
+    } ahrs_state;
 
 private:
 
@@ -579,6 +588,7 @@ private:
     bool position_ok();
     bool ekf_position_ok();
     bool optflow_position_ok();
+    void update_ahrs_state();
 
     // fence.cpp
     void fence_check();

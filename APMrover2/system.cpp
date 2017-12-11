@@ -447,3 +447,41 @@ bool Rover::optflow_position_ok()
 #endif
 }
 
+void  Rover::update_ahrs_state() {
+    // reset ahrs flags
+    ahrs_state.has_ekf_origin = false;
+    ahrs_state.has_current_loc = false;
+    ahrs_state.has_relative_pos = false;
+    ahrs_state.has_current_vel = false;
+
+    // pull position
+    ahrs_state.has_ekf_origin = ahrs.get_origin(ekf_origin);
+
+    Location loc{};
+    if (ahrs.get_position(loc)) {
+        ahrs_state.has_current_loc = true;
+        current_loc.lng = loc.lng;
+        current_loc.lat = loc.lat;
+    }
+
+    // Get XYZ position and velocity in NEU and cm
+    if (ahrs.get_relative_position_NED_origin(current_pos)) {
+        ahrs_state.has_relative_pos = true;
+        current_pos = current_pos * 100.0f;  // m to cm
+        current_pos.z = -current_pos.z;  // NED to NEU
+    }
+
+    // if using the EKF get a speed update now (from accelerometers)
+    if (ahrs.get_velocity_NED(current_vel)) {
+        ahrs_state.has_current_vel = true;
+        current_vel = current_vel * 100.0f;  // m to cm
+        current_vel.z = -current_vel.z;  // NED to NEU
+        ground_speed = norm(current_vel.x, current_vel.y);
+    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        ground_speed = ahrs.groundspeed();
+    }
+
+    ahrs.get_filter_status(filt_status);
+    ahrs_state.has_filt_status = filt_status.flags.vert_pos;
+
+}

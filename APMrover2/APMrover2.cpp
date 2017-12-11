@@ -171,16 +171,10 @@ void Rover::ahrs_update()
 
     ahrs.update();
 
+    update_ahrs_state();
+
     // update home from EKF if necessary
     update_home_from_EKF();
-
-    // if using the EKF get a speed update now (from accelerometers)
-    Vector3f velocity;
-    if (ahrs.get_velocity_NED(velocity)) {
-        ground_speed = norm(velocity.x, velocity.y);
-    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        ground_speed = ahrs.groundspeed();
-    }
 
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
@@ -393,8 +387,6 @@ void Rover::update_GPS_50Hz(void)
 
 void Rover::update_GPS_10Hz(void)
 {
-    have_position = ahrs.get_position(current_loc);
-
     if (gps.last_message_time_ms() != last_gps_msg_ms) {
         last_gps_msg_ms = gps.last_message_time_ms();
 
