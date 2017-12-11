@@ -419,8 +419,11 @@ def check_logs(step):
         newname = buildlogs_path("%s.core" % vehicle)
         print("Renaming %s to %s" % (corefile, newname))
         shutil.move(corefile, newname)
-        util.run_cmd('/bin/cp A*/A*.elf %s' % buildlogs_dirpath(),
-                     directory=util.reltopdir('.'))
+        try:
+            util.run_cmd('/bin/cp build/sitl/bin/* %s' % buildlogs_dirpath(),
+                         directory=util.reltopdir('.'))
+        except Exception:
+            print("Unable to save binary")
 
 def run_tests(steps):
     """Run a list of steps."""
