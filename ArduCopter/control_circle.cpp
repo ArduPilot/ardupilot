@@ -5,7 +5,7 @@
  */
 
 // circle_init - initialise circle controller flight mode
-bool Copter::FlightMode_Circle::init(bool ignore_checks)
+bool Copter::ModeCircle::init(bool ignore_checks)
 {
     if (_copter.position_ok() || ignore_checks) {
         pilot_yaw_override = false;
@@ -28,7 +28,7 @@ bool Copter::FlightMode_Circle::init(bool ignore_checks)
 
 // circle_run - runs the circle flight mode
 // should be called at 100hz or more
-void Copter::FlightMode_Circle::run()
+void Copter::ModeCircle::run()
 {
     float target_yaw_rate = 0;
     float target_climb_rate = 0;

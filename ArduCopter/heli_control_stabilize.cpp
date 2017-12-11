@@ -6,7 +6,7 @@
  */
 
 // stabilize_init - initialise stabilize controller
-bool Copter::FlightMode_Stabilize_Heli::init(bool ignore_checks)
+bool Copter::ModeStabilize_Heli::init(bool ignore_checks)
 {
     // set target altitude to zero for reporting
     // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
@@ -20,7 +20,7 @@ bool Copter::FlightMode_Stabilize_Heli::init(bool ignore_checks)
 
 // stabilize_run - runs the main stabilize controller
 // should be called at 100hz or more
-void Copter::FlightMode_Stabilize_Heli::run()
+void Copter::ModeStabilize_Heli::run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate;

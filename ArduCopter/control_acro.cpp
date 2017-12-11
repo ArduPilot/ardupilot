@@ -6,7 +6,7 @@
  * Init and run calls for acro flight mode
  */
 
-bool Copter::FlightMode_Acro::init(bool ignore_checks)
+bool Copter::ModeAcro::init(bool ignore_checks)
 {
    // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
    if (motors->armed() && ap.land_complete && !_copter.flightmode->has_manual_throttle() &&
@@ -19,7 +19,7 @@ bool Copter::FlightMode_Acro::init(bool ignore_checks)
    return true;
 }
 
-void Copter::FlightMode_Acro::run()
+void Copter::ModeAcro::run()
 {
     float target_roll, target_pitch, target_yaw;
     float pilot_throttle_scaled;
@@ -52,7 +52,7 @@ void Copter::FlightMode_Acro::run()
 
 // get_pilot_desired_angle_rates - transform pilot's roll pitch and yaw input into a desired lean angle rates
 // returns desired angle rates in centi-degrees-per-second
-void Copter::FlightMode_Acro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out)
+void Copter::ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out)
 {
     float rate_limit;
     Vector3f rate_ef_level, rate_bf_level, rate_bf_request;
