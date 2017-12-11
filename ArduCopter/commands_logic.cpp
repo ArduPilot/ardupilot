@@ -292,7 +292,7 @@ void Copter::exit_mission()
     // if we are not on the ground switch to loiter or land
     if(!ap.land_complete) {
         // try to enter loiter but if that fails land
-        if(!flightmode_auto.loiter_start()) {
+        if(!mode_auto.loiter_start()) {
             set_mode(LAND, MODE_REASON_MISSION_END);
         }
     }else{
@@ -309,7 +309,7 @@ void Copter::exit_mission()
 void Copter::do_RTL(void)
 {
     // start rtl in auto flight mode
-    flightmode_auto.rtl_start();
+    mode_auto.rtl_start();
 }
 
 /********************************************************************************/
@@ -320,7 +320,7 @@ void Copter::do_RTL(void)
 void Copter::do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
     // Set wp navigation target to safe altitude above current position
-    flightmode_auto.takeoff_start(cmd.content.location);
+    mode_auto.takeoff_start(cmd.content.location);
 }
 
 // do_nav_wp - initiate move to next waypoint
@@ -350,7 +350,7 @@ void Copter::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     loiter_time_max = cmd.p1;
 
     // Set wp navigation target
-    flightmode_auto.wp_start(target_loc);
+    mode_auto.wp_start(target_loc);
 
     // if no delay set the waypoint as "fast"
     if (loiter_time_max == 0 ) {
@@ -391,13 +391,13 @@ void Copter::do_land(const AP_Mission::Mission_Command& cmd)
 
         Location_Class target_loc = terrain_adjusted_location(cmd);
 
-        flightmode_auto.wp_start(target_loc);
+        mode_auto.wp_start(target_loc);
     }else{
         // set landing state
         land_state = LandStateType_Descending;
 
         // initialise landing controller
-        flightmode_auto.land_start();
+        mode_auto.land_start();
     }
 }
 
@@ -411,12 +411,12 @@ void Copter::do_payload_place(const AP_Mission::Mission_Command& cmd)
 
         Location_Class target_loc = terrain_adjusted_location(cmd);
 
-        flightmode_auto.wp_start(target_loc);
+        mode_auto.wp_start(target_loc);
     } else {
         nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
 
         // initialise placing controller
-        flightmode_auto.payload_place_start();
+        mode_auto.payload_place_start();
     }
     nav_payload_place.descend_max = cmd.p1;
 }
@@ -452,7 +452,7 @@ void Copter::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     }
 
     // start way point navigator and provide it the desired location
-    flightmode_auto.wp_start(target_loc);
+    mode_auto.wp_start(target_loc);
 }
 
 // do_circle - initiate moving in a circle
@@ -484,7 +484,7 @@ void Copter::do_circle(const AP_Mission::Mission_Command& cmd)
     uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
 
     // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
-    flightmode_auto.circle_movetoedge_start(circle_center, circle_radius_m);
+    mode_auto.circle_movetoedge_start(circle_center, circle_radius_m);
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
@@ -569,7 +569,7 @@ void Copter::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // set spline navigation target
-    flightmode_auto.spline_start(target_loc, stopped_at_start, seg_end_type, next_loc);
+    mode_auto.spline_start(target_loc, stopped_at_start, seg_end_type, next_loc);
 }
 
 #if NAV_GUIDED == ENABLED
@@ -578,10 +578,10 @@ void Copter::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 > 0) {
         // initialise guided limits
-        flightmode_guided.limit_init_time_and_pos();
+        mode_guided.limit_init_time_and_pos();
 
         // set spline navigation target
-        flightmode_auto.nav_guided_start();
+        mode_auto.nav_guided_start();
     }
 }
 #endif  // NAV_GUIDED
@@ -649,7 +649,7 @@ void Copter::do_gripper(const AP_Mission::Mission_Command& cmd)
 // do_guided_limits - pass guided limits to guided controller
 void Copter::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 {
-    flightmode_guided.limit_set(cmd.p1 * 1000, // convert seconds to ms
+    mode_guided.limit_set(cmd.p1 * 1000, // convert seconds to ms
                      cmd.content.guided_limits.alt_min * 100.0f,    // convert meters to cm
                      cmd.content.guided_limits.alt_max * 100.0f,    // convert meters to cm
                      cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
@@ -703,7 +703,7 @@ bool Copter::verify_land()
                 Vector3f dest = wp_nav->get_wp_destination();
 
                 // initialise landing controller
-                flightmode_auto.land_start(dest);
+                mode_auto.land_start(dest);
 
                 // advance to next state
                 land_state = LandStateType_Descending;
@@ -866,7 +866,7 @@ bool Copter::verify_payload_place()
     case PayloadPlaceStateType_Ascending_Start: {
         Location_Class target_loc = inertial_nav.get_position();
         target_loc.alt = nav_payload_place.descend_start_altitude;
-        flightmode_auto.wp_start(target_loc);
+        mode_auto.wp_start(target_loc);
         nav_payload_place.state = PayloadPlaceStateType_Ascending;
         }
         FALLTHROUGH;
@@ -939,7 +939,7 @@ bool Copter::verify_loiter_time()
 bool Copter::verify_circle(const AP_Mission::Mission_Command& cmd)
 {
     // check if we've reached the edge
-    if (flightmode_auto.mode() == Auto_CircleMoveToEdge) {
+    if (mode_auto.mode() == Auto_CircleMoveToEdge) {
         if (wp_nav->reached_wp_destination()) {
             Vector3f curr_pos = inertial_nav.get_position();
             Vector3f circle_center = pv_location_to_vector(cmd.content.location);
@@ -956,7 +956,7 @@ bool Copter::verify_circle(const AP_Mission::Mission_Command& cmd)
             }
 
             // start circling
-            flightmode_auto.circle_start();
+            mode_auto.circle_start();
         }
         return false;
     }
@@ -970,7 +970,7 @@ bool Copter::verify_circle(const AP_Mission::Mission_Command& cmd)
 // returns true with RTL has completed successfully
 bool Copter::verify_RTL()
 {
-    return (flightmode_rtl.state_complete() && (flightmode_rtl.state() == RTL_FinalDescent || flightmode_rtl.state() == RTL_Land));
+    return (mode_rtl.state_complete() && (mode_rtl.state() == RTL_FinalDescent || mode_rtl.state() == RTL_Land));
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
@@ -1005,7 +1005,7 @@ bool Copter::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
     }
 
     // check time and position limits
-    return flightmode_guided.limit_check();
+    return mode_guided.limit_check();
 }
 #endif  // NAV_GUIDED
 
@@ -1091,7 +1091,7 @@ bool Copter::verify_yaw()
 bool Copter::do_guided(const AP_Mission::Mission_Command& cmd)
 {
     // only process guided waypoint if we are in guided mode
-    if (control_mode != GUIDED && !(control_mode == AUTO && flightmode_auto.mode() == Auto_NavGuided)) {
+    if (control_mode != GUIDED && !(control_mode == AUTO && mode_auto.mode() == Auto_NavGuided)) {
         return false;
     }
 
@@ -1102,7 +1102,7 @@ bool Copter::do_guided(const AP_Mission::Mission_Command& cmd)
         {
             // set wp_nav's destination
             Location_Class dest(cmd.content.location);
-            return flightmode_guided.set_destination(dest);
+            return mode_guided.set_destination(dest);
         }
 
         case MAV_CMD_CONDITION_YAW:

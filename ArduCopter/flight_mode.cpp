@@ -6,87 +6,87 @@
  */
 
 // return the static controller object corresponding to supplied mode
-Copter::Mode *Copter::flightmode_for_mode(const uint8_t mode)
+Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
 {
     Copter::Mode *ret = nullptr;
 
     switch (mode) {
         case ACRO:
-            ret = &flightmode_acro;
+            ret = &mode_acro;
             break;
 
         case STABILIZE:
-            ret = &flightmode_stabilize;
+            ret = &mode_stabilize;
             break;
 
         case ALT_HOLD:
-            ret = &flightmode_althold;
+            ret = &mode_althold;
             break;
 
         case AUTO:
-            ret = &flightmode_auto;
+            ret = &mode_auto;
             break;
 
         case CIRCLE:
-            ret = &flightmode_circle;
+            ret = &mode_circle;
             break;
 
         case LOITER:
-            ret = &flightmode_loiter;
+            ret = &mode_loiter;
             break;
 
         case GUIDED:
-            ret = &flightmode_guided;
+            ret = &mode_guided;
             break;
 
         case LAND:
-            ret = &flightmode_land;
+            ret = &mode_land;
             break;
 
         case RTL:
-            ret = &flightmode_rtl;
+            ret = &mode_rtl;
             break;
 
         case DRIFT:
-            ret = &flightmode_drift;
+            ret = &mode_drift;
             break;
 
         case SPORT:
-            ret = &flightmode_sport;
+            ret = &mode_sport;
             break;
 
         case FLIP:
-            ret = &flightmode_flip;
+            ret = &mode_flip;
             break;
 
 #if AUTOTUNE_ENABLED == ENABLED
         case AUTOTUNE:
-            ret = &flightmode_autotune;
+            ret = &mode_autotune;
             break;
 #endif
 
         case POSHOLD:
-            ret = &flightmode_poshold;
+            ret = &mode_poshold;
             break;
 
         case BRAKE:
-            ret = &flightmode_brake;
+            ret = &mode_brake;
             break;
 
         case THROW:
-            ret = &flightmode_throw;
+            ret = &mode_throw;
             break;
 
         case AVOID_ADSB:
-            ret = &flightmode_avoid_adsb;
+            ret = &mode_avoid_adsb;
             break;
 
         case GUIDED_NOGPS:
-            ret = &flightmode_guided_nogps;
+            ret = &mode_guided_nogps;
             break;
 
         case SMART_RTL:
-            ret = &flightmode_smartrtl;
+            ret = &mode_smartrtl;
             break;
 
         default:
@@ -110,7 +110,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return true;
     }
 
-    Copter::Mode *new_flightmode = flightmode_for_mode(mode);
+    Copter::Mode *new_flightmode = mode_from_mode_num(mode);
     if (new_flightmode == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
@@ -180,13 +180,13 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
                        Copter::Mode *&new_flightmode)
 {
 #if AUTOTUNE_ENABLED == ENABLED
-    if (old_flightmode == &flightmode_autotune) {
-        flightmode_autotune.stop();
+    if (old_flightmode == &mode_autotune) {
+        mode_autotune.stop();
     }
 #endif
 
     // stop mission when we leave auto mode
-    if (old_flightmode == &flightmode_auto) {
+    if (old_flightmode == &mode_auto) {
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
         }
@@ -205,13 +205,13 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     takeoff_stop();
 
     // call smart_rtl cleanup
-    if (old_flightmode == &flightmode_smartrtl) {
-        flightmode_smartrtl.exit();
+    if (old_flightmode == &mode_smartrtl) {
+        mode_smartrtl.exit();
     }
 
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
-    if (old_flightmode == &flightmode_acro) {
+    if (old_flightmode == &mode_acro) {
         attitude_control->use_flybar_passthrough(false, false);
         motors->set_acro_tail(false);
     }
@@ -220,9 +220,9 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     // stab col ramp value should be pre-loaded to the correct value to avoid a twitch
     // heli_stab_col_ramp should really only be active switching between Stabilize and Acro modes
     if (!old_flightmode->has_manual_throttle()){
-        if (new_flightmode == &flightmode_stabilize){
+        if (new_flightmode == &mode_stabilize){
             input_manager.set_stab_col_ramp(1.0);
-        } else if (new_flightmode == &flightmode_acro){
+        } else if (new_flightmode == &mode_acro){
             input_manager.set_stab_col_ramp(0.0);
         }
     }

@@ -946,54 +946,54 @@ private:
     Copter::Mode *flightmode;
 
 #if FRAME_CONFIG == HELI_FRAME
-    Copter::ModeAcro_Heli flightmode_acro{*this};
+    Copter::ModeAcro_Heli mode_acro{*this};
 #else
-    Copter::ModeAcro flightmode_acro{*this};
+    Copter::ModeAcro mode_acro{*this};
 #endif
 
-    Copter::ModeAltHold flightmode_althold{*this};
+    Copter::ModeAltHold mode_althold{*this};
 
-    Copter::ModeAuto flightmode_auto{*this, mission, circle_nav};
+    Copter::ModeAuto mode_auto{*this, mission, circle_nav};
 
 #if AUTOTUNE_ENABLED == ENABLED
-    Copter::ModeAutoTune flightmode_autotune{*this};
+    Copter::ModeAutoTune mode_autotune{*this};
 #endif
 
-    Copter::ModeBrake flightmode_brake{*this};
+    Copter::ModeBrake mode_brake{*this};
 
-    Copter::ModeCircle flightmode_circle{*this, circle_nav};
+    Copter::ModeCircle mode_circle{*this, circle_nav};
 
-    Copter::ModeDrift flightmode_drift{*this};
+    Copter::ModeDrift mode_drift{*this};
 
-    Copter::ModeFlip flightmode_flip{*this};
+    Copter::ModeFlip mode_flip{*this};
 
-    Copter::ModeGuided flightmode_guided{*this};
+    Copter::ModeGuided mode_guided{*this};
 
-    Copter::ModeLand flightmode_land{*this};
+    Copter::ModeLand mode_land{*this};
 
-    Copter::ModeLoiter flightmode_loiter{*this};
+    Copter::ModeLoiter mode_loiter{*this};
 
-    Copter::ModePosHold flightmode_poshold{*this};
+    Copter::ModePosHold mode_poshold{*this};
 
-    Copter::ModeRTL flightmode_rtl{*this};
+    Copter::ModeRTL mode_rtl{*this};
 
 #if FRAME_CONFIG == HELI_FRAME
-    Copter::ModeStabilize_Heli flightmode_stabilize{*this};
+    Copter::ModeStabilize_Heli mode_stabilize{*this};
 #else
-    Copter::ModeStabilize flightmode_stabilize{*this};
+    Copter::ModeStabilize mode_stabilize{*this};
 #endif
 
-    Copter::ModeSport flightmode_sport{*this};
+    Copter::ModeSport mode_sport{*this};
 
-    Copter::ModeAvoidADSB flightmode_avoid_adsb{*this};
+    Copter::ModeAvoidADSB mode_avoid_adsb{*this};
 
-    Copter::ModeThrow flightmode_throw{*this};
+    Copter::ModeThrow mode_throw{*this};
 
-    Copter::ModeGuidedNoGPS flightmode_guided_nogps{*this};
+    Copter::ModeGuidedNoGPS mode_guided_nogps{*this};
 
-    Copter::ModeSmartRTL flightmode_smartrtl{*this};
+    Copter::ModeSmartRTL mode_smartrtl{*this};
 
-    Copter::Mode *flightmode_for_mode(const uint8_t mode);
+    Copter::Mode *mode_from_mode_num(const uint8_t mode);
 
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
 
