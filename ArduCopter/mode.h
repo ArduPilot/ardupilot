@@ -71,6 +71,8 @@ public:
     };
     static AutoYaw auto_yaw;
 
+    bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
+
 protected:
 
     virtual bool init(bool ignore_checks) = 0;

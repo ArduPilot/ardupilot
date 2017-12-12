@@ -817,7 +817,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
             float takeoff_alt = packet.param7 * 100;      // Convert m to cm
 
-            if(copter.do_user_takeoff(takeoff_alt, is_zero(packet.param3))) {
+            if (copter.flightmode->do_user_takeoff(takeoff_alt, is_zero(packet.param3))) {
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_FAILED;
@@ -1109,7 +1109,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             } else if (copter.ap.land_complete) {
                 // if armed and landed, takeoff
                 if (copter.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {
-                    copter.do_user_takeoff(packet.param1*100, true);
+                    copter.flightmode->do_user_takeoff(packet.param1*100, true);
                 }
             } else {
                 // if flying, land
