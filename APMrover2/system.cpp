@@ -140,7 +140,7 @@ void Rover::init_ardupilot()
 
     startup_ground();
 
-    Mode *initial_mode = control_mode_from_num((enum mode)g.initial_mode.get());
+    Mode *initial_mode = mode_from_mode_num((enum mode)g.initial_mode.get());
     if (initial_mode == nullptr) {
         initial_mode = &mode_initializing;
     }
