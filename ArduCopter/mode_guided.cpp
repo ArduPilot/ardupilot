@@ -50,8 +50,8 @@ bool Copter::ModeGuided::init(bool ignore_checks)
 }
 
 
-// guided_takeoff_start - initialises waypoint controller to implement take-off
-bool Copter::ModeGuided::takeoff_start(float final_alt_above_home)
+// do_user_takeoff_start - initialises waypoint controller to implement take-off
+bool Copter::ModeGuided::do_user_takeoff_start(float final_alt_above_home)
 {
     guided_mode = Guided_TakeOff;
 
