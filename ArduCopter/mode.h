@@ -134,6 +134,10 @@ protected:
     ap_t &ap;
     takeoff_state_t &takeoff_state;
 
+    // takeoff support
+    bool takeoff_triggered(float target_climb_rate) const;
+    virtual bool do_user_takeoff_start(float takeoff_alt_cm);
+
     // gnd speed limit required to observe optical flow sensor limits
     float &ekfGndSpdLimit;
 
@@ -783,7 +787,7 @@ public:
     void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     bool limit_check();
 
-    bool takeoff_start(float final_alt_above_home);
+    bool do_user_takeoff_start(float final_alt_above_home) override;
 
     GuidedMode mode() const { return guided_mode; }
 
