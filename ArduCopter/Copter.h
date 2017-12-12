@@ -362,15 +362,6 @@ private:
         uint8_t count;
         uint8_t ch_flag;
     } aux_debounce[(CH_12 - CH_7)+1];
-
-    typedef struct {
-        bool running;
-        float max_speed;
-        float alt_delta;
-        uint32_t start_ms;
-    } takeoff_state_t;
-    takeoff_state_t takeoff_state;
-
     // altitude below which we do no navigation in auto takeoff
     float auto_takeoff_no_nav_alt_cm;
 
@@ -923,9 +914,6 @@ private:
     const char* get_frame_string();
     void allocate_motors(void);
 
-    void takeoff_timer_start(float alt_cm);
-    void takeoff_stop();
-    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     void auto_takeoff_set_start_alt(void);
     void auto_takeoff_attitude_run(float target_yaw_rate);
 

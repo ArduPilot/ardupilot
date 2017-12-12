@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+Copter::Mode::takeoff_state_t Copter::Mode::takeoff_state;
+
 // This file contains the high-level takeoff logic for Loiter, PosHold, AltHold, Sport modes.
 //   The take-off can be initiated from a GCS NAV_TAKEOFF command which includes a takeoff altitude
 //   A safe takeoff speed is calculated and used to calculate a time_ms
@@ -46,7 +48,7 @@ bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 }
 
 // start takeoff to specified altitude above home in centimeters
-void Copter::takeoff_timer_start(float alt_cm)
+void Copter::Mode::takeoff_timer_start(float alt_cm)
 {
     // calculate climb rate
     float speed = MIN(wp_nav->get_speed_up(), MAX(g.pilot_speed_up*2.0f/3.0f, g.pilot_speed_up-50.0f));
@@ -64,7 +66,7 @@ void Copter::takeoff_timer_start(float alt_cm)
 }
 
 // stop takeoff
-void Copter::takeoff_stop()
+void Copter::Mode::takeoff_stop()
 {
     takeoff_state.running = false;
     takeoff_state.start_ms = 0;
@@ -74,7 +76,7 @@ void Copter::takeoff_stop()
 //  pilot_climb_rate is both an input and an output
 //  takeoff_climb_rate is only an output
 //  has side-effect of turning takeoff off when timeout as expired
-void Copter::takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
+void Copter::Mode::takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
 {
     // return pilot_climb_rate if take-off inactive
     if (!takeoff_state.running) {

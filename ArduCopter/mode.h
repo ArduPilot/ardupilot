@@ -132,7 +132,20 @@ protected:
     RC_Channel *&channel_yaw;
     float &G_Dt;
     ap_t &ap;
-    takeoff_state_t &takeoff_state;
+
+    // auto-takeoff support; takeoff state is shared across all mode instances
+    typedef struct {
+        bool running;
+        float max_speed;
+        float alt_delta;
+        uint32_t start_ms;
+    } takeoff_state_t;
+
+    static takeoff_state_t takeoff_state;
+
+    void takeoff_timer_start(float alt_cm);
+    void takeoff_stop();
+    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
 
     // takeoff support
     bool takeoff_triggered(float target_climb_rate) const;
@@ -162,9 +175,6 @@ protected:
     GCS_Copter &gcs();
     void Log_Write_Event(uint8_t id);
     void set_throttle_takeoff(void);
-    void takeoff_timer_start(float alt_cm);
-    void takeoff_stop(void);
-    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
 
