@@ -6,22 +6,22 @@
 //   the pos_control target is then slowly increased until time_ms expires
 
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
-bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
+bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
-    if (motors->armed() && ap.land_complete && flightmode->has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
+    if (copter.motors->armed() && ap.land_complete && has_user_takeoff(must_navigate) && takeoff_alt_cm > copter.current_loc.alt) {
 
 #if FRAME_CONFIG == HELI_FRAME
         // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
-        if (!motors->rotor_runup_complete()) {
+        if (!copter.motors->rotor_runup_complete()) {
             return false;
         }
 #endif
 
-        switch(control_mode) {
+        switch(copter.control_mode) {
 #if MODE_GUIDED_ENABLED == ENABLED
             case GUIDED:
-                if (mode_guided.takeoff_start(takeoff_alt_cm)) {
-                    set_auto_armed(true);
+                if (copter.mode_guided.takeoff_start(takeoff_alt_cm)) {
+                    copter.set_auto_armed(true);
                     return true;
                 }
                 return false;
@@ -31,7 +31,7 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
             case ALT_HOLD:
             case SPORT:
             case FLOWHOLD:
-                set_auto_armed(true);
+                copter.set_auto_armed(true);
                 takeoff_timer_start(takeoff_alt_cm);
                 return true;
             default:
