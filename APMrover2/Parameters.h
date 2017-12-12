@@ -336,6 +336,9 @@ public:
 
     // proximity library
     AP_Proximity proximity;
+
+    // avoidance library
+    AC_Avoid avoid;
 };
 
 extern const AP_Param::Info var_info[];

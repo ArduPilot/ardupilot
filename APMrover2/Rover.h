@@ -78,6 +78,7 @@
 #include <StorageManager/StorageManager.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include <AC_Avoidance/AC_Avoid.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
