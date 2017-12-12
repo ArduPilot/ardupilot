@@ -119,19 +119,21 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 
     bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
 
+#if FRAME_CONFIG == HELI_FRAME
+    // do not allow helis to enter a non-manual throttle mode if the
+    // rotor runup is not complete
+    if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()){
+        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        return false;
+    }
+#endif
+
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
         return false;
     }
-
-#if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter a non-manual throttle mode if the
-    // rotor runup is not complete
-    if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()){
-        return false;
-    }
-#endif
 
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
