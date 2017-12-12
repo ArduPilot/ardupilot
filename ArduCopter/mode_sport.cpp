@@ -71,17 +71,10 @@ void Copter::ModeSport::run()
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters are held on the ground until rotor speed runup has finished
-    bool takeoff_triggered = (ap.land_complete && (target_climb_rate > 0.0f) && motors->rotor_runup_complete());
-#else
-    bool takeoff_triggered = ap.land_complete && (target_climb_rate > 0.0f);
-#endif
-
     // State Machine Determination
     if (!motors->armed() || !motors->get_interlock()) {
         sport_state = Sport_MotorStopped;
-    } else if (takeoff_state.running || takeoff_triggered) {
+    } else if (takeoff_state.running || takeoff_triggered(target_climb_rate)) {
         sport_state = Sport_Takeoff;
     } else if (!ap.auto_armed || ap.land_complete) {
         sport_state = Sport_Landed;

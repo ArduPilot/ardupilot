@@ -101,17 +101,10 @@ void Copter::ModeLoiter::run()
         wp_nav->loiter_soften_for_landing();
     }
 
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters are held on the ground until rotor speed runup has finished
-    bool takeoff_triggered = (ap.land_complete && (target_climb_rate > 0.0f) && motors->rotor_runup_complete());
-#else
-    bool takeoff_triggered = ap.land_complete && (target_climb_rate > 0.0f);
-#endif
-
     // Loiter State Machine Determination
     if (!motors->armed() || !motors->get_interlock()) {
         loiter_state = Loiter_MotorStopped;
-    } else if (takeoff_state.running || takeoff_triggered) {
+    } else if (takeoff_state.running || takeoff_triggered(target_climb_rate)) {
         loiter_state = Loiter_Takeoff;
     } else if (!ap.auto_armed || ap.land_complete) {
         loiter_state = Loiter_Landed;
