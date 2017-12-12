@@ -135,7 +135,7 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE) ||
         (_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
         Vector2f position;
-        if (!_ahrs.get_relative_position_NE_origin(position)) {
+        if (!_ahrs.get_relative_position_NE_home(position)) {
             fail_msg = "fence requires position";
             return false;
         }
