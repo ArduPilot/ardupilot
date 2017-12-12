@@ -197,7 +197,7 @@ bool AC_Fence::check_fence_polygon()
 
     // check consistency of number of points
     if (_boundary_num_points != _total) {
-        // we have no idea where the fence is.  Can't breach it?!
+        // Fence is currently not completely loaded.  Can't breach it?!
         _boundary_loaded = false;
         load_polygon_from_eeprom();
         return false;
