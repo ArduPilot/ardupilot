@@ -346,14 +346,19 @@ void Copter::update_sensor_status_flags(void)
     if (copter.battery.healthy()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
-
+#if AC_FENCE == ENABLED
+    if (copter.fence.geofence_present()) {
+        control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
+    }
+#endif
 
     // all present sensors enabled by default except altitude and position control and motors which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
                                                          ~MAV_SYS_STATUS_LOGGING &
-                                                         ~MAV_SYS_STATUS_SENSOR_BATTERY);
+                                                         ~MAV_SYS_STATUS_SENSOR_BATTERY &
+                                                         ~MAV_SYS_STATUS_GEOFENCE);
 
     switch (control_mode) {
     case AUTO:
@@ -393,7 +398,11 @@ void Copter::update_sensor_status_flags(void)
     if (g.fs_batt_voltage > 0 || g.fs_batt_mah > 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
-
+#if AC_FENCE == ENABLED
+    if (copter.fence.geofence_enabled()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
+    }
+#endif
 
 
     // default to all healthy
@@ -483,7 +492,12 @@ void Copter::update_sensor_status_flags(void)
 
     if (copter.failsafe.battery) {
          control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;                                                                    }
-    
+#if AC_FENCE == ENABLED
+    if (copter.fence.geofence_failed()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;
+    }
+#endif
+
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry
     frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
