@@ -109,7 +109,7 @@ bool AP_Arming_Rover::proximity_check(bool report)
 
     // get closest object if we might use it for avoidance
     float angle_deg, distance;
-    if (rover.g2.proximity.get_closest_object(angle_deg, distance)) {
+    if (rover.g2.avoid.proximity_avoidance_enabled() && rover.g2.proximity.get_closest_object(angle_deg, distance)) {
         // display error if something is within 60cm
         if (distance <= 0.6f) {
             if (report) {
