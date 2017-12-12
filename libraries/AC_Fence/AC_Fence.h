@@ -121,6 +121,11 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    bool geofence_present() const;
+    bool geofence_enabled() const;
+    bool geofence_failed() const;
+
 private:
     AC_Fence(const AP_AHRS_NavEKF &ahrs);
 
