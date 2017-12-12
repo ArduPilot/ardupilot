@@ -72,6 +72,9 @@ protected:
     ap_t &ap;
     takeoff_state_t &takeoff_state;
 
+    // takeoff support
+    bool takeoff_triggered(float target_climb_rate) const;
+
     // gnd speed limit required to observe optical flow sensor limits
     float &ekfGndSpdLimit;
 

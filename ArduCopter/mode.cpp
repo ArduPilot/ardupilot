@@ -242,3 +242,23 @@ void Copter::Mode::update_navigation()
     // run autopilot to make high level decisions about control modes
     run_autopilot();
 }
+
+
+bool Copter::Mode::takeoff_triggered(const float target_climb_rate) const
+{
+    if (!ap.land_complete) {
+        // can't take off if we're already flying
+        return false;
+    }
+    if (target_climb_rate <= 0.0f) {
+        // can't takeoff unless we want to go up...
+        return false;
+    }
+#if FRAME_CONFIG == HELI_FRAME
+    if (!motors->rotor_runup_complete()) {
+        // hold heli on the ground until rotor speed runup has finished
+        return false;
+    }
+#endif
+    return true;
+}
