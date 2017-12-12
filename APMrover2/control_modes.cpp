@@ -2,7 +2,7 @@
 
 static const int16_t CH_7_PWM_TRIGGER = 1800;
 
-Mode *Rover::control_mode_from_num(const enum mode num)
+Mode *Rover::mode_from_mode_num(const enum mode num)
 {
     Mode *ret = nullptr;
     switch (num) {
@@ -73,7 +73,7 @@ void Rover::read_control_switch()
             return;
         }
 
-        Mode *new_mode = control_mode_from_num((enum mode)modes[switchPosition].get());
+        Mode *new_mode = mode_from_mode_num((enum mode)modes[switchPosition].get());
         if (new_mode != nullptr) {
             set_mode(*new_mode, MODE_REASON_TX_COMMAND);
         }
