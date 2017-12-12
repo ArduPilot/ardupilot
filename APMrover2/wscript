@@ -24,6 +24,7 @@ def build(bld):
             'AP_SmartRTL',
             'AC_Fence',
             'AP_Proximity',
+            'AC_Avoidance',
         ],
     )
 
