@@ -518,3 +518,32 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
 
     return true;
 }
+
+// methods for mavlink SYS_STATUS message (send_extended_status1)
+bool AC_Fence::geofence_present() const
+{
+    return _enabled;
+}
+
+bool AC_Fence::geofence_enabled() const
+{
+    if (!geofence_present()) {
+        return false;
+    }
+    if (_action == AC_FENCE_ACTION_REPORT_ONLY) {
+        return false;
+    }
+    return true;
+}
+
+bool AC_Fence::geofence_failed() const
+{
+    if (!geofence_present()) {
+        // not failed if not present; can fail if present but not enabled
+        return false;
+    }
+    if (get_breaches() != 0) {
+        return true;
+    }
+    return false;
+}
