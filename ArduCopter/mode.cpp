@@ -24,7 +24,6 @@ Copter::Mode::Mode(void) :
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt),
     ap(copter.ap),
-    takeoff_state(copter.takeoff_state),
     ekfGndSpdLimit(copter.ekfGndSpdLimit),
 #if FRAME_CONFIG == HELI_FRAME
     heli_flags(copter.heli_flags),
@@ -281,7 +280,7 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     }
 
     // cancel any takeoffs in progress
-    takeoff_stop();
+    old_flightmode->takeoff_stop();
 
 #if MODE_SMARTRTL_ENABLED == ENABLED
     // call smart_rtl cleanup
@@ -599,21 +598,6 @@ void Copter::Mode::Log_Write_Event(uint8_t id)
 void Copter::Mode::set_throttle_takeoff()
 {
     return copter.set_throttle_takeoff();
-}
-
-void Copter::Mode::takeoff_timer_start(float alt_cm)
-{
-    return copter.takeoff_timer_start(alt_cm);
-}
-
-void Copter::Mode::takeoff_stop()
-{
-    return copter.takeoff_stop();
-}
-
-void Copter::Mode::takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
-{
-    return copter.takeoff_get_climb_rates(pilot_climb_rate, takeoff_climb_rate);
 }
 
 float Copter::Mode::get_avoidance_adjusted_climbrate(float target_rate)
