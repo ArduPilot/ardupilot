@@ -2179,13 +2179,6 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
 
     throttle_wait = false;
     landing_detect.lower_limit_start_ms = 0;
-    Location origin = inertial_nav.get_origin();
-    Vector2f diff2d;
-    Vector3f target;
-    diff2d = location_diff(origin, plane.next_WP_loc);
-    target.x = diff2d.x * 100;
-    target.y = diff2d.y * 100;
-    target.z = plane.next_WP_loc.alt - origin.alt;
     set_alt_target_current();
     
     // also update nav_controller for status output
