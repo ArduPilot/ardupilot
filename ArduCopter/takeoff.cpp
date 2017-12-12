@@ -5,40 +5,44 @@
 //   A safe takeoff speed is calculated and used to calculate a time_ms
 //   the pos_control target is then slowly increased until time_ms expires
 
+bool Copter::Mode::do_user_takeoff_start(float takeoff_alt_cm)
+{
+    takeoff_timer_start(takeoff_alt_cm);
+    return true;
+}
+
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
 bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
-    if (copter.motors->armed() && ap.land_complete && has_user_takeoff(must_navigate) && takeoff_alt_cm > copter.current_loc.alt) {
+    if (!copter.motors->armed()) {
+        return false;
+    }
+    if (!ap.land_complete) {
+        // can't takeoff again!
+        return false;
+    }
+    if (!has_user_takeoff(must_navigate)) {
+        // this mode doesn't support user takeoff
+        return false;
+    }
+    if (takeoff_alt_cm <= copter.current_loc.alt) {
+        // can't takeoff downwards...
+        return false;
+    }
 
 #if FRAME_CONFIG == HELI_FRAME
-        // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
-        if (!copter.motors->rotor_runup_complete()) {
-            return false;
-        }
+    // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
+    if (!copter.motors->rotor_runup_complete()) {
+        return false;
+    }
 #endif
 
-        switch(copter.control_mode) {
-#if MODE_GUIDED_ENABLED == ENABLED
-            case GUIDED:
-                if (copter.mode_guided.takeoff_start(takeoff_alt_cm)) {
-                    copter.set_auto_armed(true);
-                    return true;
-                }
-                return false;
-#endif
-            case LOITER:
-            case POSHOLD:
-            case ALT_HOLD:
-            case SPORT:
-            case FLOWHOLD:
-                copter.set_auto_armed(true);
-                takeoff_timer_start(takeoff_alt_cm);
-                return true;
-            default:
-                return false;
-        }
+    if (!do_user_takeoff_start(takeoff_alt_cm)) {
+        return false;
     }
-    return false;
+
+    copter.set_auto_armed(true);
+    return true;
 }
 
 // start takeoff to specified altitude above home in centimeters
