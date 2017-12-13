@@ -16,9 +16,13 @@
 /// @brief  Class managing the pilot's control inputs   for Conventional Helicopter
 class AC_InputManager_Heli : public AC_InputManager {
 public:
-    static AC_InputManager_Heli create() { return AC_InputManager_Heli{}; }
-
-    constexpr AC_InputManager_Heli(AC_InputManager_Heli &&other) = default;
+    // Constructor
+    AC_InputManager_Heli()
+        : AC_InputManager()
+    {
+        // setup parameter defaults
+        AP_Param::setup_object_defaults(this, var_info);
+    }
 
     /* Do not allow copies */
     AC_InputManager_Heli(const AC_InputManager_Heli &other) = delete;
@@ -34,15 +38,6 @@ public:
     void set_stab_col_ramp(float ramp) { _stab_col_ramp = constrain_float(ramp, 0.0, 1.0); }
 
     static const struct AP_Param::GroupInfo        var_info[];
-
-protected:
-    // Constructor
-    AC_InputManager_Heli()
-        : AC_InputManager()
-    {
-        // setup parameter defaults
-        AP_Param::setup_object_defaults(this, var_info);
-    }
 
 private:
     struct InputManagerHeliFlags {
