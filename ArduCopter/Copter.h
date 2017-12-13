@@ -836,7 +836,6 @@ private:
 #endif
     void Log_Write_Precland();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
-    void Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool position_ok);
     void Log_Write_Vehicle_Startup_Messages();
     void log_init(void);
 
