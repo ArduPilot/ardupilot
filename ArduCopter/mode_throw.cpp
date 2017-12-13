@@ -193,15 +193,22 @@ void Copter::ModeThrow::run()
         bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
         bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
         bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
-        copter.Log_Write_Throw(stage,
-                                velocity,
-                                velocity_z,
-                                accel,
-                                ef_accel_z,
-                                throw_detect,
-                                attitude_ok,
-                                height_ok,
-                                pos_ok);
+        DataFlash_Class::instance()->Log_Write(
+            "THRO",
+            "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk",
+            "s-nnoo----",
+            "F-0000----",
+            "QBffffbbbb",
+            AP_HAL::micros64(),
+            (uint8_t)stage,
+            velocity,
+            velocity_z,
+            accel,
+            ef_accel_z,
+            throw_detect,
+            attitude_ok,
+            height_ok,
+            pos_ok);
     }
 }
 

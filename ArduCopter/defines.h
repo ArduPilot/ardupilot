@@ -265,21 +265,6 @@ enum FlipState {
     Flip_Abandon
 };
 
-// Throw stages
-enum ThrowModeStage {
-    Throw_Disarmed,
-    Throw_Detecting,
-    Throw_Uprighting,
-    Throw_HgtStabilise,
-    Throw_PosHold
-};
-
-// Throw types
-enum ThrowModeType {
-    ThrowType_Upward = 0,
-    ThrowType_Drop = 1
-};
-
 enum LandStateType {
     LandStateType_FlyToLocation = 0,
     LandStateType_Descending = 1
@@ -324,7 +309,6 @@ enum LoggingParameters {
      LOG_HELI_MSG,
      LOG_PRECLAND_MSG,
      LOG_GUIDEDTARGET_MSG,
-     LOG_THROW_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
