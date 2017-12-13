@@ -43,15 +43,9 @@ public:
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
-    static AP_AHRS_NavEKF create(AP_InertialSensor &ins,
-                                 AP_Baro &baro,
-                                 AP_GPS &gps,
-                                 NavEKF2 &_EKF2, NavEKF3 &_EKF3,
-                                 Flags flags = FLAG_NONE) {
-        return AP_AHRS_NavEKF{ins, baro, gps, _EKF2, _EKF3, flags};
-    }
-
-    constexpr AP_AHRS_NavEKF(AP_AHRS_NavEKF &&other) = default;
+    // Constructor
+    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps,
+                   NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
 
     /* Do not allow copies */
     AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
@@ -302,10 +296,5 @@ private:
     uint32_t _last_body_odm_update_ms = 0;
     void update_SITL(void);
 #endif    
-
-private:
-    // Constructor
-    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps,
-                   NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
 };
 #endif
