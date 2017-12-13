@@ -34,11 +34,7 @@
 class AC_Fence
 {
 public:
-    static AC_Fence create(const AP_AHRS_NavEKF &ahrs) {
-        return AC_Fence{ahrs};
-    }
-
-    constexpr AC_Fence(AC_Fence &&other) = default;
+    AC_Fence(const AP_AHRS_NavEKF &ahrs);
 
     /* Do not allow copies */
     AC_Fence(const AC_Fence &other) = delete;
@@ -127,8 +123,6 @@ public:
     bool geofence_failed() const;
 
 private:
-    AC_Fence(const AP_AHRS_NavEKF &ahrs);
-
     /// check_fence_alt_max - true if alt fence has been newly breached
     bool check_fence_alt_max(float curr_alt);
 
