@@ -35,13 +35,7 @@ class NavEKF3 {
     friend class NavEKF3_core;
 
 public:
-    static NavEKF3 create(const AP_AHRS *ahrs,
-                          AP_Baro &baro,
-                          const RangeFinder &rng) {
-        return NavEKF3{ahrs, baro, rng};
-    }
-
-    constexpr NavEKF3(NavEKF3 &&other) = default;
+    NavEKF3(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
     /* Do not allow copies */
     NavEKF3(const NavEKF3 &other) = delete;
@@ -361,8 +355,6 @@ public:
     void getTimingStatistics(int8_t instance, struct ekf_timing &timing);
 
 private:
-    NavEKF3(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
-
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF3_core *core = nullptr;
