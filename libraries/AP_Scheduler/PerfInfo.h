@@ -4,10 +4,7 @@ namespace AP {
 
 class PerfInfo {
 public:
-
-    static PerfInfo create() { return PerfInfo{}; }
-
-    constexpr PerfInfo(PerfInfo &&other) = default;
+    PerfInfo() {}
 
     /* Do not allow copies */
     PerfInfo(const PerfInfo &other) = delete;
@@ -25,9 +22,6 @@ public:
     uint32_t get_stddev_time() const;
 
 private:
-
-    PerfInfo() {}
-
     uint16_t loop_count;
     uint32_t max_time; // in microseconds
     uint32_t min_time; // in microseconds
