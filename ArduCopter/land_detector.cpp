@@ -47,10 +47,10 @@ void Copter::update_land_detector()
     } else if (ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME
         // if rotor speed and collective pitch are high then clear landing flag
-        if (motors->get_throttle() > get_non_takeoff_throttle() && !motors->limit.throttle_lower && motors->rotor_runup_complete()) {
+        if (motors->get_throttle() > flightmode->get_non_takeoff_throttle() && !motors->limit.throttle_lower && motors->rotor_runup_complete()) {
 #else
         // if throttle output is high then clear landing flag
-        if (motors->get_throttle() > get_non_takeoff_throttle()) {
+        if (motors->get_throttle() > flightmode->get_non_takeoff_throttle()) {
 #endif
             set_land_complete(false);
         }

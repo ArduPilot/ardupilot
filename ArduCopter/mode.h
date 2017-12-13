@@ -178,6 +178,7 @@ protected:
 #endif
 
     float get_pilot_desired_throttle(int16_t throttle_control, float thr_mid = 0.0f) const;
+    float get_non_takeoff_throttle() const;
 
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base

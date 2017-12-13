@@ -12,7 +12,7 @@ bool Copter::ModeAcro::init(bool ignore_checks)
 {
    // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
    if (motors->armed() && ap.land_complete && !copter.flightmode->has_manual_throttle() &&
-           (get_pilot_desired_throttle(channel_throttle->get_control_in(), copter.g2.acro_thr_mid) > copter.get_non_takeoff_throttle())) {
+           (get_pilot_desired_throttle(channel_throttle->get_control_in(), copter.g2.acro_thr_mid) > get_non_takeoff_throttle())) {
        return false;
    }
    // set target altitude to zero for reporting

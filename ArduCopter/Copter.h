@@ -669,7 +669,6 @@ private:
     void update_throttle_hover();
     void set_throttle_takeoff();
     float get_pilot_desired_climb_rate(float throttle_control);
-    float get_non_takeoff_throttle();
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     float get_avoidance_adjusted_climbrate(float target_rate);
     void set_accel_throttle_I_from_pilot_throttle();
