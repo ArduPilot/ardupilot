@@ -76,23 +76,17 @@
 
 class AP_Terrain {
 public:
+    AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rally &_rally);
+
+    /* Do not allow copies */
+    AP_Terrain(const AP_Terrain &other) = delete;
+    AP_Terrain &operator=(const AP_Terrain&) = delete;
+
     enum TerrainStatus {
         TerrainStatusDisabled  = 0, // not enabled
         TerrainStatusUnhealthy = 1, // no terrain data for current location
         TerrainStatusOK        = 2  // terrain data available
     };
-
-    static AP_Terrain create(AP_AHRS &_ahrs,
-                             const AP_Mission &_mission,
-                             const AP_Rally &_rally) {
-        return AP_Terrain{_ahrs, _mission, _rally};
-    }
-
-    constexpr AP_Terrain(AP_Terrain &&other) = default;
-
-    /* Do not allow copies */
-    AP_Terrain(const AP_Terrain &other) = delete;
-    AP_Terrain &operator=(const AP_Terrain&) = delete;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -184,8 +178,6 @@ public:
     void get_statistics(uint16_t &pending, uint16_t &loaded);
 
 private:
-    AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rally &_rally);
-
     // allocate the terrain subsystem data
     bool allocate(void);
 
