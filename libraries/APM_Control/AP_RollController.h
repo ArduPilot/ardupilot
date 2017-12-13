@@ -9,12 +9,13 @@
 
 class AP_RollController {
 public:
-    static AP_RollController create(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms,
-                                    DataFlash_Class &_dataflash) {
-        return AP_RollController{ahrs, parms, _dataflash};
+    AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash)
+        : aparm(parms)
+        , autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms, _dataflash)
+        , _ahrs(ahrs)
+    {
+        AP_Param::setup_object_defaults(this, var_info);
     }
-
-    constexpr AP_RollController(AP_RollController &&other) = default;
 
     /* Do not allow copies */
     AP_RollController(const AP_RollController &other) = delete;
@@ -45,14 +46,6 @@ public:
     AP_Float &kFF(void) { return gains.FF; }
 
 private:
-    AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash)
-        : aparm(parms)
-        , autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms, _dataflash)
-        , _ahrs(ahrs)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    }
-
     const AP_Vehicle::FixedWing &aparm;
     AP_AutoTune::ATGains gains;
     AP_AutoTune autotune;
