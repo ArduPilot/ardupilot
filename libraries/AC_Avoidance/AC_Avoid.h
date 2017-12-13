@@ -28,14 +28,7 @@
  */
 class AC_Avoid {
 public:
-    static AC_Avoid create(const AP_AHRS& ahrs,
-                           const AC_Fence& fence,
-                           const AP_Proximity& proximity,
-                           const AP_Beacon* beacon = nullptr) {
-        return AC_Avoid{ahrs, fence, proximity, beacon};
-    }
-
-    constexpr AC_Avoid(AC_Avoid &&other) = default;
+    AC_Avoid(const AP_AHRS& ahrs, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
 
     /* Do not allow copies */
     AC_Avoid(const AC_Avoid &other) = delete;
@@ -64,8 +57,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AC_Avoid(const AP_AHRS& ahrs, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
-
     /*
      * Adjusts the desired velocity for the circular fence.
      */
