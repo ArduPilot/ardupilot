@@ -19,17 +19,45 @@
  *  Code in this file implements the navigation commands
  */
 
-// auto_init - initialise auto controller
-bool Copter::ModeAuto::init(bool ignore_checks)
+bool Copter::ModeAuto::ok_to_enter_check_takeoff_cmd() const
 {
-    if ((copter.position_ok() && copter.mission.num_commands() > 1) || ignore_checks) {
-        _mode = Auto_Loiter;
+    if (!motors->armed()) {
+        // allow changing into auto mode if disarmed, regardless of
+        // the mission having a takeoff.  Arming is not permitted in
+        // auto mode, otherwise we would need a pre-arm check.
+        return true;
+    }
 
-        // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
-        if (motors->armed() && ap.land_complete && !copter.mission.starts_with_takeoff_cmd()) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
-            return false;
-        }
+    if (!ap.land_complete) {
+        // we're already flying, so we don't need a takeoff_cmd
+        return true;
+    }
+
+    if (!mission.starts_with_takeoff_cmd()) {
+            // gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
+        return false;
+    }
+    return true;
+}
+
+// auto_init - initialise auto controller
+bool Copter::ModeAuto::ok_to_enter() const
+{
+    if (mission.num_commands() < 2) {
+        // can't enter auto without at least one non-home-position
+        // command.  Note our home position counts towards
+        // num_commands()!
+        return false;
+    }
+    if (!ok_to_enter_check_takeoff_cmd()) {
+        return false;
+    }
+    return Copter::Mode::ok_to_enter();
+}
+
+void Copter::ModeAuto::enter()
+{
+        _mode = Auto_Loiter;
 
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
@@ -44,11 +72,7 @@ bool Copter::ModeAuto::init(bool ignore_checks)
         copter.mode_guided.limit_clear();
 
         // start/resume the mission (based on MIS_RESTART parameter)
-        copter.mission.start_or_resume();
-        return true;
-    } else {
-        return false;
-    }
+        mission.start_or_resume();
 }
 
 // auto_run - runs the auto controller
@@ -129,7 +153,7 @@ void Copter::ModeAuto::rtl_start()
     _mode = Auto_RTL;
 
     // call regular rtl flight mode initialisation and ask it to ignore checks
-    copter.mode_rtl.init(true);
+    copter.mode_rtl.enter();
 }
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
@@ -338,8 +362,9 @@ void Copter::ModeAuto::nav_guided_start()
 {
     _mode = Auto_NavGuided;
 
-    // call regular guided flight mode initialisation
-    copter.mode_guided.init(true);
+    // call regular guided flight mode initialisation.  Note that we
+    // have not called ok_to_enter.  Hopefully things will work out...
+    copter.mode_guided.enter();
 
     // initialise guided start time and position as reference for limit checking
     copter.mode_guided.limit_init_time_and_pos();

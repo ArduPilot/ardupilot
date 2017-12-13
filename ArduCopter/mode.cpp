@@ -189,23 +189,13 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return false;
     }
 
-    bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
-
-#if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter a non-manual throttle mode if the
-    // rotor runup is not complete
-    if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()){
+    if (!new_flightmode->ok_to_enter()) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
         return false;
     }
-#endif
 
-    if (!new_flightmode->init(ignore_checks)) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
-        return false;
-    }
+    new_flightmode->enter();
 
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
@@ -558,11 +548,6 @@ float Copter::Mode::get_pilot_desired_climb_rate(float throttle_control)
     return copter.get_pilot_desired_climb_rate(throttle_control);
 }
 
-float Copter::Mode::get_non_takeoff_throttle()
-{
-    return copter.get_non_takeoff_throttle();
-}
-
 void Copter::Mode::update_simple_mode(void) {
     copter.update_simple_mode();
 }
@@ -600,4 +585,42 @@ float Copter::Mode::get_avoidance_adjusted_climbrate(float target_rate)
 uint16_t Copter::Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
+}
+
+bool Copter::Mode::ok_to_enter_gps_checks() const
+{
+    if (!requires_GPS()) {
+        // this mode doesn't require position information
+        return true;
+    }
+    if (!motors->armed()) {
+        // we allow mode changes when the vehicle isn't armed
+        // regardless of whether the position is OK.  We rely on the
+        // pre-arm checks to ensure the position is good before
+        // allowing arming.
+        return true;
+    }
+    if (copter.position_ok()) {
+        return true;
+    }
+    return false;
+}
+
+bool Copter::Mode::ok_to_enter() const
+{
+#if FRAME_CONFIG == HELI_FRAME
+    // do not allow helis to enter a non-manual throttle mode if the
+    // rotor runup is not complete
+    if (motors->armed() &&
+        !has_manual_throttle() &&
+        !motors->rotor_runup_complete()){
+        return false;
+    }
+#endif
+
+    if (!ok_to_enter_gps_checks()) {
+        return false;
+    }
+
+    return true;
 }

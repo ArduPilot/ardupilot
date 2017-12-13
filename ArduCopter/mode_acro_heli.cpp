@@ -8,7 +8,7 @@
  */
 
 // heli_acro_init - initialise acro controller
-bool Copter::ModeAcro_Heli::init(bool ignore_checks)
+void Copter::ModeAcro_Heli::enter()
 {
     // if heli is equipped with a flybar, then tell the attitude controller to pass through controls directly to servos
     attitude_control->use_flybar_passthrough(motors->has_flybar(), motors->supports_yaw_passthrough());
@@ -17,9 +17,6 @@ bool Copter::ModeAcro_Heli::init(bool ignore_checks)
     
     // set stab collective false to use full collective pitch range
     copter.input_manager.set_use_stab_col(false);
-
-    // always successfully enter acro
-    return true;
 }
 
 // heli_acro_run - runs the acro controller

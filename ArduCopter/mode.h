@@ -75,7 +75,8 @@ public:
 
 protected:
 
-    virtual bool init(bool ignore_checks) = 0;
+    virtual bool ok_to_enter() const;
+    virtual void enter() = 0;
     virtual void run() = 0;
 
     virtual bool is_autopilot() const { return false; }
@@ -186,7 +187,6 @@ protected:
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_climb_rate(float throttle_control);
-    float get_non_takeoff_throttle(void);
     void update_simple_mode(void);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     void set_land_complete(bool b);
@@ -197,6 +197,10 @@ protected:
     uint16_t get_pilot_speed_dn(void);
 
     // end pass-through functions
+
+private:
+
+    bool ok_to_enter_gps_checks() const;
 };
 
 
@@ -204,10 +208,12 @@ protected:
 class ModeAcro : public Mode {
 
 public:
+
     // inherit constructor
     using Copter::Mode::Mode;
 
-    virtual bool init(bool ignore_checks) override;
+    bool ok_to_enter() const override;
+    void enter() override;
     virtual void run() override;
 
     bool is_autopilot() const override { return false; }
@@ -234,7 +240,7 @@ public:
     // inherit constructor
     using Copter::ModeAcro::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
 protected:
@@ -249,7 +255,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return false; }
@@ -273,10 +279,13 @@ private:
 class ModeAuto : public Mode {
 
 public:
-    // inherit constructor
-    using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    ModeAuto(AP_Mission &_mission) :
+        mission(_mission),
+        Mode() {}
+
+    bool ok_to_enter() const override;
+    void enter() override;
     void run() override;
 
     bool is_autopilot() const override { return true; }
@@ -329,6 +338,8 @@ protected:
     void run_autopilot() override;
 
 private:
+
+    bool ok_to_enter_check_takeoff_cmd() const;
 
     bool verify_command(const AP_Mission::Mission_Command& cmd);
 
@@ -433,6 +444,7 @@ private:
         float descend_max; // centimetres
     } nav_payload_place;
 
+    AP_Mission &mission;
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -442,7 +454,8 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    bool ok_to_enter() const override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return false; }
@@ -597,7 +610,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -626,7 +639,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -655,7 +668,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -681,7 +694,8 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    bool ok_to_enter() const override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return false; }
@@ -713,7 +727,8 @@ public:
     // need a constructor for parameters
     ModeFlowHold(void);
 
-    bool init(bool ignore_checks) override;
+    bool ok_to_enter() const override;
+    void enter() override;
     void run(void) override;
 
     bool requires_GPS() const override { return false; }
@@ -795,7 +810,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -857,7 +872,7 @@ public:
     // inherit constructor
     using Copter::ModeGuided::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -881,7 +896,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return false; }
@@ -910,7 +925,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -951,7 +966,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -984,7 +999,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override {
         return run(true);
     }
@@ -1055,7 +1070,8 @@ public:
     // inherit constructor
     using Copter::ModeRTL::Mode;
 
-    bool init(bool ignore_checks) override;
+    bool ok_to_enter() const override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -1092,7 +1108,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return false; }
@@ -1119,7 +1135,8 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    virtual bool init(bool ignore_checks) override;
+    bool ok_to_enter() const override;
+    void enter() override;
     virtual void run() override;
 
     bool requires_GPS() const override { return false; }
@@ -1143,7 +1160,7 @@ public:
     // inherit constructor
     using Copter::ModeStabilize::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
 protected:
@@ -1160,7 +1177,8 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    bool ok_to_enter() const override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -1211,7 +1229,8 @@ public:
     // inherit constructor
     using Copter::ModeGuided::Mode;
 
-    bool init(bool ignore_checks) override;
+    bool ok_to_enter() const override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -1237,7 +1256,7 @@ public:
     // inherit constructor
     using Copter::ModeGuided::Mode;
 
-    bool init(bool ignore_checks) override;
+    bool ok_to_enter() const override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -1260,7 +1279,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
+    void enter() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }

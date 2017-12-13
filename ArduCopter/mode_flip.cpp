@@ -38,7 +38,7 @@ int8_t    flip_roll_dir;            // roll direction (-1 = roll left, 1 = roll 
 int8_t    flip_pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
 
 // flip_init - initialise flip controller
-bool Copter::ModeFlip::init(bool ignore_checks)
+bool Copter::ModeFlip::ok_to_enter() const
 {
     // only allow flip from ACRO, Stabilize, AltHold or Drift flight modes
     if (copter.control_mode != ACRO &&
@@ -62,7 +62,11 @@ bool Copter::ModeFlip::init(bool ignore_checks)
     if (!motors->armed() || ap.land_complete) {
         return false;
     }
+    return Copter::Mode::ok_to_enter();
+}
 
+void Copter::ModeFlip::enter()
+{
     // capture original flight mode so that we can return to it after completion
     flip_orig_control_mode = copter.control_mode;
 
@@ -91,8 +95,6 @@ bool Copter::ModeFlip::init(bool ignore_checks)
     flip_orig_attitude.x = constrain_float(ahrs.roll_sensor, -angle_max, angle_max);
     flip_orig_attitude.y = constrain_float(ahrs.pitch_sensor, -angle_max, angle_max);
     flip_orig_attitude.z = ahrs.yaw_sensor;
-
-    return true;
 }
 
 // flip_run - runs the flip controller

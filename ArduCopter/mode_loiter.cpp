@@ -4,10 +4,8 @@
  * Init and run calls for loiter flight mode
  */
 
-// loiter_init - initialise loiter controller
-bool Copter::ModeLoiter::init(bool ignore_checks)
+void Copter::ModeLoiter::enter()
 {
-    if (copter.position_ok() || ignore_checks) {
         if (!copter.failsafe.radio) {
             float target_roll, target_pitch;
             // apply SIMPLE mode transform to pilot inputs
@@ -22,6 +20,7 @@ bool Copter::ModeLoiter::init(bool ignore_checks)
             // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
             loiter_nav->clear_pilot_desired_acceleration();
         }
+        // set target to current position
         loiter_nav->init_target();
 
         // initialise position and desired velocity
@@ -29,11 +28,6 @@ bool Copter::ModeLoiter::init(bool ignore_checks)
             pos_control->set_alt_target_to_current_alt();
             pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
         }
-
-        return true;
-    } else {
-        return false;
-    }
 }
 
 #if PRECISION_LANDING == ENABLED

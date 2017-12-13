@@ -28,14 +28,9 @@
  # define DRIFT_THR_MAX         0.787f  // throttle assist will be active when pilot's throttle is below this value
 #endif
 
-// drift_init - initialise drift controller
-bool Copter::ModeDrift::init(bool ignore_checks)
+void Copter::ModeDrift::enter()
 {
-    if (copter.position_ok() || ignore_checks) {
-        return true;
-    }else{
-        return false;
-    }
+    // TODO: insert missing initialisations here
 }
 
 // drift_run - runs the drift controller

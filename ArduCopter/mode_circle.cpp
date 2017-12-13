@@ -6,10 +6,8 @@
  * Init and run calls for circle flight mode
  */
 
-// circle_init - initialise circle controller flight mode
-bool Copter::ModeCircle::init(bool ignore_checks)
+void Copter::ModeCircle::enter()
 {
-    if (copter.position_ok() || ignore_checks) {
         pilot_yaw_override = false;
 
         // initialize speeds and accelerations
@@ -20,11 +18,6 @@ bool Copter::ModeCircle::init(bool ignore_checks)
 
         // initialise circle controller including setting the circle center based on vehicle speed
         copter.circle_nav->init();
-
-        return true;
-    }else{
-        return false;
-    }
 }
 
 // circle_run - runs the circle flight mode

@@ -75,11 +75,11 @@ Copter::ModeFlowHold::ModeFlowHold(void) : Mode()
 #define CONTROL_FLOWHOLD_EARTH_FRAME 0
 
 // flowhold_init - initialise flowhold controller
-bool Copter::ModeFlowHold::init(bool ignore_checks)
+bool Copter::ModeFlowHold::ok_to_enter() const
 {
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter Flow Hold if the Rotor Runup is not complete
-    if (!ignore_checks && !motors->rotor_runup_complete()){
+    if (!motors->rotor_runup_complete()){
         return false;
     }
 #endif
@@ -88,6 +88,11 @@ bool Copter::ModeFlowHold::init(bool ignore_checks)
         return false;
     }
 
+    return true;
+}
+
+void Copter::ModeFlowHold::enter()
+{
     // initialize vertical speeds and leash lengths
     copter.pos_control->set_max_speed_z(-copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
     copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
@@ -109,8 +114,6 @@ bool Copter::ModeFlowHold::init(bool ignore_checks)
     // start with INS height
     last_ins_height = copter.inertial_nav.get_altitude() * 0.01;
     height_offset = 0;
-    
-    return true;
 }
 
 /*

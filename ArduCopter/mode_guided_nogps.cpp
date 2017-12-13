@@ -5,11 +5,10 @@
  */
 
 // initialise guided_nogps controller
-bool Copter::ModeGuidedNoGPS::init(bool ignore_checks)
+void Copter::ModeGuidedNoGPS::enter()
 {
     // start in angle control mode
     Copter::ModeGuided::angle_control_start();
-    return true;
 }
 
 // guided_run - runs the guided controller

@@ -9,11 +9,18 @@
  * each source are only accepted and processed in the appropriate flight mode.
  */
 
-// initialise avoid_adsb controller
-bool Copter::ModeAvoidADSB::init(const bool ignore_checks)
+// ok_to-enter - returns true if it is OK to enter this mode
+bool Copter::ModeAvoidADSB::ok_to_enter() const
 {
     // re-use guided mode
-    return Copter::ModeGuided::init(ignore_checks);
+    return Copter::ModeGuided::ok_to_enter();
+}
+
+// initialise avoid_adsb controller
+void Copter::ModeAvoidADSB::enter()
+{
+    // re-use guided mode
+    return Copter::ModeGuided::enter();
 }
 
 bool Copter::ModeAvoidADSB::set_velocity(const Vector3f& velocity_neu)

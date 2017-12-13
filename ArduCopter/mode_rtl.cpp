@@ -7,18 +7,12 @@
  * and the lower implementation of the waypoint or landing controllers within those states
  */
 
-// rtl_init - initialise rtl controller
-bool Copter::ModeRTL::init(bool ignore_checks)
+void Copter::ModeRTL::enter()
 {
-    if (copter.position_ok() || ignore_checks) {
-        // initialise waypoint and spline controller
-        wp_nav->wp_and_spline_init();
-        build_path(!copter.failsafe.terrain);
-        climb_start();
-        return true;
-    }else{
-        return false;
-    }
+    // initialise waypoint and spline controller
+    wp_nav->wp_and_spline_init();
+    build_path(!copter.failsafe.terrain);
+    climb_start();
 }
 
 // re-start RTL with terrain following disabled

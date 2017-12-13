@@ -93,10 +93,8 @@
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
 
 // autotune_init - should be called when autotune mode is selected
-bool Copter::ModeAutoTune::init(bool ignore_checks)
+void Copter::ModeAutoTune::enter()
 {
-    bool success = true;
-
     switch (mode) {
         case FAILED:
             // autotune has been run but failed so reset state to uninitialized
@@ -106,27 +104,21 @@ bool Copter::ModeAutoTune::init(bool ignore_checks)
 
         case UNINITIALISED:
             // autotune has never been run
-            success = start(false);
-            if (success) {
-                // so store current gains as original gains
-                backup_gains_and_initialise();
-                // advance mode to tuning
-                mode = TUNING;
-                // send message to ground station that we've started tuning
-                update_gcs(AUTOTUNE_MESSAGE_STARTED);
-            }
+            // so store current gains as original gains
+            backup_gains_and_initialise();
+            // advance mode to tuning
+            mode = TUNING;
+            // send message to ground station that we've started tuning
+            update_gcs(AUTOTUNE_MESSAGE_STARTED);
             break;
 
         case TUNING:
             // we are restarting tuning after the user must have switched ch7/ch8 off so we restart tuning where we left off
-            success = start(false);
-            if (success) {
-                // reset gains to tuning-start gains (i.e. low I term)
-                load_intra_test_gains();
-                // write dataflash log even and send message to ground station
-                Log_Write_Event(DATA_AUTOTUNE_RESTART);
-                update_gcs(AUTOTUNE_MESSAGE_STARTED);
-            }
+            // reset gains to tuning-start gains (i.e. low I term)
+            load_intra_test_gains();
+            // write dataflash log even and send message to ground station
+            Log_Write_Event(DATA_AUTOTUNE_RESTART);
+            update_gcs(AUTOTUNE_MESSAGE_STARTED);
             break;
 
         case SUCCESS:
@@ -141,7 +133,15 @@ bool Copter::ModeAutoTune::init(bool ignore_checks)
     use_poshold = (copter.control_mode == LOITER || copter.control_mode == POSHOLD);
     have_position = false;
 
-    return success;
+    // initialize vertical speeds and leash lengths
+    pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control->set_max_accel_z(g.pilot_accel_z);
+
+    // initialise position and desired velocity
+    if (!pos_control->is_active_z()) {
+        pos_control->set_alt_target_to_current_alt();
+        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+    }
 }
 
 // stop - should be called when the ch7/ch8 switch is switched OFF
@@ -162,7 +162,7 @@ void Copter::ModeAutoTune::stop()
 }
 
 // start - Initialize autotune flight mode
-bool Copter::ModeAutoTune::start(bool ignore_checks)
+bool Copter::ModeAutoTune::ok_to_enter() const
 {
     // only allow flip from Stabilize, AltHold,  PosHold or Loiter modes
     if (copter.control_mode != STABILIZE && copter.control_mode != ALT_HOLD &&
@@ -180,17 +180,7 @@ bool Copter::ModeAutoTune::start(bool ignore_checks)
         return false;
     }
 
-    // initialize vertical speeds and leash lengths
-    pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control->set_max_accel_z(g.pilot_accel_z);
-
-    // initialise position and desired velocity
-    if (!pos_control->is_active_z()) {
-        pos_control->set_alt_target_to_current_alt();
-        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-    }
-
-    return true;
+    return Copter::Mode::ok_to_enter();
 }
 
 const char *Copter::ModeAutoTune::level_issue_string() const

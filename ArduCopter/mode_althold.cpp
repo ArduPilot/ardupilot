@@ -5,16 +5,14 @@
  * Init and run calls for althold, flight mode
  */
 
-// althold_init - initialise althold controller
-bool Copter::ModeAltHold::init(bool ignore_checks)
+// enter - initialise althold controller
+void Copter::ModeAltHold::enter()
 {
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
         pos_control->set_alt_target_to_current_alt();
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
     }
-
-    return true;
 }
 
 // althold_run - runs the althold controller

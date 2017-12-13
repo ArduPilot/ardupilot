@@ -5,8 +5,8 @@
  * Init and run calls for stabilize flight mode for trad heli
  */
 
-// stabilize_init - initialise stabilize controller
-bool Copter::ModeStabilize_Heli::init(bool ignore_checks)
+// enter - initialise stabilize controller
+void Copter::ModeStabilize_Heli::enter()
 {
     // set target altitude to zero for reporting
     // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
@@ -14,8 +14,6 @@ bool Copter::ModeStabilize_Heli::init(bool ignore_checks)
 
     // set stab collective true to use stabilize scaled collective pitch range
     copter.input_manager.set_use_stab_col(true);
-
-    return true;
 }
 
 // stabilize_run - runs the main stabilize controller

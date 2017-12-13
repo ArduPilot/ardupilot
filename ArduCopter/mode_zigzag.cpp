@@ -9,12 +9,8 @@
 #define ZIGZAG_WP_RADIUS_CM 300
 
 // initialise zigzag controller
-bool Copter::ModeZigZag::init(bool ignore_checks)
+void Copter::ModeZigZag::enter()
 {
-    if (!copter.position_ok() && !ignore_checks) {
-        return false;
-    }
-
     // initialize's loiter position and velocity on xy-axes from current pos and velocity
     loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
@@ -29,8 +25,6 @@ bool Copter::ModeZigZag::init(bool ignore_checks)
     stage = STORING_POINTS;
     dest_A.zero();
     dest_B.zero();
-
-    return true;
 }
 
 // run the zigzag controller

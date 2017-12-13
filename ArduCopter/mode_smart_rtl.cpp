@@ -9,9 +9,16 @@
  * Once the copter is close to home, it will run a standard land controller.
  */
 
-bool Copter::ModeSmartRTL::init(bool ignore_checks)
+bool Copter::ModeSmartRTL::ok_to_enter() const
 {
-    if ((copter.position_ok() || ignore_checks) && g2.smart_rtl.is_active()) {
+    if (!g2.smart_rtl.is_active()) {
+        return false;
+    }
+    return Copter::Mode::ok_to_enter();
+}
+
+void Copter::ModeSmartRTL::enter()
+{
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
 
@@ -26,10 +33,6 @@ bool Copter::ModeSmartRTL::init(bool ignore_checks)
 
         // wait for cleanup of return path
         smart_rtl_state = SmartRTL_WaitForPathCleanup;
-        return true;
-    }
-
-    return false;
 }
 
 // perform cleanup required when leaving smart_rtl

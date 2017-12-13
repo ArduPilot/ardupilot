@@ -930,7 +930,7 @@ private:
 #endif
     ModeAltHold mode_althold;
 #if MODE_AUTO_ENABLED == ENABLED
-    ModeAuto mode_auto;
+    ModeAuto mode_auto{mission};
 #endif
 #if AUTOTUNE_ENABLED == ENABLED
     ModeAutoTune mode_autotune;

@@ -6,8 +6,8 @@ static bool land_with_gps;
 static uint32_t land_start_time;
 static bool land_pause;
 
-// land_init - initialise land controller
-bool Copter::ModeLand::init(bool ignore_checks)
+// enter - start landing
+void Copter::ModeLand::enter()
 {
     // check if we have GPS and decide which LAND we're going to do
     land_with_gps = copter.position_ok();
@@ -34,8 +34,6 @@ bool Copter::ModeLand::init(bool ignore_checks)
 
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     ap.land_repo_active = false;
-
-    return true;
 }
 
 // land_run - runs the land controller

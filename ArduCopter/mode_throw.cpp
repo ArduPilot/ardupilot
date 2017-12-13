@@ -3,7 +3,7 @@
 #if MODE_THROW_ENABLED == ENABLED
 
 // throw_init - initialise throw controller
-bool Copter::ModeThrow::init(bool ignore_checks)
+bool Copter::ModeThrow::ok_to_enter() const
 {
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to use throw to start
@@ -15,11 +15,14 @@ bool Copter::ModeThrow::init(bool ignore_checks)
         return false;
     }
 
+    return Copter::Mode::ok_to_enter();
+}
+
+void Copter::ModeThrow::enter()
+{
     // init state
     stage = Throw_Disarmed;
     nextmode_attempted = false;
-
-    return true;
 }
 
 // runs the throw to start controller

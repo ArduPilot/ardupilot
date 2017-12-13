@@ -69,14 +69,9 @@ static struct {
     int16_t pitch;  // final pitch angle sent to attitude controller
 } poshold;
 
-// poshold_init - initialise PosHold controller
-bool Copter::ModePosHold::init(bool ignore_checks)
+// enter - initialise PosHold controller
+void Copter::ModePosHold::enter()
 {
-    // fail to initialise PosHold mode if no GPS lock
-    if (!copter.position_ok() && !ignore_checks) {
-        return false;
-    }
-    
     // initialize vertical speeds and acceleration
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_max_accel_z(g.pilot_accel_z);
@@ -113,8 +108,6 @@ bool Copter::ModePosHold::init(bool ignore_checks)
     poshold.wind_comp_roll = 0;
     poshold.wind_comp_pitch = 0;
     poshold.wind_comp_timer = 0;
-
-    return true;
 }
 
 // poshold_run - runs the PosHold controller

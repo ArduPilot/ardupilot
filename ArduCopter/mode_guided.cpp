@@ -35,16 +35,10 @@ struct Guided_Limit {
     Vector3f start_pos; // start position as a distance from home in cm.  used for checking horiz_max limit
 } guided_limit;
 
-// guided_init - initialise guided controller
-bool Copter::ModeGuided::init(bool ignore_checks)
+void Copter::ModeGuided::enter()
 {
-    if (copter.position_ok() || ignore_checks) {
         // start in position control mode
         pos_control_start();
-        return true;
-    }else{
-        return false;
-    }
 }
 
 

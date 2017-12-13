@@ -5,7 +5,7 @@
  */
 
 // sport_init - initialise sport controller
-bool Copter::ModeSport::init(bool ignore_checks)
+void Copter::ModeSport::enter()
 {
     // initialize vertical speed and acceleration
     pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
@@ -16,8 +16,6 @@ bool Copter::ModeSport::init(bool ignore_checks)
         pos_control->set_alt_target_to_current_alt();
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
     }
-
-    return true;
 }
 
 // sport_run - runs the sport controller
