@@ -24,7 +24,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Sub class
  */
 Sub::Sub(void)
-    : DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask)),
+    : DataFlash(fwver.fw_string, g.log_bitmask),
           control_mode(MANUAL),
           motors(MAIN_LOOP_RATE),
           scaleLongDown(1),
