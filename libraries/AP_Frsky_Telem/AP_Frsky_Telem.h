@@ -113,11 +113,7 @@ for FrSky SPort Passthrough
 
 class AP_Frsky_Telem {
 public:
-    static AP_Frsky_Telem create(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng) {
-        return AP_Frsky_Telem{ahrs, battery, rng};
-    }
-
-    constexpr AP_Frsky_Telem(AP_Frsky_Telem &&other) = default;
+    AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
 
     /* Do not allow copies */
     AP_Frsky_Telem(const AP_Frsky_Telem &other) = delete;
@@ -146,8 +142,6 @@ public:
     static ObjectArray<mavlink_statustext_t> _statustext_queue;
 
 private:
-    AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
-
     AP_AHRS &_ahrs;
     const AP_BattMonitor &_battery;
     const RangeFinder &_rng;
