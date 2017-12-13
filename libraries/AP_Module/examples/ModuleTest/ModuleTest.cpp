@@ -13,13 +13,13 @@ void loop();
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // sensor declaration
-static AP_InertialSensor ins = AP_InertialSensor::create();
-static AP_GPS gps = AP_GPS::create();
-static AP_Baro baro = AP_Baro::create();
-static AP_SerialManager serial_manager = AP_SerialManager::create();
+static AP_InertialSensor ins;
+static AP_GPS gps;
+static AP_Baro baro;
+static AP_SerialManager serial_manager;
 
 // choose which AHRS system to use
-static AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, baro, gps);
+static AP_AHRS_DCM ahrs{ins, baro, gps};
 
 void setup(void)
 {
