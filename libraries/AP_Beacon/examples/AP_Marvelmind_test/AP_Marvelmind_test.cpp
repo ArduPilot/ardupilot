@@ -16,7 +16,7 @@ void set_object_value_and_report(const void *object_pointer,
                       const char *name, float value);
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
-static AP_SerialManager serial_manager = AP_SerialManager::create();
+static AP_SerialManager serial_manager;
 AP_Beacon beacon{serial_manager};
 
 // try to set the object value but provide diagnostic if it failed
