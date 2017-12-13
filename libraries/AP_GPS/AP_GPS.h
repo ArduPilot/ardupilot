@@ -64,9 +64,7 @@ class AP_GPS
     friend class AP_GPS_Backend;
 
 public:
-    static AP_GPS create() { return AP_GPS{}; }
-
-    constexpr AP_GPS(AP_GPS &&other) = default;
+    AP_GPS();
 
     /* Do not allow copies */
     AP_GPS(const AP_GPS &other) = delete;
@@ -445,8 +443,6 @@ protected:
     uint32_t _log_gps_bit = -1;
 
 private:
-    AP_GPS();
-
     static AP_GPS *_singleton;
 
     // returns the desired gps update rate in milliseconds
