@@ -11,9 +11,9 @@
 
 class AP_BoardConfig_CAN {
 public:
-    static AP_BoardConfig_CAN create() { return AP_BoardConfig_CAN{}; }
-
-    constexpr AP_BoardConfig_CAN(AP_BoardConfig_CAN &&other) = default;
+    AP_BoardConfig_CAN() {
+        AP_Param::setup_object_defaults(this, var_info);
+    };
 
     /* Do not allow copies */
     AP_BoardConfig_CAN(const AP_BoardConfig_CAN &other) = delete;
@@ -98,10 +98,5 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     void px4_setup_canbus(void);
 #endif // HAL_BOARD_PX4 || HAL_BOARD_VRBRAIN
-
-private:
-    AP_BoardConfig_CAN() {
-        AP_Param::setup_object_defaults(this, var_info);
-    };
 };
 #endif
