@@ -14,7 +14,7 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - george-edison55-precise-backports
+      - george-edison55-cmake-3.x
 #      - llvm-toolchain-precise-3.7
     packages:
       - build-essential
