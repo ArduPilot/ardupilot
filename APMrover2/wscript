@@ -25,6 +25,7 @@ def build(bld):
             'AC_Fence',
             'AP_Proximity',
             'AC_Avoidance',
+            'AC_AttitudeControl',
         ],
     )
 
