@@ -16,8 +16,8 @@ public:
 
 private:
 
-    AP_InertialSensor ins = AP_InertialSensor::create();
-    AP_Scheduler scheduler = AP_Scheduler::create();
+    AP_InertialSensor ins;
+    AP_Scheduler scheduler;
 
     uint32_t ins_counter;
     static const AP_Scheduler::Task scheduler_tasks[];
@@ -27,7 +27,7 @@ private:
     void five_second_call(void);
 };
 
-static AP_BoardConfig board_config = AP_BoardConfig::create();
+static AP_BoardConfig board_config;
 static SchedTest schedtest;
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(SchedTest, &schedtest, func, _interval_ticks, _max_time_micros)
