@@ -168,10 +168,10 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler = AP_Scheduler::create();
+    AP_Scheduler scheduler;
 
     // AP_Notify instance
-    AP_Notify notify = AP_Notify::create();
+    AP_Notify notify;
 
     // used to detect MAVLink acks from GCS to stop compassmot
     uint8_t command_ack_counter;
@@ -185,16 +185,16 @@ private:
     // Dataflash
     DataFlash_Class DataFlash;
 
-    AP_GPS gps = AP_GPS::create();
+    AP_GPS gps;
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
 
-    AP_Baro barometer = AP_Baro::create();
-    Compass compass = Compass::create();
-    AP_InertialSensor ins = AP_InertialSensor::create();
+    AP_Baro barometer;
+    Compass compass;
+    AP_InertialSensor ins;
 
-    RangeFinder rangefinder = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
+    RangeFinder rangefinder{serial_manager, ROTATION_PITCH_270};
     struct {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
@@ -204,29 +204,29 @@ private:
         int8_t glitch_count;
     } rangefinder_state = { false, false, 0, 0 };
 
-    AP_RPM rpm_sensor = AP_RPM::create();
+    AP_RPM rpm_sensor;
 
     // Inertial Navigation EKF
-    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, rangefinder);
-    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, rangefinder);
-    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF);
+    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
+    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
 #endif
 
     // Mission library
-    AP_Mission mission = AP_Mission::create(ahrs,
+    AP_Mission mission{ahrs,
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void));
+            FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)};
 
     // Arming/Disarming mangement class
-    AP_Arming_Copter arming = AP_Arming_Copter::create(ahrs, barometer, compass, battery, inertial_nav, ins);
+    AP_Arming_Copter arming{ahrs, barometer, compass, battery, inertial_nav, ins};
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
-    OpticalFlow optflow = OpticalFlow::create(ahrs);
+    OpticalFlow optflow{ahrs};
 #endif
 
     // gnd speed limit required to observe optical flow sensor limits
@@ -239,7 +239,7 @@ private:
     uint32_t ekfYawReset_ms = 0;
     int8_t ekf_primary_core;
 
-    AP_SerialManager serial_manager = AP_SerialManager::create();
+    AP_SerialManager serial_manager;
 
     // GCS selection
     GCS_Copter _gcs; // avoid using this; use gcs()
@@ -310,14 +310,14 @@ private:
     // altitude below which we do no navigation in auto takeoff
     float auto_takeoff_no_nav_alt_cm;
 
-    RCMapper rcmap = RCMapper::create();
+    RCMapper rcmap;
 
     // board specific config
-    AP_BoardConfig BoardConfig = AP_BoardConfig::create();
+    AP_BoardConfig BoardConfig;
 
 #if HAL_WITH_UAVCAN
     // board specific config for CAN bus
-    AP_BoardConfig_CAN BoardConfig_CAN = AP_BoardConfig_CAN::create();
+    AP_BoardConfig_CAN BoardConfig_CAN;
 #endif
 
     // receiver RSSI
@@ -404,11 +404,11 @@ private:
     uint32_t nav_delay_time_start;
 
     // Battery Sensors
-    AP_BattMonitor battery = AP_BattMonitor::create();
+    AP_BattMonitor battery;
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry = AP_Frsky_Telem::create(ahrs, battery, rangefinder);
+    AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
 #endif
 
     // Variables for extended status MAVLink messages
@@ -428,7 +428,7 @@ private:
     LowPassFilterFloat rc_throttle_control_in_filter;
 
     // loop performance monitoring:
-    AP::PerfInfo perf_info = AP::PerfInfo::create();
+    AP::PerfInfo perf_info;
 
     // 3D Location vectors
     // Current location of the vehicle (altitude is relative to home)
@@ -496,72 +496,72 @@ private:
     uint8_t auto_trim_counter;
 
     // Reference to the relay object
-    AP_Relay relay = AP_Relay::create();
+    AP_Relay relay;
 
     // handle repeated servo and relay events
-    AP_ServoRelayEvents ServoRelayEvents = AP_ServoRelayEvents::create(relay);
+    AP_ServoRelayEvents ServoRelayEvents{relay};
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera = AP_Camera::create(&relay, MASK_LOG_CAMERA, current_loc, ahrs);
+    AP_Camera camera{&relay, MASK_LOG_CAMERA, current_loc, ahrs};
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
-    AP_Mount camera_mount = AP_Mount::create(ahrs, current_loc);
+    AP_Mount camera_mount{ahrs, current_loc};
 #endif
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence fence = AC_Fence::create(ahrs);
+    AC_Fence fence{ahrs};
 #endif
 
 #if AC_AVOID_ENABLED == ENABLED
-    AC_Avoid avoid = AC_Avoid::create(ahrs, fence, g2.proximity, &g2.beacon);
+    AC_Avoid avoid{ahrs, fence, g2.proximity, &g2.beacon};
 #endif
 
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally_Copter rally = AP_Rally_Copter::create(ahrs);
+    AP_Rally_Copter rally{ahrs};
 #endif
 
     // RSSI
-    AP_RSSI rssi = AP_RSSI::create();
+    AP_RSSI rssi;
 
     // Crop Sprayer
 #if SPRAYER == ENABLED
-    AC_Sprayer sprayer = AC_Sprayer::create(&inertial_nav);
+    AC_Sprayer sprayer{&inertial_nav};
 #endif
 
     // Parachute release
 #if PARACHUTE == ENABLED
-    AP_Parachute parachute = AP_Parachute::create(relay);
+    AP_Parachute parachute{relay};
 #endif
 
     // Landing Gear Controller
-    AP_LandingGear landinggear = AP_LandingGear::create();
+    AP_LandingGear landinggear;
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    AP_Terrain terrain = AP_Terrain::create(ahrs, mission, rally);
+    AP_Terrain terrain{ahrs, mission, rally};
 #endif
 
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
-    AC_PrecLand precland = AC_PrecLand::create(ahrs, inertial_nav);
+    AC_PrecLand precland{ahrs, inertial_nav};
 #endif
 
     // Pilot Input Management Library
     // Only used for Helicopter for now
 #if FRAME_CONFIG == HELI_FRAME
-    AC_InputManager_Heli input_manager = AC_InputManager_Heli::create();
+    AC_InputManager_Heli input_manager;
 #endif
 
-    AP_ADSB adsb = AP_ADSB::create(ahrs);
+    AP_ADSB adsb{ahrs};
 
     // avoidance of adsb enabled vehicles (normally manned vehicles)
-    AP_Avoidance_Copter avoidance_adsb = AP_Avoidance_Copter::create(ahrs, adsb);
+    AP_Avoidance_Copter avoidance_adsb{ahrs, adsb};
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
