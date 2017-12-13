@@ -42,6 +42,14 @@ public:
     void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel, float dt);
     void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel, float dt);
 
+    // adjust desired horizontal speed so that the vehicle stops before the fence or object
+    // accel (maximum acceleration/deceleration) is in m/s/s
+    // heading is in radians
+    // speed is in m/s
+    // kP should be zero for linear response, non-zero for non-linear response
+    // dt is the time since the last call in seconds
+    void adjust_speed(float kP, float accel, float heading, float &speed, float dt);
+
     // adjust vertical climb rate so vehicle does not break the vertical fence
     void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt);
 

@@ -87,6 +87,27 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel
     desired_vel.y = des_vel_xy.y;
 }
 
+// adjust desired horizontal speed so that the vehicle stops before the fence or object
+// accel (maximum acceleration/deceleration) is in m/s/s
+// heading is in radians
+// speed is in m/s
+// kP should be zero for linear response, non-zero for non-linear response
+void AC_Avoid::adjust_speed(float kP, float accel, float heading, float &speed, float dt)
+{
+    // convert heading and speed into velocity vector
+    Vector2f vel_xy;
+    vel_xy.x = cosf(heading) * speed * 100.0f;
+    vel_xy.y = sinf(heading) * speed * 100.0f;
+    adjust_velocity(kP, accel * 100.0f, vel_xy, dt);
+
+    // adjust speed towards zero
+    if (is_negative(speed)) {
+        speed = -vel_xy.length() * 0.01f;
+    } else {
+        speed = vel_xy.length() * 0.01f;
+    }
+}
+
 // adjust vertical climb rate so vehicle does not break the vertical fence
 void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt)
 {
