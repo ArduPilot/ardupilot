@@ -489,43 +489,6 @@ void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_tar
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-#if MODE_THROW_ENABLED == ENABLED
-// throw flight mode logging
-struct PACKED log_Throw {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t stage;
-    float velocity;
-    float velocity_z;
-    float accel;
-    float ef_accel_z;
-    uint8_t throw_detect;
-    uint8_t attitude_ok;
-    uint8_t height_ok;
-    uint8_t pos_ok;
-};
-
-// Write a Throw mode details
-void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool pos_ok)
-{
-    struct log_Throw pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_THROW_MSG),
-        time_us         : AP_HAL::micros64(),
-        stage           : (uint8_t)stage,
-        velocity        : velocity,
-        velocity_z      : velocity_z,
-        accel           : accel,
-        ef_accel_z      : ef_accel_z,
-        throw_detect    : throw_detect,
-        attitude_ok     : attitude_ok,
-        height_ok       : height_ok,
-        pos_ok          : pos_ok
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-#endif
-
-
 // type and unit information can be found in
 // libraries/DataFlash/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
@@ -571,10 +534,6 @@ const struct LogStructure Copter::log_structure[] = {
 #endif
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
-#if MODE_THROW_ENABLED == ENABLED
-    { LOG_THROW_MSG, sizeof(log_Throw),
-      "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk", "s-nnoo----", "F-0000----" },
-#endif
 };
 
 void Copter::Log_Write_Vehicle_Startup_Messages()
@@ -614,7 +573,6 @@ void Copter::Log_Write_Home_And_Origin() {}
 void Copter::Log_Sensor_Health() {}
 void Copter::Log_Write_Precland() {}
 void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
-void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool pos_ok) {}
 void Copter::Log_Write_Proximity() {}
 void Copter::Log_Write_Vehicle_Startup_Messages() {}
 

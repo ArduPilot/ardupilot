@@ -1057,6 +1057,11 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
 
+    // Throw types
+    enum ThrowModeType {
+        ThrowType_Upward = 0,
+        ThrowType_Drop = 1
+    };
 
 protected:
 
@@ -1070,13 +1075,21 @@ private:
     bool throw_height_good();
     bool throw_attitude_good();
 
+    // Throw stages
+    enum ThrowModeStage {
+        Throw_Disarmed,
+        Throw_Detecting,
+        Throw_Uprighting,
+        Throw_HgtStabilise,
+        Throw_PosHold
+    };
+
     ThrowModeStage stage = Throw_Disarmed;
     ThrowModeStage prev_stage = Throw_Disarmed;
     uint32_t last_log_ms;
     bool nextmode_attempted;
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_velz;     // vertical velocity when free fall was detected
-
 };
 
 // modes below rely on Guided mode so must be declared at the end (instead of in alphabetical order)
