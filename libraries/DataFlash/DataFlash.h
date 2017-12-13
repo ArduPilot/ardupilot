@@ -53,20 +53,16 @@ public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
 
-    static DataFlash_Class create(const char *firmware_string, const AP_Int32 &log_bitmask) {
-        return DataFlash_Class{firmware_string, log_bitmask};
-    }
+    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask);
+
+    /* Do not allow copies */
+    DataFlash_Class(const DataFlash_Class &other) = delete;
+    DataFlash_Class &operator=(const DataFlash_Class&) = delete;
 
     // get singleton instance
     static DataFlash_Class *instance(void) {
         return _instance;
     }
-
-    constexpr DataFlash_Class(DataFlash_Class &&other) = default;
-
-    /* Do not allow copies */
-    DataFlash_Class(const DataFlash_Class &other) = delete;
-    DataFlash_Class &operator=(const DataFlash_Class&) = delete;
 
     void set_mission(const AP_Mission *mission);
 
@@ -248,8 +244,6 @@ protected:
                                bool is_critical);
 
 private:
-    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask);
-
     #define DATAFLASH_MAX_BACKENDS 2
     uint8_t _next_backend;
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];

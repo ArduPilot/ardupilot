@@ -91,7 +91,7 @@ public:
 private:
 
     AP_Int32 log_bitmask;
-    DataFlash_Class dataflash = DataFlash_Class::create("DF AllTypes 0.2", log_bitmask);
+    DataFlash_Class dataflash{"DF AllTypes 0.2", log_bitmask};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
