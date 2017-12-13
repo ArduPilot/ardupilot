@@ -14,11 +14,11 @@ public:
     void loop();
 
 private:
-    AP_InertialSensor ins = AP_InertialSensor::create();
-    AP_Baro baro = AP_Baro::create();
-    AP_GPS  gps = AP_GPS::create();
-    Compass compass = Compass::create();
-    AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, baro, gps);
+    AP_InertialSensor ins;
+    AP_Baro baro;
+    AP_GPS  gps;
+    Compass compass;
+    AP_AHRS_DCM ahrs{ins, baro, gps};
 
     // global constants that control how many verify calls must be made for a command before it completes
     uint8_t verify_nav_cmd_iterations_to_complete = 3;
@@ -44,10 +44,10 @@ private:
     void run_replace_cmd_test();
     void run_max_cmd_test();
 
-    AP_Mission mission = AP_Mission::create(ahrs,
+    AP_Mission mission{ahrs,
             FUNCTOR_BIND_MEMBER(&MissionTest::start_cmd, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&MissionTest::verify_cmd, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&MissionTest::mission_complete, void));
+            FUNCTOR_BIND_MEMBER(&MissionTest::mission_complete, void)};
 };
 
 static MissionTest missiontest;
