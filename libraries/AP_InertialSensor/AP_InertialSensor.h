@@ -49,9 +49,7 @@ class AP_InertialSensor : AP_AccelCal_Client
     friend class AP_InertialSensor_Backend;
 
 public:
-    static AP_InertialSensor create() { return AP_InertialSensor{}; }
-
-    constexpr AP_InertialSensor(AP_InertialSensor &&other) = default;
+    AP_InertialSensor();
 
     /* Do not allow copies */
     AP_InertialSensor(const AP_InertialSensor &other) = delete;
@@ -346,8 +344,6 @@ public:
     BatchSampler batchsampler{*this};
 
 private:
-    AP_InertialSensor();
-
     // load backend drivers
     bool _add_backend(AP_InertialSensor_Backend *backend);
     void _start_backends();
