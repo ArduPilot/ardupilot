@@ -50,22 +50,17 @@
 
 class AP_Volz_Protocol {
 public:
-    static const struct AP_Param::GroupInfo var_info[];
-
-    static AP_Volz_Protocol create() {
-        return AP_Volz_Protocol{};
-    }
-
-    constexpr AP_Volz_Protocol(AP_Volz_Protocol &&other) = default;
+    AP_Volz_Protocol();
 
     /* Do not allow copies */
     AP_Volz_Protocol(const AP_Volz_Protocol &other) = delete;
     AP_Volz_Protocol &operator=(const AP_Volz_Protocol&) = delete;
 
+    static const struct AP_Param::GroupInfo var_info[];
+    
     void update();
 
 private:
-    AP_Volz_Protocol();
     AP_HAL::UARTDriver *port;
     
     void init(void);
