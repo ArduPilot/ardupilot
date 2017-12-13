@@ -93,10 +93,10 @@ private:
     Parameters g;
 
     // main loop scheduler
-    AP_Scheduler scheduler = AP_Scheduler::create();
+    AP_Scheduler scheduler;
 
     // notification object for LEDs, buzzers etc
-    AP_Notify notify = AP_Notify::create();
+    AP_Notify notify;
 
     uint32_t start_time_ms = 0;
 
@@ -104,23 +104,23 @@ private:
 
     DataFlash_Class DataFlash;
 
-    AP_GPS gps = AP_GPS::create();
+    AP_GPS gps;
 
-    AP_Baro barometer = AP_Baro::create();
+    AP_Baro barometer;
 
-    Compass compass = Compass::create();
+    Compass compass;
 
-    AP_InertialSensor ins = AP_InertialSensor::create();
+    AP_InertialSensor ins;
 
-    RangeFinder rng = RangeFinder::create(serial_manager, ROTATION_NONE);
+    RangeFinder rng{serial_manager, ROTATION_NONE};
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, rng);
-    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, rng);
-    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3);
+    NavEKF2 EKF2{&ahrs, barometer, rng};
+    NavEKF3 EKF3{&ahrs, barometer, rng};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, barometer, gps);
+    AP_AHRS_DCM ahrs{ins, barometer, gps};
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -139,19 +139,19 @@ private:
     bool yaw_servo_out_filt_init = false;
     bool pitch_servo_out_filt_init = false;
 
-    AP_SerialManager serial_manager = AP_SerialManager::create();
+    AP_SerialManager serial_manager;
     GCS_Tracker _gcs; // avoid using this; use gcs()
     GCS_Tracker &gcs() { return _gcs; }
 
-    AP_BoardConfig BoardConfig = AP_BoardConfig::create();
+    AP_BoardConfig BoardConfig;
 
 #if HAL_WITH_UAVCAN
     // board specific config for CAN bus
-    AP_BoardConfig_CAN BoardConfig_CAN = AP_BoardConfig_CAN::create();
+    AP_BoardConfig_CAN BoardConfig_CAN;
 #endif
 
     // Battery Sensors
-    AP_BattMonitor battery = AP_BattMonitor::create();
+    AP_BattMonitor battery;
 
     struct Location current_loc;
 
