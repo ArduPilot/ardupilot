@@ -101,7 +101,7 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
 - [Víctor Mayoral Vilches](https://github.com/vmayoral)
   - ***Board***: PXF, Erle-Brain 2, PXFmini
 - [Mirko Denecke](https://github.com/mirkix)
-  - ***Board***: BBBmini, BeagleBone Blue
+  - ***Board***: BBBmini, BeagleBone Blue, PocketPilot
 - [Georgii Staroselskii](https://github.com/staroselskii)
   - ***Board***: NavIO
 - [Emile Castelnuovo](https://github.com/emilecastelnuovo)
