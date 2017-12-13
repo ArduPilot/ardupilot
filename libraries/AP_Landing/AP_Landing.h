@@ -36,23 +36,13 @@ public:
     FUNCTOR_TYPEDEF(disarm_if_autoland_complete_fn_t, void);
     FUNCTOR_TYPEDEF(update_flight_stage_fn_t, void);
 
-    static AP_Landing create(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_SpdHgt_Controller, AP_Navigation *_nav_controller, AP_Vehicle::FixedWing &_aparm,
+    AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_SpdHgt_Controller, AP_Navigation *_nav_controller, AP_Vehicle::FixedWing &_aparm,
                set_target_altitude_proportion_fn_t _set_target_altitude_proportion_fn,
                constrain_target_altitude_location_fn_t _constrain_target_altitude_location_fn,
                adjusted_altitude_cm_fn_t _adjusted_altitude_cm_fn,
                adjusted_relative_altitude_cm_fn_t _adjusted_relative_altitude_cm_fn,
                disarm_if_autoland_complete_fn_t _disarm_if_autoland_complete_fn,
-               update_flight_stage_fn_t _update_flight_stage_fn) {
-        return AP_Landing{_mission, _ahrs, _SpdHgt_Controller, _nav_controller, _aparm,
-               _set_target_altitude_proportion_fn,
-               _constrain_target_altitude_location_fn,
-               _adjusted_altitude_cm_fn,
-               _adjusted_relative_altitude_cm_fn,
-               _disarm_if_autoland_complete_fn,
-               _update_flight_stage_fn};
-    }
-
-    constexpr AP_Landing(AP_Landing &&other) = default;
+               update_flight_stage_fn_t _update_flight_stage_fn);
 
     /* Do not allow copies */
     AP_Landing(const AP_Landing &other) = delete;
@@ -117,14 +107,6 @@ public:
     float alt_offset;
 
 private:
-    AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_SpdHgt_Controller, AP_Navigation *_nav_controller, AP_Vehicle::FixedWing &_aparm,
-               set_target_altitude_proportion_fn_t _set_target_altitude_proportion_fn,
-               constrain_target_altitude_location_fn_t _constrain_target_altitude_location_fn,
-               adjusted_altitude_cm_fn_t _adjusted_altitude_cm_fn,
-               adjusted_relative_altitude_cm_fn_t _adjusted_relative_altitude_cm_fn,
-               disarm_if_autoland_complete_fn_t _disarm_if_autoland_complete_fn,
-               update_flight_stage_fn_t _update_flight_stage_fn);
-
     struct {
         // denotes if a go-around has been commanded for landing
         bool commanded_go_around:1;
