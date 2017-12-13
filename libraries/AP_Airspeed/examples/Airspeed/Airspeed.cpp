@@ -31,7 +31,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 float temperature;
 
 AP_Airspeed airspeed;
-static AP_BoardConfig board_config = AP_BoardConfig::create();
+static AP_BoardConfig board_config;
 
 namespace {
 // try to set the object value but provide diagnostic if it failed
