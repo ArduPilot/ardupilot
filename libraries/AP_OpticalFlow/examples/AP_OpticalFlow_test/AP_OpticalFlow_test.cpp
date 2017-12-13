@@ -21,20 +21,19 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 class DummyVehicle {
 public:
-    AP_GPS gps = AP_GPS::create();
-    AP_Baro barometer = AP_Baro::create();
-    Compass compass = Compass::create();
-    AP_InertialSensor ins = AP_InertialSensor::create();
-    AP_SerialManager serial_manager = AP_SerialManager::create();
-    RangeFinder sonar = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
-    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3,
-                                                 AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF);
-    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, sonar);
-    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, sonar);
+    AP_GPS gps;
+    AP_Baro barometer;
+    Compass compass;
+    AP_InertialSensor ins;
+    AP_SerialManager serial_manager;
+    RangeFinder sonar{serial_manager, ROTATION_PITCH_270};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF2 EKF2{&ahrs, barometer, sonar};
+    NavEKF3 EKF3{&ahrs, barometer, sonar};
 };
 
 static DummyVehicle vehicle;
-static OpticalFlow optflow = OpticalFlow::create(vehicle.ahrs);
+static OpticalFlow optflow{vehicle.ahrs};
 
 void setup()
 {
