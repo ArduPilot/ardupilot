@@ -221,6 +221,11 @@ struct Vector2
         return delta.length();
     }
 
+    // find the intersection between two line segments
+    // returns true if they intersect, false if they do not
+    // the point of intersection is returned in the intersection argument
+    static bool segment_intersection(const Vector2<T>& seg1_start, const Vector2<T>& seg1_end, const Vector2<T>& seg2_start, const Vector2<T>& seg2_end, Vector2<T>& intersection);
+
 };
 
 typedef Vector2<int16_t>        Vector2i;
