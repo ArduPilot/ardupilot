@@ -14,22 +14,22 @@ void loop();
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 
-static AP_BoardConfig board_config = AP_BoardConfig::create();
-static AP_InertialSensor ins = AP_InertialSensor::create();
+static AP_BoardConfig board_config;
+static AP_InertialSensor ins;
 
-static Compass compass = Compass::create();
+static Compass compass;
 
-static AP_GPS gps = AP_GPS::create();
-static AP_Baro barometer = AP_Baro::create();
-static AP_SerialManager serial_manager = AP_SerialManager::create();
+static AP_GPS gps;
+static AP_Baro barometer;
+static AP_SerialManager serial_manager;
 
 class DummyVehicle {
 public:
-    RangeFinder sonar = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
-    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, sonar);
-    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, sonar);
-    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3,
-                                                 AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF);
+    RangeFinder sonar{serial_manager, ROTATION_PITCH_270};
+    NavEKF2 EKF2{&ahrs, barometer, sonar};
+    NavEKF3 EKF3{&ahrs, barometer, sonar};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3,
+            AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 };
 
 static DummyVehicle vehicle;
