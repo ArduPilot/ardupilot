@@ -438,11 +438,11 @@ private:
     static SRV_Channels *instance;
 
     // support for Volz protocol
-    AP_Volz_Protocol volz = AP_Volz_Protocol::create();
+    AP_Volz_Protocol volz;
     static AP_Volz_Protocol *volz_ptr;
 
     // support for SBUS protocol
-    AP_SBusOut sbus = AP_SBusOut::create();
+    AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
 
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
