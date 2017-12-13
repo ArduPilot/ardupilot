@@ -40,19 +40,17 @@ class AP_Notify
     friend class RGBLed;            // RGBLed needs access to notify parameters
     friend class Display;           // Display needs access to notify parameters
 public:
-    static AP_Notify create() { return AP_Notify{}; }
-
-    // get singleton instance
-    static AP_Notify *instance(void) {
-        return _instance;
-    }
-
-    constexpr AP_Notify(AP_Notify &&other) = default;
+    AP_Notify();
 
     /* Do not allow copies */
     AP_Notify(const AP_Notify &other) = delete;
     AP_Notify &operator=(const AP_Notify&) = delete;
 
+    // get singleton instance
+    static AP_Notify *instance(void) {
+        return _instance;
+    }
+    
     // Oreo LED Themes
     enum Oreo_LED_Theme {
         OreoLED_Disabled        = 0,    // Disabled the OLED driver entirely
@@ -145,8 +143,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AP_Notify();
-
     static AP_Notify *_instance;
 
     // parameters
