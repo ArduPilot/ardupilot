@@ -5,13 +5,15 @@
 class AP_Arming_Copter : public AP_Arming
 {
 public:
-    static AP_Arming_Copter create(const AP_AHRS_NavEKF &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                                   const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav,
-                                   const AP_InertialSensor &ins) {
-        return AP_Arming_Copter{ahrs_ref, baro, compass, battery, inav, ins};
+    AP_Arming_Copter(const AP_AHRS_NavEKF &ahrs_ref, const AP_Baro &baro, Compass &compass,
+                     const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav,
+                     const AP_InertialSensor &ins)
+        : AP_Arming(ahrs_ref, baro, compass, battery)
+        , _inav(inav)
+        , _ins(ins)
+        , _ahrs_navekf(ahrs_ref)
+    {
     }
-
-    constexpr AP_Arming_Copter(AP_Arming_Copter &&other) = default;
 
     /* Do not allow copies */
     AP_Arming_Copter(const AP_Arming_Copter &other) = delete;
@@ -48,15 +50,6 @@ protected:
     enum HomeState home_status() const override;
 
 private:
-    AP_Arming_Copter(const AP_AHRS_NavEKF &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                     const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav,
-                     const AP_InertialSensor &ins)
-        : AP_Arming(ahrs_ref, baro, compass, battery)
-        , _inav(inav)
-        , _ins(ins)
-        , _ahrs_navekf(ahrs_ref)
-    {
-    }
 
     const AP_InertialNav_NavEKF &_inav;
     const AP_InertialSensor &_ins;
