@@ -81,6 +81,12 @@
 
 class AP_SerialManager {
 public:
+    AP_SerialManager();
+
+    /* Do not allow copies */
+    AP_SerialManager(const AP_SerialManager &other) = delete;
+    AP_SerialManager &operator=(const AP_SerialManager&) = delete;
+
     enum SerialProtocol {
         SerialProtocol_None = -1,
         SerialProtocol_Console = 0, // unused
@@ -106,14 +112,6 @@ public:
         return _instance;
     }
     
-    static AP_SerialManager create() { return AP_SerialManager{}; }
-
-    constexpr AP_SerialManager(AP_SerialManager &&other) = default;
-
-    /* Do not allow copies */
-    AP_SerialManager(const AP_SerialManager &other) = delete;
-    AP_SerialManager &operator=(const AP_SerialManager&) = delete;
-
     // init_console - initialise console at default baud rate
     void init_console();
 
@@ -149,8 +147,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AP_SerialManager();
-
     static AP_SerialManager *_instance;
     
     // array of uart info
