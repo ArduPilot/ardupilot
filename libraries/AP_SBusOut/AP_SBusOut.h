@@ -13,22 +13,17 @@
 
 class AP_SBusOut {
 public:
-    static const struct AP_Param::GroupInfo var_info[];
-
-    static AP_SBusOut create() {
-        return AP_SBusOut{};
-    }
-
-    constexpr AP_SBusOut(AP_SBusOut &&other) = default;
+    AP_SBusOut();
 
     /* Do not allow copies */
     AP_SBusOut(const AP_SBusOut &other) = delete;
     AP_SBusOut &operator=(const AP_SBusOut&) = delete;
 
+    static const struct AP_Param::GroupInfo var_info[];
+
     void update();
 
 private:
-    AP_SBusOut();
     AP_HAL::UARTDriver *sbus1_uart;
 
     void init(void);
