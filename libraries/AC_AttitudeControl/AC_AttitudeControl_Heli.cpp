@@ -268,7 +268,7 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 // Update Alt_Hold angle maximum
 void AC_AttitudeControl_Heli::update_althold_lean_angle_max(float throttle_in)
 {
-    float althold_lean_angle_max = acos(constrain_float(_throttle_in/AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX, 0.0f, 1.0f));
+    float althold_lean_angle_max = acos(constrain_float(_throttle_in/AC_ATTITUDE_HELI_ANGLE_LIMIT_THROTTLE_MAX, 0.0f, 1.0f));
     _althold_lean_angle_max = _althold_lean_angle_max + (_dt/(_dt+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max);
 }
 
