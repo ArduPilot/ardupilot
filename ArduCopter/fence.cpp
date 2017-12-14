@@ -11,9 +11,6 @@ void Copter::fence_check()
     uint8_t new_breaches; // the type of fence that has been breached
     uint8_t orig_breaches = fence.get_breaches();
 
-    // give fence library our current distance from home in meters
-    fence.set_home_distance(home_distance()*0.01f);
-
     // check for a breach
     new_breaches = fence.check_fence(current_loc.alt/100.0f);
 
