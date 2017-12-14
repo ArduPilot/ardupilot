@@ -10,6 +10,7 @@ void Copter::run_nav_updates(void)
     flightmode->update_navigation();
 }
 
+// distance between vehicle and home in cm
 uint32_t Copter::home_distance()
 {
     if (position_ok()) {
@@ -20,6 +21,7 @@ uint32_t Copter::home_distance()
     return _home_distance;
 }
 
+// The location of home in relation to the vehicle in centi-degrees
 int32_t Copter::home_bearing()
 {
     if (position_ok()) {

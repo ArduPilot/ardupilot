@@ -162,7 +162,6 @@ private:
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
 
-
     // Global parameters are all contained within the 'g' class.
     Parameters g;
     ParametersG2 g2;
@@ -370,11 +369,6 @@ private:
     // GPS variables
     // Sometimes we need to remove the scaling for distance calcs
     float scaleLongDown;
-
-    // The location of home in relation to the vehicle in centi-degrees
-    int32_t home_bearing();
-    // distance between vehicle and home in cm
-    uint32_t home_distance();
 
     int32_t _home_bearing;
     uint32_t _home_distance;
@@ -597,9 +591,20 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
-    void compass_accumulate(void);
-    void compass_cal_update(void);
+    // AP_State.cpp
+    void set_home_state(enum HomeState new_home_state);
+    bool home_is_set();
+    void set_auto_armed(bool b);
+    void set_simple_mode(uint8_t b);
+    void set_failsafe_radio(bool b);
+    void set_failsafe_battery(bool b);
+    void set_failsafe_gcs(bool b);
+    void update_using_interlock();
+    void set_motor_emergency_stop(bool b);
+
+    // ArduCopter.cpp
     void perf_update(void);
+    void stats_update();
     void fast_loop();
     void rc_loop();
     void throttle_loop();
@@ -609,29 +614,22 @@ private:
     void fourhundred_hz_logging();
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
+    void dataflash_periodic(void);
+    void ins_periodic();
     void three_hz_loop();
     void one_hz_loop();
     void update_GPS(void);
+    void smart_rtl_save_position();
     void init_simple_bearing();
     void update_simple_mode(void);
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
     void update_altitude();
-    void set_home_state(enum HomeState new_home_state);
-    bool home_is_set();
-    void set_auto_armed(bool b);
-    void set_simple_mode(uint8_t b);
-    void set_failsafe_radio(bool b);
-    void set_failsafe_battery(bool b);
-    void set_failsafe_gcs(bool b);
-    void set_land_complete(bool b);
-    void set_land_complete_maybe(bool b);
-    void update_using_interlock();
-    void set_motor_emergency_stop(bool b);
+
+    // Attitude.cpp
     float get_smoothing_gain();
     void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
-    void check_ekf_reset();
     float get_roi_yaw();
     float get_look_ahead_yaw();
     void update_throttle_hover();
@@ -641,10 +639,80 @@ private:
     float get_non_takeoff_throttle();
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     float get_avoidance_adjusted_climbrate(float target_rate);
-    void auto_takeoff_set_start_alt(void);
-    void auto_takeoff_attitude_run(float target_yaw_rate);
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
+    uint16_t get_pilot_speed_dn();
+
+    // avoidance_adsb.cpp
+    void avoidance_adsb_update(void);
+
+    // baro_ground_effect.cpp
+    void update_ground_effect_detector(void);
+
+    // capabilities.cpp
+    void init_capabilities(void);
+
+    // commands.cpp
+    void update_home_from_EKF();
+    void set_home_to_current_location_inflight();
+    bool set_home_to_current_location(bool lock);
+    bool set_home(const Location& loc, bool lock);
+    void set_ekf_origin(const Location& loc);
+    bool far_from_EKF_origin(const Location& loc);
+    void set_system_time_from_GPS();
+
+    // compassmot.cpp
+    MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
+
+    // compat.cpp
+    void delay(uint32_t ms);
+
+    // crash_check.cpp
+    void crash_check();
+    void parachute_check();
+    void parachute_release();
+    void parachute_manual_release();
+
+    // ekf_check.cpp
+    void ekf_check();
+    bool ekf_check_position_problem();
+    bool ekf_over_threshold();
+    void failsafe_ekf_event();
+    void failsafe_ekf_off_event(void);
+    void check_ekf_reset();
+
+    // esc_calibration.cpp
+    void esc_calibration_startup_check();
+    void esc_calibration_passthrough();
+    void esc_calibration_auto();
+    void esc_calibration_notify();
+
+    // events.cpp
+    void failsafe_radio_on_event();
+    void failsafe_radio_off_event();
+    void failsafe_battery_event(void);
+    void failsafe_gcs_check();
+    void failsafe_gcs_off_event(void);
+    void failsafe_terrain_check();
+    void failsafe_terrain_set_status(bool data_ok);
+    void failsafe_terrain_on_event();
+    void gpsglitch_check();
+    void set_mode_RTL_or_land_with_pause(mode_reason_t reason);
+    bool should_disarm_on_failsafe();
+    void update_events();
+
+    // failsafe.cpp
+    void failsafe_enable();
+    void failsafe_disable();
+#if ADVANCED_FAILSAFE == ENABLED
+    void afs_fs_check(void);
+#endif
+
+    // fence.cpp
+    void fence_check();
+    void fence_send_mavlink_status(mavlink_channel_t chan);
+
+    // GCS_Mavlink.cpp
     void gcs_send_heartbeat(void);
     void gcs_send_deferred(void);
     void send_heartbeat(mavlink_channel_t chan);
@@ -656,18 +724,34 @@ private:
     void send_simstate(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
-    void rpm_update();
-    void button_update();
-    void init_proximity();
-    void update_proximity();
-    void stats_update();
-    void init_beacon();
-    void update_beacon();
-    void init_visual_odom();
-    void update_visual_odom();
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
+
+    // heli.cpp
+    void heli_init();
+    void check_dynamic_flight(void);
+    void update_heli_control_dynamics(void);
+    void heli_update_landing_swash();
+    void heli_update_rotor_speed_targets();
+
+    // inertia.cpp
+    void read_inertia();
+
+    // landing_detector.cpp
+    void update_land_and_crash_detectors();
+    void update_land_detector();
+    void set_land_complete(bool b);
+    void set_land_complete_maybe(bool b);
+    void update_throttle_thr_mix();
+
+    // landing_gear.cpp
+    void landinggear_update();
+
+    // leds.cpp
+    void update_notify();
+
+    // Log.cpp
     void Log_Write_Current();
     void Log_Write_Optflow();
     void Log_Write_Nav_Tuning();
@@ -696,24 +780,14 @@ private:
     void Log_Write_Proximity();
     void Log_Write_Beacon();
     void Log_Write_Vehicle_Startup_Messages();
-    void load_parameters(void);
-    void convert_pid_parameters(void);
-    void userhook_init();
-    void userhook_FastLoop();
-    void userhook_50Hz();
-    void userhook_MediumLoop();
-    void userhook_SlowLoop();
-    void userhook_SuperSlowLoop();
-    void update_home_from_EKF();
-    void set_home_to_current_location_inflight();
-    bool set_home_to_current_location(bool lock);
-    bool set_home(const Location& loc, bool lock);
-    void set_ekf_origin(const Location& loc);
-    bool far_from_EKF_origin(const Location& loc);
-    void set_system_time_from_GPS();
-    MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
-    void delay(uint32_t ms);
-    void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
+    void log_init(void);
+
+    // mode.cpp
+    bool set_mode(control_mode_t mode, mode_reason_t reason);
+    void update_flight_mode();
+    void notify_flight_mode();
+
+    // mode_auto.cpp
     uint8_t get_default_auto_yaw_mode(bool rtl);
     void set_auto_yaw_mode(uint8_t yaw_mode);
     void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle);
@@ -721,80 +795,47 @@ private:
     void set_auto_yaw_rate(float turn_rate_cds);
     float get_auto_heading(void);
     float get_auto_yaw_rate_cds();
-    void avoidance_adsb_update(void);
 
-#if ADVANCED_FAILSAFE == ENABLED
-    void afs_fs_check(void);
-#endif
+    // mode_land.cpp
     void land_run_vertical_control(bool pause_descent = false);
     void land_run_horizontal_control();
     void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
 
-    void smart_rtl_save_position(); // method for scheduler to call
-
-    void crash_check();
-    void parachute_check();
-    void parachute_release();
-    void parachute_manual_release();
-
-    void ekf_check();
-    bool ekf_over_threshold();
-    bool ekf_check_position_problem();
-    void failsafe_ekf_event();
-    void failsafe_ekf_off_event(void);
-    void esc_calibration_startup_check();
-    void esc_calibration_passthrough();
-    void esc_calibration_auto();
-    void esc_calibration_notify();
-    bool should_disarm_on_failsafe();
-    void failsafe_radio_on_event();
-    void failsafe_radio_off_event();
-    void failsafe_battery_event(void);
-    void failsafe_gcs_check();
-    void failsafe_gcs_off_event(void);
-    void failsafe_terrain_check();
-    void failsafe_terrain_set_status(bool data_ok);
-    void failsafe_terrain_on_event();
-    void gpsglitch_check();
-    void set_mode_RTL_or_land_with_pause(mode_reason_t reason);
-    void update_events();
-    void failsafe_enable();
-    void failsafe_disable();
-    void fence_check();
-    void fence_send_mavlink_status(mavlink_channel_t chan);
-    void update_sensor_status_flags(void);
-    bool set_mode(control_mode_t mode, mode_reason_t reason);
-    void update_flight_mode();
-    void notify_flight_mode();
-    void heli_init();
-    void check_dynamic_flight(void);
-    void update_heli_control_dynamics(void);
-    void heli_update_landing_swash();
-    void heli_update_rotor_speed_targets();
-    void read_inertia();
-    bool land_complete_maybe();
-    void update_land_and_crash_detectors();
-    void update_land_detector();
-    void update_throttle_thr_mix();
-    void update_ground_effect_detector(void);
-    void landinggear_update();
-    void update_notify();
+    // motor_test.cpp
     void motor_test_output();
     bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc);
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec, uint8_t motor_count);
     void motor_test_stop();
+
+    // motors.cpp
     void arm_motors_check();
     void auto_disarm_check();
     bool init_arm_motors(bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
     void lost_vehicle_check();
+
+    // navigation.cpp
     void run_nav_updates(void);
+    int32_t home_bearing();
+    uint32_t home_distance();
+
+    // Parameters.cpp
+    void load_parameters(void);
+    void convert_pid_parameters(void);
+
+    // position_vector.cpp
     Vector3f pv_location_to_vector(const Location& loc);
     float pv_alt_above_origin(float alt_above_home_cm);
     float pv_alt_above_home(float alt_above_origin_cm);
     float pv_distance_to_home_cm(const Vector3f &destination);
+
+    // precision_landing.cpp
+    void init_precland();
+    void update_precland();
+
+    // radio.cpp
     void default_dead_zones();
     void init_rc_in();
     void init_rc_out();
@@ -803,31 +844,43 @@ private:
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
     void radio_passthrough_to_motors();
+
+    // sensors.cpp
     void init_barometer(bool full_calibration);
     void read_barometer(void);
     void barometer_accumulate(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
     bool rangefinder_alt_ok();
+    void rpm_update();
     void init_compass();
+    void compass_accumulate(void);
     void init_optflow();
     void update_optical_flow(void);
-    void init_precland();
-    void update_precland();
     void read_battery(void);
     void read_receiver_rssi(void);
-    void epm_update();
+    void compass_cal_update(void);
+    void accel_cal_update(void);
     void gripper_update();
+    void button_update();
+    void init_proximity();
+    void update_proximity();
+    void update_sensor_status_flags(void);
+    void init_beacon();
+    void update_beacon();
+    void init_visual_odom();
+    void update_visual_odom();
     void winch_init();
     void winch_update();
-    void terrain_update();
-    void terrain_logging();
-    bool terrain_use();
+
+    // setup.cpp
     void report_compass();
     void print_blanks(int16_t num);
     void print_divider(void);
     void print_enabled(bool b);
     void report_version();
+
+    // switches.cpp
     void read_control_switch();
     bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check);
     bool check_duplicate_auxsw(void);
@@ -839,6 +892,8 @@ private:
     void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag);
     void save_trim();
     void auto_trim();
+
+    // system.cpp
     void init_ardupilot();
     void startup_INS_ground();
     bool calibrate_gyros();
@@ -849,83 +904,75 @@ private:
     void check_usb_mux(void);
     bool should_log(uint32_t mask);
     void set_default_frame_class();
-    void allocate_motors(void);
     uint8_t get_frame_mav_type();
     const char* get_frame_string();
+    void allocate_motors(void);
+
+    // takeoff.cpp
     bool current_mode_has_user_takeoff(bool must_navigate);
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
     void takeoff_timer_start(float alt_cm);
     void takeoff_stop();
     void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
-    void print_hit_enter();
+    void auto_takeoff_set_start_alt(void);
+    void auto_takeoff_attitude_run(float target_yaw_rate);
+
+    // terrain.cpp
+    void terrain_update();
+    void terrain_logging();
+    bool terrain_use();
+
+    // tuning.cpp
     void tuning();
-    void log_init(void);
-    void init_capabilities(void);
-    void dataflash_periodic(void);
-    void ins_periodic();
-    void accel_cal_update(void);
-    
-    uint16_t get_pilot_speed_dn();    
+
+    // UserCode.cpp
+    void userhook_init();
+    void userhook_FastLoop();
+    void userhook_50Hz();
+    void userhook_MediumLoop();
+    void userhook_SlowLoop();
+    void userhook_SuperSlowLoop();
 
 #include "mode.h"
 
-    Copter::Mode *flightmode;
-
+    Mode *flightmode;
 #if FRAME_CONFIG == HELI_FRAME
-    Copter::ModeAcro_Heli mode_acro{*this};
+    ModeAcro_Heli mode_acro{*this};
 #else
-    Copter::ModeAcro mode_acro{*this};
+    ModeAcro mode_acro{*this};
 #endif
-
-    Copter::ModeAltHold mode_althold{*this};
-
-    Copter::ModeAuto mode_auto{*this, mission, circle_nav};
-
+    ModeAltHold mode_althold{*this};
+    ModeAuto mode_auto{*this, mission, circle_nav};
 #if AUTOTUNE_ENABLED == ENABLED
-    Copter::ModeAutoTune mode_autotune{*this};
+    ModeAutoTune mode_autotune{*this};
 #endif
-
-    Copter::ModeBrake mode_brake{*this};
-
-    Copter::ModeCircle mode_circle{*this, circle_nav};
-
-    Copter::ModeDrift mode_drift{*this};
-
-    Copter::ModeFlip mode_flip{*this};
-
-    Copter::ModeGuided mode_guided{*this};
-
-    Copter::ModeLand mode_land{*this};
-
-    Copter::ModeLoiter mode_loiter{*this};
-
-    Copter::ModePosHold mode_poshold{*this};
-
-    Copter::ModeRTL mode_rtl{*this};
-
+    ModeBrake mode_brake{*this};
+    ModeCircle mode_circle{*this, circle_nav};
+    ModeDrift mode_drift{*this};
+    ModeFlip mode_flip{*this};
+    ModeGuided mode_guided{*this};
+    ModeLand mode_land{*this};
+    ModeLoiter mode_loiter{*this};
+    ModePosHold mode_poshold{*this};
+    ModeRTL mode_rtl{*this};
 #if FRAME_CONFIG == HELI_FRAME
-    Copter::ModeStabilize_Heli mode_stabilize{*this};
+    ModeStabilize_Heli mode_stabilize{*this};
 #else
-    Copter::ModeStabilize mode_stabilize{*this};
+    ModeStabilize mode_stabilize{*this};
 #endif
+    ModeSport mode_sport{*this};
+    ModeAvoidADSB mode_avoid_adsb{*this};
+    ModeThrow mode_throw{*this};
+    ModeGuidedNoGPS mode_guided_nogps{*this};
+    ModeSmartRTL mode_smartrtl{*this};
 
-    Copter::ModeSport mode_sport{*this};
-
-    Copter::ModeAvoidADSB mode_avoid_adsb{*this};
-
-    Copter::ModeThrow mode_throw{*this};
-
-    Copter::ModeGuidedNoGPS mode_guided_nogps{*this};
-
-    Copter::ModeSmartRTL mode_smartrtl{*this};
-
-    Copter::Mode *mode_from_mode_num(const uint8_t mode);
-
+    // mode.cpp
+    Mode *mode_from_mode_num(const uint8_t mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
 
 public:
-    void mavlink_delay_cb();
-    void failsafe_check();
+    void mavlink_delay_cb();    // GCS_Mavlink.cpp
+    void failsafe_check();      // failsafe.cpp
 };
 
 extern const AP_HAL::HAL& hal;
