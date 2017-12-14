@@ -96,13 +96,6 @@ public:
     void manual_recovery_start();
 
     ///
-    /// time saving methods to piggy-back on main code's calculations
-    ///
-
-    /// set_home_distance - update vehicle's distance from home in meters - required for circular horizontal fence monitoring
-    void set_home_distance(float distance) { _home_distance = distance; }
-
-    ///
     /// polygon related methods
     ///
 

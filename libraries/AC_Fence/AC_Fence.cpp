@@ -241,6 +241,12 @@ bool AC_Fence::check_fence_circle()
         return false;
     }
 
+    Vector2f home;
+    if (_ahrs.get_relative_position_NE_home(home)) {
+        // we (may) remain breached if we can't update home
+        _home_distance = home.length();
+    }
+
     // check if we are outside the fence
     if (_home_distance >= _circle_radius) {
 
