@@ -11,13 +11,6 @@ void Sub::fence_check()
     uint8_t new_breaches; // the type of fence that has been breached
     uint8_t orig_breaches = fence.get_breaches();
 
-    Vector3f home = pv_location_to_vector(ahrs.get_home());
-    Vector3f curr = inertial_nav.get_position();
-    int32_t home_distance = get_horizontal_distance_cm(curr, home);
-
-    // give fence library our current distance from home in meters
-    fence.set_home_distance(home_distance*0.01f);
-
     // check for a breach
     new_breaches = fence.check_fence(current_loc.alt/100.0f);
 
