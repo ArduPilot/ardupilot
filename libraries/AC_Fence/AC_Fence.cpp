@@ -337,8 +337,7 @@ bool AC_Fence::check_destination_within_fence(const Location_Class& loc)
     if ((get_enabled_fences() & AC_FENCE_TYPE_POLYGON) && _boundary_num_points > 0) {
         // check ekf has a good location
         Vector2f posNE;
-        if (_ahrs.get_relative_position_NE_origin(posNE)) {
-            posNE = posNE * 100.0f;  // m to cm
+        if (loc.get_vector_xy_from_origin_NE(posNE)) {
             if (_poly_loader.boundary_breached(posNE, _boundary_num_points, _boundary, true)) {
                 return false;
             }
