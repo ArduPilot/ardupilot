@@ -104,6 +104,23 @@ uint8_t AC_Fence::get_enabled_fences() const
     return _enabled_fences;
 }
 
+// additional checks for the polygon fence:
+bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
+{
+    if (!(_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
+        // not enabled; all good
+        return true;
+    }
+
+    if (!_boundary_valid) {
+        fail_msg = "Polygon boundary invalid";
+        return false;
+    }
+
+    return true;
+}
+
+
 /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
 bool AC_Fence::pre_arm_check(const char* &fail_msg) const
 {
@@ -129,6 +146,10 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
             fail_msg = "fence requires position";
             return false;
         }
+    }
+
+    if (!pre_arm_check_polygon(fail_msg)) {
+        return false;
     }
 
     // if we got this far everything must be ok
@@ -542,5 +563,11 @@ bool AC_Fence::geofence_failed() const
     if (get_breaches() != 0) {
         return true;
     }
+    if (_enabled_fences & AC_FENCE_TYPE_POLYGON) {
+        if (!_boundary_valid) {
+            return true;
+        }
+    }
+
     return false;
 }

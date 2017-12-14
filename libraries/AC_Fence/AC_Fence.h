@@ -130,6 +130,9 @@ private:
     /// clear_breach - update breach bitmask, time and count
     void clear_breach(uint8_t fence_type);
 
+    // additional checks for the polygon fence:
+    bool pre_arm_check_polygon(const char* &fail_msg) const;
+
     /// load polygon points stored in eeprom into boundary array and perform validation.  returns true if load successfully completed
     bool load_polygon_from_eeprom(bool force_reload = false);
 
