@@ -300,6 +300,11 @@ public:
     // advanced failsafe library
     AP_AdvancedFailsafe_Rover afs;
 #endif
+    // AC_Fence libraryfence
+#if AC_FENCE == ENABLED
+    AC_Fence fence;
+#endif
+
     AP_Beacon beacon;
 
     // Visual Odometry camera

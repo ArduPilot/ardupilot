@@ -166,3 +166,18 @@
 #ifndef ADVANCED_FAILSAFE
   #define ADVANCED_FAILSAFE DISABLED
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+//  OPTICAL_FLOW & VISUAL ODOMETRY
+#ifndef OPTFLOW
+  #define OPTFLOW DISABLED
+#endif
+
+#ifndef VISUAL_ODOMETRY_ENABLED
+  #define VISUAL_ODOMETRY_ENABLED ENABLED
+#endif
+
+// Enable/disable Fence
+#ifndef AC_FENCE
+  #define AC_FENCE ENABLED
+#endif

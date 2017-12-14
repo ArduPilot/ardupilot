@@ -76,6 +76,7 @@
 #include <Filter/ModeFilter.h>                      // Mode Filter from Filter library
 #include <RC_Channel/RC_Channel.h>                  // RC Channel Library
 #include <StorageManager/StorageManager.h>
+#include <AC_Fence/AC_Fence.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -174,7 +175,7 @@ private:
 #endif
 
     // Arming/Disarming management class
-    AP_Arming_Rover arming{ahrs, barometer, compass, battery};
+    AP_Arming_Rover arming{ahrs, barometer, compass, battery, &g2.fence};
 
     AP_L1_Control L1_controller{ahrs, nullptr};
 
@@ -188,7 +189,9 @@ private:
             FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)};
 
 #if AP_AHRS_NAVEKF_AVAILABLE
+#if OPTFLOW == ENABLED
     OpticalFlow optflow{ahrs};
+#endif
 #endif
 
     // RSSI
@@ -259,9 +262,6 @@ private:
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
-
-    // true if we have a position estimate from AHRS
-    bool have_position;
 
     // receiver RSSI
     uint8_t receiver_rssi;
@@ -395,6 +395,18 @@ private:
         LowPassFilterFloat throttle_filt = LowPassFilterFloat(2.0f);
     } cruise_learn;
 
+    Location ekf_origin;
+    Vector3f current_pos;
+    Vector3f current_vel;
+    nav_filter_status filt_status;
+    struct {
+        bool has_ekf_origin;
+        bool has_current_loc;
+        bool has_relative_pos;
+        bool has_current_vel;
+        bool has_filt_status;
+    } ahrs_state;
+
 private:
 
     // APMrover2.cpp
@@ -412,6 +424,7 @@ private:
     void update_GPS_50Hz(void);
     void update_GPS_10Hz(void);
     void update_current_mode(void);
+    void ten_hz_loop(void);
 
     // capabilities.cpp
     void init_capabilities(void);
@@ -492,6 +505,7 @@ private:
     void send_rangefinder(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
+    void send_fence_status(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);
@@ -571,10 +585,14 @@ private:
     bool disarm_motors(void);
     void smart_rtl_update();
     bool is_boat() const;
+    bool position_ok();
+    bool ekf_position_ok();
+    bool optflow_position_ok();
+    void update_ahrs_state();
 
-    // test.cpp
-    void print_hit_enter();
-    void print_enabled(bool b);
+    // fence.cpp
+    void fence_check();
+    void fence_send_mavlink_status(mavlink_channel_t chan);
 
 public:
     void mavlink_delay_cb();
