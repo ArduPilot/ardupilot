@@ -477,10 +477,13 @@ void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel,
  * Computes the speed such that the stopping distance
  * of the vehicle will be exactly the input distance.
  */
-float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance, float dt) const
+float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance_cm, float dt) const
 {
-    // should use time instead of 0.0f
-    return AC_AttitudeControl::sqrt_controller(distance, kP, accel_cmss, dt);
+    if (is_zero(kP)) {
+        return safe_sqrt(2.0f * distance_cm * accel_cmss);
+    } else {
+        return AC_AttitudeControl::sqrt_controller(distance_cm, kP, accel_cmss, dt);
+    }
 }
 
 /*
@@ -488,20 +491,25 @@ float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance, float 
  *
  * Implementation copied from AC_PosControl.
  */
-float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed) const
+float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed_cms) const
 {
     // avoid divide by zero by using current position if the velocity is below 10cm/s, kP is very low or acceleration is zero
-    if (kP <= 0.0f || accel_cmss <= 0.0f || is_zero(speed)) {
+    if (accel_cmss <= 0.0f || is_zero(speed_cms)) {
         return 0.0f;
+    }
+
+    // handle linear deceleration
+    if (kP <= 0.0f) {
+        return 0.5f * sq(speed_cms) / accel_cmss;
     }
 
     // calculate distance within which we can stop
     // accel_cmss/kP is the point at which velocity switches from linear to sqrt
-    if (speed < accel_cmss/kP) {
-        return speed/kP;
+    if (speed_cms < accel_cmss/kP) {
+        return speed_cms/kP;
     } else {
         // accel_cmss/(2.0f*kP*kP) is the distance at which we switch from linear to sqrt response
-        return accel_cmss/(2.0f*kP*kP) + (speed*speed)/(2.0f*accel_cmss);
+        return accel_cmss/(2.0f*kP*kP) + (speed_cms*speed_cms)/(2.0f*accel_cmss);
     }
 }
 

@@ -110,13 +110,14 @@ private:
     /*
      * Computes the speed such that the stopping distance
      * of the vehicle will be exactly the input distance.
+     * kP should be non-zero for Copter which has a non-linear response
      */
-    float get_max_speed(float kP, float accel_cmss, float distance, float dt) const;
+    float get_max_speed(float kP, float accel_cmss, float distance_cm, float dt) const;
 
     /*
      * Computes distance required to stop, given current speed.
      */
-    float get_stopping_distance(float kP, float accel_cmss, float speed) const;
+    float get_stopping_distance(float kP, float accel_cmss, float speed_cms) const;
 
     /*
      * methods for avoidance in non-GPS flight modes
