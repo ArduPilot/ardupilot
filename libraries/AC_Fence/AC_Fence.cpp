@@ -74,16 +74,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
 /// Default constructor.
 AC_Fence::AC_Fence(const AP_AHRS_NavEKF& ahrs) :
-    _ahrs(ahrs),
-    _alt_max_backup(0),
-    _circle_radius_backup(0),
-    _alt_max_breach_distance(0),
-    _circle_breach_distance(0),
-    _home_distance(0),
-    _breached_fences(AC_FENCE_TYPE_NONE),
-    _breach_time(0),
-    _breach_count(0),
-    _manual_recovery_start_ms(0)
+    _ahrs(ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -108,10 +99,9 @@ void AC_Fence::enable(bool value)
 uint8_t AC_Fence::get_enabled_fences() const
 {
     if (!_enabled) {
-        return AC_FENCE_TYPE_NONE;
-    }else{
-        return _enabled_fences;
+        return 0;
     }
+    return _enabled_fences;
 }
 
 /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
@@ -120,12 +110,12 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     fail_msg = nullptr;
 
     // if not enabled or not fence set-up always return true
-    if (!_enabled || _enabled_fences == AC_FENCE_TYPE_NONE) {
+    if (!_enabled || !_enabled_fences) {
         return true;
     }
 
     // check no limits are currently breached
-    if (_breached_fences != AC_FENCE_TYPE_NONE) {
+    if (_breached_fences) {
         fail_msg =  "vehicle outside fence";
         return false;
     }
@@ -284,22 +274,22 @@ bool AC_Fence::check_fence_circle()
 /// check - returns bitmask of fence types breached (if any)
 uint8_t AC_Fence::check()
 {
-    uint8_t ret = AC_FENCE_TYPE_NONE;
+    uint8_t ret = 0;
 
     // return immediately if disabled
-    if (!_enabled || _enabled_fences == AC_FENCE_TYPE_NONE) {
-        return AC_FENCE_TYPE_NONE;
+    if (!_enabled || !_enabled_fences) {
+        return 0;
     }
 
     // check if pilot is attempting to recover manually
     if (_manual_recovery_start_ms != 0) {
         // we ignore any fence breaches during the manual recovery period which is about 10 seconds
         if ((AP_HAL::millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
-            return AC_FENCE_TYPE_NONE;
-        } else {
-            // recovery period has passed so reset manual recovery time and continue with fence breach checks
-            _manual_recovery_start_ms = 0;
+            return 0;
         }
+        // recovery period has passed so reset manual recovery time
+        // and continue with fence breach checks
+        _manual_recovery_start_ms = 0;
     }
 
     // maximum altitude fence check
@@ -359,7 +349,7 @@ bool AC_Fence::check_destination_within_fence(const Location_Class& loc)
 void AC_Fence::record_breach(uint8_t fence_type)
 {
     // if we haven't already breached a limit, update the breach time
-    if (_breached_fences == AC_FENCE_TYPE_NONE) {
+    if (!_breached_fences) {
         _breach_time = AP_HAL::millis();
     }
 
@@ -407,7 +397,7 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
 void AC_Fence::manual_recovery_start()
 {
     // return immediate if we haven't breached a fence
-    if (_breached_fences == AC_FENCE_TYPE_NONE) {
+    if (!_breached_fences) {
         return;
     }
 
