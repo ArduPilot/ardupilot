@@ -56,9 +56,8 @@ public:
     /// methods to check we are within the boundaries and recover
     ///
 
-    /// check_fence - returns the fence type that has been breached (if any)
-    ///     curr_alt is the altitude above home in meters
-    uint8_t check_fence(float curr_alt);
+    /// check - returns the fence type that has been breached (if any)
+    uint8_t check();
 
     // returns true if the destination is within fence (used to reject waypoints outside the fence)
     bool check_destination_within_fence(const Location_Class& loc);
@@ -116,8 +115,9 @@ public:
     bool geofence_failed() const;
 
 private:
+
     /// check_fence_alt_max - true if alt fence has been newly breached
-    bool check_fence_alt_max(float curr_alt);
+    bool check_fence_alt_max();
 
     /// check_fence_polygon - true if polygon fence has been newly breached
     bool check_fence_polygon();
@@ -157,6 +157,8 @@ private:
 
     // other internal variables
     float           _home_distance;         // distance from home in meters (provided by main code)
+    float _curr_alt;
+
 
     // breach information
     uint8_t         _breached_fences;       // bitmask holding the fence type that was breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
