@@ -35,6 +35,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_SMBus;
     friend class AP_BattMonitor_SMBus_Solo;
     friend class AP_BattMonitor_SMBus_Maxell;
+    friend class AP_BattMonitor_SMBus_SUI;
 
 public:
 
@@ -48,7 +49,9 @@ public:
         BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT = 4,
         BattMonitor_TYPE_SOLO                       = 5,
         BattMonitor_TYPE_BEBOP                      = 6,
-        BattMonitor_TYPE_MAXELL                     = 7
+        BattMonitor_TYPE_MAXELL                     = 7,
+        BattMonitor_TYPE_XRAY                       = 8,
+        BattMonitor_TYPE_ENDURANCE                  = 9
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)
