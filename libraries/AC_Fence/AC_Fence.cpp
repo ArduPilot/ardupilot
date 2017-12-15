@@ -145,7 +145,7 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     return true;
 }
 
-bool AC_Fence::check_fence_alt_max(const float curr_alt)
+bool AC_Fence::check_fence_alt_max()
 {
     // altitude fence check
     if (!(_enabled_fences & AC_FENCE_TYPE_ALT_MAX)) {
@@ -153,21 +153,24 @@ bool AC_Fence::check_fence_alt_max(const float curr_alt)
         return false;
     }
 
+    _ahrs.get_relative_position_D_home(_curr_alt);
+    _curr_alt = -_curr_alt; // translate Down to Up
+
     // check if we are over the altitude fence
-    if( curr_alt >= _alt_max ) {
+    if(_curr_alt >= _alt_max) {
 
         // record distance above breach
-        _alt_max_breach_distance = curr_alt - _alt_max;
+        _alt_max_breach_distance = _curr_alt - _alt_max;
 
         // check for a new breach or a breach of the backup fence
         if (!(_breached_fences & AC_FENCE_TYPE_ALT_MAX) ||
-            (!is_zero(_alt_max_backup) && curr_alt >= _alt_max_backup)) {
+            (!is_zero(_alt_max_backup) && _curr_alt >= _alt_max_backup)) {
 
             // new breach
             record_breach(AC_FENCE_TYPE_ALT_MAX);
 
             // create a backup fence 20m higher up
-            _alt_max_backup = curr_alt + AC_FENCE_ALT_MAX_BACKUP_DISTANCE;
+            _alt_max_backup = _curr_alt + AC_FENCE_ALT_MAX_BACKUP_DISTANCE;
             // new breach:
             return true;
         }
@@ -278,9 +281,8 @@ bool AC_Fence::check_fence_circle()
 }
 
 
-/// check_fence - returns the fence type that has been breached (if any)
-///     curr_alt is the altitude above home in meters
-uint8_t AC_Fence::check_fence(float curr_alt)
+/// check - returns bitmask of fence types breached (if any)
+uint8_t AC_Fence::check()
 {
     uint8_t ret = AC_FENCE_TYPE_NONE;
 
@@ -301,7 +303,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
     }
 
     // maximum altitude fence check
-    if (check_fence_alt_max(curr_alt)) {
+    if (check_fence_alt_max()) {
         ret |= AC_FENCE_TYPE_ALT_MAX;
     }
 
