@@ -16,6 +16,7 @@
 #include "GPIO.h"
 #include "SITL_State.h"
 #include "Util.h"
+#include "I2CDevice.h"
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
@@ -29,9 +30,9 @@ static RCInput  sitlRCInput(&sitlState);
 static RCOutput sitlRCOutput(&sitlState);
 static AnalogIn sitlAnalogIn(&sitlState);
 static GPIO sitlGPIO(&sitlState);
+static I2CDeviceManager i2c_mgr_instance;
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::I2CDeviceManager i2c_mgr_instance;
 static Empty::SPIDeviceManager emptySPI;
 static Empty::OpticalFlow emptyOpticalFlow;
 
