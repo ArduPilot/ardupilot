@@ -572,10 +572,6 @@ private:
     void smart_rtl_update();
     bool is_boat() const;
 
-    // test.cpp
-    void print_hit_enter();
-    void print_enabled(bool b);
-
 public:
     void mavlink_delay_cb();
     void failsafe_check();
