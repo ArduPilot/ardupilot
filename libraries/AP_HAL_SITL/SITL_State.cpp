@@ -98,6 +98,9 @@ void SITL_State::_sitl_setup(const char *home_str)
         if (_use_fg_view) {
             fg_socket.connect("127.0.0.1", _fg_view_port);
         }
+        if (_use_gps_stream) {
+            gps_socket.connect("127.0.0.1", _gps_stream_port);
+        }
 
         fprintf(stdout, "Using Irlock at port : %d\n", _irlock_port);
         _sitl->irlock_port = _irlock_port;

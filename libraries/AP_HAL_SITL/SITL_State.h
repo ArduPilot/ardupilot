@@ -166,6 +166,7 @@ private:
     uint16_t _rcout_port;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
+    uint16_t _gps_stream_port;
     uint16_t _irlock_port;
     float _current;
 
@@ -173,6 +174,7 @@ private:
 
     bool _use_rtscts;
     bool _use_fg_view;
+    bool _use_gps_stream;
     
     const char *_fdm_address;
 
@@ -219,7 +221,10 @@ private:
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
-    
+
+    // output socket for raw GPS mirroring.
+    SocketAPM gps_socket{true};
+
     // TCP address to connect uartC to
     const char *_client_address;
 

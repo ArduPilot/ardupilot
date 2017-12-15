@@ -137,6 +137,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const char *model_str = nullptr;
     _client_address = nullptr;
     _use_fg_view = true;
+    _use_gps_stream = true;
     char *autotest_dir = nullptr;
     _fdm_address = "127.0.0.1";
 
@@ -144,10 +145,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const int RCIN_PORT = 5501;
     const int RCOUT_PORT = 5502;
     const int FG_VIEW_PORT = 5503;
+    const int GPS_STREAM_PORT = 5504;
     _base_port = BASE_PORT;
     _rcin_port = RCIN_PORT;
     _rcout_port = RCOUT_PORT;
     _fg_view_port = FG_VIEW_PORT;
+    _gps_stream_port = GPS_STREAM_PORT;
 
     const int SIM_IN_PORT = 9003;
     const int SIM_OUT_PORT = 9002;
@@ -265,6 +268,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             }
             if (_irlock_port == IRLOCK_PORT) {
                 _irlock_port += _instance * 10;
+            }
+            if (_gps_stream_port == GPS_STREAM_PORT) {
+                _gps_stream_port += _instance * 10;
             }
         }
         break;

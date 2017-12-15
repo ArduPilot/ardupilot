@@ -103,25 +103,28 @@ int SITL_State::gps2_pipe(void)
  */
 void SITL_State::_gps_write(const uint8_t *p, uint16_t size, uint8_t instance)
 {
-    while (size--) {
+    uint16_t remaining = size;
+    const uint8_t *cur = p;
+    while (remaining--) {
         if (_sitl->gps_byteloss > 0.0f) {
             float r = ((((unsigned)random()) % 1000000)) / 1.0e4;
             if (r < _sitl->gps_byteloss) {
                 // lose the byte
-                p++;
+                cur++;
                 continue;
             }
         }
         if (instance == 0 && gps_state.gps_fd != 0) {
-            write(gps_state.gps_fd, p, 1);
+            write(gps_state.gps_fd, cur, 1);
         }
         if (instance == 1 && _sitl->gps2_enable) {
             if (gps2_state.gps_fd != 0) {
-                write(gps2_state.gps_fd, p, 1);
+                write(gps2_state.gps_fd, cur, 1);
             }
         }
-        p++;
+        cur++;
     }
+    gps_socket.send(p, size);
 }
 
 /*
