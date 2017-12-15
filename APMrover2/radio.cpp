@@ -141,7 +141,7 @@ void Rover::trim_control_surfaces()
     read_radio();
     // Store control surface trim values
     // ---------------------------------
-    if (channel_steer->get_radio_in() > 1400) {
+    if ((channel_steer->get_radio_in() > 1400) && (channel_steer->get_radio_in() < 1600)) {
         channel_steer->set_radio_trim(channel_steer->get_radio_in());
         // save to eeprom
         channel_steer->save_eeprom();

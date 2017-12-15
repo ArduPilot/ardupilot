@@ -179,10 +179,6 @@ void Rover::startup_ground(void)
 
     startup_INS_ground();
 
-    // read the radio to set trims
-    // ---------------------------
-    trim_radio();
-
     // initialise mission library
     mission.init();
 
