@@ -4,8 +4,7 @@
 bool ModeSmartRTL::_enter()
 {
     // SmartRTL requires EKF (not DCM)
-    Location ekf_origin;
-    if (!ahrs.get_origin(ekf_origin)) {
+    if (!rover.ahrs_state.has_ekf_origin) {
         return false;
     }
 

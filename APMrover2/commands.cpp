@@ -16,9 +16,8 @@ void Rover::update_home_from_EKF()
 bool Rover::set_home_to_current_location(bool lock)
 {
     // use position from EKF if available otherwise use GPS
-    Location temp_loc;
-    if (ahrs.have_inertial_nav() && ahrs.get_position(temp_loc)) {
-        return set_home(temp_loc, lock);
+    if (ahrs.have_inertial_nav() && ahrs_state.has_current_loc) {
+        return set_home(current_loc, lock);
     }
     return false;
 }
@@ -36,8 +35,7 @@ bool Rover::set_home(const Location& loc, bool lock)
     }
 
     // check if EKF origin has been set
-    Location ekf_origin;
-    if (!ahrs.get_origin(ekf_origin)) {
+    if (!ahrs_state.has_ekf_origin) {
         return false;
     }
 
@@ -93,8 +91,7 @@ void Rover::set_ekf_origin(const Location& loc)
     }
 
     // check if EKF origin has already been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
+    if (ahrs_state.has_ekf_origin) {
         return;
     }
 
@@ -139,10 +136,9 @@ void Rover::set_system_time_from_GPS()
 void Rover::update_home()
 {
     if (home_is_set == HOME_SET_NOT_LOCKED) {
-        Location loc;
-        if (ahrs.get_position(loc)) {
-            if (get_distance(loc, ahrs.get_home()) > DISTANCE_HOME_MAX) {
-                ahrs.set_home(loc);
+        if (ahrs_state.has_current_loc) {
+            if (get_distance(current_loc, ahrs.get_home()) > DISTANCE_HOME_MAX) {
+                ahrs.set_home(current_loc);
                 Log_Write_Home_And_Origin();
                 gcs().send_home(gps.location());
             }

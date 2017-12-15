@@ -66,6 +66,14 @@ void Rover::Log_Write_Steering()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write proximity sensor distances
+void Rover::Log_Write_Proximity()
+{
+#if PROXIMITY_ENABLED == ENABLED
+    DataFlash.Log_Write_Proximity(g2.proximity);
+#endif
+}
+
 // Write beacon position and distances
 void Rover::Log_Write_Beacon()
 {
@@ -265,9 +273,8 @@ void Rover::Log_Write_Home_And_Origin()
 {
 #if AP_AHRS_NAVEKF_AVAILABLE
     // log ekf origin if set
-    Location ekf_orig;
-    if (ahrs.get_origin(ekf_orig)) {
-        DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+    if (ahrs_state.has_ekf_origin) {
+        DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_origin);
     }
 #endif
 
@@ -398,5 +405,6 @@ void Rover::Log_Arm_Disarm() {}
 void Rover::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 void Rover::Log_Write_Steering() {}
 void Rover::Log_Write_WheelEncoder() {}
+void Rover::Log_Write_Proximity() {}
 
 #endif  // LOGGING_ENABLED

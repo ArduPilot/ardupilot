@@ -92,6 +92,9 @@ void Rover::init_ardupilot()
     // initialise rangefinder
     init_rangefinder();
 
+    // init proximity sensor
+    init_proximity();
+
     // init beacons used for non-gps position estimation
     init_beacon();
 
@@ -227,6 +230,13 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     }
 
     control_mode = &new_mode;
+
+#if AC_FENCE == ENABLED
+    // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
+    // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
+    // but it should be harmless to disable the fence temporarily in these situations as well
+    g2.fence.manual_recovery_start();
+#endif
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode->mode_number());
@@ -370,7 +380,111 @@ void Rover::smart_rtl_update()
 
 // returns true if vehicle is a boat
 // this affects whether the vehicle tries to maintain position after reaching waypoints
-bool Rover::is_boat() const
+bool Rover::is_boat() const {
+    return ((enum frame_class) g2.frame_class.get() == FRAME_BOAT);
+}
+
+// position_ok - returns true if the horizontal absolute position is ok and home position is set
+bool Rover::position_ok()
 {
-    return ((enum frame_class)g2.frame_class.get() == FRAME_BOAT);
+    // return false if ekf failsafe has triggered // TODO : update with the addition of EKF failsafe
+    /*if (failsafe.ekf) {
+        return false;
+    }*/
+
+    // check ekf position estimate
+    return (ekf_position_ok() || optflow_position_ok());
+}
+
+// ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
+bool Rover::ekf_position_ok()
+{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow navigation with dcm position
+        return false;
+    }
+
+    // with EKF use filter status and ekf check
+    if (!ahrs_state.has_filt_status) {
+        return false;
+    }
+
+    // if disarmed we accept a predicted horizontal position
+    if (!arming.is_armed()) {
+        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+    } else {
+        // once armed we require a good absolute position and EKF must not be in const_pos_mode
+        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+    }
+}
+
+// optflow_position_ok - returns true if optical flow based position estimate is ok
+bool Rover::optflow_position_ok()
+{
+#if OPTFLOW != ENABLED && VISUAL_ODOMETRY_ENABLED != ENABLED
+    return false;
+#else
+    // return immediately if EKF not used
+    if (!ahrs_state.has_filt_status) {
+        return false;
+    }
+
+    // return immediately if neither optflow nor visual odometry is enabled
+#if OPTFLOW == ENABLED
+    if (!optflow.enabled()) {
+        return false;
+    }
+#endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    if (!g2.visual_odom.enabled()) {
+        return false;
+    }
+#endif
+
+    // if disarmed we accept a predicted horizontal relative position
+    if (!arming.is_armed()) {
+        return (filt_status.flags.pred_horiz_pos_rel);
+    } else {
+        return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
+    }
+#endif
+}
+
+void  Rover::update_ahrs_state() {
+    // reset ahrs flags
+    ahrs_state.has_ekf_origin = false;
+    ahrs_state.has_current_loc = false;
+    ahrs_state.has_relative_pos = false;
+    ahrs_state.has_current_vel = false;
+
+    // pull position
+    ahrs_state.has_ekf_origin = ahrs.get_origin(ekf_origin);
+
+    Location loc{};
+    if (ahrs.get_position(loc)) {
+        ahrs_state.has_current_loc = true;
+        current_loc.lng = loc.lng;
+        current_loc.lat = loc.lat;
+    }
+
+    // Get XYZ position and velocity in NEU and cm
+    if (ahrs.get_relative_position_NED_origin(current_pos)) {
+        ahrs_state.has_relative_pos = true;
+        current_pos = current_pos * 100.0f;  // m to cm
+        current_pos.z = -current_pos.z;  // NED to NEU
+    }
+
+    // if using the EKF get a speed update now (from accelerometers)
+    if (ahrs.get_velocity_NED(current_vel)) {
+        ahrs_state.has_current_vel = true;
+        current_vel = current_vel * 100.0f;  // m to cm
+        current_vel.z = -current_vel.z;  // NED to NEU
+        ground_speed = norm(current_vel.x, current_vel.y);
+    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        ground_speed = ahrs.groundspeed();
+    }
+
+    ahrs.get_filter_status(filt_status);
+    ahrs_state.has_filt_status = filt_status.flags.vert_pos;
+
 }

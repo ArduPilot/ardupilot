@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Arming/AP_Arming.h>
+#include <AC_Fence/AC_Fence.h>
 
 /*
   a rover-specific arming class
@@ -9,7 +10,7 @@ class AP_Arming_Rover : public AP_Arming
 {
 public:
     AP_Arming_Rover(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                    const AP_BattMonitor &battery)
+                    const AP_BattMonitor &battery, const AC_Fence *fence=nullptr)
         : AP_Arming(ahrs_ref, baro, compass, battery)
     {
     }
@@ -24,4 +25,10 @@ public:
 
 protected:
     enum HomeState home_status() const override;
+    bool position_checks(bool display_failure);
+    bool fence_checks(bool display_failure);
+    bool proximity_check(bool display_failure);
+
+private:
+    const AC_Fence *_fence;
 };
