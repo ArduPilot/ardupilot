@@ -350,6 +350,20 @@ def do_build_waf(opts, frame_options):
     os.chdir(old_dir)
 
 
+def do_build_parameters(vehicle):
+    # build succeeded
+    # now build parameters
+    progress("Building fresh parameter descriptions")
+    param_parse_path = os.path.join(
+        find_root_dir(), "Tools/autotest/param_metadata/param_parse.py")
+    cmd_param_build = ["python", param_parse_path, '--vehicle', vehicle]
+
+    _, sts = run_cmd_blocking("Building fresh params", cmd_param_build)
+    if sts != 0:
+        progress("Parameter build failed")
+        sys.exit(1)
+
+
 def do_build(vehicledir, opts, frame_options):
     """Build build target (e.g. sitl) in directory vehicledir"""
 
@@ -617,6 +631,11 @@ def start_mavproxy(opts, stuff):
     if opts.aircraft is not None:
         cmd.extend(['--aircraft', opts.aircraft])
 
+    if opts.fresh_params:
+        # these were built earlier:
+        path = os.path.join(os.getcwd(), "apm.pdef.xml")
+        cmd.extend(['--load-module', 'param:{"xml-filepath":"%s"}' % path])
+
     if len(extra_cmd):
         cmd.extend(['--cmd', extra_cmd])
 
@@ -798,6 +817,11 @@ group_sim.add_option("", "--no-mavproxy",
                      action='store_true',
                      default=False,
                      help="Don't launch MAVProxy")
+group_sim.add_option("", "--fresh-params",
+                     action='store_true',
+                     dest='fresh_params',
+                     default=False,
+                     help="Generate and use local parameter help XML")
 parser.add_option_group(group_sim)
 
 
@@ -947,6 +971,9 @@ if cmd_opts.hil:
 else:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
         do_build(vehicle_dir, cmd_opts, frame_infos)
+
+    if cmd_opts.fresh_params:
+        do_build_parameters(cmd_opts.vehicle)
 
     if cmd_opts.build_system == "waf":
         if cmd_opts.debug:
