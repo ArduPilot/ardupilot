@@ -151,6 +151,15 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_vel_xy, "_VELXY_", 6, AC_PosControl, AC_PID_2D),
 
+    // @Param: ANGLE_MAX
+    // @DisplayName: Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
+    // @Description: Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
+    // @Units: deg
+    // @Range: 0 45
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_ANGLE_MAX",  13, AC_PosControl, _lean_angle_max, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -744,6 +753,15 @@ bool AC_PosControl::is_active_xy() const
     return ((AP_HAL::millis() - _last_update_xy_ms) <= POSCONTROL_ACTIVE_TIMEOUT_MS);
 }
 
+/// get_lean_angle_max_cd - returns the maximum pilot commanded angle in degrees
+float AC_PosControl::get_lean_angle_max_cd() const
+{
+    if (is_zero(_lean_angle_max)) {
+        return _attitude_control.lean_angle_max();
+    }
+    return _lean_angle_max*100.0f;
+}
+
 /// init_xy_controller - initialise the xy controller
 ///     sets target roll angle, pitch angle and I terms based on vehicle current lean angles
 ///     should be called once whenever significant changes to the position target are made
@@ -1032,21 +1050,28 @@ void AC_PosControl::run_xy_controller(float dt, float ekfNavVelGainScaler)
 
     // the following section converts desired accelerations provided in lat/lon frame to roll/pitch angles
 
-    float accel_right, accel_forward;
-
     // limit acceleration using maximum lean angles
-    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max(), _attitude_control.lean_angle_max());
+    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max(), get_lean_angle_max_cd());
     float accel_max = MIN(GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f)), POSCONTROL_ACCEL_XY_MAX);
     _limit.accel_xy = limit_vector_length(_accel_target.x, _accel_target.y, accel_max);
 
+    // update angle targets that will be passed to stabilize controller
+    accel_to_lean_angles(_accel_target.x, _accel_target.y, _roll_target, _pitch_target);
+}
+
+// get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+void AC_PosControl::accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss, float& roll_target, float& pitch_target) const
+{
+    float accel_right, accel_forward;
+
     // rotate accelerations into body forward-right frame
-    accel_forward = _accel_target.x*_ahrs.cos_yaw() + _accel_target.y*_ahrs.sin_yaw();
-    accel_right = -_accel_target.x*_ahrs.sin_yaw() + _accel_target.y*_ahrs.cos_yaw();
+    accel_forward = accel_x_cmss*_ahrs.cos_yaw() + accel_y_cmss*_ahrs.sin_yaw();
+    accel_right = -accel_x_cmss*_ahrs.sin_yaw() + accel_y_cmss*_ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
-    _pitch_target = atanf(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);
-    float cos_pitch_target = cosf(_pitch_target*M_PI/18000);
-    _roll_target = atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
+    pitch_target = atanf(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);
+    float cos_pitch_target = cosf(pitch_target*M_PI/18000);
+    roll_target = atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s

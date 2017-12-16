@@ -160,6 +160,9 @@ public:
     /// xy position controller
     ///
 
+    /// get_lean_angle_max_cd - returns the maximum pilot commanded angle in degrees
+    float get_lean_angle_max_cd() const;
+
     /// init_xy_controller - initialise the xy controller
     ///     sets target roll angle, pitch angle and I terms based on vehicle current lean angles
     ///     should be called once whenever significant changes to the position target are made
@@ -282,6 +285,9 @@ public:
     const Vector3f& get_accel_target() const { return _accel_target; }
 
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+    void accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss, float& roll_target, float& pitch_target) const;
+
+    // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const;
 
     // time_since_last_xy_update - returns time in seconds since the horizontal position controller was last run
@@ -367,6 +373,7 @@ protected:
 
     // parameters
     AP_Float    _accel_xy_filt_hz;      // XY acceleration filter cutoff frequency
+    AP_Float    _lean_angle_max;        // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
     AC_P        _p_pos_z;
     AC_P        _p_vel_z;
     AC_PID      _pid_accel_z;
