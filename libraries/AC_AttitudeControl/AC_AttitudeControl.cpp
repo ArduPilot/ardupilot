@@ -454,11 +454,11 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
 void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat, const Quaternion& att_from_quat, Vector3f& att_diff_angle, float& thrust_vec_dot)
 {
-    Matrix3f att_to_rot_matrix; // earth frame to target frame
+    Matrix3f att_to_rot_matrix; // rotation from the target body frame to the inertial frame.
     att_to_quat.rotation_matrix(att_to_rot_matrix);
     Vector3f att_to_thrust_vec = att_to_rot_matrix*Vector3f(0.0f,0.0f,1.0f);
 
-    Matrix3f att_from_rot_matrix; // earth frame to target frame
+    Matrix3f att_from_rot_matrix; // rotation from the current body frame to the inertial frame.
     att_from_quat.rotation_matrix(att_from_rot_matrix);
     Vector3f att_from_thrust_vec = att_from_rot_matrix*Vector3f(0.0f,0.0f,1.0f);
 
