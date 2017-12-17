@@ -98,7 +98,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 
     // @Param: 2_VOLT_MULT
     // @DisplayName: Voltage Multiplier
-    // @Description: Used to convert the voltage of the voltage sensing pin (BATT_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_MULT). For the 3DR Power brick on APM2 or Pixhawk, this should be set to 10.1. For the Pixhawk with the 3DR 4in1 ESC this should be 12.02. For the PX4 using the PX4IO power supply this should be set to 1.
+    // @Description: Used to convert the voltage of the voltage sensing pin (BATT2_VOLT_PIN) to the actual battery's voltage (pin_voltage * VOLT_MULT). For the 3DR Power brick on APM2 or Pixhawk, this should be set to 10.1. For the Pixhawk with the 3DR 4in1 ESC this should be 12.02. For the PX4 using the PX4IO power supply this should be set to 1.
     // @User: Advanced
     AP_GROUPINFO("2_VOLT_MULT", 14, AP_BattMonitor, _volt_multiplier[1], AP_BATT_VOLTDIVIDER_DEFAULT),
 

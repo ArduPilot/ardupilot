@@ -58,7 +58,7 @@ void Rover::init_ardupilot()
     // initialise notify system
     notify.init(false);
     AP_Notify::flags.failsafe_battery = false;
-    notify_mode((enum mode)control_mode->mode_number());
+    notify_mode(control_mode);
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
@@ -133,12 +133,14 @@ void Rover::init_ardupilot()
     // give AHRS the range beacon sensor
     ahrs.set_beacon(&g2.beacon);
 
+    // initialize SmartRTL
+    g2.smart_rtl.init();
 
     init_capabilities();
 
     startup_ground();
 
-    Mode *initial_mode = control_mode_from_num((enum mode)g.initial_mode.get());
+    Mode *initial_mode = mode_from_mode_num((enum mode)g.initial_mode.get());
     if (initial_mode == nullptr) {
         initial_mode = &mode_initializing;
     }
@@ -176,10 +178,6 @@ void Rover::startup_ground(void)
     //
 
     startup_INS_ground();
-
-    // read the radio to set trims
-    // ---------------------------
-    trim_radio();
 
     // initialise mission library
     mission.init();
@@ -229,15 +227,16 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode->mode_number());
 #endif
+#if CAMERA == ENABLED
+    camera.set_is_auto_mode(control_mode->mode_number() == AUTO);
+#endif
 
     old_mode.exit();
 
-    if (should_log(MASK_LOG_MODE)) {
-        control_mode_reason = reason;
-        DataFlash.Log_Write_Mode(control_mode->mode_number(), reason);
-    }
+    control_mode_reason = reason;
+    DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
 
-    notify_mode((enum mode)control_mode->mode_number());
+    notify_mode(control_mode);
     return true;
 }
 
@@ -281,36 +280,10 @@ void Rover::check_usb_mux(void)
 }
 
 // update notify with mode change
-void Rover::notify_mode(enum mode new_mode)
+void Rover::notify_mode(const Mode *mode)
 {
-    notify.flags.flight_mode = new_mode;
-
-    switch (new_mode) {
-    case MANUAL:
-        notify.set_flight_mode_str("MANU");
-        break;
-    case STEERING:
-        notify.set_flight_mode_str("STER");
-        break;
-    case HOLD:
-        notify.set_flight_mode_str("HOLD");
-        break;
-    case AUTO:
-        notify.set_flight_mode_str("AUTO");
-        break;
-    case RTL:
-        notify.set_flight_mode_str("RTL");
-        break;
-    case GUIDED:
-        notify.set_flight_mode_str("GUID");
-        break;
-    case INITIALISING:
-        notify.set_flight_mode_str("INIT");
-        break;
-    default:
-        notify.set_flight_mode_str("----");
-        break;
-    }
+    notify.flags.flight_mode = mode->mode_number();
+    notify.set_flight_mode_str(mode->name4());
 }
 
 /*
@@ -354,8 +327,12 @@ void Rover::change_arm_state(void)
 bool Rover::arm_motors(AP_Arming::ArmingMethod method)
 {
     if (!arming.arm(method)) {
+        AP_Notify::events.arming_failed = true;
         return false;
     }
+
+    // Reset SmartRTL return location. If activated, SmartRTL will ultimately try to land at this point
+    g2.smart_rtl.reset_path(true);
 
     change_arm_state();
     return true;
@@ -378,4 +355,18 @@ bool Rover::disarm_motors(void)
     change_arm_state();
 
     return true;
+}
+
+// save current position for use by the smart_rtl mode
+void Rover::smart_rtl_update()
+{
+    const bool save_position = hal.util->get_soft_armed() && (control_mode != &mode_smartrtl);
+    mode_smartrtl.save_position(save_position);
+}
+
+// returns true if vehicle is a boat
+// this affects whether the vehicle tries to maintain position after reaching waypoints
+bool Rover::is_boat() const
+{
+    return ((enum frame_class)g2.frame_class.get() == FRAME_BOAT);
 }

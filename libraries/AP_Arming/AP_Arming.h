@@ -83,7 +83,7 @@ protected:
     uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
     uint32_t                last_gyro_pass_ms[INS_MAX_INSTANCES];
 
-    bool barometer_checks(bool report);
+    virtual bool barometer_checks(bool report);
 
     bool airspeed_checks(bool report);
 
@@ -99,7 +99,9 @@ protected:
 
     bool hardware_safety_check(bool report);
 
-    bool board_voltage_checks(bool report);
+    virtual bool board_voltage_checks(bool report);
+
+    virtual bool rc_calibration_checks(bool report);
 
     bool manual_transmitter_checks(bool report);
 

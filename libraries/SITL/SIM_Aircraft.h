@@ -164,8 +164,9 @@ protected:
     bool use_time_sync = true;
     float last_speedup = -1.0f;
 
-    enum Rotation imu_rotation = ROTATION_NONE;
-
+    // allow for AHRS_ORIENTATION
+    AP_Int8 *ahrs_orientation;
+    
     enum {
         GROUND_BEHAVIOR_NONE = 0,
         GROUND_BEHAVIOR_NO_MOVEMENT,
@@ -232,6 +233,9 @@ protected:
     float filtered_servo_angle(const struct sitl_input &input, uint8_t idx);
     float filtered_servo_range(const struct sitl_input &input, uint8_t idx);
 
+    // extrapolate sensors by a given delta time in seconds
+    void extrapolate_sensors(float delta_time);
+    
 private:
     uint64_t last_time_us = 0;
     uint32_t frame_counter = 0;

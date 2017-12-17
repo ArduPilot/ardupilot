@@ -38,13 +38,7 @@ class NavEKF2 {
     friend class NavEKF2_core;
 
 public:
-    static NavEKF2 create(const AP_AHRS *ahrs,
-                          AP_Baro &baro,
-                          const RangeFinder &rng) {
-        return NavEKF2{ahrs, baro, rng};
-    }
-
-    constexpr NavEKF2(NavEKF2 &&other) = default;
+    NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
     /* Do not allow copies */
     NavEKF2(const NavEKF2 &other) = delete;
@@ -134,7 +128,7 @@ public:
 
     // Set the argument to true to prevent the EKF using the GPS vertical velocity
     // This can be used for situations where GPS velocity errors are causing problems with height accuracy
-    void setGpsVertVelUse(const bool varIn) { inhibitGpsVertVelUse = varIn; };
+    void setInhibitGpsVertVelUse(const bool varIn) { inhibitGpsVertVelUse = varIn; };
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
@@ -330,8 +324,6 @@ public:
     void getTimingStatistics(int8_t instance, struct ekf_timing &timing);
 
 private:
-    NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
-
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF2_core *core = nullptr;

@@ -19,7 +19,6 @@ protected:
     AP_Rally *get_rally() const override;
     AP_Camera *get_camera() const override;
     AP_ServoRelayEvents *get_servorelayevents() const override;
-    AP_GPS *get_gps() const override;
     const AP_FWVersion &get_fwver() const override;
     void set_ekf_origin(const Location& loc) override;
 

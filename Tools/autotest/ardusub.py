@@ -1,4 +1,6 @@
-# drive APMrover2 in SITL
+#!/usr/bin/env python
+
+# Dive ArduSub in SITL
 from __future__ import print_function
 import os
 import shutil
@@ -17,65 +19,54 @@ HOME = mavutil.location(33.810313, -118.393867, 0, 185)
 homeloc = None
 
 
-def arm_sub(mavproxy, mav):
-    for i in range(8):
-        mavproxy.send('rc %d 1500\n' % (i+1))
-
-    mavproxy.send('arm throttle\n')
-    mavproxy.expect('ARMED')
-
-    print("SUB ARMED")
-    return True
-
 def dive_manual(mavproxy, mav):
-    mavproxy.send('rc 3 1600\n')
-    mavproxy.send('rc 5 1600\n')
-    mavproxy.send('rc 6 1550\n')
+    set_rc(mavproxy, mav, 3, 1600)
+    set_rc(mavproxy, mav, 5, 1600)
+    set_rc(mavproxy, mav, 6, 1550)
 
     if not wait_distance(mav, 50, accuracy=7, timeout=200):
         return False
     
-    mavproxy.send('rc 4 1550\n')
+    set_rc(mavproxy, mav, 4, 1550)
     
     if not wait_heading(mav, 0):
         return False
     
-    mavproxy.send('rc 4 1500\n')
+    set_rc(mavproxy, mav, 4, 1500)
     
     if not wait_distance(mav, 50, accuracy=7, timeout=100):
         return False
     
-    mavproxy.send('rc 4 1550\n')
+    set_rc(mavproxy, mav, 4, 1550)
     
     if not wait_heading(mav, 0):
         return False
     
-    mavproxy.send('rc 4 1500\n')
-    mavproxy.send('rc 5 1500\n')
-    mavproxy.send('rc 6 1100\n')
+    set_rc(mavproxy, mav, 4, 1500)
+    set_rc(mavproxy, mav, 5, 1500)
+    set_rc(mavproxy, mav, 6, 1100)
     
     if not wait_distance(mav, 75, accuracy=7, timeout=100):
         return False
-    
-    mavproxy.send('rc all 1500\n')
-    
-    mavproxy.send('disarm\n');
 
-    # wait for disarm
-    mav.motors_disarmed_wait()
-    print("Manual dive OK")
+    set_rc_default(mavproxy)
+
+    disarm_vehicle(mavproxy, mav)
+    progress("Manual dive OK")
     return True
+
 
 def dive_mission(mavproxy, mav, filename):
     
-    print("Executing mission %s" % filename)
+    progress("Executing mission %s" % filename)
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Saved [0-9]+ waypoints')
+    set_rc_default(mavproxy)
     
-    if not arm_sub(mavproxy, mav):
-        print("Failed to ARM")
+    if not arm_vehicle(mavproxy, mav):
+        progress("Failed to ARM")
         return False
     
     mavproxy.send('mode auto\n')
@@ -83,14 +74,12 @@ def dive_mission(mavproxy, mav, filename):
     
     if not wait_waypoint(mav, 1, 5, max_dist=5):
         return False
-    
-    mavproxy.send('disarm\n');
-    
-    # wait for disarm
-    mav.motors_disarmed_wait()
 
-    print("Mission OK")
+    disarm_vehicle(mavproxy, mav)
+
+    progress("Mission OK")
     return True
+
 
 def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
     """Dive ArduSub in SITL.
@@ -106,7 +95,7 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
     sitl = util.start_SITL(binary, model='vectored', wipe=True, home=home, speedup=speedup)
-    mavproxy = util.start_MAVProxy_SITL('ArduSub', options=options)
+    mavproxy = util.start_MAVProxy_SITL('ArduSub')
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
@@ -123,12 +112,12 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
 
     sitl = util.start_SITL(binary, model='vectored', home=home, speedup=speedup, valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
     mavproxy = util.start_MAVProxy_SITL('ArduSub', options=options)
-    mavproxy.expect('Telemetry log: (\S+)')
+    mavproxy.expect('Telemetry log: (\S+)\r\n')
     logfile = mavproxy.match.group(1)
-    print("LOGFILE %s" % logfile)
+    progress("LOGFILE %s" % logfile)
 
     buildlog = util.reltopdir("../buildlogs/ArduSub-test.tlog")
-    print("buildlog=%s" % buildlog)
+    progress("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
     try:
@@ -143,13 +132,13 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
     expect_list_clear()
     expect_list_extend([sitl, mavproxy])
 
-    print("Started simulator")
+    progress("Started simulator")
 
     # get a mavlink connection going
     try:
         mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
     except Exception as msg:
-        print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+        progress("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
         raise
     mav.message_hooks.append(message_hook)
     mav.idle_hooks.append(idle_hook)
@@ -157,30 +146,31 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
     failed = False
     e = 'None'
     try:
-        print("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
+        progress("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
         mav.wait_heartbeat()
-        print("Waiting for GPS fix")
+        progress("Waiting for GPS fix")
         mav.wait_gps_fix()
         
         # wait for EKF and GPS checks to pass
         mavproxy.expect('IMU0 is using GPS')
         
         homeloc = mav.location()
-        print("Home location: %s" % homeloc)
-        if not arm_sub(mavproxy, mav):
-            print("Failed to ARM")
+        progress("Home location: %s" % homeloc)
+        set_rc_default(mavproxy)
+        if not arm_vehicle(mavproxy, mav):
+            progress("Failed to ARM")
             failed = True
         if not dive_manual(mavproxy, mav):
-            print("Failed manual dive")
+            progress("Failed manual dive")
             failed = True
         if not dive_mission(mavproxy, mav, os.path.join(testdir, "sub_mission.txt")):
-            print("Failed auto mission")
+            progress("Failed auto mission")
             failed = True
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduSub-log.bin")):
-            print("Failed log download")
+            progress("Failed log download")
             failed = True
     except pexpect.TIMEOUT as e:
-        print("Failed with timeout")
+        progress("Failed with timeout")
         failed = True
 
     mav.close()
@@ -193,6 +183,6 @@ def dive_ArduSub(binary, viewerip=None, use_map=False, valgrind=False, gdb=False
         shutil.copy(valgrind_log, util.reltopdir("../buildlogs/APMrover2-valgrind.log"))
 
     if failed:
-        print("FAILED: %s" % e)
+        progress("FAILED: %s" % e)
         return False
     return True

@@ -24,28 +24,16 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Copter class
  */
 Copter::Copter(void)
-    : DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask)),
+    : DataFlash(fwver.fw_string, g.log_bitmask),
     flight_modes(&g.flight_mode1),
     control_mode(STABILIZE),
     scaleLongDown(1),
-    wp_bearing(0),
-    home_bearing(0),
-    home_distance(0),
-    wp_distance(0),
-    auto_mode(Auto_TakeOff),
-    guided_mode(Guided_TakeOff),
-    rtl_state(RTL_InitialClimb),
-    rtl_state_complete(false),
-    smart_rtl_state(SmartRTL_PathFollow),
-    circle_pilot_yaw_override(false),
     simple_cos_yaw(1.0f),
     simple_sin_yaw(0.0f),
     super_simple_last_bearing(0),
     super_simple_cos_yaw(1.0),
     super_simple_sin_yaw(0.0f),
     initial_armed_bearing(0),
-    loiter_time_max(0),
-    loiter_time(0),
     climb_rate(0),
     target_rangefinder_alt(0.0f),
     baro_alt(0),
@@ -57,17 +45,15 @@ Copter::Copter(void)
     yaw_look_at_heading(0),
     yaw_look_at_heading_slew(0),
     yaw_look_ahead_bearing(0.0f),
-    condition_value(0),
-    condition_start(0),
     G_Dt(MAIN_LOOP_SECONDS),
     inertial_nav(ahrs),
     pmTest1(0),
     fast_loopTimer(0),
     mainLoop_count(0),
-    rtl_loiter_start_time(0),
     auto_trim_counter(0),
     in_mavlink_delay(false),
-    param_loader(var_info)
+    param_loader(var_info),
+    flightmode(&mode_stabilize)
 {
     memset(&current_loc, 0, sizeof(current_loc));
 

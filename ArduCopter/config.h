@@ -69,6 +69,7 @@
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
   # define THR_MIN_DEFAULT                      0
   # define AUTOTUNE_ENABLED                     DISABLED
+  # define ACCEL_Z_P                            0.30f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -498,9 +499,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // PosHold parameter defaults
 //
-#ifndef POSHOLD_ENABLED
- # define POSHOLD_ENABLED               ENABLED // PosHold flight mode enabled by default
-#endif
 #ifndef POSHOLD_BRAKE_RATE_DEFAULT
  # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
 #endif

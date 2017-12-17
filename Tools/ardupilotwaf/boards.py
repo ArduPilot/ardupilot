@@ -85,6 +85,7 @@ class Board:
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
+            '-Wno-trigraphs',
         ]
 
         if 'clang' in cfg.env.COMPILER_CC:
@@ -102,6 +103,7 @@ class Board:
             env.CFLAGS += [
                 '-g',
                 '-O0',
+                '-Wno-trigraphs',
             ]
 
         env.CXXFLAGS += [
@@ -130,6 +132,7 @@ class Board:
             '-Werror=init-self',
             '-Werror=switch',
             '-Wfatal-errors',
+            '-Wno-trigraphs',
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
@@ -315,6 +318,16 @@ class navio2(linux):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_NAVIO2',
         )
 
+class edge(linux):
+    toolchain = 'arm-linux-gnueabihf'
+
+    def configure_env(self, cfg, env):
+        super(edge, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_EDGE',
+        )
+
 class zynq(linux):
     toolchain = 'arm-xilinx-linux-gnueabi'
 
@@ -433,6 +446,16 @@ class aero(linux):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_AERO',
         )
 
+class rst_zynq(linux):
+    toolchain = 'arm-linux-gnueabihf'
+
+    def configure_env(self, cfg, env):
+        super(rst_zynq, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ',
+        )
+        
 class px4(Board):
     abstract = True
     toolchain = 'arm-none-eabi'

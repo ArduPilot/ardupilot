@@ -163,7 +163,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 // Verify command Handlers
 /********************************************************************************/
 
-// check to see if current command goal has been acheived
+// check to see if current command goal has been achieved
 // called by mission library in mission.update()
 bool Sub::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {

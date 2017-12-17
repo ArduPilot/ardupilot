@@ -48,15 +48,15 @@ public:
     // output to motors and steering servos
     void output(bool armed, float dt);
 
-    // set when to use slew rate limiter
-    void slew_limit_throttle(bool value) { _use_slew_rate = value; }
-
     // test steering or throttle output as a percentage of the total (range -100 to +100)
     // used in response to DO_MOTOR_TEST mavlink command
     bool output_test_pct(motor_test_order motor_seq, float pct);
 
     // test steering or throttle output using a pwm value
     bool output_test_pwm(motor_test_order motor_seq, float pwm);
+
+    //  returns true if checks pass, false if they fail.  display_failure argument should be true to send text messages to GCS
+    bool pre_arm_check(bool report) const;
 
     // structure for holding motor limit flags
     struct AP_MotorsUGV_limit {
@@ -89,6 +89,9 @@ protected:
     // set limits based on steering and throttle input
     void set_limits_from_input(bool armed, float steering, float throttle);
 
+    // scale a throttle using the _thrust_curve_expo parameter.  throttle should be in the range -100 to +100
+    float get_scaled_throttle(float throttle) const;
+
     // external references
     AP_ServoRelayEvents &_relayEvents;
 
@@ -96,13 +99,13 @@ protected:
     AP_Int8 _pwm_type;  // PWM output type
     AP_Int8 _pwm_freq;  // PWM output freq for brushed motors
     AP_Int8 _disarm_disable_pwm;    // disable PWM output while disarmed
-    AP_Int8 _slew_rate; // slew rate expressed as a percentage / second
+    AP_Int16 _slew_rate; // slew rate expressed as a percentage / second
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
+    AP_Float _thrust_curve_expo; // thrust curve exponent from -1 to +1 with 0 being linear
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
-    float   _last_throttle;
-    bool    _use_slew_rate; // true if we should slew limit the throttle for one interation
+    float   _throttle_prev; // throttle input from previous iteration
 };

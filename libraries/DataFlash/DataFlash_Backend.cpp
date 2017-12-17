@@ -22,6 +22,26 @@ const struct LogStructure *DataFlash_Backend::structure(uint8_t num) const
     return _front.structure(num);
 }
 
+uint8_t DataFlash_Backend::num_units() const
+{
+    return _front._num_units;
+}
+
+const struct UnitStructure *DataFlash_Backend::unit(uint8_t num) const
+{
+    return _front.unit(num);
+}
+
+uint8_t DataFlash_Backend::num_multipliers() const
+{
+    return _front._num_multipliers;
+}
+
+const struct MultiplierStructure *DataFlash_Backend::multiplier(uint8_t num) const
+{
+    return _front.multiplier(num);
+}
+
 DataFlash_Backend::vehicle_startup_message_Log_Writer DataFlash_Backend::vehicle_message_writer() {
     return _front._vehicle_messages;
 }
@@ -132,6 +152,8 @@ bool DataFlash_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
         0,
         "IGNO",
         "",
+        "",
+        "",
         ""
     };
     if (!_front.fill_log_write_logstructure(logstruct, msg_type)) {
@@ -143,6 +165,9 @@ bool DataFlash_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
     }
 
     if (!Log_Write_Format(&logstruct)) {
+        return false;
+    }
+    if (!Log_Write_Format_Units(&logstruct)) {
         return false;
     }
 
@@ -285,7 +310,7 @@ bool DataFlash_Backend::StartNewLogOK() const
 
 bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-    if (!ShouldLog()) {
+    if (!ShouldLog(is_critical)) {
         return false;
     }
     if (StartNewLogOK()) {
@@ -297,12 +322,9 @@ bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
 }
 
-bool DataFlash_Backend::ShouldLog() const
+bool DataFlash_Backend::ShouldLog(bool is_critical)
 {
     if (!_front.WritesEnabled()) {
-        return false;
-    }
-    if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
         return false;
     }
     if (!_initialised) {
@@ -315,5 +337,20 @@ bool DataFlash_Backend::ShouldLog() const
         return false;
     }
 
+    if (is_critical && have_logged_armed && !_front._params.file_disarm_rot) {
+        // if we have previously logged while armed then we log all
+        // critical messages from then on. That fixes a problem where
+        // logs show the wrong flight mode if you disarm then arm again
+        return true;
+    }
+    
+    if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
+        return false;
+    }
+
+    if (_front.vehicle_is_armed()) {
+        have_logged_armed = true;
+    }
+    
     return true;
 }

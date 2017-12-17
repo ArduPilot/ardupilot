@@ -270,7 +270,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     auto_state.inverted_flight = false;
 
     // don't cross-track when starting a mission
-    auto_state.next_wp_no_crosstrack = true;
+    auto_state.next_wp_crosstrack = false;
 
     // reset landing check
     auto_state.checked_for_autoland = false;
@@ -295,7 +295,10 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode);
 #endif
-    
+#if CAMERA == ENABLED
+    camera.set_is_auto_mode(control_mode == AUTO);
+#endif
+
     if (previous_mode == AUTOTUNE && control_mode != AUTOTUNE) {
         // restore last gains
         autotune_restore();
@@ -446,8 +449,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 
     adsb.set_is_auto_mode(auto_navigation_mode);
 
-    if (should_log(MASK_LOG_MODE))
-        DataFlash.Log_Write_Mode(control_mode);
+    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 
     // update notify with flight mode change
     notify_flight_mode(control_mode);
@@ -464,7 +466,8 @@ void Plane::exit_mode(enum FlightMode mode)
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
 
-            if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND)
+            if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND &&
+                !quadplane.is_vtol_land(mission.get_current_nav_cmd().id))
             {
                 landing.restart_landing_sequence();
             }
@@ -479,30 +482,40 @@ void Plane::check_long_failsafe()
     // only act on changes
     // -------------------
     if (failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS && flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
-        if (failsafe.state == FAILSAFE_SHORT &&
-                   (tnow - failsafe.ch3_timer_ms) > g.long_fs_timeout*1000) {
+        uint32_t radio_timeout_ms = failsafe.last_valid_rc_ms;
+        if (failsafe.state == FAILSAFE_SHORT) {
+            // time is relative to when short failsafe enabled
+            radio_timeout_ms = failsafe.short_timer_ms;
+        }
+        if (failsafe.rc_failsafe &&
+            (tnow - radio_timeout_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_LONG, MODE_REASON_RADIO_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == AUTO &&
                    failsafe.last_heartbeat_ms != 0 &&
-                   (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
+                   (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HEARTBEAT &&
                    failsafe.last_heartbeat_ms != 0 &&
-                   (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
+                   (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
                    gcs().chan(0).last_radio_status_remrssi_ms != 0 &&
-                   (tnow - gcs().chan(0).last_radio_status_remrssi_ms) > g.long_fs_timeout*1000) {
+                   (tnow - gcs().chan(0).last_radio_status_remrssi_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
         }
     } else {
+        uint32_t timeout_seconds = g.fs_timeout_long;
+        if (g.fs_action_short != FS_ACTION_SHORT_DISABLED) {
+            // avoid dropping back into short timeout
+            timeout_seconds = g.fs_timeout_short;
+        }
         // We do not change state but allow for user to change mode
         if (failsafe.state == FAILSAFE_GCS && 
-            (tnow - failsafe.last_heartbeat_ms) < g.short_fs_timeout*1000) {
-            failsafe.state = FAILSAFE_NONE;
+            (tnow - failsafe.last_heartbeat_ms) < timeout_seconds*1000) {
+            failsafe_long_off_event(MODE_REASON_GCS_FAILSAFE);
         } else if (failsafe.state == FAILSAFE_LONG && 
-                   !failsafe.ch3_failsafe) {
-            failsafe.state = FAILSAFE_NONE;
+                   !failsafe.rc_failsafe) {
+            failsafe_long_off_event(MODE_REASON_RADIO_FAILSAFE);
         }
     }
 }
@@ -511,15 +524,17 @@ void Plane::check_short_failsafe()
 {
     // only act on changes
     // -------------------
-    if(failsafe.state == FAILSAFE_NONE && flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
-        // The condition is checked and the flag ch3_failsafe is set in radio.cpp
-        if(failsafe.ch3_failsafe) {
+    if (g.fs_action_short != FS_ACTION_SHORT_DISABLED &&
+       failsafe.state == FAILSAFE_NONE &&
+       flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        // The condition is checked and the flag rc_failsafe is set in radio.cpp
+        if(failsafe.rc_failsafe) {
             failsafe_short_on_event(FAILSAFE_SHORT, MODE_REASON_RADIO_FAILSAFE);
         }
     }
 
     if(failsafe.state == FAILSAFE_SHORT) {
-        if(!failsafe.ch3_failsafe) {
+        if(!failsafe.rc_failsafe || g.fs_action_short == FS_ACTION_SHORT_DISABLED) {
             failsafe_short_off_event(MODE_REASON_RADIO_FAILSAFE);
         }
     }

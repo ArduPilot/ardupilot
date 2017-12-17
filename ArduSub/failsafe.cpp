@@ -216,8 +216,9 @@ void Sub::failsafe_pilot_input_check()
     Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
 
+    set_neutral_controls();
+
     if(g.failsafe_pilot_input == FS_PILOT_INPUT_DISARM) {
-        set_neutral_controls();
         init_disarm_motors();
     }
 #endif
@@ -287,7 +288,7 @@ void Sub::failsafe_internal_temperature_check()
     }
 }
 
-// Check if we are leaking and perform appropiate action
+// Check if we are leaking and perform appropriate action
 void Sub::failsafe_leak_check()
 {
     bool status = leak_detector.get_status();

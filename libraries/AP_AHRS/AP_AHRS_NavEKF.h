@@ -43,15 +43,9 @@ public:
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
-    static AP_AHRS_NavEKF create(AP_InertialSensor &ins,
-                                 AP_Baro &baro,
-                                 AP_GPS &gps,
-                                 NavEKF2 &_EKF2, NavEKF3 &_EKF3,
-                                 Flags flags = FLAG_NONE) {
-        return AP_AHRS_NavEKF{ins, baro, gps, _EKF2, _EKF3, flags};
-    }
-
-    constexpr AP_AHRS_NavEKF(AP_AHRS_NavEKF &&other) = default;
+    // Constructor
+    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps,
+                   NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
 
     /* Do not allow copies */
     AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
@@ -139,7 +133,7 @@ public:
     bool set_origin(const Location &loc) override;
 
     // returns the inertial navigation origin in lat/lon/alt
-    bool get_origin(Location &ret) const;
+    bool get_origin(Location &ret) const override;
 
     bool have_inertial_nav() const override;
 
@@ -223,10 +217,12 @@ public:
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
     // it will return invalid when no limiting is required
-    bool get_hgt_ctrl_limit(float &limit) const;
+    bool get_hgt_ctrl_limit(float &limit) const override;
 
-    // get_llh - updates the provided location with the latest calculated location including absolute altitude
-    //  returns true on success (i.e. the EKF knows it's latest position), false on failure
+    // get_location - updates the provided location with the latest
+    // calculated location including absolute altitude
+    // returns true on success (i.e. the EKF knows it's latest
+    // position), false on failure
     bool get_location(struct Location &loc) const;
 
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
@@ -300,10 +296,5 @@ private:
     uint32_t _last_body_odm_update_ms = 0;
     void update_SITL(void);
 #endif    
-
-private:
-    // Constructor
-    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps,
-                   NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
 };
 #endif

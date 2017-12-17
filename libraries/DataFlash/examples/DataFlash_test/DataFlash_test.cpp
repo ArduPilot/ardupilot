@@ -21,7 +21,12 @@ struct PACKED log_Test {
 static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_TEST_MSG, sizeof(log_Test),       
-    "TEST", "HHHHii",        "V1,V2,V3,V4,L1,L2" }
+      "TEST",
+      "HHHHii",
+      "V1,V2,V3,V4,L1,L2",
+      "------",
+      "------"
+    }
 };
 
 #define NUM_PACKETS 500
@@ -36,7 +41,7 @@ public:
 private:
 
     AP_Int32 log_bitmask;
-    DataFlash_Class dataflash = DataFlash_Class::create("DF Test 0.1", log_bitmask);
+    DataFlash_Class dataflash{"DF Test 0.1", log_bitmask};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 };
 

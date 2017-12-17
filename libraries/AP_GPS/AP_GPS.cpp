@@ -55,11 +55,13 @@
 extern const AP_HAL::HAL &hal;
 
 // baudrates to try to detect GPSes with
-const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9600U, 230400U};
+const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57600U, 230400U};
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
 const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
+
+AP_GPS *AP_GPS::_singleton;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::var_info[] = {
@@ -132,8 +134,8 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: RAW_DATA
     // @DisplayName: Raw data logging
-    // @Description: Enable logging of RXM raw data from uBlox which includes carrier phase and pseudo range information. This allows for post processing of dataflash logs for more precise positioning. Note that this requires a raw capable uBlox such as the 6P or 6T.
-    // @Values: 0:Disabled,1:log every sample,5:log every 5 samples
+    // @Description: Handles logging raw data; on uBlox chips that support raw data this will log RXM messages into dataflash log; on Septentrio this will log on the equipment's SD card and when set to 2, the autopilot will try to stop logging after disarming and restart after arming
+    // @Values: 0:Ignore,1:Always log,2:Stop logging when disarmed (SBF only),5:Only log every five samples (uBlox only)
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("RAW_DATA", 9, AP_GPS, _raw_data, 0),
@@ -151,7 +153,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: Determines whether the configuration for this GPS should be written to non-volatile memory on the GPS. Currently working for UBlox 6 series and above.
     // @Values: 0:Do not save config,1:Save config,2:Save only when needed
     // @User: Advanced
-    AP_GROUPINFO("SAVE_CFG", 11, AP_GPS, _save_config, 0),
+    AP_GROUPINFO("SAVE_CFG", 11, AP_GPS, _save_config, 2),
 
     // @Param: GNSS_MODE2
     // @DisplayName: GNSS system configuration
@@ -267,6 +269,11 @@ AP_GPS::AP_GPS()
                     "GPS initilisation blob is to large to be completely sent before the baud rate changes");
 
     AP_Param::setup_object_defaults(this, var_info);
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_GPS must be singleton");
+    }
+    _singleton = this;
 }
 
 /// Startup initialisation.
@@ -926,17 +933,13 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         rtk_age_ms(1));
 }
 
-void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan)
+void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
-    if (drivers[0] != nullptr && drivers[0]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
-        drivers[0]->send_mavlink_gps_rtk(chan);
+    if (inst >= GPS_MAX_RECEIVERS) {
+        return;
     }
-}
-
-void AP_GPS::send_mavlink_gps2_rtk(mavlink_channel_t chan)
-{
-    if (drivers[1] != nullptr && drivers[1]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
-        drivers[1]->send_mavlink_gps_rtk(chan);
+    if (drivers[inst] != nullptr && drivers[inst]->supports_mavlink_gps_rtk_message()) {
+        drivers[inst]->send_mavlink_gps_rtk(chan);
     }
 }
 
@@ -1506,3 +1509,22 @@ bool AP_GPS::is_healthy(uint8_t instance) const {
            last_message_delta_time_ms(instance) < GPS_MAX_DELTA_MS &&
            drivers[instance]->is_healthy();
 }
+
+bool AP_GPS::prepare_for_arming(void) {
+    bool all_passed = true;
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        if (drivers[i] != nullptr) {
+            all_passed &= drivers[i]->prepare_for_arming();
+        }
+    }
+    return all_passed;
+}
+
+namespace AP {
+
+AP_GPS &gps()
+{
+    return AP_GPS::gps();
+}
+
+};

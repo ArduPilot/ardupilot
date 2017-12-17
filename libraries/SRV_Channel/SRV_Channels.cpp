@@ -26,6 +26,9 @@ extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
 SRV_Channels *SRV_Channels::instance;
+AP_Volz_Protocol *SRV_Channels::volz_ptr;
+AP_SBusOut *SRV_Channels::sbus_ptr;
+
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
 Bitmask SRV_Channels::function_mask{SRV_Channel::k_nr_aux_servo_functions};
@@ -111,6 +114,14 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
 
+    // @Group: _VOLZ_
+    // @Path: ../AP_Volz_Protocol/AP_Volz_Protocol.cpp
+    AP_SUBGROUPINFO(volz, "_VOLZ_",  19, SRV_Channels, AP_Volz_Protocol),
+
+    // @Group: _SBUS_
+    // @Path: ../AP_SBusOut/AP_SBusOut.cpp
+    AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
+
     AP_GROUPEND
 };
 
@@ -129,6 +140,9 @@ SRV_Channels::SRV_Channels(void)
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         channels[i].ch_num = i;
     }
+
+    volz_ptr = &volz;
+    sbus_ptr = &sbus;
 }
 
 /*
@@ -174,4 +188,26 @@ void SRV_Channels::set_output_pwm_chan(uint8_t chan, uint16_t value)
     if (chan < NUM_SERVO_CHANNELS) {
         channels[chan].set_output_pwm(value);
     }
+}
+
+/*
+  wrapper around hal.rcout->cork()
+ */
+void SRV_Channels::cork()
+{
+	hal.rcout->cork();
+}
+
+/*
+  wrapper around hal.rcout->push()
+ */
+void SRV_Channels::push()
+{
+    hal.rcout->push();
+
+    // give volz library a chance to update
+    volz_ptr->update();
+
+    // give sbus library a chance to update
+    sbus_ptr->update();
 }

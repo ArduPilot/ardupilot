@@ -38,9 +38,8 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
 };
 
 /// Constructor
-AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon)
+AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon)
     : _ahrs(ahrs),
-      _inav(inav),
       _fence(fence),
       _proximity(proximity),
       _beacon(beacon)
@@ -98,46 +97,52 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
     bool limit_alt = false;
-    float alt_diff_cm = 0.0f;   // distance from altitude limit to vehicle in cm (positive means vehicle is below limit)
+    float alt_diff = 0.0f;   // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
 
     // calculate distance below fence
     if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && (_fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
         // calculate distance from vehicle to safe altitude
-        float veh_alt = get_alt_above_home();
-        alt_diff_cm = _fence.get_safe_alt_max() * 100.0f - veh_alt;
+        float veh_alt;
+        _ahrs.get_relative_position_D_home(veh_alt);
+        // _fence.get_safe_alt_max() is UP, veh_alt is DOWN:
+        alt_diff = _fence.get_safe_alt_max() + veh_alt;
         limit_alt = true;
     }
 
-    // calculate distance to optical flow altitude limit
-    float ekf_alt_limit_cm;
-    if (_inav.get_hgt_ctrl_limit(ekf_alt_limit_cm)) {
-        float ekf_alt_diff_cm = ekf_alt_limit_cm - _inav.get_altitude();
-        if (!limit_alt || ekf_alt_diff_cm < alt_diff_cm) {
-            alt_diff_cm = ekf_alt_diff_cm;
+    // calculate distance to (e.g.) optical flow altitude limit
+    // AHRS values are always in metres
+    float alt_limit;
+    float curr_alt;
+    if (_ahrs.get_hgt_ctrl_limit(alt_limit) &&
+        _ahrs.get_relative_position_D_origin(curr_alt)) {
+        // alt_limit is UP, curr_alt is DOWN:
+        const float ctrl_alt_diff = alt_limit + curr_alt;
+        if (!limit_alt || ctrl_alt_diff < alt_diff) {
+            alt_diff = ctrl_alt_diff;
+            limit_alt = true;
         }
-        limit_alt = true;
     }
 
-    // get distance from proximity sensor (in meters, convert to cm)
-    float proximity_alt_diff_m;
-    if (_proximity.get_upward_distance(proximity_alt_diff_m)) {
-        float proximity_alt_diff_cm = (proximity_alt_diff_m - _margin) * 100.0f;
-        if (!limit_alt || proximity_alt_diff_cm < alt_diff_cm) {
-            alt_diff_cm = proximity_alt_diff_cm;
+    // get distance from proximity sensor
+    float proximity_alt_diff;
+    if (_proximity.get_upward_distance(proximity_alt_diff)) {
+        proximity_alt_diff -= _margin;
+        if (!limit_alt || proximity_alt_diff < alt_diff) {
+            alt_diff = proximity_alt_diff;
+            limit_alt = true;
         }
-        limit_alt = true;
     }
 
     // limit climb rate
     if (limit_alt) {
         // do not allow climbing if we've breached the safe altitude
-        if (alt_diff_cm <= 0.0f) {
+        if (alt_diff <= 0.0f) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
             return;
         }
 
         // limit climb rate
-        const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_diff_cm);
+        const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_diff*100.0f);
         climb_rate_cms = MIN(max_speed, climb_rate_cms);
     }
 }
@@ -205,8 +210,13 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
         return;
     }
 
-    // get position as a 2D offset in cm from ahrs home
-    const Vector2f position_xy = get_position();
+    // get position as a 2D offset from ahrs home
+    Vector2f position_xy;
+    if (!_ahrs.get_relative_position_NE_home(position_xy)) {
+        // we have no idea where we are....
+        return;
+    }
+    position_xy *= 100.0f; // m -> cm
 
     float speed = desired_vel.length();
     // get the fence radius in cm
@@ -318,11 +328,16 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     }
 
     // do not adjust velocity if vehicle is outside the polygon fence
-    Vector3f position;
+    Vector2f position_xy;
     if (earth_frame) {
-        position = _inav.get_position();
+        if (!_ahrs.get_relative_position_NE_origin(position_xy)) {
+            // boundary is in earth frame but we have no idea
+            // where we are
+            return;
+        }
+        position_xy = position_xy * 100.0f;  // m to cm
     }
-    Vector2f position_xy(position.x, position.y);
+
     if (_fence.boundary_breached(position_xy, num_points, boundary)) {
         return;
     }
@@ -388,26 +403,6 @@ void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel,
         // subtract difference between desired speed and maximum acceptable speed
         desired_vel += limit_direction*(max_speed - speed);
     }
-}
-
-/*
- * Gets the current xy-position, relative to home (not relative to EKF origin)
- */
-Vector2f AC_Avoid::get_position() const
-{
-    const Vector3f position_xyz = _inav.get_position();
-    const Vector2f position_xy(position_xyz.x,position_xyz.y);
-    const Vector2f diff = location_diff(_inav.get_origin(),_ahrs.get_home()) * 100.0f;
-    return position_xy - diff;
-}
-
-/*
- * Gets the altitude above home in cm
- */
-float AC_Avoid::get_alt_above_home() const
-{
-    // vehicle's alt above ekf origin + ekf origin's alt above sea level - home's alt above sea level
-    return _inav.get_altitude() + _inav.get_origin().alt - _ahrs.get_home().alt;
 }
 
 /*

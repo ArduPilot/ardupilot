@@ -494,7 +494,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     // get d term
     d = _pid_accel_z.get_d();
 
-    float thr_out = (p+i+d)/1000.0f +_motors.get_throttle_hover();
+    float thr_out = (p+i+d)*0.001f +_motors.get_throttle_hover();
 
     // send throttle to attitude controller with angle boost
     _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ);
@@ -617,10 +617,16 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
     stopping_point.y = curr_pos.y + (stopping_dist * curr_vel.y / vel_total);
 }
 
-/// get_distance_to_target - get horizontal distance to loiter target in cm
+/// get_distance_to_target - get horizontal distance to target position in cm
 float AC_PosControl::get_distance_to_target() const
 {
     return _distance_to_target;
+}
+
+/// get_bearing_to_target - get bearing to target position in centi-degrees
+int32_t AC_PosControl::get_bearing_to_target() const
+{
+    return get_bearing_cd(_inav.get_position(), _pos_target);
 }
 
 // is_active_xy - returns true if the xy position controller has been run very recently
@@ -660,7 +666,7 @@ void AC_PosControl::update_xy_controller(xy_mode mode, float ekfNavVelGainScaler
 {
     // compute dt
     uint32_t now = AP_HAL::millis();
-    float dt = (now - _last_update_xy_ms) / 1000.0f;
+    float dt = (now - _last_update_xy_ms)*0.001f;
     _last_update_xy_ms = now;
 
     // sanity check dt - expect to be called faster than ~5hz
@@ -1016,8 +1022,8 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler, bo
 void AC_PosControl::lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const
 {
     // rotate our roll, pitch angles into lat/lon frame
-    accel_x_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.cos_yaw() * _ahrs.sin_pitch() / MAX(_ahrs.cos_pitch(),0.5f)) - _ahrs.sin_yaw() * _ahrs.sin_roll() / MAX(_ahrs.cos_roll(),0.5f));
-    accel_y_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.sin_yaw() * _ahrs.sin_pitch() / MAX(_ahrs.cos_pitch(),0.5f)) + _ahrs.cos_yaw() * _ahrs.sin_roll() / MAX(_ahrs.cos_roll(),0.5f));
+    accel_x_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.cos_yaw() * _ahrs.sin_pitch() / MAX(_ahrs.cos_pitch(), 0.5f)) - _ahrs.sin_yaw() * _ahrs.sin_roll() / MAX(_ahrs.cos_roll()*_ahrs.cos_pitch(), 0.5f));
+    accel_y_cmss = (GRAVITY_MSS * 100) * (-(_ahrs.sin_yaw() * _ahrs.sin_pitch() / MAX(_ahrs.cos_pitch(), 0.5f)) + _ahrs.cos_yaw() * _ahrs.sin_roll() / MAX(_ahrs.cos_roll()*_ahrs.cos_pitch(), 0.5f));
 }
 
 /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain

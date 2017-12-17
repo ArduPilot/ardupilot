@@ -197,6 +197,7 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_PRECISION_LOITER:
         case AUXSW_AVOID_PROXIMITY:
         case AUXSW_INVERTED:
+        case AUXSW_WINCH_ENABLE:
             do_aux_switch_function(ch_option, ch_flag);
             break;
     }
@@ -561,10 +562,10 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 #if PRECISION_LANDING == ENABLED
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH:
-                    set_precision_loiter_enabled(true);
+                    mode_loiter.set_precision_loiter_enabled(true);
                     break;
                 case AUX_SWITCH_LOW:
-                    set_precision_loiter_enabled(false);
+                    mode_loiter.set_precision_loiter_enabled(false);
                     break;
             }
 #endif
@@ -623,6 +624,38 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 break;
             }
 #endif
+            break;
+
+        case AUXSW_WINCH_ENABLE:
+            switch (ch_flag) {
+                case AUX_SWITCH_HIGH:
+                    // high switch maintains current position
+                    g2.winch.release_length(0.0f);
+                    Log_Write_Event(DATA_WINCH_LENGTH_CONTROL);
+                    break;
+                default:
+                    // all other position relax winch
+                    g2.winch.relax();
+                    Log_Write_Event(DATA_WINCH_RELAXED);
+                    break;
+                }
+            break;
+
+        case AUXSW_WINCH_CONTROL:
+            switch (ch_flag) {
+                case AUX_SWITCH_LOW:
+                    // raise winch at maximum speed
+                    g2.winch.set_desired_rate(-g2.winch.get_rate_max());
+                    break;
+                case AUX_SWITCH_HIGH:
+                    // lower winch at maximum speed
+                    g2.winch.set_desired_rate(g2.winch.get_rate_max());
+                    break;
+                case AUX_SWITCH_MIDDLE:
+                default:
+                    g2.winch.set_desired_rate(0.0f);
+                    break;
+                }
             break;
     }
 }

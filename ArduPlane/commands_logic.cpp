@@ -32,7 +32,8 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
         AP_Mission::Mission_Command next_nav_cmd;
         const uint16_t next_index = mission.get_current_nav_index() + 1;
-        auto_state.wp_is_land_approach = mission.get_next_nav_cmd(next_index, next_nav_cmd) && (next_nav_cmd.id == MAV_CMD_NAV_LAND);
+        auto_state.wp_is_land_approach = mission.get_next_nav_cmd(next_index, next_nav_cmd) && (next_nav_cmd.id == MAV_CMD_NAV_LAND) &&
+            !quadplane.is_vtol_land(next_nav_cmd.id);
 
         gcs().send_text(MAV_SEVERITY_INFO, "Executing nav command ID #%i",cmd.id);
     } else {
@@ -43,6 +44,9 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_TAKEOFF:
         crash_state.is_crashed = false;
+        if (quadplane.is_vtol_takeoff(cmd.id)) {
+            return quadplane.do_vtol_takeoff(cmd);
+        }
         do_takeoff(cmd);
         break;
 
@@ -51,6 +55,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LAND:              // LAND to Waypoint
+        if (quadplane.is_vtol_land(cmd.id)) {
+            crash_state.is_crashed = false;
+            return quadplane.do_vtol_land(cmd);            
+        }
         do_land(cmd);
         break;
 
@@ -238,12 +246,18 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     switch(cmd.id) {
 
     case MAV_CMD_NAV_TAKEOFF:
+        if (quadplane.is_vtol_takeoff(cmd.id)) {
+            return quadplane.verify_vtol_takeoff(cmd);
+        }
         return verify_takeoff();
 
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
 
     case MAV_CMD_NAV_LAND:
+        if (quadplane.is_vtol_land(cmd.id)) {
+            return quadplane.verify_vtol_land();            
+        }
         if (flight_stage == AP_Vehicle::FixedWing::FlightStage::FLIGHT_ABORT_LAND) {
             return landing.verify_abort_landing(prev_WP_loc, next_WP_loc, current_loc, auto_state.takeoff_altitude_rel_cm, throttle_suppressed);
 
@@ -330,8 +344,8 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
 void Plane::do_RTL(int32_t rtl_altitude)
 {
-    auto_state.next_wp_no_crosstrack = true;
-    auto_state.no_crosstrack = true;
+    auto_state.next_wp_crosstrack = false;
+    auto_state.crosstrack = false;
     prev_WP_loc = current_loc;
     next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, rtl_altitude);
     setup_terrain_target_alt(next_WP_loc);
@@ -346,10 +360,12 @@ void Plane::do_RTL(int32_t rtl_altitude)
     setup_glide_slope();
     setup_turn_angle();
 
-    if (should_log(MASK_LOG_MODE))
-        DataFlash.Log_Write_Mode(control_mode);
+    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 }
 
+/*
+  start a NAV_TAKEOFF command
+ */
 void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
     prev_WP_loc = current_loc;
@@ -559,7 +575,7 @@ bool Plane::verify_takeoff()
 
         // don't cross-track on completion of takeoff, as otherwise we
         // can end up doing too sharp a turn
-        auto_state.next_wp_no_crosstrack = true;
+        auto_state.next_wp_crosstrack = false;
         return true;
     } else {
         return false;
@@ -592,10 +608,10 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         }
     }
 
-    if (auto_state.no_crosstrack) {
-        nav_controller->update_waypoint(current_loc, flex_next_WP_loc);
-    } else {
+    if (auto_state.crosstrack) {
         nav_controller->update_waypoint(prev_WP_loc, flex_next_WP_loc);
+    } else {
+        nav_controller->update_waypoint(current_loc, flex_next_WP_loc);
     }
 
     // see if the user has specified a maximum distance to waypoint

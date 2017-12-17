@@ -119,7 +119,7 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 //@{
 
 struct PACKED Location_Option_Flags {
-    uint8_t relative_alt : 1;           // 1 if altitude is relateive to home
+    uint8_t relative_alt : 1;           // 1 if altitude is relative to home
     uint8_t unused1      : 1;           // unused flag (defined so that loiter_ccw uses the correct bit)
     uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
     uint8_t terrain_alt  : 1;           // this altitude is above terrain
@@ -173,6 +173,7 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
   useful debugging macro for SITL
  */
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <stdio.h>
 #define SITL_printf(fmt, args ...) do { ::printf("%s(%u): " fmt, __FILE__, __LINE__, ##args); } while(0)
 #else
 #define SITL_printf(fmt, args ...)

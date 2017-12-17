@@ -2,12 +2,15 @@
 
 static const int16_t CH_7_PWM_TRIGGER = 1800;
 
-Mode *Rover::control_mode_from_num(const enum mode num)
+Mode *Rover::mode_from_mode_num(const enum mode num)
 {
     Mode *ret = nullptr;
     switch (num) {
     case MANUAL:
         ret = &mode_manual;
+        break;
+    case ACRO:
+        ret = &mode_acro;
         break;
     case STEERING:
         ret = &mode_steering;
@@ -20,6 +23,9 @@ Mode *Rover::control_mode_from_num(const enum mode num)
         break;
     case RTL:
         ret = &mode_rtl;
+        break;
+    case SMART_RTL:
+        ret = &mode_smartrtl;
         break;
     case GUIDED:
        ret = &mode_guided;
@@ -67,7 +73,7 @@ void Rover::read_control_switch()
             return;
         }
 
-        Mode *new_mode = control_mode_from_num((enum mode)modes[switchPosition].get());
+        Mode *new_mode = mode_from_mode_num((enum mode)modes[switchPosition].get());
         if (new_mode != nullptr) {
             set_mode(*new_mode, MODE_REASON_TX_COMMAND);
         }
@@ -156,8 +162,8 @@ void Rover::read_aux_switch()
                 return;
             }
 
-            // record the waypoint if in manual or steering modes
-            if (control_mode == &mode_manual || control_mode == &mode_steering) {
+            // record the waypoint if not in auto mode
+            if (control_mode != &mode_auto) {
                 // create new mission command
                 AP_Mission::Mission_Command cmd = {};
 
@@ -183,16 +189,106 @@ void Rover::read_aux_switch()
             cruise_learn_complete();
         }
         break;
+
+    // arm or disarm the motors
+    case CH7_ARM_DISARM:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            arm_motors(AP_Arming::RUDDER);
+        } else if (aux_ch7 == AUX_SWITCH_LOW) {
+            disarm_motors();
+        }
+        break;
+
+    // set mode to Manual
+    case CH7_MANUAL:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_manual, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_manual)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Acro
+    case CH7_ACRO:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_acro, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_acro)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Steering
+    case CH7_STEERING:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_steering, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_steering)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Hold
+    case CH7_HOLD:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_hold, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_hold)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Auto
+    case CH7_AUTO:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_auto, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_auto)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to RTL
+    case CH7_RTL:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_rtl, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_rtl)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to SmartRTL
+    case CH7_SMART_RTL:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_smartrtl, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_smartrtl)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Guided
+    case CH7_GUIDED:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_guided, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_guided)) {
+            reset_control_switch();
+        }
+        break;
     }
 }
 
+// return true if motors are moving
 bool Rover::motor_active()
 {
-    // Check if armed and output throttle servo is not neutral
-    if (hal.util->get_soft_armed()) {
-        if (!is_zero(g2.motors.get_throttle())) {
-            return true;
-        }
+    // if soft disarmed, motors not active
+    if (!hal.util->get_soft_armed()) {
+        return false;
+    }
+
+    // check throttle is active
+    if (!is_zero(g2.motors.get_throttle())) {
+        return true;
+    }
+
+    // skid-steering vehicles active when steering
+    if (g2.motors.have_skid_steering() && !is_zero(g2.motors.get_steering())) {
+        return true;
     }
 
     return false;

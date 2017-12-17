@@ -57,7 +57,13 @@ public:
     // file descriptor, exposed so SITL_State::loop_hook() can use it
     int _fd;
 
+    bool _unbuffered_writes;
+
     enum flow_control get_flow_control(void) { return FLOW_CONTROL_ENABLE; }
+
+    void configure_parity(uint8_t v) override;
+    void set_stop_bits(int n) override;
+    bool set_unbuffered_writes(bool on) override;
 
     void _timer_tick(void);
     
@@ -85,6 +91,7 @@ private:
     void _check_connection(void);
     static bool _select_check(int );
     static void _set_nonblocking(int );
+    bool set_speed(int speed);
 
     SITL_State *_sitlState;
 

@@ -298,6 +298,10 @@ float AP_MotorsMulticopter::apply_thrust_curve_and_volt_scaling(float thrust) co
     float throttle_ratio = thrust;
     // apply thrust curve - domain 0.0 to 1.0, range 0.0 to 1.0
     float thrust_curve_expo = constrain_float(_thrust_curve_expo, -1.0f, 1.0f);
+    if (fabsf(thrust_curve_expo) < 0.001) {
+        // zero expo means linear, avoid floating point exception for small values
+        return thrust;
+    }
     if(!is_zero(_batt_voltage_filt.get())) {
         throttle_ratio = ((thrust_curve_expo-1.0f) + safe_sqrt((1.0f-thrust_curve_expo)*(1.0f-thrust_curve_expo) + 4.0f*thrust_curve_expo*_lift_max*thrust))/(2.0f*thrust_curve_expo*_batt_voltage_filt.get());
     } else {

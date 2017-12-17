@@ -159,13 +159,13 @@ void Sub::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us          : AP_HAL::micros64(),
-        num_long_running : perf_info_get_num_long_running(),
-        num_loops        : perf_info_get_num_loops(),
-        max_time         : perf_info_get_max_time(),
+        num_long_running : perf_info.get_num_long_running(),
+        num_loops        : perf_info.get_num_loops(),
+        max_time         : perf_info.get_max_time(),
         pm_test          : pmTest1,
         i2c_lockup_count : 0,
         ins_error_count  : ins.error_count(),
-        log_dropped      : DataFlash.num_dropped() - perf_info_get_num_dropped(),
+        log_dropped      : DataFlash.num_dropped() - perf_info.get_num_dropped(),
         hal.util->available_memory()
     };
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -422,34 +422,37 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+// type and unit information can be found in
+// libraries/DataFlash/Logstructure.h; search for "log_Units" for
+// units and "Format characters" for field type information
 const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
-      "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
+      "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY", "smmmmnnnnoo", "FBBBBBBBBBB" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qfffffffccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt" },
+      "CTUN", "Qfffffffccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BBBBBB" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHIhBHII",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop,Mem" },
+      "PM",  "QHHIhBHII",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop,Mem", "s-------b", "F-------0" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
-      "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit" },
+      "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit", "s-vw-", "F-00-" },
     { LOG_EVENT_MSG, sizeof(log_Event),         
-      "EV",   "QB",           "TimeUS,Id" },
+      "EV",   "QB",           "TimeUS,Id", "s-", "F-" },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
-      "D16",   "QBh",         "TimeUS,Id,Value" },
+      "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         
-      "DU16",  "QBH",         "TimeUS,Id,Value" },
+      "DU16",  "QBH",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_INT32_MSG, sizeof(log_Data_Int32t),         
-      "D32",   "QBi",         "TimeUS,Id,Value" },
+      "D32",   "QBi",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT32_MSG, sizeof(log_Data_UInt32t),         
-      "DU32",  "QBI",         "TimeUS,Id,Value" },
+      "DU32",  "QBI",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
-      "DFLT",  "QBf",         "TimeUS,Id,Value" },
+      "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
-      "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
+      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
+      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
 };
 
 void Sub::Log_Write_Vehicle_Startup_Messages()

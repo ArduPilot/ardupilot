@@ -251,14 +251,14 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(land_speed_high,        "LAND_SPEED_HIGH",   0),
     
-    // @Param: PILOT_VELZ_MAX
-    // @DisplayName: Pilot maximum vertical speed
-    // @Description: The maximum vertical velocity the pilot may request in cm/s
+    // @Param: PILOT_SPEED_UP
+    // @DisplayName: Pilot maximum vertical speed ascending
+    // @Description: The maximum vertical ascending velocity the pilot may request in cm/s
     // @Units: cm/s
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
-    GSCALAR(pilot_velocity_z_max,     "PILOT_VELZ_MAX",   PILOT_VELZ_MAX),
+    GSCALAR(pilot_speed_up,     "PILOT_SPEED_UP",   PILOT_VELZ_MAX),
 
     // @Param: PILOT_ACCEL_Z
     // @DisplayName: Pilot vertical acceleration
@@ -361,7 +361,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Channel 6 Tuning
     // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
     // @User: Standard
-    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,56:Rate Yaw Filter,55:Motor Yaw Headroom,14:AltHold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,45:RC Feel,13:Heli Ext Gyro,38:Declination,39:Circle Rate,41:RangeFinder Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF
+    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,56:Rate Yaw Filter,55:Motor Yaw Headroom,14:AltHold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,45:RC Feel,13:Heli Ext Gyro,38:Declination,39:Circle Rate,41:RangeFinder Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF,57:Winch
     GSCALAR(radio_tuning, "TUNE",                   0),
 
     // @Param: TUNE_LOW
@@ -389,42 +389,42 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: CH7_OPT
     // @DisplayName: Channel 7 option
     // @Description: Select which function is performed when CH7 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl
     // @User: Standard
     GSCALAR(ch7_option, "CH7_OPT",                  AUXSW_DO_NOTHING),
 
     // @Param: CH8_OPT
     // @DisplayName: Channel 8 option
     // @Description: Select which function is performed when CH8 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl
     // @User: Standard
     GSCALAR(ch8_option, "CH8_OPT",                  AUXSW_DO_NOTHING),
 
     // @Param: CH9_OPT
     // @DisplayName: Channel 9 option
     // @Description: Select which function is performed when CH9 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl
     // @User: Standard
     GSCALAR(ch9_option, "CH9_OPT",                  AUXSW_DO_NOTHING),
 
     // @Param: CH10_OPT
     // @DisplayName: Channel 10 option
     // @Description: Select which function is performed when CH10 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl
     // @User: Standard
     GSCALAR(ch10_option, "CH10_OPT",                AUXSW_DO_NOTHING),
 
     // @Param: CH11_OPT
     // @DisplayName: Channel 11 option
     // @Description: Select which function is performed when CH11 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl
     // @User: Standard
     GSCALAR(ch11_option, "CH11_OPT",                AUXSW_DO_NOTHING),
 
     // @Param: CH12_OPT
     // @DisplayName: Channel 12 option
     // @Description: Select which function is performed when CH12 is above 1800 pwm
-    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight
+    // @Values: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl
     // @User: Standard
     GSCALAR(ch12_option, "CH12_OPT",                AUXSW_DO_NOTHING),
 
@@ -457,7 +457,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
     GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_MEDIUM),
 
-#if POSHOLD_ENABLED == ENABLED
     // @Param: PHLD_BRAKE_RATE
     // @DisplayName: PosHold braking rate
     // @Description: PosHold flight mode's rotation rate during braking in deg/sec
@@ -473,7 +472,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 2000 4500
     // @User: Advanced
     GSCALAR(poshold_brake_angle_max, "PHLD_BRAKE_ANGLE",  POSHOLD_BRAKE_ANGLE_DEFAULT),
-#endif
 
     // @Param: LAND_REPOSITION
     // @DisplayName: Land repositioning
@@ -908,7 +906,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: THROW_NEXTMODE
     // @DisplayName: Throw mode's follow up mode
     // @Description: Vehicle will switch to this mode after the throw is successfully completed.  Default is to stay in throw mode (18)
-    // @Values: 3:Auto,4:Guided,6:RTL,9:Land,17:Brake,18:Throw
+    // @Values: 3:Auto,4:Guided,5:LOITER,6:RTL,9:Land,17:Brake,18:Throw
     // @User: Standard
     AP_GROUPINFO("THROW_NEXTMODE", 3, ParametersG2, throw_nextmode, 18),
 
@@ -1009,6 +1007,23 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: SRTL_
     // @Path: ../libraries/AP_SmartRTL/AP_SmartRTL.cpp
     AP_SUBGROUPINFO(smart_rtl, "SRTL_", 21, ParametersG2, AP_SmartRTL),
+
+    // @Group: WENC
+    // @Path: ../libraries/AP_WheelEncoder/AP_WheelEncoder.cpp
+    AP_SUBGROUPINFO(wheel_encoder, "WENC", 22, ParametersG2, AP_WheelEncoder),
+
+    // @Group: WINCH_
+    // @Path: ../libraries/AP_Winch/AP_Winch.cpp
+    AP_SUBGROUPINFO(winch, "WINCH", 23, ParametersG2, AP_Winch),
+
+    // @Param: PILOT_SPEED_DN
+    // @DisplayName: Pilot maximum vertical speed descending
+    // @Description: The maximum vertical descending velocity the pilot may request in cm/s
+    // @Units: cm/s
+    // @Range: 50 500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("PILOT_SPEED_DN", 24, ParametersG2, pilot_speed_dn, 0),
 
     AP_GROUPEND
 };

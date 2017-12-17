@@ -55,11 +55,7 @@ class AP_Mount
     friend class AP_Mount_SToRM32_serial;
 
 public:
-    static AP_Mount create(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc) {
-        return AP_Mount{ahrs, current_loc};
-    }
-
-    constexpr AP_Mount(AP_Mount &&other) = default;
+    AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc);
 
     /* Do not allow copies */
     AP_Mount(const AP_Mount &other) = delete;
@@ -143,8 +139,6 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
-    AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc);
-
     // private members
     const AP_AHRS_TYPE     &_ahrs;
     const struct Location   &_current_loc;  // reference to the vehicle's current location

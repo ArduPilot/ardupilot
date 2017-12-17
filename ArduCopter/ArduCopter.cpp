@@ -127,6 +127,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
     SCHED_TASK(dataflash_periodic,    400,    300),
+    SCHED_TASK(ins_periodic,         400,     50),
     SCHED_TASK(perf_update,           0.1,    75),
     SCHED_TASK(read_receiver_rssi,    10,     75),
     SCHED_TASK(rpm_update,            10,    200),
@@ -142,6 +143,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK(gripper_update,        10,     75),
 #endif
+    SCHED_TASK(winch_update,          10,     50),
 #ifdef USERHOOK_FASTLOOP
     SCHED_TASK(userhook_FastLoop,    100,     75),
 #endif
@@ -176,16 +178,8 @@ void Copter::setup()
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 
     // setup initial performance counters
-    perf_info_reset();
+    perf_info.reset();
     fast_loopTimer = AP_HAL::micros();
-}
-
-/*
-  try to accumulate a baro reading
- */
-void Copter::barometer_accumulate(void)
-{
-    barometer.accumulate();
 }
 
 void Copter::perf_update(void)
@@ -194,14 +188,14 @@ void Copter::perf_update(void)
         Log_Write_Performance();
     if (scheduler.debug()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
-                          (unsigned)perf_info_get_num_long_running(),
-                          (unsigned)perf_info_get_num_loops(),
-                          (unsigned long)perf_info_get_max_time(),
-                          (unsigned long)perf_info_get_min_time(),
-                          (unsigned long)perf_info_get_avg_time(),
-                          (unsigned long)perf_info_get_stddev_time());
+                          (unsigned)perf_info.get_num_long_running(),
+                          (unsigned)perf_info.get_num_loops(),
+                          (unsigned long)perf_info.get_max_time(),
+                          (unsigned long)perf_info.get_min_time(),
+                          (unsigned long)perf_info.get_avg_time(),
+                          (unsigned long)perf_info.get_stddev_time());
     }
-    perf_info_reset();
+    perf_info.reset();
     pmTest1 = 0;
 }
 
@@ -221,7 +215,7 @@ void Copter::loop()
     uint32_t timer = micros();
 
     // check loop time
-    perf_info_check_loop_time(timer - fast_loopTimer);
+    perf_info.check_loop_time(timer - fast_loopTimer);
 
     // used by PI Loops
     G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.0f;
@@ -393,7 +387,7 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCOUT)) {
         DataFlash.Log_Write_RCOUT();
     }
-    if (should_log(MASK_LOG_NTUN) && (mode_requires_GPS(control_mode) || landing_with_GPS())) {
+    if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS())) {
         Log_Write_Nav_Tuning();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
@@ -437,6 +431,11 @@ void Copter::twentyfive_hz_logging()
 void Copter::dataflash_periodic(void)
 {
     DataFlash.periodic_tasks();
+}
+
+void Copter::ins_periodic(void)
+{
+    ins.periodic();
 }
 
 // three_hz_loop - 3.3hz loop
@@ -536,6 +535,11 @@ void Copter::update_GPS(void)
     }
 }
 
+void Copter::smart_rtl_save_position()
+{
+    mode_smartrtl.save_position();
+}
+
 void Copter::init_simple_bearing()
 {
     // capture current cos_yaw and sin_yaw values
@@ -585,16 +589,26 @@ void Copter::update_simple_mode(void)
 // should be called after home_bearing has been updated
 void Copter::update_super_simple_bearing(bool force_update)
 {
-    // check if we are in super simple mode and at least 10m from home
-    if(force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
-        // check the bearing to home has changed by at least 5 degrees
-        if (labs(super_simple_last_bearing - home_bearing) > 500) {
-            super_simple_last_bearing = home_bearing;
-            float angle_rad = radians((super_simple_last_bearing+18000)/100);
-            super_simple_cos_yaw = cosf(angle_rad);
-            super_simple_sin_yaw = sinf(angle_rad);
+    if (!force_update) {
+        if (ap.simple_mode != 2) {
+            return;
+        }
+        if (home_distance() < SUPER_SIMPLE_RADIUS) {
+            return;
         }
     }
+
+    const int32_t bearing = home_bearing();
+
+    // check the bearing to home has changed by at least 5 degrees
+    if (labs(super_simple_last_bearing - bearing) < 500) {
+        return;
+    }
+
+    super_simple_last_bearing = bearing;
+    const float angle_rad = radians((super_simple_last_bearing+18000)/100);
+    super_simple_cos_yaw = cosf(angle_rad);
+    super_simple_sin_yaw = sinf(angle_rad);
 }
 
 void Copter::read_AHRS(void)

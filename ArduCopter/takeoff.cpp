@@ -36,7 +36,7 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 
         switch(control_mode) {
             case GUIDED:
-                if (guided_takeoff_start(takeoff_alt_cm)) {
+                if (mode_guided.takeoff_start(takeoff_alt_cm)) {
                     set_auto_armed(true);
                     return true;
                 }
@@ -59,7 +59,7 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 void Copter::takeoff_timer_start(float alt_cm)
 {
     // calculate climb rate
-    float speed = MIN(wp_nav->get_speed_up(), MAX(g.pilot_velocity_z_max*2.0f/3.0f, g.pilot_velocity_z_max-50.0f));
+    float speed = MIN(wp_nav->get_speed_up(), MAX(g.pilot_speed_up*2.0f/3.0f, g.pilot_speed_up-50.0f));
 
     // sanity check speed and target
     if (takeoff_state.running || speed <= 0.0f || alt_cm <= 0.0f) {

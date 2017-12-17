@@ -77,15 +77,20 @@ def build_all():
 
 
 def build_binaries():
-    """Run the build_binaries.sh script."""
-    print("Running build_binaries.sh")
+    """Run the build_binaries.py script."""
+    print("Running build_binaries.py")
     # copy the script as it changes git branch, which can change the script while running
-    orig = util.reltopdir('Tools/scripts/build_binaries.sh')
-    copy = util.reltopdir('./build_binaries.sh')
+    orig = util.reltopdir('Tools/scripts/build_binaries.py')
+    copy = util.reltopdir('./build_binaries.py')
     shutil.copy2(orig, copy)
 
+    # also copy generate_manifest library:
+    orig_gm = util.reltopdir('Tools/scripts/generate_manifest.py')
+    copy_gm = util.reltopdir('./generate_manifest.py')
+    shutil.copy2(orig_gm, copy_gm)
+
     if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
-        print("Failed build_binaries.sh")
+        print("Failed build_binaries.py")
         return False
     return True
 
@@ -121,9 +126,10 @@ def build_examples():
 def build_parameters():
     """Run the param_parse.py script."""
     print("Running param_parse.py")
-    if util.run_cmd(util.reltopdir('Tools/autotest/param_metadata/param_parse.py'), directory=util.reltopdir('.')) != 0:
-        print("Failed param_parse.py")
-        return False
+    for vehicle in 'ArduPlane', 'ArduCopter', 'ArduSub', 'APMrover2', 'AntennaTracker':
+        if util.run_cmd([util.reltopdir('Tools/autotest/param_metadata/param_parse.py'), '--vehicle', vehicle], directory=util.reltopdir('.')) != 0:
+            print("Failed param_parse.py (%s)" % vehicle)
+            return False
     return True
 
 
@@ -178,7 +184,10 @@ __bin_names = {
 }
 
 def binary_path(step, debug=False):
-    vehicle = step.split(".")[1]
+    try:
+        vehicle = step.split(".")[1]
+    except Exception:
+        return None
 
     if vehicle in __bin_names:
         binary_name = __bin_names[vehicle]
@@ -411,8 +420,11 @@ def check_logs(step):
         newname = buildlogs_path("%s.core" % vehicle)
         print("Renaming %s to %s" % (corefile, newname))
         shutil.move(corefile, newname)
-        util.run_cmd('/bin/cp A*/A*.elf %s' % buildlogs_dirpath(),
-                     directory=util.reltopdir('.'))
+        try:
+            util.run_cmd('/bin/cp build/sitl/bin/* %s' % buildlogs_dirpath(),
+                         directory=util.reltopdir('.'))
+        except Exception:
+            print("Unable to save binary")
 
 def run_tests(steps):
     """Run a list of steps."""

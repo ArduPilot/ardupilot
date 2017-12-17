@@ -80,7 +80,7 @@ float Copter::get_roi_yaw()
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
-        yaw_look_at_WP_bearing = pv_get_bearing_cd(inertial_nav.get_position(), roi_WP);
+        yaw_look_at_WP_bearing = get_bearing_cd(inertial_nav.get_position(), roi_WP);
     }
 
     return yaw_look_at_WP_bearing;
@@ -112,7 +112,7 @@ void Copter::update_throttle_hover()
     }
 
     // do not update in manual throttle modes or Drift
-    if (mode_has_manual_throttle(control_mode) || (control_mode == DRIFT)) {
+    if (flightmode->has_manual_throttle() || (control_mode == DRIFT)) {
         return;
     }
 
@@ -200,10 +200,10 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_bottom) / deadband_bottom;
+        desired_rate = get_pilot_speed_dn() * (throttle_control-deadband_bottom) / deadband_bottom;
     }else if (throttle_control > deadband_top) {
         // above the deadband
-        desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_top) / (1000.0f-deadband_top);
+        desired_rate = g.pilot_speed_up * (throttle_control-deadband_top) / (1000.0f-deadband_top);
     }else{
         // must be in the deadband
         desired_rate = 0.0f;
@@ -306,4 +306,14 @@ void Copter::rotate_body_frame_to_NE(float &x, float &y)
     float ne_y = x*ahrs.sin_yaw() + y*ahrs.cos_yaw();
     x = ne_x;
     y = ne_y;
+}
+
+// It will return the PILOT_SPEED_DN value if non zero, otherwise if zero it returns the PILOT_SPEED_UP value.
+uint16_t Copter::get_pilot_speed_dn()
+{
+    if (g2.pilot_speed_dn == 0) {
+        return abs(g.pilot_speed_up);
+    } else {
+        return abs(g2.pilot_speed_dn);
+    }
 }

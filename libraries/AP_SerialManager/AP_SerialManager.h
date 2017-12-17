@@ -69,9 +69,24 @@
 #define AP_SERIALMANAGER_ULANDING_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_ULANDING_BUFSIZE_TX     128
 
+#define AP_SERIALMANAGER_VOLZ_BAUD           115
+#define AP_SERIALMANAGER_VOLZ_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_VOLZ_BUFSIZE_TX     128
+
+// SBUS servo outputs
+#define AP_SERIALMANAGER_SBUS1_BAUD           100000
+#define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
+#define AP_SERIALMANAGER_SBUS1_BUFSIZE_TX     32
+
 
 class AP_SerialManager {
 public:
+    AP_SerialManager();
+
+    /* Do not allow copies */
+    AP_SerialManager(const AP_SerialManager &other) = delete;
+    AP_SerialManager &operator=(const AP_SerialManager&) = delete;
+
     enum SerialProtocol {
         SerialProtocol_None = -1,
         SerialProtocol_Console = 0, // unused
@@ -87,17 +102,16 @@ public:
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
         SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
-        SerialProtocol_Beacon = 13
+        SerialProtocol_Beacon = 13,
+        SerialProtocol_Volz = 14,                    // Volz servo protocol
+        SerialProtocol_Sbus1 = 15
     };
 
-    static AP_SerialManager create() { return AP_SerialManager{}; }
-
-    constexpr AP_SerialManager(AP_SerialManager &&other) = default;
-
-    /* Do not allow copies */
-    AP_SerialManager(const AP_SerialManager &other) = delete;
-    AP_SerialManager &operator=(const AP_SerialManager&) = delete;
-
+    // get singleton instance
+    static AP_SerialManager *get_instance(void) {
+        return _instance;
+    }
+    
     // init_console - initialise console at default baud rate
     void init_console();
 
@@ -133,8 +147,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AP_SerialManager();
-
+    static AP_SerialManager *_instance;
+    
     // array of uart info
     struct {
         AP_Int8 protocol;

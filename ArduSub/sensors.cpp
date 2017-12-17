@@ -20,6 +20,12 @@ void Sub::read_barometer(void)
     }
 }
 
+// try to accumulate a baro reading
+void Sub::barometer_accumulate(void)
+{
+    barometer.accumulate();
+}
+
 void Sub::init_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED

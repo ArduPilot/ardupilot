@@ -57,3 +57,20 @@ bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
     }
     return true;
 }
+
+// performs pre_arm gps related checks and returns true if passed
+bool AP_Arming_Rover::gps_checks(bool display_failure)
+{
+    if (!rover.control_mode->requires_gps()) {
+        // we don't care!
+        return true;
+    }
+
+    // call parent gps checks
+    return AP_Arming::gps_checks(display_failure);
+}
+
+bool AP_Arming_Rover::pre_arm_checks(bool report)
+{
+    return rover.g2.motors.pre_arm_check(report) & AP_Arming::pre_arm_checks(report);
+}

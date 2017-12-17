@@ -67,6 +67,7 @@
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <APM_Control/AR_AttitudeControl.h>
+#include <AP_SmartRTL/AP_SmartRTL.h>
 #include <DataFlash/DataFlash.h>
 #include <Filter/AverageFilter.h>                   // Mode Filter from Filter library
 #include <Filter/Butter.h>                          // Filter library - butterworth filter
@@ -104,12 +105,14 @@ public:
 #endif
     friend class GCS_Rover;
     friend class Mode;
+    friend class ModeAcro;
     friend class ModeAuto;
     friend class ModeGuided;
     friend class ModeHold;
     friend class ModeSteering;
     friend class ModeManual;
     friend class ModeRTL;
+    friend class ModeSmartRTL;
 
     Rover(void);
 
@@ -130,17 +133,17 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler = AP_Scheduler::create();
+    AP_Scheduler scheduler;
 
     // mapping between input channels
-    RCMapper rcmap = RCMapper::create();
+    RCMapper rcmap;
 
     // board specific config
-    AP_BoardConfig BoardConfig = AP_BoardConfig::create();
+    AP_BoardConfig BoardConfig;
 
 #if HAL_WITH_UAVCAN
     // board specific config for CAN bus
-    AP_BoardConfig_CAN BoardConfig_CAN = AP_BoardConfig_CAN::create();
+    AP_BoardConfig_CAN BoardConfig_CAN;
 #endif
 
     // primary control channels
@@ -151,11 +154,11 @@ private:
     DataFlash_Class DataFlash;
 
     // sensor drivers
-    AP_GPS gps = AP_GPS::create();
-    AP_Baro barometer = AP_Baro::create();
-    Compass compass = Compass::create();
-    AP_InertialSensor ins = AP_InertialSensor::create();
-    RangeFinder rangefinder = RangeFinder::create(serial_manager, ROTATION_NONE);
+    AP_GPS gps;
+    AP_Baro barometer;
+    Compass compass;
+    AP_InertialSensor ins;
+    RangeFinder rangefinder{serial_manager, ROTATION_NONE};
     AP_Button button;
 
     // flight modes convenience array
@@ -163,61 +166,61 @@ private:
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, rangefinder);
-    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, rangefinder);
-    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3);
+    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
+    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, barometer, gps);
+    AP_AHRS_DCM ahrs{ins, barometer, gps};
 #endif
 
     // Arming/Disarming management class
-    AP_Arming_Rover arming = AP_Arming_Rover::create(ahrs, barometer, compass, battery);
+    AP_Arming_Rover arming{ahrs, barometer, compass, battery};
 
-    AP_L1_Control L1_controller = AP_L1_Control::create(ahrs, nullptr);
+    AP_L1_Control L1_controller{ahrs, nullptr};
 
     // selected navigation controller
     AP_Navigation *nav_controller;
 
     // Mission library
-    AP_Mission mission = AP_Mission::create(ahrs,
+    AP_Mission mission{ahrs,
             FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
             FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
-            FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void));
+            FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)};
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    OpticalFlow optflow = OpticalFlow::create(ahrs);
+    OpticalFlow optflow{ahrs};
 #endif
 
     // RSSI
-    AP_RSSI rssi = AP_RSSI::create();
+    AP_RSSI rssi;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
 #endif
 
-    AP_SerialManager serial_manager = AP_SerialManager::create();
+    AP_SerialManager serial_manager;
 
     // GCS handling
     GCS_Rover _gcs;  // avoid using this; use gcs()
     GCS_Rover &gcs() { return _gcs; }
 
     // relay support
-    AP_Relay relay = AP_Relay::create();
+    AP_Relay relay;
 
-    AP_ServoRelayEvents ServoRelayEvents = AP_ServoRelayEvents::create(relay);
+    AP_ServoRelayEvents ServoRelayEvents{relay};
 
     // The rover's current location
     struct Location current_loc;
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera = AP_Camera::create(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs);
+    AP_Camera camera{&relay, MASK_LOG_CAMERA, current_loc, ahrs};
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps solution for altitude rather than gps only.
-    AP_Mount camera_mount = AP_Mount::create(ahrs, current_loc);
+    AP_Mount camera_mount{ahrs, current_loc};
 #endif
 
     // true if initialisation has completed
@@ -255,7 +258,7 @@ private:
     } failsafe;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
-    AP_Notify notify = AP_Notify::create();
+    AP_Notify notify;
 
     // true if we have a position estimate from AHRS
     bool have_position;
@@ -286,11 +289,11 @@ private:
     aux_switch_pos aux_ch7;
 
     // Battery Sensors
-    AP_BattMonitor battery = AP_BattMonitor::create();
+    AP_BattMonitor battery;
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry = AP_Frsky_Telem::create(ahrs, battery, rangefinder);
+    AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
 #endif
 
     uint32_t control_sensors_present;
@@ -378,10 +381,12 @@ private:
     ModeInitializing mode_initializing;
     ModeHold mode_hold;
     ModeManual mode_manual;
+    ModeAcro mode_acro;
     ModeGuided mode_guided;
     ModeAuto mode_auto;
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
+    ModeSmartRTL mode_smartrtl;
 
     // cruise throttle and speed learning
     struct {
@@ -418,9 +423,7 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void do_RTL(void);
-    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_at_dest);
-    void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
-    void do_loiter_time(const AP_Mission::Mission_Command& cmd);
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
     void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_RTL();
@@ -451,7 +454,7 @@ private:
     void delay(uint32_t ms);
 
     // control_modes.cpp
-    Mode *control_mode_from_num(enum mode num);
+    Mode *mode_from_mode_num(enum mode num);
     void read_control_switch();
     uint8_t readSwitch(void);
     void reset_control_switch();
@@ -498,7 +501,7 @@ private:
     void Log_Write_Steering();
     void Log_Write_Beacon();
     void Log_Write_Startup(uint8_t type);
-    void Log_Write_Control_Tuning();
+    void Log_Write_Throttle();
     void Log_Write_Nav_Tuning();
     void Log_Write_Attitude();
     void Log_Write_Rangefinder();
@@ -560,27 +563,26 @@ private:
     void resetPerfData(void);
     void check_usb_mux(void);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
-    void notify_mode(enum mode new_mode);
+    void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
     void change_arm_state(void);
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
-
-    // test.cpp
-    void print_hit_enter();
-    void print_enabled(bool b);
+    void smart_rtl_update();
+    bool is_boat() const;
 
 public:
     void mavlink_delay_cb();
     void failsafe_check();
 
     void dataflash_periodic(void);
+    void ins_periodic();
     void update_soft_armed();
     // Motor test
     void motor_test_output();
     bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value);
-    uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec);
+    MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec);
     void motor_test_stop();
 };
 

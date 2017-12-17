@@ -64,13 +64,15 @@ class AP_GPS
     friend class AP_GPS_Backend;
 
 public:
-    static AP_GPS create() { return AP_GPS{}; }
-
-    constexpr AP_GPS(AP_GPS &&other) = default;
+    AP_GPS();
 
     /* Do not allow copies */
     AP_GPS(const AP_GPS &other) = delete;
     AP_GPS &operator=(const AP_GPS&) = delete;
+
+    static AP_GPS &gps() {
+        return *_singleton;
+    }
 
     // GPS driver types
     enum GPS_Type {
@@ -149,8 +151,16 @@ public:
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
 
         // all the following fields must only all be filled by RTK capable backend drivers
+        uint32_t rtk_time_week_ms;         ///< GPS Time of Week of last baseline in milliseconds
+        uint16_t rtk_week_number;          ///< GPS Week Number of last baseline
         uint32_t rtk_age_ms;               ///< GPS age of last baseline correction in milliseconds  (0 when no corrections, 0xFFFFFFFF indicates overflow)
         uint8_t  rtk_num_sats;             ///< Current number of satellites used for RTK calculation
+        uint8_t  rtk_baseline_coords_type; ///< Coordinate system of baseline. 0 == ECEF, 1 == NED
+        int32_t  rtk_baseline_x_mm;        ///< Current baseline in ECEF x or NED north component in mm
+        int32_t  rtk_baseline_y_mm;        ///< Current baseline in ECEF y or NED east component in mm
+        int32_t  rtk_baseline_z_mm;        ///< Current baseline in ECEF z or NED down component in mm
+        uint32_t rtk_accuracy;             ///< Current estimate of 3D baseline accuracy (receiver dependent, typical 0 to 9999)
+        int32_t  rtk_iar_num_hypotheses;   ///< Current number of integer ambiguity hypotheses
     };
 
     /// Startup initialisation.
@@ -363,8 +373,7 @@ public:
     void send_mavlink_gps_raw(mavlink_channel_t chan);
     void send_mavlink_gps2_raw(mavlink_channel_t chan);
 
-    void send_mavlink_gps_rtk(mavlink_channel_t chan);
-    void send_mavlink_gps2_rtk(mavlink_channel_t chan);
+    void send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst);
 
     // Returns the index of the first unconfigured GPS (returns GPS_ALL_CONFIGURED if all instances report as being configured)
     uint8_t first_unconfigured_gps(void) const;
@@ -406,6 +415,9 @@ public:
     bool is_healthy(uint8_t instance) const;
     bool is_healthy(void) const { return is_healthy(primary_instance); }
 
+    // returns true if all GPS instances have passed all final arming checks/state changes
+    bool prepare_for_arming(void);
+
 protected:
 
     // configuration parameters
@@ -431,7 +443,7 @@ protected:
     uint32_t _log_gps_bit = -1;
 
 private:
-    AP_GPS();
+    static AP_GPS *_singleton;
 
     // returns the desired gps update rate in milliseconds
     // this does not provide any guarantee that the GPS is updating at the requested
@@ -470,9 +482,11 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
+#if !HAL_MINIMIZE_FEATURES
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
+#endif // !HAL_MINIMIZE_FEATURES
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
         struct SBP2_detect_state sbp2_detect_state;
@@ -543,4 +557,8 @@ private:
         GPS_AUTO_CONFIG_ENABLE  = 1
     };
 
+};
+
+namespace AP {
+    AP_GPS &gps();
 };

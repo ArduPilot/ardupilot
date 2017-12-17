@@ -102,11 +102,11 @@ void ReplayVehicle::load_parameters(void)
 
 static const struct LogStructure min_log_structure[] = {
     { LOG_FORMAT_MSG, sizeof(log_Format),
-      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },
+      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns", "-b---", "-----" },
     { LOG_PARAMETER_MSG, sizeof(log_Parameter),
-      "PARM", "QNf",        "TimeUS,Name,Value" }, 
+      "PARM", "QNf",        "TimeUS,Name,Value", "s--", "F--" },
     { LOG_MESSAGE_MSG, sizeof(log_Message),
-      "MSG",  "QZ",     "TimeUS,Message"},
+      "MSG",  "QZ",     "TimeUS,Message", "s-", "F-" },
 };
 
 void ReplayVehicle::setup(void) 

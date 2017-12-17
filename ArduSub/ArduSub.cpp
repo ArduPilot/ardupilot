@@ -50,6 +50,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
     SCHED_TASK(dataflash_periodic,    400,    300),
+    SCHED_TASK(ins_periodic,          400,    50),
     SCHED_TASK(perf_update,           0.1,    75),
 #if RPM_ENABLED == ENABLED
     SCHED_TASK(rpm_update,            10,    200),
@@ -89,16 +90,8 @@ void Sub::setup()
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 
     // setup initial performance counters
-    perf_info_reset();
+    perf_info.reset();
     fast_loopTimer = AP_HAL::micros();
-}
-
-/*
-  try to accumulate a baro reading
- */
-void Sub::barometer_accumulate(void)
-{
-    barometer.accumulate();
 }
 
 void Sub::perf_update(void)
@@ -107,13 +100,15 @@ void Sub::perf_update(void)
         Log_Write_Performance();
     }
     if (scheduler.debug()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
-                          (unsigned)perf_info_get_num_long_running(),
-                          (unsigned)perf_info_get_num_loops(),
-                          (unsigned long)perf_info_get_max_time(),
-                          (unsigned long)perf_info_get_min_time());
+        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
+                          (unsigned)perf_info.get_num_long_running(),
+                          (unsigned)perf_info.get_num_loops(),
+                          (unsigned long)perf_info.get_max_time(),
+                          (unsigned long)perf_info.get_min_time(),
+                          (unsigned long)perf_info.get_avg_time(),
+                          (unsigned long)perf_info.get_stddev_time());
     }
-    perf_info_reset();
+    perf_info.reset();
     pmTest1 = 0;
 }
 
@@ -125,7 +120,7 @@ void Sub::loop()
     uint32_t timer = micros();
 
     // check loop time
-    perf_info_check_loop_time(timer - fast_loopTimer);
+    perf_info.check_loop_time(timer - fast_loopTimer);
 
     // used by PI Loops
     G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.0f;
@@ -209,12 +204,8 @@ void Sub::fifty_hz_loop()
 
     failsafe_sensors_check();
 
-    // Update servo output
+    // Update rc input/output
     RC_Channels::set_pwm_all();
-    // wait for outputs to initialize: TODO find a better way to do this
-    if (millis() > 10000) {
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, g.cam_slew_limit, 0.02f);
-    }
     SRV_Channels::output_ch_all();
 }
 
@@ -320,6 +311,11 @@ void Sub::twentyfive_hz_logging()
 void Sub::dataflash_periodic(void)
 {
     DataFlash.periodic_tasks();
+}
+
+void Sub::ins_periodic()
+{
+    ins.periodic();
 }
 
 // three_hz_loop - 3.3hz loop

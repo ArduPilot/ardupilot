@@ -37,9 +37,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_SMBus_Maxell;
 
 public:
-    static AP_BattMonitor create() { return AP_BattMonitor{}; }
-
-    constexpr AP_BattMonitor(AP_BattMonitor &&other) = default;
+    AP_BattMonitor();
 
     /* Do not allow copies */
     AP_BattMonitor(const AP_BattMonitor &other) = delete;
@@ -179,8 +177,6 @@ protected:
     AP_Int8     _low_voltage_source;                                /// voltage type used for detection of low voltage event
 
 private:
-    AP_BattMonitor();
-
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];
     AP_BattMonitor_Backend *drivers[AP_BATT_MONITOR_MAX_INSTANCES];
     uint8_t     _num_instances;                                     /// number of monitors

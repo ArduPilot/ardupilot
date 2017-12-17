@@ -78,6 +78,30 @@ void Tracker::send_attitude(mavlink_channel_t chan)
 }
 
 
+void Tracker::send_extended_status1(mavlink_channel_t chan)
+{
+    int16_t battery_current = -1;
+    int8_t battery_remaining = -1;
+
+    if (battery.has_current() && battery.healthy()) {
+        battery_remaining = battery.capacity_remaining_pct();
+        battery_current = battery.current_amps() * 100;
+    }
+
+    mavlink_msg_sys_status_send(
+        chan,
+        0,
+        0,
+        0,
+        static_cast<uint16_t>(scheduler.load_average() * 1000),
+        battery.voltage() * 1000,  // mV
+        battery_current,        // in 10mA units
+        battery_remaining,      // in %
+        0,  // comm drops %,
+        0,  // comm drops in pkts,
+        0, 0, 0, 0);
+}
+
 void Tracker::send_location(mavlink_channel_t chan)
 {
     uint32_t fix_time;
@@ -199,6 +223,11 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         tracker.send_simstate(chan);
+        break;
+
+    case MSG_EXTENDED_STATUS1:
+        CHECK_PAYLOAD_SIZE(SYS_STATUS);
+        tracker.send_extended_status1(chan);
         break;
 
     default:
@@ -331,7 +360,7 @@ GCS_MAVLINK_Tracker::data_stream_send(void)
     }
 
     if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-        send_message(MSG_SERVO_OUT);
+        send_message(MSG_SERVO_OUTPUT_RAW);
     }
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
@@ -451,7 +480,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
         mavlink_command_long_t packet;
         mavlink_msg_command_long_decode(msg, &packet);
         
-        uint8_t result = MAV_RESULT_UNSUPPORTED;
+        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
         
         // do command
         send_text(MAV_SEVERITY_INFO,"Command received: ");
@@ -596,7 +625,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
     {
         // decode
         mavlink_mission_item_t packet;
-        uint8_t result = MAV_MISSION_ACCEPTED;
+        MAV_MISSION_RESULT result = MAV_MISSION_ACCEPTED;
 
         mavlink_msg_mission_item_decode(msg, &packet);
 
@@ -769,11 +798,6 @@ void Tracker::gcs_update(void)
 void Tracker::gcs_retry_deferred(void)
 {
     gcs().retry_deferred();
-}
-
-AP_GPS *GCS_MAVLINK_Tracker::get_gps() const
-{
-    return &tracker.gps;
 }
 
 Compass *GCS_MAVLINK_Tracker::get_compass() const

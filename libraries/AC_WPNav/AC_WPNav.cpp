@@ -1093,7 +1093,15 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         // update target position and velocity from spline calculator
         calc_spline_pos_vel(_spline_time, target_pos, target_vel);
 
-        _pos_delta_unit = target_vel/target_vel.length();
+        // if target velocity is zero the origin and destination must be the same
+        // so flag reached destination (and protect against divide by zero)
+        float target_vel_length = target_vel.length();
+        if (is_zero(target_vel_length)) {
+            _flags.reached_destination = true;
+            return true;
+        }
+
+        _pos_delta_unit = target_vel / target_vel_length;
         calculate_wp_leash_length();
 
         // get current location
@@ -1149,10 +1157,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         _spline_vel_scaler = constrain_float(_spline_vel_scaler, 0.0f, vel_limit);
 
         // scale the spline_time by the velocity we've calculated vs the velocity that came out of the spline calculator
-        float target_vel_length = target_vel.length();
-        if (!is_zero(target_vel_length)) {
-            _spline_time_scale = _spline_vel_scaler/target_vel_length;
-        }
+        _spline_time_scale = _spline_vel_scaler / target_vel_length;
 
         // update target position
         target_pos.z += terr_offset;
@@ -1232,9 +1237,9 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
 //      returns false if conversion failed (likely because terrain data was not available)
 bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &terrain_alt)
 {
-    // convert location to NEU vector3f
-    Vector3f res_vec;
-    if (!loc.get_vector_xy_from_origin_NEU(res_vec)) {
+    // convert location to NE vector2f
+    Vector2f res_vec;
+    if (!loc.get_vector_xy_from_origin_NE(res_vec)) {
         return false;
     }
 
@@ -1266,17 +1271,6 @@ bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &te
 ///
 /// shared methods
 ///
-
-// get_bearing_cd - return bearing in centi-degrees between two positions
-// To-Do: move this to math library
-float AC_WPNav::get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const
-{
-    float bearing = 9000 + atan2f(-(destination.x-origin.x), destination.y-origin.y) * 5729.57795f;
-    if (bearing < 0) {
-        bearing += 36000;
-    }
-    return bearing;
-}
 
 /// calc_slow_down_distance - calculates distance before waypoint that target point should begin to slow-down assuming it is travelling at full speed
 void AC_WPNav::calc_slow_down_distance(float speed_cms, float accel_cmss)

@@ -6,7 +6,6 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_Fence/AC_PolyFence_loader.h>
 #include <AP_Common/Location.h>
 
@@ -35,11 +34,7 @@
 class AC_Fence
 {
 public:
-    static AC_Fence create(const AP_AHRS &ahrs, const AP_InertialNav &inav) {
-        return AC_Fence{ahrs, inav};
-    }
-
-    constexpr AC_Fence(AC_Fence &&other) = default;
+    AC_Fence(const AP_AHRS_NavEKF &ahrs);
 
     /* Do not allow copies */
     AC_Fence(const AC_Fence &other) = delete;
@@ -101,13 +96,6 @@ public:
     void manual_recovery_start();
 
     ///
-    /// time saving methods to piggy-back on main code's calculations
-    ///
-
-    /// set_home_distance - update vehicle's distance from home in meters - required for circular horizontal fence monitoring
-    void set_home_distance(float distance) { _home_distance = distance; }
-
-    ///
     /// polygon related methods
     ///
 
@@ -122,8 +110,20 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    bool geofence_present() const;
+    bool geofence_enabled() const;
+    bool geofence_failed() const;
+
 private:
-    AC_Fence(const AP_AHRS &ahrs, const AP_InertialNav &inav);
+    /// check_fence_alt_max - true if alt fence has been newly breached
+    bool check_fence_alt_max(float curr_alt);
+
+    /// check_fence_polygon - true if polygon fence has been newly breached
+    bool check_fence_polygon();
+
+    /// check_fence_circle - true if circle fence has been newly breached
+    bool check_fence_circle();
 
     /// record_breach - update breach bitmask, time and count
     void record_breach(uint8_t fence_type);
@@ -135,8 +135,7 @@ private:
     bool load_polygon_from_eeprom(bool force_reload = false);
 
     // pointers to other objects we depend upon
-    const AP_AHRS& _ahrs;
-    const AP_InertialNav& _inav;
+    const AP_AHRS_NavEKF& _ahrs;
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control

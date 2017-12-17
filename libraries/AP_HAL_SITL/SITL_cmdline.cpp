@@ -372,6 +372,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
         // set right default throttle for rover (allowing for reverse)
         pwm_input[2] = 1500;
+    } else if (strcmp(SKETCH, "ArduSub") == 0) {
+        _vehicle = ArduSub;
+        for(uint8_t i = 0; i < 8; i++) {
+            pwm_input[i] = 1500;
+        }
     } else {
         _vehicle = ArduPlane;
         if (_framerate == 0) {

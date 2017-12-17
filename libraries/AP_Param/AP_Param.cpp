@@ -1984,3 +1984,63 @@ bool AP_Param::set_default_by_name(const char *name, float value)
     // not a supported type
     return false;
 }
+
+/*
+  set a value by name
+ */
+bool AP_Param::set_by_name(const char *name, float value)
+{
+    enum ap_var_type vtype;
+    AP_Param *vp = find(name, &vtype);
+    if (vp == nullptr) {
+        return false;
+    }
+    switch (vtype) {
+    case AP_PARAM_INT8:
+        ((AP_Int8 *)vp)->set(value);
+        return true;
+    case AP_PARAM_INT16:
+        ((AP_Int16 *)vp)->set(value);
+        return true;
+    case AP_PARAM_INT32:
+        ((AP_Int32 *)vp)->set(value);
+        return true;
+    case AP_PARAM_FLOAT:
+        ((AP_Float *)vp)->set(value);
+        return true;
+    default:
+        break;
+    }
+    // not a supported type
+    return false;
+}
+
+/*
+  set and save a value by name
+ */
+bool AP_Param::set_and_save_by_name(const char *name, float value)
+{
+    enum ap_var_type vtype;
+    AP_Param *vp = find(name, &vtype);
+    if (vp == nullptr) {
+        return false;
+    }
+    switch (vtype) {
+    case AP_PARAM_INT8:
+        ((AP_Int8 *)vp)->set_and_save(value);
+        return true;
+    case AP_PARAM_INT16:
+        ((AP_Int16 *)vp)->set_and_save(value);
+        return true;
+    case AP_PARAM_INT32:
+        ((AP_Int32 *)vp)->set_and_save(value);
+        return true;
+    case AP_PARAM_FLOAT:
+        ((AP_Float *)vp)->set_and_save(value);
+        return true;
+    default:
+        break;
+    }
+    // not a supported type
+    return false;
+}

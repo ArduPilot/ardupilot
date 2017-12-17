@@ -90,10 +90,10 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(MAV_TYPE_FIXED_WING,
-                                            base_mode,
-                                            custom_mode,
-                                            system_status);
+    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(quadplane.get_mav_type(),
+                                                   base_mode,
+                                                   custom_mode,
+                                                   system_status);
 }
 
 void Plane::send_attitude(mavlink_channel_t chan)
@@ -906,7 +906,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         mavlink_command_int_t packet;
         mavlink_msg_command_int_decode(msg, &packet);
 
-        uint8_t result = MAV_RESULT_UNSUPPORTED;
+        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
 
         switch(packet.command) {
 
@@ -1037,7 +1037,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         mavlink_command_long_t packet;
         mavlink_msg_command_long_decode(msg, &packet);
 
-        uint8_t result = MAV_RESULT_UNSUPPORTED;
+        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
 
         // do command
 
@@ -1276,7 +1276,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
                 }
                 if (plane.landing.request_go_around()) {
-                    plane.auto_state.next_wp_no_crosstrack = true;
+                    plane.auto_state.next_wp_crosstrack = false;
                     result = MAV_RESULT_ACCEPTED;
                 }
             }
@@ -1448,10 +1448,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         } else if (!check_latlng(packet.lat,packet.lng)) {
             send_text(MAV_SEVERITY_WARNING,"Invalid fence point, lat or lng too large");
         } else {
-            Vector2l point;
-            point.x = packet.lat*1.0e7f;
-            point.y = packet.lng*1.0e7f;
-            plane.set_fence_point_with_index(point, packet.idx);
+            plane.set_fence_point_with_index(Vector2l(packet.lat*1.0e7f, packet.lng*1.0e7f), packet.idx);
         }
         break;
     }
@@ -1923,16 +1920,11 @@ AP_Mission *GCS_MAVLINK_Plane::get_mission()
 
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg)
 {
-    plane.auto_state.next_wp_no_crosstrack = true;
+    plane.auto_state.next_wp_crosstrack = false;
     GCS_MAVLINK::handle_mission_set_current(mission, msg);
     if (plane.control_mode == AUTO && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
-}
-
-AP_GPS *GCS_MAVLINK_Plane::get_gps() const
-{
-    return &plane.gps;
 }
 
 AP_Camera *GCS_MAVLINK_Plane::get_camera() const

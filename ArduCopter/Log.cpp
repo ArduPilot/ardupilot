@@ -21,12 +21,12 @@ struct PACKED log_AutoTune {
 };
 
 // Write an Autotune data packet
-void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
+void Copter::ModeAutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
 {
     struct log_AutoTune pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
         time_us     : AP_HAL::micros64(),
-        axis        : axis,
+        axis        : _axis,
         tune_step   : tune_step,
         meas_target : meas_target,
         meas_min    : meas_min,
@@ -36,7 +36,7 @@ void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_targ
         new_gain_sp : new_gain_sp,
         new_ddt     : new_ddt
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    _copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_AutoTuneDetails {
@@ -47,7 +47,7 @@ struct PACKED log_AutoTuneDetails {
 };
 
 // Write an Autotune data packet
-void Copter::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
+void Copter::ModeAutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 {
     struct log_AutoTuneDetails pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),
@@ -55,7 +55,7 @@ void Copter::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
         angle_cd    : angle_cd,
         rate_cds    : rate_cds
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    _copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 #endif
 
@@ -208,13 +208,13 @@ void Copter::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us          : AP_HAL::micros64(),
-        num_long_running : perf_info_get_num_long_running(),
-        num_loops        : perf_info_get_num_loops(),
-        max_time         : perf_info_get_max_time(),
+        num_long_running : perf_info.get_num_long_running(),
+        num_loops        : perf_info.get_num_loops(),
+        max_time         : perf_info.get_max_time(),
         pm_test          : pmTest1,
         i2c_lockup_count : 0,
         ins_error_count  : ins.error_count(),
-        log_dropped      : DataFlash.num_dropped() - perf_info_get_num_dropped(),
+        log_dropped      : DataFlash.num_dropped() - perf_info.get_num_dropped(),
         hal.util->available_memory()
     };
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -629,48 +629,51 @@ void Copter::Log_Write_Beacon()
     DataFlash.Log_Write_Beacon(g2.beacon);
 }
 
+// type and unit information can be found in
+// libraries/DataFlash/Logstructure.h; search for "log_Units" for
+// units and "Format characters" for field type information
 const struct LogStructure Copter::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
     { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
-      "ATUN", "QBBfffffff",       "TimeUS,Axis,TuneStep,Targ,Min,Max,RP,RD,SP,ddt" },
+      "ATUN", "QBBfffffff",       "TimeUS,Axis,TuneStep,Targ,Min,Max,RP,RD,SP,ddt", "s--ddd---o", "F--BBB---0" },
     { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
-      "ATDE", "Qff",          "TimeUS,Angle,Rate" },
+      "ATDE", "Qff",          "TimeUS,Angle,Rate", "sdk", "FBB" },
 #endif
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
-      "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
-    { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
-    { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
-      "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
+      "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi", "s-----", "F-----" },
+    { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" },
+    { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),
+       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY", "smmmmnnnnoo", "FBBBBBBBBBB" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qffffffeccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt" },
+      "CTUN", "Qffffffeccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BBBBBB" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHIhBHII",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop,Mem" },
+      "PM",  "QHHIhBHII",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop,Mem", "s-------b", "F-------0" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
-      "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit" },
+      "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit", "s-vw-", "F-00-" },
     { LOG_EVENT_MSG, sizeof(log_Event),         
-      "EV",   "QB",           "TimeUS,Id" },
+      "EV",   "QB",           "TimeUS,Id", "s-", "F-" },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
-      "D16",   "QBh",         "TimeUS,Id,Value" },
+      "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         
-      "DU16",  "QBH",         "TimeUS,Id,Value" },
+      "DU16",  "QBH",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_INT32_MSG, sizeof(log_Data_Int32t),         
-      "D32",   "QBi",         "TimeUS,Id,Value" },
+      "D32",   "QBi",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT32_MSG, sizeof(log_Data_UInt32t),         
-      "DU32",  "QBI",         "TimeUS,Id,Value" },
+      "DU32",  "QBI",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
-      "DFLT",  "QBf",         "TimeUS,Id,Value" },
+      "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
-      "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
+      "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" },
     { LOG_HELI_MSG, sizeof(log_Heli),
-      "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM" },
+      "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM", "s--", "F--" },
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
-      "PL",    "QBBffff",    "TimeUS,Heal,TAcq,pX,pY,vX,vY" },
+      "PL",    "QBBffff",    "TimeUS,Heal,TAcq,pX,pY,vX,vY", "s--ddmm","F--00BB" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ" },
+      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
     { LOG_THROW_MSG, sizeof(log_Throw),
-      "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk" },
+      "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk", "s-nnoo----", "F-0000----" },
 };
 
 void Copter::Log_Write_Vehicle_Startup_Messages()

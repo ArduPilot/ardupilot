@@ -107,6 +107,9 @@ public:
     // reset rate controller I terms
     void reset_rate_controller_I_terms();
 
+    // Sets attitude target to vehicle attitude
+    void set_attitude_target_to_current_attitude() { _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned()); }
+
     // Sets yaw target to vehicle heading
     void set_yaw_target_to_current_heading() { shift_ef_yaw_target(degrees(_ahrs.yaw - _attitude_target_euler_angle.z)*100.0f); }
 
@@ -299,9 +302,6 @@ protected:
 
     // Return the yaw slew rate limit in radians/s
     float get_slew_yaw_rads() { return radians(_slew_yaw*0.01f); }
-
-    // Return the tilt angle limit in radians
-    float get_tilt_limit_rad() { return radians(_aparm.angle_max*0.01f); }
 
     // Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
     AP_Float            _slew_yaw;

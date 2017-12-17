@@ -92,6 +92,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
     
+    // @Param: AUTO_ONLY
+    // @DisplayName: Distance-trigging in AUTO mode only
+    // @Description: When enabled, trigging by distance is done in AUTO mode only.
+    // @Values: 0:Always,1:Only when in AUTO
+    // @User: Standard
+    AP_GROUPINFO("AUTO_ONLY",  10, AP_Camera, _auto_mode_only, 0),
+
     AP_GROUPEND
 };
 
@@ -244,8 +251,9 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
         altitude_rel = current_loc.alt - ahrs.get_home().alt;
     }
 
-    mavlink_msg_camera_feedback_send(chan, 
-        gps.time_epoch_usec(),
+    mavlink_msg_camera_feedback_send(
+        chan,
+        AP::gps().time_epoch_usec(),
         0, 0, _image_index,
         current_loc.lat, current_loc.lng,
         altitude*1e-2, altitude_rel*1e-2,
@@ -258,7 +266,7 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
 */
 void AP_Camera::update()
 {
-    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
         return;
     }
 
@@ -281,6 +289,10 @@ void AP_Camera::update()
 
     if (_max_roll > 0 && labs(ahrs.roll_sensor*1e-2) > _max_roll) {
         return;
+    }
+
+    if (_is_in_auto_mode != true && _auto_mode_only != 0) {
+            return;
     }
 
     uint32_t tnow = AP_HAL::millis();
@@ -394,11 +406,11 @@ void AP_Camera::log_picture()
     if (!using_feedback_pin()) {
         gcs().send_message(MSG_CAMERA_FEEDBACK);
         if (df->should_log(log_camera_bit)) {
-            df->Log_Write_Camera(ahrs, gps, current_loc);
+            df->Log_Write_Camera(ahrs, current_loc);
         }
     } else {
         if (df->should_log(log_camera_bit)) {
-            df->Log_Write_Trigger(ahrs, gps, current_loc);
+            df->Log_Write_Trigger(ahrs, current_loc);
         }
     }
 }
@@ -433,7 +445,7 @@ void AP_Camera::update_trigger()
         DataFlash_Class *df = DataFlash_Class::instance();
         if (df != nullptr) {
             if (df->should_log(log_camera_bit)) {
-                df->Log_Write_Camera(ahrs, gps, current_loc);
+                df->Log_Write_Camera(ahrs, current_loc);
             }
         }
     }

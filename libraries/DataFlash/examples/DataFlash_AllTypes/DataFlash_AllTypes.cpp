@@ -13,6 +13,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 struct PACKED log_TYP1 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    int16_t    a[32];
     int8_t     b;
     uint8_t    B;
     int16_t    h;
@@ -25,6 +26,7 @@ struct PACKED log_TYP1 {
     char       N[16];
     char       Z[64];
 };
+static_assert(sizeof(log_TYP1) < 256, "log_TYP1 is oversize");
 
 struct PACKED log_TYP2 {
     LOG_PACKET_HEADER;
@@ -46,18 +48,35 @@ enum MyLogMessages {
 };
 
 static const struct LogStructure log_structure[] = {
-    { LOG_TYP1_MSG, sizeof(log_TYP1),
-      "TYP1", "QbBhHiIfdnNZ",        "TimeUS,b,B,h,H,i,I,f,d,n,N,Z" },
-    { LOG_TYP2_MSG, sizeof(log_TYP2),
-      "TYP2", "QcCeELMqQ",        "TimeUS,c,C,e,E,L,M,q,Q" },
-    { LOG_MESSAGE_MSG, sizeof(log_Message),
-      "MSG",  "QZ",     "TimeUS,Message"}
+    { LOG_TYP1_MSG,
+      sizeof(log_TYP1),
+      "TYP1",
+      "QbBhHiIfdnNZ",
+      "TimeUS,b,B,h,H,i,I,f,d,n,N,Z",
+      "s-----------",
+      "F-----------"
+    },
+    { LOG_TYP2_MSG,
+      sizeof(log_TYP2),
+      "TYP2",
+      "QcCeELMqQ",
+      "TimeUS,c,C,e,E,L,M,q,Q",
+      "s--------",
+      "F--------"
+    },
+    { LOG_MESSAGE_MSG,
+      sizeof(log_Message),
+      "MSG",
+      "QZ",
+      "TimeUS,Message",
+      "s-",
+      "F-"}
 };
 
 // these are identical to the entries in the above log-structure.  Not
 // shared to maintain the visual similarity between the above
 // structure and that in LogStructure.h
-#define TYP1_FMT "QbBhHiIfdnNZ"
+#define TYP1_FMT "QabBhHiIfdnNZ"
 #define TYP1_LBL "TimeUS,b,B,h,H,i,I,f,d,n,N,Z"
 #define TYP2_FMT "QcCeELMqQ"
 #define TYP2_LBL "TimeUS,c,C,e,E,L,M,q,Q"
@@ -72,7 +91,7 @@ public:
 private:
 
     AP_Int32 log_bitmask;
-    DataFlash_Class dataflash = DataFlash_Class::create("DF AllTypes 0.1", log_bitmask);
+    DataFlash_Class dataflash{"DF AllTypes 0.2", log_bitmask};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
@@ -103,6 +122,7 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages()
     struct log_TYP1 typ1 = {
         LOG_PACKET_HEADER_INIT(LOG_TYP1_MSG),
         time_us : AP_HAL::micros64(),
+        a : { -32768, 32767, 1, -1, 0, 17 }, // int16[32]
         b : -17, // int8_t
         B : 42,  // uint8_t
         h : -12372,  // int16_t

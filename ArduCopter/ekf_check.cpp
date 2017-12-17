@@ -98,7 +98,7 @@ bool Copter::ekf_check_position_problem()
     }
 
     // We don't know where we are.  Is this a problem?
-    if (copter.mode_requires_GPS(copter.control_mode)) {
+    if (copter.flightmode->requires_GPS()) {
         // Oh, yes, we have a problem
         return true;
     }
@@ -175,7 +175,7 @@ void Copter::failsafe_ekf_event()
 
     // if flight mode is already LAND ensure it's not the GPS controlled LAND
     if (control_mode == LAND) {
-        land_do_not_use_GPS();
+        mode_land.do_not_use_GPS();
     }
 }
 

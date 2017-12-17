@@ -323,7 +323,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
      * to change */
     uint8_t i;
 
-    if (last_update_usec == 0) {
+    if (last_update_usec == 0 || !output_ready) {
         for (i=0; i<SITL_NUM_CHANNELS; i++) {
             pwm_output[i] = 1000;
         }
@@ -410,13 +410,27 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     
     if (_sitl != nullptr) {
         if (_sitl->state.battery_voltage <= 0) {
-            // simulate simple battery setup
-            float throttle = motors_on?(input.servos[2]-1000) / 1000.0f:0;
-            // lose 0.7V at full throttle
-            voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
-            
-            // assume 50A at full throttle
-            _current = 50.0f * fabsf(throttle);
+            if (_vehicle == ArduSub) {
+                voltage = _sitl->batt_voltage;
+                for (i = 0; i < 6; i++) {
+                    float pwm = input.servos[i];
+                    //printf("i: %d, pwm: %.2f\n", i, pwm);
+                    float fraction = fabsf((pwm - 1500) / 500.0f);
+
+                    voltage -= fraction * 0.5f;
+
+                    float draw = fraction * 15;
+                    _current += draw;
+                }
+            } else {
+                // simulate simple battery setup
+                float throttle = motors_on?(input.servos[2]-1000) / 1000.0f:0;
+                // lose 0.7V at full throttle
+                voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
+
+                // assume 50A at full throttle
+                _current = 50.0f * fabsf(throttle);
+            }
         } else {
             // FDM provides voltage and current
             voltage = _sitl->state.battery_voltage;

@@ -38,7 +38,7 @@ public:
     void set_output_mode(enum output_mode mode) override;
 
     void timer_tick(void) override;
-    bool enable_sbus_out(uint16_t rate_hz) override;
+    bool enable_px4io_sbus_out(uint16_t rate_hz) override;
 
     // set default output update rate
     void set_default_rate(uint16_t rate_hz) override;

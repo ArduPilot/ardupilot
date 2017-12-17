@@ -11,9 +11,6 @@ void Copter::fence_check()
     uint8_t new_breaches; // the type of fence that has been breached
     uint8_t orig_breaches = fence.get_breaches();
 
-    // give fence library our current distance from home in meters
-    fence.set_home_distance(home_distance*0.01f);
-
     // check for a breach
     new_breaches = fence.check_fence(current_loc.alt/100.0f);
 
@@ -30,7 +27,7 @@ void Copter::fence_check()
 
             // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
             // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down
-            if (ap.land_complete || (mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio && ((fence.get_breaches() & AC_FENCE_TYPE_ALT_MAX)== 0))){
+            if (ap.land_complete || (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio && ((fence.get_breaches() & AC_FENCE_TYPE_ALT_MAX)== 0))){
                 init_disarm_motors();
             }else{
                 // if we are within 100m of the fence, RTL

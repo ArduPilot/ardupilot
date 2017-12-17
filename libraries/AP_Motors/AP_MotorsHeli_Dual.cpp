@@ -193,20 +193,6 @@ void AP_MotorsHeli_Dual::set_update_rate( uint16_t speed_hz )
     rc_set_freq(mask, _speed_hz);
 }
 
-// enable - starts allowing signals to be sent to motors
-void AP_MotorsHeli_Dual::enable()
-{
-    // enable output channels
-    rc_enable_ch(AP_MOTORS_MOT_1);
-    rc_enable_ch(AP_MOTORS_MOT_2);
-    rc_enable_ch(AP_MOTORS_MOT_3);
-    rc_enable_ch(AP_MOTORS_MOT_4);
-    rc_enable_ch(AP_MOTORS_MOT_5);
-    rc_enable_ch(AP_MOTORS_MOT_6);
-
-    rc_enable_ch(AP_MOTORS_HELI_DUAL_RSC);
-}
-
 // init_outputs
 bool AP_MotorsHeli_Dual::init_outputs()
 {
@@ -576,10 +562,10 @@ void AP_MotorsHeli_Dual::servo_test()
         _pitch_test -= (1.0f / (_loop_rate/2));
         _oscillate_angle += 8 * M_PI / _loop_rate;
     } else if (_servo_test_cycle_time >= 5.0f && _servo_test_cycle_time < 6.0f){                              // Raise swash to top
-        _collective_test += (1.0f / _loop_rate);
+        _collective_test = 1.0f;
         _oscillate_angle += 2 * M_PI / _loop_rate;
     } else if (_servo_test_cycle_time >= 11.0f && _servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
-        _collective_test -= (1.0f / _loop_rate);
+        _collective_test = 0.0f;
         _oscillate_angle += 2 * M_PI / _loop_rate;
     } else {                                                                                                  // reset cycle
         _servo_test_cycle_time = 0.0f;
@@ -595,7 +581,7 @@ void AP_MotorsHeli_Dual::servo_test()
 
     // over-ride servo commands to move servos through defined ranges
 
-    _throttle_in = _collective_test;
+    _throttle_filter.reset(_collective_test);
     _roll_in = _roll_test;
     _pitch_in = _pitch_test;
 }

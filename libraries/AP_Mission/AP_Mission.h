@@ -184,6 +184,14 @@ public:
         uint8_t relative_angle; // 0 = absolute angle, 1 = relative angle
     };
 
+    // winch command structure
+    struct PACKED Winch_Command {
+        uint8_t num;            // winch number
+        uint8_t action;         // action (0 = relax, 1 = length control, 2 = rate control)
+        float release_length;   // cable distance to unwind in meters, negative numbers to wind in cable
+        float release_rate;     // release rate in meters/second
+    };
+
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -245,6 +253,9 @@ public:
         // navigation delay
         Set_Yaw_Speed set_yaw_speed;
 
+        // do-winch
+        Winch_Command winch;
+
         // location
         Location location;      // Waypoint location
 
@@ -259,31 +270,50 @@ public:
         uint16_t id;                // mavlink command id
         uint16_t p1;                // general purpose parameter 1
         Content content;
+
+        // return a human-readable interpretation of the ID stored in this command
+        const char *type() const;
     };
+
 
     // main program function pointers
     FUNCTOR_TYPEDEF(mission_cmd_fn_t, bool, const Mission_Command&);
     FUNCTOR_TYPEDEF(mission_complete_fn_t, void);
 
+    // constructor
+    AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
+        _ahrs(ahrs),
+        _cmd_start_fn(cmd_start_fn),
+        _cmd_verify_fn(cmd_verify_fn),
+        _mission_complete_fn(mission_complete_fn),
+        _prev_nav_cmd_id(AP_MISSION_CMD_ID_NONE),
+        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
+        _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE),
+        _last_change_time_ms(0)
+    {
+        // load parameter defaults
+        AP_Param::setup_object_defaults(this, var_info);
+
+        // clear commands
+        _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+        _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+
+        // initialise other internal variables
+        _flags.state = MISSION_STOPPED;
+        _flags.nav_cmd_loaded = false;
+        _flags.do_cmd_loaded = false;
+    }
+
+    /* Do not allow copies */
+    AP_Mission(const AP_Mission &other) = delete;
+    AP_Mission &operator=(const AP_Mission&) = delete;    
+    
     // mission state enumeration
     enum mission_state {
         MISSION_STOPPED=0,
         MISSION_RUNNING=1,
         MISSION_COMPLETE=2
     };
-
-    static AP_Mission create(AP_AHRS &ahrs,
-                             mission_cmd_fn_t cmd_start_fn,
-                             mission_cmd_fn_t cmd_verify_fn,
-                             mission_complete_fn_t mission_complete_fn) {
-        return AP_Mission(ahrs, cmd_start_fn, cmd_verify_fn, mission_complete_fn);
-    }
-
-    constexpr AP_Mission(AP_Mission &&other) = default;
-
-    /* Do not allow copies */
-    AP_Mission(const AP_Mission &other) = delete;
-    AP_Mission &operator=(const AP_Mission&) = delete;
 
     ///
     /// public mission methods
@@ -442,30 +472,6 @@ private:
         uint8_t do_cmd_loaded   : 1; // true if a "do"/"conditional" command has been loaded into _do_cmd
         uint8_t do_cmd_all_done : 1; // true if all "do"/"conditional" commands have been completed (stops unnecessary searching through eeprom for do commands)
     } _flags;
-
-    AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
-        _ahrs(ahrs),
-        _cmd_start_fn(cmd_start_fn),
-        _cmd_verify_fn(cmd_verify_fn),
-        _mission_complete_fn(mission_complete_fn),
-        _prev_nav_cmd_id(AP_MISSION_CMD_ID_NONE),
-        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
-        _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE),
-        _last_change_time_ms(0)
-    {
-        // load parameter defaults
-        AP_Param::setup_object_defaults(this, var_info);
-
-        // clear commands
-        _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
-        _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
-
-        // initialise other internal variables
-        _flags.state = MISSION_STOPPED;
-        _flags.nav_cmd_loaded = false;
-        _flags.do_cmd_loaded = false;
-    }
-
 
     ///
     /// private methods

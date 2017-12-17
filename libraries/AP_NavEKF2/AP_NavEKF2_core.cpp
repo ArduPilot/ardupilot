@@ -334,8 +334,22 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
 {
     // If we are a plane and don't have GPS lock then don't initialise
     if (assume_zero_sideslip() && _ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "EKF2 init failure: No GPS lock");
         statesInitialised = false;
         return false;
+    }
+
+    if (statesInitialised) {
+        // we are initialised, but we don't return true until the IMU
+        // buffer has been filled. This prevents a timing
+        // vulnerability with a pause in IMU data during filter startup
+        readIMUData();
+        readMagData();
+        readGpsData();
+        readBaroData();
+        return storedIMU.is_filled();
     }
 
     // set re-used variables to zero
@@ -407,7 +421,8 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     // set to true now that states have be initialised
     statesInitialised = true;
 
-    return true;
+    // we initially return false to wait for the IMU buffer to fill
+    return false;
 }
 
 // initialise the covariance matrix

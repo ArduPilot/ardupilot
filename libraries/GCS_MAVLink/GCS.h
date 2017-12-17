@@ -161,8 +161,7 @@ public:
     void send_rangefinder_downward(const RangeFinder &rangefinder) const;
     bool send_proximity(const AP_Proximity &proximity) const;
     void send_ahrs2(AP_AHRS &ahrs);
-    bool send_gps_raw(AP_GPS &gps);
-    void send_system_time(AP_GPS &gps);
+    void send_system_time();
     void send_radio_in(uint8_t receiver_rssi);
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
     void send_scaled_pressure(AP_Baro &barometer);
@@ -231,7 +230,6 @@ protected:
     virtual Compass *get_compass() const = 0;
     virtual class AP_Camera *get_camera() const = 0;
     virtual AP_ServoRelayEvents *get_servorelayevents() const = 0;
-    virtual AP_GPS *get_gps() const = 0;
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
     virtual bool set_mode(uint8_t mode) = 0;
     virtual const AP_FWVersion &get_fwver() const = 0;
@@ -279,7 +277,7 @@ protected:
     void handle_common_message(mavlink_message_t *msg);
     void handle_set_gps_global_origin(const mavlink_message_t *msg);
     void handle_setup_signing(const mavlink_message_t *msg);
-    uint8_t handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
+    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 

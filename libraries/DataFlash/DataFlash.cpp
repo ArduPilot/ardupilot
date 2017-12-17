@@ -74,17 +74,15 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
     _num_types = num_types;
     _structures = structures;
 
-#if defined(HAL_BOARD_LOG_DIRECTORY)
+#if HAL_OS_POSIX_IO && defined(HAL_BOARD_LOG_DIRECTORY)
     if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
         DFMessageWriter_DFLogStart *message_writer =
             new DFMessageWriter_DFLogStart(_firmware_string);
         if (message_writer != nullptr)  {
-#if HAL_OS_POSIX_IO
             backends[_next_backend] = new DataFlash_File(*this,
                                                          message_writer,
                                                          HAL_BOARD_LOG_DIRECTORY);
-#endif
         }
         if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open DataFlash_File");
@@ -146,10 +144,33 @@ static uint8_t count_commas(const char *string)
     return ret;
 }
 
+/// return a unit name given its ID
+const char* DataFlash_Class::unit_name(const uint8_t unit_id)
+{
+    for(uint8_t i=0; i<unit_id; i++) {
+        if (_units[i].ID == unit_id) {
+            return _units[i].unit;
+        }
+    }
+    return NULL;
+}
+
+/// return a multiplier value given its ID
+double DataFlash_Class::multiplier_name(const uint8_t multiplier_id)
+{
+    for(uint8_t i=0; i<multiplier_id; i++) {
+        if (_multipliers[i].ID == multiplier_id) {
+            return _multipliers[i].multiplier;
+        }
+    }
+    // Should we abort here?
+    return 1.0f;
+}
+
 /// pretty-print field information from a log structure
 void DataFlash_Class::dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum)
 {
-    ::fprintf(stderr, "  %s\n", label);
+    ::fprintf(stderr, "  %s (%s)*(%f)\n", label, unit_name(logstructure->units[fieldnum]), multiplier_name(logstructure->multipliers[fieldnum]));
 }
 
 /// pretty-print log structures
@@ -223,6 +244,60 @@ void DataFlash_Class::validate_structures(const struct LogStructure *logstructur
         if (msg_len != logstructure->msg_len) {
             Debug("Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
             passed = false;
+        }
+
+        // ensure we have units for each field:
+        if (strlen(logstructure->units) != fieldcount) {
+            Debug("fieldcount=%u does not match unitcount=%lu",
+                  fieldcount, strlen(logstructure->units));
+            passed = false;
+        }
+
+        // ensure we have multipliers for each field
+        if (strlen(logstructure->multipliers) != fieldcount) {
+            Debug("fieldcount=%u does not match multipliercount=%lu",
+                  fieldcount, strlen(logstructure->multipliers));
+            passed = false;
+        }
+
+        // ensure the FMTU messages reference valid units
+        for (uint8_t j=0; j<strlen(logstructure->units); j++) {
+            char logunit = logstructure->units[j];
+            uint8_t k;
+            for (k=0; k<_num_units; k++) {
+                if (logunit == _units[k].ID) {
+                    // found this one
+                    break;
+                }
+            }
+            if (k == _num_units) {
+                Debug("invalid unit=%c", logunit);
+                passed = false;
+            }
+        }
+
+        // ensure the FMTU messages reference valid units
+        for (uint8_t j=0; j<strlen(logstructure->multipliers); j++) {
+            char logmultiplier = logstructure->multipliers[j];
+            uint8_t k;
+            for (k=0; k<_num_multipliers; k++) {
+                if (logmultiplier == '-') {
+                    // no sensible multiplier
+                    break;
+                }
+                if (logmultiplier == '?') {
+                    // currently unknown multiplier....
+                    break;
+                }
+                if (logmultiplier == _multipliers[k].ID) {
+                    // found this one
+                    break;
+                }
+            }
+            if (k == _num_multipliers) {
+                Debug("invalid multiplier=%c", logmultiplier);
+                passed = false;
+            }
         }
     }
     if (!passed) {
@@ -325,6 +400,15 @@ bool DataFlash_Class::should_log(const uint32_t mask) const
     return true;
 }
 
+const struct UnitStructure *DataFlash_Class::unit(uint16_t num) const
+{
+    return &_units[num];
+}
+
+const struct MultiplierStructure *DataFlash_Class::multiplier(uint16_t num) const
+{
+    return &log_Multipliers[num];
+}
 
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \
@@ -549,8 +633,24 @@ void DataFlash_Class::internal_error() const {
 void DataFlash_Class::Log_Write(const char *name, const char *labels, const char *fmt, ...)
 {
     va_list arg_list;
-    
-    struct log_write_fmt *f = msg_fmt_for_name(name, labels, fmt);
+
+    va_start(arg_list, fmt);
+    Log_WriteV(name, labels, nullptr, nullptr, fmt, arg_list);
+    va_end(arg_list);
+}
+
+void DataFlash_Class::Log_Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    Log_WriteV(name, labels, units, mults, fmt, arg_list);
+    va_end(arg_list);
+}
+
+void DataFlash_Class::Log_WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list)
+{
+    struct log_write_fmt *f = msg_fmt_for_name(name, labels, units, mults, fmt);
     if (f == nullptr) {
         // unable to map name to a messagetype; could be out of
         // msgtypes, could be out of slots, ...
@@ -565,14 +665,15 @@ void DataFlash_Class::Log_Write(const char *name, const char *labels, const char
             }
             f->sent_mask |= (1U<<i);
         }
-        va_start(arg_list, fmt);
-        backends[i]->Log_Write(f->msg_type, arg_list);
-        va_end(arg_list);
+        va_list arg_copy;
+        va_copy(arg_copy, arg_list);
+        backends[i]->Log_Write(f->msg_type, arg_copy);
+        va_end(arg_copy);
     }
 }
 
 
-DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *name, const char *labels, const char *fmt)
+DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt)
 {
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
@@ -596,6 +697,8 @@ DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *na
     f->name = name;
     f->fmt = fmt;
     f->labels = labels;
+    f->units = units;
+    f->mults = mults;
 
     int16_t tmp = Log_Write_calc_msg_len(fmt);
     if (tmp == -1) {
@@ -663,6 +766,24 @@ bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct
     strncpy((char*)logstruct.name, f->name, sizeof(logstruct.name)); /* cast away the "const" (*gulp*) */
     strncpy((char*)logstruct.format, f->fmt, sizeof(logstruct.format));
     strncpy((char*)logstruct.labels, f->labels, sizeof(logstruct.labels));
+    if (f->units != nullptr) {
+        strncpy((char*)logstruct.units, f->units, sizeof(logstruct.units));
+    } else {
+        memset((char*)logstruct.units, '\0', sizeof(logstruct.units));
+        memset((char*)logstruct.units, '?', strlen(logstruct.format));
+    }
+    if (f->mults != nullptr) {
+        strncpy((char*)logstruct.multipliers, f->mults, sizeof(logstruct.multipliers));
+    } else {
+        memset((char*)logstruct.multipliers, '\0', sizeof(logstruct.multipliers));
+        memset((char*)logstruct.multipliers, '?', strlen(logstruct.format));
+        // special magic to set units/mults for TimeUS, by far and
+        // away the most common first field
+        if (!strncmp(logstruct.labels, "TimeUS,", MIN(strlen(logstruct.labels), strlen("TimeUS,")))) {
+            ((char*)(logstruct.units))[0] = 's';
+            ((char*)(logstruct.multipliers))[0] = 'F';
+        }
+    }
     logstruct.msg_len = f->msg_len;
     return true;
 }
@@ -676,6 +797,7 @@ int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
     uint8_t len =  LOG_PACKET_HEADER_LEN;
     for (uint8_t i=0; i<strlen(fmt); i++) {
         switch(fmt[i]) {
+        case 'a' : len += sizeof(int16_t[32]); break;
         case 'b' : len += sizeof(int8_t); break;
         case 'c' : len += sizeof(int16_t); break;
         case 'd' : len += sizeof(double); break;
@@ -704,3 +826,64 @@ int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
 /* End of Log_Write support */
 
 #undef FOR_EACH_BACKEND
+
+// Write information about a series of IMU readings to log:
+bool DataFlash_Class::Log_Write_ISBH(const uint16_t seqno,
+                                     const AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
+                                     const uint8_t sensor_instance,
+                                     const uint16_t mult,
+                                     const uint16_t sample_count,
+                                     const uint64_t sample_us,
+                                     const float sample_rate_hz)
+{
+    if (_next_backend == 0) {
+        return false;
+    }
+    struct log_ISBH pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ISBH_MSG),
+        time_us        : AP_HAL::micros64(),
+        seqno          : seqno,
+        sensor_type    : (uint8_t)sensor_type,
+        instance       : sensor_instance,
+        multiplier     : mult,
+        sample_count   : sample_count,
+        sample_us      : sample_us,
+        sample_rate_hz : sample_rate_hz,
+    };
+
+    // only the first backend need succeed for us to be successful
+    for (uint8_t i=1; i<_next_backend; i++) {
+        backends[i]->WriteBlock(&pkt, sizeof(pkt));
+    }
+
+    return backends[0]->WriteBlock(&pkt, sizeof(pkt));
+}
+
+
+// Write a series of IMU readings to log:
+bool DataFlash_Class::Log_Write_ISBD(const uint16_t isb_seqno,
+                                     const uint16_t seqno,
+                                     const int16_t x[32],
+                                     const int16_t y[32],
+                                     const int16_t z[32])
+{
+    if (_next_backend == 0) {
+        return false;
+    }
+    struct log_ISBD pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ISBD_MSG),
+        time_us    : AP_HAL::micros64(),
+        isb_seqno  : isb_seqno,
+        seqno      : seqno
+    };
+    memcpy(pkt.x, x, sizeof(pkt.x));
+    memcpy(pkt.y, y, sizeof(pkt.y));
+    memcpy(pkt.z, z, sizeof(pkt.z));
+
+    // only the first backend need succeed for us to be successful
+    for (uint8_t i=1; i<_next_backend; i++) {
+        backends[i]->WriteBlock(&pkt, sizeof(pkt));
+    }
+
+    return backends[0]->WriteBlock(&pkt, sizeof(pkt));
+}

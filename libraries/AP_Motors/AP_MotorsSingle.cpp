@@ -78,18 +78,6 @@ void AP_MotorsSingle::set_update_rate( uint16_t speed_hz )
     rc_set_freq(mask, _speed_hz);
 }
 
-// enable - starts allowing signals to be sent to motors
-void AP_MotorsSingle::enable()
-{
-    // enable output channels
-    rc_enable_ch(AP_MOTORS_MOT_1);
-    rc_enable_ch(AP_MOTORS_MOT_2);
-    rc_enable_ch(AP_MOTORS_MOT_3);
-    rc_enable_ch(AP_MOTORS_MOT_4);
-    rc_enable_ch(AP_MOTORS_MOT_5);
-    rc_enable_ch(AP_MOTORS_MOT_6);
-}
-
 void AP_MotorsSingle::output_to_motors()
 {
     if (!_flags.initialised_ok) {

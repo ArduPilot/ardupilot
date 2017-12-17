@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
+#include <cinttypes>
+
+#ifndef PRIu64
+#define PRIu64 "llu"
+#endif
 
 // flogged from AP_Hal_Linux/system.cpp; we don't want to use stopped clock here
 uint64_t now() {
@@ -22,8 +27,8 @@ DataFlashFileReader::~DataFlashFileReader()
 {
     const uint64_t micros = now();
     const uint64_t delta = micros - start_micros;
-    ::printf("Replay counts: %ld bytes  %u entries\n", bytes_read, message_count);
-    ::printf("Replay rates: %ld bytes/second  %ld messages/second\n", bytes_read*1000000/delta, message_count*1000000/delta);
+    ::printf("Replay counts: %" PRIu64 " bytes  %u entries\n", bytes_read, message_count);
+    ::printf("Replay rates: %" PRIu64 " bytes/second  %" PRIu64 " messages/second\n", bytes_read*1000000/delta, message_count*1000000/delta);
 }
 
 bool DataFlashFileReader::open_log(const char *logfile)

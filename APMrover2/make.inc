@@ -49,3 +49,4 @@ LIBRARIES += AR_AttitudeControl
 LIBRARIES += AC_PID
 LIBRARIES += AP_Proximity
 LIBRARIES += AC_Fence
+LIBRARIES += AP_SmartRTL

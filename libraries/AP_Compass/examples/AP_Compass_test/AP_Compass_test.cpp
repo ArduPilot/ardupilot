@@ -9,8 +9,8 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static AP_BoardConfig board_config = AP_BoardConfig::create();
-static Compass compass = Compass::create();
+static AP_BoardConfig board_config;
+static Compass compass;
 
 uint32_t timer;
 

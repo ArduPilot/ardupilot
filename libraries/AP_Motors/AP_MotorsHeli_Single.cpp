@@ -157,18 +157,6 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
     rc_set_freq(mask, _speed_hz);
 }
 
-// enable - starts allowing signals to be sent to motors and servos
-void AP_MotorsHeli_Single::enable()
-{
-    // enable output channels
-    rc_enable_ch(AP_MOTORS_MOT_1);    // swash servo 1
-    rc_enable_ch(AP_MOTORS_MOT_2);    // swash servo 2
-    rc_enable_ch(AP_MOTORS_MOT_3);    // swash servo 3
-    rc_enable_ch(AP_MOTORS_MOT_4);    // yaw
-    rc_enable_ch(AP_MOTORS_HELI_SINGLE_AUX);                                 // output for gyro gain or direct drive variable pitch tail motor
-    rc_enable_ch(AP_MOTORS_HELI_SINGLE_RSC);                                 // output for main rotor esc
-}
-
 // init_outputs - initialise Servo/PWM ranges and endpoints
 bool AP_MotorsHeli_Single::init_outputs()
 {
@@ -531,11 +519,11 @@ void AP_MotorsHeli_Single::servo_test()
         _oscillate_angle += 8 * M_PI / _loop_rate;
         _yaw_test = 0.5f * sinf(_oscillate_angle);
     } else if (_servo_test_cycle_time >= 5.0f && _servo_test_cycle_time < 6.0f){                              // Raise swash to top
-        _collective_test += (1.0f / _loop_rate);
+        _collective_test = 1.0f;
         _oscillate_angle += 2 * M_PI / _loop_rate;
         _yaw_test = sinf(_oscillate_angle);
     } else if (_servo_test_cycle_time >= 11.0f && _servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
-        _collective_test -= (1.0f / _loop_rate);
+        _collective_test = 0.0f;
         _oscillate_angle += 2 * M_PI / _loop_rate;
         _yaw_test = sinf(_oscillate_angle);
     } else {                                                                                                  // reset cycle
@@ -552,7 +540,7 @@ void AP_MotorsHeli_Single::servo_test()
     }
 
     // over-ride servo commands to move servos through defined ranges
-    _throttle_in = _collective_test;
+    _throttle_filter.reset(_collective_test);
     _roll_in = _roll_test;
     _pitch_in = _pitch_test;
     _yaw_in = _yaw_test;

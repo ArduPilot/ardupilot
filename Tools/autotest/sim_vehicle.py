@@ -10,7 +10,6 @@ from __future__ import print_function
 
 import atexit
 import errno
-import getpass
 import optparse
 import os
 import os.path
@@ -23,12 +22,15 @@ import textwrap
 import time
 import shlex
 
+from pysim import vehicleinfo
+
 # List of open terminal windows for macosx
 windowID = []
 
 
 class CompatError(Exception):
-    """A custom exception class to hold state if we encounter the parse error we are looking for"""
+    """A custom exception class to hold state if we encounter the parse
+    error we are looking for"""
     def __init__(self, error, opts, rargs):
         Exception.__init__(self, error)
         self.opts = opts
@@ -36,11 +38,14 @@ class CompatError(Exception):
 
 
 class CompatOptionParser(optparse.OptionParser):
-    """An option parser which emulates the behaviour of the old sim_vehicle.sh; if passed -C, the first argument not understood starts a list of arguments that are passed straight to mavproxy"""
+    """An option parser which emulates the behaviour of the old
+    sim_vehicle.sh; if passed -C, the first argument not understood starts
+    a list of arguments that are passed straight to mavproxy
+    """
 
     class CustomFormatter(optparse.IndentedHelpFormatter):
         def __init__(self, *args, **kwargs):
-            optparse.IndentedHelpFormatter.__init__(self,*args, **kwargs)
+            optparse.IndentedHelpFormatter.__init__(self, *args, **kwargs)
 
         # taken and modified from from optparse.py's format_option
         def format_option_preserve_nl(self, option):
@@ -63,19 +68,22 @@ class CompatOptionParser(optparse.OptionParser):
             opt_width = self.help_position - self.current_indent - 2
             if len(opts) > opt_width:
                 opts = "%*s%s\n" % (self.current_indent, "", opts)
-                indent_first = self.help_position
             else:                       # start help on same line as opts
                 opts = "%*s%-*s  " % (self.current_indent, "", opt_width, opts)
-                indent_first = 0
             result.append(opts)
             if option.help:
                 help_text = self.expand_default(option)
-                tw = textwrap.TextWrapper(replace_whitespace=False, initial_indent="", subsequent_indent="    ", width=self.help_width)
+                tw = textwrap.TextWrapper(replace_whitespace=False,
+                                          initial_indent="",
+                                          subsequent_indent="    ",
+                                          width=self.help_width)
 
                 for line in help_text.split("\n"):
                     help_lines = tw.wrap(line)
                     for line in help_lines:
-                        result.extend(["%*s%s\n" % (self.help_position, "", line)])
+                        result.extend(["%*s%s\n" % (self.help_position,
+                                                    "",
+                                                    line)])
             elif opts[-1] != "\n":
                 result.append("\n")
             return "".join(result)
@@ -87,17 +95,26 @@ class CompatOptionParser(optparse.OptionParser):
 
     def __init__(self, *args, **kwargs):
         formatter = CompatOptionParser.CustomFormatter()
-        optparse.OptionParser.__init__(self, *args, formatter=formatter, **kwargs)
+        optparse.OptionParser.__init__(self,
+                                       *args,
+                                       formatter=formatter,
+                                       **kwargs)
 
     def error(self, error):
-        """Override default error handler called by optparse.OptionParser.parse_args when a parse error occurs; raise a detailed exception which can be caught"""
+        '''Override default error handler called by
+        optparse.OptionParser.parse_args when a parse error occurs;
+        raise a detailed exception which can be caught
+        '''
         if error.find("no such option") != -1:
             raise CompatError(error, self.values, self.rargs)
 
         optparse.OptionParser.error(self, error)
 
     def parse_args(self, args=None, values=None):
-        """Wrap parse_args so we can catch the exception raised upon discovering the known parameter parsing error"""
+        '''Wrap parse_args so we can catch the exception raised upon
+        discovering the known parameter parsing error
+        '''
+
         try:
             opts, args = optparse.OptionParser.parse_args(self)
         except CompatError as e:
@@ -122,7 +139,9 @@ def cygwin_pidof(proc_name):
     """ Thanks to kata198 for this:
     https://github.com/kata198/cygwin-ps-misc/blob/master/pidof
     """
-    pipe = subprocess.Popen("ps -ea | grep " + proc_name, shell=True, stdout=subprocess.PIPE)
+    pipe = subprocess.Popen("ps -ea | grep " + proc_name,
+                            shell=True,
+                            stdout=subprocess.PIPE)
     output_lines = pipe.stdout.read().replace("\r", "").split("\n")
     ret = pipe.wait()
     pids = []
@@ -157,19 +176,23 @@ def kill_tasks_cygwin(victims):
     """Shell out to ps -ea to find processes to kill"""
     for victim in list(victims):
         pids = cygwin_pidof(victim)
-#        progress("pids for (%s): %s" % (victim,",".join([ str(p) for p in pids])))
+#        progress("pids for (%s): %s" %
+#                 (victim,",".join([ str(p) for p in pids])))
         for apid in pids:
             os.kill(apid, signal.SIGKILL)
 
 
 def kill_tasks_macos():
     for window in windowID:
-        cmd = "osascript -e \'tell application \"Terminal\" to close (window(get index of window id %s))\'" % window
+        cmd = ("osascript -e \'tell application \"Terminal\" to close "
+               "(window(get index of window id %s))\'" % window)
         os.system(cmd)
 
 
 def kill_tasks_psutil(victims):
-    """Use the psutil module to kill tasks by name.  Sadly, this module is not available on Windows, but when it is we should be able to *just* use this routine"""
+    """Use the psutil module to kill tasks by name.  Sadly, this module is
+    not available on Windows, but when it is we should be able to *just*
+    use this routine"""
     import psutil
     for proc in psutil.process_iter():
         if proc.status == psutil.STATUS_ZOMBIE:
@@ -191,7 +214,7 @@ class BobException(Exception):
 
 
 def kill_tasks():
-    """Clean up stray processes by name.  This is a somewhat shotgun approach"""
+    """Clean up stray processes by name.  This is a shotgun approach"""
     progress("Killing tasks")
     try:
         victim_names = {
@@ -233,11 +256,12 @@ def check_jsbsim_version():
     jsbsim_cmd = ["JSBSim", "--version"]
     progress_cmd("Get JSBSim version", jsbsim_cmd)
     try:
-        jsbsim_version = subprocess.Popen(jsbsim_cmd, stdout=subprocess.PIPE).communicate()[0]
+        jsbsim = subprocess.Popen(jsbsim_cmd, stdout=subprocess.PIPE)
+        jsbsim_version = jsbsim.communicate()[0]
     except OSError:
-        jsbsim_version = ''     # this value will trigger the ".index"
-                                # check below and produce a reasonable
-                                # error message
+        # this value will trigger the ".index" check below and produce
+        # a reasonable error message:
+        jsbsim_version = ''
     try:
         jsbsim_version.index(b"ArduPilot")
     except ValueError:
@@ -272,10 +296,12 @@ def find_root_dir():
 
 def wait_unlimited():
     """Wait until signal received"""
-    time.sleep(987654321987654321)
+    while True:
+        time.sleep(600)
 
-from pysim import vehicleinfo
+
 vinfo = vehicleinfo.VehicleInfo()
+
 
 def do_build_waf(opts, frame_options):
     """Build sitl using waf"""
@@ -290,7 +316,7 @@ def do_build_waf(opts, frame_options):
     cmd_configure = [waf_light, "configure", "--board", "sitl"]
     if opts.debug:
         cmd_configure.append("--debug")
-    pieces = [ shlex.split(x) for x in opts.waf_configure_args ]
+    pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
 
@@ -302,7 +328,7 @@ def do_build_waf(opts, frame_options):
     cmd_build = [waf_light, "build", "--target", frame_options["waf_target"]]
     if opts.jobs is not None:
         cmd_build += ['-j', str(opts.jobs)]
-    pieces = [ shlex.split(x) for x in opts.waf_build_args ]
+    pieces = [shlex.split(x) for x in opts.waf_build_args]
     for piece in pieces:
         cmd_build.extend(piece)
 
@@ -411,7 +437,7 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     ret = os.waitpid(p.pid, 0)
     _, sts = ret
     if check and sts != 0:
-        progress("(%s) exited with code %d" % (what,sts,))
+        progress("(%s) exited with code %d" % (what, sts,))
         sys.exit(1)
     return ret
 
@@ -429,9 +455,23 @@ def run_in_terminal_window(autotest, name, cmd):
         out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
         import re
         p = re.compile('tab 1 of window id (.*)')
-        windowID.append(p.findall(out)[0])
+                        
+        tstart = time.time()
+        while time.time() - tstart < 5:
+            tabs = p.findall(out)
+            
+            if len(tabs) > 0:
+                break
+
+            time.sleep(0.1)
+
+        if len(tabs) > 0:
+            windowID.append(tabs[0])
+        else:
+            progress("Cannot find %s process terminal" % name )
     else:
         p = subprocess.Popen(runme)
+
 
 tracker_uarta = None  # blemish
 
@@ -440,17 +480,25 @@ def start_antenna_tracker(autotest, opts):
     """Compile and run the AntennaTracker, add tracker to mavproxy"""
     global tracker_uarta
     progress("Preparing antenna tracker")
-    tracker_home = find_location_by_name(find_autotest_dir(), opts.tracker_location)
+    tracker_home = find_location_by_name(find_autotest_dir(),
+                                         opts.tracker_location)
     vehicledir = os.path.join(autotest, "../../" + "AntennaTracker")
-    tracker_default_frame = vinfo.options["AntennaTracker"]["default_frame"]
-    tracker_frame_options = vinfo.options["AntennaTracker"]["frames"][tracker_default_frame]
+    opts = vinfo.options["AntennaTracker"]
+    tracker_default_frame = opts["default_frame"]
+    tracker_frame_options = opts["frames"][tracker_default_frame]
     do_build(vehicledir, opts, tracker_frame_options)
     tracker_instance = 1
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
     tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
     exe = os.path.join(vehicledir, "AntennaTracker.elf")
-    run_in_terminal_window(autotest, "AntennaTracker", ["nice", exe, "-I" + str(tracker_instance), "--model=tracker", "--home=" + tracker_home])
+    run_in_terminal_window(autotest,
+                           "AntennaTracker",
+                           ["nice",
+                            exe,
+                            "-I" + str(tracker_instance),
+                            "--model=tracker",
+                            "--home=" + tracker_home])
     os.chdir(oldpwd)
 
 
@@ -493,14 +541,15 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     cmd.extend(["--model", stuff["model"]])
     cmd.extend(["--speedup", str(opts.speedup)])
     if opts.sitl_instance_args:
-        cmd.extend(opts.sitl_instance_args.split(" "))  # this could be a lot better..
+        # this could be a lot better:
+        cmd.extend(opts.sitl_instance_args.split(" "))
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
     if "default_params_filename" in stuff:
         paths = stuff["default_params_filename"]
-        if not isinstance(paths,list):
+        if not isinstance(paths, list):
             paths = [paths]
-        paths =  [ os.path.join(autotest, x) for x in paths ]
+        paths = [os.path.join(autotest, x) for x in paths]
         path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
         cmd.extend(["--defaults", path])
@@ -510,7 +559,8 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
 
 def start_mavproxy(opts, stuff):
     """Run mavproxy"""
-    # FIXME: would be nice to e.g. "mavproxy.mavproxy(....).run" rather than shelling out
+    # FIXME: would be nice to e.g. "mavproxy.mavproxy(....).run"
+    # rather than shelling out
 
     extra_cmd = ""
     cmd = []
@@ -528,10 +578,11 @@ def start_mavproxy(opts, stuff):
         if stuff["sitl-port"]:
             cmd.extend(["--sitl", simout_port])
 
-    # If running inside of a vagrant guest, then we probably want to forward our mavlink out to the containing host OS
-    ports = [p + 10 * cmd_opts.instance for p in [14550,14551]]
+    ports = [p + 10 * cmd_opts.instance for p in [14550, 14551]]
     for port in ports:
         if os.path.isfile("/ardupilot.vagrant"):
+            # We're running inside of a vagrant guest; forward our
+            # mavlink out to the containing host OS
             cmd.extend(["--out", "10.0.2.2:" + str(port)])
         else:
             cmd.extend(["--out", "127.0.0.1:" + str(port)])
@@ -540,7 +591,10 @@ def start_mavproxy(opts, stuff):
         cmd.extend(["--load-module", "tracker"])
         global tracker_uarta
         # tracker_uarta is set when we start the tracker...
-        extra_cmd += "module load map; tracker set port %s; tracker start; tracker arm;" % (tracker_uarta,)
+        extra_cmd += ("module load map;"
+                      "tracker set port %s; "
+                      "tracker start; "
+                      "tracker arm;" % (tracker_uarta,))
 
     if opts.mavlink_gimbal:
         cmd.extend(["--load-module", "gimbal"])
@@ -549,7 +603,8 @@ def start_mavproxy(opts, stuff):
         extra_cmd += " " + stuff["extra_mavlink_cmds"]
 
     if opts.mavproxy_args:
-        cmd.extend(opts.mavproxy_args.split(" "))  # this could be a lot better..
+        # this could be a lot better:
+        cmd.extend(opts.mavproxy_args.split(" "))
 
     # compatibility pass-through parameters (for those that don't want
     # to use -C :-)
@@ -568,7 +623,9 @@ def start_mavproxy(opts, stuff):
     local_mp_modules_dir = os.path.abspath(
         os.path.join(__file__, '..', '..', 'mavproxy_modules'))
     env = dict(os.environ)
-    env['PYTHONPATH'] = local_mp_modules_dir + os.pathsep + env.get('PYTHONPATH', '')
+    env['PYTHONPATH'] = (local_mp_modules_dir +
+                         os.pathsep +
+                         env.get('PYTHONPATH', ''))
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
     progress("MAVProxy exited")
@@ -576,72 +633,195 @@ def start_mavproxy(opts, stuff):
 
 vehicle_options_string = '|'.join(vinfo.options.keys())
 
+
 def generate_frame_help():
     ret = ""
     for vehicle in vinfo.options:
-        frame_options_string = '|'.join(vinfo.options[vehicle]["frames"].keys())
+        frame_options = vinfo.options[vehicle]["frames"].keys()
+        frame_options_string = '|'.join(frame_options)
         ret += "%s: %s\n" % (vehicle, frame_options_string)
     return ret
 
-# define and run parser
-parser = CompatOptionParser("sim_vehicle.py",
-        epilog="eeprom.bin in the starting directory contains the parameters for your " \
-               "simulated vehicle. Always start from the same directory. It is "\
-               "recommended that you start in the main vehicle directory for the vehicle" \
-               "you are simulating, for example, start in the ArduPlane directory to " \
-               "simulate ArduPlane")
 
-parser.add_option("-v", "--vehicle", type='choice', default=None, help="vehicle type (%s)" % vehicle_options_string, choices=list(vinfo.options.keys()))
+# define and run parser
+parser = CompatOptionParser(
+    "sim_vehicle.py",
+    epilog=""
+    "eeprom.bin in the starting directory contains the parameters for your"
+    "simulated vehicle. Always start from the same directory. It is "
+    "recommended that you start in the main vehicle directory for the vehicle"
+    "you are simulating, for example, start in the ArduPlane directory to "
+    "simulate ArduPlane")
+
+parser.add_option("-v", "--vehicle",
+                  type='choice',
+                  default=None,
+                  help="vehicle type (%s)" % vehicle_options_string,
+                  choices=list(vinfo.options.keys()))
 parser.add_option("-f", "--frame", type='string', default=None, help="""set vehicle frame type
 
 %s""" % (generate_frame_help()))
-parser.add_option("-C", "--sim_vehicle_sh_compatible", action='store_true', default=False, help="be compatible with the way sim_vehicle.sh works; make this the first option")
-parser.add_option("-H", "--hil", action='store_true', default=False, help="start HIL")
+parser.add_option("-C", "--sim_vehicle_sh_compatible",
+                  action='store_true',
+                  default=False,
+                  help="be compatible with the way sim_vehicle.sh works; "
+                  "make this the first option")
+parser.add_option("-H", "--hil",
+                  action='store_true',
+                  default=False,
+                  help="start HIL")
 
 group_build = optparse.OptionGroup(parser, "Build options")
-group_build.add_option("-N", "--no-rebuild", action='store_true', default=False, help="don't rebuild before starting ardupilot")
-group_build.add_option("-D", "--debug", action='store_true', default=False, help="build with debugging")
-group_build.add_option("-c", "--clean", action='store_true', default=False, help="do a make clean before building")
-group_build.add_option("-j", "--jobs", default=None, type='int', help="number of processors to use during build (default for waf : number of processor, for make : 1)")
-group_build.add_option("-b", "--build-target", default=None, type='string', help="override SITL build target")
-group_build.add_option("-s", "--build-system", default="waf", type='choice', choices=["make", "waf"], help="build system to use")
-group_build.add_option("", "--rebuild-on-failure", dest="rebuild_on_failure", action='store_true', default=False, help="if build fails, do not clean and rebuild")
-group_build.add_option("", "--waf-configure-arg", action="append", dest="waf_configure_args", type="string", default=[], help="extra arguments to pass to waf in its configure step")
-group_build.add_option("", "--waf-build-arg", action="append", dest="waf_build_args", type="string", default=[], help="extra arguments to pass to waf in its build step")
+group_build.add_option("-N", "--no-rebuild",
+                       action='store_true',
+                       default=False,
+                       help="don't rebuild before starting ardupilot")
+group_build.add_option("-D", "--debug",
+                       action='store_true',
+                       default=False,
+                       help="build with debugging")
+group_build.add_option("-c", "--clean",
+                       action='store_true',
+                       default=False,
+                       help="do a make clean before building")
+group_build.add_option("-j", "--jobs",
+                       default=None,
+                       type='int',
+                       help="number of processors to use during build "
+                       "(default for waf : number of processor, for make : 1)")
+group_build.add_option("-b", "--build-target",
+                       default=None,
+                       type='string',
+                       help="override SITL build target")
+group_build.add_option("-s", "--build-system",
+                       default="waf",
+                       type='choice',
+                       choices=["make", "waf"],
+                       help="build system to use")
+group_build.add_option("", "--rebuild-on-failure",
+                       dest="rebuild_on_failure",
+                       action='store_true',
+                       default=False,
+                       help="if build fails, do not clean and rebuild")
+group_build.add_option("", "--waf-configure-arg",
+                       action="append",
+                       dest="waf_configure_args",
+                       type="string",
+                       default=[],
+                       help="extra arguments to pass to waf in configure step")
+group_build.add_option("", "--waf-build-arg",
+                       action="append",
+                       dest="waf_build_args",
+                       type="string",
+                       default=[],
+                       help="extra arguments to pass to waf in its build step")
 parser.add_option_group(group_build)
 
 group_sim = optparse.OptionGroup(parser, "Simulation options")
-group_sim.add_option("-I", "--instance", default=0, type='int', help="instance of simulator")
-group_sim.add_option("-V", "--valgrind", action='store_true', default=False, help="enable valgrind for memory access checking (very slow!)")
-group_sim.add_option("", "--callgrind", action='store_true', default=False, help="enable valgrind for performance analysis (very very slow!)")
-group_sim.add_option("-T", "--tracker", action='store_true', default=False, help="start an antenna tracker instance")
-group_sim.add_option("-A", "--sitl-instance-args", type='string', default=None, help="pass arguments to SITL instance")
-# group_sim.add_option("-R", "--reverse-throttle", action='store_true', default=False, help="reverse throttle in plane")
-group_sim.add_option("-G", "--gdb", action='store_true', default=False, help="use gdb for debugging ardupilot")
-group_sim.add_option("-g", "--gdb-stopped", action='store_true', default=False, help="use gdb for debugging ardupilot (no auto-start)")
-group_sim.add_option("-d", "--delay-start", default=0, type='float', help="delays the start of mavproxy by the number of seconds")
-group_sim.add_option("-B", "--breakpoint", type='string', action="append", default=[], help="add a breakpoint at given location in debugger")
-group_sim.add_option("-M", "--mavlink-gimbal", action='store_true', default=False, help="enable MAVLink gimbal")
-group_sim.add_option("-L", "--location", type='string', default='CMAC', help="select start location from Tools/autotest/locations.txt")
-group_sim.add_option("-l", "--custom-location", type='string', default=None, help="set custom start location")
-group_sim.add_option("-S", "--speedup", default=1, type='int', help="set simulation speedup (1 for wall clock time)")
-group_sim.add_option("-t", "--tracker-location", default='CMAC_PILOTSBOX', type='string', help="set antenna tracker start location")
-group_sim.add_option("-w", "--wipe-eeprom", action='store_true', default=False, help="wipe EEPROM and reload parameters")
-group_sim.add_option("-m", "--mavproxy-args", default=None, type='string', help="additional arguments to pass to mavproxy.py")
-group_sim.add_option("", "--strace", action='store_true', default=False, help="strace the ArduPilot binary")
-group_sim.add_option("", "--model", type='string', default=None, help="Override simulation model to use")
-group_sim.add_option("", "--use-dir", type='string', default=None, help="Store SITL state and output in named directory")
-group_sim.add_option("", "--no-mavproxy", action='store_true', default=False, help="Don't launch MAVProxy")
+group_sim.add_option("-I", "--instance",
+                     default=0,
+                     type='int',
+                     help="instance of simulator")
+group_sim.add_option("-V", "--valgrind",
+                     action='store_true',
+                     default=False,
+                     help="enable valgrind for memory access checking (slow!)")
+group_sim.add_option("", "--callgrind",
+                     action='store_true',
+                     default=False,
+                     help="enable valgrind for performance analysis (slow!!)")
+group_sim.add_option("-T", "--tracker",
+                     action='store_true',
+                     default=False,
+                     help="start an antenna tracker instance")
+group_sim.add_option("-A", "--sitl-instance-args",
+                     type='string',
+                     default=None,
+                     help="pass arguments to SITL instance")
+group_sim.add_option("-G", "--gdb",
+                     action='store_true',
+                     default=False,
+                     help="use gdb for debugging ardupilot")
+group_sim.add_option("-g", "--gdb-stopped",
+                     action='store_true',
+                     default=False,
+                     help="use gdb for debugging ardupilot (no auto-start)")
+group_sim.add_option("-d", "--delay-start",
+                     default=0,
+                     type='float',
+                     help="delay start of mavproxy by this number of seconds")
+group_sim.add_option("-B", "--breakpoint",
+                     type='string',
+                     action="append",
+                     default=[],
+                     help="add a breakpoint at given location in debugger")
+group_sim.add_option("-M", "--mavlink-gimbal",
+                     action='store_true',
+                     default=False,
+                     help="enable MAVLink gimbal")
+group_sim.add_option("-L", "--location", type='string',
+                     default='CMAC',
+                     help="use start location from "
+                     "Tools/autotest/locations.txt")
+group_sim.add_option("-l", "--custom-location",
+                     type='string',
+                     default=None,
+                     help="set custom start location")
+group_sim.add_option("-S", "--speedup",
+                     default=1,
+                     type='int',
+                     help="set simulation speedup (1 for wall clock time)")
+group_sim.add_option("-t", "--tracker-location",
+                     default='CMAC_PILOTSBOX',
+                     type='string',
+                     help="set antenna tracker start location")
+group_sim.add_option("-w", "--wipe-eeprom",
+                     action='store_true',
+                     default=False, help="wipe EEPROM and reload parameters")
+group_sim.add_option("-m", "--mavproxy-args",
+                     default=None,
+                     type='string',
+                     help="additional arguments to pass to mavproxy.py")
+group_sim.add_option("", "--strace",
+                     action='store_true',
+                     default=False,
+                     help="strace the ArduPilot binary")
+group_sim.add_option("", "--model",
+                     type='string',
+                     default=None,
+                     help="Override simulation model to use")
+group_sim.add_option("", "--use-dir",
+                     type='string',
+                     default=None,
+                     help="Store SITL state and output in named directory")
+group_sim.add_option("", "--no-mavproxy",
+                     action='store_true',
+                     default=False,
+                     help="Don't launch MAVProxy")
 parser.add_option_group(group_sim)
 
 
 # special-cased parameters for mavproxy, because some people's fingers
 # have long memories, and they don't want to use -C :-)
-group = optparse.OptionGroup(parser, "Compatibility MAVProxy options (consider using --mavproxy-args instead)")
-group.add_option("", "--out", default=[], type='string', action="append", help="create an additional mavlink output")
-group.add_option("", "--map", default=False, action='store_true', help="load map module on startup")
-group.add_option("", "--console", default=False, action='store_true', help="load console module on startup")
-group.add_option("", "--aircraft", default=None, help="store state and logs in named directory")
+group = optparse.OptionGroup(parser,
+                             "Compatibility MAVProxy options "
+                             "(consider using --mavproxy-args instead)")
+group.add_option("", "--out",
+                 default=[],
+                 type='string',
+                 action="append",
+                 help="create an additional mavlink output")
+group.add_option("", "--map",
+                 default=False,
+                 action='store_true',
+                 help="load map module on startup")
+group.add_option("", "--console",
+                 default=False,
+                 action='store_true',
+                 help="load console module on startup")
+group.add_option("", "--aircraft",
+                 default=None,
+                 help="store state and logs in named directory")
 parser.add_option_group(group)
 
 cmd_opts, cmd_args = parser.parse_args()
@@ -721,7 +901,9 @@ if cmd_opts.frame is None:
 mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10 * cmd_opts.instance)
 simout_port = "127.0.0.1:" + str(5501 + 10 * cmd_opts.instance)
 
-frame_infos = vinfo.options_for_frame(cmd_opts.frame, cmd_opts.vehicle, cmd_opts)
+frame_infos = vinfo.options_for_frame(cmd_opts.frame,
+                                      cmd_opts.vehicle,
+                                      cmd_opts)
 
 if frame_infos["model"] == "jsbsim":
     check_jsbsim_version()
@@ -756,7 +938,12 @@ if cmd_opts.use_dir is not None:
 
 if cmd_opts.hil:
     # (unlikely)
-    run_in_terminal_window(find_autotest_dir(), "JSBSim", [os.path.join(find_autotest_dir(), "jsb_sim/runsim.py"), "--home", location, "--speedup=" + str(cmd_opts.speedup)])
+    run_in_terminal_window(find_autotest_dir(),
+                           "JSBSim",
+                           [os.path.join(find_autotest_dir(),
+                                         "jsb_sim/runsim.py"),
+                            "--home", location,
+                            "--speedup=" + str(cmd_opts.speedup)])
 else:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
         do_build(vehicle_dir, cmd_opts, frame_infos)
@@ -766,7 +953,9 @@ else:
             binary_basedir = "build/sitl-debug"
         else:
             binary_basedir = "build/sitl"
-        vehicle_binary = os.path.join(find_root_dir(), binary_basedir, frame_infos["waf_target"])
+        vehicle_binary = os.path.join(find_root_dir(),
+                                      binary_basedir,
+                                      frame_infos["waf_target"])
     else:
         vehicle_binary = os.path.join(vehicle_dir, cmd_opts.vehicle + ".elf")
 
@@ -774,7 +963,11 @@ else:
         print("Vehicle binary (%s) does not exist" % (vehicle_binary,))
         sys.exit(1)
 
-    start_vehicle(vehicle_binary, find_autotest_dir(), cmd_opts, frame_infos, location)
+    start_vehicle(vehicle_binary,
+                  find_autotest_dir(),
+                  cmd_opts,
+                  frame_infos,
+                  location)
 
 if cmd_opts.delay_start:
     progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))
@@ -782,7 +975,7 @@ if cmd_opts.delay_start:
 
 try:
     if cmd_opts.no_mavproxy:
-        time.sleep(3)  # Just wait to output the last command after run_in_terminal_window.sh
+        time.sleep(3)  # output our message after run_in_terminal_window.sh's
         progress("Waiting for SITL to exit")
         wait_unlimited()
     else:

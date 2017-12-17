@@ -31,6 +31,19 @@ enum gcs_failsafe {
                                  // while in AUTO mode
 };
 
+enum failsafe_action_short {
+    FS_ACTION_SHORT_BESTGUESS = 0,      // CIRCLE/no change(if already in AUTO|GUIDED|LOITER)
+    FS_ACTION_SHORT_CIRCLE = 1,
+    FS_ACTION_SHORT_FBWA = 2,
+    FS_ACTION_SHORT_DISABLED = 3,
+};
+
+enum failsafe_action_long {
+    FS_ACTION_LONG_CONTINUE = 0,
+    FS_ACTION_LONG_RTL = 1,
+    FS_ACTION_LONG_GLIDE = 2,
+    FS_ACTION_LONG_PARACHUTE = 3,
+};
 
 enum FlightMode {
     MANUAL        = 0,
@@ -134,7 +147,7 @@ enum log_messages {
 #define MASK_LOG_PM                     (1<<3)
 #define MASK_LOG_CTUN                   (1<<4)
 #define MASK_LOG_NTUN                   (1<<5)
-#define MASK_LOG_MODE                   (1<<6)
+//#define MASK_LOG_MODE                 (1<<6) // no longer used
 #define MASK_LOG_IMU                    (1<<7)
 #define MASK_LOG_CMD                    (1<<8)
 #define MASK_LOG_CURRENT                (1<<9)

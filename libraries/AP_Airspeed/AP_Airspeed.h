@@ -98,7 +98,7 @@ public:
         return _last_pressure;
     }
 
-    // return the current offset
+    // return the current calibration offset
     float get_offset(void) const {
         return _offset;
     }

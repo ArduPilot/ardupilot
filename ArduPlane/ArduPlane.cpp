@@ -1,7 +1,7 @@
 /*
    Lead developer: Andrew Tridgell
  
-   Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher, Paul Riseborough, Brandon Jones, Jon Challinger
+   Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher, Paul Riseborough, Brandon Jones, Jon Challinger, Tom Pittenger
    Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier, Yury MonZon
 
    Please contribute your ideas! See http://dev.ardupilot.org for details
@@ -80,6 +80,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(terrain_update,         10,    200),
     SCHED_TASK(update_is_flying_5Hz,    5,    100),
     SCHED_TASK(dataflash_periodic,     50,    400),
+    SCHED_TASK(ins_periodic,           50,     50),
     SCHED_TASK(avoidance_adsb_update,  10,    100),
     SCHED_TASK(button_update,           5,    100),
     SCHED_TASK(stats_update,            1,    100),
@@ -236,8 +237,6 @@ void Plane::update_compass(void)
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
             DataFlash.Log_Write_Compass(compass);
         }
-    } else {
-        ahrs.set_compass(nullptr);
     }
 }
 
@@ -348,9 +347,9 @@ void Plane::one_second_loop()
     }
 #endif
 
-    // update home position if soft armed and gps position has
+    // update home position if armed and gps position has
     // changed. Update every 5s at most
-    if (!hal.util->get_soft_armed() &&
+    if (!arming.is_armed() &&
         gps.last_message_time_ms() - last_home_update_ms > 5000 &&
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             last_home_update_ms = gps.last_message_time_ms();
@@ -404,6 +403,11 @@ void Plane::terrain_update(void)
 #endif
 }
 
+
+void Plane::ins_periodic(void)
+{
+    ins.periodic();
+}
 
 void Plane::dataflash_periodic(void)
 {
@@ -680,7 +684,7 @@ void Plane::update_flight_mode(void)
         if (fly_inverted()) {
             nav_pitch_cd = -nav_pitch_cd;
         }
-        if (failsafe.ch3_failsafe && g.short_fs_action == 2) {
+        if (failsafe.rc_failsafe && g.fs_action_short == FS_ACTION_SHORT_FBWA) {
             // FBWA failsafe glide
             nav_roll_cd = 0;
             nav_pitch_cd = 0;
@@ -713,8 +717,7 @@ void Plane::update_flight_mode(void)
           roll when heading is locked. Heading becomes unlocked on
           any aileron or rudder input
         */
-        if ((channel_roll->get_control_in() != 0 ||
-             rudder_input != 0)) {                
+        if (channel_roll->get_control_in() != 0 || channel_rudder->get_control_in() != 0) {
             cruise_state.locked_heading = false;
             cruise_state.lock_timer_ms = 0;
         }                 
@@ -791,6 +794,10 @@ void Plane::update_navigation()
     // ------------------------------------------------------------------------
 
     uint16_t radius = 0;
+    uint16_t qrtl_radius = abs(g.rtl_radius);
+    if (qrtl_radius == 0) {
+        qrtl_radius = abs(aparm.loiter_radius);
+    }
     
     switch(control_mode) {
     case AUTO:
@@ -801,8 +808,15 @@ void Plane::update_navigation()
             
     case RTL:
         if (quadplane.available() && quadplane.rtl_mode == 1 &&
-            nav_controller->reached_loiter_target() &&
+            (nav_controller->reached_loiter_target() ||
+             location_passed_point(current_loc, prev_WP_loc, next_WP_loc) ||
+             auto_state.wp_distance < MAX(qrtl_radius, quadplane.stopping_distance())) &&
             AP_HAL::millis() - last_mode_change_ms > 1000) {
+            /*
+              for a quadplane in RTL mode we switch to QRTL when we
+              are within the maximum of the stopping distance and the
+              RTL_RADIUS
+             */
             set_mode(QRTL, MODE_REASON_UNKNOWN);
             break;
         } else if (g.rtl_autoland == 1 &&
@@ -884,10 +898,7 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
     }
 
     flight_stage = fs;
-
-    if (should_log(MASK_LOG_MODE)) {
-        Log_Write_Status();
-    }
+    Log_Write_Status();
 }
 
 void Plane::update_alt()

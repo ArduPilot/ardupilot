@@ -41,8 +41,10 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: CHECK
     // @DisplayName: Arm Checks to Peform (bitmask)
     // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72. For most users it is recommended that you set this to 1 to enable all checks.
-    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Failsafe,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration
-    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration
+    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Failsafe,128:Board voltage,256:Battery Level,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration
+    // @Values{Plane}: 0:None,1:All,2:Barometer,4:Compass,8:GPS Lock,16:INS(INertial Sensors - accels & gyros),32:Parameters(unused),64:RC Failsafe,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable,2048:Hardware safety switch,4096:GPS configuration
+    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration
+    // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration
     // @User: Standard
     AP_GROUPINFO("CHECK",        2,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
@@ -56,7 +58,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: VOLT_MIN
     // @DisplayName: Arming voltage minimum on the first battery
-    // @Description: The minimum voltage on the first battery to arm, 0 disables the check
+    // @Description: The minimum voltage of the first battery required to arm, 0 disables the check
     // @Units: V
     // @Increment: 0.1 
     // @User: Standard
@@ -64,7 +66,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: VOLT2_MIN
     // @DisplayName: Arming voltage minimum on the second battery
-    // @Description: The minimum voltage on the first battery to arm, 0 disables the check
+    // @Description: The minimum voltage of the second battery required to arm, 0 disables the check
     // @Units: V
     // @Increment: 0.1 
     // @User: Standard
@@ -339,7 +341,7 @@ bool AP_Arming::compass_checks(bool report)
 
 bool AP_Arming::gps_checks(bool report)
 {
-    const AP_GPS &gps = ahrs.get_gps();
+    const AP_GPS &gps = AP::gps();
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
         //GPS OK?
@@ -377,7 +379,7 @@ bool AP_Arming::gps_checks(bool report)
         }
 
         // check AHRS and GPS are within 10m of each other
-        Location gps_loc = ahrs.get_gps().location();
+        Location gps_loc = gps.location();
         Location ahrs_loc;
         if (ahrs.get_position(ahrs_loc)) {
             float distance = location_3d_diff_NED(gps_loc, ahrs_loc).length();
@@ -450,6 +452,11 @@ bool AP_Arming::hardware_safety_check(bool report)
     return true;
 }
 
+bool AP_Arming::rc_calibration_checks(bool report)
+{
+    return true;
+}
+
 bool AP_Arming::manual_transmitter_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -462,9 +469,9 @@ bool AP_Arming::manual_transmitter_checks(bool report)
             return false;
         }
 
-        //TODO verify radio calibration
-        //Requires access to Parameters ... which are implemented a little
-        //differently for Rover, Plane, and Copter.
+        if (!rc_calibration_checks(report)) {
+            return false;
+        }
     }
 
     return true;
@@ -509,6 +516,14 @@ bool AP_Arming::pre_arm_checks(bool report)
 
 bool AP_Arming::arm_checks(uint8_t method)
 {
+    // ensure the GPS drivers are ready on any final changes
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
+        if (!AP::gps().prepare_for_arming()) {
+            return false;
+        }
+    }
+
     // note that this will prepare DataFlash to start logging
     // so should be the last check to be done before arming
     if ((checks_to_perform & ARMING_CHECK_ALL) ||

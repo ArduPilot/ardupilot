@@ -77,9 +77,12 @@ void Copter::init_ardupilot()
     g2.gripper.init();
 #endif
 
+    // init winch and wheel encoder
+    winch_init();
+
     // initialise notify system
     notify.init(true);
-    notify_flight_mode(control_mode);
+    notify_flight_mode();
 
     // initialise battery monitor
     battery.init();
@@ -383,7 +386,7 @@ void Copter::update_auto_armed()
             return;
         }
         // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
+        if(flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
 #if FRAME_CONFIG == HELI_FRAME

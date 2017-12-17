@@ -3,8 +3,6 @@
 // enable_motor_output() - enable and output lowest possible value to motors
 void Sub::enable_motor_output()
 {
-    // enable motors
-    motors.enable();
     motors.output_min();
 }
 
@@ -77,7 +75,7 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     mainloop_failsafe_enable();
 
     // perf monitor ignores delay due to arming
-    perf_ignore_this_loop();
+    perf_info.ignore_this_loop();
 
     // flag exiting this function
     in_arm_motors = false;
@@ -122,6 +120,9 @@ void Sub::init_disarm_motors()
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
+
+    // clear input holds
+    clear_input_hold();
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos

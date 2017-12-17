@@ -1,5 +1,29 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5.4 23-Nov-2017 / 3.5.4-rc2 17-Nov-2017
+Changes from 3.5.3
+1) Compass improvements / bug fixes:
+    a) probe for LIS3MDL on I2C address 0x1e
+    b) bug fix pixracer compass detection
+------------------------------------------------------------------
+Copter 3.5.4-rc1 08-Nov-2017
+Changes from 3.5.3
+1) Compass improvements:
+    a) support added for QMC5883L, LIS3MDL, IST8310
+    b) COMPASS_TYPEMASK parameter allows enabling/disabling individual compass drivers
+2) LightWare and MaxBotix range finders supported on both I2C buses
+3) Serial port 5 can be used for telemetry or sensors (previously was only for NuttX console)
+4) px4pro flight controller supported
+5) TradHeli fixes:
+    a) motor runup check applies to all flight modes (previously only loiter, poshold, althold)
+    b) swashplate behaviour changes when on ground in acro, stabilize and althold
+    c) servo test function fixed
+    d) direct drive fixed pitch tail fix
+    e) Z-axis Accel P gain default lowered to 0.3
+6) EKF origin set using SET_GPS_GLOBAL_ORIGIN mavlink message instead of SET_HOME_POSITION
+7) Intel Aero supports 921600 baud rate between main flight controller and companion computer
+8) Bug fix to I2C race condition on Pixhawk that could occasionally cause I2C device to not be detected
+------------------------------------------------------------------
 Copter 3.5.3 21-Sep-2017 / Copter 3.5.3-rc1 12-Sep-2017
 Changes from 3.5.2
 1) Guided mode support yaw and yaw-rate fields from set-position-target message

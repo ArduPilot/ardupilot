@@ -20,7 +20,8 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Executing command ID #%i", cmd.id);
+    gcs().send_text(MAV_SEVERITY_INFO, "Executing %s(ID=%i)",
+                    cmd.type(), cmd.id);
 
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
@@ -31,12 +32,9 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         do_RTL();
         break;
 
-    case MAV_CMD_NAV_LOITER_UNLIM:              // Loiter indefinitely
-        do_loiter_unlimited(cmd);
-        break;
-
-    case MAV_CMD_NAV_LOITER_TIME:
-        do_loiter_time(cmd);
+    case MAV_CMD_NAV_LOITER_UNLIM:  // Loiter indefinitely
+    case MAV_CMD_NAV_LOITER_TIME:   // Loiter for specified time
+        do_nav_wp(cmd, true);
         break;
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
@@ -211,10 +209,11 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 
 void Rover::do_RTL(void)
 {
-    set_mode(mode_rtl, MODE_REASON_MISSION_COMMAND);
+    // start rtl in auto mode
+    mode_auto.start_RTL();
 }
 
-void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_at_dest)
+void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination)
 {
     // just starting so we haven't previously reached the waypoint
     previously_reached_wp = false;
@@ -228,27 +227,14 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_a
     // get heading to following waypoint (auto mode reduces speed to allow corning without large overshoot)
     // in case of non-zero loiter duration, we provide heading-unknown to signal we should stop at the point
     float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN;
-    if (loiter_duration == 0) {
+    if (!always_stop_at_destination && loiter_duration == 0) {
         next_leg_bearing_cd = mission.get_next_ground_course_cd(MODE_NEXT_HEADING_UNKNOWN);
     }
 
     // retrieve and sanitize target location
     Location cmdloc = cmd.content.location;
     location_sanitize(current_loc, cmdloc);
-    mode_auto.set_desired_location(cmdloc, next_leg_bearing_cd, stay_active_at_dest);
-}
-
-void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
-{
-    do_nav_wp(cmd, true);
-}
-
-// do_loiter_time - initiate loitering at a point for a given time period
-// if the vehicle is moved off the loiter point (i.e. a boat in a current)
-// then the vehicle will actively return to the loiter coords.
-void Rover::do_loiter_time(const AP_Mission::Mission_Command& cmd)
-{
-    do_nav_wp(cmd, true);
+    mode_auto.set_desired_location(cmdloc, next_leg_bearing_cd);
 }
 
 // do_set_yaw_speed - turn to a specified heading and achieve and given speed
@@ -266,7 +252,8 @@ void Rover::do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd)
     }
 
     // set auto target
-    mode_auto.set_desired_heading_and_speed(desired_heading_cd, constrain_float(cmd.content.set_yaw_speed.speed, -g.speed_cruise, g.speed_cruise));
+    const float speed_max = control_mode->get_speed_default();
+    mode_auto.set_desired_heading_and_speed(desired_heading_cd, constrain_float(cmd.content.set_yaw_speed.speed, -speed_max, speed_max));
 }
 
 /********************************************************************************/
@@ -307,7 +294,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Rover::verify_RTL()
 {
-    return mode_rtl.reached_destination();
+    return mode_auto.reached_destination();
 }
 
 bool Rover::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
@@ -376,14 +363,10 @@ bool Rover::verify_within_distance()
 
 void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.content.speed.target_ms > 0.0f) {
-        g.speed_cruise.set(cmd.content.speed.target_ms);
-        gcs().send_text(MAV_SEVERITY_INFO, "Cruise speed: %.1f m/s", static_cast<double>(g.speed_cruise.get()));
-    }
-
-    if (cmd.content.speed.throttle_pct > 0.0f && cmd.content.speed.throttle_pct <= 100.0f) {
-        g.throttle_cruise.set(cmd.content.speed.throttle_pct);
-        gcs().send_text(MAV_SEVERITY_INFO, "Cruise throttle: %.1f", static_cast<double>(g.throttle_cruise.get()));
+    // set speed for active mode
+    if ((cmd.content.speed.target_ms >= 0.0f) && (cmd.content.speed.target_ms <= rover.control_mode->get_speed_default())) {
+        control_mode->set_desired_speed(cmd.content.speed.target_ms);
+        gcs().send_text(MAV_SEVERITY_INFO, "speed: %.1f m/s", static_cast<double>(cmd.content.speed.target_ms));
     }
 }
 

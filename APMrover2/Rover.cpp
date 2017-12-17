@@ -27,11 +27,12 @@ Rover::Rover(void) :
     channel_steer(nullptr),
     channel_throttle(nullptr),
     channel_aux(nullptr),
-    DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask)),
+    DataFlash{fwver.fw_string, g.log_bitmask},
     modes(&g.mode1),
     nav_controller(&L1_controller),
     control_mode(&mode_initializing),
     home(ahrs.get_home()),
-    G_Dt(0.02f)
+    G_Dt(0.02f),
+    mode_auto(mode_rtl)
 {
 }

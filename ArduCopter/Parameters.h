@@ -99,7 +99,7 @@ public:
         k_param_throttle_accel_enabled,     // deprecated - remove
         k_param_wp_yaw_behavior,
         k_param_acro_trainer,
-        k_param_pilot_velocity_z_max,
+        k_param_pilot_speed_up,    // renamed from k_param_pilot_velocity_z_max
         k_param_circle_rate,                // deprecated - remove
         k_param_rangefinder_gain,
         k_param_ch8_option,
@@ -414,7 +414,7 @@ public:
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        land_speed_high;
-    AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
+    AP_Int16        pilot_speed_up;    // maximum vertical ascending velocity the pilot may request
     AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
 
     // Throttle
@@ -570,6 +570,13 @@ public:
 
     // Safe RTL library
     AP_SmartRTL smart_rtl;
+
+    // wheel encoder and winch
+    AP_WheelEncoder wheel_encoder;
+    AP_Winch winch;
+
+    // Additional pilot velocity items
+    AP_Int16    pilot_speed_dn;
 };
 
 extern const AP_Param::Info        var_info[];

@@ -17,6 +17,12 @@ AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
     _mon._pack_capacity[_state.instance] = 0;
 }
 
+void AP_BattMonitor_SMBus::init(void) {
+    if (_dev) {
+        _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus::timer, void));
+    }
+}
+
 /// read the battery_voltage and current, should be called at 10hz
 void AP_BattMonitor_SMBus::read(void)
 {

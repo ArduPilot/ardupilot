@@ -166,17 +166,17 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler = AP_Scheduler::create();
+    AP_Scheduler scheduler;
 
     // mapping between input channels
-    RCMapper rcmap = RCMapper::create();
+    RCMapper rcmap;
 
     // board specific config
-    AP_BoardConfig BoardConfig = AP_BoardConfig::create();
+    AP_BoardConfig BoardConfig;
 
     // board specific config for CAN bus
 #if HAL_WITH_UAVCAN
-    AP_BoardConfig_CAN BoardConfig_CAN = AP_BoardConfig_CAN::create();
+    AP_BoardConfig_CAN BoardConfig_CAN;
 #endif
 
     // primary input channels
@@ -186,7 +186,7 @@ private:
     RC_Channel *channel_rudder;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
-    AP_Notify notify = AP_Notify::create();
+    AP_Notify notify;
 
     DataFlash_Class DataFlash;
 
@@ -195,39 +195,39 @@ private:
     int32_t pitch_limit_min_cd;
 
     // Sensors
-    AP_GPS gps = AP_GPS::create();
+    AP_GPS gps;
 
     // flight modes convenience array
     AP_Int8 *flight_modes = &g.flight_mode1;
 
-    AP_Baro barometer = AP_Baro::create();
-    Compass compass = Compass::create();
+    AP_Baro barometer;
+    Compass compass;
 
-    AP_InertialSensor ins = AP_InertialSensor::create();
+    AP_InertialSensor ins;
 
-    RangeFinder rangefinder = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
+    RangeFinder rangefinder{serial_manager, ROTATION_PITCH_270};
 
     AP_Vehicle::FixedWing::Rangefinder_State rangefinder_state;
 
-    AP_RPM rpm_sensor = AP_RPM::create();
+    AP_RPM rpm_sensor;
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, rangefinder);
-    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, rangefinder);
-    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3);
+    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
+    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, barometer, gps);
+    AP_AHRS_DCM ahrs{ins, barometer, gps};
 #endif
 
-    AP_TECS TECS_controller = AP_TECS::create(ahrs, aparm, landing, g2.soaring_controller);
-    AP_L1_Control L1_controller = AP_L1_Control::create(ahrs, &TECS_controller);
+    AP_TECS TECS_controller{ahrs, aparm, landing, g2.soaring_controller};
+    AP_L1_Control L1_controller{ahrs, &TECS_controller};
 
     // Attitude to servo controllers
-    AP_RollController rollController = AP_RollController::create(ahrs, aparm, DataFlash);
-    AP_PitchController pitchController = AP_PitchController::create(ahrs, aparm, DataFlash);
-    AP_YawController yawController = AP_YawController::create(ahrs, aparm);
-    AP_SteerController steerController = AP_SteerController::create(ahrs);
+    AP_RollController rollController{ahrs, aparm, DataFlash};
+    AP_PitchController pitchController{ahrs, aparm, DataFlash};
+    AP_YawController yawController{ahrs, aparm};
+    AP_SteerController steerController{ahrs};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
@@ -254,7 +254,7 @@ private:
     // external failsafe boards during baro and airspeed calibration
     bool in_calibration;
 
-    AP_SerialManager serial_manager = AP_SerialManager::create();
+    AP_SerialManager serial_manager;
 
     // GCS selection
     GCS_Plane _gcs; // avoid using this; use gcs()
@@ -267,26 +267,26 @@ private:
     AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
     // Relay
-    AP_Relay relay = AP_Relay::create();
+    AP_Relay relay;
 
     // handle servo and relay events
-    AP_ServoRelayEvents ServoRelayEvents = AP_ServoRelayEvents::create(relay);
+    AP_ServoRelayEvents ServoRelayEvents{relay};
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera = AP_Camera::create(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs);
+    AP_Camera camera{&relay, MASK_LOG_CAMERA, current_loc, ahrs};
 #endif
 
 #if OPTFLOW == ENABLED
     // Optical flow sensor
-    OpticalFlow optflow = OpticalFlow::create(ahrs);
+    OpticalFlow optflow{ahrs};
 #endif
 
     // Rally Ponints
-    AP_Rally rally = AP_Rally::create(ahrs);
+    AP_Rally rally{ahrs};
 
     // RSSI
-    AP_RSSI rssi = AP_RSSI::create();
+    AP_RSSI rssi;
 
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
@@ -323,16 +323,16 @@ private:
     struct {
         // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
         // RC receiver should be set up to output a low throttle value when signal is lost
-        uint8_t ch3_failsafe:1;
+        bool rc_failsafe:1;
 
         // has the saved mode for failsafe been set?
-        uint8_t saved_mode_set:1;
+        bool saved_mode_set:1;
 
         // flag to hold whether battery low voltage threshold has been breached
-        uint8_t low_battery:1;
+        bool low_battery:1;
 
         // true if an adsb related failsafe has occurred
-        uint8_t adsb:1;
+        bool adsb:1;
 
         // saved flight mode
         enum FlightMode saved_mode;
@@ -341,14 +341,14 @@ private:
         // Used for failsafe based on loss of RC signal or GCS signal
         int16_t state;
 
-        // number of low ch3 values
-        uint8_t ch3_counter;
+        // number of low throttle values
+        uint8_t throttle_counter;
 
         // the time when the last HEARTBEAT message arrived from a GCS
         uint32_t last_heartbeat_ms;
         
         // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
-        uint32_t ch3_timer_ms;
+        uint32_t short_timer_ms;
         
         uint32_t last_valid_rc_ms;
 
@@ -391,11 +391,11 @@ private:
     int32_t altitude_error_cm;
 
     // Battery Sensors
-    AP_BattMonitor battery = AP_BattMonitor::create();
+    AP_BattMonitor battery;
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry = AP_Frsky_Telem::create(ahrs, battery, rangefinder);
+    AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
 #endif
 
     // Variables for extended status MAVLink messages
@@ -452,11 +452,11 @@ private:
         // should we fly inverted?
         bool inverted_flight:1;
 
-        // should we disable cross-tracking for the next waypoint?
-        bool next_wp_no_crosstrack:1;
+        // should we enable cross-tracking for the next waypoint?
+        bool next_wp_crosstrack:1;
 
         // should we use cross-tracking for this waypoint?
-        bool no_crosstrack:1;
+        bool crosstrack:1;
 
         // in FBWA taildragger takeoff mode
         bool fbwa_tdrag_takeoff_mode:1;
@@ -599,33 +599,33 @@ private:
     float smoothed_airspeed;
 
     // Mission library
-    AP_Mission mission = AP_Mission::create(ahrs,
+    AP_Mission mission{ahrs,
             FUNCTOR_BIND_MEMBER(&Plane::start_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Plane::verify_command_callback, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void));
+            FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void)};
 
 
 #if PARACHUTE == ENABLED
-    AP_Parachute parachute = AP_Parachute::create(relay);
+    AP_Parachute parachute{relay};
 #endif
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
-    AP_Terrain terrain = AP_Terrain::create(ahrs, mission, rally);
+    AP_Terrain terrain{ahrs, mission, rally};
 #endif
 
-    AP_Landing landing = AP_Landing::create(mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
-        FUNCTOR_BIND_MEMBER(&Plane::set_target_altitude_proportion, void, const Location&, float),
-        FUNCTOR_BIND_MEMBER(&Plane::constrain_target_altitude_location, void, const Location&, const Location&),
-        FUNCTOR_BIND_MEMBER(&Plane::adjusted_altitude_cm, int32_t),
-        FUNCTOR_BIND_MEMBER(&Plane::adjusted_relative_altitude_cm, int32_t),
-        FUNCTOR_BIND_MEMBER(&Plane::disarm_if_autoland_complete, void),
-        FUNCTOR_BIND_MEMBER(&Plane::update_flight_stage, void));
+    AP_Landing landing{mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
+            FUNCTOR_BIND_MEMBER(&Plane::set_target_altitude_proportion, void, const Location&, float),
+            FUNCTOR_BIND_MEMBER(&Plane::constrain_target_altitude_location, void, const Location&, const Location&),
+            FUNCTOR_BIND_MEMBER(&Plane::adjusted_altitude_cm, int32_t),
+            FUNCTOR_BIND_MEMBER(&Plane::adjusted_relative_altitude_cm, int32_t),
+            FUNCTOR_BIND_MEMBER(&Plane::disarm_if_autoland_complete, void),
+            FUNCTOR_BIND_MEMBER(&Plane::update_flight_stage, void)};
 
-    AP_ADSB adsb = AP_ADSB::create(ahrs);
+    AP_ADSB adsb{ahrs};
 
     // avoidance of adsb enabled vehicles (normally manned vheicles)
-    AP_Avoidance_Plane avoidance_adsb = AP_Avoidance_Plane::create(ahrs, adsb);
+    AP_Avoidance_Plane avoidance_adsb{ahrs, adsb};
 
     // Outback Challenge Failsafe Support
     AP_AdvancedFailsafe_Plane afs {mission, barometer, gps, rcmap};
@@ -768,11 +768,11 @@ private:
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
-    AP_Mount camera_mount = AP_Mount::create(ahrs, current_loc);
+    AP_Mount camera_mount{ahrs, current_loc};
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming_Plane arming = AP_Arming_Plane::create(ahrs, barometer, compass, battery);
+    AP_Arming_Plane arming{ahrs, barometer, compass, battery};
 
     AP_Param param_loader {var_info};
 
@@ -857,7 +857,7 @@ private:
     void set_target_altitude_proportion(const Location &loc, float proportion);
     void constrain_target_altitude_location(const Location &loc1, const Location &loc2);
     int32_t calc_altitude_error_cm(void);
-    void check_minimum_altitude(void);
+    void check_fbwb_minimum_altitude(void);
     void reset_offset_altitude(void);
     void set_offset_altitude_location(const Location &loc);
     bool above_location_current(const Location &loc);
@@ -901,11 +901,12 @@ private:
     void failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t reason);
     void failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason);
     void failsafe_short_off_event(mode_reason_t reason);
+    void failsafe_long_off_event(mode_reason_t reason);
     void low_battery_event(void);
     void update_events(void);
     uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);
-    void set_fence_point_with_index(Vector2l &point, unsigned i);
+    void set_fence_point_with_index(const Vector2l &point, unsigned i);
     void geofence_load(void);
     bool geofence_present(void);
     void geofence_update_pwm_enabled_state();
@@ -918,6 +919,7 @@ private:
     bool geofence_stickmixing(void);
     void geofence_send_status(mavlink_channel_t chan);
     bool geofence_breached(void);
+    void geofence_disable_and_send_error_msg(const char *errorMsg);
     void disarm_if_autoland_complete();
     float tecs_hgt_afe(void);
     void set_nav_controller(void);
@@ -944,7 +946,7 @@ private:
     void init_rc_out_aux();
     void rudder_arm_disarm_check();
     void read_radio();
-    void control_failsafe(uint16_t pwm);
+    void control_failsafe();
     void trim_control_surfaces();
     void trim_radio();
     bool rc_failsafe_active(void);
@@ -1072,6 +1074,7 @@ private:
     void notify_flight_mode(enum FlightMode mode);
     void log_init();
     void init_capabilities(void);
+    void ins_periodic();
     void dataflash_periodic(void);
     void parachute_check();
 #if PARACHUTE == ENABLED

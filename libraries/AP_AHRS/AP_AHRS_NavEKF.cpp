@@ -85,6 +85,11 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     if (_ekf_type == 1) {
         _ekf_type.set(2);
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    update_SITL();
+#endif
+
     update_DCM(skip_ins_update);
     if (_ekf_type == 2) {
         // if EK2 is primary then run EKF2 first to give it CPU
@@ -96,9 +101,6 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
         update_EKF3();
         update_EKF2();
     }
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    update_SITL();
-#endif
 
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);
@@ -1436,7 +1438,7 @@ bool AP_AHRS_NavEKF::get_origin(Location &ret) const
 
 // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
 // this is used to limit height during optical flow navigation
-// it will return invalid when no limiting is required
+// it will return false when no limiting is required
 bool AP_AHRS_NavEKF::get_hgt_ctrl_limit(float& limit) const
 {
     switch (ekf_type()) {

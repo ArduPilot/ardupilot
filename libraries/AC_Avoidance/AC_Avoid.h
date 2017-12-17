@@ -4,7 +4,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>     // AHRS library
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude controller library for sqrt controller
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
 #include <AP_Proximity/AP_Proximity.h>
@@ -29,15 +28,7 @@
  */
 class AC_Avoid {
 public:
-    static AC_Avoid create(const AP_AHRS& ahrs,
-                           const AP_InertialNav& inav,
-                           const AC_Fence& fence,
-                           const AP_Proximity& proximity,
-                           const AP_Beacon* beacon = nullptr) {
-        return AC_Avoid{ahrs, inav, fence, proximity, beacon};
-    }
-
-    constexpr AC_Avoid(AC_Avoid &&other) = default;
+    AC_Avoid(const AP_AHRS& ahrs, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
 
     /* Do not allow copies */
     AC_Avoid(const AC_Avoid &other) = delete;
@@ -66,8 +57,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fence& fence, const AP_Proximity& proximity, const AP_Beacon* beacon = nullptr);
-
     /*
      * Adjusts the desired velocity for the circular fence.
      */
@@ -105,12 +94,6 @@ private:
     void limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance) const;
 
     /*
-     * Gets the current position or altitude, relative to home (not relative to EKF origin) in cm
-     */
-    Vector2f get_position() const;
-    float get_alt_above_home() const;
-
-    /*
      * Computes the speed such that the stopping distance
      * of the vehicle will be exactly the input distance.
      */
@@ -133,7 +116,6 @@ private:
 
     // external references
     const AP_AHRS& _ahrs;
-    const AP_InertialNav& _inav;
     const AC_Fence& _fence;
     const AP_Proximity& _proximity;
     const AP_Beacon* _beacon;

@@ -24,9 +24,7 @@ class AP_Baro
     friend class AP_Baro_SITL; // for access to sensors[]
 
 public:
-    static AP_Baro create() { return AP_Baro{}; }
-
-    constexpr AP_Baro(AP_Baro &&other) = default;
+    AP_Baro();
 
     /* Do not allow copies */
     AP_Baro(const AP_Baro &other) = delete;
@@ -166,8 +164,6 @@ public:
     void set_pressure_correction(uint8_t instance, float p_correction);
 
 private:
-    AP_Baro();
-
     // how many drivers do we have?
     uint8_t _num_drivers;
     AP_Baro_Backend *drivers[BARO_MAX_DRIVERS];

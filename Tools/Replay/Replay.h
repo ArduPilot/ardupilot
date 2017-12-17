@@ -58,20 +58,20 @@ public:
     void setup();
     void load_parameters(void);
 
-    AP_InertialSensor ins = AP_InertialSensor::create();
-    AP_Baro barometer = AP_Baro::create();
-    AP_GPS gps = AP_GPS::create();
-    Compass compass = Compass::create();
-    AP_SerialManager serial_manager = AP_SerialManager::create();
-    RangeFinder rng = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
-    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, rng);
-    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, rng);
-    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3);
+    AP_InertialSensor ins;
+    AP_Baro barometer;
+    AP_GPS gps;
+    Compass compass;
+    AP_SerialManager serial_manager;
+    RangeFinder rng{serial_manager, ROTATION_PITCH_270};
+    NavEKF2 EKF2{&ahrs, barometer, rng};
+    NavEKF3 EKF3{&ahrs, barometer, rng};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, EKF2, EKF3};
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
     AP_Int32 unused; // logging is magic for Replay; this is unused
-    DataFlash_Class dataflash = DataFlash_Class::create("Replay v0.1", unused);
+    DataFlash_Class dataflash{"Replay v0.1", unused};
 
 private:
     Parameters g;

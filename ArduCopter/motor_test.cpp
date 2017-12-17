@@ -10,11 +10,12 @@
 #define MOTOR_TEST_PWM_MAX              2200    // max pwm value accepted by the test
 #define MOTOR_TEST_TIMEOUT_MS_MAX       30000   // max timeout is 30 seconds
 
-static uint32_t motor_test_start_ms = 0;        // system time the motor test began
-static uint32_t motor_test_timeout_ms = 0;      // test will timeout this many milliseconds after the motor_test_start_ms
-static uint8_t motor_test_seq = 0;              // motor sequence number of motor being tested
-static uint8_t motor_test_throttle_type = 0;    // motor throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through)
-static uint16_t motor_test_throttle_value = 0;  // throttle to be sent to motor, value depends upon it's type
+static uint32_t motor_test_start_ms;        // system time the motor test began
+static uint32_t motor_test_timeout_ms;      // test will timeout this many milliseconds after the motor_test_start_ms
+static uint8_t motor_test_seq;              // motor sequence number of motor being tested
+static uint8_t motor_test_count;            // number of motors to test
+static uint8_t motor_test_throttle_type;    // motor throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through)
+static uint16_t motor_test_throttle_value;  // throttle to be sent to motor, value depends upon it's type
 
 // motor_test_output - checks for timeout and sends updates to motors objects
 void Copter::motor_test_output()
@@ -25,7 +26,23 @@ void Copter::motor_test_output()
     }
 
     // check for test timeout
-    if ((AP_HAL::millis() - motor_test_start_ms) >= motor_test_timeout_ms) {
+    uint32_t now = AP_HAL::millis();
+    if ((now - motor_test_start_ms) >= motor_test_timeout_ms) {
+        if (motor_test_count > 1) {
+            if (now - motor_test_start_ms < motor_test_timeout_ms*1.5) {
+                // output zero for 50% of the test time
+                motors->output_min();
+            } else {
+                // move onto next motor
+                motor_test_seq++;
+                motor_test_count--;
+                motor_test_start_ms = now;
+                if (!motors->armed()) {
+                    motors->armed(true);
+                }
+            }
+            return;
+        }
         // stop motor test
         motor_test_stop();
     } else {
@@ -104,8 +121,12 @@ bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
 
 // mavlink_motor_test_start - start motor test - spin a single motor at a specified pwm
 //  returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
-uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value, float timeout_sec)
+MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, uint16_t throttle_value,
+                                         float timeout_sec, uint8_t motor_count)
 {
+    if (motor_count == 0) {
+        motor_count = 1;
+    }
     // if test has not started try to start it
     if (!ap.motor_test) {
         /* perform checks that it is ok to start test
@@ -141,6 +162,7 @@ uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_s
 
     // store required output
     motor_test_seq = motor_seq;
+    motor_test_count = motor_count;
     motor_test_throttle_type = throttle_type;
     motor_test_throttle_value = throttle_value;
 

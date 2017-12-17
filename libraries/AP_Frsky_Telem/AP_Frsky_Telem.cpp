@@ -123,9 +123,16 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 return;
             }
             if ((now - _passthrough.batt_timer) >= 1000) {
-                send_uint32(DIY_FIRST_ID+3, calc_batt());
+                send_uint32(DIY_FIRST_ID+3, calc_batt(0));
                 _passthrough.batt_timer = AP_HAL::millis();
                 return;
+            }
+            if (_battery.num_instances() > 1) {
+                if ((now - _passthrough.batt_timer2) >= 1000) {
+                    send_uint32(DIY_FIRST_ID+8, calc_batt(1));
+                    _passthrough.batt_timer2 = AP_HAL::millis();
+                    return;
+                }
             }
             if ((now - _passthrough.gps_status_timer) >= 1000) {
                 send_uint32(DIY_FIRST_ID+2, calc_gps_status());
@@ -567,13 +574,13 @@ uint32_t AP_Frsky_Telem::calc_param(void)
     uint32_t param = 0;
 
     // cycle through paramIDs
-    if (_paramID >= 4) {
+    if (_paramID >= 5) {
         _paramID = 0;
     }
     _paramID++;
     switch(_paramID) {
     case 1:
-        param = _params.mav_type;                                    // frame type (see MAV_TYPE in Mavlink definition file common.h)
+        param = _params.mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
         break;
     case 2:
         if (_params.fs_batt_voltage != nullptr) {
@@ -582,15 +589,18 @@ uint32_t AP_Frsky_Telem::calc_param(void)
         break;
     case 3:
         if (_params.fs_batt_mah != nullptr) {
-            param = (uint32_t)roundf((*_params.fs_batt_mah));              // battery failsafe capacity in mAh
+            param = (uint32_t)roundf((*_params.fs_batt_mah)); // battery failsafe capacity in mAh
         }
         break;
     case 4:
-        param = (uint32_t)roundf(_battery.pack_capacity_mah());      // battery pack capacity in mAh as configured by user
+        param = (uint32_t)roundf(_battery.pack_capacity_mah(0)); // battery pack capacity in mAh
+        break;
+    case 5:
+        param = (uint32_t)roundf(_battery.pack_capacity_mah(1)); // battery pack capacity in mAh
         break;
     }
     //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
-    param = (_paramID << 24) | (param & 0xFFFFFF);
+    param = (_paramID << PARAM_ID_OFFSET) | (param & PARAM_VALUE_LIMIT);
     
     return param;
 }
@@ -649,16 +659,16 @@ uint32_t AP_Frsky_Telem::calc_gps_status(void)
  * prepare battery data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_batt(void)
+uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
 {
     uint32_t batt;
     
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
-    batt = (((uint16_t)roundf(_battery.voltage() * 10.0f)) & BATT_VOLTAGE_LIMIT);
+    batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
     // battery current draw in deciamps
-    batt |= prep_number(roundf(_battery.current_amps() * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET; 
+    batt |= prep_number(roundf(_battery.current_amps(instance) * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET; 
     // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
-    batt |= ((_battery.current_total_mah() < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.current_total_mah()) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
+    batt |= ((_battery.current_total_mah(instance) < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.current_total_mah(instance)) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
     return batt;
 }
 

@@ -107,7 +107,7 @@ class VehicleInfo(object):
         },
     },
     "ArduPlane": {
-        "default_frame": "jsbsim",
+        "default_frame": "plane",
         "frames": {
             # PLANE
             "quadplane-tilttri": {

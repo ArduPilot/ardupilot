@@ -5,7 +5,9 @@ class Parameter(object):
 
 
 class Vehicle(object):
-    def __init__(self, name, path):
+    def __init__(self, name, path, truename=None):
+        if truename is not None:
+            self.truename = truename
         self.name = name
         self.path = path
         self.params = []
@@ -85,6 +87,7 @@ known_units = {
              '%'       : 'percent'               ,
              '%/s'     : 'percent per second'    ,
              'd%'      : 'decipercent'           , # decipercent is strange, but "per-mille" is even more exotic
+             'dB'      : 'decibel'               ,
 # compound
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,

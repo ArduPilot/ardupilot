@@ -58,19 +58,19 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::var_info[] = {
 
 #if MAX_NUMBER_OF_CAN_DRIVERS > 0
     // @Group: D1_
-    // @Path: ../AP_BoardConfig/canbus.cpp
+    // @Path: ../AP_BoardConfig/canbus_driver.cpp
     AP_SUBGROUPINFO(_var_info_can_protocol[0], "D1_", 4, AP_BoardConfig_CAN, AP_BoardConfig_CAN::CAN_driver_var_info),
 #endif
 
 #if MAX_NUMBER_OF_CAN_DRIVERS > 1
     // @Group: D2_
-    // @Path: ../AP_BoardConfig/canbus.cpp
+    // @Path: ../AP_BoardConfig/canbus_driver.cpp
     AP_SUBGROUPINFO(_var_info_can_protocol[1], "D2_", 5, AP_BoardConfig_CAN, AP_BoardConfig_CAN::CAN_driver_var_info),
 #endif
 
 #if MAX_NUMBER_OF_CAN_DRIVERS > 2
     // @Group: D3_
-    // @Path: ../AP_BoardConfig/canbus.cpp
+    // @Path: ../AP_BoardConfig/canbus_driver.cpp
     AP_SUBGROUPINFO(_var_info_can_protocol[2], "D3_", 6, AP_BoardConfig_CAN, AP_BoardConfig_CAN::CAN_driver_var_info),
 #endif
 

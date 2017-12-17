@@ -229,7 +229,7 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
     struct pending_param_request req;
     req.chan = chan;
     req.param_index = packet.param_index;
-    memcpy(req.param_name, packet.param_id, sizeof(req.param_name));
+    memcpy(req.param_name, packet.param_id, MIN(sizeof(packet.param_id), sizeof(req.param_name)));
     req.param_name[AP_MAX_NAME_SIZE] = 0;
 
     // queue it for processing by io timer

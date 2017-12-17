@@ -61,8 +61,8 @@ class TestGPSGlitch(Test):
         satsMsg = ("Min satellites: %s, Max HDop: %s" %
                    (satsChan.min(), hdopChan.max()))
         if gpsGlitchCount:
-            self.result.statusMessage = "\n".join(self.result.statusMessage,
-                                                  satsMsg)
+            self.result.statusMessage = "\n".join([self.result.statusMessage,
+                                                   satsMsg])
         if foundBadSatsFail or foundBadHDopFail:
             if not gpsGlitchCount:
                 self.result.status = TestResult.StatusType.FAIL

@@ -26,6 +26,9 @@ void DFMessageWriter_DFLogStart::reset()
 
     stage = ls_blockwriter_stage_init;
     next_format_to_send = 0;
+    _next_unit_to_send = 0;
+    _next_multiplier_to_send = 0;
+    _next_format_unit_to_send = 0;
     ap = AP_Param::first(&token, &type);
 }
 
@@ -47,6 +50,33 @@ void DFMessageWriter_DFLogStart::process()
         _fmt_done = true;
         stage = ls_blockwriter_stage_parms;
         FALLTHROUGH;
+
+    case ls_blockwriter_stage_units:
+        while (_next_unit_to_send < _dataflash_backend->num_units()) {
+            if (!_dataflash_backend->Log_Write_Unit(_dataflash_backend->unit(_next_unit_to_send))) {
+                return; // call me again!
+            }
+            _next_unit_to_send++;
+        }
+        stage = ls_blockwriter_stage_multipliers;
+
+    case ls_blockwriter_stage_multipliers:
+        while (_next_multiplier_to_send < _dataflash_backend->num_multipliers()) {
+            if (!_dataflash_backend->Log_Write_Multiplier(_dataflash_backend->multiplier(_next_multiplier_to_send))) {
+                return; // call me again!
+            }
+            _next_multiplier_to_send++;
+        }
+        stage = ls_blockwriter_stage_units;
+
+    case ls_blockwriter_stage_format_units:
+        while (_next_format_unit_to_send < _dataflash_backend->num_types()) {
+            if (!_dataflash_backend->Log_Write_Format_Units(_dataflash_backend->structure(_next_format_unit_to_send))) {
+                return; // call me again!
+            }
+            _next_format_unit_to_send++;
+        }
+        stage = ls_blockwriter_stage_parms;
 
     case ls_blockwriter_stage_parms:
         while (ap) {

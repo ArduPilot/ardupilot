@@ -30,6 +30,7 @@
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
+#include "Led_Sysfs.h"
 #include <stdio.h>
 
 AP_Notify *AP_Notify::_instance;
@@ -154,12 +155,18 @@ void AP_Notify::add_backends(void)
 // Notify devices for linux boards    
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+    ADD_BACKEND(new AP_BoardLED());
     ADD_BACKEND(new NavioLED_I2C());
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    ADD_BACKEND(new DiscreteRGBLed(4, 27, 6, false));
+    ADD_BACKEND(new Led_Sysfs("rgb_led0", "rgb_led2", "rgb_led1"));
+    ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
+    ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
+
+  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
+    ADD_BACKEND(new RCOutputRGBLedInverted(12, 13, 14));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
 
@@ -186,6 +193,9 @@ void AP_Notify::add_backends(void)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
     ADD_BACKEND(new DiscoLED());
     ADD_BACKEND(new ToneAlarm_Linux());
+
+  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
+    ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
 
   #else // other linux
     ADD_BACKEND(new AP_BoardLED());

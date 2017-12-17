@@ -197,9 +197,6 @@ public:
     /// calculate_wp_leash_length - calculates track speed, acceleration and leash lengths for waypoint controller
     void calculate_wp_leash_length();
 
-    /// get_bearing_cd - return bearing in centi-degrees between two positions
-    float get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const;
-
     ///
     /// spline methods
     ///
