@@ -177,7 +177,10 @@ uint16_t AP_MotorsHeli_Quad::get_motor_mask()
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         mask |= 1U << (AP_MOTORS_MOT_1+i);
     }
-    mask |= 1U << AP_MOTORS_HELI_QUAD_RSC;
+    uint8_t rsc_chan;
+    if (SRV_Channels::find_channel(SRV_Channel::k_heli_rsc, rsc_chan)) {
+        mask |= 1U << rsc_chan;
+    }
     return mask;
 }
 
