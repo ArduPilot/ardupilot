@@ -17,7 +17,9 @@ void Copter::failsafe_radio_on_event()
         if (control_mode == AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
             // continue mission
         } else if (control_mode == LAND && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
-            // continue landing
+            // continue landing because we're already in the battery failsafe landing phase
+        } else if (control_mode == LAND && g2.fs_land_continue) {
+            // continue landing because FS_LAND_CONTINUE is true
         } else {
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                 set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
@@ -54,7 +56,9 @@ void Copter::failsafe_battery_event(void)
         if (should_disarm_on_failsafe()) {
             init_disarm_motors();
         } else {
-            if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
+            if (control_mode == LAND && g2.fs_land_continue) {
+                // continue landing because FS_LAND_CONTINUE is true
+            } else if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
                 set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
             } else {
                 set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
@@ -115,6 +119,10 @@ void Copter::failsafe_gcs_check()
     } else {
         if (control_mode == AUTO && g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
             // continue mission
+        } else if (control_mode == LAND && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
+            // continue landing because we're already in the battery failsafe landing phase
+        } else if (control_mode == LAND && g2.fs_land_continue) {
+            // continue landing because FS_LAND_CONTINUE is true
         } else if (g.failsafe_gcs != FS_GCS_DISABLED) {
             set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
         }

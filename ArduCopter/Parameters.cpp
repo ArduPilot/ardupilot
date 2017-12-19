@@ -1025,6 +1025,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PILOT_SPEED_DN", 24, ParametersG2, pilot_speed_dn, 0),
 
+    // @Param: FS_LAND_CONTINUE
+    // @DisplayName: Failsafe land continue
+    // @Description: If FS_LAND_CONTINUE is set for 1 (enabled) and the copter is in Land Mode when radio, battery, or GCS failsafe activates, Copter will continue to land. 0 = (default) Disabled (Always take failafe action).  1 = Enabled (Continue with Land Mode).
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("FS_LAND_CONTINUE", 25, ParametersG2, fs_land_continue, 0),
+
     AP_GROUPEND
 };
 
