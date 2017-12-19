@@ -1,13 +1,17 @@
 #include "mode.h"
 #include "Rover.h"
 
-bool ModeRTL::_enter()
+bool ModeRTL::ok_to_enter() const
 {
     // refuse RTL if home has not been set
     if (!AP::ahrs().home_is_set()) {
         return false;
     }
+    return Mode::ok_to_enter();
+}
 
+void ModeRTL::enter()
+{
     // initialise waypoint speed
     set_desired_speed_to_default(true);
 
@@ -19,7 +23,7 @@ bool ModeRTL::_enter()
     set_desired_location(rover.home);
 #endif
 
-    return true;
+    Mode::enter();
 }
 
 void ModeRTL::update()

@@ -2,20 +2,22 @@
 #include "Rover.h"
 
 // initialize follow mode
-bool ModeFollow::_enter()
+bool ModeFollow::ok_to_enter() const
 {
     if (!g2.follow.enabled()) {
         return false;
     }
+    return true;
+}
 
+void ModeFollow::enter()
+{
     // initialise waypoint speed
     set_desired_speed_to_default();
 
     // initialise heading to current heading
     _desired_yaw_cd = ahrs.yaw_sensor;
     _yaw_error_cd = 0.0f;
-
-    return true;
 }
 
 void ModeFollow::update()

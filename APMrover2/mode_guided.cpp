@@ -1,7 +1,7 @@
 #include "mode.h"
 #include "Rover.h"
 
-bool ModeGuided::_enter()
+void ModeGuided::enter()
 {
     // initialise waypoint speed
     set_desired_speed_to_default();
@@ -9,8 +9,6 @@ bool ModeGuided::_enter()
     // set desired location to reasonable stopping point
     calc_stopping_location(_destination);
     set_desired_location(_destination);
-
-    return true;
 }
 
 void ModeGuided::update()

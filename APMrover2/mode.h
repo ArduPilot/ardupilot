@@ -36,8 +36,11 @@ public:
     // Constructor
     Mode();
 
-    // enter this mode, returns false if we failed to enter
-    bool enter();
+    // returns true of it s OK to enter this mode
+    virtual bool ok_to_enter() const;
+
+    // enter this mode
+    virtual void enter();
 
     // perform any cleanups required:
     void exit();
@@ -118,10 +121,7 @@ public:
 
 protected:
 
-    // subclasses override this to perform checks before entering the mode
-    virtual bool _enter() { return true; }
-
-    // subclasses override this to perform any required cleanup when exiting the mode
+     // subclasses override this to perform any required cleanup when exiting the mode
     virtual void _exit() { return; }
 
     // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
@@ -258,7 +258,8 @@ public:
 
 protected:
 
-    bool _enter() override;
+    bool ok_to_enter() const override;
+    void enter() override;
     void _exit() override;
 
     enum AutoSubMode {
@@ -313,7 +314,7 @@ protected:
         Guided_TurnRateAndSpeed
     };
 
-    bool _enter() override;
+    void enter() override;
 
     GuidedMode _guided_mode;    // stores which GUIDED mode the vehicle is in
 
@@ -357,7 +358,7 @@ public:
 
 protected:
 
-    bool _enter() override;
+    void enter() override;
 };
 
 class ModeManual : public Mode
@@ -386,6 +387,7 @@ protected:
 
 class ModeRTL : public Mode
 {
+    friend class ModeAuto; // for access to enter() and ok_to_enter()
 public:
 
     uint32_t mode_number() const override { return RTL; }
@@ -402,7 +404,9 @@ public:
 
 protected:
 
-    bool _enter() override;
+    bool ok_to_enter() const override;
+    void enter() override;
+
 };
 
 class ModeSmartRTL : public Mode
@@ -434,7 +438,9 @@ protected:
         SmartRTL_Failure
     } smart_rtl_state;
 
-    bool _enter() override;
+    bool ok_to_enter() const override;
+    void enter() override;
+
     bool _load_point;
 };
 
@@ -484,7 +490,8 @@ public:
 
 protected:
 
-    bool _enter() override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
+    void enter() override;
 };
 
 class ModeSimple : public Mode

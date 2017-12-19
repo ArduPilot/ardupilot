@@ -1,7 +1,7 @@
 #include "mode.h"
 #include "Rover.h"
 
-bool ModeSmartRTL::_enter()
+bool ModeSmartRTL::ok_to_enter() const
 {
     // SmartRTL requires EKF (not DCM)
     Location ekf_origin;
@@ -14,6 +14,11 @@ bool ModeSmartRTL::_enter()
         return false;
     }
 
+    return Mode::ok_to_enter();
+}
+
+void ModeSmartRTL::enter()
+{
     // initialise waypoint speed
     set_desired_speed_to_default(true);
 
@@ -24,7 +29,7 @@ bool ModeSmartRTL::_enter()
     smart_rtl_state = SmartRTL_WaitForPathCleanup;
     _reached_destination = false;
 
-    return true;
+    Mode::enter();
 }
 
 void ModeSmartRTL::update()

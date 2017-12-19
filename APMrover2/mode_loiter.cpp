@@ -1,7 +1,7 @@
 #include "mode.h"
 #include "Rover.h"
 
-bool ModeLoiter::_enter()
+void ModeLoiter::enter()
 {
     // set _destination to reasonable stopping point
     calc_stopping_location(_destination);
@@ -14,8 +14,6 @@ bool ModeLoiter::_enter()
     // initialise heading to current heading
     _desired_yaw_cd = ahrs.yaw_sensor;
     _yaw_error_cd = 0.0f;
-
-    return true;
 }
 
 void ModeLoiter::update()

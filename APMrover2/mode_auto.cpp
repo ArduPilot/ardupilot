@@ -7,7 +7,7 @@ ModeAuto::ModeAuto(ModeRTL& mode_rtl) :
 {
 }
 
-bool ModeAuto::_enter()
+bool ModeAuto::ok_to_enter() const
 {
     // fail to enter auto if no mission commands
     if (mission.num_commands() == 0) {
@@ -15,6 +15,11 @@ bool ModeAuto::_enter()
         return false;
     }
 
+    return Mode::ok_to_enter();
+}
+
+void ModeAuto::enter()
+{
     // initialise waypoint speed
     set_desired_speed_to_default();
 
@@ -26,7 +31,6 @@ bool ModeAuto::_enter()
 
     // restart mission processing
     mission.start_or_resume();
-    return true;
 }
 
 void ModeAuto::_exit()
@@ -135,7 +139,8 @@ bool ModeAuto::reached_heading()
 // start RTL (within auto)
 void ModeAuto::start_RTL()
 {
-    if (_mode_rtl.enter()) {
+    if (_mode_rtl.ok_to_enter()) {
+        _mode_rtl.enter();
         _submode = Auto_RTL;
     }
 }

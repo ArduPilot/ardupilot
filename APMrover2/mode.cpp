@@ -18,7 +18,8 @@ void Mode::exit()
     _exit();
 }
 
-bool Mode::enter()
+// these are basically the same checks as in AP_Arming:
+bool Mode::ok_to_enter() const
 {
     const bool ignore_checks = !hal.util->get_soft_armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
     if (!ignore_checks) {
@@ -42,14 +43,13 @@ bool Mode::enter()
         }
     }
 
-    bool ret = _enter();
+    return true;
+}
 
+void Mode::enter()
+{
     // initialisation common to all modes
-    if (ret) {
-        set_reversed(false);
-    }
-
-    return ret;
+    set_reversed(false);
 }
 
 // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
