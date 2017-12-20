@@ -396,6 +396,7 @@ public:
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
+    AP_Float        fs_severe_batt_volt;
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
@@ -566,6 +567,10 @@ public:
 
     // RC input channels
     RC_Channels rc_channels;
+
+    // Critical battery volt/mah to trigger landing
+    AP_Int32 fs_critical_batt_volt;
+    AP_Int32 fs_critical_batt_mah;
     
     // control over servo output ranges
     SRV_Channels servo_channels;

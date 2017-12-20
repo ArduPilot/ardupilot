@@ -1004,6 +1004,22 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(visual_odom, "VISO", 18, ParametersG2, AP_VisualOdom),
 #endif
 
+    // @Param: FS_CRITICAL_VOLT
+    // @DisplayName: Failsafe severe battery voltage
+    // @Description: Battery voltage to trigger landing. If the battery voltage drops below this voltage then the copter will LAND
+    // @Units: Volts
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FS_CRITICAL_VOLT", 19, ParametersG2, fs_critical_batt_volt, 0),
+
+    // @Param: FS_CRITICAL_VOLT
+    // @DisplayName: Failsafe severe battery mah
+    // @Description: Battery mah to trigger landing. If the battery capacity drops below this mAh then the copter will LAND
+    // @Units: mAh
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FS_CRITICAL_MAH", 20, ParametersG2, fs_critical_batt_mah, 0),
+
     AP_GROUPEND
 };
 
