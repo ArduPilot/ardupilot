@@ -89,6 +89,10 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_smartrtl;
             break;
 
+        case NEW_MODE:
+        	ret = &mode_newmode;
+        	break;
+
         default:
             break;
     }
