@@ -71,7 +71,7 @@ void Copter::failsafe_battery_event(void)
 
 }
 
-void Copter::failsafe_severe_battery_event(void)
+void Copter::failsafe_critical_battery_event(void)
 {
     // return immediately if low battery event has already been triggered
     if (fs_low_batt_land) {

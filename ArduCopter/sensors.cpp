@@ -176,8 +176,8 @@ void Copter::read_battery(void)
     // Check for severely low voltage. Failsafe battery event must be triggered before and 
     // land command must not triggered before.
     // USB must not be connected, or might cause false alarm.
-    if (!ap.usb_connected && failsafe.battery && !fs_low_batt_land && battery.exhausted(g.fs_severe_batt_volt, g.fs_batt_mah)) {
-        failsafe_severe_battery_event();
+    if (!ap.usb_connected && failsafe.battery && !fs_low_batt_land && battery.exhausted(g2.fs_critical_batt_volt, g2.fs_critical_batt_mah)) {
+        failsafe_critical_battery_event();
     }
 
     // log battery info to the dataflash

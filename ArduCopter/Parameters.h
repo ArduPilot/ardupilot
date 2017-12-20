@@ -367,8 +367,6 @@ public:
 
         // 254,255: reserved
 
-        k_param_fs_severe_batt_volt = 256,
-
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -569,6 +567,10 @@ public:
 
     // RC input channels
     RC_Channels rc_channels;
+
+    // Critical battery volt/mah to trigger landing
+    AP_Int32 fs_critical_batt_volt;
+    AP_Int32 fs_critical_batt_mah;
     
     // control over servo output ranges
     SRV_Channels servo_channels;

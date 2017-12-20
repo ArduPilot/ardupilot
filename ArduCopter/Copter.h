@@ -960,7 +960,7 @@ private:
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();
     void failsafe_battery_event(void);
-    void failsafe_severe_battery_event(void);
+    void failsafe_critical_battery_event(void);
     void failsafe_gcs_check();
     void failsafe_gcs_off_event(void);
     void failsafe_terrain_check();
