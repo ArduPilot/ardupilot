@@ -1,7 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
-#include "AP_InertialSensor_QURT.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#include "AP_InertialSensor_QURT.h"
 
 const extern AP_HAL::HAL& hal;
 
