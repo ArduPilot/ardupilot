@@ -64,6 +64,9 @@ private:
     uint8_t state;
     int32_t D1;
     int32_t D2;
+    uint32_t command_send_us;
+    bool ignore_next;
+    uint8_t cmd_sent;
     
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 };
