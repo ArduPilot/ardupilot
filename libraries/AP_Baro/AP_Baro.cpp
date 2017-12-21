@@ -35,8 +35,12 @@
 #include "AP_Baro_KellerLD.h"
 #include "AP_Baro_MS5611.h"
 #include "AP_Baro_LPS25H.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 #include "AP_Baro_qflight.h"
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
 #include "AP_Baro_QURT.h"
+#endif
 #if HAL_WITH_UAVCAN
 #include "AP_Baro_UAVCAN.h"
 #endif
