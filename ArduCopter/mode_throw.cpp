@@ -258,7 +258,7 @@ bool Copter::ModeThrow::throw_attitude_good()
 
 bool Copter::ModeThrow::throw_height_good()
 {
-    // Check that we are no more than 0.5m below the demanded height
+    // Check that we are within 0.5m of the demanded height
     return (pos_control->get_alt_error() < 50.0f);
 }
 
