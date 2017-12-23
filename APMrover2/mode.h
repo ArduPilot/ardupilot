@@ -111,7 +111,7 @@ protected:
     void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
 
     // calculate steering angle given a desired lateral acceleration
-    void calc_steering_from_lateral_acceleration(bool reversed = false);
+    void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed = false);
 
     // calculate steering output to drive towards desired heading
     void calc_steering_to_heading(float desired_heading_cd, bool reversed = false);
@@ -152,7 +152,6 @@ protected:
     Location _destination;      // destination Location when in Guided_WP
     float _distance_to_destination; // distance from vehicle to final destination in meters
     bool _reached_destination;  // true once the vehicle has reached the destination
-    float _desired_lat_accel;   // desired lateral acceleration in m/s/s
     float _desired_yaw_cd;      // desired yaw in centi-degrees
     float _yaw_error_cd;        // error between desired yaw and actual yaw in centi-degrees
     float _desired_speed;       // desired speed in m/s
