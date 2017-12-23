@@ -316,21 +316,20 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
     rover.nav_controller->set_reverse(reversed);
     rover.nav_controller->update_waypoint(origin, destination);
     float desired_lat_accel = rover.nav_controller->lateral_acceleration();
+    float desired_heading = rover.nav_controller->target_bearing_cd();
     if (reversed) {
-        _yaw_error_cd = wrap_180_cd(rover.nav_controller->target_bearing_cd() - ahrs.yaw_sensor + 18000);
+        _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor + 18000);
     } else {
-        _yaw_error_cd = wrap_180_cd(rover.nav_controller->target_bearing_cd() - ahrs.yaw_sensor);
-    }
-    if (rover.use_pivot_steering(_yaw_error_cd)) {
-        if (_yaw_error_cd >= 0.0f) {
-            desired_lat_accel = g.turn_max_g * GRAVITY_MSS;
-        } else {
-            desired_lat_accel = -g.turn_max_g * GRAVITY_MSS;
-        }
+        _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor);
     }
 
-    // call lateral acceleration to steering controller
-    calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
+    if (rover.use_pivot_steering(_yaw_error_cd)) {
+        // for pivot turns use heading controller
+        calc_steering_to_heading(desired_heading, reversed);
+    } else {
+        // call lateral acceleration to steering controller
+        calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
+    }
 }
 
 /*
