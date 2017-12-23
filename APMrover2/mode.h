@@ -107,11 +107,12 @@ protected:
     // steering_out is in the range -4500 ~ +4500, throttle_out is in the range -100 ~ +100
     void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out);
 
+    // calculate steering output to drive along line from origin to destination waypoint
+    void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
+
     // calculate steering angle given a desired lateral acceleration
     void calc_steering_from_lateral_acceleration(bool reversed = false);
 
-    // calculate steering output to drive along line from origin to destination waypoint
-    void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
 
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
