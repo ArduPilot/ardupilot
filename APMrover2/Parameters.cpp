@@ -152,7 +152,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action
     // @Description: What to do on a failsafe event
-    // @Values: 0:Nothing,1:RTL,2:HOLD
+    // @Values: 0:Nothing,1:RTL,2:Hold
     // @User: Standard
     GSCALAR(fs_action,    "FS_ACTION",     2),
 
@@ -188,7 +188,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_CRASH_CHECK
     // @DisplayName: Crash check action
     // @Description: What to do on a crash event. When enabled the rover will go to hold if a crash is detected.
-    // @Values: 0:Disabled,1:HOLD,2:HoldAndDisarm
+    // @Values: 0:Disabled,1:Hold,2:HoldAndDisarm
     // @User: Standard
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    FS_CRASH_DISABLE),
 
