@@ -364,3 +364,12 @@ void Mode::calc_steering_from_lateral_acceleration(bool reversed)
     float steering_out = attitude_control.get_steering_out_lat_accel(_desired_lat_accel, g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right, reversed);
     g2.motors.set_steering(steering_out * 4500.0f);
 }
+
+// calculate steering output to drive towards desired heading
+void Mode::calc_steering_to_heading(float desired_heading_cd, bool reversed)
+{
+    // calculate yaw error (in radians) and pass to steering angle controller
+    const float yaw_error = wrap_PI(radians((desired_heading_cd - ahrs.yaw_sensor) * 0.01f));
+    const float steering_out = attitude_control.get_steering_out_angle_error(yaw_error, g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right, reversed);
+    g2.motors.set_steering(steering_out * 4500.0f);
+}
