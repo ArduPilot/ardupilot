@@ -7,7 +7,6 @@ bool ModeGuided::_enter()
     set_desired_speed_to_default();
 
     // when entering guided mode we set the target as the current location.
-    _desired_lat_accel = 0.0f;
     set_desired_location(rover.current_loc);
 
     // guided mode never travels in reverse
