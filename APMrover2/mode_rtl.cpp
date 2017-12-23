@@ -37,6 +37,5 @@ void ModeRTL::update()
     } else {
         // we've reached destination so stop
         stop_vehicle();
-        _desired_lat_accel = 0.0f;
     }
 }

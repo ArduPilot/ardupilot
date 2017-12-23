@@ -60,7 +60,6 @@ void ModeAuto::update()
             } else {
                 // we have reached the destination so stop
                 stop_vehicle();
-                _desired_lat_accel = 0.0f;
             }
             break;
         }
