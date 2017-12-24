@@ -417,15 +417,7 @@ bool Copter::ModeAuto::landing_gear_should_be_deployed() const
     case Auto_Land:
         return true;
     case Auto_RTL:
-        switch(_copter.mode_rtl.state()) {
-        case RTL_LoiterAtHome:
-        case RTL_Land:
-        case RTL_FinalDescent:
-            return true;
-        default:
-            return false;
-        }
-        return false;
+        return _copter.mode_rtl.landing_gear_should_be_deployed();
     default:
         return false;
     }
