@@ -72,6 +72,38 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VOLT2_MIN",     5,     AP_Arming,  _min_voltage[1],  0),
 
+    // @Param: TEMP_MIN
+    // @DisplayName: Arming temperature minimum on the first battery
+    // @Description: The minimum temperature of the first battery required to arm, 0 disables the check
+    // @Units: degC
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TEMP_MIN",      6,     AP_Arming,  _min_temperature[0],  0),
+
+    // @Param: TEMP_MAX
+    // @DisplayName: Arming temperature maximum on the first battery
+    // @Description: The maximum temperature of the first battery required to arm, 0 disables the check
+    // @Units: degC
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TEMP_MAX",      7,     AP_Arming,  _max_temperature[0], 0),
+
+    // @Param: TEMP2_MIN
+    // @DisplayName: Arming temperature minimum on the second battery
+    // @Description: The minimum temperature of the second battery required to arm, 0 disables the check
+    // @Units: degC
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TEMP2_MIN",     8,     AP_Arming,  _min_temperature[1],  0),
+
+    // @Param: TEMP2_MAX
+    // @DisplayName: Arming temperature maximum on the second battery
+    // @Description: The maximum temperature of the second battery required to arm, 0 disables the check
+    // @Units: degC
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TEMP2_MAX",     9,     AP_Arming,  _max_temperature[1],  0),
+
     AP_GROUPEND
 };
 
@@ -408,6 +440,17 @@ bool AP_Arming::gps_checks(bool report)
     return true;
 }
 
+/**
+ * Battery check
+ *
+ * @param [in] report true: Output message to GCS.<BR>
+ *                    false: Not Output message.
+ * @retval true Battery is normal
+ * @retval false Battery is abnormal
+ * @note
+ * This check is performed when "ALL" or "BATTERY" is specified in the setting of the arming check.
+ * When failsafe battery is set in notification, do not check
+ */
 bool AP_Arming::battery_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -421,6 +464,7 @@ bool AP_Arming::battery_checks(bool report)
         }
 
         for (uint8_t i = 0; i < _battery.num_instances(); i++) {
+            // voltage check
             if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
                 if (report) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d voltage %.1f below minimum %.1f",
@@ -429,6 +473,47 @@ bool AP_Arming::battery_checks(bool report)
                             (double)_min_voltage[i]);
                 }
                 return false;
+            }
+
+            float temperature = 0.0f;
+            // temperature minimum check
+            if (_min_temperature[i] > 0.0f) {
+                if (!_battery.get_temperature(temperature, i)) {
+                    if (report) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d not get the temp",
+                                i+1);
+                    }
+                    return false;
+                }
+                if (temperature < _min_temperature[i]) {
+                    if (report) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d temp %.1f below minimum %.1f",
+                                i+1,
+                                (double)temperature,
+                                (double)_min_temperature[i]);
+                    }
+                    return false;
+                }
+            }
+
+            // temperature maximum check
+            if (_max_temperature[i] > 0.0f) {
+                if (0.0f == temperature && !_battery.get_temperature(temperature, i)) {
+                    if (report) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d not get the temp",
+                                i+1);
+                    }
+                    return false;
+                }
+                if (temperature > _max_temperature[i]) {
+                    if (report) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d temp %.1f below maximum %.1f",
+                                i+1,
+                                (double)temperature,
+                                (double)_max_temperature[i]);
+                    }
+                    return false;
+                }
             }
         }
      }
