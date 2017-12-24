@@ -21,7 +21,7 @@ void setup(void)
 
     // check if healthy
     if (!toshiba_led.healthy()) {
-        hal.console->printf("Failed to initialise Toshiba LED\n");
+        AP_HAL::panic("Failed to initialise Toshiba LED\n");
     }
 
     // turn on initialising notification

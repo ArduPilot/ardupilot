@@ -66,9 +66,11 @@ void ToneAlarm_Linux::update()
         return;
     }
 
-    // exit if buzzer is not enabled
-    if (pNotify->buzzer_enabled() == false) {
-        return;
+    if (pNotify) {
+        // exit if buzzer is not enabled
+        if (pNotify->buzzer_enabled() == false) {
+            return;
+        }
     }
 
     // check for arming failure
