@@ -207,7 +207,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     // calculate dt
     const uint32_t now = AP_HAL::millis();
     float dt = (now - _steer_turn_last_ms) / 1000.0f;
-    if ((_steer_turn_last_ms == 0) || (dt > AR_ATTCONTROL_TIMEOUT_MS)) {
+    if ((_steer_turn_last_ms == 0) || (dt > (AR_ATTCONTROL_TIMEOUT_MS / 1000.0f))) {
         dt = 0.0f;
         _steer_rate_pid.reset_filter();
     } else {
