@@ -21,13 +21,6 @@
 
 bool Copter::ModeAuto::ok_to_enter_check_takeoff_cmd() const
 {
-    if (!motors->armed()) {
-        // allow changing into auto mode if disarmed, regardless of
-        // the mission having a takeoff.  Arming is not permitted in
-        // auto mode, otherwise we would need a pre-arm check.
-        return true;
-    }
-
     if (!ap.land_complete) {
         // we're already flying, so we don't need a takeoff_cmd
         return true;
@@ -43,14 +36,19 @@ bool Copter::ModeAuto::ok_to_enter_check_takeoff_cmd() const
 // auto_init - initialise auto controller
 bool Copter::ModeAuto::ok_to_enter() const
 {
-    if (mission.num_commands() < 2) {
-        // can't enter auto without at least one non-home-position
-        // command.  Note our home position counts towards
-        // num_commands()!
-        return false;
-    }
-    if (!ok_to_enter_check_takeoff_cmd()) {
-        return false;
+    // allow changing into auto mode if disarmed, regardless of
+    // the mission having a takeoff.  Arming is not permitted in
+    // auto mode, otherwise we would need a pre-arm check.
+    if (motors->armed()) {
+        if (mission.num_commands() < 2) {
+            // can't enter auto without at least one non-home-position
+            // command.  Note our home position counts towards
+            // num_commands()!
+            return false;
+        }
+        if (!ok_to_enter_check_takeoff_cmd()) {
+            return false;
+        }
     }
     return Copter::Mode::ok_to_enter();
 }
