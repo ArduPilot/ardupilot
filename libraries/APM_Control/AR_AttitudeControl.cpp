@@ -141,6 +141,24 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(_steer_angle_p, "_STR_ANG_", 6, AR_AttitudeControl, AC_P),
 
+    // @Param: _STR_ACC_MAX
+    // @DisplayName: Steering control angular acceleration maximum
+    // @Description: Steering control angular acceleartion maximum (in deg/s/s).  0 to disable acceleration limiting
+    // @Range: 0 1000
+    // @Increment: 0.1
+    // @Units: deg/s/s
+    // @User: Standard
+    AP_GROUPINFO("_STR_ACC_MAX", 7, AR_AttitudeControl, _steer_accel_max, AR_ATTCONTROL_STEER_ACCEL_MAX),
+
+    // @Param: _STR_RAT_MAX
+    // @DisplayName: Steering control rotation rate maximum
+    // @Description: Steering control rotation rate maximum in deg/s.  0 to remove rate limiting
+    // @Range: 0 1000
+    // @Increment: 0.1
+    // @Units: deg/s
+    // @User: Standard
+    AP_GROUPINFO("_STR_RAT_MAX", 8, AR_AttitudeControl, _steer_rate_max, AR_ATTCONTROL_STEER_RATE_MAX),
+
     AP_GROUPEND
 };
 
@@ -201,8 +219,13 @@ float AR_AttitudeControl::get_steering_out_angle_error(float angle_err, bool ski
 // desired yaw rate in radians/sec. Positive yaw is to the right.
 float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed)
 {
-    // record desired turn rate for reporting purposes
-    _desired_turn_rate = desired_rate;
+    // get speed forward
+    float speed;
+    if (!get_forward_speed(speed)) {
+        // we expect caller will not try to control heading using rate control without a valid speed estimate
+        // on failure to get speed we do not attempt to steer
+        return 0.0f;
+    }
 
     // calculate dt
     const uint32_t now = AP_HAL::millis();
@@ -210,17 +233,23 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     if ((_steer_turn_last_ms == 0) || (dt > (AR_ATTCONTROL_TIMEOUT_MS / 1000.0f))) {
         dt = 0.0f;
         _steer_rate_pid.reset_filter();
+        // reset desired turn rate to actual turn rate for accel limiting
+        _desired_turn_rate = _ahrs.get_yaw_rate_earth();
     } else {
         _steer_rate_pid.set_dt(dt);
     }
     _steer_turn_last_ms = now;
 
-    // get speed forward
-    float speed;
-    if (!get_forward_speed(speed)) {
-        // we expect caller will not try to control heading using rate control without a valid speed estimate
-        // on failure to get speed we do not attempt to steer
-        return 0.0f;
+    // acceleration limit desired turn rate
+    const float change_max = radians(_steer_accel_max) * dt;
+    if (is_positive(dt) && is_positive(change_max)) {
+        desired_rate = constrain_float(desired_rate, _desired_turn_rate - change_max, _desired_turn_rate + change_max);
+    }
+    _desired_turn_rate = desired_rate;
+
+    // rate limit desired turn rate
+    if (is_positive(_steer_rate_max)) {
+        _desired_turn_rate = constrain_float(_desired_turn_rate, -_steer_rate_max, _steer_rate_max);
     }
 
     // only use positive speed. Use reverse flag instead of negative speeds.
