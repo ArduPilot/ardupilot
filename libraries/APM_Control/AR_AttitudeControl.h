@@ -18,7 +18,7 @@
 #define AR_ATTCONTROL_THR_SPEED_D       0.00f
 #define AR_ATTCONTROL_THR_SPEED_FILT    5.00f
 #define AR_ATTCONTROL_DT                0.02f
-#define AR_ATTCONTROL_TIMEOUT_MS        100
+#define AR_ATTCONTROL_TIMEOUT_MS        200
 
 // throttle/speed control maximum acceleration/deceleration (in m/s) (_ACCEL_MAX parameter default)
 #define AR_ATTCONTROL_THR_ACCEL_MAX     5.00f
