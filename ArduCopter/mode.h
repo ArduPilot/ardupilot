@@ -48,7 +48,7 @@ public:
         uint8_t _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
 
         // Yaw will point at this location if mode is set to AUTO_YAW_ROI
-        Vector3f roi_WP;
+        Vector3f roi;
 
         // bearing from current location to the ROI
         float _roi_yaw;
