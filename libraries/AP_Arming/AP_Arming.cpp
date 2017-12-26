@@ -468,7 +468,7 @@ bool AP_Arming::battery_checks(bool report)
             // voltage check
             if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
                 if (report) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d voltage %.1f below minimum %.1f",
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %u voltage %.1f below min %.1f",
                             i+1,
                             (double)_battery.voltage(i),
                             (double)_min_voltage[i]);
