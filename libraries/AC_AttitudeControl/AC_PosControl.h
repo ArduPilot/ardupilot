@@ -252,6 +252,10 @@ public:
     /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
     void set_target_to_stopping_point_xy();
 
+    /// get_stopping_distance_xyz - returns metres travelled before
+    /// vehicle will be stopped.
+    float get_stopping_distance_xyz() const;
+
     /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
     ///     distance_max allows limiting distance to stopping point
     ///     results placed in stopping_position vector

@@ -568,6 +568,31 @@ void AC_PosControl::set_target_to_stopping_point_xy()
     get_stopping_point_xy(_pos_target);
 }
 
+// FIXME: _accel_cms shouldn't be used for Z
+float AC_PosControl::get_stopping_distance_xyz() const
+{
+    // calculate current velocity
+    const Vector3f curr_vel = _inav.get_velocity();
+    const float vel_total = curr_vel.length();
+
+    // avoid divide by zero by using current position if the velocity is below 10cm/s, kP is very low or acceleration is zero
+    const float kP = _p_pos_xy.kP();
+    if (kP <= 0.0f || _accel_cms <= 0.0f || is_zero(vel_total)) {
+        return 0.0f;
+    }
+
+    // calculate point at which velocity switches from linear to sqrt
+    const float linear_velocity = _accel_cms/kP;
+
+    // calculate distance within which we can stop
+    if (vel_total < linear_velocity) {
+        return vel_total/kP;
+    }
+
+    const float linear_distance = _accel_cms/(2.0f*kP*kP);
+    return linear_distance + (vel_total*vel_total)/(2.0f*_accel_cms);
+}
+
 /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
 ///     distance_max allows limiting distance to stopping point
 ///     results placed in stopping_position vector
