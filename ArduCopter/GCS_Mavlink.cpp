@@ -47,6 +47,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
     case RTL:
     case LOITER:
     case AVOID_ADSB:
+    case CHASE:
     case GUIDED:
     case CIRCLE:
     case POSHOLD:
@@ -695,6 +696,7 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
         copter.avoidance_adsb.handle_msg(msg);
     }
 #endif
+    copter.mode_chase.mavlink_packet_received(msg);
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
