@@ -975,6 +975,7 @@ private:
 #if MODE_CIRCLE_ENABLED == ENABLED
     ModeCircle mode_circle;
 #endif
+    ModeChase mode_chase;
 #if MODE_DRIFT_ENABLED == ENABLED
     ModeDrift mode_drift;
 #endif
