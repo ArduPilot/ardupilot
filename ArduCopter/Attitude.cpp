@@ -33,13 +33,13 @@ float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
  * yaw controllers
  *************************************************************/
 
-// roi_yaw - returns heading towards location held in roi_WP
+// roi_yaw - returns heading towards location held in roi
 float Copter::Mode::AutoYaw::roi_yaw()
 {
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
-        _roi_yaw = get_bearing_cd(copter.inertial_nav.get_position(), roi_WP);
+        _roi_yaw = get_bearing_cd(copter.inertial_nav.get_position(), roi);
     }
 
     return _roi_yaw;
