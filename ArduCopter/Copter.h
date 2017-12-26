@@ -462,28 +462,6 @@ private:
     // Current location of the vehicle (altitude is relative to home)
     Location_Class current_loc;
 
-    // Navigation Yaw control
-    // auto flight mode's yaw mode
-    uint8_t auto_yaw_mode;
-
-    // Yaw will point at this location if auto_yaw_mode is set to AUTO_YAW_ROI
-    Vector3f roi_WP;
-
-    // bearing from current location to the yaw_look_at_WP
-    float yaw_look_at_WP_bearing;
-
-    // yaw used for YAW_LOOK_AT_HEADING yaw_mode
-    int32_t yaw_look_at_heading;
-
-    // Deg/s we should turn
-    int16_t yaw_look_at_heading_slew;
-
-    // heading when in yaw_look_ahead_bearing
-    float yaw_look_ahead_bearing;
-
-    // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
-    float auto_yaw_rate_cds;
-
     // IMU variables
     // Integration time (in seconds) for the gyros (DCM algorithm)
     // Updated with the fast loop
@@ -693,8 +671,6 @@ private:
 
     // Attitude.cpp
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
-    float get_roi_yaw();
-    float get_look_ahead_yaw();
     void update_throttle_hover();
     void set_throttle_takeoff();
     float get_pilot_desired_throttle(int16_t throttle_control, float thr_mid = 0.0f);
@@ -843,15 +819,6 @@ private:
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     void update_flight_mode();
     void notify_flight_mode();
-
-    // mode_auto.cpp
-    uint8_t get_default_auto_yaw_mode(bool rtl);
-    void set_auto_yaw_mode(uint8_t yaw_mode);
-    void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle);
-    void set_auto_yaw_roi(const Location &roi_location);
-    void set_auto_yaw_rate(float turn_rate_cds);
-    float get_auto_heading(void);
-    float get_auto_yaw_rate_cds();
 
     // mode_land.cpp
     void set_mode_land_with_pause(mode_reason_t reason);
