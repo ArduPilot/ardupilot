@@ -924,7 +924,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 roi_loc.lat = packet.x;
                 roi_loc.lng = packet.y;
                 roi_loc.alt = (int32_t)(packet.z * 100.0f);
-                copter.set_auto_yaw_roi(roi_loc);
+                copter.flightmode->auto_yaw.set_roi(roi_loc);
                 result = MAV_RESULT_ACCEPTED;
                 break;
             }
@@ -1002,7 +1002,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             if ((packet.param1 >= 0.0f)   &&
             	(packet.param1 <= 360.0f) &&
             	(is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
-            	copter.set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, is_positive(packet.param4));
+                copter.flightmode->auto_yaw.set_fixed_yaw(
+                    packet.param1,
+                    packet.param2,
+                    (int8_t)packet.param3,
+                    is_positive(packet.param4));
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_FAILED;
@@ -1066,14 +1070,17 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
             roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
             roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
-            copter.set_auto_yaw_roi(roi_loc);
+            copter.flightmode->auto_yaw.set_roi(roi_loc);
             result = MAV_RESULT_ACCEPTED;
             break;
 
         case MAV_CMD_DO_MOUNT_CONTROL:
 #if MOUNT == ENABLED
             if(!copter.camera_mount.has_pan_control()) {
-                copter.set_auto_yaw_look_at_heading((float)packet.param3 / 100.0f,0.0f,0,0);
+                copter.flightmode->auto_yaw.set_fixed_yaw(
+                    (float)packet.param3 / 100.0f,
+                    0.0f,
+                    0,0);
             }
             copter.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
             result = MAV_RESULT_ACCEPTED;
@@ -1653,7 +1660,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     //deprecated. Use MAV_CMD_DO_MOUNT_CONTROL
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
         if(!copter.camera_mount.has_pan_control()) {
-            copter.set_auto_yaw_look_at_heading(mavlink_msg_mount_control_get_input_c(msg)/100.0f, 0.0f, 0, 0);
+            copter.flightmode->auto_yaw.set_fixed_yaw(
+                mavlink_msg_mount_control_get_input_c(msg)/100.0f,
+                0.0f,
+                0,
+                0);
         }
         copter.camera_mount.control_msg(msg);
         break;

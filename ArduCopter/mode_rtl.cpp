@@ -108,7 +108,7 @@ void Copter::ModeRTL::climb_start()
     wp_nav->set_fast_waypoint(true);
 
     // hold current yaw during initial climb
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 // rtl_return_start - initialise return to home
@@ -123,7 +123,7 @@ void Copter::ModeRTL::return_start()
     }
 
     // initialise yaw to point home (maybe)
-    set_auto_yaw_mode(copter.get_default_auto_yaw_mode(true));
+    auto_yaw.set_mode_to_default(true);
 }
 
 // rtl_climb_return_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
@@ -143,7 +143,7 @@ void Copter::ModeRTL::climb_return_run()
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
 
@@ -157,12 +157,12 @@ void Copter::ModeRTL::climb_return_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(),true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
     }
 
     // check if we've completed this stage of RTL
@@ -177,10 +177,10 @@ void Copter::ModeRTL::loiterathome_start()
     _loiter_start_time = millis();
 
     // yaw back to initial take-off heading yaw unless pilot has already overridden yaw
-    if(copter.get_default_auto_yaw_mode(true) != AUTO_YAW_HOLD) {
-        set_auto_yaw_mode(AUTO_YAW_RESETTOARMEDYAW);
+    if(auto_yaw.default_mode(true) != AUTO_YAW_HOLD) {
+        auto_yaw.set_mode(AUTO_YAW_RESETTOARMEDYAW);
     } else {
-        set_auto_yaw_mode(AUTO_YAW_HOLD);
+        auto_yaw.set_mode(AUTO_YAW_HOLD);
     }
 }
 
@@ -201,7 +201,7 @@ void Copter::ModeRTL::loiterathome_run()
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
 
@@ -215,17 +215,17 @@ void Copter::ModeRTL::loiterathome_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     }else{
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(),true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
     }
 
     // check if we've completed this stage of RTL
     if ((millis() - _loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
-        if (copter.auto_yaw_mode == AUTO_YAW_RESETTOARMEDYAW) {
+        if (auto_yaw.mode() == AUTO_YAW_RESETTOARMEDYAW) {
             // check if heading is within 2 degrees of heading when vehicle was armed
             if (labs(wrap_180_cd(ahrs.yaw_sensor-copter.initial_armed_bearing)) <= 200) {
                 _state_complete = true;
@@ -250,7 +250,7 @@ void Copter::ModeRTL::descent_start()
     pos_control->set_target_to_stopping_point_z();
 
     // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 // rtl_descent_run - implements the final descent to the RTL_ALT
@@ -332,7 +332,7 @@ void Copter::ModeRTL::land_start()
     }
 
     // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 bool Copter::ModeRTL::landing_gear_should_be_deployed() const

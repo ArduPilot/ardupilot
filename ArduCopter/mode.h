@@ -10,7 +10,67 @@ class Mode {
 
     // constructor
     Mode(void);
-    
+
+public:
+
+    // Navigation Yaw control
+    class AutoYaw {
+
+    public:
+
+        // yaw(): main product of AutoYaw; the heading:
+        float yaw();
+
+        // mode(): current method of determining desired yaw:
+        autopilot_yaw_mode mode() const { return (autopilot_yaw_mode)_mode; }
+        void set_mode_to_default(bool rtl);
+        void set_mode(autopilot_yaw_mode new_mode);
+        autopilot_yaw_mode default_mode(bool rtl) const;
+
+        // rate_cds(): desired yaw rate in centidegrees/second:
+        float rate_cds() const;
+        void set_rate(float new_rate_cds);
+
+        // set_roi(...): set a "look at" location:
+        void set_roi(const Location &roi_location);
+
+        void set_fixed_yaw(float angle_deg,
+                           float turn_rate_dps,
+                           int8_t direction,
+                           bool relative_angle);
+
+    private:
+
+        float look_ahead_yaw();
+        float roi_yaw();
+
+        // auto flight mode's yaw mode
+        uint8_t _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
+
+        // Yaw will point at this location if mode is set to AUTO_YAW_ROI
+        Vector3f roi_WP;
+
+        // bearing from current location to the ROI
+        float _roi_yaw;
+
+        // yaw used for YAW_FIXED yaw_mode
+        int32_t _fixed_yaw;
+
+        // Deg/s we should turn
+        int16_t _fixed_yaw_slewrate;
+
+        // heading when in yaw_look_ahead_yaw
+        float _look_ahead_yaw;
+
+        // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
+        float _rate_cds;
+
+        // used to reduce update rate to 100hz:
+        uint8_t roi_yaw_counter;
+
+    };
+    static AutoYaw auto_yaw;
+
 protected:
 
     virtual bool init(bool ignore_checks) = 0;
@@ -74,10 +134,6 @@ protected:
     // scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
     float &ekfNavVelGainScaler;
 
-    // Navigation Yaw control
-    // auto flight mode's yaw mode
-    uint8_t &auto_yaw_mode;
-
 #if FRAME_CONFIG == HELI_FRAME
     heli_flags_t &heli_flags;
 #endif
@@ -96,14 +152,9 @@ protected:
     GCS_Copter &gcs();
     void Log_Write_Event(uint8_t id);
     void set_throttle_takeoff(void);
-    void set_auto_yaw_mode(uint8_t yaw_mode);
-    void set_auto_yaw_rate(float turn_rate_cds);
-    void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle);
     void takeoff_timer_start(float alt_cm);
     void takeoff_stop(void);
     void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
-    float get_auto_heading(void);
-    float get_auto_yaw_rate_cds(void);
     float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
 

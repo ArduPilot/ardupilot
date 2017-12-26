@@ -33,8 +33,8 @@ bool Copter::ModeAuto::init(bool ignore_checks)
 
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
-        if (copter.auto_yaw_mode == AUTO_YAW_ROI) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        if (auto_yaw.mode() == AUTO_YAW_ROI) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
 
         // initialise waypoint and spline controller
@@ -118,7 +118,7 @@ bool Copter::ModeAuto::loiter_start()
     wp_nav->set_wp_destination(stopping_point);
 
     // hold yaw at current heading
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 
     return true;
 }
@@ -170,7 +170,7 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
     }
 
     // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 
     // clear i term when we're taking off
     set_throttle_takeoff();
@@ -189,8 +189,8 @@ void Copter::ModeAuto::wp_start(const Vector3f& destination)
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (copter.auto_yaw_mode != AUTO_YAW_ROI) {
-        set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
+    if (auto_yaw.mode() != AUTO_YAW_ROI) {
+        auto_yaw.set_mode_to_default(false);
     }
 }
 
@@ -208,8 +208,8 @@ void Copter::ModeAuto::wp_start(const Location_Class& dest_loc)
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (copter.auto_yaw_mode != AUTO_YAW_ROI) {
-        set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
+    if (auto_yaw.mode() != AUTO_YAW_ROI) {
+        auto_yaw.set_mode_to_default(false);
     }
 }
 
@@ -239,7 +239,7 @@ void Copter::ModeAuto::land_start(const Vector3f& destination)
     }
 
     // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
@@ -286,10 +286,10 @@ void Copter::ModeAuto::circle_movetoedge_start(const Location_Class &circle_cent
         const Vector3f &curr_pos = inertial_nav.get_position();
         float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
         if (dist_to_center > copter.circle_nav->get_radius() && dist_to_center > 500) {
-            set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
+            auto_yaw.set_mode_to_default(false);
         } else {
             // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     } else {
         circle_start();
@@ -323,8 +323,8 @@ void Copter::ModeAuto::spline_start(const Location_Class& destination, bool stop
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (copter.auto_yaw_mode != AUTO_YAW_ROI) {
-        set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
+    if (auto_yaw.mode() != AUTO_YAW_ROI) {
+        auto_yaw.set_mode_to_default(false);
     }
 }
 
@@ -778,7 +778,7 @@ void Copter::ModeAuto::wp_run()
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
 
@@ -792,12 +792,12 @@ void Copter::ModeAuto::wp_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(),true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
     }
 }
 
@@ -821,7 +821,7 @@ void Copter::ModeAuto::spline_run()
         // get pilot's desired yaw rat
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
 
@@ -835,12 +835,12 @@ void Copter::ModeAuto::spline_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
     }
 }
 
@@ -937,7 +937,7 @@ void Copter::ModeAuto::payload_place_start(const Vector3f& destination)
     }
 
     // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 // auto_payload_place_run - places an object in auto mode
@@ -1320,7 +1320,7 @@ void Copter::ModeAuto::do_within_distance(const AP_Mission::Mission_Command& cmd
 
 void Copter::ModeAuto::do_yaw(const AP_Mission::Mission_Command& cmd)
 {
-	set_auto_yaw_look_at_heading(
+	auto_yaw.set_fixed_yaw(
 		cmd.content.yaw.angle_deg,
 		cmd.content.yaw.turn_rate_dps,
 		cmd.content.yaw.direction,
@@ -1355,7 +1355,7 @@ void Copter::ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 //	TO-DO: add support for other features of MAV_CMD_DO_SET_ROI including pointing at a given waypoint
 void Copter::ModeAuto::do_roi(const AP_Mission::Mission_Command& cmd)
 {
-    copter.set_auto_yaw_roi(cmd.content.location);
+    auto_yaw.set_roi(cmd.content.location);
 }
 
 // point the camera to a specified angle
@@ -1363,7 +1363,7 @@ void Copter::ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
 #if MOUNT == ENABLED
     if(!copter.camera_mount.has_pan_control()) {
-        copter.set_auto_yaw_look_at_heading(cmd.content.mount_control.yaw,0.0f,0,0);
+        auto_yaw.set_fixed_yaw(cmd.content.mount_control.yaw,0.0f,0,0);
     }
     copter.camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
@@ -1758,16 +1758,12 @@ bool Copter::ModeAuto::verify_within_distance()
 bool Copter::ModeAuto::verify_yaw()
 {
     // set yaw mode if it has been changed (the waypoint controller often retakes control of yaw as it executes a new waypoint command)
-    if (auto_yaw_mode != AUTO_YAW_LOOK_AT_HEADING) {
-        set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
+    if (auto_yaw.mode() != AUTO_YAW_FIXED) {
+        auto_yaw.set_mode(AUTO_YAW_FIXED);
     }
 
     // check if we are within 2 degrees of the target heading
-    if (labs(wrap_180_cd(ahrs.yaw_sensor-copter.yaw_look_at_heading)) <= 200) {
-        return true;
-    }else{
-        return false;
-    }
+    return (labs(wrap_180_cd(ahrs.yaw_sensor-auto_yaw.yaw())) <= 200);
 }
 
 // verify_nav_wp - check if we have reached the next way point
@@ -1877,11 +1873,11 @@ bool Copter::ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 
 #endif
 
-// get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter
+// default_mode - returns auto_yaw.mode() based on WP_YAW_BEHAVIOR parameter
 // set rtl parameter to true if this is during an RTL
-uint8_t Copter::get_default_auto_yaw_mode(bool rtl)
+autopilot_yaw_mode Copter::Mode::AutoYaw::default_mode(bool rtl) const
 {
-    switch (g.wp_yaw_behavior) {
+    switch (copter.g.wp_yaw_behavior) {
 
         case WP_YAW_BEHAVIOR_NONE:
             return AUTO_YAW_HOLD;
@@ -1902,35 +1898,35 @@ uint8_t Copter::get_default_auto_yaw_mode(bool rtl)
     }
 }
 
-// set_auto_yaw_mode - sets the yaw mode for auto
-void Copter::set_auto_yaw_mode(uint8_t yaw_mode)
+// set_mode - sets the yaw mode for auto
+void Copter::Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
 {
     // return immediately if no change
-    if (auto_yaw_mode == yaw_mode) {
+    if (_mode == yaw_mode) {
         return;
     }
-    auto_yaw_mode = yaw_mode;
+    _mode = yaw_mode;
 
     // perform initialisation
-    switch (auto_yaw_mode) {
+    switch (_mode) {
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
         // wpnav will initialise heading when wpnav's set_destination method is called
         break;
 
     case AUTO_YAW_ROI:
-        // point towards a location held in yaw_look_at_WP
-        yaw_look_at_WP_bearing = ahrs.yaw_sensor;
+        // look ahead until we know otherwise
+        _roi_yaw = copter.ahrs.yaw_sensor;
         break;
 
-    case AUTO_YAW_LOOK_AT_HEADING:
-        // keep heading pointing in the direction held in yaw_look_at_heading
-        // caller should set the yaw_look_at_heading
+    case AUTO_YAW_FIXED:
+        // keep heading pointing in the direction held in fixed_yaw
+        // caller should set the fixed_yaw
         break;
 
     case AUTO_YAW_LOOK_AHEAD:
         // Commanded Yaw to automatically look ahead.
-        yaw_look_ahead_bearing = ahrs.yaw_sensor;
+        _look_ahead_yaw = copter.ahrs.yaw_sensor;
         break;
 
     case AUTO_YAW_RESETTOARMEDYAW:
@@ -1939,66 +1935,65 @@ void Copter::set_auto_yaw_mode(uint8_t yaw_mode)
 
     case AUTO_YAW_RATE:
         // initialise target yaw rate to zero
-        auto_yaw_rate_cds = 0.0f;
+        _rate_cds = 0.0f;
         break;
     }
 }
 
-// set_auto_yaw_look_at_heading - sets the yaw look at heading for auto mode
-void Copter::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle)
+// set_fixed_yaw - sets the yaw look at heading for auto mode
+void Copter::Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle)
 {
-    // get current yaw target
-    int32_t curr_yaw_target = attitude_control->get_att_target_euler_cd().z;
+    const int32_t curr_yaw_target = copter.attitude_control->get_att_target_euler_cd().z;
 
     // calculate final angle as relative to vehicle heading or absolute
     if (!relative_angle) {
         // absolute angle
-        yaw_look_at_heading = wrap_360_cd(angle_deg * 100);
+        _fixed_yaw = wrap_360_cd(angle_deg * 100);
     } else {
         // relative angle
         if (direction < 0) {
             angle_deg = -angle_deg;
         }
-        yaw_look_at_heading = wrap_360_cd((angle_deg * 100) + curr_yaw_target);
+        _fixed_yaw = wrap_360_cd((angle_deg * 100) + curr_yaw_target);
     }
 
     // get turn speed
     if (is_zero(turn_rate_dps)) {
         // default to regular auto slew rate
-        yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
+        _fixed_yaw_slewrate = AUTO_YAW_SLEW_RATE;
     } else {
-        int32_t turn_rate = (wrap_180_cd(yaw_look_at_heading - curr_yaw_target) / 100) / turn_rate_dps;
-        yaw_look_at_heading_slew = constrain_int32(turn_rate, 1, 360);    // deg / sec
+        const int32_t turn_rate = (wrap_180_cd(_fixed_yaw - curr_yaw_target) / 100) / turn_rate_dps;
+        _fixed_yaw_slewrate = constrain_int32(turn_rate, 1, 360);    // deg / sec
     }
 
     // set yaw mode
-    set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
+    set_mode(AUTO_YAW_FIXED);
 
     // TO-DO: restore support for clockwise and counter clockwise rotation held in cmd.content.yaw.direction.  1 = clockwise, -1 = counterclockwise
 }
 
-// set_auto_yaw_roi - sets the yaw to look at roi for auto mode
-void Copter::set_auto_yaw_roi(const Location &roi_location)
+// set_roi - sets the yaw to look at roi for auto mode
+void Copter::Mode::AutoYaw::set_roi(const Location &roi_location)
 {
     // if location is zero lat, lon and altitude turn off ROI
     if (roi_location.alt == 0 && roi_location.lat == 0 && roi_location.lng == 0) {
         // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        auto_yaw.set_mode_to_default(false);
 #if MOUNT == ENABLED
         // switch off the camera tracking if enabled
-        if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-            camera_mount.set_mode_to_default();
+        if (copter.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+            copter.camera_mount.set_mode_to_default();
         }
 #endif  // MOUNT == ENABLED
     } else {
 #if MOUNT == ENABLED
         // check if mount type requires us to rotate the quad
-        if(!camera_mount.has_pan_control()) {
-            roi_WP = pv_location_to_vector(roi_location);
-            set_auto_yaw_mode(AUTO_YAW_ROI);
+        if(!copter.camera_mount.has_pan_control()) {
+            roi_WP = copter.pv_location_to_vector(roi_location);
+            auto_yaw.set_mode(AUTO_YAW_ROI);
         }
         // send the command to the camera mount
-        camera_mount.set_roi_target(roi_location);
+        copter.camera_mount.set_roi_target(roi_location);
 
         // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
         //      0: do nothing
@@ -2009,53 +2004,54 @@ void Copter::set_auto_yaw_roi(const Location &roi_location)
 #else
         // if we have no camera mount aim the quad at the location
         roi_WP = pv_location_to_vector(roi_location);
-        set_auto_yaw_mode(AUTO_YAW_ROI);
+        auto_yaw.set_mode(AUTO_YAW_ROI);
 #endif  // MOUNT == ENABLED
     }
 }
 
 // set auto yaw rate in centi-degrees per second
-void Copter::set_auto_yaw_rate(float turn_rate_cds)
+void Copter::Mode::AutoYaw::set_rate(float turn_rate_cds)
 {
-    set_auto_yaw_mode(AUTO_YAW_RATE);
-    auto_yaw_rate_cds = turn_rate_cds;
+    set_mode(AUTO_YAW_RATE);
+    _rate_cds = turn_rate_cds;
 }
 
-// get_auto_heading - returns target heading depending upon auto_yaw_mode
-// 100hz update rate
-float Copter::get_auto_heading(void)
+// yaw - returns target heading depending upon auto_yaw.mode()
+float Copter::Mode::AutoYaw::yaw()
 {
-    switch(auto_yaw_mode) {
+    switch(_mode) {
 
     case AUTO_YAW_ROI:
         // point towards a location held in roi_WP
-        return get_roi_yaw();
+        return roi_yaw();
 
-    case AUTO_YAW_LOOK_AT_HEADING:
-        // keep heading pointing in the direction held in yaw_look_at_heading with no pilot input allowed
-        return yaw_look_at_heading;
+    case AUTO_YAW_FIXED:
+        // keep heading pointing in the direction held in fixed_yaw
+        // with no pilot input allowed
+        return _fixed_yaw;
 
     case AUTO_YAW_LOOK_AHEAD:
         // Commanded Yaw to automatically look ahead.
-        return get_look_ahead_yaw();
+        return look_ahead_yaw();
 
     case AUTO_YAW_RESETTOARMEDYAW:
         // changes yaw to be same as when quad was armed
-        return initial_armed_bearing;
+        return copter.initial_armed_bearing;
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
     default:
         // point towards next waypoint.
         // we don't use wp_bearing because we don't want the copter to turn too much during flight
-        return wp_nav->get_yaw();
+        return copter.wp_nav->get_yaw();
     }
 }
 
-// returns yaw rate held in auto_yaw_rate and normally set by SET_POSITION_TARGET mavlink messages (positive it clockwise, negative is counter clockwise)
-float Copter::get_auto_yaw_rate_cds(void)
+// returns yaw rate normally set by SET_POSITION_TARGET mavlink
+// messages (positive is clockwise, negative is counter clockwise)
+float Copter::Mode::AutoYaw::rate_cds() const
 {
-    if (auto_yaw_mode == AUTO_YAW_RATE) {
-        return auto_yaw_rate_cds;
+    if (_mode == AUTO_YAW_RATE) {
+        return _rate_cds;
     }
 
     // return zero turn rate (this should never happen)
