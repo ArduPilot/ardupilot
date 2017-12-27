@@ -566,14 +566,14 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
 }
 
 // methods for mavlink SYS_STATUS message (send_extended_status1)
-bool AC_Fence::geofence_present() const
+bool AC_Fence::sys_status_present() const
 {
     return _enabled;
 }
 
-bool AC_Fence::geofence_enabled() const
+bool AC_Fence::sys_status_enabled() const
 {
-    if (!geofence_present()) {
+    if (!sys_status_present()) {
         return false;
     }
     if (_action == AC_FENCE_ACTION_REPORT_ONLY) {
@@ -582,9 +582,9 @@ bool AC_Fence::geofence_enabled() const
     return true;
 }
 
-bool AC_Fence::geofence_failed() const
+bool AC_Fence::sys_status_failed() const
 {
-    if (!geofence_present()) {
+    if (!sys_status_present()) {
         // not failed if not present; can fail if present but not enabled
         return false;
     }
