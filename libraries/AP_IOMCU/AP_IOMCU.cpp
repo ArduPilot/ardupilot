@@ -66,6 +66,7 @@ enum ioevents {
     IOEVENT_SET_ONESHOT_ON,
     IOEVENT_SET_ONESHOT_OFF,
     IOEVENT_SET_RATES,
+    IOEVENT_GET_RCIN,
 };
 
 // setup page registers
@@ -186,6 +187,9 @@ void AP_IOMCU::send_servo_out()
  */
 void AP_IOMCU::read_rc_input()
 {
+    // read a min of 9 channels and max of max_channels
+    uint8_t n = MIN(MAX(9, rc_input.count), max_channels);
+    read_registers(PAGE_RAW_RCIN, 0, 6+n, (uint16_t *)&rc_input);
 }
 
 /*

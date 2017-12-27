@@ -113,6 +113,17 @@ private:
         uint16_t prssi;
     } reg_status;
 
+    // PAGE_RAW_RCIN values
+    struct PACKED {
+        uint16_t count;
+        uint16_t flags;
+        uint16_t nrssi;
+        uint16_t data;
+        uint16_t frame_count;
+        uint16_t lost_frame_count;
+        uint16_t pwm[max_channels];
+    } rc_input;
+    
     // output pwm values
     struct {
         uint8_t num_channels;
