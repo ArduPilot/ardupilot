@@ -6,125 +6,406 @@
  */
 
 #include "AP_IOMCU.h"
+#include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL &hal;
 
 #define PKT_MAX_REGS 32
 
 struct PACKED IOPacket {
-	uint8_t 	count_code;
+	uint8_t 	count:6;
+	uint8_t 	code:2;
 	uint8_t 	crc;
 	uint8_t 	page;
 	uint8_t 	offset;
 	uint16_t	regs[PKT_MAX_REGS];
-};
 
-#define PKT_CODE_READ		0x00	/* FMU->IO read transaction */
-#define PKT_CODE_WRITE		0x40	/* FMU->IO write transaction */
-#define PKT_CODE_SPIUART	0xC0	/* FMU<->IO spi-uart transaction */
-#define PKT_CODE_SUCCESS	0x00	/* IO->FMU success reply */
-#define PKT_CODE_CORRUPT	0x40	/* IO->FMU bad packet reply */
-#define PKT_CODE_ERROR		0x80	/* IO->FMU register op error reply */
-
-#define PKT_CODE_MASK		0xc0
-#define PKT_COUNT_MASK		0x3f
-
-#define PKT_COUNT(_p)	((_p).count_code & PKT_COUNT_MASK)
-#define PKT_CODE(_p)	((_p).count_code & PKT_CODE_MASK)
-#define PKT_SIZE(_p)	((size_t)((uint8_t *)&((_p).regs[PKT_COUNT(_p)]) - ((uint8_t *)&(_p))))
-
-#define IO_PROTOCOL_VERSION		4
-#define IO_PAGE_CONFIG		0
-
-static const uint8_t crc8_tab[256] =
-{
-	0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15,
-	0x38, 0x3F, 0x36, 0x31, 0x24, 0x23, 0x2A, 0x2D,
-	0x70, 0x77, 0x7E, 0x79, 0x6C, 0x6B, 0x62, 0x65,
-	0x48, 0x4F, 0x46, 0x41, 0x54, 0x53, 0x5A, 0x5D,
-	0xE0, 0xE7, 0xEE, 0xE9, 0xFC, 0xFB, 0xF2, 0xF5,
-	0xD8, 0xDF, 0xD6, 0xD1, 0xC4, 0xC3, 0xCA, 0xCD,
-	0x90, 0x97, 0x9E, 0x99, 0x8C, 0x8B, 0x82, 0x85,
-	0xA8, 0xAF, 0xA6, 0xA1, 0xB4, 0xB3, 0xBA, 0xBD,
-	0xC7, 0xC0, 0xC9, 0xCE, 0xDB, 0xDC, 0xD5, 0xD2,
-	0xFF, 0xF8, 0xF1, 0xF6, 0xE3, 0xE4, 0xED, 0xEA,
-	0xB7, 0xB0, 0xB9, 0xBE, 0xAB, 0xAC, 0xA5, 0xA2,
-	0x8F, 0x88, 0x81, 0x86, 0x93, 0x94, 0x9D, 0x9A,
-	0x27, 0x20, 0x29, 0x2E, 0x3B, 0x3C, 0x35, 0x32,
-	0x1F, 0x18, 0x11, 0x16, 0x03, 0x04, 0x0D, 0x0A,
-	0x57, 0x50, 0x59, 0x5E, 0x4B, 0x4C, 0x45, 0x42,
-	0x6F, 0x68, 0x61, 0x66, 0x73, 0x74, 0x7D, 0x7A,
-	0x89, 0x8E, 0x87, 0x80, 0x95, 0x92, 0x9B, 0x9C,
-	0xB1, 0xB6, 0xBF, 0xB8, 0xAD, 0xAA, 0xA3, 0xA4,
-	0xF9, 0xFE, 0xF7, 0xF0, 0xE5, 0xE2, 0xEB, 0xEC,
-	0xC1, 0xC6, 0xCF, 0xC8, 0xDD, 0xDA, 0xD3, 0xD4,
-	0x69, 0x6E, 0x67, 0x60, 0x75, 0x72, 0x7B, 0x7C,
-	0x51, 0x56, 0x5F, 0x58, 0x4D, 0x4A, 0x43, 0x44,
-	0x19, 0x1E, 0x17, 0x10, 0x05, 0x02, 0x0B, 0x0C,
-	0x21, 0x26, 0x2F, 0x28, 0x3D, 0x3A, 0x33, 0x34,
-	0x4E, 0x49, 0x40, 0x47, 0x52, 0x55, 0x5C, 0x5B,
-	0x76, 0x71, 0x78, 0x7F, 0x6A, 0x6D, 0x64, 0x63,
-	0x3E, 0x39, 0x30, 0x37, 0x22, 0x25, 0x2C, 0x2B,
-	0x06, 0x01, 0x08, 0x0F, 0x1A, 0x1D, 0x14, 0x13,
-	0xAE, 0xA9, 0xA0, 0xA7, 0xB2, 0xB5, 0xBC, 0xBB,
-	0x96, 0x91, 0x98, 0x9F, 0x8A, 0x8D, 0x84, 0x83,
-	0xDE, 0xD9, 0xD0, 0xD7, 0xC2, 0xC5, 0xCC, 0xCB,
-	0xE6, 0xE1, 0xE8, 0xEF, 0xFA, 0xFD, 0xF4, 0xF3
-};
-
-static uint8_t crc_packet(struct IOPacket *pkt)
-{
-	uint8_t *end = (uint8_t *)(&pkt->regs[PKT_COUNT(*pkt)]);
-	uint8_t *p = (uint8_t *)pkt;
-	uint8_t c = 0;
-    
-	while (p < end) {
-		c = crc8_tab[c ^ *(p++)];
+    // get packet size in bytes
+    uint8_t get_size(void) const {
+        return count*2 + 4;
     }
+};
 
-	return c;
-}
+/*
+  values for pkt.code
+ */
+enum iocode {
+    // read types
+    CODE_READ = 0,
+    CODE_WRITE = 1,
+
+    // reply codes
+    CODE_SUCCESS = 0,
+    CODE_CORRUPT = 1,
+    CODE_ERROR = 2
+};
+
+// IO pages
+enum iopage {
+    PAGE_CONFIG = 0,
+    PAGE_STATUS = 1,
+    PAGE_ACTUATORS = 2,
+    PAGE_SERVOS = 3,
+    PAGE_RAW_RCIN = 4,
+    PAGE_RCIN = 5,
+    PAGE_RAW_ADC = 6,
+    PAGE_PWM_INFO = 7,
+    PAGE_SETUP = 50,
+    PAGE_DIRECT_PWM = 54,
+};
+
+// pending IO events to send, used as an event mask
+enum ioevents {
+    IOEVENT_SEND_PWM_OUT=1,
+    IOEVENT_INIT,
+    IOEVENT_SET_DISARMED_PWM,
+    IOEVENT_SET_FAILSAFE_PWM,
+    IOEVENT_FORCE_SAFETY_OFF,
+    IOEVENT_FORCE_SAFETY_ON,
+    IOEVENT_SET_ONESHOT_ON,
+    IOEVENT_SET_ONESHOT_OFF,
+};
+
+// setup page registers
+#define PAGE_REG_SETUP_ARMING 1
+#define P_SETUP_IO_ARM_OK       (1<<0)
+#define P_SETUP_FMU_ARMED       (1<<1)
+
+#define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
+#define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
+#define FORCE_SAFETY_MAGIC 22027
 
 AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     uart(_uart)
 {}
 
-void AP_IOMCU::write_channel(uint8_t chan, uint16_t pwm)
+/*
+  initialise library, starting thread
+ */
+void AP_IOMCU::init(void)
 {
-    static uint32_t last_ms;
+    thread_ctx = chThdCreateFromHeap(NULL,
+                                     THD_WORKING_AREA_SIZE(1024),
+                                     "IOMCU",
+                                     180,
+                                     thread_start,
+                                     this);
+    if (thread_ctx == nullptr) {
+        AP_HAL::panic("Unable to allocate IOMCU thread");
+    }
+}
 
-    if (last_ms == 0) {
-        uart.begin(1500*1000, 256, 256);
-    }
+/*
+  static function to enter thread_main()
+ */
+void AP_IOMCU::thread_start(void *ctx)
+{
+    ((AP_IOMCU *)ctx)->thread_main();
+}
+
+/*
+  main IO thread loop
+ */
+void AP_IOMCU::thread_main(void)
+{
+    // uart runs at 1.5MBit
+    uart.begin(1500*1000, 256, 256);
+
+    // set IO_ARM_OK and FMU_ARMED
+    modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0, P_SETUP_IO_ARM_OK | P_SETUP_FMU_ARMED);
     
-    uint32_t now = AP_HAL::millis();    
-    if (now - last_ms < 1000) {
-        return;
+    while (true) {
+        eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(10));
+
+        // check for pending IO events
+        if (mask & EVENT_MASK(IOEVENT_SEND_PWM_OUT)) {
+            send_servo_out();
+        }
+
+        if (mask & EVENT_MASK(IOEVENT_FORCE_SAFETY_OFF)) {
+            write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_OFF, FORCE_SAFETY_MAGIC);
+        }
+
+        if (mask & EVENT_MASK(IOEVENT_FORCE_SAFETY_ON)) {
+            write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_ON, FORCE_SAFETY_MAGIC);
+        }
+        
+        // check for regular timed events
+        uint32_t now = AP_HAL::millis();
+        if (now - last_rc_read_ms > 20) {
+            // read RC input at 50Hz
+            read_rc_input();
+            last_rc_read_ms = AP_HAL::millis();
+        }
+        
+        if (now - last_status_read_ms > 50) {
+            // read status at 20Hz
+            read_status();
+            last_status_read_ms = AP_HAL::millis();
+        }
+
+        if (now - last_servo_read_ms > 50) {
+            // read servo out at 20Hz
+            read_servo();
+            last_servo_read_ms = AP_HAL::millis();
+        }
+
+        if (now - last_debug_ms > 1000) {
+            print_debug();
+            last_debug_ms = AP_HAL::millis();
+        }
     }
-    last_ms = now;
-    
+}
+
+/*
+  send servo output data
+ */
+void AP_IOMCU::send_servo_out()
+{
+    if (pwm_out.num_channels > 0) {
+        write_registers(PAGE_DIRECT_PWM, 0, pwm_out.num_channels, pwm_out.pwm);
+    }    
+}
+
+/*
+  read RC input
+ */
+void AP_IOMCU::read_rc_input()
+{
+}
+
+/*
+  read status registers
+ */
+void AP_IOMCU::read_status()
+{
+    read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, (uint16_t *)&reg_status);
+}
+
+/*
+  read servo output values
+ */
+void AP_IOMCU::read_servo()
+{
+    if (pwm_out.num_channels > 0) {
+        read_registers(PAGE_SERVOS, 0, pwm_out.num_channels, pwm_in.pwm);
+    }
+}
+
+
+/*
+  discard any pending input
+ */
+void AP_IOMCU::discard_input(void)
+{
+    uint8_t n = uart.available();
+    while (n--) {
+        uart.read();
+    }
+}
+
+
+/*
+  read count 16 bit registers
+*/
+bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint16_t *regs)
+{
     IOPacket pkt;
 
-    memset(&pkt, 0, sizeof(pkt));
+    discard_input();
     
-    pkt.count_code = 4 | PKT_CODE_READ;
-    pkt.page = IO_PAGE_CONFIG;
-    pkt.offset = IO_PROTOCOL_VERSION;
-    pkt.crc = crc_packet(&pkt);
+    memset(&pkt.regs[0], 0, count*2);
 
-    hal.console->printf("sending IO pkt\n");
+    pkt.code = CODE_READ;
+    pkt.count = count;
+    pkt.page = page;
+    pkt.offset = offset;
+    pkt.crc = 0;
     
-    uart.write((uint8_t *)&pkt, sizeof(pkt));
+    /*
+      the protocol is a bit strange, as it unnecessarily sends the
+      same size packet that it expects to receive. This means reading
+      a large number of registers wastes a lot of serial bandwidth
+     */
+    pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
+    uart.write((uint8_t *)&pkt, pkt.get_size());
+
+    // wait for the expected number of reply bytes or timeout
+    if (!uart.wait_timeout(count*2+4, 10)) {
+        return false;
+    }
+    
+    uint8_t *b = (uint8_t *)&pkt;
     uint8_t n = uart.available();
-    if (n > 0) {
-        uint8_t *b = (uint8_t *)&pkt;
-        for (uint8_t i=0; i<n; i++) {
+    for (uint8_t i=0; i<n; i++) {
+        if (i < sizeof(pkt)) {
             b[i] = uart.read();
         }
-        hal.console->printf("IO PKT len=%u\n", n);
-        for (uint8_t i=0; i<n; i++) {
-            hal.console->printf("%02x ", b[i]);
-        }
-        hal.console->printf("\n");
     }
+
+    uint8_t got_crc = pkt.crc;
+    pkt.crc = 0;
+    uint8_t expected_crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
+    if (got_crc != expected_crc) {
+        hal.console->printf("bad crc %02x should be %02x n=%u %u/%u/%u\n",
+                            got_crc, expected_crc,
+                            n, page, offset, count);
+        return false;
+    }
+
+    if (pkt.code != CODE_SUCCESS) {
+        hal.console->printf("bad code %02x read %u/%u/%u\n", pkt.code, page, offset, count);
+        return false;
+    }
+    if (pkt.count < count) {
+        hal.console->printf("bad count %u read %u/%u/%u n=%u\n", pkt.count, page, offset, count, n);
+        return false;
+    }
+    memcpy(regs, pkt.regs, count*2);
+    return true;
+}
+
+/*
+  write count 16 bit registers
+*/
+bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs)
+{
+    IOPacket pkt;
+    
+    discard_input();
+
+    memset(&pkt.regs[0], 0, count*2);
+
+    pkt.code = CODE_WRITE;
+    pkt.count = count;
+    pkt.page = page;
+    pkt.offset = offset;
+    pkt.crc = 0;
+    memcpy(pkt.regs, regs, 2*count);
+    pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
+    uart.write((uint8_t *)&pkt, pkt.get_size());
+
+    // wait for the expected number of reply bytes or timeout
+    if (!uart.wait_timeout(4, 10)) {
+        hal.console->printf("no reply for %u/%u/%u\n", page, offset, count);
+        return false;
+    }
+    
+    uint8_t *b = (uint8_t *)&pkt;
+    uint8_t n = uart.available();
+    for (uint8_t i=0; i<n; i++) {
+        if (i < sizeof(pkt)) {
+            b[i] = uart.read();
+        }
+    }
+
+    if (pkt.code != CODE_SUCCESS) {
+        hal.console->printf("bad code %02x write %u/%u/%u %02x/%02x n=%u\n",
+                            pkt.code, page, offset, count,
+                            pkt.page, pkt.offset, n);
+        return false;
+    }
+    uint8_t got_crc = pkt.crc;
+    pkt.crc = 0;
+    uint8_t expected_crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
+    if (got_crc != expected_crc) {
+        hal.console->printf("bad crc %02x should be %02x\n", got_crc, expected_crc);
+        return false;
+    }
+    return true;
+}
+
+// modify a single register
+bool AP_IOMCU::modify_register(uint8_t page, uint8_t offset, uint16_t clearbits, uint16_t setbits)
+{
+    uint16_t v = 0;
+    if (!read_registers(page, offset, 1, &v)) {
+        return false;
+    }
+    uint16_t v2 = (v & ~clearbits) | setbits;
+    if (v2 == v) {
+        return true;
+    }
+    return write_registers(page, offset, 1, &v2);
+}
+
+void AP_IOMCU::write_channel(uint8_t chan, uint16_t pwm)
+{
+    if (chan >= max_channels) {
+        return;
+    }
+    if (chan >= pwm_out.num_channels) {
+        pwm_out.num_channels = chan+1;
+    }
+    pwm_out.pwm[chan] = pwm;
+    if (!corked) {
+        push();
+    }
+}
+
+void AP_IOMCU::print_debug(void)
+{
+#if 0
+    const uint16_t *r = (const uint16_t *)&reg_status;
+    for (uint8_t i=0; i<sizeof(reg_status)/2; i++) {
+        hal.console->printf("%04x ", r[i]);
+    }
+    hal.console->printf("\n");
+#endif
+}
+
+// trigger an ioevent
+void AP_IOMCU::trigger_event(uint8_t event)
+{
+    chEvtSignal(thread_ctx, EVENT_MASK(event));
+}
+
+// get state of safety switch
+AP_HAL::Util::safety_state AP_IOMCU::get_safety_switch_state(void) const
+{
+    return reg_status.flag_safety_off?AP_HAL::Util::SAFETY_ARMED:AP_HAL::Util::SAFETY_DISARMED;
+}
+
+// force safety on
+bool AP_IOMCU::force_safety_on(void)
+{
+    trigger_event(IOEVENT_FORCE_SAFETY_ON);
+    return true;
+}
+
+// force safety off
+void AP_IOMCU::force_safety_off(void)
+{
+    trigger_event(IOEVENT_FORCE_SAFETY_OFF);
+}
+
+// read from one channel
+uint16_t AP_IOMCU::read_channel(uint8_t chan)
+{
+    return pwm_in.pwm[chan];
+}
+
+// cork output
+void AP_IOMCU::cork(void)
+{
+    corked = true;
+}
+
+// push output
+void AP_IOMCU::push(void)
+{
+    trigger_event(IOEVENT_SEND_PWM_OUT);
+    corked = false;
+}
+
+// set output frequency
+void AP_IOMCU::set_freq(uint16_t chmask, uint16_t freq)
+{
+}
+
+// get output frequency
+uint16_t AP_IOMCU::get_freq(uint16_t chan)
+{
+    return 50;
 }
