@@ -77,14 +77,6 @@ AC_Fence::AC_Fence(const AP_AHRS_NavEKF& ahrs) :
     _ahrs(ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    // check for silly fence values
-    if (_alt_max < 0.0f) {
-        _alt_max.set_and_save(AC_FENCE_ALT_MAX_DEFAULT);
-    }
-    if (_circle_radius < 0) {
-        _circle_radius.set_and_save(AC_FENCE_CIRCLE_RADIUS_DEFAULT);
-    }
 }
 
 void AC_Fence::enable(bool value)
@@ -120,6 +112,26 @@ bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
     return true;
 }
 
+// additional checks for the circle fence:
+bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
+{
+    if (_circle_radius < 0) {
+        fail_msg = "Invalid FENCE_RADIUS value";
+        return false;
+    }
+    return true;
+}
+
+// additional checks for the alt fence:
+bool AC_Fence::pre_arm_check_alt(const char* &fail_msg) const
+{
+    if (_alt_max < 0.0f) {
+        fail_msg = "Invalid FENCE_ALT_MAX value";
+        return false;
+    }
+    return true;
+}
+
 
 /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
 bool AC_Fence::pre_arm_check(const char* &fail_msg) const
@@ -149,6 +161,14 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     }
 
     if (!pre_arm_check_polygon(fail_msg)) {
+        return false;
+    }
+
+    if (!pre_arm_check_circle(fail_msg)) {
+        return false;
+    }
+
+    if (!pre_arm_check_alt(fail_msg)) {
         return false;
     }
 
