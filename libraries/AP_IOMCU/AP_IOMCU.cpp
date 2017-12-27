@@ -57,20 +57,25 @@ enum iopage {
 
 // pending IO events to send, used as an event mask
 enum ioevents {
-    IOEVENT_SEND_PWM_OUT=1,
-    IOEVENT_INIT,
+    IOEVENT_INIT=1,
+    IOEVENT_SEND_PWM_OUT,
     IOEVENT_SET_DISARMED_PWM,
     IOEVENT_SET_FAILSAFE_PWM,
     IOEVENT_FORCE_SAFETY_OFF,
     IOEVENT_FORCE_SAFETY_ON,
     IOEVENT_SET_ONESHOT_ON,
     IOEVENT_SET_ONESHOT_OFF,
+    IOEVENT_SET_RATES,
 };
 
 // setup page registers
 #define PAGE_REG_SETUP_ARMING 1
-#define P_SETUP_IO_ARM_OK       (1<<0)
-#define P_SETUP_FMU_ARMED       (1<<1)
+#define P_SETUP_ARMING_IO_ARM_OK (1<<0)
+#define P_SETUP_ARMING_FMU_ARMED (1<<1)
+
+#define PAGE_REG_SETUP_PWM_RATE_MASK 2
+#define PAGE_REG_SETUP_DEFAULTRATE   3
+#define PAGE_REG_SETUP_ALTRATE       4
 
 #define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
@@ -113,7 +118,9 @@ void AP_IOMCU::thread_main(void)
     uart.begin(1500*1000, 256, 256);
 
     // set IO_ARM_OK and FMU_ARMED
-    modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0, P_SETUP_IO_ARM_OK | P_SETUP_FMU_ARMED);
+    modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0,
+                    P_SETUP_ARMING_IO_ARM_OK |
+                    P_SETUP_ARMING_FMU_ARMED);
     
     while (true) {
         eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(10));
@@ -129,6 +136,12 @@ void AP_IOMCU::thread_main(void)
 
         if (mask & EVENT_MASK(IOEVENT_FORCE_SAFETY_ON)) {
             write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_ON, FORCE_SAFETY_MAGIC);
+        }
+
+        
+        if (mask & EVENT_MASK(IOEVENT_SET_RATES)) {
+            write_register(PAGE_SETUP, PAGE_REG_SETUP_ALTRATE, rate.freq);
+            write_register(PAGE_SETUP, PAGE_REG_SETUP_PWM_RATE_MASK, rate.chmask);
         }
         
         // check for regular timed events
@@ -402,10 +415,16 @@ void AP_IOMCU::push(void)
 // set output frequency
 void AP_IOMCU::set_freq(uint16_t chmask, uint16_t freq)
 {
+    rate.freq = freq;
+    rate.chmask = chmask;
+    trigger_event(IOEVENT_SET_RATES);
 }
 
 // get output frequency
 uint16_t AP_IOMCU::get_freq(uint16_t chan)
 {
-    return 50;
+    if ((1U<<chan) & rate.chmask) {
+        return rate.freq;
+    }
+    return rate.default_freq;
 }
