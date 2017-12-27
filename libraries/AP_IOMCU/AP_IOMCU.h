@@ -41,7 +41,6 @@ public:
     // force safety off
     void force_safety_off(void);
 
-    
 private:
     AP_HAL::UARTDriver &uart;
 
@@ -124,6 +123,13 @@ private:
     struct {
         uint16_t pwm[max_channels];
     } pwm_in;
+
+    // output rates
+    struct {
+        uint16_t freq;
+        uint16_t chmask;
+        uint16_t default_freq = 50;
+    } rate;
     
     bool corked;
 };
