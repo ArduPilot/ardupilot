@@ -596,6 +596,24 @@ bool AC_Fence::sys_status_failed() const
             return true;
         }
     }
+    if (_enabled_fences & AC_FENCE_TYPE_CIRCLE) {
+        if (_circle_radius < 0) {
+            return true;
+        }
+    }
+    if (_enabled_fences & AC_FENCE_TYPE_ALT_MAX) {
+        if (_alt_max < 0.0f) {
+            return true;
+        }
+    }
+    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE) ||
+        (_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
+        Vector2f position;
+        if (!_ahrs.get_relative_position_NE_home(position)) {
+            // both these fence types require position
+            return true;
+        }
+    }
 
     return false;
 }
