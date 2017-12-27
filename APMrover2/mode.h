@@ -37,7 +37,7 @@ public:
     Mode();
 
     // returns true of it s OK to enter this mode
-    virtual bool ok_to_enter() const;
+    virtual bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const;
 
     // enter this mode
     virtual void enter();
@@ -258,7 +258,7 @@ public:
 
 protected:
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void enter() override;
     void _exit() override;
 
@@ -404,7 +404,7 @@ public:
 
 protected:
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void enter() override;
 
 };
@@ -438,7 +438,7 @@ protected:
         SmartRTL_Failure
     } smart_rtl_state;
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void enter() override;
 
     bool _load_point;

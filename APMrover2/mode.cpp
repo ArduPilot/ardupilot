@@ -1,6 +1,8 @@
 #include "mode.h"
 #include "Rover.h"
 
+#include <stdio.h>
+
 Mode::Mode() :
     ahrs(rover.ahrs),
     g(rover.g),
@@ -19,7 +21,7 @@ void Mode::exit()
 }
 
 // these are basically the same checks as in AP_Arming:
-bool Mode::ok_to_enter() const
+bool Mode::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
     const bool ignore_checks = !hal.util->get_soft_armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
     if (!ignore_checks) {
@@ -34,11 +36,13 @@ bool Mode::ok_to_enter() const
                                 (filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs ||
                                  filt_status.flags.horiz_pos_rel || filt_status.flags.pred_horiz_pos_rel);
         if (requires_position() && !position_ok) {
+            snprintf(failure_reason, failure_reason_len, "Position required");
             return false;
         }
 
         // check velocity estimate (if we have position estimate, we must have velocity estimate)
         if (requires_velocity() && !position_ok && !filt_status.flags.horiz_vel) {
+            snprintf(failure_reason, failure_reason_len, "Velocity required");
             return false;
         }
     }

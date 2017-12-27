@@ -1,13 +1,16 @@
 #include "mode.h"
 #include "Rover.h"
 
-bool ModeRTL::ok_to_enter() const
+#include <stdio.h>
+
+bool ModeRTL::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
     // refuse RTL if home has not been set
     if (!AP::ahrs().home_is_set()) {
+        snprintf(failure_reason, failure_reason_len, "Home not set");
         return false;
     }
-    return Mode::ok_to_enter();
+    return Mode::ok_to_enter(failure_reason, failure_reason_len);
 }
 
 void ModeRTL::enter()

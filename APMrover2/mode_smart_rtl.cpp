@@ -1,20 +1,24 @@
 #include "mode.h"
 #include "Rover.h"
 
-bool ModeSmartRTL::ok_to_enter() const
+#include <stdio.h>
+
+bool ModeSmartRTL::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
     // SmartRTL requires EKF (not DCM)
     Location ekf_origin;
     if (!ahrs.get_origin(ekf_origin)) {
+        snprintf(failure_reason, failure_reason_len, "Origin not set");
         return false;
     }
 
     // refuse to enter SmartRTL if smart RTL's home has not been set
     if (!g2.smart_rtl.is_active()) {
+        snprintf(failure_reason, failure_reason_len, "Inactive");
         return false;
     }
 
-    return Mode::ok_to_enter();
+    return Mode::ok_to_enter(failure_reason, failure_reason_len);
 }
 
 void ModeSmartRTL::enter()

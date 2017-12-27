@@ -1,21 +1,23 @@
 #include "mode.h"
 #include "Rover.h"
 
+#include <stdio.h>
+
 // constructor
 ModeAuto::ModeAuto(ModeRTL& mode_rtl) :
     _mode_rtl(mode_rtl)
 {
 }
 
-bool ModeAuto::ok_to_enter() const
+bool ModeAuto::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
     // fail to enter auto if no mission commands
     if (mission.num_commands() == 0) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
+        snprintf(failure_reason, failure_reason_len, "No Mission. Can't set AUTO.");
         return false;
     }
 
-    return Mode::ok_to_enter();
+    return Mode::ok_to_enter(failure_reason, failure_reason_len);
 }
 
 void ModeAuto::enter()
@@ -139,10 +141,16 @@ bool ModeAuto::reached_heading()
 // start RTL (within auto)
 void ModeAuto::start_RTL()
 {
-    if (_mode_rtl.ok_to_enter()) {
-        _mode_rtl.enter();
-        _submode = Auto_RTL;
+    char reason[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = {};
+    if (!_mode_rtl.ok_to_enter(reason, sizeof(reason))) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to enter RTL");
+        if (strlen(reason)) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s", reason);
+        }
+        return;
     }
+    _mode_rtl.enter();
+    _submode = Auto_RTL;
 }
 
 /*

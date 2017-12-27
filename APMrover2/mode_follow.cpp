@@ -2,9 +2,10 @@
 #include "Rover.h"
 
 // initialize follow mode
-bool ModeFollow::ok_to_enter() const
+bool ModeFollow::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
     if (!g2.follow.enabled()) {
+        snprintf(failure_reason, failure_reason_len, "Follow not enabled");
         return false;
     }
     return true;

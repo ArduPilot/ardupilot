@@ -235,10 +235,14 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     }
 
     Mode &old_mode = *control_mode;
-    if (!new_mode.ok_to_enter()) {
+    char fail_reason[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = {};
+    if (!new_mode.ok_to_enter(fail_reason, sizeof(fail_reason))) {
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE, new_mode.mode_number());
         gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
+        if (strlen(fail_reason)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "%s", fail_reason);
+        }
         return false;
     }
 
