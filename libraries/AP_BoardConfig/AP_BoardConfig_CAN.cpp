@@ -31,6 +31,10 @@
 #include <AP_HAL_PX4/CAN.h>
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <AP_HAL_Linux/CAN.h>
+#endif
+
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 extern const AP_HAL::HAL& hal;
@@ -88,17 +92,17 @@ void AP_BoardConfig_CAN::init()
         _st_can_debug[i] = (int8_t) _var_info_can[i]._can_debug;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    px4_setup_canbus();
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    setup_canbus();
 #endif
 
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 /*
   setup CANBUS drivers
  */
-void AP_BoardConfig_CAN::px4_setup_canbus(void)
+void AP_BoardConfig_CAN::setup_canbus(void)
 {
     // Create all drivers that we need
     bool initret = true;
@@ -107,7 +111,11 @@ void AP_BoardConfig_CAN::px4_setup_canbus(void)
 
         if (drv_num != 0 && drv_num <= MAX_NUMBER_OF_CAN_DRIVERS) {
             if (hal.can_mgr[drv_num - 1] == nullptr) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
                 const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new PX4::PX4CANManager;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+                const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new Linux::LinuxCANDriver();
+#endif
             }
 
             if (hal.can_mgr[drv_num - 1] != nullptr) {

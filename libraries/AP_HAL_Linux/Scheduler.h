@@ -51,6 +51,8 @@ public:
 
     void teardown();
 
+    void create_uavcan_thread();
+
 private:
     class SchedulerThread : public PeriodicThread {
     public:

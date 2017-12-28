@@ -25,6 +25,10 @@
 #include <AP_HAL_Linux/qflight/qflight_buffer.h>
 #endif
 
+#if HAL_WITH_UAVCAN
+#include "CAN.h"
+#endif
+
 using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
@@ -397,4 +401,17 @@ void Scheduler::teardown()
     _rcin_thread.join();
     _uart_thread.join();
     _tonealarm_thread.join();
+}
+
+void Scheduler::create_uavcan_thread()
+{
+#if HAL_WITH_UAVCAN
+    for (int i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+        if (hal.can_mgr[i] != nullptr) {
+            if (hal.can_mgr[i]->get_UAVCAN() != nullptr) {
+                LinuxCANDriver::from(hal.can_mgr[i])->register_thread();
+            }
+        }
+    }
+#endif
 }

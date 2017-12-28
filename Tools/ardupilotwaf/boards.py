@@ -268,9 +268,12 @@ class linux(Board):
         cfg.check_libiio(env)
 
         env.LINKFLAGS += ['-pthread',]
-        env.AP_LIBRARIES = [
+        env.AP_LIBRARIES += [
             'AP_HAL_Linux',
         ]
+
+        if self.with_uavcan:
+            cfg.define('UAVCAN_EXCEPTIONS', 0)
 
     def build(self, bld):
         super(linux, self).build(bld)
