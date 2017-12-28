@@ -263,7 +263,7 @@ int16_t CAN::configureFilters(const uavcan::CanFilterConfig* const filter_config
  * SocketCAN emulates the CAN filters in software, so the number of filters is virtually unlimited.
  * This method returns a constant value.
  */
-static constexpr unsigned NumFilters = 8;
+static constexpr unsigned NumFilters = CAN_FILTER_NUMBER;
 uint16_t CAN::getNumFilters() const { return NumFilters; }
 
 uint64_t CAN::getErrorCount() const
@@ -301,8 +301,10 @@ void CAN::_pollWrite()
 
 void CAN::_pollRead()
 {
-    while (true)
+    uint8_t iterations_count = 0;
+    while (iterations_count < CAN_MAX_POLL_ITERATIONS_COUNT)
     {
+        iterations_count++;
         RxItem rx;
         rx.ts_mono = getMonotonic();  // Monotonic timestamp is not required to be precise (unlike UTC)
         bool loopback = false;
@@ -462,7 +464,7 @@ bool CANManager::begin(uint32_t bitrate, uint8_t can_number)
 
             // TODO: Limit number of times we try to init UAVCAN and also provide
             //       the reasonable actions when it fails.
-            for (UAVCAN_init_tries = 0; UAVCAN_init_tries < 100; UAVCAN_init_tries++) {
+            for (UAVCAN_init_tries = 0; UAVCAN_init_tries < CAN_MAX_INIT_TRIES_COUNT; UAVCAN_init_tries++) {
                 if (p_uavcan->try_init() == true) {
                     return true;
                 }
