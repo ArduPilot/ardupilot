@@ -430,3 +430,7 @@
 #ifndef HAL_BOARD_STORAGE_DIRECTORY
 #define HAL_BOARD_STORAGE_DIRECTORY "/var/lib/ardupilot"
 #endif
+
+#ifndef HAL_BOARD_CAN_IFACE_NAME
+#define HAL_BOARD_CAN_IFACE_NAME "can0"
+#endif
