@@ -56,6 +56,10 @@ enum class SocketCanError
     TxTimeout
 };
 
+#define CAN_MAX_POLL_ITERATIONS_COUNT 100
+#define CAN_MAX_INIT_TRIES_COUNT 100
+#define CAN_FILTER_NUMBER 8
+
 class CAN: public AP_HAL::CAN {
 public:
     CAN(int socket_fd=0)
