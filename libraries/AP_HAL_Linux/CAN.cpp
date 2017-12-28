@@ -64,7 +64,7 @@ static uavcan::CanFrame makeUavcanFrame(const can_frame& sockcan_frame)
     return uavcan_frame;
 }
 
-bool LinuxCAN::begin(uint32_t bitrate)
+bool CAN::begin(uint32_t bitrate)
 {
     if (_initialized) return _initialized;
     // TODO: Add possibility change bitrate
@@ -78,7 +78,7 @@ bool LinuxCAN::begin(uint32_t bitrate)
     return _initialized;
 }
 
-void LinuxCAN::reset()
+void CAN::reset()
 {
     if (_initialized && _bitrate != 0) {
         close(_fd);
@@ -86,18 +86,18 @@ void LinuxCAN::reset()
     }
 }
 
-void LinuxCAN::end()
+void CAN::end()
 {
     _initialized = false;
     close(_fd);
 }
 
-bool LinuxCAN::is_initialized()
+bool CAN::is_initialized()
 {
     return _initialized;
 }
 
-int32_t LinuxCAN::tx_pending()
+int32_t CAN::tx_pending()
 {
     if (_initialized) {
         return _tx_queue.size();
@@ -106,7 +106,7 @@ int32_t LinuxCAN::tx_pending()
     }
 }
 
-int32_t LinuxCAN::available()
+int32_t CAN::available()
 {
     if (_initialized) {
         return _rx_queue.size();
@@ -115,7 +115,7 @@ int32_t LinuxCAN::available()
     }
 }
 
-int LinuxCAN::openSocket(const std::string& iface_name)
+int CAN::openSocket(const std::string& iface_name)
 {
     errno = 0;
 
@@ -179,7 +179,7 @@ int LinuxCAN::openSocket(const std::string& iface_name)
     return ret;
 }
 
-int16_t LinuxCAN::send(const uavcan::CanFrame& frame, const uavcan::MonotonicTime tx_deadline,
+int16_t CAN::send(const uavcan::CanFrame& frame, const uavcan::MonotonicTime tx_deadline,
                        const uavcan::CanIOFlags flags)
 {
     _tx_queue.emplace(frame, tx_deadline, flags, _tx_frame_counter);
@@ -189,7 +189,7 @@ int16_t LinuxCAN::send(const uavcan::CanFrame& frame, const uavcan::MonotonicTim
     return 1;
 }
 
-int16_t LinuxCAN::receive(uavcan::CanFrame& out_frame, uavcan::MonotonicTime& out_ts_monotonic,
+int16_t CAN::receive(uavcan::CanFrame& out_frame, uavcan::MonotonicTime& out_ts_monotonic,
                           uavcan::UtcTime& out_ts_utc, uavcan::CanIOFlags& out_flags)
 {
     if (_rx_queue.empty()) {
@@ -209,17 +209,17 @@ int16_t LinuxCAN::receive(uavcan::CanFrame& out_frame, uavcan::MonotonicTime& ou
     return 1;
 }
 
-bool LinuxCAN::hasReadyTx() const
+bool CAN::hasReadyTx() const
 {
     return !_tx_queue.empty() && (_frames_in_socket_tx_queue < _max_frames_in_socket_tx_queue);
 }
 
-bool LinuxCAN::hasReadyRx() const
+bool CAN::hasReadyRx() const
 {
     return !_rx_queue.empty();
 }
 
-void LinuxCAN::poll(bool read, bool write)
+void CAN::poll(bool read, bool write)
 {
     if (read) {
         _pollRead();  // Read poll must be executed first because it may decrement _frames_in_socket_tx_queue
@@ -229,7 +229,7 @@ void LinuxCAN::poll(bool read, bool write)
     }
 }
 
-int16_t LinuxCAN::configureFilters(const uavcan::CanFilterConfig* const filter_configs,
+int16_t CAN::configureFilters(const uavcan::CanFilterConfig* const filter_configs,
                               const std::uint16_t num_configs)
 {
     if (filter_configs == nullptr) {
@@ -264,16 +264,16 @@ int16_t LinuxCAN::configureFilters(const uavcan::CanFilterConfig* const filter_c
  * This method returns a constant value.
  */
 static constexpr unsigned NumFilters = 8;
-uint16_t LinuxCAN::getNumFilters() const { return NumFilters; }
+uint16_t CAN::getNumFilters() const { return NumFilters; }
 
-uint64_t LinuxCAN::getErrorCount() const
+uint64_t CAN::getErrorCount() const
 {
     uint64_t ec = 0;
     for (auto& kv : _errors) { ec += kv.second; }
     return ec;
 }
 
-void LinuxCAN::_pollWrite()
+void CAN::_pollWrite()
 {
     while (hasReadyTx()) {
         const TxItem tx = _tx_queue.top();
@@ -299,7 +299,7 @@ void LinuxCAN::_pollWrite()
     }
 }
 
-void LinuxCAN::_pollRead()
+void CAN::_pollRead()
 {
     while (true)
     {
@@ -326,7 +326,7 @@ void LinuxCAN::_pollRead()
     }
 }
 
-int LinuxCAN::_write(const uavcan::CanFrame& frame) const
+int CAN::_write(const uavcan::CanFrame& frame) const
 {
     errno = 0;
 
@@ -346,7 +346,7 @@ int LinuxCAN::_write(const uavcan::CanFrame& frame) const
 }
 
 
-int LinuxCAN::_read(uavcan::CanFrame& frame, uavcan::UtcTime& ts_utc, bool& loopback) const
+int CAN::_read(uavcan::CanFrame& frame, uavcan::UtcTime& ts_utc, bool& loopback) const
 {
     auto iov = iovec();
     auto sockcan_frame = can_frame();
@@ -393,19 +393,19 @@ int LinuxCAN::_read(uavcan::CanFrame& frame, uavcan::UtcTime& ts_utc, bool& loop
     return 1;
 }
 
-void LinuxCAN::_incrementNumFramesInSocketTxQueue()
+void CAN::_incrementNumFramesInSocketTxQueue()
 {
     _frames_in_socket_tx_queue++;
 }
 
-void LinuxCAN::_confirmSentFrame()
+void CAN::_confirmSentFrame()
 {
     if (_frames_in_socket_tx_queue > 0) {
         _frames_in_socket_tx_queue--;
     }
 }
 
-bool LinuxCAN::_wasInPendingLoopbackSet(const uavcan::CanFrame& frame)
+bool CAN::_wasInPendingLoopbackSet(const uavcan::CanFrame& frame)
 {
     if (_pending_loopback_ids.count(frame.id) > 0) {
         _pending_loopback_ids.erase(frame.id);
@@ -414,7 +414,7 @@ bool LinuxCAN::_wasInPendingLoopbackSet(const uavcan::CanFrame& frame)
     return false;
 }
 
-bool LinuxCAN::_checkHWFilters(const can_frame& frame) const
+bool CAN::_checkHWFilters(const can_frame& frame) const
 {
     if (!_hw_filters_container.empty()) {
         for (auto& f : _hw_filters_container) {
@@ -428,7 +428,7 @@ bool LinuxCAN::_checkHWFilters(const can_frame& frame) const
     }
 }
 
-void LinuxCANDriver::IfaceWrapper::updateDownStatusFromPollResult(const pollfd& pfd)
+void CANDriver::IfaceWrapper::updateDownStatusFromPollResult(const pollfd& pfd)
 {
     if (!_down&& (pfd.revents & POLLERR)) {
         int error = 0;
@@ -441,7 +441,7 @@ void LinuxCANDriver::IfaceWrapper::updateDownStatusFromPollResult(const pollfd& 
     }
 }
 
-void LinuxCANDriver::_timer_tick()
+void CANDriver::_timer_tick()
 {
     if (!_initialized) return;
 
@@ -452,7 +452,7 @@ void LinuxCANDriver::_timer_tick()
     }
 }
 
-bool LinuxCANDriver::begin(uint32_t bitrate, uint8_t can_number)
+bool CANDriver::begin(uint32_t bitrate, uint8_t can_number)
 {
     if (init(can_number) >= 0) {
         _initialized = true;
@@ -476,32 +476,32 @@ bool LinuxCANDriver::begin(uint32_t bitrate, uint8_t can_number)
     return false;
 }
 
-bool LinuxCANDriver::is_initialized()
+bool CANDriver::is_initialized()
 {
     return _initialized;
 }
 
-void LinuxCANDriver::initialized(bool val)
+void CANDriver::initialized(bool val)
 {
     _initialized = val;
 }
 
-AP_UAVCAN *LinuxCANDriver::get_UAVCAN(void)
+AP_UAVCAN *CANDriver::get_UAVCAN(void)
 {
     return p_uavcan;
 }
 
-void LinuxCANDriver::set_UAVCAN(AP_UAVCAN *uavcan)
+void CANDriver::set_UAVCAN(AP_UAVCAN *uavcan)
 {
     p_uavcan = uavcan;
 }
 
-LinuxCAN* LinuxCANDriver::getIface(uint8_t iface_index)
+CAN* CANDriver::getIface(uint8_t iface_index)
 {
     return (iface_index >= _ifaces.size()) ? nullptr : _ifaces[iface_index].get();
 }
 
-int LinuxCANDriver::init(uint8_t can_number)
+int CANDriver::init(uint8_t can_number)
 {
     int res = -1;
     char iface_name[16];
@@ -515,7 +515,7 @@ int LinuxCANDriver::init(uint8_t can_number)
     return res;
 }
 
-int16_t LinuxCANDriver::select(uavcan::CanSelectMasks& inout_masks,
+int16_t CANDriver::select(uavcan::CanSelectMasks& inout_masks,
                     const uavcan::CanFrame* (&)[uavcan::MaxCanIfaces],
                     uavcan::MonotonicTime blocking_deadline)
 {
@@ -590,14 +590,14 @@ int16_t LinuxCANDriver::select(uavcan::CanSelectMasks& inout_masks,
     return _ifaces.size();
 }
 
-int LinuxCANDriver::addIface(const std::string& iface_name)
+int CANDriver::addIface(const std::string& iface_name)
 {
     if (_ifaces.size() >= uavcan::MaxCanIfaces) {
         return -1;
     }
 
     // Open the socket
-    const int fd = LinuxCAN::openSocket(iface_name);
+    const int fd = CAN::openSocket(iface_name);
     if (fd < 0) {
         return fd;
     }

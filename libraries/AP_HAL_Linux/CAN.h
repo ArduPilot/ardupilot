@@ -56,14 +56,14 @@ enum class SocketCanError
     TxTimeout
 };
 
-class LinuxCAN: public AP_HAL::CAN {
+class CAN: public AP_HAL::CAN {
 public:
-    LinuxCAN(int socket_fd=0)
+    CAN(int socket_fd=0)
       : _fd(socket_fd)
       , _frames_in_socket_tx_queue(0)
       , _max_frames_in_socket_tx_queue(2)
     { }
-    ~LinuxCAN() { }
+    ~CAN() { }
 
     bool begin(uint32_t bitrate) override;
 
@@ -175,15 +175,15 @@ private:
     std::vector<can_filter> _hw_filters_container;
 };
 
-class LinuxCANDriver: public AP_HAL::CANManager {
+class CANDriver: public AP_HAL::CANManager {
 public:
-    static LinuxCANDriver *from(AP_HAL::CANManager *can)
+    static CANDriver *from(AP_HAL::CANManager *can)
     {
-        return static_cast<LinuxCANDriver*>(can);
+        return static_cast<CANDriver*>(can);
     }
 
-    LinuxCANDriver() { _ifaces.reserve(uavcan::MaxCanIfaces); }
-    ~LinuxCANDriver() { }
+    CANDriver() { _ifaces.reserve(uavcan::MaxCanIfaces); }
+    ~CANDriver() { }
 
     void _timer_tick();
 
@@ -201,7 +201,7 @@ public:
 
     //These methods belong to ICanDriver (which is an ancestor of AP_HAL::CANManager)
     
-    virtual LinuxCAN* getIface(uint8_t iface_index) override;
+    virtual CAN* getIface(uint8_t iface_index) override;
 
     virtual uint8_t getNumIfaces() const override { return _ifaces.size(); }
 
@@ -213,12 +213,12 @@ public:
     int addIface(const std::string& iface_name);
 
 private:
-    class IfaceWrapper : public LinuxCAN
+    class IfaceWrapper : public CAN
     {
         bool _down = false;
 
     public:
-        IfaceWrapper(int fd) : LinuxCAN(fd) { }
+        IfaceWrapper(int fd) : CAN(fd) { }
 
         void updateDownStatusFromPollResult(const pollfd& pfd);
 

@@ -168,7 +168,7 @@ void AP_BoardConfig_CAN::linux_setup_canbus(void) {
 
         if (drv_num != 0 && drv_num <= MAX_NUMBER_OF_CAN_DRIVERS) {
             if (hal.can_mgr[drv_num - 1] == nullptr) {
-                const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new Linux::LinuxCANDriver;
+                const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new Linux::CANDriver;
             }
             
             if (hal.can_mgr[drv_num - 1] != nullptr) {
