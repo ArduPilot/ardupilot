@@ -191,6 +191,7 @@ private:
     AP_Int8     _fail_time_horizon;
     AP_Int16    _fail_distance_xy;
     AP_Int16    _fail_distance_z;
+    AP_Int16    _fail_altitude_minimum;
 
     AP_Int8     _warn_action;
     AP_Int8     _warn_time_horizon;
