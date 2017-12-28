@@ -119,26 +119,13 @@ int LinuxCAN::openSocket(const std::string& iface_name)
 {
     errno = 0;
 
-    const int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+    int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (s < 0) {
         return s;
     }
 
-    class RaiiCloser
-    {
-        int fd_;
-    public:
-        RaiiCloser(int filedesc) : fd_(filedesc)
-        { }
-        ~RaiiCloser()
-        {
-            if (fd_ >= 0) {
-                hal.console->printf("SocketCAN: closing fd\n");
-                close(fd_);
-            }
-        }
-        void disarm() { fd_ = -1; }
-    } raii_closer(s);
+    std::shared_ptr<void> defer(&s, [](int* fd) { if (*fd >= 0) close(*fd); });
+    const int ret = s;
 
     // Detect the iface index
     auto ifr = ifreq();
@@ -188,9 +175,8 @@ int LinuxCAN::openSocket(const std::string& iface_name)
             return -1;
         }
     }
-
-    raii_closer.disarm();
-    return s;
+    s = -1;
+    return ret;
 }
 
 int16_t LinuxCAN::send(const uavcan::CanFrame& frame, const uavcan::MonotonicTime tx_deadline,
