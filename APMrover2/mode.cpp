@@ -33,6 +33,7 @@ bool Mode::enter_gps_checks() const
     //GPS update rate acceptable
     if (!gps.is_healthy()) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS is not healthy");
+        return false;
     }
 
     // check GPSs are within 50m of each other and that blending is healthy
