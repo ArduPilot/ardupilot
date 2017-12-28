@@ -68,7 +68,7 @@ bool LinuxCAN::begin(uint32_t bitrate)
 {
     if (_initialized) return _initialized;
     // TODO: Add possibility change bitrate
-    _fd = openSocket("can0");
+    _fd = openSocket(HAL_BOARD_CAN_IFACE_NAME);
     if (_fd > 0) {
         _bitrate = bitrate;
         _initialized = true;
