@@ -175,15 +175,15 @@ private:
     std::vector<can_filter> _hw_filters_container;
 };
 
-class CANDriver: public AP_HAL::CANManager {
+class CANManager: public AP_HAL::CANManager {
 public:
-    static CANDriver *from(AP_HAL::CANManager *can)
+    static CANManager *from(AP_HAL::CANManager *can)
     {
-        return static_cast<CANDriver*>(can);
+        return static_cast<CANManager*>(can);
     }
 
-    CANDriver() { _ifaces.reserve(uavcan::MaxCanIfaces); }
-    ~CANDriver() { }
+    CANManager() { _ifaces.reserve(uavcan::MaxCanIfaces); }
+    ~CANManager() { }
 
     void _timer_tick();
 
