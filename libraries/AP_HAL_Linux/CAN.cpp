@@ -428,7 +428,7 @@ bool CAN::_checkHWFilters(const can_frame& frame) const
     }
 }
 
-void CANDriver::IfaceWrapper::updateDownStatusFromPollResult(const pollfd& pfd)
+void CANManager::IfaceWrapper::updateDownStatusFromPollResult(const pollfd& pfd)
 {
     if (!_down&& (pfd.revents & POLLERR)) {
         int error = 0;
@@ -441,7 +441,7 @@ void CANDriver::IfaceWrapper::updateDownStatusFromPollResult(const pollfd& pfd)
     }
 }
 
-void CANDriver::_timer_tick()
+void CANManager::_timer_tick()
 {
     if (!_initialized) return;
 
@@ -452,7 +452,7 @@ void CANDriver::_timer_tick()
     }
 }
 
-bool CANDriver::begin(uint32_t bitrate, uint8_t can_number)
+bool CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
     if (init(can_number) >= 0) {
         _initialized = true;
@@ -476,32 +476,32 @@ bool CANDriver::begin(uint32_t bitrate, uint8_t can_number)
     return false;
 }
 
-bool CANDriver::is_initialized()
+bool CANManager::is_initialized()
 {
     return _initialized;
 }
 
-void CANDriver::initialized(bool val)
+void CANManager::initialized(bool val)
 {
     _initialized = val;
 }
 
-AP_UAVCAN *CANDriver::get_UAVCAN(void)
+AP_UAVCAN *CANManager::get_UAVCAN(void)
 {
     return p_uavcan;
 }
 
-void CANDriver::set_UAVCAN(AP_UAVCAN *uavcan)
+void CANManager::set_UAVCAN(AP_UAVCAN *uavcan)
 {
     p_uavcan = uavcan;
 }
 
-CAN* CANDriver::getIface(uint8_t iface_index)
+CAN* CANManager::getIface(uint8_t iface_index)
 {
     return (iface_index >= _ifaces.size()) ? nullptr : _ifaces[iface_index].get();
 }
 
-int CANDriver::init(uint8_t can_number)
+int CANManager::init(uint8_t can_number)
 {
     int res = -1;
     char iface_name[16];
@@ -509,13 +509,13 @@ int CANDriver::init(uint8_t can_number)
 
     res = addIface(iface_name);
     if (res < 0) {
-        hal.console->printf("CANDriver: init %s failed\n", iface_name);
+        hal.console->printf("CANManager: init %s failed\n", iface_name);
     }
 
     return res;
 }
 
-int16_t CANDriver::select(uavcan::CanSelectMasks& inout_masks,
+int16_t CANManager::select(uavcan::CanSelectMasks& inout_masks,
                     const uavcan::CanFrame* (&)[uavcan::MaxCanIfaces],
                     uavcan::MonotonicTime blocking_deadline)
 {
@@ -590,7 +590,7 @@ int16_t CANDriver::select(uavcan::CanSelectMasks& inout_masks,
     return _ifaces.size();
 }
 
-int CANDriver::addIface(const std::string& iface_name)
+int CANManager::addIface(const std::string& iface_name)
 {
     if (_ifaces.size() >= uavcan::MaxCanIfaces) {
         return -1;
