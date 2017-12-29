@@ -582,11 +582,11 @@ float AC_PosControl::get_stopping_distance_xyz() const
     }
 
     // calculate point at which velocity switches from linear to sqrt
-    const float linear_velocity = _accel_cms/kP;
+    const float linear_velocity = _accel_cms / kP;
 
     // calculate distance within which we can stop
     if (vel_total < linear_velocity) {
-        return vel_total/kP;
+        return vel_total / kP;
     }
 
     const float linear_distance = _accel_cms/(2.0f*kP*kP);
