@@ -803,15 +803,7 @@ bool Copter::ModeAuto::payload_place_run_should_run()
 void Copter::ModeAuto::payload_place_run()
 {
     if (!payload_place_run_should_run()) {
-#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
-        // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0, get_smoothing_gain());
-        attitude_control->set_throttle_out(0,false,g.throttle_filt);
-#else
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        // multicopters do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out_unstabilized(0,true,g.throttle_filt);
-#endif
+        zero_throttle_and_relax_ac();
         // set target to current position
         wp_nav->init_loiter_target();
         return;
