@@ -1163,7 +1163,7 @@ public:
 protected:
 
     const char *name() const override { return "CHASE"; }
-    const char *name4() const override { return "CHSE"; }
+    const char *name4() const override { return "CHAS"; }
 
 private:
 
