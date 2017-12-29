@@ -78,7 +78,7 @@ void Copter::ModeChase::run()
     }
     lonely_mode = nullptr;
 
-    const float distance_to_stop = pos_control->get_stopping_distance_xyz() * .01f;
+    const float distance_to_stop = pos_control->get_stopping_distance_xyz() * 0.01f;
 
     const float distance_to_move = distance_to_vehicle - sphere_radius_min;
     Debug("distance_to_vehicle=%f move=%f stop=%f",

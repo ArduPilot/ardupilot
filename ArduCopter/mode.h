@@ -1174,11 +1174,11 @@ private:
     uint32_t target_last_update_ms;
     const uint16_t target_update_timeout_ms = 1000;
 
-    float sphere_radius_min = 5; // no closer than this to target
-    float sphere_radius_max = 50; // give up when further than this
+    float sphere_radius_min = 5.0f; // no closer than this to target
+    float sphere_radius_max = 50.0f; // give up when further than this
 
-    const float closure_speed = 10; // metres/second
-    const float distance_slop = 2; // metres
+    const float closure_speed = 10.0f; // metres/second
+    const float distance_slop = 2.0f; // metres
 
     void run_lonely_mode();
     Copter::Mode *lonely_mode;
