@@ -15,6 +15,19 @@ class AP_BattMonitor_SMBus : public AP_BattMonitor_Backend
 {
 public:
 
+    // Smart Battery Data Specification Revision 1.1
+    enum BATTMONITOR_SMBUS {
+        BATTMONITOR_SMBUS_TEMP = 0x08,                 // Temperature
+        BATTMONITOR_SMBUS_VOLTAGE = 0x09,              // Voltage
+        BATTMONITOR_SMBUS_CURRENT = 0x0A,              // Current
+        BATTMONITOR_SMBUS_REMAINING_CAPACITY = 0x0F,   // Remaining Capacity
+        BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY = 0x10, // Full Charge Capacity
+        BATTMONITOR_SMBUS_SPECIFICATION_INFO = 0x1A,   // Specification Info
+        BATTMONITOR_SMBUS_SERIAL = 0x1C,               // Serial Number
+        BATTMONITOR_SMBUS_MANUFACTURE_NAME = 0x20,     // Manufacture Name
+        BATTMONITOR_SMBUS_MANUFACTURE_DATA = 0x23,     // Manufacture Data
+    };
+
     /// Constructor
     AP_BattMonitor_SMBus(AP_BattMonitor &mon,
                     AP_BattMonitor::BattMonitor_State &mon_state,
