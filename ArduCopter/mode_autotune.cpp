@@ -151,7 +151,7 @@ void Copter::ModeAutoTune::stop()
     load_orig_gains();
 
     // re-enable angle-to-rate request limits
-    attitude_control->use_ff_and_input_shaping(true);
+    attitude_control->use_sqrt_controller(true);
 
     // log off event and send message to ground station
     update_gcs(AUTOTUNE_MESSAGE_STOPPED);
@@ -377,7 +377,7 @@ void Copter::ModeAutoTune::run()
                 pilot_override = true;
                 // set gains to their original values
                 load_orig_gains();
-                attitude_control->use_ff_and_input_shaping(true);
+                attitude_control->use_sqrt_controller(true);
             }
             // reset pilot override time
             override_time = millis();
@@ -478,7 +478,7 @@ void Copter::ModeAutoTune::autotune_attitude_control()
     case WAITING_FOR_LEVEL:
         // Note: we should be using intra-test gains (which are very close to the original gains but have lower I)
         // re-enable rate limits
-        attitude_control->use_ff_and_input_shaping(true);
+        attitude_control->use_sqrt_controller(true);
 
         get_poshold_attitude(roll_cd, pitch_cd, desired_yaw);
         
@@ -552,7 +552,7 @@ void Copter::ModeAutoTune::autotune_attitude_control()
         // Note: we should be using intra-test gains (which are very close to the original gains but have lower I)
 
         // disable rate limits
-        attitude_control->use_ff_and_input_shaping(false);
+        attitude_control->use_sqrt_controller(false);
         // hold current attitude
         attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
 
@@ -658,7 +658,7 @@ void Copter::ModeAutoTune::autotune_attitude_control()
     case UPDATE_GAINS:
 
         // re-enable rate limits
-        attitude_control->use_ff_and_input_shaping(true);
+        attitude_control->use_sqrt_controller(true);
 
 #if LOGGING_ENABLED == ENABLED
         // log the latest gains
