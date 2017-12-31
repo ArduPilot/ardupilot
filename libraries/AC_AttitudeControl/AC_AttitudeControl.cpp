@@ -466,6 +466,7 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     _rate_target_ang_vel = update_ang_vel_target_from_att_error(attitude_error_vector);
 
     // Add feedforward term that attempts to ensure that roll and pitch errors rotate with the body frame rather than the reference frame.
+    // todo: this should probably be a matrix that couples yaw as well.
     _rate_target_ang_vel.x += attitude_error_vector.y * _ahrs.get_gyro().z;
     _rate_target_ang_vel.y += -attitude_error_vector.x * _ahrs.get_gyro().z;
 
@@ -480,11 +481,11 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     if(_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE*2.0f){
         _rate_target_ang_vel.z = _ahrs.get_gyro().z;
     }else if(_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE){
-        float flip_scalar = (1.0f - (_thrust_error_angle-AC_ATTITUDE_THRUST_ERROR_ANGLE)/AC_ATTITUDE_THRUST_ERROR_ANGLE);
-        _rate_target_ang_vel.x += target_ang_vel_quat.q2*flip_scalar;
-        _rate_target_ang_vel.y += target_ang_vel_quat.q3*flip_scalar;
+        float feedforward_scalar = (1.0f - (_thrust_error_angle-AC_ATTITUDE_THRUST_ERROR_ANGLE)/AC_ATTITUDE_THRUST_ERROR_ANGLE);
+        _rate_target_ang_vel.x += target_ang_vel_quat.q2*feedforward_scalar;
+        _rate_target_ang_vel.y += target_ang_vel_quat.q3*feedforward_scalar;
         _rate_target_ang_vel.z += target_ang_vel_quat.q4;
-        _rate_target_ang_vel.z = _ahrs.get_gyro().z*(1.0-flip_scalar) + _rate_target_ang_vel.z*flip_scalar;
+        _rate_target_ang_vel.z = _ahrs.get_gyro().z*(1.0-feedforward_scalar) + _rate_target_ang_vel.z*feedforward_scalar;
     } else {
         _rate_target_ang_vel.x += target_ang_vel_quat.q2;
         _rate_target_ang_vel.y += target_ang_vel_quat.q3;
@@ -528,17 +529,21 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
     }
     Quaternion thrust_vec_correction_quat;
     thrust_vec_correction_quat.from_axis_angle(thrust_vec_cross, thrust_vec_dot);
+
+    // Rotate thrust_vec_correction_quat to the att_from frame
     thrust_vec_correction_quat = att_from_quat.inverse()*thrust_vec_correction_quat*att_from_quat;
 
-    // calculate the remaining rotation required after thrust vector is rotated
-    Quaternion heading_quat = thrust_vec_correction_quat.inverse()*att_from_quat.inverse()*att_to_quat;
+    // calculate the remaining rotation required after thrust vector is rotated transformed to the att_from frame
+    Quaternion yaw_vec_correction_quat = thrust_vec_correction_quat.inverse()*att_from_quat.inverse()*att_to_quat;
 
+    // calculate the angle error in x and y.
     Vector3f rotation;
     thrust_vec_correction_quat.to_axis_angle(rotation);
     att_diff_angle.x = rotation.x;
     att_diff_angle.y = rotation.y;
 
-    heading_quat.to_axis_angle(rotation);
+    // calculate the angle error in z (x and y should be zero here).
+    yaw_vec_correction_quat.to_axis_angle(rotation);
     att_diff_angle.z = rotation.z;
 
     // Todo: Limit roll an pitch error based on output saturation and maximum error.
@@ -548,8 +553,8 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
     // This should be updated to be based on an angle limit, saturation, or unlimited based on user defined parameters.
     if(!is_zero(_p_angle_yaw.kP()) && fabsf(att_diff_angle.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP()){
         att_diff_angle.z = constrain_float(wrap_PI(att_diff_angle.z), -AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP(), AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS/_p_angle_yaw.kP());
-        heading_quat.from_axis_angle(Vector3f(0.0f,0.0f,att_diff_angle.z));
-        att_to_quat = att_from_quat*thrust_vec_correction_quat*heading_quat;
+        yaw_vec_correction_quat.from_axis_angle(Vector3f(0.0f,0.0f,att_diff_angle.z));
+        att_to_quat = att_from_quat*thrust_vec_correction_quat*yaw_vec_correction_quat;
     }
 }
 
