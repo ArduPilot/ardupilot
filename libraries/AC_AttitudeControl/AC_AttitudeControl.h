@@ -53,7 +53,7 @@ public:
         _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
         _dt(dt),
         _angle_boost(0),
-        _use_ff_and_input_shaping(true),
+        _use_sqrt_controller(true),
         _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _ahrs(ahrs),
@@ -150,8 +150,9 @@ public:
     // Returns false if the vehicle is pitched 90 degrees up or down
     bool ang_vel_to_euler_rate(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads);
 
-    // Configures whether the attitude controller should limit the rate demand to constrain angular acceleration
-    void use_ff_and_input_shaping(bool use_shaping) { _use_ff_and_input_shaping = use_shaping; }
+    // Specifies whether the attitude controller should use the square root controller in the attitude correction.
+    // This is used during Autotune to ensure the P term is tuned without being influenced by the acceleration limit of the square root controller.
+    void use_sqrt_controller(bool use_sqrt_cont) { _use_sqrt_controller = use_sqrt_cont; }
 
     // Return 321-intrinsic euler angles in centidegrees representing the rotation from NED earth frame to the
     // attitude controller's target attitude.
@@ -376,8 +377,9 @@ protected:
     // Used only for logging.
     float               _angle_boost;
 
-    // Specifies whether the attitude controller should use the input shaping and feedforward
-    bool                _use_ff_and_input_shaping;
+    // Specifies whether the attitude controller should use the square root controller in the attitude correction.
+    // This is used during Autotune to ensure the P term is tuned without being influenced by the acceleration limit of the square root controller.
+    bool                _use_sqrt_controller;
 
     // Filtered Alt_Hold lean angle max - used to limit lean angle when throttle is saturated using Alt_Hold
     float               _althold_lean_angle_max = 0.0f;
