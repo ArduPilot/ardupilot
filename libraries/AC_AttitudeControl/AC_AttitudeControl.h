@@ -122,6 +122,9 @@ public:
     // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
     void shift_ef_yaw_target(float yaw_shift_cd);
 
+    // handle reset of attitude from EKF since the last iteration
+    void inertial_frame_reset();
+
     // Command a Quaternion attitude with feedforward and smoothing
     void input_quaternion(Quaternion attitude_desired_quat);
 
@@ -366,6 +369,9 @@ protected:
     // This represents the angular velocity in radians per second in the body frame, used in the angular
     // velocity controller.
     Vector3f            _rate_target_ang_vel;
+
+    // This represents a quaternion attitude error in the body frame, used for inertial frame reset handling.
+    Quaternion          _attitude_ang_error;
 
     // The angle between the target thrust vector and the current thrust vector.
     float               _thrust_error_angle;
