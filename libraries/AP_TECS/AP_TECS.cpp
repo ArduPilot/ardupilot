@@ -432,6 +432,9 @@ void AP_TECS::_update_speed_demand(void)
         _TAS_rate_dem = (_TAS_dem - TAS_dem_previous) / dt;
         _TAS_dem_adj = _TAS_dem;
     }
+
+    _TAS_rate_dem = 0.8 * _TAS_rate_dem_last + 0.2 * _TAS_rate_dem;
+    _TAS_rate_dem_last = _TAS_rate_dem;
     // Constrain speed demand again to protect against bad values on initialisation.
     _TAS_dem_adj = constrain_float(_TAS_dem_adj, _TASmin, _TASmax);
 }
@@ -912,6 +915,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _hgt_dem_prev      = _hgt_dem_adj_last;
         _hgt_dem_in_old    = _hgt_dem_adj_last;
         _TAS_dem_adj       = _TAS_dem;
+        _TAS_rate_dem_last = 0.0f;
         _flags.underspeed        = false;
         _flags.badDescent        = false;
         _flags.reached_speed_takeoff = false;
@@ -925,6 +929,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _hgt_dem_adj       = _hgt_dem_adj_last;
         _hgt_dem_prev      = _hgt_dem_adj_last;
         _TAS_dem_adj       = _TAS_dem;
+        _TAS_rate_dem_last = 0.0f;
         _flags.underspeed        = false;
         _flags.badDescent  = false;
     }

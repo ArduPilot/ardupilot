@@ -244,6 +244,7 @@ private:
     // Speed rate demand after application of rate limiting
     // This is the demand tracked by the TECS control loops
     float _TAS_rate_dem;
+    float _TAS_rate_dem_last;
 
     // Total energy rate filter state
     float _STEdotErrLast;
