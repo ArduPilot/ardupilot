@@ -42,9 +42,6 @@ public:
     // return if in non-manual mode : AUTO, GUIDED, RTL
     virtual bool is_autopilot_mode() const { return false; }
 
-    // returns true if steering is directly controlled by RC
-    virtual bool manual_steering() const { return false; }
-
     // returns true if the throttle is controlled automatically
     virtual bool auto_throttle() { return is_autopilot_mode(); }
 
@@ -308,9 +305,6 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-
-    // attributes of the mode
-    bool manual_steering() const override { return true; }
 
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
