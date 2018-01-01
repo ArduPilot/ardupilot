@@ -177,6 +177,7 @@ public:
     virtual void send_scaled_pressure3(); // allow sub to override this
     void send_scaled_pressure();
     void send_sensor_offsets();
+    virtual void send_simstate() const;
     void send_ahrs();
     void send_battery2();
 #if AP_AHRS_NAVEKF_AVAILABLE
