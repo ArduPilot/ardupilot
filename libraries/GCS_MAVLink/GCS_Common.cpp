@@ -36,6 +36,10 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
@@ -2352,6 +2356,17 @@ void GCS_MAVLINK::send_banner()
 }
 
 
+void GCS_MAVLINK::send_simstate() const
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return;
+    }
+    sitl->simstate_send(get_chan());
+#endif
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet)
 {
     Compass *compass = get_compass();
@@ -2871,6 +2886,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         send_servo_output_raw();
+        break;
+
+    case MSG_SIMSTATE:
+        CHECK_PAYLOAD_SIZE(SIMSTATE);
+        send_simstate();
+        CHECK_PAYLOAD_SIZE(AHRS2);
+        send_ahrs2();
         break;
 
     case MSG_AHRS:
