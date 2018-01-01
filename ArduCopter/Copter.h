@@ -572,7 +572,7 @@ private:
 #endif
 
 #if ADSB_ENABLED == ENABLED
-    AP_ADSB adsb{ahrs};
+    AP_ADSB adsb;
 
     // avoidance of adsb enabled vehicles (normally manned vehicles)
     AP_Avoidance_Copter avoidance_adsb{ahrs, adsb};
