@@ -225,7 +225,8 @@ bool Mode::stop_vehicle()
 }
 
 // estimate maximum vehicle speed (in m/s)
-float Mode::calc_speed_max(float cruise_speed, float cruise_throttle)
+// cruise_speed is in m/s, cruise_throttle should be in the range -1 to +1
+float Mode::calc_speed_max(float cruise_speed, float cruise_throttle) const
 {
     float speed_max;
 
