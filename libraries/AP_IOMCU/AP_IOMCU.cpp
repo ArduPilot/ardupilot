@@ -67,16 +67,26 @@ enum ioevents {
     IOEVENT_SET_ONESHOT_OFF,
     IOEVENT_SET_RATES,
     IOEVENT_GET_RCIN,
+    IOEVENT_ENABLE_SBUS,
 };
 
 // setup page registers
+#define PAGE_REG_SETUP_FEATURES	0
+#define P_SETUP_FEATURES_SBUS1_OUT	1
+#define P_SETUP_FEATURES_SBUS2_OUT	2
+#define P_SETUP_FEATURES_PWM_RSSI   4
+#define P_SETUP_FEATURES_ADC_RSSI   8
+#define P_SETUP_FEATURES_ONESHOT   16
+
 #define PAGE_REG_SETUP_ARMING 1
 #define P_SETUP_ARMING_IO_ARM_OK (1<<0)
 #define P_SETUP_ARMING_FMU_ARMED (1<<1)
+#define P_SETUP_ARMING_RC_HANDLING_DISABLED (1<<6)
 
 #define PAGE_REG_SETUP_PWM_RATE_MASK 2
 #define PAGE_REG_SETUP_DEFAULTRATE   3
 #define PAGE_REG_SETUP_ALTRATE       4
+#define PAGE_REG_SETUP_SBUS_RATE    19
 
 #define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
@@ -117,11 +127,16 @@ void AP_IOMCU::thread_main(void)
 {
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 256, 256);
+    uart.set_blocking_writes(false);
 
     // set IO_ARM_OK and FMU_ARMED
     modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0,
                     P_SETUP_ARMING_IO_ARM_OK |
-                    P_SETUP_ARMING_FMU_ARMED);
+                    P_SETUP_ARMING_FMU_ARMED |
+                    P_SETUP_ARMING_RC_HANDLING_DISABLED);
+
+    // enable sbus (until we have BRD_SBUS_OUT available in ChibiOS)
+    enable_sbus_out(150);
     
     while (true) {
         eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(10));
@@ -143,6 +158,12 @@ void AP_IOMCU::thread_main(void)
         if (mask & EVENT_MASK(IOEVENT_SET_RATES)) {
             write_register(PAGE_SETUP, PAGE_REG_SETUP_ALTRATE, rate.freq);
             write_register(PAGE_SETUP, PAGE_REG_SETUP_PWM_RATE_MASK, rate.chmask);
+        }
+
+        if (mask & EVENT_MASK(IOEVENT_ENABLE_SBUS)) {
+            write_register(PAGE_SETUP, PAGE_REG_SETUP_SBUS_RATE, rate.sbus_rate_hz);
+            modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0,
+                            P_SETUP_FEATURES_SBUS1_OUT);
         }
         
         // check for regular timed events
@@ -190,6 +211,9 @@ void AP_IOMCU::read_rc_input()
     // read a min of 9 channels and max of max_channels
     uint8_t n = MIN(MAX(9, rc_input.count), max_channels);
     read_registers(PAGE_RAW_RCIN, 0, 6+n, (uint16_t *)&rc_input);
+    if (rc_input.flags_rc_ok) {
+        rc_input.last_input_us = AP_HAL::micros();
+    }
 }
 
 /*
@@ -197,7 +221,8 @@ void AP_IOMCU::read_rc_input()
  */
 void AP_IOMCU::read_status()
 {
-    read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, (uint16_t *)&reg_status);
+    uint16_t *r = (uint16_t *)&reg_status;
+    read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, r);
 }
 
 /*
@@ -431,4 +456,26 @@ uint16_t AP_IOMCU::get_freq(uint16_t chan)
         return rate.freq;
     }
     return rate.default_freq;
+}
+
+// enable SBUS out
+bool AP_IOMCU::enable_sbus_out(uint16_t rate_hz)
+{
+    rate.sbus_rate_hz = rate_hz;
+    trigger_event(IOEVENT_ENABLE_SBUS);
+    return true;
+}
+
+/*
+  check for new RC input
+*/
+bool AP_IOMCU::check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_chan)
+{
+    if (last_frame_us != rc_input.last_input_us) {
+        num_channels = MIN(MIN(rc_input.count, max_channels), max_chan);
+        memcpy(channels, rc_input.pwm, num_channels*2);
+        last_frame_us = rc_input.last_input_us;
+        return true;
+    }
+    return false;
 }
