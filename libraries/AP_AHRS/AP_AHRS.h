@@ -76,6 +76,8 @@ public:
         _sin_yaw(0.0f),
         _active_accel_instance(0)
     {
+        _singleton = this;
+
         // load default values from var_info table
         AP_Param::setup_object_defaults(this, var_info);
 
@@ -99,6 +101,11 @@ public:
 
     // empty virtual destructor
     virtual ~AP_AHRS() {}
+
+    // get singleton instance
+    static AP_AHRS *get_singleton() {
+        return _singleton;
+    }
 
     // init sets up INS board orientation
     virtual void init() {
@@ -670,6 +677,10 @@ protected:
     // AOA and SSA
     float _AOA, _SSA;
     uint32_t _last_AOA_update_ms;
+
+private:
+    static AP_AHRS *_singleton;
+
 };
 
 #include "AP_AHRS_DCM.h"
@@ -680,3 +691,7 @@ protected:
 #else
 #define AP_AHRS_TYPE AP_AHRS
 #endif
+
+namespace AP {
+    AP_AHRS &ahrs();
+};
