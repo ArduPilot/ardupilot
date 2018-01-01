@@ -41,6 +41,16 @@ public:
     // force safety off
     void force_safety_off(void);
 
+    /*
+      enable sbus output
+    */
+    bool enable_sbus_out(uint16_t rate_hz);
+
+    /*
+      check for new RC input
+     */
+    bool check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_channels);
+    
 private:
     AP_HAL::UARTDriver &uart;
 
@@ -116,12 +126,19 @@ private:
     // PAGE_RAW_RCIN values
     struct PACKED {
         uint16_t count;
-        uint16_t flags;
+        uint16_t flags_frame_drop:1;
+        uint16_t flags_failsafe:1;
+        uint16_t flags_dsm11:1;
+        uint16_t flags_mapping_ok:1;
+        uint16_t flags_rc_ok:1;
+        uint16_t flags_unused:11;
         uint16_t nrssi;
         uint16_t data;
         uint16_t frame_count;
         uint16_t lost_frame_count;
         uint16_t pwm[max_channels];
+        uint16_t last_frame_count;
+        uint32_t last_input_us;
     } rc_input;
     
     // output pwm values
@@ -140,6 +157,7 @@ private:
         uint16_t freq;
         uint16_t chmask;
         uint16_t default_freq = 50;
+        uint16_t sbus_rate_hz;
     } rate;
     
     bool corked;
