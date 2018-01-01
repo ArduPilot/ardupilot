@@ -411,3 +411,15 @@ Vector2f AP_AHRS::rotate_body_to_earth2D(const Vector2f &bf) const
     return Vector2f(bf.x * _cos_yaw - bf.y * _sin_yaw,
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }
+
+// singleton instance
+AP_AHRS *AP_AHRS::_singleton;
+
+namespace AP {
+
+AP_AHRS &ahrs()
+{
+    return *AP_AHRS::get_singleton();
+}
+
+}
