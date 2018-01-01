@@ -121,7 +121,8 @@ protected:
     bool stop_vehicle();
 
     // estimate maximum vehicle speed (in m/s)
-    float calc_speed_max(float cruise_speed, float cruise_throttle);
+    // cruise_speed is in m/s, cruise_throttle should be in the range -1 to +1
+    float calc_speed_max(float cruise_speed, float cruise_throttle) const;
 
     // calculate pilot input to nudge speed up or down
     //  target_speed should be in meters/sec
