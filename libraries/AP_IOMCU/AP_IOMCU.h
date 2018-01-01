@@ -50,6 +50,16 @@ public:
       check for new RC input
      */
     bool check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_channels);
+
+    /*
+      get servo rail voltage
+     */
+    float get_vservo(void) const { return reg_status.vservo * 0.001; }
+
+    /*
+      get rssi voltage
+     */
+    float get_vrssi(void) const { return reg_status.vrssi * 0.001; }
     
 private:
     AP_HAL::UARTDriver &uart;
