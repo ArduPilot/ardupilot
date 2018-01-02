@@ -21,8 +21,7 @@ public:
     
 private:
     AP_Baro_ICM20789(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
-    virtual ~AP_Baro_ICM20789(void) {};
-    
+
     bool init();
     bool send_cmd16(uint16_t cmd);
 
