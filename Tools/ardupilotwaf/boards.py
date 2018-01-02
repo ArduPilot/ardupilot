@@ -609,3 +609,12 @@ class aerofc_v1(px4):
         self.romfs_exclude(['oreoled.bin'])
         self.board_rc = True
         self.param_defaults = '../../../Tools/Frame_params/intel-aero-rtf.param'
+
+class pcnc1(px4):
+    name = 'pcnc1'
+    def __init__(self):
+        super(pcnc1, self).__init__()
+        self.bootloader_name = 'px4fmuv2_bl.bin'
+        self.board_name = 'pcnc1'
+        self.romfs_exclude(['oreoled.bin'])
+        self.with_uavcan = False
