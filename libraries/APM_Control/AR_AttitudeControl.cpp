@@ -147,7 +147,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 AR_AttitudeControl::AR_AttitudeControl(AP_AHRS &ahrs) :
     _ahrs(ahrs),
     _steer_angle_p(AR_ATTCONTROL_STEER_ANG_P),
-    _steer_rate_pid(AR_ATTCONTROL_STEER_RATE_P, AR_ATTCONTROL_STEER_RATE_I, AR_ATTCONTROL_STEER_RATE_D, AR_ATTCONTROL_STEER_RATE_IMAX, AR_ATTCONTROL_STEER_RATE_FILT, AR_ATTCONTROL_DT),
+    _steer_rate_pid(AR_ATTCONTROL_STEER_RATE_P, AR_ATTCONTROL_STEER_RATE_I, AR_ATTCONTROL_STEER_RATE_D, AR_ATTCONTROL_STEER_RATE_IMAX, AR_ATTCONTROL_STEER_RATE_FILT, AR_ATTCONTROL_DT, AR_ATTCONTROL_STEER_RATE_FF),
     _throttle_speed_pid(AR_ATTCONTROL_THR_SPEED_P, AR_ATTCONTROL_THR_SPEED_I, AR_ATTCONTROL_THR_SPEED_D, AR_ATTCONTROL_THR_SPEED_IMAX, AR_ATTCONTROL_THR_SPEED_FILT, AR_ATTCONTROL_DT)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -254,6 +254,9 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     // pass error to PID controller
     _steer_rate_pid.set_input_filter_all(rate_error);
 
+    // get feed-forward
+    const float ff = _steer_rate_pid.get_ff(desired_rate * scaler);
+
     // get p
     const float p = _steer_rate_pid.get_p();
 
@@ -267,7 +270,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     const float d = _steer_rate_pid.get_d();
 
     // constrain and return final output
-    return constrain_float(p + i + d, -1.0f, 1.0f);
+    return constrain_float(ff + p + i + d, -1.0f, 1.0f);
 }
 
 // get latest desired turn rate in rad/sec (recorded during calls to get_steering_out_rate)
@@ -345,6 +348,9 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     // record desired speed for logging purposes only
     _throttle_speed_pid.set_desired_rate(desired_speed);
 
+    // get feed-forward
+    const float ff = _throttle_speed_pid.get_ff(desired_speed);
+
     // get p
     const float p = _throttle_speed_pid.get_p();
 
@@ -364,7 +370,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     }
 
     // calculate final output
-    float throttle_out = (p+i+d+throttle_base);
+    float throttle_out = (ff+p+i+d+throttle_base);
 
     // clear local limit flags used to stop i-term build-up as we stop reversed outputs going to motors
     _throttle_limit_low = false;
