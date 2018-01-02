@@ -42,7 +42,6 @@ private:
 
     uint8_t instance;
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
-    AP_HAL::OwnPtr<AP_HAL::Device> dev_icm;
 
     // time last read command was sent
     uint32_t last_measure_us;

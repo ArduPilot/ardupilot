@@ -87,6 +87,14 @@ AP_Baro_Backend *AP_Baro_ICM20789::probe(AP_Baro &baro,
 
 bool AP_Baro_ICM20789::spi_init(void)
 {
+#ifdef HAL_INS_MPU60x0_NAME
+    AP_HAL::OwnPtr<AP_HAL::Device> dev_icm =
+        hal.spi->get_device(HAL_INS_MPU60x0_NAME);
+
+    if (!dev_icm->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore ICM");
+    }
+
     dev_icm->set_read_flag(0x80);
 
     dev_icm->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -116,7 +124,14 @@ bool AP_Baro_ICM20789::spi_init(void)
 
     dev_icm->write_register(0x37, 0x00);
     dev_icm->write_register(0x6A, 0x10);
+
+    dev_icm->get_semaphore()->give();
+
     return true;
+#else
+    debug("ICM20789: HAL_INS_MPU60x0_NAME not defined\n");
+    return false;
+#endif // HAL_INS_MPU60x0_NAME
 }
 
 bool AP_Baro_ICM20789::init()
@@ -127,7 +142,6 @@ bool AP_Baro_ICM20789::init()
 
     debug("Looking for 20789 baro\n");
 
-#ifdef HAL_INS_MPU60x0_NAME
     if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore for init");
     }
@@ -139,19 +153,10 @@ bool AP_Baro_ICM20789::init()
       Pressure sensor data can then be accessed using the procedure described in Section 10.
     */
     debug("Setting up IMU\n");
-    dev_icm = hal.spi->get_device(HAL_INS_MPU60x0_NAME);
-
-    if (!dev_icm->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore ICM");        
-    }
-
     if (!spi_init()) {
         debug("ICM20789: failed to initialise SPI device\n");
-        goto failed;
+        return false;
     }
-
-    dev_icm->get_semaphore()->give();
-#endif // HAL_INS_MPU60x0_NAME
 
     if (!send_cmd16(CMD_SOFT_RESET)) {
         debug("ICM20789: reset failed\n");
@@ -186,7 +191,6 @@ bool AP_Baro_ICM20789::init()
     return true;
 
  failed:
-    dev_icm->get_semaphore()->give();
     dev->get_semaphore()->give();
     return false;
 }
