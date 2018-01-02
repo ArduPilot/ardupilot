@@ -13,7 +13,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_HAL::OwnPtr<AP_HAL::Device> i2c_dev;
 static AP_HAL::OwnPtr<AP_HAL::Device> spi_dev;
-static AP_HAL::OwnPtr<AP_HAL::Device> lidar_dev;
+static AP_HAL::OwnPtr<AP_HAL::Device> dev;
 
 // SPI registers
 #define MPUREG_WHOAMI                           0x75
@@ -215,7 +215,7 @@ static bool read_calibration_data(void)
 // initialise baro on i2c
 static void i2c_init(void)
 {
-    if (!i2c_dev->get_semaphore()->take(0)) {
+    if (!i2c_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("Failed to get baro semaphore");
     }
 
@@ -242,18 +242,18 @@ static void i2c_init(void)
 
     i2c_dev->get_semaphore()->give();
 
-    printf("checking lidar\n");
-    if (!lidar_dev->get_semaphore()->take(0)) {
-        AP_HAL::panic("Failed to get lidar semaphore");
+    printf("checking baro\n");
+    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        AP_HAL::panic("Failed to get device semaphore");
     }
 
     uint8_t regs[3] = { 0xC0, 0xC1, 0xC2 };
     for (uint8_t i=0; i<ARRAY_SIZE(regs); i++) {
         uint8_t v = 0;
-        lidar_dev->read_registers(regs[i], &v, 1);
+        dev->read_registers(regs[i], &v, 1);
         printf("0x%02x : 0x%02x\n", regs[i], v);
     }
-    lidar_dev->get_semaphore()->give();
+    dev->get_semaphore()->give();
 }
 
 void setup()
@@ -267,17 +267,22 @@ void setup()
 #ifdef HAL_INS_MPU60x0_NAME
     spi_dev = std::move(hal.spi->get_device(HAL_INS_MPU60x0_NAME));
 
-    if (!spi_dev->get_semaphore()->take(0)) {
+    if (!spi_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("Failed to get spi semaphore");
     }
 
 
     i2c_dev = std::move(hal.i2c_mgr->get_device(1, 0x63));
-    lidar_dev = std::move(hal.i2c_mgr->get_device(1, 0x29));
+    dev = std::move(hal.i2c_mgr->get_device(1, 0x29));
 
     while (true) {
         spi_init();
         i2c_init();
+        hal.scheduler->delay(1000);
+    }
+#else
+    while (true) {
+        printf("HAL_INS_MPU60x0_NAME not defined for this board\n");
         hal.scheduler->delay(1000);
     }
 #endif
