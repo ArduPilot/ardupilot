@@ -17,7 +17,6 @@ public:
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
 private:
-    virtual ~AP_Baro_BMP280(void) {};
 
     bool _init(void);
     void _timer(void);
