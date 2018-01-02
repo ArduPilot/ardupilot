@@ -52,7 +52,13 @@ extern const AP_HAL::HAL &hal;
 #define CMD_SOFT_RESET     0x805D
 #define CMD_READ_ID        0xEFC8
 
+#define BARO_ICM20789_DEBUG 0
+
+#if BARO_ICM20789_DEBUG
 #define debug(fmt, args...)   hal.console->printf(fmt, ##args)
+#else
+#define debug(fmt, args...)
+#endif
 
 /*
   constructor
@@ -247,10 +253,12 @@ float AP_Baro_ICM20789::get_pressure(uint32_t p_LSB, uint32_t T_LSB)
 }
 
 
+#if BARO_ICM20789_DEBUG
 static struct {
     uint32_t Praw, Traw;
     float T, P;
 } dd;
+#endif
 
 void AP_Baro_ICM20789::convert_data(uint32_t Praw, uint32_t Traw)
 {
@@ -266,10 +274,12 @@ void AP_Baro_ICM20789::convert_data(uint32_t Praw, uint32_t Traw)
     }
 
     if (_sem->take(0)) {
+#if BARO_ICM20789_DEBUG
         dd.Praw = Praw;
         dd.Traw = Traw;
         dd.P = P;
         dd.T = T;
+#endif
 
         accum.psum += P;
         accum.tsum += T;
@@ -307,7 +317,7 @@ void AP_Baro_ICM20789::update()
             accum.count = 0;
         }
         _sem->give();
-#if 0
+#if BARO_ICM20789_DEBUG
         // useful for debugging
         DataFlash_Class::instance()->Log_Write("ICMB", "TimeUS,Traw,Praw,P,T", "QIIff",
                                                AP_HAL::micros64(),
