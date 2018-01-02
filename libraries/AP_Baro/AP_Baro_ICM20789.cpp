@@ -29,6 +29,8 @@
 #include <AP_Math/AP_Math.h>
 #include <DataFlash/DataFlash.h>
 
+#include <AP_InertialSensor/AP_InertialSensor_Invensense_registers.h>
+
 extern const AP_HAL::HAL &hal;
 
 /*
@@ -85,6 +87,12 @@ AP_Baro_Backend *AP_Baro_ICM20789::probe(AP_Baro &baro,
 }
 
 
+/*
+  Pressure sensor data can be accessed in the following mode:
+  Bypass Mode: Set register INT_PIN_CFG (Address: 55 (Decimal); 37 (Hex)) bit 1 to value 1
+  and I2C_MST_EN bit is 0 Address: 106 (Decimal); 6A (Hex)).
+  Pressure sensor data can then be accessed using the procedure described in Section 10.
+*/
 bool AP_Baro_ICM20789::spi_init(void)
 {
 #ifdef HAL_INS_MPU60x0_NAME
@@ -101,29 +109,31 @@ bool AP_Baro_ICM20789::spi_init(void)
     uint8_t whoami = 0;
     uint8_t v;
 
-    dev_icm->read_registers(0x6A, &v, 1);
-    dev_icm->write_register(0x6B, 0x01);
+    dev_icm->read_registers(MPUREG_USER_CTRL, &v, 1);
+    dev_icm->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
 
     hal.scheduler->delay(1);
-    dev_icm->write_register(0x6A, 0x10);
-    dev_icm->write_register(0x6B, 0x41);
+    dev_icm->write_register(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+    dev_icm->write_register(MPUREG_PWR_MGMT_1,
+                            BIT_PWR_MGMT_1_SLEEP | BIT_PWR_MGMT_1_CLK_XGYRO);
 
     hal.scheduler->delay(1);
-    dev_icm->write_register(0x6B, 0x01);
+    dev_icm->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
 
     hal.scheduler->delay(1);
-    dev_icm->write_register(0x23, 0x00);
-    dev_icm->write_register(0x6B, 0x41);
+    dev_icm->write_register(MPUREG_FIFO_EN, 0x00);
+    dev_icm->write_register(MPUREG_PWR_MGMT_1,
+                            BIT_PWR_MGMT_1_SLEEP | BIT_PWR_MGMT_1_CLK_XGYRO);
 
-    dev_icm->read_registers(0x75, &whoami, 1);
+    dev_icm->read_registers(MPUREG_WHOAMI, &whoami, 1);
 
     // wait for sensor to settle
     hal.scheduler->delay(100);
 
-    dev_icm->read_registers(0x75, &whoami, 1);
+    dev_icm->read_registers(MPUREG_WHOAMI, &whoami, 1);
 
-    dev_icm->write_register(0x37, 0x00);
-    dev_icm->write_register(0x6A, 0x10);
+    dev_icm->write_register(MPUREG_INT_PIN_CFG, 0x00);
+    dev_icm->write_register(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
 
     dev_icm->get_semaphore()->give();
 
@@ -146,12 +156,6 @@ bool AP_Baro_ICM20789::init()
         AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore for init");
     }
 
-    /*
-      Pressure sensor data can be accessed in the following mode:
-      Bypass Mode: Set register INT_PIN_CFG (Address: 55 (Decimal); 37 (Hex)) bit 1 to value 1 
-      and I2C_MST_EN bit is 0 Address: 106 (Decimal); 6A (Hex)). 
-      Pressure sensor data can then be accessed using the procedure described in Section 10.
-    */
     debug("Setting up IMU\n");
     if (!spi_init()) {
         debug("ICM20789: failed to initialise SPI device\n");
