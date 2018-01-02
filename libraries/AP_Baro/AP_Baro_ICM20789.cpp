@@ -121,11 +121,11 @@ bool AP_Baro_ICM20789::init()
 
     debug("Looking for 20789 baro\n");
 
+#ifdef HAL_INS_MPU60x0_NAME
     if (!dev->get_semaphore()->take(0)) {
         AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore for init");
     }
 
-#ifdef HAL_INS_MPU60x0_NAME
     /*
       Pressure sensor data can be accessed in the following mode:
       Bypass Mode: Set register INT_PIN_CFG (Address: 55 (Decimal); 37 (Hex)) bit 1 to value 1 
