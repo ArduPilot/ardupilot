@@ -44,7 +44,6 @@ public:
 
 private:
     AP_Baro_KellerLD(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
-    virtual ~AP_Baro_KellerLD(void) {};
 
     bool _init();
 

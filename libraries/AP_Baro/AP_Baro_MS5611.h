@@ -38,8 +38,7 @@ private:
                                              uint8_t *count, uint8_t max_count);
 
     AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, enum MS56XX_TYPE ms56xx_type);
-    virtual ~AP_Baro_MS56XX(void) {};
-    
+
     bool _init();
 
     void _calculate_5611();
