@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Param: _STR_RAT_FILT
     // @DisplayName: Steering control filter frequency
     // @Description: Steering control input filter.  Lower values reduce noise but add delay.
-    // @Range: 1.000 100.000
+    // @Range: 0.000 100.000
     // @Increment: 0.1
     // @Units: Hz
     // @User: Standard
@@ -102,7 +102,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Param: _SPEED_FILT
     // @DisplayName: Speed control filter frequency
     // @Description: Speed control input filter.  Lower values reduce noise but add delay.
-    // @Range: 1.000 100.000
+    // @Range: 0.000 100.000
     // @Increment: 0.1
     // @Units: Hz
     // @User: Standard
