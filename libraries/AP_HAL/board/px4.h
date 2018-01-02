@@ -13,6 +13,12 @@
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V1
 #define HAL_STORAGE_SIZE            8192
+#elif defined(CONFIG_ARCH_BOARD_PCNC1)
+// AKA PCNC1; this is basically a v3 with bits (notably MTD) missing
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V3
+#define HAL_STORAGE_SIZE            16384
+#define HAL_WITH_UAVCAN             0
+#define USE_FLASH_STORAGE           1
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V3)
 // check for V3 before V2 as V3 also defines V2
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V3
@@ -104,6 +110,11 @@
 #define HAL_PX4_HAVE_MTD_SUPPORT 0
 #define HAL_PX4_HAVE_PX4IO 0
 #define HAL_PX4_HAVE_PWM_INPUT 0
+#endif
+
+/* SkyViper */
+#ifdef CONFIG_ARCH_BOARD_PCNC1
+#define HAL_PX4_HAVE_PX4IO 0
 #endif
 
 /* default values */
