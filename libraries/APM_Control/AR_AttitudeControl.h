@@ -7,6 +7,7 @@
 
 // attitude control default definition
 #define AR_ATTCONTROL_STEER_ANG_P       1.00f
+#define AR_ATTCONTROL_STEER_RATE_FF     0.20f
 #define AR_ATTCONTROL_STEER_RATE_P      1.00f
 #define AR_ATTCONTROL_STEER_RATE_I      0.50f
 #define AR_ATTCONTROL_STEER_RATE_IMAX   1.00f
