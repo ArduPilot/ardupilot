@@ -1172,6 +1172,9 @@ void Copter::log_picture()
 void Copter::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
 #if MOUNT == ENABLED
+    if(!copter.camera_mount.has_pan_control()) {
+        set_auto_yaw_look_at_heading(cmd.content.mount_control.yaw,0.0f,0,0);
+    }
     camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
 }
