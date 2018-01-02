@@ -124,6 +124,16 @@ void AP_IOMCU::thread_start(void *ctx)
 }
 
 /*
+  handle event failure
+ */
+void AP_IOMCU::event_failed(uint8_t event)
+{
+    // wait 0.5ms then retry
+    hal.scheduler->delay_microseconds(500);
+    trigger_event(event);
+}
+
+/*
   main IO thread loop
  */
 void AP_IOMCU::thread_main(void)
@@ -132,12 +142,8 @@ void AP_IOMCU::thread_main(void)
     uart.begin(1500*1000, 256, 256);
     uart.set_blocking_writes(false);
 
-    // set IO_ARM_OK and FMU_ARMED
-    modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0,
-                    P_SETUP_ARMING_IO_ARM_OK |
-                    P_SETUP_ARMING_FMU_ARMED |
-                    P_SETUP_ARMING_RC_HANDLING_DISABLED);
-
+    trigger_event(IOEVENT_INIT);
+    
     // enable sbus (until we have BRD_SBUS_OUT available in ChibiOS)
     enable_sbus_out(150);
     
@@ -149,24 +155,48 @@ void AP_IOMCU::thread_main(void)
             send_servo_out();
         }
 
+        if (mask & EVENT_MASK(IOEVENT_INIT)) {
+            // set IO_ARM_OK and FMU_ARMED
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0,
+                                 P_SETUP_ARMING_IO_ARM_OK |
+                                 P_SETUP_ARMING_FMU_ARMED |
+                                 P_SETUP_ARMING_RC_HANDLING_DISABLED)) {
+                event_failed(IOEVENT_INIT);
+                continue;
+            }
+        }
+
+        
         if (mask & EVENT_MASK(IOEVENT_FORCE_SAFETY_OFF)) {
-            write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_OFF, FORCE_SAFETY_MAGIC);
+            if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_OFF, FORCE_SAFETY_MAGIC)) {
+                event_failed(IOEVENT_FORCE_SAFETY_OFF);
+                continue;
+            }
         }
 
         if (mask & EVENT_MASK(IOEVENT_FORCE_SAFETY_ON)) {
-            write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_ON, FORCE_SAFETY_MAGIC);
+            if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_ON, FORCE_SAFETY_MAGIC)) {
+                event_failed(IOEVENT_FORCE_SAFETY_ON);
+                continue;
+            }
         }
 
         
         if (mask & EVENT_MASK(IOEVENT_SET_RATES)) {
-            write_register(PAGE_SETUP, PAGE_REG_SETUP_ALTRATE, rate.freq);
-            write_register(PAGE_SETUP, PAGE_REG_SETUP_PWM_RATE_MASK, rate.chmask);
+            if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_ALTRATE, rate.freq) ||
+                !write_register(PAGE_SETUP, PAGE_REG_SETUP_PWM_RATE_MASK, rate.chmask)) {
+                event_failed(IOEVENT_SET_RATES);
+                continue;
+            }
         }
 
         if (mask & EVENT_MASK(IOEVENT_ENABLE_SBUS)) {
-            write_register(PAGE_SETUP, PAGE_REG_SETUP_SBUS_RATE, rate.sbus_rate_hz);
-            modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0,
-                            P_SETUP_FEATURES_SBUS1_OUT);
+            if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_SBUS_RATE, rate.sbus_rate_hz) ||
+                !modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0,
+                                 P_SETUP_FEATURES_SBUS1_OUT)) {
+                event_failed(IOEVENT_ENABLE_SBUS);
+                continue;                
+            }
         }
         
         // check for regular timed events
