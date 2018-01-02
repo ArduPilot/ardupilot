@@ -102,6 +102,7 @@ private:
     void read_status(void);
     void print_debug(void);
     void discard_input(void);
+    void event_failed(uint8_t event);
     
     static const uint8_t max_channels = 16;
     
