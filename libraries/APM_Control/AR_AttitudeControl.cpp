@@ -320,6 +320,8 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     if (_speed_last_ms == 0 || dt > 0.1f) {
         dt = 0.0f;
         _throttle_speed_pid.reset_filter();
+    } else {
+        _throttle_speed_pid.set_dt(dt);
     }
     _speed_last_ms = now;
 
