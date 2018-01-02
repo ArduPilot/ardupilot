@@ -361,11 +361,6 @@ void AP_InertialSensor_Invensense::_fifo_reset()
     uint8_t user_ctrl = _last_stat_user_ctrl;
     user_ctrl &= ~(BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_FIFO_EN);
 
-    if (_mpu_type == Invensense_ICM20789) {
-        // setup to allow for barometer
-        user_ctrl &= ~BIT_USER_CTRL_I2C_MST_EN;
-    }
-    
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
     _register_write(MPUREG_FIFO_EN, 0);
     _register_write(MPUREG_USER_CTRL, user_ctrl);
