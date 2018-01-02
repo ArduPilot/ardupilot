@@ -47,6 +47,7 @@ public:
         PX4_BOARD_AEROFC   = 13,
         PX4_BOARD_PIXHAWK_PRO = 14,
         PX4_BOARD_AUAV21   = 20,
+        PX4_BOARD_PCNC1    = 21,
         PX4_BOARD_OLDDRIVERS = 100,
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
