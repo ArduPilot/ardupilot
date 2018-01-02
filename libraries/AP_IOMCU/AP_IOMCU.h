@@ -6,6 +6,9 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+
+#if HAL_WITH_IO_MCU
+
 #include "ch.h"
 
 class AP_IOMCU {
@@ -172,3 +175,5 @@ private:
     
     bool corked;
 };
+
+#endif // HAL_WITH_IO_MCU

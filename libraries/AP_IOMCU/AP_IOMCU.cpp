@@ -6,6 +6,9 @@
  */
 
 #include "AP_IOMCU.h"
+
+#if HAL_WITH_IO_MCU
+
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
 
@@ -479,3 +482,5 @@ bool AP_IOMCU::check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uin
     }
     return false;
 }
+
+#endif // HAL_WITH_IO_MCU
