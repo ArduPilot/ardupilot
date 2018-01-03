@@ -581,7 +581,7 @@ void Plane::set_servos(void)
     // setup flap outputs
     set_servos_flaps();
     
-    if (control_mode >= FLY_BY_WIRE_B ||
+    if (auto_throttle_mode ||
         quadplane.in_assisted_flight() ||
         quadplane.in_vtol_mode()) {
         /* only do throttle slew limiting in modes where throttle
