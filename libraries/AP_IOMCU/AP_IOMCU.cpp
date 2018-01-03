@@ -71,6 +71,7 @@ enum ioevents {
     IOEVENT_SET_RATES,
     IOEVENT_GET_RCIN,
     IOEVENT_ENABLE_SBUS,
+    IOEVENT_SET_HEATER_TARGET,
 };
 
 // setup page registers
@@ -90,6 +91,7 @@ enum ioevents {
 #define PAGE_REG_SETUP_DEFAULTRATE   3
 #define PAGE_REG_SETUP_ALTRATE       4
 #define PAGE_REG_SETUP_SBUS_RATE    19
+#define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
 
 #define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
@@ -196,6 +198,13 @@ void AP_IOMCU::thread_main(void)
                                  P_SETUP_FEATURES_SBUS1_OUT)) {
                 event_failed(IOEVENT_ENABLE_SBUS);
                 continue;                
+            }
+        }
+
+        if (mask & EVENT_MASK(IOEVENT_SET_HEATER_TARGET)) {
+            if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_HEATER_DUTY_CYCLE, heater_duty_cycle)) {
+                event_failed(IOEVENT_SET_HEATER_TARGET);
+                continue;
             }
         }
         
@@ -511,6 +520,13 @@ bool AP_IOMCU::check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uin
         return true;
     }
     return false;
+}
+
+// set IMU heater target
+void AP_IOMCU::set_heater_duty_cycle(uint8_t duty_cycle)
+{
+    heater_duty_cycle = duty_cycle;
+    trigger_event(IOEVENT_SET_HEATER_TARGET);
 }
 
 #endif // HAL_WITH_IO_MCU

@@ -63,7 +63,10 @@ public:
       get rssi voltage
      */
     float get_vrssi(void) const { return reg_status.vrssi * 0.001; }
-    
+
+    // set target for IMU heater
+    void set_heater_duty_cycle(uint8_t duty_cycle);
+
 private:
     AP_HAL::UARTDriver &uart;
 
@@ -173,6 +176,9 @@ private:
         uint16_t default_freq = 50;
         uint16_t sbus_rate_hz;
     } rate;
+
+    // IMU heater duty cycle
+    uint8_t heater_duty_cycle;
     
     bool corked;
 };
