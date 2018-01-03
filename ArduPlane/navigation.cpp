@@ -135,7 +135,7 @@ void Plane::calc_airspeed_errors()
     }
 
     // Bump up the target airspeed based on throttle nudging
-    if (control_mode >= AUTO && airspeed_nudge_cm > 0) {
+    if (throttle_allows_nudging && airspeed_nudge_cm > 0) {
         target_airspeed_cm += airspeed_nudge_cm;
     }
 
