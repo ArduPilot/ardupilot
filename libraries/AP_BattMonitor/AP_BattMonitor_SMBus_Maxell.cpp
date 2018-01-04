@@ -77,14 +77,14 @@ void AP_BattMonitor_SMBus_Maxell::timer()
 
     // read current (A)
     if (read_word(BATTMONITOR_SMBUS_MAXELL_CURRENT, data)) {
-        _state.current_amps = -(float)((int16_t)data) / 1000.0f;
+        _state.current_amps = -static_cast<float>(static_cast<int16_t>(data)) / 1000.0f * 2.0f;
         _state.last_time_micros = tnow;
     }
 
-    read_full_charge_capacity();
+    read_full_charge_capacity(2);  // Maxell has set a value of 1/2.
 
     // FIXME: Preform current integration if the remaining capacity can't be requested
-    read_remaining_capacity();
+    read_remaining_capacity(2);  // Maxell has set a value of 1/2.
 
     read_temp();
 

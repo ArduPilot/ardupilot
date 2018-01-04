@@ -73,8 +73,8 @@ void AP_BattMonitor_SMBus_Solo::timer()
         _state.last_time_micros = tnow;
     }
 
-    read_full_charge_capacity();
-    read_remaining_capacity();
+    read_full_charge_capacity(1);
+    read_remaining_capacity(1);
 
     // read the button press indicator
     if (read_block(BATTMONITOR_SMBUS_SOLO_MANUFACTURE_DATA, buff, 6, false) == 6) {

@@ -36,12 +36,12 @@ protected:
 
     // reads the pack full charge capacity
     // returns true if the read was successful, or if we already knew the pack capacity
-    bool read_full_charge_capacity(void);
+    bool read_full_charge_capacity(uint8_t inMultiple);
 
     // reads the remaining capacity
     // returns true if the read was succesful, which is only considered to be the
     // we know the full charge capacity
-    bool read_remaining_capacity(void);
+    bool read_remaining_capacity(uint8_t inMultiple);
 
     // reads the temperature word from the battery
     // returns true if the read was successful

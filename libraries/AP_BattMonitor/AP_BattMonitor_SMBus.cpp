@@ -38,32 +38,41 @@ void AP_BattMonitor_SMBus::read(void)
     }
 }
 
-// reads the pack full charge capacity
-// returns true if the read was successful, or if we already knew the pack capacity
-bool AP_BattMonitor_SMBus::read_full_charge_capacity(void)
+/**
+ * reads the pack full charge capacity
+ *
+ * @param [in] inMultiple A multiple to restore the original value
+ * @retval true if the read was successful, or if we already knew the pack capacity
+ * @retval false read was failure
+ */
+bool AP_BattMonitor_SMBus::read_full_charge_capacity(uint8_t inMultiple)
 {
     uint16_t data;
 
     if (_full_charge_capacity != 0) {
         return true;
     } else if (read_word(BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY, data)) {
-        _full_charge_capacity = data;
+        _full_charge_capacity = data * inMultiple;
         return true;
     }
     return false;
 }
 
-// reads the remaining capacity
-// returns true if the read was succesful, which is only considered to be the
-// we know the full charge capacity
-bool AP_BattMonitor_SMBus::read_remaining_capacity(void)
+/**
+ * reads the remaining capacity
+ *
+ * @param [in] inMultiple A multiple to restore the original value
+ * @retval true returns true if the read was succesful, which is only considered to be the we know the full charge capacity
+ * @retval false read was failure
+ */
+bool AP_BattMonitor_SMBus::read_remaining_capacity(uint8_t inMultiple)
 {
     int32_t capacity = get_capacity();
 
     if (capacity > 0) {
         uint16_t data;
         if (read_word(BATTMONITOR_SMBUS_REMAINING_CAPACITY, data)) {
-            _state.current_total_mah = MAX(0, capacity - data);
+            _state.current_total_mah = MAX(0.0f, static_cast<float>(capacity) - static_cast<float>(data * inMultiple));
             return true;
         }
     }
@@ -167,4 +176,3 @@ uint8_t AP_BattMonitor_SMBus::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool 
     // return result
     return crc;
 }
-
