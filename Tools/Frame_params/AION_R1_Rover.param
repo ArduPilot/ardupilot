@@ -5,7 +5,6 @@ ARMING_REQUIRE,0
 #MIN 4S SOLO BATTERY
 ARMING_VOLT_MIN,13
 #default aux ch to match documentation
-AUX_CH,7
 ATC_SPEED_P,0.2
 ATC_SPEED_I,0.2
 ATC_SPEED_D,0.0
@@ -14,6 +13,7 @@ ATC_STR_RAT_P,0.5
 ATC_STR_RAT_I,0.6
 ATC_STR_RAT_D,0.0
 ATC_STR_RAT_FILT,20
+AUX_CH,7
 #cube power brick - 4s solo battery - SMBus hardware side not yet supported
 BATT_AMP_OFFSET,0
 BATT_AMP_PERVOLT,0.1
@@ -25,13 +25,9 @@ BATT_MONITOR,4
 BATT_SERIAL_NUM,-1
 BATT_VOLT_MULT,13.99818
 BATT_VOLT_PIN,2
-#default safe waypoint
+#default save waypoint
 CH7_OPTION,1
-#default force external
-COMPASS_EXTERN2,2
-COMPASS_EXTERN3,2
-COMPASS_EXTERNAL,1
-#default use compass
+#default use only first (hopefully external) compass
 COMPASS_USE,1
 COMPASS_USE2,0
 COMPASS_USE3,0
