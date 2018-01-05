@@ -48,6 +48,9 @@ public:
     // return current PWM of a channel
     virtual uint16_t read(uint8_t chan) = 0;
 
+    // handle a data96 mavlink packet for fw upload
+    virtual void handle_data_packet(mavlink_channel_t chan, const mavlink_data96_t &m) {}
+
     // update status
     virtual void update(void) = 0;
 

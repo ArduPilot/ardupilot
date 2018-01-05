@@ -1479,7 +1479,7 @@ void AP_Radio_cypress::dsm_choose_channel(void)
  */
 void AP_Radio_cypress::start_recv_bind(void)
 {
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!dev->get_semaphore()->take(0)) {
         // shouldn't be possible
         return;
     }
@@ -1709,8 +1709,39 @@ void AP_Radio_cypress::send_FCC_test_packet(void)
     transmit16(pkt);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     hrt_call_after(&wait_call, 10000, (hrt_callout)irq_timeout_trampoline, nullptr);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    //Note: please review Frequency in chconf.h to ensure the range of wait
+    chVTSet(&timeout_vt, MS2ST(10), trigger_timeout_event, nullptr);
 #endif
 #endif
+}
+
+// handle a data96 mavlink packet for fw upload
+void AP_Radio_cypress::handle_data_packet(mavlink_channel_t chan, const mavlink_data96_t &m)
+{
+    uint32_t ofs=0;
+    memcpy(&ofs, &m.data[0], 4);
+    Debug(4, "got data96 of len %u from chan %u at offset %u\n", m.len, chan, ofs);
+    if (sem->take_nonblocking()) {
+        fwupload.chan = chan;
+        fwupload.need_ack = false;
+        fwupload.offset = ofs;
+        fwupload.length = MIN(m.len-4, 92);
+        fwupload.acked = 0;
+        fwupload.sequence++;
+        if (m.type == 43) {
+            // sending a tune to play - for development testing
+            fwupload.fw_type = TELEM_PLAY;
+            fwupload.length = MIN(m.len, 90);
+            fwupload.offset = 0;
+            memcpy(&fwupload.pending_data[0], &m.data[0], fwupload.length);
+        } else {
+            // sending a chunk of firmware OTA upload
+            fwupload.fw_type = TELEM_FW;
+            memcpy(&fwupload.pending_data[0], &m.data[4], fwupload.length);
+        }
+        sem->give();
+    } 
 }
 
 #endif // HAL_RCINPUT_WITH_AP_RADIO
