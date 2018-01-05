@@ -70,6 +70,7 @@
 #endif
 
 extern const AP_HAL::HAL& hal;
+AP_BoardConfig *AP_BoardConfig::instance;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
