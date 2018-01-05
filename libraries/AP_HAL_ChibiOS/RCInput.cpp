@@ -20,6 +20,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 #if HAL_WITH_IO_MCU
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
 #endif
@@ -185,7 +186,8 @@ void ChibiRCInput::_timer_tick(void)
 
 #if HAL_WITH_IO_MCU
     chMtxLock(&rcin_mutex);
-    if (iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
+    if (AP_BoardConfig::io_enabled() &&
+        iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
         _rcin_timestamp_last_signal = last_iomcu_us;
     }
     chMtxUnlock(&rcin_mutex);
