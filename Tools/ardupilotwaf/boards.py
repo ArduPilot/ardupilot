@@ -8,6 +8,7 @@ import waflib
 from waflib.Configure import conf
 
 _board_classes = {}
+_board = None
 
 class BoardMeta(type):
     def __init__(cls, name, bases, dct):
@@ -191,13 +192,17 @@ class Board:
 
     def build(self, bld):
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
+        import time
+        ltime = time.localtime()
+        bld.ap_version_append_int('BUILD_DATE_YEAR', ltime.tm_year)
+        bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
+        bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
 def get_boards_names():
     return sorted(list(_board_classes.keys()))
 
-_board = None
 @conf
 def get_board(ctx):
     global _board
@@ -241,6 +246,136 @@ class sitl(Board):
             env.LIB += [
                 'winmm',
             ]
+
+class chibios(Board):
+    toolchain = 'arm-none-eabi'
+
+    def configure_env(self, cfg, env):
+        super(chibios, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_CHIBIOS',
+            HAVE_OCLOEXEC = 0,
+            HAVE_STD_NULLPTR_T = 0,
+        )
+
+        env.AP_LIBRARIES += [
+            'AP_HAL_ChibiOS',
+        ]
+
+        env.CXXFLAGS += [
+            '-Wlogical-op',
+            '-Wframe-larger-than=1300',
+            '-fsingle-precision-constant',
+            '-Wno-attributes',
+            '-Wno-error=double-promotion',
+            '-Wno-error=missing-declarations',
+            '-Wno-error=float-equal',
+            '-Wno-error=undef',
+            '-Wno-error=cpp',
+            '-Wno-cast-align',
+            '-fno-exceptions',
+            '-fno-rtti',
+            '-fno-threadsafe-statics',
+            '-Wall',
+            '-Wextra',
+            '-Wno-sign-compare',
+            '-Wfloat-equal',
+            '-Wpointer-arith',
+            '-Wmissing-declarations',
+            '-Wno-unused-parameter',
+            '-Werror=array-bounds',
+            '-Wfatal-errors',
+            '-Werror=unused-variable',
+            '-Werror=uninitialized',
+            '-Werror=init-self',
+            '-Wframe-larger-than=1024',
+            '-Werror=unused-but-set-variable',
+            '-Wdouble-promotion',
+            '-Wno-missing-field-initializers',
+            '-Os',
+            '-g',
+            '-fno-strict-aliasing',
+            '-fomit-frame-pointer',
+            '-falign-functions=16',
+            '-ffunction-sections',
+            '-fdata-sections',
+            '-fno-strength-reduce',
+            '-fno-builtin-printf',
+            '-fno-builtin-fprintf',
+            '-fno-builtin-vprintf',
+            '-fno-builtin-vfprintf',
+            '-fno-builtin-puts',
+            '-mcpu=cortex-m4',
+            '-mno-thumb-interwork',
+            '-mthumb',
+            '-mfpu=fpv4-sp-d16',
+            '-mfloat-abi=hard'
+        ]
+
+        env.LINKFLAGS = [
+            '-mcpu=cortex-m4',
+            '-Os',
+            '-g',
+            '-fomit-frame-pointer',
+            '-falign-functions=16',
+            '-ffunction-sections',
+            '-fdata-sections',
+            '-u_port_lock',
+            '-u_port_unlock',
+            '-u_exit',
+            '-u_kill',
+            '-u_getpid',
+            '-u_errno',
+            '-uchThdExit',
+            '-u_printf_float',
+            '-fno-common',
+            '-nostartfiles',
+            '-mfloat-abi=hard',
+            '-mfpu=fpv4-sp-d16',
+            '-mno-thumb-interwork',
+            '-mthumb',
+        ]
+
+        env.LIB += ['gcc', 'm']
+        env.GIT_SUBMODULES += [
+            'ChibiOS',
+        ]
+        cfg.load('chibios')
+
+    def build(self, bld):
+        super(chibios, self).build(bld)
+        bld.load('chibios')
+
+class skyviper_f412(chibios):
+    name = 'skyviper-f412'
+    def configure_env(self, cfg, env):
+        super(skyviper_f412, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412',
+        )
+        env.BOARD = 'skyviper-f412'
+        env.LINKFLAGS += [
+                    '-L%s'\
+                    % cfg.srcnode.make_node('modules/ChibiOS/os/common/startup/ARMCMx/compilers/GCC/ld/').abspath(),
+                    '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=%s,--defsym=__process_stack_size__=0x400,--defsym=__main_stack_size__=0x400'\
+                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/%s/ldscript.ld' % env.BOARD).abspath(),
+        ]
+
+class fmuv3(chibios):
+    name = 'fmuv3'
+    def configure_env(self, cfg, env):
+        super(fmuv3, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3',
+        )
+        env.BOARD = 'fmuv3'
+        env.LINKFLAGS += [
+                    '-L%s'\
+                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/').abspath(),
+                    '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=%s,--defsym=__process_stack_size__=0x400,--defsym=__main_stack_size__=0x400'\
+                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/%s/ldscript.ld' % env.BOARD).abspath(),
+        ]
 
 class linux(Board):
     def configure_env(self, cfg, env):
