@@ -31,8 +31,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
-
 /* 
    declare driver main entry points
  */
@@ -64,7 +62,7 @@ void AP_BoardConfig::px4_setup_pwm()
         { 8, PWM_SERVO_MODE_12PWM, 0 },
 #endif
     };
-    uint8_t mode_parm = (uint8_t)px4.pwm_count.get();
+    uint8_t mode_parm = (uint8_t)state.pwm_count.get();
     uint8_t i;
     for (i=0; i<ARRAY_SIZE(mode_table); i++) {
         if (mode_table[i].mode_parm == mode_parm) {
@@ -93,19 +91,6 @@ void AP_BoardConfig::px4_setup_pwm()
 }
 
 /*
-  setup flow control on UARTs
- */
-void AP_BoardConfig::px4_setup_uart()
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser1_rtscts.get());
-    if (hal.uartD != nullptr) {
-        hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)px4.ser2_rtscts.get());
-    }
-#endif
-}
-
-/*
   setup safety switch
  */
 void AP_BoardConfig::px4_setup_safety_mask()
@@ -114,13 +99,13 @@ void AP_BoardConfig::px4_setup_safety_mask()
     // setup channels to ignore the armed state
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd != -1) {
-        if (ioctl(px4io_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)px4.ignore_safety_channels) != 0) {
+        if (ioctl(px4io_fd, PWM_SERVO_IGNORE_SAFETY, (uint16_t)state.ignore_safety_channels) != 0) {
             hal.console->printf("IGNORE_SAFETY failed\n");
         }
     }
     int px4fmu_fd = open("/dev/px4fmu", 0);
     if (px4fmu_fd != -1) {
-        uint16_t mask = px4.ignore_safety_channels;
+        uint16_t mask = state.ignore_safety_channels;
         if (px4io_fd != -1) {
             mask >>= 8;
         }
@@ -131,54 +116,6 @@ void AP_BoardConfig::px4_setup_safety_mask()
     }
     if (px4io_fd != -1) {
         close(px4io_fd);
-    }
-#endif
-}
-
-/*
-  init safety state
- */
-void AP_BoardConfig::px4_init_safety()
-{
-    if (px4.safety_enable.get() == 0) {
-        hal.rcout->force_safety_off();
-        hal.rcout->force_safety_no_wait();
-        // wait until safety has been turned off
-        uint8_t count = 20;
-        while (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED && count--) {
-            hal.scheduler->delay(20);
-        }
-    }
-}
-
-/*
-  setup SBUS
- */
-void AP_BoardConfig::px4_setup_sbus(void)
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    if (px4.sbus_out_rate.get() >= 1) {
-        static const struct {
-            uint8_t value;
-            uint16_t rate;
-        } rates[] = {
-            { 1, 50 },
-            { 2, 75 },
-            { 3, 100 },
-            { 4, 150 },
-            { 5, 200 },
-            { 6, 250 },
-            { 7, 300 }
-        };
-        uint16_t rate = 300;
-        for (uint8_t i=0; i<ARRAY_SIZE(rates); i++) {
-            if (rates[i].value == px4.sbus_out_rate) {
-                rate = rates[i].rate;
-            }
-        }
-        if (!hal.rcout->enable_px4io_sbus_out(rate)) {
-            hal.console->printf("Failed to enable PX4IO SBUS out\n");
-        }
     }
 #endif
 }
@@ -223,56 +160,6 @@ bool AP_BoardConfig::px4_start_driver(main_fn_t main_function, const char *name,
     }
     free(s);
     return (status >> 8) == 0;
-}
-
-void AP_BoardConfig::px4_setup_drivers(void)
-{
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    /*
-      this works around an issue with some FMUv4 hardware (eg. copies
-      of the Pixracer) which have incorrect components leading to
-      sensor brownout on boot
-     */
-    if (px4_start_driver(fmu_main, "fmu", "sensor_reset 20")) {
-        printf("FMUv4 sensor reset complete\n");
-    }
-#endif
-
-    if (px4.board_type == PX4_BOARD_OLDDRIVERS) {
-        printf("Old drivers no longer supported\n");
-        px4.board_type = PX4_BOARD_AUTO;
-    }
-
-    // run board auto-detection
-    px4_autodetect();
-
-    if (px4.board_type == PX4_BOARD_PH2SLIM ||
-        px4.board_type == PX4_BOARD_PIXHAWK2) {
-        _imu_target_temperature.set_default(45);
-        if (_imu_target_temperature.get() < 0) {
-            // don't allow a value of -1 on the cube, or it could cook
-            // the IMU
-            _imu_target_temperature.set(45);
-        }
-    }
-
-    px4_configured_board = (enum px4_board_type)px4.board_type.get();
-
-    switch (px4_configured_board) {
-    case PX4_BOARD_PX4V1:
-    case PX4_BOARD_PIXHAWK:
-    case PX4_BOARD_PIXHAWK2:
-    case PX4_BOARD_PIXRACER:
-    case PX4_BOARD_PHMINI:
-    case PX4_BOARD_AUAV21:
-    case PX4_BOARD_PH2SLIM:
-    case PX4_BOARD_AEROFC:
-    case PX4_BOARD_PIXHAWK_PRO:
-        break;
-    default:
-        sensor_config_error("Unknown board type");
-        break;
-    }
 }
 
 /*
@@ -365,7 +252,7 @@ void AP_BoardConfig::px4_setup_peripherals(void)
     }
 
 #if HAL_PX4_HAVE_PX4IO
-    if (px4.io_enable.get() != 0) {
+    if (state.io_enable.get() != 0) {
         px4_setup_px4io();
     }
 #endif
@@ -386,140 +273,6 @@ void AP_BoardConfig::px4_setup_peripherals(void)
     hal.gpio->init();
     hal.rcin->init();
     hal.rcout->init();
-}
-
-/*
-  check a SPI device for a register value
- */
-bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag)
-{
-    auto dev = hal.spi->get_device(devname);
-    if (!dev) {
-        printf("%s: no device\n", devname);
-        return false;
-    }
-    dev->set_read_flag(read_flag);
-    uint8_t v;
-    if (!dev->read_registers(regnum, &v, 1)) {
-        printf("%s: reg %02x read fail\n", devname, (unsigned)regnum);
-        return false;
-    }
-    printf("%s: reg %02x %02x %02x\n", devname, (unsigned)regnum, (unsigned)value, (unsigned)v);
-    return v == value;
-}
-
-#define MPUREG_WHOAMI 0x75
-#define MPU_WHOAMI_MPU60X0  0x68
-#define MPU_WHOAMI_MPU9250  0x71
-#define MPU_WHOAMI_ICM20608 0xaf
-#define MPU_WHOAMI_ICM20602 0x12
-
-#define LSMREG_WHOAMI 0x0f
-#define LSM_WHOAMI_LSM303D 0x49
-
-/*
-  validation of the board type
- */
-void AP_BoardConfig::validate_board_type(void)
-{
-    /* some boards can be damaged by the user setting the wrong board
-       type.  The key one is the cube which has a heater which can
-       cook the IMUs if the user uses an old paramater file. We
-       override the board type for that specific case
-     */
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    if (px4.board_type == PX4_BOARD_PIXHAWK &&
-        (spi_check_register(HAL_INS_MPU60x0_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
-         spi_check_register(HAL_INS_MPU9250_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
-         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
-        spi_check_register(HAL_INS_LSM9DS0_EXT_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
-        // Pixhawk2 has LSM303D and MPUxxxx on external bus. If we
-        // detect those, then force PIXHAWK2, even if the user has
-        // configured for PIXHAWK1
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V3)
-        // force user to load the right firmware
-        sensor_config_error("Pixhawk2 requires FMUv3 firmware");        
-#endif
-        px4.board_type.set(PX4_BOARD_PIXHAWK2);
-        hal.console->printf("Forced PIXHAWK2\n");
-    }
-#endif
-
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
-	// Nothing to do for the moment
-#endif
-}
-
-/*
-  auto-detect board type
- */
-void AP_BoardConfig::px4_autodetect(void)
-{
-    if (px4.board_type != PX4_BOARD_AUTO) {
-        validate_board_type();
-        // user has chosen a board type
-        return;
-    }
-
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    // only one choice
-    px4.board_type.set(PX4_BOARD_PX4V1);
-    hal.console->printf("Detected PX4v1\n");
-
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
-    if ((spi_check_register(HAL_INS_MPU60x0_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
-         spi_check_register(HAL_INS_MPU9250_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
-         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-         spi_check_register(HAL_INS_ICM20608_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
-        spi_check_register(HAL_INS_LSM9DS0_EXT_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
-        // Pixhawk2 has LSM303D and MPUxxxx on external bus
-        px4.board_type.set(PX4_BOARD_PIXHAWK2);
-        hal.console->printf("Detected PIXHAWK2\n");
-    } else if ((spi_check_register(HAL_INS_ICM20608_AM_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-                spi_check_register(HAL_INS_ICM20608_AM_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
-               spi_check_register(HAL_INS_MPU9250_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) {
-        // PHMINI has an ICM20608 and MPU9250 on sensor bus
-        px4.board_type.set(PX4_BOARD_PHMINI);
-        hal.console->printf("Detected PixhawkMini\n");
-    } else if (spi_check_register(HAL_INS_LSM9DS0_A_NAME, LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) &&
-               (spi_check_register(HAL_INS_MPU60x0_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
-                spi_check_register(HAL_INS_ICM20608_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-                spi_check_register(HAL_INS_ICM20608_NAME, MPUREG_WHOAMI, MPU_WHOAMI_ICM20602) ||
-                spi_check_register(HAL_INS_MPU9250_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250))) {
-
-        // classic or upgraded Pixhawk1
-        px4.board_type.set(PX4_BOARD_PIXHAWK);
-        hal.console->printf("Detected Pixhawk\n");
-    } else {
-        sensor_config_error("Unable to detect board type");
-    }
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    // only one choice
-    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
-    hal.console->printf("Detected Pixracer\n");
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
-    // only one choice
-    px4.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
-    hal.console->printf("Detected Pixhawk Pro\n");	
-#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-    px4.board_type.set_and_notify(PX4_BOARD_AEROFC);
-    hal.console->printf("Detected Aero FC\n");
-#endif
-
-}
-
-/*
-  setup px4 peripherals and drivers
- */
-void AP_BoardConfig::px4_setup()
-{
-    px4_setup_peripherals();
-    px4_setup_pwm();
-    px4_setup_safety_mask();
-    px4_setup_uart();
-    px4_setup_sbus();
-    px4_setup_drivers();
 }
 
 #endif // HAL_BOARD_PX4
