@@ -28,6 +28,8 @@
 #include <nuttx/arch.h>
 #include <systemlib/systemlib.h>
 #include <drivers/drv_hrt.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include "hal.h"
 #endif
 #include "telem_structure.h"
 
@@ -82,7 +84,7 @@ private:
     
     void dump_registers(uint8_t n);
 
-    bool force_initial_state(void);
+    void force_initial_state(void);
     void set_channel(uint8_t channel);
     uint8_t read_status_debounced(uint8_t adr);
     
@@ -112,6 +114,9 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     sem_t irq_sem;
     struct hrt_call wait_call;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    virtual_timer_t timeout_vt;
+    static thread_t *_irq_handler_ctx;
 #endif
     void radio_set_config(const struct config *config, uint8_t size);
 
@@ -131,6 +136,10 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     static int irq_radio_trampoline(int irq, void *context);
     static int irq_timeout_trampoline(int irq, void *context);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    static void irq_handler_thd(void* arg);
+    static void trigger_irq_radio_event(void);
+    static void trigger_timeout_event(void *arg);
 #endif    
 
     static const uint8_t max_channels = 16;
