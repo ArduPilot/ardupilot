@@ -120,7 +120,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF3, _enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF3, _enable, 1, AP_PARAM_FLAG_ENABLE),
 
     // GPS measurement parameters
 
