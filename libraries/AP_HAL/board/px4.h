@@ -106,6 +106,16 @@
 #define HAL_PX4_HAVE_PWM_INPUT 0
 #endif
 
+/* AP_Radio configuration */
+
+#ifdef HAL_RCINPUT_WITH_AP_RADIO
+// this is the external SPI bus on a PixHawk1:
+# define CYRF_SPI_PX4_SPI_BUS        PX4_SPI_BUS_EXT
+# define CYRF_SPI_PX4_SPIDEV_EXT     (spi_dev_e)PX4_SPIDEV_EXT0
+// this is AUX5 on a PixHawk1:
+# define CYRF_IRQ_INPUT (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTD|GPIO_PIN13)
+#endif // HAL_RCINPUT_WITH_AP_RADIO
+
 /* default values */
 #ifndef HAL_SERIAL0_BAUD_DEFAULT
 #define HAL_SERIAL0_BAUD_DEFAULT 115200
