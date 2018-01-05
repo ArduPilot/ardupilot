@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Description: Maximum acceleration in yaw axis
     // @Units: cdeg/s/s
     // @Range: 0 72000
-    // @Values: 0:Disabled, 18000:Slow, 36000:Medium, 54000:Fast
+    // @Values: 0:Disabled, 9000:VerySlow, 18000:Slow, 36000:Medium, 54000:Fast
     // @Increment: 1000
     // @User: Advanced
     AP_GROUPINFO("ACCEL_Y_MAX",  4, AC_AttitudeControl, _accel_yaw_max, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS),
@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Units: cdeg/s/s
     // @Range: 0 180000
     // @Increment: 1000
-    // @Values: 0:Disabled, 72000:Slow, 108000:Medium, 162000:Fast
+    // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast
     // @User: Advanced
     AP_GROUPINFO("ACCEL_R_MAX", 6, AC_AttitudeControl, _accel_roll_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS),
 
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Units: cdeg/s/s
     // @Range: 0 180000
     // @Increment: 1000
-    // @Values: 0:Disabled, 72000:Slow, 108000:Medium, 162000:Fast
+    // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast
     // @User: Advanced
     AP_GROUPINFO("ACCEL_P_MAX", 7, AC_AttitudeControl, _accel_pitch_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS),
 
