@@ -25,6 +25,7 @@ extern "C" typedef int (*main_fn_t)(int argc, char **);
 class AP_BoardConfig {
 public:
     AP_BoardConfig() {
+        instance = this;
         AP_Param::setup_object_defaults(this, var_info);
     };
 
@@ -32,6 +33,11 @@ public:
     AP_BoardConfig(const AP_BoardConfig &other) = delete;
     AP_BoardConfig &operator=(const AP_BoardConfig&) = delete;
 
+    // singleton support
+    AP_BoardConfig *get_instance(void) {
+        return instance;
+    }
+    
     void init(void);
     void init_safety(void);
 
@@ -88,7 +94,18 @@ public:
     }
 #endif
 
+    // ask if IOMCU is enabled
+    static bool io_enabled(void) {
+#if AP_FEATURE_BOARD_DETECT
+        return instance?instance->state.io_enable.get():false;
+#else
+        return false;
+#endif
+    }
+    
 private:
+    static AP_BoardConfig *instance;
+    
     AP_Int16 vehicleSerialNumber;
 
 #if AP_FEATURE_BOARD_DETECT
