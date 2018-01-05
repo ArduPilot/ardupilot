@@ -21,25 +21,6 @@
 #include "Scheduler.h"
 #include "Device.h"
 
-#define SPIDEV_BMP280           0
-#define SPIDEV_LSM303D          1
-#define SPIDEV_L3GD20H          2
-#define SPIDEV_MS5611           3
-#define SPIDEV_EXT_MS5611       4
-#define SPIDEV_MPU              5
-#define SPIDEV_EXT_MPU          6
-#define SPIDEV_EXT_LSM9DS0_G    7
-#define SPIDEV_EXT_LSM9DS0_AM   8
-#define SPIDEV_CYRF             9
-#define SPIDEV_FLOW             10
-#define SPIDEV_RAMTROM          11
-
-#define SPIDEV_MODE0    0
-#define SPIDEV_MODE1    SPI_CR1_CPHA
-#define SPIDEV_MODE2    SPI_CR1_CPOL
-#define SPIDEV_MODE3    SPI_CR1_CPOL | SPI_CR1_CPHA
-
-
 namespace ChibiOS {
 
 class SPIDesc;
