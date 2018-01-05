@@ -52,7 +52,7 @@ void ModeSteering::update()
         stop_vehicle();
     } else {
         // run lateral acceleration to steering controller
-        calc_steering_from_lateral_acceleration(desired_lat_accel, false);
+        calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
         calc_throttle(target_speed, false);
     }
 }
