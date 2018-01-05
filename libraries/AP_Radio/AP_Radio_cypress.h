@@ -59,6 +59,9 @@ public:
     // return current PWM of a channel
     uint16_t read(uint8_t chan) override;
 
+    // handle a data96 mavlink packet for fw upload
+    void handle_data_packet(mavlink_channel_t chan, const mavlink_data96_t &m) override;
+
     // update status
     void update(void) override;
 
