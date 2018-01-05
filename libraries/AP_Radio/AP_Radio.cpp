@@ -213,6 +213,14 @@ uint32_t AP_Radio::last_recv_us(void)
     return driver->last_recv_us();
 }
 
+// handle a data96 mavlink packet for fw upload
+void AP_Radio::handle_data_packet(mavlink_channel_t chan, const mavlink_data96_t &m)
+{
+    if (driver) {
+        driver->handle_data_packet(chan, m);
+    }
+}
+
 // update status, should be called from main thread
 void AP_Radio::update(void)
 {
