@@ -1,5 +1,13 @@
 APMrover2 Release Notes:
 ========================
+APM:Rover V3.2.0-rc4 05-Jan-2018
+Changes from 3.2.0-rc3:
+1) Steering controller supports feed-forward (reduces wobble)
+2) WP_SPEED, RTL_SPEED parameters allow speed independent of CRUISE_SPEED
+3) Dataflash logging improvements for steering and throttle
+4) Remove auto-trim at startup
+5) GPS reports healthy even without 3d lock
+---------------------------------
 APM:Rover V3.2.0-rc3 05-Dec-2017
 Changes from 3.2.0-rc2:
 1) SmartRTL mode (retraces path back to home)
