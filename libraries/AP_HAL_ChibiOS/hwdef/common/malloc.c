@@ -34,11 +34,21 @@
 
 void *malloc(size_t size)
 {
-    return chHeapAllocAligned(NULL, size, MIN_ALIGNMENT);
+    if (size == 0) {
+        return NULL;
+    }
+    void *p = chHeapAllocAligned(NULL, size, MIN_ALIGNMENT);
+    if (p) {
+        memset(p, 0, size);
+    }
+    return p;
 }
 
 void *calloc(size_t nmemb, size_t size)
 {
+    if (nmemb * size == 0) {
+        return NULL;
+    }
     void *p = chHeapAllocAligned(NULL, nmemb*size, MIN_ALIGNMENT);
     if (p != NULL) {
         memset(p, 0, nmemb*size);
