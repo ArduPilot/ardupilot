@@ -16,6 +16,7 @@
  */
 #include "RCOutput.h"
 #include <AP_Math/AP_Math.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 using namespace ChibiOS;
 
@@ -64,10 +65,11 @@ void ChibiRCOutput::init()
         pwmStart(pwm_group_list[i].pwm_drv, &pwm_group_list[i].pwm_cfg);
     }
 #if HAL_WITH_IO_MCU
-    iomcu.init();
-
-    // with IOMCU the local channels start at 8
-    chan_offset = 8;
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.init();
+        // with IOMCU the local channels start at 8
+        chan_offset = 8;
+    }
 #endif
 }
 
@@ -83,7 +85,9 @@ void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     }
 
 #if HAL_WITH_IO_MCU
-    iomcu.set_freq(chmask, freq_hz);
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.set_freq(chmask, freq_hz);
+    }
 #endif
 
     chmask >>= chan_offset;
@@ -169,7 +173,9 @@ void ChibiRCOutput::write(uint8_t chan, uint16_t period_us)
     
 #if HAL_WITH_IO_MCU
     // handle IO MCU channels
-    iomcu.write_channel(chan, period_us);
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.write_channel(chan, period_us);
+    }
 #endif
     if (chan < chan_offset) {
         return;
@@ -273,10 +279,11 @@ void ChibiRCOutput::set_output_mode(enum output_mode mode)
 bool ChibiRCOutput::force_safety_on(void)
 {
 #if HAL_WITH_IO_MCU
-    return iomcu.force_safety_on();
-#else
-    return false;
+    if (AP_BoardConfig::io_enabled()) {
+        return iomcu.force_safety_on();
+    }
 #endif
+    return false;
 }
 
 /*
@@ -285,7 +292,9 @@ bool ChibiRCOutput::force_safety_on(void)
 void ChibiRCOutput::force_safety_off(void)
 {
 #if HAL_WITH_IO_MCU
-    iomcu.force_safety_off();
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.force_safety_off();
+    }
 #endif
 }
 
@@ -296,7 +305,9 @@ void ChibiRCOutput::cork(void)
 {
     corked = true;
 #if HAL_WITH_IO_MCU
-    iomcu.cork();
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.cork();
+    }
 #endif
 }
 
@@ -308,7 +319,9 @@ void ChibiRCOutput::push(void)
     corked = false;
     push_local();
 #if HAL_WITH_IO_MCU
-    iomcu.push();
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.push();
+    }
 #endif
 }
 
@@ -318,8 +331,9 @@ void ChibiRCOutput::push(void)
 bool ChibiRCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
 {
 #if HAL_WITH_IO_MCU
-    return iomcu.enable_sbus_out(rate_hz);
-#else
-    return false;
+    if (AP_BoardConfig::io_enabled()) {
+        return iomcu.enable_sbus_out(rate_hz);
+    }
 #endif
+    return false;
 }
