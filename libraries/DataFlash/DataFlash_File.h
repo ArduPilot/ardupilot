@@ -6,7 +6,7 @@
  */
 #pragma once
 
-#if HAL_OS_POSIX_IO
+#if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
 
 #include <AP_HAL/utility/RingBuffer.h>
 #include "DataFlash_Backend.h"
