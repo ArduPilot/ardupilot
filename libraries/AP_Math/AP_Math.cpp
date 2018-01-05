@@ -33,6 +33,7 @@ is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 
 template bool is_equal<int>(const int v_1, const int v_2);
 template bool is_equal<short>(const short v_1, const short v_2);
+template bool is_equal<long>(const long v_1, const long v_2);
 template bool is_equal<float>(const float v_1, const float v_2);
 template bool is_equal<double>(const double v_1, const double v_2);
 
