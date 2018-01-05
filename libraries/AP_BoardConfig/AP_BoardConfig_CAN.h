@@ -4,8 +4,9 @@
 #include "AP_BoardConfig.h"
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS //we don't have ioctls in ChibiOS
 #include <sys/ioctl.h>
-
+#endif
 #if HAL_WITH_UAVCAN
 #define UAVCAN_PROTOCOL_ENABLE  1
 
