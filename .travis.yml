@@ -84,3 +84,5 @@ matrix:
       env: CI_BUILD_TARGET="px4-v3"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest"
+    - compiler: "gcc"
+      env: CI_BUILD_TARGET="fmuv3"
