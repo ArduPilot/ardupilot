@@ -1,9 +1,13 @@
 #include "AP_HAL.h"
 #include "Util.h"
 #include "utility/print_vprintf.h"
-#include <time.h>
 #if defined(__APPLE__) && defined(__MACH__)
 #include <sys/time.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include "ch.h"
+#include "hal.h"
+#else
+#include <time.h>
 #endif
 
 /* Helper class implements AP_HAL::Print so we can use utility/vprintf */
@@ -57,6 +61,8 @@ uint64_t AP_HAL::Util::get_system_clock_ms() const
     struct timeval ts;
     gettimeofday(&ts, nullptr);
     return ((long long)((ts.tv_sec * 1000) + (ts.tv_usec / 1000)));
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    return ST2MS(chVTGetSystemTime());
 #else
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
