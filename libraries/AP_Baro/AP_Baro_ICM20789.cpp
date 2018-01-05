@@ -218,7 +218,7 @@ bool AP_Baro_ICM20789::read_calibration_data(void)
             debug("ICM20789: read cal2[%u] failed\n", i);
             return false;
         }
-        uint8_t d[3];
+        uint8_t d[3]; /* 2 bytes of data and 1 Byte of CRC */
         if (!dev->transfer(nullptr, 0, d, sizeof(d))) {
             debug("ICM20789: read cal3[%u] failed\n", i);
             return false;
@@ -300,7 +300,8 @@ void AP_Baro_ICM20789::timer(void)
 {
     uint8_t d[9] {};
     if (dev->transfer(nullptr, 0, d, sizeof(d))) {
-        // ignore CRC bytes for now
+        // ignore CRC bytes for now i.e. d[2], d[5] and d[8]
+        // ("two bytes of data are always followed by one byte CRC")
         uint32_t Praw = (uint32_t(d[0]) << 16) | (uint32_t(d[1]) << 8) | d[3];
         uint32_t Traw = (uint32_t(d[6]) << 8) | d[7];
 
