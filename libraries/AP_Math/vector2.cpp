@@ -159,5 +159,7 @@ template bool Vector2<float>::is_nan(void) const;
 template bool Vector2<float>::is_inf(void) const;
 template float Vector2<float>::angle(const Vector2<float> &v) const;
 
+template bool Vector2<long>::operator ==(const Vector2<long> &v) const;
+
 // define for int
 template bool Vector2<int>::operator ==(const Vector2<int> &v) const;
