@@ -320,7 +320,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     // calculate dt
     const uint32_t now = AP_HAL::millis();
     float dt = (now - _speed_last_ms) / 1000.0f;
-    if (_speed_last_ms == 0 || dt > 0.1f) {
+    if ((_speed_last_ms == 0) || (dt > (AR_ATTCONTROL_TIMEOUT_MS / 1000.0f))) {
         dt = 0.0f;
         _throttle_speed_pid.reset_filter();
     } else {
