@@ -24,6 +24,10 @@
 #define AP_FEATURE_SBUS_OUT 0
 #endif
 
+#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#include <AP_Radio/AP_Radio.h>
+#endif
+
 extern "C" typedef int (*main_fn_t)(int argc, char **);
 
 class AP_BoardConfig {
@@ -163,4 +167,9 @@ private:
 
     // target temperarure for IMU in Celsius, or -1 to disable
     AP_Int8 _imu_target_temperature;
+
+#ifdef HAL_RCINPUT_WITH_AP_RADIO
+    // direct attached radio
+    AP_Radio _radio;
+#endif
 };
