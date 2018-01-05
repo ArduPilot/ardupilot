@@ -1324,6 +1324,13 @@ void QuadPlane::update_transition(void)
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
         }
         hold_hover(climb_rate_cms);
+
+        // set desired yaw to current yaw in both desired angle and
+        // rate request. This reduces wing twist in transition due to
+        // multicopter yaw demands
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
+
         last_throttle = motors->get_throttle();
 
         // reset integrators while we are below target airspeed as we
@@ -1361,6 +1368,13 @@ void QuadPlane::update_transition(void)
         }
         assisted_flight = true;
         hold_stabilize(throttle_scaled);
+
+        // set desired yaw to current yaw in both desired angle and
+        // rate request while waiting for transition to
+        // complete. Navigation should be controlled by fixed wing
+        // control surfaces at this stage
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
         break;
     }
 
