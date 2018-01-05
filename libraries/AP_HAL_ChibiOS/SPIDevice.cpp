@@ -31,6 +31,9 @@ using namespace ChibiOS;
 #define SPIDEV_CS_CYRF             GPIOA, 4
 #define SPIDEV_CS_FLOW             GPIOA, 15
 
+#define SPIDEV_RADIO           1
+#define SPIDEV_FLOW            2
+
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
 #define SPI_BUS_SENSORS 0
 #define SPI_BUS_RAMTRON 1
@@ -41,13 +44,34 @@ using namespace ChibiOS;
 #define SPIDEV_CS_EXT_MS5611       GPIOC, 14
 #define SPIDEV_CS_MPU              GPIOC, 2
 #define SPIDEV_CS_EXT_MPU          GPIOE, 4
-#define SPIDEV_CS_EXT_LSM9DS0_G    GPIOC, 13
-#define SPIDEV_CS_EXT_LSM9DS0_AM   GPIOC, 15
+#define SPIDEV_CS_LSM9DS0_G        GPIOC, 13 // same cs for both internal and external
+#define SPIDEV_CS_LSM9DS0_AM       GPIOC, 15 // same cs for both internal and external
 #define SPIDEV_CS_RAMTRON          GPIOD, 10
 #define SPIDEV_CS_RADIO            GPIOD, 10
 #define SPIDEV_CS_FLOW             GPIOE, 4
 
+// these device numbers are chosen to match those used when running NuttX. That prevent
+// users having to recal when updating to ChibiOS
+#define SPIDEV_LSM9DS0_G        1
+#define SPIDEV_LSM9DS0_AM       2
+#define SPIDEV_BARO             3
+#define SPIDEV_MPU              4
+#define SPIDEV_HMC              5
+#define SPIDEV_EXT_MPU          1
+#define SPIDEV_EXT_BARO         2
+#define SPIDEV_EXT_LSM9DS0_AM   3
+#define SPIDEV_EXT_LSM9DS0_G    4
+
+#define SPIDEV_RAMTROM          10
+#define SPIDEV_CYRF             11
+
 #endif // CONFIG_HAL_BOARD_SUBTYPE
+
+// SPI mode numbers
+#define SPIDEV_MODE0    0
+#define SPIDEV_MODE1    SPI_CR1_CPHA
+#define SPIDEV_MODE2    SPI_CR1_CPOL
+#define SPIDEV_MODE3    SPI_CR1_CPOL | SPI_CR1_CPHA
 
 #define SPI1_CLOCK  STM32_PCLK2
 #define SPI2_CLOCK  STM32_PCLK1
@@ -56,15 +80,14 @@ using namespace ChibiOS;
 
 static struct SPIDriverInfo {    
     SPIDriver *driver;
+    uint8_t busid; // used for device IDs in parameters
     uint8_t dma_channel_rx;
     uint8_t dma_channel_tx;
 } spi_devices[] = {
-    { &SPID1, STM32_SPI_SPI1_RX_DMA_STREAM, STM32_SPI_SPI1_TX_DMA_STREAM },
-    { &SPID2, STM32_SPI_SPI2_RX_DMA_STREAM, STM32_SPI_SPI2_TX_DMA_STREAM },
+    { &SPID1, 1, STM32_SPI_SPI1_RX_DMA_STREAM, STM32_SPI_SPI1_TX_DMA_STREAM },
+    { &SPID2, 2, STM32_SPI_SPI2_RX_DMA_STREAM, STM32_SPI_SPI2_TX_DMA_STREAM },
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
-    { &SPID4, STM32_SPI_SPI4_RX_DMA_STREAM, STM32_SPI_SPI4_TX_DMA_STREAM },
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-    { &SPID3, STM32_SPI_SPI3_RX_DMA_STREAM, STM32_SPI_SPI3_TX_DMA_STREAM },
+    { &SPID4, 4, STM32_SPI_SPI4_RX_DMA_STREAM, STM32_SPI_SPI4_TX_DMA_STREAM },
 #endif
 };
 
@@ -72,18 +95,20 @@ static struct SPIDriverInfo {
 #define KHZ (1000U)
 SPIDesc SPIDeviceManager::device_table[] = {
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-    SPIDesc("mpu6000",  SPI_BUS_SENSORS, SPIDEV_MPU, SPIDEV_CS_MPU, SPIDEV_MODE3, 500*KHZ, 8*MHZ),
-    SPIDesc("cypress",  SPI_BUS_SENSORS2, SPIDEV_CYRF, SPIDEV_CS_CYRF, SPIDEV_MODE0, 2*MHZ, 2*MHZ),
-    SPIDesc("pixartflow", SPI_BUS_EXT, SPIDEV_FLOW, SPIDEV_CS_FLOW, SPIDEV_MODE3, 2*MHZ, 2*MHZ),
+    SPIDesc("cypress",        SPI_BUS_RADIO,    SPIDEV_RADIO,         SPIDEV_CS_RADIO,      SPIDEV_MODE0, 2*MHZ, 2*MHZ),
+    SPIDesc("pixartflow",     SPI_BUS_FLOW,     SPIDEV_FLOW,          SPIDEV_CS_FLOW,       SPIDEV_MODE3, 2*MHZ, 2*MHZ),
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
-    SPIDesc("ms5611", SPI_BUS_SENSORS, SPIDEV_MS5611, SPIDEV_CS_MS5611, SPIDEV_MODE3, 20*MHZ, 20*MHZ ),
-    SPIDesc("ms5611_ext",   SPI_BUS_EXT, SPIDEV_EXT_MS5611, SPIDEV_CS_EXT_MS5611, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
-    SPIDesc("mpu9250", SPI_BUS_SENSORS, SPIDEV_MPU, SPIDEV_CS_MPU, SPIDEV_MODE3, 1*MHZ, 8*MHZ ),
-    SPIDesc("mpu9250_ext", SPI_BUS_EXT, SPIDEV_EXT_MPU , SPIDEV_CS_EXT_MPU, SPIDEV_MODE3, 1*MHZ, 8*MHZ ),  
-    SPIDesc("lsm9ds0_ext_g", SPI_BUS_EXT, SPIDEV_EXT_LSM9DS0_G , SPIDEV_CS_EXT_LSM9DS0_G, SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
-    SPIDesc("lsm9ds0_ext_am", SPI_BUS_EXT, SPIDEV_EXT_LSM9DS0_AM , SPIDEV_CS_EXT_LSM9DS0_AM, SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
-    SPIDesc("ramtron", SPI_BUS_RAMTRON, SPIDEV_RAMTROM, SPIDEV_CS_RAMTRON, SPIDEV_MODE3, 8*MHZ, 8*MHZ ),
-    SPIDesc("cypress",  SPI_BUS_RADIO, SPIDEV_CYRF, SPIDEV_CS_RADIO, SPIDEV_MODE0, 2*MHZ, 2*MHZ),
+    SPIDesc("ms5611",         SPI_BUS_SENSORS,  SPIDEV_BARO,          SPIDEV_CS_MS5611,     SPIDEV_MODE3, 20*MHZ, 20*MHZ),
+    SPIDesc("ms5611_ext",     SPI_BUS_EXT,      SPIDEV_EXT_BARO,      SPIDEV_CS_EXT_MS5611, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
+    SPIDesc("mpu6000",        SPI_BUS_SENSORS,  SPIDEV_MPU,           SPIDEV_CS_MPU,        SPIDEV_MODE3, 1*MHZ, 8*MHZ ),
+    SPIDesc("mpu9250",        SPI_BUS_SENSORS,  SPIDEV_MPU,           SPIDEV_CS_MPU,        SPIDEV_MODE3, 1*MHZ, 8*MHZ ),
+    SPIDesc("mpu9250_ext",    SPI_BUS_EXT,      SPIDEV_EXT_MPU,       SPIDEV_CS_EXT_MPU,    SPIDEV_MODE3, 1*MHZ, 8*MHZ ),  
+    SPIDesc("lsm9ds0_g",      SPI_BUS_SENSORS,  SPIDEV_LSM9DS0_G,     SPIDEV_CS_LSM9DS0_G,  SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
+    SPIDesc("lsm9ds0_am",     SPI_BUS_SENSORS,  SPIDEV_LSM9DS0_AM,    SPIDEV_CS_LSM9DS0_AM, SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
+    SPIDesc("lsm9ds0_ext_g",  SPI_BUS_EXT,      SPIDEV_EXT_LSM9DS0_G, SPIDEV_CS_LSM9DS0_G,  SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
+    SPIDesc("lsm9ds0_ext_am", SPI_BUS_EXT,      SPIDEV_EXT_LSM9DS0_AM,SPIDEV_CS_LSM9DS0_AM, SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
+    SPIDesc("ramtron",        SPI_BUS_RAMTRON,  SPIDEV_RAMTROM,       SPIDEV_CS_RAMTRON,    SPIDEV_MODE3, 8*MHZ, 8*MHZ ),
+    SPIDesc("cypress",        SPI_BUS_RADIO,    SPIDEV_CYRF,          SPIDEV_CS_RADIO,      SPIDEV_MODE0, 2*MHZ, 2*MHZ),
 #endif
 };
 
@@ -121,7 +146,7 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     : bus(_bus)
     , device_desc(_device_desc)
 {
-    set_device_bus(_bus.bus);
+    set_device_bus(spi_devices[_bus.bus].busid);
     set_device_address(_device_desc.device);
     freq_flag_low = derive_freq_flag(device_desc.lowspeed);
     freq_flag_high = derive_freq_flag(device_desc.highspeed);
