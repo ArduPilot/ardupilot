@@ -14,7 +14,6 @@
  */
 #include "AP_Baro_LPS25H.h"
 
-#include <unistd.h>
 #include <utility>
 #include <stdio.h>
 extern const AP_HAL::HAL &hal;
