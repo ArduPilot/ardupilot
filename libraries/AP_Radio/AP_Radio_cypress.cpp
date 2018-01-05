@@ -23,9 +23,19 @@
   configuration code and register defines
    https://github.com/esden/superbitrf-firmware
  */
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+static THD_WORKING_AREA(_irq_handler_wa, 512);
+#define TIMEOUT_PRIORITY 250	//Right above timer thread
+#define EVT_TIMEOUT EVENT_MASK(0)
+#define EVT_IRQ EVENT_MASK(1)
+#endif
+
+#ifndef CYRF_SPI_DEVICE
+# define CYRF_SPI_DEVICE "cypress"
+#endif
 
 #ifndef CYRF_IRQ_INPUT
-# error "CYRF_IRQ_INPUT must be defined"
+# define CYRF_IRQ_INPUT (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTD|GPIO_PIN15)
 #endif
 
 #ifndef CYRF_RESET_PIN
@@ -235,6 +245,9 @@ enum {
 
 // object instance for trampoline
 AP_Radio_cypress *AP_Radio_cypress::radio_instance;
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+thread_t *AP_Radio_cypress::_irq_handler_ctx;
+#endif
 /*
   constructor
  */
@@ -250,7 +263,18 @@ AP_Radio_cypress::AP_Radio_cypress(AP_Radio &_radio) :
  */
 bool AP_Radio_cypress::init(void)
 {
-    dev = hal.spi->get_device("cypress");
+    dev = hal.spi->get_device(CYRF_SPI_DEVICE);
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    if(_irq_handler_ctx != nullptr) {
+        AP_HAL::panic("AP_Radio_cypress: double instantiation of irq_handler\n");
+    }
+    chVTObjectInit(&timeout_vt);
+    _irq_handler_ctx = chThdCreateStatic(_irq_handler_wa,
+                     sizeof(_irq_handler_wa),
+                     TIMEOUT_PRIORITY,        /* Initial priority.    */
+                     irq_handler_thd,  /* Thread function.     */
+                     NULL);                     /* Thread parameter.    */
+#endif
     load_bind_info();
 
     sem = hal.util->new_semaphore();    
@@ -276,7 +300,13 @@ bool AP_Radio_cypress::reset(void)
     hal.scheduler->delay(500);
     stm32_gpiowrite(CYRF_RESET_PIN, 0);
     hal.scheduler->delay(500);
+    // use AUX5 as radio IRQ pin
     stm32_configgpio(CYRF_IRQ_INPUT);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    hal.gpio->write(HAL_GPIO_RADIO_RESET, 1);
+    hal.scheduler->delay(500);
+    hal.gpio->write(HAL_GPIO_RADIO_RESET, 0);
+    hal.scheduler->delay(500);
 #endif
     radio_init();
     dev->get_semaphore()->give();
@@ -532,15 +562,14 @@ uint8_t AP_Radio_cypress::read_status_debounced(uint8_t adr)
 /*
   force the initial state of the radio
  */
-bool AP_Radio_cypress::force_initial_state(void)
+void AP_Radio_cypress::force_initial_state(void)
 {
-    const uint32_t force_initial_state_start_ms = AP_HAL::millis();
-    while (AP_HAL::millis() - force_initial_state_start_ms < 100) {
+    while (true) {
         write_register(CYRF_XACT_CFG, CYRF_FRC_END);
         uint32_t start_ms = AP_HAL::millis();
         do {
             if ((read_register(CYRF_XACT_CFG) & CYRF_FRC_END) == 0) {
-                return true;                  // FORCE_END done (osc running)
+                return;                     // FORCE_END done (osc running)
             }
         } while (AP_HAL::millis() - start_ms < 5);
 
@@ -549,7 +578,6 @@ bool AP_Radio_cypress::force_initial_state(void)
         //  trying to start oscillator again.
         write_register(CYRF_XACT_CFG, CYRF_MODE_SLEEP);
     }
-    return false;
 }
 
 /*
@@ -606,10 +634,7 @@ void AP_Radio_cypress::radio_init(void)
     dsm_setup_transfer_dsmx();
 
     write_register(CYRF_XTAL_CTRL,0x80);  // XOUT=BitSerial
-    if (!force_initial_state()) {
-        Debug(1, "Cypress: radio_init failed\n");
-        return;
-    }
+    force_initial_state();
     write_register(CYRF_PWR_CTRL,0x20);   // Disable PMU
 
     // start in RECV state
@@ -622,6 +647,8 @@ void AP_Radio_cypress::radio_init(void)
     // setup handler for rising edge of IRQ pin
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     stm32_gpiosetevent(CYRF_IRQ_INPUT, true, false, false, irq_radio_trampoline);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    hal.gpio->attach_interrupt(HAL_GPIO_RADIO_IRQ, trigger_irq_radio_event, HAL_GPIO_INTERRUPT_RISING);
 #endif
 }
 
@@ -988,6 +1015,8 @@ void AP_Radio_cypress::process_packet(const uint8_t *pkt, uint8_t len)
                     state = STATE_SEND_TELEM;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
                     hrt_call_after(&wait_call, 1000, (hrt_callout)irq_timeout_trampoline, nullptr);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+                    chVTSet(&timeout_vt, MS2ST(1), trigger_timeout_event, nullptr);
 #endif
                 }
             }
@@ -1021,6 +1050,9 @@ void AP_Radio_cypress::start_receive(void)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     //dsm.receive_timeout_usec = 45000;
     hrt_call_after(&wait_call, dsm.receive_timeout_usec, (hrt_callout)irq_timeout_trampoline, nullptr);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    //Note: please review Frequency in chconf.h to ensure the range of wait
+    chVTSet(&timeout_vt, US2ST(dsm.receive_timeout_usec), trigger_timeout_event, nullptr);
 #endif
 }
 
@@ -1138,6 +1170,9 @@ void AP_Radio_cypress::irq_timeout(void)
         // schedule a new timeout
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         hrt_call_after(&wait_call, dsm.receive_timeout_usec, (hrt_callout)irq_timeout_trampoline, nullptr);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    //Note: please review Frequency in chconf.h to ensure the range of wait
+    chVTSet(&timeout_vt, US2ST(dsm.receive_timeout_usec), trigger_timeout_event, nullptr);
 #endif
         return;
     }
@@ -1191,6 +1226,40 @@ int AP_Radio_cypress::irq_timeout_trampoline(int irq, void *context)
 {
     radio_instance->irq_timeout();
     return 0;
+}
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+void AP_Radio_cypress::irq_handler_thd(void *arg)
+{
+    (void)arg;
+    while(true) {
+        eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
+        switch(evt) {
+            case EVT_IRQ:
+                radio_instance->irq_handler();
+                break;
+            case EVT_TIMEOUT:
+                radio_instance->irq_timeout();
+                break;
+            default: break;
+        }
+    }
+}
+
+void AP_Radio_cypress::trigger_timeout_event(void *arg)
+{
+    (void)arg;
+    //we are called from ISR context
+    chSysLockFromISR();
+    chEvtSignalI(_irq_handler_ctx, EVT_TIMEOUT);
+    chSysUnlockFromISR();
+}
+
+void AP_Radio_cypress::trigger_irq_radio_event()
+{
+    //we are called from ISR context
+    chSysLockFromISR();
+    chEvtSignalI(_irq_handler_ctx, EVT_IRQ);
+    chSysUnlockFromISR();
 }
 #endif
 /*
@@ -1556,6 +1625,9 @@ void AP_Radio_cypress::send_telem_packet(void)
     state = STATE_SEND_TELEM_WAIT;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     hrt_call_after(&wait_call, 2000, (hrt_callout)irq_timeout_trampoline, nullptr);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    //Note: please review Frequency in chconf.h to ensure the range of wait
+    chVTSet(&timeout_vt, US2ST(dsm.receive_timeout_usec), trigger_timeout_event, nullptr);
 #endif
 }
 
@@ -1616,6 +1688,9 @@ void AP_Radio_cypress::send_FCC_test_packet(void)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         hrt_call_after(&wait_call, 500000, (hrt_callout)irq_timeout_trampoline, nullptr);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    //Note: please review Frequency in chconf.h to ensure the range of wait
+    chVTSet(&timeout_vt, MS2ST(500), trigger_timeout_event, nullptr);
 #endif
     } else {
         write_register(CYRF_XACT_CFG, CYRF_MODE_SYNTH_TX | CYRF_FRC_END);
@@ -1623,6 +1698,9 @@ void AP_Radio_cypress::send_FCC_test_packet(void)
         transmit16(pkt);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         hrt_call_after(&wait_call, 10000, (hrt_callout)irq_timeout_trampoline, nullptr);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    //Note: please review Frequency in chconf.h to ensure the range of wait
+    chVTSet(&timeout_vt, MS2ST(10), trigger_timeout_event, nullptr);
 #endif
     }
 #else
