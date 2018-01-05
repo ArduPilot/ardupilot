@@ -20,7 +20,7 @@ def _load_dynamic_env_data(bld):
     if 'include_dirs' == 'include_dirs':
         tmp_str = tmp_str.replace('-I','')  #remove existing -I flags
     _dynamic_env_data['include_dirs'] = re.split('; ', tmp_str)
-    print _dynamic_env_data['include_dirs']
+    #print _dynamic_env_data['include_dirs']
 
 @feature('ch_ap_library', 'ch_ap_program')
 @before_method('process_source')
@@ -64,37 +64,10 @@ class generate_fw(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
-class make_chibios_task(Task.Task):
-    color = 'CYAN'
-    always_run = True
-    def run(self):
-        build_dir = self.env.get_flat('BUILDDIR')
-        ch_root = self.env.get_flat('CHIBIOS')
-        make = self.env.get_flat('MAKE')
-        ap_hal = self.env.get_flat('AP_HAL')
-        brd_type = self.env.get_flat('BOARD') 
-        return self.exec_command("BUILDDIR='{}' CHIBIOS='{}' AP_HAL={}\
-                   '{}' lib -f {}/hwdef/{}/chibios_board.mk".format(
-                   build_dir, ch_root, ap_hal, make, ap_hal, brd_type
-                   ))
-    def exec_command(self, cmd, **kw):
-        kw['stdout'] = sys.stdout
-        return super(make_chibios_task, self).exec_command(cmd, **kw)
-    def keyword(self):
-        return "Generating"
-    def __str__(self):
-        return self.outputs[0].path_from(self.generator.bld.bldnode)
-
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
     self.link_task.always_run = True
-    make_tsk = self.create_task('make_chibios_task',
-                                group='dynamic_sources',
-                                tgt=self.bld.bldnode.find_or_declare('modules/ChibiOS/libch.a'))
-    make_tsk.env.BUILDDIR = self.bld.env.BUILDDIR
-    make_tsk.env.CHIBIOS = self.bld.env.CH_ROOT
-    make_tsk.env.AP_HAL = self.bld.env.AP_HAL_ROOT
 
     link_output = self.link_task.outputs[0]
     self.objcopy_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
@@ -133,6 +106,7 @@ def configure(cfg):
 
 def build(bld):
     bld(
+        # build hwdef.h and apj.prototype from hwdef.dat
         source='libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD'),
         rule='python ${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py -D ${BUILDROOT} ${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat',
         group='dynamic_sources',
@@ -140,9 +114,18 @@ def build(bld):
     )
 
     bld(
+        # create the file modules/ChibiOS/include_dirs
         rule='touch Makefile && BUILDDIR=${BUILDDIR} CHIBIOS=${CH_ROOT} AP_HAL=${AP_HAL_ROOT} ${MAKE} pass -f ${AP_HAL_ROOT}/hwdef/${BOARD}/chibios_board.mk',
         group='dynamic_sources',
         target='modules/ChibiOS/include_dirs'
+    )
+
+    bld(
+        # build libch.a from ChibiOS sources and hwdef.h
+        rule="BUILDDIR='${BUILDDIR}' CHIBIOS='${CH_ROOT}' AP_HAL=${AP_HAL_ROOT} '${MAKE}' lib -f ${AP_HAL_ROOT}/hwdef/${BOARD}/chibios_board.mk",
+        group='dynamic_sources',
+        source=bld.bldnode.find_or_declare('hwdef.h'),
+        target=['modules/ChibiOS/libch.a']
     )
 
     bld.env.LIB += ['ch']
@@ -150,13 +133,3 @@ def build(bld):
     wraplist = ['strerror_r']
     for w in wraplist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]
-    
-# @feature('ch_ap_program')
-# @after_method('process_source')
-# def chibios_firmware(self):
-#     fw_task = self.create_task('make_chibios', self.bld.bldnode.make_node(self.program_dir), self.bld.bldnode.make_node(self.program_name))
-#     fw_task.set_run_after(self.link_task)
-#     fw_task.env.env = dict(os.environ)
-#     fw_task.env.env['BUILDDIR'] = self.bld.bldnode.find_or_declare('modules/ChibiOS').abspath()
-#     fw_task.env.env['CH_ROOT'] = self.bld.srcnode.make_node('modules/ChibiOS').abspath()
-#     fw_task.env['AP_HAL'] = self.bld.srcnode.make_node('libraries/AP_HAL_ChibiOS').abspath()
