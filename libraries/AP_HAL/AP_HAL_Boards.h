@@ -12,6 +12,7 @@
 #define HAL_BOARD_LINUX    7
 #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_QURT     9
+#define HAL_BOARD_CHIBIOS  10
 #define HAL_BOARD_EMPTY   99
 
 /* Default board subtype is -1 */
@@ -56,6 +57,11 @@
 #define HAL_BOARD_SUBTYPE_VRUBRAIN_V52     4004
 #define HAL_BOARD_SUBTYPE_VRCORE_V10       4005
 #define HAL_BOARD_SUBTYPE_VRBRAIN_V54      4006
+
+
+/* HAL CHIBIOS sub-types, starting at 5000 */
+#define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
+#define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3         5001
 
 /* InertialSensor driver types */
 #define HAL_INS_MPU60XX_SPI  2
@@ -147,6 +153,8 @@
     #include <AP_HAL/board/qurt.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     #include <AP_HAL/board/vrbrain.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+	#include <AP_HAL/board/chibios.h>
 #else
 #error "Unknown CONFIG_HAL_BOARD type"
 #endif
@@ -184,4 +192,8 @@
 // FMUv2 going for as long as possible
 #ifndef HAL_MINIMIZE_FEATURES
 #define HAL_MINIMIZE_FEATURES       0
+#endif
+
+#ifndef HAL_OS_FATFS_IO
+#define HAL_OS_FATFS_IO 0
 #endif
