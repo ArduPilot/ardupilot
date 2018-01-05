@@ -202,7 +202,7 @@ bool AP_Baro_ICM20789::init()
 bool AP_Baro_ICM20789::send_cmd16(uint16_t cmd)
 {
     uint8_t cmd_b[2] = { uint8_t(cmd >> 8), uint8_t(cmd & 0xFF) };
-    return dev->transfer(cmd_b, 2, nullptr, 0);
+    return dev->transfer(cmd_b, ARRAY_SIZE(cmd_b), nullptr, 0);
 }
 
 bool AP_Baro_ICM20789::read_calibration_data(void)
