@@ -22,6 +22,7 @@
 #include <chheap.h>
 
 #if HAL_WITH_IO_MCU
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
 #endif
@@ -48,16 +49,17 @@ uint32_t ChibiUtil::available_memory(void)
 ChibiUtil::safety_state ChibiUtil::safety_switch_state(void)
 {
 #if HAL_WITH_IO_MCU
-    return iomcu.get_safety_switch_state();
-#else
-    return SAFETY_NONE;
+    if (AP_BoardConfig::io_enabled()) {
+        return iomcu.get_safety_switch_state();
+    }
 #endif
+    return SAFETY_NONE;
 }
 
 void ChibiUtil::set_imu_temp(float current)
 {
 #if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
-    if (!heater.target || *heater.target == -1) {
+    if (!heater.target || *heater.target == -1 || !AP_BoardConfig::io_enabled()) {
         return;
     }
 
