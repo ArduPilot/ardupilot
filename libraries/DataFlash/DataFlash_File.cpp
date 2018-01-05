@@ -12,12 +12,12 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_OS_POSIX_IO
+#if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
 #include "DataFlash_File.h"
 
 #include <AP_Common/AP_Common.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+
+#if HAL_OS_POSIX_IO
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -25,17 +25,25 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
-#include <AP_Math/AP_Math.h>
 #include <stdio.h>
 #include <time.h>
 #include <dirent.h>
-#include <GCS_MAVLink/GCS.h>
 #if defined(__APPLE__) && defined(__MACH__)
 #include <sys/param.h>
 #include <sys/mount.h>
 #elif !DATAFLASH_FILE_MINIMAL
 #include <sys/statfs.h>
 #endif
+#endif
+
+#if HAL_OS_FATFS_IO
+#include <stdio.h>
+#endif
+
+#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
+
+
 extern const AP_HAL::HAL& hal;
 
 #define MAX_LOG_FILES 500U
@@ -103,7 +111,7 @@ void DataFlash_File::Init()
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // try to cope with an existing lowercase log directory
     // name. NuttX does not handle case insensitive VFAT well
     DIR *d = opendir("/fs/microsd/APM");
@@ -117,7 +125,6 @@ void DataFlash_File::Init()
         closedir(d);
     }
 #endif
-
     const char* custom_dir = hal.util->get_custom_log_directory();
     if (custom_dir != nullptr){
         _log_directory = custom_dir;
@@ -129,7 +136,7 @@ void DataFlash_File::Init()
         ret = mkdir(_log_directory, 0777);
     }
     if (ret == -1) {
-        hal.console->printf("Failed to create log directory %s\n", _log_directory);
+        printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
         return;
     }
 #endif
@@ -232,12 +239,14 @@ bool DataFlash_File::CardInserted(void) const
 // returns -1 on error
 int64_t DataFlash_File::disk_space_avail()
 {
-#if !DATAFLASH_FILE_MINIMAL
+#if !DATAFLASH_FILE_MINIMAL && HAL_OS_POSIX_IO
     struct statfs _stats;
     if (statfs(_log_directory, &_stats) < 0) {
         return -1;
     }
     return (((int64_t)_stats.f_bavail) * _stats.f_bsize);
+#elif HAL_OS_FATFS_IO
+    return fs_getfree();
 #else
     // return a fake disk space size
     return 100*1000*1000UL;
@@ -249,12 +258,14 @@ int64_t DataFlash_File::disk_space_avail()
 // returns -1 on error
 int64_t DataFlash_File::disk_space()
 {
-#if !DATAFLASH_FILE_MINIMAL
+#if !DATAFLASH_FILE_MINIMAL && HAL_OS_POSIX_IO
     struct statfs _stats;
     if (statfs(_log_directory, &_stats) < 0) {
         return -1;
     }
     return (((int64_t)_stats.f_blocks) * _stats.f_bsize);
+#elif HAL_OS_FATFS_IO
+    return fs_gettotal();
 #else
     // return fake disk space size
     return 200*1000*1000UL;
@@ -623,7 +634,11 @@ uint16_t DataFlash_File::find_last_log()
         char buf[10];
         memset(buf, 0, sizeof(buf));
         if (read(fd, buf, sizeof(buf)-1) > 0) {
-            sscanf(buf, "%u", &ret);            
+#if HAL_OS_POSIX_IO
+            sscanf(buf, "%u", &ret);
+#else
+            ret = strtol(buf, NULL, 10);
+#endif            
         }
         close(fd);    
     }
@@ -641,6 +656,7 @@ uint32_t DataFlash_File::_get_log_size(const uint16_t log_num) const
     }
     struct stat st;
     if (::stat(fname, &st) != 0) {
+        printf("Unable to fetch Log File Size: %s\n", strerror(errno));
         free(fname);
         return 0;
     }
@@ -903,7 +919,12 @@ uint16_t DataFlash_File::start_new_log(void)
         _open_error = true;
         return 0xFFFF;
     }
+#if HAL_OS_POSIX_IO
     _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
+#else
+    //TODO add support for mode flags
+    _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
+#endif
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
@@ -928,7 +949,11 @@ uint16_t DataFlash_File::start_new_log(void)
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write (specifically the QURT RTOS)
+#if HAL_OS_POSIX_IO
     int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
+#else
+    int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC);
+#endif
     free(fname);
     if (fd == -1) {
         _open_error = true;
@@ -1113,7 +1138,11 @@ void DataFlash_File::flush(void)
     hal.scheduler->resume_timer_procs();
     if (write_fd_semaphore->take(1)) {
         if (_write_fd != -1) {
+#if HAL_OS_POSIX_IO
             ::fsync(_write_fd);
+#else
+            syncfs(_write_fd);
+#endif
         }
         write_fd_semaphore->give();
     } else {
@@ -1190,6 +1219,7 @@ void DataFlash_File::_io_timer(void)
         last_io_operation = "";
         _write_fd = -1;
         _initialised = false;
+        printf("Failed to write to File: %s\n", strerror(errno));
     } else {
         _write_offset += nwritten;
         _writebuf.advance(nwritten);
@@ -1201,7 +1231,11 @@ void DataFlash_File::_io_timer(void)
          */
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && CONFIG_HAL_BOARD != HAL_BOARD_QURT
         last_io_operation = "fsync";
+#if HAL_OS_POSIX_IO
         ::fsync(_write_fd);
+#else
+        syncfs(_write_fd);
+#endif
         last_io_operation = "";
 #endif
     }
