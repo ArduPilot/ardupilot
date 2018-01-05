@@ -49,7 +49,6 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
         if (display_failure) {
             gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Motor Interlock Enabled");
         }
-        return false;
     }
 
     // succeed if pre arm checks are disabled
