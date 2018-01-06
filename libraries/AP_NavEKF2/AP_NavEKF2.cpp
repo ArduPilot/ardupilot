@@ -1023,7 +1023,7 @@ bool NavEKF2::getHAGL(float &HAGL) const
 }
 
 // return the Euler roll, pitch and yaw angle in radians for the specified instance
-void NavEKF2::getEulerAngles(int8_t instance, Vector3f &eulers)
+void NavEKF2::getEulerAngles(int8_t instance, Vector3f &eulers) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
