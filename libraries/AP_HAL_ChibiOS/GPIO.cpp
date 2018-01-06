@@ -17,23 +17,46 @@
 #include "GPIO.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
 using namespace ChibiOS;
 
-static uint32_t _gpio_tab[]  = {
+static struct gpio_entry {
+    uint8_t pin_num;
+    bool enabled;
+    ioline_t pal_line;
+} _gpio_tab[]  = {
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-    PAL_LINE(GPIOB, 7U),
-    PAL_LINE(GPIOB, 6U)
+    {0, PAL_LINE(GPIOB, 7U)},
+    {1, PAL_LINE(GPIOB, 6U)},
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
-    LINE_LED1,
-    PAL_LINE(GPIOB, 0U)
+    // pin numbers chosen to match px4 build
+    {0,  true,  LINE_LED1},
+    {1,  true,  PAL_LINE(GPIOB, 0U)},
+    {50, false, PAL_LINE(GPIOE, 14U)},
+    {51, false, PAL_LINE(GPIOE, 13U)},
+    {52, false, PAL_LINE(GPIOE, 11U)},
+    {53, false, PAL_LINE(GPIOE,  9U)},
+    {54, true,  PAL_LINE(GPIOD, 13U)},
+    {55, true,  PAL_LINE(GPIOD, 14U)},
 #endif
 };
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-static const uint8_t num_leds = 3;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
-static const uint8_t num_leds = 1;
-#endif
+#define NUM_PINS ARRAY_SIZE(_gpio_tab)
+#define PIN_ENABLED(pin) ((pin)<NUM_PINS && _gpio_tab[pin].enabled)
+
+/*
+  map a user pin number to a GPIO table entry
+ */
+static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num)
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+        if (pin_num == _gpio_tab[i].pin_num) {
+            return &_gpio_tab[i];
+        }
+    }
+    return NULL;
+}
 
 static void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel);
 
@@ -90,16 +113,27 @@ ChibiGPIO::ChibiGPIO()
 
 void ChibiGPIO::init()
 {
-    //palClearLine(_gpio_tab[0]);
     extStart(&EXTD1, &extcfg);
+    uint8_t pwm_count = AP_BoardConfig::get_pwm_count();
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+        uint8_t pin_num = _gpio_tab[i].pin_num;
+        if (pin_num >= 50 && pin_num <= 55) {
+            // enable GPIOs based on BRD_PWM_COUNT
+            if (pin_num < 50 + pwm_count) {
+                _gpio_tab[i].enabled = false;
+            } else {
+                _gpio_tab[i].enabled = true;
+            }
+        }
+    }
 }
 
 void ChibiGPIO::pinMode(uint8_t pin, uint8_t output)
 {
-    if(pin >= num_leds) {
-        return;
+    struct gpio_entry *g = gpio_by_pin_num(pin);
+    if (g) {
+        palSetLineMode(g->pal_line, output);
     }
-    palSetLineMode(_gpio_tab[pin], output);
 }
 
 int8_t ChibiGPIO::analogPinToDigitalPin(uint8_t pin)
@@ -108,31 +142,32 @@ int8_t ChibiGPIO::analogPinToDigitalPin(uint8_t pin)
 }
 
 
-uint8_t ChibiGPIO::read(uint8_t pin) {
-    if(pin >= num_leds) {
-        return 0;
+uint8_t ChibiGPIO::read(uint8_t pin)
+{
+    struct gpio_entry *g = gpio_by_pin_num(pin);
+    if (g) {
+        return palReadLine(g->pal_line);
     }
-    return palReadLine(_gpio_tab[pin]);
 }
 
 void ChibiGPIO::write(uint8_t pin, uint8_t value)
 {
-    if(pin >= num_leds) {
-        return;
-    }
-    if (value == PAL_LOW) {
-        palClearLine(_gpio_tab[pin]);
-    } else {
-        palSetLine(_gpio_tab[pin]);
+    struct gpio_entry *g = gpio_by_pin_num(pin);
+    if (g) {
+        if (value == PAL_LOW) {
+            palClearLine(g->pal_line);
+        } else {
+            palSetLine(g->pal_line);
+        }
     }
 }
 
 void ChibiGPIO::toggle(uint8_t pin)
 {
-    if(pin >= num_leds) {
-        return;
+    struct gpio_entry *g = gpio_by_pin_num(pin);
+    if (g) {
+        palToggleLine(g->pal_line);
     }
-    palToggleLine(_gpio_tab[pin]);
 }
 
 /* Alternative interface: */
