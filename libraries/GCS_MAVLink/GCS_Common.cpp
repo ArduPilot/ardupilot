@@ -315,9 +315,10 @@ bool GCS_MAVLINK::send_proximity(const AP_Proximity &proximity) const
 }
 
 // report AHRS2 state
-void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
+void GCS_MAVLINK::send_ahrs2()
 {
 #if AP_AHRS_NAVEKF_AVAILABLE
+    const AP_AHRS &ahrs = AP::ahrs();
     Vector3f euler;
     struct Location loc {};
     if (ahrs.get_secondary_attitude(euler)) {
@@ -329,11 +330,12 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
                                loc.lat,
                                loc.lng);
     }
-    AP_AHRS_NavEKF &_ahrs = reinterpret_cast<AP_AHRS_NavEKF&>(ahrs);
-    if (_ahrs.get_NavEKF2().activeCores() > 0 &&
+    const AP_AHRS_NavEKF &_ahrs = reinterpret_cast<const AP_AHRS_NavEKF&>(ahrs);
+    const NavEKF2 &ekf2 = _ahrs.get_NavEKF2_const();
+    if (ekf2.activeCores() > 0 &&
         HAVE_PAYLOAD_SPACE(chan, AHRS3)) {
-        _ahrs.get_NavEKF2().getLLH(loc);
-        _ahrs.get_NavEKF2().getEulerAngles(-1,euler);
+        ekf2.getLLH(loc);
+        ekf2.getEulerAngles(-1,euler);
         mavlink_msg_ahrs3_send(chan,
                                euler.x,
                                euler.y,
@@ -1125,8 +1127,9 @@ void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compas
                                     accel_offsets.z);
 }
 
-void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
+void GCS_MAVLINK::send_ahrs()
 {
+    const AP_AHRS &ahrs = AP::ahrs();
     const Vector3f &omega_I = ahrs.get_gyro_drift();
     mavlink_msg_ahrs_send(
         chan,
@@ -1343,7 +1346,7 @@ MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE base_mode, const uint32_
 /*
   send OPTICAL_FLOW message
  */
-void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow)
+void GCS_MAVLINK::send_opticalflow(const OpticalFlow &optflow)
 {
     // exit immediately if no optical flow sensor or not healthy
     if (!optflow.healthy()) {
@@ -1353,11 +1356,13 @@ void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optf
     // get rates from sensor
     const Vector2f &flowRate = optflow.flowRate();
     const Vector2f &bodyRate = optflow.bodyRate();
+
+    const AP_AHRS &ahrs = AP::ahrs();
     float hagl = 0;
-
     if (ahrs.have_inertial_nav()) {
-
-        ahrs.get_hagl(hagl);
+        if (!ahrs.get_hagl(hagl)) {
+            return;
+        }
     }
 
     // populate and send message
@@ -1435,8 +1440,10 @@ void GCS_MAVLINK::send_autopilot_version() const
 /*
   send LOCAL_POSITION_NED message
  */
-void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
+void GCS_MAVLINK::send_local_position() const
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
     Vector3f local_position, velocity;
     if (!ahrs.get_relative_position_NED_home(local_position) ||
         !ahrs.get_velocity_NED(velocity)) {
@@ -2364,6 +2371,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         /* fall through */
     case MSG_SYSTEM_TIME:
         ret = try_send_gps_message(id);
+        break;
+
+    case MSG_LOCAL_POSITION:
+        CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
+        send_local_position();
+        break;
+
+    case MSG_AHRS:
+        CHECK_PAYLOAD_SIZE(AHRS);
+        send_ahrs();
         break;
 
     default:
