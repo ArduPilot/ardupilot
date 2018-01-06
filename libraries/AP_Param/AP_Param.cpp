@@ -1307,7 +1307,7 @@ bool AP_Param::load_all(bool check_defaults_file)
 void AP_Param::reload_defaults_file(bool panic_on_error)
 {
     if (param_defaults_data.length != 0) {
-        load_embedded_param_defaults(panic_on_error);
+        load_embedded_param_defaults(false);
         return;
     }
     
