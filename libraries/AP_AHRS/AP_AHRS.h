@@ -303,6 +303,8 @@ public:
     // otherwise false. This call fills in lat, lng and alt
     virtual bool get_position(struct Location &loc) const = 0;
 
+    virtual bool get_hagl(float &height) const { return false; }
+
     // return a wind estimation vector, in m/s
     virtual Vector3f wind_estimate(void) const = 0;
 
