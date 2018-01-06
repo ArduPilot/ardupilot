@@ -19,7 +19,6 @@
 #include "AP_HAL_ChibiOS.h"
 #include "ch.h"
 #include "hal.h"
-#define PWM_CHAN_MAP(n) (1 << n)
 
 class ChibiOS::ChibiRCOutput : public AP_HAL::RCOutput {
 public:
