@@ -424,11 +424,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.send_location(chan);
         break;
 
-    case MSG_LOCAL_POSITION:
-        CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
-        send_local_position(plane.ahrs);
-        break;
-
     case MSG_NAV_CONTROLLER_OUTPUT:
         if (plane.control_mode != MANUAL) {
             CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
@@ -493,16 +488,11 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_AHRS:
-        CHECK_PAYLOAD_SIZE(AHRS);
-        send_ahrs(plane.ahrs);
-        break;
-
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         plane.send_simstate(chan);
         CHECK_PAYLOAD_SIZE2(AHRS2);
-        send_ahrs2(plane.ahrs);
+        send_ahrs2();
         break;
 
     case MSG_RANGEFINDER:
@@ -540,7 +530,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #if OPTFLOW == ENABLED
         if (plane.optflow.enabled()) {        
             CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-            send_opticalflow(plane.ahrs, plane.optflow);
+            send_opticalflow(plane.optflow);
         }
 #endif
         break;
