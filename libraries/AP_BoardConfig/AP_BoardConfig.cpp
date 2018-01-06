@@ -161,7 +161,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif
 
 #if AP_FEATURE_BOARD_DETECT
-#if HAL_PX4_HAVE_PX4IO
+#if HAL_PX4_HAVE_PX4IO || HAL_WITH_IO_MCU
     // @Param: IO_ENABLE
     // @DisplayName: Enable IO co-processor
     // @Description: This allows for the IO co-processor on FMUv1 and FMUv2 to be disabled
