@@ -29,11 +29,12 @@ extern AP_IOMCU iomcu;
 
 #define PWM_CLK_FREQ        8000000
 #define PWM_US_WIDTH_FROM_CLK(x) ((PWM_CLK_FREQ/1000000)*x)
+
 const struct ChibiRCOutput::pwm_group ChibiRCOutput::pwm_group_list[] = 
 {
     //Group 1 Config
     {   //Channels in the Group and respective mapping
-        {PWM_CHAN_MAP(0) , PWM_CHAN_MAP(1) , PWM_CHAN_MAP(2) , PWM_CHAN_MAP(3)}, 
+        {0, 1, 2, 3},
         //Group Initial Config
         {
           8000000,                                  /* 8MHz PWM clock frequency.   */
@@ -96,7 +97,7 @@ void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     }
     
     for (uint8_t i = 0; i < _num_groups; i++ ) {
-        grp_ch_mask = PWM_CHAN_MAP(0) | PWM_CHAN_MAP(1) | PWM_CHAN_MAP(2) | PWM_CHAN_MAP(3);
+        grp_ch_mask = 0XF;
         if ((grp_ch_mask & chmask) == grp_ch_mask) {
             update_mask |= grp_ch_mask;
             pwmChangePeriod(pwm_group_list[i].pwm_drv, 
@@ -138,13 +139,7 @@ void ChibiRCOutput::enable_ch(uint8_t chan)
     for (uint8_t i = 0; i < _num_groups; i++ ) {
         for (uint8_t j = 0; j < 4; j++) {
             if ((pwm_group_list[i].chan[j] == chan) && !(en_mask & 1<<chan)) {
-                pwmEnableChannel(pwm_group_list[i].pwm_drv, j, PWM_US_WIDTH_FROM_CLK(900));
                 en_mask |= 1<<chan;
-                if(_output_mode == MODE_PWM_BRUSHED) {
-                    period[chan] = 0;
-                } else {
-                    period[chan] = 900;
-                }
             }
         }
     }
@@ -197,7 +192,9 @@ void ChibiRCOutput::push_local(void)
     if (num_channels == 0) {
         return;
     }
-    uint16_t outmask = (1U<<(num_channels-1));
+    uint16_t outmask = (1U<<num_channels)-1;
+    outmask &= en_mask;
+    
     for (uint8_t i = 0; i < _num_groups; i++ ) {
         for (uint8_t j = 0; j < 4; j++) {
             uint8_t chan = pwm_group_list[i].chan[j];
