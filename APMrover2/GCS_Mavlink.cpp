@@ -311,11 +311,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_location(chan);
         break;
 
-    case MSG_LOCAL_POSITION:
-        CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
-        send_local_position(rover.ahrs);
-        break;
-
     case MSG_NAV_CONTROLLER_OUTPUT:
         if (rover.control_mode->is_autopilot_mode()) {
             CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
@@ -356,11 +351,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
         send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
-        break;
-
-    case MSG_AHRS:
-        CHECK_PAYLOAD_SIZE(AHRS);
-        send_ahrs(rover.ahrs);
         break;
 
     case MSG_SIMSTATE:
