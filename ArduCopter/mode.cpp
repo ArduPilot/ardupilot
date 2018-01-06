@@ -234,6 +234,7 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
 void Copter::notify_flight_mode() {
     AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
+    AP_Notify::flags.flight_mode = control_mode;
     notify.set_flight_mode_str(flightmode->name4());
 }
 
