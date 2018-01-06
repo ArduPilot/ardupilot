@@ -113,10 +113,7 @@ static THD_FUNCTION(main_loop,arg)
     hal.uartA->begin(115200);
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
-    hal.rcin->init();
-    hal.rcout->init();
     hal.analogin->init();
-    hal.gpio->init();
     hal.scheduler->init();
 
     /*
