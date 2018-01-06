@@ -160,19 +160,19 @@ public:
     void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
     void send_rangefinder_downward(const RangeFinder &rangefinder) const;
     bool send_proximity(const AP_Proximity &proximity) const;
-    void send_ahrs2(AP_AHRS &ahrs);
+    void send_ahrs2();
     void send_system_time();
     void send_radio_in(uint8_t receiver_rssi);
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
     void send_scaled_pressure(AP_Baro &barometer);
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer);
-    void send_ahrs(AP_AHRS &ahrs);
+    void send_ahrs();
     void send_battery2(const AP_BattMonitor &battery);
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
+    void send_opticalflow(const OpticalFlow &optflow);
 #endif
     void send_autopilot_version() const;
-    void send_local_position(const AP_AHRS &ahrs) const;
+    void send_local_position() const;
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
     void send_ekf_origin(const Location &ekf_origin) const;
