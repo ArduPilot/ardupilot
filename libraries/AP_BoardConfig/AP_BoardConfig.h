@@ -102,6 +102,15 @@ public:
         return false;
 #endif
     }
+
+    // get number of PWM outputs enabled on FMU
+    static uint8_t get_pwm_count(void) {
+#if AP_FEATURE_BOARD_DETECT
+        return instance?instance->state.pwm_count.get():4;
+#else
+        return false;
+#endif
+    }
     
 private:
     static AP_BoardConfig *instance;
