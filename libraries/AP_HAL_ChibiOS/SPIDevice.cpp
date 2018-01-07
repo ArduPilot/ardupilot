@@ -23,13 +23,11 @@
 using namespace ChibiOS;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-#define SPI_BUS_SENSORS 1
-#define SPI_BUS_SENSORS2 0
-#define SPI_BUS_EXT 2
+#define SPI_BUS_FLOW  1
+#define SPI_BUS_RADIO 0
 
-#define SPIDEV_CS_MPU              GPIOB, 12
-#define SPIDEV_CS_CYRF             GPIOA, 4
-#define SPIDEV_CS_FLOW             GPIOA, 15
+#define SPIDEV_CS_FLOW             GPIOB, 12
+#define SPIDEV_CS_RADIO            GPIOA, 4
 
 #define SPIDEV_RADIO           1
 #define SPIDEV_FLOW            2
