@@ -117,6 +117,10 @@ order to save typing.
         default=False,
         help='Force a static build')
 
+    g.add_option('--default-parameters',
+        default=None,
+        help='set default parameters to embed in the firmware')
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
