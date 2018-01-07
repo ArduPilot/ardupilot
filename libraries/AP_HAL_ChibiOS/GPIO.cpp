@@ -148,6 +148,7 @@ uint8_t ChibiGPIO::read(uint8_t pin)
     if (g) {
         return palReadLine(g->pal_line);
     }
+    return 0;
 }
 
 void ChibiGPIO::write(uint8_t pin, uint8_t value)
