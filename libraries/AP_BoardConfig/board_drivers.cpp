@@ -20,24 +20,11 @@
 #include "AP_BoardConfig.h"
 #include <stdio.h>
 
-#if AP_FEATURE_BOARD_DETECT
-
 extern const AP_HAL::HAL& hal;
 
-AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
+#if AP_FEATURE_BOARD_DETECT
 
-/*
-  setup flow control on UARTs
- */
-void AP_BoardConfig::board_setup_uart()
-{
-#if AP_FEATURE_RTSCTS
-    hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser1_rtscts.get());
-    if (hal.uartD != nullptr) {
-        hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser2_rtscts.get());
-    }
-#endif
-}
+AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
 
 /*
   init safety state
@@ -52,38 +39,6 @@ void AP_BoardConfig::board_init_safety()
         uint8_t count = 20;
         while (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED && count--) {
             hal.scheduler->delay(20);
-        }
-    }
-#endif
-}
-
-/*
-  setup SBUS
- */
-void AP_BoardConfig::board_setup_sbus(void)
-{
-#if AP_FEATURE_SBUS_OUT
-    if (state.sbus_out_rate.get() >= 1) {
-        static const struct {
-            uint8_t value;
-            uint16_t rate;
-        } rates[] = {
-            { 1, 50 },
-            { 2, 75 },
-            { 3, 100 },
-            { 4, 150 },
-            { 5, 200 },
-            { 6, 250 },
-            { 7, 300 }
-        };
-        uint16_t rate = 300;
-        for (uint8_t i=0; i<ARRAY_SIZE(rates); i++) {
-            if (rates[i].value == state.sbus_out_rate) {
-                rate = rates[i].rate;
-            }
-        }
-        if (!hal.rcout->enable_px4io_sbus_out(rate)) {
-            hal.console->printf("Failed to enable SBUS out\n");
         }
     }
 #endif
@@ -269,6 +224,54 @@ void AP_BoardConfig::board_autodetect(void)
 
 }
 
+#endif // AP_FEATURE_BOARD_DETECT
+
+/*
+  setup flow control on UARTs
+ */
+void AP_BoardConfig::board_setup_uart()
+{
+#if AP_FEATURE_RTSCTS
+    hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser1_rtscts.get());
+    if (hal.uartD != nullptr) {
+        hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser2_rtscts.get());
+    }
+#endif
+}
+
+/*
+  setup SBUS
+ */
+void AP_BoardConfig::board_setup_sbus(void)
+{
+#if AP_FEATURE_SBUS_OUT
+    if (state.sbus_out_rate.get() >= 1) {
+        static const struct {
+            uint8_t value;
+            uint16_t rate;
+        } rates[] = {
+            { 1, 50 },
+            { 2, 75 },
+            { 3, 100 },
+            { 4, 150 },
+            { 5, 200 },
+            { 6, 250 },
+            { 7, 300 }
+        };
+        uint16_t rate = 300;
+        for (uint8_t i=0; i<ARRAY_SIZE(rates); i++) {
+            if (rates[i].value == state.sbus_out_rate) {
+                rate = rates[i].rate;
+            }
+        }
+        if (!hal.rcout->enable_px4io_sbus_out(rate)) {
+            hal.console->printf("Failed to enable SBUS out\n");
+        }
+    }
+#endif
+}
+
+
 /*
   setup peripherals and drivers
  */
@@ -286,7 +289,8 @@ void AP_BoardConfig::board_setup()
 #endif
     board_setup_uart();
     board_setup_sbus();
+#if AP_FEATURE_BOARD_DETECT
     board_setup_drivers();
+#endif
 }
 
-#endif // HAL_BOARD_PX4
