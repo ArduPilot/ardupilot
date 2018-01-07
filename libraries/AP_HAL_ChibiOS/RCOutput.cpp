@@ -58,10 +58,11 @@ const struct ChibiRCOutput::pwm_group ChibiRCOutput::pwm_group_list[] =
     }
 };
 
+#define NUM_GROUPS ARRAY_SIZE(pwm_group_list)
+
 void ChibiRCOutput::init()
 {
-    _num_groups = sizeof(pwm_group_list)/sizeof(pwm_group);
-    for (uint8_t i = 0; i < _num_groups; i++ ) {
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         //Start Pwm groups
         pwmStart(pwm_group_list[i].pwm_drv, &pwm_group_list[i].pwm_cfg);
     }
@@ -96,7 +97,7 @@ void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         return;
     }
     
-    for (uint8_t i = 0; i < _num_groups; i++ ) {
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         grp_ch_mask = 0XF;
         if ((grp_ch_mask & chmask) == grp_ch_mask) {
             update_mask |= grp_ch_mask;
@@ -118,7 +119,7 @@ uint16_t ChibiRCOutput::get_freq(uint8_t chan)
 #endif
     chan -= chan_offset;
     
-    for (uint8_t i = 0; i < _num_groups; i++ ) {
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         for (uint8_t j = 0; j < 4; j++) {
             if (pwm_group_list[i].chan[j] == chan) {
                 return pwm_group_list[i].pwm_drv->config->frequency / pwm_group_list[i].pwm_drv->period;
@@ -136,7 +137,7 @@ void ChibiRCOutput::enable_ch(uint8_t chan)
     }
     chan -= chan_offset;
 
-    for (uint8_t i = 0; i < _num_groups; i++ ) {
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         for (uint8_t j = 0; j < 4; j++) {
             if ((pwm_group_list[i].chan[j] == chan) && !(en_mask & 1<<chan)) {
                 en_mask |= 1<<chan;
@@ -152,7 +153,7 @@ void ChibiRCOutput::disable_ch(uint8_t chan)
     }
     chan -= chan_offset;
 
-    for (uint8_t i = 0; i < _num_groups; i++ ) {
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         for (uint8_t j = 0; j < 4; j++) {
             if (pwm_group_list[i].chan[j] == chan) {
                 pwmDisableChannel(pwm_group_list[i].pwm_drv, j);
@@ -195,7 +196,7 @@ void ChibiRCOutput::push_local(void)
     uint16_t outmask = (1U<<num_channels)-1;
     outmask &= en_mask;
     
-    for (uint8_t i = 0; i < _num_groups; i++ ) {
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         for (uint8_t j = 0; j < 4; j++) {
             uint8_t chan = pwm_group_list[i].chan[j];
             if (outmask & (1UL<<chan)) {

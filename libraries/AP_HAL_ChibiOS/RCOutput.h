@@ -64,7 +64,6 @@ private:
     static const pwm_group pwm_group_list[];
     uint16_t _esc_pwm_min;
     uint16_t _esc_pwm_max;
-    uint8_t _num_groups;
 
     // offset of first local channel
     uint8_t chan_offset;
