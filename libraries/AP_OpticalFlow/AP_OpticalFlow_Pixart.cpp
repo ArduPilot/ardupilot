@@ -83,7 +83,7 @@ extern const AP_HAL::HAL& hal;
 AP_OpticalFlow_Pixart::AP_OpticalFlow_Pixart(OpticalFlow &_frontend) :
     OpticalFlow_backend(_frontend)
 {
-    _dev = std::move(hal.spi->get_device("external0m3"));
+    _dev = std::move(hal.spi->get_device("pixart"));
 }
 
 
