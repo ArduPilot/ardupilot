@@ -141,18 +141,19 @@ private:
     void px4_setup_peripherals(void);
 #endif
     
-    void board_setup(void);
 
     void board_init_safety(void);
     void board_setup_safety_mask(void);
-    void board_setup_uart(void);
-    void board_setup_sbus(void);
     void board_setup_drivers(void);
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     void validate_board_type(void);
     void board_autodetect(void);
 
 #endif // AP_FEATURE_BOARD_DETECT
+
+    void board_setup_uart(void);
+    void board_setup_sbus(void);
+    void board_setup(void);
 
     static bool _in_sensor_config_error;
 

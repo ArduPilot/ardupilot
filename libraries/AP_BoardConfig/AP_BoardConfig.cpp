@@ -179,9 +179,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
 void AP_BoardConfig::init()
 {
-#if AP_FEATURE_BOARD_DETECT
     board_setup();
-#endif
 
 #if HAL_HAVE_IMU_HEATER
     // let the HAL know the target temperature. We pass a pointer as
