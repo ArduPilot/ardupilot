@@ -65,20 +65,22 @@ extern const AP_HAL::HAL &hal;
 /*
   constructor
  */
-AP_Baro_ICM20789::AP_Baro_ICM20789(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+AP_Baro_ICM20789::AP_Baro_ICM20789(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev, AP_HAL::OwnPtr<AP_HAL::Device> _dev_imu)
     : AP_Baro_Backend(baro)
     , dev(std::move(_dev))
+    , dev_imu(std::move(_dev_imu))
 {
 }
 
 AP_Baro_Backend *AP_Baro_ICM20789::probe(AP_Baro &baro,
-                                         AP_HAL::OwnPtr<AP_HAL::Device> dev)
+                                         AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                         AP_HAL::OwnPtr<AP_HAL::Device> dev_imu)
 {
     debug("Probing for ICM20789 baro\n");
-    if (!dev) {
+    if (!dev || !dev_imu) {
         return nullptr;
     }
-    AP_Baro_ICM20789 *sensor = new AP_Baro_ICM20789(baro, std::move(dev));
+    AP_Baro_ICM20789 *sensor = new AP_Baro_ICM20789(baro, std::move(dev), std::move(dev_imu));
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -88,60 +90,78 @@ AP_Baro_Backend *AP_Baro_ICM20789::probe(AP_Baro &baro,
 
 
 /*
-  Pressure sensor data can be accessed in the following mode:
-  Bypass Mode: Set register INT_PIN_CFG (Address: 55 (Decimal); 37 (Hex)) bit 1 to value 1
-  and I2C_MST_EN bit is 0 Address: 106 (Decimal); 6A (Hex)).
-  Pressure sensor data can then be accessed using the procedure described in Section 10.
+  setup ICM20789 to enable barometer, assuming IMU is on SPI and baro is on I2C
 */
-bool AP_Baro_ICM20789::spi_init(void)
+bool AP_Baro_ICM20789::imu_spi_init(void)
 {
-#ifdef HAL_INS_MPU60x0_NAME
-    AP_HAL::OwnPtr<AP_HAL::Device> dev_icm =
-        hal.spi->get_device(HAL_INS_MPU60x0_NAME);
-
-    if (!dev_icm->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!dev_imu->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore ICM");
     }
 
-    dev_icm->set_read_flag(0x80);
+    dev_imu->set_read_flag(0x80);
 
-    dev_icm->set_speed(AP_HAL::Device::SPEED_LOW);
+    dev_imu->set_speed(AP_HAL::Device::SPEED_LOW);
     uint8_t whoami = 0;
     uint8_t v;
 
-    dev_icm->read_registers(MPUREG_USER_CTRL, &v, 1);
-    dev_icm->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
+    dev_imu->read_registers(MPUREG_USER_CTRL, &v, 1);
+    dev_imu->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
 
     hal.scheduler->delay(1);
-    dev_icm->write_register(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
-    dev_icm->write_register(MPUREG_PWR_MGMT_1,
+    dev_imu->write_register(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+    dev_imu->write_register(MPUREG_PWR_MGMT_1,
                             BIT_PWR_MGMT_1_SLEEP | BIT_PWR_MGMT_1_CLK_XGYRO);
 
     hal.scheduler->delay(1);
-    dev_icm->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
+    dev_imu->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
 
     hal.scheduler->delay(1);
-    dev_icm->write_register(MPUREG_FIFO_EN, 0x00);
-    dev_icm->write_register(MPUREG_PWR_MGMT_1,
+    dev_imu->write_register(MPUREG_FIFO_EN, 0x00);
+    dev_imu->write_register(MPUREG_PWR_MGMT_1,
                             BIT_PWR_MGMT_1_SLEEP | BIT_PWR_MGMT_1_CLK_XGYRO);
 
-    dev_icm->read_registers(MPUREG_WHOAMI, &whoami, 1);
+    dev_imu->read_registers(MPUREG_WHOAMI, &whoami, 1);
 
     // wait for sensor to settle
     hal.scheduler->delay(100);
 
-    dev_icm->read_registers(MPUREG_WHOAMI, &whoami, 1);
+    dev_imu->read_registers(MPUREG_WHOAMI, &whoami, 1);
 
-    dev_icm->write_register(MPUREG_INT_PIN_CFG, 0x00);
-    dev_icm->write_register(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+    dev_imu->write_register(MPUREG_INT_PIN_CFG, 0x00);
+    dev_imu->write_register(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
 
-    dev_icm->get_semaphore()->give();
+    dev_imu->get_semaphore()->give();
 
     return true;
-#else
-    debug("ICM20789: HAL_INS_MPU60x0_NAME not defined\n");
-    return false;
-#endif // HAL_INS_MPU60x0_NAME
+}
+
+/*
+  setup ICM20789 to enable barometer, assuming both IMU and baro on the same i2c bus
+*/
+bool AP_Baro_ICM20789::imu_i2c_init(void)
+{
+    // as the baro device is already locked we need to re-use it,
+    // changing its address to match the IMU address
+    uint8_t old_address = dev->get_bus_address();
+    dev->set_address(dev_imu->get_bus_address());
+    
+    dev->set_retries(4);
+
+    uint8_t whoami=0;
+    dev->read_registers(MPUREG_WHOAMI, &whoami, 1);
+    debug("ICM20789: whoami 0x%02x old_address=%02x\n", whoami, old_address);
+
+    dev->write_register(MPUREG_FIFO_EN, 0x00);
+    dev->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
+    
+    // wait for sensor to settle
+    hal.scheduler->delay(10);
+
+    dev->write_register(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN);
+
+    dev->set_address(old_address);
+
+    return true;
 }
 
 bool AP_Baro_ICM20789::init()
@@ -157,8 +177,13 @@ bool AP_Baro_ICM20789::init()
     }
 
     debug("Setting up IMU\n");
-    if (!spi_init()) {
-        debug("ICM20789: failed to initialise SPI device\n");
+    if (dev_imu->bus_type() != AP_HAL::Device::BUS_TYPE_I2C) {
+        if (!imu_spi_init()) {
+            debug("ICM20789: failed to initialise IMU SPI device\n");
+            return false;
+        }
+    } else if (!imu_i2c_init()) {
+        debug("ICM20789: failed to initialise IMU I2C device\n");
         return false;
     }
 
