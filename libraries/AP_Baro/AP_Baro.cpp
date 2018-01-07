@@ -520,6 +520,9 @@ void AP_Baro::init(void)
 #elif HAL_BARO_DEFAULT == HAL_BARO_LPS25H
 	ADD_BACKEND(AP_Baro_LPS25H::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_LPS25H_I2C_BUS, HAL_BARO_LPS25H_I2C_ADDR))));
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+    ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
+                                        std::move(hal.i2c_mgr->get_device(1, 0x63))));
 #endif
 
     // can optionally have baro on I2C too
