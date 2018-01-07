@@ -53,6 +53,13 @@ class upload_fw(Task.Task):
     def keyword(self):
         return "Uploading"
 
+class set_default_parameters(Task.Task):
+    color='CYAN'
+    run_str='python ${APJ_TOOL} --set-file ${DEFAULT_PARAMETERS} ${SRC}'
+    always_run = True
+    def keyword(self):
+        return "apj_tool"
+
 class generate_fw(Task.Task):
     color='CYAN'
     run_str='${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
@@ -71,10 +78,18 @@ def chibios_firmware(self):
 
     link_output = self.link_task.outputs[0]
     self.objcopy_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
+
     generate_fw_task = self.create_task('generate_fw',
                             src=link_output,
                             tgt=self.objcopy_target)
     generate_fw_task.set_run_after(self.link_task)
+
+    if self.env.DEFAULT_PARAMETERS:
+        default_params_task = self.create_task('set_default_parameters',
+                                               src=link_output)
+        default_params_task.set_run_after(self.link_task)
+        generate_fw_task.set_run_after(default_params_task)
+    
     if self.bld.options.upload:
         _upload_task = self.create_task('upload_fw',
                                 src=self.objcopy_target)
@@ -102,7 +117,14 @@ def configure(cfg):
     env.BUILDROOT = bldpath('')
     env.PT_DIR = srcpath('Tools/ardupilotwaf/chibios/image')
     env.UPLOAD_TOOLS = srcpath('Tools/ardupilotwaf')
+    env.APJ_TOOL = srcpath('Tools/scripts/apj_tool.py')
     env.SERIAL_PORT = srcpath('/dev/serial/by-id/*_STLink*')
+
+    if cfg.options.default_parameters:
+        cfg.msg('Default parameters', cfg.options.default_parameters, color='YELLOW')
+        env.DEFAULT_PARAMETERS = srcpath(cfg.options.default_parameters)
+
+    
 
 def build(bld):
     bld(
