@@ -17,10 +17,10 @@ class AP_Baro_ICM20789 : public AP_Baro_Backend
 public:
     void update();
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, AP_HAL::OwnPtr<AP_HAL::Device> dev_imu);
     
 private:
-    AP_Baro_ICM20789(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_ICM20789(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, AP_HAL::OwnPtr<AP_HAL::Device> dev_imu);
 
     bool init();
     bool send_cmd16(uint16_t cmd);
@@ -33,7 +33,8 @@ private:
                                         float &A, float &B, float &C);
     float get_pressure(uint32_t p_LSB, uint32_t T_LSB);
 
-    bool spi_init(void);
+    bool imu_spi_init(void);
+    bool imu_i2c_init(void);
     
     void timer(void);
     
@@ -41,7 +42,9 @@ private:
     int16_t sensor_constants[4];
 
     uint8_t instance;
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+    AP_HAL::OwnPtr<AP_HAL::Device> dev_imu;
 
     // time last read command was sent
     uint32_t last_measure_us;
