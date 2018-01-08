@@ -594,13 +594,13 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(*this,
                                                                         hal.i2c_mgr->get_device(1, HAL_COMPASS_AK09916_I2C_ADDR),
                                                                         hal.i2c_mgr->get_device(1, HAL_COMPASS_ICM20948_I2C_ADDR),
-                                                                        true, ROTATION_NONE),
+                                                                        true, ROTATION_PITCH_180_YAW_90),
                      AP_Compass_AK09916::name, true);
 
         ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(*this,
                                                                         hal.i2c_mgr->get_device(0, HAL_COMPASS_AK09916_I2C_ADDR),
                                                                         hal.i2c_mgr->get_device(0, HAL_COMPASS_ICM20948_I2C_ADDR),
-                                                                        both_i2c_external, ROTATION_NONE),
+                                                                        both_i2c_external, ROTATION_PITCH_180_YAW_90),
                      AP_Compass_AK09916::name, true);
         
         // lis3mdl on bus 0 with default address
