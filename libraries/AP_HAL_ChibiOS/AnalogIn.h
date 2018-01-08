@@ -21,6 +21,8 @@
 
 #define ANALOG_MAX_CHANNELS 16
 
+// number of samples on each channel to gather on each DMA callback
+#define ADC_DMA_BUF_DEPTH 8
 
 class ChibiOS::ChibiAnalogSource : public AP_HAL::AnalogSource {
 public:
@@ -50,6 +52,8 @@ private:
 
 class ChibiOS::ChibiAnalogIn : public AP_HAL::AnalogIn {
 public:
+    friend class ChibiAnalogSource;
+    
     ChibiAnalogIn();
     void init() override;
     AP_HAL::AnalogSource* channel(int16_t pin) override;
@@ -72,4 +76,14 @@ private:
     float _servorail_voltage;
     uint16_t _power_flags;
     ADCConversionGroup adcgrpcfg;
+
+    struct pin_info {
+        uint8_t channel;
+        float scaling;
+    }; 
+    static const pin_info pin_config[];
+    
+    static adcsample_t samples[];
+    static uint32_t sample_sum[];
+    static uint32_t sample_count;
 };
