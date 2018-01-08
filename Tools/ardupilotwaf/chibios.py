@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 """
-Waf tool for PX4 build
+Waf tool for ChibiOS build
 """
 
 from waflib import Errors, Logs, Task, Utils
