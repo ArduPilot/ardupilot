@@ -53,7 +53,6 @@ void Shared_DMA::unregister()
         locks[stream_id2].deallocate();
         locks[stream_id2].obj = nullptr;
     }
-    
 }
 
 // lock the DMA channels
