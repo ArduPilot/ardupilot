@@ -293,6 +293,7 @@ class chibios(Board):
             '-Werror=unused-but-set-variable',
             '-Wdouble-promotion',
             '-Wno-missing-field-initializers',
+            '-Wno-trigraphs',
             '-Os',
             '-g',
             '-fno-strict-aliasing',
