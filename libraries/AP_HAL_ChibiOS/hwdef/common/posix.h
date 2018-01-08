@@ -379,7 +379,7 @@ int posix_fopen_modes_to_open ( const char *mode );
 
 int fprintf(FILE *fp, const char *format, ...);
 
-#if __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
