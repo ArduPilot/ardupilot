@@ -190,6 +190,9 @@ bool I2CDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
 I2CDeviceManager::get_device(uint8_t bus, uint8_t address)
 {
+    if (bus >= ARRAY_SIZE(I2CD)) {
+        return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
+    }
     auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address));
     return dev;
 }
