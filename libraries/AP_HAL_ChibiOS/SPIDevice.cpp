@@ -41,12 +41,14 @@ using namespace ChibiOS;
 #define SPIDEV_CS_MS5611           GPIOD, 7
 #define SPIDEV_CS_EXT_MS5611       GPIOC, 14
 #define SPIDEV_CS_MPU              GPIOC, 2
+#define SPIDEV_CS_HMC              GPIOC, 1
 #define SPIDEV_CS_EXT_MPU          GPIOE, 4
 #define SPIDEV_CS_LSM9DS0_G        GPIOC, 13 // same cs for both internal and external
 #define SPIDEV_CS_LSM9DS0_AM       GPIOC, 15 // same cs for both internal and external
 #define SPIDEV_CS_RAMTRON          GPIOD, 10
 #define SPIDEV_CS_RADIO            GPIOD, 10
 #define SPIDEV_CS_FLOW             GPIOE, 4
+#define SPIDEV_CS_EXT0             GPIOE, 4
 
 // these device numbers are chosen to match those used when running NuttX. That prevent
 // users having to recal when updating to ChibiOS
@@ -59,6 +61,7 @@ using namespace ChibiOS;
 #define SPIDEV_EXT_BARO         2
 #define SPIDEV_EXT_LSM9DS0_AM   3
 #define SPIDEV_EXT_LSM9DS0_G    4
+#define SPIDEV_EXT0             5
 
 #define SPIDEV_RAMTROM          10
 #define SPIDEV_CYRF             11
@@ -101,12 +104,17 @@ SPIDesc SPIDeviceManager::device_table[] = {
     SPIDesc("mpu6000",        SPI_BUS_SENSORS,  SPIDEV_MPU,           SPIDEV_CS_MPU,        SPIDEV_MODE3, 1*MHZ, 8*MHZ ),
     SPIDesc("mpu9250",        SPI_BUS_SENSORS,  SPIDEV_MPU,           SPIDEV_CS_MPU,        SPIDEV_MODE3, 1*MHZ, 8*MHZ ),
     SPIDesc("mpu9250_ext",    SPI_BUS_EXT,      SPIDEV_EXT_MPU,       SPIDEV_CS_EXT_MPU,    SPIDEV_MODE3, 1*MHZ, 8*MHZ ),  
+    SPIDesc("hmc5843",        SPI_BUS_SENSORS,  SPIDEV_HMC,           SPIDEV_CS_HMC,        SPIDEV_MODE3, 11*MHZ, 11*MHZ ),  
     SPIDesc("lsm9ds0_g",      SPI_BUS_SENSORS,  SPIDEV_LSM9DS0_G,     SPIDEV_CS_LSM9DS0_G,  SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
     SPIDesc("lsm9ds0_am",     SPI_BUS_SENSORS,  SPIDEV_LSM9DS0_AM,    SPIDEV_CS_LSM9DS0_AM, SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
     SPIDesc("lsm9ds0_ext_g",  SPI_BUS_EXT,      SPIDEV_EXT_LSM9DS0_G, SPIDEV_CS_LSM9DS0_G,  SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
     SPIDesc("lsm9ds0_ext_am", SPI_BUS_EXT,      SPIDEV_EXT_LSM9DS0_AM,SPIDEV_CS_LSM9DS0_AM, SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
     SPIDesc("ramtron",        SPI_BUS_RAMTRON,  SPIDEV_RAMTROM,       SPIDEV_CS_RAMTRON,    SPIDEV_MODE3, 8*MHZ, 8*MHZ ),
     SPIDesc("cypress",        SPI_BUS_RADIO,    SPIDEV_CYRF,          SPIDEV_CS_RADIO,      SPIDEV_MODE0, 2*MHZ, 2*MHZ),
+    SPIDesc("external0m0",    SPI_BUS_EXT,      SPIDEV_EXT0,          SPIDEV_CS_EXT0,       SPIDEV_MODE0, 2*MHZ, 2*MHZ),
+    SPIDesc("external0m1",    SPI_BUS_EXT,      SPIDEV_EXT0,          SPIDEV_CS_EXT0,       SPIDEV_MODE1, 2*MHZ, 2*MHZ),
+    SPIDesc("external0m2",    SPI_BUS_EXT,      SPIDEV_EXT0,          SPIDEV_CS_EXT0,       SPIDEV_MODE2, 2*MHZ, 2*MHZ),
+    SPIDesc("external0m3",    SPI_BUS_EXT,      SPIDEV_EXT0,          SPIDEV_CS_EXT0,       SPIDEV_MODE3, 2*MHZ, 2*MHZ),
 #endif
 };
 
