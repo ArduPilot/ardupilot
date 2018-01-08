@@ -164,7 +164,6 @@ SPIDevice::~SPIDevice()
 {
     //printf("SPI device %s on %u:%u closed\n", device_desc.name,
     //       (unsigned)bus.bus, (unsigned)device_desc.device);
-    bus.dma_handle->unregister();
     free(pname);
 }
 
