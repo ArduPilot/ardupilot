@@ -59,7 +59,6 @@ I2CDevice::I2CDevice(uint8_t bus, uint8_t address) :
 
 I2CDevice::~I2CDevice()
 {
-    businfo[_busnum].dma_handle->unregister();
     printf("I2C device bus %u address 0x%02x closed\n", 
            (unsigned)_busnum, (unsigned)_address);
     free(pname);
