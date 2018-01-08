@@ -140,6 +140,8 @@ void AP_IOMCU::event_failed(uint8_t event)
  */
 void AP_IOMCU::thread_main(void)
 {
+    thread_ctx = chThdGetSelfX();
+    
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 256, 256);
     uart.set_blocking_writes(false);
