@@ -5,6 +5,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <DataFlash/DataFlash.h>
+#include <new>
 
 /*
   parameter defaults for different types of vehicle. The
@@ -657,17 +658,23 @@ bool NavEKF2::InitialiseFilter(void)
             }
         }
 
+        // check if there is enough memory to create the EKF cores
         if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
             _enable.set(0);
             return false;
         }
-        
-        core = new NavEKF2_core[num_cores];
+
+        // try to allocate from CCM RAM, fallback to Normal RAM if not available or full
+        core = (NavEKF2_core*)hal.util->malloc_type(sizeof(NavEKF2_core)*num_cores, AP_HAL::Util::MEM_FAST);
         if (core == nullptr) {
             _enable.set(0);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
             return false;
+        }
+        for (uint8_t i = 0; i < num_cores; i++) {
+            //Call Constructors
+            new (&core[i]) NavEKF2_core();
         }
 
         // set the IMU index for the cores
