@@ -1,4 +1,4 @@
-# NOTE: 12/23/2017: Required parameters for a 3DR Solo with ArduCopter 3.5.4 and higher
+# NOTE: 1/8/2018: Required parameters for a 3DR Solo with ArduCopter 3.5.  Not for use on ArduCopter 3.6!
 ACCEL_Z_I,1.5
 ACCEL_Z_P,0.75
 ACRO_RP_P,4
@@ -6,7 +6,7 @@ ACRO_THR_MID,0.4
 ACRO_YAW_P,1
 AHRS_ORIENTATION,12
 ANGLE_MAX,2000
-ARMING_CHECK,1
+ARMING_CHECK,7166
 ATC_ACCEL_P_MAX,36000
 ATC_ACCEL_R_MAX,36000
 ATC_ACCEL_Y_MAX,7000
