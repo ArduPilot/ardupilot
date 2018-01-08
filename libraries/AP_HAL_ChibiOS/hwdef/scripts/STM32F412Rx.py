@@ -670,3 +670,23 @@ AltFunction_map = {
 	"PH0:EVENTOUT"      	:	15,
 	"PH1:EVENTOUT"      	:	15,
 }
+ADC1_map = {
+	# format is PIN : ADC1_CHAN
+	# extracted from tabula-addfunc-F412RG.csv
+	"PA0"	:	0,
+	"PA1"	:	1,
+	"PA2"	:	2,
+	"PA3"	:	3,
+	"PA4"	:	4,
+	"PA5"	:	5,
+	"PA6"	:	6,
+	"PA7"	:	7,
+	"PB0"	:	8,
+	"PB1"	:	9,
+	"PC0"	:	10,
+	"PC1"	:	11,
+	"PC2"	:	12,
+	"PC3"	:	13,
+	"PC4"	:	14,
+	"PC5"	:	15,
+}

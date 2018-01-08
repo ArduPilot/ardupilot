@@ -962,3 +962,23 @@ AltFunction_map = {
 	"PH9:I2C3_SMBA"     	:	4,
 	"PH9:TIM12_CH2"     	:	9,
 }
+ADC1_map = {
+	# format is PIN : ADC1_CHAN
+	# extracted from tabula-addfunc-F405.csv
+	"PA0"	:	0,
+	"PA1"	:	1,
+	"PA2"	:	2,
+	"PA3"	:	3,
+	"PA4"	:	4,
+	"PA5"	:	5,
+	"PA6"	:	6,
+	"PA7"	:	7,
+	"PB0"	:	8,
+	"PB1"	:	9,
+	"PC0"	:	10,
+	"PC1"	:	11,
+	"PC2"	:	12,
+	"PC3"	:	13,
+	"PC4"	:	14,
+	"PC5"	:	15,
+}
