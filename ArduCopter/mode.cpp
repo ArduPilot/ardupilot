@@ -220,6 +220,16 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
     // but it should be harmless to disable the fence temporarily in these situations as well
     fence.manual_recovery_start();
+    // disable low altitude fence when landing
+    switch (mode) {
+        case LAND:
+            FALLTHROUGH;
+        case RTL:
+            fence.enable_low_alt(false);
+            break;
+        default:
+            break;
+    }
 #endif
 
 #if FRSKY_TELEM_ENABLED == ENABLED
@@ -248,6 +258,13 @@ void Copter::update_flight_mode()
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     flightmode->run();
+#if AC_FENCE == ENABLED
+    if (!fence._low_alt_fence_enabled && (control_mode != LAND) && (control_mode != RTL)) {
+        if ((current_loc.alt/100.0f) > fence.get_safe_alt_min() && (rangefinder.has_orientation(ROTATION_PITCH_270) ? (rangefinder.distance_cm_orient(ROTATION_PITCH_270)/100.0f > fence.get_safe_alt_min()) : true)) {
+            fence.enable_low_alt(true); // Potentially enable low altitude fence the first time the vehicle is above it
+        }
+    }
+#endif
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited

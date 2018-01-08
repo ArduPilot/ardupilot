@@ -191,6 +191,9 @@ public:
 #endif
     friend class AP_Arming_Copter;
     friend class ToyMode;
+#if AC_AVOID_ENABLED == ENABLED
+    friend class AC_PosControl; // position control needs to access a AC_Avoid function
+#endif
 
     Copter(void);
 
