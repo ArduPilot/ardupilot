@@ -104,6 +104,9 @@ AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(OpticalFlow &_frontend)
 // setup the device
 bool AP_OpticalFlow_Pixart::setup_sensor(void)
 {
+    if (!_dev) {
+        return false;
+    }
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("Unable to get bus semaphore");
     }
