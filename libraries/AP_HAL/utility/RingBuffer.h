@@ -77,18 +77,19 @@ public:
     // until 'commit()' is called!
     uint8_t reserve(IoVec vec[2], uint32_t len);
 
+
     /*
      * "Releases" the memory previously reserved by 'reserve()' to be read.
      * Committer must inform how many bytes were actually written in 'len'.
      */
     bool commit(uint32_t len);
-
 private:
     uint8_t *buf;
     uint32_t size;
 
-    std::atomic<uint32_t> head{0}; // where to read data
-    std::atomic<uint32_t> tail{0}; // where to write data
+    volatile uint32_t head{0}; // where to read data
+    std::atomic<uint32_t> written{0}; // how much data was written
+	volatile uint32_t tail{0};
 };
 
 /*
@@ -98,7 +99,7 @@ template <class T>
 class ObjectBuffer {
 public:
     ObjectBuffer(uint32_t _size) {
-        buffer = new ByteBuffer((_size * sizeof(T))+1);
+        buffer = new ByteBuffer(_size * sizeof(T));
     }
     ~ObjectBuffer(void) {
         delete buffer;
