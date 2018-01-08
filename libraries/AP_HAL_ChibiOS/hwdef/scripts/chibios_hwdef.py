@@ -51,10 +51,26 @@ def get_alt_function(mcu, pin, function):
                 sys.exit(1)
             return alt_map[s]
     return None
+
+def get_ADC1_chan(mcu, pin):
+    '''return ADC1 channel for an analog pin'''
+    import importlib
+    try:
+            lib = importlib.import_module(mcu)
+            ADC1_map = lib.ADC1_map
+    except ImportError:
+            print("Unable to find ADC1_Map for MCU %s" % mcu)
+            sys.exit(1)
+    
+    if not pin in ADC1_map:
+        print("Unable to find ADC1 channel for pin %s" % pin)
+        sys.exit(1)
+    return ADC1_map[pin]
         
 class generic_pin(object):
         '''class to hold pin definition'''
         def __init__(self, port, pin, label, type, extra):
+                self.portpin = "P%s%u" % (port, pin)
                 self.port = port
                 self.pin = pin
                 self.label = label
@@ -145,9 +161,12 @@ class generic_pin(object):
 
         def __str__(self):
                 afstr = ''
+                adcstr = ''
                 if self.af is not None:
-                        afstr = " AF%u" % self.af
-                return "P%s%u %s %s%s" % (self.port, self.pin, self.label, self.type, afstr)
+                    afstr = " AF%u" % self.af
+                if self.type.startswith('ADC1'):
+                    adcstr = " ADC1_IN%u" % get_ADC1_chan(mcu_type, self.portpin)
+                return "P%s%u %s %s%s%s" % (self.port, self.pin, self.label, self.type, afstr, adcstr)
 
 # setup default as input pins
 for port in ports:
