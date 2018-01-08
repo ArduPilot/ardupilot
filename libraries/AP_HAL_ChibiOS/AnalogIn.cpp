@@ -61,6 +61,9 @@ static const struct {
                             // scaled from battery voltage
     { 3,   3.3f/4096  },    // 3DR Brick current, usually 17:1 scaled
                             // for APM_PER_VOLT
+    { 13,  3.3f/4096  },    // AUX ADC pin 4
+    { 14,  3.3f/4096  },    // AUX ADC pin 3
+    { 15,  6.6f/4096  },    // analog airspeed sensor, 2:1 scaling
 };
 
 using namespace ChibiOS;
