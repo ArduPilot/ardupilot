@@ -23,6 +23,6 @@ uint16_t ppm_read(uint8_t chan);
 
 uint8_t ppm_read_bulk(uint16_t periods[], uint8_t len);
 bool ppm_available();
-#if __cplusplus
+#ifdef __cplusplus
 }
 #endif
