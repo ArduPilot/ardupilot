@@ -284,7 +284,7 @@ AP_InertialSensor_Invensense::AP_InertialSensor_Invensense(AP_InertialSensor &im
 AP_InertialSensor_Invensense::~AP_InertialSensor_Invensense()
 {
     if (_fifo_buffer != nullptr) {
-        hal.util->dma_free(_fifo_buffer, MPU_FIFO_BUFFER_LEN * MPU_SAMPLE_SIZE);
+        hal.util->free_type(_fifo_buffer, MPU_FIFO_BUFFER_LEN * MPU_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
     }
     delete _auxiliary_bus;
 }
@@ -489,7 +489,7 @@ void AP_InertialSensor_Invensense::start()
     set_accel_orientation(_accel_instance, _rotation);
 
     // allocate fifo buffer
-    _fifo_buffer = (uint8_t *)hal.util->dma_allocate(MPU_FIFO_BUFFER_LEN * MPU_SAMPLE_SIZE);
+    _fifo_buffer = (uint8_t *)hal.util->malloc_type(MPU_FIFO_BUFFER_LEN * MPU_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
     if (_fifo_buffer == nullptr) {
         AP_HAL::panic("Invensense: Unable to allocate FIFO buffer");
     }
