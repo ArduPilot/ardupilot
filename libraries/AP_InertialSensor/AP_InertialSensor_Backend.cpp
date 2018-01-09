@@ -13,6 +13,8 @@ AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
     _imu(imu)
 {
     _sem = hal.util->new_semaphore();
+
+    _fourier_analysis.set_buffer_size(BUF_SIZE);
 }
 
 /*
@@ -310,6 +312,14 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         _sem->give();
     }
 
+    if(instance==0)
+    {
+    	_fourier_analysis.accumulate_discrete(accel.x, accel.y, dt, _imu._gyro[instance].z);
+    }
+
+    accel.y=_fourier_analysis.get_magnitude();
+    accel.z=_fourier_analysis.get_angle();
+
     log_accel_raw(instance, sample_us, accel);
 }
 
@@ -326,9 +336,9 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
             LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+instance)),
             time_us   : now,
             sample_us : sample_us?sample_us:now,
-            AccX      : accel.x,
-            AccY      : accel.y,
-            AccZ      : accel.z
+            AccX      : _accel.x,
+            AccY      : _accel.y,
+            AccZ      : _accel.z
         };
         dataflash->WriteBlock(&pkt, sizeof(pkt));
     } else {
