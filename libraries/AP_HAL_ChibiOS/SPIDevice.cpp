@@ -16,11 +16,13 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/OwnPtr.h>
+#include "Util.h"
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include <stdio.h>
 
 using namespace ChibiOS;
+extern const AP_HAL::HAL& hal;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
 #define SPI_BUS_FLOW  1
@@ -198,7 +200,17 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     if (!set_chip_select(true)) {
         return;
     }
-    spiExchange(spi_devices[device_desc.bus].driver, len, send, recv); 
+    uint8_t *recv_buf = recv;
+    const uint8_t *send_buf = send;
+
+    bus.bouncebuffer_setup(send_buf, len, recv_buf, len);
+
+    spiExchange(spi_devices[device_desc.bus].driver, len, send_buf, recv_buf);
+
+    if (recv_buf != recv) {
+        memcpy(recv, recv_buf, len);
+    }
+    
     set_chip_select(old_cs_forced);
 }
 
@@ -259,15 +271,14 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         do_transfer(send, recv, recv_len);
         return true;
     }
-    uint32_t buf_aligned[1+((send_len+recv_len)/4)];
-    uint8_t *buf = (uint8_t *)&buf_aligned[0];
+    uint8_t buf[send_len+recv_len];
     if (send_len > 0) {
         memcpy(buf, send, send_len);
     }
     if (recv_len > 0) {
         memset(&buf[send_len], 0, recv_len);
     }
-    do_transfer((uint8_t *)buf, (uint8_t *)buf, send_len+recv_len);
+    do_transfer(buf, buf, send_len+recv_len);
     if (recv_len > 0) {
         memcpy(recv, &buf[send_len], recv_len);
     }

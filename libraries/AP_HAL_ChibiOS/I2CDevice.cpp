@@ -38,6 +38,7 @@ static uint8_t rx_dma_stream[] = {
 };
 
 using namespace ChibiOS;
+extern const AP_HAL::HAL& hal;
 
 I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 
@@ -151,17 +152,22 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
 bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-    int ret;
+    uint8_t *recv_buf = recv;
+    const uint8_t *send_buf = send;
+
+    bus.bouncebuffer_setup(send_buf, send_len, recv_buf, recv_len);
+
     for(uint8_t i=0 ; i <= _retries; i++) {
+        int ret;
         i2cAcquireBus(I2CD[bus.busnum]);
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
         uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.i2ccfg.clock_speed)*MAX(send_len, recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
         if(send_len == 0) {
-            ret = i2cMasterReceiveTimeout(I2CD[bus.busnum], _address,recv, recv_len, MS2ST(timeout_ms));
+            ret = i2cMasterReceiveTimeout(I2CD[bus.busnum], _address, recv_buf, recv_len, MS2ST(timeout_ms));
         } else {
-            ret = i2cMasterTransmitTimeout(I2CD[bus.busnum], _address, send, send_len,
-                                           recv, recv_len, MS2ST(timeout_ms));
+            ret = i2cMasterTransmitTimeout(I2CD[bus.busnum], _address, send_buf, send_len,
+                                           recv_buf, recv_len, MS2ST(timeout_ms));
         }
         i2cReleaseBus(I2CD[bus.busnum]);
         if (ret != MSG_OK){
@@ -169,6 +175,9 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
             i2cStop(I2CD[bus.busnum]);
             i2cStart(I2CD[bus.busnum], &bus.i2ccfg);
         } else {
+            if (recv_buf != recv) {
+                memcpy(recv, recv_buf, recv_len);
+            }
             return true;
         }
     }

@@ -35,6 +35,10 @@ public:
     bool adjust_timer(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec);
     static void bus_thread(void *arg);
 
+    void bouncebuffer_setup(const uint8_t *&buf_tx, uint16_t tx_len,
+                            uint8_t *&buf_rx, uint16_t rx_len);
+    void bouncebuffer_rx_copy(uint8_t *buf_rx, uint16_t rx_len);
+    
 private:
     struct callback_info {
         struct callback_info *next;
@@ -46,6 +50,12 @@ private:
     thread_t* thread_ctx;
     bool thread_started;
     AP_HAL::Device *hal_device;
+
+    // support for bounce buffers for DMA-safe transfers
+    uint8_t *bounce_buffer_tx;
+    uint8_t *bounce_buffer_rx;
+    uint16_t bounce_buffer_tx_size;
+    uint16_t bounce_buffer_rx_size;
 };
 
 }
