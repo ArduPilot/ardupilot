@@ -74,8 +74,6 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Board***: APM1, APM2, Pixhawk, Pixhawk2, PixRacer
 - [Randy Mackay](https://github.com/rmackay9)
   - ***Vehicle***: Copter, AntennaTracker
-- [Robert Lefebvre](https://github.com/R-Lefebvre)
-  - ***Vehicle***: TradHeli
 - [Grant Morphett](https://github.com/gmorph):
   - ***Vehicle***: Rover
 - [Tom Pittenger](https://github.com/magicrub)
