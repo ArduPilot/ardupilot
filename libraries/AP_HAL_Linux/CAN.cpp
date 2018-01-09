@@ -475,24 +475,8 @@ bool CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
     if (init(can_number) >= 0) {
         _initialized = true;
-
-        if (p_uavcan != nullptr) {
-            uint16_t UAVCAN_init_tries;
-
-            // TODO: Limit number of times we try to init UAVCAN and also provide
-            //       the reasonable actions when it fails.
-            for (UAVCAN_init_tries = 0; UAVCAN_init_tries < CAN_MAX_INIT_TRIES_COUNT; UAVCAN_init_tries++) {
-                if (p_uavcan->try_init() == true) {
-                    return true;
-                }
-                printf("p_uavcan->try_init() false\n");
-                hal.scheduler->delay(1);
-            }
-        } else {
-             printf("p_uavcan is nullptr! =(");
-        }
     }
-    return false;
+    return _initialized;
 }
 
 bool CANManager::is_initialized()
