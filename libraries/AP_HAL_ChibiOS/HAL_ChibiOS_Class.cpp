@@ -103,7 +103,6 @@ thread_t* get_main_thread()
 }
 
 static AP_HAL::HAL::Callbacks* g_callbacks;
-THD_WORKING_AREA(_main_thread_wa, APM_MAIN_THREAD_STACK_SIZE);
 static THD_FUNCTION(main_loop,arg)
 {
     daemon_task = chThdGetSelfX();
@@ -191,8 +190,9 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
     assert(callbacks);
     g_callbacks = callbacks;
 
-    chThdCreateStatic(_main_thread_wa,
-                      sizeof(_main_thread_wa),
+    void *main_thread_wa = hal.util->malloc_type(THD_WORKING_AREA_SIZE(APM_MAIN_THREAD_STACK_SIZE), AP_HAL::Util::MEM_FAST);
+    chThdCreateStatic(main_thread_wa,
+                      APM_MAIN_THREAD_STACK_SIZE,
                       APM_MAIN_PRIORITY,     /* Initial priority.    */
                       main_loop,             /* Thread function.     */
                       nullptr);              /* Thread parameter.    */
