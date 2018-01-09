@@ -28,19 +28,50 @@ extern AP_IOMCU iomcu;
 #endif
 
 using namespace ChibiOS;
+
+extern "C" {
+    size_t mem_available(void);
+    void *malloc_ccm(size_t size);
+};
+
 /**
    how much free memory do we have in bytes.
 */
 uint32_t ChibiUtil::available_memory(void)
 {
-    size_t totalp = 0;
-    // get memory available on heap
-    chHeapStatus(nullptr, &totalp, nullptr);
+    // from malloc.c in hwdef
+    return mem_available();
+}
 
-    // we also need to add in memory that is not yet allocated to the heap
-    totalp += chCoreGetStatusX();
+/*
+    Special Allocation Routines
+*/
 
-    return totalp;
+void* ChibiUtil::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
+{
+    if (mem_type == AP_HAL::Util::MEM_FAST) {
+        return try_alloc_from_ccm_ram(size);
+    } else {
+        return malloc(size);
+    }
+}
+
+void ChibiUtil::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
+{
+    if (ptr != NULL) {
+        chHeapFree(ptr);
+    }
+}
+
+
+void* ChibiUtil::try_alloc_from_ccm_ram(size_t size)
+{
+    void *ret = malloc_ccm(size);
+    if (ret == nullptr) {
+        //we failed to allocate from CCM so we are going to try common SRAM
+        ret = malloc(size);
+    }
+    return ret;
 }
 
 /*
