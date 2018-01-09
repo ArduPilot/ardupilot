@@ -1457,16 +1457,6 @@ void AP_GPS::calc_blended_state(void)
         corrected_location[i].alt += (int)(_hgt_offset_cm[i]);
     }
 
-    // Calculate the weighted sum of horizontal and vertical position offsets relative to the blended location
-    blended_alt_offset_cm = 0.0f;
-    blended_NE_offset_m.zero();
-    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (_blend_weights[i] > 0.0f) {
-            blended_NE_offset_m += location_diff(state[GPS_BLENDED_INSTANCE].location, corrected_location[i]) * _blend_weights[i];
-            blended_alt_offset_cm += (float)(corrected_location[i].alt - state[GPS_BLENDED_INSTANCE].location.alt) * _blend_weights[i];
-        }
-    }
-
     // If the GPS week is the same then use a blended time_week_ms
     // If week is different, then use time stamp from GPS with largest weighting
     // detect inconsistent week data
