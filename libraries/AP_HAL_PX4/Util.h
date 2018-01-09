@@ -62,9 +62,9 @@ public:
     void set_imu_target_temp(int8_t *target) override;
 
     // allocate and free DMA-capable memory if possible. Otherwise return normal memory
-    void *dma_allocate(size_t size) override;
-    void dma_free(void *ptr, size_t size) override;
-    
+    void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
+    void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
+
 private:
     int _safety_handle;
     PX4::NSHShellStream _shell_stream;
