@@ -18,6 +18,6 @@ public:
     virtual AP_HAL::UARTDriver::flow_control get_flow_control(void) { return AP_HAL::UARTDriver::FLOW_CONTROL_ENABLE; }
     virtual void set_flow_control(AP_HAL::UARTDriver::flow_control flow_control_setting)
     {
-        /* most devices simply igmore this setting */
+        /* most devices simply ignore this setting */
     };
 };
