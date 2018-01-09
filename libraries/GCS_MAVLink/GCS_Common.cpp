@@ -1383,6 +1383,7 @@ void GCS_MAVLINK::send_autopilot_version() const
     uint16_t vendor_id = 0;
     uint16_t product_id = 0;
     uint64_t uid = 0;
+    uint8_t  uid2[18] = {0};
     const AP_FWVersion &version = get_fwver();
 
     flight_sw_version = version.major << (8 * 3) | \
@@ -1417,7 +1418,8 @@ void GCS_MAVLINK::send_autopilot_version() const
         (uint8_t *)os_custom_version,
         vendor_id,
         product_id,
-        uid
+        uid,
+        uid2
     );
 }
 
