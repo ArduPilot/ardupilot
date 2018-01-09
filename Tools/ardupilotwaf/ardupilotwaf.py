@@ -75,7 +75,6 @@ def get_legacy_defines(sketch_name):
 
 IGNORED_AP_LIBRARIES = [
     'doc',
-    'GCS_Console',
 ]
 
 @conf
