@@ -46,9 +46,9 @@ if len(sys.argv) != 2:
 
 parse_dma_table(sys.argv[1], table)
 
-sys.stdout.write("DMA_map = {\n");
+sys.stdout.write("DMA_Map = {\n");
 sys.stdout.write('\t# format is [DMA_TABLE, StreamNum]\n')
-sys.stdout.write('\t# extracted from %sn' % os.path.basename(sys.argv[1]))
+sys.stdout.write('\t# extracted from %sn\n' % os.path.basename(sys.argv[1]))
 
 for k in sorted(table.iterkeys()):
     s = '"%s"' % k
