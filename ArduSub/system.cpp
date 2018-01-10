@@ -35,7 +35,7 @@ void Sub::init_ardupilot()
     BoardConfig_CAN.init();
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if AP_FEATURE_BOARD_DETECT
     // Detection won't work until after BoardConfig.init()
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
