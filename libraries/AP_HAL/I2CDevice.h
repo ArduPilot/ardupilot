@@ -77,7 +77,10 @@ public:
 class I2CDeviceManager {
 public:
     /* Get a device handle */
-    virtual OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) = 0;
+    virtual OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
+                                                 uint32_t bus_clock=400000,
+                                                 bool use_smbus = false,
+                                                 uint32_t timeout_ms=4) = 0;
 };
 
 }
