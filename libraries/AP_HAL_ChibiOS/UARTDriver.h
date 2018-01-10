@@ -50,24 +50,28 @@ public:
         bool is_usb;
         bool dma_rx;
         uint8_t dma_rx_stream_id;
-        uint32_t dma_rx_channel_id; 
+        uint32_t dma_rx_channel_id;
         bool dma_tx;
         uint8_t dma_tx_stream_id;
         uint32_t dma_tx_channel_id; 
+        ioline_t rts_line;
+        uint8_t get_index(void) const {
+            return uint8_t(this - &_serial_tab[0]);
+        }
     };
 
     bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
 
+    void set_flow_control(enum flow_control flow_control) override;
+    enum flow_control get_flow_control(void) override { return _flow_control; }
+    
 private:
-    bool _dma_rx;
-    bool _dma_tx;
     bool tx_bounce_buf_ready;
-    uint8_t _serial_num;
+    const SerialDef &sdef;
+    
     uint32_t _baudrate;
     uint16_t tx_len;
-    BaseSequentialStream* _serial;
     SerialConfig sercfg;
-    bool _is_usb;
     const thread_t* _uart_owner_thd;
 
     struct {
@@ -91,10 +95,19 @@ private:
     bool _initialised;
     bool _lock_rx_in_timer_tick = false;
     Shared_DMA *dma_handle;
+    static const SerialDef _serial_tab[];
+
+    // handling of flow control
+    enum flow_control _flow_control = FLOW_CONTROL_DISABLE;
+    bool _rts_is_active;
+    uint32_t _last_write_completed_us;
+    uint32_t _first_write_started_us;
+    
     static void rx_irq_cb(void* sd);
     static void rxbuff_full_irq(void* self, uint32_t flags);
     static void tx_complete(void* self, uint32_t flags);
 
     void dma_tx_allocate(void);
     void dma_tx_deallocate(void);
+    void update_rts_line(void);
 };
