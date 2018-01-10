@@ -22,10 +22,7 @@
 #include "ch.h"
 #include "hal.h"
 
-static I2CDriver* I2CD[] = {
-    &I2CD2,
-    &I2CD1
-};
+static I2CDriver* I2CD[] = { HAL_I2C_DEVICE_LIST };
 
 static uint8_t tx_dma_stream[] = {
     STM32_I2C_I2C2_TX_DMA_STREAM,
