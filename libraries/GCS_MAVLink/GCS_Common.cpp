@@ -197,7 +197,7 @@ void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery, const uint8
                                     battery.get_cell_voltages(instance).cells, // cell voltages
                                     battery.has_current(instance) ? battery.current_amps(instance) * 100 : -1, // current
                                     battery.has_current(instance) ? battery.current_total_mah(instance) : -1, // total current
-                                    -1, // joules used
+                                    battery.has_consumed_energy(instance) ? battery.consumed_wh(instance) * 36 : -1, // consumed energy in hJ (hecto-Joules)
                                     battery.capacity_remaining_pct(instance));
 }
 
