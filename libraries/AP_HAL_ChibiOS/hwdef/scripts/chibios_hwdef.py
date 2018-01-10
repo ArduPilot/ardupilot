@@ -249,7 +249,8 @@ def write_USB_config(f):
 
 def write_I2C_config(f):
         '''write I2C config defines'''
-        i2c_list = get_config('I2C_ORDER').split()
+        get_config('I2C_ORDER')
+        i2c_list = config['I2C_ORDER']
         devlist = []
         for dev in i2c_list:
             if not dev.startswith('I2C') or dev[3] not in "1234":
