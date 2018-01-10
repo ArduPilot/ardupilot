@@ -62,6 +62,7 @@
 /* HAL CHIBIOS sub-types, starting at 5000 */
 #define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3         5001
+#define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4         5002
 
 /* InertialSensor driver types */
 #define HAL_INS_MPU60XX_SPI  2
