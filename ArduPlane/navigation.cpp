@@ -163,6 +163,8 @@ void Plane::calc_gndspeed_undershoot()
             float gndSpdFwd = yawVect * gndVel;
             groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
         }
+    } else {
+    	groundspeed_undershoot = 0;
     }
 }
 
