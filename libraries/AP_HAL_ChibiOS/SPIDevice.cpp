@@ -68,6 +68,26 @@ extern const AP_HAL::HAL& hal;
 #define SPIDEV_RAMTROM          10
 #define SPIDEV_CYRF             11
 
+
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4
+#define SPI_BUS_SENSORS 0
+#define SPI_BUS_RAMTRON 1
+#define SPI_BUS_BARO    1
+
+#define SPIDEV_CS_MPU              GPIOC, 2
+#define SPIDEV_CS_ICM              GPIOC, 15
+#define SPIDEV_CS_BARO             GPIOD, 7
+#define SPIDEV_CS_RAMTRON          GPIOD, 10
+#define SPIDEV_CS_MAG              GPIOE, 15
+
+// these device numbers are chosen to match those used when running NuttX. That prevent
+// users having to recal when updating to ChibiOS
+#define SPIDEV_BARO             3
+#define SPIDEV_MPU              4
+#define SPIDEV_MAG              5
+#define SPIDEV_ICM              6
+#define SPIDEV_RAMTROM          10
+
 #endif // CONFIG_HAL_BOARD_SUBTYPE
 
 // SPI mode numbers
@@ -117,6 +137,12 @@ SPIDesc SPIDeviceManager::device_table[] = {
     SPIDesc("external0m1",    SPI_BUS_EXT,      SPIDEV_EXT0,          SPIDEV_CS_EXT0,       SPIDEV_MODE1, 2*MHZ, 2*MHZ),
     SPIDesc("external0m2",    SPI_BUS_EXT,      SPIDEV_EXT0,          SPIDEV_CS_EXT0,       SPIDEV_MODE2, 2*MHZ, 2*MHZ),
     SPIDesc("external0m3",    SPI_BUS_EXT,      SPIDEV_EXT0,          SPIDEV_CS_EXT0,       SPIDEV_MODE3, 2*MHZ, 2*MHZ),
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4
+    SPIDesc("ms5611_int",     SPI_BUS_BARO,     SPIDEV_BARO,          SPIDEV_CS_BARO,       SPIDEV_MODE3, 20*MHZ, 20*MHZ),
+    SPIDesc("mpu9250",        SPI_BUS_SENSORS,  SPIDEV_MPU,           SPIDEV_CS_MPU,        SPIDEV_MODE3, 1*MHZ, 8*MHZ ),
+    SPIDesc("icm20608",       SPI_BUS_SENSORS,  SPIDEV_ICM,           SPIDEV_CS_ICM,        SPIDEV_MODE3, 1*MHZ, 8*MHZ ),
+    SPIDesc("hmc5843",        SPI_BUS_SENSORS,  SPIDEV_MAG,           SPIDEV_CS_MAG,        SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
+    SPIDesc("ramtron",        SPI_BUS_RAMTRON,  SPIDEV_RAMTROM,       SPIDEV_CS_RAMTRON,    SPIDEV_MODE3, 8*MHZ, 8*MHZ ),
 #endif
 };
 
