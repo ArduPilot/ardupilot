@@ -32,8 +32,8 @@
 
 #define MIN_ALIGNMENT 8
 
-#ifdef STM32F4xx_MCUCONF
-// assume all F4xx MCUs have 64k CCM 
+#if defined(STM32F427xx) || defined(STM32F405xx)
+// 427 and 405 have 64k CCM ram
 #define CCM_RAM_ATTRIBUTE __attribute__((section(".ram4")))
 #endif
 
