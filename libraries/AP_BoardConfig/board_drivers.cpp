@@ -209,7 +209,7 @@ void AP_BoardConfig::board_autodetect(void)
     } else {
         sensor_config_error("Unable to detect board type");
     }
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(HAL_CHIBIOS_ARCH_FMUV4)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXRACER);
     hal.console->printf("Detected Pixracer\n");
