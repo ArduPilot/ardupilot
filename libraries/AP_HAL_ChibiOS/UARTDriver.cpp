@@ -26,7 +26,8 @@ extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
+#ifdef HAL_USB_VENDOR_ID
+// USB has been configured in hwdef.dat
 #define HAVE_USB_SERIAL
 #endif
 
@@ -38,6 +39,13 @@ static ChibiUARTDriver::SerialDef _serial_tab[] = {
     USART3_CONFIG, // Serial 3, telem2
     UART8_CONFIG, // Serial 4, GPS2
     //UART7_CONFIG, // Serial 5, debug console
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4
+    {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0},
+    UART4_CONFIG,  // GPS
+    USART2_CONFIG, // telem1
+    USART3_CONFIG, // telem2
+    UART8_CONFIG,  // FrSky
+    USART1_CONFIG, // ESP8266
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
     USART1_CONFIG, // Serial 0, debug console
     USART6_CONFIG, // Serial 1, GPS

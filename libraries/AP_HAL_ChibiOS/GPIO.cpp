@@ -39,6 +39,11 @@ static struct gpio_entry {
     {53, false, PAL_LINE(GPIOE,  9U)},
     {54, true,  PAL_LINE(GPIOD, 13U)},
     {55, true,  PAL_LINE(GPIOD, 14U)},
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4
+    {0,  true,  PAL_LINE(GPIOB, 1U)},  // green
+    {1,  true,  PAL_LINE(GPIOB, 3U)},  // blue
+    {2,  true,  PAL_LINE(GPIOB, 11U)}, // red
+    {3,  true,  PAL_LINE(GPIOC, 3U)},  // safety
 #endif
 };
 

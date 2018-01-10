@@ -247,6 +247,19 @@ def write_USB_config(f):
 
         f.write('\n\n')
 
+def write_I2C_config(f):
+        '''write I2C config defines'''
+        i2c_list = get_config('I2C_ORDER').split()
+        devlist = []
+        for dev in i2c_list:
+            if not dev.startswith('I2C') or dev[3] not in "1234":
+                print("Bad I2C_ORDER element %s" % dev)
+                sys.exit(1)
+            n = int(dev[3:])
+            devlist.append('&I2CD%u' % n)
+        f.write('\n// List of I2C devices\n')
+        f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
+
 def write_prototype_file():
     '''write the prototype file for apj generation'''
     pf = open(os.path.join(outdir, "apj.prototype"), "w")
@@ -293,6 +306,7 @@ def write_hwdef_header(outfilename):
 
         write_mcu_config(f)
         write_USB_config(f)
+        write_I2C_config(f)
 
         write_peripheral_enable(f)
         write_prototype_file()
