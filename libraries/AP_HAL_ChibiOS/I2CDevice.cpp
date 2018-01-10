@@ -39,61 +39,85 @@ static uint8_t rx_dma_stream[] = {
 
 using namespace ChibiOS;
 
-DeviceBus I2CDevice::businfo[I2CDevice::num_buses];
+I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 
-I2CDevice::I2CDevice(uint8_t bus, uint8_t address) :
-    _retries(2),
-    _busnum(bus),
-    _address(address)
+// get a handle for DMA sharing DMA channels with other subsystems
+void I2CBus::dma_init(void)
 {
-    set_device_bus(bus);
+    dma_handle = new Shared_DMA(tx_dma_stream[busnum], rx_dma_stream[busnum],
+                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void),
+                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void));    
+}
+
+// setup I2C buses
+I2CDeviceManager::I2CDeviceManager(void)
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(I2CD); i++) {
+        businfo[i].busnum = i;
+        businfo[i].dma_init();
+        /*
+          setup default I2C config. As each device is opened we will
+          drop the speed to be the minimum speed requested
+         */
+        businfo[i].i2ccfg.op_mode = OPMODE_I2C;
+        businfo[i].i2ccfg.clock_speed = 400000;
+        businfo[i].i2ccfg.duty_cycle = FAST_DUTY_CYCLE_2;
+    }
+}
+
+I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
+    _retries(2),
+    _address(address),
+    _use_smbus(use_smbus),
+    _timeout_ms(timeout_ms),
+    bus(I2CDeviceManager::businfo[busnum])
+{
+    set_device_bus(busnum);
     set_device_address(address);
     asprintf(&pname, "I2C:%u:%02x",
-             (unsigned)bus, (unsigned)address);
-    if (businfo[_busnum].dma_handle == nullptr) {
-        businfo[_busnum].dma_handle = new Shared_DMA(tx_dma_stream[_busnum], rx_dma_stream[_busnum],
-                                                     FUNCTOR_BIND_MEMBER(&I2CDevice::dma_allocate, void),
-                                                     FUNCTOR_BIND_MEMBER(&I2CDevice::dma_deallocate, void));
+             (unsigned)busnum, (unsigned)address);
+    if (bus_clock < bus.i2ccfg.clock_speed) {
+        bus.i2ccfg.clock_speed = bus_clock;
+        if (bus_clock <= 100000) {
+            bus.i2ccfg.duty_cycle = STD_DUTY_CYCLE;
+        }
     }
 }
 
 I2CDevice::~I2CDevice()
 {
     printf("I2C device bus %u address 0x%02x closed\n", 
-           (unsigned)_busnum, (unsigned)_address);
+           (unsigned)bus.busnum, (unsigned)_address);
     free(pname);
 }
 
 /*
   allocate DMA channel
  */
-void I2CDevice::dma_allocate(void)
+void I2CBus::dma_allocate(void)
 {
-    i2cStart(I2CD[_busnum], &i2ccfg);
+    i2cStart(I2CD[busnum], &i2ccfg);
 }
 
 /*
   deallocate DMA channel
  */
-void I2CDevice::dma_deallocate(void)
+void I2CBus::dma_deallocate(void)
 {
-    i2cStop(I2CD[_busnum]);
+    i2cStop(I2CD[busnum]);
 }
 
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-    struct DeviceBus &binfo = businfo[_busnum];
+    bus.dma_handle->lock();
 
-    if (!init_done) {
-        i2ccfg.op_mode = OPMODE_I2C;
-        i2ccfg.clock_speed = 400000;
-        i2ccfg.duty_cycle = FAST_DUTY_CYCLE_2;
-        init_done = true;
+    if (_use_smbus) {
+        bus.i2ccfg.op_mode = OPMODE_SMBUS_HOST;
+    } else {
+        bus.i2ccfg.op_mode = OPMODE_I2C;
     }
-
-    binfo.dma_handle->lock();
-
+    
     if (_split_transfers) {
         /*
           splitting the transfer() into two pieces avoids a stop condition
@@ -102,25 +126,25 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         */
         if (send && send_len) {
             if (!_transfer(send, send_len, nullptr, 0)) {
-                binfo.dma_handle->unlock();
+                bus.dma_handle->unlock();
                 return false;
             }
         }
         if (recv && recv_len) {
             if (!_transfer(nullptr, 0, recv, recv_len)) {
-                binfo.dma_handle->unlock();
+                bus.dma_handle->unlock();
                 return false;
             }
         }
     } else {
         // combined transfer
         if (!_transfer(send, send_len, recv, recv_len)) {
-            binfo.dma_handle->unlock();
+            bus.dma_handle->unlock();
             return false;
         }
     }
 
-    binfo.dma_handle->unlock();
+    bus.dma_handle->unlock();
     return true;
 }
 
@@ -129,22 +153,21 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 {
     int ret;
     for(uint8_t i=0 ; i <= _retries; i++) {
-        i2cAcquireBus(I2CD[_busnum]);
+        i2cAcquireBus(I2CD[bus.busnum]);
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
-        uint32_t timeout_ms = 1+2*(((8*1000000UL/i2ccfg.clock_speed)*MAX(send_len, recv_len))/1000);
-        timeout_ms = MAX(timeout_ms, 4);
+        uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.i2ccfg.clock_speed)*MAX(send_len, recv_len))/1000);
+        timeout_ms = MAX(timeout_ms, _timeout_ms);
         if(send_len == 0) {
-            ret = i2cMasterReceiveTimeout(I2CD[_busnum], _address,recv, recv_len, MS2ST(timeout_ms));
+            ret = i2cMasterReceiveTimeout(I2CD[bus.busnum], _address,recv, recv_len, MS2ST(timeout_ms));
         } else {
-            ret = i2cMasterTransmitTimeout(I2CD[_busnum], _address, send, send_len,
+            ret = i2cMasterTransmitTimeout(I2CD[bus.busnum], _address, send, send_len,
                                            recv, recv_len, MS2ST(timeout_ms));
         }
-        i2cReleaseBus(I2CD[_busnum]);
+        i2cReleaseBus(I2CD[bus.busnum]);
         if (ret != MSG_OK){
-            _errors = i2cGetErrors(I2CD[_busnum]);
             //restart the bus
-            i2cStop(I2CD[_busnum]);
-            i2cStart(I2CD[_busnum], &i2ccfg);
+            i2cStop(I2CD[bus.busnum]);
+            i2cStart(I2CD[bus.busnum], &bus.i2ccfg);
         } else {
             return true;
         }
@@ -164,11 +187,7 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
 */
 AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
-    if (_busnum >= num_buses) {
-        return nullptr;
-    }
-    struct DeviceBus &binfo = businfo[_busnum];
-    return binfo.register_periodic_callback(period_usec, cb, this);
+    return bus.register_periodic_callback(period_usec, cb, this);
 }
     
 
@@ -177,21 +196,18 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
 */
 bool I2CDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
 {
-    if (_busnum >= num_buses) {
-        return false;
-    }
-
-    struct DeviceBus &binfo = businfo[_busnum];
-
-    return binfo.adjust_timer(h, period_usec);
+    return bus.adjust_timer(h, period_usec);
 }
 
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
-I2CDeviceManager::get_device(uint8_t bus, uint8_t address)
+I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
+                             uint32_t bus_clock,
+                             bool use_smbus,
+                             uint32_t timeout_ms)
 {
     if (bus >= ARRAY_SIZE(I2CD)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address));
+    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
     return dev;
 }

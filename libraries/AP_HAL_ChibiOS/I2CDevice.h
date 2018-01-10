@@ -30,6 +30,16 @@
 
 namespace ChibiOS {
 
+class I2CBus : public DeviceBus {
+public:
+    I2CConfig i2ccfg;
+    uint8_t busnum;
+    
+    void dma_allocate(void);
+    void dma_deallocate(void);    
+    void dma_init(void);
+};
+    
 class I2CDevice : public AP_HAL::I2CDevice {
 public:
     static I2CDevice *from(AP_HAL::I2CDevice *dev)
@@ -37,7 +47,7 @@ public:
         return static_cast<I2CDevice*>(dev);
     }
 
-    I2CDevice(uint8_t bus, uint8_t address);
+    I2CDevice(uint8_t bus, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms);
     ~I2CDevice();
 
     /* See AP_HAL::I2CDevice::set_address() */
@@ -65,7 +75,7 @@ public:
 
     AP_HAL::Semaphore* get_semaphore() override {
         // if asking for invalid bus number use bus 0 semaphore
-        return &businfo[_busnum<num_buses?_busnum:0].semaphore;
+        return &bus.semaphore;
     }
 
     void set_split_transfers(bool set) override {
@@ -73,35 +83,37 @@ public:
     }
     
 private:
-    static const uint8_t num_buses = 2;
-    static DeviceBus businfo[num_buses];
+    I2CBus &bus;
     bool _transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len);
 
-    void dma_allocate(void);
-    void dma_deallocate(void);
-    
     /* I2C interface #2 */
-    I2CConfig i2ccfg;
-    bool init_done = false;
     uint8_t _retries;
-    uint8_t _busnum;
     uint8_t _address;
     char *pname;
     bool _split_transfers;
-    i2cflags_t _errors;
+    bool _use_smbus;
+    uint32_t _timeout_ms;
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
 public:
     friend class I2CDevice;
 
+    static I2CBus businfo[];
+    
+    // constructor
+    I2CDeviceManager();
+    
     static I2CDeviceManager *from(AP_HAL::I2CDeviceManager *i2c_mgr)
     {
         return static_cast<I2CDeviceManager*>(i2c_mgr);
     }
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) override;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
+                                                 uint32_t bus_clock=400000,
+                                                 bool use_smbus = false,
+                                                 uint32_t timeout_ms=4) override;
 };
 
 }
