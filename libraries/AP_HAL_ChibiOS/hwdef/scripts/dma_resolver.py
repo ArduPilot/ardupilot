@@ -132,8 +132,8 @@ def write_dma_header(f, peripheral_list, mcu_type):
                                                                            curr_dict[key][1],
                                                                            shared))
 
-	# now generate UARTDriver.cpp config lines
-	f.write("\n\n// generated UART configuration lines\n")
+	# now generate UARTDriver.cpp DMA config lines
+	f.write("\n\n// generated UART DMA configuration lines\n")
 	for u in range(1,9):
 	        key = None
 	        if 'USART%u_TX' % u in peripheral_list:
@@ -146,15 +146,16 @@ def write_dma_header(f, peripheral_list, mcu_type):
 	                key = 'UART%u' % u
 	        if key is None:
 	                continue
-	        f.write("#define %s_CONFIG { (BaseSequentialStream*) &SD%u, false, " % (key, u))
+	        f.write("#define STM32_%s_RX_DMA_CONFIG " % key)
 	        if key + "_RX" in curr_dict:
-	                f.write("true, STM32_UART_%s_RX_DMA_STREAM, STM32_%s_RX_DMA_CHN, " % (key, key))
+	                f.write("true, STM32_UART_%s_RX_DMA_STREAM, STM32_%s_RX_DMA_CHN\n" % (key, key))
 	        else:
-	                f.write("false, 0, 0, ")
+	                f.write("false, 0, 0\n")
+	        f.write("#define STM32_%s_TX_DMA_CONFIG " % key)
 	        if key + "_TX" in curr_dict:
-	                f.write("true, STM32_UART_%s_TX_DMA_STREAM, STM32_%s_TX_DMA_CHN}\n" % (key, key))
+	                f.write("true, STM32_UART_%s_TX_DMA_STREAM, STM32_%s_TX_DMA_CHN\n" % (key, key))
 	        else:
-	                f.write("false, 0, 0}\n")
+	                f.write("false, 0, 0\n")
 
 
 if __name__ == '__main__':

@@ -57,6 +57,9 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num)
 {
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         if (pin_num == _gpio_tab[i].pin_num) {
+            if (!_gpio_tab[i].enabled) {
+                return NULL;
+            }
             return &_gpio_tab[i];
         }
     }
