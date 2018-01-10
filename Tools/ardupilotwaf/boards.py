@@ -378,6 +378,21 @@ class fmuv3(chibios):
                     % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/%s/ldscript.ld' % env.BOARD).abspath(),
         ]
 
+class fmuv4(chibios):
+    name = 'fmuv4'
+    def configure_env(self, cfg, env):
+        super(fmuv4, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4',
+        )
+        env.BOARD = 'fmuv4'
+        env.LINKFLAGS += [
+                    '-L%s'\
+                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/').abspath(),
+                    '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=%s,--defsym=__process_stack_size__=0x400,--defsym=__main_stack_size__=0x400'\
+                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/%s/ldscript.ld' % env.BOARD).abspath(),
+        ]
+
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
