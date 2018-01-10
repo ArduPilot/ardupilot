@@ -21,8 +21,8 @@
 
 // PWM
 
-// 920 us
-#define PWM_PULSE_DEFAULT (920 * TICK_PER_US)
+// 0 us
+#define PWM_PULSE_DEFAULT (0 * TICK_PER_US)
 
 // 50 Hz
 #define PWM_FREQ_DEFAULT (20 * TICK_PER_MS)
@@ -223,6 +223,9 @@ pwm:
          // Calculate time to next event
          add CH_X_NEXT_TIME, CH_X_NEXT_TIME, register.temp
 
+         // Do not set pin if pulse time is 0
+         qbeq pwmend, register.temp, 0
+
          // Check if channel is enabled 
          qbbc pwmend, CH_X_ENABLE
             
@@ -339,7 +342,7 @@ rcin_ecap_end:
    mov register.ch_enable, 0x0
    sbco register.ch_enable, RAM, CH_ENABLE_RAM_OFFSET, 4
 
-   // Initialize PWM pulse (920us)
+   // Initialize PWM pulse (0us)
    mov register.temp, PWM_PULSE_DEFAULT
    sbco register.temp, RAM, CH_1_PULSE_TIME_RAM_OFFSET, 4 
    sbco register.temp, RAM, CH_2_PULSE_TIME_RAM_OFFSET, 4
