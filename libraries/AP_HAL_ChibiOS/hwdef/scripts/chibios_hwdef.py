@@ -30,6 +30,9 @@ allpins = []
 # list of configs by type
 bytype = {}
 
+# list of configs by label
+bylabel = {}
+
 mcu_type = None
 
 def get_alt_function(mcu, pin, function):
@@ -41,6 +44,10 @@ def get_alt_function(mcu, pin, function):
     except ImportError:
             print("Unable to find module for MCU %s" % mcu)
             sys.exit(1)
+
+    if function and function.endswith("_RTS") and (function.startswith('USART') or function.startswith('UART')):
+        # we do software RTS
+        return None
     
     af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'OTG', 'JT', 'TIM']
     for l in af_labels:
@@ -81,6 +88,12 @@ class generic_pin(object):
         def has_extra(self, v):
                 return v in self.extra
 
+        def is_RTS(self):
+            '''return true if this is a RTS pin'''
+            if self.label and self.label.endswith("_RTS") and (self.type.startswith('USART') or self.type.startswith('UART')):
+                return True
+            return False
+
         def get_MODER(self):
                 '''return one of ALTERNATE, OUTPUT, ANALOG, INPUT'''
                 if self.af is not None:
@@ -90,6 +103,8 @@ class generic_pin(object):
                 elif self.type.startswith('ADC'):
                         v = "ANALOG"
                 elif self.has_extra("CS"):
+                        v = "OUTPUT"
+                elif self.is_RTS():
                         v = "OUTPUT"
                 else:
                         v = "INPUT"
@@ -212,6 +227,7 @@ def process_line(line):
                 if not type in bytype:
                         bytype[type] = []
                 bytype[type].append(p)
+                bylabel[label] = p
                 af = get_alt_function(mcu_type, a[0], label)
                 if af is not None:
                         p.af = af
@@ -260,6 +276,32 @@ def write_I2C_config(f):
             devlist.append('&I2CD%u' % n)
         f.write('\n// List of I2C devices\n')
         f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
+
+def write_UART_config(f):
+        '''write UART config defines'''
+	f.write("\n\n// generated UART configuration lines\n")
+	for u in range(1,9):
+	        key = None
+	        if 'USART%u_TX' % u in bylabel:
+	                key = 'USART%u' % u
+	        if 'UART%u_TX' % u in bylabel:
+	                key = 'UART%u' % u
+	        if 'USART%u_RX' % u in bylabel:
+	                key = 'USART%u' % u
+	        if 'UART%u_RX' % u in bylabel:
+	                key = 'UART%u' % u
+                if key is None:
+                    continue
+                if key + "_RTS" in bylabel:
+                    # this UART supports RTS, define line for it
+                    p = bylabel[key + '_RTS']
+                    rts_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
+                else:
+                    rts_line = "0"
+	        if key is None:
+	                continue
+	        f.write("#define %s_CONFIG { (BaseSequentialStream*) &SD%u, false, " % (key, u))
+                f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s}\n" % (key, key, rts_line))
 
 def write_prototype_file():
     '''write the prototype file for apj generation'''
@@ -313,6 +355,8 @@ def write_hwdef_header(outfilename):
         write_prototype_file()
 
         dma_resolver.write_dma_header(f, periph_list, mcu_type)
+
+        write_UART_config(f)
 
         f.write('''
 /*
