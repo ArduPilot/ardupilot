@@ -915,6 +915,7 @@ float AC_PosControl::get_horizontal_error() const
 ///     should be called whenever the speed, acceleration or position kP is modified
 void AC_PosControl::calc_leash_length_xy()
 {
+    // todo: remove _flags.recalc_leash_xy or don't call this function after each variable change.
     if (_flags.recalc_leash_xy) {
         _leash = calc_leash_length(_speed_cms, _accel_cms, _p_pos_xy.kP());
         _flags.recalc_leash_xy = false;
