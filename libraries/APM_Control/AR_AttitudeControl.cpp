@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Param: _STR_RAT_P
     // @DisplayName: Steering control rate P gain
     // @Description: Steering control rate P gain.  Converts the turn rate error (in radians/sec) to a steering control output (in the range -1 to +1)
-    // @Range: 0.100 2.000
+    // @Range: 0.000 2.000
     // @Increment: 0.01
     // @User: Standard
 
@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Param: _STR_RAT_FF
     // @DisplayName: Steering control feed forward
     // @Description: Steering control feed forward
-    // @Range: 0 0.5
+    // @Range: 0.000 3.000
     // @Increment: 0.001
     // @User: Standard
 
@@ -95,7 +95,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Param: _SPEED_FF
     // @DisplayName: Speed control feed forward
     // @Description: Speed control feed forward
-    // @Range: 0 0.5
+    // @Range: 0.000 0.500
     // @Increment: 0.001
     // @User: Standard
 
@@ -111,7 +111,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Param: _ACCEL_MAX
     // @DisplayName: Speed control acceleration (and deceleration) maximum in m/s/s
     // @Description: Speed control acceleration (and deceleration) maximum in m/s/s.  0 to disable acceleration limiting
-    // @Range: 0 10
+    // @Range: 0.0 10.0
     // @Increment: 0.1
     // @Units: m/s/s
     // @User: Standard
@@ -127,7 +127,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Param: _STOP_SPEED
     // @DisplayName: Speed control stop speed
     // @Description: Speed control stop speed.  Motor outputs to zero once vehicle speed falls below this value
-    // @Range: 0 0.5
+    // @Range: 0.00 0.50
     // @Increment: 0.01
     // @Units: m/s
     // @User: Standard
