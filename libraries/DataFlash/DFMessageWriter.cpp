@@ -59,6 +59,7 @@ void DFMessageWriter_DFLogStart::process()
             _next_unit_to_send++;
         }
         stage = ls_blockwriter_stage_multipliers;
+        FALLTHROUGH;
 
     case ls_blockwriter_stage_multipliers:
         while (_next_multiplier_to_send < _dataflash_backend->num_multipliers()) {
@@ -68,6 +69,7 @@ void DFMessageWriter_DFLogStart::process()
             _next_multiplier_to_send++;
         }
         stage = ls_blockwriter_stage_units;
+        FALLTHROUGH;
 
     case ls_blockwriter_stage_format_units:
         while (_next_format_unit_to_send < _dataflash_backend->num_types()) {
@@ -77,6 +79,7 @@ void DFMessageWriter_DFLogStart::process()
             _next_format_unit_to_send++;
         }
         stage = ls_blockwriter_stage_parms;
+        FALLTHROUGH;
 
     case ls_blockwriter_stage_parms:
         while (ap) {
