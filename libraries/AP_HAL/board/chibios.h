@@ -87,6 +87,20 @@
 // enable FAT filesystem
 #define HAL_OS_FATFS_IO 1
 
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
+#define HAL_CHIBIOS_ARCH_MINDPXV2 1
+
+#define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+
+#define STORAGE_FLASH_PAGE		22
+#define HAL_STORAGE_SIZE        16384
+
+// enable RAMTROM parameter storage
+#define HAL_WITH_RAMTRON 1
+
+// enable FAT filesystem
+#define HAL_OS_FATFS_IO 1
+
 #endif // CONFIG_HAL_BOARD_SUBTYPE
 
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
