@@ -31,37 +31,7 @@ using namespace ChibiOS;
 #define HAVE_USB_SERIAL
 #endif
 
-const ChibiUARTDriver::SerialDef ChibiUARTDriver::_serial_tab[] = {
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
-    {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0},   //Serial 0, USB
-    UART4_CONFIG, // Serial 1, GPS
-    USART2_CONFIG, // Serial 2, telem1
-    USART3_CONFIG, // Serial 3, telem2
-    UART8_CONFIG, // Serial 4, GPS2
-    //UART7_CONFIG, // Serial 5, debug console
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4
-    {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0},
-    UART4_CONFIG,  // GPS
-    USART2_CONFIG, // telem1
-    USART3_CONFIG, // telem2
-    UART8_CONFIG,  // FrSky
-    USART1_CONFIG, // ESP8266
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-    USART1_CONFIG, // Serial 0, debug console
-    USART6_CONFIG, // Serial 1, GPS
-    USART2_CONFIG, // Serial 2, sonix
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
-    {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0},
-    UART4_CONFIG,  // GPS
-    USART2_CONFIG, // telem1
-    USART3_CONFIG, // telem2
-    UART8_CONFIG,  // FrSky
-    USART1_CONFIG, // SBUS
-#endif
-#if HAL_WITH_IO_MCU
-    USART6_CONFIG, // IO MCU
-#endif
-};
+const ChibiUARTDriver::SerialDef ChibiUARTDriver::_serial_tab[] = { HAL_UART_DEVICE_LIST };
 
 // event used to wake up waiting thread
 #define EVT_DATA EVENT_MASK(0)

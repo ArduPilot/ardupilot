@@ -22,17 +22,11 @@
 #include "ch.h"
 #include "hal.h"
 
-static I2CDriver* I2CD[] = { HAL_I2C_DEVICE_LIST };
-
-static uint8_t tx_dma_stream[] = {
-    STM32_I2C_I2C2_TX_DMA_STREAM,
-    STM32_I2C_I2C1_TX_DMA_STREAM
-};
-
-static uint8_t rx_dma_stream[] = {
-    STM32_I2C_I2C2_RX_DMA_STREAM,
-    STM32_I2C_I2C1_RX_DMA_STREAM
-};
+static const struct I2CInfo {
+    struct I2CDriver *i2c;
+    uint8_t dma_channel_rx;
+    uint8_t dma_channel_tx;
+} I2CD[] = { HAL_I2C_DEVICE_LIST };
 
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
@@ -42,7 +36,7 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 // get a handle for DMA sharing DMA channels with other subsystems
 void I2CBus::dma_init(void)
 {
-    dma_handle = new Shared_DMA(tx_dma_stream[busnum], rx_dma_stream[busnum],
+    dma_handle = new Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx, 
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void),
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void));    
 }
@@ -94,7 +88,7 @@ I2CDevice::~I2CDevice()
  */
 void I2CBus::dma_allocate(void)
 {
-    i2cStart(I2CD[busnum], &i2ccfg);
+    i2cStart(I2CD[busnum].i2c, &i2ccfg);
 }
 
 /*
@@ -102,7 +96,7 @@ void I2CBus::dma_allocate(void)
  */
 void I2CBus::dma_deallocate(void)
 {
-    i2cStop(I2CD[busnum]);
+    i2cStop(I2CD[busnum].i2c);
 }
 
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
@@ -156,21 +150,21 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 
     for(uint8_t i=0 ; i <= _retries; i++) {
         int ret;
-        i2cAcquireBus(I2CD[bus.busnum]);
+        i2cAcquireBus(I2CD[bus.busnum].i2c);
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
         uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.i2ccfg.clock_speed)*MAX(send_len, recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
         if(send_len == 0) {
-            ret = i2cMasterReceiveTimeout(I2CD[bus.busnum], _address, recv_buf, recv_len, MS2ST(timeout_ms));
+            ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv_buf, recv_len, MS2ST(timeout_ms));
         } else {
-            ret = i2cMasterTransmitTimeout(I2CD[bus.busnum], _address, send_buf, send_len,
+            ret = i2cMasterTransmitTimeout(I2CD[bus.busnum].i2c, _address, send_buf, send_len,
                                            recv_buf, recv_len, MS2ST(timeout_ms));
         }
-        i2cReleaseBus(I2CD[bus.busnum]);
+        i2cReleaseBus(I2CD[bus.busnum].i2c);
         if (ret != MSG_OK){
             //restart the bus
-            i2cStop(I2CD[bus.busnum]);
-            i2cStart(I2CD[bus.busnum], &bus.i2ccfg);
+            i2cStop(I2CD[bus.busnum].i2c);
+            i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
         } else {
             if (recv_buf != recv) {
                 memcpy(recv, recv_buf, recv_len);
