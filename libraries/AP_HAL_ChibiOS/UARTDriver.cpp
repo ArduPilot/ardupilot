@@ -50,6 +50,13 @@ const ChibiUARTDriver::SerialDef ChibiUARTDriver::_serial_tab[] = {
     USART1_CONFIG, // Serial 0, debug console
     USART6_CONFIG, // Serial 1, GPS
     USART2_CONFIG, // Serial 2, sonix
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
+    {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0},
+    UART4_CONFIG,  // GPS
+    USART2_CONFIG, // telem1
+    USART3_CONFIG, // telem2
+    UART8_CONFIG,  // FrSky
+    USART1_CONFIG, // SBUS
 #endif
 #if HAL_WITH_IO_MCU
     USART6_CONFIG, // IO MCU

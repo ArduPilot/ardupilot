@@ -44,6 +44,8 @@ static struct gpio_entry {
     {1,  true,  PAL_LINE(GPIOB, 3U)},  // blue
     {2,  true,  PAL_LINE(GPIOB, 11U)}, // red
     {3,  true,  PAL_LINE(GPIOC, 3U)},  // safety
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
+    {0,  true,  PAL_LINE(GPIOA, 8U)},  // run LED
 #endif
 };
 

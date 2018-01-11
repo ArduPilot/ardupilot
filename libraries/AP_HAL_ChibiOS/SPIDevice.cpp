@@ -88,6 +88,25 @@ extern const AP_HAL::HAL& hal;
 #define SPIDEV_ICM              6
 #define SPIDEV_RAMTROM          10
 
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
+#define SPI_BUS_SENSORS 2
+#define SPI_BUS_EXT     1
+#define SPI_BUS_RAMTRON 0
+
+#define SPIDEV_CS_GYRO             GPIOB, 2
+#define SPIDEV_CS_BARO             GPIOC, 15
+#define SPIDEV_CS_AM               GPIOD, 11
+#define SPIDEV_CS_MPU              GPIOE, 3
+#define SPIDEV_CS_RAMTRON          GPIOE, 12
+#define SPIDEV_CS_RADIO            GPIOE, 15
+
+#define SPIDEV_BARO             1
+#define SPIDEV_MPU              2
+#define SPIDEV_GYRO             3
+#define SPIDEV_AM               4
+#define SPIDEV_RADIO            5
+#define SPIDEV_RAMTROM          6
+
 #endif // CONFIG_HAL_BOARD_SUBTYPE
 
 // SPI mode numbers
@@ -101,7 +120,7 @@ extern const AP_HAL::HAL& hal;
 #define SPI3_CLOCK  STM32_PCLK1
 #define SPI4_CLOCK  STM32_PCLK2
 
-static struct SPIDriverInfo {    
+static const struct SPIDriverInfo {    
     SPIDriver *driver;
     uint8_t busid; // used for device IDs in parameters
     uint8_t dma_channel_rx;
@@ -109,7 +128,7 @@ static struct SPIDriverInfo {
 } spi_devices[] = {
     { &SPID1, 1, STM32_SPI_SPI1_RX_DMA_STREAM, STM32_SPI_SPI1_TX_DMA_STREAM },
     { &SPID2, 2, STM32_SPI_SPI2_RX_DMA_STREAM, STM32_SPI_SPI2_TX_DMA_STREAM },
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
     { &SPID4, 4, STM32_SPI_SPI4_RX_DMA_STREAM, STM32_SPI_SPI4_TX_DMA_STREAM },
 #endif
 };
@@ -144,6 +163,15 @@ SPIDesc SPIDeviceManager::device_table[] = {
     SPIDesc("hmc5843",        SPI_BUS_SENSORS,  SPIDEV_MAG,           SPIDEV_CS_MAG,        SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
     SPIDesc("ramtron",        SPI_BUS_RAMTRON,  SPIDEV_RAMTROM,       SPIDEV_CS_RAMTRON,    SPIDEV_MODE3, 8*MHZ, 8*MHZ ),
     SPIDesc("lis3mdl",        SPI_BUS_SENSORS,  SPIDEV_MAG,           SPIDEV_CS_MAG,        SPIDEV_MODE3, 500*KHZ, 500*KHZ),
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
+    SPIDesc("ms5611",         SPI_BUS_SENSORS,  SPIDEV_BARO,          SPIDEV_CS_BARO,       SPIDEV_MODE3,  2*MHZ, 2*MHZ),
+    SPIDesc("mpu6500",        SPI_BUS_SENSORS,  SPIDEV_MPU,           SPIDEV_CS_MPU,        SPIDEV_MODE3,500*KHZ, 2*MHZ),
+    SPIDesc("lsm9ds0_am",     SPI_BUS_SENSORS,  SPIDEV_AM,            SPIDEV_CS_AM,         SPIDEV_MODE3, 11*MHZ, 11*MHZ),
+    SPIDesc("lsm9ds0_g",      SPI_BUS_SENSORS,  SPIDEV_GYRO,          SPIDEV_CS_GYRO,       SPIDEV_MODE3, 11*MHZ, 11*MHZ),
+    SPIDesc("ramtron",        SPI_BUS_RAMTRON,  SPIDEV_RAMTROM,       SPIDEV_CS_RAMTRON,    SPIDEV_MODE3,  8*MHZ,  8*MHZ),
+    SPIDesc("ramtron0",        0,  SPIDEV_RAMTROM,       SPIDEV_CS_RAMTRON,    SPIDEV_MODE3,  8*MHZ,  8*MHZ),
+    SPIDesc("ramtron1",        1,  SPIDEV_RAMTROM,       SPIDEV_CS_RAMTRON,    SPIDEV_MODE3,  8*MHZ,  8*MHZ),
+    SPIDesc("ramtron2",        2,  SPIDEV_RAMTROM,       SPIDEV_CS_RAMTRON,    SPIDEV_MODE3,  8*MHZ,  8*MHZ),
 #endif
 };
 
