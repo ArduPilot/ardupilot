@@ -267,41 +267,82 @@ def write_I2C_config(f):
         '''write I2C config defines'''
         get_config('I2C_ORDER')
         i2c_list = config['I2C_ORDER']
+        f.write('// I2C configuration\n')
         devlist = []
         for dev in i2c_list:
             if not dev.startswith('I2C') or dev[3] not in "1234":
                 print("Bad I2C_ORDER element %s" % dev)
                 sys.exit(1)
             n = int(dev[3:])
-            devlist.append('&I2CD%u' % n)
-        f.write('\n// List of I2C devices\n')
+            devlist.append('HAL_I2C%u_CONFIG' % n)
+            f.write('#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_TX_DMA_STREAM, STM32_I2C_I2C%u_RX_DMA_STREAM }\n' % (n, n, n, n))
         f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
+
+def write_SPI_config(f):
+        '''write SPI config defines'''
+        spi_list = []
+        for t in bytype.keys():
+            if t.startswith('SPI'):
+                spi_list.append(t)
+        spi_list = sorted(spi_list)
+        devlist = []
+        for dev in spi_list:
+            n = int(dev[3:])
+            devlist.append('HAL_SPI%u_CONFIG' % n)
+            f.write('#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_TX_DMA_STREAM, STM32_SPI_SPI%u_RX_DMA_STREAM }\n' % (n, n, n, n, n))
+        f.write('#define HAL_SPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
 def write_UART_config(f):
         '''write UART config defines'''
-	f.write("\n\n// generated UART configuration lines\n")
-	for u in range(1,9):
-	        key = None
-	        if 'USART%u_TX' % u in bylabel:
-	                key = 'USART%u' % u
-	        if 'UART%u_TX' % u in bylabel:
-	                key = 'UART%u' % u
-	        if 'USART%u_RX' % u in bylabel:
-	                key = 'USART%u' % u
-	        if 'UART%u_RX' % u in bylabel:
-	                key = 'UART%u' % u
-                if key is None:
-                    continue
-                if key + "_RTS" in bylabel:
-                    # this UART supports RTS, define line for it
-                    p = bylabel[key + '_RTS']
-                    rts_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
-                else:
-                    rts_line = "0"
-	        if key is None:
-	                continue
-	        f.write("#define %s_CONFIG { (BaseSequentialStream*) &SD%u, false, " % (key, u))
-                f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s}\n" % (key, key, rts_line))
+        get_config('UART_ORDER')
+        uart_list = config['UART_ORDER']
+        f.write('\n// UART configuration\n')
+
+        if 'IOMCU_UART' in config:
+            f.write('#define HAL_WITH_IO_MCU 1\n')
+            f.write('#define HAL_UART_IOMCU_IDX %u\n' % len(uart_list))
+            uart_list.append(config['IOMCU_UART'][0])
+        else:
+            f.write('#define HAL_WITH_IO_MCU 0\n')
+
+        devlist = []
+        for dev in uart_list:
+            if dev.startswith('UART'):
+                n = int(dev[4:])
+            elif dev.startswith('USART'):
+                n = int(dev[5:])
+            elif dev.startswith('OTG'):
+                n = int(dev[3:])
+            else:
+                print("Invalid element %s in UART_ORDER" % dev)
+                sys.exit(1)
+            devlist.append('HAL_%s_CONFIG' % dev)
+            if dev + "_RTS" in bylabel:
+                p = bylabel[dev + '_RTS']
+                rts_line = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
+            else:
+                rts_line = "0"
+            if dev.startswith('OTG'):
+                f.write('#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0}\n' % dev)
+            else:
+                f.write("#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, false, " % (dev, n))
+                f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s}\n" % (dev, dev, rts_line))
+        f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
+
+def write_I2C_config(f):
+        '''write I2C config defines'''
+        get_config('I2C_ORDER')
+        i2c_list = config['I2C_ORDER']
+        f.write('// I2C configuration\n')
+        devlist = []
+        for dev in i2c_list:
+            if not dev.startswith('I2C') or dev[3] not in "1234":
+                print("Bad I2C_ORDER element %s" % dev)
+                sys.exit(1)
+            n = int(dev[3:])
+            devlist.append('HAL_I2C%u_CONFIG' % n)
+            f.write('#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_TX_DMA_STREAM, STM32_I2C_I2C%u_RX_DMA_STREAM }\n' % (n, n, n, n))
+        f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
 def write_prototype_file():
     '''write the prototype file for apj generation'''
@@ -350,6 +391,7 @@ def write_hwdef_header(outfilename):
         write_mcu_config(f)
         write_USB_config(f)
         write_I2C_config(f)
+        write_SPI_config(f)
 
         write_peripheral_enable(f)
         write_prototype_file()
@@ -448,7 +490,7 @@ for line in f.readlines():
 
 outdir = args.outdir
 if outdir is None:
-        outdir = os.path.dirname(hwdef_file)
+        outdir = '.'
 
 if not "MCU" in config:
         print("Missing MCU type in config")
