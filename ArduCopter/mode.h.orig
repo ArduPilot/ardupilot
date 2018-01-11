@@ -1006,12 +1006,30 @@ public:
     bool init(bool ignore_checks) override;
     void run() override;
 
+<<<<<<< HEAD
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return true; }
     bool landing_gear_should_be_deployed() const override { return true; };
-
+=======
+    bool requires_GPS() const override
+    {
+        return false;
+    }
+    bool has_manual_throttle() const override
+    {
+        return false;
+    }
+    bool allows_arming(bool from_gcs) const override
+    {
+        return false;
+    };
+    bool is_autopilot() const override
+    {
+        return true;
+    }
+>>>>>>> Copter: Mode_zigzag ran astyle on all changed files
 
     float get_land_descent_speed();
     bool landing_with_GPS();
@@ -1533,6 +1551,8 @@ protected:
 private:
 
 };
+<<<<<<< HEAD
+=======
 
 
 class ModeZigzag : public Mode {        //a new mode for zigzag
@@ -1583,4 +1603,7 @@ private:
     void zigzag_calculate_next_dest(Vector3f& next_dest, uint8_t next_A_or_B) const;
     void zigzag_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
     bool zigzag_set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+
+
 };
+>>>>>>> Copter: Update how zigzag receives signals
