@@ -187,6 +187,9 @@ public:
     ///     should be called whenever the speed, acceleration or position kP is modified
     void calc_leash_length_xy();
 
+    /// set the horizontal leash length
+    void set_leash_length_xy(float leash) { _leash = leash; _flags.recalc_leash_xy = false; }
+
     /// get_pos_target - get target as position vector (from home in cm)
     const Vector3f& get_pos_target() const { return _pos_target; }
 
