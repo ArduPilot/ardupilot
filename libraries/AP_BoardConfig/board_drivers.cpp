@@ -94,6 +94,7 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_AEROFC:
     case PX4_BOARD_PIXHAWK_PRO:
     case PX4_BOARD_PCNC1:
+    case PX4_BOARD_MINDPXV2:
         break;
     default:
         sensor_config_error("Unknown board type");
@@ -213,6 +214,10 @@ void AP_BoardConfig::board_autodetect(void)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXRACER);
     hal.console->printf("Detected Pixracer\n");
+#elif defined(HAL_CHIBIOS_ARCH_MINDPXV2)
+    // only one choice
+    state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
+    hal.console->printf("Detected MindPX-V2\n");
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
