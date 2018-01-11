@@ -143,6 +143,7 @@ SPIDesc SPIDeviceManager::device_table[] = {
     SPIDesc("icm20608",       SPI_BUS_SENSORS,  SPIDEV_ICM,           SPIDEV_CS_ICM,        SPIDEV_MODE3, 1*MHZ, 8*MHZ ),
     SPIDesc("hmc5843",        SPI_BUS_SENSORS,  SPIDEV_MAG,           SPIDEV_CS_MAG,        SPIDEV_MODE3, 11*MHZ, 11*MHZ ),
     SPIDesc("ramtron",        SPI_BUS_RAMTRON,  SPIDEV_RAMTROM,       SPIDEV_CS_RAMTRON,    SPIDEV_MODE3, 8*MHZ, 8*MHZ ),
+    SPIDesc("lis3mdl",        SPI_BUS_SENSORS,  SPIDEV_MAG,           SPIDEV_CS_MAG,        SPIDEV_MODE3, 500*KHZ, 500*KHZ),
 #endif
 };
 
