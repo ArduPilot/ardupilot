@@ -39,11 +39,11 @@ public:
     // attributes of the mode
     //
 
-    // return if in non-manual mode : AUTO, GUIDED, RTL
+    // return if in non-manual mode : Auto, Guided, RTL, SmartRTL
     virtual bool is_autopilot_mode() const { return false; }
 
-    // returns true if the throttle is controlled automatically
-    virtual bool auto_throttle() { return is_autopilot_mode(); }
+    // returns true if vehicle can be armed or disarmed from the transmitter in this mode
+    virtual bool allows_arming_from_transmitter() { return !is_autopilot_mode(); }
 
     //
     // attributes for mavlink system status reporting
