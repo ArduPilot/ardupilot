@@ -125,13 +125,7 @@ static const struct SPIDriverInfo {
     uint8_t busid; // used for device IDs in parameters
     uint8_t dma_channel_rx;
     uint8_t dma_channel_tx;
-} spi_devices[] = {
-    { &SPID1, 1, STM32_SPI_SPI1_RX_DMA_STREAM, STM32_SPI_SPI1_TX_DMA_STREAM },
-    { &SPID2, 2, STM32_SPI_SPI2_RX_DMA_STREAM, STM32_SPI_SPI2_TX_DMA_STREAM },
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
-    { &SPID4, 4, STM32_SPI_SPI4_RX_DMA_STREAM, STM32_SPI_SPI4_TX_DMA_STREAM },
-#endif
-};
+} spi_devices[] = { HAL_SPI_DEVICE_LIST };
 
 #define MHZ (1000U*1000U)
 #define KHZ (1000U)

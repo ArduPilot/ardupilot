@@ -50,7 +50,7 @@ static FATFS SDC_FS; // FATFS object
 
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
-ChibiOS::ChibiUARTDriver uart_io(5);
+ChibiOS::ChibiUARTDriver uart_io(HAL_UART_IOMCU_IDX);
 AP_IOMCU iomcu(uart_io);
 #endif
 
