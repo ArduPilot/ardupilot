@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef.h>
+
 #define HAL_BOARD_NAME "ChibiOS"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_150
 
@@ -60,9 +62,6 @@
 
 #define STORAGE_FLASH_PAGE		22
 #define HAL_STORAGE_SIZE        16384
-
-// enable access to IO microcontroller
-#define HAL_WITH_IO_MCU         1
 
 // enable RAMTROM parameter storage
 #define HAL_WITH_RAMTRON 1
