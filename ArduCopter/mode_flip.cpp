@@ -38,31 +38,35 @@ int8_t    flip_roll_dir;            // roll direction (-1 = roll left, 1 = roll 
 int8_t    flip_pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
 
 // flip_init - initialise flip controller
-bool Copter::ModeFlip::ok_to_enter() const
+bool Copter::ModeFlip::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
     // only allow flip from ACRO, Stabilize, AltHold or Drift flight modes
     if (copter.control_mode != ACRO &&
         copter.control_mode != STABILIZE &&
         copter.control_mode != ALT_HOLD &&
         copter.control_mode != FLOWHOLD) {
+        snprintf(failure_reason, failure_reason_len, "Must enter from Acro, Stabilize, FlowHold or Alt Hold");
         return false;
     }
 
     // if in acro or stabilize ensure throttle is above zero
     if (ap.throttle_zero && (copter.control_mode == ACRO || copter.control_mode == STABILIZE)) {
+        snprintf(failure_reason, failure_reason_len, "Throttle too low");
         return false;
     }
 
     // ensure roll input is less than 40deg
     if (abs(channel_roll->get_control_in()) >= 4000) {
+        snprintf(failure_reason, failure_reason_len, "Not level");
         return false;
     }
 
     // only allow flip when flying
     if (!motors->armed() || ap.land_complete) {
+        snprintf(failure_reason, failure_reason_len, "Not armed");
         return false;
     }
-    return Copter::Mode::ok_to_enter();
+    return Copter::Mode::ok_to_enter(failure_reason, failure_reason_len);
 }
 
 void Copter::ModeFlip::enter()

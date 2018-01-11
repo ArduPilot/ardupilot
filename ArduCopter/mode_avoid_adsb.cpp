@@ -10,10 +10,10 @@
  */
 
 // ok_to-enter - returns true if it is OK to enter this mode
-bool Copter::ModeAvoidADSB::ok_to_enter() const
+bool Copter::ModeAvoidADSB::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
     // re-use guided mode
-    return Copter::ModeGuided::ok_to_enter();
+    return Copter::ModeGuided::ok_to_enter(failure_reason, failure_reason_len);
 }
 
 // initialise avoid_adsb controller

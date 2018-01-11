@@ -8,14 +8,15 @@
  * Init and run calls for acro flight mode
  */
 
-bool Copter::ModeAcro::ok_to_enter() const
+bool Copter::ModeAcro::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
    // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
    if (motors->armed() && ap.land_complete && !copter.flightmode->has_manual_throttle() &&
            (get_pilot_desired_throttle(channel_throttle->get_control_in(), copter.g2.acro_thr_mid) > get_non_takeoff_throttle())) {
+       snprintf(failure_reason, failure_reason_len, "Throttle too high");
        return false;
    }
-   return Copter::Mode::ok_to_enter();
+   return Copter::Mode::ok_to_enter(failure_reason, failure_reason_len);
 }
 
 void Copter::ModeAcro::enter()

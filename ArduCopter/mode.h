@@ -75,7 +75,7 @@ public:
 
 protected:
 
-    virtual bool ok_to_enter() const;
+    virtual bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const;
     virtual void enter() = 0;
     virtual void run() = 0;
 
@@ -200,7 +200,7 @@ protected:
 
 private:
 
-    bool ok_to_enter_gps_checks() const;
+    bool ok_to_enter_gps_checks(char *failure_reason, uint8_t failure_reason_len) const;
 };
 
 
@@ -212,7 +212,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *reason, uint8_t reason_len) const override;
     void enter() override;
     virtual void run() override;
 
@@ -284,7 +284,7 @@ public:
         mission(_mission),
         Mode() {}
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *reason, uint8_t reason_len) const override;
     void enter() override;
     void run() override;
 
@@ -339,7 +339,7 @@ protected:
 
 private:
 
-    bool ok_to_enter_check_takeoff_cmd() const;
+    bool ok_to_enter_check_takeoff_cmd(char *failure_reason, uint8_t failure_reason_len) const;
 
     bool verify_command(const AP_Mission::Mission_Command& cmd);
 
@@ -454,7 +454,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void enter() override;
     void run() override;
 
@@ -694,7 +694,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void enter() override;
     void run() override;
 
@@ -727,7 +727,7 @@ public:
     // need a constructor for parameters
     ModeFlowHold(void);
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void enter() override;
     void run(void) override;
 
@@ -1070,7 +1070,7 @@ public:
     // inherit constructor
     using Copter::ModeRTL::Mode;
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void enter() override;
     void run() override;
 
@@ -1135,7 +1135,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void enter() override;
     virtual void run() override;
 
@@ -1177,7 +1177,7 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void enter() override;
     void run() override;
 
@@ -1229,7 +1229,7 @@ public:
     // inherit constructor
     using Copter::ModeGuided::Mode;
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void enter() override;
     void run() override;
 
@@ -1256,7 +1256,7 @@ public:
     // inherit constructor
     using Copter::ModeGuided::Mode;
 
-    bool ok_to_enter() const override;
+    bool ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const override;
     void run() override;
 
     bool requires_GPS() const override { return true; }

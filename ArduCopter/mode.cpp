@@ -189,8 +189,15 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return false;
     }
 
-    if (!new_flightmode->ok_to_enter()) {
+    char failure_reason[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = {};
+    if (!new_flightmode->ok_to_enter(failure_reason, sizeof(failure_reason))) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
+        if (strlen(failure_reason)) {
+            gcs().send_text(MAV_SEVERITY_WARNING,
+                            "%s: %s",
+                            new_flightmode->name(),
+                            failure_reason);
+        }
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
         return false;
     }
@@ -587,7 +594,7 @@ uint16_t Copter::Mode::get_pilot_speed_dn()
     return copter.get_pilot_speed_dn();
 }
 
-bool Copter::Mode::ok_to_enter_gps_checks() const
+bool Copter::Mode::ok_to_enter_gps_checks(char *failure_reason, uint8_t failure_reason_len) const
 {
     if (!requires_GPS()) {
         // this mode doesn't require position information
@@ -603,10 +610,11 @@ bool Copter::Mode::ok_to_enter_gps_checks() const
     if (copter.position_ok()) {
         return true;
     }
+    snprintf(failure_reason, failure_reason_len, "Position required");
     return false;
 }
 
-bool Copter::Mode::ok_to_enter() const
+bool Copter::Mode::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
@@ -614,11 +622,12 @@ bool Copter::Mode::ok_to_enter() const
     if (motors->armed() &&
         !has_manual_throttle() &&
         !motors->rotor_runup_complete()){
+        snprintf(failure_reason, failure_reason_len, "Rotor runup not complete");
         return false;
     }
 #endif
 
-    if (!ok_to_enter_gps_checks()) {
+    if (!ok_to_enter_gps_checks(failure_reason, failure_reason_len)) {
         return false;
     }
 

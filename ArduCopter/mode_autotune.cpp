@@ -162,25 +162,30 @@ void Copter::ModeAutoTune::stop()
 }
 
 // start - Initialize autotune flight mode
-bool Copter::ModeAutoTune::ok_to_enter() const
+bool Copter::ModeAutoTune::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
-    // only allow flip from Stabilize, AltHold,  PosHold or Loiter modes
-    if (copter.control_mode != STABILIZE && copter.control_mode != ALT_HOLD &&
-        copter.control_mode != LOITER && copter.control_mode != POSHOLD) {
+    // only allow autotune from Stabilize, AltHold,  PosHold or Loiter modes
+    if (copter.control_mode != STABILIZE &&
+        copter.control_mode != ALT_HOLD &&
+        copter.control_mode != LOITER &&
+        copter.control_mode != POSHOLD) {
+        snprintf(failure_reason, failure_reason_len, "Must enter from stabilize, alt_hold, loiter or poshold");
         return false;
     }
 
     // ensure throttle is above zero
     if (ap.throttle_zero) {
+        snprintf(failure_reason, failure_reason_len, "Throttle too low");
         return false;
     }
 
     // ensure we are flying
     if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        snprintf(failure_reason, failure_reason_len, "Must be flying");
         return false;
     }
 
-    return Copter::Mode::ok_to_enter();
+    return Copter::Mode::ok_to_enter(failure_reason, failure_reason_len);
 }
 
 const char *Copter::ModeAutoTune::level_issue_string() const

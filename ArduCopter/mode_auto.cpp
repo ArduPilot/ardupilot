@@ -19,7 +19,7 @@
  *  Code in this file implements the navigation commands
  */
 
-bool Copter::ModeAuto::ok_to_enter_check_takeoff_cmd() const
+bool Copter::ModeAuto::ok_to_enter_check_takeoff_cmd(char *failure_reason, uint8_t failure_reason_len) const
 {
     if (!ap.land_complete) {
         // we're already flying, so we don't need a takeoff_cmd
@@ -27,14 +27,14 @@ bool Copter::ModeAuto::ok_to_enter_check_takeoff_cmd() const
     }
 
     if (!mission.starts_with_takeoff_cmd()) {
-            // gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
+        snprintf(failure_reason, failure_reason_len, "Missing Takeoff Cmd");
         return false;
     }
     return true;
 }
 
 // auto_init - initialise auto controller
-bool Copter::ModeAuto::ok_to_enter() const
+bool Copter::ModeAuto::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
     // allow changing into auto mode if disarmed, regardless of
     // the mission having a takeoff.  Arming is not permitted in
@@ -44,13 +44,14 @@ bool Copter::ModeAuto::ok_to_enter() const
             // can't enter auto without at least one non-home-position
             // command.  Note our home position counts towards
             // num_commands()!
+            snprintf(failure_reason, failure_reason_len, "Too few mission items");
             return false;
         }
-        if (!ok_to_enter_check_takeoff_cmd()) {
+        if (!ok_to_enter_check_takeoff_cmd(failure_reason, failure_reason_len)) {
             return false;
         }
     }
-    return Copter::Mode::ok_to_enter();
+    return Copter::Mode::ok_to_enter(failure_reason, failure_reason_len);
 }
 
 void Copter::ModeAuto::enter()

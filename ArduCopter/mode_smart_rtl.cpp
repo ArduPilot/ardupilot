@@ -9,12 +9,13 @@
  * Once the copter is close to home, it will run a standard land controller.
  */
 
-bool Copter::ModeSmartRTL::ok_to_enter() const
+bool Copter::ModeSmartRTL::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
     if (!g2.smart_rtl.is_active()) {
+        snprintf(failure_reason, failure_reason_len, "SmartRTL inactive");
         return false;
     }
-    return Copter::Mode::ok_to_enter();
+    return Copter::Mode::ok_to_enter(failure_reason, failure_reason_len);
 }
 
 void Copter::ModeSmartRTL::enter()

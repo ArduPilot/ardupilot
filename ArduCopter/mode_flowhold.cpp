@@ -75,16 +75,18 @@ Copter::ModeFlowHold::ModeFlowHold(void) : Mode()
 #define CONTROL_FLOWHOLD_EARTH_FRAME 0
 
 // flowhold_init - initialise flowhold controller
-bool Copter::ModeFlowHold::ok_to_enter() const
+bool Copter::ModeFlowHold::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter Flow Hold if the Rotor Runup is not complete
     if (!motors->rotor_runup_complete()){
+        snprintf(failure_reason, failure_reason_len, "Rotor runup not complete");
         return false;
     }
 #endif
 
     if (!copter.optflow.enabled() || !copter.optflow.healthy()) {
+        snprintf(failure_reason, failure_reason_len, "Optical flow not healthy");
         return false;
     }
 

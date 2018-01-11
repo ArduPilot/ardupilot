@@ -3,19 +3,21 @@
 #if MODE_THROW_ENABLED == ENABLED
 
 // throw_init - initialise throw controller
-bool Copter::ModeThrow::ok_to_enter() const
+bool Copter::ModeThrow::ok_to_enter(char *failure_reason, uint8_t failure_reason_len) const
 {
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to use throw to start
+    snprintf(failure_reason, failure_reason_len, "Not available for helicopters");
     return false;
 #endif
 
     // do not enter the mode when already armed or when flying
     if (motors->armed()) {
+        snprintf(failure_reason, failure_reason_len, "Must be disarmed");
         return false;
     }
 
-    return Copter::Mode::ok_to_enter();
+    return Copter::Mode::ok_to_enter(failure_reason, failure_reason_len);
 }
 
 void Copter::ModeThrow::enter()
