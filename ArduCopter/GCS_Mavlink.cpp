@@ -109,10 +109,18 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
 {
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
+    int16_t battery_voltage = -1;
 
     if (battery.has_current() && battery.healthy()) {
-        battery_remaining = battery.capacity_remaining_pct();
-        battery_current = battery.current_amps() * 100;
+        if (battery.num_instances() < 2) {
+            battery_remaining = battery.capacity_remaining_pct();
+            battery_current = battery.current_amps() * 100;
+            battery_voltage = battery.voltage() * 1000;
+        } else {
+            battery_remaining = (battery.capacity_remaining_pct(0) > battery.capacity_remaining_pct(1)) ? battery.capacity_remaining_pct(0) : battery.capacity_remaining_pct(1);
+            battery_current = (battery.current_amps(0) + battery.current_amps(1)) * 100;
+            battery_voltage = ((battery.voltage(0) > battery.voltage(1)) ? battery.voltage(0) : battery.voltage(1)) * 1000;
+        }
     }
 
     update_sensor_status_flags();
@@ -123,7 +131,7 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
         control_sensors_enabled,
         control_sensors_health,
         (uint16_t)(scheduler.load_average() * 1000),
-        battery.voltage() * 1000, // mV
+        battery_voltage,        // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
         0, // comm drops %,
