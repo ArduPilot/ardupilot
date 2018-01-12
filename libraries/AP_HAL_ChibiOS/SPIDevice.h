@@ -37,10 +37,10 @@ public:
 
 struct SPIDesc {
     SPIDesc(const char *_name, uint8_t _bus,
-            uint8_t _device, ioportid_t _port, uint8_t _pin,
+            uint8_t _device, ioline_t _pal_line,
             uint16_t _mode, uint32_t _lowspeed, uint32_t _highspeed)
         : name(_name), bus(_bus), device(_device),
-          port(_port), pin(_pin), mode(_mode),
+          pal_line(_pal_line), mode(_mode),
           lowspeed(_lowspeed), highspeed(_highspeed)
     {
     }
@@ -48,8 +48,7 @@ struct SPIDesc {
     const char *name;
     uint8_t bus;
     uint8_t device;
-    ioportid_t port;
-    uint8_t pin;
+    ioline_t pal_line;
     uint16_t mode;
     uint32_t lowspeed;
     uint32_t highspeed;
