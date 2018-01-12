@@ -54,19 +54,47 @@
  * HAL driver system settings.
  */
 #define STM32_NO_INIT                       FALSE
+
+#ifndef STM32_HSI_ENABLED
 #define STM32_HSI_ENABLED                   TRUE
+#endif
+
+#ifndef STM32_LSI_ENABLED
 #define STM32_LSI_ENABLED                   TRUE
+#endif
+
+#ifndef STM32_HSE_ENABLED
 #define STM32_HSE_ENABLED                   TRUE
+#endif
+
+#ifndef STM32_LSE_ENABLED
 #define STM32_LSE_ENABLED                   FALSE
+#endif
+
+#ifndef STM32_CLOCK48_REQUIRED
 #define STM32_CLOCK48_REQUIRED              TRUE
+#endif
+
+#ifndef STM32_SW
 #define STM32_SW                            STM32_SW_PLL
+#endif
+
+#ifndef STM32_PLLSRC
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE
+#endif
 #ifndef STM32_PLLM_VALUE
 #define STM32_PLLM_VALUE                    24
 #endif
+#ifndef STM32_PLLN_VALUE
 #define STM32_PLLN_VALUE                    336
+#endif
+#ifndef STM32_PLLP_VALUE
 #define STM32_PLLP_VALUE                    2
+#endif
+#ifndef STM32_PLLQ_VALUE
 #define STM32_PLLQ_VALUE                    7
+#endif
+
 #define STM32_HPRE                          STM32_HPRE_DIV1
 #define STM32_PPRE1                         STM32_PPRE1_DIV4
 #define STM32_PPRE2                         STM32_PPRE2_DIV2
@@ -187,13 +215,6 @@
 /*
  * ICU driver system settings.
  */
-#define STM32_ICU_USE_TIM1                  FALSE
-#define STM32_ICU_USE_TIM2                  FALSE
-#define STM32_ICU_USE_TIM3                  FALSE
-#define STM32_ICU_USE_TIM4                  TRUE
-#define STM32_ICU_USE_TIM5                  FALSE
-#define STM32_ICU_USE_TIM8                  FALSE
-#define STM32_ICU_USE_TIM9                  FALSE
 #define STM32_ICU_TIM1_IRQ_PRIORITY         7
 #define STM32_ICU_TIM2_IRQ_PRIORITY         7
 #define STM32_ICU_TIM3_IRQ_PRIORITY         7
@@ -217,13 +238,6 @@
  * PWM driver system settings.
  */
 #define STM32_PWM_USE_ADVANCED              FALSE
-#define STM32_PWM_USE_TIM1                  TRUE
-#define STM32_PWM_USE_TIM2                  FALSE
-#define STM32_PWM_USE_TIM3                  FALSE
-#define STM32_PWM_USE_TIM4                  FALSE
-#define STM32_PWM_USE_TIM5                  FALSE
-#define STM32_PWM_USE_TIM8                  FALSE
-#define STM32_PWM_USE_TIM9                  FALSE
 #define STM32_PWM_TIM1_IRQ_PRIORITY         7
 #define STM32_PWM_TIM2_IRQ_PRIORITY         7
 #define STM32_PWM_TIM3_IRQ_PRIORITY         7
@@ -293,8 +307,6 @@
 /*
  * USB driver system settings.
  */
-#define STM32_USB_USE_OTG1                  TRUE
-#define STM32_USB_USE_OTG2                  FALSE
 #define STM32_USB_OTG1_IRQ_PRIORITY         14
 #define STM32_USB_OTG2_IRQ_PRIORITY         14
 #define STM32_USB_OTG1_RX_FIFO_SIZE         512
