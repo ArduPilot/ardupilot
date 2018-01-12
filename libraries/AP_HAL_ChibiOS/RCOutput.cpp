@@ -81,12 +81,20 @@ void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
                 grp_ch_mask |= (1U<<pwm_group_list[i].chan[j]);
             }
         }
-        if ((grp_ch_mask & chmask) == grp_ch_mask) {
+        if ((grp_ch_mask & chmask) != 0) {
+            /*
+              we enable the new frequency on all groups that have one
+              of the requested channels. This means we may enable high
+              speed on some channels that aren't requested, but that
+              is needed in order to fly a vehicle such a a hex
+              multicopter properly
+             */
             update_mask |= grp_ch_mask;
             pwmChangePeriod(pwm_group_list[i].pwm_drv, 
                             pwm_group_list[i].pwm_cfg.frequency/freq_hz);
         }
     }
+    fast_channel_mask |= update_mask;
     if (chmask != update_mask) {
         hal.console->printf("RCOutput: Failed to set PWM frequency req %x set %x\n", (unsigned)chmask, (unsigned)update_mask);
     }
@@ -195,7 +203,10 @@ void ChibiRCOutput::push_local(void)
             uint8_t chan = pwm_group_list[i].chan[j];
             if (outmask & (1UL<<chan)) {
                 uint32_t period_us = period[chan];
-                if(_output_mode == MODE_PWM_BRUSHED) {
+                if(_output_mode == MODE_PWM_BRUSHED && (fast_channel_mask & (1UL<<chan))) {
+                    // note that we only use brushed signals on fast
+                    // channels. This allows for ordinary PWM on
+                    // servos attached to a brushed vehicle
                     if (period_us <= _esc_pwm_min) {
                         period_us = 0;
                     } else if (period_us >= _esc_pwm_max) {
