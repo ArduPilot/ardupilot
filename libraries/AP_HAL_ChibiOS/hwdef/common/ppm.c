@@ -16,6 +16,8 @@
 
 #include "ppm.h"
 
+#if HAL_USE_ICU
+
 static ICUConfig icucfg;    //Input Capture Unit Config
 static uint16_t ppm_buffer[10] = {0};
 static bool updated[10] = {0};
@@ -43,9 +45,9 @@ bool ppm_init(uint32_t freq, bool active_high)
     icucfg.overflow_cb = NULL;
     icucfg.dier = 0;
 
-    icuStart(&PPM_ICU_TIMER, &icucfg);
-    icuStartCapture(&PPM_ICU_TIMER);
-    icuEnableNotifications(&PPM_ICU_TIMER);
+    icuStart(&HAL_ICU_TIMER, &icucfg);
+    icuStartCapture(&HAL_ICU_TIMER);
+    icuEnableNotifications(&HAL_ICU_TIMER);
     return true;
 }
 
@@ -99,3 +101,4 @@ static void ppm_measurement_cb(ICUDriver *icup)
         buf_ptr++;
     }
 }
+#endif // HAL_USE_ICU

@@ -39,6 +39,9 @@ spidev = []
 # SPI bus list
 spi_list = []
 
+# all config lines in order
+alllines = []
+
 mcu_type = None
 
 def is_int(str):
@@ -222,6 +225,7 @@ def process_line(line):
         '''process one line of pin definition file'''
         a = shlex.split(line)
         # keep all config lines for later use
+        alllines.append(line)
         config[a[0]] = a[1:]
         if a[0] == 'MCU':
                 global mcu_type
@@ -270,10 +274,18 @@ def write_mcu_config(f):
                 f.write('#define USE_POSIX\n\n')
         if not 'SDIO_CMD' in bylabel:
             f.write('#define HAL_USE_SDC FALSE\n')
+        if 'OTG1' in bytype:
+            f.write('#define STM32_USB_USE_OTG1                  TRUE\n')
+            f.write('#define HAL_USE_USB TRUE\n')
+            f.write('#define HAL_USE_SERIAL_USB TRUE\n')
+        if 'OTG2' in bytype:
+            f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
         # write any custom STM32 defines
-        for d in config.keys():
+        for d in alllines:
             if d.startswith('STM32_'):
-                f.write('#define %s %s\n' % (d, ' '.join(config[d])))
+                f.write('#define %s\n' % d)
+            if d.startswith('define '):
+                f.write('#define %s\n' % d[7:])
         f.write('\n')
 
 def write_USB_config(f):
@@ -410,6 +422,36 @@ def write_I2C_config(f):
             f.write('#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_TX_DMA_STREAM, STM32_I2C_I2C%u_RX_DMA_STREAM }\n' % (n, n, n, n))
         f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
+def write_PWM_config(f):
+        '''write PWM config defines'''
+        ppm_in = None
+        pwm_out = []
+        pwm_timers = []
+        for l in bylabel.keys():
+            p = bylabel[l]
+            if p.type.startswith('TIM'):
+                if p.has_extra('PPMIN'):
+                    ppm_in = p
+                else:
+                    pwm_out.append(p)
+                    if p.type not in pwm_timers:
+                        pwm_timers.append(p.type)
+        if ppm_in is not None:
+            chan = int(ppm_in.label[7:])
+            n = int(ppm_in.type[3])
+            f.write('// PPM input config\n')
+            f.write('#define HAL_USE_ICU TRUE\n')
+            f.write('#define HAL_ICU_TIMER ICUD%u\n' % n)
+            f.write('#define STM32_ICU_USE_TIM%u TRUE\n' % n)
+            f.write('#define HAL_ICU_CHANNEL ICU_CHANNEL_%u\n' % chan)
+            f.write('\n')
+        f.write('// PWM output config\n')
+        for t in sorted(pwm_timers):
+            n = int(t[3])
+            f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
+            f.write('\n')
+
+
 
 def write_prototype_file():
     '''write the prototype file for apj generation'''
@@ -459,6 +501,7 @@ def write_hwdef_header(outfilename):
         write_USB_config(f)
         write_I2C_config(f)
         write_SPI_config(f)
+        write_PWM_config(f)
 
         write_peripheral_enable(f)
         write_prototype_file()
