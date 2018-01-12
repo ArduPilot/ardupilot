@@ -16,24 +16,28 @@
  */
 #pragma once
 
-/*
- * APM HW Defines
- */
-#define PPM_ICU_TIMER  ICUD4
-#define PPM_ICU_CHANNEL  ICU_CHANNEL_2
-
-#define HRT_TIMER GPTD5
-#define LINE_LED1 PAL_LINE(GPIOE,12)
-
 #include "hwdef.h"
 
+#ifndef PPM_ICU_TIMER
+#define PPM_ICU_TIMER  ICUD4
+#endif
+
+#ifndef PPM_ICU_CHANNEL
+#define PPM_ICU_CHANNEL ICU_CHANNEL_2
+#endif
+
+#ifndef HRT_TIMER
+#define HRT_TIMER GPTD5
+#endif
 
 #ifndef HAL_BOARD_INIT_HOOK_DEFINE
 #define HAL_BOARD_INIT_HOOK_DEFINE
 #endif
+
 #ifndef HAL_BOARD_INIT_HOOK_CALL
 #define HAL_BOARD_INIT_HOOK_CALL
 #endif
+
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus
 extern "C" {
