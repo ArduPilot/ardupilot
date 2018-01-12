@@ -33,17 +33,35 @@ bytype = {}
 # list of configs by label
 bylabel = {}
 
+# list of SPI devices
+spidev = []
+
+# SPI bus list
+spi_list = []
+
 mcu_type = None
+
+def is_int(str):
+    '''check if a string is an integer'''
+    try:
+        int(str)
+    except Exception:
+        return False
+    return True
+
+def error(str):
+    '''show an error and exit'''
+    print(str)
+    sys.exit(1)
 
 def get_alt_function(mcu, pin, function):
     '''return alternative function number for a pin'''
     import importlib
     try:
-            lib = importlib.import_module(mcu)
-            alt_map = lib.AltFunction_map
+        lib = importlib.import_module(mcu)
+        alt_map = lib.AltFunction_map
     except ImportError:
-            print("Unable to find module for MCU %s" % mcu)
-            sys.exit(1)
+        error("Unable to find module for MCU %s" % mcu)
 
     if function and function.endswith("_RTS") and (function.startswith('USART') or function.startswith('UART')):
         # we do software RTS
@@ -54,8 +72,7 @@ def get_alt_function(mcu, pin, function):
         if function.startswith(l):
             s = pin+":"+function
             if not s in alt_map:
-                print("Unknown pin function %s for MCU %s" % (s, mcu))
-                sys.exit(1)
+                error("Unknown pin function %s for MCU %s" % (s, mcu))
             return alt_map[s]
     return None
 
@@ -66,12 +83,10 @@ def get_ADC1_chan(mcu, pin):
             lib = importlib.import_module(mcu)
             ADC1_map = lib.ADC1_map
     except ImportError:
-            print("Unable to find ADC1_Map for MCU %s" % mcu)
-            sys.exit(1)
+            error("Unable to find ADC1_Map for MCU %s" % mcu)
     
     if not pin in ADC1_map:
-        print("Unable to find ADC1 channel for pin %s" % pin)
-        sys.exit(1)
+        error("Unable to find ADC1 channel for pin %s" % pin)
     return ADC1_map[pin]
         
 class generic_pin(object):
@@ -193,12 +208,10 @@ def get_config(name, column=0, required=True, default=None):
     '''get a value from config dictionary'''
     if not name in config:
         if required and default is None:
-            print("Error: missing required value %s in hwdef.dat" % name)
-            sys.exit(1)
+            error("Error: missing required value %s in hwdef.dat" % name)
         return default
     if len(config[name]) < column+1:
-        print("Error: missing required value %s in hwdef.dat (column %u)" % (name, column))
-        sys.exit(1)
+        error("Error: missing required value %s in hwdef.dat (column %u)" % (name, column))
     return config[name][column]
 
 def process_line(line):
@@ -231,6 +244,8 @@ def process_line(line):
                 af = get_alt_function(mcu_type, a[0], label)
                 if af is not None:
                         p.af = af
+        if a[0] == 'SPIDEV':
+            spidev.append(a[1:])
                 
 
 def write_mcu_config(f):
@@ -271,16 +286,48 @@ def write_I2C_config(f):
         devlist = []
         for dev in i2c_list:
             if not dev.startswith('I2C') or dev[3] not in "1234":
-                print("Bad I2C_ORDER element %s" % dev)
-                sys.exit(1)
+                error("Bad I2C_ORDER element %s" % dev)
             n = int(dev[3:])
             devlist.append('HAL_I2C%u_CONFIG' % n)
             f.write('#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_TX_DMA_STREAM, STM32_I2C_I2C%u_RX_DMA_STREAM }\n' % (n, n, n, n))
         f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
+def write_SPI_table(f):
+        '''write SPI device table'''
+        f.write('\n// SPI device table\n')
+        devlist = []
+        for dev in spidev:
+            if len(dev) != 7:
+                print("Badly formed SPIDEV line %s" % dev)
+            name = '"' + dev[0] + '"'
+            bus = dev[1]
+            devid = dev[2]
+            cs = dev[3]
+            mode = dev[4]
+            lowspeed = dev[5]
+            highspeed = dev[6]
+            if not bus.startswith('SPI') or not bus in spi_list:
+                error("Bad SPI bus in SPIDEV line %s" % dev)
+            if not devid.startswith('DEVID') or not is_int(devid[5:]):
+                error("Bad DEVID in SPIDEV line %s" % dev)
+            if not cs in bylabel:
+                error("Bad CS pin in SPIDEV line %s" % dev)
+            if not mode in ['MODE0', 'MODE1', 'MODE2', 'MODE3']:
+                error("Bad MODE in SPIDEV line %s" % dev)
+            if not lowspeed.endswith('*MHZ') and not lowspeed.endswith('*KHZ'):
+                error("Bad lowspeed value %s in SPIDEV line %s" % (lowspeed, dev))
+            if not highspeed.endswith('*MHZ') and not highspeed.endswith('*KHZ'):
+                error("Bad highspeed value %s in SPIDEV line %s" % (highspeed, dev))
+            cs_pin = bylabel[cs]
+            pal_line = 'PAL_LINE(GPIO%s,%uU)' % (cs_pin.port, cs_pin.pin)
+            devidx = len(devlist)
+            f.write('#define HAL_SPI_DEVICE%-2u SPIDesc(%-17s, %2u, %2u, %-19s, SPIDEV_%s, %7s, %7s)\n' % (devidx, name, spi_list.index(bus), int(devid[5:]), pal_line, mode, lowspeed, highspeed))
+            devlist.append('HAL_SPI_DEVICE%u' % devidx)
+        f.write('#define HAL_SPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
+
 def write_SPI_config(f):
         '''write SPI config defines'''
-        spi_list = []
+        global spi_list
         for t in bytype.keys():
             if t.startswith('SPI'):
                 spi_list.append(t)
@@ -290,7 +337,8 @@ def write_SPI_config(f):
             n = int(dev[3:])
             devlist.append('HAL_SPI%u_CONFIG' % n)
             f.write('#define HAL_SPI%u_CONFIG { &SPID%u, %u, STM32_SPI_SPI%u_TX_DMA_STREAM, STM32_SPI_SPI%u_RX_DMA_STREAM }\n' % (n, n, n, n, n))
-        f.write('#define HAL_SPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        f.write('#define HAL_SPI_BUS_LIST %s\n\n' % ','.join(devlist))
+        write_SPI_table(f)
 
 def write_UART_config(f):
         '''write UART config defines'''
@@ -314,8 +362,7 @@ def write_UART_config(f):
             elif dev.startswith('OTG'):
                 n = int(dev[3:])
             else:
-                print("Invalid element %s in UART_ORDER" % dev)
-                sys.exit(1)
+                error("Invalid element %s in UART_ORDER" % dev)
             devlist.append('HAL_%s_CONFIG' % dev)
             if dev + "_RTS" in bylabel:
                 p = bylabel[dev + '_RTS']
@@ -337,8 +384,7 @@ def write_I2C_config(f):
         devlist = []
         for dev in i2c_list:
             if not dev.startswith('I2C') or dev[3] not in "1234":
-                print("Bad I2C_ORDER element %s" % dev)
-                sys.exit(1)
+                error("Bad I2C_ORDER element %s" % dev)
             n = int(dev[3:])
             devlist.append('HAL_I2C%u_CONFIG' % n)
             f.write('#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_TX_DMA_STREAM, STM32_I2C_I2C%u_RX_DMA_STREAM }\n' % (n, n, n, n))
@@ -493,8 +539,7 @@ if outdir is None:
         outdir = '.'
 
 if not "MCU" in config:
-        print("Missing MCU type in config")
-        sys.exit(1)
+        error("Missing MCU type in config")
 
 mcu_type = get_config('MCU',1)
 print("Setup for MCU %s" % mcu_type)
