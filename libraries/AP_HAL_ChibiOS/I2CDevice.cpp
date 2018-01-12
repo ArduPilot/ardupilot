@@ -31,7 +31,7 @@ static const struct I2CInfo {
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
-I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
+I2CBus I2CDeviceManager::businfo[ARRAY_SIZE_SIMPLE(I2CD)];
 
 // get a handle for DMA sharing DMA channels with other subsystems
 void I2CBus::dma_init(void)
@@ -44,7 +44,7 @@ void I2CBus::dma_init(void)
 // setup I2C buses
 I2CDeviceManager::I2CDeviceManager(void)
 {
-    for (uint8_t i=0; i<ARRAY_SIZE(I2CD); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(I2CD); i++) {
         businfo[i].busnum = i;
         businfo[i].dma_init();
         /*
@@ -205,7 +205,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
                              bool use_smbus,
                              uint32_t timeout_ms)
 {
-    if (bus >= ARRAY_SIZE(I2CD)) {
+    if (bus >= ARRAY_SIZE_SIMPLE(I2CD)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
     auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
