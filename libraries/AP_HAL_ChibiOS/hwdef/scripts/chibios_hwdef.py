@@ -270,6 +270,11 @@ def write_mcu_config(f):
                 f.write('#define USE_POSIX\n\n')
         if not 'SDIO_CMD' in bylabel:
             f.write('#define HAL_USE_SDC FALSE\n')
+        # write any custom STM32 defines
+        for d in config.keys():
+            if d.startswith('STM32_'):
+                f.write('#define %s %s\n' % (d, ' '.join(config[d])))
+        f.write('\n')
 
 def write_USB_config(f):
         '''write USB config defines'''
@@ -404,6 +409,7 @@ def write_I2C_config(f):
             devlist.append('HAL_I2C%u_CONFIG' % n)
             f.write('#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_TX_DMA_STREAM, STM32_I2C_I2C%u_RX_DMA_STREAM }\n' % (n, n, n, n))
         f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
+
 
 def write_prototype_file():
     '''write the prototype file for apj generation'''

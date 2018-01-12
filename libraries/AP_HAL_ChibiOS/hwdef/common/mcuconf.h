@@ -29,6 +29,11 @@
  * 
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
  */
+/*
+  this provides the default mcuconf.h for each board. Override values in hwdef.dat
+ */
+// include generated config
+#include "hwdef.h"
 
 #pragma once
 /*
@@ -56,7 +61,9 @@
 #define STM32_CLOCK48_REQUIRED              TRUE
 #define STM32_SW                            STM32_SW_PLL
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE
-#define STM32_PLLM_VALUE                    8
+#ifndef STM32_PLLM_VALUE
+#define STM32_PLLM_VALUE                    24
+#endif
 #define STM32_PLLN_VALUE                    336
 #define STM32_PLLP_VALUE                    2
 #define STM32_PLLQ_VALUE                    7
@@ -300,7 +307,4 @@
  * WDG driver system settings.
  */
 #define STM32_WDG_USE_IWDG                  FALSE
-
-// include generated config
-#include "hwdef.h"
 
