@@ -220,7 +220,7 @@ for port in ports:
         for pin in range(pincount[port]):
                 portmap[port].append(generic_pin(port, pin, None, 'INPUT', []))
 
-def get_config(name, column=0, required=True, default=None):
+def get_config(name, column=0, required=True, default=None, need_int=False):
     '''get a value from config dictionary'''
     if not name in config:
         if required and default is None:
@@ -228,7 +228,12 @@ def get_config(name, column=0, required=True, default=None):
         return default
     if len(config[name]) < column+1:
         error("Error: missing required value %s in hwdef.dat (column %u)" % (name, column))
-    return config[name][column]
+    ret = config[name][column]
+    if need_int:
+        if not is_int(ret):
+            error("Config value %s must be an integer (got %s)" % (name, ret))
+        ret = int(ret)
+    return ret
 
 def process_line(line):
         '''process one line of pin definition file'''
@@ -277,7 +282,7 @@ def write_mcu_config(f):
         f.write('// UART used for stdout (printf)\n')
         f.write('#define HAL_STDOUT_SERIAL %s\n\n' % get_config('STDOUT_SERIAL'))
         f.write('// baudrate used for stdout (printf)\n')
-        f.write('#define HAL_STDOUT_BAUDRATE %s\n\n' % get_config('STDOUT_BAUDRATE'))
+        f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % get_config('STDOUT_BAUDRATE', need_int=True))
         if 'SDIO' in bytype:
                 f.write('// SDIO available, enable POSIX filesystem support\n')
                 f.write('#define USE_POSIX\n\n')
@@ -299,6 +304,8 @@ def write_mcu_config(f):
         hrt_timer = int(hrt_timer)
         f.write('#define HRT_TIMER GPTD%u\n' % hrt_timer)
         f.write('#define STM32_GPT_USE_TIM%u TRUE\n' % hrt_timer)
+        flash_size = get_config('FLASH_SIZE_KB', need_int=True)
+        f.write('#define BOARD_FLASH_SIZE %u' % flash_size)
         f.write('\n')
             
 

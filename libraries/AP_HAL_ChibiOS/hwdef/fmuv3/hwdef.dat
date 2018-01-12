@@ -13,6 +13,9 @@ OSCILLATOR_HZ 24000000
 # board voltage
 STM32_VDD 330U
 
+# flash size
+FLASH_SIZE_KB 2048
+
 # serial port for stdout
 STDOUT_SERIAL SD7
 STDOUT_BAUDRATE 57600

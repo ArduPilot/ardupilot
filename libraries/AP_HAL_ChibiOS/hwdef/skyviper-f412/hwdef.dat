@@ -23,6 +23,9 @@ STM32_PWM_USE_TIM3 TRUE
 # board voltage
 STM32_VDD 330U
 
+# flash size
+FLASH_SIZE_KB 1024
+
 # serial port for stdout
 STDOUT_SERIAL SD1
 STDOUT_BAUDRATE 115200
