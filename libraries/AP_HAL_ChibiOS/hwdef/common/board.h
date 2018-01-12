@@ -18,10 +18,6 @@
 
 #include "hwdef.h"
 
-#ifndef PPM_ICU_TIMER
-#define PPM_ICU_TIMER  ICUD4
-#endif
-
 #ifndef PPM_ICU_CHANNEL
 #define PPM_ICU_CHANNEL ICU_CHANNEL_2
 #endif
