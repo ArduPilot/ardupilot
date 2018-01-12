@@ -166,18 +166,48 @@
 /*
  * GPT driver system settings.
  */
+#ifndef STM32_GPT_USE_TIM1
 #define STM32_GPT_USE_TIM1                  FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM2
 #define STM32_GPT_USE_TIM2                  FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM3
 #define STM32_GPT_USE_TIM3                  FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM4
 #define STM32_GPT_USE_TIM4                  FALSE
-#define STM32_GPT_USE_TIM5                  TRUE
+#endif
+#ifndef STM32_GPT_USE_TIM5
+#define STM32_GPT_USE_TIM5                  FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM6
 #define STM32_GPT_USE_TIM6                  FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM7
 #define STM32_GPT_USE_TIM7                  FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM8
 #define STM32_GPT_USE_TIM8                  FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM9
 #define STM32_GPT_USE_TIM9                  FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM10
+#define STM32_GPT_USE_TIM10                 FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM11
 #define STM32_GPT_USE_TIM11                 FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM12
 #define STM32_GPT_USE_TIM12                 FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM13
+#define STM32_GPT_USE_TIM13                 FALSE
+#endif
+#ifndef STM32_GPT_USE_TIM14
 #define STM32_GPT_USE_TIM14                 FALSE
+#endif
 #define STM32_GPT_TIM1_IRQ_PRIORITY         7
 #define STM32_GPT_TIM2_IRQ_PRIORITY         7
 #define STM32_GPT_TIM3_IRQ_PRIORITY         7
@@ -285,7 +315,9 @@
  * ST driver system settings.
  */
 #define STM32_ST_IRQ_PRIORITY               8
+#ifndef STM32_ST_USE_TIMER
 #define STM32_ST_USE_TIMER                  2
+#endif
 
 /*
  * UART driver system settings.
