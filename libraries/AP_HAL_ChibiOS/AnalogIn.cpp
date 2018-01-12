@@ -58,7 +58,7 @@ const ChibiAnalogIn::pin_info ChibiAnalogIn::pin_config[] = {
     { 15,  VOLTAGE_SCALING*2 }, // analog airspeed sensor, 2:1 scaling
 };
 
-#define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(ChibiAnalogIn::pin_config)
+#define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE_SIMPLE(ChibiAnalogIn::pin_config)
 
 // samples filled in by ADC DMA engine
 adcsample_t ChibiAnalogIn::samples[ADC_DMA_BUF_DEPTH*ADC_GRP1_NUM_CHANNELS];

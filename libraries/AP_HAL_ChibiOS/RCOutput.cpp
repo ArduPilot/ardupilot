@@ -58,7 +58,7 @@ const struct ChibiRCOutput::pwm_group ChibiRCOutput::pwm_group_list[] =
     }
 };
 
-#define NUM_GROUPS ARRAY_SIZE(pwm_group_list)
+#define NUM_GROUPS ARRAY_SIZE_SIMPLE(pwm_group_list)
 
 void ChibiRCOutput::init()
 {

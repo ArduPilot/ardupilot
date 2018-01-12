@@ -49,7 +49,7 @@ static struct gpio_entry {
 #endif
 };
 
-#define NUM_PINS ARRAY_SIZE(_gpio_tab)
+#define NUM_PINS ARRAY_SIZE_SIMPLE(_gpio_tab)
 #define PIN_ENABLED(pin) ((pin)<NUM_PINS && _gpio_tab[pin].enabled)
 
 /*
@@ -57,7 +57,7 @@ static struct gpio_entry {
  */
 static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num)
 {
-    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(_gpio_tab); i++) {
         if (pin_num == _gpio_tab[i].pin_num) {
             if (!_gpio_tab[i].enabled) {
                 return NULL;
@@ -125,7 +125,7 @@ void ChibiGPIO::init()
 {
     extStart(&EXTD1, &extcfg);
     uint8_t pwm_count = AP_BoardConfig::get_pwm_count();
-    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(_gpio_tab); i++) {
         uint8_t pin_num = _gpio_tab[i].pin_num;
         if (pin_num >= 50 && pin_num <= 55) {
             // enable GPIOs based on BRD_PWM_COUNT
