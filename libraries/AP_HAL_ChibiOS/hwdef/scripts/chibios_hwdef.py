@@ -109,6 +109,10 @@ class generic_pin(object):
                 return True
             return False
 
+        def is_CS(self):
+            '''return true if this is a CS pin'''
+            return self.has_extra("CS") or self.type == "CS"
+
         def get_MODER(self):
                 '''return one of ALTERNATE, OUTPUT, ANALOG, INPUT'''
                 if self.af is not None:
@@ -117,7 +121,7 @@ class generic_pin(object):
                         v = "OUTPUT"
                 elif self.type.startswith('ADC'):
                         v = "ANALOG"
-                elif self.has_extra("CS"):
+                elif self.is_CS():
                         v = "OUTPUT"
                 elif self.is_RTS():
                         v = "OUTPUT"
@@ -141,7 +145,7 @@ class generic_pin(object):
                 '''return one of SPEED_VERYLOW, SPEED_LOW, SPEED_MEDIUM, SPEED_HIGH'''
                 values = ['SPEED_VERYLOW', 'SPEED_LOW', 'SPEED_MEDIUM', 'SPEED_HIGH']
                 v = 'SPEED_HIGH'
-                if self.has_extra("CS"):
+                if self.is_CS():
                         v = "SPEED_MEDIUM"
                 if self.type.startswith("I2C"):
                         v = "SPEED_MEDIUM"
@@ -154,7 +158,7 @@ class generic_pin(object):
                 '''return one of FLOATING, PULLUP, PULLDOWN'''
                 values = ['FLOATING', 'PULLUP', 'PULLDOWN']
                 v = 'FLOATING'
-                if self.has_extra("CS"):
+                if self.is_CS():
                         v = "PULLUP"
                 for e in self.extra:
                         if e in values:
@@ -297,7 +301,7 @@ def write_SPI_table(f):
                 error("Bad SPI bus in SPIDEV line %s" % dev)
             if not devid.startswith('DEVID') or not is_int(devid[5:]):
                 error("Bad DEVID in SPIDEV line %s" % dev)
-            if not cs in bylabel:
+            if not cs in bylabel or not bylabel[cs].is_CS():
                 error("Bad CS pin in SPIDEV line %s" % dev)
             if not mode in ['MODE0', 'MODE1', 'MODE2', 'MODE3']:
                 error("Bad MODE in SPIDEV line %s" % dev)
