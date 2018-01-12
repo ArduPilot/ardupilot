@@ -22,10 +22,6 @@
 #define PPM_ICU_CHANNEL ICU_CHANNEL_2
 #endif
 
-#ifndef HRT_TIMER
-#define HRT_TIMER GPTD5
-#endif
-
 #ifndef HAL_BOARD_INIT_HOOK_DEFINE
 #define HAL_BOARD_INIT_HOOK_DEFINE
 #endif

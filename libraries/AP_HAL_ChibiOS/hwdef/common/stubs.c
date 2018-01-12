@@ -195,7 +195,7 @@ int _isatty(struct _reent *r, int fd)
 }
 
 __attribute__((used))
-pid_t _getpid()
+pid_t _getpid(void)
 {
   return 0;
 }

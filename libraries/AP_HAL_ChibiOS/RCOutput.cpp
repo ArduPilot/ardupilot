@@ -27,36 +27,7 @@ extern const AP_HAL::HAL& hal;
 extern AP_IOMCU iomcu;
 #endif
 
-#define PWM_CLK_FREQ        8000000
-#define PWM_US_WIDTH_FROM_CLK(x) ((PWM_CLK_FREQ/1000000)*x)
-
-const struct ChibiRCOutput::pwm_group ChibiRCOutput::pwm_group_list[] = 
-{
-    //Group 1 Config
-    {   //Channels in the Group and respective mapping
-        {0, 1, 2, 3},
-        //Group Initial Config
-        {
-          8000000,                                  /* 8MHz PWM clock frequency.   */
-          160000,                                    /* Initial PWM period 20ms.     */
-          NULL,
-          {
-           //Channel Config
-           {PWM_OUTPUT_ACTIVE_HIGH, NULL},
-           {PWM_OUTPUT_ACTIVE_HIGH, NULL},
-           {PWM_OUTPUT_ACTIVE_HIGH, NULL},
-           {PWM_OUTPUT_ACTIVE_HIGH, NULL}
-          },
-          0,
-          0
-        },
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
-        &PWMD1
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-        &PWMD3
-#endif
-    }
-};
+const struct ChibiRCOutput::pwm_group ChibiRCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
 
 #define NUM_GROUPS ARRAY_SIZE_SIMPLE(pwm_group_list)
 
@@ -65,12 +36,19 @@ void ChibiRCOutput::init()
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         //Start Pwm groups
         pwmStart(pwm_group_list[i].pwm_drv, &pwm_group_list[i].pwm_cfg);
+        pwmChangePeriod(pwm_group_list[i].pwm_drv, pwm_group_list[i].pwm_cfg.frequency/50);
+        for (uint8_t j = 0; j < 4; j++ ) {
+            if (pwm_group_list[i].chan[j] != 255) {
+                total_channels = MAX(total_channels, pwm_group_list[i].chan[j]+1);
+            }
+        }
     }
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         iomcu.init();
         // with IOMCU the local channels start at 8
         chan_offset = 8;
+        total_channels += chan_offset;
     }
 #endif
 }
@@ -79,7 +57,6 @@ void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
     //check if the request spans accross any of the channel groups
     uint8_t update_mask = 0;
-    uint32_t grp_ch_mask;
     // greater than 400 doesn't give enough room at higher periods for
     // the down pulse
     if (freq_hz > 400 && _output_mode != MODE_PWM_BRUSHED) {
@@ -98,11 +75,16 @@ void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     }
     
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
-        grp_ch_mask = 0XF;
+        uint16_t grp_ch_mask = 0;
+        for (uint8_t j=0; j<4; j++) {
+            if (pwm_group_list[i].chan[j] != 255) {
+                grp_ch_mask |= (1U<<pwm_group_list[i].chan[j]);
+            }
+        }
         if ((grp_ch_mask & chmask) == grp_ch_mask) {
             update_mask |= grp_ch_mask;
             pwmChangePeriod(pwm_group_list[i].pwm_drv, 
-                pwm_group_list[i].pwm_cfg.frequency/freq_hz);
+                            pwm_group_list[i].pwm_cfg.frequency/freq_hz);
         }
     }
     if (chmask != update_mask) {
@@ -112,6 +94,9 @@ void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 
 uint16_t ChibiRCOutput::get_freq(uint8_t chan)
 {
+    if (chan >= total_channels) {
+        return 0;
+    }
 #if HAL_WITH_IO_MCU
     if (chan < chan_offset) {
         return iomcu.get_freq(chan);
@@ -132,6 +117,9 @@ uint16_t ChibiRCOutput::get_freq(uint8_t chan)
 
 void ChibiRCOutput::enable_ch(uint8_t chan)
 {
+    if (chan >= total_channels) {
+        return;
+    }
     if (chan < chan_offset) {
         return;
     }
@@ -148,6 +136,9 @@ void ChibiRCOutput::enable_ch(uint8_t chan)
 
 void ChibiRCOutput::disable_ch(uint8_t chan)
 {
+    if (chan >= total_channels) {
+        return;
+    }
     if (chan < chan_offset) {
         return;
     }
@@ -165,6 +156,9 @@ void ChibiRCOutput::disable_ch(uint8_t chan)
 
 void ChibiRCOutput::write(uint8_t chan, uint16_t period_us)
 {
+    if (chan >= total_channels) {
+        return;
+    }
     last_sent[chan] = period_us;
     
 #if HAL_WITH_IO_MCU
@@ -212,7 +206,8 @@ void ChibiRCOutput::push_local(void)
                     }
                     pwmEnableChannel(pwm_group_list[i].pwm_drv, j, period_us);
                 } else {
-                    pwmEnableChannel(pwm_group_list[i].pwm_drv, j, PWM_US_WIDTH_FROM_CLK(period_us));
+                    uint32_t width = (pwm_group_list[i].pwm_cfg.frequency/1000000) * period_us;
+                    pwmEnableChannel(pwm_group_list[i].pwm_drv, j, width);
                 }
             }
         }
@@ -221,6 +216,9 @@ void ChibiRCOutput::push_local(void)
 
 uint16_t ChibiRCOutput::read(uint8_t chan)
 {
+    if (chan >= total_channels) {
+        return 0;
+    }
 #if HAL_WITH_IO_MCU
     if (chan < chan_offset) {
         return iomcu.read_channel(chan);
@@ -232,6 +230,9 @@ uint16_t ChibiRCOutput::read(uint8_t chan)
 
 void ChibiRCOutput::read(uint16_t* period_us, uint8_t len)
 {
+    if (len > total_channels) {
+        len = total_channels;
+    }
 #if HAL_WITH_IO_MCU
     for (uint8_t i=0; i<MIN(len, chan_offset); i++) {
         period_us[i] = iomcu.read_channel(i);
@@ -248,11 +249,17 @@ void ChibiRCOutput::read(uint16_t* period_us, uint8_t len)
 
 uint16_t ChibiRCOutput::read_last_sent(uint8_t chan)
 {
+    if (chan >= total_channels) {
+        return 0;
+    }
     return last_sent[chan];
 }
 
 void ChibiRCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
 {
+    if (len > total_channels) {
+        len = total_channels;
+    }
     for (uint8_t i=0; i<len; i++) {
         period_us[i] = read_last_sent(i);
     }
