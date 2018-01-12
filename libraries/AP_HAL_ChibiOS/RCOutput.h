@@ -55,7 +55,7 @@ public:
     
 private:
     struct pwm_group {
-        uint8_t chan[4]; // chan number, zero based
+        uint8_t chan[4]; // chan number, zero based, 255 for disabled
         PWMConfig pwm_cfg;
         PWMDriver* pwm_drv;
     };
@@ -68,6 +68,9 @@ private:
     // offset of first local channel
     uint8_t chan_offset;
 
+    // total number of channels
+    uint8_t total_channels;
+    
     // last sent values are for all channels
     uint16_t last_sent[16];
     

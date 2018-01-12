@@ -104,7 +104,15 @@ class generic_pin(object):
                 self.af = None
 
         def has_extra(self, v):
-                return v in self.extra
+            '''return true if we have the given extra token'''
+            return v in self.extra
+
+        def extra_prefix(self, prefix):
+            '''find an extra token starting with the given prefix'''
+            for e in self.extra:
+                if e.startswith(prefix):
+                    return e
+            return None
 
         def is_RTS(self):
             '''return true if this is a RTS pin'''
@@ -197,13 +205,14 @@ class generic_pin(object):
                 return self.get_AFIO()
 
         def __str__(self):
-                afstr = ''
-                adcstr = ''
+                str = ''
                 if self.af is not None:
-                    afstr = " AF%u" % self.af
+                    str += " AF%u" % self.af
                 if self.type.startswith('ADC1'):
-                    adcstr = " ADC1_IN%u" % get_ADC1_chan(mcu_type, self.portpin)
-                return "P%s%u %s %s%s%s" % (self.port, self.pin, self.label, self.type, afstr, adcstr)
+                    str += " ADC1_IN%u" % get_ADC1_chan(mcu_type, self.portpin)
+                if self.extra_prefix('PWM'):
+                    str += " %s" % self.extra_prefix('PWM')
+                return "P%s%u %s %s%s" % (self.port, self.pin, self.label, self.type, str)
 
 # setup default as input pins
 for port in ports:
@@ -286,7 +295,12 @@ def write_mcu_config(f):
                 f.write('#define %s\n' % d)
             if d.startswith('define '):
                 f.write('#define %s\n' % d[7:])
+        hrt_timer = get_config('HRT_TIMER', default='5')
+        hrt_timer = int(hrt_timer)
+        f.write('#define HRT_TIMER GPTD%u\n' % hrt_timer)
+        f.write('#define STM32_GPT_USE_TIM%u TRUE\n' % hrt_timer)
         f.write('\n')
+            
 
 def write_USB_config(f):
         '''write USB config defines'''
@@ -433,7 +447,8 @@ def write_PWM_config(f):
                 if p.has_extra('PPMIN'):
                     ppm_in = p
                 else:
-                    pwm_out.append(p)
+                    if p.extra_prefix('PWM') is not None:
+                        pwm_out.append(p)
                     if p.type not in pwm_timers:
                         pwm_timers.append(p.type)
         if ppm_in is not None:
@@ -445,11 +460,55 @@ def write_PWM_config(f):
             f.write('#define STM32_ICU_USE_TIM%u TRUE\n' % n)
             f.write('#define HAL_ICU_CHANNEL ICU_CHANNEL_%u\n' % chan)
             f.write('\n')
-        f.write('// PWM output config\n')
+        f.write('// PWM timer config\n')
         for t in sorted(pwm_timers):
             n = int(t[3])
             f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
-            f.write('\n')
+            f.write('#define STM32_TIM%u_SUPPRESS_ISR\n' % n)
+        f.write('\n')
+        f.write('// PWM output config\n')
+        groups = []
+        for t in sorted(pwm_timers):
+            group = len(groups)+1
+            n = int(t[3])
+            chan_list = [255, 255, 255, 255]
+            for p in pwm_out:
+                if p.type != t:
+                    continue
+                chan_str = p.label[7]
+                if not is_int(chan_str):
+                    error("Bad channel for PWM %s" % p)                
+                chan = int(chan_str)
+                if chan not in [1,2,3,4]:
+                    error("Bad channel number %u for PWM %s" % (chan, p))
+                pwm = p.extra_prefix('PWM')
+                pwmchan_str = pwm[3:]
+                if not is_int(pwmchan_str):
+                    errors("Bad PWM number in %s" % p)
+                pwmchan = int(pwmchan_str)
+                chan_list[chan-1] = pwmchan-1
+            groups.append('HAL_PWM_GROUP%u' % group)
+            if n in [1, 8]:
+                # only the advanced timers do 8MHz clocks
+                pwm_clock = 8000000
+            else:
+                pwm_clock = 1000000
+            period = 20000 * pwm_clock / 1000000
+            f.write('''#define HAL_PWM_GROUP%u { \\
+        {%u, %u, %u, %u}, \\
+        /* Group Initial Config */ \\
+        { \\
+          %u,  /* PWM clock frequency. */ \\
+          %u,   /* Initial PWM period 20ms. */ \\
+          NULL,     /* no callback */ \\
+          { \\
+           /* Channel Config */ \\
+           {PWM_OUTPUT_ACTIVE_HIGH, NULL}, \\
+           {PWM_OUTPUT_ACTIVE_HIGH, NULL}, \\
+           {PWM_OUTPUT_ACTIVE_HIGH, NULL}, \\
+           {PWM_OUTPUT_ACTIVE_HIGH, NULL}  \\
+          }, 0, 0}, &PWMD%u}\n''' % (group, chan_list[0], chan_list[1], chan_list[2], chan_list[3], pwm_clock, period, n))
+        f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
 
 
 
