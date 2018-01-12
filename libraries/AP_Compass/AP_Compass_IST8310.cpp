@@ -138,13 +138,13 @@ bool AP_Compass_IST8310::init()
     }
 
     if (reset_count == 5) {
-        fprintf(stderr, "IST8310: failed to reset device\n");
+        printf("IST8310: failed to reset device\n");
         goto fail;
     }
 
     if (!_dev->write_register(AVGCNTL_REG, AVGCNTL_VAL_Y_16 | AVGCNTL_VAL_XZ_16) ||
         !_dev->write_register(PDCNTL_REG, PDCNTL_VAL_PULSE_DURATION_NORMAL)) {
-        fprintf(stderr, "IST8310: found device but could not set it up\n");
+        printf("IST8310: found device but could not set it up\n");
         goto fail;
     }
 
