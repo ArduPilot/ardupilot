@@ -563,7 +563,10 @@ class uploader(object):
         if self.baudrate_flightstack_idx >= len(self.baudrate_flightstack):
             return False
 
-        self.port.baudrate = self.baudrate_flightstack[self.baudrate_flightstack_idx]
+        try:
+            self.port.baudrate = self.baudrate_flightstack[self.baudrate_flightstack_idx]
+        except Exception:
+            return False
 
         return True
 
