@@ -24,16 +24,14 @@
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h>
 #include "shared_dma.h"
 
-static ChibiOS::ChibiUARTDriver uartADriver(0);
-static ChibiOS::ChibiUARTDriver uartBDriver(1);
-static ChibiOS::ChibiUARTDriver uartCDriver(2);
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-static Empty::UARTDriver uartDDriver;
-static Empty::UARTDriver uartEDriver;
-#else
-static ChibiOS::ChibiUARTDriver uartDDriver(3);
-static ChibiOS::ChibiUARTDriver uartEDriver(4);
-#endif
+#include <hwdef.h>
+
+static HAL_UARTA_DRIVER;
+static HAL_UARTB_DRIVER;
+static HAL_UARTC_DRIVER;
+static HAL_UARTD_DRIVER;
+static HAL_UARTE_DRIVER;
+static HAL_UARTF_DRIVER;
 static ChibiOS::I2CDeviceManager i2cDeviceManager;
 static ChibiOS::SPIDeviceManager spiDeviceManager;
 static ChibiOS::ChibiAnalogIn analogIn;
@@ -49,8 +47,8 @@ static FATFS SDC_FS; // FATFS object
 #endif
 
 #if HAL_WITH_IO_MCU
+HAL_UART_IO_DRIVER;
 #include <AP_IOMCU/AP_IOMCU.h>
-ChibiOS::ChibiUARTDriver uart_io(HAL_UART_IOMCU_IDX);
 AP_IOMCU iomcu(uart_io);
 #endif
 
@@ -61,7 +59,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &uartCDriver,
         &uartDDriver,
         &uartEDriver,
-        nullptr,            /* no uartF */
+        &uartFDriver,
         &i2cDeviceManager,
         &spiDeviceManager,
         &analogIn,

@@ -346,12 +346,24 @@ def write_UART_config(f):
         uart_list = config['UART_ORDER']
         f.write('\n// UART configuration\n')
 
+        # write out driver declarations for HAL_ChibOS_Class.cpp
+        devnames = "ABCDEFGH"
+        for dev in uart_list:
+            idx = uart_list.index(dev)
+            f.write('#define HAL_UART%s_DRIVER ChibiOS::ChibiUARTDriver uart%sDriver(%u)\n' % (devnames[idx], devnames[idx], idx))
+        for idx in range(len(uart_list), 6):
+            f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' % (devnames[idx], devnames[idx]))
+            
+
         if 'IOMCU_UART' in config:
             f.write('#define HAL_WITH_IO_MCU 1\n')
-            f.write('#define HAL_UART_IOMCU_IDX %u\n' % len(uart_list))
+            idx = len(uart_list)
+            f.write('#define HAL_UART_IOMCU_IDX %u\n' % idx)
+            f.write('#define HAL_UART_IO_DRIVER ChibiOS::ChibiUARTDriver uart_io(HAL_UART_IOMCU_IDX)\n')
             uart_list.append(config['IOMCU_UART'][0])
         else:
             f.write('#define HAL_WITH_IO_MCU 0\n')
+        f.write('\n')
 
         devlist = []
         for dev in uart_list:
@@ -375,6 +387,8 @@ def write_UART_config(f):
                 f.write("#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, false, " % (dev, n))
                 f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s}\n" % (dev, dev, rts_line))
         f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
+
+        
 
 def write_I2C_config(f):
         '''write I2C config defines'''
