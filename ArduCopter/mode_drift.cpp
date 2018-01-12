@@ -89,7 +89,7 @@ void Copter::ModeDrift::run()
 
     // If we let go of sticks, bring us to a stop
     if(is_zero(target_pitch)){
-        // .14/ (.03 * 100) = 4.6 seconds till full breaking
+        // .14/ (.03 * 100) = 4.6 seconds till full braking
         breaker += .03f;
         breaker = MIN(breaker, DRIFT_SPEEDGAIN);
         target_pitch = pitch_vel * breaker;
