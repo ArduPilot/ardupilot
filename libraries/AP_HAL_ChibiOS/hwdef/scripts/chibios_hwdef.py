@@ -264,7 +264,8 @@ def write_mcu_config(f):
         if 'SDIO' in bytype:
                 f.write('// SDIO available, enable POSIX filesystem support\n')
                 f.write('#define USE_POSIX\n\n')
-
+        if not 'SDIO_CMD' in bylabel:
+            f.write('#define HAL_USE_SDC FALSE\n')
 
 def write_USB_config(f):
         '''write USB config defines'''
@@ -277,20 +278,6 @@ def write_USB_config(f):
             f.write('#define HAL_%s "%s"\n' % (s, get_config(s)))
 
         f.write('\n\n')
-
-def write_I2C_config(f):
-        '''write I2C config defines'''
-        get_config('I2C_ORDER')
-        i2c_list = config['I2C_ORDER']
-        f.write('// I2C configuration\n')
-        devlist = []
-        for dev in i2c_list:
-            if not dev.startswith('I2C') or dev[3] not in "1234":
-                error("Bad I2C_ORDER element %s" % dev)
-            n = int(dev[3:])
-            devlist.append('HAL_I2C%u_CONFIG' % n)
-            f.write('#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_TX_DMA_STREAM, STM32_I2C_I2C%u_RX_DMA_STREAM }\n' % (n, n, n, n))
-        f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
 def write_SPI_table(f):
         '''write SPI device table'''
@@ -332,6 +319,9 @@ def write_SPI_config(f):
             if t.startswith('SPI'):
                 spi_list.append(t)
         spi_list = sorted(spi_list)
+        if len(spi_list) == 0:
+            f.write('#define HAL_USE_SPI FALSE\n')
+            return
         devlist = []
         for dev in spi_list:
             n = int(dev[3:])
@@ -353,7 +343,6 @@ def write_UART_config(f):
             f.write('#define HAL_UART%s_DRIVER ChibiOS::ChibiUARTDriver uart%sDriver(%u)\n' % (devnames[idx], devnames[idx], idx))
         for idx in range(len(uart_list), 6):
             f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' % (devnames[idx], devnames[idx]))
-            
 
         if 'IOMCU_UART' in config:
             f.write('#define HAL_WITH_IO_MCU 1\n')
@@ -365,6 +354,7 @@ def write_UART_config(f):
             f.write('#define HAL_WITH_IO_MCU 0\n')
         f.write('\n')
 
+        need_uart_driver = False
         devlist = []
         for dev in uart_list:
             if dev.startswith('UART'):
@@ -384,17 +374,24 @@ def write_UART_config(f):
             if dev.startswith('OTG'):
                 f.write('#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0}\n' % dev)
             else:
+                need_uart_driver = True
                 f.write("#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, false, " % (dev, n))
                 f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s}\n" % (dev, dev, rts_line))
         f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        if not need_uart_driver:
+            f.write('#define HAL_USE_SERIAL FALSE\n')
 
         
 
 def write_I2C_config(f):
         '''write I2C config defines'''
-        get_config('I2C_ORDER')
+        if not 'I2C_ORDER' in config:
+            error("Missing I2C_ORDER config")
         i2c_list = config['I2C_ORDER']
         f.write('// I2C configuration\n')
+        if len(i2c_list) == 0:
+            f.write('#define HAL_USE_I2C FALSE\n')
+            return
         devlist = []
         for dev in i2c_list:
             if not dev.startswith('I2C') or dev[3] not in "1234":
