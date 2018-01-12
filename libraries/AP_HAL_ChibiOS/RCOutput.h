@@ -79,6 +79,8 @@ private:
     uint16_t period[16];
     uint8_t num_channels;
     bool corked;
+    // mask of channels that are running in high speed
+    uint16_t fast_channel_mask;
 
     // push out values to local PWM
     void push_local(void);
