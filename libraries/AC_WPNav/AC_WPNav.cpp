@@ -97,8 +97,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     AP_GROUPINFO("LOIT_MINA",   9, AC_WPNav, _loiter_accel_min_cmss, WPNAV_LOITER_ACCEL_MIN),
 
     // @Param: RFND_USE
-    // @DisplayName: Use rangefinder for terrain following
-    // @Description: This controls the use of a rangefinder for terrain following
+    // @DisplayName: Waypoint missions use rangefinder for terrain following
+    // @Description: This controls if waypoint missions use rangefinder for terrain following
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("RFND_USE",   10, AC_WPNav, _rangefinder_use, 1),
