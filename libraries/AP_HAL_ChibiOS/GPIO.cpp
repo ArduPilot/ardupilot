@@ -31,7 +31,7 @@ static struct gpio_entry {
     {1, PAL_LINE(GPIOB, 6U)},
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
     // pin numbers chosen to match px4 build
-    {0,  true,  LINE_LED1},
+    {0,  true,  PAL_LINE(GPIOE, 12U)}, // LED
     {1,  true,  PAL_LINE(GPIOB, 0U)},
     {50, false, PAL_LINE(GPIOE, 14U)},
     {51, false, PAL_LINE(GPIOE, 13U)},
