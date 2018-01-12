@@ -120,6 +120,15 @@ def configure(cfg):
     env.APJ_TOOL = srcpath('Tools/scripts/apj_tool.py')
     env.SERIAL_PORT = srcpath('/dev/serial/by-id/*_STLink*')
 
+    mk_custom = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/chibios_board.mk' % env.BOARD)
+    mk_common = srcpath('libraries/AP_HAL_ChibiOS/hwdef/common/chibios_board.mk')
+    # see if there is a board specific make file
+    if os.path.exists(mk_custom):
+        env.BOARD_MK = mk_custom
+    else:
+        env.BOARD_MK = mk_common
+    print("BOARD_MK=%s" % env.BOARD_MK)
+
     if cfg.options.default_parameters:
         cfg.msg('Default parameters', cfg.options.default_parameters, color='YELLOW')
         env.DEFAULT_PARAMETERS = srcpath(cfg.options.default_parameters)
@@ -137,14 +146,14 @@ def build(bld):
 
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule='touch Makefile && BUILDDIR=${BUILDDIR} CHIBIOS=${CH_ROOT} AP_HAL=${AP_HAL_ROOT} ${MAKE} pass -f ${AP_HAL_ROOT}/hwdef/${BOARD}/chibios_board.mk',
+        rule='touch Makefile && BUILDDIR=${BUILDDIR} CHIBIOS=${CH_ROOT} AP_HAL=${AP_HAL_ROOT} ${MAKE} pass -f ${BOARD_MK}',
         group='dynamic_sources',
         target='modules/ChibiOS/include_dirs'
     )
 
     bld(
         # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR}' CHIBIOS='${CH_ROOT}' AP_HAL=${AP_HAL_ROOT} '${MAKE}' lib -f ${AP_HAL_ROOT}/hwdef/${BOARD}/chibios_board.mk",
+        rule="BUILDDIR='${BUILDDIR}' CHIBIOS='${CH_ROOT}' AP_HAL=${AP_HAL_ROOT} '${MAKE}' lib -f ${BOARD_MK}",
         group='dynamic_sources',
         source=bld.bldnode.find_or_declare('hwdef.h'),
         target=['modules/ChibiOS/libch.a']
