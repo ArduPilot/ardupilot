@@ -93,6 +93,7 @@ public:
         DEVTYPE_GYR_L3GD20   = 0x22,
         DEVTYPE_GYR_MPU9250  = 0x24,
         DEVTYPE_GYR_I3G4250D = 0x25,
+        DEVTYPE_INS_ICM20789 = 0x26
     };
         
 protected:

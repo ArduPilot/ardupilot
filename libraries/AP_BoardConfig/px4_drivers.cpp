@@ -268,6 +268,7 @@ void AP_BoardConfig::px4_setup_drivers(void)
     case PX4_BOARD_PH2SLIM:
     case PX4_BOARD_AEROFC:
     case PX4_BOARD_PIXHAWK_PRO:
+    case PX4_BOARD_PCNC1:
         break;
     default:
         sensor_config_error("Unknown board type");
@@ -467,6 +468,9 @@ void AP_BoardConfig::px4_autodetect(void)
     px4.board_type.set(PX4_BOARD_PX4V1);
     hal.console->printf("Detected PX4v1\n");
 
+#elif defined(CONFIG_ARCH_BOARD_PCNC1)
+    px4.board_type.set_and_notify(PX4_BOARD_PCNC1);
+    hal.console->printf("Detected PCNC1 (e.g. SkyViper)\n");
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
     if ((spi_check_register(HAL_INS_MPU60x0_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register(HAL_INS_MPU9250_EXT_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
