@@ -31,14 +31,15 @@ const struct ChibiRCOutput::pwm_group ChibiRCOutput::pwm_group_list[] = { HAL_PW
 
 #define NUM_GROUPS ARRAY_SIZE_SIMPLE(pwm_group_list)
 
+#define CHAN_DISABLED 255
+
 void ChibiRCOutput::init()
 {
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         //Start Pwm groups
         pwmStart(pwm_group_list[i].pwm_drv, &pwm_group_list[i].pwm_cfg);
-        pwmChangePeriod(pwm_group_list[i].pwm_drv, pwm_group_list[i].pwm_cfg.frequency/50);
         for (uint8_t j = 0; j < 4; j++ ) {
-            if (pwm_group_list[i].chan[j] != 255) {
+            if (pwm_group_list[i].chan[j] != CHAN_DISABLED) {
                 total_channels = MAX(total_channels, pwm_group_list[i].chan[j]+1);
             }
         }
@@ -77,7 +78,7 @@ void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         uint16_t grp_ch_mask = 0;
         for (uint8_t j=0; j<4; j++) {
-            if (pwm_group_list[i].chan[j] != 255) {
+            if (pwm_group_list[i].chan[j] != CHAN_DISABLED) {
                 grp_ch_mask |= (1U<<pwm_group_list[i].chan[j]);
             }
         }
@@ -201,6 +202,9 @@ void ChibiRCOutput::push_local(void)
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         for (uint8_t j = 0; j < 4; j++) {
             uint8_t chan = pwm_group_list[i].chan[j];
+            if (chan == CHAN_DISABLED) {
+                continue;
+            }
             if (outmask & (1UL<<chan)) {
                 uint32_t period_us = period[chan];
                 if(_output_mode == MODE_PWM_BRUSHED && (fast_channel_mask & (1UL<<chan))) {
