@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 extern AP_IOMCU iomcu;
 #endif
 
-const struct ChibiRCOutput::pwm_group ChibiRCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
+struct ChibiRCOutput::pwm_group ChibiRCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
 
 #define NUM_GROUPS ARRAY_SIZE_SIMPLE(pwm_group_list)
 
@@ -91,13 +91,58 @@ void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
               multicopter properly
              */
             update_mask |= grp_ch_mask;
+            uint16_t freq_set = freq_hz;
+            if (!pwm_group_list[i].advanced_timer && freq_set > 400) {
+                freq_set = 400;
+            }
+            bool changed_clock = false;
+            if (freq_set > 400 && pwm_group_list[i].pwm_cfg.frequency == 1000000) {
+                // need to change to an 8MHz clock
+                pwm_group_list[i].pwm_cfg.frequency = 8000000;
+                changed_clock = true;
+            } else if (freq_set <= 400 && pwm_group_list[i].pwm_cfg.frequency == 8000000) {
+                // need to change to an 1MHz clock
+                pwm_group_list[i].pwm_cfg.frequency = 1000000;
+            }
+            if (changed_clock) {
+                pwmStop(pwm_group_list[i].pwm_drv);
+                pwmStart(pwm_group_list[i].pwm_drv, &pwm_group_list[i].pwm_cfg);
+            }
             pwmChangePeriod(pwm_group_list[i].pwm_drv, 
-                            pwm_group_list[i].pwm_cfg.frequency/freq_hz);
+                            pwm_group_list[i].pwm_cfg.frequency/freq_set);
         }
     }
-    fast_channel_mask |= update_mask;
+    if (freq_hz > 50) {
+        fast_channel_mask |= update_mask;
+    }
     if (chmask != update_mask) {
         hal.console->printf("RCOutput: Failed to set PWM frequency req %x set %x\n", (unsigned)chmask, (unsigned)update_mask);
+    }
+}
+
+/*
+  set default output rate
+ */
+void ChibiRCOutput::set_default_rate(uint16_t freq_hz)
+{
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.set_default_rate(freq_hz);
+    }
+#endif
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
+        uint16_t grp_ch_mask = 0;
+        for (uint8_t j=0; j<4; j++) {
+            if (pwm_group_list[i].chan[j] != CHAN_DISABLED) {
+                grp_ch_mask |= (1U<<pwm_group_list[i].chan[j]);
+            }
+        }
+        if (grp_ch_mask & fast_channel_mask) {
+            // don't change fast channels
+            continue;
+        }
+        pwmChangePeriod(pwm_group_list[i].pwm_drv, 
+                        pwm_group_list[i].pwm_cfg.frequency/freq_hz);
     }
 }
 

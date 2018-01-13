@@ -536,11 +536,12 @@ def write_PWM_config(f):
             groups.append('HAL_PWM_GROUP%u' % group)
             if n in [1, 8]:
                 # only the advanced timers do 8MHz clocks
-                pwm_clock = 8000000
+                advanced_timer = 'true'
             else:
-                pwm_clock = 1000000
+                advanced_timer = 'false'
+            pwm_clock = 1000000
             period = 20000 * pwm_clock / 1000000
-            f.write('''#define HAL_PWM_GROUP%u { \\
+            f.write('''#define HAL_PWM_GROUP%u { %s, \\
         {%u, %u, %u, %u}, \\
         /* Group Initial Config */ \\
         { \\
@@ -553,7 +554,7 @@ def write_PWM_config(f):
            {%s, NULL}, \\
            {%s, NULL}, \\
            {%s, NULL}  \\
-          }, 0, 0}, &PWMD%u}\n''' % (group,
+          }, 0, 0}, &PWMD%u}\n''' % (group, advanced_timer,
                                      chan_list[0], chan_list[1], chan_list[2], chan_list[3],
                                      pwm_clock,
                                      period,
