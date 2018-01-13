@@ -1,5 +1,7 @@
 #pragma once
 
+#include "include/mavlink/v2.0/ardupilotmega/mavlink.h"
+
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 
@@ -35,16 +37,17 @@ enum ch7_option {
 
 // Auto Pilot modes
 // ----------------
+// map flight modes to the MAVLink representation
 enum mode {
-    MANUAL       = 0,
-    ACRO         = 1,
-    STEERING     = 3,
-    HOLD         = 4,
-    AUTO         = 10,
-    RTL          = 11,
-    SMART_RTL    = 12,
-    GUIDED       = 15,
-    INITIALISING = 16
+    MANUAL       = ROVER_FLIGHT_MODE_MANUAL,
+    ACRO         = ROVER_FLIGHT_MODE_ACRO,
+    STEERING     = ROVER_FLIGHT_MODE_STEERING,
+    HOLD         = ROVER_FLIGHT_MODE_HOLD,
+    AUTO         = ROVER_FLIGHT_MODE_AUTO,
+    RTL          = ROVER_FLIGHT_MODE_RTL,
+    SMART_RTL    = ROVER_FLIGHT_MODE_SMART_RTL,
+    GUIDED       = ROVER_FLIGHT_MODE_GUIDED,
+    INITIALISING = ROVER_FLIGHT_MODE_INITIALISING
 };
 
 // types of failsafe events
