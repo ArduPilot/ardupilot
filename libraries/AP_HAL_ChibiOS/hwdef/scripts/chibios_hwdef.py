@@ -300,8 +300,9 @@ def write_mcu_config(f):
         if 'SDIO' in bytype:
                 f.write('// SDIO available, enable POSIX filesystem support\n')
                 f.write('#define USE_POSIX\n\n')
-        if not 'SDIO_CMD' in bylabel:
-            f.write('#define HAL_USE_SDC FALSE\n')
+                f.write('#define HAL_USE_SDC TRUE\n')
+        else:
+                f.write('#define HAL_USE_SDC FALSE\n')
         if 'OTG1' in bytype:
             f.write('#define STM32_USB_USE_OTG1                  TRUE\n')
             f.write('#define HAL_USE_USB TRUE\n')
