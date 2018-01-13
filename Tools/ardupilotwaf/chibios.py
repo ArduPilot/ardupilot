@@ -156,14 +156,14 @@ def build(bld):
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule='touch Makefile && BUILDDIR=${BUILDDIR} CHIBIOS=${CH_ROOT} AP_HAL=${AP_HAL_ROOT} ${MAKE} pass -f ${BOARD_MK}',
+        rule='touch Makefile && BUILDDIR=${BUILDDIR} CHIBIOS=${CH_ROOT} AP_HAL=${AP_HAL_ROOT} ${CHIBIOS_FATFS_FLAG} ${MAKE} pass -f ${BOARD_MK}',
         group='dynamic_sources',
         target='modules/ChibiOS/include_dirs'
     )
 
     bld(
         # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR}' CHIBIOS='${CH_ROOT}' AP_HAL=${AP_HAL_ROOT} '${MAKE}' lib -f ${BOARD_MK}",
+        rule="BUILDDIR='${BUILDDIR}' CHIBIOS='${CH_ROOT}' AP_HAL=${AP_HAL_ROOT} ${CHIBIOS_FATFS_FLAG} '${MAKE}' lib -f ${BOARD_MK}",
         group='dynamic_sources',
         source=bld.bldnode.find_or_declare('hwdef.h'),
         target=['modules/ChibiOS/libch.a']
