@@ -291,8 +291,6 @@ def write_mcu_config(f):
         f.write('// MCU type (ChibiOS define)\n')
         f.write('#define %s_MCUCONF\n' % get_config('MCU'))
         f.write('#define %s\n\n' % get_config('MCU', 1))
-        f.write('// Board voltage. Required for performance limits calculation\n')
-        f.write('#define STM32_VDD %s\n\n' % get_config('STM32_VDD'))
         f.write('// crystal frequency\n')
         f.write('#define STM32_HSECLK %sU\n\n' % get_config('OSCILLATOR_HZ'))
         f.write('// UART used for stdout (printf)\n')
