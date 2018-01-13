@@ -21,33 +21,13 @@
 
 using namespace ChibiOS;
 
+// GPIO pin table from hwdef.dat
 static struct gpio_entry {
     uint8_t pin_num;
     bool enabled;
+    uint8_t pwm_num;
     ioline_t pal_line;
-} _gpio_tab[]  = {
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-    {0, PAL_LINE(GPIOB, 7U)},
-    {1, PAL_LINE(GPIOB, 6U)},
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
-    // pin numbers chosen to match px4 build
-    {0,  true,  PAL_LINE(GPIOE, 12U)}, // LED
-    {1,  true,  PAL_LINE(GPIOB, 0U)},
-    {50, false, PAL_LINE(GPIOE, 14U)},
-    {51, false, PAL_LINE(GPIOE, 13U)},
-    {52, false, PAL_LINE(GPIOE, 11U)},
-    {53, false, PAL_LINE(GPIOE,  9U)},
-    {54, true,  PAL_LINE(GPIOD, 13U)},
-    {55, true,  PAL_LINE(GPIOD, 14U)},
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4
-    {0,  true,  PAL_LINE(GPIOB, 1U)},  // green
-    {1,  true,  PAL_LINE(GPIOB, 3U)},  // blue
-    {2,  true,  PAL_LINE(GPIOB, 11U)}, // red
-    {3,  true,  PAL_LINE(GPIOC, 3U)},  // safety
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2
-    {0,  true,  PAL_LINE(GPIOA, 8U)},  // run LED
-#endif
-};
+} _gpio_tab[] = HAL_GPIO_PINS;
 
 #define NUM_PINS ARRAY_SIZE_SIMPLE(_gpio_tab)
 #define PIN_ENABLED(pin) ((pin)<NUM_PINS && _gpio_tab[pin].enabled)
@@ -124,16 +104,12 @@ GPIO::GPIO()
 void GPIO::init()
 {
     extStart(&EXTD1, &extcfg);
+    // auto-disable pins being used for PWM output based on BRD_PWM_COUNT parameter
     uint8_t pwm_count = AP_BoardConfig::get_pwm_count();
     for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(_gpio_tab); i++) {
-        uint8_t pin_num = _gpio_tab[i].pin_num;
-        if (pin_num >= 50 && pin_num <= 55) {
-            // enable GPIOs based on BRD_PWM_COUNT
-            if (pin_num < 50 + pwm_count) {
-                _gpio_tab[i].enabled = false;
-            } else {
-                _gpio_tab[i].enabled = true;
-            }
+        struct gpio_entry *g = &_gpio_tab[i];
+        if (g->pwm_num != 0) {
+            g->enabled = g->pwm_num > pwm_count;
         }
     }
 }
