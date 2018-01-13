@@ -118,10 +118,10 @@ static const uint32_t irq_port_list[] = {
     EXT_MODE_GPIOD //Chan 15
 };
 
-ChibiGPIO::ChibiGPIO()
+GPIO::GPIO()
 {}
 
-void ChibiGPIO::init()
+void GPIO::init()
 {
     extStart(&EXTD1, &extcfg);
     uint8_t pwm_count = AP_BoardConfig::get_pwm_count();
@@ -138,7 +138,7 @@ void ChibiGPIO::init()
     }
 }
 
-void ChibiGPIO::pinMode(uint8_t pin, uint8_t output)
+void GPIO::pinMode(uint8_t pin, uint8_t output)
 {
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
@@ -146,13 +146,13 @@ void ChibiGPIO::pinMode(uint8_t pin, uint8_t output)
     }
 }
 
-int8_t ChibiGPIO::analogPinToDigitalPin(uint8_t pin)
+int8_t GPIO::analogPinToDigitalPin(uint8_t pin)
 {
     return -1;
 }
 
 
-uint8_t ChibiGPIO::read(uint8_t pin)
+uint8_t GPIO::read(uint8_t pin)
 {
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
@@ -161,7 +161,7 @@ uint8_t ChibiGPIO::read(uint8_t pin)
     return 0;
 }
 
-void ChibiGPIO::write(uint8_t pin, uint8_t value)
+void GPIO::write(uint8_t pin, uint8_t value)
 {
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
@@ -173,7 +173,7 @@ void ChibiGPIO::write(uint8_t pin, uint8_t value)
     }
 }
 
-void ChibiGPIO::toggle(uint8_t pin)
+void GPIO::toggle(uint8_t pin)
 {
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
@@ -182,12 +182,12 @@ void ChibiGPIO::toggle(uint8_t pin)
 }
 
 /* Alternative interface: */
-AP_HAL::DigitalSource* ChibiGPIO::channel(uint16_t n) {
-    return new ChibiDigitalSource(0);
+AP_HAL::DigitalSource* GPIO::channel(uint16_t n) {
+    return new DigitalSource(0);
 }
 
 /* Interrupt interface: */
-bool ChibiGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode) {
+bool GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode) {
     extStop(&EXTD1);
     switch(mode) {
         case HAL_GPIO_INTERRUPT_LOW:
@@ -211,27 +211,27 @@ bool ChibiGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t 
     return true;
 }
 
-bool ChibiGPIO::usb_connected(void)
+bool GPIO::usb_connected(void)
 {
     return _usb_connected;
 }
 
-ChibiDigitalSource::ChibiDigitalSource(uint8_t v) :
+DigitalSource::DigitalSource(uint8_t v) :
     _v(v)
 {}
 
-void ChibiDigitalSource::mode(uint8_t output)
+void DigitalSource::mode(uint8_t output)
 {}
 
-uint8_t ChibiDigitalSource::read() {
+uint8_t DigitalSource::read() {
     return _v;
 }
 
-void ChibiDigitalSource::write(uint8_t value) {
+void DigitalSource::write(uint8_t value) {
     _v = value;
 }
 
-void ChibiDigitalSource::toggle() {
+void DigitalSource::toggle() {
     _v = !_v;
 }
 

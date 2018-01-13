@@ -45,7 +45,7 @@ using namespace ChibiOS;
   scaling table between ADC count and actual input voltage, to account
   for voltage dividers on the board. 
  */
-const ChibiAnalogIn::pin_info ChibiAnalogIn::pin_config[] = {
+const AnalogIn::pin_info AnalogIn::pin_config[] = {
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
     { ANALOG_VCC_5V_PIN,   0.007734  },    // VCC 5V rail sense
 #else
@@ -58,17 +58,17 @@ const ChibiAnalogIn::pin_info ChibiAnalogIn::pin_config[] = {
     { 15,  VOLTAGE_SCALING*2 }, // analog airspeed sensor, 2:1 scaling
 };
 
-#define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE_SIMPLE(ChibiAnalogIn::pin_config)
+#define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE_SIMPLE(AnalogIn::pin_config)
 
 // samples filled in by ADC DMA engine
-adcsample_t ChibiAnalogIn::samples[ADC_DMA_BUF_DEPTH*ADC_GRP1_NUM_CHANNELS];
-uint32_t ChibiAnalogIn::sample_sum[ADC_GRP1_NUM_CHANNELS];
-uint32_t ChibiAnalogIn::sample_count;
+adcsample_t AnalogIn::samples[ADC_DMA_BUF_DEPTH*ADC_GRP1_NUM_CHANNELS];
+uint32_t AnalogIn::sample_sum[ADC_GRP1_NUM_CHANNELS];
+uint32_t AnalogIn::sample_count;
 
 // special pin numbers
 #define ANALOG_VCC_5V_PIN                4
 
-ChibiAnalogSource::ChibiAnalogSource(int16_t pin, float initial_value) :
+AnalogSource::AnalogSource(int16_t pin, float initial_value) :
     _pin(pin),
     _value(initial_value),
     _value_ratiometric(initial_value),
@@ -80,7 +80,7 @@ ChibiAnalogSource::ChibiAnalogSource(int16_t pin, float initial_value) :
 }
 
 
-float ChibiAnalogSource::read_average() 
+float AnalogSource::read_average() 
 {
     if (_sum_count == 0) {
         return _value;
@@ -93,7 +93,7 @@ float ChibiAnalogSource::read_average()
     return _value;
 }
 
-float ChibiAnalogSource::read_latest() 
+float AnalogSource::read_latest() 
 {
     return _latest_value;
 }
@@ -101,12 +101,12 @@ float ChibiAnalogSource::read_latest()
 /*
   return scaling from ADC count to Volts
  */
-float ChibiAnalogSource::_pin_scaler(void)
+float AnalogSource::_pin_scaler(void)
 {
     float scaling = VOLTAGE_SCALING;
     for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
-        if (ChibiAnalogIn::pin_config[i].channel == _pin) {
-            scaling = ChibiAnalogIn::pin_config[i].scaling;
+        if (AnalogIn::pin_config[i].channel == _pin) {
+            scaling = AnalogIn::pin_config[i].scaling;
             break;
         }
     }
@@ -116,7 +116,7 @@ float ChibiAnalogSource::_pin_scaler(void)
 /*
   return voltage in Volts
  */
-float ChibiAnalogSource::voltage_average()
+float AnalogSource::voltage_average()
 {
     return _pin_scaler() * read_average();
 }
@@ -125,7 +125,7 @@ float ChibiAnalogSource::voltage_average()
   return voltage in Volts, assuming a ratiometric sensor powered by
   the 5V rail
  */
-float ChibiAnalogSource::voltage_average_ratiometric()
+float AnalogSource::voltage_average_ratiometric()
 {
     voltage_average();
     return _pin_scaler() * _value_ratiometric;
@@ -134,12 +134,12 @@ float ChibiAnalogSource::voltage_average_ratiometric()
 /*
   return voltage in Volts
  */
-float ChibiAnalogSource::voltage_latest()
+float AnalogSource::voltage_latest()
 {
     return _pin_scaler() * read_latest();
 }
 
-void ChibiAnalogSource::set_pin(uint8_t pin)
+void AnalogSource::set_pin(uint8_t pin)
 {
     if (_pin == pin) {
         return;
@@ -156,7 +156,7 @@ void ChibiAnalogSource::set_pin(uint8_t pin)
 /*
   apply a reading in ADC counts
  */
-void ChibiAnalogSource::_add_value(float v, float vcc5V)
+void AnalogSource::_add_value(float v, float vcc5V)
 {
     _latest_value = v;
     _sum_value += v;
@@ -176,7 +176,7 @@ void ChibiAnalogSource::_add_value(float v, float vcc5V)
 }
 
 
-ChibiAnalogIn::ChibiAnalogIn() :
+AnalogIn::AnalogIn() :
     _board_voltage(0),
     _servorail_voltage(0),
     _power_flags(0)
@@ -186,7 +186,7 @@ ChibiAnalogIn::ChibiAnalogIn() :
 /*
   callback from ADC driver when sample buffer is filled
  */
-void ChibiAnalogIn::adccallback(ADCDriver *adcp, adcsample_t *buffer, size_t n)
+void AnalogIn::adccallback(ADCDriver *adcp, adcsample_t *buffer, size_t n)
 {
     if (buffer != &samples[0]) {
         return;
@@ -202,7 +202,7 @@ void ChibiAnalogIn::adccallback(ADCDriver *adcp, adcsample_t *buffer, size_t n)
 /*
   setup adc peripheral to capture samples with DMA into a buffer
  */
-void ChibiAnalogIn::init()
+void AnalogIn::init()
 {
     adcStart(&ADCD1, NULL);
     memset(&adcgrpcfg, 0, sizeof(adcgrpcfg));
@@ -235,7 +235,7 @@ void ChibiAnalogIn::init()
 /*
   calculate average sample since last read for all channels
  */
-void ChibiAnalogIn::read_adc(uint32_t *val)
+void AnalogIn::read_adc(uint32_t *val)
 {
     chSysLock();
     for (uint8_t i = 0; i < ADC_GRP1_NUM_CHANNELS; i++) {
@@ -249,7 +249,7 @@ void ChibiAnalogIn::read_adc(uint32_t *val)
 /*
   called at 1kHz
  */
-void ChibiAnalogIn::_timer_tick(void)
+void AnalogIn::_timer_tick(void)
 {
     // read adc at 100Hz
     uint32_t now = AP_HAL::micros();
@@ -277,7 +277,7 @@ void ChibiAnalogIn::_timer_tick(void)
               (unsigned)pin_config[i].channel,
               (unsigned)buf_adc[i]);
         for (uint8_t j=0; j < ADC_GRP1_NUM_CHANNELS; j++) {
-            ChibiOS::ChibiAnalogSource *c = _channels[j];
+            ChibiOS::AnalogSource *c = _channels[j];
             if (c != nullptr && pin_config[i].channel == c->_pin) {
                 // add a value
                 c->_add_value(buf_adc[i], _board_voltage);
@@ -291,11 +291,11 @@ void ChibiAnalogIn::_timer_tick(void)
 #endif
 }
 
-AP_HAL::AnalogSource* ChibiAnalogIn::channel(int16_t pin) 
+AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin) 
 {
     for (uint8_t j=0; j<ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new ChibiAnalogSource(pin, 0.0f);
+            _channels[j] = new AnalogSource(pin, 0.0f);
             return _channels[j];
         }
     }

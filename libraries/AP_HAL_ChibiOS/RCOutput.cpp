@@ -27,13 +27,13 @@ extern const AP_HAL::HAL& hal;
 extern AP_IOMCU iomcu;
 #endif
 
-struct ChibiRCOutput::pwm_group ChibiRCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
+struct RCOutput::pwm_group RCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
 
 #define NUM_GROUPS ARRAY_SIZE_SIMPLE(pwm_group_list)
 
 #define CHAN_DISABLED 255
 
-void ChibiRCOutput::init()
+void RCOutput::init()
 {
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         //Start Pwm groups
@@ -54,7 +54,7 @@ void ChibiRCOutput::init()
 #endif
 }
 
-void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
+void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
     //check if the request spans accross any of the channel groups
     uint8_t update_mask = 0;
@@ -123,7 +123,7 @@ void ChibiRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 /*
   set default output rate
  */
-void ChibiRCOutput::set_default_rate(uint16_t freq_hz)
+void RCOutput::set_default_rate(uint16_t freq_hz)
 {
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
@@ -146,7 +146,7 @@ void ChibiRCOutput::set_default_rate(uint16_t freq_hz)
     }
 }
 
-uint16_t ChibiRCOutput::get_freq(uint8_t chan)
+uint16_t RCOutput::get_freq(uint8_t chan)
 {
     if (chan >= total_channels) {
         return 0;
@@ -169,7 +169,7 @@ uint16_t ChibiRCOutput::get_freq(uint8_t chan)
     return 50;
 }
 
-void ChibiRCOutput::enable_ch(uint8_t chan)
+void RCOutput::enable_ch(uint8_t chan)
 {
     if (chan >= total_channels) {
         return;
@@ -188,7 +188,7 @@ void ChibiRCOutput::enable_ch(uint8_t chan)
     }
 }
 
-void ChibiRCOutput::disable_ch(uint8_t chan)
+void RCOutput::disable_ch(uint8_t chan)
 {
     if (chan >= total_channels) {
         return;
@@ -208,7 +208,7 @@ void ChibiRCOutput::disable_ch(uint8_t chan)
     }
 }
 
-void ChibiRCOutput::write(uint8_t chan, uint16_t period_us)
+void RCOutput::write(uint8_t chan, uint16_t period_us)
 {
     if (chan >= total_channels) {
         return;
@@ -236,7 +236,7 @@ void ChibiRCOutput::write(uint8_t chan, uint16_t period_us)
 /*
   push values to local channels from period[] array
  */
-void ChibiRCOutput::push_local(void)
+void RCOutput::push_local(void)
 {
     if (num_channels == 0) {
         return;
@@ -274,7 +274,7 @@ void ChibiRCOutput::push_local(void)
     }
 }
 
-uint16_t ChibiRCOutput::read(uint8_t chan)
+uint16_t RCOutput::read(uint8_t chan)
 {
     if (chan >= total_channels) {
         return 0;
@@ -288,7 +288,7 @@ uint16_t ChibiRCOutput::read(uint8_t chan)
     return period[chan];
 }
 
-void ChibiRCOutput::read(uint16_t* period_us, uint8_t len)
+void RCOutput::read(uint16_t* period_us, uint8_t len)
 {
     if (len > total_channels) {
         len = total_channels;
@@ -307,7 +307,7 @@ void ChibiRCOutput::read(uint16_t* period_us, uint8_t len)
     memcpy(period_us, period, len*sizeof(uint16_t));
 }
 
-uint16_t ChibiRCOutput::read_last_sent(uint8_t chan)
+uint16_t RCOutput::read_last_sent(uint8_t chan)
 {
     if (chan >= total_channels) {
         return 0;
@@ -315,7 +315,7 @@ uint16_t ChibiRCOutput::read_last_sent(uint8_t chan)
     return last_sent[chan];
 }
 
-void ChibiRCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
+void RCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
 {
     if (len > total_channels) {
         len = total_channels;
@@ -327,7 +327,7 @@ void ChibiRCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
 /*
   setup output mode
  */
-void ChibiRCOutput::set_output_mode(enum output_mode mode)
+void RCOutput::set_output_mode(enum output_mode mode)
 {
     _output_mode = mode;
     if (_output_mode == MODE_PWM_BRUSHED) {
@@ -341,7 +341,7 @@ void ChibiRCOutput::set_output_mode(enum output_mode mode)
 /*
   force the safety switch on, disabling PWM output from the IO board
 */
-bool ChibiRCOutput::force_safety_on(void)
+bool RCOutput::force_safety_on(void)
 {
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
@@ -354,7 +354,7 @@ bool ChibiRCOutput::force_safety_on(void)
 /*
   force the safety switch off, enabling PWM output from the IO board
 */
-void ChibiRCOutput::force_safety_off(void)
+void RCOutput::force_safety_off(void)
 {
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
@@ -366,7 +366,7 @@ void ChibiRCOutput::force_safety_off(void)
 /*
   start corking output
  */
-void ChibiRCOutput::cork(void)
+void RCOutput::cork(void)
 {
     corked = true;
 #if HAL_WITH_IO_MCU
@@ -379,7 +379,7 @@ void ChibiRCOutput::cork(void)
 /*
   stop corking output
  */
-void ChibiRCOutput::push(void)
+void RCOutput::push(void)
 {
     corked = false;
     push_local();
@@ -393,7 +393,7 @@ void ChibiRCOutput::push(void)
 /*
   enable sbus output
  */
-bool ChibiRCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
+bool RCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
 {
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {

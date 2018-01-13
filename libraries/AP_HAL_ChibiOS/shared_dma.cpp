@@ -20,6 +20,8 @@
   code to handle sharing of DMA channels between peripherals
  */
 
+using namespace ChibiOS;
+
 Shared_DMA::dma_lock Shared_DMA::locks[SHARED_DMA_MAX_STREAM_ID];
 
 void Shared_DMA::init(void)

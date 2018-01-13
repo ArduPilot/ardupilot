@@ -24,9 +24,9 @@
 #define RX_BOUNCE_BUFSIZE 128
 #define TX_BOUNCE_BUFSIZE 64
 
-class ChibiOS::ChibiUARTDriver : public AP_HAL::UARTDriver {
+class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
-    ChibiUARTDriver(uint8_t serial_num);
+    UARTDriver(uint8_t serial_num);
 
     void begin(uint32_t b);
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
