@@ -225,8 +225,8 @@ class generic_pin(object):
                     str += " AF%u" % self.af
                 if self.type.startswith('ADC1'):
                     str += " ADC1_IN%u" % get_ADC1_chan(mcu_type, self.portpin)
-                if self.extra_prefix('PWM'):
-                    str += " %s" % self.extra_prefix('PWM')
+                if self.extra_value('PWM', type=int):
+                    str += " PWM%u" % self.extra_value('PWM', type=int)
                 return "P%s%u %s %s%s" % (self.port, self.pin, self.label, self.type, str)
 
 # setup default as input pins
@@ -507,7 +507,7 @@ def write_PWM_config(f):
                 if p.has_extra('PPMIN'):
                     ppm_in = p
                 else:
-                    if p.extra_prefix('PWM') is not None:
+                    if p.extra_value('PWM', type=int) is not None:
                         pwm_out.append(p)
                     if p.type not in pwm_timers:
                         pwm_timers.append(p.type)
@@ -542,12 +542,8 @@ def write_PWM_config(f):
                 chan = int(chan_str)
                 if chan not in [1,2,3,4]:
                     error("Bad channel number %u for PWM %s" % (chan, p))
-                pwm = p.extra_prefix('PWM')
-                pwmchan_str = pwm[3:]
-                if not is_int(pwmchan_str):
-                    errors("Bad PWM number in %s" % p)
-                pwmchan = int(pwmchan_str)
-                chan_list[chan-1] = pwmchan-1
+                pwm = p.extra_value('PWM', type=int)
+                chan_list[chan-1] = pwm-1
                 chan_mode[chan-1] = 'PWM_OUTPUT_ACTIVE_HIGH'
             groups.append('HAL_PWM_GROUP%u' % group)
             if n in [1, 8]:
@@ -606,6 +602,35 @@ def write_ADC_config(f):
     f.write('}\n\n')
     
 
+def write_GPIO_config(f):
+    '''write GPIO config defines'''
+    f.write('// GPIO config\n')
+    gpios = []
+    for l in bylabel:
+        p = bylabel[l]
+        gpio = p.extra_value('GPIO', type=int)
+        if gpio is None:
+            continue
+        # see if it is also a PWM pin
+        pwm = p.extra_value('PWM', type=int, default=0)
+        port = p.port
+        pin = p.pin
+        gpios.append((gpio, pwm, port, pin, p))
+    gpios = sorted(gpios)
+    f.write('#define HAL_GPIO_PINS { \\\n')
+    for (gpio, pwm, port, pin, p) in gpios:
+        f.write('{ %3u, true, %2u, PAL_LINE(GPIO%s, %2uU) }, /* %s */ \\\n' % (gpio, pwm, port, pin, p))
+    # and write #defines for use by config code
+    f.write('}\n\n')
+    f.write('// full pin define list\n')
+    for l in bylabel:
+        p = bylabel[l]
+        label = p.label
+        label = label.replace('-','_')
+        f.write('#define HAL_GPIO_PIN_%-20s PAL_LINE(GPIO%s,%uU)\n' % (label, p.port, p.pin))
+    f.write('\n')
+    
+
 def write_prototype_file():
     '''write the prototype file for apj generation'''
     pf = open(os.path.join(outdir, "apj.prototype"), "w")
@@ -656,6 +681,7 @@ def write_hwdef_header(outfilename):
         write_SPI_config(f)
         write_PWM_config(f)
         write_ADC_config(f)
+        write_GPIO_config(f)
 
         write_peripheral_enable(f)
         write_prototype_file()
