@@ -1,5 +1,12 @@
 APMrover2 Release Notes:
 ========================
+APM:Rover V3.2.0 13-Jan-2018
+Changes from 3.2.0-rc4:
+1) Here GPS/compass default orientation fix (ICM20948)
+2) PID values sent to ground station regardless of mode (see GCS_PID_MASK parameter)
+3) Steering PID min and max ranges expanded
+4) Mavlink message definition update
+--------------------------------
 APM:Rover V3.2.0-rc4 05-Jan-2018
 Changes from 3.2.0-rc3:
 1) Steering controller supports feed-forward (reduces wobble)
