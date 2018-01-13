@@ -31,12 +31,12 @@ using namespace ChibiOS;
 #define HAVE_USB_SERIAL
 #endif
 
-const ChibiUARTDriver::SerialDef ChibiUARTDriver::_serial_tab[] = { HAL_UART_DEVICE_LIST };
+const UARTDriver::SerialDef UARTDriver::_serial_tab[] = { HAL_UART_DEVICE_LIST };
 
 // event used to wake up waiting thread
 #define EVT_DATA EVENT_MASK(0)
 
-ChibiUARTDriver::ChibiUARTDriver(uint8_t serial_num) :
+UARTDriver::UARTDriver(uint8_t serial_num) :
 tx_bounce_buf_ready(true),
 sdef(_serial_tab[serial_num]),
 _baudrate(57600),
@@ -46,7 +46,7 @@ _initialised(false)
     chMtxObjectInit(&_write_mutex);
 }
 
-void ChibiUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     hal.gpio->pinMode(2, HAL_GPIO_OUTPUT);
     hal.gpio->pinMode(3, HAL_GPIO_OUTPUT);
@@ -135,8 +135,8 @@ void ChibiUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                     // cannot be shared
                     dma_handle = new Shared_DMA(sdef.dma_tx_stream_id,
                                                 SHARED_DMA_NONE,
-                                                FUNCTOR_BIND_MEMBER(&ChibiUARTDriver::dma_tx_allocate, void),
-                                                FUNCTOR_BIND_MEMBER(&ChibiUARTDriver::dma_tx_deallocate, void));
+                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_allocate, void),
+                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_deallocate, void));
                 }
             }
             sercfg.speed = _baudrate;
@@ -186,7 +186,7 @@ void ChibiUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     set_flow_control(_flow_control);
 }
 
-void ChibiUARTDriver::dma_tx_allocate(void)
+void UARTDriver::dma_tx_allocate(void)
 {
     osalDbgAssert(txdma == nullptr, "double DMA allocation");
     txdma = STM32_DMA_STREAM(sdef.dma_tx_stream_id);
@@ -198,7 +198,7 @@ void ChibiUARTDriver::dma_tx_allocate(void)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
 }
 
-void ChibiUARTDriver::dma_tx_deallocate(void)
+void UARTDriver::dma_tx_deallocate(void)
 {
     chSysLock();
     dmaStreamRelease(txdma);
@@ -206,18 +206,18 @@ void ChibiUARTDriver::dma_tx_deallocate(void)
     chSysUnlock();
 }
 
-void ChibiUARTDriver::tx_complete(void* self, uint32_t flags)
+void UARTDriver::tx_complete(void* self, uint32_t flags)
 {
-    ChibiUARTDriver* uart_drv = (ChibiUARTDriver*)self;
+    UARTDriver* uart_drv = (UARTDriver*)self;
     uart_drv->dma_handle->unlock_from_IRQ();
     uart_drv->_last_write_completed_us = AP_HAL::micros();
     uart_drv->tx_bounce_buf_ready = true;
 }
 
 
-void ChibiUARTDriver::rx_irq_cb(void* self)
+void UARTDriver::rx_irq_cb(void* self)
 {
-    ChibiUARTDriver* uart_drv = (ChibiUARTDriver*)self;
+    UARTDriver* uart_drv = (UARTDriver*)self;
     if (!uart_drv->sdef.dma_rx) {
         return;
     }
@@ -230,9 +230,9 @@ void ChibiUARTDriver::rx_irq_cb(void* self)
     }
 }
 
-void ChibiUARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
+void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 {
-    ChibiUARTDriver* uart_drv = (ChibiUARTDriver*)self;
+    UARTDriver* uart_drv = (UARTDriver*)self;
     if (uart_drv->_lock_rx_in_timer_tick) {
         return;
     }
@@ -258,12 +258,12 @@ void ChibiUARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     }
 }
 
-void ChibiUARTDriver::begin(uint32_t b)
+void UARTDriver::begin(uint32_t b)
 {
     begin(b, 0, 0);
 }
 
-void ChibiUARTDriver::end()
+void UARTDriver::end()
 {
     _initialised = false;
     while (_in_timer) hal.scheduler->delay(1);
@@ -280,7 +280,7 @@ void ChibiUARTDriver::end()
     _writebuf.set_size(0);
 }
 
-void ChibiUARTDriver::flush()
+void UARTDriver::flush()
 {
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
@@ -292,20 +292,20 @@ void ChibiUARTDriver::flush()
     }
 }
 
-bool ChibiUARTDriver::is_initialized()
+bool UARTDriver::is_initialized()
 {
     return _initialised;
 }
 
-void ChibiUARTDriver::set_blocking_writes(bool blocking)
+void UARTDriver::set_blocking_writes(bool blocking)
 {
     _nonblocking_writes = !blocking;
 }
 
-bool ChibiUARTDriver::tx_pending() { return false; }
+bool UARTDriver::tx_pending() { return false; }
 
 /* Empty implementations of Stream virtual methods */
-uint32_t ChibiUARTDriver::available() {
+uint32_t UARTDriver::available() {
     if (!_initialised) {
         return 0;
     }
@@ -320,7 +320,7 @@ uint32_t ChibiUARTDriver::available() {
     return _readbuf.available();
 }
 
-uint32_t ChibiUARTDriver::txspace()
+uint32_t UARTDriver::txspace()
 {
     if (!_initialised) {
         return 0;
@@ -328,7 +328,7 @@ uint32_t ChibiUARTDriver::txspace()
     return _writebuf.space();
 }
 
-int16_t ChibiUARTDriver::read()
+int16_t UARTDriver::read()
 {
     if (_uart_owner_thd != chThdGetSelfX()){
         return -1;
@@ -349,7 +349,7 @@ int16_t ChibiUARTDriver::read()
 }
 
 /* Empty implementations of Print virtual methods */
-size_t ChibiUARTDriver::write(uint8_t c)
+size_t UARTDriver::write(uint8_t c)
 {
     if (!chMtxTryLock(&_write_mutex)) {
         return -1;
@@ -372,7 +372,7 @@ size_t ChibiUARTDriver::write(uint8_t c)
     return ret;
 }
 
-size_t ChibiUARTDriver::write(const uint8_t *buffer, size_t size)
+size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
     if (!_initialised) {
 		return 0;
@@ -404,7 +404,7 @@ size_t ChibiUARTDriver::write(const uint8_t *buffer, size_t size)
   wait for data to arrive, or a timeout. Return true if data has
   arrived, false on timeout
  */
-bool ChibiUARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
+bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
 {
     chEvtGetAndClearEvents(EVT_DATA);
     if (available() >= n) {
@@ -421,7 +421,7 @@ bool ChibiUARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
   1kHz in the timer thread. Doing it this way reduces the system call
   overhead in the main task enormously.
  */
-void ChibiUARTDriver::_timer_tick(void)
+void UARTDriver::_timer_tick(void)
 {
     int ret;
     uint32_t n;
@@ -463,7 +463,7 @@ void ChibiUARTDriver::_timer_tick(void)
     }
     if(sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-        ((ChibiGPIO *)hal.gpio)->set_usb_connected();
+        ((GPIO *)hal.gpio)->set_usb_connected();
 #endif
     }
     _in_timer = true;
@@ -578,7 +578,7 @@ end:
 /*
   change flow control mode for port
  */
-void ChibiUARTDriver::set_flow_control(enum flow_control flow_control)
+void UARTDriver::set_flow_control(enum flow_control flow_control)
 {
     if (sdef.rts_line == 0 || sdef.is_usb) {
         // no hw flow control available
@@ -623,7 +623,7 @@ void ChibiUARTDriver::set_flow_control(enum flow_control flow_control)
   software update of rts line. We don't use the HW support for RTS as
   it has no hysteresis, so it ends up toggling RTS on every byte
  */
-void ChibiUARTDriver::update_rts_line(void)
+void UARTDriver::update_rts_line(void)
 {
     if (sdef.rts_line == 0 || _flow_control == FLOW_CONTROL_DISABLE) {
         return;

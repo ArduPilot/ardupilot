@@ -20,7 +20,7 @@
 #include "ch.h"
 #include "hal.h"
 
-class ChibiOS::ChibiRCOutput : public AP_HAL::RCOutput {
+class ChibiOS::RCOutput : public AP_HAL::RCOutput {
 public:
     void     init();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);

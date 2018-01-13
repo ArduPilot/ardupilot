@@ -1,22 +1,23 @@
 #pragma once
 
 namespace ChibiOS {
-    class ChibiAnalogIn;
-    class ChibiAnalogSource;
-    class ChibiDigitalSource;
-    class ChibiGPIO;
-    class ChibiI2CDevice;
+    class AnalogIn;
+    class AnalogSource;
+    class DigitalSource;
+    class GPIO;
+    class I2CDevice;
     class I2CDeviceManager;
     class OpticalFlow;
     class PrivateMember;
-    class ChibiRCInput;
-    class ChibiRCOutput;
-    class ChibiScheduler;
+    class RCInput;
+    class RCOutput;
+    class Scheduler;
     class Semaphore;
     class SPIDevice;
     class SPIDeviceDriver;
     class SPIDeviceManager;
-    class ChibiStorage;
-    class ChibiUARTDriver;
-    class ChibiUtil;
+    class Storage;
+    class UARTDriver;
+    class Util;
+    class Shared_DMA;
 }

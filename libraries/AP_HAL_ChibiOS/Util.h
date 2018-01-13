@@ -23,7 +23,7 @@
 // this checks an address is in main memory and 16 bit aligned
 #define IS_DMA_SAFE(addr) ((uint32_t(addr) & 0xF0000001) == 0x20000000)
 
-class ChibiOS::ChibiUtil : public AP_HAL::Util {
+class ChibiOS::Util : public AP_HAL::Util {
 public:
     bool run_debug_shell(AP_HAL::BetterStream *stream) { return false; }
     AP_HAL::Semaphore *new_semaphore(void) override { return new ChibiOS::Semaphore; }

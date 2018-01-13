@@ -38,13 +38,13 @@ THD_WORKING_AREA(_storage_thread_wa, 2048);
 THD_WORKING_AREA(_uart_thread_wa, 2048);
 
 #if HAL_WITH_IO_MCU
-extern ChibiOS::ChibiUARTDriver uart_io;
+extern ChibiOS::UARTDriver uart_io;
 #endif
 
-ChibiScheduler::ChibiScheduler()
+Scheduler::Scheduler()
 {}
 
-void ChibiScheduler::init()
+void Scheduler::init()
 {
     // setup the timer thread - this will call tasks at 1kHz
     _timer_thread_ctx = chThdCreateStatic(_timer_thread_wa,
@@ -75,7 +75,7 @@ void ChibiScheduler::init()
                      this);                  /* Thread parameter.      */
 }
 
-void ChibiScheduler::delay_microseconds(uint16_t usec)
+void Scheduler::delay_microseconds(uint16_t usec)
 {
     if (usec == 0) { //chibios faults with 0us sleep
         return;
@@ -109,7 +109,7 @@ static void set_normal_priority()
   microseconds when the time completes. This significantly improves
   the regularity of timing of the main loop as it takes
  */
-void ChibiScheduler::delay_microseconds_boost(uint16_t usec)
+void Scheduler::delay_microseconds_boost(uint16_t usec)
 {
     delay_microseconds(usec); //Suspends Thread for desired microseconds
     set_high_priority();
@@ -117,7 +117,7 @@ void ChibiScheduler::delay_microseconds_boost(uint16_t usec)
     set_normal_priority();
 }
 
-void ChibiScheduler::delay(uint16_t ms)
+void Scheduler::delay(uint16_t ms)
 {
     if (!in_main_thread()) {
         //chprintf("ERROR: delay() from timer process\n");
@@ -135,14 +135,14 @@ void ChibiScheduler::delay(uint16_t ms)
     }
 }
 
-void ChibiScheduler::register_delay_callback(AP_HAL::Proc proc,
+void Scheduler::register_delay_callback(AP_HAL::Proc proc,
                                             uint16_t min_time_ms)
 {
     _delay_cb = proc;
     _min_delay_cb_ms = min_time_ms;
 }
 
-void ChibiScheduler::register_timer_process(AP_HAL::MemberProc proc)
+void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -158,7 +158,7 @@ void ChibiScheduler::register_timer_process(AP_HAL::MemberProc proc)
     }
 }
 
-void ChibiScheduler::register_io_process(AP_HAL::MemberProc proc)
+void Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -174,17 +174,17 @@ void ChibiScheduler::register_io_process(AP_HAL::MemberProc proc)
     }
 }
 
-void ChibiScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
+void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
 {
     _failsafe = failsafe;
 }
 
-void ChibiScheduler::suspend_timer_procs()
+void Scheduler::suspend_timer_procs()
 {
     _timer_suspended = true;
 }
 
-void ChibiScheduler::resume_timer_procs()
+void Scheduler::resume_timer_procs()
 {
     _timer_suspended = false;
     if (_timer_event_missed == true) {
@@ -193,7 +193,7 @@ void ChibiScheduler::resume_timer_procs()
     }
 }
 extern void Reset_Handler();
-void ChibiScheduler::reboot(bool hold_in_bootloader)
+void Scheduler::reboot(bool hold_in_bootloader)
 {
     // disarm motors to ensure they are off during a bootloader upload
     hal.rcout->force_safety_on();
@@ -209,7 +209,7 @@ void ChibiScheduler::reboot(bool hold_in_bootloader)
     NVIC_SystemReset();
 }
 
-void ChibiScheduler::_run_timers(bool called_from_timer_thread)
+void Scheduler::_run_timers(bool called_from_timer_thread)
 {
     if (_in_timer_proc) {
         return;
@@ -233,14 +233,14 @@ void ChibiScheduler::_run_timers(bool called_from_timer_thread)
     }
 
     // process analog input
-    ((ChibiAnalogIn *)hal.analogin)->_timer_tick();
+    ((AnalogIn *)hal.analogin)->_timer_tick();
 
     _in_timer_proc = false;
 }
 
-void ChibiScheduler::_timer_thread(void *arg)
+void Scheduler::_timer_thread(void *arg)
 {
-    ChibiScheduler *sched = (ChibiScheduler *)arg;
+    Scheduler *sched = (Scheduler *)arg;
     sched->_timer_thread_ctx->name = "apm_timer";
 
     while (!sched->_hal_initialized) {
@@ -256,11 +256,11 @@ void ChibiScheduler::_timer_thread(void *arg)
         //hal.rcout->timer_tick();
 
         // process any pending RC input requests
-        ((ChibiRCInput *)hal.rcin)->_timer_tick();
+        ((RCInput *)hal.rcin)->_timer_tick();
     }
 }
 
-void ChibiScheduler::_run_io(void)
+void Scheduler::_run_io(void)
 {
     if (_in_io_proc) {
         return;
@@ -279,9 +279,9 @@ void ChibiScheduler::_run_io(void)
     _in_io_proc = false;
 }
 
-void ChibiScheduler::_uart_thread(void* arg)
+void Scheduler::_uart_thread(void* arg)
 {
-    ChibiScheduler *sched = (ChibiScheduler *)arg;
+    Scheduler *sched = (Scheduler *)arg;
     sched->_uart_thread_ctx->name = "apm_uart";
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
@@ -290,21 +290,21 @@ void ChibiScheduler::_uart_thread(void* arg)
         sched->delay_microseconds(1000);
 
         // process any pending serial bytes
-        ((ChibiUARTDriver *)hal.uartA)->_timer_tick();
-        ((ChibiUARTDriver *)hal.uartB)->_timer_tick();
-        ((ChibiUARTDriver *)hal.uartC)->_timer_tick();
-        /*((ChibiUARTDriver *)hal.uartD)->_timer_tick();
-        ((ChibiUARTDriver *)hal.uartE)->_timer_tick();
-        ((ChibiUARTDriver *)hal.uartF)->_timer_tick();*/
+        ((UARTDriver *)hal.uartA)->_timer_tick();
+        ((UARTDriver *)hal.uartB)->_timer_tick();
+        ((UARTDriver *)hal.uartC)->_timer_tick();
+        /*((UARTDriver *)hal.uartD)->_timer_tick();
+        ((UARTDriver *)hal.uartE)->_timer_tick();
+        ((UARTDriver *)hal.uartF)->_timer_tick();*/
 #if HAL_WITH_IO_MCU
         uart_io._timer_tick();
 #endif
     }
 }
 
-void ChibiScheduler::_io_thread(void* arg)
+void Scheduler::_io_thread(void* arg)
 {
-    ChibiScheduler *sched = (ChibiScheduler *)arg;
+    Scheduler *sched = (Scheduler *)arg;
     sched->_io_thread_ctx->name = "apm_io";
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
@@ -317,9 +317,9 @@ void ChibiScheduler::_io_thread(void* arg)
     }
 }
 
-void ChibiScheduler::_storage_thread(void* arg)
+void Scheduler::_storage_thread(void* arg)
 {
-    ChibiScheduler *sched = (ChibiScheduler *)arg;
+    Scheduler *sched = (Scheduler *)arg;
     sched->_storage_thread_ctx->name = "apm_storage";
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(10000);
@@ -328,16 +328,16 @@ void ChibiScheduler::_storage_thread(void* arg)
         sched->delay_microseconds(10000);
 
         // process any pending storage writes
-        ((ChibiStorage *)hal.storage)->_timer_tick();
+        ((Storage *)hal.storage)->_timer_tick();
     }
 }
 
-bool ChibiScheduler::in_main_thread() const
+bool Scheduler::in_main_thread() const
 {
     return get_main_thread() == chThdGetSelfX();
 }
 
-void ChibiScheduler::system_initialized()
+void Scheduler::system_initialized()
 {
     if (_initialized) {
         AP_HAL::panic("PANIC: scheduler::system_initialized called"

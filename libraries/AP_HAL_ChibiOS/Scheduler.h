@@ -52,9 +52,9 @@
 #define APM_MAIN_THREAD_STACK_SIZE 8192
 
 /* Scheduler implementation: */
-class ChibiOS::ChibiScheduler : public AP_HAL::Scheduler {
+class ChibiOS::Scheduler : public AP_HAL::Scheduler {
 public:
-    ChibiScheduler();
+    Scheduler();
     /* AP_HAL::Scheduler methods */
 
 

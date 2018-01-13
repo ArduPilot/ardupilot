@@ -24,10 +24,10 @@
 // number of samples on each channel to gather on each DMA callback
 #define ADC_DMA_BUF_DEPTH 8
 
-class ChibiOS::ChibiAnalogSource : public AP_HAL::AnalogSource {
+class ChibiOS::AnalogSource : public AP_HAL::AnalogSource {
 public:
-    friend class ChibiOS::ChibiAnalogIn;
-    ChibiAnalogSource(int16_t pin, float initial_value);
+    friend class ChibiOS::AnalogIn;
+    AnalogSource(int16_t pin, float initial_value);
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
@@ -50,11 +50,11 @@ private:
     float _pin_scaler();
 };
 
-class ChibiOS::ChibiAnalogIn : public AP_HAL::AnalogIn {
+class ChibiOS::AnalogIn : public AP_HAL::AnalogIn {
 public:
-    friend class ChibiAnalogSource;
+    friend class AnalogSource;
     
-    ChibiAnalogIn();
+    AnalogIn();
     void init() override;
     AP_HAL::AnalogSource* channel(int16_t pin) override;
     void _timer_tick(void);
@@ -69,7 +69,7 @@ private:
     int _system_power_handle;
     uint64_t _battery_timestamp;
     uint64_t _servorail_timestamp;
-    ChibiOS::ChibiAnalogSource* _channels[ANALOG_MAX_CHANNELS];
+    ChibiOS::AnalogSource* _channels[ANALOG_MAX_CHANNELS];
 
     uint32_t _last_run;
     float _board_voltage;

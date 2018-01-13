@@ -27,7 +27,7 @@ using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
 
-void ChibiStorage::_storage_open(void)
+void Storage::_storage_open(void)
 {
     if (_initialised) {
         return;
@@ -60,7 +60,7 @@ void ChibiStorage::_storage_open(void)
   result is that a line is written more than once, but it won't result
   in a line not being written.
 */
-void ChibiStorage::_mark_dirty(uint16_t loc, uint16_t length)
+void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
     uint16_t end = loc + length;
     for (uint16_t line=loc>>CH_STORAGE_LINE_SHIFT;
@@ -70,7 +70,7 @@ void ChibiStorage::_mark_dirty(uint16_t loc, uint16_t length)
     }
 }
 
-void ChibiStorage::read_block(void *dst, uint16_t loc, size_t n)
+void Storage::read_block(void *dst, uint16_t loc, size_t n)
 {
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
@@ -79,7 +79,7 @@ void ChibiStorage::read_block(void *dst, uint16_t loc, size_t n)
     memcpy(dst, &_buffer[loc], n);
 }
 
-void ChibiStorage::write_block(uint16_t loc, const void *src, size_t n)
+void Storage::write_block(uint16_t loc, const void *src, size_t n)
 {
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
@@ -91,7 +91,7 @@ void ChibiStorage::write_block(uint16_t loc, const void *src, size_t n)
     }
 }
 
-void ChibiStorage::_timer_tick(void)
+void Storage::_timer_tick(void)
 {
     if (!_initialised || _dirty_mask.empty()) {
         return;
@@ -127,7 +127,7 @@ void ChibiStorage::_timer_tick(void)
 /*
   load all data from flash
  */
-void ChibiStorage::_flash_load(void)
+void Storage::_flash_load(void)
 {
     _flash_page = STORAGE_FLASH_PAGE;
 
@@ -141,7 +141,7 @@ void ChibiStorage::_flash_load(void)
 /*
   write one storage line. This also updates _dirty_mask. 
 */
-void ChibiStorage::_flash_write(uint16_t line)
+void Storage::_flash_write(uint16_t line)
 {
     if (_flash.write(line*CH_STORAGE_LINE_SIZE, CH_STORAGE_LINE_SIZE)) {
         // mark the line clean
@@ -152,7 +152,7 @@ void ChibiStorage::_flash_write(uint16_t line)
 /*
   callback to write data to flash
  */
-bool ChibiStorage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
+bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
     size_t base_address = stm32_flash_getpageaddr(_flash_page+sector);
     bool ret = stm32_flash_write(base_address+offset, data, length) == length;
@@ -173,7 +173,7 @@ bool ChibiStorage::_flash_write_data(uint8_t sector, uint32_t offset, const uint
 /*
   callback to read data from flash
  */
-bool ChibiStorage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
+bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
     size_t base_address = stm32_flash_getpageaddr(_flash_page+sector);
     const uint8_t *b = ((const uint8_t *)base_address)+offset;
@@ -184,7 +184,7 @@ bool ChibiStorage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *da
 /*
   callback to erase flash sector
  */
-bool ChibiStorage::_flash_erase_sector(uint8_t sector)
+bool Storage::_flash_erase_sector(uint8_t sector)
 {
     return stm32_flash_erasepage(_flash_page+sector);
 }
@@ -192,7 +192,7 @@ bool ChibiStorage::_flash_erase_sector(uint8_t sector)
 /*
   callback to check if erase is allowed
  */
-bool ChibiStorage::_flash_erase_ok(void)
+bool Storage::_flash_erase_ok(void)
 {
     // only allow erase while disarmed
     return !hal.util->get_soft_armed();

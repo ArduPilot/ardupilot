@@ -32,7 +32,7 @@
 #define CH_STORAGE_LINE_SIZE (1<<CH_STORAGE_LINE_SHIFT)
 #define CH_STORAGE_NUM_LINES (CH_STORAGE_SIZE/CH_STORAGE_LINE_SIZE)
 
-class ChibiOS::ChibiStorage : public AP_HAL::Storage {
+class ChibiOS::Storage : public AP_HAL::Storage {
 public:
     void init() {}
     void read_block(void *dst, uint16_t src, size_t n);
@@ -58,10 +58,10 @@ private:
     
     AP_FlashStorage _flash{_buffer,
             stm32_flash_getpagesize(STORAGE_FLASH_PAGE),
-            FUNCTOR_BIND_MEMBER(&ChibiStorage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
-            FUNCTOR_BIND_MEMBER(&ChibiStorage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
-            FUNCTOR_BIND_MEMBER(&ChibiStorage::_flash_erase_sector, bool, uint8_t),
-            FUNCTOR_BIND_MEMBER(&ChibiStorage::_flash_erase_ok, bool)};
+            FUNCTOR_BIND_MEMBER(&Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
+            FUNCTOR_BIND_MEMBER(&Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
+            FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),
+            FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_ok, bool)};
     
     void _flash_load(void);
     void _flash_write(uint16_t line);
