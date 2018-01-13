@@ -444,7 +444,9 @@ void AP_IOMCU::print_debug(void)
 // trigger an ioevent
 void AP_IOMCU::trigger_event(uint8_t event)
 {
-    chEvtSignal(thread_ctx, EVENT_MASK(event));
+    if (thread_ctx != nullptr) {
+        chEvtSignal(thread_ctx, EVENT_MASK(event));
+    }
 }
 
 // get state of safety switch
