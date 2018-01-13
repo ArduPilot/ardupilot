@@ -49,6 +49,10 @@ ifeq ($(USE_SMART_BUILD),)
   USE_SMART_BUILD = no
 endif
 
+ifeq ($(USE_FATFS),)
+  USE_FATFS = yes
+endif
+
 #
 # Build global options
 ##############################################################################
@@ -98,7 +102,10 @@ include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 # Other files (optional).
 #include $(CHIBIOS)/test/rt/test.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
+
+ifeq ($(USE_FATFS),yes)
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
+endif
 
 VARIOUSSRC = $(STREAMSSRC)
 
@@ -120,8 +127,11 @@ CSRC = $(STARTUPSRC) \
 	   $(HWDEF)/common/flash.c \
 	   $(HWDEF)/common/malloc.c \
 	   $(HWDEF)/common/stdio.c \
-	   $(HWDEF)/common/posix.c \
 	   $(HWDEF)/common/hrt.c
+
+ifeq ($(USE_FATFS),yes)
+CSRC += $(HWDEF)/common/posix.c
+endif
 
 
 #	   $(TESTSRC) \
