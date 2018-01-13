@@ -109,7 +109,7 @@ public:
 #if AP_FEATURE_BOARD_DETECT
         return instance?instance->state.pwm_count.get():4;
 #else
-        return false;
+        return 0;
 #endif
     }
     
