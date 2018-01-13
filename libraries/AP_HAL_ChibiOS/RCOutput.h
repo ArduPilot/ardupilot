@@ -52,16 +52,23 @@ public:
     void force_safety_off(void) override;
 
     bool enable_px4io_sbus_out(uint16_t rate_hz) override;
+
+    /*
+      set default update rate
+     */
+    void set_default_rate(uint16_t rate_hz) override;
     
 private:
     struct pwm_group {
+        // only advanced timers can do high clocks needed for more than 400Hz
+        bool advanced_timer;
         uint8_t chan[4]; // chan number, zero based, 255 for disabled
         PWMConfig pwm_cfg;
         PWMDriver* pwm_drv;
     };
     enum output_mode _output_mode = MODE_PWM_NORMAL;
 
-    static const pwm_group pwm_group_list[];
+    static pwm_group pwm_group_list[];
     uint16_t _esc_pwm_min;
     uint16_t _esc_pwm_max;
 
