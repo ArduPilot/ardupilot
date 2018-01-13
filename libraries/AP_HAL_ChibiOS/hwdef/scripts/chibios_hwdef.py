@@ -114,6 +114,21 @@ class generic_pin(object):
                     return e
             return None
 
+        def extra_value(self, name, type=None, default=None):
+            '''find an extra value of given type'''
+            v = self.extra_prefix(name)
+            if v is None:
+                return default
+            if v[len(name)] != '(' or v[-1] != ')':
+                error("Badly formed value for %s: %s\n" % (name, v))
+            ret = v[len(name)+1:-1]
+            if type is not None:
+                try:
+                    ret = type(ret)
+                except Exception:
+                    error("Badly formed value for %s: %s\n" % (name, ret))
+            return ret
+
         def is_RTS(self):
             '''return true if this is a RTS pin'''
             if self.label and self.label.endswith("_RTS") and (self.type.startswith('USART') or self.type.startswith('UART')):
@@ -220,7 +235,7 @@ for port in ports:
         for pin in range(pincount[port]):
                 portmap[port].append(generic_pin(port, pin, None, 'INPUT', []))
 
-def get_config(name, column=0, required=True, default=None, need_int=False):
+def get_config(name, column=0, required=True, default=None, type=None):
     '''get a value from config dictionary'''
     if not name in config:
         if required and default is None:
@@ -229,10 +244,11 @@ def get_config(name, column=0, required=True, default=None, need_int=False):
     if len(config[name]) < column+1:
         error("Error: missing required value %s in hwdef.dat (column %u)" % (name, column))
     ret = config[name][column]
-    if need_int:
-        if not is_int(ret):
-            error("Config value %s must be an integer (got %s)" % (name, ret))
-        ret = int(ret)
+    if type is not None:
+        try:
+            ret = type(ret)
+        except Exception:
+            error("Badly formed config value %s (got %s)" % (name, ret))
     return ret
 
 def process_line(line):
@@ -282,7 +298,7 @@ def write_mcu_config(f):
         f.write('// UART used for stdout (printf)\n')
         f.write('#define HAL_STDOUT_SERIAL %s\n\n' % get_config('STDOUT_SERIAL'))
         f.write('// baudrate used for stdout (printf)\n')
-        f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % get_config('STDOUT_BAUDRATE', need_int=True))
+        f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % get_config('STDOUT_BAUDRATE', type=int))
         if 'SDIO' in bytype:
                 f.write('// SDIO available, enable POSIX filesystem support\n')
                 f.write('#define USE_POSIX\n\n')
@@ -304,14 +320,14 @@ def write_mcu_config(f):
         hrt_timer = int(hrt_timer)
         f.write('#define HRT_TIMER GPTD%u\n' % hrt_timer)
         f.write('#define STM32_GPT_USE_TIM%u TRUE\n' % hrt_timer)
-        flash_size = get_config('FLASH_SIZE_KB', need_int=True)
+        flash_size = get_config('FLASH_SIZE_KB', type=int)
         f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
         f.write('#define CRT1_AREAS_NUMBER 1\n')
         if mcu_type in ['STM32F427xx', 'STM32F405xx']:
             def_ccm_size = 64
         else:
             def_ccm_size = None
-        ccm_size = get_config('CCM_RAM_SIZE_KB', default=def_ccm_size, required=False, need_int=True)
+        ccm_size = get_config('CCM_RAM_SIZE_KB', default=def_ccm_size, required=False, type=int)
         if ccm_size is not None:
             f.write('#define CCM_RAM_SIZE %u\n' % ccm_size)
         f.write('\n')
@@ -319,13 +335,13 @@ def write_mcu_config(f):
             
 def write_ldscript(fname):
     '''write ldscript.ld for this board'''
-    flash_size = get_config('FLASH_SIZE_KB', need_int=True)
+    flash_size = get_config('FLASH_SIZE_KB', type=int)
 
     # space to reserve for bootloader and storage at start of flash
-    flash_reserve_start = get_config('FLASH_RESERVE_START_KB', default=16, need_int=True)
+    flash_reserve_start = get_config('FLASH_RESERVE_START_KB', default=16, type=int)
 
     # space to reserve for storage at end of flash
-    flash_reserve_end = get_config('FLASH_RESERVE_END_KB', default=0, need_int=True)
+    flash_reserve_end = get_config('FLASH_RESERVE_END_KB', default=0, type=int)
 
     # ram size
     ram_size = get_config('RAM_SIZE_KB', default=192)
@@ -563,6 +579,32 @@ def write_PWM_config(f):
         f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
 
 
+def write_ADC_config(f):
+    '''write ADC config defines'''
+    f.write('// ADC config\n')
+    adc_chans = []
+    for l in bylabel:
+        p = bylabel[l]
+        if not p.type.startswith('ADC'):
+            continue
+        chan = get_ADC1_chan(mcu_type, p.portpin)
+        scale = p.extra_value('SCALE', default=None)
+        if p.label == 'VDD_5V_SENS':
+            f.write('#define ANALOG_VCC_5V_PIN %u\n' % chan)
+        adc_chans.append((chan, scale, p.label, p.portpin))
+    adc_chans = sorted(adc_chans)
+    vdd = get_config('STM32_VDD')
+    if vdd[-1] == 'U':
+        vdd = vdd[:-1]
+    vdd = float(vdd) * 0.01
+    f.write('#define HAL_ANALOG_PINS { \\\n')
+    for (chan, scale, label, portpin) in adc_chans:
+        scale_str = '%.2f/4096' % vdd
+        if scale is not None and scale != '1':
+            scale_str = scale + '*' + scale_str
+        f.write('{ %2u, %12s }, /* %s %s */ \\\n' % (chan, scale_str, portpin, label))
+    f.write('}\n\n')
+    
 
 def write_prototype_file():
     '''write the prototype file for apj generation'''
@@ -613,6 +655,7 @@ def write_hwdef_header(outfilename):
         write_I2C_config(f)
         write_SPI_config(f)
         write_PWM_config(f)
+        write_ADC_config(f)
 
         write_peripheral_enable(f)
         write_prototype_file()

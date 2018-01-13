@@ -38,25 +38,11 @@ extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
 
-// pin number for VCC rail
-#define ANALOG_VCC_5V_PIN 4
-
 /*
   scaling table between ADC count and actual input voltage, to account
   for voltage dividers on the board. 
  */
-const AnalogIn::pin_info AnalogIn::pin_config[] = {
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-    { ANALOG_VCC_5V_PIN,   0.007734  },    // VCC 5V rail sense
-#else
-    { ANALOG_VCC_5V_PIN,   6.6f/4096  },    // VCC 5V rail sense
-#endif
-    { 2,   VOLTAGE_SCALING  },  // 3DR Brick voltage
-    { 3,   VOLTAGE_SCALING  },  // 3DR Brick current
-    { 13,  VOLTAGE_SCALING  },  // AUX ADC pin 4
-    { 14,  VOLTAGE_SCALING  },  // AUX ADC pin 3
-    { 15,  VOLTAGE_SCALING*2 }, // analog airspeed sensor, 2:1 scaling
-};
+const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ANALOG_PINS;
 
 #define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE_SIMPLE(AnalogIn::pin_config)
 
@@ -64,9 +50,6 @@ const AnalogIn::pin_info AnalogIn::pin_config[] = {
 adcsample_t AnalogIn::samples[ADC_DMA_BUF_DEPTH*ADC_GRP1_NUM_CHANNELS];
 uint32_t AnalogIn::sample_sum[ADC_GRP1_NUM_CHANNELS];
 uint32_t AnalogIn::sample_count;
-
-// special pin numbers
-#define ANALOG_VCC_5V_PIN                4
 
 AnalogSource::AnalogSource(int16_t pin, float initial_value) :
     _pin(pin),
@@ -266,11 +249,13 @@ void AnalogIn::_timer_tick(void)
     
     // match the incoming channels to the currently active pins
     for (uint8_t i=0; i < ADC_GRP1_NUM_CHANNELS; i++) {
+#ifdef ANALOG_VCC_5V_PIN
         if (pin_config[i].channel == ANALOG_VCC_5V_PIN) {
             // record the Vcc value for later use in
             // voltage_average_ratiometric()
             _board_voltage = buf_adc[i] * pin_config[i].scaling;
         }
+#endif
     }
     for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
         Debug("chan %u value=%u\n",
