@@ -69,9 +69,11 @@ void RGBLed::set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     if (!_healthy) {
         return;
     }
-    if (pNotify->_rgb_led_override) {
-        // don't set if in override mode
-        return;
+    if (pNotify) {
+        if (pNotify->_rgb_led_override) {
+            // don't set if in override mode
+            return;
+        }
     }
     _set_rgb(red, green, blue);
 }
@@ -82,19 +84,21 @@ void RGBLed::update_colours(void)
 {
     uint8_t brightness = _led_bright;
 
-    switch (pNotify->_rgb_led_brightness) {
-    case RGB_LED_OFF:
-        brightness = _led_off;
-        break;
-    case RGB_LED_LOW:
-        brightness = _led_dim;
-        break;
-    case RGB_LED_MEDIUM:
-        brightness = _led_medium;
-        break;
-    case RGB_LED_HIGH:
-        brightness = _led_bright;
-        break;
+    if (pNotify) {
+        switch (pNotify->_rgb_led_brightness) {
+        case RGB_LED_OFF:
+            brightness = _led_off;
+            break;
+        case RGB_LED_LOW:
+            brightness = _led_dim;
+            break;
+        case RGB_LED_MEDIUM:
+            brightness = _led_medium;
+            break;
+        case RGB_LED_HIGH:
+            brightness = _led_bright;
+            break;
+        }
     }
 
     // slow rate from 50Hz to 10hz
@@ -342,11 +346,13 @@ void RGBLed::update()
     if (!_healthy) {
         return;
     }
-    if (!pNotify->_rgb_led_override) {
+    if (pNotify) {
+        if (pNotify->_rgb_led_override) {
+            update_override();
+        }
+    } else {
         update_colours();
         set_rgb(_red_des, _green_des, _blue_des);
-    } else {
-        update_override();
     }
 }
 
@@ -355,9 +361,11 @@ void RGBLed::update()
 */
 void RGBLed::handle_led_control(mavlink_message_t *msg)
 {
-    if (!pNotify->_rgb_led_override) {
-        // ignore LED_CONTROL commands if not in LED_OVERRIDE mode
-        return;
+    if (pNotify) {
+        if (!pNotify->_rgb_led_override) {
+            // ignore LED_CONTROL commands if not in LED_OVERRIDE mode
+            return;
+        }
     }
 
     // decode mavlink message

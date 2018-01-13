@@ -160,9 +160,11 @@ void ToneAlarm_PX4::update()
         return;
     }
 
-    // exit if buzzer is not enabled
-    if (pNotify->buzzer_enabled() == false) {
-        return;
+    if (pNotify) {
+        // exit if buzzer is not enabled
+        if (pNotify->buzzer_enabled() == false) {
+            return;
+        }
     }
 
     check_cont_tone();
