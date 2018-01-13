@@ -72,6 +72,7 @@ enum ioevents {
     IOEVENT_GET_RCIN,
     IOEVENT_ENABLE_SBUS,
     IOEVENT_SET_HEATER_TARGET,
+    IOEVENT_SET_DEFAULT_RATE,
 };
 
 // setup page registers
@@ -206,6 +207,13 @@ void AP_IOMCU::thread_main(void)
         if (mask & EVENT_MASK(IOEVENT_SET_HEATER_TARGET)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_HEATER_DUTY_CYCLE, heater_duty_cycle)) {
                 event_failed(IOEVENT_SET_HEATER_TARGET);
+                continue;
+            }
+        }
+
+        if (mask & EVENT_MASK(IOEVENT_SET_DEFAULT_RATE)) {
+            if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_DEFAULTRATE, rate.default_freq)) {
+                event_failed(IOEVENT_SET_DEFAULT_RATE);
                 continue;
             }
         }
@@ -531,6 +539,13 @@ void AP_IOMCU::set_heater_duty_cycle(uint8_t duty_cycle)
 {
     heater_duty_cycle = duty_cycle;
     trigger_event(IOEVENT_SET_HEATER_TARGET);
+}
+
+// set default output rate
+void AP_IOMCU::set_default_rate(uint16_t rate_hz)
+{
+    rate.default_freq = rate_hz;
+    trigger_event(IOEVENT_SET_DEFAULT_RATE);
 }
 
 #endif // HAL_WITH_IO_MCU

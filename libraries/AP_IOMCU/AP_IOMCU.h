@@ -67,6 +67,9 @@ public:
     // set target for IMU heater
     void set_heater_duty_cycle(uint8_t duty_cycle);
 
+    // set default output rate
+    void set_default_rate(uint16_t rate_hz);
+    
 private:
     AP_HAL::UARTDriver &uart;
 
