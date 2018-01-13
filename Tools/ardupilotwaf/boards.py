@@ -351,6 +351,7 @@ class chibios(Board):
             'ChibiOS',
         ]
         cfg.load('chibios')
+        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=yes'
 
     def build(self, bld):
         super(chibios, self).build(bld)
@@ -363,6 +364,7 @@ class skyviper_f412(chibios):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412',
         )
+        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
 
 class fmuv3(chibios):
     name = 'fmuv3'
