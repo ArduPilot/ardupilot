@@ -25,7 +25,7 @@
 #define RC_INPUT_MAX_CHANNELS 18
 #endif
 
-class ChibiOS::ChibiRCInput : public AP_HAL::RCInput {
+class ChibiOS::RCInput : public AP_HAL::RCInput {
 public:
     void init() override;
     bool new_input() override;

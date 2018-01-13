@@ -34,13 +34,13 @@ static HAL_UARTE_DRIVER;
 static HAL_UARTF_DRIVER;
 static ChibiOS::I2CDeviceManager i2cDeviceManager;
 static ChibiOS::SPIDeviceManager spiDeviceManager;
-static ChibiOS::ChibiAnalogIn analogIn;
-static ChibiOS::ChibiStorage storageDriver;
-static ChibiOS::ChibiGPIO gpioDriver;
-static ChibiOS::ChibiRCInput rcinDriver;
-static ChibiOS::ChibiRCOutput rcoutDriver;
-static ChibiOS::ChibiScheduler schedulerInstance;
-static ChibiOS::ChibiUtil utilInstance;
+static ChibiOS::AnalogIn analogIn;
+static ChibiOS::Storage storageDriver;
+static ChibiOS::GPIO gpioDriver;
+static ChibiOS::RCInput rcinDriver;
+static ChibiOS::RCOutput rcoutDriver;
+static ChibiOS::Scheduler schedulerInstance;
+static ChibiOS::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 #ifdef USE_POSIX
 static FATFS SDC_FS; // FATFS object
@@ -105,7 +105,7 @@ static THD_FUNCTION(main_loop,arg)
 {
     daemon_task = chThdGetSelfX();
 
-    Shared_DMA::init();
+    ChibiOS::Shared_DMA::init();
     
     hal.uartA->begin(115200);
     hal.uartB->begin(38400);

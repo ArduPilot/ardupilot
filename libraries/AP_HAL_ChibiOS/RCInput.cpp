@@ -28,7 +28,7 @@ extern AP_IOMCU iomcu;
 
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
-void ChibiRCInput::init()
+void RCInput::init()
 {
 #if HAL_USE_ICU == TRUE
     ppm_init(1000000, true);
@@ -37,7 +37,7 @@ void ChibiRCInput::init()
     _init = true;
 }
 
-bool ChibiRCInput::new_input()
+bool RCInput::new_input()
 {
     if (!_init) {
         return false;
@@ -65,7 +65,7 @@ bool ChibiRCInput::new_input()
     return valid;
 }
 
-uint8_t ChibiRCInput::num_channels()
+uint8_t RCInput::num_channels()
 {
     if (!_init) {
         return 0;
@@ -76,7 +76,7 @@ uint8_t ChibiRCInput::num_channels()
     return n;
 }
 
-uint16_t ChibiRCInput::read(uint8_t channel)
+uint16_t RCInput::read(uint8_t channel)
 {
     if (!_init) {
         return 0;
@@ -105,7 +105,7 @@ uint16_t ChibiRCInput::read(uint8_t channel)
     return v;
 }
 
-uint8_t ChibiRCInput::read(uint16_t* periods, uint8_t len)
+uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 {
     if (!_init) {
         return false;
@@ -120,7 +120,7 @@ uint8_t ChibiRCInput::read(uint16_t* periods, uint8_t len)
     return len;
 }
 
-bool ChibiRCInput::set_overrides(int16_t *overrides, uint8_t len)
+bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
 {
     if (!_init) {
         return false;
@@ -133,7 +133,7 @@ bool ChibiRCInput::set_overrides(int16_t *overrides, uint8_t len)
     return res;
 }
 
-bool ChibiRCInput::set_override(uint8_t channel, int16_t override)
+bool RCInput::set_override(uint8_t channel, int16_t override)
 {
     if (!_init) {
         return false;
@@ -153,7 +153,7 @@ bool ChibiRCInput::set_override(uint8_t channel, int16_t override)
     return false;
 }
 
-void ChibiRCInput::clear_overrides()
+void RCInput::clear_overrides()
 {
     for (uint8_t i = 0; i < RC_INPUT_MAX_CHANNELS; i++) {
         set_override(i, 0);
@@ -161,7 +161,7 @@ void ChibiRCInput::clear_overrides()
 }
 
 
-void ChibiRCInput::_timer_tick(void)
+void RCInput::_timer_tick(void)
 {
     if (!_init) {
         return;
@@ -202,7 +202,7 @@ void ChibiRCInput::_timer_tick(void)
     // and a timeout for the last valid input to handle failsafe
 }
 
-bool ChibiRCInput::rc_bind(int dsmMode)
+bool RCInput::rc_bind(int dsmMode)
 {
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (radio) {

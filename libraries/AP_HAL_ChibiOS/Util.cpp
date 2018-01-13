@@ -37,7 +37,7 @@ extern "C" {
 /**
    how much free memory do we have in bytes.
 */
-uint32_t ChibiUtil::available_memory(void)
+uint32_t Util::available_memory(void)
 {
     // from malloc.c in hwdef
     return mem_available();
@@ -47,7 +47,7 @@ uint32_t ChibiUtil::available_memory(void)
     Special Allocation Routines
 */
 
-void* ChibiUtil::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
+void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
 {
     if (mem_type == AP_HAL::Util::MEM_FAST) {
         return try_alloc_from_ccm_ram(size);
@@ -56,7 +56,7 @@ void* ChibiUtil::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
     }
 }
 
-void ChibiUtil::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
+void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 {
     if (ptr != NULL) {
         chHeapFree(ptr);
@@ -64,7 +64,7 @@ void ChibiUtil::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_
 }
 
 
-void* ChibiUtil::try_alloc_from_ccm_ram(size_t size)
+void* Util::try_alloc_from_ccm_ram(size_t size)
 {
     void *ret = malloc_ccm(size);
     if (ret == nullptr) {
@@ -77,7 +77,7 @@ void* ChibiUtil::try_alloc_from_ccm_ram(size_t size)
 /*
   get safety switch state
  */
-ChibiUtil::safety_state ChibiUtil::safety_switch_state(void)
+Util::safety_state Util::safety_switch_state(void)
 {
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
@@ -87,7 +87,7 @@ ChibiUtil::safety_state ChibiUtil::safety_switch_state(void)
     return SAFETY_NONE;
 }
 
-void ChibiUtil::set_imu_temp(float current)
+void Util::set_imu_temp(float current)
 {
 #if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
     if (!heater.target || *heater.target == -1 || !AP_BoardConfig::io_enabled()) {
@@ -130,7 +130,7 @@ void ChibiUtil::set_imu_temp(float current)
 #endif // HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
 }
 
-void ChibiUtil::set_imu_target_temp(int8_t *target)
+void Util::set_imu_target_temp(int8_t *target)
 {
 #if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
     heater.target = target;

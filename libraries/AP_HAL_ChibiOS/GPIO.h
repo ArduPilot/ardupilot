@@ -33,9 +33,9 @@
 #endif
 #endif
 
-class ChibiOS::ChibiGPIO : public AP_HAL::GPIO {
+class ChibiOS::GPIO : public AP_HAL::GPIO {
 public:
-    ChibiGPIO();
+    GPIO();
     void    init();
     void    pinMode(uint8_t pin, uint8_t output);
     int8_t  analogPinToDigitalPin(uint8_t pin);
@@ -58,9 +58,9 @@ private:
     bool _usb_connected = false;
 };
 
-class ChibiOS::ChibiDigitalSource : public AP_HAL::DigitalSource {
+class ChibiOS::DigitalSource : public AP_HAL::DigitalSource {
 public:
-    ChibiDigitalSource(uint8_t v);
+    DigitalSource(uint8_t v);
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value);

@@ -23,7 +23,7 @@
 // DMA stream ID for stream_id2 when only one is needed
 #define SHARED_DMA_NONE 255
 
-class Shared_DMA
+class ChibiOS::Shared_DMA
 {
 public:
     FUNCTOR_TYPEDEF(dma_allocate_fn_t, void);
