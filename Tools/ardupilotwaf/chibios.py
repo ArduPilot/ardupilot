@@ -147,6 +147,14 @@ def configure(cfg):
 
 def build(bld):
     bld(
+        # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
+        source='libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD'),
+        rule='python ${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py -D ${BUILDROOT} ${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat',
+        group='dynamic_sources',
+        target=['hwdef.h', 'apj.prototype']
+    )
+    
+    bld(
         # create the file modules/ChibiOS/include_dirs
         rule='touch Makefile && BUILDDIR=${BUILDDIR} CHIBIOS=${CH_ROOT} AP_HAL=${AP_HAL_ROOT} ${MAKE} pass -f ${BOARD_MK}',
         group='dynamic_sources',
