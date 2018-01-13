@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include "include/mavlink/v2.0/ardupilotmega/mavlink.h"
 
 // Just so that it's completely clear...
 #define ENABLED                 1
@@ -87,26 +88,27 @@ enum aux_sw_func {
 #define HIL_MODE_SENSORS                1
 
 // Auto Pilot Modes enumeration
+// map flight modes to the MAVLink representation
 enum control_mode_t {
-    STABILIZE =     0,  // manual airframe angle with manual throttle
-    ACRO =          1,  // manual body-frame angular rate with manual throttle
-    ALT_HOLD =      2,  // manual airframe angle with automatic throttle
-    AUTO =          3,  // fully automatic waypoint control using mission commands
-    GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-    LOITER =        5,  // automatic horizontal acceleration with automatic throttle
-    RTL =           6,  // automatic return to launching point
-    CIRCLE =        7,  // automatic circular flight with automatic throttle
-    LAND =          9,  // automatic landing with horizontal position control
-    DRIFT =        11,  // semi-automous position, yaw and throttle control
-    SPORT =        13,  // manual earth-frame angular rate control with manual throttle
-    FLIP =         14,  // automatically flip the vehicle on the roll axis
-    AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
-    POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    BRAKE =        17,  // full-brake using inertial/GPS system, no pilot input
-    THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
-    AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
-    GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
-    SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
+    STABILIZE =    COPTER_FLIGHT_MODE_STABILIZE,     // manual airframe angle with manual throttle
+    ACRO =         COPTER_FLIGHT_MODE_ACRO,           // manual body-frame angular rate with manual throttle
+    ALT_HOLD =     COPTER_FLIGHT_MODE_ALT_HOLD,       // manual airframe angle with automatic throttle
+    AUTO =         COPTER_FLIGHT_MODE_AUTO,           // fully automatic waypoint control using mission commands
+    GUIDED =       COPTER_FLIGHT_MODE_GUIDED,         // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+    LOITER =       COPTER_FLIGHT_MODE_LOITER,         // automatic horizontal acceleration with automatic throttle
+    RTL =          COPTER_FLIGHT_MODE_RTL,            // automatic return to launching point
+    CIRCLE =       COPTER_FLIGHT_MODE_CIRCLE,         // automatic circular flight with automatic throttle
+    LAND =         COPTER_FLIGHT_MODE_LAND,           // automatic landing with horizontal position control
+    DRIFT =        COPTER_FLIGHT_MODE_DRIFT,          // semi-automous position, yaw and throttle control
+    SPORT =        COPTER_FLIGHT_MODE_SPORT,          // manual earth-frame angular rate control with manual throttle
+    FLIP =         COPTER_FLIGHT_MODE_FLIP,           // automatically flip the vehicle on the roll axis
+    AUTOTUNE =     COPTER_FLIGHT_MODE_AUTOTUNE,       // automatically tune the vehicle's roll and pitch gains
+    POSHOLD =      COPTER_FLIGHT_MODE_POSHOLD,        // automatic position hold with manual override, with automatic throttle
+    BRAKE =        COPTER_FLIGHT_MODE_BRAKE,          // full-brake using inertial/GPS system, no pilot input
+    THROW =        COPTER_FLIGHT_MODE_THROW,          // throw to launch mode using inertial/GPS system, no pilot input
+    AVOID_ADSB =   COPTER_FLIGHT_MODE_AVOID_ADSB,     // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
+    GUIDED_NOGPS = COPTER_FLIGHT_MODE_GUIDED_NOGPS, // guided mode but only accepts attitude and altitude
+    SMART_RTL =    COPTER_FLIGHT_MODE_SMART_RTL,      // SMART_RTL returns to home by retracing its steps
 };
 
 enum mode_reason_t {
