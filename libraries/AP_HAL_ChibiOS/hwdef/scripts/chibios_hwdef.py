@@ -305,9 +305,46 @@ def write_mcu_config(f):
         f.write('#define HRT_TIMER GPTD%u\n' % hrt_timer)
         f.write('#define STM32_GPT_USE_TIM%u TRUE\n' % hrt_timer)
         flash_size = get_config('FLASH_SIZE_KB', need_int=True)
-        f.write('#define BOARD_FLASH_SIZE %u' % flash_size)
+        f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
+        f.write('#define CRT1_AREAS_NUMBER 1\n')
+        if mcu_type in ['STM32F427xx', 'STM32F405xx']:
+            def_ccm_size = 64
+        else:
+            def_ccm_size = None
+        ccm_size = get_config('CCM_RAM_SIZE_KB', default=def_ccm_size, required=False, need_int=True)
+        if ccm_size is not None:
+            f.write('#define CCM_RAM_SIZE %u\n' % ccm_size)
         f.write('\n')
+
             
+def write_ldscript(fname):
+    '''write ldscript.ld for this board'''
+    flash_size = get_config('FLASH_SIZE_KB', need_int=True)
+
+    # space to reserve for bootloader and storage at start of flash
+    flash_reserve_start = get_config('FLASH_RESERVE_START_KB', default=16, need_int=True)
+
+    # space to reserve for storage at end of flash
+    flash_reserve_end = get_config('FLASH_RESERVE_END_KB', default=0, need_int=True)
+
+    # ram size
+    ram_size = get_config('RAM_SIZE_KB', default=192)
+
+    flash_base = 0x08000000 + flash_reserve_start*1024
+    flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
+
+    print("Generating ldscript.ld")
+    f = open(fname, 'w')
+    f.write('''/* generated ldscript.ld */
+MEMORY
+{
+    flash : org = 0x%08x, len = %uK
+    ram0  : org = 0x20000000, len = %uk
+}
+
+INCLUDE common.ld
+''' % (flash_base, flash_length, ram_size))
+
 
 def write_USB_config(f):
         '''write USB config defines'''
@@ -680,3 +717,5 @@ periph_list = build_peripheral_list()
 # write out hwdef.h
 write_hwdef_header(os.path.join(outdir, "hwdef.h"))
 
+# write out ldscript.ld
+write_ldscript(os.path.join(outdir, "ldscript.ld"))
