@@ -516,6 +516,7 @@ def write_PWM_config(f):
             group = len(groups)+1
             n = int(t[3])
             chan_list = [255, 255, 255, 255]
+            chan_mode = ['PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED']
             for p in pwm_out:
                 if p.type != t:
                     continue
@@ -531,6 +532,7 @@ def write_PWM_config(f):
                     errors("Bad PWM number in %s" % p)
                 pwmchan = int(pwmchan_str)
                 chan_list[chan-1] = pwmchan-1
+                chan_mode[chan-1] = 'PWM_OUTPUT_ACTIVE_HIGH'
             groups.append('HAL_PWM_GROUP%u' % group)
             if n in [1, 8]:
                 # only the advanced timers do 8MHz clocks
@@ -547,11 +549,16 @@ def write_PWM_config(f):
           NULL,     /* no callback */ \\
           { \\
            /* Channel Config */ \\
-           {PWM_OUTPUT_ACTIVE_HIGH, NULL}, \\
-           {PWM_OUTPUT_ACTIVE_HIGH, NULL}, \\
-           {PWM_OUTPUT_ACTIVE_HIGH, NULL}, \\
-           {PWM_OUTPUT_ACTIVE_HIGH, NULL}  \\
-          }, 0, 0}, &PWMD%u}\n''' % (group, chan_list[0], chan_list[1], chan_list[2], chan_list[3], pwm_clock, period, n))
+           {%s, NULL}, \\
+           {%s, NULL}, \\
+           {%s, NULL}, \\
+           {%s, NULL}  \\
+          }, 0, 0}, &PWMD%u}\n''' % (group,
+                                     chan_list[0], chan_list[1], chan_list[2], chan_list[3],
+                                     pwm_clock,
+                                     period,
+                                     chan_mode[0], chan_mode[1], chan_mode[2], chan_mode[3],
+                                     n))
         f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
 
 
