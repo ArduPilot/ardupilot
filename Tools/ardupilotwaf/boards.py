@@ -253,6 +253,8 @@ class chibios(Board):
     def configure_env(self, cfg, env):
         super(chibios, self).configure_env(cfg, env)
 
+        env.BOARD = self.name
+
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_CHIBIOS',
             HAVE_OCLOEXEC = 0,
@@ -314,6 +316,9 @@ class chibios(Board):
             '-mfloat-abi=hard'
         ]
 
+        bldnode = cfg.bldnode.make_node(self.name)
+        env.BUILDROOT = bldnode.make_node('').abspath()
+
         env.LINKFLAGS = [
             '-mcpu=cortex-m4',
             '-Os',
@@ -336,6 +341,9 @@ class chibios(Board):
             '-mfpu=fpv4-sp-d16',
             '-mno-thumb-interwork',
             '-mthumb',
+            '-L%s' % cfg.srcnode.make_node('modules/ChibiOS/os/common/startup/ARMCMx/compilers/GCC/ld/').abspath(),
+            '-L%s' % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/common/').abspath(),
+            '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=%s/ldscript.ld,--defsym=__process_stack_size__=0x400,--defsym=__main_stack_size__=0x400' % env.BUILDROOT,
         ]
 
         env.LIB += ['gcc', 'm']
@@ -355,13 +363,6 @@ class skyviper_f412(chibios):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412',
         )
-        env.BOARD = 'skyviper-f412'
-        env.LINKFLAGS += [
-                    '-L%s'\
-                    % cfg.srcnode.make_node('modules/ChibiOS/os/common/startup/ARMCMx/compilers/GCC/ld/').abspath(),
-                    '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=%s,--defsym=__process_stack_size__=0x400,--defsym=__main_stack_size__=0x400'\
-                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/%s/ldscript.ld' % env.BOARD).abspath(),
-        ]
 
 class fmuv3(chibios):
     name = 'fmuv3'
@@ -370,13 +371,6 @@ class fmuv3(chibios):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3',
         )
-        env.BOARD = 'fmuv3'
-        env.LINKFLAGS += [
-                    '-L%s'\
-                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/').abspath(),
-                    '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=%s,--defsym=__process_stack_size__=0x400,--defsym=__main_stack_size__=0x400'\
-                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/%s/ldscript.ld' % env.BOARD).abspath(),
-        ]
 
 class fmuv4(chibios):
     name = 'fmuv4'
@@ -385,13 +379,6 @@ class fmuv4(chibios):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4',
         )
-        env.BOARD = 'fmuv4'
-        env.LINKFLAGS += [
-                    '-L%s'\
-                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/').abspath(),
-                    '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=%s,--defsym=__process_stack_size__=0x400,--defsym=__main_stack_size__=0x400'\
-                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/%s/ldscript.ld' % env.BOARD).abspath(),
-        ]
 
 class mindpx_v2(chibios):
     name = 'mindpx-v2'
@@ -400,13 +387,6 @@ class mindpx_v2(chibios):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2',
         )
-        env.BOARD = 'mindpx-v2'
-        env.LINKFLAGS += [
-                    '-L%s'\
-                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/').abspath(),
-                    '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=%s,--defsym=__process_stack_size__=0x400,--defsym=__main_stack_size__=0x400'\
-                    % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/%s/ldscript.ld' % env.BOARD).abspath(),
-        ]
 
 class linux(Board):
     def configure_env(self, cfg, env):

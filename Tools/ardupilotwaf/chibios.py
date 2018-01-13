@@ -127,23 +127,25 @@ def configure(cfg):
         env.BOARD_MK = mk_custom
     else:
         env.BOARD_MK = mk_common
-    print("BOARD_MK=%s" % env.BOARD_MK)
 
     if cfg.options.default_parameters:
         cfg.msg('Default parameters', cfg.options.default_parameters, color='YELLOW')
         env.DEFAULT_PARAMETERS = srcpath(cfg.options.default_parameters)
 
-    
+    import subprocess
+
+    hwdef = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
+    hwdef_script = srcpath('libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
+    hwdef_out = env.BUILDROOT
+    if not os.path.exists(hwdef_out):
+        os.mkdir(hwdef_out)
+    try:
+        cmd = 'python %s -D %s %s' % (hwdef_script, hwdef_out, hwdef)
+        ret = subprocess.call(cmd, shell=True)
+    except Exception:
+        print("Failed to generate hwdef.h")
 
 def build(bld):
-    bld(
-        # build hwdef.h and apj.prototype from hwdef.dat
-        source='libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD'),
-        rule='python ${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py -D ${BUILDROOT} ${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat',
-        group='dynamic_sources',
-        target=['hwdef.h', 'apj.prototype']
-    )
-
     bld(
         # create the file modules/ChibiOS/include_dirs
         rule='touch Makefile && BUILDDIR=${BUILDDIR} CHIBIOS=${CH_ROOT} AP_HAL=${AP_HAL_ROOT} ${MAKE} pass -f ${BOARD_MK}',
