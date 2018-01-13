@@ -32,15 +32,10 @@
 
 #define MIN_ALIGNMENT 8
 
-#if defined(STM32F427xx) || defined(STM32F405xx)
-// 427 and 405 have 64k CCM ram
-#define CCM_RAM_ATTRIBUTE __attribute__((section(".ram4")))
+#if defined(CCM_RAM_SIZE)
+#ifndef CCM_BASE_ADDRESS
+#define CCM_BASE_ADDRESS 0x10000000
 #endif
-
-#ifdef CCM_RAM_ATTRIBUTE
-//CCM RAM Heap
-#define CCM_REGION_SIZE 64*1024
-CH_HEAP_AREA(ccm_heap_region, CCM_REGION_SIZE) CCM_RAM_ATTRIBUTE;
 static memory_heap_t ccm_heap;
 static bool ccm_heap_initialised = false;
 #endif
@@ -48,10 +43,10 @@ static bool ccm_heap_initialised = false;
 void *malloc_ccm(size_t size)
 {
     void *p = NULL;
-#ifdef CCM_RAM_ATTRIBUTE
+#if defined(CCM_RAM_SIZE)
     if (!ccm_heap_initialised) {
         ccm_heap_initialised = true;
-        chHeapObjectInit(&ccm_heap, ccm_heap_region, CCM_REGION_SIZE);
+        chHeapObjectInit(&ccm_heap, (void *)CCM_BASE_ADDRESS, CCM_RAM_SIZE*1024);
     }
     p = chHeapAllocAligned(&ccm_heap, size, CH_HEAP_ALIGNMENT);
     if (p != NULL) {
@@ -100,7 +95,7 @@ size_t mem_available(void)
     // we also need to add in memory that is not yet allocated to the heap
     totalp += chCoreGetStatusX();
 
-#ifdef CCM_RAM_ATTRIBUTE
+#if defined(CCM_RAM_SIZE)
     size_t ccm_available = 0;
     chHeapStatus(&ccm_heap, &ccm_available, NULL);
     totalp += ccm_available;
