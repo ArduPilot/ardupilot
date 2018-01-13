@@ -116,8 +116,6 @@ def write_dma_header(f, peripheral_list, mcu_type):
 
 
 	f.write("// auto-generated DMA mapping from dma_resolver.py\n")
-        f.write('\n#pragma once\n\n')
-
 
 	if unassigned:
 	        f.write("\n// Note: The following peripherals can't be resolved for DMA: %s\n\n" % unassigned)
