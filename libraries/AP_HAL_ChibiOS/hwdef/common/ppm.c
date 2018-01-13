@@ -15,56 +15,104 @@
  */
 
 #include "ppm.h"
+/*
+ * PPM decoder tuning parameters.
+ *
+ * The PPM decoder works as follows.
+ *
+ * Initially, the decoder waits in the UNSYNCH state for two edges
+ * separated by PPM_MIN_START.  Once the second edge is detected,
+ * the decoder moves to the ARM state.
+ *
+ * The ARM state expects an edge within PPM_MAX_PULSE_WIDTH, being the
+ * timing mark for the first channel.  If this is detected, it moves to
+ * the INACTIVE state.
+ *
+ * The INACTIVE phase waits for and discards the next edge, as it is not
+ * significant.  Once the edge is detected, it moves to the ACTIVE stae.
+ *
+ * The ACTIVE state expects an edge within PPM_MAX_PULSE_WIDTH, and when
+ * received calculates the time from the previous mark and records
+ * this time as the value for the next channel.
+ *
+ * If at any time waiting for an edge, the delay from the previous edge
+ * exceeds PPM_MIN_START the frame is deemed to have ended and the recorded
+ * values are advertised to clients.
+ */
+#define PPM_MAX_PULSE_WIDTH	500		/* maximum width of a pulse */
+#define PPM_MIN_CHANNEL_VALUE	800		/* shortest valid channel signal */
+#define PPM_MAX_CHANNEL_VALUE	2200		/* longest valid channel signal */
+#define PPM_MIN_START		2500		/* shortest valid start gap */
 
-#if HAL_USE_ICU
+/* Input timeout - after this interval we assume signal is lost */
+#define PPM_INPUT_TIMEOUT	100 * 1000	/* 100ms */
 
-static ICUConfig icucfg;    //Input Capture Unit Config
-static uint16_t ppm_buffer[10] = {0};
-static bool updated[10] = {0};
-static bool available;
+/* Number of same-sized frames required to 'lock' */
+#define PPM_CHANNEL_LOCK	3		/* should be less than the input timeout */
+
+/* decoded PPM buffer */
+#define PPM_MIN_CHANNELS	4
+#define PPM_MAX_CHANNELS	12
+
+/*
+ * Public decoder state
+ */
+uint16_t	ppm_buffer[PPM_MAX_CHANNELS];
+unsigned	ppm_decoded_channels;
+
+static uint16_t ppm_temp_buffer[PPM_MAX_CHANNELS];
+#if HAL_USE_EICU
+/* PPM decoder state machine */
+static struct {
+	uint16_t	last_edge;	/* last capture time */
+	uint16_t	last_mark;	/* last significant edge */
+	unsigned	next_channel;
+	unsigned	count_max;
+	enum {
+		UNSYNCH = 0,
+		ARM,
+		ACTIVE,
+		INACTIVE
+	} phase;
+} ppm;
+
+static EICUChannelConfig eicuchancfg;    //Input Capture Unit Config
+static EICUConfig eicucfg;    //Input Capture Unit Config
 static uint8_t buf_ptr = 0;
-static uint8_t num_channels = 0;
-static void ppm_measurement_cb(ICUDriver*);
+static void ppm_measurement_cb(EICUDriver *eicup, eicuchannel_t channel);
 
 //Initiallise ppm ICU with requested configuration
 bool ppm_init(uint32_t freq, bool active_high)
 {
-    icumode_t ppm_active_mode;
-
     if (active_high) {
-        ppm_active_mode = ICU_INPUT_ACTIVE_HIGH;
+        eicuchancfg.alvl = EICU_INPUT_ACTIVE_HIGH;
     } else {
-        ppm_active_mode = ICU_INPUT_ACTIVE_LOW;
+        eicuchancfg.alvl = EICU_INPUT_ACTIVE_LOW;
     }
 
-    icucfg.mode = ppm_active_mode;
-    icucfg.frequency = freq;
-    icucfg.channel = PPM_ICU_CHANNEL;
-    icucfg.width_cb = NULL;
-    icucfg.period_cb = ppm_measurement_cb;
-    icucfg.overflow_cb = NULL;
-    icucfg.dier = 0;
-
-    icuStart(&HAL_ICU_TIMER, &icucfg);
-    icuStartCapture(&HAL_ICU_TIMER);
-    icuEnableNotifications(&HAL_ICU_TIMER);
+    eicuchancfg.capture_cb = ppm_measurement_cb;
+    memset(&eicucfg, 0, sizeof(eicucfg));
+    eicucfg.frequency = freq;
+    eicucfg.dier = 0;
+    eicucfg.iccfgp[PPM_EICU_CHANNEL] = &eicuchancfg;
+    eicuStart(&PPM_EICU_TIMER, &eicucfg);
+    eicuEnable(&PPM_EICU_TIMER);
     return true;
 }
 
 uint16_t ppm_read(uint8_t channel)
 {
     //return 0 if channel requested is out range
-    if(channel >= num_channels) {
+    if(channel >= ppm_decoded_channels) {
         return 0;
     }
-    updated[channel] = false;
     return ppm_buffer[channel];
 }
 
 uint8_t ppm_read_bulk(uint16_t periods[], uint8_t len)
 {
     uint8_t i;
-    for(i = 0; (i < num_channels) && (i < len); i++) {
+    for(i = 0; (i < ppm_decoded_channels) && (i < len); i++) {
         periods[i] = ppm_buffer[i];
     }
     return i;
@@ -72,33 +120,147 @@ uint8_t ppm_read_bulk(uint16_t periods[], uint8_t len)
 
 bool ppm_available()
 {
-    uint8_t i;
-    for (i = 0; i < 10; i++) {
-        if (updated[i]) {
-            return true;
-        }
-    }
-    return false;
+    return (ppm_decoded_channels > 0);
 }
 
 uint8_t ppm_num_channels()
 {
-    return num_channels;
+    return ppm_decoded_channels;
 }
 
-static void ppm_measurement_cb(ICUDriver *icup)
+void
+ppm_input_decode(bool reset, unsigned count)
 {
-    uint16_t period = icuGetPeriodX(icup);
-    if (period >= 2700 || buf_ptr >= 10) {
-        //This is a sync pulse let's reset buffer pointer
-        num_channels = buf_ptr + 1;
-        buf_ptr = 0;
-    } else {
-        if(period > 900) {
-            updated[buf_ptr] = true;
-            ppm_buffer[buf_ptr] = period;
-        }
-        buf_ptr++;
-    }
+	uint16_t width;
+	uint16_t interval;
+	unsigned i;
+
+	/* if we missed an edge, we have to give up */
+	if (reset) {
+		goto error;
+	}
+
+	/* how long since the last edge? */
+	width = count - ppm.last_edge;
+
+	if (count < ppm.last_edge) {
+		width += ppm.count_max;        /* handle wrapped count */
+	}
+
+	ppm.last_edge = count;
+
+	/*
+	 * If this looks like a start pulse, then push the last set of values
+	 * and reset the state machine.
+	 *
+	 * Note that this is not a "high performance" design; it implies a whole
+	 * frame of latency between the pulses being received and their being
+	 * considered valid.
+	 */
+	if (width >= PPM_MIN_START) {
+
+		/*
+		 * If the number of channels changes unexpectedly, we don't want
+		 * to just immediately jump on the new count as it may be a result
+		 * of noise or dropped edges.  Instead, take a few frames to settle.
+		 */
+		if (ppm.next_channel != ppm_decoded_channels) {
+			static unsigned new_channel_count;
+			static unsigned new_channel_holdoff;
+
+			if (new_channel_count != ppm.next_channel) {
+				/* start the lock counter for the new channel count */
+				new_channel_count = ppm.next_channel;
+				new_channel_holdoff = PPM_CHANNEL_LOCK;
+
+			} else if (new_channel_holdoff > 0) {
+				/* this frame matched the last one, decrement the lock counter */
+				new_channel_holdoff--;
+
+			} else {
+				/* we have seen PPM_CHANNEL_LOCK frames with the new count, accept it */
+				ppm_decoded_channels = new_channel_count;
+				new_channel_count = 0;
+			}
+
+		} else {
+			/* frame channel count matches expected, let's use it */
+			if (ppm.next_channel > PPM_MIN_CHANNELS) {
+				for (i = 0; i < ppm.next_channel; i++) {
+					ppm_buffer[i] = ppm_temp_buffer[i];
+				}
+			}
+		}
+
+		/* reset for the next frame */
+		ppm.next_channel = 0;
+
+		/* next edge is the reference for the first channel */
+		ppm.phase = ARM;
+
+		return;
+	}
+
+	switch (ppm.phase) {
+	case UNSYNCH:
+		/* we are waiting for a start pulse - nothing useful to do here */
+		return;
+
+	case ARM:
+
+		/* we expect a pulse giving us the first mark */
+		if (width > PPM_MAX_PULSE_WIDTH) {
+			goto error;        /* pulse was too long */
+		}
+
+		/* record the mark timing, expect an inactive edge */
+		ppm.last_mark = count;
+		ppm.phase = INACTIVE;
+		return;
+
+	case INACTIVE:
+		/* this edge is not interesting, but now we are ready for the next mark */
+		ppm.phase = ACTIVE;
+
+		/* note that we don't bother looking at the timing of this edge */
+
+		return;
+
+	case ACTIVE:
+
+		/* we expect a well-formed pulse */
+		if (width > PPM_MAX_PULSE_WIDTH) {
+			goto error;        /* pulse was too long */
+		}
+
+		/* determine the interval from the last mark */
+		interval = count - ppm.last_mark;
+		ppm.last_mark = count;
+
+		/* if the mark-mark timing is out of bounds, abandon the frame */
+		if ((interval < PPM_MIN_CHANNEL_VALUE) || (interval > PPM_MAX_CHANNEL_VALUE)) {
+			goto error;
+		}
+
+		/* if we have room to store the value, do so */
+		if (ppm.next_channel < PPM_MAX_CHANNELS) {
+			ppm_temp_buffer[ppm.next_channel++] = interval;
+		}
+
+		ppm.phase = INACTIVE;
+		return;
+
+	}
+
+	/* the state machine is corrupted; reset it */
+
+error:
+	/* we don't like the state of the decoder, reset it and try again */
+	ppm.phase = UNSYNCH;
+	ppm_decoded_channels = 0;
 }
-#endif // HAL_USE_ICU
+
+static void ppm_measurement_cb(EICUDriver *eicup, eicuchannel_t channel) {
+    ppm_input_decode(false, eicup->tim->CCR[channel]);
+}
+#endif // HAL_USE_EICU

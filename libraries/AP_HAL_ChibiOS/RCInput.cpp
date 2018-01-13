@@ -30,8 +30,8 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 void RCInput::init()
 {
-#if HAL_USE_ICU == TRUE
-    ppm_init(1000000, true);
+#if HAL_USE_EICU == TRUE
+    ppm_init(1000000, false);
 #endif
     chMtxObjectInit(&rcin_mutex);
     _init = true;
@@ -166,7 +166,7 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-#if HAL_USE_ICU == TRUE
+#if HAL_USE_EICU == TRUE
     if (ppm_available()) {
         chMtxLock(&rcin_mutex);
         _num_channels = ppm_read_bulk(_rc_values, RC_INPUT_MAX_CHANNELS);
