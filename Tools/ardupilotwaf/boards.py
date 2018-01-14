@@ -365,6 +365,7 @@ class skyviper_f412(chibios):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412',
         )
         env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
+        env.DEFAULT_PARAMETERS = '../../Tools/Frame_params/SkyViper-F412/defaults.parm'
 
 class fmuv3(chibios):
     name = 'fmuv3'
@@ -373,6 +374,12 @@ class fmuv3(chibios):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3',
         )
+
+class skyviper_v2450(fmuv3):
+    name = 'skyviper-v2450'
+    def configure_env(self, cfg, env):
+        super(skyviper_v2450, self).configure_env(cfg, env)
+        env.DEFAULT_PARAMETERS = '../../Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
 
 class fmuv4(chibios):
     name = 'fmuv4'
