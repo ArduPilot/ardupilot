@@ -397,6 +397,15 @@ class mindpx_v2(chibios):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2',
         )
 
+class sparky2(chibios):
+    name = 'sparky2'
+    def configure_env(self, cfg, env):
+        super(sparky2, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_SPARKY2',
+        )
+        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
+
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
