@@ -27,11 +27,13 @@
 
 #include <assert.h>
 #include <stdio.h>
+#if HAL_OS_POSIX_IO
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#endif
+#include <sys/types.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -196,7 +198,11 @@ void AP_Terrain::open_file(void)
     if (fd != -1) {
         ::close(fd);
     }
+#if HAL_OS_POSIX_IO
     fd = ::open(file_path, O_RDWR|O_CREAT|O_CLOEXEC, 0644);
+#else
+    fd = ::open(file_path, O_RDWR|O_CREAT|O_CLOEXEC);
+#endif
     if (fd == -1) {
 #if TERRAIN_DEBUG
         hal.console->printf("Open %s failed - %s\n",

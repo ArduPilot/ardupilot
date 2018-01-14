@@ -18,7 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
 
-#if HAL_OS_POSIX_IO && defined(HAL_BOARD_TERRAIN_DIRECTORY)
+#if (HAL_OS_POSIX_IO || HAL_OS_FATFS_IO) && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define AP_TERRAIN_AVAILABLE 1
 #else
 #define AP_TERRAIN_AVAILABLE 0
