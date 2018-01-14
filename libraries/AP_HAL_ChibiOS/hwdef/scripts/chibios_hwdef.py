@@ -54,7 +54,7 @@ def is_int(str):
 
 def error(str):
     '''show an error and exit'''
-    print(str)
+    print("Error: " + str)
     sys.exit(1)
 
 def get_alt_function(mcu, pin, function):
@@ -239,10 +239,10 @@ def get_config(name, column=0, required=True, default=None, type=None):
     '''get a value from config dictionary'''
     if not name in config:
         if required and default is None:
-            error("Error: missing required value %s in hwdef.dat" % name)
+            error("missing required value %s in hwdef.dat" % name)
         return default
     if len(config[name]) < column+1:
-        error("Error: missing required value %s in hwdef.dat (column %u)" % (name, column))
+        error("missing required value %s in hwdef.dat (column %u)" % (name, column))
     ret = config[name][column]
     if type is not None:
         try:
@@ -250,41 +250,6 @@ def get_config(name, column=0, required=True, default=None, type=None):
         except Exception:
             error("Badly formed config value %s (got %s)" % (name, ret))
     return ret
-
-def process_line(line):
-        '''process one line of pin definition file'''
-        a = shlex.split(line)
-        # keep all config lines for later use
-        alllines.append(line)
-        config[a[0]] = a[1:]
-        if a[0] == 'MCU':
-                global mcu_type
-                mcu_type = a[2]
-        if a[0].startswith('P') and a[0][1] in ports:
-                # it is a port/pin definition
-                try:
-                        port = a[0][1]
-                        pin = int(a[0][2:])
-                        label = a[1]
-                        type = a[2]
-                        extra = a[3:]
-                except Exception:
-                        print("Bad pin line: %s" % a)
-                        return
-
-                p = generic_pin(port, pin, label, type, extra)
-                portmap[port][pin] = p
-                allpins.append(p)
-                if not type in bytype:
-                        bytype[type] = []
-                bytype[type].append(p)
-                bylabel[label] = p
-                af = get_alt_function(mcu_type, a[0], label)
-                if af is not None:
-                        p.af = af
-        if a[0] == 'SPIDEV':
-            spidev.append(a[1:])
-                
 
 def write_mcu_config(f):
         '''write MCU config defines'''
@@ -767,15 +732,67 @@ def build_peripheral_list():
                 done.add(type)
         return peripherals
 
-# process input file
-hwdef_file = args.hwdef
+def process_line(line):
+        '''process one line of pin definition file'''
+        a = shlex.split(line)
+        # keep all config lines for later use
+        alllines.append(line)
+        config[a[0]] = a[1:]
+        if a[0] == 'MCU':
+                global mcu_type
+                mcu_type = a[2]
+        if a[0].startswith('P') and a[0][1] in ports:
+                # it is a port/pin definition
+                try:
+                        port = a[0][1]
+                        pin = int(a[0][2:])
+                        label = a[1]
+                        type = a[2]
+                        extra = a[3:]
+                except Exception:
+                        print("Bad pin line: %s" % a)
+                        return
 
-f = open(hwdef_file,"r")
-for line in f.readlines():
+                p = generic_pin(port, pin, label, type, extra)
+                portmap[port][pin] = p
+                allpins.append(p)
+                if not type in bytype:
+                        bytype[type] = []
+                bytype[type].append(p)
+                bylabel[label] = p
+                af = get_alt_function(mcu_type, a[0], label)
+                if af is not None:
+                        p.af = af
+        if a[0] == 'SPIDEV':
+            spidev.append(a[1:])
+        if a[0] == 'undef':
+            config.pop(a[1], '')
+                
+                
+
+def process_file(filename):
+    '''process a hwdef.dat file'''
+    try:
+        f = open(filename,"r")
+    except Exception:
+        error("Unable to open file %s" % filename)
+    for line in f.readlines():
         line = line.strip()
         if len(line) == 0 or line[0] == '#':
-                continue
-        process_line(line)
+            continue
+        a = shlex.split(line)
+        if a[0] == "include" and len(a)>1:
+            include_file = a[1]
+            if include_file[0] != '/':
+                dir = os.path.dirname(filename)
+                include_file = os.path.normpath(os.path.join(dir, include_file))
+            print("Including %s" % include_file)
+            process_file(include_file)
+        else:
+            process_line(line)
+
+# process input file
+process_file(args.hwdef)
 
 outdir = args.outdir
 if outdir is None:
