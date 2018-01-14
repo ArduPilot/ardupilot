@@ -1598,18 +1598,17 @@ int mkdir(const char *pathname, mode_t mode)
 {
     errno = 0;
 
-    if(mode)
-    {
-        if(chmod(pathname, mode))
-            return(-1);
-    }
-
     int res = f_mkdir(pathname);
     if(res != FR_OK)
     {
         errno = fatfs_to_errno(res);
         return(-1);
     }
+
+    if (mode) {
+        chmod(pathname, mode);
+    }
+
     return(0);
 }
 
@@ -2115,8 +2114,9 @@ int fatfs_to_errno( FRESULT Result )
 
         case FR_DENIED:          /* FatFS (7) Access denied due to prohibited access or directory full */
             return (EACCES);     /* POSIX Permission denied (POSIX.1) */
-        case FR_EXIST:           /* FatFS (8) Access denied due to prohibited access */
-            return (EACCES);     /* POSIX Permission denied (POSIX.1) */
+            
+        case FR_EXIST:           /* file exists */
+            return (EEXIST);     /* file exists */
 
         case FR_INVALID_OBJECT:  /* FatFS (9) The file/directory object is invalid */
             return (EINVAL);     /* POSIX Invalid argument (POSIX.1) */
@@ -2518,4 +2518,38 @@ fprintf(FILE *fp, const char *fmt, ...)
     va_end(va);
 
     return len;
+}
+
+/*
+  fsync file
+ */
+int
+fsync(int fileno)
+{
+    FILE *stream;
+    FIL *fh;
+    int res;
+
+    errno = 0;
+
+    // checks if fileno out of bounds
+    stream = fileno_to_stream(fileno);
+    if(stream == NULL)
+    {
+        return(-1);
+    }
+
+    // fileno_to_fatfs checks for fileno out of bounds
+    fh = fileno_to_fatfs(fileno);
+    if(fh == NULL)
+    {
+        return(-1);
+    }
+    res = f_sync(fh);
+    if (res != FR_OK)
+    {
+        errno = fatfs_to_errno(res);
+        return(-1);
+    }
+    return(0);
 }
