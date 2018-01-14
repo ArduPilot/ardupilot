@@ -144,3 +144,21 @@ SPIDEV external0m1    SPI4 DEVID5  MPU_EXT_CS   MODE1  2*MHZ  2*MHZ
 SPIDEV external0m2    SPI4 DEVID5  MPU_EXT_CS   MODE2  2*MHZ  2*MHZ
 SPIDEV external0m3    SPI4 DEVID5  MPU_EXT_CS   MODE3  2*MHZ  2*MHZ
 
+define HAL_CHIBIOS_ARCH_FMUV3 1
+
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
+define HAL_STORAGE_SIZE 16384
+
+# fallback storage location is flash if no FRAM fitted
+define STORAGE_FLASH_PAGE 22
+
+# enable RAMTROM parameter storage
+define HAL_WITH_RAMTRON 1
+
+# pixhawk2 cube has an IMU header
+define HAL_HAVE_IMU_HEATER 1
+
+# enable FAT filesystem
+define HAL_OS_FATFS_IO 1
