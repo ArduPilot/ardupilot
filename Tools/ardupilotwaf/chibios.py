@@ -132,6 +132,8 @@ def configure(cfg):
         cfg.msg('Default parameters', cfg.options.default_parameters, color='YELLOW')
         env.DEFAULT_PARAMETERS = srcpath(cfg.options.default_parameters)
 
+    # we need to run chibios_hwdef.py at configure stage to generate the ldscript.ld
+    # that is needed by the remaining configure checks
     import subprocess
 
     hwdef = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
@@ -148,10 +150,10 @@ def configure(cfg):
 def build(bld):
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
-        source='libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD'),
+        source=bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD')),
         rule='python ${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py -D ${BUILDROOT} ${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat',
         group='dynamic_sources',
-        target=['hwdef.h', 'apj.prototype']
+        target=['hwdef.h', 'apj.prototype', 'ldscript.ld']
     )
     
     bld(
@@ -161,13 +163,20 @@ def build(bld):
         target='modules/ChibiOS/include_dirs'
     )
 
-    bld(
+    common_src = [bld.bldnode.find_or_declare('hwdef.h'),
+                  bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')]
+    common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.[ch]')
+    common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.mk')
+    common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.[ch]')
+    common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
+    ch_task = bld(
         # build libch.a from ChibiOS sources and hwdef.h
         rule="BUILDDIR='${BUILDDIR}' CHIBIOS='${CH_ROOT}' AP_HAL=${AP_HAL_ROOT} ${CHIBIOS_FATFS_FLAG} '${MAKE}' lib -f ${BOARD_MK}",
         group='dynamic_sources',
-        source=bld.bldnode.find_or_declare('hwdef.h'),
-        target=['modules/ChibiOS/libch.a']
+        source=common_src,
+        target='modules/ChibiOS/libch.a'
     )
+    ch_task.name = "ChibiOS_lib"
 
     bld.env.LIB += ['ch']
     bld.env.LIBPATH += ['modules/ChibiOS/']
