@@ -23,7 +23,7 @@ void set_object_value_and_report(const void *object_pointer,
                       const char *name, float value)
 {
     if (!AP_Param::set_object_value(object_pointer, group_info, name, value)) {
-        printf("WARNING: AP_Param::set object value \"%s::%s\" Failed.\n",
+        hal.console->printf("WARNING: AP_Param::set object value \"%s::%s\" Failed.\n",
                             group_info->name, name);
     }
 }
@@ -44,7 +44,7 @@ void loop(void)
     float accuracy = 0.0f;
     beacon.get_vehicle_position_ned(pos, accuracy);
     if (pos.x > 0.001f) {
-        printf("%f %f %f\n", static_cast<double>(pos.x), static_cast<double>(pos.y), static_cast<double>(pos.z));
+        hal.console->printf("%f %f %f\n", static_cast<double>(pos.x), static_cast<double>(pos.y), static_cast<double>(pos.z));
         count++;
     }
     hal.scheduler->delay(1000);
