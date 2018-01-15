@@ -19,6 +19,7 @@
 #include <uavcan/equipment/gnss/Fix.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
 #include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
+#include <uavcan/equipment/ahrs/MagneticFieldStrength2.hpp>
 #include <uavcan/equipment/air_data/StaticPressure.hpp>
 #include <uavcan/equipment/air_data/StaticTemperature.hpp>
 #include <uavcan/equipment/actuator/ArrayCommand.hpp>
@@ -225,6 +226,31 @@ static void magnetic_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::
 {   magnetic_cb(msg, 1); }
 static void (*magnetic_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength>& msg)
         = { magnetic_cb0, magnetic_cb1 };
+        
+static void magnetic_cb_2(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength2>& msg, uint8_t mgr)
+{
+    if (hal.can_mgr[mgr] != nullptr) {
+        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+        if (ap_uavcan != nullptr) {
+            AP_UAVCAN::Mag_Info *state = ap_uavcan->find_mag_node(msg.getSrcNodeID().get());
+            if (state != nullptr && msg.sensor_id == 1) {
+                state->mag_vector[0] = msg.magnetic_field_ga[0];
+                state->mag_vector[1] = msg.magnetic_field_ga[1];
+                state->mag_vector[2] = msg.magnetic_field_ga[2];
+
+                // after all is filled, update all listeners with new data
+                ap_uavcan->update_mag_state(msg.getSrcNodeID().get());
+            }
+        }
+    }
+}
+
+static void magnetic_cb_2_0(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength2>& msg)
+{   magnetic_cb_2(msg, 0); }
+static void magnetic_cb_2_1(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength2>& msg)
+{   magnetic_cb_2(msg, 1); }
+static void (*magnetic_cb_2_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength2>& msg)
+        = { magnetic_cb_2_0, magnetic_cb_2_1 };
 
 static void air_data_sp_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticPressure>& msg, uint8_t mgr)
 {
@@ -391,6 +417,14 @@ bool AP_UAVCAN::try_init(void)
                     const int magnetic_start_res = magnetic->start(magnetic_cb_arr[_uavcan_i]);
                     if (magnetic_start_res < 0) {
                         debug_uavcan(1, "UAVCAN Compass subscriber start problem\n\r");
+                        return false;
+                    }
+                    
+                    uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength2> *magnetic2;
+                    magnetic2 = new uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength2>(*node);
+                    const int magnetic_start_res_2 = magnetic2->start(magnetic_cb_2_arr[_uavcan_i]);
+                    if (magnetic_start_res_2 < 0) {
+                        debug_uavcan(1, "UAVCAN Compass for multiple mags subscriber start problem\n\r");
                         return false;
                     }
 
