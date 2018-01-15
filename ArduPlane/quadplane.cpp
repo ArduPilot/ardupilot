@@ -31,60 +31,6 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TRANSITION_MS", 11, QuadPlane, transition_time_ms, 5000),
 
-    // @Param: PZ_P
-    // @DisplayName: Position (vertical) controller P gain
-    // @Description: Position (vertical) controller P gain.  Converts the difference between the desired altitude and actual altitude into a climb or descent rate which is passed to the throttle rate controller
-    // @Range: 1.000 3.000
-    // @User: Standard
-    AP_SUBGROUPINFO(p_alt_hold, "PZ_", 12, QuadPlane, AC_P),
-
-    // @Param: PXY_P
-    // @DisplayName: Position (horizonal) controller P gain
-    // @Description: Loiter position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
-    // @Range: 0.500 2.000
-    // @User: Standard
-    AP_SUBGROUPINFO(p_pos_xy,   "PXY_", 13, QuadPlane, AC_P),
-
-    // @Param: VZ_P
-    // @DisplayName: Velocity (vertical) P gain
-    // @Description: Velocity (vertical) P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
-    // @Range: 1.000 8.000
-    // @User: Standard
-    AP_SUBGROUPINFO(p_vel_z,   "VZ_", 15, QuadPlane, AC_P),
-
-    // @Param: AZ_P
-    // @DisplayName: Throttle acceleration controller P gain
-    // @Description: Throttle acceleration controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output
-    // @Range: 0.500 1.500
-    // @User: Standard
-
-    // @Param: AZ_I
-    // @DisplayName: Throttle acceleration controller I gain
-    // @Description: Throttle acceleration controller I gain.  Corrects long-term difference in desired vertical acceleration and actual acceleration
-    // @Range: 0.000 3.000
-    // @User: Standard
-
-    // @Param: AZ_IMAX
-    // @DisplayName: Throttle acceleration controller I gain maximum
-    // @Description: Throttle acceleration controller I gain maximum.  Constrains the maximum pwm that the I term will generate
-    // @Range: 0 1000
-    // @Units: d%
-    // @User: Standard
-
-    // @Param: AZ_D
-    // @DisplayName: Throttle acceleration controller D gain
-    // @Description: Throttle acceleration controller D gain.  Compensates for short-term change in desired vertical acceleration vs actual acceleration
-    // @Range: 0.000 0.400
-    // @User: Standard
-
-    // @Param: AZ_FILT_HZ
-    // @DisplayName: Throttle acceleration filter
-    // @Description: Filter applied to acceleration to reduce noise.  Lower values reduce noise but add delay.
-    // @Range: 1.000 100.000
-    // @Units: Hz
-    // @User: Standard
-    AP_SUBGROUPINFO(pid_accel_z, "AZ_", 16, QuadPlane, AC_PID),
-
     // @Group: P_
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     AP_SUBGROUPPTR(pos_control, "P", 17, QuadPlane, AC_PosControl),
@@ -571,8 +517,7 @@ bool QuadPlane::setup(void)
         goto failed;
     }
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
-    pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control,
-                                    p_alt_hold, p_vel_z, pid_accel_z, p_pos_xy);
+    pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
     if (!pos_control) {
         hal.console->printf("%s pos_control\n", strUnableToAllocate);
         goto failed;
@@ -589,7 +534,7 @@ bool QuadPlane::setup(void)
     motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
-    pid_accel_z.set_dt(loop_delta_t);
+    pos_control->get_accel_z_pid().set_dt(loop_delta_t);
     pos_control->set_dt(loop_delta_t);
     attitude_control->parameter_sanity_check();
 
@@ -767,7 +712,7 @@ void QuadPlane::run_z_controller(void)
 
         // the base throttle we start at is the current throttle we are using
         float base_throttle = constrain_float(motors->get_throttle() - motors->get_throttle_hover(), -1, 1) * 1000;
-        pid_accel_z.set_integrator(base_throttle);
+        pos_control->get_accel_z_pid().set_integrator(base_throttle);
 
         last_pidz_init_ms = now;
     }
@@ -2143,7 +2088,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     attitude_control->get_rate_roll_pid().reset_I();
     attitude_control->get_rate_pitch_pid().reset_I();
     attitude_control->get_rate_yaw_pid().reset_I();
-    pid_accel_z.reset_I();
+    pos_control->get_accel_z_pid().reset_I();
     pos_control->get_vel_xy_pid().reset_I();
     
     plane.set_next_WP(cmd.content.location);
