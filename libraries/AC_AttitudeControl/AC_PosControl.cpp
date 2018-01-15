@@ -4,6 +4,24 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+ // default gains for Plane
+ # define POSCONTROL_VEL_XY_P                   0.7f    // horizontal velocity controller P gain default
+ # define POSCONTROL_VEL_XY_I                   0.35f   // horizontal velocity controller I gain default
+ # define POSCONTROL_VEL_XY_D                   0.0f    // horizontal velocity controller D gain default
+ # define POSCONTROL_VEL_XY_IMAX                1000.0f // horizontal velocity controller IMAX gain default
+ # define POSCONTROL_VEL_XY_FILT_HZ             5.0f    // horizontal velocity controller input filter
+ # define POSCONTROL_VEL_XY_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
+#else
+ // default gains for Copter and Sub
+ # define POSCONTROL_VEL_XY_P                   1.0f    // horizontal velocity controller P gain default
+ # define POSCONTROL_VEL_XY_I                   0.5f    // horizontal velocity controller I gain default
+ # define POSCONTROL_VEL_XY_D                   0.0f    // horizontal velocity controller D gain default
+ # define POSCONTROL_VEL_XY_IMAX                1000.0f // horizontal velocity controller IMAX gain default
+ # define POSCONTROL_VEL_XY_FILT_HZ             5.0f    // horizontal velocity controller input filter
+ # define POSCONTROL_VEL_XY_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
+#endif
+
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
 
@@ -16,6 +34,51 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ACC_XY_FILT", 1, AC_PosControl, _accel_xy_filt_hz, POSCONTROL_ACCEL_FILTER_HZ),
 
+    // @Param: _VELXY_P
+    // @DisplayName: Velocity (horizontal) P gain
+    // @Description: Velocity (horizontal) P gain.  Converts the difference between desired velocity to a target acceleration
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: _VELXY_I
+    // @DisplayName: Velocity (horizontal) I gain
+    // @Description: Velocity (horizontal) I gain.  Corrects long-term difference in desired velocity to a target acceleration
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: _VELXY_D
+    // @DisplayName: Velocity (horizontal) D gain
+    // @Description: Velocity (horizontal) D gain.  Corrects short-term changes in velocity
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _VELXY_IMAX
+    // @DisplayName: Velocity (horizontal) integrator maximum
+    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: cm/s/s
+    // @User: Advanced
+
+    // @Param: _VELXY_FILT
+    // @DisplayName: Velocity (horizontal) input filter
+    // @Description: Velocity (horizontal) input filter.  This filter (in hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: _VELXY_D_FILT
+    // @DisplayName: Velocity (horizontal) input filter
+    // @Description: Velocity (horizontal) input filter.  This filter (in hz) is applied to the input for P and I terms
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    AP_SUBGROUPINFO(_pid_vel_xy, "_VELXY_", 2, AC_PosControl, AC_PID_2D),
+
     AP_GROUPEND
 };
 
@@ -26,7 +89,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                              const AP_Motors& motors, AC_AttitudeControl& attitude_control,
                              AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
-                             AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy) :
+                             AC_P& p_pos_xy) :
     _ahrs(ahrs),
     _inav(inav),
     _motors(motors),
@@ -35,7 +98,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _p_vel_z(p_vel_z),
     _pid_accel_z(pid_accel_z),
     _p_pos_xy(p_pos_xy),
-    _pi_vel_xy(pi_vel_xy),
+    _pid_vel_xy(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ, POSCONTROL_DT_50HZ),
     _dt(POSCONTROL_DT_400HZ),
     _dt_xy(POSCONTROL_DT_50HZ),
     _last_update_xy_ms(0),
@@ -97,7 +160,7 @@ void AC_PosControl::set_dt(float delta_sec)
 void AC_PosControl::set_dt_xy(float dt_xy)
 {
     _dt_xy = dt_xy;
-    _pi_vel_xy.set_dt(dt_xy);
+    _pid_vel_xy.set_dt(dt_xy);
 }
 
 /// set_speed_z - sets maximum climb and descent rates
@@ -647,7 +710,7 @@ void AC_PosControl::init_xy_controller(bool reset_I)
     if (reset_I) {
         // reset last velocity if this controller has just been engaged or dt is zero
         lean_angles_to_accel(_accel_target.x, _accel_target.y);
-        _pi_vel_xy.set_integrator(_accel_target);
+        _pid_vel_xy.set_integrator(_accel_target);
     }
 
     // flag reset required in rate to accel step
@@ -706,7 +769,7 @@ void AC_PosControl::init_vel_controller_xyz()
 
     // reset last velocity if this controller has just been engaged or dt is zero
     lean_angles_to_accel(_accel_target.x, _accel_target.y);
-    _pi_vel_xy.set_integrator(_accel_target);
+    _pid_vel_xy.set_integrator(_accel_target);
 
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
@@ -900,7 +963,7 @@ void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainSc
 ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
 void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 {
-    Vector2f vel_xy_p, vel_xy_i;
+    Vector2f vel_xy_p, vel_xy_i, vel_xy_d;
 
     // reset last velocity target to current target
     if (_flags.reset_rate_to_accel_xy) {
@@ -940,21 +1003,24 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
     _vel_error.y = _vel_target.y - _vehicle_horiz_vel.y;
 
     // call pi controller
-    _pi_vel_xy.set_input(_vel_error);
+    _pid_vel_xy.set_input(_vel_error);
 
     // get p
-    vel_xy_p = _pi_vel_xy.get_p();
+    vel_xy_p = _pid_vel_xy.get_p();
 
     // update i term if we have not hit the accel or throttle limits OR the i term will reduce
     if (!_limit.accel_xy && !_motors.limit.throttle_upper) {
-        vel_xy_i = _pi_vel_xy.get_i();
+        vel_xy_i = _pid_vel_xy.get_i();
     } else {
-        vel_xy_i = _pi_vel_xy.get_i_shrink();
+        vel_xy_i = _pid_vel_xy.get_i_shrink();
     }
 
+    // get d
+    vel_xy_d = _pid_vel_xy.get_d();
+
     // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
-    _accel_target.x = _accel_feedforward.x + (vel_xy_p.x + vel_xy_i.x) * ekfNavVelGainScaler;
-    _accel_target.y = _accel_feedforward.y + (vel_xy_p.y + vel_xy_i.y) * ekfNavVelGainScaler;
+    _accel_target.x = _accel_feedforward.x + (vel_xy_p.x + vel_xy_i.x + vel_xy_d.x) * ekfNavVelGainScaler;
+    _accel_target.y = _accel_feedforward.y + (vel_xy_p.y + vel_xy_i.y + vel_xy_d.y) * ekfNavVelGainScaler;
 }
 
 /// accel_to_lean_angles - horizontal desired acceleration to lean angles
