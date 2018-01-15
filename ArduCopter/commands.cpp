@@ -31,7 +31,11 @@ void Copter::set_home_to_current_location_inflight() {
     if (inertial_nav.get_location(temp_loc)) {
         const struct Location &ekf_origin = inertial_nav.get_origin();
         temp_loc.alt = ekf_origin.alt;
-        set_home(temp_loc, false);
+        if (!set_home(temp_loc, false)) {
+            return;
+        }
+        // we have successfully set AHRS home, set it for SmartRTL
+        g2.smart_rtl.set_home(true);
     }
 }
 
@@ -40,7 +44,12 @@ bool Copter::set_home_to_current_location(bool lock) {
     // get current location from EKF
     Location temp_loc;
     if (inertial_nav.get_location(temp_loc)) {
-        return set_home(temp_loc, lock);
+        if (!set_home(temp_loc, lock)) {
+            return false;
+        }
+        // we have successfully set AHRS home, set it for SmartRTL
+        g2.smart_rtl.set_home(true);
+        return true;
     }
     return false;
 }
