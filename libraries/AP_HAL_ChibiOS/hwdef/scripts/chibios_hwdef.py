@@ -308,7 +308,7 @@ def write_ldscript(fname):
     flash_reserve_end = get_config('FLASH_RESERVE_END_KB', default=0, type=int)
 
     # ram size
-    ram_size = get_config('RAM_SIZE_KB', default=192)
+    ram_size = get_config('RAM_SIZE_KB', default=192, type=int)
 
     flash_base = 0x08000000 + flash_reserve_start*1024
     flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
