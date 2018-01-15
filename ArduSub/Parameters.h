@@ -149,11 +149,11 @@ public:
 
 
         // PID Controllers
-        k_param_p_pos_xy = 126,
-        k_param_p_alt_hold,
+        k_param_p_pos_xy = 126, // deprecated
+        k_param_p_alt_hold, // deprecated
         k_param_pi_vel_xy, // deprecated
-        k_param_p_vel_z,
-        k_param_pid_accel_z,
+        k_param_p_vel_z, // deprecated
+        k_param_pid_accel_z, // deprecated
 
 
         // Failsafes
@@ -304,31 +304,12 @@ public:
     AP_Int8         acro_trainer;
     AP_Float        acro_expo;
 
-    // PI/D controllers
-    AC_P            p_vel_z;
-    AC_PID          pid_accel_z;
-
-    AC_P            p_pos_xy;
-    AC_P            p_alt_hold;
-
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
-    Parameters() :
-
-        // PID controller       initial P         initial I         initial D       initial imax        initial filt hz     pid rate
-        //---------------------------------------------------------------------------------------------------------------------------------
-        p_vel_z(VEL_Z_P),
-        pid_accel_z(ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    MAIN_LOOP_SECONDS),
-
-        // P controller         initial P
-        //----------------------------------------------------------------------
-        p_pos_xy(POS_XY_P),
-
-        p_alt_hold(ALT_HOLD_P)
-
+    Parameters()
     {
     }
 };
