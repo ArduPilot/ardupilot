@@ -50,8 +50,8 @@ public:
     // clear return path and set return location if position_ok is true.  This should be called as part of the arming procedure
     // if position_ok is false, SmartRTL will not be available.
     // example sketches use the method that allows providing vehicle position directly
-    void reset_path(bool position_ok);
-    void reset_path(bool position_ok, const Vector3f& current_pos);
+    void set_home(bool position_ok);
+    void set_home(bool position_ok, const Vector3f& current_pos);
 
     // call this at 3hz (or higher) regardless of what mode the vehicle is in
     // example sketches use method that allows providing vehicle position directly
@@ -175,6 +175,7 @@ private:
     // SmartRTL State Variables
     bool _active;       // true if SmartRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SmartRTL will be permanently deactivated (for the remainder of the flight)
     bool _example_mode; // true when being called from the example sketch, logging and background tasks are disabled
+    bool _home_saved;   // true once home has been saved successfully by the set_home or update methods
     uint32_t _last_good_position_ms;    // the last system time a last good position was reported. If no position is available for a while, SmartRTL will be disabled.
     uint32_t _last_position_save_ms;    // the system time a position was saved to the path (used for timeout)
     uint32_t _thorough_clean_request_ms;// the last system time the thorough cleanup was requested (set by thorough_cleanup method, used by background cleanup)
