@@ -331,8 +331,8 @@ bool Rover::arm_motors(AP_Arming::ArmingMethod method)
         return false;
     }
 
-    // Reset SmartRTL return location. If activated, SmartRTL will ultimately try to land at this point
-    g2.smart_rtl.reset_path(true);
+    // Set the SmartRTL home location. If activated, SmartRTL will ultimately try to land at this point
+    g2.smart_rtl.set_home(true);
 
     change_arm_state();
     return true;
@@ -360,7 +360,7 @@ bool Rover::disarm_motors(void)
 // save current position for use by the smart_rtl mode
 void Rover::smart_rtl_update()
 {
-    const bool save_position = hal.util->get_soft_armed() && (control_mode != &mode_smartrtl);
+    const bool save_position = (control_mode != &mode_smartrtl);
     mode_smartrtl.save_position(save_position);
 }
 
