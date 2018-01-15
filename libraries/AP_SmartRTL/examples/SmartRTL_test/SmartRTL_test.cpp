@@ -86,7 +86,7 @@ void loop()
 // reset path (i.e. clear path and add home) and upload "test_path_before" to smart_rtl
 void reset()
 {
-    smart_rtl.reset_path(true, Vector3f{0.0f, 0.0f, 0.0f});
+    smart_rtl.set_home(true, Vector3f{0.0f, 0.0f, 0.0f});
     for (Vector3f v : test_path_before) {
         smart_rtl.update(true, v);
     }
