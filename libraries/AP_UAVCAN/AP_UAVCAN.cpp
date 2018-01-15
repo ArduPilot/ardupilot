@@ -207,14 +207,14 @@ static void magnetic_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::a
     if (hal.can_mgr[mgr] != nullptr) {
         AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
         if (ap_uavcan != nullptr) {
-            AP_UAVCAN::Mag_Info *state = ap_uavcan->find_mag_node(msg.getSrcNodeID().get());
+            AP_UAVCAN::Mag_Info *state = ap_uavcan->find_mag_node(msg.getSrcNodeID().get(), 0);
             if (state != nullptr) {
                 state->mag_vector[0] = msg.magnetic_field_ga[0];
                 state->mag_vector[1] = msg.magnetic_field_ga[1];
                 state->mag_vector[2] = msg.magnetic_field_ga[2];
 
                 // after all is filled, update all listeners with new data
-                ap_uavcan->update_mag_state(msg.getSrcNodeID().get());
+                ap_uavcan->update_mag_state(msg.getSrcNodeID().get(), 0);
             }
         }
     }
@@ -232,14 +232,14 @@ static void magnetic_cb_2(const uavcan::ReceivedDataStructure<uavcan::equipment:
     if (hal.can_mgr[mgr] != nullptr) {
         AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
         if (ap_uavcan != nullptr) {
-            AP_UAVCAN::Mag_Info *state = ap_uavcan->find_mag_node(msg.getSrcNodeID().get());
-            if (state != nullptr && msg.sensor_id == 1) {
+            AP_UAVCAN::Mag_Info *state = ap_uavcan->find_mag_node(msg.getSrcNodeID().get(), msg.sensor_id);
+            if (state != nullptr) {
                 state->mag_vector[0] = msg.magnetic_field_ga[0];
                 state->mag_vector[1] = msg.magnetic_field_ga[1];
                 state->mag_vector[2] = msg.magnetic_field_ga[2];
 
                 // after all is filled, update all listeners with new data
-                ap_uavcan->update_mag_state(msg.getSrcNodeID().get());
+                ap_uavcan->update_mag_state(msg.getSrcNodeID().get(), msg.sensor_id);
             }
         }
     }
@@ -327,6 +327,7 @@ AP_UAVCAN::AP_UAVCAN() :
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
         _mag_nodes[i] = UINT8_MAX;
         _mag_node_taken[i] = 0;
+        _mag_node_max_sensorid_count[i] = 1;
     }
 
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
@@ -338,6 +339,7 @@ AP_UAVCAN::AP_UAVCAN() :
 
         _mag_listener_to_node[i] = UINT8_MAX;
         _mag_listeners[i] = nullptr;
+        _mag_listener_sensor_ids[i] = 0;
     }
 
     _rc_out_sem = hal.util->new_semaphore();
@@ -1003,6 +1005,7 @@ uint8_t AP_UAVCAN::register_mag_listener_to_node(AP_Compass_Backend* new_listene
             if (_mag_nodes[i] == node) {
                 _mag_listeners[sel_place] = new_listener;
                 _mag_listener_to_node[sel_place] = i;
+                _mag_listener_sensor_ids[sel_place] = 0;
                 _mag_node_taken[i]++;
                 ret = i + 1;
 
@@ -1031,11 +1034,15 @@ void AP_UAVCAN::remove_mag_listener(AP_Compass_Backend* rem_listener)
     }
 }
 
-AP_UAVCAN::Mag_Info *AP_UAVCAN::find_mag_node(uint8_t node)
+AP_UAVCAN::Mag_Info *AP_UAVCAN::find_mag_node(uint8_t node, uint8_t sensor_id)
 {
     // Check if such node is already defined
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
         if (_mag_nodes[i] == node) {
+            if (_mag_node_max_sensorid_count[i] < sensor_id) {
+                _mag_node_max_sensorid_count[i] = sensor_id;
+                debug_uavcan(2, "AP_UAVCAN: Compass: found sensor id %d on node %d\n\r", (int)(sensor_id), (int)(node));
+            }
             return &_mag_node_state[i];
         }
     }
@@ -1044,6 +1051,8 @@ AP_UAVCAN::Mag_Info *AP_UAVCAN::find_mag_node(uint8_t node)
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
         if (_mag_nodes[i] == UINT8_MAX) {
             _mag_nodes[i] = node;
+            _mag_node_max_sensorid_count[i] = (sensor_id ? sensor_id : 1);
+            debug_uavcan(2, "AP_UAVCAN: Compass: register sensor id %d on node %d\n\r", (int)(sensor_id), (int)(node));  
             return &_mag_node_state[i];
         }
     }
@@ -1053,14 +1062,17 @@ AP_UAVCAN::Mag_Info *AP_UAVCAN::find_mag_node(uint8_t node)
 }
 
 /*
- * Find discovered not taken mag node with smallest node ID
+ * Find discovered mag node with smallest node ID and which is taken N times,
+ * where N is less than its maximum sensor id.
+ * This allows multiple AP_Compass_UAVCAN instanses listening multiple compasses
+ * that are on one node.
  */
 uint8_t AP_UAVCAN::find_smallest_free_mag_node()
 {
     uint8_t ret = UINT8_MAX;
 
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
-        if (_mag_node_taken[i] == 0) {
+        if (_mag_node_taken[i] < _mag_node_max_sensorid_count[i]) {
             ret = MIN(ret, _mag_nodes[i]);
         }
     }
@@ -1068,14 +1080,34 @@ uint8_t AP_UAVCAN::find_smallest_free_mag_node()
     return ret;
 }
 
-void AP_UAVCAN::update_mag_state(uint8_t node)
+void AP_UAVCAN::update_mag_state(uint8_t node, uint8_t sensor_id)
 {
     // Go through all listeners of specified node and call their's update methods
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
         if (_mag_nodes[i] == node) {
             for (uint8_t j = 0; j < AP_UAVCAN_MAX_LISTENERS; j++) {
                 if (_mag_listener_to_node[j] == i) {
-                    _mag_listeners[j]->handle_mag_msg(_mag_node_state[i].mag_vector);
+                    
+                    /*If the current listener has default sensor_id,
+                      while our sensor_id is not default, we have
+                      to assign our sensor_id to this listener*/ 
+                    if ((_mag_listener_sensor_ids[j] == 0) && (sensor_id != 0)) {
+                        bool already_taken = false;
+                        for (uint8_t k = 0; k < AP_UAVCAN_MAX_LISTENERS; k++) 
+                            if (_mag_listener_sensor_ids[k] == sensor_id)
+                                already_taken = true;
+                        if (!already_taken) {
+                            debug_uavcan(2, "AP_UAVCAN: Compass: sensor_id updated to %d for listener %d\n", sensor_id, j);
+                            _mag_listener_sensor_ids[j] = sensor_id;
+                        }
+                    }
+                    
+                    /*If the current listener has the sensor_id that we have,
+                      or our sensor_id is default, ask the listener to handle the measurements
+                      (the default one is used for the nodes that have only one compass*/
+                    if ((sensor_id == 0) || (_mag_listener_sensor_ids[j] == sensor_id)) {
+                        _mag_listeners[j]->handle_mag_msg(_mag_node_state[i].mag_vector);
+                    }
                 }
             }
         }
