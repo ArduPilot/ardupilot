@@ -123,6 +123,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     float   pitch_thrust;               // pitch thrust input value, +/- 1.0
     float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
     float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
+    float   throttle_avg_max;           // throttle thrust average maximum value, 0.0 - 1.0
     float   throttle_thrust_best_rpy;   // throttle providing maximum roll, pitch and yaw range without climbing
     float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   rpy_low = 0.0f;             // lowest motor value
@@ -137,6 +138,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     pitch_thrust = _pitch_in * get_compensation_gain();
     yaw_thrust = _yaw_in * get_compensation_gain()*sinf(radians(_yaw_servo_angle_max_deg)); // we scale this so a thrust request of 1.0f will ask for full servo deflection at full rear throttle
     throttle_thrust = get_throttle() * get_compensation_gain();
+    throttle_avg_max = _throttle_avg_max * get_compensation_gain();
 
     // calculate angle of yaw pivot
     _pivot_angle = safe_asin(yaw_thrust);
@@ -158,7 +160,7 @@ void AP_MotorsTri::output_armed_stabilizing()
         limit.throttle_upper = true;
     }
 
-    _throttle_avg_max = constrain_float(_throttle_avg_max, throttle_thrust, _throttle_thrust_max);
+    throttle_avg_max = constrain_float(throttle_avg_max, throttle_thrust, _throttle_thrust_max);
 
     // The following mix may be offer less coupling between axis but needs testing
     //_thrust_right = roll_thrust * -0.5f + pitch_thrust * 1.0f;
@@ -195,7 +197,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     //      We will choose #2 (a mix of pilot and hover throttle) only when the throttle is quite low.  We favor reducing throttle instead of better yaw control because the pilot has commanded it
 
     // check everything fits
-    throttle_thrust_best_rpy = MIN(0.5f*thrust_max - (rpy_low+rpy_high)/2.0, _throttle_avg_max);
+    throttle_thrust_best_rpy = MIN(0.5f*thrust_max - (rpy_low+rpy_high)/2.0, throttle_avg_max);
     if(is_zero(rpy_low)){
         rpy_scale = 1.0f;
     } else {
