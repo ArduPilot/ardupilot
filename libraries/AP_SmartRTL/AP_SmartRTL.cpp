@@ -167,14 +167,14 @@ bool AP_SmartRTL::pop_point(Vector3f& point)
 }
 
 // clear return path and set home location.  This should be called as part of the arming procedure
-void AP_SmartRTL::reset_path(bool position_ok)
+void AP_SmartRTL::set_home(bool position_ok)
 {
     Vector3f current_pos;
     position_ok &= _ahrs.get_relative_position_NED_origin(current_pos);
-    reset_path(position_ok, current_pos);
+    set_home(position_ok, current_pos);
 }
 
-void AP_SmartRTL::reset_path(bool position_ok, const Vector3f& current_pos)
+void AP_SmartRTL::set_home(bool position_ok, const Vector3f& current_pos)
 {
     if (_path == nullptr) {
         return;
@@ -188,26 +188,30 @@ void AP_SmartRTL::reset_path(bool position_ok, const Vector3f& current_pos)
     reset_simplification();
     reset_pruning();
 
-    // de-activate if no position at take-off
+    // don't continue if no position at take-off
     if (!position_ok) {
-        deactivate(SRTL_DEACTIVATED_BAD_POSITION, "bad position");
         return;
     }
 
     // save current position as first point in path
     if (!add_point(current_pos)) {
-        deactivate(SRTL_ADD_FAILED_NO_SEMAPHORE, "failed to save initial point");
         return;
     }
 
     // successfully added point and reset path
     _last_good_position_ms = AP_HAL::millis();
     _active = true;
+    _home_saved = true;
 }
 
 // call this at 3hz (or higher) regardless of what mode the vehicle is in
 void AP_SmartRTL::update(bool position_ok, bool save_position)
 {
+    // try to save home if not already saved
+    if (position_ok && !_home_saved) {
+        set_home(true);
+    }
+
     if (!_active || !save_position) {
         return;
     }
