@@ -48,9 +48,7 @@ public:
 
     /// Constructor
     AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                  const AP_Motors& motors, AC_AttitudeControl& attitude_control,
-                  AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
-                  AC_P& p_pos_xy);
+                  const AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
     // xy_mode - specifies behavior of xy position controller
     enum xy_mode {
@@ -166,9 +164,6 @@ public:
     // get_leash_down_z, get_leash_up_z - returns vertical leash lengths in cm
     float get_leash_down_z() const { return _leash_down_z; }
     float get_leash_up_z() const { return _leash_up_z; }
-
-    /// get_pos_z_kP - returns z position controller's kP gain
-    float get_pos_z_kP() const { return _p_pos_z.kP(); }
 
     ///
     /// xy position controller
@@ -288,10 +283,11 @@ public:
     // get_leash_xy - returns horizontal leash length in cm
     float get_leash_xy() const { return _leash; }
 
-    /// get_pos_xy_kP - returns xy position controller's kP gain
-    float get_pos_xy_kP() const { return _p_pos_xy.kP(); }
-
-    /// get horizontal pid controller
+    /// get pid controllers
+    AC_P& get_pos_z_p() { return _p_pos_z; }
+    AC_P& get_vel_z_p() { return _p_vel_z; }
+    AC_PID& get_accel_z_pid() { return _pid_accel_z; }
+    AC_P& get_pos_xy_p() { return _p_pos_xy; }
     AC_PID_2D& get_vel_xy_pid() { return _pid_vel_xy; }
 
     /// accessors for reporting
@@ -386,14 +382,12 @@ protected:
     const AP_Motors&            _motors;
     AC_AttitudeControl&         _attitude_control;
 
-    // references to pid controllers
-    AC_P&       _p_pos_z;
-    AC_P&       _p_vel_z;
-    AC_PID&     _pid_accel_z;
-    AC_P&       _p_pos_xy;
-
     // parameters
     AP_Float    _accel_xy_filt_hz;      // XY acceleration filter cutoff frequency
+    AC_P        _p_pos_z;
+    AC_P        _p_vel_z;
+    AC_PID      _pid_accel_z;
+    AC_P        _p_pos_xy;
     AC_PID_2D   _pid_vel_xy;
 
     // internal variables
