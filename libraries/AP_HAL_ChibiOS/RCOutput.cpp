@@ -243,6 +243,9 @@ void RCOutput::push_local(void)
     }
     uint16_t outmask = (1U<<num_channels)-1;
     outmask &= en_mask;
+
+    uint16_t widest_pulse = 0;
+    uint8_t need_trigger = 0;
     
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         for (uint8_t j = 0; j < 4; j++) {
@@ -269,8 +272,36 @@ void RCOutput::push_local(void)
                     uint32_t width = (pwm_group_list[i].pwm_cfg.frequency/1000000) * period_us;
                     pwmEnableChannel(pwm_group_list[i].pwm_drv, j, width);
                 }
+                if (period_us > widest_pulse) {
+                    widest_pulse = period_us;
+                }
+                need_trigger |= (1U<<i);
             }
         }
+    }
+
+    if (need_trigger && _output_mode == MODE_PWM_ONESHOT) {
+        uint64_t now = AP_HAL::micros64();
+        if (now < min_pulse_trigger_us) {
+            // guarantee minimum pulse separation
+            hal.scheduler->delay_microseconds(min_pulse_trigger_us - now);
+        }
+        osalSysLock();
+        for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
+            if (need_trigger & (1U<<i)) {
+                // this triggers pulse output for a channel group
+                pwm_group_list[i].pwm_drv->tim->EGR = STM32_TIM_EGR_UG;
+            }
+        }
+        osalSysUnlock();
+        if (widest_pulse > 2300) {
+            widest_pulse = 2300;
+        }
+        /*
+          calculate time that we are allowed to trigger next pulse
+          to guarantee at least a 50us gap between pulses
+        */
+        min_pulse_trigger_us = AP_HAL::micros64() + widest_pulse + 50;
     }
 }
 
@@ -335,6 +366,17 @@ void RCOutput::set_output_mode(enum output_mode mode)
         for (uint8_t i=chan_offset; i<chan_offset+num_channels; i++) {
             write(i, 0);
         }
+    }
+    if (_output_mode == MODE_PWM_ONESHOT) {
+        // for oneshot we force 1Hz output and then trigger on each loop
+        for (uint8_t i=0; i< NUM_GROUPS; i++) {
+            pwmChangePeriod(pwm_group_list[i].pwm_drv, pwm_group_list[i].pwm_cfg.frequency);
+        }
+#if HAL_WITH_IO_MCU
+        if (AP_BoardConfig::io_enabled()) {
+            return iomcu.set_oneshot_mode();
+        }
+#endif
     }
 }
 
