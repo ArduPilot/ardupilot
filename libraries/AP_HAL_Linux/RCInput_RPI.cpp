@@ -113,8 +113,8 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     uint64_t pageInfo;
     void *offset;
 
-    _virt_pages = (void **)malloc(page_count * sizeof(void *));
-    _phys_pages = (void **)malloc(page_count * sizeof(void *));
+    _virt_pages = (void **)calloc(page_count, sizeof(void *));
+    _phys_pages = (void **)calloc(page_count, sizeof(void *));
     _page_count = page_count;
 
     if ((fdMem = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC)) < 0) {
