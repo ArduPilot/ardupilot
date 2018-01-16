@@ -151,7 +151,7 @@ private:
 #endif
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery{MASK_LOG_CURRENT};
 
     struct Location current_loc;
 
