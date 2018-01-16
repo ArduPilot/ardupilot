@@ -1,3 +1,41 @@
+Release 3.8.5beta1, 16th January 2018
+--------------------------------
+
+This is a minor release with three new features, all related to
+airspeed.
+
+The first is to support the MS5525 sensor on multiple I2C
+addresses. Two new values of the ARSDP_TYPE are introduced (4 and 5)
+for specific I2C addresses. This allows you to deconflict the MS5525
+from a MS5611 barometer on the same bus.
+
+The second is the addition of a driver for the SDP33 airspeed
+sensor. This is an interesting sensor sold by Drotek that doesn't need
+zero offset calibration for each flight. It is still considered
+experimental.
+
+The third new feature is dual airspeed sensor support, which allows
+you to have two independent airspeed sensors. At the moment the
+failover between the sensors is very simple (it will only failover if
+the primary stops communicating). More sophisticated failover methods
+will be introduced in the future. To enable a 2nd airspeed sensor set
+the ARSPD2_TYPE parameter to the type of the 2nd sensor. You can
+combine any types of sensor.
+
+Release 3.8.4, 9th January 2018
+-------------------------------
+
+This is a minor release with just two small changes.
+
+The first change is to fix a timing bug in the MS5525 airspeed sensor
+driver. That bug was causing unreliable airspeed sensing. Thanks to
+David Ingraham for providing logs that helped find the issue.
+
+The second change is to fix transitions in AUTO mode in
+tailsitter. The transition for tailsitters was causing instability on
+transition from vertical takeoff to forward flight.
+
+
 Release 3.8.3, 13th November 2017
 ---------------------------------
 
