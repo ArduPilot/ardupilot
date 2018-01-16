@@ -111,7 +111,7 @@ public:
         MEM_DMA_SAFE,
         MEM_FAST
     };
-    virtual void *malloc_type(size_t size, Memory_Type mem_type) { return malloc(size); }
+    virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
 
     /**
