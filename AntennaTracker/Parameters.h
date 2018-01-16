@@ -93,6 +93,7 @@ public:
         k_param_log_bitmask,        // 140
         k_param_notify,
         k_param_BoardConfig_CAN,
+        k_param_battery,
 
         //
         // 150: Telemetry control
