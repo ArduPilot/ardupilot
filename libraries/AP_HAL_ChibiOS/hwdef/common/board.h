@@ -26,6 +26,11 @@
 #define HAL_BOARD_INIT_HOOK_CALL
 #endif
 
+// default to interrupts on port D
+#ifndef HAL_GPIO_INTERRUPT_PORT
+#define HAL_GPIO_INTERRUPT_PORT EXT_MODE_GPIOD
+#endif
+
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus
 extern "C" {

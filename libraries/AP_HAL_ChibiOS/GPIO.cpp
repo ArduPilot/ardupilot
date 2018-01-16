@@ -80,22 +80,22 @@ static EXTConfig extcfg = {
 };
 
 static const uint32_t irq_port_list[] = {
-    EXT_MODE_GPIOD, //Chan 0
-    EXT_MODE_GPIOD, //Chan 1
-    EXT_MODE_GPIOD, //Chan 2
-    EXT_MODE_GPIOD, //Chan 3
-    EXT_MODE_GPIOD, //Chan 4
-    EXT_MODE_GPIOD, //Chan 5
-    EXT_MODE_GPIOD, //Chan 6
-    EXT_MODE_GPIOD, //Chan 7
-    EXT_MODE_GPIOD, //Chan 8
-    EXT_MODE_GPIOD, //Chan 9
-    EXT_MODE_GPIOD, //Chan 10
-    EXT_MODE_GPIOD, //Chan 11
-    EXT_MODE_GPIOD, //Chan 12
-    EXT_MODE_GPIOD, //Chan 13
-    EXT_MODE_GPIOD, //Chan 14
-    EXT_MODE_GPIOD //Chan 15
+    HAL_GPIO_INTERRUPT_PORT, //Chan 0
+    HAL_GPIO_INTERRUPT_PORT, //Chan 1
+    HAL_GPIO_INTERRUPT_PORT, //Chan 2
+    HAL_GPIO_INTERRUPT_PORT, //Chan 3
+    HAL_GPIO_INTERRUPT_PORT, //Chan 4
+    HAL_GPIO_INTERRUPT_PORT, //Chan 5
+    HAL_GPIO_INTERRUPT_PORT, //Chan 6
+    HAL_GPIO_INTERRUPT_PORT, //Chan 7
+    HAL_GPIO_INTERRUPT_PORT, //Chan 8
+    HAL_GPIO_INTERRUPT_PORT, //Chan 9
+    HAL_GPIO_INTERRUPT_PORT, //Chan 10
+    HAL_GPIO_INTERRUPT_PORT, //Chan 11
+    HAL_GPIO_INTERRUPT_PORT, //Chan 12
+    HAL_GPIO_INTERRUPT_PORT, //Chan 13
+    HAL_GPIO_INTERRUPT_PORT, //Chan 14
+    HAL_GPIO_INTERRUPT_PORT  //Chan 15
 };
 
 GPIO::GPIO()
