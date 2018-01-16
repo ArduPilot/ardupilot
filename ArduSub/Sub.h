@@ -328,7 +328,7 @@ private:
     uint32_t nav_delay_time_start;
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery{MASK_LOG_CURRENT};
 
     AP_Arming_Sub arming{ahrs, barometer, compass, battery};
 
@@ -507,7 +507,6 @@ private:
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
     void do_erase_logs(void);
-    void Log_Write_Current();
     void Log_Write_Optflow();
     void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();

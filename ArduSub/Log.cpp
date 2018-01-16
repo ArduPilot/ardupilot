@@ -12,15 +12,6 @@ void Sub::do_erase_logs(void)
     gcs().send_text(MAV_SEVERITY_INFO, "Log erase complete");
 }
 
-// Write a Current data packet
-void Sub::Log_Write_Current()
-{
-    DataFlash.Log_Write_Current(battery);
-
-    // also write power status
-    DataFlash.Log_Write_Power();
-}
-
 struct PACKED log_Optflow {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -472,7 +463,6 @@ void Sub::log_init(void)
 #else // LOGGING_ENABLED
 
 void Sub::do_erase_logs(void) {}
-void Sub::Log_Write_Current() {}
 void Sub::Log_Write_Nav_Tuning() {}
 void Sub::Log_Write_Control_Tuning() {}
 void Sub::Log_Write_Performance() {}
