@@ -148,9 +148,6 @@ void AP_IOMCU::thread_main(void)
 
     trigger_event(IOEVENT_INIT);
     
-    // enable sbus (until we have BRD_SBUS_OUT available in ChibiOS)
-    enable_sbus_out(150);
-    
     while (true) {
         eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(10));
 
@@ -257,7 +254,16 @@ void AP_IOMCU::thread_main(void)
 void AP_IOMCU::send_servo_out()
 {
     if (pwm_out.num_channels > 0) {
-        write_registers(PAGE_DIRECT_PWM, 0, pwm_out.num_channels, pwm_out.pwm);
+        uint8_t n = pwm_out.num_channels;
+        if (rate.sbus_rate_hz == 0) {
+            n = MIN(n, 8);
+        }
+        uint32_t now = AP_HAL::micros();
+        if (now - last_servo_out_us >= 2000) {
+            // don't send data at more than 500Hz
+            write_registers(PAGE_DIRECT_PWM, 0, n, pwm_out.pwm);
+            last_servo_out_us = now;
+        }
     }    
 }
 
@@ -266,8 +272,8 @@ void AP_IOMCU::send_servo_out()
  */
 void AP_IOMCU::read_rc_input()
 {
-    // read a min of 9 channels and max of max_channels
-    uint8_t n = MIN(MAX(9, rc_input.count), max_channels);
+    // read a min of 9 channels and max of IOMCU_MAX_CHANNELS
+    uint8_t n = MIN(MAX(9, rc_input.count), IOMCU_MAX_CHANNELS);
     read_registers(PAGE_RAW_RCIN, 0, 6+n, (uint16_t *)&rc_input);
     if (rc_input.flags_rc_ok) {
         rc_input.last_input_us = AP_HAL::micros();
@@ -432,7 +438,7 @@ bool AP_IOMCU::modify_register(uint8_t page, uint8_t offset, uint16_t clearbits,
 
 void AP_IOMCU::write_channel(uint8_t chan, uint16_t pwm)
 {
-    if (chan >= max_channels) {
+    if (chan >= IOMCU_MAX_CHANNELS) {
         return;
     }
     if (chan >= pwm_out.num_channels) {
@@ -532,7 +538,7 @@ bool AP_IOMCU::enable_sbus_out(uint16_t rate_hz)
 bool AP_IOMCU::check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_chan)
 {
     if (last_frame_us != rc_input.last_input_us) {
-        num_channels = MIN(MIN(rc_input.count, max_channels), max_chan);
+        num_channels = MIN(MIN(rc_input.count, IOMCU_MAX_CHANNELS), max_chan);
         memcpy(channels, rc_input.pwm, num_channels*2);
         last_frame_us = rc_input.last_input_us;
         return true;
