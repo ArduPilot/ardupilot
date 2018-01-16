@@ -179,7 +179,7 @@ bool AP_Radio_cc2500::send(const uint8_t *pkt, uint16_t len)
 }
 
 const AP_Radio_cc2500::config AP_Radio_cc2500::radio_config[] = {
-    {CC2500_02_IOCFG0,   0x01}, // GD0 high on RXFIFO filled or end of packet
+    {CC2500_00_IOCFG2,   0x01}, // GD2 high on RXFIFO filled or end of packet
     {CC2500_17_MCSM1,    0x0C}, // stay in RX on packet receive, CCA always, TX -> IDLE
     {CC2500_18_MCSM0,    0x18}, // XOSC expire 64, cal on IDLE -> TX or RX
     {CC2500_06_PKTLEN,   0x1E}, // packet length 30
