@@ -1093,9 +1093,11 @@ void AP_UAVCAN::update_mag_state(uint8_t node, uint8_t sensor_id)
                       to assign our sensor_id to this listener*/ 
                     if ((_mag_listener_sensor_ids[j] == 0) && (sensor_id != 0)) {
                         bool already_taken = false;
-                        for (uint8_t k = 0; k < AP_UAVCAN_MAX_LISTENERS; k++) 
-                            if (_mag_listener_sensor_ids[k] == sensor_id)
+                        for (uint8_t k = 0; k < AP_UAVCAN_MAX_LISTENERS; k++) {
+                            if (_mag_listener_sensor_ids[k] == sensor_id) {
                                 already_taken = true;
+                            }
+                        }
                         if (!already_taken) {
                             debug_uavcan(2, "AP_UAVCAN: Compass: sensor_id updated to %d for listener %d\n", sensor_id, j);
                             _mag_listener_sensor_ids[j] = sensor_id;
