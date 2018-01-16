@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 
     // @Param: LOOP_RATE
     // @DisplayName: Scheduling main loop rate
-    // @Description: This controls the rate of the main control loop in Hz. This should only be changed by developers. This only takes effect on restart
+    // @Description: This controls the rate of the main control loop in Hz. This should only be changed by developers. This only takes effect on restart. Values over 400 are considered highly experimental.
     // @Values: 50:50Hz,100:100Hz,200:200Hz,250:250Hz,300:300Hz,400:400Hz
     // @RebootRequired: True
     // @User: Advanced
@@ -60,11 +60,11 @@ AP_Scheduler::AP_Scheduler(void)
     _loop_rate_hz.set(SCHEDULER_DEFAULT_LOOP_RATE);
     AP_Param::setup_object_defaults(this, var_info);
 
-    // only allow 50 to 400 Hz
+    // only allow 50 to 2000 Hz
     if (_loop_rate_hz < 50) {
         _loop_rate_hz.set(50);
-    } else if (_loop_rate_hz > 400) {
-        _loop_rate_hz.set(400);
+    } else if (_loop_rate_hz > 2000) {
+        _loop_rate_hz.set(2000);
     }
 }
 
