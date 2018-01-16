@@ -185,17 +185,14 @@ void Copter::read_battery(void)
 {
     battery.read();
 
-    // update compass with current value
-    if (battery.has_current()) {
-        compass.set_current(battery.current_amps());
-    }
-
     // update motors with voltage and current
     if (battery.get_type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
         motors->set_voltage(battery.voltage());
-        AP_Notify::flags.battery_voltage = battery.voltage();
     }
+
     if (battery.has_current()) {
+        compass.set_current(battery.current_amps());
+
         motors->set_current(battery.current_amps());
         motors->set_resistance(battery.get_resistance());
         motors->set_voltage_resting_estimate(battery.voltage_resting_estimate());
@@ -205,11 +202,6 @@ void Copter::read_battery(void)
     // we only check when we're not powered by USB to avoid false alarms during bench tests
     if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
         failsafe_battery_event();
-    }
-
-    // log battery info to the dataflash
-    if (should_log(MASK_LOG_CURRENT)) {
-        Log_Write_Current();
     }
 }
 
