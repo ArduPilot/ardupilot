@@ -250,10 +250,10 @@ void *PX4Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
     if (mem_type == AP_HAL::Util::MEM_DMA_SAFE) {
         return fat_dma_alloc(size);
     } else {
-        return malloc(size);
+        return calloc(1, size);
     }
 #else
-    return malloc(size);
+    return calloc(1, size);
 #endif
 }
 void PX4Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
