@@ -202,14 +202,6 @@ void Rover::Log_Write_Rangefinder()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-void Rover::Log_Write_Current()
-{
-    DataFlash.Log_Write_Current(battery);
-
-    // also write power status
-    DataFlash.Log_Write_Power();
-}
-
 struct PACKED log_Arm_Disarm {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -390,7 +382,6 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 
 // dummy functions
 void Rover::Log_Write_Startup(uint8_t type) {}
-void Rover::Log_Write_Current() {}
 void Rover::Log_Write_Nav_Tuning() {}
 void Rover::Log_Write_Performance() {}
 void Rover::Log_Write_Throttle() {}
