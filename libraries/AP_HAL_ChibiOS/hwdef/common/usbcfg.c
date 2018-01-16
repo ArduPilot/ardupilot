@@ -217,7 +217,7 @@ static void setup_usb_string(USBDescriptor *desc, const char *str)
 {
     uint8_t len = strlen(str);
     desc->ud_size = 2+2*len;
-    uint8_t *b = (uint8_t *)malloc(desc->ud_size);
+    uint8_t *b = (uint8_t *)calloc(1, desc->ud_size);
     desc->ud_string = (const char *)b;
     b[0] = USB_DESC_BYTE(desc->ud_size);
     b[1] = USB_DESC_BYTE(USB_DESCRIPTOR_STRING);
