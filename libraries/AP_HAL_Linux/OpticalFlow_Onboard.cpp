@@ -283,7 +283,7 @@ void OpticalFlow_Onboard::_run_optflow()
             convert_buffer_size = _width * _height;
         }
 
-        convert_buffer = (uint8_t *)malloc(convert_buffer_size);
+        convert_buffer = (uint8_t *)calloc(1, convert_buffer_size);
         if (!convert_buffer) {
             AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate conversion buffer\n");
         }
@@ -293,7 +293,7 @@ void OpticalFlow_Onboard::_run_optflow()
         output_buffer_size = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH *
             HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
 
-        output_buffer = (uint8_t *)malloc(output_buffer_size);
+        output_buffer = (uint8_t *)calloc(1, output_buffer_size);
         if (!output_buffer) {
             if (convert_buffer) {
                 free(convert_buffer);
