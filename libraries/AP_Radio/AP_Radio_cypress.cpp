@@ -302,7 +302,7 @@ bool AP_Radio_cypress::reset(void)
     hal.scheduler->delay(500);
     // use AUX5 as radio IRQ pin
     stm32_configgpio(CYRF_IRQ_INPUT);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#elif defined(HAL_GPIO_RADIO_RESET)
     hal.gpio->write(HAL_GPIO_RADIO_RESET, 1);
     hal.scheduler->delay(500);
     hal.gpio->write(HAL_GPIO_RADIO_RESET, 0);
