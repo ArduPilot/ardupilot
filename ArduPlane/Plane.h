@@ -391,7 +391,7 @@ private:
     int32_t altitude_error_cm;
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery{MASK_LOG_CURRENT};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
@@ -834,7 +834,6 @@ private:
     void Log_Write_Status();
     void Log_Write_Sonar();
     void Log_Write_Optflow();
-    void Log_Write_Current();
     void Log_Arm_Disarm();
     void Log_Write_GPS(uint8_t instance);
     void Log_Write_IMU();
