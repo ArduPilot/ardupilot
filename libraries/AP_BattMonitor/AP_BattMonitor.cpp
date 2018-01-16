@@ -3,8 +3,11 @@
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
+
+AP_BattMonitor *AP_BattMonitor::_singleton;
 
 const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // 0 - 18, 20- 22 used by old parameter indexes
@@ -25,10 +28,16 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AP_BattMonitor::AP_BattMonitor(void) :
+AP_BattMonitor::AP_BattMonitor(uint32_t log_battery_bit) :
+    _log_battery_bit(log_battery_bit),
     _num_instances(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_BattMonitor must be singleton");
+    }
+    _singleton = this;
 }
 
 // init - instantiate the battery monitors
@@ -169,6 +178,16 @@ AP_BattMonitor::read()
             drivers[i]->read();
             drivers[i]->update_resistance_estimate();
         }
+    }
+
+    if (get_type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
+        AP_Notify::flags.battery_voltage = voltage();
+    }
+
+    DataFlash_Class *df = DataFlash_Class::instance();
+    if (df->should_log(_log_battery_bit)) {
+        df->Log_Write_Current();
+        df->Log_Write_Power();
     }
 }
 
@@ -344,3 +363,13 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
         return (AP_HAL::millis() - state[instance].temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
     }
 }
+
+
+namespace AP {
+
+AP_BattMonitor &battery()
+{
+    return AP_BattMonitor::battery();
+}
+
+};
