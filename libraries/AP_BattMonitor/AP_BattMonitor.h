@@ -35,11 +35,15 @@ class AP_BattMonitor
     friend class AP_BattMonitor_SMBus_Maxell;
 
 public:
-    AP_BattMonitor();
+    AP_BattMonitor(uint32_t log_battery_bit);
 
     /* Do not allow copies */
     AP_BattMonitor(const AP_BattMonitor &other) = delete;
     AP_BattMonitor &operator=(const AP_BattMonitor&) = delete;
+
+    static AP_BattMonitor &battery() {
+        return *_singleton;
+    }
 
     struct cells {
         uint16_t cells[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
@@ -139,10 +143,17 @@ protected:
     AP_BattMonitor_Params _params[AP_BATT_MONITOR_MAX_INSTANCES];
 
 private:
+    static AP_BattMonitor *_singleton;
+
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];
     AP_BattMonitor_Backend *drivers[AP_BATT_MONITOR_MAX_INSTANCES];
+    uint32_t    _log_battery_bit;
     uint8_t     _num_instances;                                     /// number of monitors
 
     void convert_params(void);
 
+};
+
+namespace AP {
+    AP_BattMonitor &battery();
 };
