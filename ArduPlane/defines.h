@@ -1,5 +1,7 @@
 #pragma once
 
+#include "include/mavlink/v2.0/ardupilotmega/mavlink.h"
+
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 
@@ -45,27 +47,28 @@ enum failsafe_action_long {
     FS_ACTION_LONG_PARACHUTE = 3,
 };
 
+// map flight modes to the MAVLink representation
 enum FlightMode {
-    MANUAL        = 0,
-    CIRCLE        = 1,
-    STABILIZE     = 2,
-    TRAINING      = 3,
-    ACRO          = 4,
-    FLY_BY_WIRE_A = 5,
-    FLY_BY_WIRE_B = 6,
-    CRUISE        = 7,
-    AUTOTUNE      = 8,
-    AUTO          = 10,
-    RTL           = 11,
-    LOITER        = 12,
-    AVOID_ADSB    = 14,
-    GUIDED        = 15,
-    INITIALISING  = 16,
-    QSTABILIZE    = 17,
-    QHOVER        = 18,
-    QLOITER       = 19,
-    QLAND         = 20,
-    QRTL          = 21
+    MANUAL        = PLANE_FLIGHT_MODE_MANUAL,
+    CIRCLE        = PLANE_FLIGHT_MODE_CIRCLE,
+    STABILIZE     = PLANE_FLIGHT_MODE_STABILIZE,
+    TRAINING      = PLANE_FLIGHT_MODE_TRAINING,
+    ACRO          = PLANE_FLIGHT_MODE_ACRO,
+    FLY_BY_WIRE_A = PLANE_FLIGHT_MODE_FLY_BY_WIRE_A,
+    FLY_BY_WIRE_B = PLANE_FLIGHT_MODE_FLY_BY_WIRE_B,
+    CRUISE        = PLANE_FLIGHT_MODE_CRUISE,
+    AUTOTUNE      = PLANE_FLIGHT_MODE_AUTOTUNE,
+    AUTO          = PLANE_FLIGHT_MODE_AUTO,
+    RTL           = PLANE_FLIGHT_MODE_RTL,
+    LOITER        = PLANE_FLIGHT_MODE_LOITER,
+    AVOID_ADSB    = PLANE_FLIGHT_MODE_AVOID_ADSB,
+    GUIDED        = PLANE_FLIGHT_MODE_GUIDED,
+    INITIALISING  = PLANE_FLIGHT_MODE_INITIALISING,
+    QSTABILIZE    = PLANE_FLIGHT_MODE_QSTABILIZE,
+    QHOVER        = PLANE_FLIGHT_MODE_QHOVER,
+    QLOITER       = PLANE_FLIGHT_MODE_QLOITER,
+    QLAND         = PLANE_FLIGHT_MODE_QLAND,
+    QRTL          = PLANE_FLIGHT_MODE_QRTL
 };
 
 enum mode_reason_t {

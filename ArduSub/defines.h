@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include "include/mavlink/v2.0/ardupilotmega/mavlink.h"
 
 // Just so that it's completely clear...
 #define ENABLED                 1
@@ -30,16 +31,17 @@ enum autopilot_yaw_mode {
 };
 
 // Auto Pilot Modes enumeration
+// map flight modes to the MAVLink representation
 enum control_mode_t {
-    STABILIZE =     0,  // manual angle with manual depth/throttle
-    ACRO =          1,  // manual body-frame angular rate with manual depth/throttle
-    ALT_HOLD =      2,  // manual angle with automatic depth/throttle
-    AUTO =          3,  // fully automatic waypoint control using mission commands
-    GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-    CIRCLE =        7,  // automatic circular flight with automatic throttle
-    SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
-    POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    MANUAL =       19   // Pass-through input with no stabilization
+    STABILIZE = SUB_FLIGHT_MODE_STABILIZE, // manual angle with manual depth/throttle
+    ACRO =      SUB_FLIGHT_MODE_ACRO,      // manual body-frame angular rate with manual depth/throttle
+    ALT_HOLD =  SUB_FLIGHT_MODE_ALT_HOLD,  // manual angle with automatic depth/throttle
+    AUTO =      SUB_FLIGHT_MODE_AUTO,      // fully automatic waypoint control using mission commands
+    GUIDED =    SUB_FLIGHT_MODE_GUIDED,    // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+    CIRCLE =    SUB_FLIGHT_MODE_CIRCLE,    // automatic circular flight with automatic throttle
+    SURFACE =   SUB_FLIGHT_MODE_SURFACE,   // automatically return to surface, pilot maintains horizontal control
+    POSHOLD =   SUB_FLIGHT_MODE_POSHOLD,   // automatic position hold with manual override, with automatic throttle
+    MANUAL =    SUB_FLIGHT_MODE_MANUAL     // Pass-through input with no stabilization
 };
 
 enum mode_reason_t {

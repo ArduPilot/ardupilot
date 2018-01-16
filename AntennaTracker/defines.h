@@ -1,5 +1,7 @@
 #pragma once
 
+#include "include/mavlink/v2.0/ardupilotmega/mavlink.h"
+
 // Command/Waypoint/Location Options Bitmask
 //--------------------
 #define MASK_OPTIONS_RELATIVE_ALT       (1<<0)          // 1 = Relative
@@ -8,13 +10,14 @@
 // Controller modes
 // ----------------
 
+// map flight modes to the MAVLink representation
 enum ControlMode {
-    MANUAL=0,
-    STOP=1,
-    SCAN=2,
-    SERVO_TEST=3,
-    AUTO=10,
-    INITIALISING=16
+    MANUAL       = TRACKER_FLIGHT_MODE_MANUAL,
+    STOP         = TRACKER_FLIGHT_MODE_STOP,
+    SCAN         = TRACKER_FLIGHT_MODE_SCAN,
+    SERVO_TEST   = TRACKER_FLIGHT_MODE_SERVO_TEST,
+    AUTO         = TRACKER_FLIGHT_MODE_AUTO,
+    INITIALISING = TRACKER_FLIGHT_MODE_INITIALISING
 };
 
 enum ServoType {
