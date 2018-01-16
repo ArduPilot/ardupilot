@@ -1138,11 +1138,7 @@ void DataFlash_File::flush(void)
     hal.scheduler->resume_timer_procs();
     if (write_fd_semaphore->take(1)) {
         if (_write_fd != -1) {
-#if HAL_OS_POSIX_IO
             ::fsync(_write_fd);
-#else
-            syncfs(_write_fd);
-#endif
         }
         write_fd_semaphore->give();
     } else {
@@ -1231,11 +1227,7 @@ void DataFlash_File::_io_timer(void)
          */
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && CONFIG_HAL_BOARD != HAL_BOARD_QURT
         last_io_operation = "fsync";
-#if HAL_OS_POSIX_IO
         ::fsync(_write_fd);
-#else
-        syncfs(_write_fd);
-#endif
         last_io_operation = "";
 #endif
     }
