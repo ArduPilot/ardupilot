@@ -69,7 +69,10 @@ public:
 
     // set default output rate
     void set_default_rate(uint16_t rate_hz);
-    
+
+    // set to oneshot mode
+    void set_oneshot_mode(void);
+
 private:
     AP_HAL::UARTDriver &uart;
 

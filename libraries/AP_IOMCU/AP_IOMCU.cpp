@@ -67,7 +67,6 @@ enum ioevents {
     IOEVENT_FORCE_SAFETY_OFF,
     IOEVENT_FORCE_SAFETY_ON,
     IOEVENT_SET_ONESHOT_ON,
-    IOEVENT_SET_ONESHOT_OFF,
     IOEVENT_SET_RATES,
     IOEVENT_GET_RCIN,
     IOEVENT_ENABLE_SBUS,
@@ -214,6 +213,13 @@ void AP_IOMCU::thread_main(void)
         if (mask & EVENT_MASK(IOEVENT_SET_DEFAULT_RATE)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_DEFAULTRATE, rate.default_freq)) {
                 event_failed(IOEVENT_SET_DEFAULT_RATE);
+                continue;
+            }
+        }
+
+        if (mask & EVENT_MASK(IOEVENT_SET_ONESHOT_ON)) {
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0, P_SETUP_FEATURES_ONESHOT)) {
+                event_failed(IOEVENT_SET_ONESHOT_ON);
                 continue;
             }
         }
@@ -546,6 +552,12 @@ void AP_IOMCU::set_default_rate(uint16_t rate_hz)
 {
     rate.default_freq = rate_hz;
     trigger_event(IOEVENT_SET_DEFAULT_RATE);
+}
+
+// setup for oneshot mode
+void AP_IOMCU::set_oneshot_mode(void)
+{
+    trigger_event(IOEVENT_SET_ONESHOT_ON);
 }
 
 #endif // HAL_WITH_IO_MCU
