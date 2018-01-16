@@ -113,7 +113,7 @@ bool VideoIn::allocate_buffers(uint32_t nbufs)
         return ret;
     }
 
-    buffers = (struct buffer *)malloc(rb.count * sizeof buffers[0]);
+    buffers = (struct buffer *)calloc(rb.count, sizeof buffers[0]);
     if (buffers == nullptr) {
         hal.console->printf("Unable to allocate buffers\n");
         return false;
