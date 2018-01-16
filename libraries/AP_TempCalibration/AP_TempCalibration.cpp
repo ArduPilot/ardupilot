@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
     // @Param: TEMP_MIN
     // @DisplayName: Min learned temperature
     // @Description: Minimum learned temperature. This is automatically set by the learning process
-    // @Units: degrees C
+    // @Units: degC
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
     // @Param: TEMP_MIN
     // @DisplayName: Min learned temperature
     // @Description: Minimum learned temperature. This is automatically set by the learning process
-    // @Units: degrees C
+    // @Units: degC
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
     // @Param: TEMP_MAX
     // @DisplayName: Max learned temperature
     // @Description: Maximum learned temperature. This is automatically set by the learning process
-    // @Units: degrees C
+    // @Units: degC
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
