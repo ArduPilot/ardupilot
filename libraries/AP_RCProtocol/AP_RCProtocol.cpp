@@ -51,16 +51,14 @@ uint8_t AP_RCProtocol::num_channels()
 {
     if (_detected_protocol != AP_RCProtocol::NONE) {
         return backend[_detected_protocol]->num_channels();
-    } else {
-        return AP_RCProtocol::NONE;
     }
+    return 0;
 }
 
 uint16_t AP_RCProtocol::read(uint8_t chan)
 {
     if (_detected_protocol != AP_RCProtocol::NONE) {
         return backend[_detected_protocol]->read(chan);
-    } else {
-        return 0;
     }
+    return 0;
 }
