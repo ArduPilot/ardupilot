@@ -50,8 +50,8 @@ public:
     // clear return path and set return location if position_ok is true.  This should be called as part of the arming procedure
     // if position_ok is false, SmartRTL will not be available.
     // example sketches use the method that allows providing vehicle position directly
-    void reset_path(bool position_ok);
-    void reset_path(bool position_ok, const Vector3f& current_pos);
+    void set_home(bool position_ok);
+    void set_home(bool position_ok, const Vector3f& current_pos);
 
     // call this at 3hz (or higher) regardless of what mode the vehicle is in
     // example sketches use method that allows providing vehicle position directly
@@ -225,4 +225,6 @@ private:
 
     // returns true if the two loops overlap (used within add_loop to determine which loops to keep or throw away)
     bool loops_overlap(const prune_loop_t& loop1, const prune_loop_t& loop2) const;
+    // whether home has been saved successfully by AP_SmartRTL::update
+    bool _home_saved;
 };
