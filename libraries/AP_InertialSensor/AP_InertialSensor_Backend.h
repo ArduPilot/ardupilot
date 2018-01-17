@@ -144,11 +144,21 @@ protected:
         return _imu._accel_raw_sample_rates[instance];
     }
 
+    // set accelerometer raw sample rate
+    void _set_accel_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
+        _imu._accel_raw_sample_rates[instance] = rate_hz;
+    }
+    
     // get gyroscope raw sample rate
     uint32_t _gyro_raw_sample_rate(uint8_t instance) const {
         return _imu._gyro_raw_sample_rates[instance];
     }
 
+    // set gyro raw sample rate
+    void _set_gyro_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
+        _imu._gyro_raw_sample_rates[instance] = rate_hz;
+    }
+    
     // publish a temperature value
     void _publish_temperature(uint8_t instance, float temperature);
 
