@@ -17,8 +17,14 @@
 #pragma once
 
 #include "AP_HAL_ChibiOS.h"
+#include "SoftSigReader.h"
+
 #ifdef HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
+#endif
+
+#if HAL_USE_ICU == TRUE
+#include <AP_RCProtocol/AP_RCProtocol.h>
 #endif
 
 #ifndef RC_INPUT_MAX_CHANNELS
@@ -62,6 +68,12 @@ private:
     AP_Radio *radio;
     uint32_t last_radio_us;
 #endif
+
+#ifdef HAL_USE_ICU
+    ChibiOS::SoftSigReader sig_reader;
+    AP_RCProtocol rcin_prot;
+#endif
+
 #if HAL_WITH_IO_MCU
     uint32_t last_iomcu_us;
 #endif
