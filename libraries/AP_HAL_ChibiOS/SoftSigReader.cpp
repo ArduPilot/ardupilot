@@ -49,7 +49,7 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
     dmaStreamSetMode(dma, dmamode | STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_PSIZE_WORD |
                             STM32_DMA_CR_MSIZE_WORD | STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     
-    icucfg.mode = ICU_INPUT_ACTIVE_HIGH;
+    icucfg.mode = ICU_INPUT_ACTIVE_LOW;
     icucfg.frequency = INPUT_CAPTURE_FREQUENCY;
     icucfg.channel = chan;
     icucfg.width_cb = NULL;
@@ -104,8 +104,10 @@ bool SoftSigReader::read(uint32_t &widths0, uint32_t &widths1)
 bool SoftSigReader::set_bounce_buf_size(uint16_t buf_size)
 {
     if (buf_size > _bounce_buf_size) {
-        delete[] signal;
-        signal = (uint32_t*)hal.util->malloc_type(sizeof(uint32_t)*_bounce_buf_size, AP_HAL::Util::MEM_DMA_SAFE);
+        if (signal) {
+            hal.util->free_type(signal, sizeof(uint32_t)*_bounce_buf_size, AP_HAL::Util::MEM_DMA_SAFE);
+        }
+        signal = (uint32_t*)hal.util->malloc_type(sizeof(uint32_t)*buf_size, AP_HAL::Util::MEM_DMA_SAFE);
         if (signal == nullptr) {
             return false;
         }
