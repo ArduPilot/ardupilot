@@ -20,4 +20,5 @@ namespace ChibiOS {
     class UARTDriver;
     class Util;
     class Shared_DMA;
+    class SoftSigReader;
 }
