@@ -61,6 +61,8 @@ def chibios_dma_define_name(key):
                 return 'STM32_UART_%s_DMA_STREAM' % key
         elif key.startswith('SDIO'):
                 return 'STM32_SDC_%s_DMA_STREAM' % key
+	elif key.startswith('TIM'):
+		return 'STM32_RCIN_DMA_STREAM'
         else:
                 print("Error: Unknown key type %s" % key)
                 sys.exit(1)
