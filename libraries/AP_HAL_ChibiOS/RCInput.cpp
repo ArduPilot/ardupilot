@@ -25,13 +25,14 @@
 extern AP_IOMCU iomcu;
 #endif
 
-
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 void RCInput::init()
 {
-#if HAL_USE_EICU == TRUE
-    ppm_init(1000000, false);
+#if HAL_USE_ICU == TRUE
+    //attach timer channel on which the signal will be received
+    sig_reader.attach_capture_timer(&RCIN_ICU_TIMER, RCIN_ICU_CHANNEL, STM32_RCIN_DMA_STREAM, STM32_RCIN_DMA_CHANNEL);
+    rcin_prot.init();
 #endif
     chMtxObjectInit(&rcin_mutex);
     _init = true;
@@ -166,12 +167,27 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-#if HAL_USE_EICU == TRUE
-    if (ppm_available()) {
+#if HAL_USE_ICU == TRUE
+    uint32_t width_s0, width_s1;
+
+    while(sig_reader.read(width_s0, width_s1)) {
+        rcin_prot.process_pulse(width_s0, width_s1);
+    }
+
+    if (rcin_prot.new_input()) {
         chMtxLock(&rcin_mutex);
-        _num_channels = ppm_read_bulk(_rc_values, RC_INPUT_MAX_CHANNELS);
         _rcin_timestamp_last_signal = AP_HAL::micros();
+        _num_channels = rcin_prot.num_channels();
+        for (uint8_t i=0; i<_num_channels; i++) {
+            _rc_values[i] = rcin_prot.read(i);
+        }
         chMtxUnlock(&rcin_mutex);
+        //TODO: adjust bounce buffer size appropriately per protocol type
+        if (rcin_prot.protocol_detected() == AP_RCProtocol::SBUS || rcin_prot.protocol_detected() == AP_RCProtocol::DSM) {
+            sig_reader.set_bounce_buf_size(128); //increase the buffer size if it isn't
+        } else {
+            sig_reader.set_bounce_buf_size(16);
+        }
     }
 #endif
 
