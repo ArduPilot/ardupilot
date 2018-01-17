@@ -460,6 +460,9 @@ private:
     // control enable of fast sampling
     AP_Int8     _fast_sampling_mask;
 
+    // control enable of detected sensors
+    AP_Int8     _enable_mask;
+    
     // board orientation from AHRS
     enum Rotation _board_orientation;
 
