@@ -76,10 +76,7 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
 void SoftSigReader::_irq_handler(void* self, uint32_t flags)
 {
     SoftSigReader* sig_reader = (SoftSigReader*)self;
-    for (uint16_t i = 0; i < sig_reader->_bounce_buf_size; i++) {
-        sig_reader->sigbuf.push_force(sig_reader->signal[i]);
-        sig_reader->signal[i] = 0;
-    }
+    sig_reader->sigbuf.push(sig_reader->signal, sig_reader->_bounce_buf_size);
     //restart the DMA transfers
     dmaStreamSetMemory0(sig_reader->dma, sig_reader->signal);
     dmaStreamSetTransactionSize(sig_reader->dma, sig_reader->_bounce_buf_size);
