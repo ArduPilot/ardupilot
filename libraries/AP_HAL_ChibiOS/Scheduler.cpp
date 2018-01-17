@@ -253,7 +253,7 @@ void Scheduler::_timer_thread(void *arg)
         sched->_run_timers(true);
 
         // process any pending RC output requests
-        //hal.rcout->timer_tick();
+        hal.rcout->timer_tick();
 
         // process any pending RC input requests
         ((RCInput *)hal.rcin)->_timer_tick();
