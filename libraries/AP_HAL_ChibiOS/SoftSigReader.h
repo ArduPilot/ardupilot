@@ -22,7 +22,8 @@
 
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
 #define MAX_SIGNAL_TRANSITIONS 256
-#define DEFAULT_BOUNCE_BUF_SIZE 16
+#define DEFAULT_BOUNCE_BUF_SIZE 32
+
 class ChibiOS::SoftSigReader {
 public:
     bool attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, uint8_t dma_stream, uint32_t dma_channel);
