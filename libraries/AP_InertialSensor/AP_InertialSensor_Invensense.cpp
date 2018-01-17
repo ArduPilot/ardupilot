@@ -38,7 +38,12 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+// hal.console can be accessed from bus threads on ChibiOS
+#define debug(fmt, args ...)  do {hal.console->printf("MPU: " fmt "\n", ## args); } while(0)
+#else
 #define debug(fmt, args ...)  do {printf("MPU: " fmt "\n", ## args); } while(0)
+#endif
 
 /*
   EXT_SYNC allows for frame synchronisation with an external device
@@ -574,7 +579,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
 
         int16_t t2 = int16_val(data, 3);
         if (!_check_raw_temp(t2)) {
-            debug("temp reset %d %d", _raw_temp, t2);
+            debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
             _fifo_reset();
             return false;
         }
@@ -617,7 +622,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
         // use temperatue to detect FIFO corruption
         int16_t t2 = int16_val(data, 3);
         if (!_check_raw_temp(t2)) {
-            debug("temp reset %d %d", _raw_temp, t2);
+            debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
             _fifo_reset();
             ret = false;
             break;
@@ -730,7 +735,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
 
         if (_fast_sampling) {
             if (!_accumulate_fast_sampling(rx, n)) {
-                debug("stop at %u of %u", n_samples, bytes_read/MPU_SAMPLE_SIZE);
+                debug("IMU[%u] stop at %u of %u", _accel_instance, n_samples, bytes_read/MPU_SAMPLE_SIZE);
                 break;
             }
         } else {
