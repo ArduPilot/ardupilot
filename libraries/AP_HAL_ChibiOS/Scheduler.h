@@ -25,14 +25,23 @@
 #define APM_MAIN_PRIORITY_BOOST 180 // same as normal for now
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      178
-#define APM_SPI_PRIORITY        179
-#define APM_CAN_PRIORITY        177
-#define APM_I2C_PRIORITY        176
 #define APM_UART_PRIORITY        60
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
 #define APM_SHELL_PRIORITY       57
 #define APM_STARTUP_PRIORITY     10
+
+#ifndef APM_SPI_PRIORITY
+#define APM_SPI_PRIORITY        181
+#endif
+
+#ifndef APM_CAN_PRIORITY
+#define APM_CAN_PRIORITY        177
+#endif
+
+#ifndef APM_I2C_PRIORITY
+#define APM_I2C_PRIORITY        176
+#endif
 
 /* how long to boost priority of the main thread for each main
    loop. This needs to be long enough for all interrupt-level drivers
