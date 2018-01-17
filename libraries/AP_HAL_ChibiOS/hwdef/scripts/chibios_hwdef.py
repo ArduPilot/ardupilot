@@ -462,27 +462,31 @@ def write_I2C_config(f):
 
 def write_PWM_config(f):
         '''write PWM config defines'''
-        ppm_in = None
+        rc_in = None
         pwm_out = []
         pwm_timers = []
         for l in bylabel.keys():
             p = bylabel[l]
             if p.type.startswith('TIM'):
-                if p.has_extra('PPMIN'):
-                    ppm_in = p
+                if p.has_extra('RCIN'):
+                    rc_in = p
                 else:
                     if p.extra_value('PWM', type=int) is not None:
                         pwm_out.append(p)
                     if p.type not in pwm_timers:
                         pwm_timers.append(p.type)
-        if ppm_in is not None:
-            chan = int(ppm_in.label[7:])
-            n = int(ppm_in.type[3])
-            f.write('// PPM input config\n')
-            f.write('#define HAL_USE_EICU TRUE\n')
-            f.write('#define PPM_EICU_TIMER EICUD%u\n' % n)
-            f.write('#define STM32_EICU_USE_TIM%u TRUE\n' % n)
-            f.write('#define PPM_EICU_CHANNEL EICU_CHANNEL_%u\n' % chan)
+        if rc_in is not None:
+            if int(rc_in.label[7:]) not in [1,2]:
+                error("Bad channel number, only channel 1 and 2 supported for RCIN")
+            n = int(rc_in.type[3])
+            dma_chan_str = rc_in.extra_prefix('DMA_CH')[6:]
+            dma_chan = int(dma_chan_str)
+            f.write('// RC input config\n')
+            f.write('#define HAL_USE_ICU TRUE\n')
+            f.write('#define STM32_ICU_USE_TIM%u TRUE\n' % n)
+            f.write('#define RCIN_ICU_TIMER ICUD%u\n' % n)
+            f.write('#define RCIN_ICU_CHANNEL ICU_CHANNEL_%u\n' % int(rc_in.label[7:]))
+            f.write('#define STM32_RCIN_DMA_CHANNEL %u' % dma_chan)
             f.write('\n')
         f.write('// PWM timer config\n')
         for t in sorted(pwm_timers):
@@ -728,7 +732,9 @@ def build_peripheral_list():
                 if type.startswith('ADC'):
                         peripherals.append(type)                        
                 if type.startswith('SDIO'):
-                        peripherals.append(type)                        
+                        peripherals.append(type)
+                if type.startswith('TIM') and p.has_extra('RCIN'):
+                        peripherals.append(p.label)
                 done.add(type)
         return peripherals
 
