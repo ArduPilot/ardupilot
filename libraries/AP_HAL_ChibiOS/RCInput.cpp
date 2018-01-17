@@ -214,7 +214,7 @@ void RCInput::_timer_tick(void)
 
 bool RCInput::rc_bind(int dsmMode)
 {
-#if HAL_RCINPUT_WITH_AP_RADIO
+#ifdef HAL_RCINPUT_WITH_AP_RADIO
     if (radio) {
         radio->start_recv_bind();
     }

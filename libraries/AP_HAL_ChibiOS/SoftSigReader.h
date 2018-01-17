@@ -20,6 +20,8 @@
 
 #include "AP_HAL_ChibiOS.h"
 
+#if HAL_USE_ICU == TRUE
+
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
 #define MAX_SIGNAL_TRANSITIONS 256
 #define DEFAULT_BOUNCE_BUF_SIZE 32
@@ -41,3 +43,6 @@ private:
     ICUConfig icucfg;
     uint16_t _bounce_buf_size = DEFAULT_BOUNCE_BUF_SIZE;
 };
+
+#endif // HAL_USE_ICU
+
