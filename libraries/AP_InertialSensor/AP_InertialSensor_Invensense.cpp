@@ -256,7 +256,6 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_REV_D9                          0x59    // 0101			1001
 
 #define MPU_SAMPLE_SIZE 14
-#define MPU_FIFO_DOWNSAMPLE_COUNT 8
 #define MPU_FIFO_BUFFER_LEN 16
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
@@ -442,6 +441,15 @@ void AP_InertialSensor_Invensense::start()
     // setup ODR and on-sensor filtering
     _set_filter_register();
 
+    // update backend sample rate
+    _set_accel_raw_sample_rate(_accel_instance, _backend_rate_hz);
+    _set_gyro_raw_sample_rate(_gyro_instance, _backend_rate_hz);
+      
+    if (_fast_sampling) {
+        hal.console->printf("MPU[%u]: enabled fast sampling rate %uHz/%uHz\n",
+                            _accel_instance, _backend_rate_hz*_fifo_downsample_rate, _backend_rate_hz);
+    }
+    
     // set sample rate to 1000Hz and apply a software filter
     // In this configuration, the gyro sample rate is 8kHz
     _register_write(MPUREG_SMPLRT_DIV, 0, true);
@@ -500,7 +508,7 @@ void AP_InertialSensor_Invensense::start()
     }
 
     // start the timer process to read samples
-    _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
+    _dev->register_periodic_callback(1000000UL / _backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
 }
 
 
@@ -649,11 +657,11 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
         _accum.gyro += _accum.gyro_filter.apply(g);
         _accum.count++;
 
-        if (_accum.count == MPU_FIFO_DOWNSAMPLE_COUNT) {
-            float ascale = _accel_scale / (MPU_FIFO_DOWNSAMPLE_COUNT/2);
+        if (_accum.count == _fifo_downsample_rate) {
+            float ascale = _accel_scale / (_fifo_downsample_rate/2);
             _accum.accel *= ascale;
 
-            float gscale = GYRO_SCALE / MPU_FIFO_DOWNSAMPLE_COUNT;
+            float gscale = GYRO_SCALE / _fifo_downsample_rate;
             _accum.gyro *= gscale;
             
             _rotate_and_correct_accel(_accel_instance, _accum.accel);
@@ -809,14 +817,26 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
     config = 0;
 #endif
 
+    // assume 1kHz sampling to start
+    _fifo_downsample_rate = 1;
+    _backend_rate_hz = 1000;
+    
     if (enable_fast_sampling(_accel_instance)) {
         _fast_sampling = (_mpu_type != Invensense_MPU6000 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
         if (_fast_sampling) {
-            hal.console->printf("MPU[%u]: enabled fast sampling\n", _accel_instance);
-
+            if (get_sample_rate_hz() <= 1000) {
+                _fifo_downsample_rate = 8;
+            } else if (get_sample_rate_hz() <= 2000) {
+                _fifo_downsample_rate = 4;
+            } else {
+                _fifo_downsample_rate = 2;
+            }
+            // calculate rate we will be giving samples to the backend
+            _backend_rate_hz *= (8 / _fifo_downsample_rate);
+            
             // for logging purposes set the oversamping rate
-            _set_accel_oversampling(_accel_instance, MPU_FIFO_DOWNSAMPLE_COUNT/2);
-            _set_gyro_oversampling(_gyro_instance, MPU_FIFO_DOWNSAMPLE_COUNT);
+            _set_accel_oversampling(_accel_instance, _fifo_downsample_rate/2);
+            _set_gyro_oversampling(_gyro_instance, _fifo_downsample_rate);
 
             /* set divider for internal sample rate to 0x1F when fast
              sampling enabled. This reduces the impact of the slave
