@@ -661,6 +661,14 @@ void GCS_MAVLINK_Rover::handle_change_alt_request(AP_Mission::Mission_Command &c
     // nothing to do
 }
 
+void GCS_MAVLINK_Rover::packetReceived(const mavlink_status_t &status, mavlink_message_t &msg)
+{
+    //breadcrumb needs to see GLOBAL_POSITION_INT
+    rover.mode_breadcrumb.mavlink_packet_received(msg);
+
+    GCS_MAVLINK::packetReceived(status, msg);
+}
+
 void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {

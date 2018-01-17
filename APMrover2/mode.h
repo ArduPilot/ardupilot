@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>  // for MAV_SEVERITY
+#include "AP_HAL/utility/RingBuffer.h"
 #include "defines.h"
 
 #define MODE_NEXT_HEADING_UNKNOWN   99999.0f    // used to indicate to set_desired_location method that next leg's heading is unknown
@@ -278,6 +279,53 @@ protected:
     float _desired_yaw_rate_cds;// target turn rate centi-degrees per second
 };
 
+class ModeBreadcrumb : public ModeGuided
+{
+public:
+
+    uint32_t mode_number() const override { return BREADCRUMB; }
+    const char *name4() const override { return "BCMB"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    // attributes of the mode
+    bool is_autopilot_mode() const override { return true; }
+
+    void mavlink_packet_received(const mavlink_message_t &msg);
+
+
+protected:
+
+    bool _enter() override;
+
+    void _exit()  override;
+
+private:
+
+    Location target_loc;
+    Vector3f target_vel;
+
+    Location _current_crumb; // waypoint crumb we are going to
+    Location _last_crumb_added; // last crumb that was successfully added to buffer
+    bool _has_crumb; // whether we are currently going to a crumb
+
+    ObjectBuffer<Location> *_crumbs_ring_buffer; // pointer to circular queue that stores points along target vehicle path
+
+    AP_HAL::Semaphore *_crumbs_sem; // semaphore for updating target vehicle location and speed
+
+    const float closure_speed = 10.0f; // metres/second #TODO Maybe make a parameter?
+    const float distance_to_stop = 20.0f; // maintain given distance from the target in meters #TODO Maybe make a parameter?
+    const float distance_to_prune = 10.0f; // prune crumbs that are too close to each other in meters #TODO Maybe make a parameter?
+
+    uint32_t target_last_update_ms;
+    const uint16_t target_update_timeout_ms = 1000;
+
+    bool get_next_crumb();
+
+    void run_lonely_mode();
+    Mode *lonely_mode;
+};
 
 class ModeHold : public Mode
 {

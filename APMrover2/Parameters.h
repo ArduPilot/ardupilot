@@ -76,6 +76,7 @@ public:
         k_param_cli_enabled_old,    // unused
         k_param_gcs3,
         k_param_gcs_pid_mask,
+        k_param_sysid_bcmb_target,  // target vehicle for breadcrumb mode to follow
 
         //
         // 130: Sensor parameters
@@ -220,6 +221,7 @@ public:
     AP_Int16    sysid_this_mav;
     AP_Int16    sysid_my_gcs;
     AP_Int8     telem_delay;
+    AP_Int8     sysid_bcmb_target;
 
     // sensor parameters
     AP_Int8     compass_enabled;

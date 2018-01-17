@@ -33,6 +33,9 @@ Mode *Rover::mode_from_mode_num(const enum mode num)
     case INITIALISING:
         ret = &mode_initializing;
         break;
+    case BREADCRUMB:
+        ret = &mode_breadcrumb;
+        break;
     default:
         break;
     }

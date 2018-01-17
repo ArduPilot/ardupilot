@@ -76,6 +76,13 @@ const AP_Param::Info Rover::var_info[] = {
     // @Bitmask: 0:Steering,1:Throttle
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
+    // @Param: SYSID_BCMBTARGET
+    // @DisplayName: Target vehicle for breadcrumb mode
+    // @Description: Target vehicle with this sysid should send GLOBAL_POSITION_INT messages to this vehicle. This vehicle will follow that vehicle's path.
+    // @User: Standard
+    // @Range: 1 255
+    GSCALAR(sysid_bcmb_target,      "SYSID_BCMBTARGET", 2),
+
     // @Param: MAG_ENABLE
     // @DisplayName: Enable Compass
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
