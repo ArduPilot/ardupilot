@@ -22,6 +22,8 @@
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
+#if HAL_USE_ICU == TRUE
+
 bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, uint8_t dma_stream, uint32_t dma_channel)
 {
     if (chan > ICU_CHANNEL_2) {
@@ -115,5 +117,6 @@ bool SoftSigReader::set_bounce_buf_size(uint16_t buf_size)
     return true;
 }
 
+#endif // HAL_USE_ICU
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

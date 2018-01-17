@@ -69,7 +69,7 @@ private:
     uint32_t last_radio_us;
 #endif
 
-#ifdef HAL_USE_ICU
+#if HAL_USE_ICU == TRUE
     ChibiOS::SoftSigReader sig_reader;
     AP_RCProtocol rcin_prot;
 #endif
