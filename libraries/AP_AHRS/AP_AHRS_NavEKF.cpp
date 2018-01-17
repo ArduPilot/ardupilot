@@ -79,7 +79,7 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
     EKF3.resetGyroBias();
 }
 
-void AP_AHRS_NavEKF::update(bool skip_ins_update)
+void AP_AHRS_NavEKF::update(bool skip_ins_update, bool run_ekf)
 {
     // EKF1 is no longer supported - handle case where it is selected
     if (_ekf_type == 1) {
@@ -91,17 +91,21 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
 #endif
 
     update_DCM(skip_ins_update);
-    if (_ekf_type == 2) {
-        // if EK2 is primary then run EKF2 first to give it CPU
-        // priority
-        update_EKF2();
-        update_EKF3();
-    } else {
-        // otherwise run EKF3 first
-        update_EKF3();
-        update_EKF2();
+    
+    if(run_ekf)
+    {
+    	if (_ekf_type == 2) {
+    		// if EK2 is primary then run EKF2 first to give it CPU
+    		// priority
+    		update_EKF2();
+    		update_EKF3();
+    	} else {
+    		// otherwise run EKF3 first
+    		update_EKF3();
+    		update_EKF2();
+    	}
     }
-
+    
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);
 

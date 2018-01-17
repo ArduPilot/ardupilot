@@ -51,3 +51,10 @@ def build(bld):
         use=vehicle + '_libs',
         defines=['FRAME_CONFIG=HELI_FRAME'],
         )
+    
+    bld.ap_program(
+        program_name='arducopter-rot',
+        program_groups=['bin', 'copter'],
+        use=vehicle + '_libs',
+        defines=['FRAME_CONFIG=ROT_FRAME'],
+        )
