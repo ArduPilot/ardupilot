@@ -182,12 +182,6 @@ void RCInput::_timer_tick(void)
             _rc_values[i] = rcin_prot.read(i);
         }
         chMtxUnlock(&rcin_mutex);
-        //TODO: adjust bounce buffer size appropriately per protocol type
-        if (rcin_prot.protocol_detected() == AP_RCProtocol::SBUS || rcin_prot.protocol_detected() == AP_RCProtocol::DSM) {
-            sig_reader.set_bounce_buf_size(128); //increase the buffer size if it isn't
-        } else {
-            sig_reader.set_bounce_buf_size(16);
-        }
     }
 #endif
 
