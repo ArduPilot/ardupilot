@@ -125,6 +125,12 @@ private:
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
 
+    // what downsampling rate are we using from the FIFO?
+    uint8_t _fifo_downsample_rate;
+
+    // what rate are we generating samples into the backend?
+    uint16_t _backend_rate_hz;
+
     // Last status from register user control
     uint8_t _last_stat_user_ctrl;    
 
