@@ -52,6 +52,7 @@ void RCOutput::init()
         total_channels += chan_offset;
     }
 #endif
+    chMtxObjectInit(&trigger_mutex);
 }
 
 void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
@@ -280,28 +281,15 @@ void RCOutput::push_local(void)
         }
     }
 
-    if (need_trigger && _output_mode == MODE_PWM_ONESHOT) {
-        uint64_t now = AP_HAL::micros64();
-        if (now < min_pulse_trigger_us) {
-            // guarantee minimum pulse separation
-            hal.scheduler->delay_microseconds(min_pulse_trigger_us - now);
-        }
-        osalSysLock();
-        for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
-            if (need_trigger & (1U<<i)) {
-                // this triggers pulse output for a channel group
-                pwm_group_list[i].pwm_drv->tim->EGR = STM32_TIM_EGR_UG;
-            }
-        }
-        osalSysUnlock();
-        if (widest_pulse > 2300) {
-            widest_pulse = 2300;
-        }
-        /*
-          calculate time that we are allowed to trigger next pulse
-          to guarantee at least a 50us gap between pulses
-        */
-        min_pulse_trigger_us = AP_HAL::micros64() + widest_pulse + 50;
+    if (widest_pulse > 2300) {
+        widest_pulse = 2300;
+    }
+    trigger_widest_pulse = widest_pulse;
+    
+    trigger_groups = need_trigger;
+    
+    if (trigger_groups && _output_mode == MODE_PWM_ONESHOT) {
+        trigger_oneshot();
     }
 }
 
@@ -355,6 +343,7 @@ void RCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
         period_us[i] = read_last_sent(i);
     }
 }
+
 /*
   setup output mode
  */
@@ -443,4 +432,54 @@ bool RCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
     }
 #endif
     return false;
+}
+
+/*
+  trigger output groups for oneshot mode
+ */
+void RCOutput::trigger_oneshot(void)
+{
+    if (!chMtxTryLock(&trigger_mutex)) {
+        return;
+    }
+    uint64_t now = AP_HAL::micros64();
+    if (now < min_pulse_trigger_us) {
+        // guarantee minimum pulse separation
+        hal.scheduler->delay_microseconds(min_pulse_trigger_us - now);
+    }
+    osalSysLock();
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
+        if (trigger_groups & (1U<<i)) {
+            // this triggers pulse output for a channel group
+            pwm_group_list[i].pwm_drv->tim->EGR = STM32_TIM_EGR_UG;
+        }
+    }
+    osalSysUnlock();
+    /*
+      calculate time that we are allowed to trigger next pulse
+      to guarantee at least a 50us gap between pulses
+    */
+    min_pulse_trigger_us = AP_HAL::micros64() + trigger_widest_pulse + 50;
+    chMtxUnlock(&trigger_mutex);
+}
+
+/*
+  periodic timer. The only need for a periodic timer is in oneshot
+  mode where we want to sustain a minimum output rate for when the
+  main loop is busy doing something like gyro calibration
+
+  A mininum output rate helps with some oneshot ESCs
+ */
+void RCOutput::timer_tick(void)
+{
+    if (_output_mode != MODE_PWM_ONESHOT ||
+        trigger_groups == 0 ||
+        min_pulse_trigger_us == 0) {
+        return;
+    }
+    uint64_t now = AP_HAL::micros64();
+    if (now - min_pulse_trigger_us > 10000) {
+        // trigger at a minimum of 100Hz
+        trigger_oneshot();
+    }
 }

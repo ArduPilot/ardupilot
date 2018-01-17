@@ -57,6 +57,11 @@ public:
       set default update rate
      */
     void set_default_rate(uint16_t rate_hz) override;
+
+    /*
+      timer push (for oneshot min rate)
+     */
+    void timer_tick(void) override;
     
 private:
     struct pwm_group {
@@ -91,7 +96,19 @@ private:
 
     // min time to trigger next pulse to prevent overlap
     uint64_t min_pulse_trigger_us;
+
+    // mutex for oneshot triggering
+    mutex_t trigger_mutex;
+
+    // which output groups need triggering
+    uint8_t trigger_groups;
+
+    // widest pulse for oneshot triggering
+    uint16_t trigger_widest_pulse;
     
     // push out values to local PWM
     void push_local(void);
+
+    // trigger oneshot pulses
+    void trigger_oneshot(void);
 };
