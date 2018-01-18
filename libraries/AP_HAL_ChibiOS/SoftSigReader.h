@@ -32,8 +32,6 @@ public:
     bool read(uint32_t &widths0, uint32_t &widths1);
     //This sets the size of bounce buffer size, which in turn controls the rate of interrupt from DMA
     bool set_bounce_buf_size(uint16_t buf_size);
-    //inverts the signal input mode
-    void invert();
 private:
     uint32_t *signal;
     static void _irq_handler(void* self, uint32_t flags);
