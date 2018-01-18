@@ -239,17 +239,9 @@ void Copter::ModeFlowHold::run()
     // get pilot's desired yaw rate
     float target_yaw_rate = copter.get_pilot_desired_yaw_rate(copter.channel_yaw->get_control_in());
     
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters are held on the ground until rotor speed runup has finished
-    bool takeoff_triggered = (copter.ap.land_complete && (target_climb_rate > 0.0f) && copter.motors->rotor_runup_complete());
-#else
-    bool takeoff_triggered = copter.ap.land_complete && (target_climb_rate > 0.0f);
-#endif
-    
-    // FlowHold State Machine Determination
     if (!copter.motors->armed() || !copter.motors->get_interlock()) {
         flowhold_state = FlowHold_MotorStopped;
-    } else if (copter.takeoff_state.running || takeoff_triggered) {
+    } else if (copter.takeoff_state.running || takeoff_triggered(target_climb_rate)) {
         flowhold_state = FlowHold_Takeoff;
     } else if (!copter.ap.auto_armed || copter.ap.land_complete) {
         flowhold_state = FlowHold_Landed;
