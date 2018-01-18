@@ -19,7 +19,7 @@ enum telem_type {
 #define TELEM_FLAG_VIDEO   (1U<<6)
 #define TELEM_FLAG_HYBRID  (1U<<7)
 
-struct telem_status {
+struct PACKED telem_status {
     uint8_t pps; // packets per second received
     uint8_t rssi; // lowpass rssi
     uint8_t flags; // TELEM_FLAG_*
@@ -30,13 +30,13 @@ struct telem_status {
 };
 
 // play a tune
-struct telem_play {
+struct PACKED telem_play {
     uint8_t seq;
     uint8_t tune_index;
 };
 
 // write to new firmware
-struct telem_firmware {
+struct PACKED telem_firmware {
     uint8_t seq;
     uint8_t len;
     uint16_t offset;
@@ -46,7 +46,7 @@ struct telem_firmware {
 /*
   telemetry packet from RX to TX
  */
-struct telem_packet {
+struct PACKED telem_packet {
     uint8_t crc; // simple CRC
     enum telem_type type;
     union {
@@ -67,7 +67,7 @@ enum tx_telem_type {
   tx_status structure sent one byte at a time to RX. This is packed
   into channels 8, 9 and 10 (using 32 bits of a possible 33)
  */
-struct telem_tx_status {
+struct PACKED telem_tx_status {
     uint8_t crc;
     enum tx_telem_type type;
     uint16_t data;
