@@ -969,6 +969,9 @@ private:
     ModeThrow mode_throw{*this};
     ModeGuidedNoGPS mode_guided_nogps{*this};
     ModeSmartRTL mode_smartrtl{*this};
+#if OPTFLOW == ENABLED
+    ModeFlowHold mode_flowhold{*this};
+#endif
 
     // mode.cpp
     Mode *mode_from_mode_num(const uint8_t mode);
