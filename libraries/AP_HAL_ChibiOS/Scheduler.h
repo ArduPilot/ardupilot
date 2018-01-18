@@ -25,6 +25,7 @@
 #define APM_MAIN_PRIORITY_BOOST 180 // same as normal for now
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      178
+#define APM_RCIN_PRIORITY       177
 #define APM_UART_PRIORITY        60
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
@@ -103,11 +104,13 @@ private:
     volatile bool _timer_event_missed;
 
     thread_t* _timer_thread_ctx;
+    thread_t* _rcin_thread_ctx;
     thread_t* _io_thread_ctx;
     thread_t* _storage_thread_ctx;
     thread_t* _uart_thread_ctx;
 
     static void _timer_thread(void *arg);
+    static void _rcin_thread(void *arg);
     static void _io_thread(void *arg);
     static void _storage_thread(void *arg);
     static void _uart_thread(void *arg);
