@@ -564,6 +564,10 @@ public:
 
     // temperature calibration handling
     AP_TempCalibration temp_calibration;
+
+#if TOY_MODE_ENABLED == ENABLED
+    ToyMode toy_mode;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];

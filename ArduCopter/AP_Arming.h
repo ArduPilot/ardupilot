@@ -5,6 +5,8 @@
 class AP_Arming_Copter : public AP_Arming
 {
 public:
+    friend class Copter;
+    friend class ToyMode;
     AP_Arming_Copter(const AP_AHRS_NavEKF &ahrs_ref, const AP_Baro &baro, Compass &compass,
                      const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav,
                      const AP_InertialSensor &ins)
