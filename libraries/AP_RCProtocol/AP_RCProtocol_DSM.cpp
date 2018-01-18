@@ -14,12 +14,16 @@
  * 
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
+/*
+  with thanks to PX4 dsm.c for DSM decoding approach
+ */
 #include "AP_RCProtocol_DSM.h"
 
-//#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
-# define debug(fmt, args...)	printf(fmt "\n", ##args)
+extern const AP_HAL::HAL& hal;
+# define debug(fmt, args...)	hal.console->printf(fmt "\n", ##args)
 #else
 # define debug(fmt, args...)	do {} while(0)
 #endif
@@ -81,11 +85,7 @@ void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
             uint16_t num_values=0;
             if (dsm_decode(AP_HAL::micros64(), bytes, values, &num_values, 8) &&
                 num_values >= MIN_RCIN_CHANNELS) {
-                for (i=0; i<num_values; i++) {
-                    _pwm_values[i] = values[i];
-                }
-                _num_channels = num_values;
-                rc_input_count++;
+                add_input(num_values, values, false);
             }
         }
         memset(&dsm_state, 0, sizeof(dsm_state));
@@ -244,17 +244,18 @@ void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16]
 bool AP_RCProtocol_DSM::dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[16], 
                                    uint16_t *values, uint16_t *num_values, uint16_t max_values)
 {
-	/*
+#if 0
 	debug("DSM dsm_frame %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x",
 		dsm_frame[0], dsm_frame[1], dsm_frame[2], dsm_frame[3], dsm_frame[4], dsm_frame[5], dsm_frame[6], dsm_frame[7],
 		dsm_frame[8], dsm_frame[9], dsm_frame[10], dsm_frame[11], dsm_frame[12], dsm_frame[13], dsm_frame[14], dsm_frame[15]);
-	*/
+#endif
 	/*
 	 * If we have lost signal for at least a second, reset the
 	 * format guessing heuristic.
 	 */
-	if (((frame_time - dsm_last_frame_time) > 1000000) && (dsm_channel_shift != 0))
+	if (((frame_time - dsm_last_frame_time) > 1000000) && (dsm_channel_shift != 0)) {
             dsm_guess_format(true, dsm_frame);
+    }
 
 	/* we have received something we think is a dsm_frame */
 	dsm_last_frame_time = frame_time;

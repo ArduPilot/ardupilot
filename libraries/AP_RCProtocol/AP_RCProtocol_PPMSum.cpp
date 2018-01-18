@@ -27,11 +27,7 @@ void AP_RCProtocol_PPMSum::process_pulse(uint32_t width_s0, uint32_t width_s1)
         // a long pulse indicates the end of a frame. Reset the
         // channel counter so next pulse is channel 0
         if (ppm_state._channel_counter >= MIN_RCIN_CHANNELS) {
-            for (uint8_t i=0; i<ppm_state._channel_counter; i++) {
-                _pwm_values[i] = ppm_state._pulse_capt[i];
-            }
-            _num_channels = ppm_state._channel_counter;
-            rc_input_count++;
+            add_input(ppm_state._channel_counter, ppm_state._pulse_capt, false);
         }
         ppm_state._channel_counter = 0;
         return;
@@ -58,11 +54,7 @@ void AP_RCProtocol_PPMSum::process_pulse(uint32_t width_s0, uint32_t width_s1)
     // if we have reached the maximum supported channels then
     // mark as unsynchronised, so we wait for a wide pulse
     if (ppm_state._channel_counter >= MAX_RCIN_CHANNELS) {
-        for (uint8_t i=0; i<ppm_state._channel_counter; i++) {
-            _pwm_values[i] = ppm_state._pulse_capt[i];
-        }
-        _num_channels = ppm_state._channel_counter;
-        rc_input_count++;
+        add_input(ppm_state._channel_counter, ppm_state._pulse_capt, false);
         ppm_state._channel_counter = -1;
     }
 }
