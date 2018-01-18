@@ -311,7 +311,7 @@ protected:
     bool try_send_camera_message(enum ap_message id);
     bool try_send_gps_message(enum ap_message id);
     void send_hwstatus();
-
+    void handle_data_packet(mavlink_message_t *msg);
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
