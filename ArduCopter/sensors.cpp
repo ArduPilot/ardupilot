@@ -371,6 +371,7 @@ void Copter::update_sensor_status_flags(void)
     case GUIDED_NOGPS:
     case SPORT:
     case AUTOTUNE:
+    case FLOWHOLD:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     default:

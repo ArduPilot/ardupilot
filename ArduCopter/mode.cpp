@@ -89,6 +89,12 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_smartrtl;
             break;
 
+#if OPTFLOW == ENABLED
+        case FLOWHOLD:
+            ret = &mode_flowhold;
+            break;
+#endif
+            
         default:
             break;
     }
