@@ -85,6 +85,7 @@ void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
                     _pwm_values[i] = values[i];
                 }
                 _num_channels = num_values;
+                rc_input_count++;
             }
         }
         memset(&dsm_state, 0, sizeof(dsm_state));
