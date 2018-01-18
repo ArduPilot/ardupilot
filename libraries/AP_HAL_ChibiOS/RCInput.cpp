@@ -25,6 +25,7 @@
 extern AP_IOMCU iomcu;
 #endif
 
+#define SIG_DETECT_TIMEOUT_US 500000
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 void RCInput::init()
@@ -36,6 +37,8 @@ void RCInput::init()
 #endif
     chMtxObjectInit(&rcin_mutex);
     _init = true;
+    //timeout starts from the initialisation
+    _rcin_timestamp_last_signal = AP_HAL::micros();
 }
 
 bool RCInput::new_input()
@@ -182,6 +185,11 @@ void RCInput::_timer_tick(void)
             _rc_values[i] = rcin_prot.read(i);
         }
         chMtxUnlock(&rcin_mutex);
+    }
+    //we reset if nothing detected for SIG_DETECT_TIMEOUT_US
+    if (AP_HAL::micros() - _rcin_timestamp_last_signal > SIG_DETECT_TIMEOUT_US) {
+        _rcin_timestamp_last_signal = AP_HAL::micros();
+        sig_reader.invert();
     }
 #endif
 
