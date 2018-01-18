@@ -152,7 +152,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action
     // @Description: What to do on a failsafe event
-    // @Values: 0:Nothing,1:RTL,2:Hold
+    // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold
     // @User: Standard
     GSCALAR(fs_action,    "FS_ACTION",     2),
 
