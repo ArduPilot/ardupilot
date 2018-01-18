@@ -16,6 +16,7 @@ bool Copter::current_mode_has_user_takeoff(bool must_navigate)
             return true;
         case ALT_HOLD:
         case SPORT:
+        case FLOWHOLD:
             return !must_navigate;
         default:
             return false;
@@ -45,6 +46,7 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
             case POSHOLD:
             case ALT_HOLD:
             case SPORT:
+            case FLOWHOLD:
                 set_auto_armed(true);
                 takeoff_timer_start(takeoff_alt_cm);
                 return true;
