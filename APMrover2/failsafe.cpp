@@ -72,7 +72,9 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
             case 0:
                 break;
             case 1:
-                set_mode(mode_rtl, MODE_REASON_FAILSAFE);
+                if (!set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
+                    set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                }
                 break;
             case 2:
                 set_mode(mode_hold, MODE_REASON_FAILSAFE);
