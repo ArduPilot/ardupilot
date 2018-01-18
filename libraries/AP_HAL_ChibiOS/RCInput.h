@@ -62,6 +62,7 @@ private:
     mutex_t rcin_mutex;
     int16_t _rssi = -1;
     uint32_t _rcin_timestamp_last_signal;
+    uint32_t _rcin_detect_timeout;
     bool _init;
 #ifdef HAL_RCINPUT_WITH_AP_RADIO
     bool _radio_init;
