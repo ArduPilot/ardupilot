@@ -5,6 +5,7 @@
 class Mode {
     friend class Copter;
     friend class AP_Arming_Copter;
+    friend class ToyMode;
 
 public:
 

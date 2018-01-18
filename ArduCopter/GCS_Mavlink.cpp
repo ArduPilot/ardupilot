@@ -1715,6 +1715,12 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 #endif
         break;
 
+#if TOY_MODE_ENABLED == ENABLED
+    case MAVLINK_MSG_ID_NAMED_VALUE_INT:
+        copter.g2.toy_mode.handle_message(msg);
+        break;
+#endif
+        
     default:
         handle_common_message(msg);
         break;

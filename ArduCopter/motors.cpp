@@ -13,6 +13,13 @@ void Copter::arm_motors_check()
 {
     static int16_t arming_counter;
 
+#if TOY_MODE_ENABLED == ENABLED
+    if (g2.toy_mode.enabled()) {
+        // not armed with sticks in toy mode
+        return;
+    }
+#endif
+    
     // ensure throttle is down
     if (channel_throttle->get_control_in() > 0) {
         arming_counter = 0;
@@ -101,7 +108,7 @@ void Copter::auto_disarm_check()
         if (flightmode->has_manual_throttle() || !sprung_throttle_stick) {
             thr_low = ap.throttle_zero;
         } else {
-            float deadband_top = channel_throttle->get_control_mid() + g.throttle_deadzone;
+            float deadband_top = get_throttle_mid() + g.throttle_deadzone;
             thr_low = channel_throttle->get_control_in() <= deadband_top;
         }
 
@@ -173,9 +180,15 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
         ahrs.resetHeightDatum();
         Log_Write_Event(DATA_EKF_ALT_RESET);
+
+        // we have reset height, so arming height is zero
+        arming_altitude_m = 0;        
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location(false);
+
+        // remember the height when we armed
+        arming_altitude_m = inertial_nav.get_altitude() * 0.01;
     }
     update_super_simple_bearing(false);
 
