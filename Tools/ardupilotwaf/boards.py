@@ -304,7 +304,6 @@ class chibios(Board):
             '-Werror=init-self',
             '-Wframe-larger-than=1024',
             '-Werror=unused-but-set-variable',
-            '-Wdouble-promotion',
             '-Wno-missing-field-initializers',
             '-Wno-trigraphs',
             '-Os',
