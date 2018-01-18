@@ -43,6 +43,7 @@ private:
     ICUConfig icucfg;
     ICUDriver* _icu_drv = nullptr;
     uint16_t _bounce_buf_size = DEFAULT_BOUNCE_BUF_SIZE;
+    bool need_swap;
 };
 
 #endif // HAL_USE_ICU

@@ -52,7 +52,6 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
     dmaStreamSetMode(dma, dmamode | STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_PSIZE_WORD |
                             STM32_DMA_CR_MSIZE_WORD | STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     
-    icucfg.mode = ICU_INPUT_ACTIVE_LOW;
     icucfg.frequency = INPUT_CAPTURE_FREQUENCY;
     icucfg.channel = chan;
     icucfg.width_cb = NULL;
@@ -61,7 +60,10 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
 
     if (chan == ICU_CHANNEL_1) {
         icucfg.dier = STM32_TIM_DIER_CC1DE;
+        icucfg.mode = ICU_INPUT_ACTIVE_HIGH;
+        need_swap = true;
     } else {
+        icucfg.mode = ICU_INPUT_ACTIVE_LOW;
         icucfg.dier = STM32_TIM_DIER_CC2DE;
     }
     icuStart(_icu_drv, &icucfg);
@@ -90,17 +92,16 @@ void SoftSigReader::_irq_handler(void* self, uint32_t flags)
 bool SoftSigReader::read(uint32_t &widths0, uint32_t &widths1)
 {
     if (sigbuf.pop(widths0) && sigbuf.pop(widths1)) {
-        //the data is period and width, order depending on which channel is used and 
-        //width type (0 or 1) depends on mode being set to HIGH or LOW
-        if (widths0 > widths1) {
-            //This happens when ICU_CHANNEL_1 is used
-            //We need to swap while converting to widths
-            widths1 = widths0 - widths1;
-            widths0 -= widths1;
-        } else {
-            //This happens when ICU_CHANNEL_2 is used
-            widths1 -= widths0;
+        //the data is period and width, order depending on which
+        //channel is used and width type (0 or 1) depends on mode
+        //being set to HIGH or LOW. We need to swap the words when on
+        //channel 1
+        if (need_swap) {
+            uint32_t tmp = widths1;
+            widths1 = widths0;
+            widths0 = tmp;
         }
+        widths1 -= widths0;
     } else {
         return false;
     }
