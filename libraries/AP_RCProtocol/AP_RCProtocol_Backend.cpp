@@ -16,6 +16,7 @@
  */
 
 #include "AP_RCProtocol.h"
+#include <AP_Math/AP_Math.h>
 
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) : 
     frontend(_frontend),
@@ -43,3 +44,15 @@ uint16_t AP_RCProtocol_Backend::read(uint8_t chan)
     return _pwm_values[chan];
 }
 
+/*
+  provide input from a backend
+ */
+void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe)
+{
+    num_values = MIN(num_values, MAX_RCIN_CHANNELS);
+    memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
+    _num_channels = num_values;
+    if (!in_failsafe) {
+        rc_input_count++;
+    }
+}

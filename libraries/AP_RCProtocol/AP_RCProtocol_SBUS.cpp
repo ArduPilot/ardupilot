@@ -267,13 +267,7 @@ void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
                         &sbus_failsafe, &sbus_frame_drop,
                         MAX_RCIN_CHANNELS) &&
             num_values >= MIN_RCIN_CHANNELS) {
-            for (i=0; i<num_values; i++) {
-                _pwm_values[i] = values[i];
-            }
-            _num_channels = num_values;
-            if (!sbus_failsafe) {
-                rc_input_count++;
-            }
+            add_input(num_values, values, sbus_failsafe);
         }
         goto reset;
     } else if (bits_s1 > 12) {
