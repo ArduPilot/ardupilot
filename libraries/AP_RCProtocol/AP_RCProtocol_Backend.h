@@ -29,11 +29,15 @@ public:
     uint16_t read(uint8_t chan);
     bool new_input();
     uint8_t num_channels();
+
 protected:
+    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
+    
+private:
     AP_RCProtocol &frontend;
     unsigned int rc_input_count;
     unsigned int last_rc_input_count;
 
-    uint16_t _pwm_values[MAX_RCIN_CHANNELS] = {0};
+    uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;
 };
