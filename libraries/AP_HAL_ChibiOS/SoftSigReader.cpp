@@ -107,24 +107,6 @@ bool SoftSigReader::read(uint32_t &widths0, uint32_t &widths1)
     return true;
 }
 
-void SoftSigReader::invert()
-{
-    if (_icu_drv == nullptr) {
-        return;
-    }
-    icuStopCapture(_icu_drv);
-    icuStop(_icu_drv);
-    if (icucfg.mode == ICU_INPUT_ACTIVE_LOW) {
-        icucfg.mode = ICU_INPUT_ACTIVE_HIGH;
-    } else {
-        icucfg.mode = ICU_INPUT_ACTIVE_LOW;
-    }
-    icuStart(_icu_drv, &icucfg);
-    _icu_drv->tim->DCR = STM32_TIM_DCR_DBA(0x0D) | STM32_TIM_DCR_DBL(1);
-    icuStartCapture(_icu_drv);
-}
-
-
 
 bool SoftSigReader::set_bounce_buf_size(uint16_t buf_size)
 {

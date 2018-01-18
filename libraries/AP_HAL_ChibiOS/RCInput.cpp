@@ -37,8 +37,6 @@ void RCInput::init()
 #endif
     chMtxObjectInit(&rcin_mutex);
     _init = true;
-    //timeout starts from the initialisation
-    _rcin_detect_timeout = AP_HAL::micros();
 }
 
 bool RCInput::new_input()
@@ -185,11 +183,6 @@ void RCInput::_timer_tick(void)
             _rc_values[i] = rcin_prot.read(i);
         }
         chMtxUnlock(&rcin_mutex);
-    }
-    //we reset if nothing detected for SIG_DETECT_TIMEOUT_US
-    if (AP_HAL::micros() - _rcin_detect_timeout > SIG_DETECT_TIMEOUT_US) {
-        _rcin_detect_timeout = AP_HAL::micros();
-        sig_reader.invert();
     }
 #endif
 
