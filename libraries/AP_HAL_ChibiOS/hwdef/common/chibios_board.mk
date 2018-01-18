@@ -123,7 +123,6 @@ CSRC = $(STARTUPSRC) \
 	   $(HWDEF)/common/stubs.c \
 	   $(HWDEF)/common/board.c \
 	   $(HWDEF)/common/usbcfg.c \
-	   $(HWDEF)/common/ppm.c \
 	   $(HWDEF)/common/flash.c \
 	   $(HWDEF)/common/malloc.c \
 	   $(HWDEF)/common/stdio.c \
