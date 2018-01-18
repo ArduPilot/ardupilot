@@ -130,6 +130,10 @@
 #include "afs_copter.h"
 #endif
 
+#if TOY_MODE_ENABLED == ENABLED
+#include "toy_mode.h"
+#endif
+
 // Local modules
 #include "Parameters.h"
 #include "avoidance_adsb.h"
@@ -151,6 +155,7 @@ public:
     friend class AP_AdvancedFailsafe_Copter;
 #endif
     friend class AP_Arming_Copter;
+    friend class ToyMode;
 
     Copter(void);
 
@@ -324,6 +329,9 @@ private:
 
     RCMapper rcmap;
 
+    // intertial nav alt when we armed
+    float arming_altitude_m;
+    
     // board specific config
     AP_BoardConfig BoardConfig;
 
@@ -820,6 +828,9 @@ private:
     void motors_output();
     void lost_vehicle_check();
 
+    // toy_mode.cpp
+    void toy_mode_update(void);
+
     // navigation.cpp
     void run_nav_updates(void);
     int32_t home_bearing();
@@ -848,6 +859,7 @@ private:
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
     void radio_passthrough_to_motors();
+    int16_t get_throttle_mid(void);
 
     // sensors.cpp
     void init_barometer(bool full_calibration);
