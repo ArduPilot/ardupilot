@@ -33,6 +33,7 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
     if (signal == nullptr) {
         return false;
     }
+    _icu_drv = icu_drv;
     //Setup Burst transfer of period and width measurement
     dma = STM32_DMA_STREAM(dma_stream);
     bool dma_allocated = dmaStreamAllocate(dma,
@@ -63,15 +64,15 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
     } else {
         icucfg.dier = STM32_TIM_DIER_CC2DE;
     }
-    icuStart(icu_drv, &icucfg);
+    icuStart(_icu_drv, &icucfg);
     //Extended Timer Setup to enable DMA transfer
     //selected offset for TIM_CCR1 and for two words
-    icu_drv->tim->DCR = STM32_TIM_DCR_DBA(0x0D) | STM32_TIM_DCR_DBL(1);
+    _icu_drv->tim->DCR = STM32_TIM_DCR_DBA(0x0D) | STM32_TIM_DCR_DBL(1);
     //Enable DMA
     dmaStreamEnable(dma);
     
     //Start Timer
-    icuStartCapture(icu_drv);
+    icuStartCapture(_icu_drv);
     return true;
 }
 
@@ -89,9 +90,15 @@ void SoftSigReader::_irq_handler(void* self, uint32_t flags)
 bool SoftSigReader::read(uint32_t &widths0, uint32_t &widths1)
 {
     if (sigbuf.pop(widths0) && sigbuf.pop(widths1)) {
+        //the data is period and width, order depending on which channel is used and 
+        //width type (0 or 1) depends on mode being set to HIGH or LOW
         if (widths0 > widths1) {
-            widths0 -= widths1; 
+            //This happens when ICU_CHANNEL_1 is used
+            //We need to swap while converting to widths
+            widths1 = widths0 - widths1;
+            widths0 -= widths1;
         } else {
+            //This happens when ICU_CHANNEL_2 is used
             widths1 -= widths0;
         }
     } else {
@@ -99,6 +106,25 @@ bool SoftSigReader::read(uint32_t &widths0, uint32_t &widths1)
     }
     return true;
 }
+
+void SoftSigReader::invert()
+{
+    if (_icu_drv == nullptr) {
+        return;
+    }
+    icuStopCapture(_icu_drv);
+    icuStop(_icu_drv);
+    if (icucfg.mode == ICU_INPUT_ACTIVE_LOW) {
+        icucfg.mode = ICU_INPUT_ACTIVE_HIGH;
+    } else {
+        icucfg.mode = ICU_INPUT_ACTIVE_LOW;
+    }
+    icuStart(_icu_drv, &icucfg);
+    _icu_drv->tim->DCR = STM32_TIM_DCR_DBA(0x0D) | STM32_TIM_DCR_DBL(1);
+    icuStartCapture(_icu_drv);
+}
+
+
 
 bool SoftSigReader::set_bounce_buf_size(uint16_t buf_size)
 {
