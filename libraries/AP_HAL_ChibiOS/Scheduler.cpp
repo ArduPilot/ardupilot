@@ -33,6 +33,7 @@ using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
 THD_WORKING_AREA(_timer_thread_wa, 2048);
+THD_WORKING_AREA(_rcin_thread_wa, 512);
 THD_WORKING_AREA(_io_thread_wa, 2048);
 THD_WORKING_AREA(_storage_thread_wa, 2048);
 THD_WORKING_AREA(_uart_thread_wa, 2048);
@@ -51,6 +52,13 @@ void Scheduler::init()
                      sizeof(_timer_thread_wa),
                      APM_TIMER_PRIORITY,        /* Initial priority.    */
                      _timer_thread,             /* Thread function.     */
+                     this);                     /* Thread parameter.    */
+
+    // setup the RCIN thread - this will call tasks at 1kHz
+    _rcin_thread_ctx = chThdCreateStatic(_rcin_thread_wa,
+                     sizeof(_rcin_thread_wa),
+                     APM_RCIN_PRIORITY,        /* Initial priority.    */
+                     _rcin_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
 
     // the UART thread runs at a medium priority
@@ -254,8 +262,18 @@ void Scheduler::_timer_thread(void *arg)
 
         // process any pending RC output requests
         hal.rcout->timer_tick();
+    }
+}
 
-        // process any pending RC input requests
+void Scheduler::_rcin_thread(void *arg)
+{
+    Scheduler *sched = (Scheduler *)arg;
+    sched->_rcin_thread_ctx->name = "apm_rcin";
+    while (!sched->_hal_initialized) {
+        sched->delay_microseconds(20000);
+    }
+    while (true) {
+        sched->delay_microseconds(2500);
         ((RCInput *)hal.rcin)->_timer_tick();
     }
 }
