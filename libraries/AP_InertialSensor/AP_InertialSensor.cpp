@@ -879,6 +879,8 @@ AP_InertialSensor::detect_backends(void)
                                              hal.spi->get_device(HAL_INS_RST_A_NAME),
                                              HAL_INS_DEFAULT_G_ROTATION,
                                              HAL_INS_DEFAULT_A_ROTATION));
+#elif HAL_INS_DEFAULT == HAL_INS_ICM20789_SPI
+    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20789")));
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
