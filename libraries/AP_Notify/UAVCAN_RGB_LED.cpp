@@ -61,7 +61,7 @@ bool UAVCAN_RGB_LED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
             if (hal.can_mgr[i] != nullptr) {
                 AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
                 if (uavcan != nullptr) {
-                    success = success || uavcan->led_write(_led_index, red, green, blue);
+                    success |= uavcan->led_write(_led_index, red, green, blue);
                 }
             }
         }
