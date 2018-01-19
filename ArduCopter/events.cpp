@@ -19,10 +19,14 @@ void Copter::failsafe_radio_on_event()
         } else if (control_mode == LAND && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
             // continue landing
         } else {
-            if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
-            } else {
+            if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
                 set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
+            } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL) {
+                set_mode_SmartRTL_or_RTL(MODE_REASON_RADIO_FAILSAFE);
+            } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND) {
+                set_mode_SmartRTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
+            } else { // g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND
+                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             }
         }
     }
@@ -54,9 +58,13 @@ void Copter::failsafe_battery_event(void)
         if (should_disarm_on_failsafe()) {
             init_disarm_motors();
         } else {
-            if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
+            if (g.failsafe_battery_enabled == FS_BATT_SMARTRTL_OR_RTL) {
+                set_mode_SmartRTL_or_RTL(MODE_REASON_BATTERY_FAILSAFE);
+            } else if (g.failsafe_battery_enabled == FS_BATT_SMARTRTL_OR_LAND) {
+                set_mode_SmartRTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+            } else if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
                 set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-            } else {
+            } else { // g.failsafe_battery_enabled == FS_BATT_LAND
                 set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
             }
         }
@@ -115,7 +123,11 @@ void Copter::failsafe_gcs_check()
     } else {
         if (control_mode == AUTO && g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
             // continue mission
-        } else if (g.failsafe_gcs != FS_GCS_DISABLED) {
+        } else if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL) {
+            set_mode_SmartRTL_or_RTL(MODE_REASON_GCS_FAILSAFE);
+        } else if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND) {
+            set_mode_SmartRTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
+        } else { // g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL
             set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
         }
     }
@@ -214,6 +226,33 @@ void Copter::set_mode_RTL_or_land_with_pause(mode_reason_t reason)
         set_mode_land_with_pause(reason);
     } else {
         // alert pilot to mode change
+        AP_Notify::events.failsafe_mode_change = 1;
+    }
+}
+
+// set_mode_SmartRTL_or_land_with_pause - sets mode to SMART_RTL if possible or LAND with 4 second delay before descent starts
+// this is always called from a failsafe so we trigger notification to pilot
+void Copter::set_mode_SmartRTL_or_land_with_pause(mode_reason_t reason)
+{
+    // attempt to switch to SMART_RTL, if this failed then switch to Land
+    if (!set_mode(SMART_RTL, reason)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Using Land Mode");
+        set_mode_land_with_pause(reason);
+    } else {
+        AP_Notify::events.failsafe_mode_change = 1;
+    }
+}
+
+// set_mode_SmartRTL_or_RTL - sets mode to SMART_RTL if possible or RTL if possible or LAND with 4 second delay before descent starts
+// this is always called from a failsafe so we trigger notification to pilot
+void Copter::set_mode_SmartRTL_or_RTL(mode_reason_t reason)
+{
+    // attempt to switch to SmartRTL, if this failed then attempt to RTL
+    // if that fails, then land
+    if (!set_mode(SMART_RTL, reason)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Trying RTL Mode");
+        set_mode_RTL_or_land_with_pause(reason);
+    } else {
         AP_Notify::events.failsafe_mode_change = 1;
     }
 }
