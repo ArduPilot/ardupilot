@@ -130,3 +130,11 @@
 #ifndef HAL_HAVE_SAFETY_SWITCH
 #define HAL_HAVE_SAFETY_SWITCH 1
 #endif
+
+#ifndef AP_FEATURE_RTSCTS
+#define AP_FEATURE_RTSCTS 1
+#endif
+
+#ifndef AP_FEATURE_SBUS_OUT
+#define AP_FEATURE_SBUS_OUT 1
+#endif
