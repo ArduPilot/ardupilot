@@ -480,7 +480,9 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
 // write_aux - converts servo_out parameter value (0 to 1 range) to pwm and outputs to aux channel (ch7)
 void AP_MotorsHeli_Single::write_aux(float servo_out)
 {
-    rc_write(AP_MOTORS_HELI_SINGLE_AUX, calc_pwm_output_0to1(servo_out, _servo_aux));
+    if (_servo_aux) {
+        rc_write(AP_MOTORS_HELI_SINGLE_AUX, calc_pwm_output_0to1(servo_out, _servo_aux));
+    }
 }
 
 // servo_test - move servos through full range of movement
