@@ -33,6 +33,10 @@ extern const AP_HAL::HAL& hal;
 
 I2CBus I2CDeviceManager::businfo[ARRAY_SIZE_SIMPLE(I2CD)];
 
+#ifndef HAL_I2C_BUS_BASE
+#define HAL_I2C_BUS_BASE 0
+#endif
+
 // get a handle for DMA sharing DMA channels with other subsystems
 void I2CBus::dma_init(void)
 {
@@ -64,7 +68,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     _timeout_ms(timeout_ms),
     bus(I2CDeviceManager::businfo[busnum])
 {
-    set_device_bus(busnum);
+    set_device_bus(busnum+HAL_I2C_BUS_BASE);
     set_device_address(address);
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
@@ -205,6 +209,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
                              bool use_smbus,
                              uint32_t timeout_ms)
 {
+    bus -= HAL_I2C_BUS_BASE;
     if (bus >= ARRAY_SIZE_SIMPLE(I2CD)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
