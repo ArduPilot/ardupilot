@@ -124,28 +124,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Increment: 0.1
     AP_GROUPINFO("YAW_SCALER", 12, AP_MotorsHeli_Dual, _yaw_scaler, 1.0f),
 
-    // @Param: RSC_PWM_MIN
-    // @DisplayName: RSC PWM output miniumum
-    // @Description: This sets the PWM output on RSC channel for maximum rotor speed
-    // @Range: 0 2000
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_MIN", 13, AP_MotorsHeli_Dual, _rotor._pwm_min, 1000),
-
-    // @Param: RSC_PWM_MAX
-    // @DisplayName: RSC PWM output maxiumum
-    // @Description: This sets the PWM output on RSC channel for miniumum rotor speed
-    // @Range: 0 2000
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_MAX", 14, AP_MotorsHeli_Dual, _rotor._pwm_max, 2000),
-
-    // @Param: RSC_PWM_REV
-    // @DisplayName: RSC PWM reversal
-    // @Description: This controls reversal of the RSC channel output
-    // @Values: -1:Reversed,1:Normal
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_REV", 15, AP_MotorsHeli_Dual, _rotor._pwm_rev, 1),
-
-
     // @Param: COL2_MIN
     // @DisplayName: Collective Pitch Minimum for rear swashplate
     // @Description: Lowest possible servo position for the rear swashplate
