@@ -31,6 +31,8 @@
 #define SCHEDULER_DEFAULT_LOOP_RATE  50
 #endif
 
+#define debug(level, fmt, args...)   do { if ((level) <= _debug.get()) { hal.console->printf(fmt, ##args); }} while (0)
+
 extern const AP_HAL::HAL& hal;
 
 int8_t AP_Scheduler::current_task = -1;
@@ -113,14 +115,12 @@ void AP_Scheduler::run(uint32_t time_available)
 
             if (dt >= interval_ticks*2) {
                 // we've slipped a whole run of this task!
-                if (_debug > 4) {
-                    ::printf("Scheduler slip task[%u-%s] (%u/%u/%u)\n",
-                             (unsigned)i,
-                             _tasks[i].name,
-                             (unsigned)dt,
-                             (unsigned)interval_ticks,
-                             (unsigned)_task_time_allowed);
-                }
+                debug(2, "Scheduler slip task[%u-%s] (%u/%u/%u)\n",
+                      (unsigned)i,
+                      _tasks[i].name,
+                      (unsigned)dt,
+                      (unsigned)interval_ticks,
+                      (unsigned)_task_time_allowed);
             }
 
             if (_task_time_allowed <= time_available) {
@@ -146,13 +146,11 @@ void AP_Scheduler::run(uint32_t time_available)
 
                 if (time_taken > _task_time_allowed) {
                     // the event overran!
-                    if (_debug > 4) {
-                        ::printf("Scheduler overrun task[%u-%s] (%u/%u)\n",
-                                 (unsigned)i,
-                                 _tasks[i].name,
-                                 (unsigned)time_taken,
-                                 (unsigned)_task_time_allowed);
-                    }
+                    debug(3, "Scheduler overrun task[%u-%s] (%u/%u)\n",
+                          (unsigned)i,
+                          _tasks[i].name,
+                          (unsigned)time_taken,
+                          (unsigned)_task_time_allowed);
                 }
                 if (time_taken >= time_available) {
                     goto update_spare_ticks;
