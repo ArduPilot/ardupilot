@@ -37,6 +37,12 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE_SIMPLE(I2CD)];
 #define HAL_I2C_BUS_BASE 0
 #endif
 
+// default to 100kHz clock for maximum reliability. This can be
+// changed in hwdef.dat
+#ifndef HAL_I2C_MAX_CLOCK
+#define HAL_I2C_MAX_CLOCK 100000
+#endif
+
 // get a handle for DMA sharing DMA channels with other subsystems
 void I2CBus::dma_init(void)
 {
@@ -56,8 +62,12 @@ I2CDeviceManager::I2CDeviceManager(void)
           drop the speed to be the minimum speed requested
          */
         businfo[i].i2ccfg.op_mode = OPMODE_I2C;
-        businfo[i].i2ccfg.clock_speed = 400000;
-        businfo[i].i2ccfg.duty_cycle = FAST_DUTY_CYCLE_2;
+        businfo[i].i2ccfg.clock_speed = HAL_I2C_MAX_CLOCK;
+        if (businfo[i].i2ccfg.clock_speed <= 100000) {
+            businfo[i].i2ccfg.duty_cycle = STD_DUTY_CYCLE;
+        } else {
+            businfo[i].i2ccfg.duty_cycle = FAST_DUTY_CYCLE_2;
+        }
     }
 }
 
