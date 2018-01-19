@@ -265,7 +265,7 @@ float Mode::calc_speed_nudge(float target_speed, float cruise_speed, float cruis
     const float vehicle_speed_max = calc_speed_max(cruise_speed, cruise_throttle);
 
     // return unadjusted target if already over vehicle's projected maximum speed
-    if (target_speed >= vehicle_speed_max) {
+    if (fabsf(target_speed) >= vehicle_speed_max) {
         return target_speed;
     }
 
