@@ -383,6 +383,11 @@ class skyviper_f412(chibios):
         env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
         env.DEFAULT_PARAMETERS = '../../Tools/Frame_params/SkyViper-F412/defaults.parm'
 
+class skyviper_f412_rev1(skyviper_f412):
+    name = 'skyviper-f412-rev1'
+    def configure_env(self, cfg, env):
+        super(skyviper_f412_rev1, self).configure_env(cfg, env)
+
 class fmuv3(chibios):
     name = 'fmuv3'
     def __init__(self):
