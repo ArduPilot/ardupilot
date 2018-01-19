@@ -184,3 +184,5 @@ define STORAGE_FLASH_PAGE 22
 # enable FAT filesystem
 #define HAL_OS_FATFS_IO 1
 
+# enable RTSCTS
+define AP_FEATURE_RTSCTS 1
