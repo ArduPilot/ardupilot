@@ -35,6 +35,9 @@ STDOUT_BAUDRATE 115200
 # order of I2C buses
 I2C_ORDER I2C2 I2C1
 
+# we need I2C clock at 400kHz for IMU
+define HAL_I2C_MAX_CLOCK 400000
+
 # order of UARTs
 UART_ORDER USART1 USART6 USART2
 
