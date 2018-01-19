@@ -773,6 +773,12 @@ def process_line(line):
             spidev.append(a[1:])
         if a[0] == 'undef':
             config.pop(a[1], '')
+            #also remove all occurences of defines in previous lines if any
+            for line in alllines:
+                if line.startswith('define') and a[1] in line:
+                    alllines.remove(line)
+
+
                 
                 
 
