@@ -12,11 +12,15 @@
 #define AP_FEATURE_SAFETY_BUTTON 0
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || defined(HAL_CHIBIOS_ARCH_FMUV3)
-#define AP_FEATURE_RTSCTS 1
-#define AP_FEATURE_SBUS_OUT 1
-#else
+#ifndef AP_FEATURE_RTSCTS
 #define AP_FEATURE_RTSCTS 0
+#endif
+
+#ifndef AP_FEATURE_RTSCTS
+#define AP_FEATURE_RTSCTS 0
+#endif
+
+#ifndef AP_FEATURE_SBUS_OUT
 #define AP_FEATURE_SBUS_OUT 0
 #endif
 
