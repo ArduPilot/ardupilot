@@ -155,7 +155,7 @@ public:
     bool Reset(void);
 
     bool lock_bus(void) {
-        return dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        return dev && dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER);
     }
     void unlock_bus(void) {
         dev->get_semaphore()->give();
