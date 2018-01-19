@@ -170,3 +170,9 @@ define HAL_HAVE_IMU_HEATER 1
 
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1
+
+# enable RTSCTS
+define AP_FEATURE_RTSCTS 1
+
+# enable SBUS_OUT on IOMCU
+define AP_FEATURE_SBUS_OUT 1
