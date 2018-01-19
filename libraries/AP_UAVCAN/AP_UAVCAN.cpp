@@ -1082,13 +1082,21 @@ void AP_UAVCAN::update_mag_state(uint8_t node)
 }
 
 bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue) {
+    
+    if (_led_conf.devices_count >= AP_UAVCAN_MAX_LED_DEVICES) {
+        return false;
+    }
+    if (!led_out_sem_take()) {
+        return false;
+    }
+    
     uavcan::equipment::indication::RGB565 color;
+    
     color.red = (red >> 3);
     color.green = (green >> 2);
     color.blue = (blue >> 3);
-    
-    if (!led_out_sem_take()) return false;
-    
+
+    // check if device exists. if so, update here and return
     for (uint8_t i = 0; i < _led_conf.devices_count; i++) {
         if (!_led_conf.devices[i].enabled || (_led_conf.devices[i].led_index == led_index)) {
             _led_conf.devices[i].led_index = led_index;
@@ -1100,11 +1108,7 @@ bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t
         }
     }
     
-    if (_led_conf.devices_count >= AP_UAVCAN_MAX_LED_DEVICES) {
-        led_out_sem_give();
-        return false;
-    }
-    
+    // no existing device found, add it
     _led_conf.devices[_led_conf.devices_count].led_index = led_index;
     _led_conf.devices[_led_conf.devices_count].rgb565_color = color;
     _led_conf.devices[_led_conf.devices_count].enabled = true;
