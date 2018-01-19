@@ -48,6 +48,7 @@ known_units = {
              'cs'      : 'centiseconds'          ,
              'ms'      : 'milliseconds'          ,
              'PWM'     : 'PWM in microseconds'   , # should be microseconds, this is NOT a SI unit, but follows https://github.com/ArduPilot/ardupilot/pull/5538#issuecomment-271943061
+             'PWM/s'     : 'PWM rate of chamge, in microseconds per second'   , # Rate of change of PWM value in microseconds
              'Hz'      : 'hertz'                 ,
              'kHz'     : 'kilohertz'             ,
 # distance
