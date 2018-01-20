@@ -1306,11 +1306,6 @@ bool AP_Mission::advance_current_nav_cmd()
         return false;
     }
 
-    // stop the current running do command
-    _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
-    _flags.do_cmd_loaded = false;
-    _flags.do_cmd_all_done = false;
-
     // get starting point for search
     cmd_index = _nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
@@ -1350,15 +1345,21 @@ bool AP_Mission::advance_current_nav_cmd()
                 _do_cmd = cmd;
                 _flags.do_cmd_loaded = true;
                 _cmd_start_fn(_do_cmd);
+				// move onto next command
+				cmd_index = cmd.index+1;
             } else {
+				// run the active do command
+				if (_cmd_verify_fn(_do_cmd)) {
+					// market _nav_cmd as complete (it will be started on the next iteration)
+					flags.do_cmd_loaded = false;
+				}
+
                 // protect against endless loops of do-commands
                 if (max_loops-- == 0) {
                     return false;
                 }
             }
         }
-        // move onto next command
-        cmd_index = cmd.index+1;
     }
 
     // if we have not found a do command then set flag to show there are no do-commands to be run before nav command completes
