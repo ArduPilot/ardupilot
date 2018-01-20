@@ -240,7 +240,8 @@ def kill_tasks():
 
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
-        if under_macos():
+        if under_macos() and os.environ.get('DISPLAY'):
+            #use special macos kill routine if Display is on
             return kill_tasks_macos()
 
         try:
@@ -464,7 +465,7 @@ def run_in_terminal_window(autotest, name, cmd):
     runme.extend(cmd)
     progress_cmd("Run " + name, runme)
 
-    if under_macos():
+    if under_macos() and os.environ.get('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
         out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
         import re
@@ -478,7 +479,8 @@ def run_in_terminal_window(autotest, name, cmd):
                 break
 
             time.sleep(0.1)
-
+        #sleep for extra 2 seconds for application to start
+        time.sleep(2)
         if len(tabs) > 0:
             windowID.append(tabs[0])
         else:
