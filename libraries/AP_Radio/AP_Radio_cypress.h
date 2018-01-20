@@ -185,7 +185,7 @@ private:
         uint8_t last_data_code[16];
 
         uint32_t receive_start_us;
-        uint32_t receive_timeout_usec;
+        uint32_t receive_timeout_msec;
 
         uint32_t last_recv_us;
         uint32_t last_parse_us;
@@ -286,5 +286,8 @@ private:
 
     // check for double binding
     void check_double_bind(void);
+
+    // setup a timeout handler
+    void setup_timeout(uint32_t timeout_ms);
 };
 
