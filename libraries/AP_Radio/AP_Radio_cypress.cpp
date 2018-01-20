@@ -682,11 +682,10 @@ uint8_t AP_Radio_cypress::read_register(uint8_t reg)
  */
 void AP_Radio_cypress::write_multiple(uint8_t reg, uint8_t n, const uint8_t *data)
 {
-    dev->set_chip_select(true);
-    reg |= FLAG_WRITE;
-    dev->transfer(&reg, 1, nullptr, 0);
-    dev->transfer(data, n, nullptr, 0);
-    dev->set_chip_select(false);
+    uint8_t pkt[n+1];
+    pkt[0] = reg | FLAG_WRITE;
+    memcpy(&pkt[1], data, n);
+    dev->transfer(pkt, n+1, nullptr, 0);
 }
 
 /*
