@@ -169,12 +169,9 @@ class generic_pin(object):
 
         def get_OSPEEDR(self):
                 '''return one of SPEED_VERYLOW, SPEED_LOW, SPEED_MEDIUM, SPEED_HIGH'''
+                # on STM32F4 these speeds correspond to 2MHz, 25MHz, 50MHz and 100MHz
                 values = ['SPEED_VERYLOW', 'SPEED_LOW', 'SPEED_MEDIUM', 'SPEED_HIGH']
-                v = 'SPEED_HIGH'
-                if self.is_CS():
-                        v = "SPEED_MEDIUM"
-                if self.type.startswith("I2C"):
-                        v = "SPEED_MEDIUM"
+                v = 'SPEED_MEDIUM'
                 for e in self.extra:
                         if e in values:
                                 v = e
