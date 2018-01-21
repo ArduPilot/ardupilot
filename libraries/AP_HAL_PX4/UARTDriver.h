@@ -31,7 +31,7 @@ public:
 	    _devpath = path;
     }
 
-    void _timer_tick(void);
+    void _timer_tick(void) override;
 
     int _get_fd(void) {
 	    return _fd;
