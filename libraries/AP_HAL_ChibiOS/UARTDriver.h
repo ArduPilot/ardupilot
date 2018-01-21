@@ -66,6 +66,9 @@ public:
 
     // allow for low latency writes
     bool set_unbuffered_writes(bool on) override;
+
+    void configure_parity(uint8_t v) override;
+    void set_stop_bits(int n) override;
     
 private:
     bool tx_bounce_buf_ready;
