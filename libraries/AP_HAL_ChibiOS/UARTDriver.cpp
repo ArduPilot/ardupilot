@@ -694,4 +694,60 @@ bool UARTDriver::set_unbuffered_writes(bool on)
     return true;
 }
 
+/*
+  setup parity
+ */
+void UARTDriver::configure_parity(uint8_t v)
+{
+    if (sdef.is_usb) {
+        // not possible
+        return;
+    }
+    
+    switch (v) {
+    case 0:
+        // no parity
+        sercfg.cr1 &= ~(USART_CR1_PCE | USART_CR1_PS);
+        break;
+    case 1:
+        // odd parity
+        sercfg.cr1 |= USART_CR1_PCE;
+        sercfg.cr1 |= USART_CR1_PS;
+        break;
+    case 2:
+        // even parity
+        sercfg.cr1 |= USART_CR1_PCE;
+        sercfg.cr1 &= ~USART_CR1_PS;
+        break;
+    }
+
+    // stop and start to take effect
+    sdStop((SerialDriver*)sdef.serial);
+    sdStart((SerialDriver*)sdef.serial, &sercfg);
+}
+
+/*
+  set stop bits
+ */
+void UARTDriver::set_stop_bits(int n)
+{
+    if (sdef.is_usb) {
+        // not possible
+        return;
+    }
+    
+    switch (n) {
+    case 1:
+        sercfg.cr2 = USART_CR2_STOP1_BITS;
+        break;
+    case 2:
+        sercfg.cr2 = USART_CR2_STOP2_BITS;
+        break;
+    }
+    // stop and start to take effect
+    sdStop((SerialDriver*)sdef.serial);
+    sdStart((SerialDriver*)sdef.serial, &sercfg);
+}
+
+
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
