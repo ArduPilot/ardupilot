@@ -145,6 +145,7 @@ void AP_IOMCU::thread_main(void)
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 256, 256);
     uart.set_blocking_writes(false);
+    uart.set_unbuffered_writes(true);
 
     trigger_event(IOEVENT_INIT);
     
