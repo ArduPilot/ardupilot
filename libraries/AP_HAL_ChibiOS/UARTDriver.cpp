@@ -21,6 +21,7 @@
 #include "GPIO.h"
 #include <usbcfg.h>
 #include "shared_dma.h"
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -368,6 +369,9 @@ size_t UARTDriver::write(uint8_t c)
         hal.scheduler->delay(1);
     }
     size_t ret = _writebuf.write(&c, 1);
+    if (unbuffered_writes) {
+        write_pending_bytes();
+    }
     chMtxUnlock(&_write_mutex);
     return ret;
 }
@@ -382,7 +386,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         return -1;
     }
 
-    if (!_nonblocking_writes) {
+    if (!_nonblocking_writes && !unbuffered_writes) {
         /*
           use the per-byte delay loop in write() above for blocking writes
          */
@@ -396,6 +400,9 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     }
 
     size_t ret = _writebuf.write(buffer, size);
+    if (unbuffered_writes) {
+        write_pending_bytes();
+    }
     chMtxUnlock(&_write_mutex);
     return ret;
 }
@@ -417,6 +424,112 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
 }
 
 /*
+  write out pending bytes with DMA
+ */
+void UARTDriver::write_pending_bytes_DMA(uint32_t n)
+{
+    if (!tx_bounce_buf_ready && txdma) {
+        if (!(txdma->stream->CR & STM32_DMA_CR_EN)) {
+            if (txdma->stream->NDTR == 0) {
+                tx_bounce_buf_ready = true;
+                _last_write_completed_us = AP_HAL::micros();
+                dma_handle->unlock();
+            }
+        }
+    }
+
+    if (!tx_bounce_buf_ready) {
+        return;
+    }
+
+    /* TX DMA channel preparation.*/
+    _writebuf.advance(tx_len);
+    tx_len = _writebuf.peekbytes(tx_bounce_buf, MIN(n, TX_BOUNCE_BUFSIZE));
+    if (tx_len == 0) {
+        return;
+    }
+    dma_handle->lock();
+    tx_bounce_buf_ready = false;
+    osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
+    dmaStreamSetMemory0(txdma, tx_bounce_buf);
+    dmaStreamSetTransactionSize(txdma, tx_len);
+    uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
+    dmamode |= STM32_DMA_CR_CHSEL(STM32_DMA_GETCHANNEL(sdef.dma_tx_stream_id,
+                                                       sdef.dma_tx_channel_id));
+    dmamode |= STM32_DMA_CR_PL(0);
+    dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
+                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
+    dmaStreamEnable(txdma);
+}
+
+/*
+  write any pending bytes to the device, non-DMA method
+ */
+void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
+{
+    ByteBuffer::IoVec vec[2];
+    const auto n_vec = _writebuf.peekiovec(vec, n);
+    for (int i = 0; i < n_vec; i++) {
+        int ret;
+        if (sdef.is_usb) {
+            ret = 0;
+#ifdef HAVE_USB_SERIAL
+            ret = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+#endif
+        } else {
+            ret = chnWriteTimeout((SerialDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+        }
+        if (ret < 0) {
+            break;
+        }
+        if (ret > 0) {
+            _last_write_completed_us = AP_HAL::micros();
+        }
+        _writebuf.advance(ret);
+        
+        /* We wrote less than we asked for, stop */
+        if ((unsigned)ret != vec[i].len) {
+            break;
+        }
+    }
+}
+
+
+/*
+  write any pending bytes to the device
+ */
+void UARTDriver::write_pending_bytes(void)
+{
+    uint32_t n;
+
+    // write any pending bytes
+    n = _writebuf.available();
+    if (n <= 0) {
+        return;
+    }
+    
+    if (!sdef.dma_tx) {
+        write_pending_bytes_NODMA(n);
+    } else {
+        write_pending_bytes_DMA(n);
+    }
+    
+    // handle AUTO flow control mode
+    if (_flow_control == FLOW_CONTROL_AUTO) {
+        if (_first_write_started_us == 0) {
+            _first_write_started_us = AP_HAL::micros();
+        }
+        if (_last_write_completed_us != 0) {
+            _flow_control = FLOW_CONTROL_ENABLE;
+        } else if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
+            // it doesn't look like hw flow control is working
+            hal.console->printf("disabling flow control on serial %u\n", sdef.get_index());
+            set_flow_control(FLOW_CONTROL_DISABLE);
+        }
+    }
+}
+
+/*
   push any pending bytes to/from the serial port. This is called at
   1kHz in the timer thread. Doing it this way reduces the system call
   overhead in the main task enormously.
@@ -424,7 +537,6 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
 void UARTDriver::_timer_tick(void)
 {
     int ret;
-    uint32_t n;
 
     if (!_initialised) return;
 
@@ -468,110 +580,41 @@ void UARTDriver::_timer_tick(void)
     }
     _in_timer = true;
 
-    {
-        // try to fill the read buffer
-        ByteBuffer::IoVec vec[2];
+    // try to fill the read buffer
+    ByteBuffer::IoVec vec[2];
 
-        const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
-        for (int i = 0; i < n_vec; i++) {
-            //Do a non-blocking read
-            if (sdef.is_usb) {
-                ret = 0;
-    #ifdef HAVE_USB_SERIAL
-                ret = chnReadTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-    #endif
-            } else if(!sdef.dma_rx){
-                ret = 0;
-                ret = chnReadTimeout((SerialDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-            } else {
-                ret = 0;
-            }
-            if (ret < 0) {
-                break;
-            }
-            _readbuf.commit((unsigned)ret);
-
-            /* stop reading as we read less than we asked for */
-            if ((unsigned)ret < vec[i].len) {
-                break;
-            }
-        }
-    }
-
-    // write any pending bytes
-    n = _writebuf.available();
-    if (n > 0) {
-        if(!sdef.dma_tx) {
-            ByteBuffer::IoVec vec[2];
-            const auto n_vec = _writebuf.peekiovec(vec, n);
-            for (int i = 0; i < n_vec; i++) {
-                if (sdef.is_usb) {
-                    ret = 0;
-    #ifdef HAVE_USB_SERIAL
-                    ret = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-    #endif
-                } else {
-                    ret = chnWriteTimeout((SerialDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-                }
-                if (ret < 0) {
-                    break;
-                }
-                if (ret > 0) {
-                    _last_write_completed_us = AP_HAL::micros();
-                }
-                _writebuf.advance(ret);
-
-                /* We wrote less than we asked for, stop */
-                if ((unsigned)ret != vec[i].len) {
-                    break;
-                }
-            }
+    const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
+    for (int i = 0; i < n_vec; i++) {
+        //Do a non-blocking read
+        if (sdef.is_usb) {
+            ret = 0;
+#ifdef HAVE_USB_SERIAL
+            ret = chnReadTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+#endif
+        } else if(!sdef.dma_rx){
+            ret = 0;
+            ret = chnReadTimeout((SerialDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
         } else {
-            if(tx_bounce_buf_ready) {
-                /* TX DMA channel preparation.*/
-                _writebuf.advance(tx_len);
-                tx_len = _writebuf.peekbytes(tx_bounce_buf, TX_BOUNCE_BUFSIZE);
-                if (tx_len == 0) {
-                    goto end;
-                }
-                dma_handle->lock();
-                tx_bounce_buf_ready = false;
-                osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
-                dmaStreamSetMemory0(txdma, tx_bounce_buf);
-                dmaStreamSetTransactionSize(txdma, tx_len);
-                uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
-                dmamode |= STM32_DMA_CR_CHSEL(STM32_DMA_GETCHANNEL(sdef.dma_tx_stream_id,
-                                                                   sdef.dma_tx_channel_id));
-                dmamode |= STM32_DMA_CR_PL(0);
-                dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
-                                 STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
-                dmaStreamEnable(txdma);
-            } else if (sdef.dma_tx && txdma) {
-                if (!(txdma->stream->CR & STM32_DMA_CR_EN)) {
-                    if (txdma->stream->NDTR == 0) {
-                        tx_bounce_buf_ready = true;
-                        _last_write_completed_us = AP_HAL::micros();
-                        dma_handle->unlock();
-                    }
-                }
-            }
+            ret = 0;
         }
+        if (ret < 0) {
+            break;
+        }
+        _readbuf.commit((unsigned)ret);
         
-        // handle AUTO flow control mode
-        if (_flow_control == FLOW_CONTROL_AUTO) {
-            if (_first_write_started_us == 0) {
-                _first_write_started_us = AP_HAL::micros();
-            }
-            if (_last_write_completed_us != 0) {
-                _flow_control = FLOW_CONTROL_ENABLE;
-            } else if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
-                // it doesn't look like hw flow control is working
-                hal.console->printf("disabling flow control on serial %u\n", sdef.get_index());
-                set_flow_control(FLOW_CONTROL_DISABLE);
-            }
+        /* stop reading as we read less than we asked for */
+        if ((unsigned)ret < vec[i].len) {
+            break;
         }
     }
-end:
+
+    if (!unbuffered_writes) {
+        // now send pending bytes. If we are doing "unbuffered" writes
+        // then the send happens as soon as the bytes are provided by
+        // the write() call, and no writes are done in the timer tick
+        write_pending_bytes();
+    }
+
     _in_timer = false;
 }
 
@@ -636,6 +679,15 @@ void UARTDriver::update_rts_line(void)
         _rts_is_active = true;
         palClearLine(sdef.rts_line);
     }
+}
+
+/* 
+   setup unbuffered writes for lower latency
+ */
+bool UARTDriver::set_unbuffered_writes(bool on)
+{
+    unbuffered_writes = on;
+    return true;
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
