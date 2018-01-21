@@ -63,6 +63,9 @@ public:
 
     void set_flow_control(enum flow_control flow_control) override;
     enum flow_control get_flow_control(void) override { return _flow_control; }
+
+    // allow for low latency writes
+    bool set_unbuffered_writes(bool on) override;
     
 private:
     bool tx_bounce_buf_ready;
@@ -101,6 +104,9 @@ private:
     bool _rts_is_active;
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
+
+    // set to true for unbuffered writes (low latency writes)
+    bool unbuffered_writes;
     
     static void rx_irq_cb(void* sd);
     static void rxbuff_full_irq(void* self, uint32_t flags);
@@ -109,4 +115,8 @@ private:
     void dma_tx_allocate(void);
     void dma_tx_deallocate(void);
     void update_rts_line(void);
+
+    void write_pending_bytes_DMA(uint32_t n);
+    void write_pending_bytes_NODMA(uint32_t n);
+    void write_pending_bytes(void);
 };
