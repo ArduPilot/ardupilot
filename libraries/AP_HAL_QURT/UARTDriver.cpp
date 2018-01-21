@@ -269,7 +269,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
   push any pending bytes to/from the serial port. This is called at
   1kHz in the timer thread
  */
-void UARTDriver::timer_tick(void)
+void UARTDriver::_timer_tick(void)
 {
     uint16_t n;
 
