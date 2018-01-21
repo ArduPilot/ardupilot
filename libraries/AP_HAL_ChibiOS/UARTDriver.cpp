@@ -686,6 +686,10 @@ void UARTDriver::update_rts_line(void)
  */
 bool UARTDriver::set_unbuffered_writes(bool on)
 {
+    if (on && !sdef.dma_tx) {
+        // we can't implement low latemcy writes safely without TX DMA
+        return false;
+    }
     unbuffered_writes = on;
     return true;
 }
