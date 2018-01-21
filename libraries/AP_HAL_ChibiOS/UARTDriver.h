@@ -40,8 +40,7 @@ public:
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
-    void _timer_tick(void);
-
+    void _timer_tick(void) override;
 
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);

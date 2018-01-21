@@ -308,12 +308,12 @@ void Scheduler::_uart_thread(void* arg)
         sched->delay_microseconds(1000);
 
         // process any pending serial bytes
-        ((UARTDriver *)hal.uartA)->_timer_tick();
-        ((UARTDriver *)hal.uartB)->_timer_tick();
-        ((UARTDriver *)hal.uartC)->_timer_tick();
-        /*((UARTDriver *)hal.uartD)->_timer_tick();
-        ((UARTDriver *)hal.uartE)->_timer_tick();
-        ((UARTDriver *)hal.uartF)->_timer_tick();*/
+        hal.uartA->_timer_tick();
+        hal.uartB->_timer_tick();
+        hal.uartC->_timer_tick();
+        hal.uartD->_timer_tick();
+        hal.uartE->_timer_tick();
+        hal.uartF->_timer_tick();
 #if HAL_WITH_IO_MCU
         uart_io._timer_tick();
 #endif
