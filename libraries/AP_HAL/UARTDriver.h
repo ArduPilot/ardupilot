@@ -66,4 +66,10 @@ public:
       timeout
      */
     virtual bool wait_timeout(uint16_t n, uint32_t timeout_ms) { return false; }
+
+    /*
+     * Optional method to control the update of the motors. Derived classes
+     * can implement it if their HAL layer requires.
+     */
+    virtual void _timer_tick(void) { }
 };
