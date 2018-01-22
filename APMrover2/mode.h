@@ -55,8 +55,9 @@ public:
     // true if heading is controlled
     virtual bool attitude_stabilized() const { return true; }
 
-    // true if mode requires GPS:
-    virtual bool requires_gps() const { return true; }
+    // true if mode requires position and/or velocity estimate
+    virtual bool requires_position() const { return true; }
+    virtual bool requires_velocity() const { return true; }
 
     //
     // navigation methods
@@ -155,9 +156,6 @@ protected:
     float _desired_speed;       // desired speed in m/s
     float _desired_speed_final; // desired speed in m/s when we reach the destination
     float _speed_error;         // ground speed error in m/s
-
-    bool enter_gps_checks() const;
-
 };
 
 
@@ -173,6 +171,10 @@ public:
 
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
+
+    // acro mode requires a velocity estimate
+    bool requires_position() const override { return false; }
+    bool requires_velocity() const override { return true; }
 };
 
 
@@ -292,8 +294,9 @@ public:
     // attributes for mavlink system status reporting
     bool attitude_stabilized() const override { return false; }
 
-    // hold mode does not require GPS
-    bool requires_gps() const override { return false; }
+    // hold mode does not require position or velocity estimate
+    bool requires_position() const override { return false; }
+    bool requires_velocity() const override { return false; }
 };
 
 
@@ -311,8 +314,9 @@ public:
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
 
-    // manual mode does not require GPS
-    bool requires_gps() const override { return false; }
+    // manual mode does not require position or velocity estimate
+    bool requires_position() const override { return false; }
+    bool requires_velocity() const override { return false; }
 };
 
 
@@ -383,6 +387,10 @@ public:
 
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
+
+    // steering requires velocity but not position
+    bool requires_position() const override { return false; }
+    bool requires_velocity() const override { return true; }
 };
 
 class ModeInitializing : public Mode
