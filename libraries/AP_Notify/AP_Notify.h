@@ -143,8 +143,10 @@ public:
     const char* get_text() const { return _send_text; }
 
     static const struct AP_Param::GroupInfo var_info[];
+    uint8_t get_buzz_pin() const  { return _buzzer_pin; }
 
 private:
+
     static AP_Notify *_instance;
 
     // parameters
@@ -153,6 +155,7 @@ private:
     AP_Int8 _buzzer_enable;
     AP_Int8 _display_type;
     AP_Int8 _oreo_theme;
+    AP_Int8 _buzzer_pin;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed
