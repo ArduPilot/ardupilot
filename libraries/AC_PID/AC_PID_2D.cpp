@@ -4,6 +4,11 @@
 #include <AP_Math/AP_Math.h>
 #include "AC_PID_2D.h"
 
+#define AC_PID_2D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
+#define AC_PID_2D_FILT_HZ_MIN      0.01f   // minimum input filter frequency
+#define AC_PID_2D_FILT_D_HZ_DEFAULT  10.0f   // default input filter frequency
+#define AC_PID_2D_FILT_D_HZ_MIN      0.005f   // minimum input filter frequency
+
 const AP_Param::GroupInfo AC_PID_2D::var_info[] = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
@@ -109,7 +114,7 @@ void AC_PID_2D::set_input(const Vector2f &input)
 
     // update filter and calculate derivative
     const Vector2f input_delta = (input - _input) * _filt_alpha;
-    _input = _input + input_delta;
+    _input += input_delta;
 
     set_input_filter_d(input_delta);
 }
@@ -117,14 +122,14 @@ void AC_PID_2D::set_input(const Vector2f &input)
 // set_input_filter_d - set input to PID controller
 //  only input to the D portion of the controller is filtered
 //  this should be called before any other calls to get_p, get_i or get_d
-void AC_PID_2D::set_input_filter_d(Vector2f input_delta)
+void AC_PID_2D::set_input_filter_d(const Vector2f& input_delta)
 {
     // don't process inf or NaN
     if (!isfinite(input_delta.x) && !isfinite(input_delta.y)) {
         return;
     }
 
-    // reset input filter to value received
+    // reset input filter
     if (_flags._reset_filter) {
         _flags._reset_filter = false;
         _derivative.x = 0.0f;
@@ -133,8 +138,8 @@ void AC_PID_2D::set_input_filter_d(Vector2f input_delta)
 
     // update filter and calculate derivative
     if (is_positive(_dt)) {
-        Vector2f derivative = input_delta / _dt;
-        Vector2f delta_derivative = (derivative - _derivative) * _filt_alpha_d;
+        const Vector2f derivative = input_delta / _dt;
+        const Vector2f delta_derivative = (derivative - _derivative) * _filt_alpha_d;
         _derivative += delta_derivative;
     }
 }
@@ -212,21 +217,6 @@ void AC_PID_2D::save_gains()
     _imax.save();
     _filt_hz.save();
     _filt_d_hz.save();
-}
-
-/// Overload the function call operator to permit easy initialisation
-void AC_PID_2D::operator() (float p, float i, float imaxval, float input_filt_hz, float input_filt_d_hz, float dt)
-{
-    _kp = p;
-    _ki = i;
-    _kd = i;
-    _imax = fabsf(imaxval);
-    _filt_hz = input_filt_hz;
-    _filt_d_hz = input_filt_d_hz;
-    _dt = dt;
-    // calculate the input filter alpha
-    calc_filt_alpha();
-    calc_filt_alpha_d();
 }
 
 // calc_filt_alpha - recalculate the input filter alpha
