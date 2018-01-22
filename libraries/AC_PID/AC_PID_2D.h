@@ -8,11 +8,6 @@
 #include <stdlib.h>
 #include <cmath>
 
-#define AC_PID_2D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
-#define AC_PID_2D_FILT_HZ_MIN      0.01f   // minimum input filter frequency
-#define AC_PID_2D_FILT_D_HZ_DEFAULT  10.0f   // default input filter frequency
-#define AC_PID_2D_FILT_D_HZ_MIN      0.005f   // minimum input filter frequency
-
 /// @class	AC_PID_2D
 /// @brief	Copter PID control class
 class AC_PID_2D {
@@ -49,9 +44,6 @@ public:
     // save gain to eeprom
     void        save_gains();
 
-    /// operator function call for easy initialisation
-    void operator() (float p, float i, float imaxval, float input_filt_hz, float input_filt_D_hz, float dt);
-
     // get accessors
     AP_Float   &kP() { return _kp; }
     AP_Float   &kI() { return _ki; }
@@ -81,7 +73,7 @@ protected:
     // set_input_filter_d - set input to PID controller
     //  only input to the D portion of the controller is filtered
     //  this should be called before any other calls to get_p, get_i or get_d
-    void        set_input_filter_d(Vector2f input_delta);
+    void        set_input_filter_d(const Vector2f& input_delta);
 
     // calc_filt_alpha - recalculate the input filter alpha
     void        calc_filt_alpha();
