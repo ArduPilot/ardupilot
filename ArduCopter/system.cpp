@@ -178,8 +178,6 @@ void Copter::init_ardupilot()
     attitude_control->parameter_sanity_check();
     pos_control->set_dt(scheduler.get_loop_period_s());
 
-    g.pid_accel_z.set_dt(scheduler.get_loop_period_s());
-
     // init the optical flow sensor
     init_optflow();
 
