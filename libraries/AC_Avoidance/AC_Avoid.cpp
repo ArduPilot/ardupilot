@@ -1,5 +1,11 @@
 #include "AC_Avoid.h"
 
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+ # define AP_AVOID_BEHAVE_DEFAULT AC_Avoid::BehaviourType::BEHAVIOR_STOP
+#else
+ # define AP_AVOID_BEHAVE_DEFAULT AC_Avoid::BehaviourType::BEHAVIOR_SLIDE
+#endif
+
 const AP_Param::GroupInfo AC_Avoid::var_info[] = {
 
     // @Param: ENABLE
@@ -39,7 +45,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Description: Avoidance behaviour (slide or stop)
     // @Values: 0:Slide,1:Stop
     // @User: Standard
-    AP_GROUPINFO("BEHAVE", 5, AC_Avoid, _behavior, 0),
+    AP_GROUPINFO("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT),
 
     AP_GROUPEND
 };
