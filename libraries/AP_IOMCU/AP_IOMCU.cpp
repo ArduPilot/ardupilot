@@ -306,7 +306,7 @@ void AP_IOMCU::read_servo()
  */
 void AP_IOMCU::discard_input(void)
 {
-    uint8_t n = uart.available();
+    uint32_t n = uart.available();
     while (n--) {
         uart.read();
     }
