@@ -19,53 +19,26 @@ void Mode::exit()
     _exit();
 }
 
-// these are basically the same checks as in AP_Arming:
-bool Mode::enter_gps_checks() const
-{
-    const AP_GPS &gps = AP::gps();
-
-    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Bad GPS Position");
-        return false;
-    }
-    //GPS update rate acceptable
-    if (!gps.is_healthy()) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS is not healthy");
-        return false;
-    }
-
-    // check GPSs are within 50m of each other and that blending is healthy
-    float distance_m;
-    if (!gps.all_consistent(distance_m)) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL,
-                        "GPS positions differ by %4.1fm",
-                        (double)distance_m);
-        return false;
-    }
-    if (!gps.blend_health_check()) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS blending unhealthy");
-        return false;
-    }
-
-    // check AHRS and GPS are within 10m of each other
-    const Location gps_loc = gps.location();
-    Location ahrs_loc;
-    if (ahrs.get_position(ahrs_loc)) {
-        float distance = location_3d_diff_NED(gps_loc, ahrs_loc).length();
-        if (distance > MODE_AHRS_GPS_ERROR_MAX) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS and AHRS differ by %4.1fm", (double)distance);
-            return false;
-        }
-    }
-
-    return true;
-}
-
 bool Mode::enter()
 {
     const bool ignore_checks = !hal.util->get_soft_armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
     if (!ignore_checks) {
-        if (requires_gps() && !enter_gps_checks()) {
+
+        // get EKF filter status
+        nav_filter_status filt_status;
+        rover.ahrs.get_filter_status(filt_status);
+
+        // check position estimate.  requires origin and at least one horizontal position flag to be true
+        Location origin;
+        const bool position_ok = ahrs.get_origin(origin) &&
+                                (filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs ||
+                                 filt_status.flags.horiz_pos_rel || filt_status.flags.pred_horiz_pos_rel);
+        if (requires_position() && !position_ok) {
+            return false;
+        }
+
+        // check velocity estimate (if we have position estimate, we must have velocity estimate)
+        if (requires_velocity() && !position_ok && !filt_status.flags.horiz_vel) {
             return false;
         }
     }
