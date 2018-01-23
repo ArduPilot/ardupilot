@@ -497,3 +497,9 @@ void Copter::update_visual_odom()
     }
 #endif
 }
+
+// update telemetry
+void Copter::update_telemetry()
+{
+    telemetry.update();
+}

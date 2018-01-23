@@ -34,19 +34,21 @@ def build(bld):
             'AP_Beacon',
             'AP_Arming',
             'AP_VisualOdom',
+            'AP_Telemetry',
         ],
     )
 
+    vehicle = bld.path.name
     bld.ap_program(
         program_name='arducopter',
         program_groups=['bin', 'copter'],
-        use=vehicle + '_libs',
-        defines=['FRAME_CONFIG=MULTICOPTER_FRAME'],
+        use=[vehicle + '_libs'],
+        defines=['FRAME_CONFIG=MULTICOPTER_FRAME','USERHOOK_SUPERSLOWLOOP=1'],
         )
 
     bld.ap_program(
         program_name='arducopter-heli',
         program_groups=['bin', 'copter'],
         use=vehicle + '_libs',
-        defines=['FRAME_CONFIG=HELI_FRAME'],
+        defines=['FRAME_CONFIG=HELI_FRAME','USERHOOK_SUPERSLOWLOOP=1'],
         )
