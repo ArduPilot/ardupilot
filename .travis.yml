@@ -13,8 +13,9 @@ addons:
     
   apt:
     sources:
+      - sourceline: 'ppa:george-edison55/cmake-3.x'
       - ubuntu-toolchain-r-test
-      - george-edison55-precise-backports
+#      - george-edison55-cmake-3.x
 #      - llvm-toolchain-precise-3.7
     packages:
       - build-essential
@@ -67,22 +68,15 @@ env:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
     #   via the "travis encrypt" command using the project repo's public key
     - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
-  matrix:
-    - CI_BUILD_TARGET="sitl minlure raspilot"
-    - CI_BUILD_TARGET="linux navio2 bebop"
 
 matrix:
   fast_finish: true
   include:
     - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v1"
+      env: CI_BUILD_TARGET="sitl minlure linux navio2 bebop"
     - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v2"
+      env: CI_BUILD_TARGET="px4-v2 px4-v4"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v3"
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v4"
-    - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v4pro"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest"

@@ -593,13 +593,13 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(*this,
                                                                         hal.i2c_mgr->get_device(1, HAL_COMPASS_AK09916_I2C_ADDR),
                                                                         hal.i2c_mgr->get_device(1, HAL_COMPASS_ICM20948_I2C_ADDR),
-                                                                        true, ROTATION_NONE),
+                                                                        true, ROTATION_PITCH_180_YAW_90),
                      AP_Compass_AK09916::name, true);
 
         ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(*this,
                                                                         hal.i2c_mgr->get_device(0, HAL_COMPASS_AK09916_I2C_ADDR),
                                                                         hal.i2c_mgr->get_device(0, HAL_COMPASS_ICM20948_I2C_ADDR),
-                                                                        both_i2c_external, ROTATION_NONE),
+                                                                        both_i2c_external, ROTATION_PITCH_180_YAW_90),
                      AP_Compass_AK09916::name, true);
         
         // lis3mdl
@@ -607,6 +607,13 @@ void Compass::_detect_backends(void)
                                                               true, ROTATION_YAW_90),
                     AP_Compass_LIS3MDL::name, true);
         ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_LIS3MDL_I2C_ADDR),
+                                                              both_i2c_external, both_i2c_external?ROTATION_YAW_90:ROTATION_NONE),
+                    AP_Compass_LIS3MDL::name, both_i2c_external);
+
+        ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_LIS3MDL_I2C_ADDR2),
+                                                              true, ROTATION_YAW_90),
+                    AP_Compass_LIS3MDL::name, true);
+        ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_LIS3MDL_I2C_ADDR2),
                                                               both_i2c_external, both_i2c_external?ROTATION_YAW_90:ROTATION_NONE),
                     AP_Compass_LIS3MDL::name, both_i2c_external);
         
@@ -663,8 +670,13 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
                                                               false, ROTATION_PITCH_180),
                     AP_Compass_HMC5843::name, false);
+        // R15 has LIS3MDL on spi bus instead of HMC; same CS pin
+        ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME),
+                                                              false, ROTATION_NONE),
+                    AP_Compass_LIS3MDL::name, false);
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                     AP_Compass_AK8963::name, false);
+        break;
 
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),

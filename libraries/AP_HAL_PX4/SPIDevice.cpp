@@ -84,6 +84,10 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
     SPIDesc("ms5611_int",   PX4_SPI_BUS_BARO, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
+#ifdef PX4_SPIDEV_HMC
+    // r15 has LIS3MDL in place of HMC
+	SPIDesc("lis3mdl",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_HMC, SPIDEV_MODE3, 500*KHZ, 500*KHZ),
+#endif
 #endif
 #ifdef PX4_SPIDEV_BARO
     SPIDesc("ms5611",       PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),

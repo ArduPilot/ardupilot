@@ -1,5 +1,18 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5.5-rc1 20-Jan-2018
+Changes from 3.5.4
+1) ICM20948 compass orientation fix
+2) LIS3MDL compass support on Pixracer
+3) support for easy embedding of defaults in firmware binary
+4) do-mount-control control command sets copter yaw when using 2-axis gimbal
+------------------------------------------------------------------
+Copter 3.5.4 23-Nov-2017 / 3.5.4-rc2 17-Nov-2017
+Changes from 3.5.3
+1) Compass improvements / bug fixes:
+    a) probe for LIS3MDL on I2C address 0x1e
+    b) bug fix pixracer compass detection
+------------------------------------------------------------------
 Copter 3.5.4-rc1 08-Nov-2017
 Changes from 3.5.3
 1) Compass improvements:
