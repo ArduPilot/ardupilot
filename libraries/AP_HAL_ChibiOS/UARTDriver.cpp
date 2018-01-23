@@ -622,31 +622,31 @@ void UARTDriver::_timer_tick(void)
     }
     _in_timer = true;
 
-    // try to fill the read buffer
-    ByteBuffer::IoVec vec[2];
+    if (!sdef.dma_rx) {
+        // try to fill the read buffer
+        ByteBuffer::IoVec vec[2];
 
-    const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
-    for (int i = 0; i < n_vec; i++) {
-        //Do a non-blocking read
-        if (sdef.is_usb) {
-            ret = 0;
-#ifdef HAVE_USB_SERIAL
-            ret = chnReadTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-#endif
-        } else if(!sdef.dma_rx){
-            ret = 0;
-            ret = chnReadTimeout((SerialDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-        } else {
-            ret = 0;
-        }
-        if (ret < 0) {
-            break;
-        }
-        _readbuf.commit((unsigned)ret);
-        
-        /* stop reading as we read less than we asked for */
-        if ((unsigned)ret < vec[i].len) {
-            break;
+        const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
+        for (int i = 0; i < n_vec; i++) {
+            //Do a non-blocking read
+            if (sdef.is_usb) {
+                ret = 0;
+    #ifdef HAVE_USB_SERIAL
+                ret = chnReadTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+    #endif
+            } else {
+                ret = 0;
+                ret = chnReadTimeout((SerialDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+            }
+            if (ret < 0) {
+                break;
+            }
+            _readbuf.commit((unsigned)ret);
+
+            /* stop reading as we read less than we asked for */
+            if ((unsigned)ret < vec[i].len) {
+                break;
+            }
         }
     }
 
