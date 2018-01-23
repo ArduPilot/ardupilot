@@ -23,6 +23,8 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_MotorsHeli_Quad::var_info[] = {
     AP_NESTEDGROUPINFO(AP_MotorsHeli, 0),
 
+    // Indices 1-3 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
+
     AP_GROUPEND
 };
 
