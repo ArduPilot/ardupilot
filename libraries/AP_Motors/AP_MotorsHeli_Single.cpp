@@ -116,6 +116,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
 
+    // Indices 16-18 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
     // parameters up to and including 29 are reserved for tradheli
 
     AP_GROUPEND
