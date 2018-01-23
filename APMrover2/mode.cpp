@@ -1,8 +1,6 @@
 #include "mode.h"
 #include "Rover.h"
 
-#define MODE_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
-
 Mode::Mode() :
     ahrs(rover.ahrs),
     g(rover.g),
