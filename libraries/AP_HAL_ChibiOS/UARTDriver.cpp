@@ -214,6 +214,10 @@ void UARTDriver::tx_complete(void* self, uint32_t flags)
         uart_drv->dma_handle->unlock_from_IRQ();
         uart_drv->_last_write_completed_us = AP_HAL::micros();
         uart_drv->tx_bounce_buf_ready = true;
+        if (uart_drv->unbuffered_writes) {
+            //kickstart the next write
+            uart_drv->write_pending_bytes_DMA_from_irq();
+        }
     }
 }
 
@@ -457,6 +461,35 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         return;
     }
     dma_handle->lock();
+    tx_bounce_buf_ready = false;
+    osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
+    dmaStreamSetMemory0(txdma, tx_bounce_buf);
+    dmaStreamSetTransactionSize(txdma, tx_len);
+    uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
+    dmamode |= STM32_DMA_CR_CHSEL(STM32_DMA_GETCHANNEL(sdef.dma_tx_stream_id,
+                                                       sdef.dma_tx_channel_id));
+    dmamode |= STM32_DMA_CR_PL(0);
+    dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
+                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
+    _last_write_started_us = AP_HAL::micros();
+    dmaStreamEnable(txdma);
+}
+
+/*
+  write out pending bytes with DMA from IRQ
+ */
+void UARTDriver::write_pending_bytes_DMA_from_irq()
+{
+    if (!tx_bounce_buf_ready) {
+        return;
+    }
+
+    /* TX DMA channel preparation.*/
+    _writebuf.advance(tx_len);
+    tx_len = _writebuf.peekbytes(tx_bounce_buf, TX_BOUNCE_BUFSIZE);
+    if (tx_len == 0) {
+        return;
+    }
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
     dmaStreamSetMemory0(txdma, tx_bounce_buf);
