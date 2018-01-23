@@ -121,5 +121,6 @@ private:
 
     void write_pending_bytes_DMA(uint32_t n);
     void write_pending_bytes_NODMA(uint32_t n);
+    void write_pending_bytes_DMA_from_irq(void);
     void write_pending_bytes(void);
 };
