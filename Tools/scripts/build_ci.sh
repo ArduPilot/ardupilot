@@ -32,25 +32,6 @@ else
     export CCACHE_MAXSIZE="150M"
 fi
 
-# special case for SITL testing in CI
-if [ "$CI_BUILD_TARGET" = "sitltest" ]; then
-    echo "Installing pymavlink"
-    git submodule init
-    git submodule update
-    (cd modules/mavlink/pymavlink && python setup.py build install --user)
-    unset BUILDROOT
-    echo "Running SITL QuadCopter test"
-    Tools/autotest/autotest.py build.ArduCopter fly.ArduCopter
-    ccache -s && ccache -z
-    echo "Running SITL QuadPlane test"
-    Tools/autotest/autotest.py build.ArduPlane fly.QuadPlane
-    ccache -s && ccache -z
-    echo "Running SITL Rover test"
-    Tools/autotest/autotest.py build.APMrover2 drive.APMrover2
-    ccache -s && ccache -z
-    exit 0
-fi
-
 declare -A waf_supported_boards
 
 waf=modules/waf/waf-light
@@ -64,6 +45,41 @@ function get_time {
 
 echo "Targets: $CI_BUILD_TARGET"
 for t in $CI_BUILD_TARGET; do
+    # special case for SITL testing in CI
+    if [ $t == "sitltest-copter" ]; then
+        echo "Installing pymavlink"
+        git submodule init
+        git submodule update
+        (cd modules/mavlink/pymavlink && python setup.py build install --user)
+        unset BUILDROOT
+        echo "Running SITL QuadCopter test"
+        Tools/autotest/autotest.py build.ArduCopter fly.ArduCopter
+        ccache -s && ccache -z
+        continue
+    fi
+    if [ $t == "sitltest-quadplane" ]; then
+        echo "Installing pymavlink"
+        git submodule init
+        git submodule update
+        (cd modules/mavlink/pymavlink && python setup.py build install --user)
+        unset BUILDROOT
+        echo "Running SITL QuadPlane test"
+        Tools/autotest/autotest.py build.ArduPlane fly.QuadPlane
+        ccache -s && ccache -z
+        continue
+    fi
+    if [ $t == "sitltest-rover" ]; then
+        echo "Installing pymavlink"
+        git submodule init
+        git submodule update
+        (cd modules/mavlink/pymavlink && python setup.py build install --user)
+        unset BUILDROOT
+        echo "Running SITL Rover test"
+        Tools/autotest/autotest.py build.APMrover2 drive.APMrover2
+        ccache -s && ccache -z
+        continue
+    fi
+
     # only do make-based builds for GCC, when target is PX4-v3 or build is launched by a scheduled job and target is a PX4 board or SITL
     if [[ "$cxx_compiler" != "clang++" && ($t == "px4-v3" || (-n ${CI_CRON_JOB+1} && ($t == "px4"* || $t == "sitl"))) ]]; then
         echo "Starting make based build for target ${t}..."
