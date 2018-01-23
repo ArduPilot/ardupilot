@@ -123,6 +123,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Increment: 0.1
     AP_GROUPINFO("YAW_SCALER", 12, AP_MotorsHeli_Dual, _yaw_scaler, 1.0f),
 
+    // Indices 13-15 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
+
     // @Param: COL2_MIN
     // @DisplayName: Collective Pitch Minimum for rear swashplate
     // @Description: Lowest possible servo position in PWM microseconds for the rear swashplate
