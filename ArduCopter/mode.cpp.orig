@@ -85,13 +85,18 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
         ret = &mode_guided_nogps;
         break;
 
+<<<<<<< HEAD
+        case SMART_RTL:
+            ret = &mode_smartrtl;
+            break;
+=======
     case SMART_RTL:
         ret = &mode_smartrtl;
-        break;
 
     case ZIGZAG:
         ret = &mode_zigzag;
         break;
+>>>>>>> Copter: Mode_zigzag ran astyle on all changed files
 
     default:
         break;

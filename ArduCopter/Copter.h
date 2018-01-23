@@ -217,17 +217,20 @@ private:
 
     // Mission library
     AP_Mission mission{ahrs,
-            FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)};
+                   FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
+                   FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
+                   FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)};
 
-    bool start_command(const AP_Mission::Mission_Command& cmd) {
+    bool start_command(const AP_Mission::Mission_Command& cmd)
+    {
         return mode_auto.start_command(cmd);
     }
-    bool verify_command_callback(const AP_Mission::Mission_Command& cmd) {
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd)
+    {
         return mode_auto.verify_command_callback(cmd);
     }
-    void exit_mission() {
+    void exit_mission()
+    {
         mode_auto.exit_mission();
     }
 
@@ -236,7 +239,7 @@ private:
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow {ahrs};
 #endif
 
     // gnd speed limit required to observe optical flow sensor limits
@@ -253,7 +256,10 @@ private:
 
     // GCS selection
     GCS_Copter _gcs; // avoid using this; use gcs()
-    GCS_Copter &gcs() { return _gcs; }
+    GCS_Copter &gcs()
+    {
+        return _gcs;
+    }
 
     // User variables
 #ifdef USERHOOK_VARIABLES
@@ -359,9 +365,9 @@ private:
 
     // Motor Output
 #if FRAME_CONFIG == HELI_FRAME
- #define MOTOR_CLASS AP_MotorsHeli
+#define MOTOR_CLASS AP_MotorsHeli
 #else
- #define MOTOR_CLASS AP_MotorsMulticopter
+#define MOTOR_CLASS AP_MotorsMulticopter
 #endif
 
     MOTOR_CLASS *motors;
@@ -450,9 +456,9 @@ private:
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
 #if FRAME_CONFIG == HELI_FRAME
-    #define AC_AttitudeControl_t AC_AttitudeControl_Heli
+#define AC_AttitudeControl_t AC_AttitudeControl_Heli
 #else
-    #define AC_AttitudeControl_t AC_AttitudeControl_Multi
+#define AC_AttitudeControl_t AC_AttitudeControl_Multi
 #endif
     AC_AttitudeControl_t *attitude_control;
     AC_PosControl *pos_control;
@@ -482,7 +488,7 @@ private:
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera{&relay, MASK_LOG_CAMERA, current_loc, ahrs};
+    AP_Camera camera {&relay, MASK_LOG_CAMERA, current_loc, ahrs};
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
@@ -493,16 +499,16 @@ private:
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence fence{ahrs};
+    AC_Fence fence {ahrs};
 #endif
 
 #if AC_AVOID_ENABLED == ENABLED
-    AC_Avoid avoid{ahrs, fence, g2.proximity, &g2.beacon};
+    AC_Avoid avoid {ahrs, fence, g2.proximity, &g2.beacon};
 #endif
 
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally_Copter rally{ahrs};
+    AP_Rally_Copter rally {ahrs};
 #endif
 
     // RSSI
@@ -510,12 +516,12 @@ private:
 
     // Crop Sprayer
 #if SPRAYER == ENABLED
-    AC_Sprayer sprayer{&inertial_nav};
+    AC_Sprayer sprayer {&inertial_nav};
 #endif
 
     // Parachute release
 #if PARACHUTE == ENABLED
-    AP_Parachute parachute{relay};
+    AP_Parachute parachute {relay};
 #endif
 
     // Landing Gear Controller
@@ -523,12 +529,12 @@ private:
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    AP_Terrain terrain{ahrs, mission, rally};
+    AP_Terrain terrain {ahrs, mission, rally};
 #endif
 
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
-    AC_PrecLand precland{ahrs, inertial_nav};
+    AC_PrecLand precland {ahrs, inertial_nav};
 #endif
 
     // Pilot Input Management Library
@@ -587,7 +593,7 @@ private:
 
     // set when we are upgrading parameters from 3.4
     bool upgrading_frame_params;
-    
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -940,16 +946,16 @@ private:
 
     Mode *flightmode;
 #if FRAME_CONFIG == HELI_FRAME
-    ModeAcro_Heli mode_acro{*this};
+    ModeAcro_Heli mode_acro {*this};
 #else
-    ModeAcro mode_acro{*this};
+    ModeAcro mode_acro {*this};
 #endif
-    ModeAltHold mode_althold{*this};
+    ModeAltHold mode_althold {*this};
     ModeAuto mode_auto{*this, mission, circle_nav};
 #if AUTOTUNE_ENABLED == ENABLED
-    ModeAutoTune mode_autotune{*this};
+    ModeAutoTune mode_autotune {*this};
 #endif
-    ModeBrake mode_brake{*this};
+    ModeBrake mode_brake {*this};
     ModeCircle mode_circle{*this, circle_nav};
     ModeDrift mode_drift{*this};
     ModeFlip mode_flip{*this};
@@ -959,15 +965,16 @@ private:
     ModePosHold mode_poshold{*this};
     ModeRTL mode_rtl{*this};
 #if FRAME_CONFIG == HELI_FRAME
-    ModeStabilize_Heli mode_stabilize{*this};
+    ModeStabilize_Heli mode_stabilize {*this};
 #else
-    ModeStabilize mode_stabilize{*this};
+    ModeStabilize mode_stabilize {*this};
 #endif
-    ModeSport mode_sport{*this};
+    ModeSport mode_sport {*this};
     ModeAvoidADSB mode_avoid_adsb{*this};
     ModeThrow mode_throw{*this};
     ModeGuidedNoGPS mode_guided_nogps{*this};
     ModeSmartRTL mode_smartrtl{*this};
+    ModeZigzag mode_zigzag{*this};
 
     // mode.cpp
     Mode *mode_from_mode_num(const uint8_t mode);

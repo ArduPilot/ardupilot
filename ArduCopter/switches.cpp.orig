@@ -308,6 +308,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 // with zero throttle, create LAND command
                 cmd.id = MAV_CMD_NAV_LAND;
             }
+
             // save command
             if (mission.add_cmd(cmd)) {
                 // log event
@@ -678,6 +679,16 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // lower winch at maximum speed
             g2.winch.set_desired_rate(g2.winch.get_rate_max());
             break;
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+         case AUXSW_ZIGZAG_ENABLE:
+            if (control_mode == ZIGZAG) {
+                copter.mode_zigzag.zigzag_receive_signal_from_auxsw(ch_flag);
+            }       
+            break;
+>>>>>>> Copter: Solved problems in mode_zigzag and cleaned the code.
+=======
         case AUX_SWITCH_MIDDLE:
         default:
             g2.winch.set_desired_rate(0.0f);
@@ -689,6 +700,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             copter.mode_zigzag.zigzag_receive_signal_from_auxsw(ch_flag);
         }
         break;
+>>>>>>> Copter: Mode_zigzag ran astyle on all changed files
     }
 }
 
