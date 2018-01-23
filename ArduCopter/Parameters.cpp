@@ -947,6 +947,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PILOT_SPEED_DN", 24, ParametersG2, pilot_speed_dn, 0),
 
+    // @Param: LAND_ALT_LOW
+    // @DisplayName: Land alt low
+    // @Description: Altitude during Landing at which vehicle slows to LAND_SPEED
+    // @Units: cm
+    // @Range: 100 10000
+    // @Increment: 10
+    // @User: Advanced
+    AP_GROUPINFO("LAND_ALT_LOW", 25, ParametersG2, land_alt_low, 1000),
+
     AP_GROUPEND
 };
 

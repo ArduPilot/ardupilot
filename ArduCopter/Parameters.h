@@ -556,6 +556,9 @@ public:
 
     // Additional pilot velocity items
     AP_Int16    pilot_speed_dn;
+
+    // Land alt final stage
+    AP_Int16 land_alt_low;
 };
 
 extern const AP_Param::Info        var_info[];
