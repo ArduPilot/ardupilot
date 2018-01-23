@@ -74,6 +74,7 @@ enum aux_sw_func {
     AUXSW_INVERTED  =           43,  // enable inverted flight
     AUXSW_WINCH_ENABLE =        44, // winch enable/disable
     AUXSW_WINCH_CONTROL =       45, // winch control
+    AUXSW_RC_OVERRIDE_ENABLE =  46, // enable RC Override
     AUXSW_SWITCH_MAX,
 };
 
