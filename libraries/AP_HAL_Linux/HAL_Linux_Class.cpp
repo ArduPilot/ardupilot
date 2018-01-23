@@ -61,7 +61,7 @@ static UtilRPI utilInstance;
 static Util utilInstance;
 #endif
 
-// 3 serial ports on Linux for now
+// 5 serial ports on Linux
 static UARTDriver uartADriver(true);
 static UARTDriver uartCDriver(false);
 static UARTDriver uartDDriver(false);
