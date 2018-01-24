@@ -382,6 +382,26 @@ static const struct defaults_struct defaults_table_tailsitter[] = {
     { "Q_TRANSITION_MS",   2000 },
 };
 
+/*
+  conversion table for quadplane parameters
+ */
+const AP_Param::ConversionInfo q_conversion_table[] = {
+    { Parameters::k_param_quadplane, 4044, AP_PARAM_FLOAT, "Q_P_POSZ_P" },     //  Q_PZ_P
+    { Parameters::k_param_quadplane, 4045, AP_PARAM_FLOAT, "Q_P_POSXY_P"},     //  Q_PXY_P
+    { Parameters::k_param_quadplane, 4046, AP_PARAM_FLOAT, "Q_P_VELXY_P"},     //  Q_VXY_P
+    { Parameters::k_param_quadplane, 78,   AP_PARAM_FLOAT, "Q_P_VELXY_I"},     //  Q_VXY_I
+    { Parameters::k_param_quadplane, 142,  AP_PARAM_FLOAT, "Q_P_VELXY_IMAX"},  //  Q_VXY_IMAX
+    { Parameters::k_param_quadplane, 206,  AP_PARAM_FLOAT, "Q_P_VELXY_FILT"},  //  Q_VXY_FILT_HZ
+    { Parameters::k_param_quadplane, 4047, AP_PARAM_FLOAT, "Q_P_VELZ_P"},      //  Q_VZ_P
+    { Parameters::k_param_quadplane, 4048, AP_PARAM_FLOAT, "Q_P_ACCELZ_P"},    //  Q_AZ_P
+    { Parameters::k_param_quadplane, 80,   AP_PARAM_FLOAT, "Q_P_ACCELZ_I"},    //  Q_AZ_I
+    { Parameters::k_param_quadplane, 144,  AP_PARAM_FLOAT, "Q_P_ACCELZ_D"},    //  Q_AZ_D
+    { Parameters::k_param_quadplane, 336,  AP_PARAM_FLOAT, "Q_P_ACCELZ_IMAX"}, //  Q_AZ_IMAX
+    { Parameters::k_param_quadplane, 400,  AP_PARAM_FLOAT, "Q_P_ACCELZ_FILT"}, //  Q_AZ_FILT
+    { Parameters::k_param_quadplane, 464,  AP_PARAM_FLOAT, "Q_P_ACCELZ_FF"},   //  Q_AZ_FF
+};
+
+
 QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
     ahrs(_ahrs)
 {
@@ -559,6 +579,8 @@ bool QuadPlane::setup(void)
 
     
     setup_defaults();
+
+    AP_Param::convert_old_parameters(&q_conversion_table[0], ARRAY_SIZE(q_conversion_table));
     
     gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialised");
     initialised = true;
