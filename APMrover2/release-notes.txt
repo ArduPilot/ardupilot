@@ -1,5 +1,9 @@
 APMrover2 Release Notes:
 ========================
+APM:Rover V3.2.1-rc1 24-Jan-2018
+Changes from 3.2.0:
+1) Fix mode switch logic to allow Auto, Guided, RTL, SmartRTL, Steering, Acro using non-GPS navigation (i.e. wheel encoders, visual odometry)
+--------------------------------
 APM:Rover V3.2.0 13-Jan-2018
 Changes from 3.2.0-rc4:
 1) Here GPS/compass default orientation fix (ICM20948)
