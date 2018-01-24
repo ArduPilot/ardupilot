@@ -198,7 +198,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         int32_t     altitude_msl;
         uint32_t    horizontal_accuracy;
         uint32_t    vertical_accuracy;
-    } pos;
+    } pos {};
     struct PACKED ubx_nav_status {
         uint32_t    time;               // GPS msToW
         uint8_t     fix_type;
@@ -207,7 +207,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         uint8_t     res;
         uint32_t    time_to_first_fix;
         uint32_t    uptime;             // milliseconds
-    } status;
+    } status {};
     struct PACKED ubx_nav_velned {
         uint32_t    time;               // GPS msToW
         int32_t     ned_north;
@@ -218,7 +218,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         int32_t     heading_2d;
         uint32_t    speed_accuracy;
         uint32_t    heading_accuracy;
-    } velned;
+    } velned {};
     struct PACKED ubx_nav_solution {
         uint32_t time;
         int32_t time_nsec;
@@ -237,7 +237,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         uint8_t res;
         uint8_t satellites;
         uint32_t res2;
-    } sol;
+    } sol {};
     struct PACKED ubx_nav_dop {
         uint32_t time;                                  // GPS msToW
         uint16_t gDOP;
@@ -247,7 +247,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         uint16_t hDOP;
         uint16_t nDOP;
         uint16_t eDOP;
-    } dop;
+    } dop {};
     struct PACKED ubx_nav_pvt {
         uint32_t itow; 
         uint16_t year; 
@@ -270,7 +270,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         uint8_t reserved1[6]; 
         uint32_t headVeh;
         uint8_t reserved2[4]; 
-    } pvt;
+    } pvt {};
     const uint8_t SV_COUNT = 10;
     struct PACKED ubx_nav_svinfo {
         uint32_t itow;
@@ -288,7 +288,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
             int16_t azim;
             int32_t prRes;
         } sv[SV_COUNT];
-    } svinfo;
+    } svinfo {};
     const uint8_t MSG_POSLLH = 0x2;
     const uint8_t MSG_STATUS = 0x3;
     const uint8_t MSG_DOP = 0x4;
