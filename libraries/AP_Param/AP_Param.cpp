@@ -2193,3 +2193,60 @@ bool AP_Param::set_and_save_by_name(const char *name, float value)
     // not a supported type
     return false;
 }
+
+#if AP_PARAM_KEY_DUMP
+/*
+  do not remove this show_all() code, it is essential for debugging
+  and creating conversion tables
+ */
+
+// print the value of all variables
+void AP_Param::show(const AP_Param *ap, const char *s,
+                    enum ap_var_type type, AP_HAL::BetterStream *port)
+{
+    switch (type) {
+    case AP_PARAM_INT8:
+        port->printf("%s: %d\n", s, (int)((AP_Int8 *)ap)->get());
+        break;
+    case AP_PARAM_INT16:
+        port->printf("%s: %d\n", s, (int)((AP_Int16 *)ap)->get());
+        break;
+    case AP_PARAM_INT32:
+        port->printf("%s: %ld\n", s, (long)((AP_Int32 *)ap)->get());
+        break;
+    case AP_PARAM_FLOAT:
+        port->printf("%s: %f\n", s, (double)((AP_Float *)ap)->get());
+        break;
+    default:
+        break;
+    }
+}
+
+// print the value of all variables
+void AP_Param::show(const AP_Param *ap, const ParamToken &token,
+                    enum ap_var_type type, AP_HAL::BetterStream *port)
+{
+    char s[AP_MAX_NAME_SIZE+1];
+    ap->copy_name_token(token, s, sizeof(s), true);
+    s[AP_MAX_NAME_SIZE] = 0;
+    show(ap, s, type, port);
+}
+
+// print the value of all variables
+void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
+{
+    ParamToken token;
+    AP_Param *ap;
+    enum ap_var_type type;
+
+    for (ap=AP_Param::first(&token, &type);
+         ap;
+         ap=AP_Param::next_scalar(&token, &type)) {
+        if (showKeyValues) {
+            port->printf("Key %i: Index %i: GroupElement %i  :  ", token.key, token.idx, token.group_element);
+        }
+        show(ap, token, type, port);
+    }
+}
+#endif // AP_PARAM_KEY_DUMP
+
