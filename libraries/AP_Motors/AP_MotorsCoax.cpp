@@ -136,11 +136,12 @@ void AP_MotorsCoax::output_armed_stabilizing()
     float   actuator_allowed = 0.0f;    // amount of yaw we can fit in
 
     // apply voltage and air pressure compensation
-    roll_thrust = _roll_in * get_compensation_gain();
-    pitch_thrust = _pitch_in * get_compensation_gain();
-    yaw_thrust = _yaw_in * get_compensation_gain();
-    throttle_thrust = get_throttle() * get_compensation_gain();
-    throttle_avg_max = _throttle_avg_max * get_compensation_gain();
+    const float compensation_gain = get_compensation_gain();
+    roll_thrust = _roll_in * compensation_gain;
+    pitch_thrust = _pitch_in * compensation_gain;
+    yaw_thrust = _yaw_in * compensation_gain;
+    throttle_thrust = get_throttle() * compensation_gain;
+    throttle_avg_max = _throttle_avg_max * compensation_gain;
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {
