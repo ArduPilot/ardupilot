@@ -974,6 +974,8 @@ private:
     Mode *mode_from_mode_num(const uint8_t mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
 
+    void do_go_around(int32_t go_around_alt_cm);
+
 public:
     void mavlink_delay_cb();    // GCS_Mavlink.cpp
     void failsafe_check();      // failsafe.cpp

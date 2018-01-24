@@ -6,6 +6,9 @@ static bool land_with_gps;
 static uint32_t land_start_time;
 static bool land_pause;
 
+static bool go_around;
+static int32_t go_around_alt_cm;
+
 // land_init - initialise land controller
 bool Copter::ModeLand::init(bool ignore_checks)
 {
@@ -34,6 +37,9 @@ bool Copter::ModeLand::init(bool ignore_checks)
 
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     ap.land_repo_active = false;
+   
+    go_around = false;
+    go_around_alt_cm = 300;
 
     return true;
 }
@@ -156,6 +162,11 @@ int32_t Copter::ModeLand::get_alt_above_ground(void)
     return alt_above_ground;
 }
 
+void Copter::do_go_around(int32_t param_go_around_alt_cm) {
+    go_around = true;
+    go_around_alt_cm = param_go_around_alt_cm;
+}
+
 void Copter::land_run_vertical_control(bool pause_descent)
 {
     bool navigating = pos_control->is_active_xy();
@@ -172,6 +183,19 @@ void Copter::land_run_vertical_control(bool pause_descent)
     int32_t alt_above_ground = mode_land.get_alt_above_ground();
 
     float cmb_rate = 0;
+   
+    if (go_around) {
+        if (alt_above_ground > go_around_alt_cm) {
+            go_around = false;
+        } else {
+            cmb_rate = 100;
+            pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, G_Dt, false);
+            pos_control->add_takeoff_climb_rate(cmb_rate, G_Dt);
+            pos_control->update_z_controller();
+            return;
+        }
+    }
+  
     if (!pause_descent) {
         float max_land_descent_velocity;
         if (g.land_speed_high > 0) {

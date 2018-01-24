@@ -1134,6 +1134,15 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_DO_GO_AROUND:
+            if (packet.param1 > 0) {
+                copter.do_go_around((int32_t)(packet.param1*100));
+            } else {
+                copter.do_go_around(300); //if GCS send go_around with param #1 = 0, we climb to 3m above ground
+            }
+            result = MAV_RESULT_ACCEPTED;
+            break;
+
         case MAV_CMD_DO_FENCE_ENABLE:
 #if AC_FENCE == ENABLED
             result = MAV_RESULT_ACCEPTED;
