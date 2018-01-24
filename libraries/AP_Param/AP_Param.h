@@ -31,6 +31,9 @@
 
 #define AP_MAX_NAME_SIZE 16
 
+// optionally enable debug code for dumping keys
+#define AP_PARAM_KEY_DUMP 0
+
 /*
   maximum size of embedded parameter file
  */
@@ -413,6 +416,23 @@ public:
 
     // check if a given frame type should be included
     static bool check_frame_type(uint16_t flags);
+
+#if AP_PARAM_KEY_DUMP
+    /// print the value of all variables
+    static void         show_all(AP_HAL::BetterStream *port, bool showKeyValues=false);
+
+    /// print the value of one variable
+    static void         show(const AP_Param *param, 
+                             const char *name,
+                             enum ap_var_type ptype, 
+                             AP_HAL::BetterStream *port);
+
+    /// print the value of one variable
+    static void         show(const AP_Param *param, 
+                             const ParamToken &token,
+                             enum ap_var_type ptype, 
+                             AP_HAL::BetterStream *port);
+#endif // AP_PARAM_KEY_DUMP
     
 private:
     /// EEPROM header
