@@ -112,6 +112,8 @@ const struct UnitStructure log_Units[] = {
 
 const struct MultiplierStructure log_Multipliers[] = {
 // <leave a gap here, just in case....>
+    { '-', 0 },       // no multiplier e.g. a string
+    { '?', 1 },       // multipliers which haven't been worked out yet....
     { '2', 1e2 },
     { '1', 1e1 },
     { '0', 1e0 },
