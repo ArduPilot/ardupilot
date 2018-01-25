@@ -901,7 +901,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return true; }
 
     RTLState state() { return _state; }
