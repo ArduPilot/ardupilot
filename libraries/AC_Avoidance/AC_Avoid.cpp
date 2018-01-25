@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
     // @Description: Distance from object at which obstacle avoidance will begin in non-GPS modes
     // @Units: m
-    // @Range: 3 30
+    // @Range: 1 30
     // @User: Standard
     AP_GROUPINFO("DIST_MAX", 3,  AC_Avoid, _dist_max, AC_AVOID_NONGPS_DIST_MAX_DEFAULT),
 
