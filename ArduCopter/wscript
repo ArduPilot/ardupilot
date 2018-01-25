@@ -35,6 +35,7 @@ def build(bld):
             'AP_VisualOdom',
             'AP_WheelEncoder',
             'AP_Winch',
+            'AP_Follow',
         ],
     )
 
