@@ -407,9 +407,6 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 
     size_t ret = _writebuf.write(buffer, size);
     if (unbuffered_writes) {
-        if (ret != size) {
-            hal.console->printf("ret=%d size=%d\n", (int)ret, (int)size);
-        }
         write_pending_bytes();
     }
     chMtxUnlock(&_write_mutex);
@@ -440,9 +437,6 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     if (!tx_bounce_buf_ready && txdma) {
         if (!(txdma->stream->CR & STM32_DMA_CR_EN)) {
             if (txdma->stream->NDTR == 0) {
-                hal.console->printf("ISR complete %u took %u\n",
-                                    AP_HAL::millis(),
-                                    AP_HAL::micros() - _last_write_started_us);
                 tx_bounce_buf_ready = true;
                 _last_write_completed_us = AP_HAL::micros();
                 dma_handle->unlock();
@@ -471,7 +465,6 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     dmamode |= STM32_DMA_CR_PL(0);
     dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
-    _last_write_started_us = AP_HAL::micros();
     dmaStreamEnable(txdma);
 }
 
@@ -500,7 +493,6 @@ void UARTDriver::write_pending_bytes_DMA_from_irq()
     dmamode |= STM32_DMA_CR_PL(0);
     dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
-    _last_write_started_us = AP_HAL::micros();
     dmaStreamEnable(txdma);
 }
 
