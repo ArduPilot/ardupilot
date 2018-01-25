@@ -987,7 +987,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: mode_flowhold.cpp
     AP_SUBGROUPPTR(mode_flowhold_ptr, "FHLD", 26, ParametersG2, Copter::ModeFlowHold),
 #endif
-    
+
+    // @Group: FOLL
+    // @Path: ../libraries/AP_Follow/AP_Follow.cpp
+    AP_SUBGROUPINFO(follow, "FOLL", 27, ParametersG2, AP_Follow),
+
     AP_GROUPEND
 };
 
@@ -1012,6 +1016,7 @@ ParametersG2::ParametersG2(void)
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     ,mode_flowhold_ptr(&copter.mode_flowhold)
 #endif
+    ,follow(copter.ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
