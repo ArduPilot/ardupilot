@@ -751,6 +751,8 @@ void UARTDriver::configure_parity(uint8_t v)
         // not possible
         return;
     }
+    // stop and start to take effect
+    sdStop((SerialDriver*)sdef.serial);
     
     switch (v) {
     case 0:
@@ -759,19 +761,24 @@ void UARTDriver::configure_parity(uint8_t v)
         break;
     case 1:
         // odd parity
-        sercfg.cr1 |= USART_CR1_PCE;
+        // setting USART_CR1_M ensures extra bit is used as parity
+        // not last bit of data
+        sercfg.cr1 |= USART_CR1_M | USART_CR1_PCE;
         sercfg.cr1 |= USART_CR1_PS;
         break;
     case 2:
         // even parity
-        sercfg.cr1 |= USART_CR1_PCE;
+        sercfg.cr1 |= USART_CR1_M | USART_CR1_PCE;
         sercfg.cr1 &= ~USART_CR1_PS;
         break;
     }
 
-    // stop and start to take effect
-    sdStop((SerialDriver*)sdef.serial);
     sdStart((SerialDriver*)sdef.serial, &sercfg);
+    if(sdef.dma_rx) {
+        //Configure serial driver to skip handling RX packets
+        //because we will handle them via DMA
+        ((SerialDriver*)sdef.serial)->usart->CR1 &= ~USART_CR1_RXNEIE;
+    }
 }
 
 /*
@@ -783,6 +790,8 @@ void UARTDriver::set_stop_bits(int n)
         // not possible
         return;
     }
+    // stop and start to take effect
+    sdStop((SerialDriver*)sdef.serial);
     
     switch (n) {
     case 1:
@@ -792,9 +801,12 @@ void UARTDriver::set_stop_bits(int n)
         sercfg.cr2 = USART_CR2_STOP2_BITS;
         break;
     }
-    // stop and start to take effect
-    sdStop((SerialDriver*)sdef.serial);
     sdStart((SerialDriver*)sdef.serial, &sercfg);
+    if(sdef.dma_rx) {
+        //Configure serial driver to skip handling RX packets
+        //because we will handle them via DMA
+        ((SerialDriver*)sdef.serial)->usart->CR1 &= ~USART_CR1_RXNEIE;
+    }
 }
 
 
