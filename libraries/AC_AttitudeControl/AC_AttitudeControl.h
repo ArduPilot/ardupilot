@@ -104,8 +104,8 @@ public:
     // Sets and saves the yaw acceleration limit in centidegrees/s/s
     void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max.set_and_save(accel_yaw_max); }
 
-    // Sets the yaw acceleration limit in centidegrees/s/s
-    void set_smoothing_gain(float smoothing_gain) { _smoothing_gain = constrain_float(smoothing_gain,1.0f,1/_dt); }
+    // set the rate control input smoothing time constant
+    void set_input_tc(float input_tc) { _input_tc = constrain_float(input_tc, 0.0f, 1.0f); }
 
     // Ensure attitude controller have zero errors to relax rate controller output
     void relax_attitude_controllers();
@@ -338,6 +338,9 @@ protected:
     // Angle limit time constant (to maintain altitude)
     AP_Float            _angle_limit_tc;
 
+    // rate controller input smoothing time constant
+    AP_Float            _input_tc;
+
     // Intersampling period in seconds
     float               _dt;
 
@@ -384,9 +387,6 @@ protected:
 
     // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
     float               _throttle_rpy_mix;
-
-    // smoothing gain (should be replaced with s-curve generation)
-    float               _smoothing_gain;
 
     // References to external libraries
     const AP_AHRS_View&  _ahrs;
