@@ -407,7 +407,7 @@ void *PX4Scheduler::_storage_thread(void *arg)
 
         // process any pending storage writes
         perf_begin(sched->_perf_storage_timer);
-        ((PX4Storage *)hal.storage)->_timer_tick();
+        hal.storage->_timer_tick();
         perf_end(sched->_perf_storage_timer);
     }
     return nullptr;
