@@ -8,12 +8,12 @@ extern const AP_HAL::HAL& hal;
  // default gains for Plane
  # define POSCONTROL_POS_Z_P                    1.0f    // vertical position controller P gain default
  # define POSCONTROL_VEL_Z_P                    5.0f    // vertical velocity controller P gain default
- # define POSCONTROL_ACCEL_Z_P                  0.3f    // vertical acceleration controller P gain default
- # define POSCONTROL_ACCEL_Z_I                  1.0f    // vertical acceleration controller I gain default
- # define POSCONTROL_ACCEL_Z_D                  0.0f    // vertical acceleration controller D gain default
- # define POSCONTROL_ACCEL_Z_IMAX               800     // vertical acceleration controller IMAX gain default
- # define POSCONTROL_ACCEL_Z_FILT_HZ            10.0f   // vertical acceleration controller input filter default
- # define POSCONTROL_ACCEL_Z_DT                 0.02f   // vertical acceleration controller dt default
+ # define POSCONTROL_ACC_Z_P                    0.3f    // vertical acceleration controller P gain default
+ # define POSCONTROL_ACC_Z_I                    1.0f    // vertical acceleration controller I gain default
+ # define POSCONTROL_ACC_Z_D                    0.0f    // vertical acceleration controller D gain default
+ # define POSCONTROL_ACC_Z_IMAX                 800     // vertical acceleration controller IMAX gain default
+ # define POSCONTROL_ACC_Z_FILT_HZ              10.0f   // vertical acceleration controller input filter default
+ # define POSCONTROL_ACC_Z_DT                   0.02f   // vertical acceleration controller dt default
  # define POSCONTROL_POS_XY_P                   1.0f    // horizontal position controller P gain default
  # define POSCONTROL_VEL_XY_P                   0.7f    // horizontal velocity controller P gain default
  # define POSCONTROL_VEL_XY_I                   0.35f   // horizontal velocity controller I gain default
@@ -25,12 +25,12 @@ extern const AP_HAL::HAL& hal;
  // default gains for Copter and Sub
  # define POSCONTROL_POS_Z_P                    1.0f    // vertical position controller P gain default
  # define POSCONTROL_VEL_Z_P                    5.0f    // vertical velocity controller P gain default
- # define POSCONTROL_ACCEL_Z_P                  0.5f    // vertical acceleration controller P gain default
- # define POSCONTROL_ACCEL_Z_I                  1.0f    // vertical acceleration controller I gain default
- # define POSCONTROL_ACCEL_Z_D                  0.0f    // vertical acceleration controller D gain default
- # define POSCONTROL_ACCEL_Z_IMAX               800     // vertical acceleration controller IMAX gain default
- # define POSCONTROL_ACCEL_Z_FILT_HZ            20.0f   // vertical acceleration controller input filter default
- # define POSCONTROL_ACCEL_Z_DT                 0.0025f // vertical acceleration controller dt default
+ # define POSCONTROL_ACC_Z_P                    0.5f    // vertical acceleration controller P gain default
+ # define POSCONTROL_ACC_Z_I                    1.0f    // vertical acceleration controller I gain default
+ # define POSCONTROL_ACC_Z_D                    0.0f    // vertical acceleration controller D gain default
+ # define POSCONTROL_ACC_Z_IMAX                 800     // vertical acceleration controller IMAX gain default
+ # define POSCONTROL_ACC_Z_FILT_HZ              20.0f   // vertical acceleration controller input filter default
+ # define POSCONTROL_ACC_Z_DT                   0.0025f // vertical acceleration controller dt default
  # define POSCONTROL_POS_XY_P                   1.0f    // horizontal position controller P gain default
  # define POSCONTROL_VEL_XY_P                   1.0f    // horizontal velocity controller P gain default
  # define POSCONTROL_VEL_XY_I                   0.5f    // horizontal velocity controller I gain default
@@ -66,39 +66,39 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(_p_vel_z, "_VELZ_", 3, AC_PosControl, AC_P),
 
-    // @Param: _ACCELZ_P
+    // @Param: _ACCZ_P
     // @DisplayName: Acceleration (vertical) controller P gain
     // @Description: Acceleration (vertical) controller P gain.  Converts the difference between desired vertical acceleration and actual acceleration into a motor output
     // @Range: 0.500 1.500
     // @Increment: 0.05
     // @User: Standard
 
-    // @Param: _ACCELZ_I
+    // @Param: _ACCZ_I
     // @DisplayName: Acceleration (vertical) controller I gain
     // @Description: Acceleration (vertical) controller I gain.  Corrects long-term difference in desired vertical acceleration and actual acceleration
     // @Range: 0.000 3.000
     // @User: Standard
 
-    // @Param: _ACCELZ_IMAX
+    // @Param: _ACCZ_IMAX
     // @DisplayName: Acceleration (vertical) controller I gain maximum
     // @Description: Acceleration (vertical) controller I gain maximum.  Constrains the maximum pwm that the I term will generate
     // @Range: 0 1000
     // @Units: d%
     // @User: Standard
 
-    // @Param: _ACCELZ_D
+    // @Param: _ACCZ_D
     // @DisplayName: Acceleration (vertical) controller D gain
     // @Description: Acceleration (vertical) controller D gain.  Compensates for short-term change in desired vertical acceleration vs actual acceleration
     // @Range: 0.000 0.400
     // @User: Standard
 
-    // @Param: _ACCELZ_FILT
+    // @Param: _ACCZ_FILT
     // @DisplayName: Acceleration (vertical) controller filter
     // @Description: Filter applied to acceleration to reduce noise.  Lower values reduce noise but add delay.
     // @Range: 1.000 100.000
     // @Units: Hz
     // @User: Standard
-    AP_SUBGROUPINFO(_pid_accel_z, "_ACCELZ_", 4, AC_PosControl, AC_PID),
+    AP_SUBGROUPINFO(_pid_accel_z, "_ACCZ_", 4, AC_PosControl, AC_PID),
 
     // @Param: _POSXY_P
     // @DisplayName: Position (horizonal) controller P gain
@@ -166,7 +166,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _attitude_control(attitude_control),
     _p_pos_z(POSCONTROL_POS_Z_P),
     _p_vel_z(POSCONTROL_VEL_Z_P),
-    _pid_accel_z(POSCONTROL_ACCEL_Z_P, POSCONTROL_ACCEL_Z_I, POSCONTROL_ACCEL_Z_D, POSCONTROL_ACCEL_Z_IMAX, POSCONTROL_ACCEL_Z_FILT_HZ, POSCONTROL_ACCEL_Z_DT),
+    _pid_accel_z(POSCONTROL_ACC_Z_P, POSCONTROL_ACC_Z_I, POSCONTROL_ACC_Z_D, POSCONTROL_ACC_Z_IMAX, POSCONTROL_ACC_Z_FILT_HZ, POSCONTROL_ACC_Z_DT),
     _p_pos_xy(POSCONTROL_POS_XY_P),
     _pid_vel_xy(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ, POSCONTROL_DT_50HZ),
     _dt(POSCONTROL_DT_400HZ),
