@@ -25,11 +25,24 @@
 #include <inttypes.h>
 
 #include <AP_Math/AP_Math.h>
+#include "AP_Math/fourier.h"
 
 #include "AP_InertialSensor.h"
 
+
+const int SAMPLE_RATE=1600;
+const int MIN_FREQ=1;
+const int BUF_SIZE=1600;//SAMPLE_RATE/MIN_FREQ;
+
 class AuxiliaryBus;
 class DataFlash_Class;
+
+struct log_data{
+	float AccX;
+	float AccY;
+	float AccZ;
+	float GyrZ;
+};
 
 class AP_InertialSensor_Backend
 {
@@ -73,6 +86,11 @@ public:
     // notify of a fifo reset
     void notify_fifo_reset(void);
     
+    float get_pitch_angle(void);
+    float get_yaw_angle(void);
+    
+    void synchronize_fourier_phase(float);
+    
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -96,6 +114,9 @@ public:
     };
         
 protected:
+
+    Fourier_Analysis _fourier_analysis;
+
     // access to frontend
     AP_InertialSensor &_imu;
 

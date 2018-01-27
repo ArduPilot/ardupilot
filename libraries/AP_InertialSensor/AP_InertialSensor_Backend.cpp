@@ -12,6 +12,7 @@ const extern AP_HAL::HAL& hal;
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
     _imu(imu)
 {
+	_fourier_analysis.Set_Fourier_Analysis(BUF_SIZE);
     _sem = hal.util->new_semaphore();
 }
 
@@ -310,7 +311,31 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         _sem->give();
     }
 
+    if(instance==0)
+    {
+    	_fourier_analysis.accumulate_discrete(accel, dt, _imu._gyro[instance]);
+    }
+
+    Vector3f new_accel;
+    
+    new_accel.x=accel.x;
+    
     log_accel_raw(instance, sample_us, accel);
+}
+
+float::AP_InertialSensor_Backend::get_pitch_angle(void)
+{
+	return _fourier_analysis.get_result().x;
+}
+
+float::AP_InertialSensor_Backend::get_yaw_angle(void)
+{
+	return(_fourier_analysis.get_result().y);
+}
+
+void::AP_InertialSensor_Backend::synchronize_fourier_phase(float actual_heading)
+{
+	_fourier_analysis.synchronize_fourier_phase(actual_heading);
 }
 
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)

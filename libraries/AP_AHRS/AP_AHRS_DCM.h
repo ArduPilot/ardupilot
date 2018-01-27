@@ -21,6 +21,7 @@
  *
  */
 
+ 
 class AP_AHRS_DCM : public AP_AHRS {
 public:
     AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro)
@@ -119,6 +120,8 @@ public:
 
     // time that the AHRS has been up
     uint32_t uptime_ms() const override;
+    
+    void resynchronize_fourier_phase(void);
 
 private:
     float _ki;

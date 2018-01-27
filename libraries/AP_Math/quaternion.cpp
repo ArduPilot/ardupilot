@@ -70,7 +70,7 @@ void Quaternion::rotation_matrix_norm(Matrix3f &m) const
     m.c.z = (-q2q2 - q3q3 + q4q4 + q1q1)*invs;
 }
 
-// return the rotation matrix equivalent for this quaternion
+// return the quaternion equivalent to this rotation matrix
 // Thanks to Martin John Baker
 // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
 void Quaternion::from_rotation_matrix(const Matrix3f &m)
@@ -151,6 +151,7 @@ void Quaternion::from_vector312(float roll ,float pitch, float yaw)
     from_rotation_matrix(m);
 }
 
+// creates a quaternion from an axis vector and an angle, the angle is equal to the vector length
 void Quaternion::from_axis_angle(Vector3f v)
 {
     float theta = v.length();
@@ -163,6 +164,7 @@ void Quaternion::from_axis_angle(Vector3f v)
     from_axis_angle(v,theta);
 }
 
+// creates a quaternion from an axis vector and an angle
 void Quaternion::from_axis_angle(const Vector3f &axis, float theta)
 {
     // axis must be a unit vector as there is no check for length
@@ -179,6 +181,7 @@ void Quaternion::from_axis_angle(const Vector3f &axis, float theta)
     q4 = axis.z * st2;
 }
 
+//rotates current quaternion by vector v with an angle = length(v)
 void Quaternion::rotate(const Vector3f &v)
 {
     Quaternion r;
@@ -325,6 +328,23 @@ Quaternion Quaternion::operator*(const Quaternion &v) const
     ret.q4 = w1*z2 + x1*y2 - y1*x2 + z1*w2;
 
     return ret;
+}
+
+Quaternion Quaternion::operator*(const float &k) const
+{
+	Quaternion ret;
+	const float &w1 = q1;
+    const float &w2 = q2;
+    const float &w3 = q3;
+    const float &w4 = q4;
+	
+    ret.q1=w1*k;
+    ret.q2=w2*k;
+    ret.q3=w3*k;
+    ret.q4=w4*k;
+    
+	
+	return ret;
 }
 
 Quaternion &Quaternion::operator*=(const Quaternion &v)
