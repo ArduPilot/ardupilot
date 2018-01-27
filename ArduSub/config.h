@@ -246,32 +246,6 @@
 # define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
 #endif
 
-#ifndef ALT_HOLD_P
-# define ALT_HOLD_P            3.0f
-#endif
-
-// Velocity (vertical) control gains
-#ifndef VEL_Z_P
-# define VEL_Z_P       8.0f
-#endif
-
-// Accel (vertical) control gains
-#ifndef ACCEL_Z_P
-# define ACCEL_Z_P     0.50f
-#endif
-#ifndef ACCEL_Z_I
-# define ACCEL_Z_I     0.1f
-#endif
-#ifndef ACCEL_Z_D
-# define ACCEL_Z_D     0.0f
-#endif
-#ifndef ACCEL_Z_IMAX
-# define ACCEL_Z_IMAX  100
-#endif
-#ifndef ACCEL_Z_FILT_HZ
-# define ACCEL_Z_FILT_HZ   20.0f
-#endif
-
 // default maximum vertical velocity and acceleration the pilot may request
 #ifndef PILOT_VELZ_MAX
 # define PILOT_VELZ_MAX    500     // maximum vertical velocity in cm/s
