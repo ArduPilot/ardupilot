@@ -340,7 +340,7 @@ void Scheduler::_tonealarm_task()
 void Scheduler::_io_task()
 {
     // process any pending storage writes
-    Storage::from(hal.storage)->_timer_tick();
+    hal.storage->_timer_tick();
 
     // run registered IO processes
     _run_io();
