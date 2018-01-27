@@ -43,10 +43,10 @@ float Sub::get_pilot_desired_yaw_rate(int16_t stick_angle)
 // check for ekf yaw reset and adjust target heading
 void Sub::check_ekf_yaw_reset()
 {
-    float yaw_angle_change_rad = 0.0f;
+    float yaw_angle_change_rad;
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control.shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
+        attitude_control.inertial_frame_reset();
         ekfYawReset_ms = new_ekfYawReset_ms;
     }
 }
