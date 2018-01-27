@@ -32,6 +32,9 @@ public:
         SRF02_I2C_CMD_1ST_IN_SEQUENCE_TO_CHANGE_I2C_ADDRESS = 0xa0,
         SRF02_I2C_CMD_3RD_IN_SEQUENCE_TO_CHANGE_I2C_ADDRESS = 0xa5,
         SRF02_I2C_CMD_2ND_IN_SEQUENCE_TO_CHANGE_I2C_ADDRESS = 0Xaa,
+        // SRF08
+        SRF08_I2C_SOFTWARE_VERSION = 0x0b,  // SRF08 Software version 11.
+
     };
 
     // static detection function

@@ -15,6 +15,10 @@
 /**
  * SRF02 SPEC
  * https://www.dfrobot.com/wiki/index.php/SRF02_Ultrasonic_sensor_(SKU:SEN0005)
+ * http://robot-electronics.co.uk/htm/srf02tech.htm
+ *
+ * SRF08 SPEC
+ * https://www.robot-electronics.co.uk/htm/srf08tech.html
  */
 #include "AP_RangeFinder_SRF02I2C.h"
 
@@ -105,11 +109,15 @@ bool AP_RangeFinder_SRF02I2C::_init()
     uint8_t info[6];
     _dev->read_registers(SRF02_I2C_REG_R_SOFTWARE_REVISION, info, sizeof(info));
     if (SRF02_I2C_CHECK_CODE_DEFAULT != info[SRF02_I2C_REG_R_CHECK_CODE] && SRF02_I2C_CHECK_CODE != info[SRF02_I2C_REG_R_CHECK_CODE]) {
-        _dev->get_semaphore()->give();
-        return false;
+        if (SRF08_I2C_SOFTWARE_VERSION != info[SRF02_I2C_REG_R_SOFTWARE_REVISION]) {
+            _dev->get_semaphore()->give();
+            return false;
+        }
+        // The value of autotune can not be obtained in SRF08.
+    } else {
+        // Get Autotune Minimum
+        _autotuneMinimum = info[SRF02_I2C_REG_R_AUTOTUNE_MINIMUM_HIGH_BYTE] << 8 | info[SRF02_I2C_REG_R_AUTOTUNE_MINIMUM_LOW_BYTE];
     }
-    // Get Autotune Minimum
-    _autotuneMinimum = info[SRF02_I2C_REG_R_AUTOTUNE_MINIMUM_HIGH_BYTE] << 8 | info[SRF02_I2C_REG_R_AUTOTUNE_MINIMUM_LOW_BYTE];
 
     // Issuing measurement start command
     ret = _startMeasurement();
