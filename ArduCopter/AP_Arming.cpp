@@ -266,10 +266,10 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             parameter_checks_pid_warning_message(display_failure, "PSC_VELZ_P");
             return false;
         } else if (is_zero(copter.pos_control->get_accel_z_pid().kP())) {
-            parameter_checks_pid_warning_message(display_failure, "PSC_ACCELZ_P");
+            parameter_checks_pid_warning_message(display_failure, "PSC_ACCZ_P");
             return false;
         } else if (is_zero(copter.pos_control->get_accel_z_pid().kI())) {
-            parameter_checks_pid_warning_message(display_failure, "PSC_ACCELZ_I");
+            parameter_checks_pid_warning_message(display_failure, "PSC_ACCZ_I");
             return false;
         } else if (is_zero(copter.attitude_control->get_rate_roll_pid().kP()) && is_zero(copter.attitude_control->get_rate_roll_pid().ff())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_RAT_RLL_P");
