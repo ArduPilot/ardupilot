@@ -346,7 +346,7 @@ void Scheduler::_storage_thread(void* arg)
         sched->delay_microseconds(10000);
 
         // process any pending storage writes
-        ((Storage *)hal.storage)->_timer_tick();
+        hal.storage->_timer_tick();
     }
 }
 
