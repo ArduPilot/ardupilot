@@ -415,6 +415,15 @@ class revo_mini(chibios):
         )
         env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
 
+class mini_pix(chibios):
+    name = 'mini-pix'
+    def configure_env(self, cfg, env):
+        super(mini_pix, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_MINIPIX',
+        )
+        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
+
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
