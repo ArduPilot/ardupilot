@@ -35,7 +35,11 @@ static HAL_UARTF_DRIVER;
 static ChibiOS::I2CDeviceManager i2cDeviceManager;
 static ChibiOS::SPIDeviceManager spiDeviceManager;
 static ChibiOS::AnalogIn analogIn;
+#ifdef HAL_USE_EMPTY_STORAGE
+static Empty::Storage storageDriver;
+#else
 static ChibiOS::Storage storageDriver;
+#endif
 static ChibiOS::GPIO gpioDriver;
 static ChibiOS::RCInput rcinDriver;
 static ChibiOS::RCOutput rcoutDriver;
