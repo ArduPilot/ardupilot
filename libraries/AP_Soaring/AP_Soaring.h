@@ -90,7 +90,7 @@ public:
     {
         _throttle_suppressed = suppressed;
     }
-    float get_vario_reading()
+    float get_vario_reading() const
     {
         return _vario.displayed_reading;
     }
