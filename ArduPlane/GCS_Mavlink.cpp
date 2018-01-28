@@ -237,22 +237,37 @@ void Plane::send_servo_out(mavlink_channel_t chan)
         rssi.read_receiver_rssi_uint8());
 }
 
-void Plane::send_vfr_hud(mavlink_channel_t chan)
+float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
 {
-    float aspeed;
-    if (airspeed.enabled()) {
-        aspeed = airspeed.get_airspeed();
-    } else if (!ahrs.airspeed_estimate(&aspeed)) {
-        aspeed = 0;
+    // airspeed sensors are best.  While the AHRS airspeed_estimate
+    // will use an airspeed sensor, that value is constrained by the
+    // ground speed.  When reporting we should send the true airspeed
+    // value if possible:
+    if (plane.airspeed.enabled()) {
+        return plane.airspeed.get_airspeed();
     }
-    mavlink_msg_vfr_hud_send(
-        chan,
-        aspeed,
-        ahrs.groundspeed(),
-        (ahrs.yaw_sensor / 100) % 360,
-        abs(throttle_percentage()),
-        current_loc.alt / 100.0f,
-        (g2.soaring_controller.is_active() ? g2.soaring_controller.get_vario_reading() : barometer.get_climb_rate()));
+
+    // airspeed estimates are OK:
+    float aspeed;
+    if (AP::ahrs().airspeed_estimate(&aspeed)) {
+        return aspeed;
+    }
+
+    // lying is worst:
+    return 0;
+}
+
+int16_t GCS_MAVLINK_Plane::vfr_hud_throttle() const
+{
+    return abs(plane.throttle_percentage());
+}
+
+float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
+{
+    if (plane.g2.soaring_controller.is_active()) {
+        return plane.g2.soaring_controller.get_vario_reading();
+    }
+    return AP::baro().get_climb_rate();
 }
 
 /*
@@ -416,11 +431,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
             plane.send_servo_out(chan);
         }
 #endif
-        break;
-
-    case MSG_VFR_HUD:
-        CHECK_PAYLOAD_SIZE(VFR_HUD);
-        plane.send_vfr_hud(chan);
         break;
 
     case MSG_FENCE_STATUS:
