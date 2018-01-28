@@ -263,12 +263,12 @@ static mavlink_hil_state_t last_hil_state;
 #endif
 
 // report simulator state
-void Plane::send_simstate(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_simstate() const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.simstate_send(chan);
+    GCS_MAVLINK::send_simstate();
 #elif HIL_SUPPORT
-    if (g.hil_mode == 1) {
+    if (plane.g.hil_mode == 1) {
         mavlink_msg_simstate_send(chan,
                                   last_hil_state.roll,
                                   last_hil_state.pitch,
@@ -428,13 +428,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         plane.send_fence_status(chan);
 #endif
-        break;
-
-    case MSG_SIMSTATE:
-        CHECK_PAYLOAD_SIZE(SIMSTATE);
-        plane.send_simstate(chan);
-        CHECK_PAYLOAD_SIZE2(AHRS2);
-        send_ahrs2();
         break;
 
     case MSG_TERRAIN:
