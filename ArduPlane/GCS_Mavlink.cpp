@@ -237,8 +237,13 @@ void Plane::send_servo_out(mavlink_channel_t chan)
         rssi.read_receiver_rssi_uint8());
 }
 
-void Plane::send_vfr_hud(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_vfr_hud()
 {
+    AP_AHRS &ahrs = AP::ahrs();
+    const AP_Airspeed &airspeed = plane.airspeed;
+    const ParametersG2 &g2 = plane.g2;
+    AP_Baro &barometer = AP::baro();
+
     float aspeed;
     if (airspeed.enabled()) {
         aspeed = airspeed.get_airspeed();
@@ -250,8 +255,8 @@ void Plane::send_vfr_hud(mavlink_channel_t chan)
         aspeed,
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
-        abs(throttle_percentage()),
-        current_loc.alt / 100.0f,
+        abs(plane.throttle_percentage()),
+        plane.current_loc.alt / 100.0f,
         (g2.soaring_controller.is_active() ? g2.soaring_controller.get_vario_reading() : barometer.get_climb_rate()));
 }
 
@@ -425,11 +430,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #else
         send_servo_output_raw(false);
 #endif
-        break;
-
-    case MSG_VFR_HUD:
-        CHECK_PAYLOAD_SIZE(VFR_HUD);
-        plane.send_vfr_hud(chan);
         break;
 
     case MSG_FENCE_STATUS:
