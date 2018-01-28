@@ -203,97 +203,103 @@ void NavEKF3_core::setAidingMode()
     checkGyroCalStatus();
 
     // Determine if we should change aiding mode
-     if (PV_AidingMode == AID_NONE) {
-        // Don't allow filter to start position or velocity aiding until the tilt and yaw alignment is complete
-        // and IMU gyro bias estimates have stabilised
-        // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
-        // GPS aiding is the preferred option unless excluded by the user
-        if(readyToUseGPS() || readyToUseRangeBeacon()) {
-            PV_AidingMode = AID_ABSOLUTE;
-        } else if (readyToUseOptFlow() || readyToUseBodyOdm()) {
-            PV_AidingMode = AID_RELATIVE;
+    switch (PV_AidingMode) {
+        case AID_NONE: {
+            // Don't allow filter to start position or velocity aiding until the tilt and yaw alignment is complete
+            // and IMU gyro bias estimates have stabilised
+            // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
+            // GPS aiding is the preferred option unless excluded by the user
+            if(readyToUseGPS() || readyToUseRangeBeacon()) {
+                PV_AidingMode = AID_ABSOLUTE;
+            } else if (readyToUseOptFlow() || readyToUseBodyOdm()) {
+                PV_AidingMode = AID_RELATIVE;
+            }
+            break;
         }
-    } else if (PV_AidingMode == AID_RELATIVE) {
-         // Check if the fusion has timed out (flow measurements have been rejected for too long)
-         bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
-         // Check if the fusion has timed out (body odometry measurements have been rejected for too long)
-         bool bodyOdmFusionTimeout = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) > 5000);
-         // Enable switch to absolute position mode if GPS or range beacon data is available
-         // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
-         if(readyToUseGPS() || readyToUseRangeBeacon()) {
-             PV_AidingMode = AID_ABSOLUTE;
-         } else if (flowFusionTimeout && bodyOdmFusionTimeout) {
-             PV_AidingMode = AID_NONE;
-         }
-     } else if (PV_AidingMode == AID_ABSOLUTE) {
-         // Find the minimum time without data required to trigger any check
-         uint16_t minTestTime_ms = MIN(frontend->tiltDriftTimeMax_ms, MIN(frontend->posRetryTimeNoVel_ms,frontend->posRetryTimeUseVel_ms));
+        case AID_RELATIVE: {
+            // Check if the fusion has timed out (flow measurements have been rejected for too long)
+            bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
+            // Check if the fusion has timed out (body odometry measurements have been rejected for too long)
+            bool bodyOdmFusionTimeout = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) > 5000);
+            // Enable switch to absolute position mode if GPS or range beacon data is available
+            // If GPS or range beacons data is not available and flow fusion has timed out, then fall-back to no-aiding
+            if(readyToUseGPS() || readyToUseRangeBeacon()) {
+                PV_AidingMode = AID_ABSOLUTE;
+            } else if (flowFusionTimeout && bodyOdmFusionTimeout) {
+                PV_AidingMode = AID_NONE;
+            }
+            break;
+        }
+        case AID_ABSOLUTE: {
+            // Find the minimum time without data required to trigger any check
+            uint16_t minTestTime_ms = MIN(frontend->tiltDriftTimeMax_ms, MIN(frontend->posRetryTimeNoVel_ms,frontend->posRetryTimeUseVel_ms));
 
-         // Check if optical flow data is being used
-         bool optFlowUsed = (imuSampleTime_ms - prevFlowFuseTime_ms <= minTestTime_ms);
+            // Check if optical flow data is being used
+            bool optFlowUsed = (imuSampleTime_ms - prevFlowFuseTime_ms <= minTestTime_ms);
 
-         // Check if body odometry data is being used
-         bool bodyOdmUsed = (imuSampleTime_ms - prevBodyVelFuseTime_ms <= minTestTime_ms);
+            // Check if body odometry data is being used
+            bool bodyOdmUsed = (imuSampleTime_ms - prevBodyVelFuseTime_ms <= minTestTime_ms);
 
-         // Check if airspeed data is being used
-         bool airSpdUsed = (imuSampleTime_ms - lastTasPassTime_ms <= minTestTime_ms);
+            // Check if airspeed data is being used
+            bool airSpdUsed = (imuSampleTime_ms - lastTasPassTime_ms <= minTestTime_ms);
 
-         // Check if range beacon data is being used
-         bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms <= minTestTime_ms);
+            // Check if range beacon data is being used
+            bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms <= minTestTime_ms);
 
-         // Check if GPS is being used
-         bool gpsPosUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
-         bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
+            // Check if GPS is being used
+            bool gpsPosUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
+            bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
-         // Check if attitude drift has been constrained by a measurement source
-         bool attAiding = gpsPosUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed || bodyOdmUsed;
+            // Check if attitude drift has been constrained by a measurement source
+            bool attAiding = gpsPosUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed || bodyOdmUsed;
 
-         // check if velocity drift has been constrained by a measurement source
-         bool velAiding = gpsVelUsed || airSpdUsed || optFlowUsed || bodyOdmUsed;
+            // check if velocity drift has been constrained by a measurement source
+            bool velAiding = gpsVelUsed || airSpdUsed || optFlowUsed || bodyOdmUsed;
 
-         // check if position drift has been constrained by a measurement source
-         bool posAiding = gpsPosUsed || rngBcnUsed;
+            // check if position drift has been constrained by a measurement source
+            bool posAiding = gpsPosUsed || rngBcnUsed;
 
-         // Check if the loss of attitude aiding has become critical
-         bool attAidLossCritical = false;
-         if (!attAiding) {
-             attAidLossCritical = (imuSampleTime_ms - prevFlowFuseTime_ms > frontend->tiltDriftTimeMax_ms) &&
-                    (imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
-                    (imuSampleTime_ms - lastRngBcnPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
-                    (imuSampleTime_ms - lastPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
-                    (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
-         }
+            // Check if the loss of attitude aiding has become critical
+            bool attAidLossCritical = false;
+            if (!attAiding) {
+            	attAidLossCritical = (imuSampleTime_ms - prevFlowFuseTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                		(imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                        (imuSampleTime_ms - lastRngBcnPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                        (imuSampleTime_ms - lastPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                        (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
+            }
 
-         // Check if the loss of position accuracy has become critical
-         bool posAidLossCritical = false;
-         if (!posAiding ) {
-             uint16_t maxLossTime_ms;
-             if (!velAiding) {
-                 maxLossTime_ms = frontend->posRetryTimeNoVel_ms;
-             } else {
-                 maxLossTime_ms = frontend->posRetryTimeUseVel_ms;
-             }
-             posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
-                    (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
-         }
+            // Check if the loss of position accuracy has become critical
+            bool posAidLossCritical = false;
+            if (!posAiding ) {
+                uint16_t maxLossTime_ms;
+                if (!velAiding) {
+                    maxLossTime_ms = frontend->posRetryTimeNoVel_ms;
+                } else {
+                    maxLossTime_ms = frontend->posRetryTimeUseVel_ms;
+                }
+                posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
+                        (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
+            }
 
-         if (attAidLossCritical) {
-             // if the loss of attitude data is critical, then put the filter into a constant position mode
-             PV_AidingMode = AID_NONE;
-             posTimeout = true;
-             velTimeout = true;
-             rngBcnTimeout = true;
-             tasTimeout = true;
-             gpsNotAvailable = true;
-         } else if (posAidLossCritical) {
-             // if the loss of position is critical, declare all sources of position aiding as being timed out
-             posTimeout = true;
-             velTimeout = true;
-             rngBcnTimeout = true;
-             gpsNotAvailable = true;
-         }
-
-     }
+            if (attAidLossCritical) {
+                // if the loss of attitude data is critical, then put the filter into a constant position mode
+                PV_AidingMode = AID_NONE;
+                posTimeout = true;
+                velTimeout = true;
+                rngBcnTimeout = true;
+                tasTimeout = true;
+                gpsNotAvailable = true;
+             } else if (posAidLossCritical) {
+                // if the loss of position is critical, declare all sources of position aiding as being timed out
+                posTimeout = true;
+                velTimeout = true;
+                rngBcnTimeout = true;
+                gpsNotAvailable = true;
+            }
+            break;
+        }
+    }
 
     // check to see if we are starting or stopping aiding and set states and modes as required
     if (PV_AidingMode != PV_AidingModePrev) {
