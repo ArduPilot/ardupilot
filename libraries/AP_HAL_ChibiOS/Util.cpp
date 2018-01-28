@@ -20,6 +20,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "Util.h"
 #include <chheap.h>
+#include "ToneAlarm.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -27,7 +28,12 @@
 extern AP_IOMCU iomcu;
 #endif
 
+extern const AP_HAL::HAL& hal;
+
 using namespace ChibiOS;
+
+static int state;
+ToneAlarm Util::_toneAlarm;
 
 extern "C" {
     size_t mem_available(void);
@@ -135,6 +141,35 @@ void Util::set_imu_target_temp(int8_t *target)
 #if HAL_WITH_IO_MCU && HAL_HAVE_IMU_HEATER
     heater.target = target;
 #endif
+}
+
+bool Util::toneAlarm_init()
+{
+    return _toneAlarm.init();
+}
+
+void Util::toneAlarm_set_tune(uint8_t tone)
+{
+    _toneAlarm.set_tune(tone);
+    hal.console->printf("set_tune: %d\n", tone);
+}
+
+void Util::_toneAlarm_timer_tick() {
+    if(state == 0) {
+        state = state + _toneAlarm.init_tune();
+    } else if (state == 1) {
+        state = state + _toneAlarm.set_note();
+    }
+    if (state == 2) {
+        state = state + _toneAlarm.play();
+    } else if (state == 3) {
+        state = 1;
+    }
+
+    if (_toneAlarm.is_tune_comp()) {
+        state = 0;
+    }
+
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

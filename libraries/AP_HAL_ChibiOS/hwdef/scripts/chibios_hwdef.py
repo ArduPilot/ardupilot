@@ -532,6 +532,8 @@ def write_PWM_config(f):
         if p.type.startswith('TIM'):
             if p.has_extra('RCIN'):
                 rc_in = p
+            elif p.has_extra('ALARM'):
+                alarm = p
             else:
                 if p.extra_value('PWM', type=int) is not None:
                     pwm_out.append(p)
@@ -557,6 +559,51 @@ def write_PWM_config(f):
             '#define RCIN_ICU_CHANNEL ICU_CHANNEL_%u\n' % int(chan_str))
         f.write('#define STM32_RCIN_DMA_CHANNEL %u' % dma_chan)
         f.write('\n')
+    if alarm is not None:
+        n_str = alarm.label[3]
+        if not is_int(n_str):
+            error("Bad timer number for ALARM PWM %s" % p)
+        n = int(n_str)
+        # could probably also use timers 10-14 on STM32
+        if (n < 1):
+            error("Bad timer number %u for ALARM PWM %s" % (chan, p))
+
+        f.write('// Alarm PWM output config\n')
+        f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
+        f.write('#define STM32_TIM%u_SUPPRESS_ISR\n' % n)
+
+        chan_mode = [
+            'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED',
+            'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED'
+        ]
+        chan_str = alarm.label[7]
+        if not is_int(chan_str):
+            error("Bad channel for ALARM PWM %s" % p)
+        chan = int(chan_str)
+        if chan not in [1, 2, 3, 4]:
+            error("Bad channel number %u for ALARM PWM %s" % (chan, p))
+        chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
+        f.write('#define ALARM_CHANNEL %u\n' % (chan-1));
+
+        pwm_clock = 1000000
+        period = 1000
+
+        f.write('''#define HAL_PWM_ALARM { \\
+        { \\
+          %u,  /* PWM clock frequency. */ \\
+          %u,   /* Initial PWM period 20ms. */ \\
+          NULL,     /* no callback */ \\
+          { \\
+           /* Channel Config */ \\
+           {%s, NULL}, \\
+           {%s, NULL}, \\
+           {%s, NULL}, \\
+           {%s, NULL}  \\
+          }, 0, 0}, &PWMD%u}\n''' %
+                (pwm_clock, period, chan_mode[0],
+                 chan_mode[1], chan_mode[2], chan_mode[3], n))
+        f.write('\n')
+
     f.write('// PWM timer config\n')
     for t in sorted(pwm_timers):
         n = int(t[3])
