@@ -19,12 +19,17 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "Semaphores.h"
+#include "ToneAlarm.h"
 
 // this checks an address is in main memory and 16 bit aligned
 #define IS_DMA_SAFE(addr) ((uint32_t(addr) & 0xF0000001) == 0x20000000)
 
 class ChibiOS::Util : public AP_HAL::Util {
 public:
+    static Util *from(AP_HAL::Util *util) {
+        return static_cast<Util*>(util);
+    }
+
     bool run_debug_shell(AP_HAL::BetterStream *stream) { return false; }
     AP_HAL::Semaphore *new_semaphore(void) override { return new ChibiOS::Semaphore; }
     uint32_t available_memory() override;
@@ -41,8 +46,12 @@ public:
     // IMU temperature control
     void set_imu_temp(float current);
     void set_imu_target_temp(int8_t *target);
+    bool toneAlarm_init();
+    void toneAlarm_set_tune(uint8_t tone);
+    void _toneAlarm_timer_tick();
 
 private:
+    static ToneAlarm _toneAlarm;
     void* try_alloc_from_ccm_ram(size_t size);
     uint32_t available_memory_in_ccm_ram(void);
 
