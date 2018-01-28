@@ -37,6 +37,7 @@ protected:
     virtual bool in_hil_mode() const override;
 
     void send_attitude() const override;
+    void send_simstate() const override;
 
 private:
 
