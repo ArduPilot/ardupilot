@@ -45,7 +45,7 @@ public:
             float speed;      // m/s
             float direction;  // degrees 0..360
             float turbulence;
-            float pitch;	   //-90..90
+            float dir_z;	   //-90..90
         } wind;
     };
 
