@@ -29,6 +29,7 @@
 
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include "shared_dma.h"
 
 using namespace ChibiOS;
 
@@ -207,6 +208,10 @@ void Scheduler::reboot(bool hold_in_bootloader)
     hal.rcout->force_safety_on();
     hal.rcout->force_safety_no_wait();
 
+    // lock all shared DMA channels. This has the effect of waiting
+    // till the sensor buses are idle
+    Shared_DMA::lock_all();
+    
     // delay to ensure the async force_saftey operation completes
     delay(500);
 
