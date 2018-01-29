@@ -128,10 +128,12 @@ public:
     // wind control
     float wind_speed_active;
     float wind_direction_active;
+    float wind_pitch_active;
     AP_Float wind_speed;
     AP_Float wind_direction;
     AP_Float wind_turbulance;
     AP_Float gps_drift_alt;
+    AP_Float wind_pitch;
 
     AP_Int16  baro_delay; // barometer data delay in ms
     AP_Int16  mag_delay; // magnetometer data delay in ms

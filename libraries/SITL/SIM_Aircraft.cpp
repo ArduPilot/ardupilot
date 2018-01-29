@@ -565,7 +565,9 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 void Aircraft::update_wind(const struct sitl_input &input)
 {
     // wind vector in earth frame
-    wind_ef = Vector3f(cosf(radians(input.wind.direction)), sinf(radians(input.wind.direction)), 0) * input.wind.speed;
+    wind_ef = Vector3f(cosf(radians(input.wind.direction))*cosf(radians(input.wind.pitch)), 
+						sinf(radians(input.wind.direction))*cosf(radians(input.wind.pitch)), 
+						sinf(radians(input.wind.pitch))) * input.wind.speed;
 
     const float wind_turb = input.wind.turbulence * 10.0f;  // scale input.wind.turbulence to match standard deviation when using iir_coef=0.98
     const float iir_coef = 0.98f;  // filtering high frequencies from turbulence
