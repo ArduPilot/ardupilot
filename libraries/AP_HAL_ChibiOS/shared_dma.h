@@ -55,6 +55,9 @@ public:
     //should be called inside the destructor of Shared DMA participants
     void unregister(void);
 
+    // lock all shared DMA channels. Used on reboot
+    static void lock_all(void);
+    
 private:
     dma_allocate_fn_t allocate;
     dma_allocate_fn_t deallocate;
