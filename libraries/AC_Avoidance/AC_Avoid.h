@@ -62,6 +62,19 @@ public:
     void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
     bool proximity_avoidance_enabled() { return _proximity_enabled; }
 
+    // helper functions
+
+    // Limits the component of desired_vel in the direction of the unit vector
+    // limit_direction to be at most the maximum speed permitted by the limit_distance.
+    // uses velocity adjustment idea from Randy's second email on this thread:
+    //   https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
+    void limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance, float dt) const;
+
+     // compute the speed such that the stopping distance of the vehicle will
+     // be exactly the input distance.
+     // kP should be non-zero for Copter which has a non-linear response
+    float get_max_speed(float kP, float accel_cmss, float distance_cm, float dt) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -97,22 +110,6 @@ private:
      *   margin is the distance (in meters) that the vehicle should stop short of the polygon
      */
     void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt);
-
-    /*
-     * Limits the component of desired_vel in the direction of the unit vector
-     * limit_direction to be at most the maximum speed permitted by the limit_distance.
-     *
-     * Uses velocity adjustment idea from Randy's second email on this thread:
-     * https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
-     */
-    void limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance, float dt) const;
-
-    /*
-     * Computes the speed such that the stopping distance
-     * of the vehicle will be exactly the input distance.
-     * kP should be non-zero for Copter which has a non-linear response
-     */
-    float get_max_speed(float kP, float accel_cmss, float distance_cm, float dt) const;
 
     /*
      * Computes distance required to stop, given current speed.
