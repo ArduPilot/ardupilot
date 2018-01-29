@@ -230,6 +230,37 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
 }
 
 /*
+ * Limits the component of desired_vel in the direction of the unit vector
+ * limit_direction to be at most the maximum speed permitted by the limit_distance.
+ *
+ * Uses velocity adjustment idea from Randy's second email on this thread:
+ * https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
+ */
+void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance, float dt) const
+{
+    const float max_speed = get_max_speed(kP, accel_cmss, limit_distance, dt);
+    // project onto limit direction
+    const float speed = desired_vel * limit_direction;
+    if (speed > max_speed) {
+        // subtract difference between desired speed and maximum acceptable speed
+        desired_vel += limit_direction*(max_speed - speed);
+    }
+}
+
+/*
+ * Computes the speed such that the stopping distance
+ * of the vehicle will be exactly the input distance.
+ */
+float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance_cm, float dt) const
+{
+    if (is_zero(kP)) {
+        return safe_sqrt(2.0f * distance_cm * accel_cmss);
+    } else {
+        return AC_AttitudeControl::sqrt_controller(distance_cm, kP, accel_cmss, dt);
+    }
+}
+
+/*
  * Adjusts the desired velocity for the circular fence.
  */
 void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f &desired_vel, float dt)
@@ -458,37 +489,6 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         // if points were in body-frame, rotate resulting vector back to earth-frame
         desired_vel.x = safe_vel.x * _ahrs.cos_yaw() - safe_vel.y * _ahrs.sin_yaw();
         desired_vel.y = safe_vel.x * _ahrs.sin_yaw() + safe_vel.y * _ahrs.cos_yaw();
-    }
-}
-
-/*
- * Limits the component of desired_vel in the direction of the unit vector
- * limit_direction to be at most the maximum speed permitted by the limit_distance.
- *
- * Uses velocity adjustment idea from Randy's second email on this thread:
- * https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
- */
-void AC_Avoid::limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance, float dt) const
-{
-    const float max_speed = get_max_speed(kP, accel_cmss, limit_distance, dt);
-    // project onto limit direction
-    const float speed = desired_vel * limit_direction;
-    if (speed > max_speed) {
-        // subtract difference between desired speed and maximum acceptable speed
-        desired_vel += limit_direction*(max_speed - speed);
-    }
-}
-
-/*
- * Computes the speed such that the stopping distance
- * of the vehicle will be exactly the input distance.
- */
-float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance_cm, float dt) const
-{
-    if (is_zero(kP)) {
-        return safe_sqrt(2.0f * distance_cm * accel_cmss);
-    } else {
-        return AC_AttitudeControl::sqrt_controller(distance_cm, kP, accel_cmss, dt);
     }
 }
 
