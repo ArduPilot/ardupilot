@@ -27,6 +27,7 @@ namespace AP_HAL {
     class RCOutput;
     class Scheduler;
     class Semaphore;
+    class POSIXSemaphore;
     class OpticalFlow;
 
     class CANManager;
