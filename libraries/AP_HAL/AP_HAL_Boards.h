@@ -190,6 +190,10 @@
 #define HAL_WITH_UAVCAN 0
 #endif
 
+#ifndef HAL_WITH_IO_MCU
+#define HAL_WITH_IO_MCU 0
+#endif
+
 // this is used as a general mechanism to make a 'small' build by
 // dropping little used features. We use this to allow us to keep
 // FMUv2 going for as long as possible
