@@ -343,10 +343,12 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     float altitude = _barometer?_barometer->get_altitude():0;
     float wind_speed = 0;
     float wind_direction = 0;
+    float wind_dir_z = 0;
     if (_sitl) {
         // The EKF does not like step inputs so this LPF keeps it happy.
-        wind_speed = _sitl->wind_speed_active = (0.95f*_sitl->wind_speed_active) + (0.05f*_sitl->wind_speed);
+        wind_speed =     _sitl->wind_speed_active     = (0.95f*_sitl->wind_speed_active)     + (0.05f*_sitl->wind_speed);
         wind_direction = _sitl->wind_direction_active = (0.95f*_sitl->wind_direction_active) + (0.05f*_sitl->wind_direction);
+        wind_dir_z =     _sitl->wind_dir_z_active     = (0.95f*_sitl->wind_dir_z_active)     + (0.05f*_sitl->wind_dir_z);
     }
 
     if (altitude < 0) {
@@ -359,6 +361,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     input.wind.speed = wind_speed;
     input.wind.direction = wind_direction;
     input.wind.turbulence = _sitl?_sitl->wind_turbulance:0;
+    input.wind.dir_z = wind_dir_z;
 
     for (i=0; i<SITL_NUM_CHANNELS; i++) {
         if (pwm_output[i] == 0xFFFF) {
