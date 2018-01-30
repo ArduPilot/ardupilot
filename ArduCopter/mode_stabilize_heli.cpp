@@ -61,6 +61,11 @@ void Copter::ModeStabilize_Heli::run()
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
+    //get pilot desired boost
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
+        motors->set_boost((float)RC_Channels::rc_channel(CH_7)->get_control_in() * 0.001f);
+    }
+
     // get pilot's desired throttle
     pilot_throttle_scaled = _copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
 
