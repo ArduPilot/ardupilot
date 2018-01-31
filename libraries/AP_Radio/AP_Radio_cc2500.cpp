@@ -292,6 +292,8 @@ void AP_Radio_cc2500::radio_init(void)
     hal.gpio->attach_interrupt(HAL_GPIO_RADIO_IRQ, trigger_irq_radio_event, HAL_GPIO_INTERRUPT_RISING);
 #endif
 
+    initTuneRx();
+
     if (load_bind_info()) {
         Debug(3,"Loaded bind info\n");
         listLength = 47;
@@ -300,7 +302,6 @@ void AP_Radio_cc2500::radio_init(void)
         chanskip = 1;
         nextChannel(1);
     } else {
-        initTuneRx();
         protocolState = STATE_BIND_TUNING;
     }
 
@@ -463,11 +464,11 @@ void AP_Radio_cc2500::irq_handler(void)
             uint8_t hop_chan = packet[4] & 0x3F;
             uint8_t skip = (packet[4]>>6) | (packet[5]<<2);
             if (channr != hop_chan) {
-                Debug(4, "channr=%u hop_chan=%u\n", channr, hop_chan);
+                Debug(2, "channr=%u hop_chan=%u\n", channr, hop_chan);
             }
             channr = hop_chan;
             if (chanskip != skip) {
-                Debug(4, "chanskip=%u skip=%u\n", chanskip, skip);
+                Debug(2, "chanskip=%u skip=%u\n", chanskip, skip);
             }
             chanskip = skip;
             packet_timer = irq_time_us;
