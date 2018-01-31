@@ -22,6 +22,8 @@ protected:
 
     uint8_t sysid_my_gcs() const override;
 
+    void send_vfr_hud() override;
+
     bool set_mode(uint8_t mode) override;
 
     MAV_RESULT _handle_command_preflight_calibration_baro() override;

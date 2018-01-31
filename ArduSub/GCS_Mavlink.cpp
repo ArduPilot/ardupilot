@@ -291,16 +291,19 @@ void NOINLINE Sub::send_radio_out(mavlink_channel_t chan)
         hal.rcout->read(15));
 }
 
-void NOINLINE Sub::send_vfr_hud(mavlink_channel_t chan)
+void GCS_MAVLINK_Sub::send_vfr_hud()
 {
+    AP_AHRS &ahrs = AP::ahrs();
+    const AP_GPS &gps = AP::gps();
+
     mavlink_msg_vfr_hud_send(
         chan,
         gps.ground_speed(),
         gps.ground_speed(),
         (ahrs.yaw_sensor / 100) % 360,
-        (int16_t)(motors.get_throttle() * 100),
-        current_loc.alt / 100.0f,
-        climb_rate / 100.0f);
+        (int16_t)(sub.motors.get_throttle() * 100),
+        sub.current_loc.alt / 100.0f,
+        sub.climb_rate / 100.0f);
 }
 
 /*
@@ -470,11 +473,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         sub.send_radio_out(chan);
-        break;
-
-    case MSG_VFR_HUD:
-        CHECK_PAYLOAD_SIZE(VFR_HUD);
-        sub.send_vfr_hud(chan);
         break;
 
     case MSG_RPM:
