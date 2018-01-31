@@ -173,6 +173,7 @@
 #define MPU_WHOAMI_MPU9250      0x71
 #define MPU_WHOAMI_MPU9255      0x73
 #define MPU_WHOAMI_ICM20789     0x03
+#define MPU_WHOAMI_ICM20789_R1  0x02
 
 #define BIT_READ_FLAG                           0x80
 #define BIT_I2C_SLVX_EN                         0x80
