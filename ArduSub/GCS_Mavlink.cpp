@@ -251,14 +251,6 @@ void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
         0);
 }
 
-// report simulator state
-void NOINLINE Sub::send_simstate(mavlink_channel_t chan)
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.simstate_send(chan);
-#endif
-}
-
 void NOINLINE Sub::send_vfr_hud(mavlink_channel_t chan)
 {
     mavlink_msg_vfr_hud_send(
@@ -459,15 +451,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         sub.fence_send_mavlink_status(chan);
 #endif
-        break;
-
-    case MSG_SIMSTATE:
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        CHECK_PAYLOAD_SIZE(SIMSTATE);
-        sub.send_simstate(chan);
-#endif
-        CHECK_PAYLOAD_SIZE(AHRS2);
-        send_ahrs2();
         break;
 
     case MSG_MOUNT_STATUS:
