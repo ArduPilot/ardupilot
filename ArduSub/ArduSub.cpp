@@ -90,7 +90,7 @@ void Sub::setup()
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 
     // setup initial performance counters
-    perf_info.reset();
+    perf_info.reset(scheduler.get_loop_rate_hz());
     fast_loopTimer = AP_HAL::micros();
 }
 
@@ -108,7 +108,7 @@ void Sub::perf_update(void)
                           (unsigned long)perf_info.get_avg_time(),
                           (unsigned long)perf_info.get_stddev_time());
     }
-    perf_info.reset();
+    perf_info.reset(scheduler.get_loop_rate_hz());
     pmTest1 = 0;
 }
 
