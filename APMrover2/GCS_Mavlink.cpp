@@ -152,14 +152,6 @@ void Rover::send_vfr_hud(mavlink_channel_t chan)
         0);
 }
 
-// report simulator state
-void Rover::send_simstate(mavlink_channel_t chan)
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.simstate_send(chan);
-#endif
-}
-
 void Rover::send_rangefinder(mavlink_channel_t chan)
 {
     float distance_cm;
@@ -295,11 +287,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_VFR_HUD:
         CHECK_PAYLOAD_SIZE(VFR_HUD);
         rover.send_vfr_hud(chan);
-        break;
-
-    case MSG_SIMSTATE:
-        CHECK_PAYLOAD_SIZE(SIMSTATE);
-        rover.send_simstate(chan);
         break;
 
     case MSG_RANGEFINDER:
