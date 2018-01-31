@@ -519,10 +519,20 @@ void AP_InertialSensor_Invensense::_read_fifo()
       the ones at the end of the FIFO, so clear those with a reset
       once we've read the first 24. Reading 24 gives us the normal
       number of samples for fast sampling at 400Hz
+
+      On I2C with the much lower clock rates we need a lower threshold
+      or we may never catch up
      */
-    if (n_samples > 32) {
-        need_reset = true;
-        n_samples = 24;
+    if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C) {
+        if (n_samples > 4) {
+            need_reset = true;
+            n_samples = 4;
+        }
+    } else {
+        if (n_samples > 32) {
+            need_reset = true;
+            n_samples = 24;
+        }
     }
     
     while (n_samples > 0) {
@@ -716,8 +726,9 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
         return false;
     }
 
-    // setup for register checking
-    _dev->setup_checked_registers(7, 20);
+    // setup for register checking. We check much less often on I2C
+    // where the cost of the checks is higher
+    _dev->setup_checked_registers(7, _dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
     
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
