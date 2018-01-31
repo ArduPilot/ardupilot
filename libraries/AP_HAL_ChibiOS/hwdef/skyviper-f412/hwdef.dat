@@ -38,6 +38,9 @@ I2C_ORDER I2C2 I2C1
 # we need I2C clock at 400kHz for IMU
 define HAL_I2C_MAX_CLOCK 400000
 
+# run I2C bus thread at high priority for IMU
+define APM_I2C_PRIORITY 181
+
 # order of UARTs
 UART_ORDER USART1 USART6 USART2
 
