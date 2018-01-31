@@ -115,14 +115,6 @@ void Tracker::send_nav_controller_output(mavlink_channel_t chan)
 }
 
 
-// report simulator state
-void Tracker::send_simstate(mavlink_channel_t chan)
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.simstate_send(chan);
-#endif
-}
-
 bool GCS_MAVLINK_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
@@ -142,11 +134,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
     case MSG_NAV_CONTROLLER_OUTPUT:
         CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
         tracker.send_nav_controller_output(chan);
-        break;
-
-    case MSG_SIMSTATE:
-        CHECK_PAYLOAD_SIZE(SIMSTATE);
-        tracker.send_simstate(chan);
         break;
 
     case MSG_EXTENDED_STATUS1:
