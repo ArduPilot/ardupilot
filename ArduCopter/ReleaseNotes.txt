@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.5.5-rc1 24-Jan-2018
+Copter 3.5.5 31-Jan-2018 / 3.5.5-rc1 24-Jan-2018
 Changes from 3.5.4
 1) ICM20948 compass orientation fix
 2) LIS3MDL compass support on Pixracer
