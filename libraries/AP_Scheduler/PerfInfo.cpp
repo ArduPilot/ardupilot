@@ -8,11 +8,8 @@
 //  we measure the main loop time
 //
 
-// 400hz loop update rate
-#define OVERTIME_THRESHOLD_MICROS 3000
-
 // reset - reset all records of loop time to zero
-void AP::PerfInfo::reset()
+void AP::PerfInfo::reset(uint16_t loop_rate_hz)
 {
     loop_count = 0;
     max_time = 0;
@@ -21,6 +18,8 @@ void AP::PerfInfo::reset()
     log_dropped = DataFlash_Class::instance()->num_dropped();
     sigma_time = 0;
     sigmasquared_time = 0;
+    // 500us threshold for overtime
+    overtime_threshold_us = (1000000UL / loop_rate_hz) + 500;
 }
 
 // ignore_loop - ignore this loop from performance measurements (used to reduce false positive when arming)
@@ -46,7 +45,7 @@ void AP::PerfInfo::check_loop_time(uint32_t time_in_micros)
     if( min_time == 0 || time_in_micros < min_time) {
         min_time = time_in_micros;
     }
-    if( time_in_micros > OVERTIME_THRESHOLD_MICROS ) {
+    if (time_in_micros > overtime_threshold_us) {
         long_running++;
     }
     sigma_time += time_in_micros;
