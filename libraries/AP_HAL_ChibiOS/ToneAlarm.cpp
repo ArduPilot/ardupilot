@@ -36,7 +36,7 @@ bool ToneAlarm::tune_repeat[TONE_NUMBER_OF_TUNES] = {false,true,false,false,fals
 
 ToneAlarm::ToneAlarm()
 {
-    tune_num = -1;                    //initialy no tune to play
+    tune_num = -1;                    //initially no tune to play
     tune_pos = 0;
 }
 
@@ -63,40 +63,49 @@ bool ToneAlarm::is_tune_comp()
 
 void ToneAlarm::stop()
 {
-    pwmDisableChannel(pwm_group.pwm_drv, ALARM_CHANNEL);
+    pwmDisableChannel(pwm_group.pwm_drv, pwm_group.chan);
 
 }
 
 bool ToneAlarm::play()
 {
     uint16_t cur_time = AP_HAL::millis();
-    if(tune_num != prev_tune_num){
+    if(tune_num != prev_tune_num) {
+        stop();
         tune_changed = true;
-        return true;
+        tune_pos = 0;
+        tune_comp = true;
+        return false;
     }
-    if(cur_note != 0){
-        hal.console->printf("cur_note: %d, duration: %d\n", cur_note, duration);
-        // specify buzzer timer and channel with defines in hwdef.dat
+    if(cur_note != 0) {
+        // specify alarm timer and channel in hwdef.dat
         pwmChangePeriod(pwm_group.pwm_drv,
                         pwm_group.pwm_cfg.frequency/cur_note);
 
-        pwmEnableChannel(pwm_group.pwm_drv, ALARM_CHANNEL,
+        pwmEnableChannel(pwm_group.pwm_drv, pwm_group.chan,
                          (pwm_group.pwm_cfg.frequency/2)/cur_note);
 
-        cur_note =0;
+        cur_note = 0;
         prev_time = cur_time;
     }
-    if((cur_time - prev_time) > duration){
+    // has note duration elapsed?
+    if((cur_time - prev_time) > duration) {
+        // yes, stop the PWM signal
         stop();
-        if(tune[tune_num][tune_pos] == '\0'){
+        // was that the last note?
+        if(tune[tune_num][tune_pos] == '\0') {
+            // this was the last note
+            // if this is not a repeating tune, disable playback
             if(!tune_repeat[tune_num]){
                 tune_num = -1;
             }
-
+            // reset tune spec index to zero: this is the only place tune_pos is reset
             tune_pos = 0;
             tune_comp = true;
+            // indicate tune is complete by returning false
             return false;
         }
+        // indicate tune is still playing by returning true
         return true;
     }
     return false;
@@ -179,10 +188,6 @@ bool ToneAlarm::set_note()
     // now play the note
 
     if(note){
-        if(tune_changed == true){
-            tune_pos =0;
-            tune_changed = false;
-        }
         cur_note = notes[(scale - 4) * 12 + note];
         return true;
     } else{
@@ -199,6 +204,7 @@ bool ToneAlarm::init_tune()
     default_oct = 6;
     bpm = 63;
     prev_tune_num = tune_num;
+    tune_changed = false;
     if(tune_num <0 || tune_num > TONE_NUMBER_OF_TUNES){
         return false;
     }
@@ -252,5 +258,6 @@ bool ToneAlarm::init_tune()
 
     // BPM usually expresses the number of quarter notes per minute
     wholenote = (60 * 1000L / bpm) * 4;  // this is the time for whole note (in milliseconds)
+
     return true;
 }
