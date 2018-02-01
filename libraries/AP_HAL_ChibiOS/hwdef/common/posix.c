@@ -247,6 +247,9 @@ fgetc(FILE *stream)
     return (c);
 }
 
+int getc(FILE *fp) {
+	return (fgetc (fp));
+}
 /// @brief Put a byte to TTY device or FatFs file stream
 /// open() or fopen() sets stream->put = fatfs_outc() for FatFs functions
 /// See fdevopen()        sets stream->put get for TTY devices
@@ -298,6 +301,10 @@ fputc(int c, FILE *stream)
     }
 }
 
+void clearerr(FILE *stream)
+{
+    stream->flags = 0;
+}
 
 
 ///@brief functions normally defined as macros
@@ -423,6 +430,23 @@ fgets(char *str, int size, FILE *stream)
     return(str);
 }
 
+
+/**  char *gets(p) -- get line from stdin */
+
+char *
+gets (char *p)
+{
+	char *s;
+	int n;
+
+	s = fgets (p, MAXLN, stdin);
+	if (s == 0)
+		return (0);
+	n = strlen (p);
+	if (n && p[n - 1] == '\n')
+		p[n - 1] = 0;
+	return (s);
+}
 /// @brief put a string to stdout
 /// See fdevopen()        sets stream->put get for TTY devices
 ///
@@ -774,7 +798,7 @@ FILE *fopen(const char *path, const char *mode)
 /// @return count on sucess.
 /// @return 0 or < size on error with errno set.
 
-size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
+size_t __wrap_fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     size_t count = size * nmemb;
     int fn = fileno(stream);
@@ -1199,7 +1223,14 @@ ssize_t write(int fd, const void *buf, size_t count)
     return ((ssize_t) size);
 }
 
-
+FILE * __wrap_freopen ( const char * filename, const char * mode, FILE * stream )
+{
+    int ret = close(stream);
+    if (ret < 0) {
+        return NULL;
+    }
+    return fopen(filename, mode);
+}
 /// @brief POSIX close a file stream.
 ///
 /// - man page flose (3).
@@ -1208,8 +1239,8 @@ ssize_t write(int fd, const void *buf, size_t count)
 
 /// @return  0 on sucess.
 /// @return  -1 on error witrh errno set.
-/*
-int fclose(FILE *stream)
+
+int __wrap_fclose(FILE *stream)
 {
     int fn = fileno(stream);
     if(fn < 0)
@@ -1217,7 +1248,6 @@ int fclose(FILE *stream)
 
     return( close(fn) );
 }
-*/
 // =============================================
 // =============================================
 ///  - POSIX file information functions
@@ -1668,6 +1698,19 @@ int rmdir(const char *pathname)
 /// @return -1 on error with errno set.
 
 int unlink(const char *pathname)
+{
+    errno = 0;
+    int res = f_unlink(pathname);
+    if(res != FR_OK)
+    {
+        errno = fatfs_to_errno(res);
+        return(-1);
+    }
+    return(0);
+}
+
+
+int remove(const char *pathname)
 {
     errno = 0;
     int res = f_unlink(pathname);
