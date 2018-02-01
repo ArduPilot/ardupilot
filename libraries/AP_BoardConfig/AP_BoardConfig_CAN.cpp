@@ -31,6 +31,8 @@
 #include <AP_HAL_PX4/CAN.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/CAN.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <AP_HAL_ChibiOS/CAN.h>
 #endif
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -107,6 +109,8 @@ void AP_BoardConfig_CAN::setup_canbus(void)
                     const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new PX4::PX4CANManager;
                 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
                     const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new Linux::CANManager;
+                #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+                    const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new ChibiOS::CANManager;
                 #endif
                 
             }
