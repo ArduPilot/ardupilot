@@ -68,14 +68,15 @@ void Copter::failsafe_battery_event(void)
                 set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
             }
         }
+    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
     }
 
     // set the low battery flag
-    set_failsafe_battery(true);
+    set_low_battery(true);
 
     // warn the ground station and log to dataflash
     gcs().send_text(MAV_SEVERITY_WARNING,"Low battery");
-    Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
+    
 
 }
 
