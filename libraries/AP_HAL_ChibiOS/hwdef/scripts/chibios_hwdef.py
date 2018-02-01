@@ -568,7 +568,7 @@ def write_PWM_config(f):
         if (n < 1):
             error("Bad timer number %u for ALARM PWM %s" % (chan, p))
 
-        f.write('// Alarm PWM output config\n')
+        f.write('\n// Alarm PWM output config\n')
         f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
         f.write('#define STM32_TIM%u_SUPPRESS_ISR\n' % n)
 
@@ -583,25 +583,29 @@ def write_PWM_config(f):
         if chan not in [1, 2, 3, 4]:
             error("Bad channel number %u for ALARM PWM %s" % (chan, p))
         chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
-        f.write('#define ALARM_CHANNEL %u\n' % (chan-1));
 
         pwm_clock = 1000000
         period = 1000
 
-        f.write('''#define HAL_PWM_ALARM { \\
-        { \\
-          %u,  /* PWM clock frequency. */ \\
-          %u,   /* Initial PWM period 20ms. */ \\
-          NULL,     /* no callback */ \\
-          { \\
-           /* Channel Config */ \\
-           {%s, NULL}, \\
-           {%s, NULL}, \\
-           {%s, NULL}, \\
-           {%s, NULL}  \\
-          }, 0, 0}, &PWMD%u}\n''' %
-                (pwm_clock, period, chan_mode[0],
-                 chan_mode[1], chan_mode[2], chan_mode[3], n))
+        f.write('''#define HAL_PWM_ALARM \\
+        { /* pwmGroup */ \\
+          %u,  /* Timer channel */ \\
+          { /* PWMConfig */ \\
+            %u,    /* PWM clock frequency. */ \\
+            %u,    /* Initial PWM period 20ms. */ \\
+            NULL,  /* no callback */ \\
+            { /* Channel Config */ \\
+             {%s, NULL}, \\
+             {%s, NULL}, \\
+             {%s, NULL}, \\
+             {%s, NULL}  \\
+            }, \\
+            0, 0 \\
+          }, \\
+          &PWMD%u /* PWMDriver* */ \\
+        }\n''' %
+        (chan-1, pwm_clock, period, chan_mode[0],
+        chan_mode[1], chan_mode[2], chan_mode[3], n))
         f.write('\n')
 
     f.write('// PWM timer config\n')
