@@ -584,7 +584,7 @@ uavcan::ICanDriver * AP_UAVCAN::get_can_driver()
         if (_parent_can_mgr->is_initialized() == false) {
             return nullptr;
         } else {
-            return _parent_can_mgr;
+            return _parent_can_mgr->get_driver();
         }
     }
     return nullptr;
