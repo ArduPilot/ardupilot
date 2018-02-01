@@ -77,6 +77,7 @@ public:
         PROTOCOL_AUTO=0,
         PROTOCOL_DSM2=1,
         PROTOCOL_DSMX=2,
+        PROTOCOL_D16=3,
     };
     
     // get packet statistics

@@ -19,6 +19,7 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Math/crc.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 static THD_WORKING_AREA(_irq_handler_wa, 512);
@@ -134,26 +135,24 @@ uint8_t AP_Radio_cc2500::num_channels(void)
         chan_count = MAX(chan_count, chan);
     }
 
-#if 0
-    ch = get_tx_rssi_chan();
-    if (ch > 0) {
-        dsm.pwm_channels[ch-1] = dsm.tx_rssi;
-        dsm.num_channels = MAX(dsm.num_channels, ch);
+    chan = get_tx_rssi_chan();
+    if (chan > 0) {
+        pwm_channels[chan-1] = tx_rssi;
+        chan_count = MAX(chan_count, chan);
     }
 
-    ch = get_tx_pps_chan();
-    if (ch > 0) {
-        dsm.pwm_channels[ch-1] = dsm.tx_pps;
-        dsm.num_channels = MAX(dsm.num_channels, ch);
+    chan = get_tx_pps_chan();
+    if (chan > 0) {
+        pwm_channels[chan-1] = tx_pps;
+        chan_count = MAX(chan_count, chan);
     }
-#endif
     
     if (now - last_pps_ms > 1000) {
         last_pps_ms = now;
         t_status.pps = stats.recv_packets - last_stats.recv_packets;
         last_stats = stats;
         if (lost != 0 || timeouts != 0) {
-            Debug(3,"lost=%u timeouts=%u\n", lost, timeouts);
+            Debug(3,"lost=%u timeouts=%u TS=%u\n", lost, timeouts, sizeof(struct telem_packet_cc2500));
         }
         lost=0;
         timeouts=0;
@@ -341,6 +340,94 @@ void AP_Radio_cc2500::handle_data_packet(mavlink_channel_t chan, const mavlink_d
 {
 }
 
+/*
+  handle a FrSky D16 packet
+ */
+bool AP_Radio_cc2500::handle_D16_packet(const uint8_t *packet)
+{
+    if (packet[0] != 0x1D) {
+        return false;
+    }
+    if (packet[1] != bindTxId[0] ||
+        packet[2] != bindTxId[1]) {
+        Debug(3, "p1=%02x p2=%02x p6=%02x\n", packet[1], packet[2], packet[6]);
+        // not for us
+        return false;
+    }
+    if (packet[7] == 0x00 ||
+        packet[7] == 0x20 ||
+        packet[7] == 0x10 ||
+        packet[7] == 0x12 ||
+        packet[7] == 0x14 ||
+        packet[7] == 0x16 ||
+        packet[7] == 0x18 ||
+        packet[7] == 0x1A ||
+        packet[7] == 0x1C ||
+        packet[7] == 0x1E) {
+        // channel packet or range check packet
+        parse_frSkyX(packet);
+
+        packet3 = packet[3];
+
+        uint8_t hop_chan = packet[4] & 0x3F;
+        uint8_t skip = (packet[4]>>6) | (packet[5]<<2);
+        if (channr != hop_chan) {
+            Debug(2, "channr=%u hop_chan=%u\n", channr, hop_chan);
+        }
+        channr = hop_chan;
+        if (chanskip != skip) {
+            Debug(2, "chanskip=%u skip=%u\n", chanskip, skip);
+        }
+        chanskip = skip;
+        return true;
+    }
+    return false;
+}
+
+/*
+  handle a SRT packet
+ */
+bool AP_Radio_cc2500::handle_SRT_packet(const uint8_t *packet)
+{
+    const struct srt_packet *pkt = (const struct srt_packet *)packet;
+    if (pkt->length != sizeof(struct srt_packet)-1 ||
+        pkt->txid[0] != bindTxId[0] ||
+        pkt->txid[1] != bindTxId[1]) {
+        Debug(3, "len=%u p1=%02x p2=%02x\n", pkt->length, pkt->txid[0], pkt->txid[1]);
+        // not for us
+        return false;
+    }
+    if (pkt->version != 1) {
+        // only support version 1 so far
+        return false;
+    }
+    pwm_channels[0] = pkt->chan1 + 1000 + ((pkt->chan_high&0xC0)<<2);
+    pwm_channels[1] = pkt->chan2 + 1000 + ((pkt->chan_high&0x30)<<4);
+    pwm_channels[2] = pkt->chan3 + 1000 + ((pkt->chan_high&0x0C)<<6);
+    pwm_channels[3] = pkt->chan4 + 1000 + ((pkt->chan_high&0x03)<<8);
+    // we map the buttons onto two PWM channels for ease of integration with ArduPilot
+    pwm_channels[4] = 1000 + (pkt->buttons & 0x7) * 100;
+    pwm_channels[5] = 1000 + (pkt->buttons >> 3) * 100;
+    pwm_channels[6] = pkt->tx_voltage * 4;
+
+    tx_rssi = pkt->telem_rssi;
+    tx_pps = pkt->telem_pps;
+    
+    if (chan_count < 7) {
+        chan_count = 7;
+    }
+    
+    if (pkt->channr != channr) {
+        Debug(2, "channr=%u hop_chan=%u\n", channr, pkt->channr);
+        channr = pkt->channr;
+    }
+    if (pkt->chanskip != chanskip) {
+        Debug(2, "chanskip=%u skip=%u\n", chanskip, pkt->chanskip);
+        chanskip = pkt->chanskip;
+    }
+    return true;
+}
+
 // main IRQ handler
 void AP_Radio_cc2500::irq_handler(void)
 {
@@ -369,15 +456,10 @@ void AP_Radio_cc2500::irq_handler(void)
         return;
     }
     
-    if (ccLen != 32) {
+    if (ccLen != 32 && ccLen != sizeof(srt_packet)+2) {
         cc2500.Strobe(CC2500_SFRX);
         cc2500.Strobe(CC2500_SRX);
         Debug(3, "bad len %u\n", ccLen);
-        return;
-    }
-    
-    if (!check_crc(ccLen, packet)) {
-        Debug(3, "bad CRC\n");
         return;
     }
     
@@ -395,6 +477,11 @@ void AP_Radio_cc2500::irq_handler(void)
         }
     }
 
+    if (!check_crc(ccLen, packet)) {
+        Debug(3, "bad CRC ccLen=%u\n", ccLen);
+        return;
+    }
+    
     switch (protocolState) {
     case STATE_BIND_TUNING:
         tuneRx(ccLen, packet);
@@ -427,28 +514,13 @@ void AP_Radio_cc2500::irq_handler(void)
         // fallthrough
 
     case STATE_DATA: {
-        if (packet[0] != 0x1D || ccLen != 32) {
-            break;
+        bool ok = false;
+        if (ccLen == 32) {
+            ok = handle_D16_packet(packet);
+        } else if (ccLen == sizeof(srt_packet)+2) {
+            ok = handle_SRT_packet(packet);
         }
-        if (packet[1] != bindTxId[0] ||
-            packet[2] != bindTxId[1]) {
-            Debug(3, "p1=%02x p2=%02x p6=%02x\n", packet[1], packet[2], packet[6]);
-            // not for us
-            break;
-        }
-        if (packet[7] == 0x00 ||
-            packet[7] == 0x20 ||
-            packet[7] == 0x10 ||
-            packet[7] == 0x12 ||
-            packet[7] == 0x14 ||
-            packet[7] == 0x16 ||
-            packet[7] == 0x18 ||
-            packet[7] == 0x1A ||
-            packet[7] == 0x1C ||
-            packet[7] == 0x1E) {
-            // channel packet or range check packet
-            parse_frSkyX(packet);
-
+        if (ok) {
             // get RSSI value from status byte
             uint8_t rssi_raw = packet[ccLen-2];
             float rssi_dbm;
@@ -461,34 +533,24 @@ void AP_Radio_cc2500::irq_handler(void)
             t_status.rssi = uint8_t(MAX(rssi_filtered, 1));
             
             stats.recv_packets++;
-            uint8_t hop_chan = packet[4] & 0x3F;
-            uint8_t skip = (packet[4]>>6) | (packet[5]<<2);
-            if (channr != hop_chan) {
-                Debug(2, "channr=%u hop_chan=%u\n", channr, hop_chan);
-            }
-            channr = hop_chan;
-            if (chanskip != skip) {
-                Debug(2, "chanskip=%u skip=%u\n", chanskip, skip);
-            }
-            chanskip = skip;
+
             packet_timer = irq_time_us;
             chVTSet(&timeout_vt, MS2ST(10), trigger_timeout_event, nullptr);
-            
-            packet3 = packet[3];
-
+        
             cc2500.Strobe(CC2500_SIDLE);
             cc2500.SetPower(get_transmit_power());
-            send_telemetry();
-
+            if (ccLen == 32 || get_protocol() == AP_Radio::PROTOCOL_D16) {
+                send_D16_telemetry();
+            } else {
+                send_SRT_telemetry();
+            }
+        
             // we can safely sleep here as we have a dedicated thread for radio processing.
             cc2500.unlock_bus();
-            hal.scheduler->delay_microseconds(2800);
+            hal.scheduler->delay_microseconds(2500);
             cc2500.lock_bus();
-
+        
             nextChannel(chanskip);
-            
-        } else {
-            Debug(3, "p7=%02x\n", packet[7]);
         }
         break;
     }
@@ -511,7 +573,7 @@ void AP_Radio_cc2500::irq_timeout(void)
         protocolState = STATE_FCCTEST;
         Debug(1,"Starting FCCTEST %d\n", get_fcc_test());
         setChannel(labs(get_fcc_test()) * 10);
-        send_telemetry();
+        send_D16_telemetry();
     }
     
     switch (protocolState) {
@@ -568,7 +630,7 @@ void AP_Radio_cc2500::irq_timeout(void)
         }
         setChannel(labs(get_fcc_test()) * 10);
         cc2500.SetPower(get_transmit_power());
-        send_telemetry();
+        send_D16_telemetry();
         break;
     }
 
@@ -619,7 +681,7 @@ void AP_Radio_cc2500::initTuneRx(void)
     best_lqi = 255;
     best_bindOffset = bindOffset;
     cc2500.WriteReg(CC2500_0C_FSCTRL0, (uint8_t)bindOffset);
-    cc2500.WriteReg(CC2500_07_PKTCTRL1, 0x0C);
+    //cc2500.WriteReg(CC2500_07_PKTCTRL1, 0x0C);
     cc2500.WriteReg(CC2500_18_MCSM0, 0x8);
 
     cc2500.Strobe(CC2500_SIDLE);
@@ -636,7 +698,7 @@ void AP_Radio_cc2500::initialiseData(uint8_t adr)
     cc2500.WriteRegCheck(CC2500_0C_FSCTRL0, bindOffset);
     cc2500.WriteRegCheck(CC2500_18_MCSM0, 0x8);
     cc2500.WriteRegCheck(CC2500_09_ADDR, adr ? 0x03 : bindTxId[0]);
-    cc2500.WriteRegCheck(CC2500_07_PKTCTRL1, 0x0D); // address check, no broadcast, autoflush, status enable
+    //cc2500.WriteRegCheck(CC2500_07_PKTCTRL1, 0x0D); // address check, no broadcast, autoflush, status enable
     cc2500.WriteRegCheck(CC2500_19_FOCCFG, 0x16);
     hal.scheduler->delay_microseconds(10*1000);
 }
@@ -782,7 +844,7 @@ void AP_Radio_cc2500::parse_frSkyX(const uint8_t *packet)
     }
 }
 
-uint16_t AP_Radio_cc2500::calc_crc(uint8_t *data, uint8_t len)
+uint16_t AP_Radio_cc2500::calc_crc(const uint8_t *data, uint8_t len)
 {
     uint16_t crc = 0;
     for(uint8_t i=0; i < len; i++) {
@@ -793,8 +855,17 @@ uint16_t AP_Radio_cc2500::calc_crc(uint8_t *data, uint8_t len)
 
 bool AP_Radio_cc2500::check_crc(uint8_t ccLen, uint8_t *packet)
 {
-    uint16_t lcrc = calc_crc(&packet[3],(ccLen-7));
-    return ((lcrc >>8)==packet[ccLen-4] && (lcrc&0x00FF)==packet[ccLen-3]);
+    if (ccLen == sizeof(srt_packet)+2) {
+        struct srt_packet *pkt = (struct srt_packet *)packet;
+        // SRT packet
+        uint16_t lcrc = calc_crc(packet,sizeof(struct srt_packet)-2);
+        return lcrc == (pkt->crc[0]<<8) || pkt->crc[1];
+    } else if (ccLen == 32) {
+        // D16 packet
+        uint16_t lcrc = calc_crc(&packet[3],(ccLen-7));
+        return ((lcrc >>8)==packet[ccLen-4] && (lcrc&0x00FF)==packet[ccLen-3]);
+    }
+    return false;
 }
 
 /*
@@ -838,9 +909,9 @@ bool AP_Radio_cc2500::load_bind_info(void)
 }
 
 /*
-  send a telemetry packet
+  send a D16 telemetry packet
  */
-void AP_Radio_cc2500::send_telemetry(void)
+void AP_Radio_cc2500::send_D16_telemetry(void)
 {
     uint8_t frame[15];
 
@@ -867,6 +938,46 @@ void AP_Radio_cc2500::send_telemetry(void)
         // in negative FCC test modes we don't write to the FIFO, which gives
         // continuous transmission
         cc2500.WriteFifo(frame, sizeof(frame));
+    }
+    cc2500.Strobe(CC2500_STX);
+}
+
+
+/*
+  send a SRT telemetry packet
+ */
+void AP_Radio_cc2500::send_SRT_telemetry(void)
+{
+    struct telem_packet_cc2500 pkt {};
+
+    pkt.length = sizeof(pkt)-1;
+
+    t_status.flags = 0;
+    t_status.flags |= AP_Notify::flags.gps_status >= 3?TELEM_FLAG_GPS_OK:0;
+    t_status.flags |= AP_Notify::flags.pre_arm_check?TELEM_FLAG_ARM_OK:0;
+    t_status.flags |= AP_Notify::flags.failsafe_battery?0:TELEM_FLAG_BATT_OK;
+    t_status.flags |= hal.util->get_soft_armed()?TELEM_FLAG_ARMED:0;
+    t_status.flags |= AP_Notify::flags.have_pos_abs?TELEM_FLAG_POS_OK:0;
+    t_status.flags |= AP_Notify::flags.video_recording?TELEM_FLAG_VIDEO:0;
+    t_status.flight_mode = AP_Notify::flags.flight_mode;
+    t_status.tx_max = get_tx_max_power();
+    t_status.note_adjust = get_tx_buzzer_adjust();
+
+    pkt.type = TELEM_STATUS;
+    pkt.txid[0] = bindTxId[0];
+    pkt.txid[1] = bindTxId[1];
+    pkt.payload.status = t_status;
+
+    uint16_t lcrc = calc_crc((const uint8_t *)&pkt, sizeof(pkt)-2);
+    pkt.crc[0] = lcrc>>8;
+    pkt.crc[1] = lcrc&0xFF;
+
+    cc2500.Strobe(CC2500_SIDLE);
+    cc2500.Strobe(CC2500_SFTX);
+    if (get_fcc_test() >= 0) {
+        // in negative FCC test modes we don't write to the FIFO, which gives
+        // continuous transmission
+        cc2500.WriteFifo((const uint8_t *)&pkt, sizeof(pkt));
     }
     cc2500.Strobe(CC2500_STX);
 }

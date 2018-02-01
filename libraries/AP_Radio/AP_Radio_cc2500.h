@@ -135,10 +135,11 @@ private:
     void nextChannel(uint8_t skip);
 
     void parse_frSkyX(const uint8_t *packet);
-    uint16_t calc_crc(uint8_t *data, uint8_t len);
+    uint16_t calc_crc(const uint8_t *data, uint8_t len);
     bool check_crc(uint8_t ccLen, uint8_t *packet);
 
-    void send_telemetry(void);
+    void send_D16_telemetry(void);
+    void send_SRT_telemetry(void);
 
     void irq_handler(void);
     void irq_timeout(void);
@@ -178,6 +179,11 @@ private:
 
     struct telem_status t_status;
     uint32_t last_pps_ms;
+    uint8_t tx_rssi;
+    uint8_t tx_pps;
+
+    bool handle_D16_packet(const uint8_t *packet);
+    bool handle_SRT_packet(const uint8_t *packet);
 };
 
 

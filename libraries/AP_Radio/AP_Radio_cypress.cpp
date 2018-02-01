@@ -374,28 +374,28 @@ void AP_Radio_cypress::print_debug_info(void)
 uint8_t AP_Radio_cypress::num_channels(void)
 {
     uint32_t now = AP_HAL::millis();
-    uint8_t ch = get_rssi_chan();
-    if (ch > 0) {
-        dsm.pwm_channels[ch-1] = dsm.rssi;
-        dsm.num_channels = MAX(dsm.num_channels, ch);
+    uint8_t chan = get_rssi_chan();
+    if (chan > 0) {
+        dsm.pwm_channels[chan-1] = dsm.rssi;
+        dsm.num_channels = MAX(dsm.num_channels, chan);
     }
 
-    ch = get_pps_chan();
-    if (ch > 0) {
-        dsm.pwm_channels[ch-1] = t_status.pps;
-        dsm.num_channels = MAX(dsm.num_channels, ch);
+    chan = get_pps_chan();
+    if (chan > 0) {
+        dsm.pwm_channels[chan-1] = t_status.pps;
+        dsm.num_channels = MAX(dsm.num_channels, chan);
     }
 
-    ch = get_tx_rssi_chan();
-    if (ch > 0) {
-        dsm.pwm_channels[ch-1] = dsm.tx_rssi;
-        dsm.num_channels = MAX(dsm.num_channels, ch);
+    chan = get_tx_rssi_chan();
+    if (chan > 0) {
+        dsm.pwm_channels[chan-1] = dsm.tx_rssi;
+        dsm.num_channels = MAX(dsm.num_channels, chan);
     }
 
-    ch = get_tx_pps_chan();
-    if (ch > 0) {
-        dsm.pwm_channels[ch-1] = dsm.tx_pps;
-        dsm.num_channels = MAX(dsm.num_channels, ch);
+    chan = get_tx_pps_chan();
+    if (chan > 0) {
+        dsm.pwm_channels[chan-1] = dsm.tx_pps;
+        dsm.num_channels = MAX(dsm.num_channels, chan);
     }
     
     if (now - last_debug_print_ms > 1000) {
@@ -1579,7 +1579,7 @@ void AP_Radio_cypress::transmit16(const uint8_t data[16])
  */
 void AP_Radio_cypress::send_telem_packet(void)
 {
-    struct telem_packet pkt;
+    struct telem_packet_cypress pkt;
 
     t_status.flags = 0;
     t_status.flags |= AP_Notify::flags.gps_status >= 3?TELEM_FLAG_GPS_OK:0;

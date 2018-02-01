@@ -44,16 +44,31 @@ struct PACKED telem_firmware {
 };
 
 /*
-  telemetry packet from RX to TX
+  telemetry packet from RX to TX for cypress
  */
-struct PACKED telem_packet {
+struct PACKED telem_packet_cypress {
     uint8_t crc; // simple CRC
-    enum telem_type type;
+     enum telem_type type;
+     union {
+         uint8_t pkt[14];
+         struct telem_status status;
+         struct telem_firmware fw;
+     } payload;
+};
+
+/*
+  telemetry packet from RX to TX for cc2500
+ */
+struct PACKED telem_packet_cc2500 {
+    uint8_t length;
+    uint8_t type;
+    uint8_t txid[2];
     union {
-        uint8_t pkt[14];
+        uint8_t pkt[12];
         struct telem_status status;
         struct telem_firmware fw;
     } payload;
+    uint8_t crc[2];
 };
 
 
@@ -71,4 +86,25 @@ struct PACKED telem_tx_status {
     uint8_t crc;
     enum tx_telem_type type;
     uint16_t data;
+};
+
+/*
+  skyrocket specific packet for cc2500
+ */
+struct srt_packet {
+    uint8_t length;
+    uint8_t txid[2];
+    uint8_t version; // protocol version
+    uint8_t chan1;
+    uint8_t chan2;
+    uint8_t chan3;
+    uint8_t chan4;
+    uint8_t chan_high;
+    uint8_t tx_voltage; // ADC value / 4
+    uint8_t buttons;    // see channels.h
+    uint8_t telem_pps;
+    uint8_t telem_rssi;
+    uint8_t channr;
+    uint8_t chanskip;
+    uint8_t crc[2];
 };
