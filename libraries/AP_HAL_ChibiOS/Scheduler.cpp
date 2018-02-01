@@ -39,7 +39,7 @@ THD_WORKING_AREA(_io_thread_wa, 2048);
 THD_WORKING_AREA(_storage_thread_wa, 2048);
 THD_WORKING_AREA(_uart_thread_wa, 2048);
 #ifdef HAL_WITH_UAVCAN
-THD_WORKING_AREA(_uavcan_thread_wa, 2048);
+THD_WORKING_AREA(_uavcan_thread_wa, 4096);
 #endif
 #if HAL_WITH_IO_MCU
 extern ChibiOS::UARTDriver uart_io;
