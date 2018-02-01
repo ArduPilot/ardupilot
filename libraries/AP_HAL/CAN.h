@@ -92,8 +92,10 @@ public:
 /**
  * Generic CAN driver.
  */
-class AP_HAL::CANManager: public uavcan::ICanDriver {
+class AP_HAL::CANManager {
 public:
+    CANManager(uavcan::ICanDriver* driver) : _driver(driver) {}
+
     /*  CAN port open method
      Opens port with specified bit rate
      bitrate - selects the speed that the port will be configured to.  If zero, the port speed is left
@@ -115,6 +117,9 @@ public:
 
     virtual AP_UAVCAN *get_UAVCAN(void) = 0;
     virtual void set_UAVCAN(AP_UAVCAN *uavcan) = 0;
+    uavcan::ICanDriver* get_driver() { return _driver; }
+private:
+    uavcan::ICanDriver* _driver;
 };
 
 #endif
