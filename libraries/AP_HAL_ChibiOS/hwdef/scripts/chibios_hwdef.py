@@ -88,7 +88,7 @@ def get_alt_function(mcu, pin, function):
         # we do software RTS
         return None
 
-    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'OTG', 'JT', 'TIM']
+    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'OTG', 'JT', 'TIM', 'CAN']
     for l in af_labels:
         if function.startswith(l):
             s = pin + ":" + function
