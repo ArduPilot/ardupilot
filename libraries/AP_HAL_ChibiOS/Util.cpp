@@ -151,9 +151,13 @@ bool Util::toneAlarm_init()
 void Util::toneAlarm_set_tune(uint8_t tone)
 {
     _toneAlarm.set_tune(tone);
-    hal.console->printf("set_tune: %d\n", tone);
 }
 
+// (state 0) if init_tune() -> (state 1) complete=false
+// (state 1) if set_note -> (state 2) -> if play -> (state 3)
+//   play returns true if tune has changed or tune is complete (repeating tunes never complete)
+// (state 3) -> (state 1)
+// (on every tick) if (complete) -> (state 0)
 void Util::_toneAlarm_timer_tick() {
     if(state == 0) {
         state = state + _toneAlarm.init_tune();

@@ -37,7 +37,7 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 THD_WORKING_AREA(_timer_thread_wa, 2048);
 THD_WORKING_AREA(_rcin_thread_wa, 512);
-THD_WORKING_AREA(_toneAlarm_thread_wa, 2048);
+THD_WORKING_AREA(_toneAlarm_thread_wa, 512);
 THD_WORKING_AREA(_io_thread_wa, 2048);
 THD_WORKING_AREA(_storage_thread_wa, 2048);
 #if HAL_WITH_UAVCAN
@@ -315,10 +315,10 @@ void Scheduler::_toneAlarm_thread(void *arg)
     Scheduler *sched = (Scheduler *)arg;
     sched->_toneAlarm_thread_ctx->name = "toneAlarm";
     while (!sched->_hal_initialized) {
-        sched->delay_microseconds(10000);
+        sched->delay_microseconds(20000);
     }
     while (true) {
-        sched->delay_microseconds(10000);
+        sched->delay_microseconds(20000);
 
         // process tone command
         Util::from(hal.util)->_toneAlarm_timer_tick();

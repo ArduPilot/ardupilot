@@ -50,6 +50,8 @@ public:
     void toneAlarm_set_tune(uint8_t tone);
     void _toneAlarm_timer_tick();
 
+    static ToneAlarm& get_ToneAlarm() { return _toneAlarm; }
+
 private:
     static ToneAlarm _toneAlarm;
     void* try_alloc_from_ccm_ram(size_t size);
