@@ -261,6 +261,14 @@ class chibios(Board):
             HAVE_STD_NULLPTR_T = 0,
         )
 
+        if self.with_uavcan:
+            env.AP_LIBRARIES += [
+                'modules/uavcan/libuavcan_drivers/stm32/driver/src/*.cpp'
+                ]
+            env.INCLUDES += [
+                cfg.srcnode.find_dir('modules/uavcan/libuavcan_drivers/stm32/driver/include').abspath()
+            ]
+
         env.AP_LIBRARIES += [
             'AP_HAL_ChibiOS',
         ]
@@ -347,6 +355,12 @@ class chibios(Board):
         ]
 
         env.LIB += ['gcc', 'm']
+        if self.with_uavcan:
+            env.CFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
+                           '-DUAVCAN_STM32_NUM_IFACES=2']
+            env.CXXFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
+                             '-DUAVCAN_STM32_NUM_IFACES=2']
+
         env.GIT_SUBMODULES += [
             'ChibiOS',
         ]
@@ -369,6 +383,10 @@ class skyviper_f412(chibios):
 
 class fmuv3(chibios):
     name = 'fmuv3'
+    def __init__(self):
+        super(fmuv3, self).__init__()
+        self.with_uavcan = True
+
     def configure_env(self, cfg, env):
         super(fmuv3, self).configure_env(cfg, env)
         env.DEFINES.update(
