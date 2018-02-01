@@ -36,6 +36,10 @@
 #define APM_SPI_PRIORITY        179
 #endif
 
+#ifndef APM_UAVCAN_PRIORITY
+#define APM_UAVCAN_PRIORITY     178
+#endif
+
 #ifndef APM_CAN_PRIORITY
 #define APM_CAN_PRIORITY        177
 #endif
@@ -108,12 +112,17 @@ private:
     thread_t* _io_thread_ctx;
     thread_t* _storage_thread_ctx;
     thread_t* _uart_thread_ctx;
-
+#if HAL_WITH_UAVCAN
+    thread_t* _uavcan_thread_ctx;
+#endif
     static void _timer_thread(void *arg);
     static void _rcin_thread(void *arg);
     static void _io_thread(void *arg);
     static void _storage_thread(void *arg);
     static void _uart_thread(void *arg);
+#if HAL_WITH_UAVCAN
+    static void _uavcan_thread(void *arg);
+#endif
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);
 };
