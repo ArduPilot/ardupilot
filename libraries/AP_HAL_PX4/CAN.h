@@ -255,7 +255,7 @@ public:
     bool is_initialized() override;
 };
 
-class PX4CANManager: public AP_HAL::CANManager {
+class PX4CANManager: public AP_HAL::CANManager, public uavcan::ICanDriver {
     BusEvent update_event_;
     PX4CAN if0_;
     PX4CAN if1_;
