@@ -545,9 +545,10 @@ void AP_Radio_cc2500::irq_handler(void)
                 send_SRT_telemetry();
             }
         
-            // we can safely sleep here as we have a dedicated thread for radio processing.
+            // we can safely sleep here as we have a dedicated thread for radio processing. We need to sleep
+            // for enough time for the packet to be fully transmitted
             cc2500.unlock_bus();
-            hal.scheduler->delay_microseconds(2500);
+            hal.scheduler->delay_microseconds(3500);
             cc2500.lock_bus();
         
             nextChannel(chanskip);
@@ -859,7 +860,7 @@ bool AP_Radio_cc2500::check_crc(uint8_t ccLen, uint8_t *packet)
         struct srt_packet *pkt = (struct srt_packet *)packet;
         // SRT packet
         uint16_t lcrc = calc_crc(packet,sizeof(struct srt_packet)-2);
-        return lcrc == (pkt->crc[0]<<8) || pkt->crc[1];
+        return lcrc == ((pkt->crc[0]<<8) | pkt->crc[1]);
     } else if (ccLen == 32) {
         // D16 packet
         uint16_t lcrc = calc_crc(&packet[3],(ccLen-7));
