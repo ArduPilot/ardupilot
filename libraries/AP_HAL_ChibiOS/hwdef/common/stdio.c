@@ -112,9 +112,12 @@ int printf(const char *fmt, ...)
    return done;
 }
 
-#define MAXLN 128
-#define ISSPACE " \t\n\r\f\v"
-
+//just a stub
+int 
+scanf (const char *fmt, ...)
+{
+    return 0;
+}
 /*
  *  sscanf(buf,fmt,va_alist)
  */
@@ -309,5 +312,34 @@ vsscanf (const char *buf, const char *s, va_list ap)
     s++, buf++;
   }
     }
+    return (count);
+}
+
+/*
+ *  fscanf(stream,fmt,va_alist)
+ */
+int fscanf (FILE *stream, const char *fmt, ...)
+{
+    int             count;
+    va_list ap;
+
+    va_start (ap, fmt);
+    count = vfscanf (stream, fmt, ap);
+    va_end (ap);
+    return (count);
+}
+
+/*
+ *  vfscanf(stream,fmt,ap) 
+ */
+static int vfscanf (FILE *stream, const char *fmt, va_list ap)
+{
+    int             count;
+    char            buf[MAXLN + 1];
+
+    if (fgets (buf, MAXLN, stream) == 0) {
+	    return (-1);
+    }
+    count = vsscanf (buf, fmt, ap);
     return (count);
 }
