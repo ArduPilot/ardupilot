@@ -21,4 +21,5 @@ namespace ChibiOS {
     class Util;
     class Shared_DMA;
     class SoftSigReader;
+    class CANManager;
 }
