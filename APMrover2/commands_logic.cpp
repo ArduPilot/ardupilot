@@ -319,7 +319,7 @@ bool Rover::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     const bool result = verify_nav_wp(cmd);
     if (result) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Finished active loiter\n");
+        gcs().send_text(MAV_SEVERITY_WARNING, "Finished active loiter");
     }
     return result;
 }
