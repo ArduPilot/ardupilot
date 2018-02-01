@@ -21,6 +21,10 @@
 #define HAL_GPIO_LED_OFF          HIGH
 #endif
 
+#ifndef HAL_WITH_UAVCAN
+#define HAL_WITH_UAVCAN 0
+#endif
+
 #ifndef HAL_HAVE_BOARD_VOLTAGE
 #define HAL_HAVE_BOARD_VOLTAGE 0
 #endif
