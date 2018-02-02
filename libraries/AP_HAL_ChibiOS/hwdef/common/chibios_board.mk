@@ -51,6 +51,7 @@ endif
 
 ifeq ($(USE_FATFS),)
   USE_FATFS = yes
+  FATFS_FLAGS=-DUSE_FATFS
 endif
 
 #
@@ -102,9 +103,9 @@ include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 # Other files (optional).
 #include $(CHIBIOS)/test/rt/test.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
-include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 
 ifeq ($(USE_FATFS),yes)
+include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
@@ -218,7 +219,7 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS =
+UDEFS = $(FATFS_FLAGS)
 
 # Define ASM defines here
 UADEFS =
