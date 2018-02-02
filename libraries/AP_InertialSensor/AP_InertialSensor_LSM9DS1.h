@@ -40,10 +40,8 @@ private:
         A_SCALE_16G
     };
 
-    bool _accel_data_ready();
-    bool _gyro_data_ready();
-
     void _poll_data();
+    void _fifo_reset();
 
     bool _init_sensor();
     bool _hardware_init();
@@ -57,8 +55,8 @@ private:
     uint8_t _register_read(uint8_t reg);
     void _register_write(uint8_t reg, uint8_t val, bool checked=false);
 
-    void _read_data_transaction_x();
-    void _read_data_transaction_g();
+    void _read_data_transaction_x(uint16_t samples);
+    void _read_data_transaction_g(uint16_t samples);
 
     #if LSM9DS1_DEBUG
     void        _dump_registers();
