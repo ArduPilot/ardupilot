@@ -15,6 +15,10 @@ apm1 apm1-1280 apm2 apm2beta:
 flymaple flymaple-hil:
 	$(error $@ is deprecated on master branch; use master-AVR)
 
+f4light: HAL_BOARD = HAL_BOARD_F4LIGHT
+f4light: TOOLCHAIN = ARM
+f4light: all
+
 qflight: HAL_BOARD = HAL_BOARD_LINUX
 qflight: TOOLCHAIN = QFLIGHT
 qflight: all
