@@ -18,9 +18,10 @@
   Management for hal.storage to allow for backwards compatible mapping
   of storage offsets to available storage
  */
-#include "StorageManager.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include "StorageManager.h"
+
 
 extern const AP_HAL::HAL& hal;
 
