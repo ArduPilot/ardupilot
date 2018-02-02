@@ -38,7 +38,7 @@ THD_WORKING_AREA(_rcin_thread_wa, 512);
 THD_WORKING_AREA(_io_thread_wa, 2048);
 THD_WORKING_AREA(_storage_thread_wa, 2048);
 THD_WORKING_AREA(_uart_thread_wa, 2048);
-#ifdef HAL_WITH_UAVCAN
+#if HAL_WITH_UAVCAN
 THD_WORKING_AREA(_uavcan_thread_wa, 4096);
 #endif
 #if HAL_WITH_IO_MCU
@@ -58,7 +58,7 @@ void Scheduler::init()
                      this);                     /* Thread parameter.    */
 
     // setup the timer thread - this will call tasks at 1kHz
-#ifdef HAL_WITH_UAVCAN
+#if HAL_WITH_UAVCAN
     _uavcan_thread_ctx = chThdCreateStatic(_uavcan_thread_wa,
                      sizeof(_uavcan_thread_wa),
                      APM_UAVCAN_PRIORITY,        /* Initial priority.    */
