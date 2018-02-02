@@ -33,6 +33,8 @@
 *~
 .*.swo
 .*.swp
+*.i
+*.ii
 .DS_Store
 .autotools
 .built
