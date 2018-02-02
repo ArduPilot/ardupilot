@@ -11,6 +11,7 @@ enum telem_type {
     TELEM_FW    = 2, // update new firmware
 };
 
+// flags in telem_status structure
 #define TELEM_FLAG_GPS_OK  (1U<<0)
 #define TELEM_FLAG_ARM_OK  (1U<<1)
 #define TELEM_FLAG_BATT_OK (1U<<2)
@@ -24,18 +25,12 @@ struct PACKED telem_status {
     uint8_t rssi; // lowpass rssi
     uint8_t flags; // TELEM_FLAG_*
     uint8_t flight_mode; // flight mode
-    uint8_t wifi_chan;
-    uint8_t tx_max;
-    uint8_t note_adjust;
+    uint8_t wifi_chan; // wifi channel number on Sonix
+    uint8_t tx_max;  // max TX power
+    uint8_t note_adjust; // buzzer tone adjustment
 };
 
-// play a tune
-struct PACKED telem_play {
-    uint8_t seq;
-    uint8_t tune_index;
-};
-
-// write to new firmware
+// write to new firmware. This is also used to play a tune
 struct PACKED telem_firmware {
     uint8_t seq;
     uint8_t len;
@@ -50,7 +45,7 @@ struct PACKED telem_packet_cypress {
     uint8_t crc; // simple CRC
      enum telem_type type;
      union {
-         uint8_t pkt[14];
+        uint8_t pkt[14];
          struct telem_status status;
          struct telem_firmware fw;
      } payload;
@@ -71,39 +66,37 @@ struct PACKED telem_packet_cc2500 {
     uint8_t crc[2];
 };
 
-
-enum tx_telem_type {
-    TXTELEM_RSSI = 0,
-    TXTELEM_CRC1 = 1,
-    TXTELEM_CRC2 = 2,
-};
-
 /*
-  tx_status structure sent one byte at a time to RX. This is packed
-  into channels 8, 9 and 10 (using 32 bits of a possible 33)
+  packet type - controls data field. We have 4 bits, giving 16 possible
+  data field types
  */
-struct PACKED telem_tx_status {
-    uint8_t crc;
-    enum tx_telem_type type;
-    uint16_t data;
+enum packet_type {
+    PKTYPE_VOLTAGE    = 0,
+    PKTYPE_YEAR       = 1,
+    PKTYPE_MONTH      = 2,
+    PKTYPE_DAY        = 3,
+    PKTYPE_TELEM_RSSI = 4,
+    PKTYPE_TELEM_PPS  = 5,
+    PKTYPE_BL_VERSION = 6,
+    PKTYPE_FW_ACK     = 7,
+    PKTYPE_NUM_TYPES  = 8 // used for modulus
 };
 
 /*
   skyrocket specific packet for cc2500
  */
-struct srt_packet {
-    uint8_t length;
+struct PACKED srt_packet {
+    uint8_t length;     // required for cc2500 FIFO
     uint8_t txid[2];
-    uint8_t version; // protocol version
+    uint8_t version:4;  // protocol version
+    uint8_t pkt_type:4; // packet type
     uint8_t chan1;
     uint8_t chan2;
     uint8_t chan3;
     uint8_t chan4;
     uint8_t chan_high;
-    uint8_t tx_voltage; // ADC value / 4
+    uint8_t data;       // data according to pkt_type
     uint8_t buttons;    // see channels.h
-    uint8_t telem_pps;
-    uint8_t telem_rssi;
     uint8_t channr;
     uint8_t chanskip;
     uint8_t crc[2];
