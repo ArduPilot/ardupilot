@@ -67,7 +67,8 @@ public:
 
     // get TX fw version
     uint32_t get_tx_version(void) override {
-        return 0;
+        // pack date into 16 bits for vendor_id in AUTOPILOT_VERSION
+        return (uint16_t(tx_date.firmware_year)<<12) + (uint16_t(tx_date.firmware_month)<<8) + tx_date.firmware_day;
     }
     
     // get radio statistics structure
@@ -177,6 +178,25 @@ private:
     };
     static const config radio_config[];
 
+    struct {
+        mavlink_channel_t chan;
+        bool need_ack;
+        uint8_t counter;
+        uint8_t sequence;
+        uint32_t offset;
+        uint32_t length;
+        uint32_t acked;
+        uint8_t len;
+        enum telem_type fw_type;
+        uint8_t pending_data[92];
+    } fwupload;
+
+    struct {
+        uint8_t firmware_year;
+        uint8_t firmware_month;
+        uint8_t firmware_day;
+    } tx_date;
+        
     struct telem_status t_status;
     uint32_t last_pps_ms;
     uint8_t tx_rssi;
@@ -184,6 +204,9 @@ private:
 
     bool handle_D16_packet(const uint8_t *packet);
     bool handle_SRT_packet(const uint8_t *packet);
+
+    // check sending of fw upload ack
+    void check_fw_ack(void);
 };
 
 

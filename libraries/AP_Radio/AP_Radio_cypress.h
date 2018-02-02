@@ -227,7 +227,7 @@ private:
         enum telem_type fw_type;
         uint8_t pending_data[92];
     } fwupload;
-    
+
     // bind structure saved to storage
     static const uint16_t bind_magic = 0x43F6;
     struct PACKED bind_info {
