@@ -21,8 +21,8 @@ const AP_Param::GroupInfo ToyMode::var_info[] = {
 
     // @Param: _ENABLE
     // @DisplayName: tmode enable 
-    // @Description: tmode (or "toy" mode) gives a simplified user interface designed for mass market drones.
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: tmode (or "toy" mode) gives a simplified user interface designed for mass market drones. Version1 is for the SkyViper V2450GPS. Version2 is for the F412 based boards
+    // @Values: 0:Disabled,1:EnableVersion1,2:EnableVersion2
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_ENABLE", 1, ToyMode, enable, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -219,10 +219,16 @@ void ToyMode::update()
     copter.ahrs.set_indoor_mode(copter.control_mode == ALT_HOLD || copter.control_mode == FLOWHOLD);
 #endif
     
+    bool left_button = false;
+    bool right_button = false;
+    bool left_action_button = false;
+    bool right_action_button = false;
+    bool power_button = false;
+    bool left_change = false;
+    
     uint16_t ch5_in = hal.rcin->read(CH_5);
     uint16_t ch6_in = hal.rcin->read(CH_6);
     uint16_t ch7_in = hal.rcin->read(CH_7);
-    bool left_change = ((ch5_in > 1700 && last_ch5 <= 1700) || (ch5_in <= 1700 && last_ch5 > 1700));
 
     if (copter.failsafe.radio || ch5_in < 900) {
         // failsafe handling is outside the scope of toy mode, it does
@@ -232,17 +238,37 @@ void ToyMode::update()
         red_blink_index = green_blink_index;
         return;
     }
-        
-    last_ch5 = ch5_in;
-                        
-    // get buttons from channels
-    bool left_button = (ch5_in > 2050 || (ch5_in > 1050 && ch5_in < 1150));
-    bool right_button = (ch6_in > 1500);
-    uint8_t ch7_bits = (ch7_in>1000)?uint8_t((ch7_in-1000)/100):0;
-    bool left_action_button = (ch7_bits&1) != 0;
-    bool right_action_button = (ch7_bits&2) != 0;
-    bool power_button = (ch7_bits&4) != 0;
+
     uint32_t now = AP_HAL::millis();
+    
+    if (is_v2450_buttons()) {
+        // V2450 button mapping from cypress radio. It maps the
+        // buttons onto channels 5, 6 and 7 in a complex way, with the
+        // left button latching
+        left_change = ((ch5_in > 1700 && last_ch5 <= 1700) || (ch5_in <= 1700 && last_ch5 > 1700));
+        
+        last_ch5 = ch5_in;
+                        
+        // get buttons from channels
+        left_button = (ch5_in > 2050 || (ch5_in > 1050 && ch5_in < 1150));
+        right_button = (ch6_in > 1500);
+        uint8_t ch7_bits = (ch7_in>1000)?uint8_t((ch7_in-1000)/100):0;
+        left_action_button = (ch7_bits&1) != 0;
+        right_action_button = (ch7_bits&2) != 0;
+        power_button = (ch7_bits&4) != 0;
+    } else if (is_f412_buttons()) {
+        // F412 button setup for cc2500 radio. This maps the 6 buttons
+        // onto channels 5 and 6, with no latching
+        uint8_t ch5_bits = (ch5_in>1000)?uint8_t((ch5_in-1000)/100):0;
+        uint8_t ch6_bits = (ch6_in>1000)?uint8_t((ch6_in-1000)/100):0;
+        left_button = (ch5_bits & 4) != 0;
+        right_button = (ch5_bits & 2) != 0;
+        right_action_button = (ch6_bits & 1) != 0;
+        left_action_button = (ch6_bits & 2) != 0;
+        power_button = (ch6_bits & 4) != 0;
+        left_change = (left_button != last_left_button);
+        last_left_button = left_button;
+    }
     
     // decode action buttons into an action
     uint8_t action_input = 0;    
@@ -306,9 +332,17 @@ void ToyMode::update()
         ignore_left_change = false;
     }
 
-    // check for left button latching change
-    if (action == ACTION_NONE && left_change) {
-        action = toy_action(actions[6].get());
+    if (is_v2450_buttons()) {
+        // check for left button latching change
+        if (action == ACTION_NONE && left_change) {
+            action = toy_action(actions[6].get());
+        }
+    } else if (is_f412_buttons()) {
+        if (action == ACTION_NONE && left_change && !left_button) {
+            // left release
+            action = toy_action(actions[6].get());
+        }
+
     }
 
     // check for right button

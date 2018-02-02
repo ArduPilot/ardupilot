@@ -42,6 +42,14 @@ private:
 
     void thrust_limiting(float *thrust, uint8_t num_motors);
     void arm_check_compass(void);
+
+    // work out type of button setup
+    bool is_v2450_buttons(void) const {
+        return enable == 1;
+    }
+    bool is_f412_buttons(void) const {
+        return enable == 2;
+    }
     
     enum toy_action {
         ACTION_NONE         = 0,
@@ -112,6 +120,7 @@ private:
     uint32_t throttle_low_counter;
     uint32_t throttle_high_counter;
     uint16_t last_ch5;
+    bool last_left_button;
     uint8_t last_mode_choice;
     int32_t left_press_counter;
     int32_t right_press_counter;
