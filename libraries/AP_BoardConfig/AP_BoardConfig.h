@@ -4,6 +4,10 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 
+#if defined(HAL_NEEDS_PARAM_HELPER)
+#include <AP_Param_Helper/AP_Param_Helper.h>
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_MINDPXV2)
 #define AP_FEATURE_BOARD_DETECT 1
 #define AP_FEATURE_SAFETY_BUTTON 1
@@ -171,5 +175,10 @@ private:
 #ifdef HAL_RCINPUT_WITH_AP_RADIO
     // direct attached radio
     AP_Radio _radio;
+#endif
+    
+#if defined(HAL_NEEDS_PARAM_HELPER)
+    // HAL specific parameters
+    AP_Param_Helper param_helper{false};
 #endif
 };
