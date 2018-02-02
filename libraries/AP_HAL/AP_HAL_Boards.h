@@ -120,6 +120,7 @@
 #define HAL_COMPASS_OCPOC_ZYNQ         17
 #define HAL_COMPASS_EDGE               18
 #define HAL_COMPASS_LIS3MDL            19
+#define HAL_COMPASS_MAG3110            20
 
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1
