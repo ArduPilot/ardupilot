@@ -114,6 +114,7 @@ uint16_t AP_Radio_cc2500::read(uint8_t chan)
  */
 void AP_Radio_cc2500::update(void)
 {
+    check_fw_ack();
 }
     
 
@@ -338,6 +339,29 @@ void AP_Radio_cc2500::start_recv_bind(void)
 // handle a data96 mavlink packet for fw upload
 void AP_Radio_cc2500::handle_data_packet(mavlink_channel_t chan, const mavlink_data96_t &m)
 {
+    uint32_t ofs=0;
+    memcpy(&ofs, &m.data[0], 4);
+    Debug(4, "got data96 of len %u from chan %u at offset %u\n", m.len, chan, ofs);
+    if (sem->take_nonblocking()) {
+        fwupload.chan = chan;
+        fwupload.need_ack = false;
+        fwupload.offset = ofs;
+        fwupload.length = MIN(m.len-4, 92);
+        fwupload.acked = 0;
+        fwupload.sequence++;
+        if (m.type == 43) {
+            // sending a tune to play - for development testing
+            fwupload.fw_type = TELEM_PLAY;
+            fwupload.length = MIN(m.len, 90);
+            fwupload.offset = 0;
+            memcpy(&fwupload.pending_data[0], &m.data[0], fwupload.length);
+        } else {
+            // sending a chunk of firmware OTA upload
+            fwupload.fw_type = TELEM_FW;
+            memcpy(&fwupload.pending_data[0], &m.data[4], fwupload.length);
+        }
+        sem->give();
+    } 
 }
 
 /*
@@ -408,10 +432,50 @@ bool AP_Radio_cc2500::handle_SRT_packet(const uint8_t *packet)
     // we map the buttons onto two PWM channels for ease of integration with ArduPilot
     pwm_channels[4] = 1000 + (pkt->buttons & 0x7) * 100;
     pwm_channels[5] = 1000 + (pkt->buttons >> 3) * 100;
-    pwm_channels[6] = pkt->tx_voltage * 4;
 
-    tx_rssi = pkt->telem_rssi;
-    tx_pps = pkt->telem_pps;
+    uint8_t data = pkt->data;
+    /*
+      decode special data field
+     */
+    switch (pkt->pkt_type) {
+    case PKTYPE_VOLTAGE:
+        // voltage from TX is in 0.025 volt units. Convert to 0.01 volt units for easier display
+        pwm_channels[6] = data * 4;
+        break;
+    case PKTYPE_YEAR:
+        tx_date.firmware_year = data;
+        break;
+    case PKTYPE_MONTH:
+        tx_date.firmware_month = data;
+        break;
+    case PKTYPE_DAY:
+        tx_date.firmware_day = data;
+        break;
+    case PKTYPE_TELEM_RSSI:
+        tx_rssi = data;
+        break;
+    case PKTYPE_TELEM_PPS:
+        tx_pps = data;
+        break;
+    case PKTYPE_BL_VERSION:
+        // unused so far for cc2500
+        break;
+    case PKTYPE_FW_ACK: {
+            // got an fw upload ack 
+            Debug(4, "ack %u seq=%u acked=%u length=%u len=%u\n",
+                  data, fwupload.sequence, fwupload.acked, fwupload.length, fwupload.len);
+            if (fwupload.sequence == data && sem->take_nonblocking()) {
+                fwupload.sequence++;
+                fwupload.acked += fwupload.len;
+                if (fwupload.acked == fwupload.length) {
+                    // trigger send of DATA16 ack to client
+                    fwupload.need_ack = true;
+                }
+                sem->give();
+            }
+        break;
+    }
+    }
     
     if (chan_count < 7) {
         chan_count = 7;
@@ -964,10 +1028,30 @@ void AP_Radio_cc2500::send_SRT_telemetry(void)
     t_status.tx_max = get_tx_max_power();
     t_status.note_adjust = get_tx_buzzer_adjust();
 
-    pkt.type = TELEM_STATUS;
+    // send fw update packet for 7/8 of packets if any data pending
+    if (fwupload.length != 0 &&
+        fwupload.length > fwupload.acked &&
+        ((fwupload.counter++ & 0x07) != 0) &&
+        sem->take_nonblocking()) {
+        pkt.type = fwupload.fw_type;
+        pkt.payload.fw.seq = fwupload.sequence;
+        uint32_t len = fwupload.length>fwupload.acked?fwupload.length - fwupload.acked:0;
+        pkt.payload.fw.len = len<=8?len:8;
+        pkt.payload.fw.offset = fwupload.offset+fwupload.acked;
+        memcpy(&pkt.payload.fw.data[0], &fwupload.pending_data[fwupload.acked], pkt.payload.fw.len);
+        fwupload.len = pkt.payload.fw.len;
+        Debug(4, "sent fw seq=%u offset=%u len=%u type=%u\n",
+               pkt.payload.fw.seq,
+               pkt.payload.fw.offset,
+               pkt.payload.fw.len,
+               pkt.type);
+        sem->give();
+    } else {
+        pkt.type = TELEM_STATUS;
+        pkt.payload.status = t_status;
+    }
     pkt.txid[0] = bindTxId[0];
     pkt.txid[1] = bindTxId[1];
-    pkt.payload.status = t_status;
 
     uint16_t lcrc = calc_crc((const uint8_t *)&pkt, sizeof(pkt)-2);
     pkt.crc[0] = lcrc>>8;
@@ -981,6 +1065,23 @@ void AP_Radio_cc2500::send_SRT_telemetry(void)
         cc2500.WriteFifo((const uint8_t *)&pkt, sizeof(pkt));
     }
     cc2500.Strobe(CC2500_STX);
+}
+
+/*
+  send a fwupload ack if needed
+ */
+void AP_Radio_cc2500::check_fw_ack(void)
+{
+    if (fwupload.need_ack && sem->take_nonblocking()) {
+        // ack the send of a DATA96 fw packet to TX
+        fwupload.need_ack = false;
+        uint8_t data16[16] {};
+        uint32_t ack_to = fwupload.offset + fwupload.acked;
+        memcpy(&data16[0], &ack_to, 4);
+        mavlink_msg_data16_send(fwupload.chan, 42, 4, data16);
+        Debug(4,"sent ack DATA16\n");
+        sem->give();
+    }
 }
 
 #endif // HAL_RCINPUT_WITH_AP_RADIO
