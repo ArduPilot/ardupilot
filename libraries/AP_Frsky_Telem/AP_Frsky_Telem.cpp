@@ -617,16 +617,16 @@ uint32_t AP_Frsky_Telem::calc_gps_latlng(bool *send_latitude)
     // alternate between latitude and longitude
     if ((*send_latitude) == true) {
         if (loc.lat < 0) {
-            latlng = ((abs(loc.lat)/100)*6) | 0x40000000;
+            latlng = ((labs(loc.lat)/100)*6) | 0x40000000;
         } else {
-            latlng = ((abs(loc.lat)/100)*6);
+            latlng = ((labs(loc.lat)/100)*6);
         }
         (*send_latitude) = false;
     } else {
         if (loc.lng < 0) {
-            latlng = ((abs(loc.lng)/100)*6) | 0xC0000000;
+            latlng = ((labs(loc.lng)/100)*6) | 0xC0000000;
         } else {
-            latlng = ((abs(loc.lng)/100)*6) | 0x80000000;
+            latlng = ((labs(loc.lng)/100)*6) | 0x80000000;
         }
         (*send_latitude) = true;
     }
