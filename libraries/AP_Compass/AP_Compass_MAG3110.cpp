@@ -52,6 +52,14 @@ RUS:
 
 */
 
+/*
+  the vector length filter can help with noise on the bus, but may
+  interfere with higher level processing. It should really be moved
+  into the AP_Compass_backend code, with a parameter to enable it.
+ */
+#ifndef MAG3110_ENABLE_LEN_FILTER
+#define MAG3110_ENABLE_LEN_FILTER 0
+#endif
 
 
 // Registers
@@ -199,7 +207,8 @@ void AP_Compass_MAG3110::_update()
 
 
     bool ret=true;
-    
+
+#if MAG3110_ENABLE_LEN_FILTER
     float len = raw_field.length();
     if(is_zero(compass_len)) {
         compass_len=len;
@@ -216,6 +225,7 @@ void AP_Compass_MAG3110::_update()
             compass_len = compass_len * (1-FILTER_KOEF) + len*FILTER_KOEF; // complimentary filter 1/10 on good samples
         }
     }
+#endif
     
     if(ret) {
 
