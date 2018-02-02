@@ -227,6 +227,7 @@ atob(uint32_t *vp, char *p, int base)
 }
 
 
+#if HAL_OS_FATFS_IO
 /*
  *  vsscanf(buf,fmt,ap)
  */
@@ -343,3 +344,4 @@ static int vfscanf (FILE *stream, const char *fmt, va_list ap)
     count = vsscanf (buf, fmt, ap);
     return (count);
 }
+#endif // HAL_OS_FATFS_IO
