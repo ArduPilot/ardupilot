@@ -1,0 +1,1 @@
+boards/revomini_Revolution/1_read_ME.md
