@@ -579,7 +579,7 @@ float AC_AttitudeControl::input_shaping_angle(float error_angle, float input_tc,
 float AC_AttitudeControl::input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max, float dt)
 {
     // Acceleration is limited directly to smooth the beginning of the curve.
-    if (accel_max > 0.0f) {
+    if (is_positive(accel_max)) {
         float delta_ang_vel = accel_max * dt;
         return constrain_float(desired_ang_vel, target_ang_vel-delta_ang_vel, target_ang_vel+delta_ang_vel);
     } else {
@@ -638,7 +638,7 @@ Vector3f AC_AttitudeControl::euler_accel_limit(Vector3f euler_rad, Vector3f eule
     float sin_theta = constrain_float(fabsf(sinf(euler_rad.y)), 0.1f, 1.0f);
 
     Vector3f rot_accel;
-    if(is_zero(euler_accel.x) || is_zero(euler_accel.y) || is_zero(euler_accel.z) || (euler_accel.x < 0.0f) || (euler_accel.y < 0.0f) || (euler_accel.z < 0.0f)) {
+    if(is_zero(euler_accel.x) || is_zero(euler_accel.y) || is_zero(euler_accel.z) || is_negative(euler_accel.x) || is_negative(euler_accel.y) || is_negative(euler_accel.z)) {
         rot_accel.x = euler_accel.x;
         rot_accel.y = euler_accel.y;
         rot_accel.z = euler_accel.z;
@@ -749,7 +749,7 @@ float AC_AttitudeControl::rate_target_to_motor_roll(float rate_actual_rads, floa
     float integrator = get_rate_roll_pid().get_integrator();
 
     // Ensure that integrator can only be reduced if the output is saturated
-    if (!_motors.limit.roll_pitch || ((integrator > 0 && rate_error_rads < 0) || (integrator < 0 && rate_error_rads > 0))) {
+    if (!_motors.limit.roll_pitch || ((is_positive(integrator) && is_negative(rate_error_rads)) || (is_negative(integrator) && is_positive(rate_error_rads)))) {
         integrator = get_rate_roll_pid().get_i();
     }
 
@@ -772,7 +772,7 @@ float AC_AttitudeControl::rate_target_to_motor_pitch(float rate_actual_rads, flo
     float integrator = get_rate_pitch_pid().get_integrator();
 
     // Ensure that integrator can only be reduced if the output is saturated
-    if (!_motors.limit.roll_pitch || ((integrator > 0 && rate_error_rads < 0) || (integrator < 0 && rate_error_rads > 0))) {
+    if (!_motors.limit.roll_pitch || ((is_positive(integrator) && is_negative(rate_error_rads)) || (is_negative(integrator) && is_positive(rate_error_rads)))) {
         integrator = get_rate_pitch_pid().get_i();
     }
 
@@ -795,7 +795,7 @@ float AC_AttitudeControl::rate_target_to_motor_yaw(float rate_actual_rads, float
     float integrator = get_rate_yaw_pid().get_integrator();
 
     // Ensure that integrator can only be reduced if the output is saturated
-    if (!_motors.limit.yaw || ((integrator > 0 && rate_error_rads < 0) || (integrator < 0 && rate_error_rads > 0))) {
+    if (!_motors.limit.yaw || ((is_positive(integrator) && is_negative(rate_error_rads)) || (is_negative(integrator) && is_positive(rate_error_rads)))) {
         integrator = get_rate_yaw_pid().get_i();
     }
 
@@ -872,11 +872,11 @@ float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord
 // Inverse proportional controller with piecewise sqrt sections to constrain second derivative
 float AC_AttitudeControl::stopping_point(float first_ord_mag, float p, float second_ord_lim)
 {
-    if (second_ord_lim > 0.0f && !is_zero(second_ord_lim) && is_zero(p)) {
+    if (is_positive(second_ord_lim) && !is_zero(second_ord_lim) && is_zero(p)) {
         return (first_ord_mag*first_ord_mag)/(2.0f*second_ord_lim);
-    } else if ((second_ord_lim < 0.0f || is_zero(second_ord_lim)) && !is_zero(p)) {
+    } else if ((is_negative(second_ord_lim) || is_zero(second_ord_lim)) && !is_zero(p)) {
         return first_ord_mag/p;
-    } else if ((second_ord_lim < 0.0f || is_zero(second_ord_lim)) && is_zero(p)) {
+    } else if ((is_negative(second_ord_lim) || is_zero(second_ord_lim)) && is_zero(p)) {
         return 0.0f;
     }
 
@@ -889,7 +889,7 @@ float AC_AttitudeControl::stopping_point(float first_ord_mag, float p, float sec
     } else {
         float linear_dist = second_ord_lim/sq(p);
         float overshoot = (linear_dist/2.0f) + sq(first_ord_mag)/(2.0f*second_ord_lim);
-        if (first_ord_mag > 0){
+        if (is_positive(first_ord_mag)){
             return overshoot;
         } else {
             return -overshoot;
