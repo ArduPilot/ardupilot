@@ -1,5 +1,7 @@
 #pragma once
 
+class AP_Param;
+
 #include "AP_HAL_Namespace.h"
 
 #include "AnalogIn.h"
@@ -13,6 +15,12 @@
 #include "OpticalFlow.h"
 #if HAL_WITH_UAVCAN
 #include "CAN.h"
+#endif
+
+
+#if defined(HAL_NEEDS_PARAM_HELPER)
+#include <AP_Param/AP_Param.h>
+class AP_Param_Helper;
 #endif
 
 class AP_HAL::HAL {
