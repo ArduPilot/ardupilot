@@ -14,7 +14,10 @@
 
 #include "DataFlash.h"
 #include "DataFlash_File.h"
+#include "DataFlash_File_sd.h"
 #include "DataFlash_MAVLink.h"
+#include "DataFlash_Revo.h"
+#include "DataFlash_File_sd.h"
 #include "DFMessageWriter.h"
 
 extern const AP_HAL::HAL& hal;
