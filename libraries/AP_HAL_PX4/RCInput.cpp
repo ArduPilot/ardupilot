@@ -41,7 +41,7 @@ bool PX4RCInput::new_input()
     _override_valid = false;
     pthread_mutex_unlock(&rcin_mutex);
     if (_rcin.input_source != last_input_source) {
-        gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s\n", input_source_name(_rcin.input_source));
+        gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", input_source_name(_rcin.input_source));
         last_input_source = _rcin.input_source;
     }
     return valid;
