@@ -26,6 +26,9 @@ void Copter::ModeStabilize_Heli::run()
     float target_yaw_rate;
     float pilot_throttle_scaled;
 
+    // initialize smoothing gain
+    attitude_control->set_smoothing_gain(get_smoothing_gain());
+
     // Tradheli should not reset roll, pitch, yaw targets when motors are not runup, because
     // we may be in autorotation flight.  These should be reset only when transitioning from disarmed
     // to armed, because the pilot will have placed the helicopter down on the landing pad.  This is so
@@ -56,7 +59,7 @@ void Copter::ModeStabilize_Heli::run()
 
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, _copter.aparm.angle_max);
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, _copter.aparm.angle_max, _copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
@@ -65,7 +68,7 @@ void Copter::ModeStabilize_Heli::run()
     pilot_throttle_scaled = _copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // output pilot's throttle - note that TradHeli does not used angle-boost
     attitude_control->set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);

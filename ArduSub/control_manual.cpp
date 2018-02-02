@@ -13,6 +13,9 @@ bool Sub::manual_init()
 // should be called at 100hz or more
 void Sub::manual_run()
 {
+    // initialize smoothing gain
+    attitude_control.set_smoothing_gain(get_smoothing_gain());
+
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);

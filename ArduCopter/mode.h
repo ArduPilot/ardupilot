@@ -95,8 +95,8 @@ protected:
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
-    void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max) {
-        _copter.get_pilot_desired_lean_angles(roll_in, pitch_in, roll_out, pitch_out, angle_max);
+    void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max, float angle_limit) {
+        _copter.get_pilot_desired_lean_angles(roll_in, pitch_in, roll_out, pitch_out, angle_max, angle_limit);
     }
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt) {
         return _copter.get_surface_tracking_climb_rate(target_rate, current_alt_target, dt);

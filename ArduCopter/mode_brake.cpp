@@ -37,6 +37,9 @@ bool Copter::ModeBrake::init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::ModeBrake::run()
 {
+    // initialize smoothing gain
+    attitude_control->set_smoothing_gain(get_smoothing_gain());
+
     // if not auto armed set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
         wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
@@ -62,7 +65,7 @@ void Copter::ModeBrake::run()
     wp_nav->update_brake(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
 
     // body-frame rate controller is run directly from 100hz loop
 
