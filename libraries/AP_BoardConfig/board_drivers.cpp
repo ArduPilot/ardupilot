@@ -91,6 +91,12 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_PHMINI:
     case PX4_BOARD_AUAV21:
     case PX4_BOARD_PH2SLIM:
+    case VRX_BOARD_BRAIN51:
+    case VRX_BOARD_BRAIN52:
+    case VRX_BOARD_UBRAIN51:
+    case VRX_BOARD_UBRAIN52:
+    case VRX_BOARD_CORE10:
+    case VRX_BOARD_BRAIN54:
     case PX4_BOARD_AEROFC:
     case PX4_BOARD_PIXHAWK_PRO:
     case PX4_BOARD_PCNC1:
@@ -225,6 +231,24 @@ void AP_BoardConfig::board_autodetect(void)
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     state.board_type.set_and_notify(PX4_BOARD_AEROFC);
     hal.console->printf("Detected Aero FC\n");
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
+    state.board_type.set_and_notify(VRX_BOARD_BRAIN51);
+    hal.console->printf("Detected VR Brain 5.1\n");
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
+    state.board_type.set_and_notify(VRX_BOARD_BRAIN52);
+    hal.console->printf("Detected VR Brain 5.2\n");
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+    state.board_type.set_and_notify(VRX_BOARD_UBRAIN51);
+    hal.console->printf("Detected VR Micro Brain 5.1\n");
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+    state.board_type.set_and_notify(VRX_BOARD_UBRAIN52);
+    hal.console->printf("Detected VR Micro Brain 5.2\n");
+#elif defined(CONFIG_ARCH_BOARD_VRCORE_V10)
+    state.board_type.set_and_notify(VRX_BOARD_CORE10);
+    hal.console->printf("Detected VR Core 1.0\n");
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
+    state.board_type.set_and_notify(VRX_BOARD_BRAIN54);
+    hal.console->printf("Detected VR Brain 5.4\n");
 #endif
 
 }
