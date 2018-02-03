@@ -231,6 +231,8 @@ void AP_SerialManager::init()
                                     state[i].uart->begin(map_baudrate(state[i].baud),
                                     		AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
 											AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
+                                    state[i].uart->set_unbuffered_writes(true);
+                                    state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                                     break;
                 case SerialProtocol_Sbus1:
                     state[i].baud = AP_SERIALMANAGER_SBUS1_BAUD / 1000;   // update baud param in case user looks at it
