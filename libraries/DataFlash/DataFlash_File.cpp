@@ -74,6 +74,8 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
     _writebuf_chunk(512),
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52E)
+    _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
     _writebuf_chunk(512),
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
