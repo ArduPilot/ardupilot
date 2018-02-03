@@ -654,7 +654,7 @@ void RangeFinder::detect_instance(uint8_t instance)
                                                         hal.i2c_mgr->get_device(0, 0x29)));
         }
         break;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     case RangeFinder_TYPE_PX4_PWM:
         if (AP_RangeFinder_PX4_PWM::detect()) {
             state[instance].instance = instance;
