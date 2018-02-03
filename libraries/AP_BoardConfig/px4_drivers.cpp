@@ -262,7 +262,11 @@ void AP_BoardConfig::px4_setup_peripherals(void)
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     const char *fmu_mode = "mode_rcin";
 #else
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    const char *fmu_mode = "mode_pwm";
+#else
     const char *fmu_mode = "mode_pwm4";
+#endif
 #endif
     if (px4_start_driver(fmu_main, "fmu", fmu_mode)) {
         printf("fmu %s started OK\n", fmu_mode);
