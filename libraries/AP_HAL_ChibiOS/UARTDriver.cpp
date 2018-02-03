@@ -211,12 +211,15 @@ void UARTDriver::tx_complete(void* self, uint32_t flags)
 {
     UARTDriver* uart_drv = (UARTDriver*)self;
     if (!uart_drv->tx_bounce_buf_ready) {
-        uart_drv->dma_handle->unlock_from_IRQ();
         uart_drv->_last_write_completed_us = AP_HAL::micros();
         uart_drv->tx_bounce_buf_ready = true;
         if (uart_drv->unbuffered_writes) {
             //kickstart the next write
             uart_drv->write_pending_bytes_DMA_from_irq();
+        }
+        if (uart_drv->tx_bounce_buf_ready) {
+            // we didn't launch a new DMA
+            uart_drv->dma_handle->unlock_from_IRQ();
         }
     }
 }
