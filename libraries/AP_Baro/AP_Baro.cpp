@@ -453,6 +453,27 @@ void AP_Baro::init(void)
 #endif
         break;
 
+    case AP_BoardConfig::VRX_BOARD_BRAIN54:
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_EXT_NAME))));
+#ifdef HAL_BARO_MS5611_SPI_IMU_NAME
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_IMU_NAME))));
+#endif
+        break;
+
+    case AP_BoardConfig::VRX_BOARD_BRAIN51:
+    case AP_BoardConfig::VRX_BOARD_BRAIN52:
+    case AP_BoardConfig::VRX_BOARD_BRAIN52E:
+    case AP_BoardConfig::VRX_BOARD_CORE10:
+    case AP_BoardConfig::VRX_BOARD_UBRAIN51:
+    case AP_BoardConfig::VRX_BOARD_UBRAIN52:
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
+        break;
+
     default:
         break;
     }
