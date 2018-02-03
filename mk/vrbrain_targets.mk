@@ -45,6 +45,7 @@ VRBRAIN_MK_DIR=$(MK_DIR)/VRBRAIN
 # we have different config files for vrbrain-v51, vrbrain-v52, vrbrain-v54, vrcore-v10, vrubrain-v51, vrubrain-v52
 VRBRAIN_V51_CONFIG_FILE=config_vrbrain-v51_APM.mk
 VRBRAIN_V52_CONFIG_FILE=config_vrbrain-v52_APM.mk
+VRBRAIN_V52E_CONFIG_FILE=config_vrbrain-v52E_APM.mk
 VRBRAIN_V54_CONFIG_FILE=config_vrbrain-v54_APM.mk
 VRCORE_V10_CONFIG_FILE=config_vrcore-v10_APM.mk
 VRUBRAIN_V51_CONFIG_FILE=config_vrubrain-v51_APM.mk
@@ -114,6 +115,19 @@ vrbrain-v52: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(UAVCAN_H
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-vrbrain-v52.vrx" "$(SKETCH)-vrbrain-v52.vrx"
 	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v52.vrx"
 
+vrbrain-v52E: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(UAVCAN_HEADERS) $(VRBRAIN_ROOT)/Archives/vrbrain-v52E.export $(SKETCHCPP) module_mk
+	$(v) echo Building vrbrain-v52E
+	$(RULEHDR)
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRBRAIN_V52E_CONFIG_FILE)
+	$(v) cp $(VRBRAIN_MK_DIR)/$(VRBRAIN_V52E_CONFIG_FILE) $(VRBRAIN_ROOT)/makefiles/nuttx/
+	$(v) $(VRBRAIN_MAKE) vrbrain-v52E_APM
+	$(v) rm -f $(VRBRAIN_ROOT)/makefiles/nuttx/$(VRBRAIN_V52E_CONFIG_FILE)
+	$(v) rm -f $(SKETCH)-vrbrain-v52E.vrx
+	$(v) arm-none-eabi-size $(VRBRAIN_ROOT)/Build/vrbrain-v52E_APM.build/firmware.elf
+	$(v) cp $(VRBRAIN_ROOT)/Images/vrbrain-v52E_APM.px4 $(SKETCH)-vrbrain-v52E.vrx
+	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-vrbrain-v52E.vrx" "$(SKETCH)-vrbrain-v52E.vrx"
+	$(v) echo "VRBRAIN $(SKETCH) Firmware is in $(SKETCH)-vrbrain-v52E.vrx"
+
 vrbrain-v54: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(UAVCAN_HEADERS) $(VRBRAIN_ROOT)/Archives/vrbrain-v54.export $(SKETCHCPP) module_mk
 	$(v) echo Building vrbrain-v54
 	$(RULEHDR)
@@ -171,6 +185,7 @@ vrubrain-v52: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(UAVCAN_
 vrbrainStd:
 	$(MAKE) vrbrain-v51
 	$(MAKE) vrbrain-v52
+	$(MAKE) vrbrain-v52E
 	$(MAKE) vrbrain-v54
 	$(MAKE) vrcore-v10
 	$(MAKE) vrubrain-v51
@@ -255,6 +270,7 @@ vrbrain-archives-clean:
 .NOTPARALLEL: \
 	$(VRBRAIN_ROOT)/Archives/vrbrain-v51.export \
 	$(VRBRAIN_ROOT)/Archives/vrbrain-v52.export \
+	$(VRBRAIN_ROOT)/Archives/vrbrain-v52E.export \
 	$(VRBRAIN_ROOT)/Archives/vrbrain-v54.export \
 	$(VRBRAIN_ROOT)/Archives/vrcore-v10.export \
 	$(VRBRAIN_ROOT)/Archives/vrubrain-v51.export \
@@ -265,6 +281,9 @@ $(VRBRAIN_ROOT)/Archives/vrbrain-v51.export:
 
 $(VRBRAIN_ROOT)/Archives/vrbrain-v52.export:
 	$(v) $(VRBRAIN_MAKE_ARCHIVES) BOARDS="vrbrain-v52"
+
+$(VRBRAIN_ROOT)/Archives/vrbrain-v52E.export:
+	$(v) $(VRBRAIN_MAKE_ARCHIVES) BOARDS="vrbrain-v52E"
 
 $(VRBRAIN_ROOT)/Archives/vrbrain-v54.export:
 	$(v) $(VRBRAIN_MAKE_ARCHIVES) BOARDS="vrbrain-v54"
@@ -279,7 +298,7 @@ $(VRBRAIN_ROOT)/Archives/vrubrain-v52.export:
 	$(v) $(VRBRAIN_MAKE_ARCHIVES) BOARDS="vrubrain-v52"
 
 vrbrain-archives:
-	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="vrbrain-v51 vrbrain-v52 vrbrain-v54 vrcore-v10 vrubrain-v51 vrubrain-v52"
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="vrbrain-v51 vrbrain-v52 vrbrain-v52E vrbrain-v54 vrcore-v10 vrubrain-v51 vrubrain-v52"
 
 vrbrain-info: module_mk
 	@echo "BUILDROOT                    $(BUILDROOT)"
