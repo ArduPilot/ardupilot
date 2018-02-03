@@ -264,6 +264,10 @@ bool SPIDevice::set_chip_select(bool set)
         bus.spicfg.sspad = PAL_PAD(device_desc.pal_line);
         bus.spicfg.cr1 = (uint16_t)(freq_flag | device_desc.mode);
         bus.spicfg.cr2 = 0;
+        if (bus.spi_started) {
+            spiStop(spi_devices[device_desc.bus].driver);
+            bus.spi_started = false;
+        }
         spiStart(spi_devices[device_desc.bus].driver, &bus.spicfg);        /* Setup transfer parameters.       */
         bus.spi_started = true;
         spiSelectI(spi_devices[device_desc.bus].driver);                /* Slave Select assertion.          */
