@@ -52,6 +52,7 @@ static const struct {
 #else
 #error "Unknown board type for AnalogIn scaling"
 #endif
+    { 0, 0.f          },
 };
 
 using namespace VRBRAIN;
@@ -237,6 +238,11 @@ void VRBRAINAnalogIn::next_stop_pin(void)
  */
 void VRBRAINAnalogIn::_timer_tick(void)
 {
+    if (_adc_fd == -1) {
+        // not initialised yet
+        return;
+    }
+
     // read adc at 100Hz
     uint32_t now = AP_HAL::micros();
     uint32_t delta_t = now - _last_run;

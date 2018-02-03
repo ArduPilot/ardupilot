@@ -12,19 +12,24 @@
 
 class VRBRAIN::VRBRAINRCInput : public AP_HAL::RCInput {
 public:
-    void init();
-    bool new_input();
-    uint8_t num_channels();
-    uint16_t read(uint8_t ch);
-    uint8_t read(uint16_t* periods, uint8_t len);
+    void init() override;
+    bool new_input() override;
+    uint8_t num_channels() override;
+    uint16_t read(uint8_t ch) override;
+    uint8_t read(uint16_t* periods, uint8_t len) override;
 
-    bool set_overrides(int16_t *overrides, uint8_t len);
-    bool set_override(uint8_t channel, int16_t override);
-    void clear_overrides();
+    int16_t get_rssi(void) override {
+        return _rssi;
+    }
+        
+    
+    bool set_overrides(int16_t *overrides, uint8_t len) override;
+    bool set_override(uint8_t channel, int16_t override) override;
+    void clear_overrides() override;
 
     void _timer_tick(void);
 
-    bool rc_bind(int dsmMode);
+    bool rc_bind(int dsmMode) override;
 
 private:
     /* override state */
@@ -35,4 +40,8 @@ private:
     bool _override_valid;
     perf_counter_t _perf_rcin;
     pthread_mutex_t rcin_mutex;
+    int16_t _rssi = -1;
+
+    uint8_t last_input_source = input_rc_s::RC_INPUT_SOURCE_UNKNOWN;
+    const char *input_source_name(uint8_t id) const;
 };
