@@ -32,7 +32,8 @@ public:
     uint8_t bus;
     SPIConfig spicfg;
     void dma_allocate(void);
-    void dma_deallocate(void);    
+    void dma_deallocate(void);
+    bool spi_started;
 };
 
 struct SPIDesc {

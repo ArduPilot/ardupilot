@@ -73,7 +73,10 @@ void SPIBus::dma_allocate(void)
 void SPIBus::dma_deallocate(void)
 {
     // another non-SPI peripheral wants one of our DMA channels
-    spiStop(spi_devices[bus].driver);
+    if (spi_started) {
+        spiStop(spi_devices[bus].driver);
+        spi_started = false;
+    }
 }
 
 
@@ -262,6 +265,7 @@ bool SPIDevice::set_chip_select(bool set)
         bus.spicfg.cr1 = (uint16_t)(freq_flag | device_desc.mode);
         bus.spicfg.cr2 = 0;
         spiStart(spi_devices[device_desc.bus].driver, &bus.spicfg);        /* Setup transfer parameters.       */
+        bus.spi_started = true;
         spiSelectI(spi_devices[device_desc.bus].driver);                /* Slave Select assertion.          */
         cs_forced = true;
     }
