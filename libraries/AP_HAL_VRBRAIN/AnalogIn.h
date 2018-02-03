@@ -53,15 +53,15 @@ private:
 class VRBRAIN::VRBRAINAnalogIn : public AP_HAL::AnalogIn {
 public:
     VRBRAINAnalogIn();
-    void init();
-    AP_HAL::AnalogSource* channel(int16_t pin);
+    void init() override;
+    AP_HAL::AnalogSource* channel(int16_t pin) override;
     void _timer_tick(void);
-    float board_voltage(void) { return _board_voltage; }
-    float servorail_voltage(void) { return _servorail_voltage; }
-    uint16_t power_status_flags(void) { return _power_flags; }
+    float board_voltage(void) override { return _board_voltage; }
+    float servorail_voltage(void) override { return _servorail_voltage; }
+    uint16_t power_status_flags(void) override { return _power_flags; }
 
 private:
-    int _adc_fd;
+    int _adc_fd = -1;
     int _battery_handle;
     int _servorail_handle;
     int _system_power_handle;
