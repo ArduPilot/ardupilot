@@ -29,7 +29,7 @@ private:
 
 class VRBRAIN::VRBRAINUtil : public AP_HAL::Util {
 public:
-	VRBRAINUtil(void);
+    VRBRAINUtil(void);
     bool run_debug_shell(AP_HAL::BetterStream *stream);
 
     enum safety_state safety_switch_state(void);
@@ -60,7 +60,11 @@ public:
 
     void set_imu_temp(float current) override;
     void set_imu_target_temp(int8_t *target) override;
-    
+
+    // allocate and free DMA-capable memory if possible. Otherwise return normal memory
+    void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
+    void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
+
 private:
     int _safety_handle;
     VRBRAIN::NSHShellStream _shell_stream;
