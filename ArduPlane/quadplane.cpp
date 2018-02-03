@@ -946,7 +946,8 @@ void QuadPlane::control_loiter()
 
     // process pilot's roll and pitch input
     wp_nav->set_pilot_desired_acceleration(plane.channel_roll->get_control_in(),
-                                           plane.channel_pitch->get_control_in());
+                                           plane.channel_pitch->get_control_in(),
+                                           plane.G_Dt);
 
     // Update EKF speed limit - used to limit speed when we are using optical flow
     float ekfGndSpdLimit, ekfNavVelGainScaler;    
