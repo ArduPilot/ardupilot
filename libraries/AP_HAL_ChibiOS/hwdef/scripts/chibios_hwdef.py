@@ -436,11 +436,17 @@ def write_UART_config(f):
 
     # write out driver declarations for HAL_ChibOS_Class.cpp
     devnames = "ABCDEFGH"
+    sdev = 0
     for dev in uart_list:
         idx = uart_list.index(dev)
-        f.write(
-            '#define HAL_UART%s_DRIVER ChibiOS::UARTDriver uart%sDriver(%u)\n'
-            % (devnames[idx], devnames[idx], idx))
+        if dev == 'EMPTY':
+            f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
+                (devnames[idx], devnames[idx]))
+        else:
+            f.write(
+                '#define HAL_UART%s_DRIVER ChibiOS::UARTDriver uart%sDriver(%u)\n'
+                % (devnames[idx], devnames[idx], sdev))
+            sdev += 1
     for idx in range(len(uart_list), 6):
         f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
                 (devnames[idx], devnames[idx]))
@@ -466,6 +472,8 @@ def write_UART_config(f):
             n = int(dev[5:])
         elif dev.startswith('OTG'):
             n = int(dev[3:])
+        elif dev.startswith('EMPTY'):
+            continue
         else:
             error("Invalid element %s in UART_ORDER" % dev)
         devlist.append('HAL_%s_CONFIG' % dev)
