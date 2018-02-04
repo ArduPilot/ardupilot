@@ -660,7 +660,7 @@ def write_GPIO_config(f):
     # and write #defines for use by config code
     f.write('}\n\n')
     f.write('// full pin define list\n')
-    for l in bylabel:
+    for l in sorted(bylabel.keys()):
         p = bylabel[l]
         label = p.label
         label = label.replace('-', '_')
@@ -886,7 +886,7 @@ process_file(args.hwdef)
 
 outdir = args.outdir
 if outdir is None:
-    outdir = '.'
+    outdir = '/tmp'
 
 if not "MCU" in config:
     error("Missing MCU type in config")
