@@ -951,6 +951,7 @@ private:
     ModeAutoTune mode_autotune{*this};
 #endif
     ModeBrake mode_brake{*this};
+    ModeChase mode_chase{*this};
     ModeCircle mode_circle{*this, circle_nav};
     ModeDrift mode_drift{*this};
     ModeFlip mode_flip{*this};

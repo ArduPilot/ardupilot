@@ -1138,3 +1138,49 @@ protected:
 private:
 
 };
+
+class ModeChase : public ModeGuided {
+
+public:
+
+    ModeChase(Copter &copter) :
+        Copter::ModeGuided(copter) {
+        target_loc.flags.relative_alt = true;
+    }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; }
+    bool is_autopilot() const override { return true; }
+
+    bool set_velocity(const Vector3f& velocity_neu);
+
+    void mavlink_packet_received(const mavlink_message_t &msg);
+
+protected:
+
+    const char *name() const override { return "CHASE"; }
+    const char *name4() const override { return "CHAS"; }
+
+private:
+
+    uint8_t target_srcid = 255;
+
+    Location_Class target_loc;
+    Vector3f target_vel;
+    uint32_t target_last_update_ms;
+    const uint16_t target_update_timeout_ms = 1000;
+
+    float sphere_radius_min = 5.0f; // no closer than this to target
+    float sphere_radius_max = 50.0f; // give up when further than this
+
+    const float closure_speed = 10.0f; // metres/second
+    const float distance_slop = 2.0f; // metres
+
+    void run_lonely_mode();
+    Copter::Mode *lonely_mode;
+
+};
