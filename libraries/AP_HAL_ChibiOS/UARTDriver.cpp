@@ -664,14 +664,14 @@ void UARTDriver::_timer_tick(void)
 /*
   change flow control mode for port
  */
-void UARTDriver::set_flow_control(enum flow_control flow_control)
+void UARTDriver::set_flow_control(enum flow_control flowcontrol)
 {
     if (sdef.rts_line == 0 || sdef.is_usb) {
         // no hw flow control available
         return;
     }
 
-    _flow_control = flow_control;
+    _flow_control = flowcontrol;
     if (!_initialised) {
         // not ready yet, we just set variable for when we call begin
         return;
