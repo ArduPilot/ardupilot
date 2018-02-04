@@ -102,7 +102,10 @@ I2CDevice::~I2CDevice()
  */
 void I2CBus::dma_allocate(void)
 {
-    i2cStart(I2CD[busnum].i2c, &i2ccfg);
+    if (!i2c_started) {
+        i2cStart(I2CD[busnum].i2c, &i2ccfg);
+        i2c_started = true;
+    }
 }
 
 /*
@@ -110,7 +113,10 @@ void I2CBus::dma_allocate(void)
  */
 void I2CBus::dma_deallocate(void)
 {
-    i2cStop(I2CD[busnum].i2c);
+    if (i2c_started) {
+        i2cStop(I2CD[busnum].i2c);
+        i2c_started = false;
+    }
 }
 
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
@@ -177,8 +183,12 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         i2cReleaseBus(I2CD[bus.busnum].i2c);
         if (ret != MSG_OK){
             //restart the bus
-            i2cStop(I2CD[bus.busnum].i2c);
+            if (bus.i2c_started) {
+                i2cStop(I2CD[bus.busnum].i2c);
+                bus.i2c_started = false;
+            }
             i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
+            bus.i2c_started = true;
         } else {
             if (recv_buf != recv) {
                 memcpy(recv, recv_buf, recv_len);
