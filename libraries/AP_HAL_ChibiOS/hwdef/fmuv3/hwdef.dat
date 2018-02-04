@@ -181,3 +181,9 @@ define AP_FEATURE_SBUS_OUT 1
 
 # enable UAVCAN
 define HAL_WITH_UAVCAN 1
+
+# battery pins
+define HAL_BATT_VOLT_PIN 2
+define HAL_BATT_CURR_PIN 3
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
