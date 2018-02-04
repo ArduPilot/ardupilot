@@ -7,6 +7,12 @@
 #include "AP_HAL_Boards.h"
 #include "AP_HAL_Namespace.h"
 
+//An empty Event class only for inheritence,
+//all event related operations will be handled by Scheduler
+class AP_HAL::Event {
+protected:
+    uint32_t thread_id;
+};
 
 class AP_HAL::Scheduler {
 public:
@@ -61,4 +67,14 @@ public:
     virtual void get_stats() {};
     virtual uint8_t get_busy() { return 0; };
 
+    /*
+      Operations relating to Events 
+    */
+    virtual Event* init_event_object() { return nullptr; }
+
+    virtual bool setup_event(Event* evt) { return false; }
+
+    virtual bool wait_for_event(uint32_t evt_mask) { return false; }
+
+    virtual void send_event(Event* evt, uint32_t evt_mask) {}
 };
