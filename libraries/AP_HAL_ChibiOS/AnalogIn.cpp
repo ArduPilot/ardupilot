@@ -178,7 +178,7 @@ AnalogIn::AnalogIn() :
  */
 void AnalogIn::adccallback(ADCDriver *adcp, adcsample_t *buffer, size_t n)
 {
-    if (buffer != &samples[0]) {
+    if (buffer != samples) {
         return;
     }
     for (uint8_t i = 0; i < ADC_DMA_BUF_DEPTH; i++) {
@@ -194,6 +194,9 @@ void AnalogIn::adccallback(ADCDriver *adcp, adcsample_t *buffer, size_t n)
  */
 void AnalogIn::init()
 {
+    if (ADC_GRP1_NUM_CHANNELS == 0) {
+        return;
+    }
     adcStart(&ADCD1, NULL);
     memset(&adcgrpcfg, 0, sizeof(adcgrpcfg));
     adcgrpcfg.circular = true;
@@ -219,7 +222,7 @@ void AnalogIn::init()
             adcgrpcfg.sqr1 |= chan << (5*(i-12));
         }
     }
-    adcStartConversion(&ADCD1, &adcgrpcfg, &samples[0], ADC_DMA_BUF_DEPTH); 
+    adcStartConversion(&ADCD1, &adcgrpcfg, samples, ADC_DMA_BUF_DEPTH);
 }
 
 /*
