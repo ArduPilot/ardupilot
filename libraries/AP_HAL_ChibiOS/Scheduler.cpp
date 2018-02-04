@@ -220,19 +220,6 @@ void Scheduler::delay_microseconds_boost(uint16_t usec)
     set_high_priority();
     delay_microseconds(usec); //Suspends Thread for desired microseconds
     set_normal_priority();
-    _called_boost = true;
-}
-
-/*
-  return true if delay_microseconds_boost() has been called since last check
- */
-bool Scheduler::check_called_boost(void)
-{
-    if (!_called_boost) {
-        return false;
-    }
-    _called_boost = false;
-    return true;
 }
 
 void Scheduler::delay(uint16_t ms)

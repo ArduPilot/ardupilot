@@ -12,6 +12,7 @@ namespace ChibiOS {
     class RCInput;
     class RCOutput;
     class Scheduler;
+    class Event;
     class Semaphore;
     class SPIDevice;
     class SPIDeviceDriver;

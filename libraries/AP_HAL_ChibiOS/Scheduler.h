@@ -55,6 +55,15 @@
 
 #define APM_MAIN_THREAD_STACK_SIZE 8192
 
+
+class ChibiOS::Event : public AP_HAL::Event {
+    friend class ChibiOS::Scheduler;
+public:
+    Event(thread_t* _thread) : thread(_thread) {}
+private:
+    thread_t* thread;
+};
+
 /* Scheduler implementation: */
 class ChibiOS::Scheduler : public AP_HAL::Scheduler {
 public:
@@ -79,15 +88,30 @@ public:
     void     hal_initialized() { _hal_initialized = true; }
     uint8_t  get_busy() { return _busy_percent; }
 
-    bool     check_called_boost(void);
-    
+    AP_HAL::Event*    init_event_object() override {
+                AP_HAL::Event* ret_evt = new ChibiOS::Event(chThdGetSelfX());
+                return ret_evt;
+    }
+    bool    setup_event(AP_HAL::Event* evt) override { 
+            if (evt == nullptr) return false;
+            ((ChibiOS::Event*)evt)->thread = chThdGetSelfX();
+            return true;
+    }
+    bool    wait_for_event(uint32_t evt_mask) override {
+                chEvtWaitAll((eventmask_t)evt_mask);
+                return true;
+    }
+    void    send_event(AP_HAL::Event* evt, uint32_t evt_mask) override { 
+                if (evt == nullptr) return;
+                chEvtSignal(((ChibiOS::Event*)evt)->thread, (eventmask_t)evt_mask);
+    }
+
 private:
     bool _initialized;
     volatile bool _hal_initialized;
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
     AP_HAL::Proc _failsafe;
-    bool _called_boost;
     
     volatile bool _timer_suspended;
 
