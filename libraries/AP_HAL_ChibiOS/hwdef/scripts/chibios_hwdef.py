@@ -527,10 +527,15 @@ def write_PWM_config(f):
                 if p.type not in pwm_timers:
                     pwm_timers.append(p.type)
     if rc_in is not None:
-        if int(rc_in.label[7:]) not in [1, 2]:
+        a = rc_in.label.split('_')
+        chan_str = a[1][2:]
+        timer_str = a[0][3:]
+        if not is_int(chan_str) or not is_int(timer_str):
+            error("Bad timer channel %s" % rc_in.label)
+        if int(chan_str) not in [1, 2]:
             error(
                 "Bad channel number, only channel 1 and 2 supported for RCIN")
-        n = int(rc_in.type[3])
+        n = int(a[0][3:])
         dma_chan_str = rc_in.extra_prefix('DMA_CH')[6:]
         dma_chan = int(dma_chan_str)
         f.write('// RC input config\n')
@@ -538,7 +543,7 @@ def write_PWM_config(f):
         f.write('#define STM32_ICU_USE_TIM%u TRUE\n' % n)
         f.write('#define RCIN_ICU_TIMER ICUD%u\n' % n)
         f.write(
-            '#define RCIN_ICU_CHANNEL ICU_CHANNEL_%u\n' % int(rc_in.label[7:]))
+            '#define RCIN_ICU_CHANNEL ICU_CHANNEL_%u\n' % int(chan_str))
         f.write('#define STM32_RCIN_DMA_CHANNEL %u' % dma_chan)
         f.write('\n')
     f.write('// PWM timer config\n')
@@ -805,6 +810,10 @@ def process_line(line):
     a = shlex.split(line)
     # keep all config lines for later use
     alllines.append(line)
+
+    if a[0].startswith('P') and a[0][1] in ports and a[0] in config:
+        print("WARNING: Pin %s redefined" % a[0])
+    
     config[a[0]] = a[1:]
     if a[0] == 'MCU':
         global mcu_type
@@ -818,7 +827,7 @@ def process_line(line):
             type = a[2]
             extra = a[3:]
         except Exception:
-            print("Bad pin line: %s" % a)
+            error("Bad pin line: %s" % a)
             return
 
         p = generic_pin(port, pin, label, type, extra)
