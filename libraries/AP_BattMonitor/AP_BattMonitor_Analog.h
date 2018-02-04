@@ -5,7 +5,13 @@
 #include "AP_BattMonitor_Backend.h"
 
 // default pins and dividers
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+#if defined(HAL_BATT_VOLT_PIN)
+ // pins defined in board config (hwdef.dat on ChibiOS)
+ # define AP_BATT_VOLT_PIN                  HAL_BATT_VOLT_PIN
+ # define AP_BATT_CURR_PIN                  HAL_BATT_CURR_PIN
+ # define AP_BATT_VOLTDIVIDER_DEFAULT       HAL_BATT_VOLT_SCALE
+ # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  HAL_BATT_CURR_SCALE
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
  // px4
  # define AP_BATT_VOLT_PIN                  100
  # define AP_BATT_CURR_PIN                  101
