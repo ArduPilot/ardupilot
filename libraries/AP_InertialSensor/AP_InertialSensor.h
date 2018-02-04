@@ -15,7 +15,7 @@
 #define INS_MAX_INSTANCES 3
 #define INS_MAX_BACKENDS  6
 #define INS_VIBRATION_CHECK_INSTANCES 2
-
+#define EVT_INS_NEW_DATA 0xF
 #define DEFAULT_IMU_LOG_BAT_MASK 0
 
 #include <stdint.h>

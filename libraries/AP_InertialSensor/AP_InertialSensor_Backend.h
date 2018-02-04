@@ -79,7 +79,8 @@ public:
 
     // notify of a fifo reset
     void notify_fifo_reset(void);
-    
+
+    void setup_event();
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -240,5 +241,5 @@ private:
     bool should_log_imu_raw() const;
     void log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel);
     void log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gryo);
-
+    AP_HAL::Event* _evt;
 };

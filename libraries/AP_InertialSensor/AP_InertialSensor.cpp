@@ -1428,6 +1428,7 @@ check_sample:
         while (true) {
             for (uint8_t i=0; i<_backend_count; i++) {
                 _backends[i]->accumulate();
+                _backends[i]->setup_event();
             }
 
             for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
@@ -1439,7 +1440,9 @@ check_sample:
                 break;
             }
 
-            hal.scheduler->delay_microseconds(100);
+            if (!hal.scheduler->wait_for_event(EVT_INS_NEW_DATA)) {
+                hal.scheduler->delay_microseconds(100);
+            }
         }
     }
 

@@ -17,6 +17,14 @@ AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
     _sem = hal.util->new_semaphore();
 }
 
+void AP_InertialSensor_Backend::setup_event() {
+    if ( _evt == nullptr) {
+        _evt = hal.scheduler->init_event_object();
+    } else {
+        hal.scheduler->setup_event(_evt);
+    }
+}
+
 /*
   notify of a FIFO reset so we don't use bad data to update observed sensor rate
  */
@@ -202,6 +210,10 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         }
         _imu._new_gyro_data[instance] = true;
         _sem->give();
+        if (_evt != nullptr) {
+            if(_imu._new_accel_data[instance])
+                hal.scheduler->send_event(_evt, EVT_INS_NEW_DATA);
+        }
     }
 
     log_gyro_raw(instance, sample_us, gyro);
@@ -314,6 +326,10 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 
         _imu._new_accel_data[instance] = true;
         _sem->give();
+        if (_evt != nullptr) {
+            if(_imu._new_gyro_data[instance])
+                hal.scheduler->send_event(_evt, EVT_INS_NEW_DATA);
+        }
     }
 
     log_accel_raw(instance, sample_us, accel);
