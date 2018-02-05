@@ -63,6 +63,7 @@ struct PACKED log_Performance {
     uint32_t g_dt_min;
     uint32_t log_dropped;
     uint32_t mem_avail;
+    uint16_t load;
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
@@ -76,7 +77,8 @@ void Plane::Log_Write_Performance()
         g_dt_max        : perf.G_Dt_max,
         g_dt_min        : perf.G_Dt_min,
         log_dropped     : DataFlash.num_dropped() - perf.last_log_dropped,
-        hal.util->available_memory()
+        mem_avail       : hal.util->available_memory(),
+        load            : (uint16_t)(scheduler.load_average() * 1000)
     };
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -371,7 +373,7 @@ void Plane::Log_Write_Home_And_Origin()
 const struct LogStructure Plane::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHIIII",  "TimeUS,NLon,NLoop,MaxT,MinT,LogDrop,Mem", "ss----b", "FC----0" },
+      "PM",  "QHHIIIIH",  "TimeUS,NLon,NLoop,MaxT,MinT,LogDrop,Mem,Load", "ss----b%", "FC----0A" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "QBH",         "TimeUS,SType,CTot", "s--", "F--" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
