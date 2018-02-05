@@ -514,7 +514,7 @@ def write_I2C_config(f):
         n = int(dev[3:])
         devlist.append('HAL_I2C%u_CONFIG' % n)
         f.write(
-            '#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_TX_DMA_STREAM, STM32_I2C_I2C%u_RX_DMA_STREAM }\n'
+            '#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM }\n'
             % (n, n, n, n))
     f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
