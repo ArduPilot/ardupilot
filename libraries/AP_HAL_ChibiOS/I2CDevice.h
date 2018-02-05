@@ -35,6 +35,7 @@ public:
     I2CConfig i2ccfg;
     uint8_t busnum;
     bool i2c_started;
+    bool i2c_active;
     
     void dma_allocate(void);
     void dma_deallocate(void);    
