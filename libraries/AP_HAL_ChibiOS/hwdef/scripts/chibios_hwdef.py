@@ -509,6 +509,11 @@ def write_I2C_config(f):
     for dev in i2c_list:
         if not dev.startswith('I2C') or dev[3] not in "1234":
             error("Bad I2C_ORDER element %s" % dev)
+        if dev + "_SCL" in bylabel:
+            p = bylabel[dev + "_SCL"]
+            f.write(
+                '#define HAL_%s_SCL_AF %d\n' % (dev, p.af)
+            )
         n = int(dev[3:])
         devlist.append('HAL_I2C%u_CONFIG' % n)
         f.write(
