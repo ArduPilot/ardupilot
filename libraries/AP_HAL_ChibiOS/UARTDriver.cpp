@@ -123,11 +123,13 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             if(!was_initialised) {
                 if(sdef.dma_rx) {
                     rxdma = STM32_DMA_STREAM(sdef.dma_rx_stream_id);
+                    chSysLock();
                     bool dma_allocated = dmaStreamAllocate(rxdma,
                                                12,  //IRQ Priority
                                                (stm32_dmaisr_t)rxbuff_full_irq,
                                                (void *)this);
                     osalDbgAssert(!dma_allocated, "stream already allocated");
+                    chSysUnlock();
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
                 }
                 if (sdef.dma_tx) {
@@ -191,11 +193,13 @@ void UARTDriver::dma_tx_allocate(void)
 {
     osalDbgAssert(txdma == nullptr, "double DMA allocation");
     txdma = STM32_DMA_STREAM(sdef.dma_tx_stream_id);
+    chSysLock();
     bool dma_allocated = dmaStreamAllocate(txdma,
                                            12,  //IRQ Priority
                                            (stm32_dmaisr_t)tx_complete,
                                            (void *)this);
     osalDbgAssert(!dma_allocated, "stream already allocated");
+    chSysUnlock();
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
 }
 
