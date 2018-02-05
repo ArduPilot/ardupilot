@@ -109,6 +109,9 @@ static THD_FUNCTION(main_loop,arg)
 {
     daemon_task = chThdGetSelfX();
 
+    //Clear all I2C Buses
+    ChibiOS::I2CBus::clear_all();
+
     ChibiOS::Shared_DMA::init();
     
     hal.uartA->begin(115200);
