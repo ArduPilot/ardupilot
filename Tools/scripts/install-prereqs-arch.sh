@@ -41,9 +41,13 @@ sudo pip3 -q install -U $PYTHON3_PKGS
 yaourt -S --noconfirm $ARCH_AUR_PKGS
 
 (
- cd /usr/lib/ccache
- sudo ln -s /usr/bin/ccache arm-none-eabi-g++
- sudo ln -s /usr/bin/ccache arm-none-eabi-gcc
+    cd /usr/lib/ccache
+    if [ ! -f arm-none-eabi-g++ ]; then
+       sudo ln -s /usr/bin/ccache arm-none-eabi-g++
+    fi
+    if [ ! -f arm-none-eabi-g++ ]; then
+        sudo ln -s /usr/bin/ccache arm-none-eabi-gcc
+    fi
 )
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
