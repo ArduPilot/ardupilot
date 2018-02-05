@@ -8,19 +8,18 @@
 #include "AP_Baro_Backend.h"
 
 #ifndef HAL_BARO_BMP085_I2C_ADDR
- #define HAL_BARO_BMP085_I2C_ADDR        (0x77)
+#define HAL_BARO_BMP085_I2C_ADDR        (0x77)
 #endif
 
-class AP_Baro_BMP085 : public AP_Baro_Backend
-{
+class AP_Baro_BMP085 : public AP_Baro_Backend {
 public:
     AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     /* AP_Baro public interface: */
     void update();
-    
+
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
-    
+
 
 private:
     bool _init();
@@ -59,7 +58,7 @@ private:
     int32_t _raw_temp;
     int32_t _temp;
     AverageIntegralFilter<int32_t, int32_t, 10> _pressure_filter;
-    
+
     uint8_t _vers;
-    uint8_t _type;    
+    uint8_t _type;
 };
