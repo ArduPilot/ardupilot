@@ -36,11 +36,13 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
     _icu_drv = icu_drv;
     //Setup Burst transfer of period and width measurement
     dma = STM32_DMA_STREAM(dma_stream);
+    chSysLock();
     bool dma_allocated = dmaStreamAllocate(dma,
                                             12,  //IRQ Priority
                                             (stm32_dmaisr_t)_irq_handler,
                                             (void *)this);
     osalDbgAssert(!dma_allocated, "stream already allocated");
+    chSysUnlock();
     //setup address for full word transfer from Timer
     dmaStreamSetPeripheral(dma, &icu_drv->tim->DMAR);
 
