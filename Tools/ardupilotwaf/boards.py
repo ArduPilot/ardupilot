@@ -273,6 +273,9 @@ class chibios(Board):
             'AP_HAL_ChibiOS',
         ]
 
+        # make board name available for USB IDs
+        env.CHIBIOS_BOARD_NAME = 'HAL_BOARD_NAME="%s"' % self.name
+
         env.CXXFLAGS += [
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
