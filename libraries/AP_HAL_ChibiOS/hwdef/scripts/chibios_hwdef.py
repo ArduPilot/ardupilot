@@ -355,16 +355,12 @@ INCLUDE common.ld
 
 def write_USB_config(f):
     '''write USB config defines'''
-    if not 'USB_VENDOR' in config:
-        return
     f.write('// USB configuration\n')
-    f.write('#define HAL_USB_VENDOR_ID %s\n' % get_config('USB_VENDOR'))
-    f.write('#define HAL_USB_PRODUCT_ID %s\n' % get_config('USB_PRODUCT'))
-    for s in [
-            'USB_STRING_MANUFACTURER', 'USB_STRING_PRODUCT',
-            'USB_STRING_SERIAL'
-    ]:
-        f.write('#define HAL_%s "%s"\n' % (s, get_config(s)))
+    f.write('#define HAL_USB_VENDOR_ID %s\n' % get_config('USB_VENDOR', default=0x0483)) # default to ST
+    f.write('#define HAL_USB_PRODUCT_ID %s\n' % get_config('USB_PRODUCT', default=0x5740))
+    f.write('#define HAL_USB_STRING_MANUFACTURER "%s"\n' % get_config("USB_STRING_MANUFACTURER", default="ArduPilot"))
+    f.write('#define HAL_USB_STRING_PRODUCT "%s"\n' % get_config("USB_STRING_PRODUCT", default="%BOARD%"))
+    f.write('#define HAL_USB_STRING_SERIAL "%s"\n' % get_config("USB_STRING_SERIAL", default="%SERIAL%"))
 
     f.write('\n\n')
 
