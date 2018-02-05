@@ -46,14 +46,14 @@ void ModeAuto::update()
         case Auto_WP:
         {
             _distance_to_destination = get_distance(rover.current_loc, _destination);
+            const bool near_wp = _distance_to_destination <= rover.g.waypoint_radius;
             // check if we've reached the destination
-            if (!_reached_destination) {
-                if (_distance_to_destination <= rover.g.waypoint_radius || location_passed_point(rover.current_loc, _origin, _destination)) {
-                    // trigger reached
-                    _reached_destination = true;
-                }
+            if (!_reached_destination && (near_wp || location_passed_point(rover.current_loc, _origin, _destination))) {
+                // trigger reached
+                _reached_destination = true;
             }
-            if (!_reached_destination || rover.is_boat()) {
+            // determine if we should keep navigating
+            if (!_reached_destination || (rover.is_boat() && !near_wp)) {
                 // continue driving towards destination
                 calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination, _reversed);
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true);
