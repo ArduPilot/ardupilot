@@ -111,7 +111,6 @@ private:
     thread_t* _rcin_thread_ctx;
     thread_t* _io_thread_ctx;
     thread_t* _storage_thread_ctx;
-    thread_t* _uart_thread_ctx;
 #if HAL_WITH_UAVCAN
     thread_t* _uavcan_thread_ctx;
 #endif

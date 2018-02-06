@@ -37,12 +37,8 @@ THD_WORKING_AREA(_timer_thread_wa, 2048);
 THD_WORKING_AREA(_rcin_thread_wa, 512);
 THD_WORKING_AREA(_io_thread_wa, 2048);
 THD_WORKING_AREA(_storage_thread_wa, 2048);
-THD_WORKING_AREA(_uart_thread_wa, 2048);
 #if HAL_WITH_UAVCAN
 THD_WORKING_AREA(_uavcan_thread_wa, 4096);
-#endif
-#if HAL_WITH_IO_MCU
-extern ChibiOS::UARTDriver uart_io;
 #endif
 
 Scheduler::Scheduler()
@@ -71,13 +67,6 @@ void Scheduler::init()
                      APM_RCIN_PRIORITY,        /* Initial priority.    */
                      _rcin_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
-
-    // the UART thread runs at a medium priority
-    _uart_thread_ctx = chThdCreateStatic(_uart_thread_wa,
-                     sizeof(_uart_thread_wa),
-                     APM_UART_PRIORITY,        /* Initial priority.    */
-                     _uart_thread,             /* Thread function.     */
-                     this);                    /* Thread parameter.    */
 
     // the IO thread runs at lower priority
     _io_thread_ctx = chThdCreateStatic(_io_thread_wa,
@@ -324,29 +313,6 @@ void Scheduler::_run_io(void)
     }
 
     _in_io_proc = false;
-}
-
-void Scheduler::_uart_thread(void* arg)
-{
-    Scheduler *sched = (Scheduler *)arg;
-    sched->_uart_thread_ctx->name = "apm_uart";
-    while (!sched->_hal_initialized) {
-        sched->delay_microseconds(1000);
-    }
-    while (true) {
-        sched->delay_microseconds(1000);
-
-        // process any pending serial bytes
-        hal.uartA->_timer_tick();
-        hal.uartB->_timer_tick();
-        hal.uartC->_timer_tick();
-        hal.uartD->_timer_tick();
-        hal.uartE->_timer_tick();
-        hal.uartF->_timer_tick();
-#if HAL_WITH_IO_MCU
-        uart_io._timer_tick();
-#endif
-    }
 }
 
 void Scheduler::_io_thread(void* arg)
