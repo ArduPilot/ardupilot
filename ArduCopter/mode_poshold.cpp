@@ -36,7 +36,6 @@ static struct {
     poshold_rp_mode pitch_mode           : 3;    // pitch mode: pilot override, brake or loiter
     uint8_t braking_time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
     uint8_t braking_time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
-    uint8_t loiter_reset_I              : 1;    // true the very first time PosHold enters loiter, thereafter we trust the i terms loiter has
 
     // pilot input related variables
     float pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
@@ -107,9 +106,6 @@ bool Copter::ModePosHold::init(bool ignore_checks)
         poshold.roll_mode = POSHOLD_PILOT_OVERRIDE;
         poshold.pitch_mode = POSHOLD_PILOT_OVERRIDE;
     }
-
-    // loiter's I terms should be reset the first time only
-    poshold.loiter_reset_I = true;
 
     // initialise wind_comp each time PosHold is switched on
     poshold.wind_comp_ef.zero();
@@ -413,9 +409,7 @@ void Copter::ModePosHold::run()
             poshold.pitch_mode = POSHOLD_BRAKE_TO_LOITER;
             poshold.brake_to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
             // init loiter controller
-            wp_nav->init_loiter_target(inertial_nav.get_position(), poshold.loiter_reset_I); // (false) to avoid I_term reset. In original code, velocity(0,0,0) was used instead of current velocity: wp_nav->init_loiter_target(inertial_nav.get_position(), Vector3f(0,0,0));
-            // at this stage, we are going to run update_loiter that will reset I_term once. From now, we ensure next time that we will enter loiter and update it, I_term won't be reset anymore
-            poshold.loiter_reset_I = false;
+            wp_nav->init_loiter_target(inertial_nav.get_position());
             // set delay to start of wind compensation estimate updates
             poshold.wind_comp_start_timer = POSHOLD_WIND_COMP_START_TIMER;
         }
