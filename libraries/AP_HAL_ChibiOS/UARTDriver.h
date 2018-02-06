@@ -24,6 +24,8 @@
 #define RX_BOUNCE_BUFSIZE 128
 #define TX_BOUNCE_BUFSIZE 64
 
+#define UART_MAX_DRIVERS 7
+
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(uint8_t serial_num);
@@ -73,6 +75,18 @@ public:
 private:
     bool tx_bounce_buf_ready;
     const SerialDef &sdef;
+
+    // thread used for all UARTs
+    static thread_t *uart_thread_ctx;
+
+    // last time we ran the uart thread
+    static uint32_t last_thread_run_us;
+    
+    // table to find UARTDrivers from serial number, used for event handling
+    static UARTDriver *uart_drivers[UART_MAX_DRIVERS];
+
+    // index into uart_drivers table
+    uint8_t serial_num;
     
     uint32_t _baudrate;
     uint16_t tx_len;
@@ -121,6 +135,8 @@ private:
 
     void write_pending_bytes_DMA(uint32_t n);
     void write_pending_bytes_NODMA(uint32_t n);
-    void write_pending_bytes_DMA_from_irq(void);
     void write_pending_bytes(void);
+
+    void thread_init();
+    static void uart_thread(void *);
 };
