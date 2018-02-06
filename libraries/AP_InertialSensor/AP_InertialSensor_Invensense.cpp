@@ -966,10 +966,10 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
     }
 
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
-    _dev->get_semaphore()->give();
 
     if (tries == 5) {
         hal.console->printf("Failed to boot Invensense 5 times\n");
+        _dev->get_semaphore()->give();
         return false;
     }
 
@@ -978,6 +978,7 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
         // this avoids a sensor bug, see description above
 		_register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
 	}
+    _dev->get_semaphore()->give();
     
     return true;
 }
