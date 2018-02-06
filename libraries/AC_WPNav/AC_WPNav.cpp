@@ -170,7 +170,7 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
 ///
 
 /// init_loiter_target in cm from home
-void AC_WPNav::init_loiter_target(const Vector3f& position, bool reset_I)
+void AC_WPNav::init_loiter_target(const Vector3f& position)
 {
     // initialise pos controller speed, acceleration
     _pos_control.set_speed_xy(WPNAV_LOITER_VEL_CORRECTION_MAX);
