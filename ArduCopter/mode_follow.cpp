@@ -1,7 +1,7 @@
 #include "Copter.h"
 
 /*
- * mode_chase.cpp - chase another mavlink-enabled vehicle by system id
+ * mode_follow.cpp - follow another mavlink-enabled vehicle by system id
  *
  * TODO: set ROI yaw mode / point camera at target
  * TODO: stick control to move around on sphere
@@ -19,23 +19,23 @@
 #endif
 
 // initialise avoid_adsb controller
-bool Copter::ModeChase::init(const bool ignore_checks)
+bool Copter::ModeFollow::init(const bool ignore_checks)
 {
     // re-use guided mode
     return Copter::ModeGuided::init(ignore_checks);
 }
 
-bool Copter::ModeChase::set_velocity(const Vector3f& velocity_neu)
+bool Copter::ModeFollow::set_velocity(const Vector3f& velocity_neu)
 {
     // check flight mode
-    if (_copter.flightmode != &_copter.mode_chase) {
+    if (_copter.flightmode != &_copter.mode_follow) {
         return false;
     }
 
     return true;
 }
 
-void Copter::ModeChase::run()
+void Copter::ModeFollow::run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {

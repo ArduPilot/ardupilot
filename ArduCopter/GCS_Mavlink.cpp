@@ -47,7 +47,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
     case RTL:
     case LOITER:
     case AVOID_ADSB:
-    case CHASE:
+    case FOLLOW:
     case GUIDED:
     case CIRCLE:
     case POSHOLD:
