@@ -68,7 +68,7 @@ def chibios_dma_define_name(key):
         sys.exit(1)
 
 
-def write_dma_header(f, peripheral_list, mcu_type):
+def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[]):
     '''write out a DMA resolver header file'''
     global dma_map
     try:
@@ -83,6 +83,8 @@ def write_dma_header(f, peripheral_list, mcu_type):
     curr_dict = {}
 
     for periph in peripheral_list:
+        if periph in dma_exclude:
+            continue
         assigned = False
         check_list = []
         if not periph in dma_map:
@@ -195,3 +197,4 @@ if __name__ == '__main__':
 
     f = open("dma.h", "w")
     write_dma_header(f, plist, mcu_type)
+
