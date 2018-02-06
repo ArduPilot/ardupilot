@@ -200,6 +200,7 @@ struct PACKED log_Performance {
     uint16_t ins_error_count;
     uint32_t log_dropped;
     uint32_t mem_avail;
+    uint16_t load;
 };
 
 // Write a performance monitoring packet
@@ -215,7 +216,8 @@ void Copter::Log_Write_Performance()
         i2c_lockup_count : 0,
         ins_error_count  : ins.error_count(),
         log_dropped      : DataFlash.num_dropped() - perf_info.get_num_dropped(),
-        hal.util->available_memory()
+        mem_avail        : hal.util->available_memory(),
+        load             : (uint16_t)(scheduler.load_average() * 1000)
     };
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -649,7 +651,7 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qffffffeccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BBBBBB" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHIhBHII",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop,Mem", "s-------b", "F-------0" },
+      "PM",  "QHHIhBHIIH",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr,LogDrop,Mem,Load", "s-------b%", "F-------0A" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
       "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit", "s-vw-", "F-00-" },
     { LOG_EVENT_MSG, sizeof(log_Event),         
