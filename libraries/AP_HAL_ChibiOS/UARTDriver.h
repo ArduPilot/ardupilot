@@ -112,6 +112,7 @@ private:
     bool _in_timer;
     bool _nonblocking_writes;
     bool _initialised;
+    bool _device_initialised;
     bool _lock_rx_in_timer_tick = false;
     Shared_DMA *dma_handle;
     static const SerialDef _serial_tab[];
