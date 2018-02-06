@@ -1109,6 +1109,10 @@ void AP_Invensense_AuxiliaryBus::_configure_slaves()
 {
     auto &backend = AP_InertialSensor_Invensense::from(_ins_backend);
 
+    if (!backend._dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
+    
     /* Enable the I2C master to slaves on the auxiliary I2C bus*/
     if (!(backend._last_stat_user_ctrl & BIT_USER_CTRL_I2C_MST_EN)) {
         backend._last_stat_user_ctrl |= BIT_USER_CTRL_I2C_MST_EN;
@@ -1127,6 +1131,8 @@ void AP_Invensense_AuxiliaryBus::_configure_slaves()
     backend._register_write(MPUREG_I2C_MST_DELAY_CTRL,
                             BIT_I2C_SLV0_DLY_EN | BIT_I2C_SLV1_DLY_EN |
                             BIT_I2C_SLV2_DLY_EN | BIT_I2C_SLV3_DLY_EN);
+
+    backend._dev->get_semaphore()->give();
 }
 
 int AP_Invensense_AuxiliaryBus::_configure_periodic_read(AuxiliaryBusSlave *slave,
