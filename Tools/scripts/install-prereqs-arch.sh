@@ -79,10 +79,11 @@ if  ! grep -Fxq "$exportline2" ~/.bashrc ; then
     fi
 fi
 
+SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 (
- cd ./ardupilot
- git submodule init
- git submodule update
+    cd $SCRIPT_DIR
+    git submodule init
+    git submodule update --recursive
 )
 
 echo "Done. Please log out and log in again."
