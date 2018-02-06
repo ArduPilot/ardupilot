@@ -822,7 +822,7 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
     _backend_rate_hz = 1000;
     
     if (enable_fast_sampling(_accel_instance)) {
-        _fast_sampling = (_mpu_type != Invensense_MPU6000 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
+        _fast_sampling = (_mpu_type >= Invensense_MPU9250 && _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
         if (_fast_sampling) {
             if (get_sample_rate_hz() <= 1000) {
                 _fifo_downsample_rate = 8;
