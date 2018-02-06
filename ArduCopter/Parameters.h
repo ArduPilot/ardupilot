@@ -581,9 +581,10 @@ public:
     // we need a pointer to the mode for the G2 table
     void *mode_flowhold_ptr;
 #endif
-
+#if MODE_FOLLOW_ENABLED == ENABLED
     // follow
     AP_Follow follow;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];

@@ -292,6 +292,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Follow - follow another vehicle or GCS
+#ifndef MODE_FOLLOW_ENABLED
+# define MODE_FOLLOW_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Guided mode - control vehicle's position or angles from GCS
 #ifndef MODE_GUIDED_ENABLED
 # define MODE_GUIDED_ENABLED ENABLED

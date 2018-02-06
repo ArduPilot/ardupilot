@@ -241,7 +241,7 @@ bool Copter::ModeGuided::set_destination(const Location_Class& dest_loc, bool us
 }
 
 // guided_set_velocity - sets guided mode's target velocity
-void Copter::ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+void Copter::ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
     // check we are in velocity control mode
     if (guided_mode != Guided_Velocity) {
@@ -256,7 +256,9 @@ void Copter::ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, fl
     vel_update_time_ms = millis();
 
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode, Vector3f(), velocity);
+    if (log_request) {
+        copter.Log_Write_GuidedTarget(guided_mode, Vector3f(), velocity);
+    }
 }
 
 // set guided mode posvel target

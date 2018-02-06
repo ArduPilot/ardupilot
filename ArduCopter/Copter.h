@@ -84,7 +84,6 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
-#include <AP_Follow/AP_Follow.h>
 
 // Configuration
 #include "defines.h"
@@ -120,6 +119,9 @@
 #endif
 #if ADSB_ENABLED == ENABLED
  # include <AP_ADSB/AP_ADSB.h>
+#endif
+#if MODE_FOLLOW_ENABLED == ENABLED
+ # include <AP_Follow/AP_Follow.h>
 #endif
 #if AC_FENCE == ENABLED
  # include <AC_Fence/AC_Fence.h>
@@ -980,7 +982,9 @@ private:
     ModeDrift mode_drift;
 #endif
     ModeFlip mode_flip;
+#if MODE_FOLLOW_ENABLED == ENABLED
     ModeFollow mode_follow;
+#endif
 #if MODE_GUIDED_ENABLED == ENABLED
     ModeGuided mode_guided;
 #endif
