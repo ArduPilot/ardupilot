@@ -60,6 +60,17 @@
  */
 #define CH_CFG_ST_TIMEDELTA                 2
 
+/*
+  default to a large interrupt stack for now. We may trim this later
+  if we become confident of our interrupt handler requirements. Note
+  that we pay for this stack size in every thread, so it is quite
+  expensive in memory
+ */
+#ifndef PORT_INT_REQUIRED_STACK
+#define PORT_INT_REQUIRED_STACK 256
+#endif
+
+
 /** @} */
 
 /*===========================================================================*/
