@@ -49,6 +49,9 @@ public:
     // unlock call from an IRQ
     void unlock_from_IRQ(void);
 
+    // unlock call from a chSysLock zone
+    void unlock_from_lockzone(void);
+    
     //should be called inside the destructor of Shared DMA participants
     void unregister(void);
 
@@ -57,6 +60,7 @@ private:
     dma_allocate_fn_t deallocate;
     uint8_t stream_id1;
     uint8_t stream_id2;
+    bool have_lock;
 
     static struct dma_lock {
         // semaphore to ensure only one peripheral uses a DMA channel at a time
