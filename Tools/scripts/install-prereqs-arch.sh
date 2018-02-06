@@ -35,10 +35,10 @@ function prompt_user() {
 
 sudo usermod -a -G uucp $USER
 
-sudo pacman -S --noconfirm $BASE_PKGS $SITL_PKGS $PX4_PKGS
+sudo pacman -S --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
 sudo pip2 -q install -U $PYTHON2_PKGS
 sudo pip3 -q install -U $PYTHON3_PKGS
-yaourt -S --noconfirm $ARCH_AUR_PKGS
+yaourt -S --noconfirm --needed $ARCH_AUR_PKGS
 
 (
     cd /usr/lib/ccache
