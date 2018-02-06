@@ -1067,6 +1067,7 @@ private:
 
 };
 
+// modes below rely on Guided mode so must be declared at the end (instead of in alphabetical order)
 
 class ModeAvoidADSB : public ModeGuided {
 
@@ -1093,11 +1094,11 @@ private:
 
 };
 
-class ModeChase : public ModeGuided {
+class ModeFollow : public ModeGuided {
 
 public:
 
-    ModeChase(Copter &copter) :
+    ModeFollow(Copter &copter) :
         Copter::ModeGuided(copter) {
     }
 
@@ -1113,6 +1114,6 @@ public:
 
 protected:
 
-    const char *name() const override { return "CHASE"; }
-    const char *name4() const override { return "CHAS"; }
+    const char *name() const override { return "FOLLOW"; }
+    const char *name4() const override { return "FOLL"; }
 };

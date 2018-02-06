@@ -976,11 +976,11 @@ private:
 #if MODE_CIRCLE_ENABLED == ENABLED
     ModeCircle mode_circle;
 #endif
-    ModeChase mode_chase;
 #if MODE_DRIFT_ENABLED == ENABLED
     ModeDrift mode_drift;
 #endif
     ModeFlip mode_flip;
+    ModeFollow mode_follow;
 #if MODE_GUIDED_ENABLED == ENABLED
     ModeGuided mode_guided;
 #endif

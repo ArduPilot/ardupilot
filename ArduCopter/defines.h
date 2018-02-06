@@ -109,7 +109,7 @@ enum control_mode_t {
     GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
     SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
     FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
-    CHASE     =    23,  // chase attempts to follow a mavink system id
+    FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
 };
 
 enum mode_reason_t {
