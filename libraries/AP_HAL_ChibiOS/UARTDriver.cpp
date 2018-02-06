@@ -122,7 +122,6 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     if (sdef.serial == nullptr) {
         return;
     }
-    bool was_initialised = _initialised;
     uint16_t min_tx_buffer = 4096;
     uint16_t min_rx_buffer = 1024;
     // on PX4 we have enough memory to have a larger transmit and
@@ -171,7 +170,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         /*
          * Initializes a serial-over-USB CDC driver.
          */
-        if (!was_initialised) {
+        if (!_device_initialised) {
             sduObjectInit((SerialUSBDriver*)sdef.serial);
             sduStart((SerialUSBDriver*)sdef.serial, &serusbcfg);
             /*
@@ -183,12 +182,14 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             hal.scheduler->delay_microseconds(1500);
             usbStart(serusbcfg.usbp, &usbcfg);
             usbConnectBus(serusbcfg.usbp);
+            _device_initialised = true;
         }
 #endif
     } else {
         if (_baudrate != 0) {
+            bool was_initialised = _device_initialised;            
             //setup Rx DMA
-            if(!was_initialised) {
+            if(!_device_initialised) {
                 if(sdef.dma_rx) {
                     rxdma = STM32_DMA_STREAM(sdef.dma_rx_stream_id);
                     chSysLock();
@@ -209,6 +210,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                                                 FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_allocate, void),
                                                 FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_deallocate, void));
                 }
+                _device_initialised = true;
             }
             sercfg.speed = _baudrate;
             if (!sdef.dma_tx && !sdef.dma_rx) {
