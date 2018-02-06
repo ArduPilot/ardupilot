@@ -699,6 +699,16 @@ def write_peripheral_enable(f):
         if type.startswith('I2C'):
             f.write('#define STM32_I2C_USE_%s                  TRUE\n' % type)
 
+def get_dma_exclude(periph_list):
+    '''return list of DMA devices to exclude from DMA'''
+    dma_exclude = []
+    for periph in periph_list:
+        if periph not in bylabel:
+            continue
+        p = bylabel[periph]
+        if p.has_extra('NODMA'):
+            dma_exclude.append(periph)
+    return dma_exclude
 
 def write_hwdef_header(outfilename):
     '''write hwdef header file'''
@@ -724,7 +734,7 @@ def write_hwdef_header(outfilename):
     write_peripheral_enable(f)
     write_prototype_file()
 
-    dma_resolver.write_dma_header(f, periph_list, mcu_type)
+    dma_resolver.write_dma_header(f, periph_list, mcu_type, dma_exclude=get_dma_exclude(periph_list))
 
     write_UART_config(f)
 
@@ -900,3 +910,4 @@ write_hwdef_header(os.path.join(outdir, "hwdef.h"))
 
 # write out ldscript.ld
 write_ldscript(os.path.join(outdir, "ldscript.ld"))
+
