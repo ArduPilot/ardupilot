@@ -196,6 +196,7 @@ uint16_t SPIDevice::derive_freq_flag(uint32_t _frequency)
 bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+    bus.semaphore.assert_owner();
     if (send_len == recv_len && send == recv) {
         // simplest cases, needed for DMA
         do_transfer(send, recv, recv_len);
@@ -217,6 +218,7 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
 
 bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv, uint32_t len)
 {
+    bus.semaphore.assert_owner();
     uint8_t buf[len];
     memcpy(buf, send, len);
     do_transfer(buf, buf, len);
@@ -245,6 +247,7 @@ bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
  */
 bool SPIDevice::set_chip_select(bool set)
 {
+    bus.semaphore.assert_owner();
     if (set && cs_forced) {
         return true;
     }
