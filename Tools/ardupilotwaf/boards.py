@@ -452,7 +452,6 @@ class mini_pix(chibios):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_MINIPIX',
         )
-        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
 
 class linux(Board):
     def configure_env(self, cfg, env):
