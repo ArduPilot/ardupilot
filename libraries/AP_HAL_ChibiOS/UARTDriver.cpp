@@ -511,19 +511,22 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
  */
 void UARTDriver::write_pending_bytes_DMA(uint32_t n)
 {
+    chSysLock();
     if (!tx_bounce_buf_ready && txdma) {
         if (!(txdma->stream->CR & STM32_DMA_CR_EN)) {
             if (txdma->stream->NDTR == 0) {
                 tx_bounce_buf_ready = true;
                 _last_write_completed_us = AP_HAL::micros();
-                dma_handle->unlock();
+                dma_handle->unlock_from_lockzone();
             }
         }
     }
 
     if (!tx_bounce_buf_ready) {
+        chSysUnlock();
         return;
     }
+    chSysUnlock();
 
     /* TX DMA channel preparation.*/
     _writebuf.advance(tx_len);
