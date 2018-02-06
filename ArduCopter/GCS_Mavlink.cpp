@@ -696,8 +696,10 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
         copter.avoidance_adsb.handle_msg(msg);
     }
 #endif
+#if MODE_FOLLOW_ENABLED == ENABLED
     // pass message to follow library
     copter.g2.follow.handle_msg(msg);
+#endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
@@ -828,11 +830,13 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         switch(packet.command)
         {
             case MAV_CMD_DO_FOLLOW:
+#if MODE_FOLLOW_ENABLED == ENABLED
                 // param1: sysid of target to follow
                 if ((packet.param1 > 0) && (packet.param1 <= 255)) {
                     copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
                     result = MAV_RESULT_ACCEPTED;
                 }
+#endif
                 break;
 
             case MAV_CMD_DO_SET_HOME: {
@@ -955,11 +959,13 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_DO_FOLLOW:
+#if MODE_FOLLOW_ENABLED == ENABLED
             // param1: sysid of target to follow
             if ((packet.param1 > 0) && (packet.param1 <= 255)) {
                 copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
                 result = MAV_RESULT_ACCEPTED;
             }
+#endif
             break;
 
         case MAV_CMD_CONDITION_YAW:

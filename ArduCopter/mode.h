@@ -690,7 +690,7 @@ public:
     void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
     bool set_destination(const Location_Class& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
 
     void limit_clear();
@@ -1098,9 +1098,8 @@ class ModeFollow : public ModeGuided {
 
 public:
 
-    ModeFollow(Copter &copter) :
-        Copter::ModeGuided(copter) {
-    }
+    // inherit constructor
+    using Copter::ModeGuided::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1110,10 +1109,10 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return true; }
 
-    bool set_velocity(const Vector3f& velocity_neu);
-
 protected:
 
     const char *name() const override { return "FOLLOW"; }
     const char *name4() const override { return "FOLL"; }
+
+    uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
