@@ -243,7 +243,8 @@ static char *string_substitute(const char *str)
             if (strcmp(str, "%SERIAL%") == 0) {
                 const char *hex = "0123456789ABCDEF";
                 const uint8_t *cpu_id = (const uint8_t *)UDID_START;
-                for (uint8_t i=0; i<12; i++) {
+                uint8_t i;
+                for (i=0; i<12; i++) {
                     *p++ = hex[(cpu_id[i]>>4)&0xF];
                     *p++ = hex[cpu_id[i]&0xF];
                 }
