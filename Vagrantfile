@@ -1,17 +1,22 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+# Testing an ArduPilot VM:
+# sim_vehicle.py # in the starting directory should start a Copter simulation
+# xterm # X11 forwarding should work
+# sim_vehicle.py --debug --gdb
+# sim_vehicle.py --valgrind
+# cd /vagrant && ./waf configure --board=px4-v2 && ./waf build --target=bin/ardusub
+# cd /vagrant ./waf configure --board=navio2 && ./waf build --target=bin/arduplane
+# cd /vagrant ./Tools/autotest/sim_vehicle.py -v ArduPlane # should test JSBSim
+# cd /vagrant ./Tools/autotest/autotest.py build.APMrover2 drive.APMrover2
+
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.box = "ubuntu/zesty32"
-  # push.app = "geeksville/ardupilot-sitl"
-
-  # The following forwarding is not necessary (or possible), because our sim_vehicle.py is smart enough to send packets
-  # out to the containing OS
-  # config.vm.network "forwarded_port", guest: 14550, host: 14550, protocol: "udp"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -39,6 +44,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # If you are on windows then you must use a version of git >= 1.8.x to update the submodules
   # in order to build. Older versions of git use absolute paths for submodules which confuses things.
 
-  config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"  
+  config.vm.define "devenv", primary: true do |devenv|
+    config.vm.box = "ubuntu/zesty32"
+    config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"  
+  end
+
+  config.vm.define "trusty64" do |trusty64|
+    config.vm.box = "ubuntu/trusty64"
+    config.vm.provision "trusty64", type: "shell", path: "Tools/vagrant/initvagrant.sh"
+  end
+
 end
 
