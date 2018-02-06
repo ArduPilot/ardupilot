@@ -126,6 +126,11 @@ void I2CBus::dma_deallocate(void)
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+    if (!bus.semaphore.check_owner()) {
+        hal.console->printf("ERR: I2C transfer by non-owner\n");
+        return false;
+    }
+    
     bus.dma_handle->lock();
 
     if (_use_smbus) {
@@ -172,41 +177,39 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 
     bus.bouncebuffer_setup(send_buf, send_len, recv_buf, recv_len);
 
+    i2cAcquireBus(I2CD[bus.busnum].i2c);
+    
     for(uint8_t i=0 ; i <= _retries; i++) {
         int ret;
-        i2cAcquireBus(I2CD[bus.busnum].i2c);
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
         uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.i2ccfg.clock_speed)*MAX(send_len, recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
         bus.i2c_active = true;
+        osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
         if(send_len == 0) {
             ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv_buf, recv_len, MS2ST(timeout_ms));
         } else {
             ret = i2cMasterTransmitTimeout(I2CD[bus.busnum].i2c, _address, send_buf, send_len,
                                            recv_buf, recv_len, MS2ST(timeout_ms));
         }
-        i2cReleaseBus(I2CD[bus.busnum].i2c);
         bus.i2c_active = false;
-        osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
-        if (ret != MSG_OK){
+        if (ret != MSG_OK) {
             //restart the bus
-            if (bus.i2c_started) {
-                osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
-                i2cStop(I2CD[bus.busnum].i2c);
-                osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
-                bus.i2c_started = false;
-            }
+            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY || I2CD[bus.busnum].i2c->state == I2C_LOCKED, "i2cStart state");
+            i2cStop(I2CD[bus.busnum].i2c);
             osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
             i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
             osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
-            bus.i2c_started = true;
         } else {
+            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
             if (recv_buf != recv) {
                 memcpy(recv, recv_buf, recv_len);
             }
+            i2cReleaseBus(I2CD[bus.busnum].i2c);
             return true;
         }
     }
+    i2cReleaseBus(I2CD[bus.busnum].i2c);
     return false;
 }
 
