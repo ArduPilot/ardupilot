@@ -29,6 +29,12 @@ public:
     bool give();
     bool take(uint32_t timeout_ms);
     bool take_nonblocking();
+    bool check_owner(void) {
+        return _lock.owner == chThdGetSelfX();
+    }
+    void assert_owner(void) {
+        osalDbgAssert(check_owner(), "owner");
+    }
 private:
     mutex_t _lock;
 };
