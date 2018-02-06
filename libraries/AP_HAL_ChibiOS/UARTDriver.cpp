@@ -22,6 +22,7 @@
 #include <usbcfg.h>
 #include "shared_dma.h"
 #include <AP_Math/AP_Math.h>
+#include "Scheduler.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -32,23 +33,90 @@ using namespace ChibiOS;
 #define HAVE_USB_SERIAL
 #endif
 
+#if HAL_WITH_IO_MCU
+extern ChibiOS::UARTDriver uart_io;
+#endif
+
 const UARTDriver::SerialDef UARTDriver::_serial_tab[] = { HAL_UART_DEVICE_LIST };
 
-// event used to wake up waiting thread
+// handle for UART handling thread
+thread_t *UARTDriver::uart_thread_ctx;
+
+// table to find UARTDrivers from serial number, used for event handling
+UARTDriver *UARTDriver::uart_drivers[UART_MAX_DRIVERS];
+
+// last time we did a 1kHz run of uarts
+uint32_t UARTDriver::last_thread_run_us;
+
+// event used to wake up waiting thread. This event number is for
+// caller threads
 #define EVT_DATA EVENT_MASK(0)
 
-UARTDriver::UARTDriver(uint8_t serial_num) :
+UARTDriver::UARTDriver(uint8_t _serial_num) :
 tx_bounce_buf_ready(true),
-sdef(_serial_tab[serial_num]),
+serial_num(_serial_num),
+sdef(_serial_tab[_serial_num]),
 _baudrate(57600),
 _in_timer(false),
 _initialised(false)
 {
+    osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many UART drivers");
+    uart_drivers[serial_num] = this;
     chMtxObjectInit(&_write_mutex);
 }
 
+/*
+  thread for handling UART send/receive
+
+  We use events indexed by serial_num to trigger a more rapid send for
+  unbuffered_write uarts, and run at 1kHz for general UART handling
+ */
+void UARTDriver::uart_thread(void* arg)
+{
+    uart_thread_ctx = chThdGetSelfX();
+    while (true) {
+        eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(1));
+        uint32_t now = AP_HAL::micros();
+        if (now - last_thread_run_us >= 1000) {
+            // run them all if it's been more than 1ms since we ran
+            // them all
+            mask = ~0;
+            last_thread_run_us = now;
+        }
+        for (uint8_t i=0; i<UART_MAX_DRIVERS; i++) {
+            if (uart_drivers[i] == nullptr) {
+                continue;
+            }
+            if ((mask & EVENT_MASK(i)) &&
+                uart_drivers[i]->_initialised) {
+                uart_drivers[i]->_timer_tick();
+            }
+        }
+    }
+}
+
+/*
+  initialise UART thread
+ */
+void UARTDriver::thread_init(void)
+{
+    if (uart_thread_ctx) {
+        // already initialised
+        return;
+    }
+    uart_thread_ctx = chThdCreateFromHeap(NULL,
+                                          THD_WORKING_AREA_SIZE(2048),
+                                          "apm_uart",
+                                          APM_UART_PRIORITY,
+                                          uart_thread,
+                                           this);
+}
+
+
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
+    thread_init();
+    
     hal.gpio->pinMode(2, HAL_GPIO_OUTPUT);
     hal.gpio->pinMode(3, HAL_GPIO_OUTPUT);
     if (sdef.serial == nullptr) {
@@ -211,20 +279,22 @@ void UARTDriver::dma_tx_deallocate(void)
     chSysUnlock();
 }
 
+/*
+  DMA transmit complettion interrupt handler
+ */
 void UARTDriver::tx_complete(void* self, uint32_t flags)
 {
     UARTDriver* uart_drv = (UARTDriver*)self;
     if (!uart_drv->tx_bounce_buf_ready) {
         uart_drv->_last_write_completed_us = AP_HAL::micros();
         uart_drv->tx_bounce_buf_ready = true;
-        if (uart_drv->unbuffered_writes) {
-            //kickstart the next write
-            uart_drv->write_pending_bytes_DMA_from_irq();
+        if (uart_drv->unbuffered_writes && uart_drv->_writebuf.available()) {
+            // trigger a rapid send of next bytes
+            chSysLockFromISR();
+            chEvtSignalI(uart_thread_ctx, EVENT_MASK(uart_drv->serial_num));
+            chSysUnlockFromISR();
         }
-        if (uart_drv->tx_bounce_buf_ready) {
-            // we didn't launch a new DMA
-            uart_drv->dma_handle->unlock_from_IRQ();
-        }
+        uart_drv->dma_handle->unlock_from_IRQ();
     }
 }
 
@@ -462,34 +532,6 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         return;
     }
     dma_handle->lock();
-    tx_bounce_buf_ready = false;
-    osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
-    dmaStreamSetMemory0(txdma, tx_bounce_buf);
-    dmaStreamSetTransactionSize(txdma, tx_len);
-    uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
-    dmamode |= STM32_DMA_CR_CHSEL(STM32_DMA_GETCHANNEL(sdef.dma_tx_stream_id,
-                                                       sdef.dma_tx_channel_id));
-    dmamode |= STM32_DMA_CR_PL(0);
-    dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
-                     STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
-    dmaStreamEnable(txdma);
-}
-
-/*
-  write out pending bytes with DMA from IRQ
- */
-void UARTDriver::write_pending_bytes_DMA_from_irq()
-{
-    if (!tx_bounce_buf_ready) {
-        return;
-    }
-
-    /* TX DMA channel preparation.*/
-    _writebuf.advance(tx_len);
-    tx_len = _writebuf.peekbytes(tx_bounce_buf, TX_BOUNCE_BUFSIZE);
-    if (tx_len == 0) {
-        return;
-    }
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
     dmaStreamSetMemory0(txdma, tx_bounce_buf);
