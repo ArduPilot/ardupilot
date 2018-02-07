@@ -76,9 +76,6 @@ void Tracker::loop()
     // wait for an INS sample
     ins.wait_for_sample();
 
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
     scheduler.run(19900UL);
 }
 

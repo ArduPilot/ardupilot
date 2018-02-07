@@ -232,9 +232,6 @@ void Copter::loop()
     // ---------------------
     fast_loop();
 
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
     // run all the tasks that are due to run. Note that we only
     // have to call this once per loop, as the tasks are scheduled
     // in multiples of the main loop tick. So if they don't run on

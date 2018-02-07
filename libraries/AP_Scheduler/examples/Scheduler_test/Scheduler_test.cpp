@@ -60,9 +60,6 @@ void SchedTest::loop(void)
     // wait for an INS sample
     ins.wait_for_sample();
 
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
     // run all tasks that fit in 20ms
     scheduler.run(20000);
 }
