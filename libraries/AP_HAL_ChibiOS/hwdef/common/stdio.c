@@ -28,6 +28,7 @@
 #include <hal.h>
 #include <memstreams.h>
 #include <chprintf.h>
+#include "stdio.h"
 
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 {
@@ -116,6 +117,7 @@ int printf(const char *fmt, ...)
 int 
 scanf (const char *fmt, ...)
 {
+    (void)fmt;
     return 0;
 }
 /*
@@ -170,7 +172,7 @@ _atob (uint32_t *vp, char *p, int base)
   }
 
   if (base == 16 && (q = strchr (p, '.')) != 0) {
-    if (q - p > sizeof(tmp) - 1)
+      if ((unsigned)(q - p) > (unsigned)(sizeof(tmp) - 1))
       return (0);
 
     strncpy (tmp, p, q - p);
@@ -227,7 +229,7 @@ atob(uint32_t *vp, char *p, int base)
 }
 
 
-#if HAL_OS_FATFS_IO
+#if defined(HAL_OS_FATFS_IO) && HAL_OS_FATFS_IO
 /*
  *  vsscanf(buf,fmt,ap)
  */

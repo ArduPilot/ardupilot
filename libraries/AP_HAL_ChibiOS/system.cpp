@@ -38,10 +38,13 @@ typedef enum  {
 
 void *__dso_handle;
 
+void __cxa_pure_virtual(void);    
 void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate a traceback
 
+void NMI_Handler(void);
 void NMI_Handler(void) { while (1); }
 
+void HardFault_Handler(void);
 void HardFault_Handler(void) {
     //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
     //Get thread context. Contains main registers including PC and LR
@@ -72,6 +75,7 @@ void HardFault_Handler(void) {
 
 void BusFault_Handler(void) __attribute__((alias("HardFault_Handler")));
 
+void UsageFault_Handler(void);
 void UsageFault_Handler(void) {
     //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
     //Get thread context. Contains main registers including PC and LR
@@ -99,6 +103,7 @@ void UsageFault_Handler(void) {
     while(1) {}
 }
 
+void MemManage_Handler(void);
 void MemManage_Handler(void) {
     //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
     //Get thread context. Contains main registers including PC and LR

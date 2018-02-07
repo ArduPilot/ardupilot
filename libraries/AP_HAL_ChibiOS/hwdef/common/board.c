@@ -16,6 +16,7 @@
  */
 
 #include "hal.h"
+#include "usbcfg.h"
 
 #if HAL_USE_PAL || defined(__DOXYGEN__)
 /**
