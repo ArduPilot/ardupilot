@@ -109,6 +109,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string.h>
 #include "posix.h"
+#include "stdio.h"
 #undef strerror_r
 
 ///  Note: fdevopen assigns stdin,stdout,stderr
@@ -231,7 +232,6 @@ fgetc(FILE *stream)
     } else {
         if(!stream->get)
         {
-            printf("fgetc stream->get NULL\n");
             return(EOF);
         }
         // get character from device or file
@@ -266,13 +266,6 @@ fputc(int c, FILE *stream)
     errno = 0;
     int ret;
 
-    if(stream == NULL)
-    {
-        errno = EBADF;                            // Bad File Number
-        return(EOF);
-    }
-
-
     if(stream != stdout && stream != stderr)
     {
         return(fatfs_putc(c,stream));
@@ -291,7 +284,6 @@ fputc(int c, FILE *stream)
     } else {
         if(!stream->put)
         {
-            printf("fputc stream->put NULL\n");
             return(EOF);
         }
         ret = stream->put(c, stream);
@@ -1225,7 +1217,8 @@ ssize_t write(int fd, const void *buf, size_t count)
 
 FILE * __wrap_freopen ( const char * filename, const char * mode, FILE * stream )
 {
-    int ret = close(stream);
+    int fn = fileno(stream);
+    int ret = close(fn);
     if (ret < 0) {
         return NULL;
     }
@@ -1411,7 +1404,7 @@ int utime(const char *filename, const struct utimbuf *times)
 
 int64_t fs_getfree() {
     FATFS *fs;
-    DWORD fre_clust, fre_sect, tot_sect;
+    DWORD fre_clust, fre_sect;
 
 
     /* Get volume information and free clusters of drive 1 */
@@ -1426,7 +1419,7 @@ int64_t fs_getfree() {
 
 int64_t fs_gettotal() {
     FATFS *fs;
-    DWORD fre_clust, fre_sect, tot_sect;
+    DWORD fre_clust, tot_sect;
 
 
     /* Get volume information and free clusters of drive 1 */
@@ -2238,7 +2231,6 @@ int fatfs_to_fileno(FIL *fh)
  */
 static time_t replace_mktime(const struct tm *t)
 {
-    struct tm       *u;
     time_t  epoch = 0;
     int n;
     int mon [] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }, y, m, i;
