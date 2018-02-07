@@ -20,7 +20,7 @@ private:
     AP_Scheduler scheduler;
 
     uint32_t ins_counter;
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static AP_Scheduler::Task scheduler_tasks[];
 
     void ins_update(void);
     void one_hz_print(void);
@@ -37,7 +37,7 @@ static SchedTest schedtest;
   often they should be called (in 20ms units) and the maximum time
   they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
+AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
     SCHED_TASK(ins_update,             50,   1000),
     SCHED_TASK(one_hz_print,            1,   1000),
     SCHED_TASK(five_second_call,      0.2,   1800),
@@ -59,10 +59,7 @@ void SchedTest::loop(void)
 {
     // wait for an INS sample
     ins.wait_for_sample();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
+    
     // run all tasks that fit in 20ms
     scheduler.run(20000);
 }

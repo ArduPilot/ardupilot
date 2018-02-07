@@ -30,7 +30,7 @@
   often they should be called (in Hz) and the maximum time
   they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task Plane::scheduler_tasks[] = {
+AP_Scheduler::Task Plane::scheduler_tasks[] = {
                            // Units:   Hz      us
     SCHED_TASK(ahrs_update,           400,    400),
     SCHED_TASK(read_radio,             50,    100),
@@ -128,10 +128,7 @@ void Plane::loop()
     fast_loopTimer = timer;
 
     mainLoop_count++;
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
+    
     // run all the tasks that are due to run. Note that we only
     // have to call this once per loop, as the tasks are scheduled
     // in multiples of the main loop tick. So if they don't run on

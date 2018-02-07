@@ -42,7 +42,7 @@ Rover rover;
   with how often they should be called (in 20ms units) and the maximum
   time they are expected to take (in microseconds)
 */
-const AP_Scheduler::Task Rover::scheduler_tasks[] = {
+AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
     SCHED_TASK(read_radio,             50,   1000),
     SCHED_TASK(ahrs_update,            50,   6400),
@@ -132,10 +132,7 @@ void Rover::loop()
     }
 
     mainLoop_count++;
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
+    
     // run all the tasks that are due to run. Note that we only
     // have to call this once per loop, as the tasks are scheduled
     // in multiples of the main loop tick. So if they don't run on

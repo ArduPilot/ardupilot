@@ -31,7 +31,7 @@
   (in 20ms units) and the maximum time they are expected to take (in
   microseconds)
  */
-const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
+AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(update_ahrs,            50,   1000),
     SCHED_TASK(read_radio,             50,    200),
     SCHED_TASK(update_tracking,        50,   1000),
@@ -75,10 +75,7 @@ void Tracker::loop()
 {
     // wait for an INS sample
     ins.wait_for_sample();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
+    
     scheduler.run(19900UL);
 }
 

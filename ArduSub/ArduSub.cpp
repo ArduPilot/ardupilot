@@ -24,7 +24,7 @@
   should be listed here, along with how often they should be called (in hz)
   and the maximum time they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task Sub::scheduler_tasks[] = {
+AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(fifty_hz_loop,         50,     75),
     SCHED_TASK(update_GPS,            50,    200),
 #if OPTFLOW == ENABLED
@@ -132,10 +132,7 @@ void Sub::loop()
     // Execute the fast loop
     // ---------------------
     fast_loop();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
+    
     // run all the tasks that are due to run. Note that we only
     // have to call this once per loop, as the tasks are scheduled
     // in multiples of the main loop tick. So if they don't run on

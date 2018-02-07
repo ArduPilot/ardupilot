@@ -350,7 +350,7 @@ private:
     // true if pivoting (set by use_pivot_steering)
     bool pivot_steering_active;
 
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static AP_Scheduler::Task scheduler_tasks[];
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;

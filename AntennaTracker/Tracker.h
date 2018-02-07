@@ -194,7 +194,7 @@ private:
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay = false;
 
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 

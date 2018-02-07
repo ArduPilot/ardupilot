@@ -455,7 +455,7 @@ private:
     uint32_t last_pilot_yaw_input_ms;
     uint32_t fs_terrain_recover_start_ms = 0;
 
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
