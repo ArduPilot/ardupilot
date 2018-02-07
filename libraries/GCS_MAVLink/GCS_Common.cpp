@@ -556,6 +556,9 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     waypoint_receiving   = true;
     waypoint_request_i   = packet.start_index;
     waypoint_request_last= packet.end_index;
+
+    waypoint_dest_sysid = msg->sysid;       // record system id of GCS who wants to partially update the mission
+    waypoint_dest_compid = msg->compid;     // record component id of GCS who wants to partially update the mission
 }
 
 
