@@ -156,7 +156,9 @@ void AP_TempCalibration::calculate_calibration(void)
         test_err < current_err) {
         // move to new value
         debug("CAL: %.2f\n", test_exponent);
-        baro_exponent.set_and_save_ifchanged(test_exponent);
+        if (!is_equal(test_exponent, baro_exponent.get())) {
+            baro_exponent.set_and_save(test_exponent);
+        }
         temp_min.set_and_save_ifchanged(learn_temp_start);
         temp_max.set_and_save_ifchanged(learn_temp_start + learn_i*learn_temp_step);
     }
