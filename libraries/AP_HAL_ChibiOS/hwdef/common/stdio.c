@@ -28,6 +28,7 @@
 #include <hal.h>
 #include <memstreams.h>
 #include <chprintf.h>
+#include <ctype.h>
 #include "stdio.h"
 
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
@@ -236,7 +237,8 @@ atob(uint32_t *vp, char *p, int base)
 int
 vsscanf (const char *buf, const char *s, va_list ap)
 {
-    int             count, noassign, width, base, lflag;
+    int             count, noassign, base=0, lflag;
+    uint32_t width;
     const char     *tc;
     char           *t, tmp[MAXLN];
 
@@ -317,6 +319,8 @@ vsscanf (const char *buf, const char *s, va_list ap)
     }
     return (count);
 }
+
+static int vfscanf(FILE *stream, const char *fmt, va_list ap);
 
 /*
  *  fscanf(stream,fmt,va_alist)
