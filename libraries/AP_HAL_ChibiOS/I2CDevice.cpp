@@ -116,7 +116,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
              (unsigned)busnum, (unsigned)address);
     if (bus_clock < bus.i2ccfg.clock_speed) {
         bus.i2ccfg.clock_speed = bus_clock;
-        hal.console->printf("I2C% clock %ukHz\n", busnum, bus_clock/1000);
+        hal.console->printf("I2C%u clock %ukHz\n", busnum, unsigned(bus_clock/1000));
         if (bus_clock <= 100000) {
             bus.i2ccfg.duty_cycle = STD_DUTY_CYCLE;
         }
