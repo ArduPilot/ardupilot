@@ -70,6 +70,7 @@
 #define HAL_BOARD_SUBTYPE_CHIBIOS_MINIPIX       5006
 
 /* InertialSensor driver types */
+#define HAL_INS_NONE         0
 #define HAL_INS_MPU60XX_SPI  2
 #define HAL_INS_MPU60XX_I2C  3
 #define HAL_INS_HIL          4
@@ -91,6 +92,7 @@
 #define HAL_INS_LSM9DS1     22
 
 /* Barometer driver types */
+#define HAL_BARO_NONE        0
 #define HAL_BARO_BMP085      1
 #define HAL_BARO_MS5611_I2C  2
 #define HAL_BARO_MS5611_SPI  3
@@ -106,6 +108,7 @@
 #define HAL_BARO_LPS25H     13
 
 /* Compass driver types */
+#define HAL_COMPASS_NONE                0
 #define HAL_COMPASS_HMC5843             1
 #define HAL_COMPASS_PX4                 2
 #define HAL_COMPASS_HIL                 3
@@ -208,4 +211,20 @@
 
 #ifndef HAL_OS_FATFS_IO
 #define HAL_OS_FATFS_IO 0
+#endif
+
+#ifndef HAL_PX4_HAVE_PX4IO
+#define HAL_PX4_HAVE_PX4IO 0
+#endif
+
+#ifndef HAL_COMPASS_DEFAULT
+#define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+#endif
+
+#ifndef HAL_BARO_DEFAULT
+#define HAL_BARO_DEFAULT HAL_BARO_NONE
+#endif
+
+#ifndef HAL_INS_DEFAULT
+#define HAL_INS_DEFAULT HAL_INS_NONE
 #endif
