@@ -889,10 +889,11 @@ private:
     bool check_duplicate_auxsw(void);
     void reset_control_switch();
     uint8_t read_3pos_switch(uint8_t chan);
+    void read_aux_switch(uint8_t chan, int8_t ch_option, uint8_t ch_flag);
     void read_aux_switches();
     void init_aux_switches();
-    void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag);
-    void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag);
+    void init_aux_switch_function(uint8_t chan, int8_t ch_option, uint8_t ch_flag);
+    void do_aux_switch_function(uint8_t chan, int8_t ch_function, uint8_t ch_flag);
     void save_trim();
     void auto_trim();
 

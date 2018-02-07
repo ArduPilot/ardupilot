@@ -127,7 +127,7 @@ uint8_t Copter::read_3pos_switch(uint8_t chan)
         switch_position = read_3pos_switch(chan); \
         if (flag != switch_position) {                              \
             flag = switch_position;                                 \
-            do_aux_switch_function(option, flag);                   \
+            do_aux_switch_function(chan, option, flag);                   \
         }                                                           \
     } while (false)
 
@@ -168,18 +168,18 @@ void Copter::init_aux_switches()
     aux_con.CH12_flag = read_3pos_switch(CH_12);
 
     // initialise functions assigned to switches
-    init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
-    init_aux_switch_function(g.ch8_option, aux_con.CH8_flag);
-    init_aux_switch_function(g.ch10_option, aux_con.CH10_flag);
-    init_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
+    init_aux_switch_function(CH_7, g.ch7_option, aux_con.CH7_flag);
+    init_aux_switch_function(CH_8, g.ch8_option, aux_con.CH8_flag);
+    init_aux_switch_function(CH_10, g.ch10_option, aux_con.CH10_flag);
+    init_aux_switch_function(CH_11, g.ch11_option, aux_con.CH11_flag);
 
     // ch9, ch12 only supported on some boards
-    init_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
-    init_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
+    init_aux_switch_function(CH_9, g.ch9_option, aux_con.CH9_flag);
+    init_aux_switch_function(CH_12, g.ch12_option, aux_con.CH12_flag);
 }
 
 // init_aux_switch_function - initialize aux functions
-void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
+void Copter::init_aux_switch_function(uint8_t chan, int8_t ch_option, uint8_t ch_flag)
 {    
     // init channel options
     switch(ch_option) {
@@ -204,13 +204,13 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_INVERTED:
         case AUXSW_WINCH_ENABLE:
         case AUXSW_RC_OVERRIDE_ENABLE:
-            do_aux_switch_function(ch_option, ch_flag);
+            do_aux_switch_function(chan, ch_option, ch_flag);
             break;
     }
 }
 
 // do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
-void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
+void Copter::do_aux_switch_function(uint8_t chan, int8_t ch_function, uint8_t ch_flag)
 {
 
     switch(ch_function) {
@@ -666,15 +666,20 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
         case AUXSW_RC_OVERRIDE_ENABLE:
             // Allow or disallow RC_Override
-            switch (ch_flag) {
-                case AUX_SWITCH_HIGH: {
-                    ap.rc_override_enable = true;
-                    break;
+            // Prevent usage of this configuration on channel overridable. Enable RC_Override in case of radio lose.
+            if ((chan > CH_8) && !failsafe.radio) {
+                switch (ch_flag) {
+                    case AUX_SWITCH_HIGH: {
+                        ap.rc_override_enable = true;
+                        break;
+                    }
+                    case AUX_SWITCH_LOW: {
+                        ap.rc_override_enable = false;
+                        break;
+                    }
                 }
-                case AUX_SWITCH_LOW: {
-                    ap.rc_override_enable = false;
-                    break;
-                }
+            } else {
+                ap.rc_override_enable = true;
             }
             break;
     }
