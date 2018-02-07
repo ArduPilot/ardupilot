@@ -33,4 +33,7 @@ extern const USBConfig usbcfg;
 extern SerialUSBConfig serusbcfg;
 extern SerialUSBDriver SDU1;
 #endif
+
+void setup_usb_strings(void);
+
 /** @} */
