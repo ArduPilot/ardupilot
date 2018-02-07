@@ -356,13 +356,13 @@ void AP_Radio_cypress::update(void)
 void AP_Radio_cypress::print_debug_info(void)
 {
     Debug(2, "recv:%3u bad:%3u to:%3u re:%u N:%2u TXI:%u TX:%u 1:%4u 2:%4u 3:%4u 4:%4u 5:%4u 6:%4u 7:%4u 8:%4u 14:%u\n",
-          stats.recv_packets - last_stats.recv_packets,
-          stats.bad_packets - last_stats.bad_packets,
-          stats.timeouts - last_stats.timeouts,
-          stats.recv_errors - last_stats.recv_errors,
+          unsigned(stats.recv_packets - last_stats.recv_packets),
+          unsigned(stats.bad_packets - last_stats.bad_packets),
+          unsigned(stats.timeouts - last_stats.timeouts),
+          unsigned(stats.recv_errors - last_stats.recv_errors),
           num_channels(),
-          dsm.send_irq_count,
-          dsm.send_count,
+          unsigned(dsm.send_irq_count),
+          unsigned(dsm.send_count),
           dsm.pwm_channels[0], dsm.pwm_channels[1], dsm.pwm_channels[2], dsm.pwm_channels[3], 
           dsm.pwm_channels[4], dsm.pwm_channels[5], dsm.pwm_channels[6], dsm.pwm_channels[7],
           dsm.pwm_channels[13]);
@@ -807,7 +807,7 @@ bool AP_Radio_cypress::parse_dsm_channels(const uint8_t *data)
         if (chan == 7 && key == 0) {
             // got an ack from key 0
             Debug(4, "ack %u seq=%u acked=%u length=%u len=%u\n",
-                  v, fwupload.sequence, fwupload.acked, fwupload.length, fwupload.len);
+                  v, fwupload.sequence, unsigned(fwupload.acked), unsigned(fwupload.length), fwupload.len);
             if (fwupload.sequence == v && sem->take_nonblocking()) {
                 fwupload.sequence++;
                 fwupload.acked += fwupload.len;
@@ -1404,7 +1404,7 @@ void AP_Radio_cypress::dsm_choose_channel(void)
 
         state = STATE_AUTOBIND;
         
-        Debug(3,"recv autobind %u\n", now - dsm.last_autobind_send);
+        Debug(3,"recv autobind %u\n", unsigned(now - dsm.last_autobind_send));
         dsm.last_autobind_send = now;
         return;
     }
@@ -1701,7 +1701,7 @@ void AP_Radio_cypress::handle_data_packet(mavlink_channel_t chan, const mavlink_
 {
     uint32_t ofs=0;
     memcpy(&ofs, &m.data[0], 4);
-    Debug(4, "got data96 of len %u from chan %u at offset %u\n", m.len, chan, ofs);
+    Debug(4, "got data96 of len %u from chan %u at offset %u\n", m.len, chan, unsigned(ofs));
     if (sem->take_nonblocking()) {
         fwupload.chan = chan;
         fwupload.need_ack = false;
