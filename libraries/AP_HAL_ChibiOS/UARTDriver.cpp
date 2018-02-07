@@ -735,7 +735,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
         palClearLine(sdef.rts_line);
         _rts_is_active = true;
         // disable hardware CTS support
-        ((SerialDriver*)(sdef.serial))->usart->CR3 &= ~USART_CR3_CTSE;
+        ((SerialDriver*)(sdef.serial))->usart->CR3 &= ~(USART_CR3_CTSE | USART_CR3_RTSE);
         break;
 
     case FLOW_CONTROL_AUTO:
@@ -750,8 +750,9 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
         palSetLineMode(sdef.rts_line, 1);
         palClearLine(sdef.rts_line);
         _rts_is_active = true;
-        // enable hardware CTS support
+        // enable hardware CTS support, disable RTS support as we do that in software
         ((SerialDriver*)(sdef.serial))->usart->CR3 |= USART_CR3_CTSE;
+        ((SerialDriver*)(sdef.serial))->usart->CR3 &= ~USART_CR3_RTSE;
         break;
     }
 }
