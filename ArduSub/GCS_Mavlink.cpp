@@ -243,28 +243,19 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
 
 void NOINLINE Sub::send_location(mavlink_channel_t chan)
 {
-    uint32_t fix_time;
-    // if we have a GPS fix, take the time as the last fix time. That
-    // allows us to correctly calculate velocities and extrapolate
-    // positions.
-    // If we don't have a GPS fix then we are dead reckoning, and will
-    // use the current boot time as the fix time.
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-        fix_time = gps.last_fix_time_ms();
-    } else {
-        fix_time = millis();
-    }
-    const Vector3f &vel = inertial_nav.get_velocity();
+    const uint32_t now = AP_HAL::millis();
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
     mavlink_msg_global_position_int_send(
         chan,
-        fix_time,
+        now,
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
         (ahrs.get_home().alt + current_loc.alt) * 10UL,      // millimeters above sea level
         current_loc.alt * 10,           // millimeters above ground
-        vel.x,                          // X speed cm/s (+ve North)
-        vel.y,                          // Y speed cm/s (+ve East)
-        vel.z,                          // Z speed cm/s (+ve up)
+        vel.x * 100,                    // X speed cm/s (+ve North)
+        vel.y * 100,                    // Y speed cm/s (+ve East)
+        vel.z * 100,                    // Z speed cm/s (+ve Down)
         ahrs.yaw_sensor);               // compass heading in 1/100 degree
 }
 
