@@ -123,7 +123,7 @@ void Rover::send_location(mavlink_channel_t chan)
         (current_loc.alt - home.alt) * 10,  // millimeters above home
         vel.x * 100,   // X speed cm/s (+ve North)
         vel.y * 100,   // Y speed cm/s (+ve East)
-        vel.z * -100,  // Z speed cm/s (+ve up)
+        vel.z * 100,   // Z speed cm/s (+ve Down)
         ahrs.yaw_sensor);
 }
 
