@@ -153,7 +153,7 @@ uint8_t AP_Radio_cc2500::num_channels(void)
         t_status.pps = stats.recv_packets - last_stats.recv_packets;
         last_stats = stats;
         if (lost != 0 || timeouts != 0) {
-            Debug(3,"lost=%u timeouts=%u TS=%u\n", lost, timeouts, sizeof(struct telem_packet_cc2500));
+            Debug(3,"lost=%u timeouts=%u TS=%u\n", unsigned(lost), unsigned(timeouts), sizeof(struct telem_packet_cc2500));
         }
         lost=0;
         timeouts=0;
@@ -341,7 +341,7 @@ void AP_Radio_cc2500::handle_data_packet(mavlink_channel_t chan, const mavlink_d
 {
     uint32_t ofs=0;
     memcpy(&ofs, &m.data[0], 4);
-    Debug(4, "got data96 of len %u from chan %u at offset %u\n", m.len, chan, ofs);
+    Debug(4, "got data96 of len %u from chan %u at offset %u\n", m.len, chan, unsigned(ofs));
     if (sem->take_nonblocking()) {
         fwupload.chan = chan;
         fwupload.need_ack = false;
@@ -463,7 +463,7 @@ bool AP_Radio_cc2500::handle_SRT_packet(const uint8_t *packet)
     case PKTYPE_FW_ACK: {
             // got an fw upload ack 
             Debug(4, "ack %u seq=%u acked=%u length=%u len=%u\n",
-                  data, fwupload.sequence, fwupload.acked, fwupload.length, fwupload.len);
+                  data, fwupload.sequence, unsigned(fwupload.acked), unsigned(fwupload.length), fwupload.len);
             if (fwupload.sequence == data && sem->take_nonblocking()) {
                 fwupload.sequence++;
                 fwupload.acked += fwupload.len;
@@ -666,7 +666,7 @@ void AP_Radio_cc2500::irq_timeout(void)
         uint32_t now = AP_HAL::micros();
         
         if (now - packet_timer > 50*sync_time_us) {
-            Debug(3,"searching %u\n", now - packet_timer);
+            Debug(3,"searching %u\n", unsigned(now - packet_timer));
             cc2500.Strobe(CC2500_SIDLE);
             cc2500.Strobe(CC2500_SFRX);
             nextChannel(1);
