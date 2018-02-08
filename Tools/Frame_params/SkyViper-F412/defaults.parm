@@ -214,10 +214,11 @@ RC3_DZ              15
 RC4_DZ              15
 
 # pos control
-POS_XY_P              0.7
-VEL_XY_I              0.3
-VEL_XY_P              0.6
-VEL_XY_FILT_HZ        1.0
+# pos control
+PSC_POSXY_P           0.7
+PSC_VELXY_I           0.3
+PSC_VELXY_P           0.6
+PSC_VELXY_FILT        1.0
 WPNAV_LOIT_JERK     4000
 WPNAV_LOIT_MAXA      800
 WPNAV_LOIT_MINA      250
