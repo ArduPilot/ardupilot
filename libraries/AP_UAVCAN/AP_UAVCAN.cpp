@@ -548,40 +548,42 @@ void AP_UAVCAN::rc_out_send_esc(void)
 
 void AP_UAVCAN::do_cyclic(void)
 {
-    if (_initialized) {
-        auto *node = get_node();
-
-        const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
-
-        if (error < 0) {
-            hal.scheduler->delay_microseconds(1000);
-        } else {
-            if (rc_out_sem_take()) {
-
-                if (_rco_armed) {
-
-                    // if we have any Servos in bitmask
-                    if (_servo_bm > 0) {
-                    	rc_out_send_servos();
-                    }
-
-                    // if we have any ESC's in bitmask
-                    if (_esc_bm > 0) {
-						rc_out_send_esc();
-                    }
-                }
-
-                for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
-                    // mark as transmitted
-                    _rco_conf[i].active = false;
-                }
-
-                rc_out_sem_give();
-            }
-        }
-    } else {
+    if (!_initialized) {
         hal.scheduler->delay_microseconds(1000);
+        return;
     }
+
+	auto *node = get_node();
+
+	const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
+
+	if (error < 0) {
+		hal.scheduler->delay_microseconds(1000);
+		return;
+	}
+
+	if (rc_out_sem_take()) {
+
+		if (_rco_armed) {
+
+			// if we have any Servos in bitmask
+			if (_servo_bm > 0) {
+				rc_out_send_servos();
+			}
+
+			// if we have any ESC's in bitmask
+			if (_esc_bm > 0) {
+				rc_out_send_esc();
+			}
+		}
+
+		for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
+			// mark as transmitted
+			_rco_conf[i].active = false;
+		}
+
+		rc_out_sem_give();
+	}
 }
 
 uavcan::ISystemClock & AP_UAVCAN::get_system_clock()
