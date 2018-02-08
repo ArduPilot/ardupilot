@@ -8,7 +8,7 @@
 bool Copter::ModeStabilize::init(bool ignore_checks)
 {
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-    if (motors->armed() && ap.land_complete && !_copter.flightmode->has_manual_throttle() &&
+    if (motors->armed() && ap.land_complete && !copter.flightmode->has_manual_throttle() &&
             (get_pilot_desired_throttle(channel_throttle->get_control_in()) > get_non_takeoff_throttle())) {
         return false;
     }
@@ -40,7 +40,7 @@ void Copter::ModeStabilize::run()
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
-    AP_Vehicle::MultiCopter &aparm = _copter.aparm;
+    AP_Vehicle::MultiCopter &aparm = copter.aparm;
 
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
