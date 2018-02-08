@@ -152,9 +152,11 @@ bool AP_Radio::init(void)
     case RADIO_TYPE_CYRF6936:
         driver = new AP_Radio_cypress(*this);
         break;
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     case RADIO_TYPE_CC2500:
         driver = new AP_Radio_cc2500(*this);
         break;
+#endif
     default:
         break;
     }
