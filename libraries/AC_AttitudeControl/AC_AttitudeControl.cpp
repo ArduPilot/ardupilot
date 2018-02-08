@@ -133,6 +133,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: INPUT_TC
     // @DisplayName: Attitude control input time constant (aka smoothing)
     // @Description: Attitude control input time constant.  Low numbers lead to sharper response, higher numbers to softer response
+    // @Units: s
     // @Range: 0 1
     // @Increment: 0.01
     // @Values: 0.5:Very Soft, 0.2:Soft, 0.15:Medium, 0.1:Crisp, 0.05:Very Crisp
