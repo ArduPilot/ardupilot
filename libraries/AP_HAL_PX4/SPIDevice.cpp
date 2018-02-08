@@ -139,7 +139,7 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #endif
 
 #ifdef CYRF_SPI_PX4_SPI_BUS
-    SPIDesc("cypress",   CYRF_SPI_PX4_SPI_BUS,  (spi_dev_e)1, SPIDEV_MODE0, 2*MHZ, 2*MHZ),
+    SPIDesc("cypress",   CYRF_SPI_PX4_SPI_BUS,  CYRF_SPI_PX4_SPIDEV_EXT, SPIDEV_MODE0, 2*MHZ, 2*MHZ),
 #endif
 
     SPIDesc(nullptr, 0, (spi_dev_e)0, (spi_mode_e)0, 0, 0),
