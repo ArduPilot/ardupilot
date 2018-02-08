@@ -36,9 +36,11 @@ def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list):
                 return False
     return True
 
-
-def can_share(periph):
+def can_share(periph, noshare_list):
     '''check if a peripheral is in the SHARED_MAP list'''
+    for noshare in noshare_list:
+        if fnmatch.fnmatch(periph, noshare):
+            return False
     for f in SHARED_MAP:
         if fnmatch.fnmatch(periph, f):
             return True
@@ -67,10 +69,38 @@ def chibios_dma_define_name(key):
         print("Error: Unknown key type %s" % key)
         sys.exit(1)
 
+def get_list_index(peripheral, priority_list):
+    '''return index into priority_list for a peripheral'''
+    for i in range(len(priority_list)):
+        str = priority_list[i]
+        if fnmatch.fnmatch(peripheral, str):
+            return i
+    # default to max priority
+    return len(priority_list)
 
-def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[]):
+def get_sharing_priority(periph_list, priority_list):
+    '''get priority of a list of peripherals we could share with'''
+    highest = len(priority_list)
+    for p in periph_list:
+        prio = get_list_index(p, priority_list)
+        if prio < highest:
+            highest = prio
+    return highest
+
+def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
+                     dma_priority='', dma_noshare=''):
     '''write out a DMA resolver header file'''
     global dma_map
+
+    # form a list of DMA priorities
+    priority_list = dma_priority.split()
+
+    # sort by priority
+    peripheral_list = sorted(peripheral_list, key=lambda x: get_list_index(x, priority_list))
+
+    # form a list of peripherals that can't share
+    noshare_list = dma_noshare.split()
+
     try:
         lib = importlib.import_module(mcu_type)
         dma_map = lib.DMA_Map
@@ -100,26 +130,32 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[]):
         if assigned == False:
             unassigned.append(periph)
 
-# now look for shared DMA possibilities
+    # now look for shared DMA possibilities
     stream_assign = {}
     for k in curr_dict.keys():
         stream_assign[curr_dict[k]] = [k]
 
     unassigned_new = unassigned[:]
     for periph in unassigned:
+        share_possibility = []
         for stream in dma_map[periph]:
             share_ok = True
             for periph2 in stream_assign[stream]:
-                if not can_share(periph) or not can_share(periph2):
+                if not can_share(periph, noshare_list) or not can_share(periph2, noshare_list):
                     share_ok = False
             if share_ok:
-                if debug:
-                    print("Sharing %s on %s with %s" % (periph, stream,
-                                                        stream_assign[stream]))
-                curr_dict[periph] = stream
-                stream_assign[stream].append(periph)
-                unassigned_new.remove(periph)
-                break
+                share_possibility.append(stream)
+        if share_possibility:
+            # sort the possible sharings so minimise impact on high priority streams
+            share_possibility = sorted(share_possibility, key=lambda x: get_sharing_priority(stream_assign[x], priority_list))
+            # and take the one with the least impact (lowest value for highest priority stream share)
+            stream = share_possibility[-1]
+            if debug:
+                print("Sharing %s on %s with %s" % (periph, stream,
+                                                    stream_assign[stream]))
+            curr_dict[periph] = stream
+            stream_assign[stream].append(periph)
+            unassigned_new.remove(periph)
     unassigned = unassigned_new
 
     f.write("// auto-generated DMA mapping from dma_resolver.py\n")

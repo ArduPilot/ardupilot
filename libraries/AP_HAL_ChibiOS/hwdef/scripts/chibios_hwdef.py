@@ -739,7 +739,10 @@ def write_hwdef_header(outfilename):
     write_peripheral_enable(f)
     write_prototype_file()
 
-    dma_resolver.write_dma_header(f, periph_list, mcu_type, dma_exclude=get_dma_exclude(periph_list))
+    dma_resolver.write_dma_header(f, periph_list, mcu_type,
+                                  dma_exclude=get_dma_exclude(periph_list),
+                                  dma_priority=get_config('DMA_PRIORITY',default=''),
+                                  dma_noshare=get_config('DMA_NOSHARE',default=''))
 
     write_UART_config(f)
 
