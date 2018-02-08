@@ -791,6 +791,25 @@ class px4_v3(px4):
         self.px4io_name = 'px4io-v2'
         self.with_uavcan = True
 
+class skyviper_v2450_px4(px4_v3):
+    name = 'skyviper-v2450-px4'
+    def __init__(self):
+        super(skyviper_v2450_px4, self).__init__()
+        self.px4io_name = None
+        self.param_defaults = '../../../Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
+
+    def configure_env(self, cfg, env):
+        super(skyviper_v2450_px4, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            TOY_MODE_ENABLED = 'ENABLED',
+            USE_FLASH_STORAGE = 1,
+            ARMING_DELAY_SEC = 0,
+            LAND_START_ALT = 700,
+            HAL_RCINPUT_WITH_AP_RADIO = 1,
+            LAND_DETECTOR_ACCEL_MAX = 2
+        )
+
 class px4_v4(px4):
     name = 'px4-v4'
     def __init__(self):
