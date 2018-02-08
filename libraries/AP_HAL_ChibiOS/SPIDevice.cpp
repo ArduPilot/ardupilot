@@ -196,7 +196,10 @@ uint16_t SPIDevice::derive_freq_flag(uint32_t _frequency)
 bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-    bus.semaphore.assert_owner();
+    if (!bus.semaphore.check_owner()) {
+        hal.console->printf("SPI: not owner of 0x%x\n", unsigned(get_bus_id()));
+        return false;
+    }
     if (send_len == recv_len && send == recv) {
         // simplest cases, needed for DMA
         do_transfer(send, recv, recv_len);
