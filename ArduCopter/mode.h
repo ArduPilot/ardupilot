@@ -105,14 +105,14 @@ class ModeAcro : public Mode {
 public:
     // inherit constructor
     using Copter::Mode::Mode;
-    
+
     virtual bool init(bool ignore_checks) override;
     virtual void run() override;
 
-    virtual bool is_autopilot() const override { return false; }
-    virtual bool requires_GPS() const override { return false; }
-    virtual bool has_manual_throttle() const override { return true; }
-    virtual bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(bool from_gcs) const override { return true; };
 
 protected:
 
@@ -171,13 +171,13 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    virtual bool init(bool ignore_checks) override;
-    virtual void run() override;
+    bool init(bool ignore_checks) override;
+    void run() override;
 
-    virtual bool is_autopilot() const override { return true; }
-    virtual bool requires_GPS() const override { return true; }
-    virtual bool has_manual_throttle() const override { return false; }
-    virtual bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return true; }
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; };
 
     // Auto
     AutoMode mode() const { return _mode; }
@@ -534,13 +534,13 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    virtual bool init(bool ignore_checks) override;
-    virtual void run() override;
+    bool init(bool ignore_checks) override;
+    void run() override;
 
-    virtual bool requires_GPS() const override { return true; }
-    virtual bool has_manual_throttle() const override { return false; }
-    virtual bool allows_arming(bool from_gcs) const override { return true; };
-    virtual bool is_autopilot() const override { return false; }
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
 
 protected:
 
@@ -560,13 +560,13 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    virtual bool init(bool ignore_checks) override;
-    virtual void run() override;
+    bool init(bool ignore_checks) override;
+    void run() override;
 
-    virtual bool requires_GPS() const override { return false; }
-    virtual bool has_manual_throttle() const override { return false; }
-    virtual bool allows_arming(bool from_gcs) const override { return false; };
-    virtual bool is_autopilot() const override { return false; }
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return false; }
 
 protected:
 
@@ -964,13 +964,13 @@ public:
     // inherit constructor
     using Copter::Mode::Mode;
 
-    virtual bool init(bool ignore_checks) override;
-    virtual void run() override;
+    bool init(bool ignore_checks) override;
+    void run() override;
 
-    virtual bool requires_GPS() const override { return false; }
-    virtual bool has_manual_throttle() const override { return false; }
-    virtual bool allows_arming(bool from_gcs) const override { return true; };
-    virtual bool is_autopilot() const override { return false; }
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
 
 protected:
 
@@ -991,10 +991,10 @@ public:
     virtual bool init(bool ignore_checks) override;
     virtual void run() override;
 
-    virtual bool requires_GPS() const override { return false; }
-    virtual bool has_manual_throttle() const override { return true; }
-    virtual bool allows_arming(bool from_gcs) const override { return true; };
-    virtual bool is_autopilot() const override { return false; }
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
 
 protected:
 
