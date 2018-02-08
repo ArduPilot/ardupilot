@@ -811,6 +811,7 @@ class skyviper_v2450_px4(px4_v3):
             LAND_DETECTOR_ACCEL_MAX = 2
         )
         env.PX4_RC_S_SCRIPT = 'init.d/rcS_no_microSD'
+        env.BUILD_ABIN = True
 
 class px4_v4(px4):
     name = 'px4-v4'

@@ -63,7 +63,7 @@ class generate_fw(Task.Task):
     run_str='${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
     python ${UPLOAD_TOOLS}/px_mkfw.py --image ${SRC}.bin \
     --prototype ${BUILDROOT}/apj.prototype > ${TGT} && \
-    ${CHIBIOS_SCRIPTS}/make_abin.sh ${SRC}.bin ${SRC}.abin'
+    ${TOOLS_SCRIPTS}/make_abin.sh ${SRC}.bin ${SRC}.abin'
     always_run = True
     def keyword(self):
         return "Generating"
@@ -117,6 +117,7 @@ def configure(cfg):
     env.PT_DIR = srcpath('Tools/ardupilotwaf/chibios/image')
     env.UPLOAD_TOOLS = srcpath('Tools/ardupilotwaf')
     env.CHIBIOS_SCRIPTS = srcpath('libraries/AP_HAL_ChibiOS/hwdef/scripts')
+    env.TOOLS_SCRIPTS = srcpath('Tools/scripts')
     env.APJ_TOOL = srcpath('Tools/scripts/apj_tool.py')
     env.SERIAL_PORT = srcpath('/dev/serial/by-id/*_STLink*')
 
