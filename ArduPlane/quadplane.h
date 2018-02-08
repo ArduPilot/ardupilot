@@ -175,7 +175,7 @@ private:
     void init_throttle_wait();
 
     // use multicopter rate controller
-    void multicopter_attitude_rate_update(float yaw_rate_cds, float smoothing_gain);
+    void multicopter_attitude_rate_update(float yaw_rate_cds);
     
     // main entry points for VTOL flight modes
     void init_stabilize(void);
@@ -299,8 +299,6 @@ private:
 
     // pitch when we enter loiter mode
     int32_t loiter_initial_pitch_cd;
-    
-    const float smoothing_gain = 6;
 
     // true if we have reached the airspeed threshold for transition
     enum {

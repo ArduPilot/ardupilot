@@ -181,13 +181,6 @@ enum tuning_func {
 #define ACRO_TRAINER_LEVELING   1
 #define ACRO_TRAINER_LIMITED    2
 
-// RC Feel roll/pitch definitions
-#define RC_FEEL_RP_VERY_SOFT        0
-#define RC_FEEL_RP_SOFT             25
-#define RC_FEEL_RP_MEDIUM           50
-#define RC_FEEL_RP_CRISP            75
-#define RC_FEEL_RP_VERY_CRISP       100
-
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
 #define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP               1   // auto pilot will face next waypoint or home during rtl
