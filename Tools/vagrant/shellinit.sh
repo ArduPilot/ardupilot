@@ -12,4 +12,7 @@ export PATH=$APMROOT/Tools/autotest:$PATH
 cd $APMROOT/ArduCopter
 
 echo "Ardupilot environment ready.  Run 'sim_vehicle.py' to start simulating an arducopter instance."
-echo "or run 'make sitl' to just do a test build."
+echo "To build for fmuv2:"
+echo "  cd /vagrant"
+echo "  ./waf configure --board=px4-v2"
+echo "  ./waf build --target=bin/arducopter"
