@@ -124,7 +124,10 @@ def find_toolchain_program(cfg, filename, **kw):
         for i, name in enumerate(filename):
             filename[i] = '%s-%s' % (cfg.env.TOOLCHAIN, name)
 
-    return cfg.find_program(filename, **kw)
+    try:
+        return cfg.find_program(filename, **kw)
+    except:
+       return None
 
 def configure(cfg):
     _filter_supported_c_compilers('gcc', 'clang')
