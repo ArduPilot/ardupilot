@@ -13,7 +13,7 @@ bool Copter::ModeStabilize_Heli::init(bool ignore_checks)
     pos_control->set_alt_target(0);
 
     // set stab collective true to use stabilize scaled collective pitch range
-    _copter.input_manager.set_use_stab_col(true);
+    copter.input_manager.set_use_stab_col(true);
 
     return true;
 }
@@ -33,16 +33,16 @@ void Copter::ModeStabilize_Heli::run()
     // Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero so the swash servos move
     
     if(!motors->armed()) {
-        _copter.heli_flags.init_targets_on_arming = true;
+        copter.heli_flags.init_targets_on_arming = true;
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
     }
     
-    if(motors->armed() && _copter.heli_flags.init_targets_on_arming) {
+    if(motors->armed() && copter.heli_flags.init_targets_on_arming) {
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
         if (motors->get_interlock()) {
-            _copter.heli_flags.init_targets_on_arming=false;
+            copter.heli_flags.init_targets_on_arming=false;
         }
     }
 
@@ -56,13 +56,13 @@ void Copter::ModeStabilize_Heli::run()
 
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, _copter.aparm.angle_max);
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = _copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
+    pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
 
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());

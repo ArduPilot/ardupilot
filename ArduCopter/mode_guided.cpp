@@ -38,9 +38,9 @@ struct Guided_Limit {
 // guided_init - initialise guided controller
 bool Copter::ModeGuided::init(bool ignore_checks)
 {
-    if (_copter.position_ok() || ignore_checks) {
+    if (copter.position_ok() || ignore_checks) {
         // initialise yaw
-        set_auto_yaw_mode(_copter.get_default_auto_yaw_mode(false));
+        set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
         // start in position control mode
         pos_control_start();
         return true;
@@ -56,12 +56,12 @@ bool Copter::ModeGuided::takeoff_start(float final_alt_above_home)
     guided_mode = Guided_TakeOff;
 
     // initialise wpnav destination
-    Location_Class target_loc = _copter.current_loc;
+    Location_Class target_loc = copter.current_loc;
     target_loc.set_alt_cm(final_alt_above_home, Location_Class::ALT_FRAME_ABOVE_HOME);
 
     if (!wp_nav->set_wp_destination(target_loc)) {
         // failure to set destination can only be because of missing terrain data
-        _copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -73,7 +73,7 @@ bool Copter::ModeGuided::takeoff_start(float final_alt_above_home)
     set_throttle_takeoff();
 
     // get initial alt for WP_NAVALT_MIN
-    _copter.auto_takeoff_set_start_alt();
+    copter.auto_takeoff_set_start_alt();
 
     return true;
 }
@@ -95,7 +95,7 @@ void Copter::ModeGuided::pos_control_start()
     wp_nav->set_wp_destination(stopping_point, false);
 
     // initialise yaw
-    set_auto_yaw_mode(_copter.get_default_auto_yaw_mode(false));
+    set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
 }
 
 // initialise guided mode's velocity controller
@@ -163,7 +163,7 @@ void Copter::ModeGuided::angle_control_start()
 
     // initialise targets
     guided_angle_state.update_time_ms = millis();
-    guided_angle_state.roll_cd = _copter.ahrs.roll_sensor;
+    guided_angle_state.roll_cd = copter.ahrs.roll_sensor;
     guided_angle_state.pitch_cd = ahrs.pitch_sensor;
     guided_angle_state.yaw_cd = ahrs.yaw_sensor;
     guided_angle_state.climb_rate_cms = 0.0f;
@@ -187,8 +187,8 @@ bool Copter::ModeGuided::set_destination(const Vector3f& destination, bool use_y
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
     Location_Class dest_loc(destination);
-    if (!_copter.fence.check_destination_within_fence(dest_loc)) {
-        _copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
+    if (!copter.fence.check_destination_within_fence(dest_loc)) {
+        copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -201,7 +201,7 @@ bool Copter::ModeGuided::set_destination(const Vector3f& destination, bool use_y
     wp_nav->set_wp_destination(destination, false);
 
     // log target
-    _copter.Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
+    copter.Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
     return true;
 }
 
@@ -218,8 +218,8 @@ bool Copter::ModeGuided::set_destination(const Location_Class& dest_loc, bool us
 #if AC_FENCE == ENABLED
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
-    if (!_copter.fence.check_destination_within_fence(dest_loc)) {
-        _copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
+    if (!copter.fence.check_destination_within_fence(dest_loc)) {
+        copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -227,7 +227,7 @@ bool Copter::ModeGuided::set_destination(const Location_Class& dest_loc, bool us
 
     if (!wp_nav->set_wp_destination(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
-        _copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -236,7 +236,7 @@ bool Copter::ModeGuided::set_destination(const Location_Class& dest_loc, bool us
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
     // log target
-    _copter.Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
+    copter.Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
     return true;
 }
 
@@ -256,7 +256,7 @@ void Copter::ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, fl
     vel_update_time_ms = millis();
 
     // log target
-    _copter.Log_Write_GuidedTarget(guided_mode, Vector3f(), velocity);
+    copter.Log_Write_GuidedTarget(guided_mode, Vector3f(), velocity);
 }
 
 // set guided mode posvel target
@@ -270,8 +270,8 @@ bool Copter::ModeGuided::set_destination_posvel(const Vector3f& destination, con
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
     Location_Class dest_loc(destination);
-    if (!_copter.fence.check_destination_within_fence(dest_loc)) {
-        _copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
+    if (!copter.fence.check_destination_within_fence(dest_loc)) {
+        copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -284,10 +284,10 @@ bool Copter::ModeGuided::set_destination_posvel(const Vector3f& destination, con
     guided_pos_target_cm = destination;
     guided_vel_target_cms = velocity;
 
-    _copter.pos_control->set_pos_target(guided_pos_target_cm);
+    copter.pos_control->set_pos_target(guided_pos_target_cm);
 
     // log target
-    _copter.Log_Write_GuidedTarget(guided_mode, destination, velocity);
+    copter.Log_Write_GuidedTarget(guided_mode, destination, velocity);
     return true;
 }
 
@@ -312,11 +312,11 @@ void Copter::ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms, bo
 
     // interpret positive climb rate as triggering take-off
     if (motors->armed() && !ap.auto_armed && (guided_angle_state.climb_rate_cms > 0.0f)) {
-        _copter.set_auto_armed(true);
+        copter.set_auto_armed(true);
     }
 
     // log target
-    _copter.Log_Write_GuidedTarget(guided_mode,
+    copter.Log_Write_GuidedTarget(guided_mode,
                            Vector3f(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd),
                            Vector3f(0.0f, 0.0f, guided_angle_state.climb_rate_cms));
 }
@@ -371,7 +371,7 @@ void Copter::ModeGuided::takeoff_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!_copter.failsafe.radio) {
+    if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
@@ -392,13 +392,13 @@ void Copter::ModeGuided::takeoff_run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    _copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
-    _copter.pos_control->update_z_controller();
+    copter.pos_control->update_z_controller();
 
     // call attitude controller
-    _copter.auto_takeoff_attitude_run(target_yaw_rate);
+    copter.auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 // guided_pos_control_run - runs the guided position controller
@@ -413,7 +413,7 @@ void Copter::ModeGuided::pos_control_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!_copter.failsafe.radio) {
+    if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -425,13 +425,13 @@ void Copter::ModeGuided::pos_control_run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    _copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (_copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
     } else if (auto_yaw_mode == AUTO_YAW_RATE) {
@@ -457,7 +457,7 @@ void Copter::ModeGuided::vel_control_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!_copter.failsafe.radio) {
+    if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -485,7 +485,7 @@ void Copter::ModeGuided::vel_control_run()
     pos_control->update_vel_controller_xyz(ekfNavVelGainScaler);
 
     // call attitude controller
-    if (_copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate, get_smoothing_gain());
     } else if (auto_yaw_mode == AUTO_YAW_RATE) {
@@ -513,7 +513,7 @@ void Copter::ModeGuided::posvel_control_run()
     // process pilot's yaw input
     float target_yaw_rate = 0;
 
-    if (!_copter.failsafe.radio) {
+    if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -557,7 +557,7 @@ void Copter::ModeGuided::posvel_control_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (_copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate, get_smoothing_gain());
     } else if (auto_yaw_mode == AUTO_YAW_RATE) {
@@ -587,7 +587,7 @@ void Copter::ModeGuided::angle_control_run()
     float roll_in = guided_angle_state.roll_cd;
     float pitch_in = guided_angle_state.pitch_cd;
     float total_in = norm(roll_in, pitch_in);
-    float angle_max = MIN(attitude_control->get_althold_lean_angle_max(), _copter.aparm.angle_max);
+    float angle_max = MIN(attitude_control->get_althold_lean_angle_max(), copter.aparm.angle_max);
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;
         roll_in *= ratio;
@@ -653,7 +653,7 @@ void Copter::ModeGuided::set_desired_velocity_with_accel_and_fence_limits(const 
 
 #if AC_AVOID_ENABLED
     // limit the velocity to prevent fence violations
-    _copter.avoid.adjust_velocity(pos_control->get_pos_xy_p().kP(), pos_control->get_accel_xy(), curr_vel_des, G_Dt);
+    copter.avoid.adjust_velocity(pos_control->get_pos_xy_p().kP(), pos_control->get_accel_xy(), curr_vel_des, G_Dt);
     // get avoidance adjusted climb rate
     curr_vel_des.z = get_avoidance_adjusted_climbrate(curr_vel_des.z);    
 #endif

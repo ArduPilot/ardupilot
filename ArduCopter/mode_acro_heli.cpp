@@ -14,7 +14,7 @@ bool Copter::ModeAcro_Heli::init(bool ignore_checks)
     motors->set_acro_tail(true);
     
     // set stab collective false to use full collective pitch range
-    _copter.input_manager.set_use_stab_col(false);
+    copter.input_manager.set_use_stab_col(false);
 
     // always successfully enter acro
     return true;
@@ -34,16 +34,16 @@ void Copter::ModeAcro_Heli::run()
     // Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero so the swash servos move
     
     if(!motors->armed()) {
-        _copter.heli_flags.init_targets_on_arming=true;
+        copter.heli_flags.init_targets_on_arming=true;
         attitude_control->set_attitude_target_to_current_attitude();
         attitude_control->reset_rate_controller_I_terms();
     }
     
-    if(motors->armed() && _copter.heli_flags.init_targets_on_arming) {
+    if(motors->armed() && copter.heli_flags.init_targets_on_arming) {
         attitude_control->set_attitude_target_to_current_attitude();
         attitude_control->reset_rate_controller_I_terms();
         if (motors->get_interlock()) {
-            _copter.heli_flags.init_targets_on_arming=false;
+            copter.heli_flags.init_targets_on_arming=false;
         }
     }   
 
@@ -91,7 +91,7 @@ void Copter::ModeAcro_Heli::run()
     }
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = _copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
+    pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
 
     // output pilot's throttle without angle boost
     attitude_control->set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);

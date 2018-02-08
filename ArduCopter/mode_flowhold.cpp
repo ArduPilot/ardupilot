@@ -46,12 +46,12 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILT_HZ", 3, Copter::ModeFlowHold, flow_filter_hz, 5),
 
-    // @Param: _MIN_QUAL
+    // @Param: _QUAL_MIN
     // @DisplayName: Minimum flow quality
     // @Description: Minimum flow quality to use flow position hold
     // @Range: 0 255
     // @User: Standard
-    AP_GROUPINFO("_MIN_QUAL", 4, Copter::ModeFlowHold, flow_min_quality, 10),
+    AP_GROUPINFO("_QUAL_MIN", 4, Copter::ModeFlowHold, flow_min_quality, 10),
 
     // 5 was FLOW_SPEED
     
@@ -66,13 +66,18 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     AP_GROUPEND
 };
 
+Copter::ModeFlowHold::ModeFlowHold(void) : Mode()
+{
+    AP_Param::setup_object_defaults(this, var_info);            
+}
+
 #define CONTROL_FLOWHOLD_EARTH_FRAME 0
 
 // flowhold_init - initialise flowhold controller
 bool Copter::ModeFlowHold::init(bool ignore_checks)
 {
 #if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter Alt Hold if the Rotor Runup is not complete
+    // do not allow helis to enter Flow Hold if the Rotor Runup is not complete
     if (!ignore_checks && !motors->rotor_runup_complete()){
         return false;
     }
@@ -279,7 +284,7 @@ void Copter::ModeFlowHold::run()
     bf_angles.x = constrain_float(bf_angles.x, -angle_max, angle_max);
     bf_angles.y = constrain_float(bf_angles.y, -angle_max, angle_max);
             
-    // Alt Hold State Machine
+    // Flow Hold State Machine
     switch (flowhold_state) {
 
     case FlowHold_MotorStopped:

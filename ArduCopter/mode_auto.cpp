@@ -17,21 +17,38 @@
  *  Code in this file implements the navigation commands
  */
 
+// update mission
+void Copter::ModeAuto::run_autopilot()
+{
+    copter.mission.update();
+}
+
+uint32_t Copter::ModeAuto::wp_distance() const
+{
+    return wp_nav->get_wp_distance_to_destination();
+}
+
+int32_t Copter::ModeAuto::wp_bearing() const
+{
+    return wp_nav->get_wp_bearing_to_destination();
+}
+
+
 // auto_init - initialise auto controller
 bool Copter::ModeAuto::init(bool ignore_checks)
 {
-    if ((_copter.position_ok() && mission.num_commands() > 1) || ignore_checks) {
+    if ((copter.position_ok() && copter.mission.num_commands() > 1) || ignore_checks) {
         _mode = Auto_Loiter;
 
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
-        if (motors->armed() && ap.land_complete && !mission.starts_with_takeoff_cmd()) {
+        if (motors->armed() && ap.land_complete && !copter.mission.starts_with_takeoff_cmd()) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
             return false;
         }
 
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
-        if (_copter.auto_yaw_mode == AUTO_YAW_ROI) {
+        if (copter.auto_yaw_mode == AUTO_YAW_ROI) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
 
@@ -39,10 +56,10 @@ bool Copter::ModeAuto::init(bool ignore_checks)
         wp_nav->wp_and_spline_init();
 
         // clear guided limits
-        _copter.mode_guided.limit_clear();
+        copter.mode_guided.limit_clear();
 
         // start/resume the mission (based on MIS_RESTART parameter)
-        mission.start_or_resume();
+        copter.mission.start_or_resume();
         return true;
     }else{
         return false;
@@ -107,21 +124,21 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
     Location_Class dest(dest_loc);
 
     // set horizontal target
-    dest.lat = _copter.current_loc.lat;
-    dest.lng = _copter.current_loc.lng;
+    dest.lat = copter.current_loc.lat;
+    dest.lng = copter.current_loc.lng;
 
     // get altitude target
     int32_t alt_target;
     if (!dest.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_target)) {
         // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
-        _copter.Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
+        copter.Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
         // fall back to altitude above current altitude
-        alt_target = _copter.current_loc.alt + dest.alt;
+        alt_target = copter.current_loc.alt + dest.alt;
     }
 
     // sanity check target
-    if (alt_target < _copter.current_loc.alt) {
-        dest.set_alt_cm(_copter.current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+    if (alt_target < copter.current_loc.alt) {
+        dest.set_alt_cm(copter.current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
     }
     // Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
     if (alt_target < 100) {
@@ -131,7 +148,7 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
     // set waypoint controller target
     if (!wp_nav->set_wp_destination(dest)) {
         // failure to set destination can only be because of missing terrain data
-        _copter.failsafe_terrain_on_event();
+        copter.failsafe_terrain_on_event();
         return;
     }
 
@@ -142,7 +159,7 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
     set_throttle_takeoff();
 
     // get initial alt for WP_NAVALT_MIN
-    _copter.auto_takeoff_set_start_alt();
+    copter.auto_takeoff_set_start_alt();
 }
 
 // auto_takeoff_run - takeoff in auto mode
@@ -161,7 +178,7 @@ void Copter::ModeAuto::takeoff_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!_copter.failsafe.radio) {
+    if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
@@ -182,13 +199,13 @@ void Copter::ModeAuto::takeoff_run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    _copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->update_z_controller();
 
     // call attitude controller
-    _copter.auto_takeoff_attitude_run(target_yaw_rate);
+    copter.auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
@@ -201,8 +218,8 @@ void Copter::ModeAuto::wp_start(const Vector3f& destination)
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (_copter.auto_yaw_mode != AUTO_YAW_ROI) {
-        set_auto_yaw_mode(_copter.get_default_auto_yaw_mode(false));
+    if (copter.auto_yaw_mode != AUTO_YAW_ROI) {
+        set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
     }
 }
 
@@ -214,14 +231,14 @@ void Copter::ModeAuto::wp_start(const Location_Class& dest_loc)
     // send target to waypoint controller
     if (!wp_nav->set_wp_destination(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
-        _copter.failsafe_terrain_on_event();
+        copter.failsafe_terrain_on_event();
         return;
     }
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (_copter.auto_yaw_mode != AUTO_YAW_ROI) {
-        set_auto_yaw_mode(_copter.get_default_auto_yaw_mode(false));
+    if (copter.auto_yaw_mode != AUTO_YAW_ROI) {
+        set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
     }
 }
 
@@ -241,7 +258,7 @@ void Copter::ModeAuto::wp_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!_copter.failsafe.radio) {
+    if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -253,13 +270,13 @@ void Copter::ModeAuto::wp_run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    _copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (_copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
     }else{
@@ -279,14 +296,14 @@ void Copter::ModeAuto::spline_start(const Location_Class& destination, bool stop
     // initialise wpnav
     if (!wp_nav->set_spline_destination(destination, stopped_at_start, seg_end_type, next_destination)) {
         // failure to set destination can only be because of missing terrain data
-        _copter.failsafe_terrain_on_event();
+        copter.failsafe_terrain_on_event();
         return;
     }
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (_copter.auto_yaw_mode != AUTO_YAW_ROI) {
-        set_auto_yaw_mode(_copter.get_default_auto_yaw_mode(false));
+    if (copter.auto_yaw_mode != AUTO_YAW_ROI) {
+        set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
     }
 }
 
@@ -306,7 +323,7 @@ void Copter::ModeAuto::spline_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!_copter.failsafe.radio) {
+    if (!copter.failsafe.radio) {
         // get pilot's desired yaw rat
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -324,7 +341,7 @@ void Copter::ModeAuto::spline_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (_copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
     }else{
@@ -377,8 +394,8 @@ void Copter::ModeAuto::land_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
     
-    _copter.land_run_horizontal_control();
-    _copter.land_run_vertical_control();
+    copter.land_run_horizontal_control();
+    copter.land_run_vertical_control();
 }
 
 bool Copter::ModeAuto::landing_gear_should_be_deployed() const
@@ -387,7 +404,7 @@ bool Copter::ModeAuto::landing_gear_should_be_deployed() const
     case Auto_Land:
         return true;
     case Auto_RTL:
-        return _copter.mode_rtl.landing_gear_should_be_deployed();
+        return copter.mode_rtl.landing_gear_should_be_deployed();
     default:
         return false;
     }
@@ -400,7 +417,7 @@ void Copter::ModeAuto::rtl_start()
     _mode = Auto_RTL;
 
     // call regular rtl flight mode initialisation and ask it to ignore checks
-    _copter.mode_rtl.init(true);
+    copter.mode_rtl.init(true);
 }
 
 // auto_rtl_run - rtl in AUTO flight mode
@@ -408,7 +425,7 @@ void Copter::ModeAuto::rtl_start()
 void Copter::ModeAuto::rtl_run()
 {
     // call regular rtl flight mode run function
-    _copter.mode_rtl.run(false);
+    copter.mode_rtl.run(false);
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
@@ -420,18 +437,18 @@ void Copter::ModeAuto::circle_movetoedge_start(const Location_Class &circle_cent
     if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
         // default to current position and log error
         circle_center_neu = inertial_nav.get_position();
-        _copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_CIRCLE_INIT);
+        copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_CIRCLE_INIT);
     }
-    circle_nav->set_center(circle_center_neu);
+    copter.circle_nav->set_center(circle_center_neu);
 
     // set circle radius
     if (!is_zero(radius_m)) {
-        circle_nav->set_radius(radius_m * 100.0f);
+        copter.circle_nav->set_radius(radius_m * 100.0f);
     }
 
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
-    circle_nav->get_closest_point_on_circle(circle_edge_neu);
+    copter.circle_nav->get_closest_point_on_circle(circle_edge_neu);
     float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
 
     // if more than 3m then fly to edge
@@ -448,14 +465,14 @@ void Copter::ModeAuto::circle_movetoedge_start(const Location_Class &circle_cent
         // initialise wpnav to move to edge of circle
         if (!wp_nav->set_wp_destination(circle_edge)) {
             // failure to set destination can only be because of missing terrain data
-            _copter.failsafe_terrain_on_event();
+            copter.failsafe_terrain_on_event();
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
         const Vector3f &curr_pos = inertial_nav.get_position();
         float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
-        if (dist_to_center > circle_nav->get_radius() && dist_to_center > 500) {
-            set_auto_yaw_mode(_copter.get_default_auto_yaw_mode(false));
+        if (dist_to_center > copter.circle_nav->get_radius() && dist_to_center > 500) {
+            set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
         } else {
             // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
             set_auto_yaw_mode(AUTO_YAW_HOLD);
@@ -472,7 +489,7 @@ void Copter::ModeAuto::circle_start()
     _mode = Auto_Circle;
 
     // initialise circle controller
-    circle_nav->init(circle_nav->get_center());
+    copter.circle_nav->init(copter.circle_nav->get_center());
 }
 
 // auto_circle_run - circle in AUTO flight mode
@@ -480,13 +497,13 @@ void Copter::ModeAuto::circle_start()
 void Copter::ModeAuto::circle_run()
 {
     // call circle controller
-    circle_nav->update();
+    copter.circle_nav->update();
 
     // call z-axis position controller
     pos_control->update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_yaw(circle_nav->get_roll(), circle_nav->get_pitch(), circle_nav->get_yaw(),true, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), copter.circle_nav->get_yaw(),true, get_smoothing_gain());
 }
 
 #if NAV_GUIDED == ENABLED
@@ -496,10 +513,10 @@ void Copter::ModeAuto::nav_guided_start()
     _mode = Auto_NavGuided;
 
     // call regular guided flight mode initialisation
-    _copter.mode_guided.init(true);
+    copter.mode_guided.init(true);
 
     // initialise guided start time and position as reference for limit checking
-    _copter.mode_guided.limit_init_time_and_pos();
+    copter.mode_guided.limit_init_time_and_pos();
 }
 
 // auto_nav_guided_run - allows control by external navigation controller
@@ -507,7 +524,7 @@ void Copter::ModeAuto::nav_guided_start()
 void Copter::ModeAuto::nav_guided_run()
 {
     // call regular guided flight mode run function
-    _copter.mode_guided.run();
+    copter.mode_guided.run();
 }
 #endif  // NAV_GUIDED
 
@@ -516,7 +533,7 @@ void Copter::ModeAuto::nav_guided_run()
 bool Copter::ModeAuto::loiter_start()
 {
     // return failure if GPS is bad
-    if (!_copter.position_ok()) {
+    if (!copter.position_ok()) {
         return false;
     }
     _mode = Auto_Loiter;
@@ -546,7 +563,7 @@ void Copter::ModeAuto::loiter_run()
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
-    if(!_copter.failsafe.radio) {
+    if(!copter.failsafe.radio) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
@@ -554,7 +571,7 @@ void Copter::ModeAuto::loiter_run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint and z-axis position controller
-    _copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
     pos_control->update_z_controller();
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
@@ -833,7 +850,7 @@ void Copter::ModeAuto::payload_place_run()
 void Copter::ModeAuto::payload_place_run_loiter()
 {
     // loiter...
-    _copter.land_run_horizontal_control();
+    copter.land_run_horizontal_control();
 
     // run loiter controller
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
@@ -848,6 +865,6 @@ void Copter::ModeAuto::payload_place_run_loiter()
 
 void Copter::ModeAuto::payload_place_run_descend()
 {
-    _copter.land_run_horizontal_control();
-    _copter.land_run_vertical_control();
+    copter.land_run_horizontal_control();
+    copter.land_run_vertical_control();
 }

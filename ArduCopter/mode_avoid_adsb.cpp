@@ -19,7 +19,7 @@ bool Copter::ModeAvoidADSB::init(const bool ignore_checks)
 bool Copter::ModeAvoidADSB::set_velocity(const Vector3f& velocity_neu)
 {
     // check flight mode
-    if (_copter.control_mode != AVOID_ADSB) {
+    if (copter.control_mode != AVOID_ADSB) {
         return false;
     }
 

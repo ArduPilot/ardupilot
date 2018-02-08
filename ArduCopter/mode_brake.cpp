@@ -7,7 +7,7 @@
 // brake_init - initialise brake controller
 bool Copter::ModeBrake::init(bool ignore_checks)
 {
-    if (_copter.position_ok() || ignore_checks) {
+    if (copter.position_ok() || ignore_checks) {
 
         // set desired acceleration to zero
         wp_nav->clear_pilot_desired_acceleration();
@@ -52,7 +52,7 @@ void Copter::ModeBrake::run()
 
     // if landed immediately disarm
     if (ap.land_complete) {
-        _copter.init_disarm_motors();
+        copter.init_disarm_motors();
     }
 
     // set motors to full range
@@ -71,8 +71,8 @@ void Copter::ModeBrake::run()
     pos_control->update_z_controller();
 
     if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {
-        if (!_copter.set_mode(LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
-            _copter.set_mode(ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
+        if (!copter.set_mode(LOITER, MODE_REASON_BRAKE_TIMEOUT)) {
+            copter.set_mode(ALT_HOLD, MODE_REASON_BRAKE_TIMEOUT);
         }
     }
 }
