@@ -7,7 +7,7 @@
 // loiter_init - initialise loiter controller
 bool Copter::ModeLoiter::init(bool ignore_checks)
 {
-    if (_copter.position_ok() || ignore_checks) {
+    if (copter.position_ok() || ignore_checks) {
 
         // set target to current position
         wp_nav->init_loiter_target();
@@ -41,7 +41,7 @@ bool Copter::ModeLoiter::do_precision_loiter()
     if (wp_nav->get_pilot_desired_acceleration().length() > 50.0f) {
         return false;
     }
-    if (!_copter.precland.target_acquired()) {
+    if (!copter.precland.target_acquired()) {
         return false; // we don't have a good vector
     }
     return true;
@@ -51,11 +51,11 @@ void Copter::ModeLoiter::precision_loiter_xy()
 {
     wp_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel_rel;
-    if (!_copter.precland.get_target_position_cm(target_pos)) {
+    if (!copter.precland.get_target_position_cm(target_pos)) {
         target_pos.x = inertial_nav.get_position().x;
         target_pos.y = inertial_nav.get_position().y;
     }
-    if (!_copter.precland.get_target_velocity_relative_cms(target_vel_rel)) {
+    if (!copter.precland.get_target_velocity_relative_cms(target_vel_rel)) {
         target_vel_rel.x = -inertial_nav.get_velocity().x;
         target_vel_rel.y = -inertial_nav.get_velocity().y;
     }
@@ -78,7 +78,7 @@ void Copter::ModeLoiter::run()
     pos_control->set_accel_z(g.pilot_accel_z);
 
     // process pilot inputs unless we are in radio failsafe
-    if (!_copter.failsafe.radio) {
+    if (!copter.failsafe.radio) {
         // apply SIMPLE mode transform to pilot inputs
         update_simple_mode();
 
@@ -196,7 +196,7 @@ void Copter::ModeLoiter::run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
 
         // adjust climb rate using rangefinder
-        if (_copter.rangefinder_alt_ok()) {
+        if (copter.rangefinder_alt_ok()) {
             // if rangefinder is ok, use surface tracking
             target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
         }
@@ -209,4 +209,14 @@ void Copter::ModeLoiter::run()
         pos_control->update_z_controller();
         break;
     }
+}
+
+uint32_t Copter::ModeLoiter::wp_distance() const
+{
+    return wp_nav->get_loiter_distance_to_target();
+}
+
+int32_t Copter::ModeLoiter::wp_bearing() const
+{
+    return wp_nav->get_loiter_bearing_to_target();
 }

@@ -137,3 +137,13 @@ void Copter::ModeSmartRTL::save_position()
 
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
+
+uint32_t Copter::ModeSmartRTL::wp_distance() const
+{
+    return wp_nav->get_wp_distance_to_destination();
+}
+
+int32_t Copter::ModeSmartRTL::wp_bearing() const
+{
+    return wp_nav->get_wp_bearing_to_destination();
+}

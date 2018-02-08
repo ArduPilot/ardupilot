@@ -36,7 +36,7 @@ void Copter::ModeAutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, 
         new_gain_sp : new_gain_sp,
         new_ddt     : new_ddt
     };
-    _copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_AutoTuneDetails {
@@ -55,7 +55,7 @@ void Copter::ModeAutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_
         angle_cd    : angle_cd,
         rate_cds    : rate_cds
     };
-    _copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 #endif
 

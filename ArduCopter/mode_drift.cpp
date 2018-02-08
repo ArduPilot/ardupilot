@@ -29,7 +29,7 @@
 // drift_init - initialise drift controller
 bool Copter::ModeDrift::init(bool ignore_checks)
 {
-    if (_copter.position_ok() || ignore_checks) {
+    if (copter.position_ok() || ignore_checks) {
         return true;
     }else{
         return false;
@@ -58,7 +58,7 @@ void Copter::ModeDrift::run()
     }
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, _copter.aparm.angle_max);
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, copter.aparm.angle_max);
 
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
