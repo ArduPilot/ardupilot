@@ -525,6 +525,7 @@ def write_I2C_config(f):
 def write_PWM_config(f):
     '''write PWM config defines'''
     rc_in = None
+    alarm = None
     pwm_out = []
     pwm_timers = []
     for l in bylabel.keys():
