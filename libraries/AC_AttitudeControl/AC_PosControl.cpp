@@ -1087,9 +1087,9 @@ void AC_PosControl::accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss,
     accel_right = -accel_x_cmss*_ahrs.sin_yaw() + accel_y_cmss*_ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
-    pitch_target = atanf(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);
-    float cos_pitch_target = cosf(pitch_target*M_PI/18000);
-    roll_target = atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
+    pitch_target = atanf(-accel_forward/(GRAVITY_MSS * 100.0f))*(18000.0f/M_PI);
+    float cos_pitch_target = cosf(pitch_target*M_PI/18000.0f);
+    roll_target = atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100.0f))*(18000.0f/M_PI);
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
@@ -1194,7 +1194,7 @@ Vector3f AC_PosControl::sqrt_controller(const Vector3f& error, float p, float se
     float linear_dist = second_ord_lim/sq(p);
     float error_length = norm(error.x, error.y);
     if (error_length > linear_dist) {
-        float first_order_scale = safe_sqrt(2.0f*second_ord_lim*(error_length-(linear_dist/2.0f)))/error_length;
+        float first_order_scale = safe_sqrt(2.0f*second_ord_lim*(error_length-(linear_dist * 0.5f)))/error_length;
         return Vector3f(error.x*first_order_scale, error.y*first_order_scale, error.z);
     } else {
         return Vector3f(error.x*p, error.y*p, error.z);
