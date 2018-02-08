@@ -281,7 +281,7 @@ void AC_WPNav::get_loiter_stopping_point_xy(Vector3f& stopping_point) const
 float AC_WPNav::get_loiter_angle_max_cd() const
 {
     if (is_zero(_loiter_angle_max)){
-        return MIN(_attitude_control.lean_angle_max()*2.0f/3.0f, _pos_control.get_lean_angle_max_cd()*2.0f/3.0f);
+        return MIN(_attitude_control.lean_angle_max(), _pos_control.get_lean_angle_max_cd()) * (2.0f/3.0f);
     }
     return MIN(_loiter_angle_max*100.0f, _pos_control.get_lean_angle_max_cd());
 }
@@ -331,7 +331,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
         float loiter_brake_accel = 0.0f;
         if (_loiter_desired_accel.is_zero()) {
             if((AP_HAL::millis()-_brake_timer) > _loiter_brake_delay * 1000.0f){
-                float brake_gain = _pos_control.get_vel_xy_pid().kP()/2.0f;
+                float brake_gain = _pos_control.get_vel_xy_pid().kP() * 0.5f;
                 loiter_brake_accel = constrain_float(AC_AttitudeControl::sqrt_controller(desired_speed, brake_gain, _loiter_brake_jerk_max_cmsss, nav_dt), 0.0f, _loiter_brake_accel_cmss);
             }
         } else {
