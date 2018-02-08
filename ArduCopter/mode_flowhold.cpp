@@ -60,7 +60,7 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @Description: Controls deceleration rate on stick release
     // @Range: 1 30
     // @User: Standard
-    // @Units: deg/sec
+    // @Units: deg/s
     AP_GROUPINFO("_BRAKE_RATE", 6, Copter::ModeFlowHold, brake_rate_dps, 8),
     
     AP_GROUPEND
