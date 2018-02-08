@@ -256,7 +256,7 @@ vsscanf (const char *buf, const char *s, va_list ap)
     else if (*s == 'l' || *s == 'L')
         lflag = 1;
     else if (*s >= '1' && *s <= '9') {
-        for (tc = s; isdigit (*s); s++);
+        for (tc = s; isdigit ((unsigned)(*s)); s++);
         strncpy (tmp, tc, s - tc);
         tmp[s - tc] = '\0';
         atob (&width, tmp, 10);
