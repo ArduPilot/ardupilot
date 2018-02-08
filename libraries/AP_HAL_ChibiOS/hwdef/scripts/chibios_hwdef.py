@@ -828,6 +828,7 @@ def build_peripheral_list():
 
 def process_line(line):
     '''process one line of pin definition file'''
+    global allpins
     a = shlex.split(line)
     # keep all config lines for later use
     alllines.append(line)
@@ -864,11 +865,24 @@ def process_line(line):
     if a[0] == 'SPIDEV':
         spidev.append(a[1:])
     if a[0] == 'undef':
+        print("Removing %s" % a[1])
         config.pop(a[1], '')
+        bytype.pop(a[1],'')
+        bylabel.pop(a[1],'')
         #also remove all occurences of defines in previous lines if any
-        for line in alllines:
+        for line in alllines[:]:
             if line.startswith('define') and a[1] in line:
                 alllines.remove(line)
+        newpins = []
+        for pin in allpins:
+            if pin.type == a[1]:
+                continue
+            if pin.label == a[1]:
+                continue
+            if pin.portpin == a[1]:
+                continue
+            newpins.append(pin)
+        allpins = newpins
 
 
 def process_file(filename):
