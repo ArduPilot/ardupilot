@@ -56,9 +56,10 @@ PB10 USART3_TX USART3
 PB11 USART3_RX USART3
 
 # main port. This should be telem1, but is disabled as it interferes
-# #with USB for some unknown reason
-#PA9 USART1_TX USART1
-#PA10 USART1_RX USART1
+# #with USB for some unknown reason. These need to be pulled HIGH for
+# USB to work
+PA9 X_USART1_TX OUTPUT HIGH
+PA10 X_USART1_RX OUTPUT HIGH
 
 # alternative config
 # PB10 I2C2_SCL I2C2
