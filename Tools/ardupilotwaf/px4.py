@@ -191,7 +191,7 @@ def _process_romfs(self):
     file_list = [
         'init.d/rc.APM',
         'init.d/rc.error',
-        'init.d/rcS',
+        (bld.env.PX4_RC_S_SCRIPT, 'init.d/rcS'),
         'tones/startup',
         (bld.env.PX4_BOOTLOADER, 'bootloader/fmu_bl.bin'),
     ]

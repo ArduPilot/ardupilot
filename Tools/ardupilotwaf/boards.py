@@ -751,6 +751,7 @@ class px4(Board):
         env.PX4_BOARD_RC = self.board_rc
         env.PX4_PX4IO_NAME = self.px4io_name
         env.PX4_PARAM_DEFAULTS = self.param_defaults
+        env.PX4_RC_S_SCRIPT = 'init.d/rcS'
 
         env.AP_PROGRAM_AS_STLIB = True
 
@@ -809,6 +810,7 @@ class skyviper_v2450_px4(px4_v3):
             HAL_RCINPUT_WITH_AP_RADIO = 1,
             LAND_DETECTOR_ACCEL_MAX = 2
         )
+        env.PX4_RC_S_SCRIPT = 'init.d/rcS_no_microSD'
 
 class px4_v4(px4):
     name = 'px4-v4'
