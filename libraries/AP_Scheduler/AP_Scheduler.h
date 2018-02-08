@@ -71,7 +71,7 @@ public:
     void init(const Task *tasks, uint8_t num_tasks);
 
     // call when one tick has passed
-    void tick(void);
+    void tick();
 
     // run the tasks. Call this once per 'tick'.
     // time_available is the amount of time available to run
@@ -79,10 +79,10 @@ public:
     void run(uint32_t time_available);
 
     // return the number of microseconds available for the current task
-    uint16_t time_available_usec(void);
+    uint16_t time_available_usec();
 
     // return debug parameter
-    uint8_t debug(void) { return _debug; }
+    uint8_t debug() { return _debug; }
 
     // return load average, as a number between 0 and 1. 1 means
     // 100% load. Calculated from how much spare time we have at the
@@ -90,25 +90,16 @@ public:
     float load_average();
 
     // get the active main loop rate
-    uint16_t get_loop_rate_hz(void) {
-        if (_active_loop_rate_hz == 0) {
-            _active_loop_rate_hz = _loop_rate_hz;
-        }
-        return _active_loop_rate_hz;
+    uint16_t get_loop_rate_hz() const {
+        return _loop_rate_hz;
     }
     // get the time-allowed-per-loop in microseconds
-    uint32_t get_loop_period_us() {
-        if (_loop_period_us == 0) {
-            _loop_period_us = 1000000UL / _loop_rate_hz;
-        }
+    uint32_t get_loop_period_us() const {
         return _loop_period_us;
     }
     // get the time-allowed-per-loop in seconds
-    float get_loop_period_s() {
-        if (is_zero(_loop_period_s)) {
-            _loop_period_s = 1.0 / _loop_rate_hz;
-        }
-        return _loop_period_s;
+    float get_loop_period_s() const {
+        return (float)_loop_period_us / 1000000.f;
     }
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -122,41 +113,35 @@ private:
 
     // overall scheduling rate in Hz
     AP_Int16 _loop_rate_hz;
-
-    // loop rate in Hz as set at startup
-    AP_Int16 _active_loop_rate_hz;
     
-    // calculated loop period in usec
-    uint16_t _loop_period_us;
+    // overall scheduling period in µs
+    uint32_t _loop_period_us = 0;
 
-    // calculated loop period in seconds
-    float _loop_period_s;
-    
     // progmem list of tasks to run
-    const struct Task *_tasks;
+    const struct Task *_tasks = nullptr;
 
     // number of tasks in _tasks list
-    uint8_t _num_tasks;
+    uint8_t _num_tasks = 0;
 
     // number of 'ticks' that have passed (number of times that
     // tick() has been called
-    uint16_t _tick_counter;
+    uint16_t _tick_counter = 0;
 
     // tick counter at the time we last ran each task
-    uint16_t *_last_run;
+    uint16_t *_last_run = nullptr;
 
     // number of microseconds allowed for the current task
-    uint32_t _task_time_allowed;
+    uint32_t _task_time_allowed = 0;
 
     // the time in microseconds when the task started
-    uint32_t _task_time_started;
+    uint32_t _task_time_started = 0;
 
     // number of spare microseconds accumulated
-    uint32_t _spare_micros;
+    uint32_t _spare_micros = 0;
 
     // number of ticks that _spare_micros is counted over
-    uint8_t _spare_ticks;
+    uint8_t _spare_ticks = 0;
 
     // performance counters
-    AP_HAL::Util::perf_counter_t *_perf_counters;
+    AP_HAL::Util::perf_counter_t *_perf_counters = nullptr;
 };
