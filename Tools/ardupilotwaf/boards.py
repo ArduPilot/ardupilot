@@ -402,9 +402,14 @@ class fmuv3(chibios):
 
 class skyviper_v2450(fmuv3):
     name = 'skyviper-v2450'
+    def __init__(self):
+        super(skyviper_v2450, self).__init__()
+        self.with_uavcan = False
+        
     def configure_env(self, cfg, env):
         super(skyviper_v2450, self).configure_env(cfg, env)
         env.DEFAULT_PARAMETERS = '../../Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
+        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
 
 class fmuv4(chibios):
     name = 'fmuv4'
