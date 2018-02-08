@@ -21,13 +21,8 @@
  */
 
 #include "AP_Radio_backend.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include <nuttx/arch.h>
-#include <systemlib/systemlib.h>
-#include <drivers/drv_hrt.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "hal.h"
-#endif
 #include "telem_structure.h"
 #include "driver_cc2500.h"
 
@@ -209,4 +204,6 @@ private:
     void check_fw_ack(void);
 };
 
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
