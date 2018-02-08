@@ -109,11 +109,10 @@
 /* AP_Radio configuration */
 
 #ifdef HAL_RCINPUT_WITH_AP_RADIO
-// this is the external SPI bus on a PixHawk1:
-# define CYRF_SPI_PX4_SPI_BUS        PX4_SPI_BUS_EXT
-# define CYRF_SPI_PX4_SPIDEV_EXT     (spi_dev_e)PX4_SPIDEV_EXT0
-// this is AUX5 on a PixHawk1:
-# define CYRF_IRQ_INPUT (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTD|GPIO_PIN13)
+// this is the SPI bus for cypress on the skyviper-v2450
+# define CYRF_SPI_PX4_SPI_BUS        2
+# define CYRF_SPI_PX4_SPIDEV_EXT     (spi_dev_e)1
+# define CYRF_IRQ_INPUT (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTD|GPIO_PIN15)
 #endif // HAL_RCINPUT_WITH_AP_RADIO
 
 /* default values */
