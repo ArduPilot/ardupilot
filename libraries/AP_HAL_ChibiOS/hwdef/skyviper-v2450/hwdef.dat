@@ -4,13 +4,15 @@
 # start with fmuv3 base port
 include ../fmuv3/hwdef.dat
 
-# remove some unnecessary features from fmuv3
+# remove some unnecessary features inherited from fmuv3
 undef UART8
 undef UART8_TX
 undef UART8_RX
 undef USART3
 undef USART3_TX
 undef USART3_RX
+undef CAN1
+undef CAN2
 undef HAL_WITH_UAVCAN
 undef IOMCU_UART
 undef AP_FEATURE_SBUS_OUT
@@ -18,6 +20,7 @@ undef HAL_OS_FATFS_IO
 undef AP_FEATURE_RTSCTS
 undef HAL_WITH_RAMTRON
 undef IOMCU_UART
+undef SDIO
 
 UART_ORDER OTG1 UART4 USART2
 
@@ -37,3 +40,10 @@ define LAND_DETECTOR_ACCEL_MAX 2.0f
 SPIDEV cypress    SPI2 DEVID11 FRAM_CS     MODE0  2*MHZ  2*MHZ
 SPIDEV cc2500     SPI2 DEVID12 FRAM_CS     MODE0  4*MHZ  4*MHZ
 SPIDEV pixartflow SPI4 DEVID13 MPU_EXT_CS  MODE3  2*MHZ  2*MHZ
+
+# SPI2 for the cypress needs exclusive access or we will end up with
+# lost packets
+DMA_PRIORITY SPI2_*
+DMA_NOSHARE SPI2_*
+undef PA1
+PA1 UART4_RX UART4 NODMA
