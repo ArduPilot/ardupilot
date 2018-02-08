@@ -174,8 +174,8 @@ int Util::read_file(const char *path, const char *fmt, ...)
 }
 
 const char *Linux::Util::_hw_names[UTIL_NUM_HARDWARES] = {
-    [UTIL_HARDWARE_RPI1]   = "BCM2708",
-    [UTIL_HARDWARE_RPI2]   = "BCM2709",
+    [UTIL_HARDWARE_RPI1]   = "BCM2708,BCM2835",
+    [UTIL_HARDWARE_RPI2]   = "BCM2709,BCM2836,BCM2837",
     [UTIL_HARDWARE_BEBOP]  = "Mykonos3 board",
     [UTIL_HARDWARE_BEBOP2] = "Milos board",
     [UTIL_HARDWARE_DISCO]  = "Evinrude board",
@@ -190,15 +190,22 @@ int Util::get_hw_arm32()
         return -errno;
     }
 
+    char hw_names[MAX_SIZE_LINE];
     while (fgets(buffer, MAX_SIZE_LINE, f) != nullptr) {
         if (strstr(buffer, "Hardware") == nullptr) {
             continue;
         }
         for (uint8_t i = 0; i < UTIL_NUM_HARDWARES; i++) {
-            if (strstr(buffer, _hw_names[i]) == nullptr) {
-                continue;
+            strcpy(hw_names, _hw_names[i]);
+            char *hw_name = strtok(hw_names, ",");
+            while (hw_name != NULL) {
+                if (strstr(buffer, hw_name) == nullptr) {
+                    hw_name = strtok(NULL, ",");
+                    continue;
+                }
+                fclose(f);
+                break;
             }
-            fclose(f);
             return i;
         }
     }
