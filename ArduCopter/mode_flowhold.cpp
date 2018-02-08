@@ -10,22 +10,22 @@
 
 const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @Param: _XY_P
-    // @DisplayName: Flow (horizontal) P gain
-    // @Description: Flow (horizontal) P gain.
+    // @DisplayName: FlowHold P gain
+    // @Description: FlowHold (horizontal) P gain.
     // @Range: 0.1 6.0
     // @Increment: 0.1
     // @User: Advanced
 
     // @Param: _XY_I
-    // @DisplayName: Flow I gain
-    // @Description: Flow I gain
+    // @DisplayName: FlowHold I gain
+    // @Description: FlowHold (horizontal) I gain
     // @Range: 0.02 1.00
     // @Increment: 0.01
     // @User: Advanced
 
     // @Param: _XY_IMAX
-    // @DisplayName: Flow integrator maximum
-    // @Description: Flow integrator maximum
+    // @DisplayName: FlowHold Integrator Max
+    // @Description: FlowHold (horizontal) integrator maximum
     // @Range: 0 4500
     // @Increment: 10
     // @Units: cdeg
@@ -33,30 +33,30 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     AP_SUBGROUPINFO(flow_pi_xy, "_XY_",  1, Copter::ModeFlowHold, AC_PI_2D),
 
     // @Param: _FLOW_MAX
-    // @DisplayName: Flow Max
+    // @DisplayName: FlowHold Flow Rate Max
     // @Description: Controls maximum apparent flow rate in flowhold
     // @Range: 0.1 2.5
     // @User: Standard
     AP_GROUPINFO("_FLOW_MAX", 2, Copter::ModeFlowHold, flow_max, 0.6),
 
     // @Param: _FILT_HZ
-    // @DisplayName: Flow Filter Frequency
+    // @DisplayName: FlowHold Filter Frequency
     // @Description: Filter frequency for flow data
     // @Range: 1 100
     // @User: Standard
     AP_GROUPINFO("_FILT_HZ", 3, Copter::ModeFlowHold, flow_filter_hz, 5),
 
     // @Param: _QUAL_MIN
-    // @DisplayName: Minimum flow quality
+    // @DisplayName: FlowHold Flow quality minimum
     // @Description: Minimum flow quality to use flow position hold
     // @Range: 0 255
     // @User: Standard
     AP_GROUPINFO("_QUAL_MIN", 4, Copter::ModeFlowHold, flow_min_quality, 10),
 
     // 5 was FLOW_SPEED
-    
+
     // @Param: _BRAKE_RATE
-    // @DisplayName: Braking rate
+    // @DisplayName: FlowHold Braking rate
     // @Description: Controls deceleration rate on stick release
     // @Range: 1 30
     // @User: Standard
@@ -161,7 +161,7 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
             braking = false;
 #if 0
             printf("braking done at %u vel=%f\n", now - last_stick_input_ms,
-                   sensor_flow.length());
+                   (double)sensor_flow.length());
 #endif
         }
     }
@@ -209,10 +209,10 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
     if (log_counter++ % 20 == 0) {
         DataFlash_Class::instance()->Log_Write("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffffff",
                                                AP_HAL::micros64(),
-                                               sensor_flow.x, sensor_flow.y,
-                                               bf_angles.x, bf_angles.y,
-                                               quality_filtered,
-                                               xy_I.x, xy_I.y);
+                                               (double)sensor_flow.x, (double)sensor_flow.y,
+                                               (double)bf_angles.x, (double)bf_angles.y,
+                                               (double)quality_filtered,
+                                               (double)xy_I.x, (double)xy_I.y);
     }
 }
 
@@ -511,15 +511,15 @@ void Copter::ModeFlowHold::update_height_estimate(void)
     
     DataFlash_Class::instance()->Log_Write("FXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
                                            AP_HAL::micros64(),
-                                           delta_flowrate.x,
-                                           delta_flowrate.y,
-                                           delta_vel_rate.x,
-                                           delta_vel_rate.y,
-                                           height_estimate,
-                                           delta_height,
-                                           height_offset,
-                                           ins_height,
-                                           last_ins_height,
+                                           (double)delta_flowrate.x,
+                                           (double)delta_flowrate.y,
+                                           (double)delta_vel_rate.x,
+                                           (double)delta_vel_rate.y,
+                                           (double)height_estimate,
+                                           (double)delta_height,
+                                           (double)height_offset,
+                                           (double)ins_height,
+                                           (double)last_ins_height,
                                            dt_ms);
     mavlink_msg_named_value_float_send(MAVLINK_COMM_0, AP_HAL::millis(), "HEST", height_estimate);
     mavlink_msg_named_value_float_send(MAVLINK_COMM_1, AP_HAL::millis(), "HEST", height_estimate);
