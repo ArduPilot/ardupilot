@@ -4,23 +4,34 @@
 # start with fmuv3 base port
 include ../fmuv3/hwdef.dat
 
+# remove some unnecessary features from fmuv3
+undef UART8
+undef UART8_TX
+undef UART8_RX
+undef USART3
+undef USART3_TX
+undef USART3_RX
+undef HAL_WITH_UAVCAN
+undef IOMCU_UART
+undef AP_FEATURE_SBUS_OUT
+undef HAL_OS_FATFS_IO
+undef AP_FEATURE_RTSCTS
+undef HAL_WITH_RAMTRON
+undef IOMCU_UART
+
+UART_ORDER OTG1 UART4 USART2
+
 # enable AP_Radio support
 define HAL_RCINPUT_WITH_AP_RADIO 1
 
 define HAL_GPIO_RADIO_RESET      1 // PB0 GPIO from FMU3
 define HAL_GPIO_RADIO_IRQ       15 // PD15
 
-# disable FRAM for storage
-undef HAL_WITH_RAMTRON
-
 # setup defines for ArduCopter config
 define TOY_MODE_ENABLED ENABLED
 define ARMING_DELAY_SEC 0
 define LAND_START_ALT 700
 define LAND_DETECTOR_ACCEL_MAX 2.0f
-
-# disable IOMCU
-undef IOMCU_UART
 
 # support cypress and cc2500 radios
 SPIDEV cypress    SPI2 DEVID11 FRAM_CS     MODE0  2*MHZ  2*MHZ
