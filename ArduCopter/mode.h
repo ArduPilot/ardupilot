@@ -130,7 +130,7 @@ class ModeAcro_Heli : public ModeAcro {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Copter::ModeAcro::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1012,7 +1012,7 @@ class ModeStabilize_Heli : public ModeStabilize {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Copter::ModeStabilize::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
