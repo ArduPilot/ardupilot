@@ -107,10 +107,7 @@ void Plane::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
-
-    perf_info.reset(scheduler.get_loop_rate_hz());
-    perf_info.ignore_this_loop();
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
 }
 
 void Plane::loop()
@@ -338,7 +335,7 @@ void Plane::one_second_loop()
 
 void Plane::log_perf_info()
 {
-    scheduler.update_logging(should_log(MASK_LOG_PM));
+    scheduler.update_logging();
 }
 
 void Plane::compass_save()
