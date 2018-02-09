@@ -244,7 +244,7 @@ void AP_Scheduler::loop()
 
 void AP_Scheduler::update_logging(const bool log_to_dataflash)
 {
-    if (debug()) {
+    if (debug_flags()) {
         perf_info.update_logging();
     }
     if (log_to_dataflash) {
