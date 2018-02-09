@@ -599,17 +599,6 @@ void Plane::update_notify()
     notify.update();
 }
 
-void Plane::resetPerfData(void) 
-{
-    perf.mainLoop_count = 0;
-    perf.G_Dt_max       = 0;
-    perf.G_Dt_min       = 0;
-    perf.num_long       = 0;
-    perf.start_ms       = millis();
-    perf.last_log_dropped = DataFlash.num_dropped();
-}
-
-
 // sets notify object flight mode information
 void Plane::notify_flight_mode(enum FlightMode mode)
 {
