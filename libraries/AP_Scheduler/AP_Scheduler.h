@@ -72,14 +72,14 @@ public:
     };
 
     // initialise scheduler
-    void init(const Task *tasks, uint8_t num_tasks);
+    void init(const Task *tasks, uint8_t num_tasks, uint32_t log_performance_bit);
 
     // called by vehicle's main loop - which should be the only thing
     // that function does
     void loop();
 
     // call to update any logging the scheduler might do; call at 1Hz
-    void update_logging(bool log_to_dataflash);
+    void update_logging();
 
     // write out PERF message to dataflash
     void Log_Write_Performance();
@@ -188,4 +188,7 @@ private:
 
     // performance counters
     AP_HAL::Util::perf_counter_t *_perf_counters;
+
+    // bitmask bit which indicates if we should log PERF message to dataflash
+    uint32_t _log_performance_bit;
 };

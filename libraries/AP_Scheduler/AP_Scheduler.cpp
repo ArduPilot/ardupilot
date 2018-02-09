@@ -74,7 +74,7 @@ AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
 }
 
 // initialise the scheduler
-void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks)
+void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint32_t log_performance_bit)
 {
     _tasks = tasks;
     _num_tasks = num_tasks;
@@ -86,6 +86,8 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks)
     perf_info.set_loop_rate(get_loop_rate_hz());
     perf_info.reset();
     loop_start = AP_HAL::micros();
+
+    _log_performance_bit = log_performance_bit;
 }
 
 // one tick has passed
@@ -242,12 +244,13 @@ void AP_Scheduler::loop()
     perf_info.check_loop_time(AP_HAL::micros() - loop_start);
 }
 
-void AP_Scheduler::update_logging(const bool log_to_dataflash)
+void AP_Scheduler::update_logging()
 {
     if (debug_flags()) {
         perf_info.update_logging();
     }
-    if (log_to_dataflash) {
+    if (_log_performance_bit != (uint32_t)-1 &&
+        DataFlash_Class::instance()->should_log(_log_performance_bit)) {
         Log_Write_Performance();
     }
     perf_info.set_loop_rate(get_loop_rate_hz());
