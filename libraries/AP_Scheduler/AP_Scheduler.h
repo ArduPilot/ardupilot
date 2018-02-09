@@ -99,7 +99,7 @@ public:
     uint16_t time_available_usec(void);
 
     // return debug parameter
-    uint8_t debug(void) { return _debug; }
+    uint8_t debug_flags(void) { return _debug; }
 
     // return load average, as a number between 0 and 1. 1 means
     // 100% load. Calculated from how much spare time we have at the
