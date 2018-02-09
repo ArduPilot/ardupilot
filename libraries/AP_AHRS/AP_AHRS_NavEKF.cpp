@@ -106,8 +106,10 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
         update_EKF2();
     }
 
+#if AP_MODULE_SUPPORTED
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);
+#endif
 
     // push gyros if optical flow present
     if (hal.opticalflow) {
