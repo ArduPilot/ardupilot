@@ -89,12 +89,12 @@ void Sub::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
 }
 
 void Sub::perf_update(void)
 {
-    scheduler.update_logging(should_log(MASK_LOG_PM));
+    scheduler.update_logging();
 }
 
 void Sub::loop()
