@@ -218,7 +218,7 @@ void Plane::crash_detection_update(void)
                 // trigger hard landing event right away, or never again. This inhibits a false hard landing
                 // event when, for example, a minute after a good landing you pick the plane up and
                 // this logic is still running and detects the plane is on its side as you carry it.
-                crash_state.debounce_timer_ms = now;
+                crash_state.debounce_timer_ms = now_ms;
                 crash_state.debounce_time_total_ms = 0; // no debounce
             }
 
