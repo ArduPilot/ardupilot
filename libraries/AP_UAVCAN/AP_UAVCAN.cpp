@@ -25,6 +25,9 @@
 #include <uavcan/equipment/actuator/Command.hpp>
 #include <uavcan/equipment/actuator/Status.hpp>
 #include <uavcan/equipment/esc/RawCommand.hpp>
+#include <uavcan/equipment/indication/LightsCommand.hpp>
+#include <uavcan/equipment/indication/SingleLightCommand.hpp>
+#include <uavcan/equipment/indication/RGB565.hpp>
 
 extern const AP_HAL::HAL& hal;
 
@@ -277,6 +280,7 @@ static void (*air_data_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan:
 // publisher interfaces
 static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[MAX_NUMBER_OF_CAN_DRIVERS];
 
 AP_UAVCAN::AP_UAVCAN() :
     _node_allocator(
@@ -315,6 +319,7 @@ AP_UAVCAN::AP_UAVCAN() :
     }
 
     _rc_out_sem = hal.util->new_semaphore();
+    _led_out_sem = hal.util->new_semaphore();
 
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
 }
@@ -418,6 +423,12 @@ bool AP_UAVCAN::try_init(void)
                     esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
                     esc_raw[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
+                    rgb_led[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*node);
+                    rgb_led[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                    rgb_led[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
+                    _led_conf.devices_count = 0;
+
                     /*
                      * Informing other nodes that we're ready to work.
                      * Default mode is INITIALIZING.
@@ -453,6 +464,20 @@ bool AP_UAVCAN::rc_out_sem_take()
 void AP_UAVCAN::rc_out_sem_give()
 {
     _rc_out_sem->give();
+}
+
+bool AP_UAVCAN::led_out_sem_take()
+{
+    bool sem_ret = _led_out_sem->take(10);
+    if (!sem_ret) {
+        debug_uavcan(1, "AP_UAVCAN LEDOut semaphore fail\n\r");
+    }
+    return sem_ret;
+}
+
+void AP_UAVCAN::led_out_sem_give()
+{
+    _led_out_sem->give();
 }
 
 void AP_UAVCAN::do_cyclic(void)
@@ -566,6 +591,27 @@ void AP_UAVCAN::do_cyclic(void)
                 }
 
                 rc_out_sem_give();
+            }
+            
+            if (led_out_sem_take()) {
+                
+                if (_led_conf.broadcast_enabled && ((AP_HAL::micros64() - _led_conf.last_update) > (AP_UAVCAN_LED_DELAY_MILLISECONDS * 1000))) {
+                    uavcan::equipment::indication::LightsCommand msg;
+                    uavcan::equipment::indication::SingleLightCommand cmd;
+
+                    for (uint8_t i = 0; i < _led_conf.devices_count; i++) {
+                        if (_led_conf.devices[i].enabled) {
+                            cmd.light_id =_led_conf.devices[i].led_index;
+                            cmd.color = _led_conf.devices[i].rgb565_color;
+                            msg.commands.push_back(cmd);
+                        }
+                    }
+
+                    rgb_led[_uavcan_i]->broadcast(msg);
+                    _led_conf.last_update = AP_HAL::micros64();
+                }
+                
+                led_out_sem_give();
             }
         }
     } else {
@@ -1033,6 +1079,43 @@ void AP_UAVCAN::update_mag_state(uint8_t node)
             }
         }
     }
+}
+
+bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue) {
+    
+    if (_led_conf.devices_count >= AP_UAVCAN_MAX_LED_DEVICES) {
+        return false;
+    }
+    if (!led_out_sem_take()) {
+        return false;
+    }
+    
+    uavcan::equipment::indication::RGB565 color;
+    
+    color.red = (red >> 3);
+    color.green = (green >> 2);
+    color.blue = (blue >> 3);
+
+    // check if device exists. if so, update here and return
+    for (uint8_t i = 0; i < _led_conf.devices_count; i++) {
+        if (!_led_conf.devices[i].enabled || (_led_conf.devices[i].led_index == led_index)) {
+            _led_conf.devices[i].led_index = led_index;
+            _led_conf.devices[i].rgb565_color = color;
+            _led_conf.devices[i].enabled = true;
+            _led_conf.broadcast_enabled = true;
+            led_out_sem_give();
+            return true;
+        }
+    }
+    
+    // no existing device found, add it
+    _led_conf.devices[_led_conf.devices_count].led_index = led_index;
+    _led_conf.devices[_led_conf.devices_count].rgb565_color = color;
+    _led_conf.devices[_led_conf.devices_count].enabled = true;
+    _led_conf.devices_count++;
+    _led_conf.broadcast_enabled = true;
+    led_out_sem_give();
+    return true;
 }
 
 #endif // HAL_WITH_UAVCAN

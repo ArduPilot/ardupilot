@@ -17,6 +17,7 @@
 #include <AP_Compass/AP_Compass.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
+#include <uavcan/equipment/indication/RGB565.hpp>
 
 #ifndef UAVCAN_NODE_POOL_SIZE
 #define UAVCAN_NODE_POOL_SIZE 8192
@@ -40,6 +41,9 @@
 
 #define AP_UAVCAN_HW_VERS_MAJOR 1
 #define AP_UAVCAN_HW_VERS_MINOR 0
+
+#define AP_UAVCAN_MAX_LED_DEVICES 4
+#define AP_UAVCAN_LED_DELAY_MILLISECONDS 50
 
 class AP_UAVCAN {
 public:
@@ -97,6 +101,11 @@ public:
     // synchronization for RC output
     bool rc_out_sem_take();
     void rc_out_sem_give();
+    
+    // synchronization for LED output
+    bool led_out_sem_take();
+    void led_out_sem_give();
+
 
 private:
     // ------------------------- GPS
@@ -137,7 +146,21 @@ private:
     uint8_t _rco_armed;
     uint8_t _rco_safety;
 
+    typedef struct {
+        bool enabled;
+        uint8_t led_index;
+        uavcan::equipment::indication::RGB565 rgb565_color;
+    } _led_device;
+
+    struct {
+        bool broadcast_enabled;
+        _led_device devices[AP_UAVCAN_MAX_LED_DEVICES];
+        uint8_t devices_count;
+        uint64_t last_update;
+    } _led_conf;
+
     AP_HAL::Semaphore *_rc_out_sem;
+    AP_HAL::Semaphore *_led_out_sem;
 
     class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
         SystemClock()
@@ -213,6 +236,7 @@ public:
     void rco_force_safety_off(void);
     void rco_arm_actuators(bool arm);
     void rco_write(uint16_t pulse_len, uint8_t ch);
+    bool led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue);
 
     void set_parent_can_mgr(AP_HAL::CANManager* parent_can_mgr)
     {
