@@ -108,6 +108,9 @@ void Plane::setup()
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
+
+    perf_info.reset(scheduler.get_loop_rate_hz());
+    perf_info.ignore_this_loop();
 }
 
 void Plane::loop()
@@ -119,23 +122,12 @@ void Plane::loop()
 
     uint32_t timer = micros();
 
-    perf.delta_us_fast_loop  = timer - perf.fast_loopTimer_us;
-    G_Dt = perf.delta_us_fast_loop * 1.0e-6f;
+    // check loop time
+    perf_info.check_loop_time(timer - fast_loopTimer);
+    G_Dt = (float)(timer - fast_loopTimer) * 1.0e-6;
+    fast_loopTimer = timer;
 
-    if (perf.delta_us_fast_loop > loop_us + 500) {
-        perf.num_long++;
-    }
-
-    if (perf.delta_us_fast_loop > perf.G_Dt_max && perf.fast_loopTimer_us != 0) {
-        perf.G_Dt_max = perf.delta_us_fast_loop;
-    }
-
-    if (perf.delta_us_fast_loop < perf.G_Dt_min || perf.G_Dt_min == 0) {
-        perf.G_Dt_min = perf.delta_us_fast_loop;
-    }
-    perf.fast_loopTimer_us = timer;
-
-    perf.mainLoop_count++;
+    mainLoop_count++;
 
     // tell the scheduler one tick has passed
     scheduler.tick();
@@ -367,20 +359,19 @@ void Plane::one_second_loop()
 
 void Plane::log_perf_info()
 {
-    if (scheduler.debug() != 0) {
-        gcs().send_text(MAV_SEVERITY_INFO, "PERF: %u/%u Dt=%u/%u Log=%u",
-                          (unsigned)perf.num_long,
-                          (unsigned)perf.mainLoop_count,
-                          (unsigned)perf.G_Dt_max,
-                          (unsigned)perf.G_Dt_min,
-                          (unsigned)(DataFlash.num_dropped() - perf.last_log_dropped));
-    }
-
     if (should_log(MASK_LOG_PM)) {
         Log_Write_Performance();
     }
-
-    resetPerfData();
+    if (scheduler.debug()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
+                          (unsigned)perf_info.get_num_long_running(),
+                          (unsigned)perf_info.get_num_loops(),
+                          (unsigned long)perf_info.get_max_time(),
+                          (unsigned long)perf_info.get_min_time(),
+                          (unsigned long)perf_info.get_avg_time(),
+                          (unsigned long)perf_info.get_stddev_time());
+    }
+    perf_info.reset(scheduler.get_loop_rate_hz());
 }
 
 void Plane::compass_save()
