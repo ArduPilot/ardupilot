@@ -235,3 +235,10 @@
 #ifndef HAL_INS_DEFAULT
 #define HAL_INS_DEFAULT HAL_INS_NONE
 #endif
+
+#ifdef HAVE_LIBDL
+#define AP_MODULE_SUPPORTED 1
+#else
+#define AP_MODULE_SUPPORTED 0
+#endif
+
