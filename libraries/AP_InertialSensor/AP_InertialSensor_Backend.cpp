@@ -2,8 +2,10 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 #include <DataFlash/DataFlash.h>
+#if AP_MODULE_SUPPORTED
 #include <AP_Module/AP_Module.h>
 #include <stdio.h>
+#endif
 
 #define SENSOR_RATE_DEBUG 0
 
@@ -160,8 +162,10 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     }
     _imu._gyro_last_sample_us[instance] = sample_us;
 
+#if AP_MODULE_SUPPORTED
     // call gyro_sample hook if any
     AP_Module::call_hook_gyro_sample(instance, dt, gyro);
+#endif
 
     // push gyros if optical flow present
     if (hal.opticalflow)
@@ -289,8 +293,10 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     }
     _imu._accel_last_sample_us[instance] = sample_us;
 
+#if AP_MODULE_SUPPORTED
     // call accel_sample hook if any
     AP_Module::call_hook_accel_sample(instance, dt, accel, fsync_set);
+#endif    
     
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
@@ -447,3 +453,4 @@ bool AP_InertialSensor_Backend::should_log_imu_raw() const
     }
     return true;
 }
+
