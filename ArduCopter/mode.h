@@ -727,7 +727,7 @@ class ModeGuidedNoGPS : public ModeGuided {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Copter::ModeGuided::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -926,7 +926,7 @@ class ModeSmartRTL : public ModeRTL {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Copter::ModeRTL::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1064,7 +1064,7 @@ class ModeAvoidADSB : public ModeGuided {
 
 public:
     // inherit constructor
-    using Copter::Mode::Mode;
+    using Copter::ModeGuided::Mode;
 
     bool init(bool ignore_checks) override;
     void run() override;
