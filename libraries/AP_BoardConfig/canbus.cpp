@@ -21,6 +21,12 @@
 #include "AP_BoardConfig_CAN.h"
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
+  # define CAN_DRIVER_DEFAULT 1
+#else
+  # define CAN_DRIVER_DEFAULT 0
+#endif
+
 // table of user settable CAN bus parameters
 const AP_Param::GroupInfo AP_BoardConfig_CAN::CAN_if_var_info::var_info[] = {
     // @Param: DRIVER
@@ -29,7 +35,7 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::CAN_if_var_info::var_info[] = {
     // @Values: 0:Disabled,1:First driver,2:Second driver
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO_FLAGS("DRIVER", 1, AP_BoardConfig_CAN::CAN_if_var_info, _driver_number, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("DRIVER", 1, AP_BoardConfig_CAN::CAN_if_var_info, _driver_number, CAN_DRIVER_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
     // @Param: BITRATE
     // @DisplayName: Bitrate of CAN interface
