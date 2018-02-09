@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <AP_HAL/AP_HAL.h>
+
+#if AP_MODULE_SUPPORTED
+
 /*
   support for external modules
  */
@@ -280,3 +284,5 @@ void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3
     }
 #endif
 }
+
+#endif // AP_MODULE_SUPPORTED
