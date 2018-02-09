@@ -100,12 +100,12 @@ void CompassLearn::update(void)
     if (sample_available) {
         DataFlash_Class::instance()->Log_Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
                                                AP_HAL::micros64(),
-                                               best_offsets.x,
-                                               best_offsets.y,
-                                               best_offsets.z,
-                                               best_error,
-                                               best_yaw_deg,
-                                               worst_error,
+                                               (double)best_offsets.x,
+                                               (double)best_offsets.y,
+                                               (double)best_offsets.z,
+                                               (double)best_error,
+                                               (double)best_yaw_deg,
+                                               (double)worst_error,
                                                num_samples);
     }
 
