@@ -115,7 +115,7 @@ void Rover::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
 }
 
 /*
@@ -254,7 +254,7 @@ void Rover::update_aux(void)
 
 void Rover::perf_update()
 {
-    scheduler.update_logging(should_log(MASK_LOG_PM));
+    scheduler.update_logging();
 }
 
 /*
