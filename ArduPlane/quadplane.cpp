@@ -817,7 +817,8 @@ void QuadPlane::init_loiter(void)
         vel.z = 0;
         stopping_point += vel.normalized() * stopping_distance() * 100;
     }
-    
+
+    // initialise loiter
     wp_nav->init_loiter_target(stopping_point);
 
     // initialize vertical speed and acceleration
@@ -1724,24 +1725,8 @@ void QuadPlane::vtol_position_controller(void)
     const Location &loc = plane.next_WP_loc;
     float ekfGndSpdLimit, ekfNavVelGainScaler;    
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
-    
+
     switch (poscontrol.state) {
-    case QPOS_LAND_FINAL:
-        /*
-          for land-final we use the loiter controller
-         */
-    
-        // run loiter controller
-        wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
-
-        // nav roll and pitch are controller by position controller
-        plane.nav_roll_cd = pos_control->get_roll();
-        plane.nav_pitch_cd = pos_control->get_pitch();
-
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                      plane.nav_pitch_cd,
-                                                                      get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
-        break;
 
     case QPOS_POSITION1: {
         Vector2f diff_wp = location_diff(plane.current_loc, loc);
@@ -1790,12 +1775,16 @@ void QuadPlane::vtol_position_controller(void)
         }
         pos_control->set_desired_velocity_xy(target_speed_xy.x*100,
                                              target_speed_xy.y*100);
-        
-        pos_control->update_vel_controller_xy(ekfNavVelGainScaler);
 
+        // reset position controller xy target to current position
+        // because we only want velocity control (no position control)
         const Vector3f& curr_pos = inertial_nav.get_position();
         pos_control->set_xy_target(curr_pos.x, curr_pos.y);
-        
+        pos_control->set_desired_accel_xy(0.0f,0.0f);
+
+        // run horizontal velocity controller
+        pos_control->update_vel_controller_xy(ekfNavVelGainScaler);
+
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
         plane.nav_pitch_cd = pos_control->get_pitch();
@@ -1835,25 +1824,31 @@ void QuadPlane::vtol_position_controller(void)
     case QPOS_POSITION2:
     case QPOS_LAND_DESCEND:
         /*
-          for final land repositioning and descent we run the loiter controller
+          for final land repositioning and descent we run the position controller
          */
-        
+
         // also run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.prev_WP_loc, loc);
+        FALLTHROUGH;
 
+    case QPOS_LAND_FINAL:
+
+        // set position controller desired velocity and acceleration to zero
+        pos_control->set_desired_velocity_xy(0.0f,0.0f);
+        pos_control->set_desired_accel_xy(0.0f,0.0f);
+
+        // set position control target and update
         pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
-        
-        // run loiter controller
-        wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+        pos_control->update_xy_controller(ekfNavVelGainScaler);
 
         // nav roll and pitch are controller by position controller
-        plane.nav_roll_cd = wp_nav->get_roll();
-        plane.nav_pitch_cd = wp_nav->get_pitch();
+        plane.nav_roll_cd = pos_control->get_roll();
+        plane.nav_pitch_cd = pos_control->get_pitch();
 
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                             plane.nav_pitch_cd,
-                                                                             get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
+                                                                      plane.nav_pitch_cd,
+                                                                      get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
 
     case QPOS_LAND_COMPLETE:
@@ -1950,25 +1945,29 @@ void QuadPlane::setup_target_position(void)
 void QuadPlane::takeoff_controller(void)
 {
     /*
-      for takeoff we need to use the loiter controller wpnav controller takes over the descent rate
-      control
+      for takeoff we use the position controller
     */
     float ekfGndSpdLimit, ekfNavVelGainScaler;    
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     setup_target_position();
-    
-    // run loiter controller
-    wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
-    
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                         plane.nav_pitch_cd,
-                                                                         get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
-    
+
+    // set position controller desired velocity and acceleration to zero
+    pos_control->set_desired_velocity_xy(0.0f,0.0f);
+    pos_control->set_desired_accel_xy(0.0f,0.0f);
+
+    // set position control target and update
+    pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
+    pos_control->update_xy_controller(ekfNavVelGainScaler);
+
     // nav roll and pitch are controller by position controller
     plane.nav_roll_cd = pos_control->get_roll();
     plane.nav_pitch_cd = pos_control->get_pitch();
-    
+
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+                                                                  plane.nav_pitch_cd,
+                                                                  get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
+
     pos_control->set_alt_target_from_climb_rate(wp_nav->get_speed_up(), plane.G_Dt, true);
     run_z_controller();
 }
@@ -2062,6 +2061,8 @@ void QuadPlane::init_qrtl(void)
     poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
     poscontrol.state = QPOS_POSITION1;
     poscontrol.speed_scale = 0;
+    pos_control->set_desired_accel_xy(0.0f, 0.0f);
+    pos_control->init_xy_controller(true);
 }
 
 /*
@@ -2113,7 +2114,8 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     plane.next_WP_loc.alt = plane.current_loc.alt;
     poscontrol.state = QPOS_POSITION1;
     poscontrol.speed_scale = 0;
-    wp_nav->init_loiter_target();
+    pos_control->set_desired_accel_xy(0.0f, 0.0f);
+    pos_control->init_xy_controller(true);
 
     throttle_wait = false;
     landing_detect.lower_limit_start_ms = 0;
