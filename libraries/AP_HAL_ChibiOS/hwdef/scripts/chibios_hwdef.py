@@ -561,14 +561,13 @@ def write_PWM_config(f):
         f.write('#define STM32_RCIN_DMA_CHANNEL %u' % dma_chan)
         f.write('\n')
     if alarm is not None:
-        n_str = alarm.label[3]
-        if not is_int(n_str):
-            error("Bad timer number for ALARM PWM %s" % p)
-        n = int(n_str)
-        # could probably also use timers 10-14 on STM32
-        if (n < 1):
-            error("Bad timer number %u for ALARM PWM %s" % (chan, p))
 
+        a = alarm.label.split('_')
+        chan_str = a[1][2:]
+        timer_str = a[0][3:]
+        if not is_int(chan_str) or not is_int(timer_str):
+            error("Bad timer channel %s" % alarm.label)
+        n = int(timer_str)
         f.write('\n// Alarm PWM output config\n')
         f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
         f.write('#define STM32_TIM%u_SUPPRESS_ISR\n' % n)
@@ -577,9 +576,6 @@ def write_PWM_config(f):
             'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED',
             'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED'
         ]
-        chan_str = alarm.label[7]
-        if not is_int(chan_str):
-            error("Bad channel for ALARM PWM %s" % p)
         chan = int(chan_str)
         if chan not in [1, 2, 3, 4]:
             error("Bad channel number %u for ALARM PWM %s" % (chan, p))
