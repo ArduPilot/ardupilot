@@ -50,7 +50,10 @@ PA4 VDD_5V_SENS ADC1 SCALE(2)
 # SPI1 is fram bus
 PA5 SPI1_SCK SPI1
 PA6 SPI1_MISO SPI1
-PA7 TONE INPUT
+
+# Timers 1-4 are used for (servo) PWM outputs and 5/6 are used for clocks
+# Use Timer 14 for tone generation
+PA7 TIM14_CH1 TIM14 GPIO(32) ALARM
 
 PA8 RUN_LED OUTPUT GPIO(0)
 PA9 VBUS INPUT
