@@ -124,7 +124,7 @@ void Rover::setup()
 void Rover::loop()
 {
     scheduler.loop();
-    G_Dt = scheduler.last_loop_time;
+    G_Dt = scheduler.get_filtered_loop_time();
 }
 
 void Rover::update_soft_armed()
