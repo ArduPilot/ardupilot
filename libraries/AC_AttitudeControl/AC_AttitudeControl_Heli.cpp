@@ -247,6 +247,12 @@ void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cd
 // rate_controller_run - run lowest level rate controller and send outputs to the motors
 // should be called at 100hz or more
 void AC_AttitudeControl_Heli::rate_controller_run()
+{
+	rate_controller_run(false,0);
+}
+
+
+void AC_AttitudeControl_Heli::rate_controller_run(bool rotational_frame, float instant_heading)
 {	
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
 

@@ -132,6 +132,7 @@ public:
     }
 
     Quaternion operator*(const Quaternion &v) const;
+    Quaternion operator*(const float &k) const;
     Quaternion &operator*=(const Quaternion &v);
     Quaternion operator/(const Quaternion &v) const;
 };

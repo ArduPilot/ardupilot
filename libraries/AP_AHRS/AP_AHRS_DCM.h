@@ -21,6 +21,7 @@
  *
  */
 
+ 
 class AP_AHRS_DCM : public AP_AHRS {
 public:
     AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro)
@@ -69,6 +70,11 @@ public:
     // return rotation matrix representing rotaton from body to earth axes
     const Matrix3f &get_rotation_body_to_ned() const override {
         return _body_dcm_matrix;
+    }
+    
+    // return rotation matrix representing rotaton from body to earth axes
+    const Matrix3f &get_dcm_matrix() const {
+        return _dcm_matrix;
     }
 
     // return the current drift correction integrator value
@@ -119,7 +125,8 @@ public:
 
     // time that the AHRS has been up
     uint32_t uptime_ms() const override;
-
+    
+    void resynchronize_fourier_phase(void);
 private:
     float _ki;
     float _ki_yaw;

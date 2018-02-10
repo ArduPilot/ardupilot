@@ -95,17 +95,20 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
 #endif
 
     update_DCM(skip_ins_update);
-    if (_ekf_type == 2) {
-        // if EK2 is primary then run EKF2 first to give it CPU
-        // priority
-        update_EKF2();
-        update_EKF3();
-    } else {
-        // otherwise run EKF3 first
-        update_EKF3();
-        update_EKF2();
+    
+    if (ekf_type() != EKF_TYPE_NONE) {
+    	if (_ekf_type == 2) {
+    		// if EK2 is primary then run EKF2 first to give it CPU
+    		// priority
+    		update_EKF2();
+    		update_EKF3();
+    	} else {
+    		// otherwise run EKF3 first
+    		update_EKF3();
+    		update_EKF2();
+    	}
     }
-
+    
 #if AP_MODULE_SUPPORTED
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);

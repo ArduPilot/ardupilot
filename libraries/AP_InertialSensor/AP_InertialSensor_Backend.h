@@ -25,6 +25,7 @@
 #include <inttypes.h>
 
 #include <AP_Math/AP_Math.h>
+#include "AP_Math/fourier.h"
 
 #include "AP_InertialSensor.h"
 
@@ -80,6 +81,10 @@ public:
     // notify of a fifo reset
     void notify_fifo_reset(void);
     
+    Vector2f get_pitch_yaw_FT(void);
+    
+    void synchronize_fourier_phase(float);
+    
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -106,6 +111,9 @@ public:
     };
         
 protected:
+
+    Fourier_Analysis _fourier_analysis;
+
     // access to frontend
     AP_InertialSensor &_imu;
 

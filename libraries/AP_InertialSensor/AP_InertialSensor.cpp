@@ -618,6 +618,16 @@ void AP_InertialSensor::_start_backends()
     }
 }
 
+void AP_InertialSensor::synchronize_fourier_phase(float instant_heading)
+{
+	_backends[0]->synchronize_fourier_phase(instant_heading);
+}
+
+Vector2f AP_InertialSensor::get_pitch_yaw_FT(void)
+{
+	return _backends[0]->get_pitch_yaw_FT();
+}
+
 /* Find the N instance of the backend that has already been successfully detected */
 AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, uint8_t instance)
 {

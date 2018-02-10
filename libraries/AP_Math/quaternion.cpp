@@ -1,20 +1,20 @@
 /*
- * quaternion.cpp
- * Copyright (C) Andrew Tridgell 2012
- *
- * This file is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This file is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+* quaternion.cpp
+* Copyright (C) Andrew Tridgell 2012
+*
+* This file is free software: you can redistribute it and/or modify it
+* under the terms of the GNU General Public License as published by the
+* Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This file is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along
+* with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #pragma GCC optimize("O3")
 
@@ -32,7 +32,7 @@ void Quaternion::rotation_matrix(Matrix3f &m) const
     float q1q3 = q1 * q3;
     float q1q4 = q1 * q4;
     float q4q4 = q4 * q4;
-
+    
     m.a.x = 1.0f-2.0f*(q3q3 + q4q4);
     m.a.y = 2.0f*(q2q3 - q1q4);
     m.a.z = 2.0f*(q2q4 + q1q3);
@@ -58,7 +58,7 @@ void Quaternion::rotation_matrix_norm(Matrix3f &m) const
     float q3q4 = q3 * q4;
     float q4q4 = q4 * q4;
     float invs = 1.0f / (q1q1 + q2q2 + q3q3 + q4q4);
-
+    
     m.a.x = ( q2q2 - q3q3 - q4q4 + q1q1)*invs;
     m.a.y = 2.0f*(q2q3 - q1q4)*invs;
     m.a.z = 2.0f*(q2q4 + q1q3)*invs;
@@ -70,7 +70,7 @@ void Quaternion::rotation_matrix_norm(Matrix3f &m) const
     m.c.z = (-q2q2 - q3q3 + q4q4 + q1q1)*invs;
 }
 
-// return the rotation matrix equivalent for this quaternion
+// return the quaternion equivalent to this rotation matrix
 // Thanks to Martin John Baker
 // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
 void Quaternion::from_rotation_matrix(const Matrix3f &m)
@@ -88,9 +88,9 @@ void Quaternion::from_rotation_matrix(const Matrix3f &m)
     float &qx = q2;
     float &qy = q3;
     float &qz = q4;
-
+    
     float tr = m00 + m11 + m22;
-
+    
     if (tr > 0) {
         float S = sqrtf(tr+1) * 2;
         qw = 0.25f * S;
@@ -135,7 +135,7 @@ void Quaternion::from_euler(float roll, float pitch, float yaw)
     float sr2 = sinf(roll*0.5f);
     float sp2 = sinf(pitch*0.5f);
     float sy2 = sinf(yaw*0.5f);
-
+    
     q1 = cr2*cp2*cy2 + sr2*sp2*sy2;
     q2 = sr2*cp2*cy2 - cr2*sp2*sy2;
     q3 = cr2*sp2*cy2 + sr2*cp2*sy2;
@@ -147,10 +147,11 @@ void Quaternion::from_vector312(float roll ,float pitch, float yaw)
 {
     Matrix3f m;
     m.from_euler312(roll, pitch, yaw);
-
+    
     from_rotation_matrix(m);
 }
 
+// creates a quaternion from an axis vector and an angle, the angle is equal to the vector length
 void Quaternion::from_axis_angle(Vector3f v)
 {
     float theta = v.length();
@@ -163,6 +164,7 @@ void Quaternion::from_axis_angle(Vector3f v)
     from_axis_angle(v,theta);
 }
 
+// creates a quaternion from an axis vector and an angle
 void Quaternion::from_axis_angle(const Vector3f &axis, float theta)
 {
     // axis must be a unit vector as there is no check for length
@@ -172,13 +174,14 @@ void Quaternion::from_axis_angle(const Vector3f &axis, float theta)
         return;
     }
     float st2 = sinf(theta/2.0f);
-
+    
     q1 = cosf(theta/2.0f);
     q2 = axis.x * st2;
     q3 = axis.y * st2;
     q4 = axis.z * st2;
 }
 
+//rotates current quaternion by vector v with an angle = length(v)
 void Quaternion::rotate(const Vector3f &v)
 {
     Quaternion r;
@@ -186,6 +189,7 @@ void Quaternion::rotate(const Vector3f &v)
     (*this) *= r;
 }
 
+//convert quaternion to a vector with magnitude=to its angle
 void Quaternion::to_axis_angle(Vector3f &v)
 {
     float l = sqrt(sq(q2)+sq(q3)+sq(q4));
@@ -213,7 +217,7 @@ void Quaternion::from_axis_angle_fast(const Vector3f &axis, float theta)
     float t2 = theta/2.0f;
     float sqt2 = sq(t2);
     float st2 = t2-sqt2*t2/6.0f;
-
+    
     q1 = 1.0f-(sqt2/2.0f)+sq(sqt2)/24.0f;
     q2 = axis.x * st2;
     q3 = axis.y * st2;
@@ -230,19 +234,19 @@ void Quaternion::rotate_fast(const Vector3f &v)
     float sqt2 = sq(t2);
     float st2 = t2-sqt2*t2/6.0f;
     st2 /= theta;
-
+    
     //"rotation quaternion"
     float w2 = 1.0f-(sqt2/2.0f)+sq(sqt2)/24.0f;
     float x2 = v.x * st2;
     float y2 = v.y * st2;
     float z2 = v.z * st2;
-
+    
     //copy our quaternion
     float w1 = q1;
     float x1 = q2;
     float y1 = q3;
     float z1 = q4;
-
+    
     //do the multiply into our quaternion
     q1 = w1*w2 - x1*x2 - y1*y2 - z1*z2;
     q2 = w1*x2 + x1*w2 + y1*z2 - z1*y2;
@@ -313,18 +317,35 @@ Quaternion Quaternion::operator*(const Quaternion &v) const
     const float &x1 = q2;
     const float &y1 = q3;
     const float &z1 = q4;
-
+    
     float w2 = v.q1;
     float x2 = v.q2;
     float y2 = v.q3;
     float z2 = v.q4;
-
+    
     ret.q1 = w1*w2 - x1*x2 - y1*y2 - z1*z2;
     ret.q2 = w1*x2 + x1*w2 + y1*z2 - z1*y2;
     ret.q3 = w1*y2 - x1*z2 + y1*w2 + z1*x2;
     ret.q4 = w1*z2 + x1*y2 - y1*x2 + z1*w2;
-
+    
     return ret;
+}
+
+Quaternion Quaternion::operator*(const float &k) const
+{
+	Quaternion ret;
+	const float &w1 = q1;
+    const float &w2 = q2;
+    const float &w3 = q3;
+    const float &w4 = q4;
+	
+    ret.q1=w1*k;
+    ret.q2=w2*k;
+    ret.q3=w3*k;
+    ret.q4=w4*k;
+    
+	
+	return ret;
 }
 
 Quaternion &Quaternion::operator*=(const Quaternion &v)
@@ -333,17 +354,17 @@ Quaternion &Quaternion::operator*=(const Quaternion &v)
     float x1 = q2;
     float y1 = q3;
     float z1 = q4;
-
+    
     float w2 = v.q1;
     float x2 = v.q2;
     float y2 = v.q3;
     float z2 = v.q4;
-
+    
     q1 = w1*w2 - x1*x2 - y1*y2 - z1*z2;
     q2 = w1*x2 + x1*w2 + y1*z2 - z1*y2;
     q3 = w1*y2 - x1*z2 + y1*w2 + z1*x2;
     q4 = w1*z2 + x1*y2 - y1*x2 + z1*w2;
-
+    
     return *this;
 }
 
@@ -354,12 +375,12 @@ Quaternion Quaternion::operator/(const Quaternion &v) const
     const float &quat1 = q2;
     const float &quat2 = q3;
     const float &quat3 = q4;
-
+    
     float rquat0 = v.q1;
     float rquat1 = v.q2;
     float rquat2 = v.q3;
     float rquat3 = v.q4;
-
+    
     ret.q1 = (rquat0*quat0 + rquat1*quat1 + rquat2*quat2 + rquat3*quat3);
     ret.q2 = (rquat0*quat1 - rquat1*quat0 - rquat2*quat3 + rquat3*quat2);
     ret.q3 = (rquat0*quat2 + rquat1*quat3 - rquat2*quat0 - rquat3*quat1);

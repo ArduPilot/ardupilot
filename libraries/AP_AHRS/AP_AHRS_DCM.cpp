@@ -3,7 +3,7 @@
  *
  *       AHRS system using DCM matrices
  *
- *       Based on DCM code by Doug Weibel, Jordi MuÒoz and Jose Julio. DIYDrones.com
+ *       Based on DCM code by Doug Weibel, Jordi Mu√±oz and Jose Julio. DIYDrones.com
  *
  *       Adapted for the general ArduPilot AHRS interface by Andrew Tridgell
 
@@ -34,6 +34,10 @@ extern const AP_HAL::HAL& hal;
 // which results in false gyro drift. See
 // http://gentlenav.googlecode.com/files/fastRotations.pdf
 #define SPIN_RATE_LIMIT 20
+
+//the limit above which an other algorithm is used to calculate dcm matrix (in degrees per second)
+#define GYRO_MAX_SPIN_RATE 180
+#define GYRO_MAX_SPIN_RATE_RAD radians(GYRO_MAX_SPIN_RATE)
 
 // reset the current gyro drift estimate
 //  should be called if gyro offsets are recalculated
@@ -81,6 +85,10 @@ AP_AHRS_DCM::update(bool skip_ins_update)
     // Perform drift correction
     drift_correction(delta_t);
 
+    if(fabsf(_ins.get_gyro().z) > GYRO_MAX_SPIN_RATE_RAD) {
+    	_dcm_matrix.from_euler(0.0f, _ins.get_pitch_yaw_FT().x, _ins.get_pitch_yaw_FT().y);
+    }
+    
     // paranoid check for bad values in the DCM matrix
     check_matrix();
 
@@ -92,6 +100,13 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 
     // update AOA and SSA
     update_AOA_SSA();
+}
+
+void AP_AHRS_DCM::resynchronize_fourier_phase(void)
+{
+	float instant_heading=_compass->calculate_heading(_dcm_matrix);
+	
+	_ins.synchronize_fourier_phase(instant_heading);
 }
 
 // update the DCM matrix using only the gyros
@@ -274,7 +289,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
  *  to approximations rather than identities. In effect, the axes in the two frames of reference no
  *  longer describe a rigid body. Fortunately, numerical error accumulates very slowly, so it is a
  *  simple matter to stay ahead of it.
- *  We call the process of enforcing the orthogonality conditions “renormalization”.
+ *  We call the process of enforcing the orthogonality conditions √írenormalization√í.
  */
 void
 AP_AHRS_DCM::normalize(void)

@@ -252,14 +252,31 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
 
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
+	rate_controller_run(false,0);
+}
+
+void AC_AttitudeControl_Multi::rate_controller_run(const bool rotational_frame, const float instant_heading)
+{
+	Vector3f gyro_latest = _ahrs.get_gyro_latest();
+	float delta_angle=instant_heading-_ahrs.yaw;
+	
+    float instant_roll=rate_target_to_motor_roll(gyro_latest.x, _rate_target_ang_vel.x);
+    float instant_pitch=rate_target_to_motor_pitch(gyro_latest.y, _rate_target_ang_vel.y);
+    float instant_yaw=rate_target_to_motor_yaw(gyro_latest.z, _rate_target_ang_vel.z);
+    
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
 
-    Vector3f gyro_latest = _ahrs.get_gyro_latest();
-    _motors.set_roll(rate_target_to_motor_roll(gyro_latest.x, _rate_target_ang_vel.x));
-    _motors.set_pitch(rate_target_to_motor_pitch(gyro_latest.y, _rate_target_ang_vel.y));
-    _motors.set_yaw(rate_target_to_motor_yaw(gyro_latest.z, _rate_target_ang_vel.z));
-
+    if (rotational_frame == true) {
+    	_motors.set_roll(cosf(delta_angle)*instant_roll+sinf(delta_angle)*instant_pitch);
+    	_motors.set_pitch(cosf(delta_angle)*instant_pitch-sinf(delta_angle)*instant_roll);
+    	_motors.set_yaw(0.0f);
+    } else {
+    	_motors.set_roll(instant_roll);
+    	_motors.set_pitch(instant_pitch);
+    	_motors.set_yaw(instant_yaw);
+    }
+    
     control_monitor_update();
 }
 

@@ -316,7 +316,21 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         _sem->give();
     }
 
+    if (instance==0) {
+    	_fourier_analysis.accumulate_discrete(accel, dt, _imu._gyro[instance]);
+    }
+
     log_accel_raw(instance, sample_us, accel);
+}
+
+Vector2f AP_InertialSensor_Backend::get_pitch_yaw_FT(void)
+{
+	return _fourier_analysis.get_result();
+}
+
+void::AP_InertialSensor_Backend::synchronize_fourier_phase(float actual_heading)
+{
+	_fourier_analysis.synchronize_fourier_phase(actual_heading);
 }
 
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)

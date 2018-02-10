@@ -642,6 +642,12 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             }
             break;
 
+        case MOTOR_FRAME_ROTATIONAL_DUAL:
+        	add_motor(AP_MOTORS_MOT_1, 0, 0, 1);
+            add_motor(AP_MOTORS_MOT_2, 180, 0, 2);
+            success = true;
+            break;
+            
         default:
             // matrix doesn't support the configured class
             break;

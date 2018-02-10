@@ -89,7 +89,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if OPTFLOW == ENABLED
     SCHED_TASK(update_optical_flow,  200,    160),
 #endif
-    SCHED_TASK(update_batt_compass,   10,    120),
+    SCHED_TASK(update_batt_compass,   70,    120),
     SCHED_TASK(read_aux_switches,     10,     50),
     SCHED_TASK(arm_motors_check,      10,     50),
 #if TOY_MODE_ENABLED == ENABLED
@@ -204,7 +204,11 @@ void Copter::fast_loop()
     ins.update();
 
     // run low level rate controllers that only require IMU data
-    attitude_control->rate_controller_run();
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_ROTATIONAL_DUAL) {
+    	attitude_control->rate_controller_run(true, compass.calculate_heading(ahrs.get_dcm_matrix()));
+    } else {
+    	attitude_control->rate_controller_run();
+    }
 
     // send outputs to the motors library immediately
     motors_output();
@@ -277,7 +281,7 @@ void Copter::throttle_loop()
 }
 
 // update_batt_compass - read battery and compass
-// should be called at 10hz
+// should be called at 10hz (changed to 70hz for gyropter/monocopter support)
 void Copter::update_batt_compass(void)
 {
     // read battery before compass because it may be used for motor interference compensation
@@ -286,12 +290,13 @@ void Copter::update_batt_compass(void)
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot
         compass.set_throttle(motors->get_throttle());
-        compass.set_voltage(battery.voltage());
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
             DataFlash.Log_Write_Compass(compass);
         }
+        
+        ahrs.resynchronize_fourier_phase();
     }
 }
 
@@ -543,8 +548,8 @@ void Copter::read_AHRS(void)
     gcs_check_input();
 #endif
 
-    // we tell AHRS to skip INS update as we have already done it in fast_loop()
-    ahrs.update(true);
+	// we tell AHRS to skip INS update as we have already done it in fast_loop()
+	ahrs.update(true);
 }
 
 // read baro and rangefinder altitude at 10hz

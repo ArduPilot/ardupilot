@@ -280,6 +280,10 @@ public:
         IMU_SENSOR_TYPE_GYRO = 1,
     };
 
+    Vector2f get_pitch_yaw_FT(void);
+
+    void synchronize_fourier_phase(float);
+    
     class BatchSampler {
     public:
         BatchSampler(const AP_InertialSensor &imu) :

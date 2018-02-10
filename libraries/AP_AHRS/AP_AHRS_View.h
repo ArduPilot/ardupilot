@@ -168,6 +168,7 @@ public:
     float roll;
     float pitch;
     float yaw;
+    
     int32_t roll_sensor;
     int32_t pitch_sensor;
     int32_t yaw_sensor;
@@ -179,6 +180,8 @@ private:
     Matrix3f rot_view;
     Matrix3f rot_body_to_ned;
     Vector3f gyro;
+    
+    float _heading;
 
     struct {
         float cos_roll;
