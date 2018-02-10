@@ -71,7 +71,7 @@ void Copter::ModeThrow::run()
         pos_control->set_desired_velocity_z(fmaxf(inertial_nav.get_velocity_z(),0.0f));
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
-        _copter.set_auto_armed(true);
+        copter.set_auto_armed(true);
 
     } else if (stage == Throw_HgtStabilise && throw_height_good()) {
         gcs().send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
@@ -81,7 +81,7 @@ void Copter::ModeThrow::run()
         wp_nav->init_loiter_target();
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
-        _copter.set_auto_armed(true);
+        copter.set_auto_armed(true);
     } else if (stage == Throw_PosHold && throw_position_good()) {
         if (!nextmode_attempted) {
             switch (g2.throw_nextmode) {
@@ -186,13 +186,13 @@ void Copter::ModeThrow::run()
         last_log_ms = now;
         float velocity = inertial_nav.get_velocity().length();
         float velocity_z = inertial_nav.get_velocity().z;
-        float accel = _copter.ins.get_accel().length();
+        float accel = copter.ins.get_accel().length();
         float ef_accel_z = ahrs.get_accel_ef().z;
         bool throw_detect = (stage > Throw_Detecting) || throw_detected();
         bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
         bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
         bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
-        _copter.Log_Write_Throw(stage,
+        copter.Log_Write_Throw(stage,
                                 velocity,
                                 velocity_z,
                                 accel,
@@ -227,7 +227,7 @@ bool Copter::ModeThrow::throw_detected()
     bool free_falling = ahrs.get_accel_ef().z > -0.25 * GRAVITY_MSS;
 
     // Check if the accel length is < 1.0g indicating that any throw action is complete and the copter has been released
-    bool no_throw_action = _copter.ins.get_accel().length() < 1.0f * GRAVITY_MSS;
+    bool no_throw_action = copter.ins.get_accel().length() < 1.0f * GRAVITY_MSS;
 
     // High velocity or free-fall combined with increasing height indicate a possible air-drop or throw release
     bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action;

@@ -138,7 +138,7 @@ bool Copter::ModeAutoTune::init(bool ignore_checks)
     }
 
     // only do position hold if starting autotune from LOITER or POSHOLD
-    use_poshold = (_copter.control_mode == LOITER || _copter.control_mode == POSHOLD);
+    use_poshold = (copter.control_mode == LOITER || copter.control_mode == POSHOLD);
     have_position = false;
 
     return success;
@@ -165,8 +165,8 @@ void Copter::ModeAutoTune::stop()
 bool Copter::ModeAutoTune::start(bool ignore_checks)
 {
     // only allow flip from Stabilize, AltHold,  PosHold or Loiter modes
-    if (_copter.control_mode != STABILIZE && _copter.control_mode != ALT_HOLD &&
-        _copter.control_mode != LOITER && _copter.control_mode != POSHOLD) {
+    if (copter.control_mode != STABILIZE && copter.control_mode != ALT_HOLD &&
+        copter.control_mode != LOITER && copter.control_mode != POSHOLD) {
         return false;
     }
 
@@ -337,7 +337,7 @@ void Copter::ModeAutoTune::run()
     update_simple_mode();
 
     // get pilot desired lean angles
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, _copter.aparm.angle_max);
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
@@ -601,25 +601,25 @@ void Copter::ModeAutoTune::autotune_attitude_control()
         switch (axis) {
         case ROLL:
             if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().x) * 100.0f), _copter.scheduler.get_loop_period_s());
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().x) * 100.0f), copter.scheduler.get_loop_period_s());
             } else {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().x) * 100.0f - start_rate), _copter.scheduler.get_loop_period_s());
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().x) * 100.0f - start_rate), copter.scheduler.get_loop_period_s());
             }
             lean_angle = direction_sign * (ahrs.roll_sensor - (int32_t)start_angle);
             break;
         case PITCH:
             if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().y) * 100.0f), _copter.scheduler.get_loop_period_s());
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().y) * 100.0f), copter.scheduler.get_loop_period_s());
             } else {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().y) * 100.0f - start_rate), _copter.scheduler.get_loop_period_s());
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().y) * 100.0f - start_rate), copter.scheduler.get_loop_period_s());
             }
             lean_angle = direction_sign * (ahrs.pitch_sensor - (int32_t)start_angle);
             break;
         case YAW:
             if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().z) * 100.0f), _copter.scheduler.get_loop_period_s());
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().z) * 100.0f), copter.scheduler.get_loop_period_s());
             } else {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().z) * 100.0f - start_rate), _copter.scheduler.get_loop_period_s());
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().z) * 100.0f - start_rate), copter.scheduler.get_loop_period_s());
             }
             lean_angle = direction_sign * wrap_180_cd(ahrs.yaw_sensor-(int32_t)start_angle);
             break;
@@ -650,7 +650,7 @@ void Copter::ModeAutoTune::autotune_attitude_control()
 
         // log this iterations lean angle and rotation rate
         Log_Write_AutoTuneDetails(lean_angle, rotation_rate);
-        _copter.DataFlash.Log_Write_Rate(ahrs, *motors, *attitude_control, *pos_control);
+        copter.DataFlash.Log_Write_Rate(ahrs, *motors, *attitude_control, *pos_control);
         break;
 
     case UPDATE_GAINS:
@@ -1456,7 +1456,7 @@ void Copter::ModeAutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch
     }
 
     // do we know where we are?
-    if (!_copter.position_ok()) {
+    if (!copter.position_ok()) {
         return;
     }
 

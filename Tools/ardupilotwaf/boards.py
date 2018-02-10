@@ -261,9 +261,20 @@ class chibios(Board):
             HAVE_STD_NULLPTR_T = 0,
         )
 
+        if self.with_uavcan:
+            env.AP_LIBRARIES += [
+                'modules/uavcan/libuavcan_drivers/stm32/driver/src/*.cpp'
+                ]
+            env.INCLUDES += [
+                cfg.srcnode.find_dir('modules/uavcan/libuavcan_drivers/stm32/driver/include').abspath()
+            ]
+
         env.AP_LIBRARIES += [
             'AP_HAL_ChibiOS',
         ]
+
+        # make board name available for USB IDs
+        env.CHIBIOS_BOARD_NAME = 'HAL_BOARD_NAME="%s"' % self.name
 
         env.CXXFLAGS += [
             '-Wlogical-op',
@@ -293,7 +304,6 @@ class chibios(Board):
             '-Werror=init-self',
             '-Wframe-larger-than=1024',
             '-Werror=unused-but-set-variable',
-            '-Wdouble-promotion',
             '-Wno-missing-field-initializers',
             '-Wno-trigraphs',
             '-Os',
@@ -347,6 +357,12 @@ class chibios(Board):
         ]
 
         env.LIB += ['gcc', 'm']
+        if self.with_uavcan:
+            env.CFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
+                           '-DUAVCAN_STM32_NUM_IFACES=2']
+            env.CXXFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
+                             '-DUAVCAN_STM32_NUM_IFACES=2']
+
         env.GIT_SUBMODULES += [
             'ChibiOS',
         ]
@@ -367,8 +383,17 @@ class skyviper_f412(chibios):
         env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
         env.DEFAULT_PARAMETERS = '../../Tools/Frame_params/SkyViper-F412/defaults.parm'
 
+class skyviper_f412_rev1(skyviper_f412):
+    name = 'skyviper-f412-rev1'
+    def configure_env(self, cfg, env):
+        super(skyviper_f412_rev1, self).configure_env(cfg, env)
+
 class fmuv3(chibios):
     name = 'fmuv3'
+    def __init__(self):
+        super(fmuv3, self).__init__()
+        self.with_uavcan = True
+
     def configure_env(self, cfg, env):
         super(fmuv3, self).configure_env(cfg, env)
         env.DEFINES.update(
@@ -377,9 +402,14 @@ class fmuv3(chibios):
 
 class skyviper_v2450(fmuv3):
     name = 'skyviper-v2450'
+    def __init__(self):
+        super(skyviper_v2450, self).__init__()
+        self.with_uavcan = False
+        
     def configure_env(self, cfg, env):
         super(skyviper_v2450, self).configure_env(cfg, env)
         env.DEFAULT_PARAMETERS = '../../Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
+        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
 
 class fmuv4(chibios):
     name = 'fmuv4'
@@ -403,6 +433,24 @@ class sparky2(chibios):
         super(sparky2, self).configure_env(cfg, env)
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_SPARKY2',
+        )
+        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
+
+class revo_mini(chibios):
+    name = 'revo-mini'
+    def configure_env(self, cfg, env):
+        super(revo_mini, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_REVOMINI',
+        )
+        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
+
+class mini_pix(chibios):
+    name = 'mini-pix'
+    def configure_env(self, cfg, env):
+        super(mini_pix, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_MINIPIX',
         )
         env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
 
@@ -708,6 +756,7 @@ class px4(Board):
         env.PX4_BOARD_RC = self.board_rc
         env.PX4_PX4IO_NAME = self.px4io_name
         env.PX4_PARAM_DEFAULTS = self.param_defaults
+        env.PX4_RC_S_SCRIPT = 'init.d/rcS'
 
         env.AP_PROGRAM_AS_STLIB = True
 
@@ -747,6 +796,27 @@ class px4_v3(px4):
         self.board_name = 'px4fmu-v3'
         self.px4io_name = 'px4io-v2'
         self.with_uavcan = True
+
+class skyviper_v2450_px4(px4_v3):
+    name = 'skyviper-v2450-px4'
+    def __init__(self):
+        super(skyviper_v2450_px4, self).__init__()
+        self.px4io_name = None
+        self.param_defaults = '../../../Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
+
+    def configure_env(self, cfg, env):
+        super(skyviper_v2450_px4, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            TOY_MODE_ENABLED = 'ENABLED',
+            USE_FLASH_STORAGE = 1,
+            ARMING_DELAY_SEC = 0,
+            LAND_START_ALT = 700,
+            HAL_RCINPUT_WITH_AP_RADIO = 1,
+            LAND_DETECTOR_ACCEL_MAX = 2
+        )
+        env.PX4_RC_S_SCRIPT = 'init.d/rcS_no_microSD'
+        env.BUILD_ABIN = True
 
 class px4_v4(px4):
     name = 'px4-v4'

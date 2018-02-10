@@ -92,6 +92,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(update_batt_compass,   10,    120),
     SCHED_TASK(read_aux_switches,     10,     50),
     SCHED_TASK(arm_motors_check,      10,     50),
+#if TOY_MODE_ENABLED == ENABLED
+    SCHED_TASK(toy_mode_update,       10,     50),
+#endif
     SCHED_TASK(auto_disarm_check,     10,     50),
     SCHED_TASK(auto_trim,             10,     75),
     SCHED_TASK(read_rangefinder,      20,    100),
@@ -133,6 +136,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(rpm_update,            10,    200),
     SCHED_TASK(compass_cal_update,   100,    100),
     SCHED_TASK(accel_cal_update,      10,    100),
+    SCHED_TASK(temp_cal_update,       10,    100),
 #if ADSB_ENABLED == ENABLED
     SCHED_TASK(avoidance_adsb_update, 10,    100),
 #endif
@@ -178,7 +182,7 @@ void Copter::setup()
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 
     // setup initial performance counters
-    perf_info.reset();
+    perf_info.reset(scheduler.get_loop_rate_hz());
     fast_loopTimer = AP_HAL::micros();
 }
 
@@ -195,7 +199,7 @@ void Copter::perf_update(void)
                           (unsigned long)perf_info.get_avg_time(),
                           (unsigned long)perf_info.get_stddev_time());
     }
-    perf_info.reset();
+    perf_info.reset(scheduler.get_loop_rate_hz());
     pmTest1 = 0;
 }
 
@@ -349,6 +353,7 @@ void Copter::update_batt_compass(void)
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot
         compass.set_throttle(motors->get_throttle());
+        compass.set_voltage(battery.voltage());
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {

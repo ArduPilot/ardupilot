@@ -9,8 +9,8 @@
 bool Copter::ModeAcro::init(bool ignore_checks)
 {
    // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
-   if (motors->armed() && ap.land_complete && !_copter.flightmode->has_manual_throttle() &&
-           (get_pilot_desired_throttle(channel_throttle->get_control_in(), _copter.g2.acro_thr_mid) > _copter.get_non_takeoff_throttle())) {
+   if (motors->armed() && ap.land_complete && !copter.flightmode->has_manual_throttle() &&
+           (get_pilot_desired_throttle(channel_throttle->get_control_in(), copter.g2.acro_thr_mid) > copter.get_non_takeoff_throttle())) {
        return false;
    }
    // set target altitude to zero for reporting
@@ -45,7 +45,7 @@ void Copter::ModeAcro::run()
     attitude_control->input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
 
     // output pilot's throttle without angle boost
-    attitude_control->set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
+    attitude_control->set_throttle_out(pilot_throttle_scaled, false, copter.g.throttle_filt);
 }
 
 
@@ -56,7 +56,7 @@ void Copter::ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pi
     float rate_limit;
     Vector3f rate_ef_level, rate_bf_level, rate_bf_request;
 
-    AP_Vehicle::MultiCopter &aparm = _copter.aparm;
+    AP_Vehicle::MultiCopter &aparm = copter.aparm;
 
     // apply circular limit to pitch and roll inputs
     float total_in = norm(pitch_in, roll_in);
@@ -138,7 +138,7 @@ void Copter::ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pi
             rate_bf_request.y += rate_bf_level.y;
             rate_bf_request.z += rate_bf_level.z;
         }else{
-            float acro_level_mix = constrain_float(1-MAX(MAX(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0, 0, 1)*ahrs.cos_pitch();
+            float acro_level_mix = constrain_float(float(1-MAX(MAX(abs(roll_in), abs(pitch_in)), abs(yaw_in)))/4500.0, 0, 1)*ahrs.cos_pitch();
 
             // Scale leveling rates by stick input
             rate_bf_level = rate_bf_level*acro_level_mix;

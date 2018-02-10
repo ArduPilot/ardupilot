@@ -5,6 +5,33 @@
  * flight modes is in control_acro.cpp, control_stabilize.cpp, etc
  */
 
+/*
+  constructor for Mode object
+ */
+Copter::Mode::Mode(void) :
+    g(copter.g),
+    g2(copter.g2),
+    wp_nav(copter.wp_nav),
+    pos_control(copter.pos_control),
+    inertial_nav(copter.inertial_nav),
+    ahrs(copter.ahrs),
+    attitude_control(copter.attitude_control),
+    motors(copter.motors),
+    channel_roll(copter.channel_roll),
+    channel_pitch(copter.channel_pitch),
+    channel_throttle(copter.channel_throttle),
+    channel_yaw(copter.channel_yaw),
+    G_Dt(copter.G_Dt),
+    ap(copter.ap),
+    takeoff_state(copter.takeoff_state),
+    ekfGndSpdLimit(copter.ekfGndSpdLimit),
+    ekfNavVelGainScaler(copter.ekfNavVelGainScaler),
+#if FRAME_CONFIG == HELI_FRAME
+    heli_flags(copter.heli_flags),
+#endif
+    auto_yaw_mode(copter.auto_yaw_mode)
+{ };
+
 // return the static controller object corresponding to supplied mode
 Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
 {
@@ -89,6 +116,12 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_smartrtl;
             break;
 
+#if OPTFLOW == ENABLED
+        case FLOWHOLD:
+            ret = (Copter::Mode *)g2.mode_flowhold_ptr;
+            break;
+#endif
+            
         default:
             break;
     }
@@ -234,6 +267,7 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
 void Copter::notify_flight_mode() {
     AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
+    AP_Notify::flags.flight_mode = control_mode;
     notify.set_flight_mode_str(flightmode->name4());
 }
 
@@ -267,10 +301,127 @@ void Copter::Mode::zero_throttle_and_relax_ac()
 #if FRAME_CONFIG == HELI_FRAME
     // Helicopters always stabilize roll/pitch/yaw
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
-    attitude_control->set_throttle_out(0.0f, false, g.throttle_filt);
+    attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 #else
     motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
     // multicopters do not stabilize roll/pitch/yaw when disarmed
-    attitude_control->set_throttle_out_unstabilized(0.0f, true, g.throttle_filt);
+    attitude_control->set_throttle_out_unstabilized(0.0f, true, copter.g.throttle_filt);
 #endif
+}
+
+
+// pass-through functions to reduce code churn on conversion;
+// these are candidates for moving into the Mode base
+// class.
+void Copter::Mode::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
+{
+    copter.get_pilot_desired_lean_angles(roll_in, pitch_in, roll_out, pitch_out, angle_max);
+}
+
+float Copter::Mode::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
+{
+    return copter.get_surface_tracking_climb_rate(target_rate, current_alt_target, dt);
+}
+
+float Copter::Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
+{
+    return copter.get_pilot_desired_yaw_rate(stick_angle);
+}
+
+float Copter::Mode::get_pilot_desired_climb_rate(float throttle_control)
+{
+    return copter.get_pilot_desired_climb_rate(throttle_control);
+}
+
+float Copter::Mode::get_pilot_desired_throttle(int16_t throttle_control, float thr_mid)
+{
+    return copter.get_pilot_desired_throttle(throttle_control, thr_mid);
+}
+
+float Copter::Mode::get_non_takeoff_throttle()
+{
+    return copter.get_non_takeoff_throttle();
+}
+
+void Copter::Mode::update_simple_mode(void) {
+    copter.update_simple_mode();
+}
+
+float Copter::Mode::get_smoothing_gain() {
+    return copter.get_smoothing_gain();
+}
+
+bool Copter::Mode::set_mode(control_mode_t mode, mode_reason_t reason)
+{
+    return copter.set_mode(mode, reason);
+}
+
+void Copter::Mode::set_land_complete(bool b)
+{
+    return copter.set_land_complete(b);
+}
+
+GCS_Copter &Copter::Mode::gcs()
+{
+    return copter.gcs();
+}
+
+void Copter::Mode::Log_Write_Event(uint8_t id)
+{
+    return copter.Log_Write_Event(id);
+}
+
+void Copter::Mode::set_throttle_takeoff()
+{
+    return copter.set_throttle_takeoff();
+}
+
+void Copter::Mode::set_auto_yaw_mode(uint8_t yaw_mode)
+{
+    return copter.set_auto_yaw_mode(yaw_mode);
+}
+
+void Copter::Mode::set_auto_yaw_rate(float turn_rate_cds)
+{
+    return copter.set_auto_yaw_rate(turn_rate_cds);
+}
+
+void Copter::Mode::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle)
+{
+    return copter.set_auto_yaw_look_at_heading(angle_deg, turn_rate_dps, direction, relative_angle);
+}
+
+void Copter::Mode::takeoff_timer_start(float alt_cm)
+{
+    return copter.takeoff_timer_start(alt_cm);
+}
+
+void Copter::Mode::takeoff_stop()
+{
+    return copter.takeoff_stop();
+}
+
+void Copter::Mode::takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
+{
+    return copter.takeoff_get_climb_rates(pilot_climb_rate, takeoff_climb_rate);
+}
+
+float Copter::Mode::get_auto_heading()
+{
+    return copter.get_auto_heading();
+}
+
+float Copter::Mode::get_auto_yaw_rate_cds()
+{
+    return copter.get_auto_yaw_rate_cds();
+}
+
+float Copter::Mode::get_avoidance_adjusted_climbrate(float target_rate)
+{
+    return copter.get_avoidance_adjusted_climbrate(target_rate);
+}
+
+uint16_t Copter::Mode::get_pilot_speed_dn()
+{
+    return copter.get_pilot_speed_dn();
 }

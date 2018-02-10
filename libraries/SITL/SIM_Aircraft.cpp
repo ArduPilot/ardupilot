@@ -191,7 +191,7 @@ void Aircraft::update_mag_field_bf()
     float intensity;
     float declination;
     float inclination;
-    get_mag_field_ef(location.lat * 1e-7f, location.lng * 1e-7f, intensity, declination, inclination);
+    AP_Declination::get_mag_field_ef(location.lat * 1e-7f, location.lng * 1e-7f, intensity, declination, inclination);
 
     // create a field vector and rotate to the required orientation
     Vector3f mag_ef(1e3f * intensity, 0.0f, 0.0f);
@@ -565,7 +565,9 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 void Aircraft::update_wind(const struct sitl_input &input)
 {
     // wind vector in earth frame
-    wind_ef = Vector3f(cosf(radians(input.wind.direction)), sinf(radians(input.wind.direction)), 0) * input.wind.speed;
+    wind_ef = Vector3f(cosf(radians(input.wind.direction))*cosf(radians(input.wind.dir_z)), 
+                       sinf(radians(input.wind.direction))*cosf(radians(input.wind.dir_z)), 
+                       sinf(radians(input.wind.dir_z))) * input.wind.speed;
 
     const float wind_turb = input.wind.turbulence * 10.0f;  // scale input.wind.turbulence to match standard deviation when using iir_coef=0.98
     const float iir_coef = 0.98f;  // filtering high frequencies from turbulence
@@ -584,91 +586,6 @@ void Aircraft::update_wind(const struct sitl_input &input)
             sinf(radians(turbulence_azimuth)) * turbulence_horizontal_speed,
             turbulence_vertical_speed);
     }
-}
-
-/*
- calculate magnetic field intensity and orientation
-*/
-bool Aircraft::get_mag_field_ef(float latitude_deg, float longitude_deg, float &intensity_gauss, float &declination_deg, float &inclination_deg)
-{
-    bool valid_input_data = true;
-
-    /* round down to nearest sampling resolution */
-    int32_t min_lat = static_cast<int32_t>(static_cast<int32_t>(latitude_deg / SAMPLING_RES) * SAMPLING_RES);
-    int32_t min_lon = static_cast<int32_t>(static_cast<int32_t>(longitude_deg / SAMPLING_RES) * SAMPLING_RES);
-
-    /* for the rare case of hitting the bounds exactly
-     * the rounding logic wouldn't fit, so enforce it.
-     */
-
-    /* limit to table bounds - required for maxima even when table spans full globe range */
-    if (latitude_deg <= SAMPLING_MIN_LAT) {
-        min_lat = static_cast<int32_t>(SAMPLING_MIN_LAT);
-        valid_input_data = false;
-    }
-
-    if (latitude_deg >= SAMPLING_MAX_LAT) {
-        min_lat = static_cast<int32_t>(static_cast<int32_t>(latitude_deg / SAMPLING_RES) * SAMPLING_RES - SAMPLING_RES);
-        valid_input_data = false;
-    }
-
-    if (longitude_deg <= SAMPLING_MIN_LON) {
-        min_lon = static_cast<int32_t>(SAMPLING_MIN_LON);
-        valid_input_data = false;
-    }
-
-    if (longitude_deg >= SAMPLING_MAX_LON) {
-        min_lon = static_cast<int32_t>(static_cast<int32_t>(longitude_deg / SAMPLING_RES) * SAMPLING_RES - SAMPLING_RES);
-        valid_input_data = false;
-    }
-
-    /* find index of nearest low sampling point */
-    uint32_t min_lat_index = static_cast<uint32_t>((-(SAMPLING_MIN_LAT) + min_lat)  / SAMPLING_RES);
-    uint32_t min_lon_index = static_cast<uint32_t>((-(SAMPLING_MIN_LON) + min_lon) / SAMPLING_RES);
-
-    /* calculate intensity */
-
-    float data_sw = intensity_table[min_lat_index][min_lon_index];
-    float data_se = intensity_table[min_lat_index][min_lon_index + 1];;
-    float data_ne = intensity_table[min_lat_index + 1][min_lon_index + 1];
-    float data_nw = intensity_table[min_lat_index + 1][min_lon_index];
-
-    /* perform bilinear interpolation on the four grid corners */
-
-    float data_min = ((longitude_deg - min_lon) / SAMPLING_RES) * (data_se - data_sw) + data_sw;
-    float data_max = ((longitude_deg - min_lon) / SAMPLING_RES) * (data_ne - data_nw) + data_nw;
-
-    intensity_gauss = ((latitude_deg - min_lat) / SAMPLING_RES) * (data_max - data_min) + data_min;
-
-    /* calculate declination */
-
-    data_sw = declination_table[min_lat_index][min_lon_index];
-    data_se = declination_table[min_lat_index][min_lon_index + 1];;
-    data_ne = declination_table[min_lat_index + 1][min_lon_index + 1];
-    data_nw = declination_table[min_lat_index + 1][min_lon_index];
-
-    /* perform bilinear interpolation on the four grid corners */
-
-    data_min = ((longitude_deg - min_lon) / SAMPLING_RES) * (data_se - data_sw) + data_sw;
-    data_max = ((longitude_deg - min_lon) / SAMPLING_RES) * (data_ne - data_nw) + data_nw;
-
-    declination_deg = ((latitude_deg - min_lat) / SAMPLING_RES) * (data_max - data_min) + data_min;
-
-    /* calculate inclination */
-
-    data_sw = inclination_table[min_lat_index][min_lon_index];
-    data_se = inclination_table[min_lat_index][min_lon_index + 1];;
-    data_ne = inclination_table[min_lat_index + 1][min_lon_index + 1];
-    data_nw = inclination_table[min_lat_index + 1][min_lon_index];
-
-    /* perform bilinear interpolation on the four grid corners */
-
-    data_min = ((longitude_deg - min_lon) / SAMPLING_RES) * (data_se - data_sw) + data_sw;
-    data_max = ((longitude_deg - min_lon) / SAMPLING_RES) * (data_ne - data_nw) + data_nw;
-
-    inclination_deg = ((latitude_deg - min_lat) / SAMPLING_RES) * (data_max - data_min) + data_min;
-
-    return valid_input_data;
 }
 
 /*

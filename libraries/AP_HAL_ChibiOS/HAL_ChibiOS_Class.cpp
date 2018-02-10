@@ -35,7 +35,11 @@ static HAL_UARTF_DRIVER;
 static ChibiOS::I2CDeviceManager i2cDeviceManager;
 static ChibiOS::SPIDeviceManager spiDeviceManager;
 static ChibiOS::AnalogIn analogIn;
+#ifdef HAL_USE_EMPTY_STORAGE
+static Empty::Storage storageDriver;
+#else
 static ChibiOS::Storage storageDriver;
+#endif
 static ChibiOS::GPIO gpioDriver;
 static ChibiOS::RCInput rcinDriver;
 static ChibiOS::RCOutput rcoutDriver;
@@ -104,6 +108,12 @@ static AP_HAL::HAL::Callbacks* g_callbacks;
 static THD_FUNCTION(main_loop,arg)
 {
     daemon_task = chThdGetSelfX();
+
+#ifdef HAL_I2C_CLEAR_BUS
+    // Clear all I2C Buses. This can be needed on some boards which
+    // can get a stuck I2C peripheral on boot
+    ChibiOS::I2CBus::clear_all();
+#endif
 
     ChibiOS::Shared_DMA::init();
     

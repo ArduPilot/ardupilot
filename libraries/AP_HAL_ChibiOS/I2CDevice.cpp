@@ -51,6 +51,38 @@ void I2CBus::dma_init(void)
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void));    
 }
 
+// Clear Bus to avoid bus lockup
+void I2CBus::clear_all()
+{
+#if defined(HAL_GPIO_PIN_I2C1_SCL) && defined(HAL_I2C1_SCL_AF)
+    clear_bus(HAL_GPIO_PIN_I2C1_SCL, HAL_I2C1_SCL_AF);
+#endif
+
+#if defined(HAL_GPIO_PIN_I2C2_SCL) && defined(HAL_I2C2_SCL_AF)
+    clear_bus(HAL_GPIO_PIN_I2C1_SCL, HAL_I2C1_SCL_AF);
+#endif
+
+#if defined(HAL_GPIO_PIN_I2C3_SCL) && defined(HAL_I2C3_SCL_AF)
+    clear_bus(HAL_GPIO_PIN_I2C1_SCL, HAL_I2C1_SCL_AF);
+#endif
+
+#if defined(HAL_GPIO_PIN_I2C4_SCL) && defined(HAL_I2C4_SCL_AF)
+    clear_bus(HAL_GPIO_PIN_I2C1_SCL, HAL_I2C1_SCL_AF);
+#endif
+}
+
+//This code blocks!
+void I2CBus::clear_bus(ioline_t scl_line, uint8_t scl_af)
+{
+    //send dummy clock
+    palSetLineMode(scl_line, PAL_MODE_OUTPUT_PUSHPULL);
+    for(int i = 0; i < 20; i++) {
+        palToggleLine(scl_line);
+        hal.scheduler->delay_microseconds(200);
+    }
+    palSetLineMode(scl_line, PAL_MODE_ALTERNATE(scl_af) | PAL_STM32_OSPEED_MID2 | PAL_STM32_OTYPE_OPENDRAIN);
+}
+
 // setup I2C buses
 I2CDeviceManager::I2CDeviceManager(void)
 {
@@ -84,6 +116,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
              (unsigned)busnum, (unsigned)address);
     if (bus_clock < bus.i2ccfg.clock_speed) {
         bus.i2ccfg.clock_speed = bus_clock;
+        hal.console->printf("I2C%u clock %ukHz\n", busnum, unsigned(bus_clock/1000));
         if (bus_clock <= 100000) {
             bus.i2ccfg.duty_cycle = STD_DUTY_CYCLE;
         }
@@ -102,7 +135,12 @@ I2CDevice::~I2CDevice()
  */
 void I2CBus::dma_allocate(void)
 {
-    i2cStart(I2CD[busnum].i2c, &i2ccfg);
+    if (!i2c_started) {
+        osalDbgAssert(I2CD[busnum].i2c->state == I2C_STOP, "i2cStart state");
+        i2cStart(I2CD[busnum].i2c, &i2ccfg);
+        osalDbgAssert(I2CD[busnum].i2c->state == I2C_READY, "i2cStart state");
+        i2c_started = true;
+    }
 }
 
 /*
@@ -110,12 +148,22 @@ void I2CBus::dma_allocate(void)
  */
 void I2CBus::dma_deallocate(void)
 {
-    i2cStop(I2CD[busnum].i2c);
+    if (i2c_started) {
+        osalDbgAssert(I2CD[busnum].i2c->state == I2C_READY, "i2cStart state");
+        i2cStop(I2CD[busnum].i2c);
+        osalDbgAssert(I2CD[busnum].i2c->state == I2C_STOP, "i2cStart state");
+        i2c_started = false;
+    }
 }
 
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+    if (!bus.semaphore.check_owner()) {
+        hal.console->printf("I2C: not owner of 0x%x\n", (unsigned)get_bus_id());
+        return false;
+    }
+    
     bus.dma_handle->lock();
 
     if (_use_smbus) {
@@ -162,30 +210,39 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 
     bus.bouncebuffer_setup(send_buf, send_len, recv_buf, recv_len);
 
+    i2cAcquireBus(I2CD[bus.busnum].i2c);
+    
     for(uint8_t i=0 ; i <= _retries; i++) {
         int ret;
-        i2cAcquireBus(I2CD[bus.busnum].i2c);
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
         uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.i2ccfg.clock_speed)*MAX(send_len, recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
+        bus.i2c_active = true;
+        osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
         if(send_len == 0) {
             ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv_buf, recv_len, MS2ST(timeout_ms));
         } else {
             ret = i2cMasterTransmitTimeout(I2CD[bus.busnum].i2c, _address, send_buf, send_len,
                                            recv_buf, recv_len, MS2ST(timeout_ms));
         }
-        i2cReleaseBus(I2CD[bus.busnum].i2c);
-        if (ret != MSG_OK){
+        bus.i2c_active = false;
+        if (ret != MSG_OK) {
             //restart the bus
+            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY || I2CD[bus.busnum].i2c->state == I2C_LOCKED, "i2cStart state");
             i2cStop(I2CD[bus.busnum].i2c);
+            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
             i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
+            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
         } else {
+            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
             if (recv_buf != recv) {
                 memcpy(recv, recv_buf, recv_len);
             }
+            i2cReleaseBus(I2CD[bus.busnum].i2c);
             return true;
         }
     }
+    i2cReleaseBus(I2CD[bus.busnum].i2c);
     return false;
 }
 

@@ -24,6 +24,8 @@
 #define RX_BOUNCE_BUFSIZE 128
 #define TX_BOUNCE_BUFSIZE 64
 
+#define UART_MAX_DRIVERS 7
+
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(uint8_t serial_num);
@@ -40,8 +42,7 @@ public:
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
-    void _timer_tick(void);
-
+    void _timer_tick(void) override;
 
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
@@ -64,10 +65,28 @@ public:
 
     void set_flow_control(enum flow_control flow_control) override;
     enum flow_control get_flow_control(void) override { return _flow_control; }
+
+    // allow for low latency writes
+    bool set_unbuffered_writes(bool on) override;
+
+    void configure_parity(uint8_t v) override;
+    void set_stop_bits(int n) override;
     
 private:
     bool tx_bounce_buf_ready;
     const SerialDef &sdef;
+
+    // thread used for all UARTs
+    static thread_t *uart_thread_ctx;
+
+    // last time we ran the uart thread
+    static uint32_t last_thread_run_us;
+    
+    // table to find UARTDrivers from serial number, used for event handling
+    static UARTDriver *uart_drivers[UART_MAX_DRIVERS];
+
+    // index into uart_drivers table
+    uint8_t serial_num;
     
     uint32_t _baudrate;
     uint16_t tx_len;
@@ -93,6 +112,7 @@ private:
     bool _in_timer;
     bool _nonblocking_writes;
     bool _initialised;
+    bool _device_initialised;
     bool _lock_rx_in_timer_tick = false;
     Shared_DMA *dma_handle;
     static const SerialDef _serial_tab[];
@@ -102,6 +122,9 @@ private:
     bool _rts_is_active;
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
+
+    // set to true for unbuffered writes (low latency writes)
+    bool unbuffered_writes;
     
     static void rx_irq_cb(void* sd);
     static void rxbuff_full_irq(void* self, uint32_t flags);
@@ -110,4 +133,11 @@ private:
     void dma_tx_allocate(void);
     void dma_tx_deallocate(void);
     void update_rts_line(void);
+
+    void write_pending_bytes_DMA(uint32_t n);
+    void write_pending_bytes_NODMA(uint32_t n);
+    void write_pending_bytes(void);
+
+    void thread_init();
+    static void uart_thread(void *);
 };

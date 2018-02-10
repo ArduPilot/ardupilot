@@ -106,6 +106,15 @@
 #define HAL_PX4_HAVE_PWM_INPUT 0
 #endif
 
+/* AP_Radio configuration */
+
+#ifdef HAL_RCINPUT_WITH_AP_RADIO
+// this is the SPI bus for cypress on the skyviper-v2450
+# define CYRF_SPI_PX4_SPI_BUS        2
+# define CYRF_SPI_PX4_SPIDEV_EXT     (spi_dev_e)1
+# define CYRF_IRQ_INPUT (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTD|GPIO_PIN15)
+#endif // HAL_RCINPUT_WITH_AP_RADIO
+
 /* default values */
 #ifndef HAL_SERIAL0_BAUD_DEFAULT
 #define HAL_SERIAL0_BAUD_DEFAULT 115200

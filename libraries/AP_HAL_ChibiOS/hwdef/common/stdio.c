@@ -28,6 +28,8 @@
 #include <hal.h>
 #include <memstreams.h>
 #include <chprintf.h>
+#include <ctype.h>
+#include "stdio.h"
 
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 {
@@ -112,9 +114,13 @@ int printf(const char *fmt, ...)
    return done;
 }
 
-#define MAXLN 128
-#define ISSPACE " \t\n\r\f\v"
-
+//just a stub
+int 
+scanf (const char *fmt, ...)
+{
+    (void)fmt;
+    return 0;
+}
 /*
  *  sscanf(buf,fmt,va_alist)
  */
@@ -167,7 +173,7 @@ _atob (uint32_t *vp, char *p, int base)
   }
 
   if (base == 16 && (q = strchr (p, '.')) != 0) {
-    if (q - p > sizeof(tmp) - 1)
+      if ((unsigned)(q - p) > (unsigned)(sizeof(tmp) - 1))
       return (0);
 
     strncpy (tmp, p, q - p);
@@ -224,13 +230,15 @@ atob(uint32_t *vp, char *p, int base)
 }
 
 
+#if defined(HAL_OS_FATFS_IO) && HAL_OS_FATFS_IO
 /*
  *  vsscanf(buf,fmt,ap)
  */
 int
 vsscanf (const char *buf, const char *s, va_list ap)
 {
-    int             count, noassign, width, base, lflag;
+    int             count, noassign, base=0, lflag;
+    uint32_t width;
     const char     *tc;
     char           *t, tmp[MAXLN];
 
@@ -248,7 +256,7 @@ vsscanf (const char *buf, const char *s, va_list ap)
     else if (*s == 'l' || *s == 'L')
         lflag = 1;
     else if (*s >= '1' && *s <= '9') {
-        for (tc = s; isdigit (*s); s++);
+        for (tc = s; isdigit ((unsigned)(*s)); s++);
         strncpy (tmp, tc, s - tc);
         tmp[s - tc] = '\0';
         atob (&width, tmp, 10);
@@ -311,3 +319,35 @@ vsscanf (const char *buf, const char *s, va_list ap)
     }
     return (count);
 }
+
+static int vfscanf(FILE *stream, const char *fmt, va_list ap);
+
+/*
+ *  fscanf(stream,fmt,va_alist)
+ */
+int fscanf (FILE *stream, const char *fmt, ...)
+{
+    int             count;
+    va_list ap;
+
+    va_start (ap, fmt);
+    count = vfscanf (stream, fmt, ap);
+    va_end (ap);
+    return (count);
+}
+
+/*
+ *  vfscanf(stream,fmt,ap) 
+ */
+static int vfscanf (FILE *stream, const char *fmt, va_list ap)
+{
+    int             count;
+    char            buf[MAXLN + 1];
+
+    if (fgets (buf, MAXLN, stream) == 0) {
+	    return (-1);
+    }
+    count = vsscanf (buf, fmt, ap);
+    return (count);
+}
+#endif // HAL_OS_FATFS_IO

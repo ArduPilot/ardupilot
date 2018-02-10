@@ -35,15 +35,19 @@ function prompt_user() {
 
 sudo usermod -a -G uucp $USER
 
-sudo pacman -S --noconfirm $BASE_PKGS $SITL_PKGS $PX4_PKGS
+sudo pacman -S --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
 sudo pip2 -q install -U $PYTHON2_PKGS
 sudo pip3 -q install -U $PYTHON3_PKGS
-yaourt -S --noconfirm $ARCH_AUR_PKGS
+yaourt -S --noconfirm --needed $ARCH_AUR_PKGS
 
 (
- cd /usr/lib/ccache
- sudo ln -s /usr/bin/ccache arm-none-eabi-g++
- sudo ln -s /usr/bin/ccache arm-none-eabi-gcc
+    cd /usr/lib/ccache
+    if [ ! -f arm-none-eabi-g++ ]; then
+       sudo ln -s /usr/bin/ccache arm-none-eabi-g++
+    fi
+    if [ ! -f arm-none-eabi-g++ ]; then
+        sudo ln -s /usr/bin/ccache arm-none-eabi-gcc
+    fi
 )
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
@@ -75,10 +79,11 @@ if  ! grep -Fxq "$exportline2" ~/.bashrc ; then
     fi
 fi
 
+SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 (
- cd ./ardupilot
- git submodule init
- git submodule update
+    cd $SCRIPT_DIR
+    git submodule init
+    git submodule update --recursive
 )
 
 echo "Done. Please log out and log in again."

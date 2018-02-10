@@ -97,6 +97,7 @@
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_Winch/AP_Winch.h>
+#include <AP_TempCalibration/AP_TempCalibration.h>
 
 // Configuration
 #include "defines.h"
@@ -129,6 +130,10 @@
 #include "afs_copter.h"
 #endif
 
+#if TOY_MODE_ENABLED == ENABLED
+#include "toy_mode.h"
+#endif
+
 // Local modules
 #include "Parameters.h"
 #include "avoidance_adsb.h"
@@ -150,6 +155,7 @@ public:
     friend class AP_AdvancedFailsafe_Copter;
 #endif
     friend class AP_Arming_Copter;
+    friend class ToyMode;
 
     Copter(void);
 
@@ -323,6 +329,9 @@ private:
 
     RCMapper rcmap;
 
+    // intertial nav alt when we armed
+    float arming_altitude_m;
+    
     // board specific config
     AP_BoardConfig BoardConfig;
 
@@ -388,7 +397,7 @@ private:
     int32_t initial_armed_bearing;
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery{MASK_LOG_CURRENT};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
@@ -756,7 +765,6 @@ private:
     void update_notify();
 
     // Log.cpp
-    void Log_Write_Current();
     void Log_Write_Optflow();
     void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();
@@ -820,6 +828,9 @@ private:
     void motors_output();
     void lost_vehicle_check();
 
+    // toy_mode.cpp
+    void toy_mode_update(void);
+
     // navigation.cpp
     void run_nav_updates(void);
     int32_t home_bearing();
@@ -848,6 +859,7 @@ private:
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
     void radio_passthrough_to_motors();
+    int16_t get_throttle_mid(void);
 
     // sensors.cpp
     void init_barometer(bool full_calibration);
@@ -941,38 +953,43 @@ private:
 
     Mode *flightmode;
 #if FRAME_CONFIG == HELI_FRAME
-    ModeAcro_Heli mode_acro{*this};
+    ModeAcro_Heli mode_acro;
 #else
-    ModeAcro mode_acro{*this};
+    ModeAcro mode_acro;
 #endif
-    ModeAltHold mode_althold{*this};
-    ModeAuto mode_auto{*this, mission, circle_nav};
+    ModeAltHold mode_althold;
+    ModeAuto mode_auto;
 #if AUTOTUNE_ENABLED == ENABLED
-    ModeAutoTune mode_autotune{*this};
+    ModeAutoTune mode_autotune;
 #endif
-    ModeBrake mode_brake{*this};
-    ModeCircle mode_circle{*this, circle_nav};
-    ModeDrift mode_drift{*this};
-    ModeFlip mode_flip{*this};
-    ModeGuided mode_guided{*this};
-    ModeLand mode_land{*this};
-    ModeLoiter mode_loiter{*this};
-    ModePosHold mode_poshold{*this};
-    ModeRTL mode_rtl{*this};
+    ModeBrake mode_brake;
+    ModeCircle mode_circle;
+    ModeDrift mode_drift;
+    ModeFlip mode_flip;
+    ModeGuided mode_guided;
+    ModeLand mode_land;
+    ModeLoiter mode_loiter;
+    ModePosHold mode_poshold;
+    ModeRTL mode_rtl;
 #if FRAME_CONFIG == HELI_FRAME
-    ModeStabilize_Heli mode_stabilize{*this};
+    ModeStabilize_Heli mode_stabilize;
 #else
-    ModeStabilize mode_stabilize{*this};
+    ModeStabilize mode_stabilize;
 #endif
-    ModeSport mode_sport{*this};
-    ModeAvoidADSB mode_avoid_adsb{*this};
-    ModeThrow mode_throw{*this};
-    ModeGuidedNoGPS mode_guided_nogps{*this};
-    ModeSmartRTL mode_smartrtl{*this};
+    ModeSport mode_sport;
+    ModeAvoidADSB mode_avoid_adsb;
+    ModeThrow mode_throw;
+    ModeGuidedNoGPS mode_guided_nogps;
+    ModeSmartRTL mode_smartrtl;
+#if OPTFLOW == ENABLED
+    ModeFlowHold mode_flowhold;
+#endif
 
     // mode.cpp
     Mode *mode_from_mode_num(const uint8_t mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
+
+    void temp_cal_update(void);
 
 public:
     void mavlink_delay_cb();    // GCS_Mavlink.cpp

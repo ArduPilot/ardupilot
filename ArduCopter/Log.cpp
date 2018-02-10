@@ -36,7 +36,7 @@ void Copter::ModeAutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, 
         new_gain_sp : new_gain_sp,
         new_ddt     : new_ddt
     };
-    _copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_AutoTuneDetails {
@@ -55,18 +55,9 @@ void Copter::ModeAutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_
         angle_cd    : angle_cd,
         rate_cds    : rate_cds
     };
-    _copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 #endif
-
-// Write a Current data packet
-void Copter::Log_Write_Current()
-{
-    DataFlash.Log_Write_Current(battery);
-
-    // also write power status
-    DataFlash.Log_Write_Power();
-}
 
 struct PACKED log_Optflow {
     LOG_PACKET_HEADER;
@@ -702,7 +693,6 @@ void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_targ
                                 float meas_min, float meas_max, float new_gain_rp, \
                                 float new_gain_rd, float new_gain_sp, float new_ddt) {}
 void Copter::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
-void Copter::Log_Write_Current() {}
 void Copter::Log_Write_Nav_Tuning() {}
 void Copter::Log_Write_Control_Tuning() {}
 void Copter::Log_Write_Performance() {}

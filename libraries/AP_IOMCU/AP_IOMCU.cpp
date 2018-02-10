@@ -145,6 +145,7 @@ void AP_IOMCU::thread_main(void)
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 256, 256);
     uart.set_blocking_writes(false);
+    uart.set_unbuffered_writes(true);
 
     trigger_event(IOEVENT_INIT);
     
@@ -305,7 +306,7 @@ void AP_IOMCU::read_servo()
  */
 void AP_IOMCU::discard_input(void)
 {
-    uint8_t n = uart.available();
+    uint32_t n = uart.available();
     while (n--) {
         uart.read();
     }
@@ -335,7 +336,9 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
       a large number of registers wastes a lot of serial bandwidth
      */
     pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
-    uart.write((uint8_t *)&pkt, pkt.get_size());
+    if (uart.write((uint8_t *)&pkt, pkt.get_size()) != pkt.get_size()) {
+        return false;
+    }
 
     // wait for the expected number of reply bytes or timeout
     if (!uart.wait_timeout(count*2+4, 10)) {
@@ -390,7 +393,9 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
     pkt.crc = 0;
     memcpy(pkt.regs, regs, 2*count);
     pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
-    uart.write((uint8_t *)&pkt, pkt.get_size());
+    if (uart.write((uint8_t *)&pkt, pkt.get_size()) != pkt.get_size()) {
+        return false;
+    }
 
     // wait for the expected number of reply bytes or timeout
     if (!uart.wait_timeout(4, 10)) {
@@ -556,8 +561,10 @@ void AP_IOMCU::set_heater_duty_cycle(uint8_t duty_cycle)
 // set default output rate
 void AP_IOMCU::set_default_rate(uint16_t rate_hz)
 {
-    rate.default_freq = rate_hz;
-    trigger_event(IOEVENT_SET_DEFAULT_RATE);
+    if (rate.default_freq != rate_hz) {
+        rate.default_freq = rate_hz;
+        trigger_event(IOEVENT_SET_DEFAULT_RATE);
+    }
 }
 
 // setup for oneshot mode

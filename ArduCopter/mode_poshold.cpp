@@ -74,7 +74,7 @@ static struct {
 bool Copter::ModePosHold::init(bool ignore_checks)
 {
     // fail to initialise PosHold mode if no GPS lock
-    if (!_copter.position_ok() && !ignore_checks) {
+    if (!copter.position_ok() && !ignore_checks) {
         return false;
     }
     
@@ -147,7 +147,7 @@ void Copter::ModePosHold::run()
     }
 
     // process pilot inputs
-    if (!_copter.failsafe.radio) {
+    if (!copter.failsafe.radio) {
         // apply SIMPLE mode transform to pilot inputs
         update_simple_mode();
 
@@ -201,7 +201,7 @@ void Copter::ModePosHold::run()
         return;
     }else{
         // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, _copter.aparm.angle_max);
+        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, copter.aparm.angle_max);
 
         // convert inertial nav earth-frame velocities to body-frame
         // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
@@ -517,7 +517,7 @@ void Copter::ModePosHold::run()
         }
         
         // constrain target pitch/roll angles
-        float angle_max = _copter.aparm.angle_max;
+        float angle_max = copter.aparm.angle_max;
         poshold.roll = constrain_int16(poshold.roll, -angle_max, angle_max);
         poshold.pitch = constrain_int16(poshold.pitch, -angle_max, angle_max);
 
@@ -525,7 +525,7 @@ void Copter::ModePosHold::run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(poshold.roll, poshold.pitch, target_yaw_rate, get_smoothing_gain());
 
         // adjust climb rate using rangefinder
-        if (_copter.rangefinder_alt_ok()) {
+        if (copter.rangefinder_alt_ok()) {
             // if rangefinder is ok, use surface tracking
             target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
         }

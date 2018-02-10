@@ -192,3 +192,16 @@ void Copter::radio_passthrough_to_motors()
                                   channel_throttle->get_control_in_zero_dz()*0.001,
                                   channel_yaw->norm_input());
 }
+
+/*
+  return the throttle input for mid-stick as a control-in value
+ */
+int16_t Copter::get_throttle_mid(void)
+{
+#if TOY_MODE_ENABLED == ENABLED
+    if (g2.toy_mode.enabled()) {
+        return g2.toy_mode.get_throttle_mid();
+    }
+#endif
+    return channel_throttle->get_control_mid();
+}

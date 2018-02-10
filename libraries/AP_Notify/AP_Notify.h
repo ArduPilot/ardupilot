@@ -80,12 +80,14 @@ public:
         float    battery_voltage       ;    // battery voltage
         uint32_t gps_fusion         : 1;    // 0 = GPS fix rejected by EKF, not usable for flight. 1 = GPS in use by EKF, usable for flight
         uint32_t gps_glitching      : 1;    // 1 if gps is glitching
+        uint32_t have_pos_abs       : 1;    // 0 = no absolute position available, 1 = absolute position available
 
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
         uint32_t vehicle_lost       : 1;    // 1 when lost copter tone is requested (normally only used for copter)
         uint32_t waiting_for_throw  : 1;    // 1 when copter is in THROW mode and waiting to detect the user hand launch
         uint32_t powering_off       : 1;    // 1 when the vehicle is powering off
+        uint32_t video_recording    : 1;    // 1 when the vehicle is recording video
     };
 
     /// notify_events_type - bitmask of active events.

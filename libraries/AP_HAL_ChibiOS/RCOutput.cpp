@@ -93,19 +93,30 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
              */
             update_mask |= grp_ch_mask;
             uint16_t freq_set = freq_hz;
-            if (!pwm_group_list[i].advanced_timer && freq_set > 400) {
-                freq_set = 400;
-            }
-            bool changed_clock = false;
+            uint32_t old_clock = pwm_group_list[i].pwm_cfg.frequency;
+            
             if (freq_set > 400 && pwm_group_list[i].pwm_cfg.frequency == 1000000) {
                 // need to change to an 8MHz clock
                 pwm_group_list[i].pwm_cfg.frequency = 8000000;
-                changed_clock = true;
             } else if (freq_set <= 400 && pwm_group_list[i].pwm_cfg.frequency == 8000000) {
                 // need to change to an 1MHz clock
                 pwm_group_list[i].pwm_cfg.frequency = 1000000;
             }
-            if (changed_clock) {
+
+            // check if the frequency is possible, and keep halving
+            // down to 1MHz until it is OK with the hardware timer we
+            // are using. If we don't do this we'll hit an assert in
+            // the ChibiOS PWM driver on some timers
+            PWMDriver *pwmp = pwm_group_list[i].pwm_drv;
+            uint32_t psc = (pwmp->clock / pwmp->config->frequency) - 1;
+            while ((psc > 0xFFFF || ((psc + 1) * pwmp->config->frequency) != pwmp->clock) &&
+                   pwm_group_list[i].pwm_cfg.frequency > 1000000) {
+                pwm_group_list[i].pwm_cfg.frequency /= 2;
+                psc = (pwmp->clock / pwmp->config->frequency) - 1;
+            }
+            
+            if (old_clock != pwm_group_list[i].pwm_cfg.frequency) {
+                // we need to stop and start to setup the new clock
                 pwmStop(pwm_group_list[i].pwm_drv);
                 pwmStart(pwm_group_list[i].pwm_drv, &pwm_group_list[i].pwm_cfg);
             }

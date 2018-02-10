@@ -174,11 +174,6 @@ void Sub::read_battery(void)
 {
     battery.read();
 
-    // update compass with current value
-    if (battery.has_current()) {
-        compass.set_current(battery.current_amps());
-    }
-
     // update motors with voltage and current
     if (battery.get_type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
         motors.set_voltage(battery.voltage());
@@ -186,14 +181,10 @@ void Sub::read_battery(void)
 
     if (battery.has_current()) {
         motors.set_current(battery.current_amps());
+        compass.set_current(battery.current_amps());
     }
 
     failsafe_battery_check();
-
-    // log battery info to the dataflash
-    if (should_log(MASK_LOG_CURRENT)) {
-        Log_Write_Current();
-    }
 }
 
 void Sub::compass_cal_update()

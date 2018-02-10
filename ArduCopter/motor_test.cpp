@@ -51,6 +51,11 @@ void Copter::motor_test_output()
         // calculate pwm based on throttle type
         switch (motor_test_throttle_type) {
 
+            case MOTOR_TEST_COMPASS_CAL:
+                compass.set_voltage(battery.voltage());
+                compass.per_motor_calibration_update();
+                // fall through 
+                
             case MOTOR_TEST_THROTTLE_PERCENT:
                 // sanity check motor_test_throttle value
 #if FRAME_CONFIG != HELI_FRAME
@@ -129,6 +134,8 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
     }
     // if test has not started try to start it
     if (!ap.motor_test) {
+        gcs().send_text(MAV_SEVERITY_INFO, "starting motor test");
+        
         /* perform checks that it is ok to start test
            The RC calibrated check can be skipped if direct pwm is
            supplied
@@ -150,6 +157,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
             g.failsafe_throttle = FS_THR_DISABLED;
             g.failsafe_battery_enabled = FS_BATT_DISABLED;
             g.failsafe_gcs = FS_GCS_DISABLED;
+            g.fs_ekf_action = 0;
 
             // turn on notify leds
             AP_Notify::flags.esc_calibration = true;
@@ -166,6 +174,10 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
     motor_test_throttle_type = throttle_type;
     motor_test_throttle_value = throttle_value;
 
+    if (motor_test_throttle_type == MOTOR_TEST_COMPASS_CAL) {
+        compass.per_motor_calibration_start();
+    }            
+                
     // return success
     return MAV_RESULT_ACCEPTED;
 }
@@ -177,6 +189,8 @@ void Copter::motor_test_stop()
     if (!ap.motor_test) {
         return;
     }
+
+    gcs().send_text(MAV_SEVERITY_INFO, "finished motor test");    
 
     // flag test is complete
     ap.motor_test = false;
@@ -192,7 +206,12 @@ void Copter::motor_test_stop()
     g.failsafe_throttle.load();
     g.failsafe_battery_enabled.load();
     g.failsafe_gcs.load();
+    g.fs_ekf_action.load();
 
+    if (motor_test_throttle_type == MOTOR_TEST_COMPASS_CAL) {
+        compass.per_motor_calibration_end();
+    }
+    
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
 }

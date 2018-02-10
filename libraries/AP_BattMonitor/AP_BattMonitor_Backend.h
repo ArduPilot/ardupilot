@@ -34,6 +34,9 @@ public:
     // read the latest battery voltage
     virtual void read() = 0;
 
+    /// returns true if battery monitor instance provides consumed energy info
+    virtual bool has_consumed_energy() const { return false; }
+
     /// returns true if battery monitor instance provides current info
     virtual bool has_current() const = 0;
 

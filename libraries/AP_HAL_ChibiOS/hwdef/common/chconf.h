@@ -60,6 +60,17 @@
  */
 #define CH_CFG_ST_TIMEDELTA                 2
 
+/*
+  default to a large interrupt stack for now. We may trim this later
+  if we become confident of our interrupt handler requirements. Note
+  that we pay for this stack size in every thread, so it is quite
+  expensive in memory
+ */
+#ifndef PORT_INT_REQUIRED_STACK
+#define PORT_INT_REQUIRED_STACK 256
+#endif
+
+
 /** @} */
 
 /*===========================================================================*/
@@ -355,7 +366,7 @@
  *
  * @note    The default is @p CH_DBG_TRACE_MASK_DISABLED.
  */
-#define CH_DBG_TRACE_MASK                   CH_DBG_TRACE_MASK_NONE
+#define CH_DBG_TRACE_MASK                   CH_DBG_TRACE_MASK_DISABLED
 
 /**
  * @brief   Trace buffer entries.
@@ -496,9 +507,11 @@
  * @details This hook is invoked in case to a system halting error before
  *          the system is halted.
  */
-#define CH_CFG_SYSTEM_HALT_HOOK(reason) {                                   \
-  /* System halt code here.*/                                               \
-}
+
+#define CH_CFG_SYSTEM_HALT_HOOK(reason) do {                               \
+        extern int printf(const char *fmt, ...); \
+        printf(reason); \
+} while(0)
 
 /**
  * @brief   Trace hook.

@@ -95,6 +95,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_ICEngine/AP_ICEngine.h>
 #include <AP_Landing/AP_Landing.h>
+#include <AP_Scheduler/PerfInfo.h>       // loop perf monitoring
 
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
@@ -391,7 +392,7 @@ private:
     int32_t altitude_error_cm;
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery{MASK_LOG_CURRENT};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
@@ -734,31 +735,11 @@ private:
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
     float G_Dt = 0.02f;
 
-    struct {
-        // Performance monitoring
-        // Timer used to accrue data and trigger recording of the performanc monitoring log message
-        uint32_t start_ms;
-
-        // The maximum and minimum main loop execution time, in microseconds, recorded in the current performance monitoring interval
-        uint32_t G_Dt_max;
-        uint32_t G_Dt_min;
-
-        // System Timers
-        // Time in microseconds of start of main control loop
-        uint32_t fast_loopTimer_us;
-
-        // Number of milliseconds used in last main loop cycle
-        uint32_t delta_us_fast_loop;
-
-        // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-        uint16_t mainLoop_count;
-
-        // number of long loops
-        uint16_t num_long;
-
-        // accumulated lost log messages
-        uint32_t last_log_dropped;
-    } perf;
+    // loop performance monitoring:
+    AP::PerfInfo perf_info;
+    uint32_t mainLoop_count;
+    uint32_t fast_loopTimer;
+    uint32_t last_log_dropped;
 
     struct {
         uint32_t last_trim_check;
@@ -834,7 +815,6 @@ private:
     void Log_Write_Status();
     void Log_Write_Sonar();
     void Log_Write_Optflow();
-    void Log_Write_Current();
     void Log_Arm_Disarm();
     void Log_Write_GPS(uint8_t instance);
     void Log_Write_IMU();
@@ -973,7 +953,6 @@ private:
     void check_short_failsafe();
     void startup_INS_ground(void);
     void update_notify();
-    void resetPerfData(void);
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
     void change_arm_state(void);

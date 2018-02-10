@@ -109,6 +109,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string.h>
 #include "posix.h"
+#include "stdio.h"
 #undef strerror_r
 
 ///  Note: fdevopen assigns stdin,stdout,stderr
@@ -231,7 +232,6 @@ fgetc(FILE *stream)
     } else {
         if(!stream->get)
         {
-            printf("fgetc stream->get NULL\n");
             return(EOF);
         }
         // get character from device or file
@@ -247,6 +247,9 @@ fgetc(FILE *stream)
     return (c);
 }
 
+int getc(FILE *fp) {
+	return (fgetc (fp));
+}
 /// @brief Put a byte to TTY device or FatFs file stream
 /// open() or fopen() sets stream->put = fatfs_outc() for FatFs functions
 /// See fdevopen()        sets stream->put get for TTY devices
@@ -262,13 +265,6 @@ fputc(int c, FILE *stream)
 {
     errno = 0;
     int ret;
-
-    if(stream == NULL)
-    {
-        errno = EBADF;                            // Bad File Number
-        return(EOF);
-    }
-
 
     if(stream != stdout && stream != stderr)
     {
@@ -288,7 +284,6 @@ fputc(int c, FILE *stream)
     } else {
         if(!stream->put)
         {
-            printf("fputc stream->put NULL\n");
             return(EOF);
         }
         ret = stream->put(c, stream);
@@ -298,6 +293,10 @@ fputc(int c, FILE *stream)
     }
 }
 
+void clearerr(FILE *stream)
+{
+    stream->flags = 0;
+}
 
 
 ///@brief functions normally defined as macros
@@ -423,6 +422,23 @@ fgets(char *str, int size, FILE *stream)
     return(str);
 }
 
+
+/**  char *gets(p) -- get line from stdin */
+
+char *
+gets (char *p)
+{
+	char *s;
+	int n;
+
+	s = fgets (p, MAXLN, stdin);
+	if (s == 0)
+		return (0);
+	n = strlen (p);
+	if (n && p[n - 1] == '\n')
+		p[n - 1] = 0;
+	return (s);
+}
 /// @brief put a string to stdout
 /// See fdevopen()        sets stream->put get for TTY devices
 ///
@@ -774,7 +790,7 @@ FILE *fopen(const char *path, const char *mode)
 /// @return count on sucess.
 /// @return 0 or < size on error with errno set.
 
-size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
+size_t __wrap_fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     size_t count = size * nmemb;
     int fn = fileno(stream);
@@ -1199,7 +1215,15 @@ ssize_t write(int fd, const void *buf, size_t count)
     return ((ssize_t) size);
 }
 
-
+FILE * __wrap_freopen ( const char * filename, const char * mode, FILE * stream )
+{
+    int fn = fileno(stream);
+    int ret = close(fn);
+    if (ret < 0) {
+        return NULL;
+    }
+    return fopen(filename, mode);
+}
 /// @brief POSIX close a file stream.
 ///
 /// - man page flose (3).
@@ -1208,8 +1232,8 @@ ssize_t write(int fd, const void *buf, size_t count)
 
 /// @return  0 on sucess.
 /// @return  -1 on error witrh errno set.
-/*
-int fclose(FILE *stream)
+
+int __wrap_fclose(FILE *stream)
 {
     int fn = fileno(stream);
     if(fn < 0)
@@ -1217,7 +1241,6 @@ int fclose(FILE *stream)
 
     return( close(fn) );
 }
-*/
 // =============================================
 // =============================================
 ///  - POSIX file information functions
@@ -1381,7 +1404,7 @@ int utime(const char *filename, const struct utimbuf *times)
 
 int64_t fs_getfree() {
     FATFS *fs;
-    DWORD fre_clust, fre_sect, tot_sect;
+    DWORD fre_clust, fre_sect;
 
 
     /* Get volume information and free clusters of drive 1 */
@@ -1396,7 +1419,7 @@ int64_t fs_getfree() {
 
 int64_t fs_gettotal() {
     FATFS *fs;
-    DWORD fre_clust, fre_sect, tot_sect;
+    DWORD fre_clust, tot_sect;
 
 
     /* Get volume information and free clusters of drive 1 */
@@ -1668,6 +1691,19 @@ int rmdir(const char *pathname)
 /// @return -1 on error with errno set.
 
 int unlink(const char *pathname)
+{
+    errno = 0;
+    int res = f_unlink(pathname);
+    if(res != FR_OK)
+    {
+        errno = fatfs_to_errno(res);
+        return(-1);
+    }
+    return(0);
+}
+
+
+int remove(const char *pathname)
 {
     errno = 0;
     int res = f_unlink(pathname);
@@ -2195,7 +2231,6 @@ int fatfs_to_fileno(FIL *fh)
  */
 static time_t replace_mktime(const struct tm *t)
 {
-    struct tm       *u;
     time_t  epoch = 0;
     int n;
     int mon [] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }, y, m, i;

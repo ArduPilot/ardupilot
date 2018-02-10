@@ -40,6 +40,7 @@ enum AltSource {
 #define MASK_LOG_IMU                    (1<<3)
 #define MASK_LOG_RCOUT                  (1<<4)
 #define MASK_LOG_COMPASS                (1<<5)
+#define MASK_LOG_CURRENT                (1<<6)
 #define MASK_LOG_ANY                    0xFFFF
 
 //  Logging messages

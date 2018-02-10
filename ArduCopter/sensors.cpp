@@ -185,17 +185,14 @@ void Copter::read_battery(void)
 {
     battery.read();
 
-    // update compass with current value
-    if (battery.has_current()) {
-        compass.set_current(battery.current_amps());
-    }
-
     // update motors with voltage and current
     if (battery.get_type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
         motors->set_voltage(battery.voltage());
-        AP_Notify::flags.battery_voltage = battery.voltage();
     }
+
     if (battery.has_current()) {
+        compass.set_current(battery.current_amps());
+
         motors->set_current(battery.current_amps());
         motors->set_resistance(battery.get_resistance());
         motors->set_voltage_resting_estimate(battery.voltage_resting_estimate());
@@ -205,11 +202,6 @@ void Copter::read_battery(void)
     // we only check when we're not powered by USB to avoid false alarms during bench tests
     if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
         failsafe_battery_event();
-    }
-
-    // log battery info to the dataflash
-    if (should_log(MASK_LOG_CURRENT)) {
-        Log_Write_Current();
     }
 }
 
@@ -379,6 +371,7 @@ void Copter::update_sensor_status_flags(void)
     case GUIDED_NOGPS:
     case SPORT:
     case AUTOTUNE:
+    case FLOWHOLD:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     default:
@@ -559,4 +552,9 @@ void Copter::winch_update()
 {
     g2.wheel_encoder.update();
     g2.winch.update();
+}
+
+void Copter::temp_cal_update(void)
+{
+    g2.temp_calibration.update();
 }

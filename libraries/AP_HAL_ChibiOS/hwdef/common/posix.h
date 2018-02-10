@@ -35,6 +35,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ff.h>
 #include <stdarg.h>
 #include <time.h>
+
+#define MAXLN 128
+#define ISSPACE " \t\n\r\f\v"
+
 ///@brief make sure we use our strerror_r function
 
 #ifdef __cplusplus
@@ -46,6 +50,8 @@ extern "C" {
 /// - Using these makes code portable accross many acrchitectures
 //typedef uint32_t blkcnt_t;  /*< blkcnt_t for this architecture */
 //typedef uint32_t blksize_t; /*< blksize_t for this architecture */
+typedef int32_t      off_t;
+typedef off_t        fpos_t;
 extern int errno;
 // =============================================
 
@@ -297,6 +303,7 @@ extern FILE *__iob[MAX_FILES];
 int isatty ( int fileno );
 int fgetc ( FILE *stream );
 int fputc ( int c , FILE *stream );
+void clearerr(FILE *stream);
 #ifndef IO_MACROS
 int getchar ( void );
 int putchar ( int c );
@@ -321,7 +328,7 @@ int close ( int fileno );
 int fileno ( FILE *stream );
 FILE *fileno_to_stream ( int fileno );
 FILE *fopen ( const char *path , const char *mode );
-size_t fread ( void *ptr , size_t size , size_t nmemb , FILE *stream );
+size_t __wrap_fread ( void *ptr , size_t size , size_t nmemb , FILE *stream );
 int ftruncate ( int fd , off_t length );
 size_t fwrite ( const void *ptr , size_t size , size_t nmemb , FILE *stream );
 int open (const char *pathname, int flags);
@@ -331,7 +338,10 @@ int syncfs(int fd);
 int fsync ( int fd );
 int truncate ( const char *path , off_t length );
 ssize_t write ( int fd , const void *buf , size_t count );
-//int fclose ( FILE *stream );
+int __wrap_fclose ( FILE *stream );
+FILE * __wrap_freopen ( const char * filename, const char * mode, FILE * stream );
+int getc(FILE *fp);
+char *gets (char *p);
 //void dump_stat ( struct stat *sp );
 
 #if 0
@@ -356,6 +366,7 @@ int mkdir ( const char *pathname , mode_t mode );
 int rename ( const char *oldpath , const char *newpath );
 int rmdir ( const char *pathname );
 int unlink ( const char *pathname );
+int remove(const char *pathname);
 int closedir ( DIR *dirp );
 DIR *opendir ( const char *pathdir );
 struct dirent *readdir ( DIR *dirp );

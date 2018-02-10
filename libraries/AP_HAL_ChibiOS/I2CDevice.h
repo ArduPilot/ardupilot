@@ -34,10 +34,14 @@ class I2CBus : public DeviceBus {
 public:
     I2CConfig i2ccfg;
     uint8_t busnum;
+    bool i2c_started;
+    bool i2c_active;
     
     void dma_allocate(void);
     void dma_deallocate(void);    
     void dma_init(void);
+    static void clear_all(void);
+    static void clear_bus(ioline_t scl_line, uint8_t scl_af);
 };
     
 class I2CDevice : public AP_HAL::I2CDevice {

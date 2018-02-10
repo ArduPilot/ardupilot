@@ -84,6 +84,7 @@ const struct UnitStructure log_Units[] = {
     { 'G', "Gauss" },         // Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
     { 'h', "degheading" },    // 0.? to 359.?
     { 'i', "A.s" },           // Ampere second
+    { 'J', "W.s" },           // Joule (Watt second)
     // { 'l', "l" },          // litres
     { 'L', "rad/s/s" },       // radians per second per second
     { 'm', "m" },             // metres
@@ -127,6 +128,7 @@ const struct MultiplierStructure log_Multipliers[] = {
     { 'G', 1e-7 },
 // <leave a gap here, just in case....>
     { '!', 3.6 }, // (ampere*second => milliampere*hour) and (km/h => m/s)
+    { '/', 3600 }, // (ampere*second => ampere*hour)
 };
 
 struct PACKED log_Parameter {
@@ -667,6 +669,7 @@ struct PACKED log_Current {
     float    voltage_resting;
     float    current_amps;
     float    current_total;
+    float    consumed_wh;
     int16_t  temperature; // degrees C * 100
     float    resistance;
 };
@@ -1111,10 +1114,10 @@ struct PACKED log_DSTL {
 #define QUAT_UNITS  "s????"
 #define QUAT_MULTS  "F????"
 
-#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,Temp,Res"
-#define CURR_FMT    "Qffffcf"
-#define CURR_UNITS  "sv?A?Ow"
-#define CURR_MULTS  "F??????"
+#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res"
+#define CURR_FMT    "Qfffffcf"
+#define CURR_UNITS  "sv?A?JOw"
+#define CURR_MULTS  "F????/??"
 
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"

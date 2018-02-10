@@ -25,7 +25,10 @@
 
 extern const AP_HAL::HAL& hal;
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V4
+#ifdef HAL_SERIAL5_PROTOCOL
+#define SERIAL5_PROTOCOL HAL_SERIAL5_PROTOCOL
+#define SERIAL5_BAUD HAL_SERIAL5_BAUD
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
 #define SERIAL5_PROTOCOL SerialProtocol_MAVLink
 #define SERIAL5_BAUD 921600
 #else
@@ -231,6 +234,8 @@ void AP_SerialManager::init()
                                     state[i].uart->begin(map_baudrate(state[i].baud),
                                     		AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
 											AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
+                                    state[i].uart->set_unbuffered_writes(true);
+                                    state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                                     break;
                 case SerialProtocol_Sbus1:
                     state[i].baud = AP_SERIALMANAGER_SBUS1_BAUD / 1000;   // update baud param in case user looks at it
@@ -240,6 +245,7 @@ void AP_SerialManager::init()
                     state[i].uart->configure_parity(2);    // enable even parity
                     state[i].uart->set_stop_bits(2);
                     state[i].uart->set_unbuffered_writes(true);
+                    state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
             }
         }

@@ -91,22 +91,41 @@ void Shared_DMA::lock(void)
             locks[stream_id2].obj = this;
         }
     }
+    have_lock = true;
 }
 
 // unlock the DMA channels
 void Shared_DMA::unlock(void)
 {
+    osalDbgAssert(have_lock, "must have lock");
     if (stream_id2 != SHARED_DMA_NONE) {
         chBSemSignal(&locks[stream_id2].semaphore);        
     }
     if (stream_id1 != SHARED_DMA_NONE) {
         chBSemSignal(&locks[stream_id1].semaphore);
     }
+    have_lock = false;
+}
+
+// unlock the DMA channels from a lock zone
+void Shared_DMA::unlock_from_lockzone(void)
+{
+    osalDbgAssert(have_lock, "must have lock");
+    if (stream_id2 != SHARED_DMA_NONE) {
+        chBSemSignalI(&locks[stream_id2].semaphore);
+        chSchRescheduleS();
+    }
+    if (stream_id1 != SHARED_DMA_NONE) {
+        chBSemSignalI(&locks[stream_id1].semaphore);
+        chSchRescheduleS();
+    }
+    have_lock = false;
 }
 
 // unlock the DMA channels from an IRQ
 void Shared_DMA::unlock_from_IRQ(void)
 {
+    osalDbgAssert(have_lock, "must have lock");
     chSysLockFromISR();
     if (stream_id2 != SHARED_DMA_NONE) {
         chBSemSignalI(&locks[stream_id2].semaphore);        
@@ -114,5 +133,17 @@ void Shared_DMA::unlock_from_IRQ(void)
     if (stream_id1 != SHARED_DMA_NONE) {
         chBSemSignalI(&locks[stream_id1].semaphore);
     }
+    have_lock = false;
     chSysUnlockFromISR();
+}
+
+/*
+  lock all channels - used on reboot to ensure no sensor DMA is in
+  progress
+ */
+void Shared_DMA::lock_all(void)
+{
+    for (uint8_t i=0; i<SHARED_DMA_MAX_STREAM_ID; i++) {
+        chBSemWait(&locks[i].semaphore);
+    }
 }

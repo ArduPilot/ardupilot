@@ -30,7 +30,8 @@ public:
     void write_dword(uint16_t loc, uint32_t value);
     void write_block(uint16_t dst, const void* src, size_t n);
 
-    virtual void _timer_tick(void);
+    virtual void _timer_tick(void) override;
+    
 protected:
     void _mark_dirty(uint16_t loc, uint16_t length);
     virtual void _storage_create(void);

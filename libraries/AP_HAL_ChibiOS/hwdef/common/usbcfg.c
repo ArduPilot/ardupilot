@@ -30,6 +30,7 @@
 #include "hwdef.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #pragma GCC optimize("O0")
 
@@ -167,39 +168,6 @@ static const uint8_t vcom_string0[] = {
 };
 
 /*
- * Vendor string.
- */
-static const uint8_t vcom_string1[] = {
-  USB_DESC_BYTE(20),                    /* bLength.                         */
-  USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  'A', 0, 'r', 0, 'd', 0, 'u', 0, 'P', 0, 'i', 0, 'l', 0, 'o', 0,
-  't', 0
-};
-
-/*
- * Device Description string.
- */
-static const uint8_t vcom_string2[] = {
-  USB_DESC_BYTE(56),                    /* bLength.                         */
-  USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  'C', 0, 'h', 0, 'i', 0, 'b', 0, 'i', 0, 'O', 0, 'S', 0, '/', 0,
-  'R', 0, 'T', 0, ' ', 0, 'V', 0, 'i', 0, 'r', 0, 't', 0, 'u', 0,
-  'a', 0, 'l', 0, ' ', 0, 'C', 0, 'O', 0, 'M', 0, ' ', 0, 'P', 0,
-  'o', 0, 'r', 0, 't', 0
-};
-
-/*
- * Serial Number string.
- */
-static const uint8_t vcom_string3[] = {
-  USB_DESC_BYTE(8),                     /* bLength.                         */
-  USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  '0' + CH_KERNEL_MAJOR, 0,
-  '0' + CH_KERNEL_MINOR, 0,
-  '0' + CH_KERNEL_PATCH, 0
-};
-
-/*
  * Strings wrappers array. The strings are created dynamically to
  * allow them to be setup with apj_tool
  */
@@ -210,21 +178,73 @@ static USBDescriptor vcom_strings[] = {
   {0, NULL}, // version
 };
 
+
+// start of 12 byte CPU ID
+#ifndef UDID_START
+#define UDID_START	0x1FFF7A10
+#endif
+
+/*
+  handle substitution of variables in strings for USB descriptors
+ */
+static char *string_substitute(const char *str)
+{
+    uint8_t new_len = strlen(str);
+    if (strstr(str, "%BOARD%")) {
+        new_len += strlen(HAL_BOARD_NAME) - 7;
+    }
+    if (strstr(str, "%SERIAL%")) {
+        new_len += 24 - 8;
+    }
+    char *str2 = malloc(new_len+1);
+    char *p = str2;
+    while (*str) {
+        char c = *str;
+        if (c == '%') {
+            if (strcmp(str, "%BOARD%") == 0) {
+                memcpy(p, HAL_BOARD_NAME, strlen(HAL_BOARD_NAME));
+                str += 7;
+                p += strlen(HAL_BOARD_NAME);
+                continue;
+            }
+            if (strcmp(str, "%SERIAL%") == 0) {
+                const char *hex = "0123456789ABCDEF";
+                const uint8_t *cpu_id = (const uint8_t *)UDID_START;
+                uint8_t i;
+                for (i=0; i<12; i++) {
+                    *p++ = hex[(cpu_id[i]>>4)&0xF];
+                    *p++ = hex[cpu_id[i]&0xF];
+                }
+                str += 8;
+                continue;
+            }
+        }
+        *p++ = *str++;
+    }
+    *p = 0;
+    return str2;
+}
+
+
 /*
   dynamically allocate a USB descriptor string
  */
 static void setup_usb_string(USBDescriptor *desc, const char *str)
 {
-    uint8_t len = strlen(str);
+    char *str2 = string_substitute(str);
+    uint8_t len = strlen(str2);
     desc->ud_size = 2+2*len;
     uint8_t *b = (uint8_t *)calloc(1, desc->ud_size);
-    desc->ud_string = (const char *)b;
+    desc->ud_string = (const uint8_t *)b;
     b[0] = USB_DESC_BYTE(desc->ud_size);
     b[1] = USB_DESC_BYTE(USB_DESCRIPTOR_STRING);
     uint8_t i;
     for (i=0; i<len; i++) {
-        b[2+i*2] = str[i];
+        b[2+i*2] = str2[i];
         b[2+i*2+1] = 0;
+    }
+    if (str2 != str) {
+        free(str2);
     }
 }
 

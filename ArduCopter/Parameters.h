@@ -561,6 +561,18 @@ public:
 
     // Land alt final stage
     AP_Int16 land_alt_low;
+
+    // temperature calibration handling
+    AP_TempCalibration temp_calibration;
+
+#if TOY_MODE_ENABLED == ENABLED
+    ToyMode toy_mode;
+#endif
+
+#if OPTFLOW == ENABLED
+    // we need a pointer to the mode for the G2 table
+    void *mode_flowhold_ptr;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];

@@ -239,7 +239,6 @@ void Rover::update_compass(void)
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
         // update offsets
-        compass.learn_offsets();
         if (should_log(MASK_LOG_COMPASS)) {
             DataFlash.Log_Write_Compass(compass);
         }
@@ -299,9 +298,6 @@ void Rover::update_aux(void)
  */
 void Rover::one_second_loop(void)
 {
-    if (should_log(MASK_LOG_CURRENT)) {
-        Log_Write_Current();
-    }
     // send a heartbeat
     gcs().send_message(MSG_HEARTBEAT);
 

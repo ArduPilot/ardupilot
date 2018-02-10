@@ -106,8 +106,10 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
         update_EKF2();
     }
 
+#if AP_MODULE_SUPPORTED
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);
+#endif
 
     // push gyros if optical flow present
     if (hal.opticalflow) {
@@ -202,6 +204,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             EKF2.getFilterStatus(-1,filt_state);
             AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
             AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
+            AP_Notify::flags.have_pos_abs = filt_state.flags.horiz_pos_abs;
         }
     }
 }
@@ -274,6 +277,7 @@ void AP_AHRS_NavEKF::update_EKF3(void)
             EKF3.getFilterStatus(-1,filt_state);
             AP_Notify::flags.gps_fusion = filt_state.flags.using_gps; // Drives AP_Notify flag for usable GPS.
             AP_Notify::flags.gps_glitching = filt_state.flags.gps_glitching;
+            AP_Notify::flags.have_pos_abs = filt_state.flags.horiz_pos_abs;
         }
     }
 }

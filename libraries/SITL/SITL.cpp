@@ -108,6 +108,7 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("ARSPD_PITOT",  7, SITL,  arspd_fail_pitot_pressure, 0),
     AP_GROUPINFO("GPS_ALT_OFS",  8, SITL,  gps_alt_offset, 0),
     AP_GROUPINFO("ARSPD_SIGN",   9, SITL,  arspd_signflip, 0),
+    AP_GROUPINFO("WIND_DIR_Z",  10, SITL,  wind_dir_z,     0),
     AP_GROUPEND
 };
     

@@ -363,12 +363,12 @@ void *VRBRAINScheduler::_uart_thread(void *arg)
         sched->delay_microseconds_semaphore(1000);
 
         // process any pending serial bytes
-        ((VRBRAINUARTDriver *)hal.uartA)->_timer_tick();
-        ((VRBRAINUARTDriver *)hal.uartB)->_timer_tick();
-        ((VRBRAINUARTDriver *)hal.uartC)->_timer_tick();
-        ((VRBRAINUARTDriver *)hal.uartD)->_timer_tick();
-        ((VRBRAINUARTDriver *)hal.uartE)->_timer_tick();
-        ((VRBRAINUARTDriver *)hal.uartF)->_timer_tick();
+        hal.uartA->_timer_tick();
+        hal.uartB->_timer_tick();
+        hal.uartC->_timer_tick();
+        hal.uartD->_timer_tick();
+        hal.uartE->_timer_tick();
+        hal.uartF->_timer_tick();
     }
     return nullptr;
 }
@@ -407,7 +407,7 @@ void *VRBRAINScheduler::_storage_thread(void *arg)
 
         // process any pending storage writes
         perf_begin(sched->_perf_storage_timer);
-        ((VRBRAINStorage *)hal.storage)->_timer_tick();
+        hal.storage->_timer_tick();
         perf_end(sched->_perf_storage_timer);
     }
     return nullptr;

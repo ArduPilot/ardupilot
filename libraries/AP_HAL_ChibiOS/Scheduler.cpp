@@ -25,9 +25,11 @@
 #include <AP_HAL_ChibiOS/Storage.h>
 #include <AP_HAL_ChibiOS/RCOutput.h>
 #include <AP_HAL_ChibiOS/RCInput.h>
+#include <AP_HAL_ChibiOS/CAN.h>
 
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include "shared_dma.h"
 
 using namespace ChibiOS;
 
@@ -36,10 +38,8 @@ THD_WORKING_AREA(_timer_thread_wa, 2048);
 THD_WORKING_AREA(_rcin_thread_wa, 512);
 THD_WORKING_AREA(_io_thread_wa, 2048);
 THD_WORKING_AREA(_storage_thread_wa, 2048);
-THD_WORKING_AREA(_uart_thread_wa, 2048);
-
-#if HAL_WITH_IO_MCU
-extern ChibiOS::UARTDriver uart_io;
+#if HAL_WITH_UAVCAN
+THD_WORKING_AREA(_uavcan_thread_wa, 4096);
 #endif
 
 Scheduler::Scheduler()
@@ -54,19 +54,20 @@ void Scheduler::init()
                      _timer_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
 
+    // setup the timer thread - this will call tasks at 1kHz
+#if HAL_WITH_UAVCAN
+    _uavcan_thread_ctx = chThdCreateStatic(_uavcan_thread_wa,
+                     sizeof(_uavcan_thread_wa),
+                     APM_UAVCAN_PRIORITY,        /* Initial priority.    */
+                     _uavcan_thread,            /* Thread function.     */
+                     this);                     /* Thread parameter.    */
+#endif
     // setup the RCIN thread - this will call tasks at 1kHz
     _rcin_thread_ctx = chThdCreateStatic(_rcin_thread_wa,
                      sizeof(_rcin_thread_wa),
                      APM_RCIN_PRIORITY,        /* Initial priority.    */
                      _rcin_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
-
-    // the UART thread runs at a medium priority
-    _uart_thread_ctx = chThdCreateStatic(_uart_thread_wa,
-                     sizeof(_uart_thread_wa),
-                     APM_UART_PRIORITY,        /* Initial priority.    */
-                     _uart_thread,             /* Thread function.     */
-                     this);                    /* Thread parameter.    */
 
     // the IO thread runs at lower priority
     _io_thread_ctx = chThdCreateStatic(_io_thread_wa,
@@ -207,6 +208,10 @@ void Scheduler::reboot(bool hold_in_bootloader)
     hal.rcout->force_safety_on();
     hal.rcout->force_safety_no_wait();
 
+    // lock all shared DMA channels. This has the effect of waiting
+    // till the sensor buses are idle
+    Shared_DMA::lock_all();
+    
     // delay to ensure the async force_saftey operation completes
     delay(500);
 
@@ -264,6 +269,24 @@ void Scheduler::_timer_thread(void *arg)
         hal.rcout->timer_tick();
     }
 }
+#if HAL_WITH_UAVCAN
+void Scheduler::_uavcan_thread(void *arg)
+{
+    Scheduler *sched = (Scheduler *)arg;
+    sched->_rcin_thread_ctx->name = "apm_uavcan";
+    while (!sched->_hal_initialized) {
+        sched->delay_microseconds(20000);
+    }
+    while (true) {
+        sched->delay_microseconds(1000);
+        for (int i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
+            if(hal.can_mgr[i] != nullptr) {
+                CANManager::from(hal.can_mgr[i])->_timer_tick();
+            }
+        }
+    }
+}
+#endif
 
 void Scheduler::_rcin_thread(void *arg)
 {
@@ -297,29 +320,6 @@ void Scheduler::_run_io(void)
     _in_io_proc = false;
 }
 
-void Scheduler::_uart_thread(void* arg)
-{
-    Scheduler *sched = (Scheduler *)arg;
-    sched->_uart_thread_ctx->name = "apm_uart";
-    while (!sched->_hal_initialized) {
-        sched->delay_microseconds(1000);
-    }
-    while (true) {
-        sched->delay_microseconds(1000);
-
-        // process any pending serial bytes
-        ((UARTDriver *)hal.uartA)->_timer_tick();
-        ((UARTDriver *)hal.uartB)->_timer_tick();
-        ((UARTDriver *)hal.uartC)->_timer_tick();
-        /*((UARTDriver *)hal.uartD)->_timer_tick();
-        ((UARTDriver *)hal.uartE)->_timer_tick();
-        ((UARTDriver *)hal.uartF)->_timer_tick();*/
-#if HAL_WITH_IO_MCU
-        uart_io._timer_tick();
-#endif
-    }
-}
-
 void Scheduler::_io_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
@@ -346,7 +346,7 @@ void Scheduler::_storage_thread(void* arg)
         sched->delay_microseconds(10000);
 
         // process any pending storage writes
-        ((Storage *)hal.storage)->_timer_tick();
+        hal.storage->_timer_tick();
     }
 }
 

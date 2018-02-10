@@ -52,6 +52,8 @@ void *malloc_ccm(size_t size)
     if (p != NULL) {
         memset(p, 0, size);
     }
+#else
+    (void)size;
 #endif
     return p;
 }

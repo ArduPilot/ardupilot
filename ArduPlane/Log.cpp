@@ -69,6 +69,7 @@ struct PACKED log_Performance {
 // Write a performance monitoring packet. Total length : 19 bytes
 void Plane::Log_Write_Performance()
 {
+    uint32_t dropped = DataFlash.num_dropped();
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us         : AP_HAL::micros64(),
@@ -80,6 +81,7 @@ void Plane::Log_Write_Performance()
         mem_avail       : hal.util->available_memory(),
         load            : (uint16_t)(scheduler.load_average() * 1000)
     };
+    last_log_dropped = dropped;
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
@@ -265,14 +267,6 @@ struct PACKED log_Arm_Disarm {
     uint16_t arm_checks;
 };
 
-void Plane::Log_Write_Current()
-{
-    DataFlash.Log_Write_Current(battery);
-
-    // also write power status
-    DataFlash.Log_Write_Power();
-}
-
 void Plane::Log_Arm_Disarm() {
     struct log_Arm_Disarm pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
@@ -441,7 +435,6 @@ void Plane::Log_Write_Sonar() {}
 void Plane::Log_Write_Optflow() {}
  #endif
 
-void Plane::Log_Write_Current() {}
 void Plane::Log_Arm_Disarm() {}
 void Plane::Log_Write_GPS(uint8_t instance) {}
 void Plane::Log_Write_IMU() {}
