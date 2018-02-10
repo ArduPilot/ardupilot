@@ -12,66 +12,41 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-/*
- *  main loop scheduler for APM
- *  Author: Andrew Tridgell, January 2013
- *
- */
 #pragma once
 
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/Util.h>
 #include <AP_Math/AP_Math.h>
-
-#define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
-
-/*
-  useful macro for creating scheduler task table
- */
-#define SCHED_TASK_CLASS(classname, classptr, func, _rate_hz, _max_time_micros) { \
-    .function = FUNCTOR_BIND(classptr, &classname::func, void),\
-    AP_SCHEDULER_NAME_INITIALIZER(func)\
-    .rate_hz = _rate_hz,\
-    .max_time_micros = _max_time_micros\
-}
-
-/*
-  A task scheduler for APM main loops
-
-  Sketches should call scheduler.init() on startup, then call
-  scheduler.tick() at regular intervals (typically every 10ms).
-
-  To run tasks use scheduler.run(), passing the amount of time that
-  the scheduler is allowed to use before it must return
- */
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
-class AP_Scheduler
-{
+
+template <class Vehicle>
+struct AP_Task {
+    typedef void (Vehicle::*task_fn_t)();
+        
+    task_fn_t   function;
+    const char* name;
+    float       rate_hz;
+    uint16_t    max_time_micros;
+    uint16_t    last_run;
+};
+
+// We define this as a constexpr, because of concerns regarding RAM usage in PX4
+template <class Vehicle>
+static constexpr AP_Task<Vehicle> make_task(void (Vehicle::*task_fn_t)(), float rate_hz = 0, uint16_t max_time_micros = 0, const char* name = "") {
+    return { task_fn_t, name, rate_hz, max_time_micros, 0 };
+}
+
+template <class Vehicle>
+class AP_Scheduler {
+    typedef void (Vehicle::*task_fn_t)();
+    
 public:
-    AP_Scheduler();
-
-    /* Do not allow copies */
-    AP_Scheduler(const AP_Scheduler &other) = delete;
-    AP_Scheduler &operator=(const AP_Scheduler&) = delete;
-
-    FUNCTOR_TYPEDEF(task_fn_t, void);
-
-    struct Task {
-        task_fn_t function;
-        const char *name;
-        float rate_hz;
-        uint16_t max_time_micros;
-    };
+    AP_Scheduler(Vehicle &parent);
 
     // initialise scheduler
-    void init(const Task *tasks, uint8_t num_tasks);
-
-    // call when one tick has passed
-    void tick(void);
+    void init(AP_Task<Vehicle> *tasks, uint8_t num_tasks);
 
     // run the tasks. Call this once per 'tick'.
     // time_available is the amount of time available to run
@@ -116,7 +91,13 @@ public:
     // current running task, or -1 if none. Used to debug stuck tasks
     static int8_t current_task;
 
+protected:
+    void update_spare_ticks();
+    
 private:
+    // Object pointer to parent class (which member funtions shall be executed)
+    Vehicle &_parent;
+    
     // used to enable scheduler debugging
     AP_Int8 _debug;
 
@@ -127,36 +108,39 @@ private:
     AP_Int16 _active_loop_rate_hz;
     
     // calculated loop period in usec
-    uint16_t _loop_period_us;
+    uint16_t _loop_period_us = 0;
 
     // calculated loop period in seconds
-    float _loop_period_s;
+    float _loop_period_s = 0;
     
     // progmem list of tasks to run
-    const struct Task *_tasks;
+    AP_Task<Vehicle> *_tasks = nullptr;
 
     // number of tasks in _tasks list
-    uint8_t _num_tasks;
+    uint8_t _num_tasks = 0;
 
     // number of 'ticks' that have passed (number of times that
     // tick() has been called
-    uint16_t _tick_counter;
-
-    // tick counter at the time we last ran each task
-    uint16_t *_last_run;
+    uint16_t _tick_counter = 0;
 
     // number of microseconds allowed for the current task
-    uint32_t _task_time_allowed;
+    uint32_t _task_time_allowed = 0;
 
     // the time in microseconds when the task started
-    uint32_t _task_time_started;
+    uint32_t _task_time_started = 0;
 
     // number of spare microseconds accumulated
-    uint32_t _spare_micros;
+    uint32_t _spare_micros = 0;
 
     // number of ticks that _spare_micros is counted over
-    uint8_t _spare_ticks;
+    uint8_t _spare_ticks = 0;
 
+    uint32_t _last_run_us = 0;
+    
     // performance counters
     AP_HAL::Util::perf_counter_t *_perf_counters;
 };
+
+template <class Vehicle> int8_t AP_Scheduler<Vehicle>::current_task = -1;
+
+#include "AP_Scheduler.tpp"

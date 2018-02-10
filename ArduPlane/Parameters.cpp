@@ -956,19 +956,19 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Group: ADSB_
     // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
-    GOBJECT(adsb,                "ADSB_", AP_ADSB),
+    GOBJECT(adsb,                   "ADSB_", AP_ADSB),
 
     // @Group: AVD_
     // @Path: ../libraries/AP_Avoidance/AP_Avoidance.cpp
-    GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Plane),
+    GOBJECT(avoidance_adsb,         "AVD_", AP_Avoidance_Plane),
 
     // @Group: Q_
     // @Path: quadplane.cpp
-    GOBJECT(quadplane,           "Q_", QuadPlane),
+    GOBJECT(quadplane,              "Q_", QuadPlane),
 
     // @Group: TUNE_
     // @Path: tuning.cpp,../libraries/AP_Tuning/AP_Tuning.cpp
-    GOBJECT(tuning,           "TUNE_", AP_Tuning_Plane),
+    GOBJECT(tuning,                 "TUNE_", AP_Tuning_Plane),
     
     // @Group: Q_A_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
@@ -1000,11 +1000,11 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
-    GOBJECT(scheduler, "SCHED_", AP_Scheduler),
+    GOBJECT(scheduler,              "SCHED_", AP_Scheduler<Plane>),
 
     // @Group: RCMAP_
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap,                "RCMAP_",         RCMapper),
+    GOBJECT(rcmap,                  "RCMAP_",         RCMapper),
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
@@ -1032,15 +1032,15 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Group: ARSPD
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
-    GOBJECT(airspeed,                               "ARSPD",   AP_Airspeed),
+    GOBJECT(airspeed,               "ARSPD",   AP_Airspeed),
 
     // @Group: NAVL1_
     // @Path: ../libraries/AP_L1_Control/AP_L1_Control.cpp
-    GOBJECT(L1_controller,         "NAVL1_",   AP_L1_Control),
+    GOBJECT(L1_controller,          "NAVL1_",   AP_L1_Control),
 
     // @Group: TECS_
     // @Path: ../libraries/AP_TECS/AP_TECS.cpp
-    GOBJECT(TECS_controller,         "TECS_",   AP_TECS),
+    GOBJECT(TECS_controller,        "TECS_",   AP_TECS),
 
 #if MOUNT == ENABLED
     // @Group: MNT
@@ -1050,7 +1050,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Group: LOG
     // @Path: ../libraries/DataFlash/DataFlash.cpp
-    GOBJECT(DataFlash,           "LOG",  DataFlash_Class),
+    GOBJECT(DataFlash,              "LOG",  DataFlash_Class),
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp

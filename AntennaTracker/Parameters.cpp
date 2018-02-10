@@ -248,8 +248,8 @@ const AP_Param::Info Tracker::var_info[] = {
     GOBJECT(compass,                "COMPASS_",     Compass),
 
     // @Group: SCHED_
-    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
-    GOBJECT(scheduler, "SCHED_", AP_Scheduler),
+    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.h
+    GOBJECT(scheduler, "SCHED_", AP_Scheduler<Tracker>),
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
