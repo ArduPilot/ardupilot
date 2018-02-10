@@ -85,7 +85,6 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     // setup initial performance counters
     perf_info.set_loop_rate(get_loop_rate_hz());
     perf_info.reset();
-    loop_start = AP_HAL::micros();
 
     _log_performance_bit = log_performance_bit;
 }
@@ -209,14 +208,14 @@ float AP_Scheduler::load_average()
 
 void AP_Scheduler::loop()
 {
-    const uint32_t timer = AP_HAL::micros();
-
     // wait for an INS sample
     AP::ins().wait_for_sample();
 
-    // used by PI Loops
-    last_loop_time          = (float)(timer - loop_start) / 1000000.0f;
-    loop_start              = timer;
+    const uint32_t sample_time_us = AP_HAL::micros();
+    
+    if (loop_timer_start_us == 0) {
+        loop_timer_start_us = sample_time_us;
+    }
 
     // Execute the fast loop
     // ---------------------
@@ -233,7 +232,7 @@ void AP_Scheduler::loop()
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
     const uint32_t loop_us = get_loop_period_us();
-    const uint32_t time_available = (timer + loop_us) - AP_HAL::micros();
+    const uint32_t time_available = (sample_time_us + loop_us) - AP_HAL::micros();
     run(time_available > loop_us ? 0u : time_available);
 
     // check loop time
@@ -241,7 +240,9 @@ void AP_Scheduler::loop()
     // move result of AP_HAL::micros() forward:
     hal.scheduler->delay_microseconds(1);
 #endif
-    perf_info.check_loop_time(AP_HAL::micros() - loop_start);
+    perf_info.check_loop_time(AP_HAL::micros() - loop_timer_start_us);
+
+    loop_timer_start_us = AP_HAL::micros();
 }
 
 void AP_Scheduler::update_logging()

@@ -140,9 +140,6 @@ public:
     // loop performance monitoring:
     AP::PerfInfo perf_info;
 
-    // time taken for previous loop (in seconds):
-    float last_loop_time;
-
 private:
     // function that is called before anything in the scheduler table:
     scheduler_fastloop_fn_t _fastloop_fn;
@@ -187,8 +184,8 @@ private:
     // number of ticks that _spare_micros is counted over
     uint8_t _spare_ticks;
 
-    // timestamp of loop start:
-    uint32_t loop_start;
+    // start of loop timing
+    uint32_t loop_timer_start_us;
 
     // performance counters
     AP_HAL::Util::perf_counter_t *_perf_counters;
