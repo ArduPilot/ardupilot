@@ -17,64 +17,62 @@
 
 #include "Sub.h"
 
-#define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Sub, &sub, func, rate_hz, max_time_micros)
-
 /*
   scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called (in hz)
   and the maximum time they are expected to take (in microseconds)
  */
-AP_Scheduler::Task Sub::scheduler_tasks[] = {
-    SCHED_TASK(fifty_hz_loop,         50,     75),
-    SCHED_TASK(update_GPS,            50,    200),
+AP_Task Sub::scheduler_tasks[] = {
+    make_task("fifty_hz_loop",              &sub, &Sub::fifty_hz_loop,         50,     75),
+    make_task("update_GPS",                 &sub, &Sub::update_GPS,            50,    200),
 #if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,  200,    160),
+    make_task("update_optical_flow",        &sub, &Sub::update_optical_flow,  200,    160),
 #endif
-    SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK(read_rangefinder,      20,    100),
-    SCHED_TASK(update_altitude,       10,    100),
-    SCHED_TASK(three_hz_loop,          3,     75),
-    SCHED_TASK(update_turn_counter,   10,     50),
-    SCHED_TASK(compass_accumulate,   100,    100),
-    SCHED_TASK(barometer_accumulate,  50,     90),
-    SCHED_TASK(update_notify,         50,     90),
-    SCHED_TASK(one_hz_loop,            1,    100),
-    SCHED_TASK(gcs_check_input,      400,    180),
-    SCHED_TASK(gcs_send_heartbeat,     1,    110),
-    SCHED_TASK(gcs_send_deferred,     50,    550),
-    SCHED_TASK(gcs_data_stream_send,  50,    550),
-    SCHED_TASK(update_mount,          50,     75),
+    make_task("update_batt_compass",        &sub, &Sub::update_batt_compass,   10,    120),
+    make_task("read_rangefinder",           &sub, &Sub::read_rangefinder,      20,    100),
+    make_task("update_altitude",            &sub, &Sub::update_altitude,       10,    100),
+    make_task("three_hz_loop",              &sub, &Sub::three_hz_loop,          3,     75),
+    make_task("update_turn_counter",        &sub, &Sub::update_turn_counter,   10,     50),
+    make_task("compass_accumulate",         &sub, &Sub::compass_accumulate,   100,    100),
+    make_task("barometer_accumulate",       &sub, &Sub::barometer_accumulate,  50,     90),
+    make_task("update_notify",              &sub, &Sub::update_notify,         50,     90),
+    make_task("one_hz_loop",                &sub, &Sub::one_hz_loop,            1,    100),
+    make_task("gcs_check_input",            &sub, &Sub::gcs_check_input,      400,    180),
+    make_task("gcs_send_heartbeat",         &sub, &Sub::gcs_send_heartbeat,     1,    110),
+    make_task("gcs_send_deferred",          &sub, &Sub::gcs_send_deferred,     50,    550),
+    make_task("gcs_data_stream_send",       &sub, &Sub::gcs_data_stream_send,  50,    550),
+    make_task("update_mount",               &sub, &Sub::update_mount,          50,     75),
 #if CAMERA == ENABLED
-    SCHED_TASK(update_trigger,        50,     75),
+    make_task("update_trigger",             &sub, &Sub::update_trigger,        50,     75),
 #endif
-    SCHED_TASK(ten_hz_logging_loop,   10,    350),
-    SCHED_TASK(twentyfive_hz_logging, 25,    110),
-    SCHED_TASK(dataflash_periodic,    400,    300),
-    SCHED_TASK(ins_periodic,          400,    50),
-    SCHED_TASK(perf_update,           0.1,    75),
+    make_task("ten_hz_logging_loop",        &sub, &Sub::ten_hz_logging_loop,   10,    350),
+    make_task("twentyfive_hz_logging",      &sub, &Sub::twentyfive_hz_logging, 25,    110),
+    make_task("dataflash_periodic",         &sub, &Sub::dataflash_periodic,    400,   300),
+    make_task("ins_periodic",               &sub, &Sub::ins_periodic,          400,    50),
+    make_task("perf_update",                &sub, &Sub::perf_update,           0.1,    75),
 #if RPM_ENABLED == ENABLED
-    SCHED_TASK(rpm_update,            10,    200),
+    make_task("rpm_update",                 &sub, &Sub::rpm_update,            10,    200),
 #endif
-    SCHED_TASK(compass_cal_update,   100,    100),
-    SCHED_TASK(accel_cal_update,      10,    100),
-    SCHED_TASK(terrain_update,        10,    100),
+    make_task("compass_cal_update",         &sub, &Sub::compass_cal_update,   100,    100),
+    make_task("accel_cal_update",           &sub, &Sub::accel_cal_update,      10,    100),
+    make_task("terrain_update",             &sub, &Sub::terrain_update,        10,    100),
 #if GRIPPER_ENABLED == ENABLED
-    SCHED_TASK(gripper_update,            10,     75),
+    make_task("gripper_update",             &sub, &Sub::gripper_update,        10,     75),
 #endif
 #ifdef USERHOOK_FASTLOOP
-    SCHED_TASK(userhook_FastLoop,    100,     75),
+    make_task("userhook_FastLoop",          &sub, &Sub::userhook_FastLoop,    100,     75),
 #endif
 #ifdef USERHOOK_50HZLOOP
-    SCHED_TASK(userhook_50Hz,         50,     75),
+    make_task("userhook_50Hz",              &sub, &Sub::userhook_50Hz,         50,     75),
 #endif
 #ifdef USERHOOK_MEDIUMLOOP
-    SCHED_TASK(userhook_MediumLoop,   10,     75),
+    make_task("userhook_MediumLoop",        &sub, &Sub::userhook_MediumLoop,   10,     75),
 #endif
 #ifdef USERHOOK_SLOWLOOP
-    SCHED_TASK(userhook_SlowLoop,     3.3,    75),
+    make_task("userhook_SlowLoop",          &sub, &Sub::userhook_SlowLoop,     3.3,    75),
 #endif
 #ifdef USERHOOK_SUPERSLOWLOOP
-    SCHED_TASK(userhook_SuperSlowLoop, 1,   75),
+    make_task("userhook_SuperSlowLoop",     &sub, &Sub::userhook_SuperSlowLoop, 1,     75),
 #endif
 };
 

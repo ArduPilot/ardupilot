@@ -760,7 +760,7 @@ private:
 
     AP_Param param_loader {var_info};
 
-    static AP_Scheduler::Task scheduler_tasks[];
+    static AP_Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
     // use this to prevent recursion during sensor init

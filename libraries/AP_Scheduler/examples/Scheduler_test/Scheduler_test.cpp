@@ -9,6 +9,14 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+struct SchedTest2 {
+    void two_hz_print(void) {
+        hal.console->printf("two_hz: t=%lu\n", (unsigned long)AP_HAL::millis());
+    }
+};
+
+SchedTest2 schedtest2;
+
 class SchedTest {
 public:
     void setup();
@@ -20,7 +28,7 @@ private:
     AP_Scheduler scheduler;
 
     uint32_t ins_counter;
-    static AP_Scheduler::Task scheduler_tasks[];
+    static AP_Task scheduler_tasks[];
 
     void ins_update(void);
     void one_hz_print(void);
@@ -30,17 +38,16 @@ private:
 static AP_BoardConfig board_config;
 static SchedTest schedtest;
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(SchedTest, &schedtest, func, _interval_ticks, _max_time_micros)
-
 /*
   scheduler table - all regular tasks are listed here, along with how
   often they should be called (in 20ms units) and the maximum time
   they are expected to take (in microseconds)
  */
-AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
-    SCHED_TASK(ins_update,             50,   1000),
-    SCHED_TASK(one_hz_print,            1,   1000),
-    SCHED_TASK(five_second_call,      0.2,   1800),
+AP_Task SchedTest::scheduler_tasks[] = {
+    make_task("1", &schedtest, &SchedTest::ins_update,             50,   1000),
+    make_task("2", &schedtest, &SchedTest::one_hz_print,            1,   1000),
+    make_task("3", &schedtest2, &SchedTest2::two_hz_print,        0.5,   1000),
+    make_task("4", &schedtest, &SchedTest::five_second_call,      0.2,   1800),
 };
 
 

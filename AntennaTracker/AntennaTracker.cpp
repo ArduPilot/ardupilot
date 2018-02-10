@@ -23,35 +23,33 @@
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(Tracker, &tracker, func, _interval_ticks, _max_time_micros)
-
 /*
   scheduler table - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called
   (in 20ms units) and the maximum time they are expected to take (in
   microseconds)
  */
-AP_Scheduler::Task Tracker::scheduler_tasks[] = {
-    SCHED_TASK(update_ahrs,            50,   1000),
-    SCHED_TASK(read_radio,             50,    200),
-    SCHED_TASK(update_tracking,        50,   1000),
-    SCHED_TASK(update_GPS,             10,   4000),
-    SCHED_TASK(update_compass,         10,   1500),
-    SCHED_TASK(update_battery,         10,   1500),
-    SCHED_TASK(update_barometer,       10,   1500),
-    SCHED_TASK(gcs_update,             50,   1700),
-    SCHED_TASK(gcs_data_stream_send,   50,   3000),
-    SCHED_TASK(compass_accumulate,     50,   1500),
-    SCHED_TASK(barometer_accumulate,   50,    900),
-    SCHED_TASK(ten_hz_logging_loop,    10,    300),
-    SCHED_TASK(dataflash_periodic,     50,    300),
-    SCHED_TASK(ins_periodic,           50,     50),
-    SCHED_TASK(update_notify,          50,    100),
-    SCHED_TASK(check_usb_mux,          10,    300),
-    SCHED_TASK(gcs_retry_deferred,     50,   1000),
-    SCHED_TASK(one_second_loop,         1,   3900),
-    SCHED_TASK(compass_cal_update,     50,    100),
-    SCHED_TASK(accel_cal_update,       10,    100)
+AP_Task Tracker::scheduler_tasks[] = {
+    make_task("update_ahrs",            &tracker, &Tracker::update_ahrs,            50,   1000),
+    make_task("read_radio",             &tracker, &Tracker::read_radio,             50,    200),
+    make_task("update_tracking",        &tracker, &Tracker::update_tracking,        50,   1000),
+    make_task("update_GPS",             &tracker, &Tracker::update_GPS,             10,   4000),
+    make_task("update_compass",         &tracker, &Tracker::update_compass,         10,   1500),
+    make_task("update_battery",         &tracker, &Tracker::update_battery,         10,   1500),
+    make_task("update_barometer",       &tracker, &Tracker::update_barometer,       10,   1500),
+    make_task("gcs_update",             &tracker, &Tracker::gcs_update,             50,   1700),
+    make_task("gcs_data_stream_send",   &tracker, &Tracker::gcs_data_stream_send,   50,   3000),
+    make_task("compass_accumulate",     &tracker, &Tracker::compass_accumulate,     50,   1500),
+    make_task("barometer_accumulate",   &tracker, &Tracker::barometer_accumulate,   50,    900),
+    make_task("ten_hz_logging_loop",    &tracker, &Tracker::ten_hz_logging_loop,    10,    300),
+    make_task("dataflash_periodic",     &tracker, &Tracker::dataflash_periodic,     50,    300),
+    make_task("ins_periodic",           &tracker, &Tracker::ins_periodic,           50,     50),
+    make_task("update_notify",          &tracker, &Tracker::update_notify,          50,    100),
+    make_task("check_usb_mux",          &tracker, &Tracker::check_usb_mux,          10,    300),
+    make_task("gcs_retry_deferred",     &tracker, &Tracker::gcs_retry_deferred,     50,   1000),
+    make_task("one_second_loop",        &tracker, &Tracker::one_second_loop,         1,   3900),
+    make_task("compass_cal_update",     &tracker, &Tracker::compass_cal_update,     50,    100),
+    make_task("accel_cal_update",       &tracker, &Tracker::accel_cal_update,       10,    100)
 };
 
 /**
