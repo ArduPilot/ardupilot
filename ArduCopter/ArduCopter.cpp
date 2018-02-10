@@ -75,96 +75,94 @@
 
 #include "Copter.h"
 
-#define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Copter, &copter, func, rate_hz, max_time_micros)
-
 /*
   scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called (in hz)
   and the maximum time they are expected to take (in microseconds)
  */
-AP_Scheduler::Task Copter::scheduler_tasks[] = {
-    SCHED_TASK(rc_loop,              100,    130),
-    SCHED_TASK(throttle_loop,         50,     75),
-    SCHED_TASK(update_GPS,            50,    200),
+AP_Task<Copter> Copter::scheduler_tasks[] = {
+    make_task(&Copter::rc_loop,              100,    130, "rc_loop"),
+    make_task(&Copter::throttle_loop,         50,     75, "throttle_loop"),
+    make_task(&Copter::update_GPS,            50,    200, "update_GPS"),
 #if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,  200,    160),
+    make_task(&Copter::update_optical_flow,  200,    160, "update_optical_flow"),
 #endif
-    SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK(read_aux_switches,     10,     50),
-    SCHED_TASK(arm_motors_check,      10,     50),
+    make_task(&Copter::update_batt_compass,   10,    120, "update_batt_compass"),
+    make_task(&Copter::read_aux_switches,     10,     50, "read_aux_switches"),
+    make_task(&Copter::arm_motors_check,      10,     50, "arm_motors_check"),
 #if TOY_MODE_ENABLED == ENABLED
-    SCHED_TASK(toy_mode_update,       10,     50),
+    make_task(&Copter::toy_mode_update,       10,     50, "toy_mode_update"),
 #endif
-    SCHED_TASK(auto_disarm_check,     10,     50),
-    SCHED_TASK(auto_trim,             10,     75),
-    SCHED_TASK(read_rangefinder,      20,    100),
-    SCHED_TASK(update_proximity,     100,     50),
-    SCHED_TASK(update_beacon,        400,     50),
-    SCHED_TASK(update_visual_odom,   400,     50),
-    SCHED_TASK(update_altitude,       10,    100),
-    SCHED_TASK(run_nav_updates,       50,    100),
-    SCHED_TASK(update_throttle_hover,100,     90),
-    SCHED_TASK(smart_rtl_save_position, 3,    100),
-    SCHED_TASK(three_hz_loop,          3,     75),
-    SCHED_TASK(compass_accumulate,   100,    100),
-    SCHED_TASK(barometer_accumulate,  50,     90),
+    make_task(&Copter::auto_disarm_check,     10,     50, "auto_disarm_check"),
+    make_task(&Copter::auto_trim,             10,     75, "auto_trim"),
+    make_task(&Copter::read_rangefinder,      20,    100, "read_rangefinder"),
+    make_task(&Copter::update_proximity,     100,     50, "update_proximity"),
+    make_task(&Copter::update_beacon,        400,     50, "update_beacon"),
+    make_task(&Copter::update_visual_odom,   400,     50, "update_visual_odom"),
+    make_task(&Copter::update_altitude,       10,    100, "update_altitude"),
+    make_task(&Copter::run_nav_updates,       50,    100, "run_nav_updates"),
+    make_task(&Copter::update_throttle_hover,100,     90, "update_throttle_hover"),
+    make_task(&Copter::smart_rtl_save_position, 3,    100, "smart_rtl_save_position"),
+    make_task(&Copter::three_hz_loop,          3,     75, "three_hz_loop"),
+    make_task(&Copter::compass_accumulate,   100,    100, "compass_accumulate"),
+    make_task(&Copter::barometer_accumulate,  50,     90, "barometer_accumulate"),
 #if PRECISION_LANDING == ENABLED
-    SCHED_TASK(update_precland,      400,     50),
+    make_task(&Copter::update_precland,      400,     50, "update_precland"),
 #endif
 #if FRAME_CONFIG == HELI_FRAME
-    SCHED_TASK(check_dynamic_flight,  50,     75),
+    make_task(&Copter::check_dynamic_flight,  50,     75, "check_dynamic_flight"),
 #endif
-    SCHED_TASK(fourhundred_hz_logging,400,    50),
-    SCHED_TASK(update_notify,         50,     90),
-    SCHED_TASK(one_hz_loop,            1,    100),
-    SCHED_TASK(ekf_check,             10,     75),
-    SCHED_TASK(gpsglitch_check,       10,     50),
-    SCHED_TASK(landinggear_update,    10,     75),
-    SCHED_TASK(lost_vehicle_check,    10,     50),
-    SCHED_TASK(gcs_check_input,      400,    180),
-    SCHED_TASK(gcs_send_heartbeat,     1,    110),
-    SCHED_TASK(gcs_send_deferred,     50,    550),
-    SCHED_TASK(gcs_data_stream_send,  50,    550),
-    SCHED_TASK(update_mount,          50,     75),
-    SCHED_TASK(update_trigger,        50,     75),
-    SCHED_TASK(ten_hz_logging_loop,   10,    350),
-    SCHED_TASK(twentyfive_hz_logging, 25,    110),
-    SCHED_TASK(dataflash_periodic,    400,    300),
-    SCHED_TASK(ins_periodic,         400,     50),
-    SCHED_TASK(perf_update,           0.1,    75),
-    SCHED_TASK(read_receiver_rssi,    10,     75),
-    SCHED_TASK(rpm_update,            10,    200),
-    SCHED_TASK(compass_cal_update,   100,    100),
-    SCHED_TASK(accel_cal_update,      10,    100),
-    SCHED_TASK(temp_cal_update,       10,    100),
+    make_task(&Copter::fourhundred_hz_logging,400,    50, "fourhundred_hz_logging"),
+    make_task(&Copter::update_notify,         50,     90, "update_notify"),
+    make_task(&Copter::one_hz_loop,            1,    100, "one_hz_loop"),
+    make_task(&Copter::ekf_check,             10,     75, "ekf_check"),
+    make_task(&Copter::gpsglitch_check,       10,     50, "gpsglitch_check"),
+    make_task(&Copter::landinggear_update,    10,     75, "landinggear_update"),
+    make_task(&Copter::lost_vehicle_check,    10,     50, "lost_vehicle_check"),
+    make_task(&Copter::gcs_check_input,      400,    180, "gcs_check_input"),
+    make_task(&Copter::gcs_send_heartbeat,     1,    110, "gcs_send_heartbeat"),
+    make_task(&Copter::gcs_send_deferred,     50,    550, "gcs_send_deferred"),
+    make_task(&Copter::gcs_data_stream_send,  50,    550, "gcs_data_stream_send"),
+    make_task(&Copter::update_mount,          50,     75, "update_mount"),
+    make_task(&Copter::update_trigger,        50,     75, "update_trigger"),
+    make_task(&Copter::ten_hz_logging_loop,   10,    350, "ten_hz_logging_loop"),
+    make_task(&Copter::twentyfive_hz_logging, 25,    110, "twentyfive_hz_logging"),
+    make_task(&Copter::dataflash_periodic,    400,    300, "dataflash_periodic"),
+    make_task(&Copter::ins_periodic,         400,     50, "ins_periodic"),
+    make_task(&Copter::perf_update,           0.1,    75, "perf_update"),
+    make_task(&Copter::read_receiver_rssi,    10,     75, "read_receiver_rssi"),
+    make_task(&Copter::rpm_update,            10,    200, "rpm_update"),
+    make_task(&Copter::compass_cal_update,   100,    100, "compass_cal_update"),
+    make_task(&Copter::accel_cal_update,      10,    100, "accel_cal_update"),
+    make_task(&Copter::temp_cal_update,       10,    100, "temp_cal_update"),
 #if ADSB_ENABLED == ENABLED
-    SCHED_TASK(avoidance_adsb_update, 10,    100),
+    make_task(&Copter::avoidance_adsb_update, 10,    100, "avoidance_adsb_update"),
 #endif
 #if ADVANCED_FAILSAFE == ENABLED
-    SCHED_TASK(afs_fs_check,          10,    100),
+    make_task(&Copter::afs_fs_check,          10,    100, "afs_fs_check"),
 #endif
-    SCHED_TASK(terrain_update,        10,    100),
+    make_task(&Copter::terrain_update,        10,    100, "terrain_update"),
 #if GRIPPER_ENABLED == ENABLED
-    SCHED_TASK(gripper_update,        10,     75),
+    make_task(&Copter::gripper_update,        10,     75, "gripper_update"),
 #endif
-    SCHED_TASK(winch_update,          10,     50),
+    make_task(&Copter::winch_update,          10,     50, "winch_update"),
 #ifdef USERHOOK_FASTLOOP
-    SCHED_TASK(userhook_FastLoop,    100,     75),
+    make_task(&Copter::userhook_FastLoop,    100,     75, "userhook_FastLoop"),
 #endif
 #ifdef USERHOOK_50HZLOOP
-    SCHED_TASK(userhook_50Hz,         50,     75),
+    make_task(&Copter::userhook_50Hz,         50,     75, "userhook_50Hz"),
 #endif
 #ifdef USERHOOK_MEDIUMLOOP
-    SCHED_TASK(userhook_MediumLoop,   10,     75),
+    make_task(&Copter::userhook_MediumLoop,   10,     75, "userhook_MediumLoop"),
 #endif
 #ifdef USERHOOK_SLOWLOOP
-    SCHED_TASK(userhook_SlowLoop,     3.3,    75),
+    make_task(&Copter::userhook_SlowLoop,     3.3,    75, "userhook_SlowLoop"),
 #endif
 #ifdef USERHOOK_SUPERSLOWLOOP
-    SCHED_TASK(userhook_SuperSlowLoop, 1,   75),
+    make_task(&Copter::userhook_SuperSlowLoop, 1,     75, "userhook_SuperSlowLoop"),
 #endif
-    SCHED_TASK(button_update,          5,    100),
-    SCHED_TASK(stats_update,           1,    100),
+    make_task(&Copter::button_update,          5,    100, "button_update"),
+    make_task(&Copter::stats_update,           1,    100, "stats_update"),
 };
 
 

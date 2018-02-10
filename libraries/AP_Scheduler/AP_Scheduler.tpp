@@ -12,14 +12,6 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-/*
- *  main loop scheduler for APM
- *  Author: Andrew Tridgell, January 2013
- *
- */
-#include "AP_Scheduler.h"
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -31,13 +23,12 @@
 #define SCHEDULER_DEFAULT_LOOP_RATE  50
 #endif
 
-#define debug(level, fmt, args...)   do { if ((level) <= _debug.get()) { hal.console->printf(fmt, ##args); }} while (0)
+#define debug_helper(level, fmt, args...)   do { if ((level) <= _debug.get()) { hal.console->printf(fmt, ##args); }} while (0)
 
 extern const AP_HAL::HAL& hal;
 
-int8_t AP_Scheduler::current_task = -1;
-
-const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
+template <class Vehicle>
+const AP_Param::GroupInfo AP_Scheduler<Vehicle>::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Scheduler debug level
     // @Description: Set to non-zero to enable scheduler debug messages. When set to show "Slips" the scheduler will display a message whenever a scheduled task is delayed due to too much CPU load. When set to ShowOverruns the scheduled will display a message whenever a task takes longer than the limit promised in the task table.
@@ -57,7 +48,8 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 };
 
 // constructor
-AP_Scheduler::AP_Scheduler()
+template <class Vehicle>
+AP_Scheduler<Vehicle>::AP_Scheduler(Vehicle &parent) : _parent(parent)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -71,7 +63,8 @@ AP_Scheduler::AP_Scheduler()
 }
 
 // initialise the scheduler
-void AP_Scheduler::init(AP_Scheduler::Task *tasks, uint8_t num_tasks)
+template <class Vehicle>
+void AP_Scheduler<Vehicle>::init(AP_Task<Vehicle> *tasks, uint8_t num_tasks) 
 {
     _tasks = tasks;
     _num_tasks = num_tasks;
@@ -90,7 +83,8 @@ void AP_Scheduler::init(AP_Scheduler::Task *tasks, uint8_t num_tasks)
   run one tick
   this will run as many scheduler tasks as we can in the specified time
  */
-void AP_Scheduler::run(uint32_t time_available)
+template <class Vehicle>
+void AP_Scheduler<Vehicle>::run(uint32_t time_available)
 {    
 /*
     // the scheduler can run faster than the given frequency would allow 
@@ -116,7 +110,7 @@ void AP_Scheduler::run(uint32_t time_available)
 
         // we've slipped a whole run of this task!
         if (dticks >= bias_slipped_ticks) {
-            debug(2, "Scheduler slip task[%u-%s] (%u/%u/%u)\n",
+            debug_helper(2, "Scheduler slip task[%u-%s] (%u/%u/%u)\n",
                     (unsigned)i,
                     _tasks[i].name,
                     (unsigned)dticks,
@@ -132,7 +126,8 @@ void AP_Scheduler::run(uint32_t time_available)
             if (bPerfCntrs) {
                 hal.util->perf_begin(_perf_counters[i]);
             }
-            _tasks[i].function();
+            task_fn_t func = _tasks[i].function;
+            (_parent.*func)();
             if (bPerfCntrs) {
                 hal.util->perf_end(_perf_counters[i]);
             }
@@ -147,7 +142,7 @@ void AP_Scheduler::run(uint32_t time_available)
 
             // the event overran!
             if (time_taken > _task_time_allowed) {
-                debug(3, "Scheduler overrun task[%u-%s] (%u/%u)\n",
+                debug_helper(3, "Scheduler overrun task[%u-%s] (%u/%u)\n",
                         (unsigned)i,
                         _tasks[i].name,
                         (unsigned)time_taken,
@@ -167,7 +162,8 @@ void AP_Scheduler::run(uint32_t time_available)
     update_spare_ticks();
 }
 
-void AP_Scheduler::update_spare_ticks() {
+template <class Vehicle>
+void AP_Scheduler<Vehicle>::update_spare_ticks() {
     // update number of spare microseconds
     _spare_ticks++;
     if(_spare_ticks == 32) {
@@ -179,7 +175,8 @@ void AP_Scheduler::update_spare_ticks() {
 /*
   return number of micros until the current task reaches its deadline
  */
-uint16_t AP_Scheduler::time_available_usec()
+template <class Vehicle>
+uint16_t AP_Scheduler<Vehicle>::time_available_usec()
 {
     const uint32_t dt = AP_HAL::micros() - _task_time_started;
     if (dt > _task_time_allowed) {
@@ -191,7 +188,8 @@ uint16_t AP_Scheduler::time_available_usec()
 /*
   calculate load average as a number from 0 to 1
  */
-float AP_Scheduler::load_average()
+template <class Vehicle>
+float AP_Scheduler<Vehicle>::load_average()
 {
     if (_spare_ticks == 0) {
         return 0.0f;

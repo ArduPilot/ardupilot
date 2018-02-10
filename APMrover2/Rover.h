@@ -136,7 +136,7 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler<Rover> scheduler = AP_Scheduler<Rover>(*this);
 
     // mapping between input channels
     RCMapper rcmap;
@@ -350,7 +350,7 @@ private:
     // true if pivoting (set by use_pivot_steering)
     bool pivot_steering_active;
 
-    static AP_Scheduler::Task scheduler_tasks[];
+    static AP_Task<Rover> scheduler_tasks[];
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;

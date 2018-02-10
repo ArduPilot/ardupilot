@@ -93,7 +93,7 @@ private:
     Parameters g;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler<Tracker> scheduler = AP_Scheduler<Tracker>(*this);
 
     // notification object for LEDs, buzzers etc
     AP_Notify notify;
@@ -194,7 +194,7 @@ private:
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay = false;
 
-    static AP_Scheduler::Task scheduler_tasks[];
+    static AP_Task<Tracker> scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
