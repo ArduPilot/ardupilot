@@ -32,9 +32,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
 
-static int state;
-ToneAlarm Util::_toneAlarm;
-
 extern "C" {
     size_t mem_available(void);
     void *malloc_ccm(size_t size);
@@ -143,6 +140,10 @@ void Util::set_imu_target_temp(int8_t *target)
 #endif
 }
 
+#ifdef HAL_PWM_ALARM
+static int state;
+ToneAlarm Util::_toneAlarm;
+
 bool Util::toneAlarm_init()
 {
     return _toneAlarm.init();
@@ -175,5 +176,5 @@ void Util::_toneAlarm_timer_tick() {
     }
 
 }
-
+#endif // HAL_PWM_ALARM
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

@@ -568,7 +568,8 @@ def write_PWM_config(f):
         if not is_int(chan_str) or not is_int(timer_str):
             error("Bad timer channel %s" % alarm.label)
         n = int(timer_str)
-        f.write('\n// Alarm PWM output config\n')
+        f.write('\n')
+        f.write('// Alarm PWM output config\n')
         f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
         f.write('#define STM32_TIM%u_SUPPRESS_ISR\n' % n)
 
@@ -603,7 +604,11 @@ def write_PWM_config(f):
         }\n''' %
         (chan-1, pwm_clock, period, chan_mode[0],
         chan_mode[1], chan_mode[2], chan_mode[3], n))
+    else:
         f.write('\n')
+        f.write('// No Alarm output pin defined\n')
+        f.write('#undef HAL_PWM_ALARM\n')
+    f.write('\n')
 
     f.write('// PWM timer config\n')
     for t in sorted(pwm_timers):
