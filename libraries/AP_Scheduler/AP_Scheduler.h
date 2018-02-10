@@ -128,6 +128,10 @@ public:
         return _loop_period_s;
     }
 
+    float get_filtered_loop_time(void) const {
+        return perf_info.get_filtered_time();
+    }
+    
     static const struct AP_Param::GroupInfo var_info[];
 
     // current running task, or -1 if none. Used to debug stuck tasks
