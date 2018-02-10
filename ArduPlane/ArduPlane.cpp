@@ -113,7 +113,7 @@ void Plane::setup()
 void Plane::loop()
 {
     scheduler.loop();
-    G_Dt = scheduler.last_loop_time;
+    G_Dt = scheduler.get_filtered_loop_time();
 }
 
 void Plane::update_soft_armed()
