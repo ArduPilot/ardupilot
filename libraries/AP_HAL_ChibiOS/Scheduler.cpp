@@ -56,7 +56,7 @@ void Scheduler::init()
                      _timer_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
 
-    // setup the timer thread - this will call tasks at 1kHz
+    // setup the uavcan thread - this will call tasks at 1kHz
 #if HAL_WITH_UAVCAN
     _uavcan_thread_ctx = chThdCreateStatic(_uavcan_thread_wa,
                      sizeof(_uavcan_thread_wa),
@@ -72,12 +72,13 @@ void Scheduler::init()
                      this);                     /* Thread parameter.    */
 
     // the toneAlarm thread runs at a medium priority
+#ifdef HAL_PWM_ALARM
     _toneAlarm_thread_ctx = chThdCreateStatic(_toneAlarm_thread_wa,
                      sizeof(_toneAlarm_thread_wa),
                      APM_TONEALARM_PRIORITY,        /* Initial priority.    */
                      _toneAlarm_thread,             /* Thread function.     */
                      this);                    /* Thread parameter.    */
-
+#endif
     // the IO thread runs at lower priority
     _io_thread_ctx = chThdCreateStatic(_io_thread_wa,
                      sizeof(_io_thread_wa),
@@ -309,6 +310,7 @@ void Scheduler::_rcin_thread(void *arg)
         ((RCInput *)hal.rcin)->_timer_tick();
     }
 }
+#ifdef HAL_PWM_ALARM
 
 void Scheduler::_toneAlarm_thread(void *arg)
 {
@@ -324,7 +326,7 @@ void Scheduler::_toneAlarm_thread(void *arg)
         Util::from(hal.util)->_toneAlarm_timer_tick();
     }
 }
-
+#endif
 void Scheduler::_run_io(void)
 {
     if (_in_io_proc) {
