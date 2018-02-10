@@ -37,6 +37,7 @@ private:
     uint64_t sigmasquared_time;
     uint16_t long_running;
     uint32_t log_dropped;
+    uint32_t last_check_us;
     float filtered_loop_time;
     bool ignore_loop;
 

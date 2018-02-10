@@ -3,6 +3,8 @@
 #include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS.h>
 
+extern const AP_HAL::HAL& hal;
+
 //
 //  high level performance monitoring
 //
@@ -50,9 +52,22 @@ void AP::PerfInfo::check_loop_time(uint32_t time_in_micros)
     sigma_time += time_in_micros;
     sigmasquared_time += time_in_micros * time_in_micros;
 
-    // we keep a filtered loop time for use as G_Dt which is the
-    // predicted time for the next loop
-    filtered_loop_time = 0.99 * filtered_loop_time + 0.01 * time_in_micros * 1.0e-6;
+    /* we keep a filtered loop time for use as G_Dt which is the
+       predicted time for the next loop. We remove really excessive
+       times from this calculation so as not to throw it off too far
+       in case we get a single long loop
+
+       Note that the time we use here is the time between calls to
+       check_loop_time() not the time from loop start to loop
+       end. This is because we are using the time for time between
+       calls to controllers, which has nothing to do with cpu speed.
+    */
+    const uint32_t now = AP_HAL::micros();
+    const uint32_t loop_time_us = now - last_check_us;
+    last_check_us = now;
+    if (loop_time_us < overtime_threshold_micros + 10000UL) {
+        filtered_loop_time = 0.99 * filtered_loop_time + 0.01 * loop_time_us * 1.0e-6;
+    }
 }
 
 // get_num_loops: return number of loops used for recording performance
