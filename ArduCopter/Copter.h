@@ -174,7 +174,7 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler<Copter> scheduler = AP_Scheduler<Copter>(*this);
 
     // AP_Notify instance
     AP_Notify notify;
@@ -598,7 +598,7 @@ private:
     // set when we are upgrading parameters from 3.4
     bool upgrading_frame_params;
     
-    static AP_Scheduler::Task scheduler_tasks[];
+    static AP_Task<Copter> scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 

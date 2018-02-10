@@ -167,7 +167,7 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler<Plane> scheduler = AP_Scheduler<Plane>(*this);
 
     // mapping between input channels
     RCMapper rcmap;
@@ -760,7 +760,7 @@ private:
 
     AP_Param param_loader {var_info};
 
-    static AP_Scheduler::Task scheduler_tasks[];
+    static AP_Task<Plane> scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
     // use this to prevent recursion during sensor init
