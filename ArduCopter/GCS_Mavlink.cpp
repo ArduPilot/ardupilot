@@ -1212,6 +1212,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
 #endif
 
+#if WINCH_ENABLED == ENABLED
         case MAV_CMD_DO_WINCH:
             // param1 : winch number (ignored)
             // param2 : action (0=relax, 1=relative length control, 2=rate control). See WINCH_ACTIONS enum.
@@ -1244,6 +1245,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 }
             }
             break;
+#endif
 
         /* Solo user presses Fly button */
         case MAV_CMD_SOLO_BTN_FLY_CLICK: {

@@ -95,8 +95,6 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
-#include <AP_WheelEncoder/AP_WheelEncoder.h>
-#include <AP_Winch/AP_Winch.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
 
 // Configuration
@@ -132,6 +130,11 @@
 
 #if TOY_MODE_ENABLED == ENABLED
 #include "toy_mode.h"
+#endif
+
+#if WINCH_ENABLED == ENABLED
+#include <AP_WheelEncoder/AP_WheelEncoder.h>
+#include <AP_Winch/AP_Winch.h>
 #endif
 
 // Local modules

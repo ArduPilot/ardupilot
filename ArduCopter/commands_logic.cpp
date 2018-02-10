@@ -160,9 +160,11 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+#if WINCH_ENABLED == ENABLED
     case MAV_CMD_DO_WINCH:                             // Mission command to control winch
         do_winch(cmd);
         break;
+#endif
 
     default:
         // do nothing with unrecognized MAVLink messages
@@ -664,6 +666,7 @@ void Copter::ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 }
 #endif
 
+#if WINCH_ENABLED == ENABLED
 // control winch based on mission command
 void Copter::ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
 {
@@ -686,6 +689,7 @@ void Copter::ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
             break;
     }
 }
+#endif
 
 /********************************************************************************/
 //	Verify Nav (Must) commands

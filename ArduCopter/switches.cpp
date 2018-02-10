@@ -633,6 +633,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_WINCH_ENABLE:
+#if WINCH_ENABLED == ENABLED
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH:
                     // high switch maintains current position
@@ -645,9 +646,11 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     Log_Write_Event(DATA_WINCH_RELAXED);
                     break;
                 }
+#endif
             break;
 
         case AUXSW_WINCH_CONTROL:
+#if WINCH_ENABLED == ENABLED
             switch (ch_flag) {
                 case AUX_SWITCH_LOW:
                     // raise winch at maximum speed
@@ -662,6 +665,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     g2.winch.set_desired_rate(0.0f);
                     break;
                 }
+#endif
             break;
 
         case AUXSW_RC_OVERRIDE_ENABLE:

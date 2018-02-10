@@ -213,6 +213,7 @@ void Copter::tuning() {
          attitude_control->get_rate_yaw_pid().filt_hz(tuning_value);
          break;
 
+#if WINCH_ENABLED == ENABLED
      case TUNING_WINCH: {
          float desired_rate = 0.0f;
          if (v > 0.6f) {
@@ -224,5 +225,6 @@ void Copter::tuning() {
          g2.winch.set_desired_rate(desired_rate);
          break;
          }
+#endif
      }
 }
