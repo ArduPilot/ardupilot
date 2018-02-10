@@ -543,15 +543,19 @@ void Copter::update_visual_odom()
 // winch and wheel encoder initialisation
 void Copter::winch_init()
 {
+#if WINCH_ENABLED == ENABLED
     g2.wheel_encoder.init();
     g2.winch.init(&g2.wheel_encoder);
+#endif
 }
 
 // winch and wheel encoder update
 void Copter::winch_update()
 {
+#if WINCH_ENABLED == ENABLED
     g2.wheel_encoder.update();
     g2.winch.update();
+#endif
 }
 
 void Copter::temp_cal_update(void)

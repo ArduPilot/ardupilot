@@ -553,8 +553,10 @@ public:
     AP_SmartRTL smart_rtl;
 
     // wheel encoder and winch
+#if WINCH_ENABLED == ENABLED
     AP_WheelEncoder wheel_encoder;
     AP_Winch winch;
+#endif
 
     // Additional pilot velocity items
     AP_Int16    pilot_speed_dn;
