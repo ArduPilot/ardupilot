@@ -121,12 +121,12 @@ float AP::PerfInfo::get_filtered_time() const
 void AP::PerfInfo::update_logging()
 {
     gcs().send_text(MAV_SEVERITY_WARNING,
-                    "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
+                    "PERF: %u/%u max=%lu min=%lu F=%u sd=%lu",
                     (unsigned)get_num_long_running(),
                     (unsigned)get_num_loops(),
                     (unsigned long)get_max_time(),
                     (unsigned long)get_min_time(),
-                    (unsigned long)get_avg_time(),
+                    (unsigned)(get_filtered_time()*1.0e6),
                     (unsigned long)get_stddev_time());
 }
 
