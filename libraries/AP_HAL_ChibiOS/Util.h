@@ -46,14 +46,19 @@ public:
     // IMU temperature control
     void set_imu_temp(float current);
     void set_imu_target_temp(int8_t *target);
+
+#ifdef HAL_PWM_ALARM
     bool toneAlarm_init();
     void toneAlarm_set_tune(uint8_t tone);
     void _toneAlarm_timer_tick();
 
     static ToneAlarm& get_ToneAlarm() { return _toneAlarm; }
+#endif
 
 private:
+#ifdef HAL_PWM_ALARM
     static ToneAlarm _toneAlarm;
+#endif
     void* try_alloc_from_ccm_ram(size_t size);
     uint32_t available_memory_in_ccm_ram(void);
 

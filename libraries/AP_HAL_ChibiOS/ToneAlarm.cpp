@@ -1,6 +1,9 @@
-#include "ToneAlarm.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+
+#ifdef HAL_PWM_ALARM
+
+#include "ToneAlarm.h"
 
 using namespace ChibiOS;
 
@@ -261,3 +264,4 @@ bool ToneAlarm::init_tune()
 
     return true;
 }
+#endif
