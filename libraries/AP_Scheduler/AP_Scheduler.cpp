@@ -209,10 +209,10 @@ float AP_Scheduler::load_average()
 
 void AP_Scheduler::loop()
 {
+    const uint32_t timer = AP_HAL::micros();
+
     // wait for an INS sample
     AP::ins().wait_for_sample();
-
-    const uint32_t timer = AP_HAL::micros();
 
     // used by PI Loops
     last_loop_time          = (float)(timer - loop_start) / 1000000.0f;
