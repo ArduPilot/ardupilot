@@ -305,10 +305,6 @@ def write_mcu_config(f):
             f.write('#define %s\n' % d)
         if d.startswith('define '):
             f.write('#define %s\n' % d[7:])
-    hrt_timer = get_config('HRT_TIMER', default='5')
-    hrt_timer = int(hrt_timer)
-    f.write('#define HRT_TIMER GPTD%u\n' % hrt_timer)
-    f.write('#define STM32_GPT_USE_TIM%u TRUE\n' % hrt_timer)
     flash_size = get_config('FLASH_SIZE_KB', type=int)
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
     f.write('#define CRT1_AREAS_NUMBER 1\n')

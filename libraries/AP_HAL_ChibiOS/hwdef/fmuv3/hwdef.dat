@@ -82,12 +82,6 @@ STM32_VDD 330U
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
 
-# ArduPilot has its own high resolution timer, which needs to be
-# separate from the ChibiOS timer.
-
-# ArduPilot highres timer
-HRT_TIMER 6
-
 # now the size of flash in kilobytes, for creating the ld.script
 
 # flash size

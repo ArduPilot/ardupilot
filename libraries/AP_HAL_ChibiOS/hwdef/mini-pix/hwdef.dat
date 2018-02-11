@@ -16,9 +16,6 @@ OSCILLATOR_HZ 24000000
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
 
-# ArduPilot highres timer
-HRT_TIMER 6
-
 FLASH_SIZE_KB 1024
 
 # board voltage
