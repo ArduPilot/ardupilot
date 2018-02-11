@@ -46,9 +46,10 @@
 /**
  * @brief   System tick frequency.
  * @details Frequency of the system timer that drives the system ticks. This
- *          setting also defines the system tick time unit.
+ *          setting also defines the system tick time unit. We set this to 1000000
+ *          in ArduPilot so we get maximum resolution for timing of delays
  */
-#define CH_CFG_ST_FREQUENCY                 10000
+#define CH_CFG_ST_FREQUENCY                 1000000
 
 /**
  * @brief   Time delta constant for the tick-less mode.
