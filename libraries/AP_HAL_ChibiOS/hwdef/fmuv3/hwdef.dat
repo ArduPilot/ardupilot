@@ -16,6 +16,18 @@
 # that you read the resulting hwdef.h file when porting to a new board
 # to make sure it has resulted in what you want
 
+# You should read this file in conjunction with the schematic for your
+# board, the datasheet for the MCU for your board and the python
+# tables file that we have extracted from the datasheet for your
+# MCU. The python tables file is particularly important, so if you
+# haven't seen it before go and look at it now. For the STM32F427 it
+# it called STM32F427xx.py and it is in the hwdef/script/ directory
+# inside the HAL_ChibiOS directory. That file tells you what each pin
+# can do (the alternate functions table) and what DMA channels can be
+# used for each peripheral type. The alternative functions table is
+# particularly useful when doing a new hwdef.dat file as you can work
+# out peripheral numbers given a port/pin name.
+
 # we need to start off by saying what main CPU is on the board. There
 # are two CPU identifiers that you need to specify. The first is the
 # ChibiOS MCU type. So far we only support STM32F4xx for all STM32F4
@@ -102,9 +114,13 @@ USB_STRING_MANUFACTURER "ArduPilot"
 USB_STRING_PRODUCT "%BOARD%"
 USB_STRING_SERIAL  "%SERIAL%"
 
-# now define the order that I2C buses are presented. For historical
-# reasons inherited from HAL_PX4 the 'external' I2C bus should be bus
-# 1, and internal I2C bus should be bus 0
+# now define the order that I2C buses are presented in the hal.i2c API
+# in ArduPilot. For historical reasons inherited from HAL_PX4 the
+# 'external' I2C bus should be bus 1 in hal.i2c, and internal I2C bus
+# should be bus 0. On fmuv3 the STM32 I2C1 is our external bus and
+# I2C2 is our internal bus, so we need to setup the order as I2C2
+# followed by I2C1 in order to achieve the conventional order that
+# drivers expect
 
 # order of I2C buses
 I2C_ORDER I2C2 I2C1
