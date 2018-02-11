@@ -18,9 +18,12 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
- # define HAL_GPIO_LED_ON           LOW
- # define HAL_GPIO_LED_OFF          HIGH
+#ifndef HAL_GPIO_LED_ON
+#define HAL_GPIO_LED_ON 0
+#endif
+
+#ifndef HAL_GPIO_LED_OFF
+#define HAL_GPIO_LED_OFF 1
 #endif
 
 class ChibiOS::GPIO : public AP_HAL::GPIO {
