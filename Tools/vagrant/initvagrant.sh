@@ -40,7 +40,7 @@ easy_install catkin_pkg
 # ARM toolchain
 if [ ! -d /opt/$ARM_ROOT ]; then
     (
-        sudo -u $VAGRANT_USER wget -nv $ARM_TARBALL_URL
+        wget -nv $ARM_TARBALL_URL
         pushd /opt
         tar xjf ${OLDPWD}/${ARM_TARBALL}
         popd
