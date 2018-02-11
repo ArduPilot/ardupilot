@@ -556,8 +556,8 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(leak_detector, "LEAK", AP_LeakDetector),
 
     // @Group: SCHED_
-    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
-    GOBJECT(scheduler, "SCHED_", AP_Scheduler),
+    // @Path: ../libraries/AP_Scheduler/AP_Scheduler.h
+    GOBJECT(scheduler, "SCHED_", AP_Scheduler<Sub>),
 
 #if AC_FENCE == ENABLED
     // @Group: FENCE_

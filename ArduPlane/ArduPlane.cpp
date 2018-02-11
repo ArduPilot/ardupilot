@@ -22,68 +22,65 @@
 
 #include "Plane.h"
 
-#define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(Plane, &plane, func, rate_hz, max_time_micros)
-
-
 /*
   scheduler table - all regular tasks are listed here, along with how
   often they should be called (in Hz) and the maximum time
   they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task Plane::scheduler_tasks[] = {
+AP_Task<Plane> Plane::scheduler_tasks[] = {
                            // Units:   Hz      us
-    SCHED_TASK(ahrs_update,           400,    400),
-    SCHED_TASK(read_radio,             50,    100),
-    SCHED_TASK(check_short_failsafe,   50,    100),
-    SCHED_TASK(update_speed_height,    50,    200),
-    SCHED_TASK(update_flight_mode,    400,    100),
-    SCHED_TASK(stabilize,             400,    100),
-    SCHED_TASK(set_servos,            400,    100),
-    SCHED_TASK(read_control_switch,     7,    100),
-    SCHED_TASK(gcs_retry_deferred,     50,    500),
-    SCHED_TASK(update_GPS_50Hz,        50,    300),
-    SCHED_TASK(update_GPS_10Hz,        10,    400),
-    SCHED_TASK(navigate,               10,    150),
-    SCHED_TASK(update_compass,         10,    200),
-    SCHED_TASK(read_airspeed,          10,    100),
-    SCHED_TASK(update_alt,             10,    200),
-    SCHED_TASK(adjust_altitude_target, 10,    200),
-    SCHED_TASK(afs_fs_check,           10,    100),
-    SCHED_TASK(gcs_update,             50,    500),
-    SCHED_TASK(gcs_data_stream_send,   50,    500),
-    SCHED_TASK(update_events,          50,    150),
-    SCHED_TASK(read_battery,           10,    300),
-    SCHED_TASK(compass_accumulate,     50,    200),
-    SCHED_TASK(barometer_accumulate,   50,    150),
-    SCHED_TASK(update_notify,          50,    300),
-    SCHED_TASK(read_rangefinder,       50,    100),
-    SCHED_TASK(ice_update,             10,    100),
-    SCHED_TASK(compass_cal_update,     50,    50),
-    SCHED_TASK(accel_cal_update,       10,    50),
+    make_task(&Plane::ahrs_update,           400,    400, "ahrs_update"),
+    make_task(&Plane::read_radio,             50,    100, "read_radio"),
+    make_task(&Plane::check_short_failsafe,   50,    100, "check_short_failsafe"),
+    make_task(&Plane::update_speed_height,    50,    200, "update_speed_height"),
+    make_task(&Plane::update_flight_mode,    400,    100, "update_flight_mode"),
+    make_task(&Plane::stabilize,             400,    100, "stabilize"),
+    make_task(&Plane::set_servos,            400,    100, "set_servos"),
+    make_task(&Plane::read_control_switch,     7,    100, "read_control_switch"),
+    make_task(&Plane::gcs_retry_deferred,     50,    500, "gcs_retry_deferred"),
+    make_task(&Plane::update_GPS_50Hz,        50,    300, "update_GPS_50Hz"),
+    make_task(&Plane::update_GPS_10Hz,        10,    400, "update_GPS_10Hz"),
+    make_task(&Plane::navigate,               10,    150, "navigate"),
+    make_task(&Plane::update_compass,         10,    200, "update_compass"),
+    make_task(&Plane::read_airspeed,          10,    100, "read_airspeed"),
+    make_task(&Plane::update_alt,             10,    200, "update_alt"),
+    make_task(&Plane::adjust_altitude_target, 10,    200, "adjust_altitude_target"),
+    make_task(&Plane::afs_fs_check,           10,    100, "afs_fs_check"),
+    make_task(&Plane::gcs_update,             50,    500, "gcs_update"),
+    make_task(&Plane::gcs_data_stream_send,   50,    500, "gcs_data_stream_send"),
+    make_task(&Plane::update_events,          50,    150, "update_events"),
+    make_task(&Plane::read_battery,           10,    300, "read_battery"),
+    make_task(&Plane::compass_accumulate,     50,    200, "compass_accumulate"),
+    make_task(&Plane::barometer_accumulate,   50,    150, "barometer_accumulate"),
+    make_task(&Plane::update_notify,          50,    300, "update_notify"),
+    make_task(&Plane::read_rangefinder,       50,    100, "read_rangefinder"),
+    make_task(&Plane::ice_update,             10,    100, "ice_update"),
+    make_task(&Plane::compass_cal_update,     50,    50,  "compass_cal_update"),
+    make_task(&Plane::accel_cal_update,       10,    50,  "accel_cal_update"),
 #if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,    50,    50),
+    make_task(&Plane::update_optical_flow,    50,    50,  "update_optical_flow"),
 #endif
-    SCHED_TASK(one_second_loop,         1,    400),
-    SCHED_TASK(check_long_failsafe,     3,    400),
-    SCHED_TASK(read_receiver_rssi,     10,    100),
-    SCHED_TASK(rpm_update,             10,    100),
-    SCHED_TASK(airspeed_ratio_update,   1,    100),
-    SCHED_TASK(update_mount,           50,    100),
-    SCHED_TASK(update_trigger,         50,    100),
-    SCHED_TASK(log_perf_info,         0.2,    100),
-    SCHED_TASK(compass_save,          0.1,    200),
-    SCHED_TASK(Log_Write_Fast,         25,    300),
-    SCHED_TASK(update_logging1,        25,    300),
-    SCHED_TASK(update_logging2,        25,    300),
-    SCHED_TASK(update_soaring,         50,    400),
-    SCHED_TASK(parachute_check,        10,    200),
-    SCHED_TASK(terrain_update,         10,    200),
-    SCHED_TASK(update_is_flying_5Hz,    5,    100),
-    SCHED_TASK(dataflash_periodic,     50,    400),
-    SCHED_TASK(ins_periodic,           50,     50),
-    SCHED_TASK(avoidance_adsb_update,  10,    100),
-    SCHED_TASK(button_update,           5,    100),
-    SCHED_TASK(stats_update,            1,    100),
+    make_task(&Plane::one_second_loop,         1,    400, "one_second_loop"),
+    make_task(&Plane::check_long_failsafe,     3,    400, "check_long_failsafe"),
+    make_task(&Plane::read_receiver_rssi,     10,    100, "read_receiver_rssi"),
+    make_task(&Plane::rpm_update,             10,    100, "rpm_update"),
+    make_task(&Plane::airspeed_ratio_update,   1,    100, "airspeed_ratio_update"),
+    make_task(&Plane::update_mount,           50,    100, "update_mount"),
+    make_task(&Plane::update_trigger,         50,    100, "update_trigger"),
+    make_task(&Plane::log_perf_info,         0.2,    100, "log_perf_info"),
+    make_task(&Plane::compass_save,          0.1,    200, "compass_save"),
+    make_task(&Plane::Log_Write_Fast,         25,    300, "Log_Write_Fast"),
+    make_task(&Plane::update_logging1,        25,    300, "update_logging1"),
+    make_task(&Plane::update_logging2,        25,    300, "update_logging2"),
+    make_task(&Plane::update_soaring,         50,    400, "update_soaring"),
+    make_task(&Plane::parachute_check,        10,    200, "parachute_check"),
+    make_task(&Plane::terrain_update,         10,    200, "terrain_update"),
+    make_task(&Plane::update_is_flying_5Hz,    5,    100, "update_is_flying_5Hz"),
+    make_task(&Plane::dataflash_periodic,     50,    400, "dataflash_periodic"),
+    make_task(&Plane::ins_periodic,           50,     50, "ins_periodic"),
+    make_task(&Plane::avoidance_adsb_update,  10,    100, "avoidance_adsb_update"),
+    make_task(&Plane::button_update,           5,    100, "button_update"),
+    make_task(&Plane::stats_update,            1,    100, "stats_update"),
 };
 
 /*
@@ -128,10 +125,7 @@ void Plane::loop()
     fast_loopTimer = timer;
 
     mainLoop_count++;
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
+    
     // run all the tasks that are due to run. Note that we only
     // have to call this once per loop, as the tasks are scheduled
     // in multiples of the main loop tick. So if they don't run on

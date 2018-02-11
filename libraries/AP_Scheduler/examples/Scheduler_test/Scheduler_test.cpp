@@ -17,10 +17,10 @@ public:
 private:
 
     AP_InertialSensor ins;
-    AP_Scheduler scheduler;
+    AP_Scheduler<SchedTest> scheduler = AP_Scheduler<SchedTest>(*this);
 
     uint32_t ins_counter;
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static AP_Task<SchedTest> scheduler_tasks[];
 
     void ins_update(void);
     void one_hz_print(void);
@@ -30,17 +30,15 @@ private:
 static AP_BoardConfig board_config;
 static SchedTest schedtest;
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(SchedTest, &schedtest, func, _interval_ticks, _max_time_micros)
-
 /*
   scheduler table - all regular tasks are listed here, along with how
   often they should be called (in 20ms units) and the maximum time
   they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
-    SCHED_TASK(ins_update,             50,   1000),
-    SCHED_TASK(one_hz_print,            1,   1000),
-    SCHED_TASK(five_second_call,      0.2,   1800),
+AP_Task<SchedTest> SchedTest::scheduler_tasks[] = {
+    make_task(&SchedTest::ins_update,             50,   1000),
+    make_task(&SchedTest::one_hz_print,            1,   1000),
+    make_task(&SchedTest::five_second_call,      0.2,   1800),
 };
 
 
@@ -59,10 +57,7 @@ void SchedTest::loop(void)
 {
     // wait for an INS sample
     ins.wait_for_sample();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
+    
     // run all tasks that fit in 20ms
     scheduler.run(20000);
 }
