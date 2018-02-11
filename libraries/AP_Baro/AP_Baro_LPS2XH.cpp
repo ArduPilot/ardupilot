@@ -177,7 +177,7 @@ void AP_Baro_LPS2XH::_update_pressure(void)
     uint8_t pressure[3];
     _dev->read_registers(PRESS_OUT_XL_ADDR, pressure, 3);
     int32_t Pressure_Reg_s32 = ((uint32_t)pressure[2]<<16)|((uint32_t)pressure[1]<<8)|(uint32_t)pressure[0];
-    int32_t Pressure_mb = Pressure_Reg_s32 / 4096 *100; // scale for pa
+    int32_t Pressure_mb = Pressure_Reg_s32 * (100.0 / 4096); // scale for pa
     if (_sem->take_nonblocking()) {
         _pressure=Pressure_mb;
         _sem->give();
