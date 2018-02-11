@@ -15,10 +15,10 @@
 #define HAL_GPIO_C_LED_PIN        0
 #endif
 #ifndef HAL_GPIO_LED_ON
-#define HAL_GPIO_LED_ON           LOW
+#define HAL_GPIO_LED_ON           0
 #endif
 #ifndef HAL_GPIO_LED_OFF
-#define HAL_GPIO_LED_OFF          HIGH
+#define HAL_GPIO_LED_OFF          1
 #endif
 
 #ifndef HAL_WITH_UAVCAN
