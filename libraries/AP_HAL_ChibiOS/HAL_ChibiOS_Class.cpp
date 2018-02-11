@@ -168,7 +168,6 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
      * - Kernel initialization, the main() function becomes a thread and the
      *   RTOS is active.
      */
-    hrt_init();
     //STDOUT Initialistion
     SerialConfig stdoutcfg =
     {

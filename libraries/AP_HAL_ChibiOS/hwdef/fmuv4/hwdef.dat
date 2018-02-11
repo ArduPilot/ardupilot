@@ -16,9 +16,6 @@ STM32_VDD 330U
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
 
-# ArduPilot highres timer
-HRT_TIMER 6
-
 # flash size
 FLASH_SIZE_KB 2048
 

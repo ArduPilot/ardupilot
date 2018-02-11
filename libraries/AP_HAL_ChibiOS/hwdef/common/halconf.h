@@ -80,10 +80,11 @@
 #endif
 
 /**
- * @brief   Enables the GPT subsystem.
+ * @brief Enables the GPT subsystem. We don't need it on most boards
+ * in ArduPilot, so it is disabled by default
  */
 #if !defined(HAL_USE_GPT) || defined(__DOXYGEN__)
-#define HAL_USE_GPT                 TRUE
+#define HAL_USE_GPT                 FALSE
 #endif
 
 /**
