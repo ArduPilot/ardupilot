@@ -1,7 +1,7 @@
 #include "Copter.h"
 #include <utility>
 
-#if OPTFLOW == ENABLED
+#if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
 
 /*
   implement FLOWHOLD mode, for position hold using opttical flow
