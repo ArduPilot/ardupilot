@@ -66,7 +66,7 @@ void AP::PerfInfo::check_loop_time(uint32_t time_in_micros)
     const uint32_t loop_time_us = now - last_check_us;
     last_check_us = now;
     if (loop_time_us < overtime_threshold_micros + 10000UL) {
-        filtered_loop_time = 0.99 * filtered_loop_time + 0.01 * loop_time_us * 1.0e-6;
+        filtered_loop_time = 0.99f * filtered_loop_time + 0.01f * loop_time_us * 1.0e-6f;
     }
 }
 
@@ -137,6 +137,6 @@ void AP::PerfInfo::set_loop_rate(uint16_t rate_hz)
 
     if (loop_rate_hz != rate_hz) {
         loop_rate_hz = rate_hz;
-        filtered_loop_time = 1.0 / rate_hz;
+        filtered_loop_time = 1.0f / rate_hz;
     }
 }
