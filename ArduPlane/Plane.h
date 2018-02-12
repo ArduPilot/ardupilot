@@ -975,7 +975,6 @@ private:
     void airspeed_ratio_update(void);
     void update_mount(void);
     void update_trigger(void);    
-    void log_perf_info(void);
     void compass_save(void);
     void update_logging1(void);
     void update_logging2(void);
