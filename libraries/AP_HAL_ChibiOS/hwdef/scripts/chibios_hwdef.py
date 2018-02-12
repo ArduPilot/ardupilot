@@ -540,6 +540,10 @@ def write_PWM_config(f):
         a = rc_in.label.split('_')
         chan_str = a[1][2:]
         timer_str = a[0][3:]
+        if chan_str[-1] == 'N':
+            # it is an inverted channel
+            f.write('#define HAL_RCIN_IS_INVERTED\n')
+            chan_str = chan_str[:-1]
         if not is_int(chan_str) or not is_int(timer_str):
             error("Bad timer channel %s" % rc_in.label)
         if int(chan_str) not in [1, 2]:
@@ -873,7 +877,10 @@ def build_peripheral_list():
         if type.startswith('SDIO'):
             peripherals.append(type)
         if type.startswith('TIM') and p.has_extra('RCIN'):
-            peripherals.append(p.label)
+            label = p.label
+            if label[-1] == 'N':
+                label = label[:-1]
+            peripherals.append(label)
         done.add(type)
     return peripherals
 
