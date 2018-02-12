@@ -95,8 +95,10 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
+#if WINCH_ENABLED == ENABLED
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_Winch/AP_Winch.h>
+#endif
 #include <AP_TempCalibration/AP_TempCalibration.h>
 
 // Configuration
