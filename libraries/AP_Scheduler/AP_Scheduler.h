@@ -131,6 +131,11 @@ public:
     float get_filtered_loop_time(void) const {
         return perf_info.get_filtered_time();
     }
+
+    // get the time in seconds that the last loop took
+    float get_last_loop_time_s(void) const {
+        return _last_loop_time_s;
+    }
     
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -185,8 +190,11 @@ private:
     uint8_t _spare_ticks;
 
     // start of loop timing
-    uint32_t loop_timer_start_us;
+    uint32_t _loop_timer_start_us;
 
+    // time of last loop in seconds
+    uint32_t _last_loop_time_s;
+    
     // performance counters
     AP_HAL::Util::perf_counter_t *_perf_counters;
 
