@@ -28,7 +28,7 @@ STDOUT_BAUDRATE 57600
 I2C_ORDER I2C1
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 USART6 USART3
+UART_ORDER OTG1 USART1 USART6 USART3
 
 # we need to add support for N channels for RCIN
 # PB14 TIM8_CH2 TIM8 RCIN PULLDOWN LOW DMA_CH0
@@ -54,11 +54,9 @@ PC7 USART6_RX USART6
 PB10 USART3_TX USART3
 PB11 USART3_RX USART3
 
-# main port. This should be telem1, but is disabled as it interferes
-# #with USB for some unknown reason. These need to be pulled HIGH for
-# USB to work
-PA9 X_USART1_TX OUTPUT HIGH
-PA10 X_USART1_RX OUTPUT HIGH
+# main port, for telem1
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
 
 # alternative config
 # PB10 I2C2_SCL I2C2
