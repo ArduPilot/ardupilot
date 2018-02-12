@@ -606,7 +606,6 @@ private:
     void set_motor_emergency_stop(bool b);
 
     // ArduCopter.cpp
-    void perf_update(void);
     void fast_loop();
     void rc_loop();
     void throttle_loop();
