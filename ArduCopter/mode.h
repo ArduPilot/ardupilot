@@ -583,7 +583,7 @@ private:
 };
 
 
-#if OPTFLOW == ENABLED
+#if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
 /*
   class to support FLOWHOLD mode, which is a position hold mode using
   optical flow directly, avoiding the need for a rangefinder
