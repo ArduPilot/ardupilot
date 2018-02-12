@@ -61,12 +61,6 @@ void Rover::init_beacon()
     g2.beacon.init();
 }
 
-// update beacons
-void Rover::update_beacon()
-{
-    g2.beacon.update();
-}
-
 // init visual odometry sensor
 void Rover::init_visual_odom()
 {
@@ -160,13 +154,6 @@ void Rover::update_wheel_encoder()
 
     // record system time update for next iteration
     wheel_encoder_last_ekf_update_ms = now;
-}
-
-// read_battery - reads battery voltage and current and invokes failsafe
-// should be called at 10hz
-void Rover::read_battery(void)
-{
-    battery.read();
 }
 
 // read the receiver RSSI as an 8 bit number for MAVLink
@@ -267,25 +254,11 @@ void Rover::read_rangefinders(void)
     }
 }
 
-/*
-  update AP_Button
- */
-void Rover::button_update(void)
-{
-    button.update();
-}
-
 // initialise proximity sensor
 void Rover::init_proximity(void)
 {
     g2.proximity.init();
     g2.proximity.set_rangefinder(&rangefinder);
-}
-
-// update proximity sensor
-void Rover::update_proximity(void)
-{
-    g2.proximity.update();
 }
 
 // update error mask of sensors and subsystems. The mask
