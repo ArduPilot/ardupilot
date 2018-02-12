@@ -368,8 +368,7 @@ bool Rover::disarm_motors(void)
 // save current position for use by the smart_rtl mode
 void Rover::smart_rtl_update()
 {
-    const bool save_position = (control_mode != &mode_smartrtl);
-    mode_smartrtl.save_position(save_position);
+    mode_smartrtl.save_position();
 }
 
 // returns true if vehicle is a boat

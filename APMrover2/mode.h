@@ -358,7 +358,7 @@ public:
     bool reached_destination() override { return smart_rtl_state == SmartRTL_StopAtHome; }
 
     // save current position for use by the smart_rtl flight mode
-    void save_position(bool save_pos);
+    void save_position();
 
 protected:
 
