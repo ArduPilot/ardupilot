@@ -198,8 +198,6 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
-    void dataflash_periodic(void);
-    void ins_periodic();
     void one_second_loop();
     void ten_hz_logging_loop();
     void send_heartbeat(mavlink_channel_t chan);
@@ -226,10 +224,8 @@ private:
     void update_barometer(void);
     void update_ahrs();
     void update_compass(void);
-    void update_battery(void);
     void compass_accumulate(void);
     void accel_cal_update(void);
-    void barometer_accumulate(void);
     void update_GPS(void);
     void init_servos();
     void update_pitch_servo(float pitch);
@@ -241,7 +237,6 @@ private:
     void update_yaw_cr_servo(float yaw);
     void update_yaw_onoff_servo(float yaw);
     void init_tracker();
-    void update_notify();
     bool get_home_eeprom(struct Location &loc);
     void set_home_eeprom(struct Location temp);
     void set_home(struct Location temp);
