@@ -53,7 +53,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
     SCHED_TASK_CLASS(DataFlash_Class,     &sub.DataFlash,    periodic_tasks,     400, 300),
     SCHED_TASK_CLASS(AP_InertialSensor,   &sub.ins,          periodic,           400,  50),
-    SCHED_TASK(perf_update,           0.1,    75),
+    SCHED_TASK_CLASS(AP_Scheduler,        &sub.scheduler,    update_logging,     0.1,  75),
 #if RPM_ENABLED == ENABLED
     SCHED_TASK(rpm_update,            10,    200),
 #endif
@@ -90,11 +90,6 @@ void Sub::setup()
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
-}
-
-void Sub::perf_update(void)
-{
-    scheduler.update_logging();
 }
 
 void Sub::loop()
