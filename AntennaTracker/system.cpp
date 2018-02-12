@@ -122,13 +122,6 @@ void Tracker::init_tracker()
     BoardConfig.init_safety();    
 }
 
-// updates the status of the notify objects
-// should be called at 50hz
-void Tracker::update_notify()
-{
-    notify.update();
-}
-
 /*
   fetch HOME from EEPROM
 */

@@ -43,11 +43,6 @@ void Tracker::update_compass(void)
     }
 }
 
-void Tracker::update_battery()
-{
-    battery.read();
-}
-
 /*
   if the compass is enabled then try to accumulate a reading
  */
@@ -56,14 +51,6 @@ void Tracker::compass_accumulate(void)
     if (g.compass_enabled) {
         compass.accumulate();
     }    
-}
-
-/*
-  try to accumulate a baro reading
- */
-void Tracker::barometer_accumulate(void)
-{
-    barometer.accumulate();
 }
 
 /*
