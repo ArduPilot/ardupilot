@@ -202,6 +202,6 @@ void Copter::esc_calibration_notify()
     uint32_t now = AP_HAL::millis();
     if (now - esc_calibration_notify_update_ms > 20) {
         esc_calibration_notify_update_ms = now;
-        update_notify();
+        notify.update();
     }
 }
