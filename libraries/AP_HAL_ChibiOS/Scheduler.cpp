@@ -35,6 +35,7 @@
 using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
+
 THD_WORKING_AREA(_timer_thread_wa, 2048);
 THD_WORKING_AREA(_rcin_thread_wa, 512);
 #ifdef HAL_PWM_ALARM
@@ -94,6 +95,32 @@ void Scheduler::init()
                      APM_STORAGE_PRIORITY,        /* Initial priority.      */
                      _storage_thread,             /* Thread function.       */
                      this);                  /* Thread parameter.      */
+}
+
+void Scheduler::get_stats(void) {
+    thread_t* tp = chRegFirstThread();
+    uint64_t idle_time = 0;
+    uint64_t total_time = 0;
+    do {
+        if (tp->prio == 1)  {
+            idle_time = tp->stats.cumulative;
+        }
+        total_time += tp->stats.cumulative;
+
+//        hal.console->printf("%12ls %4lu %12ls",
+//                            tp->name,
+//                            (uint32_t)tp->prio,
+//                            CH_STATE_NAMES[tp->state]);
+
+//        hal.console->printf(" %llu\n", tp->stats.cumulative);
+
+        tp->stats.cumulative = 0;
+
+        tp = chRegNextThread(tp);
+    } while (tp != NULL);
+
+    _busy_percent = 100 * (1.0f - (float)idle_time / total_time);
+//    hal.console->printf("busy percent: %d, n_irq: %lu\n", busy_percent, ch.kernel_stats.n_irq);
 }
 
 
@@ -295,6 +322,7 @@ void Scheduler::_timer_thread(void *arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
+//    static systime_t last_print_stats = 0;
     while (true) {
         sched->delay_microseconds(1000);
 

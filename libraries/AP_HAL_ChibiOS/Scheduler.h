@@ -73,6 +73,7 @@ public:
     bool     in_main_thread() const override;
     void     system_initialized();
     void     hal_initialized() { _hal_initialized = true; }
+    uint8_t  get_busy() { return _busy_percent; }
 
     bool     check_called_boost(void);
     
@@ -104,6 +105,7 @@ private:
 #if HAL_WITH_UAVCAN
     thread_t* _uavcan_thread_ctx;
 #endif
+    uint8_t     _busy_percent;
     static void _timer_thread(void *arg);
     static void _rcin_thread(void *arg);
     static void _io_thread(void *arg);
@@ -115,5 +117,7 @@ private:
 #endif
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);
+
+    void get_stats(void);
 };
 #endif
