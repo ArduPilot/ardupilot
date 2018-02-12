@@ -464,7 +464,6 @@ private:
     void perf_update(void);
     void fast_loop();
     void fifty_hz_loop();
-    void update_mount();
     void update_batt_compass(void);
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
@@ -622,7 +621,6 @@ private:
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
-    void update_notify();
     bool init_arm_motors(bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
@@ -640,7 +638,6 @@ private:
     void clear_input_hold();
     void init_barometer(bool save);
     void read_barometer(void);
-    void barometer_accumulate(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
     bool rangefinder_alt_ok(void);
@@ -650,9 +647,6 @@ private:
     void update_optical_flow(void);
 #endif
     void read_battery(void);
-#if GRIPPER_ENABLED == ENABLED
-    void gripper_update();
-#endif
     void terrain_update();
     void terrain_logging();
     bool terrain_use();
@@ -690,7 +684,6 @@ private:
 #if CAMERA == ENABLED
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-    void update_trigger();
 #endif
 
 #if GRIPPER_ENABLED == ENABLED
@@ -710,8 +703,6 @@ private:
     void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
     void log_init(void);
     void init_capabilities(void);
-    void dataflash_periodic(void);
-    void ins_periodic();
     void accel_cal_update(void);
 
     void failsafe_leak_check();

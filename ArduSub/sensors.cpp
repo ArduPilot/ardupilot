@@ -20,12 +20,6 @@ void Sub::read_barometer(void)
     }
 }
 
-// try to accumulate a baro reading
-void Sub::barometer_accumulate(void)
-{
-    barometer.accumulate();
-}
-
 void Sub::init_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
@@ -206,11 +200,3 @@ void Sub::accel_cal_update()
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
 }
-
-#if GRIPPER_ENABLED == ENABLED
-// gripper update
-void Sub::gripper_update()
-{
-    g2.gripper.update();
-}
-#endif
