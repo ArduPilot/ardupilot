@@ -1630,7 +1630,7 @@ Vector3f NavEKF3_core::calcRotVecVariances()
         q3 = -q3;
     }
     float t2 = q0*q0;
-    float t3 = acos(q0);
+    float t3 = acosf(q0);
     float t4 = -t2+1.0f;
     float t5 = t2-1.0f;
     if ((t4 > 1e-9f) && (t5 < -1e-9f)) {
