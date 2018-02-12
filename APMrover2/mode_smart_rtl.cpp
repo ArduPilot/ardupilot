@@ -87,7 +87,8 @@ void ModeSmartRTL::update()
 }
 
 // save current position for use by the smart_rtl flight mode
-void ModeSmartRTL::save_position(bool save_pos)
+void ModeSmartRTL::save_position()
 {
+    const bool save_pos = (rover.control_mode != &rover.mode_smartrtl);
     g2.smart_rtl.update(true, save_pos);
 }
