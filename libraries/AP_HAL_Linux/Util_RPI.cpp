@@ -8,18 +8,18 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
 
-#include "Util_RPI.h"
 #include "Util.h"
+#include "Util_RPI.h"
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
 using namespace Linux;
 
