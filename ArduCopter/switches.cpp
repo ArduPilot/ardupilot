@@ -78,7 +78,7 @@ void Copter::read_control_switch()
 // check_if_auxsw_mode_used - Check to see if any of the Aux Switches are set to a given mode.
 bool Copter::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
 {
-    bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check 
+    bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check
                 || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check;
 
     return ret;
@@ -180,7 +180,7 @@ void Copter::init_aux_switches()
 
 // init_aux_switch_function - initialize aux functions
 void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
-{    
+{
     // init channel options
     switch(ch_option) {
         case AUXSW_SIMPLE_MODE:
