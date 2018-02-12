@@ -2,6 +2,8 @@
 
 # this script is run by the root user in the virtual machine
 
+resize2fs /dev/sda1
+
 set -e
 set -x
 
@@ -13,7 +15,7 @@ PYTHON_PKGS="pymavlink MAVProxy droneapi future pexpect"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
           zip genromfs cmake"
-UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.9-base:i386 libstdc++5:i386 libstdc++6:i386"
+UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.8-base:i386 libstdc++5:i386 libstdc++6:i386"
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
@@ -25,13 +27,13 @@ ARM_HF_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
 
-VAGRANT_USER=ubuntu
+VAGRANT_USER=vagrant
 
 usermod -a -G dialout $VAGRANT_USER
 
 apt-get -y remove modemmanager
 apt-get -y update
-apt-get -y install dos2unix g++-4.7 ccache python-lxml screen xterm gdb pkgconf
+apt-get -y install dos2unix g++-4.8 ccache python-lxml screen xterm gdb pkgconf
 apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $ARM_HF_PKGS
 pip -q install $PYTHON_PKGS
 easy_install catkin_pkg

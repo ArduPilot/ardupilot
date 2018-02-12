@@ -6,7 +6,7 @@ VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-  config.vm.box = "ubuntu/zesty32"
+  config.vm.box = "ubuntu/artful32"
   # push.app = "geeksville/ardupilot-sitl"
 
   # The following forwarding is not necessary (or possible), because our sim_vehicle.py is smart enough to send packets
@@ -18,6 +18,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Example for VirtualBox:
   #
   config.vm.provider "virtualbox" do |vb|
+      vb.name = "ardupilot"
       # Don't boot with headless mode
       #   vb.gui = true
       #
