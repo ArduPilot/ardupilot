@@ -213,8 +213,11 @@ void AP_Scheduler::loop()
 
     const uint32_t sample_time_us = AP_HAL::micros();
     
-    if (loop_timer_start_us == 0) {
-        loop_timer_start_us = sample_time_us;
+    if (_loop_timer_start_us == 0) {
+        _loop_timer_start_us = sample_time_us;
+        _last_loop_time_s = get_loop_period_s();
+    } else {
+        _last_loop_time_s = (sample_time_us - _loop_timer_start_us) * 1.0e-6;
     }
 
     // Execute the fast loop
@@ -241,9 +244,9 @@ void AP_Scheduler::loop()
 #endif
 
     // check loop time
-    perf_info.check_loop_time(sample_time_us - loop_timer_start_us);
+    perf_info.check_loop_time(sample_time_us - _loop_timer_start_us);
         
-    loop_timer_start_us = sample_time_us;
+    _loop_timer_start_us = sample_time_us;
 }
 
 void AP_Scheduler::update_logging()
