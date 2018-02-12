@@ -403,8 +403,6 @@ private:
     // APMrover2.cpp
     void stats_update();
     void ahrs_update();
-    void mount_update(void);
-    void update_trigger(void);
     void update_alt();
     void gcs_failsafe_check(void);
     void update_compass(void);
@@ -474,9 +472,6 @@ private:
     void cruise_learn_update();
     void cruise_learn_complete();
 
-    // events.cpp
-    void update_events(void);
-
     // failsafe.cpp
     void failsafe_trigger(uint8_t failsafe_type, bool on);
 #if ADVANCED_FAILSAFE == ENABLED
@@ -544,18 +539,14 @@ private:
     void init_barometer(bool full_calibration);
     void init_rangefinder(void);
     void init_beacon();
-    void update_beacon();
     void init_visual_odom();
     void update_visual_odom();
     void update_wheel_encoder();
-    void read_battery(void);
     void read_receiver_rssi(void);
     void compass_cal_update(void);
     void accel_cal_update(void);
     void read_rangefinders(void);
-    void button_update(void);
     void init_proximity();
-    void update_proximity();
     void update_sensor_status_flags(void);
 
     // Steering.cpp
@@ -569,7 +560,6 @@ private:
     bool set_mode(Mode &new_mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
-    void update_notify();
     void resetPerfData(void);
     void check_usb_mux(void);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
@@ -579,15 +569,12 @@ private:
     void change_arm_state(void);
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
-    void smart_rtl_update();
     bool is_boat() const;
 
 public:
     void mavlink_delay_cb();
     void failsafe_check();
 
-    void dataflash_periodic(void);
-    void ins_periodic();
     void update_soft_armed();
     // Motor test
     void motor_test_output();

@@ -52,8 +52,8 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_GPS_50Hz,        50,   2500),
     SCHED_TASK(update_GPS_10Hz,        10,   2500),
     SCHED_TASK(update_alt,             10,   3400),
-    SCHED_TASK(update_beacon,          50,     50),
-    SCHED_TASK(update_proximity,       50,     50),
+    SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,   50),
+    SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,   50),
     SCHED_TASK(update_visual_odom,     50,     50),
     SCHED_TASK(update_wheel_encoder,   20,     50),
     SCHED_TASK(update_compass,         10,   2000),
@@ -65,23 +65,27 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(gcs_data_stream_send,   50,   3000),
     SCHED_TASK(read_control_switch,     7,   1000),
     SCHED_TASK(read_aux_switch,        10,    100),
-    SCHED_TASK(read_battery,           10,   1000),
+    SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10, 1000),
     SCHED_TASK(read_receiver_rssi,     10,   1000),
-    SCHED_TASK(update_events,          50,   1000),
+    SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50, 1000),
     SCHED_TASK(check_usb_mux,           3,   1000),
-    SCHED_TASK(mount_update,           50,    600),
-    SCHED_TASK(update_trigger,         50,    600),
+#if MOUNT == ENABLED
+    SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  600),
+#endif
+#if CAMERA == ENABLED
+    SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update_trigger, 50,  600),
+#endif
     SCHED_TASK(gcs_failsafe_check,     10,    600),
     SCHED_TASK(fence_check,            10,    100),
     SCHED_TASK(compass_accumulate,     50,    900),
-    SCHED_TASK(smart_rtl_update,        3,    100),
-    SCHED_TASK(update_notify,          50,    300),
+    SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  100),
+    SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300),
     SCHED_TASK(one_second_loop,         1,   3000),
     SCHED_TASK(compass_cal_update,     50,    100),
     SCHED_TASK(accel_cal_update,       10,    100),
-    SCHED_TASK(dataflash_periodic,     50,    300),
-    SCHED_TASK(ins_periodic,           50,     50),
-    SCHED_TASK(button_update,           5,    100),
+    SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
+    SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,       50,   50),
+    SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  100),
     SCHED_TASK(stats_update,            1,    100),
     SCHED_TASK(crash_check,            10,   1000),
     SCHED_TASK(cruise_learn_update,    50,     50),
@@ -191,26 +195,6 @@ void Rover::ahrs_update()
     if (should_log(MASK_LOG_IMU)) {
         DataFlash.Log_Write_IMU(ins);
     }
-}
-
-/*
-  update camera mount - 50Hz
- */
-void Rover::mount_update(void)
-{
-#if MOUNT == ENABLED
-    camera_mount.update();
-#endif
-}
-
-/*
-  update camera trigger - 50Hz
- */
-void Rover::update_trigger(void)
-{
-#if CAMERA == ENABLED
-    camera.update_trigger();
-#endif
 }
 
 void Rover::update_alt()
@@ -353,16 +337,6 @@ void Rover::one_second_loop(void)
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
     update_sensor_status_flags();
-}
-
-void Rover::dataflash_periodic(void)
-{
-    DataFlash.periodic_tasks();
-}
-
-void Rover::ins_periodic()
-{
-    ins.periodic();
 }
 
 void Rover::update_GPS_50Hz(void)

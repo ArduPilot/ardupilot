@@ -262,13 +262,6 @@ void Rover::startup_INS_ground(void)
     ahrs.reset();
 }
 
-// updates the notify state
-// should be called at 50hz
-void Rover::update_notify()
-{
-    notify.update();
-}
-
 void Rover::resetPerfData(void) {
     mainLoop_count = 0;
     G_Dt_max = 0;
@@ -363,12 +356,6 @@ bool Rover::disarm_motors(void)
     change_arm_state();
 
     return true;
-}
-
-// save current position for use by the smart_rtl mode
-void Rover::smart_rtl_update()
-{
-    mode_smartrtl.save_position();
 }
 
 // returns true if vehicle is a boat
