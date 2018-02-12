@@ -24,12 +24,6 @@ void Copter::read_barometer(void)
     motors->set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
-// try to accumulate a baro reading
-void Copter::barometer_accumulate(void)
-{
-    barometer.accumulate();
-}
-
 void Copter::init_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
@@ -260,36 +254,12 @@ void Copter::accel_cal_update()
 #endif
 }
 
-#if GRIPPER_ENABLED == ENABLED
-// gripper update
-void Copter::gripper_update()
-{
-    g2.gripper.update();
-}
-#endif
-
-/*
-  update AP_Button
- */
-void Copter::button_update(void)
-{
-    g2.button.update();
-}
-
 // initialise proximity sensor
 void Copter::init_proximity(void)
 {
 #if PROXIMITY_ENABLED == ENABLED
     g2.proximity.init();
     g2.proximity.set_rangefinder(&rangefinder);
-#endif
-}
-
-// update proximity sensor
-void Copter::update_proximity(void)
-{
-#if PROXIMITY_ENABLED == ENABLED
-    g2.proximity.update();
 #endif
 }
 
@@ -503,12 +473,6 @@ void Copter::init_beacon()
     g2.beacon.init();
 }
 
-// update beacons
-void Copter::update_beacon()
-{
-    g2.beacon.update();
-}
-
 // init visual odometry sensor
 void Copter::init_visual_odom()
 {
@@ -552,9 +516,4 @@ void Copter::winch_update()
 {
     g2.wheel_encoder.update();
     g2.winch.update();
-}
-
-void Copter::temp_cal_update(void)
-{
-    g2.temp_calibration.update();
 }

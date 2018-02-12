@@ -967,16 +967,6 @@ void ToyMode::send_named_int(const char *name, int32_t value)
     mavlink_msg_named_value_int_send(MAVLINK_COMM_1, AP_HAL::millis(), name, value);
 }
 
-#if TOY_MODE_ENABLED == ENABLED
-/*
-  called from scheduler at 10Hz
- */
-void Copter::toy_mode_update(void)
-{
-    g2.toy_mode.update();
-}
-#endif
-
 /*
   limit maximum thrust based on voltage
  */
