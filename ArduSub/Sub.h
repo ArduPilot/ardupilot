@@ -448,7 +448,6 @@ private:
 
     void compass_accumulate(void);
     void compass_cal_update(void);
-    void perf_update(void);
     void fast_loop();
     void fifty_hz_loop();
     void update_batt_compass(void);
