@@ -28,32 +28,31 @@ UtilRPI::UtilRPI()
     _check_rpi_version();
 }
 
-#define MAX_SIZE_LINE 50
 int UtilRPI::_check_rpi_version()
 {
+    const unsigned int MAX_SIZE_LINE = 50;
+    char buffer[MAX_SIZE_LINE];
     int hw;
 
-    char buffer[MAX_SIZE_LINE] = { 0 };
-    FILE* f = fopen("/sys/firmware/devicetree/base/model", "r");
+    FILE *f = fopen("/sys/firmware/devicetree/base/model", "r");
     if (f != nullptr && fgets(buffer, MAX_SIZE_LINE, f) != nullptr) {
-    	int ret = sscanf(buffer+12, "%d", &_rpi_version);
-		fclose(f);
-		if (ret != EOF) {
+        int ret = sscanf(buffer + 12, "%d", &_rpi_version);
+        fclose(f);
+        if (ret != EOF) {
 
-			// Preserving old behavior.
-			if (_rpi_version > 2) {
-				_rpi_version = 2;
-			}
-			// RPi 1 doesn't have a number there, so sscanf() won't have read anything.
-			else if (_rpi_version == 0) {
-				_rpi_version = 1;
-			}
+            if (_rpi_version > 2) {
+                // Preserving old behavior.
+                _rpi_version = 2;
+            } else if (_rpi_version == 0) {
+                // RPi 1 doesn't have a number there, so sscanf() won't have read anything.
+                _rpi_version = 1;
+            }
 
-			printf("%s. (intern: %d)\n", buffer, _rpi_version);
+            printf("%s. (intern: %d)\n", buffer, _rpi_version);
 
-			return _rpi_version;
-		}
-	}
+            return _rpi_version;
+        }
+    }
 
     // Attempting old method if the version couldn't be read with the new one.
     hw = Util::from(hal.util)->get_hw_arm32();
