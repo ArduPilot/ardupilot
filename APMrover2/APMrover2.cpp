@@ -85,7 +85,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,       10,    100),
     SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
     SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,       50,   50),
-    SCHED_TASK(perf_update,           0.1,     75),
+    SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1,  75),
     SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  100),
     SCHED_TASK(stats_update,            1,    100),
     SCHED_TASK(crash_check,            10,   1000),
@@ -250,11 +250,6 @@ void Rover::update_logging2(void)
 void Rover::update_aux(void)
 {
     SRV_Channels::enable_aux_servos();
-}
-
-void Rover::perf_update()
-{
-    scheduler.update_logging();
 }
 
 /*

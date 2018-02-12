@@ -387,7 +387,6 @@ private:
 private:
 
     // APMrover2.cpp
-    void perf_update();
     void stats_update();
     void ahrs_update();
     void update_alt();
