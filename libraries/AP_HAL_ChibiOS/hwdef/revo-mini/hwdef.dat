@@ -28,10 +28,11 @@ STDOUT_BAUDRATE 57600
 I2C_ORDER I2C1
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 USART1 USART6 USART3
+UART_ORDER OTG1 USART1 USART3
 
-# we need to add support for N channels for RCIN
-# PB14 TIM8_CH2 TIM8 RCIN PULLDOWN LOW DMA_CH0
+# rcinput is PC6, which is the 3rd "PWM IN" pin (the yellow wire on a
+# revolution board)
+PC6 TIM8_CH1 TIM8 RCIN FLOAT LOW DMA_CH0
 
 # analog pins
 PC3 VDD_5V_SENS ADC1
@@ -46,11 +47,11 @@ PB5 LED_BLUE OUTPUT LOW GPIO(0)
 PB6 LED_YELLOW OUTPUT LOW GPIO(1) # optional
 PB4 LED_RED OUTPUT LOW GPIO(2)
 
-# GPS port
-PC6 USART6_TX USART6
-PC7 USART6_RX USART6
+# GPS port disabled (PC6 used for RCIN)
+#PC6 USART6_TX USART6
+#PC7 USART6_RX USART6
 
-# flexi port, telem2 (can also be I2C2)
+# flexi port, setup as GPS
 PB10 USART3_TX USART3
 PB11 USART3_RX USART3
 
