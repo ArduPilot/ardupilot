@@ -7,6 +7,14 @@ set -x
 
 echo "Initial setup of SITL-vagrant instance."
 
+# zesty is no longer a supported release, it needs the old-releases server, not the old stuff that was in there.
+# as seen in the ../../Vagrantfile which uses ubuntu/zesty32
+cat > /etc/apt/sources.list << EOF
+deb http://old-releases.ubuntu.com/ubuntu/ zesty main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ zesty-updates main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ zesty-security main restricted universe multiverse
+EOF
+
 BASE_PKGS="gawk make git arduino-core curl"
 SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk3.0 python-scipy python-opencv python-numpy python-empy python-pyparsing ccache"
 PYTHON_PKGS="pymavlink MAVProxy droneapi future pexpect"
@@ -29,10 +37,10 @@ VAGRANT_USER=ubuntu
 
 usermod -a -G dialout $VAGRANT_USER
 
-apt-get -y remove modemmanager
-apt-get -y update
-apt-get -y install dos2unix g++-4.7 ccache python-lxml screen xterm gdb pkgconf
-apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $ARM_HF_PKGS
+apt-get -y remove modemmanager --allow-unauthenticated
+apt-get -y update --allow-unauthenticated
+apt-get -y install dos2unix g++-4.7 ccache python-lxml screen xterm gdb pkgconf --allow-unauthenticated
+apt-get -y install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $ARM_HF_PKGS --allow-unauthenticated
 pip -q install $PYTHON_PKGS
 easy_install catkin_pkg
 
@@ -74,7 +82,7 @@ echo "$PROFILE_TEXT" | sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DO
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
 # build JSB sim
-apt-get install -y libtool libtool-bin automake autoconf libexpat1-dev
+apt-get install -y libtool libtool-bin automake autoconf libexpat1-dev --allow-unauthenticated
 sudo -u $VAGRANT_USER -H bash <<"EOF"
 set -e
 set -x
