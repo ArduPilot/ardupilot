@@ -32,6 +32,7 @@
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
 #include "Led_Sysfs.h"
+#include "UAVCAN_RGB_LED.h"
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -180,6 +181,7 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new RCOutputRGBLedInverted(12, 13, 14));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
+    ADD_BACKEND(new UAVCAN_RGB_LED(0));
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     ADD_BACKEND(new AP_BoardLED());
