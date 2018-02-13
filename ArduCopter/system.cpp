@@ -48,7 +48,9 @@ void Copter::init_ardupilot()
     // load parameters from EEPROM
     load_parameters();
 
-    G_Dt = scheduler.get_loop_period_s();
+    // time per loop - this gets updated in the main loop() based on
+    // actual loop rate
+    G_Dt = 1.0/400;
 
     // initialise stats module
     g2.stats.init();
