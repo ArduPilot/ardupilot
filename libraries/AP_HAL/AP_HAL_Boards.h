@@ -236,9 +236,18 @@
 #define HAL_INS_DEFAULT HAL_INS_NONE
 #endif
 
+#ifndef HAL_GPS_TYPE_DEFAULT
+#define HAL_GPS_TYPE_DEFAULT 1
+#endif
+
+#ifndef HAL_CAN_DRIVER_DEFAULT
+#define HAL_CAN_DRIVER_DEFAULT 0
+#endif
+
 #ifdef HAVE_LIBDL
 #define AP_MODULE_SUPPORTED 1
 #else
 #define AP_MODULE_SUPPORTED 0
 #endif
+
 
