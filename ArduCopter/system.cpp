@@ -50,7 +50,7 @@ void Copter::init_ardupilot()
 
     // time per loop - this gets updated in the main loop() based on
     // actual loop rate
-    G_Dt = 1.0/400;
+    G_Dt = 1.0 / scheduler.get_loop_rate_hz();
 
     // initialise stats module
     g2.stats.init();
