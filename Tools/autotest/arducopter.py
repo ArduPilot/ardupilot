@@ -958,9 +958,6 @@ def fly_mission(mavproxy, mav, height_accuracy=-1.0, target_altitude=None):
     mavproxy.send('switch 4\n')  # auto mode
     wait_mode(mav, 'AUTO')
     ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
-    expect_msg = "Reached command #%u" % (num_wp-1)
-    if (ret):
-        mavproxy.expect(expect_msg)
     progress("test: MISSION COMPLETE: passed=%s" % ret)
     # wait here until ready
     mavproxy.send('switch 5\n')  # loiter mode
