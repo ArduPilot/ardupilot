@@ -157,6 +157,7 @@ px4-cleandep: clean
 	$(v) find $(PX4_ROOT)/Build -type f -name '*.d' | xargs rm -f
 	$(v) find $(UAVCAN_DIRECTORY) -type f -name '*.d' | xargs rm -f
 	$(v) find $(SKETCHBOOK)/$(SKETCH) -type f -name '*.d' | xargs rm -f
+	$(v) /bin/rm -rf $(SKETCHBOOK)/modules/uavcan/libuavcan/include/dsdlc_generated
 
 px4-v2-upload-solo: px4-v2
 	scp $(SKETCH)-v2.px4 root@10.1.1.10:/tmp/
