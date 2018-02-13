@@ -54,7 +54,7 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(MAV_TYPE_GROUND_ROVER,
+    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(MAV_TYPE_GROUND_ROVER,MAV_TYPE_SURFACE_BOAT,
                                             base_mode,
                                             control_mode->mode_number(),
                                             system_status);
