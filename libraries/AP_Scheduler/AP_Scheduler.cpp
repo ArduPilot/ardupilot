@@ -71,6 +71,7 @@ AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
     } else if (_loop_rate_hz > 2000) {
         _loop_rate_hz.set(2000);
     }
+    _last_loop_time_s = 1.0 / _loop_rate_hz;
 }
 
 // initialise the scheduler
