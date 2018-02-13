@@ -193,7 +193,7 @@ private:
     uint32_t _loop_timer_start_us;
 
     // time of last loop in seconds
-    uint32_t _last_loop_time_s;
+    float _last_loop_time_s;
     
     // performance counters
     AP_HAL::Util::perf_counter_t *_perf_counters;
