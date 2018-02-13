@@ -149,6 +149,7 @@ px4:
 px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build $(PX4_ROOT)/Images/*.px4 $(PX4_ROOT)/Images/*.bin
 	$(v) /bin/rm -rf $(PX4_ROOT)/src/modules/uORB/topics $(PX4_ROOT)/src/platforms/nuttx/px4_messages
+	$(v) /bin/rm -rf $(SKETCHBOOK)/modules/uavcan/libuavcan/include/dsdlc_generated
 	$(v) /bin/rm -f $(SRCROOT)/*.o
 
 px4-cleandep: clean
