@@ -257,7 +257,7 @@ def run_step(step):
         "gdbserver": opts.gdbserver,
     }
     if opts.speedup is not None:
-        fly_opts.speedup = opts.speedup
+        fly_opts["speedup"] = opts.speedup
 
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter(binary, frame=opts.frame, **fly_opts)
