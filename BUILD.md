@@ -16,21 +16,21 @@ list some basic and more used commands as example.
 
 * **Build ArduCopter**
 
-    Here we use minlure as an example of Linux board. Other boards can be used
-    and the next section shows how to get a list of available boards.
+    Below shows how to build ArduCopter for the Pixhawk2/Cube. Many other boards are
+    supported and the next section shows how to get a full list of them.
 
     ```sh
-    ./waf configure --board minlure
+    ./waf configure --board px4-v3
     ./waf copter
     ```
 
     The first command should be called only once or when you want to change a
     configuration option. One configuration often used is the `--board` option to
     switch from one board to another one. For example we could switch to
-    Pixhawk and build again:
+    SkyViper GPS drone and build again:
 
     ```sh
-    ./waf configure --board px4-v2
+    ./waf configure --board skyviper-v2450
     ./waf copter
     ```
 
@@ -51,6 +51,25 @@ list some basic and more used commands as example.
 
     ```sh
     ./waf list_boards
+
+    ```
+
+    Here are some commands to configure waf for commonly used boards:
+
+    ```sh
+    ./waf configure --board bebop --static # Bebop or Bebop2
+    ./waf configure --board edge           # emlid edge
+    ./waf configure --board minilure       # minilure linux flight controller
+    ./waf configure --board navio2         # emlid navio2
+    ./waf configure --board px4-v1         # the very old two layer Pixhawk (almost none exist)
+    ./waf configure --board px4-v2         # older Pixhawks that suffer from the 1MB flash limit issue
+    ./waf configure --board px4-v3         # Pixhawk2/Cube and newer Pixhawks with no 1MB flash limit issue
+    ./waf configure --board fmuv3          # Pixhawk2/Cube using ChibiOS
+    ./waf configure --board px4-v4         # Pixracer
+    ./waf configure --board fmuv4          # Pixracer using ChibiOS
+    ./waf configure --board skyviper-v2450 # SkyRocket's SkyViper GPS drone using ChibiOS
+    ./waf configure --board sitl           # software-in-the-loop simulator
+    ./waf configure --board sitl --debug   # software-in-the-loop simulator with debug symbols
 
     ```
 
