@@ -172,7 +172,8 @@ void AP_Scheduler::run(uint32_t time_available)
                   (unsigned)_task_time_allowed);
         }
         if (time_taken >= time_available) {
-            goto update_spare_ticks;
+            time_available = 0;
+            break;
         }
         time_available -= time_taken;
     }
@@ -180,7 +181,6 @@ void AP_Scheduler::run(uint32_t time_available)
     // update number of spare microseconds
     _spare_micros += time_available;
 
-update_spare_ticks:
     _spare_ticks++;
     if (_spare_ticks == 32) {
         _spare_ticks /= 2;
