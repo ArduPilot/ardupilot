@@ -87,6 +87,7 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_PX4V1:
     case PX4_BOARD_PIXHAWK:
     case PX4_BOARD_PIXHAWK2:
+    case PX4_BOARD_SP01:
     case PX4_BOARD_PIXRACER:
     case PX4_BOARD_PHMINI:
     case PX4_BOARD_AUAV21:
