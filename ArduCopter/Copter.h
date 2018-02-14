@@ -330,6 +330,9 @@ private:
 
     RCMapper rcmap;
 
+    // intertial nav alt when we armed
+    float arming_altitude_m;
+
     // board specific config
     AP_BoardConfig BoardConfig;
 
@@ -395,7 +398,7 @@ private:
     int32_t initial_armed_bearing;
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery{MASK_LOG_CURRENT};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
@@ -835,7 +838,8 @@ private:
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
     void radio_passthrough_to_motors();
-
+    int16_t get_throttle_mid(void);
+    
     // sensors.cpp
     void init_barometer(bool full_calibration);
     void read_barometer(void);
@@ -924,26 +928,26 @@ private:
 
     Mode *flightmode;
 #if FRAME_CONFIG == HELI_FRAME
-    ModeAcro_Heli mode_acro{*this};
+    ModeAcro_Heli mode_acro;
 #else
-    ModeAcro mode_acro{*this};
+    ModeAcro mode_acro;
 #endif
-    ModeAltHold mode_althold{*this};
-    ModeAuto mode_auto{*this, mission, circle_nav};
+    ModeAltHold mode_althold;
+    ModeAuto mode_auto;
 #if AUTOTUNE_ENABLED == ENABLED
-    ModeAutoTune mode_autotune{*this};
+    ModeAutoTune mode_autotune;
 #endif
-    ModeBrake mode_brake{*this};
-    ModeCircle mode_circle{*this, circle_nav};
-    ModeDrift mode_drift{*this};
-    ModeFlip mode_flip{*this};
-    ModeGuided mode_guided{*this};
-    ModeLand mode_land{*this};
-    ModeLoiter mode_loiter{*this};
-    ModePosHold mode_poshold{*this};
-    ModeRTL mode_rtl{*this};
+    ModeBrake mode_brake;
+    ModeCircle mode_circle;
+    ModeDrift mode_drift;
+    ModeFlip mode_flip;
+    ModeGuided mode_guided;
+    ModeLand mode_land;
+    ModeLoiter mode_loiter;
+    ModePosHold mode_poshold;
+    ModeRTL mode_rtl;
 #if FRAME_CONFIG == HELI_FRAME
-    ModeStabilize_Heli mode_stabilize{*this};
+    ModeStabilize_Heli mode_stabilize;
 #else
     ModeStabilize mode_stabilize;
 #endif
@@ -955,11 +959,6 @@ private:
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     ModeFlowHold mode_flowhold;
 #endif
-    ModeSport mode_sport{*this};
-    ModeAvoidADSB mode_avoid_adsb{*this};
-    ModeThrow mode_throw{*this};
-    ModeGuidedNoGPS mode_guided_nogps{*this};
-    ModeSmartRTL mode_smartrtl{*this};
 
     // mode.cpp
     Mode *mode_from_mode_num(const uint8_t mode);
