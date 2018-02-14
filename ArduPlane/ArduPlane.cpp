@@ -283,6 +283,9 @@ void Plane::one_second_loop()
     // send a heartbeat
     gcs().send_message(MSG_HEARTBEAT);
 
+    hal.scheduler->get_stats();
+    hal.console->printf("time: %.3f sec, busy: %u%%\n", (float)AP_HAL::millis()/1000, hal.scheduler->get_busy());
+
     // make it possible to change control channel ordering at runtime
     set_control_channels();
 
