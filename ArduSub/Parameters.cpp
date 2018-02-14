@@ -288,6 +288,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 0.5 4.0
     GSCALAR(throttle_gain, "JS_THR_GAIN", 1.0f),
 
+    // @Param: STROBE_MAX_BRIGHT
+    // @DisplayName: Strobe light maximum brightness
+    // @Description: PWM value of maximum brightness
+    // @User: Standard
+    // @Range: 1100 1900
+    // @Units: PWM
+    GSCALAR(strobe_max_bright, "STROBE_MAX_BRIGHT", 1900),
+
     // @Param: FRAME_CONFIG
     // @DisplayName: Frame configuration
     // @Description: Set this parameter according to your vehicle/motor configuration

@@ -43,6 +43,7 @@ void Sub::init_rc_in()
     RC_Channels::set_override(9, min); // lights 2 channel
 
     RC_Channels::set_override(10, 1100); // video switch
+    RC_Channels::set_override(11, 1100); // strobe light
 #endif
 }
 

@@ -204,8 +204,8 @@ public:
 
         k_param_cam_slew_limit = 237, // deprecated
         k_param_lights_steps,
+        k_param_strobe_max_bright,
         k_param_pilot_speed_dn,
-
     };
 
     AP_Int16        format_version;
@@ -299,6 +299,9 @@ public:
 
     AP_Float                surface_depth;
     AP_Int8                 frame_configuration;
+
+    // Control strobe light bright level
+    AP_Int8         strobe_max_bright;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

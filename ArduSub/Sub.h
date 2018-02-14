@@ -436,6 +436,9 @@ private:
     AP_Terrain terrain{ahrs, mission, rally};
 #endif
 
+    // control strobe light state
+    bool strobe_state;
+
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
@@ -715,6 +718,7 @@ private:
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
                   "_failsafe_priorities is missing the sentinel");
 
+    void update_strobe_light();
 
 public:
     void mavlink_delay_cb();

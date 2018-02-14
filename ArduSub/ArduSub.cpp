@@ -259,6 +259,8 @@ void Sub::three_hz_loop()
 #endif // AC_FENCE_ENABLED
 
     ServoRelayEvents.update_events();
+
+    update_strobe_light();
 }
 
 // one_hz_loop - runs at 1Hz
@@ -351,6 +353,16 @@ bool Sub::control_check_barometer()
     }
 #endif
     return true;
+}
+
+void Sub::update_strobe_light()
+{
+    if(RC_Channels::get_radio_in(11) < 1500) {
+        return;
+    }
+
+    hal.rcout->write(12, strobe_state ? 1100 : g.strobe_max_bright);
+    strobe_state = !strobe_state;
 }
 
 AP_HAL_MAIN_CALLBACKS(&sub);
