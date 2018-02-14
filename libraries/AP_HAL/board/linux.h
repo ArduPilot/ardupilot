@@ -364,6 +364,8 @@
 #define HAL_COMPASS_LIS3MDL_NAME "lis3mdl"
 #define HAL_OPTFLOW_PX4FLOW_I2C_BUS 0
 
+#define HAL_HAVE_GETTIME_SETTIME 1
+
 #else
 #error "no Linux board subtype set"
 #endif

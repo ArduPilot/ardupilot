@@ -42,21 +42,14 @@ public:
     virtual enum safety_state safety_switch_state(void) { return SAFETY_NONE; }
 
     /*
-      set system clock in UTC microseconds
+      set HW RTC in UTC microseconds
      */
-    virtual void set_system_clock(uint64_t time_utc_usec) {}
+    virtual void set_hw_rtc(uint64_t time_utc_usec);
 
     /*
-      get system clock in UTC milliseconds
+      get system clock in UTC microseconds
      */
-    uint64_t get_system_clock_ms() const;
-
-    /*
-      get system time in UTC hours, minutes, seconds and milliseconds
-     */
-    void get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int32_t &ms) const;
-
-    uint32_t get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms) const;
+    virtual uint64_t get_hw_rtc() const;
 
     /*
       get system identifier (eg. serial number)
@@ -124,4 +117,5 @@ protected:
     // values until the vehicle code has fully started
     bool soft_armed = false;
     uint64_t capabilities = 0;
+
 };
