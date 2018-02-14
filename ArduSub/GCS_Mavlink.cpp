@@ -1020,14 +1020,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         mavlink_msg_command_long_decode(msg, &packet);
 
         switch (packet.command) {
-        case MAV_CMD_PREFLIGHT_STORAGE:
-            if (is_equal(packet.param1, 2.0f)) {
-                AP_Param::erase_all();
-                gcs().send_text(MAV_SEVERITY_WARNING, "All parameters reset, reboot board");
-                result= MAV_RESULT_ACCEPTED;
-            }
-            break;
-
         case MAV_CMD_NAV_LOITER_UNLIM:
             if (sub.set_mode(POSHOLD, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;
