@@ -97,8 +97,7 @@ void Scheduler::init()
                      this);                  /* Thread parameter.      */
 }
 
-void Scheduler::get_stats(void)
-{
+void Scheduler::get_stats(void) {
     thread_t* tp = chRegFirstThread();
     uint32_t idle_time = 0;
     uint32_t total_time = 0;
