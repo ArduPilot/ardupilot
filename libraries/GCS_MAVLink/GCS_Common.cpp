@@ -976,9 +976,12 @@ GCS_MAVLINK::update(uint32_t max_time_us)
  */
 void GCS_MAVLINK::send_system_time()
 {
+    uint64_t time_unix = 0;
+    AP::rtc().get_utc_usec(time_unix); // may fail, leaving time_unix at 0
+
     mavlink_msg_system_time_send(
         chan,
-        AP::gps().time_epoch_usec(),
+        time_unix,
         AP_HAL::millis());
 }
 
@@ -1950,6 +1953,14 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
 }
 
 
+void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t *msg)
+{
+    mavlink_system_time_t packet;
+    mavlink_msg_system_time_decode(msg, &packet);
+
+    AP::rtc().set_utc_usec(packet.time_unix_usec, AP_RTC::SOURCE_MAVLINK_SYSTEM_TIME);
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &packet)
 {
     AP_Camera *camera = get_camera();
@@ -2330,6 +2341,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
 
     case MAVLINK_MSG_ID_ATT_POS_MOCAP:
         handle_att_pos_mocap(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SYSTEM_TIME:
+        handle_system_time_message(msg);
         break;
     }
 
