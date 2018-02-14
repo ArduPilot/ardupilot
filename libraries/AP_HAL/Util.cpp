@@ -66,6 +66,24 @@ uint64_t AP_HAL::Util::get_system_clock_ms() const
 #endif
 }
 
+uint64_t AP_HAL::Util::get_system_clock_us() const
+{
+#if defined(__APPLE__) && defined(__MACH__)
+    struct timeval ts;
+    gettimeofday(&ts, nullptr);
+    return ((long long)((ts.tv_sec * 1000000) + ts.tv_usec));
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    // ChibiOS is not ready for that
+    return 0;
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    const uint64_t seconds = ts.tv_sec;
+    const uint64_t nanoseconds = ts.tv_nsec;
+    return (seconds * 1000000ULL + nanoseconds/1000ULL);
+#endif
+}
+
 void AP_HAL::Util::get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int32_t &ms) const
 {
      // get time of day in ms
