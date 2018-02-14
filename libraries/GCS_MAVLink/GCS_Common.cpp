@@ -2157,6 +2157,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         break;
     }
 
+    case MAV_CMD_PREFLIGHT_STORAGE:
+        if (is_equal(packet.param1, 2.0f)) {
+            AP_Param::erase_all();
+            send_text(MAV_SEVERITY_WARNING, "All parameters reset, reboot board");
+            result= MAV_RESULT_ACCEPTED;
+        }
+        break;
+
     case MAV_CMD_DO_SET_SERVO:
         /* fall through */
     case MAV_CMD_DO_REPEAT_SERVO:
