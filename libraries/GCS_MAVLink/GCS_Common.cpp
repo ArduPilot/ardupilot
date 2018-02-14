@@ -1131,7 +1131,7 @@ void GCS_MAVLINK::send_system_time(AP_GPS &gps)
 {
     mavlink_msg_system_time_send(
         chan,
-        gps.time_epoch_usec(),
+        hal.util->get_system_clock_us(),
         AP_HAL::millis());
 }
 
