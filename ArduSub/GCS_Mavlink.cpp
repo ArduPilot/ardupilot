@@ -431,6 +431,13 @@ bool NOINLINE Sub::send_info(mavlink_channel_t chan)
             "InputHold",
             input_hold_engaged);
 
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
+    mavlink_msg_named_value_float_send(
+            chan,
+            AP_HAL::millis(),
+            "StickMode",
+            roll_pitch_flag);
+
     return true;
 }
 

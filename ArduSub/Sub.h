@@ -336,6 +336,9 @@ private:
     // Flag indicating if we are currently using input hold
     bool input_hold_engaged;
 
+    // Flag indicating current stick mode: Maneuver/Attitude
+    uint16_t roll_pitch_flag;
+
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
     Location_Class current_loc;

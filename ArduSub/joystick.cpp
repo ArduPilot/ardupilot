@@ -22,8 +22,6 @@ uint16_t buttons_prev;
 const uint8_t SERVO_CHAN_1 = 9; // Pixhawk Aux1
 const uint8_t SERVO_CHAN_2 = 10; // Pixhawk Aux2
 const uint8_t SERVO_CHAN_3 = 11; // Pixhawk Aux3
-
-uint8_t roll_pitch_flag = false; // Flag to adjust roll/pitch instead of forward/lateral
 }
 
 void Sub::init_joystick()
