@@ -52,7 +52,7 @@ public:
 	Fourier_Analysis();
 	~Fourier_Analysis();
 	void Set_Fourier_Analysis(int32_t buffer_size);
-	void accumulate_discrete(const &Vector3f new_sample, float dt, const &Vector3f omega);
+	void accumulate_discrete(const Vector3f new_sample, float dt, const Vector3f omega);
 	Vector2f get_result(void);
 	float get_phase(void);
 	void set_buffer_size(int32_t buffer_size);

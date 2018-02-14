@@ -96,7 +96,7 @@ void Fourier_Analysis::_add_signal(bool substract) {
 }
 
 //acumulates a new sample into the filter. dt is the time elapsed since last accumulaton and omega are the instant gyro value
-void Fourier_Analysis::accumulate_discrete(const &Vector3f new_sample, float dt, const &Vector3f omega) {
+void Fourier_Analysis::accumulate_discrete(const Vector3f new_sample, float dt, const Vector3f omega) {
 	int32_t last_buffer_index_sup = _buffer_index_sup-1<0 ? _buffer_size-1 : _buffer_index_sup-1;
 	
 	_add_signal(true);
