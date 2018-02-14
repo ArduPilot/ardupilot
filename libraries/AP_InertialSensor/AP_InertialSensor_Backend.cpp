@@ -328,7 +328,7 @@ Vector2f AP_InertialSensor_Backend::get_pitch_yaw_FT(void)
 	return _fourier_analysis.get_result();
 }
 
-void::AP_InertialSensor_Backend::synchronize_fourier_phase(float actual_heading)
+void AP_InertialSensor_Backend::synchronize_fourier_phase(float actual_heading)
 {
 	_fourier_analysis.synchronize_fourier_phase(actual_heading);
 }
