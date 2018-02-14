@@ -397,6 +397,7 @@ SPIDEV external0m0    SPI4 DEVID5  MPU_EXT_CS   MODE0  2*MHZ  2*MHZ
 SPIDEV external0m1    SPI4 DEVID5  MPU_EXT_CS   MODE1  2*MHZ  2*MHZ
 SPIDEV external0m2    SPI4 DEVID5  MPU_EXT_CS   MODE2  2*MHZ  2*MHZ
 SPIDEV external0m3    SPI4 DEVID5  MPU_EXT_CS   MODE3  2*MHZ  2*MHZ
+SPIDEV pixartPC15     SPI4 DEVID13 ACCEL_EXT_CS MODE3  2*MHZ  2*MHZ
 
 # Now some commented out SPI device names which can be used by
 # developers to test that the clock calculations are right for a
