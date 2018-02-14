@@ -118,7 +118,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     y_last = y;
     z_last = z;
 
-    hal.rcin->set_overrides(channels, 10);
+    hal.rcin->set_overrides(channels, 11);
 }
 
 void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
