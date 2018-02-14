@@ -58,4 +58,7 @@ public:
 
     virtual void create_uavcan_thread() {};
 
+    virtual void get_stats() {};
+    virtual uint8_t get_busy() { return 0; };
+
 };
