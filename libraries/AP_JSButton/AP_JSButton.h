@@ -38,6 +38,7 @@ public:
         k_lights2_cycle         = 34,           ///< lights 2 cycle
         k_lights2_brighter      = 35,           ///< lights 2 up
         k_lights2_dimmer        = 36,           ///< lights 2 down
+        k_strobe_light          = 37,           ///< strobe light state
         // 37-40 reserved for future light functions
         k_gain_toggle           = 41,           ///< toggle different gain settings
         k_gain_inc              = 42,           ///< increase control gain
