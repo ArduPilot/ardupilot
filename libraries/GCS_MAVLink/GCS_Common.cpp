@@ -200,8 +200,8 @@ void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery, const uint8
                                     MAV_BATTERY_TYPE_UNKNOWN, // type
                                     got_temperature ? ((int16_t) (temp * 100)) : INT16_MAX, // temperature. INT16_MAX if unknown
                                     battery.get_cell_voltages(instance).cells, // cell voltages
-                                    battery.has_current(instance) ? battery.current_amps(instance) * 100 : -1, // current
-                                    battery.has_current(instance) ? battery.current_total_mah(instance) : -1, // total current
+                                    battery.has_current(instance) ? battery.current_amps(instance) * 100 : -1, // current in centiampere
+                                    battery.has_current(instance) ? battery.consumed_mah(instance) : -1,       // total consumed current in milliampere.hour
                                     battery.has_consumed_energy(instance) ? battery.consumed_wh(instance) * 36 : -1, // consumed energy in hJ (hecto-Joules)
                                     battery.capacity_remaining_pct(instance));
 }
