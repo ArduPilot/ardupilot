@@ -16,7 +16,14 @@
 #include <stdio.h>
 
 #include "AP_Baro_LPS2XH.h"
+
+#include <AP_InertialSensor/AP_InertialSensor_Invensense_registers.h>
+
 extern const AP_HAL::HAL &hal;
+
+// WHOAMI values
+#define LPS22HB_WHOAMI 0xB1
+#define LPS25HB_WHOAMI 0xBD
 
 #define REG_ID		      					0x0F
 
@@ -64,6 +71,62 @@ AP_Baro_Backend *AP_Baro_LPS2XH::probe(AP_Baro &baro,
         return nullptr;
     }
     return sensor;
+}
+
+AP_Baro_Backend *AP_Baro_LPS2XH::probe_InvensenseIMU(AP_Baro &baro,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                                     uint8_t imu_address)
+{
+    if (!dev) {
+        return nullptr;
+    }
+    AP_Baro_LPS2XH *sensor = new AP_Baro_LPS2XH(baro, std::move(dev));
+    if (sensor) {
+        if (!sensor->_imu_i2c_init(imu_address)) {
+            delete sensor;
+            return nullptr;
+        }
+    }
+    if (!sensor || !sensor->_init()) {
+        delete sensor;
+        return nullptr;
+    }
+    return sensor;
+}
+
+/*
+  setup invensense IMU to enable barometer, assuming both IMU and baro
+  on the same i2c bus
+*/
+bool AP_Baro_LPS2XH::_imu_i2c_init(uint8_t imu_address)
+{
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
+    // as the baro device is already locked we need to re-use it,
+    // changing its address to match the IMU address
+    uint8_t old_address = _dev->get_bus_address();
+    _dev->set_address(imu_address);
+    
+    _dev->set_retries(4);
+
+    uint8_t whoami=0;
+    _dev->read_registers(MPUREG_WHOAMI, &whoami, 1);
+    hal.console->printf("IMU: whoami 0x%02x old_address=%02x\n", whoami, old_address);
+
+    _dev->write_register(MPUREG_FIFO_EN, 0x00);
+    _dev->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
+    
+    // wait for sensor to settle
+    hal.scheduler->delay(10);
+
+    _dev->write_register(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN);
+
+    _dev->set_address(old_address);
+
+    _dev->get_semaphore()->give();
+
+    return true;
 }
 
 bool AP_Baro_LPS2XH::_init()

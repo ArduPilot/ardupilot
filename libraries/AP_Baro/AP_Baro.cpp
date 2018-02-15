@@ -522,6 +522,10 @@ void AP_Baro::init(void)
 #elif HAL_BARO_DEFAULT == HAL_BARO_LPS25H
 	ADD_BACKEND(AP_Baro_LPS2XH::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_LPS25H_I2C_BUS, HAL_BARO_LPS25H_I2C_ADDR))));
+#elif HAL_BARO_DEFAULT == HAL_BARO_LPS25H_IMU_I2C
+	ADD_BACKEND(AP_Baro_LPS2XH::probe_InvensenseIMU(*this,
+                                                    std::move(hal.i2c_mgr->get_device(HAL_BARO_LPS25H_I2C_BUS, HAL_BARO_LPS25H_I2C_ADDR)),
+                                                    HAL_BARO_LPS25H_I2C_IMU_ADDR));
 #elif HAL_BARO_DEFAULT == HAL_BARO_20789_I2C_I2C
         ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
                                             std::move(hal.i2c_mgr->get_device(HAL_BARO_20789_I2C_BUS, HAL_BARO_20789_I2C_ADDR_PRESS)),
