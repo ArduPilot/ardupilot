@@ -249,16 +249,16 @@ float AP_BattMonitor::current_amps(uint8_t instance) const {
     }
 }
 
-/// current_total_mah - returns total current drawn since start-up in amp-hours
-float AP_BattMonitor::current_total_mah(uint8_t instance) const {
+/// consumed_mah - returns total current drawn since start-up in milliampere.hours
+float AP_BattMonitor::consumed_mah(uint8_t instance) const {
     if (instance < _num_instances) {
-        return state[instance].current_total_mah;
+        return state[instance].consumed_mah;
     } else {
         return 0.0f;
     }
 }
 
-/// consumed_wh - returns energy consumed since start-up in watt-hours
+/// consumed_wh - returns energy consumed since start-up in Watt.hours
 float AP_BattMonitor::consumed_wh(uint8_t instance) const {
     if (instance < _num_instances) {
         return state[instance].consumed_wh;
@@ -323,7 +323,7 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
 
     // check capacity if current monitoring is enabled
     if (has_current(instance) && (min_capacity_mah > 0) &&
-        (_params[instance]._pack_capacity - state[instance].current_total_mah < min_capacity_mah)) {
+        (_params[instance]._pack_capacity - state[instance].consumed_mah < min_capacity_mah)) {
         return true;
     }
 

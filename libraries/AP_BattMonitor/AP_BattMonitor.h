@@ -54,12 +54,12 @@ public:
         cells       cell_voltages;      // battery cell voltages in millivolts, 10 cells matches the MAVLink spec
         float       voltage;            // voltage in volts
         float       current_amps;       // current in amperes
-        float       current_total_mah;  // total current draw since start-up
-        float       consumed_wh;        // total energy consumed in Wh since start-up
+        float       consumed_mah;       // total current draw in milliampere.hours since start-up
+        float       consumed_wh;        // total energy consumed in Watt.hours since start-up
         uint32_t    last_time_micros;   // time when voltage and current was last read
         uint32_t    low_voltage_start_ms;  // time when voltage dropped below the minimum
         float       temperature;        // battery temperature in celsius
-        uint32_t    temperature_time;   // timestamp of the last recieved temperature message
+        uint32_t    temperature_time;   // timestamp of the last received temperature message
         float       voltage_resting_estimate; // voltage with sag removed based on current and resistance estimate
         float       resistance;         // resistance calculated by comparing resting voltage vs in flight voltage
         bool        healthy;            // battery monitor is communicating correctly
@@ -99,11 +99,11 @@ public:
     float current_amps(uint8_t instance) const;
     float current_amps() const { return current_amps(AP_BATT_PRIMARY_INSTANCE); }
 
-    /// current_total_mah - returns total current drawn since start-up in amp-hours
-    float current_total_mah(uint8_t instance) const;
-    float current_total_mah() const { return current_total_mah(AP_BATT_PRIMARY_INSTANCE); }
+    /// consumed_mah - returns total current drawn since start-up in milliampere.hours
+    float consumed_mah(uint8_t instance) const;
+    float consumed_mah() const { return consumed_mah(AP_BATT_PRIMARY_INSTANCE); }
 
-    /// consumed_wh - returns total energy drawn since start-up in watt-hours
+    /// consumed_wh - returns total energy drawn since start-up in watt.hours
     float consumed_wh(uint8_t instance) const;
     float consumed_wh() const { return consumed_wh(AP_BATT_PRIMARY_INSTANCE); }
 
