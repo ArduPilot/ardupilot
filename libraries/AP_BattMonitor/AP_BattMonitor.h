@@ -68,12 +68,12 @@ public:
         float       current_amps;              // current in amperes
         float       consumed_mah;              // total current draw in milliamp hours since start-up
         float       consumed_wh;               // total energy consumed in Wh since start-up
-        uint32_t    last_time_micros;          // time when voltage and current was last read
-        uint32_t    low_voltage_start_ms;      // time when voltage dropped below the minimum
+        uint32_t    last_time_micros;          // time when voltage and current was last read in microseconds
+        uint32_t    low_voltage_start_ms;      // time when voltage dropped below the minimum in milliseconds
         uint32_t    critical_voltage_start_ms; // critical voltage failsafe start timer in milliseconds
-        float       temperature;               // battery temperature in celsius
+        float       temperature;               // battery temperature in degrees Celsius
         uint32_t    temperature_time;          // timestamp of the last received temperature message
-        float       voltage_resting_estimate;  // voltage with sag removed based on current and resistance estimate
+        float       voltage_resting_estimate;  // voltage with sag removed based on current and resistance estimate in Volt
         float       resistance;                // resistance, in Ohms, calculated by comparing resting voltage vs in flight voltage
         BatteryFailsafe failsafe;              // stage failsafe the battery is in
         bool        healthy;                   // battery monitor is communicating correctly
