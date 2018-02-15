@@ -33,6 +33,10 @@
 #define APM_SHELL_PRIORITY       57
 #define APM_STARTUP_PRIORITY     10
 
+//#if TEST_IDLE
+//#define APM_TEST_PRIORITY         2
+//#endif
+
 #ifndef APM_SPI_PRIORITY
 #define APM_SPI_PRIORITY        179
 #endif
@@ -96,6 +100,11 @@ private:
     volatile bool _in_io_proc;
 
     volatile bool _timer_event_missed;
+
+#if TEST_IDLE
+    thread_t* _test_thread_ctx;
+    static void _test_thread(void *arg);
+#endif
 
     thread_t* _timer_thread_ctx;
     thread_t* _rcin_thread_ctx;

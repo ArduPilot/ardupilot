@@ -36,6 +36,9 @@ using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
 
+#if TEST_IDLE
+THD_WORKING_AREA(_test_thread_wa, 256);
+#endif
 THD_WORKING_AREA(_timer_thread_wa, 2048);
 THD_WORKING_AREA(_rcin_thread_wa, 512);
 #ifdef HAL_PWM_ALARM
@@ -52,6 +55,14 @@ Scheduler::Scheduler()
 
 void Scheduler::init()
 {
+#if TEST_IDLE
+    // setup the test thread - this will just burn cpu
+    _test_thread_ctx = chThdCreateStatic(_test_thread_wa,
+                     sizeof(_test_thread_wa),
+                     APM_TEST_PRIORITY,         /* Initial priority.    */
+                     _test_thread,             /* Thread function.     */
+                     this);                     /* Thread parameter.    */
+#endif
     // setup the timer thread - this will call tasks at 1kHz
     _timer_thread_ctx = chThdCreateStatic(_timer_thread_wa,
                      sizeof(_timer_thread_wa),

@@ -61,6 +61,15 @@
  */
 #define CH_CFG_ST_TIMEDELTA                 2
 
+// change to 1 to add an infinite loop thread at priority
+#define TEST_IDLE 0
+
+// raise the priority of the OTG thread from 2 to 10 and set test thread priority to 2 (lowest)
+#if TEST_IDLE
+#define STM32_USB_OTG_THREAD_PRIO 10
+#define APM_TEST_PRIORITY         2
+#endif
+
 /*
   default to a large interrupt stack for now. We may trim this later
   if we become confident of our interrupt handler requirements. Note
