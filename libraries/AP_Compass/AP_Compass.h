@@ -20,6 +20,7 @@
 #define AP_COMPASS_MOT_COMP_PER_MOTOR   0x03
 
 // setup default mag orientation for some board types
+#ifndef MAG_BOARD_ORIENTATION
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 # define MAG_BOARD_ORIENTATION ROTATION_YAW_90
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
@@ -28,6 +29,8 @@
 #else
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
+#endif
+
 
 // define default compass calibration fitness and consistency checks
 #define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
