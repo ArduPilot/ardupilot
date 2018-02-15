@@ -224,3 +224,8 @@ float AC_PID::get_filt_alpha() const
     float rc = 1/(M_2PI*_filt_hz);
     return _dt / (_dt + rc);
 }
+
+void AC_PID::reset() {
+    memset(&_pid_info, 0, sizeof(_pid_info));
+    reset_I();
+}

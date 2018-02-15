@@ -21,7 +21,7 @@
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <GCS_MAVLink/GCS.h>
-#include <PID/PID.h>
+#include <AC_PID/AC_PID.h>
 
 class AP_Landing;
 
@@ -82,7 +82,7 @@ private:
     uint16_t initial_elevator_pwm; // PWM to start slewing the elevator up from
     uint32_t last_time;            // last time the controller ran
     float L1_xtrack_i;             // L1 integrator for navigation
-    PID ds_PID;
+    AC_PID ds_PID = AC_PID(0, 0, 0, 0, 20, 0);
     int32_t last_target_bearing;   // used for tracking the progress on loitering
     float crosstrack_error; // current crosstrack error
     float predicted_travel_distance; // distance the aircraft is perdicted to travel during deepstall

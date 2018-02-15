@@ -125,8 +125,8 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     AP_GROUPINFO("L1_TCON", 13, AP_Landing_Deepstall, time_constant, 0.4),
 
     // @Group: DS_
-    // @Path: ../PID/PID.cpp
-    AP_SUBGROUPINFO(ds_PID, "", 14, AP_Landing_Deepstall, PID),
+    // @Path: ../AC_PID/AC_PID.cpp
+    AP_SUBGROUPINFO(ds_PID, "", 14, AP_Landing_Deepstall, AC_PID),
 
     // @Param: ABORTALT
     // @DisplayName: Deepstall minimum abort altitude
@@ -631,5 +631,13 @@ float AP_Landing_Deepstall::update_steering()
                                     (double)location_diff(current_loc, landing_point).length());
 #endif // DEBUG_PRINTS
 
-    return ds_PID.get_pid(error);
+    static uint32_t last_time_ms = 0;
+    last_time_ms = last_time_ms == 0 ? AP_HAL::millis() : last_time_ms;
+    const float dt = static_cast<float>(AP_HAL::millis() - last_time_ms) / 1000.f;
+    last_time_ms = AP_HAL::millis();
+    
+    ds_PID.set_dt(dt);
+    ds_PID.set_input_filter_all(error);
+    
+    return ds_PID.get_pid();
 }
