@@ -144,7 +144,7 @@ void Plane::low_battery_event(void)
         return;
     }
     gcs().send_text(MAV_SEVERITY_WARNING, "Low battery %.2fV used %.0f mAh",
-                      (double)battery.voltage(), (double)battery.current_total_mah());
+                      (double)battery.voltage(), (double)battery.consumed_mah());
     if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
     	set_mode(RTL, MODE_REASON_BATTERY_FAILSAFE);
     	aparm.throttle_cruise.load();
