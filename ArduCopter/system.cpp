@@ -282,6 +282,9 @@ void Copter::init_ardupilot()
     // disable safety if requested
     BoardConfig.init_safety();
 
+    // default enable RC override
+    copter.ap.rc_override_enable = true;
+    
     hal.console->printf("\nReady to FLY ");
 
     // flag that initialisation has completed
