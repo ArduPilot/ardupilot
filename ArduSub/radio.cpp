@@ -31,6 +31,7 @@ void Sub::init_rc_in()
         hal.rcin->set_override(i, 1500);
     }
 
+    hal.rcin->set_override(6, 1500); // camera pan channel
     hal.rcin->set_override(7, 1500); // camera tilt channel
 
     RC_Channel* chan = RC_Channels::rc_channel(8);

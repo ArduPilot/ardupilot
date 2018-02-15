@@ -362,6 +362,13 @@ bool NOINLINE Sub::send_info(mavlink_channel_t chan)
     mavlink_msg_named_value_float_send(
             chan,
             AP_HAL::millis(),
+            "CamPan",
+            1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_pan) / 2.0f + 0.5f));
+
+    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
+    mavlink_msg_named_value_float_send(
+            chan,
+            AP_HAL::millis(),
             "TetherTrn",
             quarter_turn_count/4);
 
