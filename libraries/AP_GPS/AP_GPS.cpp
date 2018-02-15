@@ -626,17 +626,22 @@ void AP_GPS::update_instance(uint8_t instance)
     // detection to run again
     if (!result) {
         if (tnow - timing[instance].last_message_time_ms > GPS_TIMEOUT_MS) {
-            // free the driver before we run the next detection, so we
-            // don't end up with two allocated at any time
-            delete drivers[instance];
-            drivers[instance] = nullptr;
             memset(&state[instance], 0, sizeof(state[instance]));
             state[instance].instance = instance;
-            state[instance].status = NO_GPS;
             state[instance].hdop = GPS_UNKNOWN_DOP;
             state[instance].vdop = GPS_UNKNOWN_DOP;
             timing[instance].last_message_time_ms = tnow;
             timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
+            // do not try to detect again if type is MAV
+            if (_type[instance] == GPS_TYPE_MAV) {
+                state[instance].status = NO_FIX;
+            } else {
+                // free the driver before we run the next detection, so we
+                // don't end up with two allocated at any time
+                delete drivers[instance];
+                drivers[instance] = nullptr;
+                state[instance].status = NO_GPS;
+            }
         }
     } else {
         // delta will only be correct after parsing two messages
