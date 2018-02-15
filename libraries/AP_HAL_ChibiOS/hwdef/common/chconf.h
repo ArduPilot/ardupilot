@@ -64,6 +64,9 @@
 // change to 1 to add an infinite loop thread at priority
 #define TEST_IDLE 0
 
+// change to 1 to print thread stats in Scheduler::get_stats()
+#define PRINT_STATS 0
+
 // raise the priority of the OTG thread from 2 to 10 and set test thread priority to 2 (lowest)
 #if TEST_IDLE
 #define STM32_USB_OTG_THREAD_PRIO 10

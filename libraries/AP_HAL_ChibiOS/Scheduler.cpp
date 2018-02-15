@@ -346,7 +346,6 @@ void Scheduler::_timer_thread(void *arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
-//    static systime_t last_print_stats = 0;
     while (true) {
         sched->delay_microseconds(1000);
 
@@ -357,6 +356,26 @@ void Scheduler::_timer_thread(void *arg)
         hal.rcout->timer_tick();
     }
 }
+
+#if TEST_IDLE
+void Scheduler::_test_thread(void *arg)
+{
+    Scheduler *sched = (Scheduler *)arg;
+    sched->_test_thread_ctx->name = "test_thread";
+
+    while (!sched->_hal_initialized) {
+        sched->delay_microseconds(1000);
+    }
+    uint64_t Fnm1 = 0;
+    uint64_t Fn = 1;
+    while (true) {
+        uint64_t tmp = Fn;
+        Fn = Fn + Fnm1;
+        Fnm1 = tmp;
+    }
+}
+#endif
+
 #if HAL_WITH_UAVCAN
 void Scheduler::_uavcan_thread(void *arg)
 {
