@@ -609,15 +609,20 @@ void AP_GPS::update_instance(uint8_t instance)
     // detection to run again
     if (!result) {
         if (tnow - timing[instance].last_message_time_ms > 4000) {
-            // free the driver before we run the next detection, so we
-            // don't end up with two allocated at any time
-            delete drivers[instance];
-            drivers[instance] = nullptr;
             memset(&state[instance], 0, sizeof(state[instance]));
             state[instance].instance = instance;
-            state[instance].status = NO_GPS;
             state[instance].hdop = 9999;
             timing[instance].last_message_time_ms = tnow;
+            // do not try to detect again if type is MAV
+            if (_type[instance] == GPS_TYPE_MAV) {
+                state[instance].status = NO_FIX;
+            } else {
+                // free the driver before we run the next detection, so we
+                // don't end up with two allocated at any time
+                delete drivers[instance];
+                drivers[instance] = nullptr;
+                state[instance].status = NO_GPS;
+            }
         }
     } else {
         timing[instance].last_message_time_ms = tnow;
