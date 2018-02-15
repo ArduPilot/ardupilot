@@ -113,7 +113,7 @@ void Copter::ModeFollow::run()
 
             case AP_Follow::YAW_BEHAVE_SAME_AS_LEAD_VEHICLE: {
                 float target_hdg = 0.0f;
-                if (g2.follow.get_target_heading(target_hdg)) {
+                if (g2.follow.get_target_heading_deg(target_hdg)) {
                     yaw_cd = target_hdg * 100.0f;
                     use_yaw = true;
                 }
