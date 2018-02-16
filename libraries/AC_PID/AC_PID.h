@@ -41,6 +41,9 @@ public:
     float       get_d();
     float       get_ff(float requested_rate);
     
+    // reset the whole PID state
+    void        reset();
+    
     // reset_I - reset the integrator
     void        reset_I();
 

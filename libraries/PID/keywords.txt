@@ -1,9 +1,0 @@
-PID		KEYWORD1
-get_pid		KEYWORD2
-reset_I		KEYWORD2
-kP		KEYWORD2
-kD		KEYWORD2
-kI		KEYWORD2
-imax		KEYWORD2
-load_gains	KEYWORD2
-save_gains	KEYWORD2
