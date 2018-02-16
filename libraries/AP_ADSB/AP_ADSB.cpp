@@ -68,8 +68,8 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     AP_GROUPINFO("LIST_RADIUS",   3, AP_ADSB, in_state.list_radius, ADSB_LIST_RADIUS_DEFAULT),
 
     // @Param: ICAO_ID
-    // @DisplayName: ICAO_ID vehicle identifaction number
-    // @Description: ICAO_ID unique vehicle identifaction number of this aircraft. This is a integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
+    // @DisplayName: ICAO_ID vehicle identification number
+    // @Description: ICAO_ID unique vehicle identification number of this aircraft. This is a integer limited to 24bits. If set to 0 then one will be randomly generated. If set to -1 then static information is not sent, transceiver is assumed pre-programmed.
     // @Range: -1 16777215
     // @User: Advanced
     AP_GROUPINFO("ICAO_ID",   4, AP_ADSB, out_state.cfg.ICAO_id_param, 0),
