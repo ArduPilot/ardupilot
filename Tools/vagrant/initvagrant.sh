@@ -29,6 +29,11 @@ apt-get install -y valgrind
 # gdb support:
 apt-get install -y gdb
 
+# gcov support:
+apt-get install -y gcovr lcov
+
+# install pexpect for autotest.py
+pip install pexpect
 
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
