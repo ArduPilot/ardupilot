@@ -98,10 +98,12 @@ enum VRBRAINUtil::safety_state VRBRAINUtil::safety_switch_state(void)
 
 void VRBRAINUtil::set_system_clock(uint64_t time_utc_usec)
 {
+    _system_time_was_set = true;
+
     timespec ts;
     ts.tv_sec = time_utc_usec/1000000ULL;
     ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
-    clock_settime(CLOCK_REALTIME, &ts);    
+    clock_settime(CLOCK_REALTIME, &ts);
 }
 
 /*
