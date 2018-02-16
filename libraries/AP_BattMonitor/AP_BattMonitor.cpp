@@ -2,6 +2,9 @@
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
+#if HAL_WITH_UAVCAN
+#include "AP_BattMonitor_UAVCAN.h"
+#endif
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <DataFlash/DataFlash.h>
 
@@ -19,7 +22,6 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 2_
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2_", 24, AP_BattMonitor, AP_BattMonitor_Params),
-
 
     AP_GROUPEND
 };
@@ -82,6 +84,12 @@ AP_BattMonitor::init()
             case AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance], _params[instance]);
+                _num_instances++;
+#endif
+                break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_UAVCAN_BatteryInfo:
+#if HAL_WITH_UAVCAN
+                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance]);
                 _num_instances++;
 #endif
                 break;
