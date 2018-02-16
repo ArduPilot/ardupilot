@@ -520,6 +520,24 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("4_ORIENT", 56, RangeFinder, _orientation[3], ROTATION_PITCH_270),
+
+//Added for Hydrofoil///////////////////////////////////////////////////////////////////////
+
+        // @Param: DIST2HLL
+        // @DisplayName: Rangefinder offset to hull
+        // @Description: Distance from rangefinder to hull in cm. This can be used as a sensor offset for standard rangefinders or the offset when using pressure sensors
+        // @Values: -500 500
+        // @User: Advanced
+        AP_GROUPINFO("DIST2HLL", 57, RangeFinder, dist2hll, 0.0),
+
+        // @Param: FLPREAD
+        // @DisplayName: Flip rangefinder reading
+        // @Description: Flip rangefinder reading if using pressure sensor to calculate distance of hull above water. Leave as 0 for std rangefinders.
+        // @Values: 0:Don't flip, 1:Flip
+        // @User: Advanced
+        AP_GROUPINFO("FLPREAD", 58, RangeFinder, flpread, 0.0),
+
+//End of Hydrofoil Changes/////////////////////////////////////////////////////////////////
 #endif
     
     AP_GROUPEND
@@ -589,6 +607,14 @@ void RangeFinder::update(void)
             update_pre_arm_check(i);
         }
     }
+}
+
+/*  returns true if rangefinder reading needs to be updated and false
+    if not
+*/
+bool RangeFinder::flip_measurement(void) {
+    if (flpread == 1.0) { return true; }
+    else { return false; };
 }
 
 bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)

@@ -21,7 +21,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 
 // Maximum number of range finder instances available on this platform
-#define RANGEFINDER_MAX_INSTANCES 2
+#define RANGEFINDER_MAX_INSTANCES 4
 #define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10
 #define RANGEFINDER_PREARM_ALT_MAX_CM           200
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
@@ -99,6 +99,8 @@ public:
     AP_Int16 _powersave_range;
     AP_Vector3f _pos_offset[RANGEFINDER_MAX_INSTANCES]; // position offset in body frame
     AP_Int8  _orientation[RANGEFINDER_MAX_INSTANCES];
+    AP_Float dist2hll;
+    AP_Float flpread;
 
     static const struct AP_Param::GroupInfo var_info[];
     
@@ -113,6 +115,10 @@ public:
     // update state of all rangefinders. Should be called at around
     // 10Hz from main loop
     void update(void);
+
+    float get_hull_offset(void) { return dist2hll; }
+
+    bool flip_measurement(void);
 
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(mavlink_message_t *msg);
