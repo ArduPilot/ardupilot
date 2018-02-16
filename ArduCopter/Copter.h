@@ -68,7 +68,6 @@
 #include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>           // APM relay
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed/AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
@@ -121,6 +120,10 @@
 #endif
 #if FRSKY_TELEM_ENABLED == ENABLED
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#endif
+
+#if CAMERA == ENABLED
+#include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #endif
 
 #if ADVANCED_FAILSAFE == ENABLED
