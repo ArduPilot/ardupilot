@@ -76,7 +76,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: EMIT_TYPE
     // @DisplayName: Emitter type
-    // @Description: ADSB classification for the type of vehicle emitting the transponder signal. Default value is 14 (UAV).
+    // @Description: ADSB classification for the type of vehicle emmitting the transponder signal. Default value is 14 (UAV).
     // @Values: 0:NoInfo,1:Light,2:Small,3:Large,4:HighVortexlarge,5:Heavy,6:HighlyManuv,7:Rotocraft,8:RESERVED,9:Glider,10:LightAir,11:Parachute,12:UltraLight,13:RESERVED,14:UAV,15:Space,16:RESERVED,17:EmergencySurface,18:ServiceSurface,19:PointObstacle
     // @User: Advanced
     AP_GROUPINFO("EMIT_TYPE",   5, AP_ADSB, out_state.cfg.emitterType, ADSB_EMITTER_TYPE_UAV),
