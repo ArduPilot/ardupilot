@@ -414,6 +414,8 @@ void Copter::one_hz_loop()
 #endif
     }
 
+    hal.scheduler->get_stats();
+    
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
 
