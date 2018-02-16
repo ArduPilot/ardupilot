@@ -554,6 +554,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_AVOID_ADSB:
+#if ADSB_ENABLED == ENABLED
             // enable or disable AP_Avoidance
             if (ch_flag == AUX_SWITCH_HIGH) {
                 avoidance_adsb.enable();
@@ -562,6 +563,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 avoidance_adsb.disable();
                 Log_Write_Event(DATA_AVOIDANCE_ADSB_DISABLE);
             }
+#endif
             break;
 
         case AUXSW_PRECISION_LOITER:
