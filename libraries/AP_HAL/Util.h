@@ -46,6 +46,11 @@ public:
     virtual void set_system_clock(uint64_t time_utc_usec) {}
 
     /*
+      check if system clock was already set
+     */
+    bool system_time_was_set() const;
+
+    /*
       get system clock in UTC milliseconds
      */
     uint64_t get_system_clock_ms() const;

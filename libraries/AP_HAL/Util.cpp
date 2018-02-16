@@ -112,6 +112,11 @@ void AP_HAL::Util::get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &se
     hour = hour_ms / (60 * 60 * 1000);
 }
 
+bool AP_HAL::Util::system_time_was_set() const
+{
+    return _system_time_was_set;
+}
+
 // get milliseconds from now to a target time of day expressed as hour, min, sec, ms
 // match starts from first value that is not -1. I.e. specifying hour=-1, minutes=10 will ignore the hour and return time until 10 minutes past 12am (utc)
 uint32_t AP_HAL::Util::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms) const
