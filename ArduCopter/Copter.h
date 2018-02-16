@@ -151,7 +151,9 @@
 
 // Local modules
 #include "Parameters.h"
+#if ADSB_ENABLED == ENABLED
 #include "avoidance_adsb.h"
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -552,10 +554,12 @@ private:
     AC_InputManager_Heli input_manager;
 #endif
 
+#if ADSB_ENABLED == ENABLED
     AP_ADSB adsb{ahrs};
 
     // avoidance of adsb enabled vehicles (normally manned vehicles)
     AP_Avoidance_Copter avoidance_adsb{ahrs, adsb};
+#endif
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
@@ -652,8 +656,10 @@ private:
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn();
 
+#if ADSB_ENABLED == ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
+#endif
 
     // baro_ground_effect.cpp
     void update_ground_effect_detector(void);
@@ -965,7 +971,9 @@ private:
     ModeStabilize mode_stabilize;
 #endif
     ModeSport mode_sport;
+#if ADSB_ENABLED == ENABLED
     ModeAvoidADSB mode_avoid_adsb;
+#endif
     ModeThrow mode_throw;
     ModeGuidedNoGPS mode_guided_nogps;
     ModeSmartRTL mode_smartrtl;

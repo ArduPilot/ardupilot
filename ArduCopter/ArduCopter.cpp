@@ -422,7 +422,9 @@ void Copter::one_hz_loop()
     // log terrain data
     terrain_logging();
 
+#if ADSB_ENABLED == ENABLED
     adsb.set_is_flying(!ap.land_complete);
+#endif
 
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it

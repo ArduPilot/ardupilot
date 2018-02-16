@@ -761,6 +761,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
 
+#if ADSB_ENABLED == ENABLED
     // @Group: ADSB_
     // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
     GOBJECT(adsb,                "ADSB_", AP_ADSB),
@@ -768,6 +769,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: AVD_
     // @Path: ../libraries/AP_Avoidance/AP_Avoidance.cpp
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Copter),
+#endif
 
     // @Param: AUTOTUNE_AXES
     // @DisplayName: Autotune axis bitmask
