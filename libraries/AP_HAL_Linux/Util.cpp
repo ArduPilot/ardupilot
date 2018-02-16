@@ -84,21 +84,23 @@ void Util::_toneAlarm_timer_tick() {
     } else if (state == 3) {
         state = 1;
     }
-    
+
     if (_toneAlarm.is_tune_comp()) {
         state = 0;
     }
-    
+
 }
 
 void Util::set_system_clock(uint64_t time_utc_usec)
 {
 #if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
+    _system_time_was_set = true;
+
     timespec ts;
     ts.tv_sec = time_utc_usec/1000000ULL;
     ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
-    clock_settime(CLOCK_REALTIME, &ts);    
-#endif    
+    clock_settime(CLOCK_REALTIME, &ts);
+#endif
 }
 
 bool Util::is_chardev_node(const char *path)
