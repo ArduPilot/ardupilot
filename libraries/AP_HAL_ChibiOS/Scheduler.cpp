@@ -97,30 +97,44 @@ void Scheduler::init()
                      this);                  /* Thread parameter.      */
 }
 
-void Scheduler::get_stats(void) {
+void Scheduler::get_stats(void)
+{
     thread_t* tp = chRegFirstThread();
-    uint64_t idle_time = 0;
-    uint64_t total_time = 0;
+    uint32_t idle_time = 0;
+    uint32_t total_time = 0;
+    uint8_t idx = 0;
+    const uint8_t max_tasks = 20;
+    static uint64_t last_time[max_tasks];
+    uint32_t task_usec[max_tasks];
+    const char *names[max_tasks];
+    uint8_t prio[max_tasks];
+    uint8_t states[max_tasks];
+    const char *state_names[] = { CH_STATE_NAMES };
+    
     do {
+        uint64_t cumulative = tp->stats.cumulative;
+        uint64_t delta = cumulative - last_time[idx];
+        last_time[idx] = cumulative;
+        task_usec[idx] = delta;
+        names[idx] = tp->name;
+        prio[idx] = tp->prio;
+        states[idx] = tp->state;
         if (tp->prio == 1)  {
-            idle_time = tp->stats.cumulative;
+            idle_time = delta;
         }
-        total_time += tp->stats.cumulative;
-
-//        hal.console->printf("%12ls %4lu %12ls",
-//                            tp->name,
-//                            (uint32_t)tp->prio,
-//                            CH_STATE_NAMES[tp->state]);
-
-//        hal.console->printf(" %llu\n", tp->stats.cumulative);
-
-        tp->stats.cumulative = 0;
-
+        total_time += delta;
         tp = chRegNextThread(tp);
+        idx++;
     } while (tp != NULL);
 
+    for (uint8_t i=0; i<idx; i++) {
+        uint32_t pct = (100*uint64_t(task_usec[i])) / total_time;
+        hal.console->printf("%12s %4u %12s %2u%% %u\n", names[i], (unsigned)prio[i], state_names[states[i]], (unsigned)pct, (unsigned)task_usec[i]);
+    }
+    
     _busy_percent = 100 * (1.0f - (float)idle_time / total_time);
-//    hal.console->printf("busy percent: %d, n_irq: %lu\n", busy_percent, ch.kernel_stats.n_irq);
+
+    hal.console->printf("busy percent: %d, n_irq: %lu total=%u\n", _busy_percent, ch.kernel_stats.n_irq, (unsigned)total_time);
 }
 
 
