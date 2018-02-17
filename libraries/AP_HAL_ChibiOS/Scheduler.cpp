@@ -120,7 +120,12 @@ void Scheduler::get_stats(void) {
     uint8_t prio[max_tasks];
     uint8_t states[max_tasks];
     const char *state_names[] = { CH_STATE_NAMES };
-    
+
+    static uint64_t then = 0;
+    uint64_t now = AP_HAL::micros();
+
+    hal.console->printf("%12s %4s %12s %5s %12s\n",
+                        "name", "PRIO", "state", "cpu", "ticks");
     do {
         uint64_t cumulative = tp->stats.cumulative;
         uint64_t delta = cumulative - last_time[idx];
@@ -135,16 +140,23 @@ void Scheduler::get_stats(void) {
         total_time += delta;
         tp = chRegNextThread(tp);
         idx++;
-    } while (tp != NULL);
+    } while ((tp != NULL) && (idx < max_tasks));
 
     for (uint8_t i=0; i<idx; i++) {
         uint32_t pct = (100*uint64_t(task_usec[i])) / total_time;
-        hal.console->printf("%12s %4u %12s %2u%% %u\n", names[i], (unsigned)prio[i], state_names[states[i]], (unsigned)pct, (unsigned)task_usec[i]);
+        hal.console->printf("%12s %4u %12s %4u%% %12u\n",
+                            names[i], (unsigned)prio[i], state_names[states[i]],
+                            (unsigned)pct, (unsigned)task_usec[i]);
     }
     
     _busy_percent = 100 * (1.0f - (float)idle_time / total_time);
 
-    hal.console->printf("busy percent: %d, n_irq: %lu total=%u\n", _busy_percent, ch.kernel_stats.n_irq, (unsigned)total_time);
+    uint64_t dt = now - then;
+    if (then) {
+        hal.console->printf("busy: %2d%%, nirq: %lu tick rate: %.3f MHz\n",
+                            _busy_percent, ch.kernel_stats.n_irq, (float)total_time/dt);
+    }
+    then = now;
 }
 
 

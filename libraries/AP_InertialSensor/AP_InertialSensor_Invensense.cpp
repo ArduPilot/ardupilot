@@ -472,10 +472,10 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
             
             _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
-            
+
             _notify_new_accel_raw_sample(_accel_instance, _accum.accel, 0, false);
             _notify_new_gyro_raw_sample(_gyro_instance, _accum.gyro);
-            
+
             _accum.accel.zero();
             _accum.gyro.zero();
             _accum.count = 0;
@@ -490,7 +490,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
         float temp = (static_cast<float>(tsum)/n_samples)*temp_sensitivity + temp_zero;
         _temp_filtered = _temp_filter.apply(temp);
     }
-    
+
     return ret;
 }
 
@@ -534,7 +534,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
             n_samples = 24;
         }
     }
-    
+
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, MPU_FIFO_BUFFER_LEN);
         if (!_dev->set_chip_select(true)) {
@@ -567,6 +567,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
                 break;
             }
         }
+
         n_samples -= n;
     }
 

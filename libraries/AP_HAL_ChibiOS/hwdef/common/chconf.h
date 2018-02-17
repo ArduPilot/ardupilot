@@ -337,6 +337,8 @@
  * @{
  */
 /*===========================================================================*/
+#define SET_DEBUG_PIN   GPIOB->ODR |=  (1 << 4);
+#define CLR_DEBUG_PIN   GPIOB->ODR &= ~(1 << 4);
 
 /**
  * @brief   Debug option, kernel statistics.
@@ -379,7 +381,13 @@
  *
  * @note    The default is @p CH_DBG_TRACE_MASK_DISABLED.
  */
-#define CH_DBG_TRACE_MASK                   0
+#define CH_DBG_TRACE_MASK (    \
+CH_DBG_TRACE_MASK_HALT |       \
+CH_DBG_TRACE_MASK_USER)
+/* all but
+ CH_DBG_TRACE_MASK_SWITCH
+ CH_DBG_TRACE_MASK_ISR
+  are disabled */
 
 /**
  * @brief   Trace buffer entries.
