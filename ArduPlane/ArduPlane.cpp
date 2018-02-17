@@ -286,8 +286,8 @@ void Plane::one_second_loop()
     static int scnt = 0;
     if (scnt++ >= 4) {
         scnt = 0;
+        hal.console->printf("time: %.3f\n", (float)AP_HAL::millis()/1000);
         hal.scheduler->get_stats();
-        hal.console->printf("time: %.3f sec, busy: %u%%\n", (float)AP_HAL::millis()/1000, hal.scheduler->get_busy());
     }
 
     // make it possible to change control channel ordering at runtime
