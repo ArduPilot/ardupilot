@@ -717,7 +717,7 @@ void AP_GPS::update(void)
 
                     bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
 
-                    if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
+                    if (state[i].status >= state[primary_instance].status && another_gps_has_1_or_more_sats) {
 
                         bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
 
