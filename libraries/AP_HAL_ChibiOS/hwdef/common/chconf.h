@@ -64,9 +64,6 @@
 // change to 1 to add an infinite loop thread at priority
 #define TEST_IDLE 0
 
-// change to 1 to print thread stats in Scheduler::get_stats()
-#define PRINT_STATS 0
-
 // raise the priority of the OTG thread from 2 to 10 and set test thread priority to 2 (lowest)
 #if TEST_IDLE
 #define STM32_USB_OTG_THREAD_PRIO 10
@@ -337,8 +334,12 @@
  * @{
  */
 /*===========================================================================*/
+/* pixracer 8266 GPIO2 */
 #define SET_DEBUG_PIN   GPIOB->ODR |=  (1 << 4);
 #define CLR_DEBUG_PIN   GPIOB->ODR &= ~(1 << 4);
+/* pixracer 8266 RST */
+#define SET_IDLE_PIN   GPIOE->ODR |=  (1 << 6);
+#define CLR_IDLE_PIN   GPIOE->ODR &= ~(1 << 6);
 
 /**
  * @brief   Debug option, kernel statistics.
@@ -494,6 +495,7 @@ CH_DBG_TRACE_MASK_USER)
  */
 #define CH_CFG_IDLE_ENTER_HOOK() {                                          \
   /* Idle-enter code here.*/                                                \
+  SET_IDLE_PIN; \
 }
 
 /**
@@ -504,6 +506,7 @@ CH_DBG_TRACE_MASK_USER)
  */
 #define CH_CFG_IDLE_LEAVE_HOOK() {                                          \
   /* Idle-leave code here.*/                                                \
+  CLR_IDLE_PIN; \
 }
 
 /**
