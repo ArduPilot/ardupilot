@@ -476,7 +476,7 @@ void Scheduler::_io_thread(void* arg)
 
         static uint32_t last_stats = 0;
         uint32_t now = AP_HAL::millis();
-        if ((now - last_stats) > 5000) {
+        if ((now - last_stats) >= 5000) {
             last_stats = now;
             hal.console->printf("time: %.3f\n", (float)AP_HAL::millis()/1000);
             hal.scheduler->get_stats();

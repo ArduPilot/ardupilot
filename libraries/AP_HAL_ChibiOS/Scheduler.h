@@ -38,7 +38,7 @@
 //#endif
 
 #ifndef APM_SPI_PRIORITY
-#define APM_SPI_PRIORITY        200
+#define APM_SPI_PRIORITY        179
 #endif
 
 #ifndef APM_UAVCAN_PRIORITY
