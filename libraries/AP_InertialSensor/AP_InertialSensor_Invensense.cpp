@@ -557,6 +557,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
             _dev->set_chip_select(false);
         }
 
+        SET_DEBUG_PIN;
         if (_fast_sampling) {
             if (!_accumulate_fast_sampling(rx, n)) {
                 debug("IMU[%u] stop at %u of %u", _accel_instance, n_samples, bytes_read/MPU_SAMPLE_SIZE);
@@ -567,6 +568,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
                 break;
             }
         }
+        CLR_DEBUG_PIN;
 
         n_samples -= n;
     }
