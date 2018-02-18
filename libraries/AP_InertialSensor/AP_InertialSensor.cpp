@@ -1272,26 +1272,21 @@ void AP_InertialSensor::update(void)
     wait_for_sample();
 
     if (!_hil_mode) {
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            // mark sensors unhealthy and let update() in each backend
-            // mark them healthy via _publish_gyro() and
-            // _publish_accel()
-            _gyro_healthy[i] = false;
-            _accel_healthy[i] = false;
-            _delta_velocity_valid[i] = false;
-            _delta_angle_valid[i] = false;
-        }
+        // mark sensors unhealthy and let update() in each backend
+        memset(_gyro_healthy,           0, sizeof(_gyro_healthy[0]) * INS_MAX_INSTANCES);
+        memset(_accel_healthy,          0, sizeof(_accel_healthy[0]) * INS_MAX_INSTANCES);
+        memset(_delta_velocity_valid,   0, sizeof(_delta_velocity_valid[0]) * INS_MAX_INSTANCES);
+        memset(_delta_angle_valid,      0, sizeof(_delta_angle_valid[0]) * INS_MAX_INSTANCES);
+
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
         }
 
         // clear accumulators
-        for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-            _delta_velocity_acc[i].zero();
-            _delta_velocity_acc_dt[i] = 0;
-            _delta_angle_acc[i].zero();
-            _delta_angle_acc_dt[i] = 0;
-        }
+        memset(_delta_velocity_acc_dt,  0, sizeof(_delta_velocity_acc_dt[0]) * INS_MAX_INSTANCES);
+        memset(_delta_angle_acc_dt,     0, sizeof(_delta_angle_acc_dt[0]) * INS_MAX_INSTANCES);
+        memset(_delta_velocity_acc,     0, sizeof(_delta_velocity_acc[0]) * INS_MAX_INSTANCES);
+        memset(_delta_angle_acc,        0, sizeof(_delta_angle_acc[0]) * INS_MAX_INSTANCES);
 
         if (!_startup_error_counts_set) {
             for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
