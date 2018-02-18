@@ -1301,22 +1301,21 @@ void AP_InertialSensor::update(void)
             }
         }
 
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_error_count[i] < _accel_startup_error_count[i]) {
-                _accel_startup_error_count[i] = _accel_error_count[i];
-            }
-            if (_gyro_error_count[i] < _gyro_startup_error_count[i]) {
-                _gyro_startup_error_count[i] = _gyro_error_count[i];
-            }
-        }
-
         // adjust health status if a sensor has a non-zero error count
         // but another sensor doesn't.
         bool have_zero_accel_error_count = false;
         bool have_zero_gyro_error_count = false;
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            // accel
+            if (_accel_error_count[i] < _accel_startup_error_count[i]) {
+                _accel_startup_error_count[i] = _accel_error_count[i];
+            }
             if (_accel_healthy[i] && _accel_error_count[i] <= _accel_startup_error_count[i]) {
                 have_zero_accel_error_count = true;
+            }
+            // gyro
+            if (_gyro_error_count[i] < _gyro_startup_error_count[i]) {
+                _gyro_startup_error_count[i] = _gyro_error_count[i];
             }
             if (_gyro_healthy[i] && _gyro_error_count[i] <= _gyro_startup_error_count[i]) {
                 have_zero_gyro_error_count = true;
