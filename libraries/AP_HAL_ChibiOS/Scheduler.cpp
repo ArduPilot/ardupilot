@@ -115,38 +115,48 @@ void Scheduler::get_stats(void) {
     uint8_t idx = 0;
     const uint8_t max_tasks = 20;
     static uint64_t last_time[max_tasks];
-    uint32_t task_usec[max_tasks];
+    static uint64_t last_n[max_tasks];
+    uint32_t task_ticks[max_tasks];
     const char *names[max_tasks];
     uint8_t prio[max_tasks];
     uint8_t states[max_tasks];
+    rtcnt_t best[max_tasks];
+    rtcnt_t worst[max_tasks];
+    rtcnt_t n[max_tasks];
     const char *state_names[] = { CH_STATE_NAMES };
 
     static uint64_t then = 0;
     uint64_t now = AP_HAL::micros();
 
-    hal.console->printf("%12s %4s %12s %5s %12s\n",
-                        "name", "PRIO", "state", "cpu", "ticks");
+    hal.console->printf("%12s %4s %12s %5s %12s %8s %8s %8s %8s\n",
+                        "NAME", "PRIO", "STATE", "PCT", "TOTAL", "MIN", "MAX", "RUNS", "AVG");
     do {
         uint64_t cumulative = tp->stats.cumulative;
         uint64_t delta = cumulative - last_time[idx];
         last_time[idx] = cumulative;
-        task_usec[idx] = delta;
+        task_ticks[idx] = delta;
         names[idx] = tp->name;
         prio[idx] = tp->prio;
         states[idx] = tp->state;
         if (tp->prio == 1)  {
             idle_time = delta;
         }
+        best[idx] = tp->stats.best;
+        worst[idx] = tp->stats.worst;
+        n[idx] = tp->stats.n - last_n[idx];
+        last_n[idx] = tp->stats.n;
         total_time += delta;
         tp = chRegNextThread(tp);
         idx++;
     } while ((tp != NULL) && (idx < max_tasks));
 
     for (uint8_t i=0; i<idx; i++) {
-        uint32_t pct = (100*uint64_t(task_usec[i])) / total_time;
-        hal.console->printf("%12s %4u %12s %4u%% %12u\n",
+        uint32_t pct = (100*uint64_t(task_ticks[i])) / total_time;
+        hal.console->printf("%12s %4u %12s %4u%% %12u %8u %8u %8u %8u\n",
                             names[i], (unsigned)prio[i], state_names[states[i]],
-                            (unsigned)pct, (unsigned)task_usec[i]);
+                            (unsigned)pct, (unsigned)task_ticks[i],
+                            (unsigned)best[i], (unsigned)worst[i], (unsigned)n[i],
+                            (unsigned)(task_ticks[i]/n[i]));
     }
     
     _busy_percent = 100 * (1.0f - (float)idle_time / total_time);
