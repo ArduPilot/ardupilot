@@ -475,8 +475,10 @@ private:
     bool _accel_id_ok[INS_MAX_INSTANCES];
 
     // primary accel and gyro
-    uint8_t _primary_gyro;
-    uint8_t _primary_accel;
+    int8_t find_primary_gyro() const;
+    int8_t find_primary_accel() const;
+    int8_t _primary_gyro = -1;
+    int8_t _primary_accel = -1;
 
     // bitmask bit which indicates if we should log raw accel and gyro data
     uint32_t _log_raw_bit;

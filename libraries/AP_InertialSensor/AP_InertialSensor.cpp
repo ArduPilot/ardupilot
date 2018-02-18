@@ -1335,18 +1335,8 @@ void AP_InertialSensor::update(void)
         }
 
         // set primary to first healthy accel and gyro
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _use[i]) {
-                _primary_gyro = i;
-                break;
-            }
-        }
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _use[i]) {
-                _primary_accel = i;
-                break;
-            }
-        }
+        _primary_gyro = find_primary_gyro();
+        _primary_accel = find_primary_accel();
     }
 
     // apply notch filter to primary gyro
@@ -1355,6 +1345,33 @@ void AP_InertialSensor::update(void)
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;
+}
+
+int8_t AP_InertialSensor::find_primary_gyro() const {
+    if(_primary_gyro >= 0 && _gyro_healthy[_primary_gyro]) {
+        return _primary_gyro;
+    }
+
+    // set primary to first healthy accel and gyro
+    for (int8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+        if (_gyro_healthy[i] && _use[i]) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+int8_t AP_InertialSensor::find_primary_accel() const {
+    if(_primary_accel >= 0 && _accel_healthy[_primary_accel]) {
+        return _primary_accel;
+    }
+
+    for (int8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+        if (_accel_healthy[i] && _use[i]) {
+            return i;
+        }
+    }
+    return 0;
 }
 
 /*
