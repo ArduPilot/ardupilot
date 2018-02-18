@@ -36,9 +36,6 @@ using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
 
-#if TEST_IDLE
-THD_WORKING_AREA(_test_thread_wa, 256);
-#endif
 THD_WORKING_AREA(_timer_thread_wa, 2048);
 THD_WORKING_AREA(_rcin_thread_wa, 512);
 #ifdef HAL_PWM_ALARM
@@ -55,14 +52,6 @@ Scheduler::Scheduler()
 
 void Scheduler::init()
 {
-#if TEST_IDLE
-    // setup the test thread - this will just burn cpu
-    _test_thread_ctx = chThdCreateStatic(_test_thread_wa,
-                     sizeof(_test_thread_wa),
-                     APM_TEST_PRIORITY,         /* Initial priority.    */
-                     _test_thread,             /* Thread function.     */
-                     this);                     /* Thread parameter.    */
-#endif
     // setup the timer thread - this will call tasks at 1kHz
     _timer_thread_ctx = chThdCreateStatic(_timer_thread_wa,
                      sizeof(_timer_thread_wa),
@@ -128,8 +117,6 @@ void Scheduler::get_stats(void) {
     static uint64_t then = 0;
     uint64_t now = AP_HAL::micros();
 
-    hal.console->printf("%12s %4s %12s %5s %12s %8s %8s %8s %8s\n",
-                        "NAME", "PRIO", "STATE", "PCT", "TOTAL", "BEST", "WORST", "RUNS", "AVG");
     do {
         uint64_t cumulative = tp->stats.cumulative;
         uint64_t delta = cumulative - last_time[idx];
@@ -159,20 +146,26 @@ void Scheduler::get_stats(void) {
         idx++;
     } while ((tp != NULL) && (idx < max_tasks));
 
+    hal.console->printf("%12s %4s %12s %5s %12s %8s %8s %8s %8s\n",
+                        "NAME", "PRIO", "STATE", "PCT", "RUNS", "TOTAL us", "BEST", "AVG", "WORST");
+    const uint32_t ticksPerMicrosec = STM32_SYSCLK / 1000000UL;
     for (uint8_t i=0; i<idx; i++) {
         uint32_t pct = (100*uint64_t(task_ticks[i])) / total_time;
-        hal.console->printf("%12s %4u %12s %4u%% %12u %8u %8u %8u %8u\n",
+        uint32_t task_us = task_ticks[i] / ticksPerMicrosec;
+        uint32_t best_us = best[i] / ticksPerMicrosec;
+        uint32_t worst_us = worst[i] / ticksPerMicrosec;
+        float avg_us = (runs[i] > 0) ? (float)task_ticks[i] / ticksPerMicrosec / runs[i] : 0.0f;
+        hal.console->printf("%12s %4u %12s %4u%% %12u %8u %8u %8.1f %8u\n",
                             names[i], (unsigned)prio[i], state_names[states[i]],
-                            (unsigned)pct, (unsigned)task_ticks[i],
-                            (unsigned)best[i], (unsigned)worst[i], (unsigned)runs[i],
-                            (unsigned)(task_ticks[i]/runs[i]));
+                            (unsigned)pct, (unsigned)runs[i], (unsigned)task_us,
+                            (unsigned)best_us, (double)avg_us, (unsigned)worst_us);
     }
     
     _busy_percent = 100 * (1.0f - (float)idle_time / total_time);
 
     uint64_t dt = now - then;
     if (then) {
-        hal.console->printf("busy: %2d%%, nirq: %lu tick rate: %.3f MHz, run interval: %.3f sec\n",
+        hal.console->printf("busy: %2d%%, nirq: %lu tick rate: %.0f MHz, run interval: %.3f sec\n",
                             _busy_percent, ch.kernel_stats.n_irq, (float)total_time/dt, (float)dt * 1e-6);
     }
     then = now;
@@ -374,25 +367,6 @@ void Scheduler::_timer_thread(void *arg)
         hal.rcout->timer_tick();
     }
 }
-
-#if TEST_IDLE
-void Scheduler::_test_thread(void *arg)
-{
-    Scheduler *sched = (Scheduler *)arg;
-    sched->_test_thread_ctx->name = "test_thread";
-
-    while (!sched->_hal_initialized) {
-        sched->delay_microseconds(1000);
-    }
-    uint64_t Fnm1 = 0;
-    uint64_t Fn = 1;
-    while (true) {
-        uint64_t tmp = Fn;
-        Fn = Fn + Fnm1;
-        Fnm1 = tmp;
-    }
-}
-#endif
 
 #if HAL_WITH_UAVCAN
 void Scheduler::_uavcan_thread(void *arg)

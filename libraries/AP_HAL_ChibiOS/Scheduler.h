@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -32,10 +32,6 @@
 #define APM_IO_PRIORITY          58
 #define APM_SHELL_PRIORITY       57
 #define APM_STARTUP_PRIORITY     10
-
-//#if TEST_IDLE
-//#define APM_TEST_PRIORITY         2
-//#endif
 
 #ifndef APM_SPI_PRIORITY
 #define APM_SPI_PRIORITY        179
@@ -92,7 +88,7 @@ public:
                 AP_HAL::Event* ret_evt = new ChibiOS::Event(chThdGetSelfX());
                 return ret_evt;
     }
-    bool    setup_event(AP_HAL::Event* evt) override { 
+    bool    setup_event(AP_HAL::Event* evt) override {
             if (evt == nullptr) return false;
             ((ChibiOS::Event*)evt)->thread = chThdGetSelfX();
             return true;
@@ -101,7 +97,7 @@ public:
                 chEvtWaitAll((eventmask_t)evt_mask);
                 return true;
     }
-    void    send_event(AP_HAL::Event* evt, uint32_t evt_mask) override { 
+    void    send_event(AP_HAL::Event* evt, uint32_t evt_mask) override {
                 if (evt == nullptr) return;
                 chEvtSignal(((ChibiOS::Event*)evt)->thread, (eventmask_t)evt_mask);
     }
@@ -112,7 +108,7 @@ private:
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
     AP_HAL::Proc _failsafe;
-    
+
     volatile bool _timer_suspended;
 
     AP_HAL::MemberProc _timer_proc[CHIBIOS_SCHEDULER_MAX_TIMER_PROCS];
@@ -124,11 +120,6 @@ private:
     volatile bool _in_io_proc;
 
     volatile bool _timer_event_missed;
-
-#if TEST_IDLE
-    thread_t* _test_thread_ctx;
-    static void _test_thread(void *arg);
-#endif
 
     thread_t* _timer_thread_ctx;
     thread_t* _rcin_thread_ctx;
