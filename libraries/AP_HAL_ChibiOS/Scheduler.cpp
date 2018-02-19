@@ -114,7 +114,6 @@ void Scheduler::get_stats(void) {
     rtcnt_t runs[max_tasks];
     const char *state_names[] = { CH_STATE_NAMES };
 
-    static uint64_t then = 0;
     uint64_t now = AP_HAL::micros();
 
     do {
@@ -146,29 +145,35 @@ void Scheduler::get_stats(void) {
         idx++;
     } while ((tp != NULL) && (idx < max_tasks));
 
-    hal.console->printf("%12s %4s %12s %5s %12s %8s %8s %8s %8s\n",
-                        "NAME", "PRIO", "STATE", "PCT", "RUNS", "TOTAL us", "BEST", "AVG", "WORST");
-    const uint32_t ticksPerMicrosec = STM32_SYSCLK / 1000000UL;
-    for (uint8_t i=0; i<idx; i++) {
-        uint32_t pct = (100*uint64_t(task_ticks[i])) / total_time;
-        uint32_t task_us = task_ticks[i] / ticksPerMicrosec;
-        uint32_t best_us = best[i] / ticksPerMicrosec;
-        uint32_t worst_us = worst[i] / ticksPerMicrosec;
-        float avg_us = (runs[i] > 0) ? (float)task_ticks[i] / ticksPerMicrosec / runs[i] : 0.0f;
-        hal.console->printf("%12s %4u %12s %4u%% %12u %8u %8u %8.1f %8u\n",
-                            names[i], (unsigned)prio[i], state_names[states[i]],
-                            (unsigned)pct, (unsigned)runs[i], (unsigned)task_us,
-                            (unsigned)best_us, (double)avg_us, (unsigned)worst_us);
-    }
-    
     _busy_percent = 100 * (1.0f - (float)idle_time / total_time);
 
+    static uint64_t then = 0;
+    static uint32_t last_n_irq = 0;
     uint64_t dt = now - then;
     if (then) {
-        hal.console->printf("busy: %2d%%, nirq: %lu tick rate: %.0f MHz, run interval: %.3f sec\n",
-                            _busy_percent, ch.kernel_stats.n_irq, (float)total_time/dt, (float)dt * 1e-6);
+        uint32_t dn_irq = ch.kernel_stats.n_irq - last_n_irq;
+        hal.console->printf("busy: %2d%%, irq rate: %.3f KHz tick rate: %.0f MHz, run interval: %.3f sec\n",
+                            _busy_percent, (float)dn_irq/(1e-3*dt), (float)total_time/dt, (float)dt * 1e-6);
+
+        hal.console->printf("%12s %4s %12s %5s %8s %8s %8s %8s %8s\n",
+                            "NAME", "PRIO", "STATE", "PCT", "RUNS/sec", "TOTAL us", "BEST", "AVG", "WORST");
+
+        const uint32_t ticksPerMicrosec = STM32_SYSCLK / 1000000UL;
+        for (uint8_t i=0; i<idx; i++) {
+            uint32_t pct = (100*uint64_t(task_ticks[i])) / total_time;
+            uint32_t task_us = task_ticks[i] / ticksPerMicrosec;
+            uint32_t best_us = best[i] / ticksPerMicrosec;
+            uint32_t worst_us = worst[i] / ticksPerMicrosec;
+            float avg_us = (runs[i] > 0) ? (float)task_ticks[i] / ticksPerMicrosec / runs[i] : 0.0f;
+
+            hal.console->printf("%12s %4u %12s %4u%% %8.0f %8u %8u %8.1f %8u\n",
+                                names[i], (unsigned)prio[i], state_names[states[i]],
+                    (unsigned)pct, (float)runs[i]/(dt*1e-6), (unsigned)task_us,
+                    (unsigned)best_us, (double)avg_us, (unsigned)worst_us);
+        }
     }
     then = now;
+    last_n_irq = ch.kernel_stats.n_irq;
 }
 
 
