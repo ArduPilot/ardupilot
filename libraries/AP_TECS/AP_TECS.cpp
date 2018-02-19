@@ -627,6 +627,8 @@ float AP_TECS::timeConstant(void) const
     return _timeConst;
 }
 
+// ## TO-DO : Change Airplane State Behaviors to how hydrofoil will perform
+
 /*
   calculate throttle demand - airspeed enabled case
  */
