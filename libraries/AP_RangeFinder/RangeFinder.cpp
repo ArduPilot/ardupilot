@@ -537,6 +537,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
         // @User: Advanced
         AP_GROUPINFO("FLPREAD", 58, RangeFinder, flpread, 0.0),
 
+        // @Param: FLPREAD
+        // @DisplayName: Flip rangefinder reading
+        // @Description: Flip rangefinder reading if using pressure sensor to calculate distance of hull above water. Leave as 0 for std rangefinders.
+        // @Values: 0:Don't flip, 1:Flip
+        // @User: Advanced
+        AP_GROUPINFO("_EXPO", 59, RangeFinder, expo, 0.0),
+
 //End of Hydrofoil Changes/////////////////////////////////////////////////////////////////
 #endif
     

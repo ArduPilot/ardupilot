@@ -321,6 +321,7 @@ private:
 
 //Global Variable for Hydrofoil Project/////////
 float dist_above_water = 0.0;
+float vel_above_water = 0.0;
 //End of Global Variables///////////////////////
 
 
@@ -866,6 +867,7 @@ float dist_above_water = 0.0;
     void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);
     int32_t relative_target_altitude_cm(void);
+    int32_t relative_target_altitude_cm_water(void);
     void change_target_altitude(int32_t change_cm);
     void set_target_altitude_proportion(const Location &loc, float proportion);
     void constrain_target_altitude_location(const Location &loc1, const Location &loc2);

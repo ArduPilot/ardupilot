@@ -101,6 +101,7 @@ public:
     AP_Int8  _orientation[RANGEFINDER_MAX_INSTANCES];
     AP_Float dist2hll;
     AP_Float flpread;
+    AP_Float expo;
 
     static const struct AP_Param::GroupInfo var_info[];
     
@@ -117,6 +118,8 @@ public:
     void update(void);
 
     float get_hull_offset(void) { return dist2hll; }
+
+    float get_expo(void) { return expo; }
 
     bool flip_measurement(void);
 

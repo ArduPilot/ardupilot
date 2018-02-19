@@ -43,6 +43,8 @@ public:
     // Should be called at 50Hz or greater
     void update_50hz(void);
 
+    void update_50hz(float vz, float pz);
+
     // Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm,
                                int32_t EAS_dem_cm,

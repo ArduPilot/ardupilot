@@ -22,6 +22,8 @@ public:
 	// Should be called at 50Hz or faster
 	virtual void update_50hz(void) = 0;
 
+	virtual void update_50hz(float vz, float pz) = 0;
+
 
 	// Update of the pitch and throttle demands
 	// Should be called at 10Hz or faster

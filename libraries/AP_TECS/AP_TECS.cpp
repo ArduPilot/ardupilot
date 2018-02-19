@@ -331,6 +331,46 @@ void AP_TECS::update_50hz(void)
 
 }
 
+void AP_TECS::update_50hz(float vz, float pz)
+{
+    // Implement third order complementary filter for height and height rate
+    // estimated height rate = _climb_rate
+    // estimated height above field elevation  = _height
+    // Reference Paper :
+    // Optimizing the Gains of the Baro-Inertial Vertical Channel
+    // Widnall W.S, Sinha P.K,
+    // AIAA Journal of Guidance and Control, 78-1307R
+
+    /*
+      if we have a vertical position estimate from the EKF then use
+      it, otherwise use barometric altitude
+     */
+    //_ahrs.get_relative_position_D_home(_height);
+    _height = pz;
+
+    // Calculate time in seconds since last update
+    uint64_t now = AP_HAL::micros64();
+    float DT = (now - _update_50hz_last_usec) * 1.0e-6f;
+    if (DT > 1.0f) {
+        _climb_rate = 0.0f;
+        _height_filter.dd_height = 0.0f;
+        DT            = 0.02f; // when first starting TECS, use a
+        // small time constant
+    }
+    _update_50hz_last_usec = now;
+
+    _climb_rate = vz;
+
+    // Update and average speed rate of change
+    // Get DCM
+    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
+    // Calculate speed rate of change
+    float temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins().get_accel().x;
+    // take 5 point moving average
+    _vel_dot = _vdot_filter.apply(temp);
+
+}
+
 void AP_TECS::_update_speed(float load_factor)
 {
     // Calculate time in seconds since last update

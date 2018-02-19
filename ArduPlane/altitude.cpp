@@ -114,9 +114,9 @@ void Plane::setup_glide_slope(void)
 int32_t Plane::get_RTL_altitude()
 {
     if (g.RTL_altitude_cm < 0) {
-        return current_loc.alt;
+        return dist_above_water;
     }
-    return g.RTL_altitude_cm + home.alt;
+    return dist_above_water;
 }
 
 /*
@@ -149,7 +149,7 @@ void Plane::set_target_altitude_current(void)
 {
     // record altitude above sea level at the current time as our
     // target altitude
-    target_altitude.amsl_cm = current_loc.alt;
+    target_altitude.amsl_cm =dist_above_water;
 
     // reset any glide slope offset
     reset_offset_altitude();
@@ -193,7 +193,7 @@ void Plane::set_target_altitude_current_adjusted(void)
     set_target_altitude_current();
 
     // use adjusted_altitude_cm() to take account of ALTITUDE_OFFSET
-    target_altitude.amsl_cm = adjusted_altitude_cm();
+    target_altitude.amsl_cm = dist_above_water;
 }
 
 /*
@@ -201,28 +201,8 @@ void Plane::set_target_altitude_current_adjusted(void)
  */
 void Plane::set_target_altitude_location(const Location &loc)
 {
-    target_altitude.amsl_cm = loc.alt;
-    if (loc.flags.relative_alt) {
-        target_altitude.amsl_cm += home.alt;
-    }
-#if AP_TERRAIN_AVAILABLE
-    /*
-      if this location has the terrain_alt flag set and we know the
-      terrain altitude of our current location then treat it as a
-      terrain altitude
-     */
-    float height;
-    if (loc.flags.terrain_alt && terrain.height_above_terrain(height, true)) {
-        target_altitude.terrain_following = true;
-        target_altitude.terrain_alt_cm = loc.alt;
-        if (!loc.flags.relative_alt) {
-            // it has home added, remove it
-            target_altitude.terrain_alt_cm -= home.alt;
-        }
-    } else {
-        target_altitude.terrain_following = false;
-    }
-#endif
+    target_altitude.amsl_cm = dist_above_water;
+
 }
 
 /*
@@ -231,27 +211,17 @@ void Plane::set_target_altitude_location(const Location &loc)
  */
 int32_t Plane::relative_target_altitude_cm(void)
 {
-#if AP_TERRAIN_AVAILABLE
-    float relative_home_height;
-    if (target_altitude.terrain_following && 
-        terrain.height_relative_home_equivalent(target_altitude.terrain_alt_cm*0.01f,
-                                                relative_home_height, true)) {
-        // add lookahead adjustment the target altitude
-        target_altitude.lookahead = lookahead_adjustment();
-        relative_home_height += target_altitude.lookahead;
 
-        // correct for rangefinder data
-        relative_home_height += rangefinder_correction();
+    return dist_above_water;
+}
 
-        // we are following terrain, and have terrain data for the
-        // current location. Use it.
-        return relative_home_height*100;
-    }
-#endif
-    int32_t relative_alt = target_altitude.amsl_cm - home.alt;
-    relative_alt += mission_alt_offset()*100;
-    relative_alt += rangefinder_correction() * 100;
-    return relative_alt;
+/*
+  return relative to home target altitude in centimeters. Used for
+  altitude control libraries
+ */
+int32_t Plane::relative_target_altitude_cm_water(void)
+{
+    return target_altitude.amsl_cm;
 }
 
 /*

@@ -202,7 +202,7 @@ void Plane::update_speed_height(void)
 	    // Call TECS 50Hz update. Note that we call this regardless of
 	    // throttle suppressed, as this needs to be running for
 	    // takeoff detection
-        SpdHgt_Controller->update_50hz();
+        SpdHgt_Controller->update_50hz(vel_above_water*0.01,dist_above_water*0.01);
     }
 }
 
@@ -933,7 +933,7 @@ void Plane::update_alt()
             distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
         }
 
-        SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
+        SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm_water(),
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  distance_beyond_land_wp,
