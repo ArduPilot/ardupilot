@@ -706,7 +706,7 @@ void Plane::update_flight_mode(void)
         nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
         update_load_factor();
-        update_fbwb_speed_height();
+        update_fbwb_speed_height_water();
         break;
         
     case CRUISE:
@@ -727,7 +727,7 @@ void Plane::update_flight_mode(void)
         } else {
             calc_nav_roll();
         }
-        update_fbwb_speed_height();
+        update_fbwb_speed_height_water();
         break;
         
     case STABILIZE:

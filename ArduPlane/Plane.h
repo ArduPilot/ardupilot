@@ -875,6 +875,7 @@ float vel_above_water = 0.0;
     int32_t calc_altitude_error_cm_water(void);
     void check_minimum_altitude(void);
     void check_minimum_altitude_water(void);
+    void check_maximum_altitude_water(void);
     void reset_offset_altitude(void);
     void set_offset_altitude_location(const Location &loc);
     bool above_location_current(const Location &loc);

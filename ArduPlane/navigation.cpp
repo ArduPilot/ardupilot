@@ -334,7 +334,7 @@ void Plane::update_fbwb_speed_height_water(void)
     // check for FBWB altitude limit
     check_minimum_altitude_water();
 
-//##TO-DO: add a maximum altitude checker
+    check_maximum_altitude_water();
 
     altitude_error_cm = calc_altitude_error_cm_water();
     

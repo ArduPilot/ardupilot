@@ -45,6 +45,8 @@ public:
 
     void update_50hz(float vz, float pz);
 
+    float get_max_height(void) {return _mxheight; }
+
     // Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm,
                                int32_t EAS_dem_cm,
@@ -169,6 +171,7 @@ private:
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
     AP_Float _maxSinkRate_approach;
+    AP_Float _mxheight;
 
     // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
     int8_t _pitch_max_limit = 90;

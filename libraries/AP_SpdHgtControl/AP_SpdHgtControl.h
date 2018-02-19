@@ -24,6 +24,8 @@ public:
 
 	virtual void update_50hz(float vz, float pz) = 0;
 
+	virtual float get_max_height(void) = 0;
+
 
 	// Update of the pitch and throttle demands
 	// Should be called at 10Hz or faster

@@ -343,6 +343,22 @@ void Plane::check_minimum_altitude_water(void)
 }
 
 /*
+  check for FBWB_max_altitude_cm violation
+ */
+void Plane::check_maximum_altitude_water(void)
+{
+    float mxhgt = SpdHgt_Controller->get_max_height();
+    if (mxhgt < 0) {
+        return;
+    }
+
+    if (target_altitude.amsl_cm > mxhgt) {
+        target_altitude.amsl_cm = mxhgt;
+    }
+}
+
+
+/*
   reset the altitude offset used for glide slopes
  */
 void Plane::reset_offset_altitude(void)
