@@ -104,7 +104,10 @@ uint16_t AP_Arming::compass_magfield_expected() const
 
 bool AP_Arming::is_armed()
 {
-    return require == NONE || armed;
+    if ( require == NONE && !armed ) {
+        arm(NONE);
+    }
+    return armed;
 }
 
 uint16_t AP_Arming::get_enabled_checks()
@@ -498,7 +501,7 @@ bool AP_Arming::board_voltage_checks(bool report)
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    if (armed || require == NONE) {
+    if (armed) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
