@@ -170,6 +170,22 @@ void Plane::set_target_altitude_current(void)
 }
 
 /*
+  set the target altitude to the current altitude. This is used when 
+  setting up for altitude hold, such as when releasing elevator in
+  CRUISE mode.
+ */
+void Plane::set_target_altitude_current_water(void)
+{
+    // record altitude above sea level at the current time as our
+    // target altitude
+    target_altitude.amsl_cm = dist_above_water;
+
+    // reset any glide slope offset
+    reset_offset_altitude();
+
+}
+
+/*
   set the target altitude to the current altitude, with ALT_OFFSET adjustment
  */
 void Plane::set_target_altitude_current_adjusted(void)
@@ -310,6 +326,15 @@ int32_t Plane::calc_altitude_error_cm(void)
 }
 
 /*
+  return error between target altitude and current altitude
+ */
+int32_t Plane::calc_altitude_error_cm_water(void)
+{
+
+    return target_altitude.amsl_cm - adjusted_altitude_cm_water();
+}
+
+/*
   check for FBWB_min_altitude_cm violation
  */
 void Plane::check_minimum_altitude(void)
@@ -330,6 +355,20 @@ void Plane::check_minimum_altitude(void)
 
     if (target_altitude.amsl_cm < home.alt + g.FBWB_min_altitude_cm) {
         target_altitude.amsl_cm = home.alt + g.FBWB_min_altitude_cm;
+    }
+}
+
+/*
+  check for FBWB_min_altitude_cm violation
+ */
+void Plane::check_minimum_altitude_water(void)
+{
+    if (g.FBWB_min_altitude_cm < 0) {
+        return;
+    }
+
+    if (target_altitude.amsl_cm < g.FBWB_min_altitude_cm) {
+        target_altitude.amsl_cm = g.FBWB_min_altitude_cm;
     }
 }
 
@@ -434,6 +473,16 @@ void Plane::setup_terrain_target_alt(Location &loc)
 int32_t Plane::adjusted_altitude_cm(void)
 {
     return current_loc.alt - (mission_alt_offset()*100);
+}
+
+/*
+  return current_loc.alt adjusted for ALT_OFFSET
+  This is useful during long flights to account for barometer changes
+  from the GCS, or to adjust the flying height of a long mission
+ */
+int32_t Plane::adjusted_altitude_cm_water(void)
+{
+    return dist_above_water;
 }
 
 /*

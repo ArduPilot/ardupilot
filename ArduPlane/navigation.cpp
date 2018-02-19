@@ -325,16 +325,18 @@ void Plane::update_fbwb_speed_height_water(void)
         if (is_zero(elevator_input) && !is_zero(target_altitude.last_elevator_input)) {
             // the user has just released the elevator, lock in
             // the current altitude
-            set_target_altitude_current();
+            set_target_altitude_current_water();
         }
         
         target_altitude.last_elevator_input = elevator_input;
     }
     
     // check for FBWB altitude limit
-    check_minimum_altitude();
+    check_minimum_altitude_water();
 
-    altitude_error_cm = calc_altitude_error_cm();
+//##TO-DO: add a maximum altitude checker
+
+    altitude_error_cm = calc_altitude_error_cm_water();
     
     calc_throttle();
     calc_nav_pitch();
