@@ -88,10 +88,3 @@ status.txt
 tags
 terrain/
 test.ArduCopter/*
-*.xml
-modules/ChibiOS/
-modules/mavlink
-.idea/ardupilot.iml
-modules/mavlink
-modules/PX4Firmware
-modules/PX4NuttX

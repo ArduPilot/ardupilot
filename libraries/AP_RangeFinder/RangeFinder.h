@@ -100,7 +100,7 @@ public:
     AP_Vector3f _pos_offset[RANGEFINDER_MAX_INSTANCES]; // position offset in body frame
     AP_Int8  _orientation[RANGEFINDER_MAX_INSTANCES];
     AP_Float dist2hll;
-    AP_Float _flpread[RANGEFINDER_MAX_INSTANCES];
+    AP_Float flpread;
 
     static const struct AP_Param::GroupInfo var_info[];
     

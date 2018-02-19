@@ -44,7 +44,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port, Axton: 13: Pixhawk2 Power2 Voltage Sense, 14: Pixhawk2 Power2 Current Sense
+    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
     // @User: Standard
     AP_GROUPINFO("_PIN",     1, RangeFinder, _pin[0], -1),
 
@@ -171,7 +171,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port, Axton: 13: Pixhawk2 Power2 Voltage Sense, 14: Pixhawk2 Power2 Current Sense
+    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
     // @User: Advanced
     AP_GROUPINFO("2_PIN",     13, RangeFinder, _pin[1], -1),
 
@@ -530,19 +530,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
         // @User: Advanced
         AP_GROUPINFO("DIST2HLL", 57, RangeFinder, dist2hll, 0.0),
 
-        // @Param: _FLPREAD
+        // @Param: FLPREAD
         // @DisplayName: Flip rangefinder reading
         // @Description: Flip rangefinder reading if using pressure sensor to calculate distance of hull above water. Leave as 0 for std rangefinders.
         // @Values: 0:Don't flip, 1:Flip
         // @User: Advanced
-        AP_GROUPINFO("_FLPREAD", 58, RangeFinder, _flpread[0], 0.0),
-        
-        // @Param: 2_FLPREAD
-        // @DisplayName: Flip rangefinder reading for Rangefinder 2
-        // @Description: Flip rangefinder reading if using pressure sensor to calculate distance of hull above water. Leave as 0 for std rangefinders.
-        // @Values: 0:Don't flip, 1:Flip
-        // @User: Advanced
-        AP_GROUPINFO("2_FLPREAD", 59, RangeFinder, _flpread[1], 0.0),
+        AP_GROUPINFO("FLPREAD", 58, RangeFinder, flpread, 0.0),
 
 //End of Hydrofoil Changes/////////////////////////////////////////////////////////////////
 #endif
@@ -620,7 +613,7 @@ void RangeFinder::update(void)
     if not
 */
 bool RangeFinder::flip_measurement(void) {
-    if (_flpread == 1.0) { return true; }
+    if (flpread == 1.0) { return true; }
     else { return false; };
 }
 
