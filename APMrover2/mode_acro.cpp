@@ -22,15 +22,6 @@ void ModeAcro::update()
     // convert pilot steering input to desired turn rate in radians/sec
     const float target_turn_rate = (desired_steering / 4500.0f) * radians(g2.acro_turn_rate);
 
-    // determine if pilot is requesting pivot turn
-    const bool is_pivot_turning = g2.motors.have_skid_steering() && is_zero(target_speed) && (!is_zero(desired_steering));
-
-    // stop vehicle if target speed is zero and not pivot turning
-    if (is_zero(target_speed) && !is_pivot_turning) {
-        stop_vehicle();
-        return;
-    }
-
     // set reverse flag backing up
     const bool reversed = is_negative(target_speed);
     rover.set_reverse(reversed);
