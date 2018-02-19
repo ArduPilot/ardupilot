@@ -50,14 +50,9 @@ void ModeSteering::update()
     // apply object avoidance to desired speed using half vehicle's maximum acceleration/deceleration
     rover.g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_accel_max(), ahrs.yaw, target_speed, rover.G_Dt);
 
-    // run speed to throttle output controller
-    if (is_zero(target_speed) && !is_pivot_turning) {
-        stop_vehicle();
-    } else {
-        // run lateral acceleration to steering controller
-        calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
+    // run lateral acceleration to steering controller
+    calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
 
-        // run speed to throttle controller
-        calc_throttle(target_speed, false);
-    }
+    // run speed to throttle controller
+    calc_throttle(target_speed, false);
 }
