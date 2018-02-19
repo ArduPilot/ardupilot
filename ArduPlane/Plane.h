@@ -940,6 +940,7 @@ float dist_above_water = 0.0;
     void update_loiter(uint16_t radius);
     void update_cruise();
     void update_fbwb_speed_height(void);
+    void update_fbwb_speed_height_water(void);
     void setup_turn_angle(void);
     bool reached_loiter_target(void);
     bool print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...);

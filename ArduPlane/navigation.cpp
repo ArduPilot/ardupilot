@@ -298,6 +298,50 @@ void Plane::update_fbwb_speed_height(void)
 }
 
 /*
+  handle speed and height control in FBWB or CRUISE mode. 
+  In this mode the elevator is used to change target altitude. The
+  throttle is used to change target airspeed or throttle
+ */
+void Plane::update_fbwb_speed_height_water(void)
+{
+    uint32_t now = micros();
+    if (now - target_altitude.last_elev_check_us >= 100000) {
+        // we don't run this on every loop as it would give too small granularity on quadplanes at 300Hz, and
+        // give below 1cm altitude change, which would result in no climb or descent
+        float dt = (now - target_altitude.last_elev_check_us) * 1.0e-6;
+        dt = constrain_float(dt, 0.1, 0.15);
+
+        target_altitude.last_elev_check_us = now;
+        
+        float elevator_input = channel_pitch->get_control_in() / 4500.0f;
+    
+        if (g.flybywire_elev_reverse) {
+            elevator_input = -elevator_input;
+        }
+
+        int32_t alt_change_cm = g.flybywire_climb_rate * elevator_input * dt * 100;
+        change_target_altitude(alt_change_cm);
+        
+        if (is_zero(elevator_input) && !is_zero(target_altitude.last_elevator_input)) {
+            // the user has just released the elevator, lock in
+            // the current altitude
+            set_target_altitude_current();
+        }
+        
+        target_altitude.last_elevator_input = elevator_input;
+    }
+    
+    // check for FBWB altitude limit
+    check_minimum_altitude();
+
+    altitude_error_cm = calc_altitude_error_cm();
+    
+    calc_throttle();
+    calc_nav_pitch();
+}
+
+
+/*
   calculate the turn angle for the next leg of the mission
  */
 void Plane::setup_turn_angle(void)
