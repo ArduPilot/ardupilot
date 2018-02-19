@@ -581,7 +581,7 @@ void Plane::rangefinder_height_update(void)
         }
         // correct the range for attitude (multiply by DCM.c.z, which
         // is cos(roll)*cos(pitch))
-        rangefinder_state.height_estimate = distance * ahrs.get_rotation_body_to_ned().c.z;
+        rangefinder_state.height_estimate = distance;
 
         // we consider ourselves to be fully in range when we have 10
         // good samples (0.2s) that are different by 5% of the maximum
