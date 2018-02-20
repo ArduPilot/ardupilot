@@ -27,6 +27,7 @@
 #include "RCInput_RPI.h"
 #include "RCInput_SBUS.h"
 #include "RCInput_SoloLink.h"
+#include "RCInput_Aero.h"
 #include "RCInput_UART.h"
 #include "RCInput_UDP.h"
 #include "RCInput_115200.h"
@@ -158,7 +159,7 @@ static RCInput_DSM rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 static RCInput_Multi rcinDriver{2, new RCInput_SBUS, new RCInput_115200("/dev/uart-sumd")};
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-static RCInput_SoloLink rcinDriver;
+static RCInput_Aero rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
 static RCInput_Navio2 rcinDriver;
