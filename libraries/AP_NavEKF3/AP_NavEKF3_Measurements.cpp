@@ -663,7 +663,7 @@ void NavEKF3_core::correctEkfOriginHeight()
 
     // calculate the observation variance assuming EKF error relative to datum is independent of GPS observation error
     // when not using GPS as height source
-    float originHgtObsVar = sq(gpsHgtAccuracy) + P[8][8];
+    float originHgtObsVar = sq(gpsHgtAccuracy) + P[9][9];
 
     // calculate the correction gain
     float gain = ekfOriginHgtVar / (ekfOriginHgtVar + originHgtObsVar);
