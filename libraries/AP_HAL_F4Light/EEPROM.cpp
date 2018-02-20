@@ -654,15 +654,16 @@ uint16_t EEPROMClass::read(uint16_t Address, uint16_t *Data)
 	
 	Address &= ADDRESS_MASK;
 	
+	uint32_t ptr = pageEnd;
+	
 	// Check each active page address  starting from end - the last value written
-	for (pageBase += 6; pageEnd >= pageBase; pageEnd -= 4){
-	    if (read_16(pageEnd) == Address){// Compare the read address with the virtual address		
-		*Data = read_16(pageEnd - 2);		// Get content of Address-2 which is variable value
+	for (pageBase += 6; ptr >= pageBase; ptr -= 4){
+	    if (read_16(ptr) == Address){// Compare the read address with the virtual address		
+		*Data = read_16(ptr - 2);		// Get content of Address-2 which is variable value
 		return EEPROM_OK;
 	    }
 	}
 
-	// Return ReadStatus value: (0: variable exist, 1: variable doesn't exist)
 	return EEPROM_BAD_ADDRESS;
 }
 

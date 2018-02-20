@@ -14,7 +14,6 @@
 #include "osd_core/compat.h"
 
 
-// #define OSD_DMA_TRANSFER
 
 using namespace F4Light;
 
@@ -840,12 +839,12 @@ void osd_begin(AP_HAL::OwnPtr<F4Light::SPIDevice> spi){
 #ifdef BOARD_OSD_VSYNC_PIN
     Revo_hal_handler h = { .vp = vsync_ISR };
     
-    F4LightGPIO::_attach_interrupt(BOARD_OSD_VSYNC_PIN, h.h, RISING, VSI_INT_PRIORITY);
+    GPIO::_attach_interrupt(BOARD_OSD_VSYNC_PIN, h.h, RISING, VSI_INT_PRIORITY);
 #endif
 
-    task_handle = F4LightScheduler::start_task(OSDns::osd_loop, SMALL_TASK_STACK); // 
-    F4LightScheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY); // less than main task
-    F4LightScheduler::set_task_period(task_handle, 10000);              // 100Hz 
+    task_handle = Scheduler::start_task(OSDns::osd_loop, SMALL_TASK_STACK); // 
+    Scheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY); // less than main task
+    Scheduler::set_task_period(task_handle, 10000);              // 100Hz 
 }
 
 // all task is in one thread so no sync required
@@ -855,7 +854,7 @@ void osd_loop() {
         osd_need_redraw=false;
         
         OSD::update();           
-        F4LightScheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY); // restore priority to low
+        Scheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY); // restore priority to low
     }
 
     uint32_t pt=millis();
@@ -913,10 +912,10 @@ void osd_loop() {
         
         if(update_screen && vsync_wait && (millis() - vsync_time)>50){ // прерывания остановились - с последнего прошло более 50мс
             vsync_wait=0; // хватит ждать
-            F4LightScheduler::set_task_priority(task_handle, OSD_HIGH_PRIORITY); // equal to main 
+            Scheduler::set_task_priority(task_handle, OSD_HIGH_PRIORITY); // equal to main 
             OSD::update(); // обновим принудительно (и далее будем обновлять каждые 20мс)
             update_screen = 0;
-            F4LightScheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY);
+            Scheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY);
         }
     }
 
@@ -988,8 +987,8 @@ void vsync_ISR(){
 
     if(update_screen) { // there is data for screen
         osd_need_redraw=true;
-        F4LightScheduler::set_task_priority(task_handle, OSD_HIGH_PRIORITY); // higher than all drivers so it will be scheduled just after semaphore release
-        F4LightScheduler::task_resume(task_handle); // task should be finished at this time so resume it
+        Scheduler::set_task_priority(task_handle, OSD_HIGH_PRIORITY); // higher than all drivers so it will be scheduled just after semaphore release
+        Scheduler::task_resume(task_handle); // task should be finished at this time so resume it
         update_screen = 0;
     }
 }
@@ -1023,16 +1022,16 @@ uint32_t osd_txspace() {
 void osd_putc(uint8_t c){ 
     uint8_t cnt=10;
     while(rb_is_full(&osd_txrb)) {
-        F4LightScheduler::set_task_priority(task_handle, OSD_HIGH_PRIORITY); // to run in time of yield()
+        Scheduler::set_task_priority(task_handle, OSD_HIGH_PRIORITY); // to run in time of yield()
         hal_yield(0);
         if(--cnt == 0) break; // destination don't listen
     }
     rb_push_insert(&osd_txrb, c);
-    F4LightScheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY); // restore priority to low
+    Scheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY); // restore priority to low
 }
 
 void osd_dequeue() {
-    F4LightScheduler::set_task_priority(task_handle, 100); // equal to main to not overflow buffers on packet decode
+    Scheduler::set_task_priority(task_handle, 100); // equal to main to not overflow buffers on packet decode
 
     while(!rb_is_empty(&osd_txrb)) {
         extern bool mavlink_one_byte(char c);
@@ -1040,7 +1039,7 @@ void osd_dequeue() {
     
         if(mavlink_one_byte(c)) lflags.got_data=true;
     }
-    F4LightScheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY); // restore priority to low
+    Scheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY); // restore priority to low
 
 }
 
