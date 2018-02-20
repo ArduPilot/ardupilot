@@ -104,7 +104,7 @@ uint16_t AP_Arming::compass_magfield_expected() const
 
 bool AP_Arming::is_armed()
 {
-    if ( require == NONE && !armed ) {
+    if (require == NONE && !armed) {
         arm(NONE);
     }
     return armed;
