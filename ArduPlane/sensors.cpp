@@ -59,10 +59,10 @@ void Plane::read_rangefinder(void)
 		vel_above_water = rangefinder.get_expo()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo())*vel_above_water;
 	}
 	else{
-		dist_above_water = (rangefinder.get_hull_offset() + wtrdistcm)*rangefinder.get_expo()+(1.0-rangefinder.get_expo())*dist_above_water;
+		dist_above_water = (rangefinder.get_offb()*ahrs.sin_roll()+(rangefinder.get_offc()+wtrdistcm)*ahrs.cos_roll())*ahrs.cos_pitch()-rangefinder.get_offa()*ahrs.sin_pitch();
 		vel_above_water = rangefinder.get_expo()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo())*vel_above_water;
 	}
-	// ## TO-DO : Establish pitch compensation of rangefinder based on offset from c.g.
+	// ## TO-DO : Implement Kalman Filter for vel estimate using rangefinder
 }
 /*
   calibrate compass
