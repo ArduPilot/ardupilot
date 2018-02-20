@@ -99,9 +99,12 @@ public:
     AP_Int16 _powersave_range;
     AP_Vector3f _pos_offset[RANGEFINDER_MAX_INSTANCES]; // position offset in body frame
     AP_Int8  _orientation[RANGEFINDER_MAX_INSTANCES];
-    AP_Float dist2hll;
-    AP_Float flpread;
-    AP_Float expo;
+    AP_Float _dist2hll;
+    AP_Float _flpread;
+    AP_Float _expo;
+    AP_Float _offa;
+    AP_Float _offb;
+    AP_Float _offc;
 
     static const struct AP_Param::GroupInfo var_info[];
     
@@ -117,9 +120,15 @@ public:
     // 10Hz from main loop
     void update(void);
 
-    float get_hull_offset(void) { return dist2hll; }
+    float get_hull_offset(void) { return _dist2hll; }
 
-    float get_expo(void) { return expo; }
+    float get_expo(void) { return _expo; }
+
+    float get_offa(void) { return _offa; }
+
+    float get_offb(void) { return _offb; }
+
+    float get_offc(void) { return _offc; }
 
     bool flip_measurement(void);
 

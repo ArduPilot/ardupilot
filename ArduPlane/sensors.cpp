@@ -54,11 +54,12 @@ void Plane::read_rangefinder(void)
 	float prev_dist = dist_above_water;
 	float wtrdistcm = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
 	if(rangefinder.flip_measurement()) {
-		dist_above_water = rangefinder.get_hull_offset() - wtrdistcm;
+		//Where Low Pass filter Lives. Alpha is the the RNGFND_EXPO parameter.
+		dist_above_water = (rangefinder.get_hull_offset() - wtrdistcm)*rangefinder.get_expo()+(1.0-rangefinder.get_expo())*dist_above_water;
 		vel_above_water = rangefinder.get_expo()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo())*vel_above_water;
 	}
 	else{
-		dist_above_water = rangefinder.get_hull_offset() + wtrdistcm;
+		dist_above_water = (rangefinder.get_hull_offset() + wtrdistcm)*rangefinder.get_expo()+(1.0-rangefinder.get_expo())*dist_above_water;
 		vel_above_water = rangefinder.get_expo()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo())*vel_above_water;
 	}
 	// ## TO-DO : Establish pitch compensation of rangefinder based on offset from c.g.

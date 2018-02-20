@@ -528,21 +528,42 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
         // @Description: Distance from rangefinder to hull in cm. This can be used as a sensor offset for standard rangefinders or the offset when using pressure sensors
         // @Values: -500 500
         // @User: Advanced
-        AP_GROUPINFO("DIST2HLL", 57, RangeFinder, dist2hll, 0.0),
+        AP_GROUPINFO("DIST2HLL", 57, RangeFinder, _dist2hll, 0.0),
 
         // @Param: FLPREAD
-        // @DisplayName: Flip rangefinder reading
-        // @Description: Flip rangefinder reading if using pressure sensor to calculate distance of hull above water. Leave as 0 for std rangefinders.
+        // @DisplayName: Flip rangefinder reading since pressure sensor is being used
+        // @Description: Flip rangefinder reading if using pressure sensor to calculate distance of hull above water. Leave as 0 for std rangefinders. Also signals code that pressure sensor is being used for z-height calculations
         // @Values: 0:Don't flip, 1:Flip
         // @User: Advanced
-        AP_GROUPINFO("FLPREAD", 58, RangeFinder, flpread, 0.0),
+        AP_GROUPINFO("FLPREAD", 58, RangeFinder, _flpread, 0.0),
 
-        // @Param: FLPREAD
-        // @DisplayName: Flip rangefinder reading
-        // @Description: Flip rangefinder reading if using pressure sensor to calculate distance of hull above water. Leave as 0 for std rangefinders.
-        // @Values: 0:Don't flip, 1:Flip
+        // @Param: EXPO
+        // @DisplayName: Lowpass Filter Gain
+        // @Description: Low pass filter gain for rangefinder
+        // @Values: 0 1
         // @User: Advanced
-        AP_GROUPINFO("_EXPO", 59, RangeFinder, expo, 0.0),
+        AP_GROUPINFO("_EXPO", 59, RangeFinder, _expo, 1.0),
+
+        // @Param: OFFSETA
+        // @DisplayName: Offset A
+        // @Description: X distance from vehicle center of gravity to rangefinder in NED reference frame in cm
+        // @Values: -1000 1000
+        // @User: Advanced
+        AP_GROUPINFO("_OFF_A", 60, RangeFinder, _offa, 0.0),
+
+        // @Param: OFFSETB
+        // @DisplayName: Offset B
+        // @Description: Y distance from vehicle center of gravity to rangefinder in NED reference frame in cm
+        // @Values: -1000 1000
+        // @User: Advanced
+        AP_GROUPINFO("_OFF_B", 61, RangeFinder, _offb, 0.0),
+
+        // @Param: OFFSETC
+        // @DisplayName: Offset C
+        // @Description: Z distance from vehicle center of gravity to rangefinder in NED reference frame in cm
+        // @Values: -1000 1000
+        // @User: Advanced
+        AP_GROUPINFO("_OFF_C", 62, RangeFinder, _offc, 0.0),
 
 //End of Hydrofoil Changes/////////////////////////////////////////////////////////////////
 #endif
@@ -620,7 +641,7 @@ void RangeFinder::update(void)
     if not
 */
 bool RangeFinder::flip_measurement(void) {
-    if (flpread == 1.0) { return true; }
+    if (_flpread == 1.0) { return true; }
     else { return false; };
 }
 
