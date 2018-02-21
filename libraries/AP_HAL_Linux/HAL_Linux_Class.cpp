@@ -34,6 +34,7 @@
 #include "RCInput_ZYNQ.h"
 #include "RCOutput_AioPRU.h"
 #include "RCOutput_Bebop.h"
+#include "RCOutput_CANZero.h"
 #include "RCOutput_Disco.h"
 #include "RCOutput_PCA9685.h"
 #include "RCOutput_PRU.h"
@@ -222,7 +223,7 @@ static ap::RCOutput_Tap rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
 static RCOutput_Sysfs rcoutDriver(0, 0, 15);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
-static RCOutput_Sysfs rcoutDriver(0, 0, 2);
+static RCOutput_CANZero rcoutDriver(0, 0, 2, 16);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
 static RCOutput_Sysfs rcoutDriver(0, 0, 8);
 #else

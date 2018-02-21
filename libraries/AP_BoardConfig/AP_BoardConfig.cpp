@@ -78,6 +78,12 @@
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
 #endif
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
+#define BOARD_DEFAULT_CTL 0x03
+#define BOARD_DEFAULT_SPD 12000
+#define BOARD_DEFAULT_ACC 20000
+#endif
+
 extern const AP_HAL::HAL& hal;
 AP_BoardConfig *AP_BoardConfig::instance;
 
@@ -192,7 +198,33 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Path: ../libraries/AP_Param_Helper/AP_Param_Helper.cpp
     AP_SUBGROUPINFO(param_helper, "", 12, AP_BoardConfig, AP_Param_Helper),
 #endif
-    
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
+	// @Param: CTL
+	// @DisplayName: Controlword
+	// @Description: The controlword to be used to turn motors on.
+	// @Range: 0x0000 0xFFFF
+	// @RebootRequired: True
+	// @User: Advanced
+	AP_GROUPINFO("CANZERO_CTL", 13, AP_BoardConfig, CANZero_CTL, BOARD_DEFAULT_CTL),
+
+	// @Param: SPD
+	// @DisplayName: Maximum rpm
+	// @Description: Determines the maximum RPM of the motors.
+	// @Range:
+	// @RebootRequired: True
+	// @User: Advanced
+	AP_GROUPINFO("CANZERO_SPD", 14, AP_BoardConfig, CANZero_SPD, BOARD_DEFAULT_SPD),
+
+	// @Param: ACC
+	// @DisplayName: Acceleration in rpmps
+	// @Description: Acceleration of the motors in rpmps.
+	// @Range:
+	// @RebootRequired: True
+	// @User: Advanced
+	AP_GROUPINFO("CANZERO_ACC", 15, AP_BoardConfig, CANZero_ACC, BOARD_DEFAULT_ACC),
+#endif
+
     AP_GROUPEND
 };
 

@@ -55,6 +55,12 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
+	AP_Int16 CANZero_CTL;
+	AP_Int32 CANZero_SPD;
+	AP_Int32 CANZero_ACC;
+#endif
+
     // notify user of a fatal startup error related to available sensors. 
     static void sensor_config_error(const char *reason);
 
