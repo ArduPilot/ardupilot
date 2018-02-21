@@ -99,65 +99,54 @@
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if SPRAYER == ENABLED
-#include <AC_Sprayer/AC_Sprayer.h>         // crop sprayer library
+ # include <AC_Sprayer/AC_Sprayer.h>
 #endif
 #if GRIPPER_ENABLED == ENABLED
-#include <AP_Gripper/AP_Gripper.h>             // gripper stuff
+ # include <AP_Gripper/AP_Gripper.h>
 #endif
 #if PARACHUTE == ENABLED
-#include <AP_Parachute/AP_Parachute.h>       // Parachute release library
+ # include <AP_Parachute/AP_Parachute.h>
 #endif
 #if PRECISION_LANDING == ENABLED
-#include <AC_PrecLand/AC_PrecLand.h>
-#include <AP_IRLock/AP_IRLock.h>
+ # include <AC_PrecLand/AC_PrecLand.h>
+ # include <AP_IRLock/AP_IRLock.h>
 #endif
 #if FRSKY_TELEM_ENABLED == ENABLED
-#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+ # include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #endif
 #if ADSB_ENABLED == ENABLED
-#include <AP_ADSB/AP_ADSB.h>
+ # include <AP_ADSB/AP_ADSB.h>
 #endif
-
-
 #if AC_FENCE == ENABLED
-#include <AC_Fence/AC_Fence.h>           // Arducopter Fence library
+ # include <AC_Fence/AC_Fence.h>
 #endif
-
 #if AC_TERRAIN == ENABLED
-#include <AP_Terrain/AP_Terrain.h>
+ # include <AP_Terrain/AP_Terrain.h>
 #endif
-
 #if OPTFLOW == ENABLED
-#include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
+ # include <AP_OpticalFlow/AP_OpticalFlow.h>
 #endif
-
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
-#include <AP_VisualOdom/AP_VisualOdom.h>
+ # include <AP_VisualOdom/AP_VisualOdom.h>
 #endif
-
 #if RANGEFINDER_ENABLED == ENABLED
-#include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
+ # include <AP_RangeFinder/AP_RangeFinder.h>
 #endif
-
 #if PROXIMITY_ENABLED == ENABLED
-#include <AP_Proximity/AP_Proximity.h>
+ # include <AP_Proximity/AP_Proximity.h>
 #endif
-
 #if CAMERA == ENABLED
-#include <AP_Camera/AP_Camera.h>          // Photo or video camera
+ # include <AP_Camera/AP_Camera.h>
 #endif
-
 #if ADVANCED_FAILSAFE == ENABLED
-#include "afs_copter.h"
+ # include "afs_copter.h"
 #endif
-
 #if TOY_MODE_ENABLED == ENABLED
-#include "toy_mode.h"
+ # include "toy_mode.h"
 #endif
-
 #if WINCH_ENABLED == ENABLED
-#include <AP_WheelEncoder/AP_WheelEncoder.h>
-#include <AP_Winch/AP_Winch.h>
+ # include <AP_WheelEncoder/AP_WheelEncoder.h>
+ # include <AP_Winch/AP_Winch.h>
 #endif
 
 // Local modules
