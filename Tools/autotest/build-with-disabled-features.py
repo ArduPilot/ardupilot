@@ -4,6 +4,25 @@ from __future__ import print_function
 
 '''
 Build ArduPilot with various build-time options enabled or disabled
+
+Usage is straight forward; invoke this script from the root directory
+of an ArduPilot checkout:
+
+pbarker@bluebottle:~/rc/ardupilot(build-with-disabled-features)$ ./Tools/autotest/build-with-disabled-features.py 
+
+BWFD: Building
+Running: ("/home/pbarker/rc/ardupilot/Tools/autotest/autotest.py" "build.ArduCopter") in (.)
+lckfile='/home/pbarker/rc/buildlogs/autotest.lck'
+.
+.
+.
+>>>> PASSED STEP: build.ArduCopter at Thu Feb 22 09:46:43 2018
+check step:  build.ArduCopter
+BWFD: ADVANCED_FAILSAFE OK
+BWFD: Successes: ['MOUNT', 'AUTOTUNE_ENABLED', 'AC_FENCE', 'CAMERA', 'RANGEFINDER_ENABLED', 'PROXIMITY_ENABLED', 'AC_RALLY', 'AC_AVOID_ENABLED', 'AC_TERRAIN', 'PARACHUTE', 'NAV_GUIDED', 'OPTFLOW', 'VISUAL_ODOMETRY_ENABLED', 'FRSKY_TELEM_ENABLED', 'ADSB_ENABLED', 'PRECISION_LANDING', 'SPRAYER', 'WINCH_ENABLED', 'ADVANCED_FAILSAFE']
+BWFD: Failures: ['LOGGING_ENABLED']
+pbarker@bluebottle:~/rc/ardupilot(build-with-disabled-features)$ q
+
 '''
 
 import re
