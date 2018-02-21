@@ -58,11 +58,8 @@
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
-#include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
-#include <AP_Proximity/AP_Proximity.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
 #include <AP_Beacon/AP_Beacon.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
@@ -75,7 +72,6 @@
 #include <AC_WPNav/AC_WPNav.h>           // ArduCopter waypoint navigation library
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
-#include <AC_Fence/AC_Fence.h>           // Arducopter Fence library
 #include <AC_Avoidance/AC_Avoid.h>           // Arducopter stop at fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
@@ -84,14 +80,11 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_ADSB/AP_ADSB.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 #include <AP_Button/AP_Button.h>
 #include <AP_Arming/AP_Arming.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
 
@@ -120,6 +113,34 @@
 #endif
 #if FRSKY_TELEM_ENABLED == ENABLED
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#endif
+#if ADSB_ENABLED == ENABLED
+#include <AP_ADSB/AP_ADSB.h>
+#endif
+
+
+#if AC_FENCE == ENABLED
+#include <AC_Fence/AC_Fence.h>           // Arducopter Fence library
+#endif
+
+#if AC_TERRAIN == ENABLED
+#include <AP_Terrain/AP_Terrain.h>
+#endif
+
+#if OPTFLOW == ENABLED
+#include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
+#endif
+
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+#include <AP_VisualOdom/AP_VisualOdom.h>
+#endif
+
+#if RANGEFINDER_ENABLED == ENABLED
+#include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
+#endif
+
+#if PROXIMITY_ENABLED == ENABLED
+#include <AP_Proximity/AP_Proximity.h>
 #endif
 
 #if CAMERA == ENABLED
@@ -492,7 +513,7 @@ private:
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
-    // current_loc uses the baro/gps soloution for altitude rather than gps only.
+    // current_loc uses the baro/gps solution for altitude rather than gps only.
     AP_Mount camera_mount{ahrs, current_loc};
 #endif
 
