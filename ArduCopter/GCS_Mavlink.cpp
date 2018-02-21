@@ -29,7 +29,11 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
     uint32_t custom_mode = control_mode;
 
     // set system as critical if any failsafe have triggered
-    if (failsafe.radio || failsafe.battery || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb)  {
+    if (failsafe.radio || failsafe.battery || failsafe.gcs || failsafe.ekf || failsafe.terrain
+#if ADSB_ENABLED == ENABLE
+        || failsafe.adsb
+#endif
+        )  {
         system_status = MAV_STATE_CRITICAL;
     }
 
@@ -453,8 +457,10 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_ADSB_VEHICLE:
+#if ADSB_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         copter.adsb.send_adsb_vehicle(chan);
+#endif
         break;
     case MSG_BATTERY_STATUS:
         send_battery_status(copter.battery);
@@ -683,10 +689,12 @@ void GCS_MAVLINK_Copter::handle_change_alt_request(AP_Mission::Mission_Command &
 void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
                                         mavlink_message_t &msg)
 {
+#if ADSB_ENABLED == ENABLED
     if (copter.g2.dev_options.get() & DevOptionADSBMAVLink) {
         // optional handling of GLOBAL_POSITION_INT as a MAVLink based avoidance source
         copter.avoidance_adsb.handle_msg(msg);
     }
+#endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
 

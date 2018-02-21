@@ -104,9 +104,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_throw;
             break;
 
+#if ADSB_ENABLED == ENABLED
         case AVOID_ADSB:
             ret = &mode_avoid_adsb;
             break;
+#endif
 
         case GUIDED_NOGPS:
             ret = &mode_guided_nogps;
@@ -177,7 +179,9 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     control_mode_reason = reason;
     DataFlash.Log_Write_Mode(control_mode);
 
+#if ADSB_ENABLED == ENABLED
     adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
+#endif
 
 #if AC_FENCE == ENABLED
     // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
