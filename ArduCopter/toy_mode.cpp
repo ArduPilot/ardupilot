@@ -635,22 +635,28 @@ void ToyMode::update()
     
     if (new_mode != copter.control_mode) {
         load_test.running = false;
+#if AC_FENCE == ENABLED
         copter.fence.enable(false);
+#endif
         if (set_and_remember_mode(new_mode, MODE_REASON_TX_COMMAND)) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: mode %s", copter.flightmode->name4());
             // force fence on in all GPS flight modes
+#if AC_FENCE == ENABLED
             if (copter.flightmode->requires_GPS()) {
                 copter.fence.enable(true);
             }
+#endif
         } else {
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: %u FAILED", (unsigned)new_mode);
             if (new_mode == RTL) {
                 // if we can't RTL then land
                 gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: LANDING");
                 set_and_remember_mode(LAND, MODE_REASON_TMODE);
+#if AC_FENCE == ENABLED
                 if (copter.landing_with_GPS()) {
                     copter.fence.enable(true);
                 }
+#endif
             }
         }
     }
