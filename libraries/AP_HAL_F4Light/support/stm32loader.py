@@ -22,11 +22,13 @@
 # along with stm32loader; see the file COPYING3.  If not see
 # <http://www.gnu.org/licenses/>.
 
-import sys, getopt
+from __future__ import print_function
+
+import sys
+import getopt
 import serial
 import time
 import glob
-import time
 import tempfile
 import os
 import subprocess
@@ -37,12 +39,17 @@ try:
 except:
     usepbar = 0
 
+try:
+    xrange          # Python 2
+except NameError:
+    xrange = range  # Python 3
+
 # Verbose level
 QUIET = 20
 
 def mdebug(level, message):
-    if(QUIET >= level):
-        print >> sys.stderr , message
+    if QUIET >= level:
+        print(message, file=sys.stderr)
 
 
 class CmdException(Exception):
@@ -321,7 +328,7 @@ class CommandInterface:
 
 
 def usage():
-    print """Usage: %s [-hqVewvr] [-l length] [-p port] [-b baud] [-a addr] [file.bin]
+    print("""Usage: %s [-hqVewvr] [-l length] [-p port] [-b baud] [-a addr] [file.bin]
     -h          This help
     -q          Quiet
     -V          Verbose
@@ -336,7 +343,7 @@ def usage():
 
     ./stm32loader.py -e -w -v example/main.bin
 
-    """ % sys.argv[0]
+    """ % sys.argv[0])
 
 def read(filename):
     """Read the file to be programmed and turn it into a binary"""
@@ -373,7 +380,7 @@ if __name__ == "__main__":
     try:
         import psyco
         psyco.full()
-        print "Using Psyco..."
+        print("Using Psyco...")
     except ImportError:
         pass
 
@@ -393,9 +400,9 @@ if __name__ == "__main__":
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hqVewvrp:b:a:l:")
-    except getopt.GetoptError, err:
+    except getopt.GetoptError as err:
         # print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
+        print(str(err))  # will print something like "option -a not recognized"
         usage()
         sys.exit(2)
 
@@ -456,7 +463,7 @@ if __name__ == "__main__":
         try:
             cmd.initChip()
         except CmdException:
-            print "Can't init. Ensure that BOOT0 is enabled and reset device"
+            print("Can't init. Ensure that BOOT0 is enabled and reset device")
 
         bootversion = cmd.cmdGet()
 
@@ -486,20 +493,19 @@ if __name__ == "__main__":
         if conf['verify']:
             verify = cmd.readMemory(conf['address'], len(data))
             if(data == verify):
-                print "Verification OK"
+                print("Verification OK")
             else:
-                print "Verification FAILED"
-                print str(len(data)) + ' vs ' + str(len(verify))
+                print("Verification FAILED")
+                print('{} vs {}'.format(len(data), len(verify)))
                 for i in xrange(0, len(data)):
                     if data[i] != verify[i]:
-                        print hex(i) + ': ' + hex(data[i]) + ' vs ' + hex(verify[i])
+                        print(hex(i) + ': ' + hex(data[i]) + ' vs ' + hex(verify[i]))
 
         if not conf['write'] and conf['read']:
             rdata = cmd.readMemory(conf['address'], conf['len'])
 #            file(conf['fname'], 'wb').write(rdata)
-            file(args[0], 'wb').write(''.join(map(chr,rdata)))
+            open(args[0], 'wb').write(''.join(map(chr, rdata)))
 
 #    cmd.cmdGo(addr + 0x04)
     finally:
         cmd.releaseChip()
-
