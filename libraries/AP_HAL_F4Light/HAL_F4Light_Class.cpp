@@ -15,8 +15,6 @@
 #include "HAL_F4Light_Class.h"
 #include "RCInput.h"
 #include "Util.h"
-//#include <AP_HAL_Empty/AP_HAL_Empty.h>
-//#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
 #include <AP_Param_Helper/AP_Param_Helper.h>
 
@@ -24,11 +22,6 @@
 
 #if defined(USE_SOFTSERIAL)
 #include "UART_SoftDriver.h"
-#endif
-
-
-#ifdef USE_WAYBACK_ENABLE
-#include "AP_WayBack/AP_WayBack.h"
 #endif
 
 
@@ -280,10 +273,10 @@ void HAL_F4Light::run(int argc,char* const argv[], Callbacks* callbacks) const
 
 
 #if defined(BOARD_SDCARD_NAME) && defined(BOARD_SDCARD_CS_PIN)
-        printf("\nEnabling SD at %ldms\n", millis());            
+        printf("\nEnabling SD at %ldms\n", AP_HAL::millis());            
         SD.begin(F4Light::SPIDeviceManager::_get_device(BOARD_SDCARD_NAME));
 #elif defined(BOARD_DATAFLASH_FATFS)
-        printf("\nEnabling DataFlash as SD at %ldms\n", millis());            
+        printf("\nEnabling DataFlash as SD at %ldms\n", AP_HAL::millis());            
         SD.begin(F4Light::SPIDeviceManager::_get_device(HAL_DATAFLASH_NAME));
 #endif
 
@@ -321,33 +314,6 @@ void HAL_F4Light::run(int argc,char* const argv[], Callbacks* callbacks) const
 }
 
 
-#if USE_WAYBACK == ENABLED && defined(WAYBACK_DEBUG)
-
-#define SERIAL_BUFSIZE 128
-
-static AP_HAL::UARTDriver* uart;
-
-static void getSerialLine(char *cp ){      // получение строки
-    uint8_t cnt=0; // строка не длиннее 256 байт
-
-    while(true){
-        if(!uart->available()){
-            continue;
-        }
-
-        char c=uart->read();
-
-        if(c==0x0d || (cnt && c==0x0a)){
-            cp[cnt]=0;
-            return;
-        }
-        if(c==0x0a) continue; // skip unneeded LF
-
-        cp[cnt]=c;
-        if(cnt<SERIAL_BUFSIZE) cnt++;
-    }
-}
-#endif
 
 static bool lateInitDone=false;
 
@@ -454,117 +420,6 @@ void HAL_F4Light::lateInit() {
     }
 #endif
 
-#if USE_WAYBACK == ENABLED && defined(WAYBACK_DEBUG)
-    {
-        uint8_t dbg = hal_param_helper->_dbg_wayback;
-        if(dbg){
-                    
-            dbg -=1;
-
-            if(dbg < sizeof(uarts)/sizeof(AP_HAL::UARTDriver**) ){
-                AP_HAL::UARTDriver** up = uarts[dbg];
-                if(up && *up){        
-                    uart = *up;
-            
-                    AP_WayBack track;
-                    Scheduler::_delay(5000); // time to connect
-            
-                    track.set_debug_mode(true);
-                    track.init();
-                    track.start();
-                    
-                    uart->begin(115200);
-    
-                    uart->println("send pairs 'lat,lon'");
-                    uart->println("send H for help");
-            
-                    char buffer[SERIAL_BUFSIZE];
-                    float x,y;
-                    char *bp=buffer;
-                    uint16_t i=0;
-            
-                    while(1){
-                        getSerialLine(buffer);
-
-                        if(buffer[1]==0) {
-                            switch(buffer[0]){
-                            case 'G': // return by track
-                                // get point
-    
-                                track.stop();
-
-                                while(track.get_point(x,y)){
-                                    uart->print(x);
-                                    uart->print(",");
-                                    uart->println(y);
-                                }
-                                uart->println(".");
-                                break;
-                                
-                            case 'c':
-                            case 'C':
-                                hal_param_helper->_dbg_wayback = 0;
-                                hal_param_helper->_dbg_wayback.save();
-                                goto done;
-                                
-                                
-                            case 'R': // Reset
-                                track.stop();
-                                track.end();
-                                track.init();
-                                track.start();
-                                break;
-                            
-                            case 'S': // show current state
-                                i=0;
-                                while(true){
-                                    uint16_t k=i;
-                                    if(!track.show_track(i, x, y )) break;
-                                    uart->print(k);
-                                    uart->print(",");
-                                    uart->print(x);
-                                    uart->print(",");
-                                    uart->println(y);
-                                }
-                                uart->println(".");
-                                break;
-                            case 'h':
-                            case 'H':
-                                uart->println("send pairs 'lat,lon'");
-                                uart->println("send G to get point");
-
-                                uart->println("send S to show track point");            
-                                uart->println("send R to reset track");            
-                                uart->println("send C to cancel this mode");            
-                                break;
-                        
-                            }
-                        } else {
-                            // given a point - "x,y"
-                            bp=buffer;
-
-                            while(*bp) {
-                                if(*bp++ == ',') break;
-                            }
-                            x=atof(buffer);
-                            y=atof(bp);
-        
-                            uint32_t t=AP_HAL::micros();
-
-                            track.add_point(x,y);
-                            t=AP_HAL::micros() - t;
-
-                            uart->print("# time=");
-                            uart->println(t);
-                        
-                        }
-                    }
-                }
-            }
-        }
-    }
-done:
-#endif
 
     RCOutput::lateInit(); // 2nd stage - now with loaded parameters
 

@@ -239,12 +239,12 @@ uint8_t Sd2Card::init(AP_HAL::OwnPtr<F4Light::SPIDevice> spi) {
 
     _spi = std::move(spi);
 
-    F4LightGPIO::_pinMode(DF_RESET,OUTPUT);
-    F4LightGPIO::_setSpeed(DF_RESET, GPIO_speed_100MHz);
+    GPIO::_pinMode(DF_RESET,OUTPUT);
+    GPIO::_setSpeed(DF_RESET, GPIO_speed_100MHz);
     // Reset the chip. We don't need a semaphore because no SPI activity
-    F4LightGPIO::_write(DF_RESET,0);
-    F4LightScheduler::_delay(1);
-    F4LightGPIO::_write(DF_RESET,1);
+    GPIO::_write(DF_RESET,0);
+    Scheduler::_delay(1);
+    GPIO::_write(DF_RESET,1);
 
     if (!_spi) {
         printf("DataFlash SPIDeviceDriver not found\n");

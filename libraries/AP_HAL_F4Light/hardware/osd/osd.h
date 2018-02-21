@@ -36,5 +36,6 @@ namespace OSDns {// OSD interface emulates UART
     void max_do_transfer(const uint8_t *buffer, uint16_t len);
     void update_max_buffer(const uint8_t *buffer, uint16_t len);
 
+    inline uint32_t millis(){ return AP_HAL::millis(); }
 }
 #endif
