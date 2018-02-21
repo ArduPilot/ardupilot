@@ -654,10 +654,6 @@ void Copter::log_init(void)
 
 #else // LOGGING_ENABLED
 
-void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, \
-                                float meas_min, float meas_max, float new_gain_rp, \
-                                float new_gain_rd, float new_gain_sp, float new_ddt) {}
-void Copter::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
 void Copter::Log_Write_Nav_Tuning() {}
 void Copter::Log_Write_Control_Tuning() {}
 void Copter::Log_Write_Performance() {}
