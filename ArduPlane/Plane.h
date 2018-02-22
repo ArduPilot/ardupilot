@@ -95,6 +95,7 @@
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_ICEngine/AP_ICEngine.h>
+#include <AP_Gripper/AP_Gripper.h>
 #include <AP_Landing/AP_Landing.h>
 
 #include "GCS_Mavlink.h"
