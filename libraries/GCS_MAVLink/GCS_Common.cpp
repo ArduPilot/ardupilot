@@ -256,17 +256,24 @@ void GCS_MAVLINK::send_distance_sensor_downward(const RangeFinder &rangefinder) 
     send_distance_sensor(rangefinder, instance);
 }
 
-void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder) const
+//Found where distances are being send
+void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder, AP_AHRS &ahrs) const
 {
     // exit immediately if rangefinder is disabled or not downward looking
     if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
         // no sonar to report
         return;
     }
+/* Old Code
     mavlink_msg_rangefinder_send(
             chan,
             rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f,
             rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
+*/  
+	mavlink_msg_rangefinder_send(
+            chan,
+            ahrs.get_h_water(),
+            ahrs.get_h_dot_water());
 }
 
 bool GCS_MAVLINK::send_proximity(const AP_Proximity &proximity) const

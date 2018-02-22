@@ -458,7 +458,7 @@ void Plane::setup_terrain_target_alt(Location &loc)
  */
 int32_t Plane::adjusted_altitude_cm(void)
 {
-    return current_loc.alt - (mission_alt_offset()*100);
+    return dist_above_water;
 }
 
 /*

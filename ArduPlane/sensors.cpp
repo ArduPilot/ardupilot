@@ -62,6 +62,8 @@ void Plane::read_rangefinder(void)
 		dist_above_water = (rangefinder.get_offb()*ahrs.sin_roll()+(rangefinder.get_offc()+wtrdistcm)*ahrs.cos_roll())*ahrs.cos_pitch()-rangefinder.get_offa()*ahrs.sin_pitch();
 		vel_above_water = rangefinder.get_expo()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo())*vel_above_water;
 	}
+	ahrs.set_h_water(dist_above_water);
+	ahrs.set_h_dot_water(vel_above_water);
 	// ## TO-DO : Implement Kalman Filter for vel estimate using rangefinder
 }
 /*
