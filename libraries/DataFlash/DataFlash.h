@@ -339,7 +339,7 @@ private:
     // possibly expensive calls to start log system:
     void Prep();
 
-    bool _writes_enabled;
+    bool _writes_enabled:1;
 
     /* support for retrieving logs via mavlink: */
     uint8_t  _log_listing:1; // sending log list
