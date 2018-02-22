@@ -105,7 +105,15 @@ public:
     AP_Float _offa;
     AP_Float _offb;
     AP_Float _offc;
-
+    AP_Float _expo_v;
+    AP_Float _2dist2hll;
+    AP_Float _2flpread;
+    AP_Float _2expo;
+    AP_Float _2offa;
+    AP_Float _2offb;
+    AP_Float _2offc;
+    AP_Float _2expo_v;
+    AP_Int8 _sensor_sel;
     static const struct AP_Param::GroupInfo var_info[];
     
     // Return the number of range finder instances
@@ -124,6 +132,8 @@ public:
 
     float get_expo(void) { return _expo; }
 
+    float get_expo_vel(void) { return _expo_v; }
+
     float get_offa(void) { return _offa; }
 
     float get_offb(void) { return _offb; }
@@ -131,6 +141,22 @@ public:
     float get_offc(void) { return _offc; }
 
     bool flip_measurement(void);
+
+    float get_hull_offset2(void) { return _2dist2hll; }
+
+    float get_expo2(void) { return _2expo; }
+
+    float get_expo_vel2(void) { return _2expo_v; }
+
+    float get_offa2(void) { return _2offa; }
+
+    float get_offb2(void) { return _2offb; }
+
+    float get_offc2(void) { return _2offc; }
+
+    uint8_t get_sensor_sel(void) { return _sensor_sel; }
+
+    bool flip_measurement2(void);
 
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(mavlink_message_t *msg);

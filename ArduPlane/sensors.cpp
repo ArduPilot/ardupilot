@@ -52,15 +52,32 @@ void Plane::read_rangefinder(void)
     rangefinder_height_update();
 
 	float prev_dist = dist_above_water;
-	float wtrdistcm = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
-	if(rangefinder.flip_measurement()) {
-		//Where Low Pass filter Lives. Alpha is the the RNGFND_EXPO parameter.
-		dist_above_water = (rangefinder.get_hull_offset() - wtrdistcm)*rangefinder.get_expo()+(1.0-rangefinder.get_expo())*dist_above_water;
-		vel_above_water = rangefinder.get_expo()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo())*vel_above_water;
+	float wtrdistcm = rangefinder.distance_cm(rangefinder.get_sensor_sel());
+	if(rangefinder.get_sensor_sel() == 1){
+		if(rangefinder.flip_measurement()) {
+			//Where Low Pass filter Lives. Alpha is the the RNGFND_EXPO parameter.
+			dist_above_water = (rangefinder.get_hull_offset() - wtrdistcm)*rangefinder.get_expo()+(1.0-rangefinder.get_expo())*dist_above_water;
+			vel_above_water = rangefinder.get_expo_vel()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo_vel())*vel_above_water;
+		}
+		else{
+			dist_above_water = (rangefinder.get_offb()*ahrs.sin_roll()+(rangefinder.get_offc()+wtrdistcm)*ahrs.cos_roll())*ahrs.cos_pitch()-rangefinder.get_offa()*ahrs.sin_pitch();
+			vel_above_water = rangefinder.get_expo()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo())*vel_above_water;
+		}
 	}
-	else{
-		dist_above_water = (rangefinder.get_offb()*ahrs.sin_roll()+(rangefinder.get_offc()+wtrdistcm)*ahrs.cos_roll())*ahrs.cos_pitch()-rangefinder.get_offa()*ahrs.sin_pitch();
-		vel_above_water = rangefinder.get_expo()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo())*vel_above_water;
+	else if(rangefinder.get_sensor_sel() == 2){
+		if(rangefinder.flip_measurement2()) {
+			//Where Low Pass filter Lives. Alpha is the the RNGFND_EXPO parameter.
+			dist_above_water = (rangefinder.get_hull_offset2() - wtrdistcm)*rangefinder.get_expo2()+(1.0-rangefinder.get_expo2())*dist_above_water;
+			vel_above_water = rangefinder.get_expo_vel2()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo_vel2())*vel_above_water;
+		}
+		else{
+			dist_above_water = (rangefinder.get_offb2()*ahrs.sin_roll()+(rangefinder.get_offc2()+wtrdistcm)*ahrs.cos_roll())*ahrs.cos_pitch()-rangefinder.get_offa2()*ahrs.sin_pitch();
+			vel_above_water = rangefinder.get_expo_vel2()*((dist_above_water-prev_dist)/G_Dt)+(1.0-rangefinder.get_expo_vel2())*vel_above_water;
+		}
+	}
+	else {
+		dist_above_water=0;
+		vel_above_water=0;
 	}
 	ahrs.set_h_water(dist_above_water);
 	ahrs.set_h_dot_water(vel_above_water);

@@ -528,21 +528,21 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
         // @Description: Distance from rangefinder to hull in cm. This can be used as a sensor offset for standard rangefinders or the offset when using pressure sensors
         // @Values: -500 500
         // @User: Advanced
-        AP_GROUPINFO("DIST2HLL", 57, RangeFinder, _dist2hll, 0.0),
+        AP_GROUPINFO("_DIST2HLL", 57, RangeFinder, _dist2hll, 0.0),
 
         // @Param: FLPREAD
         // @DisplayName: Flip rangefinder reading since pressure sensor is being used
         // @Description: Flip rangefinder reading if using pressure sensor to calculate distance of hull above water. Leave as 0 for std rangefinders. Also signals code that pressure sensor is being used for z-height calculations
         // @Values: 0:Don't flip, 1:Flip
         // @User: Advanced
-        AP_GROUPINFO("FLPREAD", 58, RangeFinder, _flpread, 0.0),
+        AP_GROUPINFO("_FLPREAD", 58, RangeFinder, _flpread, 0.0),
 
         // @Param: EXPO
         // @DisplayName: Lowpass Filter Gain
         // @Description: Low pass filter gain for rangefinder
         // @Values: 0 1
         // @User: Advanced
-        AP_GROUPINFO("_EXPO", 59, RangeFinder, _expo, 1.0),
+        AP_GROUPINFO("_P_ALPHA", 59, RangeFinder, _expo, 1.0),
 
         // @Param: OFFSETA
         // @DisplayName: Offset A
@@ -564,6 +564,69 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
         // @Values: -1000 1000
         // @User: Advanced
         AP_GROUPINFO("_OFF_C", 62, RangeFinder, _offc, 0.0),
+
+        // @Param: EXPO
+        // @DisplayName: Lowpass Filter Gain
+        // @Description: Low pass filter gain for rangefinder
+        // @Values: 0 1
+        // @User: Advanced
+        AP_GROUPINFO("_V_ALPHA", 63, RangeFinder, _expo_v, 1.0),
+
+        // @Param: DIST2HLL
+        // @DisplayName: Rangefinder offset to hull
+        // @Description: Distance from rangefinder to hull in cm. This can be used as a sensor offset for standard rangefinders or the offset when using pressure sensors
+        // @Values: -500 500
+        // @User: Advanced
+        AP_GROUPINFO("2_DIST2HLL", 64, RangeFinder, _2dist2hll, 0.0),
+
+        // @Param: FLPREAD
+        // @DisplayName: Flip rangefinder reading since pressure sensor is being used
+        // @Description: Flip rangefinder reading if using pressure sensor to calculate distance of hull above water. Leave as 0 for std rangefinders. Also signals code that pressure sensor is being used for z-height calculations
+        // @Values: 0:Don't flip, 1:Flip
+        // @User: Advanced
+        AP_GROUPINFO("2_FLPREAD", 65, RangeFinder, _2flpread, 0.0),
+
+        // @Param: EXPO
+        // @DisplayName: Lowpass Filter Gain
+        // @Description: Low pass filter gain for rangefinder
+        // @Values: 0 1
+        // @User: Advanced
+        AP_GROUPINFO("2_P_ALPHA", 66, RangeFinder, _2expo, 1.0),
+
+        // @Param: OFFSETA
+        // @DisplayName: Offset A
+        // @Description: X distance from vehicle center of gravity to rangefinder in NED reference frame in cm
+        // @Values: -1000 1000
+        // @User: Advanced
+        AP_GROUPINFO("2_OFF_A", 67, RangeFinder, _2offa, 0.0),
+
+        // @Param: OFFSETB
+        // @DisplayName: Offset B
+        // @Description: Y distance from vehicle center of gravity to rangefinder in NED reference frame in cm
+        // @Values: -1000 1000
+        // @User: Advanced
+        AP_GROUPINFO("2_OFF_B", 68, RangeFinder, _2offb, 0.0),
+
+        // @Param: OFFSETC
+        // @DisplayName: Offset C
+        // @Description: Z distance from vehicle center of gravity to rangefinder in NED reference frame in cm
+        // @Values: -1000 1000
+        // @User: Advanced
+        AP_GROUPINFO("2_OFF_C", 69, RangeFinder, _2offc, 0.0),
+
+        // @Param: EXPO
+        // @DisplayName: Lowpass Filter Gain
+        // @Description: Low pass filter gain for rangefinder
+        // @Values: 0 1
+        // @User: Advanced
+        AP_GROUPINFO("2_V_ALPHA", 70, RangeFinder, _2expo_v, 1.0),
+
+        // @Param: EXPO
+        // @DisplayName: Lowpass Filter Gain
+        // @Description: Low pass filter gain for rangefinder
+        // @Values: 0 1
+        // @User: Advanced
+        AP_GROUPINFO("_SEL", 71, RangeFinder, _sensor_sel, 1),
 
 //End of Hydrofoil Changes/////////////////////////////////////////////////////////////////
 #endif
@@ -642,6 +705,14 @@ void RangeFinder::update(void)
 */
 bool RangeFinder::flip_measurement(void) {
     if (_flpread == 1.0) { return true; }
+    else { return false; };
+}
+
+/*  returns true if rangefinder reading needs to be updated and false
+    if not
+*/
+bool RangeFinder::flip_measurement2(void) {
+    if (_2flpread == 1.0) { return true; }
     else { return false; };
 }
 
