@@ -60,7 +60,7 @@ struct PACKED log_Format_Units {
 
 struct UnitStructure {
     const char ID;
-    const char unit[64];
+    const char *unit;
 };
 
 struct MultiplierStructure {
@@ -113,9 +113,9 @@ const struct UnitStructure log_Units[] = {
 // tl;dr a GCS shouldn't/mustn't infer any scaling from the unit name
 
 const struct MultiplierStructure log_Multipliers[] = {
-// <leave a gap here, just in case....>
     { '-', 0 },       // no multiplier e.g. a string
     { '?', 1 },       // multipliers which haven't been worked out yet....
+// <leave a gap here, just in case....>
     { '2', 1e2 },
     { '1', 1e1 },
     { '0', 1e0 },
