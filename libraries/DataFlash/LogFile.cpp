@@ -1863,6 +1863,9 @@ void DataFlash_Class::Log_Write_AOA_SSA(AP_AHRS &ahrs)
 // Write beacon sensor (position) data
 void DataFlash_Class::Log_Write_Beacon(AP_Beacon &beacon)
 {
+    if (!beacon.enabled()) {
+        return;
+    }
     // position
     Vector3f pos;
     float accuracy = 0.0f;
