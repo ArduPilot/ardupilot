@@ -249,6 +249,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
 
+#if MODE_AUTO_ENABLED == ENABLED
         case AUXSW_SAVE_WP:
             // save waypoint when switch is brought high
             if (ch_flag == AUX_SWITCH_HIGH) {
@@ -302,6 +303,13 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 }
             }
             break;
+
+        case AUXSW_MISSION_RESET:
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                mission.reset();
+            }
+            break;
+#endif
 
         case AUXSW_CAMERA_TRIGGER:
 #if CAMERA == ENABLED
@@ -449,12 +457,6 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     break;
             }
 #endif
-            break;
-
-        case AUXSW_MISSION_RESET:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                mission.reset();
-            }
             break;
 
         case AUXSW_ATTCON_FEEDFWD:

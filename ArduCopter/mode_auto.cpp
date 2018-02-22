@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_AUTO_ENABLED == ENABLED
+
 /*
  * Init and run calls for auto flight mode
  *
@@ -577,6 +579,8 @@ void Copter::ModeAuto::loiter_run()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate, get_smoothing_gain());
 }
 
+#endif
+
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter
 // set rtl parameter to true if this is during an RTL
 uint8_t Copter::get_default_auto_yaw_mode(bool rtl)
@@ -762,6 +766,8 @@ float Copter::get_auto_yaw_rate_cds(void)
     return 0.0f;
 }
 
+#if MODE_AUTO_ENABLED == ENABLED
+
 // auto_payload_place_start - initialises controller to implement a placing
 void Copter::ModeAuto::payload_place_start()
 {
@@ -868,3 +874,5 @@ void Copter::ModeAuto::payload_place_run_descend()
     copter.land_run_horizontal_control();
     copter.land_run_vertical_control();
 }
+
+#endif
