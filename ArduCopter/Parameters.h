@@ -549,8 +549,10 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
+#if MODE_SMARTRTL_ENABLED == ENABLED
     // Safe RTL library
     AP_SmartRTL smart_rtl;
+#endif
 
     // wheel encoder and winch
 #if WINCH_ENABLED == ENABLED

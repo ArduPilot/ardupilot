@@ -984,7 +984,9 @@ private:
 #endif
     ModeThrow mode_throw;
     ModeGuidedNoGPS mode_guided_nogps;
+#if MODE_SMARTRTL_ENABLED == ENABLED
     ModeSmartRTL mode_smartrtl;
+#endif
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     ModeFlowHold mode_flowhold;
 #endif
