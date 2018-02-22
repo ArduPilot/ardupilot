@@ -106,7 +106,6 @@ public:
     AP_Float _offb;
     AP_Float _offc;
     AP_Float _expo_v;
-    AP_Float _2dist2hll;
     AP_Float _2flpread;
     AP_Float _2expo;
     AP_Float _2offa;
@@ -141,8 +140,6 @@ public:
     float get_offc(void) { return _offc; }
 
     bool flip_measurement(void);
-
-    float get_hull_offset2(void) { return _2dist2hll; }
 
     float get_expo2(void) { return _2expo; }
 

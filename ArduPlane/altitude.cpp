@@ -323,8 +323,8 @@ void Plane::check_minimum_altitude(void)
     }
 #endif
 
-    if (target_altitude.amsl_cm < home.alt + g.FBWB_min_altitude_cm) {
-        target_altitude.amsl_cm = home.alt + g.FBWB_min_altitude_cm;
+    if ((target_altitude.amsl_cm+rangefinder.get_hull_offset()) < g.FBWB_min_altitude_cm) {
+        target_altitude.amsl_cm = g.FBWB_min_altitude_cm-rangefinder.get_hull_offset();
     }
 }
 
@@ -337,8 +337,8 @@ void Plane::check_minimum_altitude_water(void)
         return;
     }
 
-    if (target_altitude.amsl_cm < g.FBWB_min_altitude_cm) {
-        target_altitude.amsl_cm = g.FBWB_min_altitude_cm;
+    if ((target_altitude.amsl_cm+rangefinder.get_hull_offset()) < g.FBWB_min_altitude_cm) {
+        target_altitude.amsl_cm = g.FBWB_min_altitude_cm-rangefinder.get_hull_offset();
     }
 }
 
@@ -352,8 +352,8 @@ void Plane::check_maximum_altitude_water(void)
         return;
     }
 
-    if (target_altitude.amsl_cm > mxhgt) {
-        target_altitude.amsl_cm = mxhgt;
+    if ((target_altitude.amsl_cm+rangefinder.get_hull_offset()) > mxhgt) {
+        target_altitude.amsl_cm = mxhgt-rangefinder.get_hull_offset();
     }
 }
 
