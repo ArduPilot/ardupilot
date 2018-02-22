@@ -455,58 +455,22 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 AP_InertialSensor *AP_InertialSensor::_s_instance = nullptr;
 
 AP_InertialSensor::AP_InertialSensor() :
-    _gyro_count(0),
-    _accel_count(0),
-    _backend_count(0),
-    _accel(),
-    _gyro(),
     _board_orientation(ROTATION_NONE),
-    _primary_gyro(0),
-    _primary_accel(0),
-    _log_raw_bit(-1),
-    _hil_mode(false),
-    _calibrating(false),
-    _backends_detected(false),
-    _accel_cal_requires_reboot(false),
-    _startup_error_counts_set(false),
-    _startup_ms(0)
+    _log_raw_bit(-1)
 {
     if (_s_instance) {
         AP_HAL::panic("Too many inertial sensors");
     }
     _s_instance = this;
     AP_Param::setup_object_defaults(this, var_info);
-    for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
-        _backends[i] = nullptr;
-    }
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        _accel_error_count[i] = 0;
-        _gyro_error_count[i] = 0;
         _gyro_cal_ok[i] = true;
-        _accel_clip_count[i] = 0;
-
         _accel_max_abs_offsets[i] = 3.5f;
-
-        _accel_raw_sample_rates[i] = 0;
-        _gyro_raw_sample_rates[i] = 0;
-
-        _delta_velocity_acc[i].zero();
-        _delta_velocity_acc_dt[i] = 0;
-
-        _delta_angle_acc[i].zero();
-        _delta_angle_acc_dt[i] = 0;
-        _last_delta_angle[i].zero();
-        _last_raw_gyro[i].zero();
-
-        _accel_startup_error_count[i] = 0;
-        _gyro_startup_error_count[i] = 0;
     }
     for (uint8_t i=0; i<INS_VIBRATION_CHECK_INSTANCES; i++) {
         _accel_vibe_floor_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ);
         _accel_vibe_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ);
     }
-    memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
-    memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
 
     AP_AccelCal::register_client(this);
 }
