@@ -26,6 +26,7 @@
 #include <uavcan/equipment/actuator/Command.hpp>
 #include <uavcan/equipment/actuator/Status.hpp>
 #include <uavcan/equipment/esc/RawCommand.hpp>
+#include <uavcan/equipment/esc/Status.hpp>
 
 extern const AP_HAL::HAL& hal;
 
@@ -300,6 +301,35 @@ static void air_data_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equipmen
 static void (*air_data_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticTemperature>& msg)
         = { air_data_st_cb0, air_data_st_cb1 };
 
+//--- EscStatus ---
+static void escstatus_st_cb_func(const uavcan::ReceivedDataStructure<uavcan::equipment::esc::Status>& msg, uint8_t mgr)
+{
+    if (hal.can_mgr[mgr] == nullptr) {
+        return;
+    }
+
+    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    if (ap_uavcan == nullptr) {
+        return;
+    }
+
+    AP_UAVCAN::EscStatus_Data *data = ap_uavcan->escstatus_getptrto_data((uint16_t) msg.esc_index);
+    if (data != nullptr) {
+        data->error_count = msg.error_count;
+        data->voltage = msg.voltage;
+        data->current = msg.current;
+        data->temperature = msg.temperature;
+        data->rpm = msg.rpm;
+        data->power_rating_pct = msg.power_rating_pct;
+
+        ap_uavcan->escstatus_update_data((uint16_t) msg.esc_index);
+    }
+}
+
+static void escstatus_st_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::esc::Status>& msg){ escstatus_st_cb_func(msg, 0); }
+static void escstatus_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::esc::Status>& msg){ escstatus_st_cb_func(msg, 1); }
+static void (*escstatus_st_cb[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::esc::Status>& msg) = { escstatus_st_cb0, escstatus_st_cb1 };
+
 // publisher interfaces
 static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[MAX_NUMBER_OF_CAN_DRIVERS];
@@ -343,6 +373,11 @@ AP_UAVCAN::AP_UAVCAN() :
     }
 
     _rc_out_sem = hal.util->new_semaphore();
+
+    for (uint8_t i = 0; i < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; i++) {
+        _escstatus.id[i] = UINT8_MAX;
+    }
+    for (uint8_t li = 0; li < AP_UAVCAN_MAX_LISTENERS; li++) {
 
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
 }
@@ -453,6 +488,16 @@ bool AP_UAVCAN::try_init(void)
                     esc_raw[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*node);
                     esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
                     esc_raw[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+                    {
+                        uavcan::Subscriber<uavcan::equipment::esc::Status> *st;
+                        st = new uavcan::Subscriber<uavcan::equipment::esc::Status>(*node);
+                        const int start_res = st->start(escstatus_st_cb[_uavcan_i]);
+                        if (start_res < 0) {
+                            debug_uavcan(1, "UAVCAN EscStatus subscriber start problem\n\r");
+                            return false;
+                        }
+                    }
 
                     /*
                      * Informing other nodes that we're ready to work.
@@ -1112,6 +1157,53 @@ void AP_UAVCAN::update_mag_state(uint8_t node, uint8_t sensor_id)
                     }
                 }
             }
+        }
+    }
+}
+
+AP_UAVCAN::EscStatus_Data* AP_UAVCAN::escstatus_getptrto_data(uint8_t id)
+{
+    // I think the esc_index are continues, by how ArduPilot works
+    // so we could just directly jump with id into the data list, return &_escstatus.data[id], with id<8 overflow protection of course
+
+    // check if id is already in list, and if it is take it
+    for (uint8_t i = 0; i < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; i++) {
+        if (_escstatus.id[i] == id) {
+            return &_escstatus.data[i];
+        }
+    }
+
+    // if id is not yet in list, find the first free spot, and take that
+    for (uint8_t i = 0; i < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; i++) {
+        if (_escstatus.id[i] == UINT8_MAX) {
+            _escstatus.id[i] = id;
+            return &_escstatus.data[i];
+        }
+    }
+
+    return nullptr;
+}
+
+void AP_UAVCAN::escstatus_update_data(uint8_t id)
+{
+    // only 8 LOG_ESC1_MSG are defined, see /libraries/DataFlash/LogStructure.h
+    // technically, it could happen that the esc_index is not continues, and one would need a better handling
+    // however, I think, ArduPilot implicitly enforces continues esc_index, so should be no problem
+    if (id >= 8) return;
+
+    for (uint8_t i = 0; i < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; i++) {
+        if (_escstatus.id[i] == id) {
+
+                    uint64_t time_us = AP_HAL::micros64();
+                    struct log_Esc pkt = {
+                            LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ESC1_MSG + id)),
+                            time_us     : time_us,
+                            rpm         : (int16_t)(_escstatus.data[i].rpm),
+                            voltage     : (int16_t)(_escstatus.data[i].voltage*100.0f + 0.5f),
+                            current     : (int16_t)(_escstatus.data[i].current*100.0f + 0.5f),
+                            temperature : (int16_t)(_escstatus.data[i].temperature*100.0f + 0.5f)
+                     };
+                     DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
         }
     }
 }

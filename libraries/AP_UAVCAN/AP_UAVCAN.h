@@ -34,6 +34,7 @@
 #define AP_UAVCAN_MAX_GPS_NODES 4
 #define AP_UAVCAN_MAX_MAG_NODES 4
 #define AP_UAVCAN_MAX_BARO_NODES 4
+#define AP_UAVCAN_ESCSTATUS_MAX_NUMBER 8 // is this limited by the message size? Perhaps use existing params
 
 #define AP_UAVCAN_SW_VERS_MAJOR 1
 #define AP_UAVCAN_SW_VERS_MINOR 0
@@ -102,6 +103,21 @@ public:
     void rc_out_send_servos();
     void rc_out_send_esc();
 
+    // --- EscStatus ---
+    // currently, we do nothing than to write the data to dataflash
+    // => we do not need a listener, we can do it in _update_data()
+    // this of course needs to change once we have a proper class which wants to listen to EscStatus
+    struct EscStatus_Data {
+        uint32_t error_count;
+        float voltage;
+        float current;
+        float temperature;
+        int32_t rpm;
+        uint8_t power_rating_pct;
+    };
+    EscStatus_Data* escstatus_getptrto_data(uint8_t id);
+    void escstatus_update_data(uint8_t id);
+
 private:
     // ------------------------- GPS
     // 255 - means free node
@@ -144,6 +160,12 @@ private:
     uint8_t _rco_safety;
 
     AP_HAL::Semaphore *_rc_out_sem;
+
+    // --- EscStatus ---
+    struct {
+        uint16_t id[AP_UAVCAN_ESCSTATUS_MAX_NUMBER];
+        EscStatus_Data data[AP_UAVCAN_ESCSTATUS_MAX_NUMBER];
+    } _escstatus;
 
     class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
         SystemClock()
