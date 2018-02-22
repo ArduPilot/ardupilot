@@ -54,25 +54,10 @@ public:
     
     // Constructor
     AP_AHRS() :
-        roll(0.0f),
-        pitch(0.0f),
-        yaw(0.0f),
-        roll_sensor(0),
-        pitch_sensor(0),
-        yaw_sensor(0),
         _vehicle_class(AHRS_VEHICLE_UNKNOWN),
-        _compass(nullptr),
-        _optflow(nullptr),
-        _airspeed(nullptr),
-        _beacon(nullptr),
-        _compass_last_update(0),
         _cos_roll(1.0f),
         _cos_pitch(1.0f),
-        _cos_yaw(1.0f),
-        _sin_roll(0.0f),
-        _sin_pitch(0.0f),
-        _sin_yaw(0.0f),
-        _active_accel_instance(0)
+        _cos_yaw(1.0f)
     {
         _singleton = this;
 
@@ -85,12 +70,6 @@ public:
 
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
-
-        // initialise _home
-        _home.options    = 0;
-        _home.alt        = 0;
-        _home.lng        = 0;
-        _home.lat        = 0;
 
         _last_trim = _trim.get();
         _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
