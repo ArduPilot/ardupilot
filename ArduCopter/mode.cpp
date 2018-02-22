@@ -118,9 +118,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_guided_nogps;
             break;
 
+#if MODE_SMARTRTL_ENABLED == ENABLED
         case SMART_RTL:
             ret = &mode_smartrtl;
             break;
+#endif
 
 #if OPTFLOW == ENABLED
         case FLOWHOLD:
@@ -249,10 +251,12 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     // cancel any takeoffs in progress
     takeoff_stop();
 
+#if MODE_SMARTRTL_ENABLED == ENABLED
     // call smart_rtl cleanup
     if (old_flightmode == &mode_smartrtl) {
         mode_smartrtl.exit();
     }
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.

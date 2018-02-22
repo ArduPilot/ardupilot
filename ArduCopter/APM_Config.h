@@ -25,6 +25,8 @@
 //#define WINCH_ENABLED         DISABLED            // disable winch support
 //#define MODE_AUTO_ENABLED     DISABLED            // disable auto mode support
 //#define MODE_POSHOLD_ENABLED  DISABLED            // disable poshold mode support
+//#define MODE_SMARTRTL_ENABLED DISABLED            // disable smartrtl mode support
+
 
 // features below are disabled by default on all boards
 //#define CAL_ALWAYS_REBOOT                         // flight controller will reboot after compass or accelerometer calibration completes
