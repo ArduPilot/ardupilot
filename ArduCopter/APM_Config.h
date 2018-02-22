@@ -24,6 +24,7 @@
 //#define SPRAYER               DISABLED            // disable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define WINCH_ENABLED         DISABLED            // disable winch support
 //#define MODE_AUTO_ENABLED     DISABLED            // disable auto mode support
+//#define MODE_POSHOLD_ENABLED  DISABLED            // disable poshold mode support
 
 // features below are disabled by default on all boards
 //#define CAL_ALWAYS_REBOOT                         // flight controller will reboot after compass or accelerometer calibration completes
