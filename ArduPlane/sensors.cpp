@@ -62,22 +62,30 @@ void Plane::read_rangefinder(void)
 		if(rangefinder.flip_measurement()) {
 			//Where Low Pass filter Lives. Alpha is the the RNGFND_EXPO parameter.
 			dist_above_water = rangefinder.get_expo()*(-1.0*wtrdistcm+rangefinder.get_offb()*ahrs.cos_pitch()*ahrs.sin_roll()+rangefinder.get_offc()*ahrs.cos_pitch()*ahrs.cos_roll()-rangefinder.get_offa()*ahrs.sin_pitch())+(1.0-rangefinder.get_expo())*dist_above_water;
-			vel_above_water = rangefinder.get_expo_vel()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel())*vel_above_water;
+			if(rngdt > 0.0) {
+				vel_above_water = rangefinder.get_expo_vel()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel())*vel_above_water;
+			}
 		}
 		else{
 			dist_above_water =  rangefinder.get_expo()*((rangefinder.get_offb()*ahrs.sin_roll()+(rangefinder.get_offc()+wtrdistcm)*ahrs.cos_roll())*ahrs.cos_pitch()-rangefinder.get_offa()*ahrs.sin_pitch())+(1.0-rangefinder.get_expo())*dist_above_water;
-			vel_above_water = rangefinder.get_expo_vel()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel())*vel_above_water;
+			if(rngdt > 0.0) {
+				vel_above_water = rangefinder.get_expo_vel()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel())*vel_above_water;
+			}
 		}
 	}
 	else if(rangefinder.get_sensor_sel() == 2){
 		if(rangefinder.flip_measurement2()) {
 			//Where Low Pass filter Lives. Alpha is the the RNGFND_EXPO parameter.
 			dist_above_water =rangefinder.get_expo2()*( -1.0*wtrdistcm+rangefinder.get_offb2()*ahrs.cos_pitch()*ahrs.sin_roll()+rangefinder.get_offc2()*ahrs.cos_pitch()*ahrs.cos_roll()-rangefinder.get_offa2()*ahrs.sin_pitch())+(1.0-rangefinder.get_expo2())*dist_above_water;
-			vel_above_water = rangefinder.get_expo_vel2()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel2())*vel_above_water;
+			if(rngdt > 0.0) {
+				vel_above_water = rangefinder.get_expo_vel2()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel2())*vel_above_water;
+			}
 		}
 		else{
 			dist_above_water =rangefinder.get_expo2()*((rangefinder.get_offb2()*ahrs.sin_roll()+(rangefinder.get_offc2()+wtrdistcm)*ahrs.cos_roll())*ahrs.cos_pitch()-rangefinder.get_offa2()*ahrs.sin_pitch())+(1.0-rangefinder.get_expo2())*dist_above_water;
-			vel_above_water = rangefinder.get_expo_vel2()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel2())*vel_above_water;
+			if(rngdt > 0.0) {
+				vel_above_water = rangefinder.get_expo_vel2()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel2())*vel_above_water;
+			}
 		}
 	}
 	else {
