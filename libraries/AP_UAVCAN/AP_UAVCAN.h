@@ -48,13 +48,6 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    // this function will register the listening class on a first free channel or on the specified channel
-    // if preferred_channel = 0 then free channel will be searched for
-    // if preferred_channel > 0 then listener will be added to specific channel
-    // return value is the number of assigned channel or 0 if fault
-    // channel numbering starts from 1
-    uint8_t register_gps_listener(AP_GPS_Backend* new_listener, uint8_t preferred_channel);
-
     uint8_t register_gps_listener_to_node(AP_GPS_Backend* new_listener, uint8_t node);
 
     uint8_t find_gps_without_listener(void);
@@ -76,7 +69,6 @@ public:
         float temperature_variance;
     };
 
-    uint8_t register_baro_listener(AP_Baro_Backend* new_listener, uint8_t preferred_channel);
     uint8_t register_baro_listener_to_node(AP_Baro_Backend* new_listener, uint8_t node);
     void remove_baro_listener(AP_Baro_Backend* rem_listener);
     Baro_Info *find_baro_node(uint8_t node);
@@ -87,7 +79,6 @@ public:
         Vector3f mag_vector;
     };
 
-    uint8_t register_mag_listener(AP_Compass_Backend* new_listener, uint8_t preferred_channel);
     void remove_mag_listener(AP_Compass_Backend* rem_listener);
     Mag_Info *find_mag_node(uint8_t node, uint8_t sensor_id);
     uint8_t find_smallest_free_mag_node();
