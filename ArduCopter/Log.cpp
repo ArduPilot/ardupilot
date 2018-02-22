@@ -571,13 +571,6 @@ void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocit
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write proximity sensor distances
-void Copter::Log_Write_Proximity()
-{
-#if PROXIMITY_ENABLED == ENABLED
-    DataFlash.Log_Write_Proximity(g2.proximity);
-#endif
-}
 
 // type and unit information can be found in
 // libraries/DataFlash/Logstructure.h; search for "log_Units" for
