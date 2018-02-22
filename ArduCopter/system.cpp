@@ -231,14 +231,18 @@ void Copter::init_ardupilot()
     // initialise AP_RPM library
     rpm_sensor.init();
 
+#if MODE_AUTO_ENABLED == ENABLED
     // initialise mission library
     mission.init();
+#endif
 
     // initialize SmartRTL
     g2.smart_rtl.init();
 
     // initialise DataFlash library
+#if MODE_AUTO_ENABLED == ENABLED
     DataFlash.set_mission(&mission);
+#endif
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
 
     // initialise the flight mode and aux switch

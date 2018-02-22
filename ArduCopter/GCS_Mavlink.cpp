@@ -669,7 +669,11 @@ GCS_MAVLINK_Copter::data_stream_send(void)
 
 bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
+#if MODE_AUTO_ENABLED == ENABLED
     return copter.mode_auto.do_guided(cmd);
+#else
+    return false;
+#endif
 }
 
 void GCS_MAVLINK_Copter::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
@@ -1025,6 +1029,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 #endif
             break;
 
+#if MODE_AUTO_ENABLED == ENABLED
         case MAV_CMD_MISSION_START:
             if (copter.motors->armed() && copter.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
                 copter.set_auto_armed(true);
@@ -1034,6 +1039,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
+#endif
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
             // exit immediately if armed
@@ -1793,7 +1799,11 @@ bool GCS_MAVLINK_Copter::accept_packet(const mavlink_status_t &status, mavlink_m
 
 AP_Mission *GCS_MAVLINK_Copter::get_mission()
 {
+#if MODE_AUTO_ENABLED == ENABLED
     return &copter.mission;
+#else
+    return nullptr;
+#endif
 }
 
 Compass *GCS_MAVLINK_Copter::get_compass() const

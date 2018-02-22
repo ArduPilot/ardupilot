@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_AUTO_ENABLED == ENABLED
+
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -1192,3 +1194,5 @@ void Copter::ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
     copter.camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
 }
+
+#endif
