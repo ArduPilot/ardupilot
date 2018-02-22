@@ -470,7 +470,9 @@ void Copter::update_sensor_status_flags(void)
 // init beacons used for non-gps position estimates
 void Copter::init_beacon()
 {
+#if BEACON == ENABLED
     g2.beacon.init();
+#endif
 }
 
 // init visual odometry sensor

@@ -333,8 +333,12 @@ void Copter::ten_hz_logging_loop()
     }
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control->control_monitor_log();
+#if PROXIMITY_ENABLED == ENABLED
         Log_Write_Proximity();
+#endif
+#if BEACON == ENABLED
         Log_Write_Beacon();
+#endif
     }
 #if FRAME_CONFIG == HELI_FRAME
     Log_Write_Heli();
