@@ -512,8 +512,10 @@ public:
     // ground effect compensation enable/disable
     AP_Int8 gndeffect_comp_enabled;
 
+#if BEACON_ENABLED == ENABLED
     // beacon (non-GPS positioning) library
     AP_Beacon beacon;
+#endif
 
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
     // Visual Odometry camera

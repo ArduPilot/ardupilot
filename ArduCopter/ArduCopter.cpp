@@ -101,7 +101,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if PROXIMITY_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Proximity,         &copter.g2.proximity,        update,         100,  50),
 #endif
+#if BEACON_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Beacon,            &copter.g2.beacon,           update,         400,  50),
+#endif
     SCHED_TASK(update_visual_odom,   400,     50),
     SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
@@ -336,7 +338,9 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control->control_monitor_log();
         Log_Write_Proximity();
-        Log_Write_Beacon();
+#if BEACON_ENABLED == ENABLED
+        DataFlash.Log_Write_Beacon(g2.beacon);
+#endif
     }
 #if FRAME_CONFIG == HELI_FRAME
     Log_Write_Heli();

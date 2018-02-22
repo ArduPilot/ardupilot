@@ -153,8 +153,10 @@ void Copter::init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
+#if BEACON_ENABLED == ENABLED
     // give AHRS the range beacon sensor
     ahrs.set_beacon(&g2.beacon);
+#endif
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
@@ -222,8 +224,10 @@ void Copter::init_ardupilot()
     // init proximity sensor
     init_proximity();
 
+#if BEACON_ENABLED == ENABLED
     // init beacons used for non-gps position estimation
-    init_beacon();
+    g2.beacon.init();
+#endif
 
     // init visual odometry
     init_visual_odom();
