@@ -968,7 +968,9 @@ private:
     ModeFlip mode_flip;
     ModeGuided mode_guided;
     ModeLand mode_land;
+#if MODE_LOITER_ENABLED == ENABLED
     ModeLoiter mode_loiter;
+#endif
 #if MODE_POSHOLD_ENABLED == ENABLED
     ModePosHold mode_poshold;
 #endif

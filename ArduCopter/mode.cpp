@@ -60,9 +60,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_circle;
             break;
 
+#if MODE_LOITER_ENABLED == ENABLED
         case LOITER:
             ret = &mode_loiter;
             break;
+#endif
 
         case GUIDED:
             ret = &mode_guided;
