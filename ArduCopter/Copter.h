@@ -65,7 +65,6 @@
 #include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>           // APM relay
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed/AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
@@ -134,6 +133,9 @@
 #endif
 #if PROXIMITY_ENABLED == ENABLED
  # include <AP_Proximity/AP_Proximity.h>
+#endif
+#if MOUNT == ENABLED
+ #include <AP_Mount/AP_Mount.h>
 #endif
 #if CAMERA == ENABLED
  # include <AP_Camera/AP_Camera.h>
