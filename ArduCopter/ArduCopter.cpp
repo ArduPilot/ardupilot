@@ -97,14 +97,18 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK(auto_disarm_check,     10,     50),
     SCHED_TASK(auto_trim,             10,     75),
+#if RANGEFINDER_ENABLED == ENABLED
     SCHED_TASK(read_rangefinder,      20,    100),
+#endif
 #if PROXIMITY_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Proximity,         &copter.g2.proximity,        update,         100,  50),
 #endif
 #if BEACON_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Beacon,            &copter.g2.beacon,           update,         400,  50),
 #endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
     SCHED_TASK(update_visual_odom,   400,     50),
+#endif
     SCHED_TASK(update_altitude,       10,    100),
     SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(update_throttle_hover,100,     90),
@@ -153,7 +157,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,          10,    100),
 #endif
+#if AC_TERRAIN == ENABLED
     SCHED_TASK(terrain_update,        10,    100),
+#endif
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Gripper,           &copter.g2.gripper,          update,          10,  75),
 #endif
