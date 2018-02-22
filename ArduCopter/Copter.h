@@ -969,7 +969,9 @@ private:
     ModeGuided mode_guided;
     ModeLand mode_land;
     ModeLoiter mode_loiter;
+#if MODE_POSHOLD_ENABLED == ENABLED
     ModePosHold mode_poshold;
+#endif
     ModeRTL mode_rtl;
 #if FRAME_CONFIG == HELI_FRAME
     ModeStabilize_Heli mode_stabilize;
