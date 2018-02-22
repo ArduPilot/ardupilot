@@ -21,6 +21,7 @@
 //#define FRSKY_TELEM_ENABLED   DISABLED            // disable FRSky telemetry
 //#define ADSB_ENABLED          DISABLED            // disable ADSB support
 //#define PRECISION_LANDING     DISABLED            // disable precision landing using companion computer or IRLock sensor
+//#define BEACON_ENABLED        DISABLED            // disable beacon support
 //#define SPRAYER               DISABLED            // disable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define WINCH_ENABLED         DISABLED            // disable winch support
 //#define MODE_AUTO_ENABLED     DISABLED            // disable auto mode support
