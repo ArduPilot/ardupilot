@@ -269,7 +269,7 @@ private:
     float ekfNavVelGainScaler;
 
     // system time in milliseconds of last recorded yaw reset from ekf
-    uint32_t ekfYawReset_ms = 0;
+    uint32_t ekfYawReset_ms;
     int8_t ekf_primary_core;
 
     AP_SerialManager serial_manager;
@@ -381,7 +381,7 @@ private:
     struct {
         uint8_t baro        : 1;    // true if baro is healthy
         uint8_t compass     : 1;    // true if compass is healthy
-        uint8_t primary_gps;        // primary gps index
+        uint8_t primary_gps : 2;    // primary gps index
     } sensor_health;
 
     // Motor Output
