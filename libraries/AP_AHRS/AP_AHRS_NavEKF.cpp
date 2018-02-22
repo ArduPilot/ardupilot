@@ -36,9 +36,6 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(NavEKF2 &_EKF2,
     AP_AHRS_DCM(),
     EKF2(_EKF2),
     EKF3(_EKF3),
-    _ekf2_started(false),
-    _ekf3_started(false),
-    _force_ekf(false),
     _ekf_flags(flags)
 {
     _dcm_matrix.identity();
