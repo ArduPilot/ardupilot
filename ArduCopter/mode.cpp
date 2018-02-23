@@ -66,9 +66,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_GUIDED_ENABLED == ENABLED
         case GUIDED:
             ret = &mode_guided;
             break;
+#endif
 
         case LAND:
             ret = &mode_land;
