@@ -292,6 +292,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// GuidedNoGPS mode - control vehicle's angles from GCS
+#ifndef MODE_GUIDED_NOGPS_ENABLED
+# define MODE_GUIDED_NOGPS_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Loiter mode - allows vehicle to hold global position
 #ifndef MODE_LOITER_ENABLED
 # define MODE_LOITER_ENABLED ENABLED
