@@ -38,6 +38,10 @@ public:
     }
     void set_output_mode(enum output_mode mode) override;
 
+    float scale_esc_to_unity(uint16_t pwm) override {
+        return 2.0 * ((float) pwm - _esc_pwm_min) / (_esc_pwm_max - _esc_pwm_min) - 1.0;
+    }
+    
     void     cork(void) override;
     void     push(void) override;
 
