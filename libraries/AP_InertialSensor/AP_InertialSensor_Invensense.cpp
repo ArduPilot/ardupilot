@@ -372,9 +372,7 @@ bool AP_InertialSensor_Invensense::_data_ready()
  */
 void AP_InertialSensor_Invensense::_poll_data()
 {
-    SET_DEBUG_PIN;
     _read_fifo();
-    CLR_DEBUG_PIN;
 }
 
 bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_samples)
