@@ -1341,6 +1341,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+#if MODE_GUIDED_ENABLED == ENABLED
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:   // MAV ID: 82
     {
         // decode packet
@@ -1581,6 +1582,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
         break;
     }
+#endif
 
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
     {
