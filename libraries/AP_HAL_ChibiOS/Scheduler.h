@@ -34,7 +34,7 @@
 #define APM_STARTUP_PRIORITY     10
 
 #ifndef APM_SPI_PRIORITY
-#define APM_SPI_PRIORITY        179
+#define APM_SPI_PRIORITY        181
 #endif
 
 #ifndef APM_UAVCAN_PRIORITY
