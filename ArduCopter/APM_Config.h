@@ -27,6 +27,7 @@
 //#define MODE_LOITER_ENABLED   DISABLED            // disable loiter mode support
 //#define MODE_POSHOLD_ENABLED  DISABLED            // disable poshold mode support
 //#define MODE_SMARTRTL_ENABLED DISABLED            // disable smartrtl mode support
+//#define MODE_SPORT_ENABLED DISABLED               // disable sport mode support
 
 
 // features below are disabled by default on all boards

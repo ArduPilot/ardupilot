@@ -980,7 +980,9 @@ private:
 #else
     ModeStabilize mode_stabilize;
 #endif
+#if MODE_SPORT_ENABLED == ENABLED
     ModeSport mode_sport;
+#endif
 #if ADSB_ENABLED == ENABLED
     ModeAvoidADSB mode_avoid_adsb;
 #endif
