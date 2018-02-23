@@ -698,44 +698,6 @@ uint8_t AP_UAVCAN::find_gps_without_listener(void)
     return UINT8_MAX;
 }
 
-uint8_t AP_UAVCAN::register_gps_listener(AP_GPS_Backend* new_listener, uint8_t preferred_channel)
-{
-    uint8_t sel_place = UINT8_MAX, ret = 0;
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_gps_listeners[i] == nullptr) {
-            sel_place = i;
-            break;
-        }
-    }
-
-    if (sel_place != UINT8_MAX) {
-        if (preferred_channel != 0) {
-            if (preferred_channel <= AP_UAVCAN_MAX_GPS_NODES) {
-                _gps_listeners[sel_place] = new_listener;
-                _gps_listener_to_node[sel_place] = preferred_channel - 1;
-                _gps_node_taken[_gps_listener_to_node[sel_place]]++;
-                ret = preferred_channel;
-
-                debug_uavcan(2, "reg_GPS place:%d, chan: %d\n\r", sel_place, preferred_channel);
-            }
-        } else {
-            for (uint8_t i = 0; i < AP_UAVCAN_MAX_GPS_NODES; i++) {
-                if (_gps_node_taken[i] == 0) {
-                    _gps_listeners[sel_place] = new_listener;
-                    _gps_listener_to_node[sel_place] = i;
-                    _gps_node_taken[i]++;
-                    ret = i + 1;
-
-                    debug_uavcan(2, "reg_GPS place:%d, chan: %d\n\r", sel_place, i);
-                    break;
-                }
-            }
-        }
-    }
-
-    return ret;
-}
-
 uint8_t AP_UAVCAN::register_gps_listener_to_node(AP_GPS_Backend* new_listener, uint8_t node)
 {
     uint8_t sel_place = UINT8_MAX, ret = 0;
@@ -813,45 +775,6 @@ void AP_UAVCAN::update_gps_state(uint8_t node)
             }
         }
     }
-}
-
-uint8_t AP_UAVCAN::register_baro_listener(AP_Baro_Backend* new_listener, uint8_t preferred_channel)
-{
-    uint8_t sel_place = UINT8_MAX, ret = 0;
-
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_baro_listeners[i] == nullptr) {
-            sel_place = i;
-            break;
-        }
-    }
-
-    if (sel_place != UINT8_MAX) {
-        if (preferred_channel != 0) {
-            if (preferred_channel < AP_UAVCAN_MAX_BARO_NODES) {
-                _baro_listeners[sel_place] = new_listener;
-                _baro_listener_to_node[sel_place] = preferred_channel - 1;
-                _baro_node_taken[_baro_listener_to_node[sel_place]]++;
-                ret = preferred_channel;
-
-                debug_uavcan(2, "reg_Baro place:%d, chan: %d\n\r", sel_place, preferred_channel);
-            }
-        } else {
-            for (uint8_t i = 0; i < AP_UAVCAN_MAX_BARO_NODES; i++) {
-                if (_baro_node_taken[i] == 0) {
-                    _baro_listeners[sel_place] = new_listener;
-                    _baro_listener_to_node[sel_place] = i;
-                    _baro_node_taken[i]++;
-                    ret = i + 1;
-
-                    debug_uavcan(2, "reg_BARO place:%d, chan: %d\n\r", sel_place, i);
-                    break;
-                }
-            }
-        }
-    }
-
-    return ret;
 }
 
 uint8_t AP_UAVCAN::register_baro_listener_to_node(AP_Baro_Backend* new_listener, uint8_t node)
@@ -945,44 +868,6 @@ uint8_t AP_UAVCAN::find_smallest_free_baro_node()
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_BARO_NODES; i++) {
         if (_baro_node_taken[i] == 0) {
             ret = MIN(ret, _baro_nodes[i]);
-        }
-    }
-
-    return ret;
-}
-
-uint8_t AP_UAVCAN::register_mag_listener(AP_Compass_Backend* new_listener, uint8_t preferred_channel)
-{
-    uint8_t sel_place = UINT8_MAX, ret = 0;
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_mag_listeners[i] == nullptr) {
-            sel_place = i;
-            break;
-        }
-    }
-
-    if (sel_place != UINT8_MAX) {
-        if (preferred_channel != 0) {
-            if (preferred_channel < AP_UAVCAN_MAX_MAG_NODES) {
-                _mag_listeners[sel_place] = new_listener;
-                _mag_listener_to_node[sel_place] = preferred_channel - 1;
-                _mag_node_taken[_mag_listener_to_node[sel_place]]++;
-                ret = preferred_channel;
-
-                debug_uavcan(2, "reg_Compass place:%d, chan: %d\n\r", sel_place, preferred_channel);
-            }
-        } else {
-            for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
-                if (_mag_node_taken[i] == 0) {
-                    _mag_listeners[sel_place] = new_listener;
-                    _mag_listener_to_node[sel_place] = i;
-                    _mag_node_taken[i]++;
-                    ret = i + 1;
-
-                    debug_uavcan(2, "reg_MAG place:%d, chan: %d\n\r", sel_place, i);
-                    break;
-                }
-            }
         }
     }
 
