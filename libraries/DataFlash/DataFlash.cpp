@@ -250,11 +250,20 @@ bool DataFlash_Class::validate_structure(const struct LogStructure *logstructure
     Debug("offset=%d ID=%d NAME=%s\n", i, logstructure->msg_type, logstructure->name);
 #endif
 
-    // names must be null-terminated
-    if (logstructure->name[4] != '\0') {
-        Debug("Message name not NULL-terminated");
-        passed = false;
-    }
+    // fields must be null-terminated
+#define CHECK_ENTRY(fieldname,fieldname_s,fieldlen)                     \
+    do {                                                                \
+        if (strnlen(logstructure->fieldname, fieldlen) > fieldlen-1) {  \
+            Debug("Message " fieldname_s " not NULL-terminated or too long"); \
+            passed = false;                                             \
+        }                                                               \
+    } while (false)
+    CHECK_ENTRY(name, "name", LS_NAME_SIZE);
+    CHECK_ENTRY(format, "format", LS_FORMAT_SIZE);
+    CHECK_ENTRY(labels, "labels", LS_LABELS_SIZE);
+    CHECK_ENTRY(units, "units", LS_UNITS_SIZE);
+    CHECK_ENTRY(multipliers, "multipliers", LS_MULTIPLIERS_SIZE);
+#undef CHECK_ENTRY
 
     // ensure each message ID is only used once
     if (seen_ids[logstructure->msg_type]) {
@@ -753,29 +762,32 @@ DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *na
     log_write_fmts = f;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    char ls_name[LS_NAME_SIZE] = {};
+    char ls_format[LS_FORMAT_SIZE] = {};
+    char ls_labels[LS_LABELS_SIZE] = {};
+    char ls_units[LS_UNITS_SIZE] = {};
+    char ls_multipliers[LS_MULTIPLIERS_SIZE] = {};
     struct LogStructure ls = {
         f->msg_type,
         f->msg_len,
-        "",
-        "",
-        "",
-        "",
-        ""
+        ls_name,
+        ls_format,
+        ls_labels,
+        ls_units,
+        ls_multipliers
     };
-    memcpy((char*)ls.name, f->name, MIN(sizeof(ls.name), strlen(f->name)));
-    memcpy((char*)ls.format, f->fmt, MIN(sizeof(ls.format), strlen(f->fmt)));
-    memcpy((char*)ls.labels, f->labels, MIN(sizeof(ls.labels), strlen(f->labels)));
+    memcpy((char*)ls_name, f->name, MIN(sizeof(ls_name), strlen(f->name)));
+    memcpy((char*)ls_format, f->fmt, MIN(sizeof(ls_format), strlen(f->fmt)));
+    memcpy((char*)ls_labels, f->labels, MIN(sizeof(ls_labels), strlen(f->labels)));
     if (f->units != nullptr) {
-        memcpy((char*)ls.units, f->units, MIN(sizeof(ls.units), strlen(f->units)));
+        memcpy((char*)ls_units, f->units, MIN(sizeof(ls_units), strlen(f->units)));
     } else {
-        memset((char*)ls.units, '\0', sizeof(ls.units));
-        memset((char*)ls.units, '?', strlen(ls.format));
+        memset((char*)ls_units, '?', MIN(sizeof(ls_format), strlen(f->fmt)));
     }
     if (f->mults != nullptr) {
-        memcpy((char*)ls.multipliers, f->mults, MIN(sizeof(ls.multipliers), strlen(f->mults)));
+        memcpy((char*)ls_multipliers, f->mults, MIN(sizeof(ls_multipliers), strlen(f->mults)));
     } else {
-        memset((char*)ls.multipliers, '\0', sizeof(ls.multipliers));
-        memset((char*)ls.multipliers, '?', strlen(ls.format));
+        memset((char*)ls_multipliers, '?', MIN(sizeof(ls_format), strlen(f->fmt)));
     }
     validate_structure(&ls, (int16_t)-1);
 #endif
@@ -816,6 +828,10 @@ int16_t DataFlash_Class::find_free_msg_type() const
     return -1;
 }
 
+/*
+ * It is assumed that logstruct's char* variables are valid strings of
+ * maximum lengths for those fields (given in LogStructure.h e.g. LS_NAME_SIZE)
+ */
 bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const
 {
     // find log structure information corresponding to msg_type:
@@ -831,23 +847,23 @@ bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct
     }
 
     logstruct.msg_type = msg_type;
-    strncpy((char*)logstruct.name, f->name, sizeof(logstruct.name)); /* cast away the "const" (*gulp*) */
-    strncpy((char*)logstruct.format, f->fmt, sizeof(logstruct.format));
-    strncpy((char*)logstruct.labels, f->labels, sizeof(logstruct.labels));
+    strncpy((char*)logstruct.name, f->name, LS_NAME_SIZE);
+    strncpy((char*)logstruct.format, f->fmt, LS_FORMAT_SIZE);
+    strncpy((char*)logstruct.labels, f->labels, LS_LABELS_SIZE);
     if (f->units != nullptr) {
-        strncpy((char*)logstruct.units, f->units, sizeof(logstruct.units));
+        strncpy((char*)logstruct.units, f->units, LS_UNITS_SIZE);
     } else {
-        memset((char*)logstruct.units, '\0', sizeof(logstruct.units));
-        memset((char*)logstruct.units, '?', strlen(logstruct.format));
+        memset((char*)logstruct.units, '\0', LS_UNITS_SIZE);
+        memset((char*)logstruct.units, '?', MIN(LS_UNITS_SIZE,strlen(logstruct.format)));
     }
     if (f->mults != nullptr) {
-        strncpy((char*)logstruct.multipliers, f->mults, sizeof(logstruct.multipliers));
+        strncpy((char*)logstruct.multipliers, f->mults, LS_MULTIPLIERS_SIZE);
     } else {
-        memset((char*)logstruct.multipliers, '\0', sizeof(logstruct.multipliers));
-        memset((char*)logstruct.multipliers, '?', strlen(logstruct.format));
+        memset((char*)logstruct.multipliers, '\0', LS_MULTIPLIERS_SIZE);
+        memset((char*)logstruct.multipliers, '?', MIN(LS_MULTIPLIERS_SIZE, strlen(logstruct.format)));
         // special magic to set units/mults for TimeUS, by far and
         // away the most common first field
-        if (!strncmp(logstruct.labels, "TimeUS,", MIN(strlen(logstruct.labels), strlen("TimeUS,")))) {
+        if (!strncmp(logstruct.labels, "TimeUS,", MIN(LS_LABELS_SIZE, strlen("TimeUS,")))) {
             ((char*)(logstruct.units))[0] = 's';
             ((char*)(logstruct.multipliers))[0] = 'F';
         }
