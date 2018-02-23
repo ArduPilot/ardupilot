@@ -298,6 +298,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// RTL - Return To Launch
+#ifndef MODE_RTL_ENABLED
+# define MODE_RTL_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // SmartRTL - allows vehicle to retrace a (loop-eliminated) breadcrumb home
 #ifndef MODE_SMARTRTL_ENABLED
 # define MODE_SMARTRTL_ENABLED ENABLED
