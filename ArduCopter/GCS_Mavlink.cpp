@@ -1303,11 +1303,15 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                     bool shot_mode = (!is_zero(packet.param1) && (copter.control_mode == GUIDED || copter.control_mode == GUIDED_NOGPS));
 
                     if (!shot_mode) {
+#if MODE_BRAKE_ENABLED == ENABLED
                         if (copter.set_mode(BRAKE, MODE_REASON_GCS_COMMAND)) {
                             copter.mode_brake.timeout_to_loiter_ms(2500);
                         } else {
                             copter.set_mode(ALT_HOLD, MODE_REASON_GCS_COMMAND);
                         }
+#else
+                        copter.set_mode(ALT_HOLD, MODE_REASON_GCS_COMMAND);
+#endif
                     } else {
                         // SoloLink is expected to handle pause in shots
                     }

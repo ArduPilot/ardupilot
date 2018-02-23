@@ -274,6 +274,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Brake mode - bring vehicle to stop
+#ifndef MODE_BRAKE_ENABLED
+# define MODE_BRAKE_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Drift - fly vehicle in altitude-held, coordinated-turn mode
 #ifndef MODE_DRIFT_ENABLED
 # define MODE_DRIFT_ENABLED ENABLED
