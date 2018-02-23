@@ -56,9 +56,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_CIRCLE_ENABLED == ENABLED
         case CIRCLE:
             ret = &mode_circle;
             break;
+#endif
 
 #if MODE_LOITER_ENABLED == ENABLED
         case LOITER:

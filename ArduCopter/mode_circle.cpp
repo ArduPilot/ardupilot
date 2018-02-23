@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_CIRCLE_ENABLED == ENABLED
+
 /*
  * Init and run calls for circle flight mode
  */
@@ -103,3 +105,5 @@ int32_t Copter::ModeCircle::wp_bearing() const
 {
     return wp_nav->get_loiter_bearing_to_target();
 }
+
+#endif
