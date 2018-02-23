@@ -44,11 +44,11 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
-/* FMUV3 USART3_RTS */
+/* FMUV3 USART3_RTS Telemetry2 */
 define SET_DEBUG_PIN   GPIOD->ODR |=  (1 << 12);
 define CLR_DEBUG_PIN   GPIOD->ODR &= ~(1 << 12);
 
-/* FMUV3 USART2_RTS */
+/* FMUV3 USART2_RTS Telemetry1 */
 define SET_IDLE_PIN   GPIOD->ODR |=  (1 << 4);
 define CLR_IDLE_PIN   GPIOD->ODR &= ~(1 << 4);
 
