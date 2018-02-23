@@ -78,9 +78,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_rtl;
             break;
 
+#if MODE_DRIFT_ENABLED == ENABLED
         case DRIFT:
             ret = &mode_drift;
             break;
+#endif
 
 #if MODE_SPORT_ENABLED == ENABLED
         case SPORT:
