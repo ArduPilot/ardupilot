@@ -21,6 +21,10 @@
 #define ULANDING_HDR 254   // Header Byte from uLanding (0xFE)
 #define ULANDING_HDR_V0 72 // Header Byte for beta V0 of uLanding (0x48)
 
+#define ULANDING_BAUD           115200
+#define ULANDING_BUFSIZE_RX     128
+#define ULANDING_BUFSIZE_TX     128
+
 extern const AP_HAL::HAL& hal;
 
 /*
@@ -32,9 +36,9 @@ AP_RangeFinder_uLanding::AP_RangeFinder_uLanding(RangeFinder::RangeFinder_State 
                                                  AP_SerialManager &serial_manager) :
     AP_RangeFinder_Backend(_state)
 {
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Aerotenna_uLanding, 0);
+    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, 0);
     if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Aerotenna_uLanding, 0));
+        uart->begin(ULANDING_BAUD, ULANDING_BUFSIZE_RX, ULANDING_BUFSIZE_TX);
     }
 }
 
@@ -45,7 +49,7 @@ AP_RangeFinder_uLanding::AP_RangeFinder_uLanding(RangeFinder::RangeFinder_State 
 */
 bool AP_RangeFinder_uLanding::detect(AP_SerialManager &serial_manager)
 {
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Aerotenna_uLanding, 0) != nullptr;
+    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, 0) != nullptr;
 }
 
 /*
