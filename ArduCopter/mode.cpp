@@ -126,9 +126,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_GUIDED_NOGPS_ENABLED == ENABLED
         case GUIDED_NOGPS:
             ret = &mode_guided_nogps;
             break;
+#endif
 
 #if MODE_SMARTRTL_ENABLED == ENABLED
         case SMART_RTL:
