@@ -964,7 +964,9 @@ private:
 #endif
     ModeBrake mode_brake;
     ModeCircle mode_circle;
+#if MODE_DRIFT_ENABLED == ENABLED
     ModeDrift mode_drift;
+#endif
     ModeFlip mode_flip;
     ModeGuided mode_guided;
     ModeLand mode_land;
