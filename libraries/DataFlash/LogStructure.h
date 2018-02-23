@@ -17,12 +17,19 @@
 struct LogStructure {
     uint8_t msg_type;
     uint8_t msg_len;
-    const char name[5];
-    const char format[16];
-    const char labels[64];
-    const char units[16];
-    const char multipliers[16];
+    const char *name;
+    const char *format;
+    const char *labels;
+    const char *units;
+    const char *multipliers;
 };
+
+// maximum lengths of fields in LogStructure, including trailing nulls
+static const uint8_t LS_NAME_SIZE = 5;
+static const uint8_t LS_FORMAT_SIZE = 17;
+static const uint8_t LS_LABELS_SIZE = 65;
+static const uint8_t LS_UNITS_SIZE = 17;
+static const uint8_t LS_MULTIPLIERS_SIZE = 17;
 
 /*
   log structures common to all vehicle types
