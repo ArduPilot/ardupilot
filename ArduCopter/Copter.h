@@ -995,7 +995,9 @@ private:
     ModeAvoidADSB mode_avoid_adsb;
 #endif
     ModeThrow mode_throw;
+#if MODE_GUIDED_NOGPS_ENABLED == ENABLED
     ModeGuidedNoGPS mode_guided_nogps;
+#endif
 #if MODE_SMARTRTL_ENABLED == ENABLED
     ModeSmartRTL mode_smartrtl;
 #endif

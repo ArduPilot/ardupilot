@@ -27,6 +27,7 @@
 //#define MODE_BRAKE_ENABLED    DISABLED            // disable brake mode support
 //#define MODE_DRIFT_ENABLED    DISABLED            // disable drift mode support
 //#define MODE_GUIDED_ENABLED   DISABLED            // disable guided mode support
+//#define MODE_GUIDED_NOGPS_ENABLED   DISABLED      // disable guided/nogps mode support
 //#define MODE_LOITER_ENABLED   DISABLED            // disable loiter mode support
 //#define MODE_POSHOLD_ENABLED  DISABLED            // disable poshold mode support
 //#define MODE_RTL_ENABLED DISABLED                 // disable rtl mode support
