@@ -280,6 +280,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Circle - fly vehicle around a central point
+#ifndef MODE_CIRCLE_ENABLED
+# define MODE_CIRCLE_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Drift - fly vehicle in altitude-held, coordinated-turn mode
 #ifndef MODE_DRIFT_ENABLED
 # define MODE_DRIFT_ENABLED ENABLED
@@ -642,6 +648,10 @@
 
 #if MODE_AUTO_ENABLED && !MODE_GUIDED_ENABLED
   #error ModeAuto requires ModeGuided which is disabled
+#endif
+
+#if MODE_AUTO_ENABLED && !MODE_CIRCLE_ENABLED
+  #error ModeAuto requires ModeCircle which is disabled
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
