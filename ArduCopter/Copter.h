@@ -978,7 +978,9 @@ private:
 #if MODE_POSHOLD_ENABLED == ENABLED
     ModePosHold mode_poshold;
 #endif
+#if MODE_RTL_ENABLED == ENABLED
     ModeRTL mode_rtl;
+#endif
 #if FRAME_CONFIG == HELI_FRAME
     ModeStabilize_Heli mode_stabilize;
 #else
