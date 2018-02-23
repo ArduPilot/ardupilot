@@ -4,6 +4,13 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
+/* pixracer 8266 GPIO2 */
+define SET_DEBUG_PIN   GPIOB->ODR |=  (1 << 4);
+define CLR_DEBUG_PIN   GPIOB->ODR &= ~(1 << 4);
+/* pixracer 8266 RST */
+define SET_IDLE_PIN   GPIOE->ODR |=  (1 << 6);
+define CLR_IDLE_PIN   GPIOE->ODR &= ~(1 << 6);
+
 # board ID for firmware load
 APJ_BOARD_ID 11
 

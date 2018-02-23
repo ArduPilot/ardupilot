@@ -325,13 +325,6 @@
  * @{
  */
 /*===========================================================================*/
-/* pixracer 8266 GPIO2 */
-#define SET_DEBUG_PIN   GPIOB->ODR |=  (1 << 4);
-#define CLR_DEBUG_PIN   GPIOB->ODR &= ~(1 << 4);
-/* pixracer 8266 RST */
-#define SET_IDLE_PIN   GPIOE->ODR |=  (1 << 6);
-#define CLR_IDLE_PIN   GPIOE->ODR &= ~(1 << 6);
-
 /**
  * @brief   Debug option, kernel statistics.
  *

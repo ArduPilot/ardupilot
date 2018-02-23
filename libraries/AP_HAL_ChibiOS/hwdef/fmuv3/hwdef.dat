@@ -44,6 +44,14 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
+/* FMUV3 USART3_RTS */
+define SET_DEBUG_PIN   GPIOD->ODR |=  (1 << 12);
+define CLR_DEBUG_PIN   GPIOD->ODR &= ~(1 << 12);
+
+/* FMUV3 USART2_RTS */
+define SET_IDLE_PIN   GPIOD->ODR |=  (1 << 4);
+define CLR_IDLE_PIN   GPIOD->ODR &= ~(1 << 4);
+
 # now we need to specify the APJ_BOARD_ID. This is the ID that the
 # bootloader presents to GCS software so it knows if this firmware is
 # suitable for the board. Please see
