@@ -649,8 +649,10 @@ void Copter::ModeAutoTune::autotune_attitude_control()
         }
 
         // log this iterations lean angle and rotation rate
+#if LOGGING_ENABLED == ENABLED
         Log_Write_AutoTuneDetails(lean_angle, rotation_rate);
         copter.DataFlash.Log_Write_Rate(ahrs, *motors, *attitude_control, *pos_control);
+#endif
         break;
 
     case UPDATE_GAINS:
@@ -658,6 +660,7 @@ void Copter::ModeAutoTune::autotune_attitude_control()
         // re-enable rate limits
         attitude_control->use_ff_and_input_shaping(true);
 
+#if LOGGING_ENABLED == ENABLED
         // log the latest gains
         if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
             switch (axis) {
@@ -684,6 +687,7 @@ void Copter::ModeAutoTune::autotune_attitude_control()
                 break;
             }
         }
+#endif
 
         // Check results after mini-step to increase rate D gain
         switch (tune_type) {
