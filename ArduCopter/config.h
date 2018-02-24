@@ -654,6 +654,18 @@
   #error ModeAuto requires ModeCircle which is disabled
 #endif
 
+#if MODE_AUTO_ENABLED && !MODE_RTL_ENABLED
+  #error ModeAuto requires ModeRTL which is disabled
+#endif
+
+#if AC_TERRAIN && !MODE_AUTO_ENABLED
+  #error Terrain requires ModeAuto which is disabled
+#endif
+
+#if AC_AVOID_ENABLED && !BEACON_ENABLED
+  #error AC_Avoid requires Beacon which is disabled
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
