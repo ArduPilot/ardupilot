@@ -44,6 +44,11 @@ class Builder():
             "AC_FENCE": ["AC_AVOID_ENABLED"],
             "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED"],
             "AC_RALLY": ["AC_TERRAIN"],
+            "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED"],
+            "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
+            "BEACON_ENABLED": ["AC_AVOID_ENABLED"],
+            "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
+            "MODE_GUIDED_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
         }
 
     def reverse_deps_for_var(self, var):
