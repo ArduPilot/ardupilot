@@ -17,10 +17,20 @@ def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
     tmp_str = bldnode.find_node('include_dirs').read()
     tmp_str = tmp_str.replace(';\n','')
-    if 'include_dirs' == 'include_dirs':
-        tmp_str = tmp_str.replace('-I','')  #remove existing -I flags
-    _dynamic_env_data['include_dirs'] = re.split('; ', tmp_str)
-    #print _dynamic_env_data['include_dirs']
+    tmp_str = tmp_str.replace('-I','')  #remove existing -I flags
+    # split, coping with separator
+    idirs = re.split('; ', tmp_str)
+
+    # create unique list, coping with relative paths
+    idirs2 = []
+    for d in idirs:
+        if d.startswith('../'):
+            # relative paths from the make build are relative to BUILDROOT
+            d = os.path.join(bld.env.BUILDROOT, d)
+        d = os.path.normpath(d)
+        if not d in idirs2:
+            idirs2.append(d)
+    _dynamic_env_data['include_dirs'] = idirs2
 
 @feature('ch_ap_library', 'ch_ap_program')
 @before_method('process_source')
@@ -121,6 +131,11 @@ def configure(cfg):
     env.APJ_TOOL = srcpath('Tools/scripts/apj_tool.py')
     env.SERIAL_PORT = srcpath('/dev/serial/by-id/*_STLink*')
 
+    # relative paths to pass to make, relative to directory that make is run from
+    env.CH_ROOT_REL = os.path.relpath(env.CH_ROOT, env.BUILDROOT)
+    env.AP_HAL_REL = os.path.relpath(env.AP_HAL_ROOT, env.BUILDROOT)
+    env.BUILDDIR_REL = os.path.relpath(env.BUILDDIR, env.BUILDROOT)
+
     mk_custom = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/chibios_board.mk' % env.BOARD)
     mk_common = srcpath('libraries/AP_HAL_ChibiOS/hwdef/common/chibios_board.mk')
     # see if there is a board specific make file
@@ -159,7 +174,7 @@ def build(bld):
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule='touch Makefile && BUILDDIR=${BUILDDIR} CHIBIOS=${CH_ROOT} AP_HAL=${AP_HAL_ROOT} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f ${BOARD_MK}',
+        rule='touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f ${BOARD_MK}',
         group='dynamic_sources',
         target='modules/ChibiOS/include_dirs'
     )
@@ -172,7 +187,7 @@ def build(bld):
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     ch_task = bld(
         # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR}' CHIBIOS='${CH_ROOT}' AP_HAL=${AP_HAL_ROOT} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f ${BOARD_MK}",
+        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f ${BOARD_MK}",
         group='dynamic_sources',
         source=common_src,
         target='modules/ChibiOS/libch.a'
