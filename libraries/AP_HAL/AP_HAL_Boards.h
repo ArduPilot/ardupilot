@@ -136,6 +136,7 @@
 #define HAL_COMPASS_MAG3110            20
 #define HAL_COMPASS_BMM150_I2C         21
 #define HAL_COMPASS_QMC5883L           22
+#define HAL_COMPASS_IST8310            23
 
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1
