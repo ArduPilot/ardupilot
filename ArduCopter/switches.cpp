@@ -203,7 +203,7 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_AVOID_PROXIMITY:
         case AUXSW_INVERTED:
         case AUXSW_WINCH_ENABLE:
-        case AUXSW_RC_OVERRIDE_ENABLE:
+        case AUXSW_RC_OVERRIDE_DISABLE:
             do_aux_switch_function(ch_option, ch_flag);
             break;
     }
@@ -670,15 +670,15 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 #endif
             break;
 
-        case AUXSW_RC_OVERRIDE_ENABLE:
+        case AUXSW_RC_OVERRIDE_DISABLE:
             // Allow or disallow RC_Override
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH: {
-                    ap.rc_override_enable = true;
+                    ap.rc_override_disable = false;
                     break;
                 }
                 case AUX_SWITCH_LOW: {
-                    ap.rc_override_enable = false;
+                    ap.rc_override_disable = true;
                     break;
                 }
             }
