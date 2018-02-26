@@ -377,7 +377,6 @@ AP_UAVCAN::AP_UAVCAN() :
     for (uint8_t i = 0; i < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; i++) {
         _escstatus.id[i] = UINT8_MAX;
     }
-    for (uint8_t li = 0; li < AP_UAVCAN_MAX_LISTENERS; li++) {
 
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
 }
