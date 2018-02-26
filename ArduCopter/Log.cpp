@@ -582,11 +582,13 @@ void Copter::Log_Write_Proximity()
 // Write beacon position and distances
 void Copter::Log_Write_Beacon()
 {
+#if BEACON == ENABLED
     // exit immediately if feature is disabled
     if (!g2.beacon.enabled()) {
         return;
     }
     DataFlash.Log_Write_Beacon(g2.beacon);
+#endif
 }
 
 // type and unit information can be found in
