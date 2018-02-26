@@ -473,6 +473,14 @@ class mini_pix(chibios):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_MINIPIX',
         )
 
+class OMNIBUSF7V2(chibios):
+    name = 'OMNIBUSF7V2'
+    def configure_env(self, cfg, env):
+        super(OMNIBUSF7V2, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_OMNIBUSF7V2',
+        )
+
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
