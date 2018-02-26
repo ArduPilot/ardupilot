@@ -44,6 +44,8 @@ using namespace F4Light;
 
 namespace OSDns {
 
+class BetterStream : AP_HAL::BetterStream {};
+
 #include "osd_core/GCS_MAVLink.h"
 
 #include "osd_core/OSD_Max7456.h"
