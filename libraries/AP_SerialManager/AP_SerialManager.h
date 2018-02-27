@@ -92,10 +92,10 @@ public:
         SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
-        SerialProtocol_Lidar = 9,
+        SerialProtocol_Rangefinder = 9,
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
         SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
-        SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support - deprecated, users should use Lidar
+        SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support - deprecated, users should use Rangefinder
         SerialProtocol_Beacon = 13,
         SerialProtocol_Volz = 14,                    // Volz servo protocol
         SerialProtocol_Sbus1 = 15
