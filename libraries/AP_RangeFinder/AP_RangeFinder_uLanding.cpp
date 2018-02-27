@@ -37,7 +37,7 @@ AP_RangeFinder_uLanding::AP_RangeFinder_uLanding(RangeFinder::RangeFinder_State 
                                                  uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state)
 {
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, serial_instance);
+    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
         uart->begin(ULANDING_BAUD, ULANDING_BUFSIZE_RX, ULANDING_BUFSIZE_TX);
     }
@@ -50,7 +50,7 @@ AP_RangeFinder_uLanding::AP_RangeFinder_uLanding(RangeFinder::RangeFinder_State 
 */
 bool AP_RangeFinder_uLanding::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
 {
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, serial_instance) != nullptr;
+    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 /*
