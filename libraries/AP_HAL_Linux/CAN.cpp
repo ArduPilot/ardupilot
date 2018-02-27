@@ -31,8 +31,6 @@
 
 #include "CAN.h"
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
-
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -461,17 +459,6 @@ void CANManager::IfaceWrapper::updateDownStatusFromPollResult(const pollfd& pfd)
     }
 }
 
-void CANManager::_timer_tick()
-{
-    if (!_initialized) return;
-
-    if (p_uavcan != nullptr) {
-        p_uavcan->do_cyclic();
-    } else {
-        hal.console->printf("p_uavcan is nullptr");
-    }
-}
-
 bool CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
     if (init(can_number) >= 0) {
@@ -488,16 +475,6 @@ bool CANManager::is_initialized()
 void CANManager::initialized(bool val)
 {
     _initialized = val;
-}
-
-AP_UAVCAN *CANManager::get_UAVCAN(void)
-{
-    return p_uavcan;
-}
-
-void CANManager::set_UAVCAN(AP_UAVCAN *uavcan)
-{
-    p_uavcan = uavcan;
 }
 
 CAN* CANManager::getIface(uint8_t iface_index)
