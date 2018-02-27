@@ -59,15 +59,15 @@ void I2CBus::clear_all()
 #endif
 
 #if defined(HAL_GPIO_PIN_I2C2_SCL) && defined(HAL_I2C2_SCL_AF)
-    clear_bus(HAL_GPIO_PIN_I2C1_SCL, HAL_I2C1_SCL_AF);
+    clear_bus(HAL_GPIO_PIN_I2C2_SCL, HAL_I2C2_SCL_AF);
 #endif
 
 #if defined(HAL_GPIO_PIN_I2C3_SCL) && defined(HAL_I2C3_SCL_AF)
-    clear_bus(HAL_GPIO_PIN_I2C1_SCL, HAL_I2C1_SCL_AF);
+    clear_bus(HAL_GPIO_PIN_I2C3_SCL, HAL_I2C3_SCL_AF);
 #endif
 
 #if defined(HAL_GPIO_PIN_I2C4_SCL) && defined(HAL_I2C4_SCL_AF)
-    clear_bus(HAL_GPIO_PIN_I2C1_SCL, HAL_I2C1_SCL_AF);
+    clear_bus(HAL_GPIO_PIN_I2C4_SCL, HAL_I2C4_SCL_AF);
 #endif
 }
 
