@@ -6,6 +6,7 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
 
@@ -566,6 +567,28 @@ void NavEKF2_core::UpdateFilter(bool predict)
 #if EK2_DISABLE_INTERRUPTS
     irqrestore(istate);
 #endif
+
+    /*
+      this is a check to cope with a vehicle sitting idle on the
+      ground and getting over-confident of the state. The symptoms
+      would be "gyros still settling" when the user tries to arm. In
+      that state the EKF can't recover, so we do a hard reset and let
+      it try again.
+     */
+    if (filterStatus.value != 0) {
+        last_filter_ok_ms = AP_HAL::millis();
+    }
+    if (filterStatus.value == 0 &&
+        last_filter_ok_ms != 0 &&
+        AP_HAL::millis() - last_filter_ok_ms > 5000 &&
+        !hal.util->get_soft_armed()) {
+        // we've been unhealthy for 5 seconds after being healthy, reset the filter
+        gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u forced reset",(unsigned)imu_index);
+        last_filter_ok_ms = 0;
+        statesInitialised = false;
+        InitialiseFilterBootstrap();
+    }
+    
 }
 
 void NavEKF2_core::correctDeltaAngle(Vector3f &delAng, float delAngDT)
