@@ -56,23 +56,4 @@ void CANManager::initialized(bool val)
     initialized_ = val;
 }
 
-AP_UAVCAN *CANManager::get_UAVCAN(void)
-{
-    return p_uavcan;
-}
-
-void CANManager::set_UAVCAN(AP_UAVCAN *uavcan)
-{
-    p_uavcan = uavcan;
-}
-
-void CANManager::_timer_tick()
-{
-    if (!initialized_) return;
-
-    if (p_uavcan != nullptr) {
-        p_uavcan->do_cyclic();
-    }
-}
-
 #endif //HAL_WITH_UAVCAN
