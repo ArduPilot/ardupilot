@@ -34,9 +34,9 @@ AP_RangeFinder_MaxsonarSerialLV::AP_RangeFinder_MaxsonarSerialLV(RangeFinder::Ra
                                                                  uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state)
 {
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, serial_instance);
+    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar, serial_instance));
+        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
     }
 }
 
@@ -47,7 +47,7 @@ AP_RangeFinder_MaxsonarSerialLV::AP_RangeFinder_MaxsonarSerialLV(RangeFinder::Ra
 */
 bool AP_RangeFinder_MaxsonarSerialLV::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
 {
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, serial_instance) != nullptr;
+    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 // read - return last value measured by sensor
