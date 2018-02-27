@@ -19,10 +19,6 @@
 #include "UARTDriver.h"
 #include "Util.h"
 
-#if HAL_WITH_UAVCAN
-#include "CAN.h"
-#endif
-
 using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
@@ -222,16 +218,6 @@ void Scheduler::_timer_task()
     }
 
     _in_timer_proc = false;
-
-#if HAL_WITH_UAVCAN
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    for (i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
-        if(hal.can_mgr[i] != nullptr) {
-            CANManager::from(hal.can_mgr[i])->_timer_tick();
-        }
-    }
-#endif
-#endif
 }
 
 void Scheduler::_run_io(void)
