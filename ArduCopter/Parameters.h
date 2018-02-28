@@ -498,8 +498,10 @@ public:
     // button checking
     AP_Button button;
 
+#if STATS_ENABLED == ENABLED
     // vehicle statistics
     AP_Stats stats;
+#endif
 
 #if GRIPPER_ENABLED
     AP_Gripper gripper;

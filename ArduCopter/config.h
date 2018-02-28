@@ -693,7 +693,10 @@
 #define TOY_MODE_ENABLED DISABLED
 #endif
 
-
 #if TOY_MODE_ENABLED && FRAME_CONFIG == HELI_FRAME
   #error Toy mode is not available on Helicopters
+#endif
+
+#ifndef STATS_ENABLED
+ # define STATS_ENABLED ENABLED
 #endif
