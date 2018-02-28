@@ -400,6 +400,11 @@ class fmuv3(chibios):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3',
         )
 
+class fmuv2(fmuv3):
+    name = 'fmuv2'
+    def __init__(self):
+        super(fmuv2, self).__init__()
+
 class skyviper_v2450(fmuv3):
     name = 'skyviper-v2450'
     def __init__(self):
