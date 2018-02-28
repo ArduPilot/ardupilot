@@ -56,7 +56,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(compass_accumulate,     50,    200),
     SCHED_TASK(barometer_accumulate,   50,    150),
     SCHED_TASK(update_notify,          50,    300),
-    SCHED_TASK(read_rangefinder,       50,    100),
+    SCHED_TASK(read_rangefinder,       20,    100),
     SCHED_TASK(ice_update,             10,    100),
     SCHED_TASK(compass_cal_update,     50,    50),
     SCHED_TASK(accel_cal_update,       10,    50),

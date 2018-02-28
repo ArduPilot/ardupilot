@@ -273,7 +273,7 @@ void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder, AP_A
 	mavlink_msg_rangefinder_send(
             chan,
             ahrs.get_h_water(),
-            ahrs.get_h_dot_water());
+            rangefinder.voltage_mv_orient(ROTATION_PITCH_270) * 0.001f);
 }
 
 bool GCS_MAVLINK::send_proximity(const AP_Proximity &proximity) const

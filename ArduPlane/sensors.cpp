@@ -62,7 +62,7 @@ void Plane::read_rangefinder(void)
 	float DAW = 0;
 	float VAW = 0;
 	
-	for(uint8_t i = 1; i <= rangefinder.num_sensors(); i++) {
+	for(uint8_t i = 0; i < rangefinder.num_sensors(); i++) {
         float wtrdistcm = rangefinder.distance_cm(i);
         /*
         Working check; if abs error of new measurment is too large, filter it
