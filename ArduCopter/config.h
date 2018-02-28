@@ -668,10 +668,6 @@
   #error Terrain requires ModeAuto which is disabled
 #endif
 
-#if AC_AVOID_ENABLED && !BEACON_ENABLED
-  #error AC_Avoid requires Beacon which is disabled
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
