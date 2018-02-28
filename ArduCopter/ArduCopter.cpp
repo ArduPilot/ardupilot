@@ -191,6 +191,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
 };
 
+constexpr int8_t Copter::_failsafe_priorities[7];
 
 void Copter::setup()
 {
@@ -297,7 +298,7 @@ void Copter::throttle_loop()
 void Copter::update_batt_compass(void)
 {
     // read battery before compass because it may be used for motor interference compensation
-    read_battery();
+    battery.read();
 
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot

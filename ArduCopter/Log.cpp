@@ -183,7 +183,7 @@ void Copter::Log_Write_MotBatt()
         time_us         : AP_HAL::micros64(),
         lift_max        : (float)(motors->get_lift_max()),
         bat_volt        : (float)(motors->get_batt_voltage_filt()),
-        bat_res         : (float)(motors->get_batt_resistance()),
+        bat_res         : (float)(battery.get_resistance()),
         th_limit        : (float)(motors->get_throttle_limit())
     };
     DataFlash.WriteBlock(&pkt_mot, sizeof(pkt_mot));
