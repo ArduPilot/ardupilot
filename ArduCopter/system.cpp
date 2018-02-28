@@ -52,8 +52,10 @@ void Copter::init_ardupilot()
     // actual loop rate
     G_Dt = 1.0 / scheduler.get_loop_rate_hz();
 
+#if STATS_ENABLED == ENABLED
     // initialise stats module
     g2.stats.init();
+#endif
 
     gcs().set_dataflash(&DataFlash);
 
