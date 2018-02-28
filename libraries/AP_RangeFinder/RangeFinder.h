@@ -100,19 +100,13 @@ public:
     AP_Vector3f _pos_offset[RANGEFINDER_MAX_INSTANCES]; // position offset in body frame
     AP_Int8  _orientation[RANGEFINDER_MAX_INSTANCES];
     AP_Float _dist2hll;
-    AP_Float _flpread;
-    AP_Float _expo;
-    AP_Float _offa;
-    AP_Float _offb;
-    AP_Float _offc;
-    AP_Float _expo_v;
-    AP_Float _2flpread;
-    AP_Float _2expo;
-    AP_Float _2offa;
-    AP_Float _2offb;
-    AP_Float _2offc;
-    AP_Float _2expo_v;
-    AP_Int8 _sensor_sel;
+    AP_Int8 _flpread[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _expo[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _expo_v[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _offa[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _offb[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _offc[RANGEFINDER_MAX_INSTANCES];
+    
     static const struct AP_Param::GroupInfo var_info[];
     
     // Return the number of range finder instances
@@ -129,32 +123,18 @@ public:
 
     float get_hull_offset(void) { return _dist2hll; }
 
-    float get_expo(void) { return _expo; }
+    float get_expo(uint8_t instance) { return _expo[instance]; }
 
-    float get_expo_vel(void) { return _expo_v; }
+    float get_expo_vel(uint8_t instance) { return _expo_v[instance]; }
 
-    float get_offa(void) { return _offa; }
+    float get_offa(uint8_t instance) { return _offa[instance]; }
 
-    float get_offb(void) { return _offb; }
+    float get_offb(uint8_t instance) { return _offb[instance]; }
 
-    float get_offc(void) { return _offc; }
+    float get_offc(uint8_t instance) { return _offc[instance]; }
 
-    bool flip_measurement(void);
-
-    float get_expo2(void) { return _2expo; }
-
-    float get_expo_vel2(void) { return _2expo_v; }
-
-    float get_offa2(void) { return _2offa; }
-
-    float get_offb2(void) { return _2offb; }
-
-    float get_offc2(void) { return _2offc; }
-
-    uint8_t get_sensor_sel(void) { return _sensor_sel; }
-
-    bool flip_measurement2(void);
-
+    bool flip_measurement(uint8_t instance);
+        
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(mavlink_message_t *msg);
 

@@ -50,51 +50,47 @@ void Plane::read_rangefinder(void)
         Log_Write_Sonar();
 
     rangefinder_height_update();
+	
+	
 	float rngdt = 0.0; //Time step in seconds since last call
 	float current_time_rng = micros()/1000000.0;
 	if(prev_rng_time != 0.0) {
 		rngdt = current_time_rng-prev_rng_time;
 	}
-	prev_rng_time=current_time_rng;
+	prev_rng_time = current_time_rng;
 	float prev_dist = dist_above_water;
-	float wtrdistcm = rangefinder.distance_cm(rangefinder.get_sensor_sel());
-	if(rangefinder.get_sensor_sel() == 1){
-		if(rangefinder.flip_measurement()) {
-			//Where Low Pass filter Lives. Alpha is the the RNGFND_EXPO parameter.
-			dist_above_water = rangefinder.get_expo()*(-1.0*wtrdistcm+rangefinder.get_offb()*ahrs.cos_pitch()*ahrs.sin_roll()+rangefinder.get_offc()*ahrs.cos_pitch()*ahrs.cos_roll()-rangefinder.get_offa()*ahrs.sin_pitch())+(1.0-rangefinder.get_expo())*dist_above_water;
-			if(rngdt > 0.0) {
-				vel_above_water = rangefinder.get_expo_vel()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel())*vel_above_water;
-			}
-		}
-		else{
-			dist_above_water =  rangefinder.get_expo()*((rangefinder.get_offb()*ahrs.sin_roll()+(rangefinder.get_offc()+wtrdistcm)*ahrs.cos_roll())*ahrs.cos_pitch()-rangefinder.get_offa()*ahrs.sin_pitch())+(1.0-rangefinder.get_expo())*dist_above_water;
-			if(rngdt > 0.0) {
-				vel_above_water = rangefinder.get_expo_vel()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel())*vel_above_water;
-			}
-		}
-	}
-	else if(rangefinder.get_sensor_sel() == 2){
-		if(rangefinder.flip_measurement2()) {
-			//Where Low Pass filter Lives. Alpha is the the RNGFND_EXPO parameter.
-			dist_above_water =rangefinder.get_expo2()*( -1.0*wtrdistcm+rangefinder.get_offb2()*ahrs.cos_pitch()*ahrs.sin_roll()+rangefinder.get_offc2()*ahrs.cos_pitch()*ahrs.cos_roll()-rangefinder.get_offa2()*ahrs.sin_pitch())+(1.0-rangefinder.get_expo2())*dist_above_water;
-			if(rngdt > 0.0) {
-				vel_above_water = rangefinder.get_expo_vel2()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel2())*vel_above_water;
-			}
-		}
-		else{
-			dist_above_water =rangefinder.get_expo2()*((rangefinder.get_offb2()*ahrs.sin_roll()+(rangefinder.get_offc2()+wtrdistcm)*ahrs.cos_roll())*ahrs.cos_pitch()-rangefinder.get_offa2()*ahrs.sin_pitch())+(1.0-rangefinder.get_expo2())*dist_above_water;
-			if(rngdt > 0.0) {
-				vel_above_water = rangefinder.get_expo_vel2()*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel2())*vel_above_water;
-			}
-		}
-	}
-	else {
-		dist_above_water=0;
-		vel_above_water=0;
-	}
-	ahrs.set_h_water(dist_above_water);
-	ahrs.set_h_dot_water(vel_above_water);
-	// ## TO-DO : Implement Kalman Filter for vel estimate using rangefinder
+	float DAW = 0;
+	float VAW = 0;
+	
+	for(uint8_t i = 1; i <= rangefinder.num_sensors(); i++) {
+        float wtrdistcm = rangefinder.distance_cm(i);
+        /*
+        Working check; if abs error of new measurment is too large, filter it
+        if (abs(wtrdistcm - prev_dist) / prev_dist) > .30 {
+            wtrdistcm = 0.8*prev_dist + 0.2 * wtrdistcm;
+            }
+        */
+            if(rangefinder.flip_measurement(i)) {
+                //Where Low Pass filter Lives. Alpha is the the RNGFND_EXPO parameter.
+                DAW += rangefinder.get_expo(i)*(-1.0*wtrdistcm+rangefinder.get_offb(i)*ahrs.cos_pitch()*ahrs.sin_roll()+rangefinder.get_offc(i)*ahrs.cos_pitch()*ahrs.cos_roll()-rangefinder.get_offa(i)*ahrs.sin_pitch())+(1.0-rangefinder.get_expo(i))*dist_above_water;
+                if(rngdt > 0.0) {
+                    VAW += rangefinder.get_expo_vel(i)*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel(i))*vel_above_water;
+                }
+            }
+            else{
+                DAW +=  rangefinder.get_expo(i)*((rangefinder.get_offb(i)*ahrs.sin_roll()+(rangefinder.get_offc(i)+wtrdistcm)*ahrs.cos_roll())*ahrs.cos_pitch()-rangefinder.get_offa(i)*ahrs.sin_pitch())+(1.0-rangefinder.get_expo(i))*dist_above_water;
+                if(rngdt > 0.0) {
+                    VAW += rangefinder.get_expo_vel(i)*((dist_above_water-prev_dist)/rngdt)+(1.0-rangefinder.get_expo_vel(i))*vel_above_water;
+                }
+            }
+    }    
+        dist_above_water = DAW/rangefinder.num_sensors();
+        vel_above_water = VAW/rangefinder.num_sensors();
+        
+        ahrs.set_h_water(dist_above_water);
+        ahrs.set_h_dot_water(vel_above_water);
+        // ## TO-DO : Implement Kalman Filter for vel estimate using rangefinder
+        
 }
 /*
   calibrate compass
