@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 
     // @Group: _
     // @Path: AP_BattMonitor_Params.cpp
-    AP_SUBGROUPINFO_FLAGS(_params[0], "_", 23, AP_BattMonitor, AP_BattMonitor_Params, AP_PARAM_FLAG_IGNORE_ENABLE),
+    AP_SUBGROUPINFO(_params[0], "_", 23, AP_BattMonitor, AP_BattMonitor_Params),
 
     // @Group: 2_
     // @Path: AP_BattMonitor_Params.cpp
