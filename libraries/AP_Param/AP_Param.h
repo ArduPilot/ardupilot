@@ -63,16 +63,13 @@
 // the var_info is a pointer, allowing for dynamic definition of the var_info tree
 #define AP_PARAM_FLAG_INFO_POINTER  (1<<4)
 
-// ignore the enable parameter on this group
-#define AP_PARAM_FLAG_IGNORE_ENABLE (1<<5)
-
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   6
+#define AP_PARAM_FRAME_TYPE_SHIFT   5
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -108,7 +105,6 @@
 // declare a subgroup entry in a group var_info. This is for having another arbitrary object as a member of the parameter list of
 // an object
 #define AP_SUBGROUPINFO(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET }
-#define AP_SUBGROUPINFO_FLAGS(element, name, idx, thisclazz, elclazz, flags) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET | flags }
 
 // declare a second parameter table for the same object
 #define AP_SUBGROUPEXTENSION(name, idx, clazz, vinfo) { AP_PARAM_GROUP, idx, name, 0, { group_info : clazz::vinfo }, AP_PARAM_FLAG_NESTED_OFFSET }
