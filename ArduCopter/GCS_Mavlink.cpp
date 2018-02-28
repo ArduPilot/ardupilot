@@ -759,7 +759,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // or for complete GCS control of switch position
         // and RC PWM values.
         if(msg->sysid != copter.g.sysid_my_gcs) break;                         // Only accept control from our gcs
-        if (!copter.ap.rc_override_enable) {
+        if (copter.ap.rc_override_disable) {
             if (copter.failsafe.rc_override_active) {  // if overrides were active previously, disable them
                 copter.failsafe.rc_override_active = false;
                 hal.rcin->clear_overrides();
