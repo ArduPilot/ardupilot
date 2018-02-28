@@ -52,7 +52,6 @@ private:
 
     double capacity = 0.25; // litres
 
-    uint64_t start_time_us;
     uint64_t last_update_us;
 
     bool should_report();
