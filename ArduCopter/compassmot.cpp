@@ -108,9 +108,8 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         gcs_chan.send_text(MAV_SEVERITY_INFO, "Throttle");
     }
 
-    // disable throttle and battery failsafe
+    // disable throttle failsafe
     g.failsafe_throttle = FS_THR_DISABLED;
-    g.failsafe_battery_enabled = FS_BATT_DISABLED;
 
     // disable motor compensation
     compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
@@ -164,7 +163,7 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         compass.read();
         
         // read current
-        read_battery();
+        battery.read();
         
         // calculate scaling for throttle
         throttle_pct = (float)channel_throttle->get_control_in() / 1000.0f;
@@ -269,7 +268,6 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
 
     // re-enable failsafes
     g.failsafe_throttle.load();
-    g.failsafe_battery_enabled.load();
 
     // flag we have completed
     ap.compass_mot = false;

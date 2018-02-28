@@ -373,19 +373,18 @@ private:
 
     // Failsafe
     struct {
-        uint8_t rc_override_active  : 1; // 0   // true if rc control are overwritten by ground station
-        uint8_t radio               : 1; // 1   // A status flag for the radio failsafe
-        uint8_t battery             : 1; // 2   // A status flag for the battery failsafe
-        uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
-        uint8_t ekf                 : 1; // 5   // true if ekf failsafe has occurred
-        uint8_t terrain             : 1; // 6   // true if the missing terrain data failsafe has occurred
-        uint8_t adsb                : 1; // 7   // true if an adsb related failsafe has occurred
-
-        int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
-
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
+
+        int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
+
+        uint8_t rc_override_active  : 1; // true if rc control are overwritten by ground station
+        uint8_t radio               : 1; // A status flag for the radio failsafe
+        uint8_t gcs                 : 1; // A status flag for the ground station failsafe
+        uint8_t ekf                 : 1; // true if ekf failsafe has occurred
+        uint8_t terrain             : 1; // true if the missing terrain data failsafe has occurred
+        uint8_t adsb                : 1; // true if an adsb related failsafe has occurred
     } failsafe;
 
     // sensor health for logging
@@ -425,7 +424,9 @@ private:
     int32_t initial_armed_bearing;
 
     // Battery Sensors
-    AP_BattMonitor battery{MASK_LOG_CURRENT};
+    AP_BattMonitor battery{MASK_LOG_CURRENT,
+                           FUNCTOR_BIND_MEMBER(&Copter::handle_battery_failsafe, void, const char*, const int8_t),
+                           _failsafe_priorities};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
@@ -628,11 +629,37 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
+    enum Failsafe_Action {
+        Failsafe_Action_None           = 0,
+        Failsafe_Action_Land           = 1,
+        Failsafe_Action_RTL            = 2,
+        Failsafe_Action_SmartRTL       = 3,
+        Failsafe_Action_SmartRTL_Land  = 4,
+        Failsafe_Action_Terminate      = 5
+    };
+
+    static constexpr int8_t _failsafe_priorities[] = {
+                                                      Failsafe_Action_Terminate,
+                                                      Failsafe_Action_Land,
+                                                      Failsafe_Action_RTL,
+                                                      Failsafe_Action_SmartRTL_Land,
+                                                      Failsafe_Action_SmartRTL,
+                                                      Failsafe_Action_None,
+                                                      -1 // the priority list must end with a sentinel of -1
+                                                     };
+
+    #define FAILSAFE_LAND_PRIORITY 1
+    static_assert(_failsafe_priorities[FAILSAFE_LAND_PRIORITY] == Failsafe_Action_Land,
+                  "FAILSAFE_LAND_PRIORITY must match the entry in _failsafe_priorities");
+    static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
+                  "_failsafe_priorities is missing the sentinel");
+
+
+
     // AP_State.cpp
     void set_auto_armed(bool b);
     void set_simple_mode(uint8_t b);
     void set_failsafe_radio(bool b);
-    void set_failsafe_battery(bool b);
     void set_failsafe_gcs(bool b);
     void update_using_interlock();
     void set_motor_emergency_stop(bool b);
@@ -718,7 +745,7 @@ private:
     // events.cpp
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();
-    void failsafe_battery_event(void);
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
     void failsafe_gcs_check();
     void failsafe_gcs_off_event(void);
     void failsafe_terrain_check();
@@ -880,7 +907,6 @@ private:
     void compass_accumulate(void);
     void init_optflow();
     void update_optical_flow(void);
-    void read_battery(void);
     void read_receiver_rssi(void);
     void compass_cal_update(void);
     void accel_cal_update(void);
