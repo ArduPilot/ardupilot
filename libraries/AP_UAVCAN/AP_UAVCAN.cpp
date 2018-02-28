@@ -37,7 +37,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_uavcan(level_debug, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(_uavcan_i)) { hal.console->printf(fmt, ##args); }} while (0)
+#define debug_uavcan(level_debug, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(_driver_index)) { printf(fmt, ##args); }} while (0)
 
 // Translation of all messages from UAVCAN structures into AP structures is done
 // in AP_UAVCAN and not in corresponding drivers.
@@ -419,47 +419,38 @@ AP_UAVCAN::~AP_UAVCAN()
 {
 }
 
-bool AP_UAVCAN::try_init(void)
+void AP_UAVCAN::init(uint8_t driver_index)
 {
-    if (_parent_can_mgr == nullptr) {
-        return false;
-    }
-
     if (_initialized) {
-        return true;
-    }
-    
-    if (!_parent_can_mgr->is_initialized()) {
-        return false;
-    }
-    
-    _uavcan_i = UINT8_MAX;
-    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-        if (_parent_can_mgr == hal.can_mgr[i]) {
-            _uavcan_i = i;
-            break;
-        }
+        return;
     }
 
-    if(_uavcan_i == UINT8_MAX) {
-        return false;
+    _driver_index = driver_index;
+
+    AP_HAL::CANManager* can_mgr = hal.can_mgr[driver_index];
+    if (can_mgr == nullptr) {
+        return;
+    }
+
+    if (!can_mgr->is_initialized()) {
+        return;
     }
 
     auto *node = get_node();
 
     if (node == nullptr) {
-        return false;
+        return;
     }
-    
+
     if (node->isStarted()) {
-        return false;
+        return;
     }
-    
+
     uavcan::NodeID self_node_id(_uavcan_node);
     node->setNodeID(self_node_id);
 
     char ndname[20];
-    snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", _uavcan_i);
+    snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", driver_index);
 
     uavcan::NodeStatusProvider::NodeName name(ndname);
     node->setName(name);
@@ -478,76 +469,77 @@ bool AP_UAVCAN::try_init(void)
     const int node_start_res = node->start();
     if (node_start_res < 0) {
         debug_uavcan(1, "UAVCAN: node start problem\n\r");
+        return;
     }
 
     uavcan::Subscriber<uavcan::equipment::gnss::Fix> *gnss_fix;
     gnss_fix = new uavcan::Subscriber<uavcan::equipment::gnss::Fix>(*node);
 
-    const int gnss_fix_start_res = gnss_fix->start(gnss_fix_cb_arr[_uavcan_i]);
+    const int gnss_fix_start_res = gnss_fix->start(gnss_fix_cb_arr[driver_index]);
     if (gnss_fix_start_res < 0) {
         debug_uavcan(1, "UAVCAN GNSS subscriber start problem\n\r");
-        return false;
+        return;
     }
 
     uavcan::Subscriber<uavcan::equipment::gnss::Auxiliary> *gnss_aux;
     gnss_aux = new uavcan::Subscriber<uavcan::equipment::gnss::Auxiliary>(*node);
-    const int gnss_aux_start_res = gnss_aux->start(gnss_aux_cb_arr[_uavcan_i]);
+    const int gnss_aux_start_res = gnss_aux->start(gnss_aux_cb_arr[driver_index]);
     if (gnss_aux_start_res < 0) {
         debug_uavcan(1, "UAVCAN GNSS Aux subscriber start problem\n\r");
-        return false;
+        return;
     }
 
     uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength> *magnetic;
     magnetic = new uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength>(*node);
-    const int magnetic_start_res = magnetic->start(magnetic_cb_arr[_uavcan_i]);
+    const int magnetic_start_res = magnetic->start(magnetic_cb_arr[driver_index]);
     if (magnetic_start_res < 0) {
         debug_uavcan(1, "UAVCAN Compass subscriber start problem\n\r");
-        return false;
+        return;
     }
 
     uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength2> *magnetic2;
     magnetic2 = new uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength2>(*node);
-    const int magnetic_start_res_2 = magnetic2->start(magnetic_cb_2_arr[_uavcan_i]);
+    const int magnetic_start_res_2 = magnetic2->start(magnetic_cb_2_arr[driver_index]);
     if (magnetic_start_res_2 < 0) {
         debug_uavcan(1, "UAVCAN Compass for multiple mags subscriber start problem\n\r");
-        return false;
+        return;
     }
 
     uavcan::Subscriber<uavcan::equipment::air_data::StaticPressure> *air_data_sp;
     air_data_sp = new uavcan::Subscriber<uavcan::equipment::air_data::StaticPressure>(*node);
-    const int air_data_sp_start_res = air_data_sp->start(air_data_sp_cb_arr[_uavcan_i]);
+    const int air_data_sp_start_res = air_data_sp->start(air_data_sp_cb_arr[driver_index]);
     if (air_data_sp_start_res < 0) {
         debug_uavcan(1, "UAVCAN Baro subscriber start problem\n\r");
-        return false;
+        return;
     }
-    
+
     uavcan::Subscriber<uavcan::equipment::air_data::StaticTemperature> *air_data_st;
     air_data_st = new uavcan::Subscriber<uavcan::equipment::air_data::StaticTemperature>(*node);
-    const int air_data_st_start_res = air_data_st->start(air_data_st_cb_arr[_uavcan_i]);
+    const int air_data_st_start_res = air_data_st->start(air_data_st_cb_arr[driver_index]);
     if (air_data_st_start_res < 0) {
         debug_uavcan(1, "UAVCAN Temperature subscriber start problem\n\r");
-        return false;
+        return;
     }
-    
+
     uavcan::Subscriber<uavcan::equipment::power::BatteryInfo> *battery_info_st;
     battery_info_st = new uavcan::Subscriber<uavcan::equipment::power::BatteryInfo>(*node);
-    const int battery_info_start_res = battery_info_st->start(battery_info_st_cb_arr[_uavcan_i]);
+    const int battery_info_start_res = battery_info_st->start(battery_info_st_cb_arr[driver_index]);
     if (battery_info_start_res < 0) {
         debug_uavcan(1, "UAVCAN BatteryInfo subscriber start problem\n\r");
-        return false;
+        return;
     }
 
-    act_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*node);
-    act_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
-    act_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+    act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*node);
+    act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
+    act_out_array[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
-    esc_raw[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*node);
-    esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
-    esc_raw[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+    esc_raw[driver_index] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*node);
+    esc_raw[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
+    esc_raw[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
-    rgb_led[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*node);
-    rgb_led[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
-    rgb_led[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+    rgb_led[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*node);
+    rgb_led[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    rgb_led[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
     _led_conf.devices_count = 0;
 
@@ -557,11 +549,19 @@ bool AP_UAVCAN::try_init(void)
      */
     node->setModeOperational();
 
+    // Spin node for device discovery
+    _node->spin(uavcan::MonotonicDuration::fromMSec(5000));
+
+    snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index);
+
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::loop, void), _thread_name, 4096, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
+        _node->setModeOfflineAndPublish();
+        debug_uavcan(1, "UAVCAN: couldn't create thread\n\r");
+        return;
+    }
+
     _initialized = true;
-
-    debug_uavcan(1, "UAVCAN: init done\n\r");
-
-    return true;
+    debug_uavcan(2, "UAVCAN: init done\n\r");
 }
 
 void AP_UAVCAN::SRV_sem_take()
@@ -584,7 +584,7 @@ void AP_UAVCAN::SRV_send_servos(void)
         uavcan::equipment::actuator::ArrayCommand msg;
 
         SRV_sem_take();
-        
+
         uint8_t i;
         // UAVCAN can hold maximum of 15 commands in one frame
         for (i = 0; starting_servo < UAVCAN_SRV_NUMBER && i < 15; starting_servo++) {
@@ -615,9 +615,9 @@ void AP_UAVCAN::SRV_send_servos(void)
         }
 
         SRV_sem_give();
-        
+
         if (i > 0) {
-            act_out_array[_uavcan_i]->broadcast(msg);
+            act_out_array[_driver_index]->broadcast(msg);
 
             if (i == 15) {
                 repeat_send = true;
@@ -649,7 +649,7 @@ void AP_UAVCAN::SRV_send_esc(void)
         k = 0;
 
         SRV_sem_take();
-        
+
         for (uint8_t i = 0; i < max_esc_num && k < 20; i++) {
             if ((((uint32_t) 1) << i) & _esc_bm) {
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
@@ -666,59 +666,59 @@ void AP_UAVCAN::SRV_send_esc(void)
         }
         SRV_sem_give();
 
-        esc_raw[_uavcan_i]->broadcast(esc_msg);
+        esc_raw[_driver_index]->broadcast(esc_msg);
     }
 }
 
-void AP_UAVCAN::do_cyclic(void)
+void AP_UAVCAN::loop(void)
 {
-    if (!_initialized) {
-        hal.scheduler->delay_microseconds(1000);
-        return;
-    }
+    while (true) {
+        if (!_initialized) {
+            hal.scheduler->delay_microseconds(1000);
+            continue;
+        }
 
-    auto *node = get_node();
+        auto *node = get_node();
 
-    const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
+        const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
 
-    if (error < 0) {
-        hal.scheduler->delay_microseconds(100);
-        return;
-    }
+        if (error < 0) {
+            hal.scheduler->delay_microseconds(100);
+            continue;
+        }
 
-    if (_SRV_armed) {
-        bool sent_servos = false;
-            
-        if (_servo_bm > 0) {
-            // if we have any Servos in bitmask
-            uint32_t now = AP_HAL::micros();
-            const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
-            if (now - _SRV_last_send_us >= servo_period_us) {
-                _SRV_last_send_us = now;
-                SRV_send_servos();
-                sent_servos = true;
-                for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-                    _SRV_conf[i].servo_pending = false;
+        if (_SRV_armed) {
+            bool sent_servos = false;
+
+            if (_servo_bm > 0) {
+                // if we have any Servos in bitmask
+                uint32_t now = AP_HAL::micros();
+                const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
+                if (now - _SRV_last_send_us >= servo_period_us) {
+                    _SRV_last_send_us = now;
+                    SRV_send_servos();
+                    sent_servos = true;
+                    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+                        _SRV_conf[i].servo_pending = false;
+                    }
                 }
+            }
+
+            // if we have any ESC's in bitmask
+            if (_esc_bm > 0 && !sent_servos) {
+                SRV_send_esc();
+            }
+
+            for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+                _SRV_conf[i].esc_pending = false;
             }
         }
 
-        // if we have any ESC's in bitmask
-        if (_esc_bm > 0 && !sent_servos) {
-            SRV_send_esc();
-        }
-        
-        for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-            _SRV_conf[i].esc_pending = false;
+        if (led_out_sem_take()) {
+            led_out_send();
+            led_out_sem_give();
         }
     }
-
-    if (led_out_sem_take()) {
-
-        led_out_send();
-        led_out_sem_give();
-    }
-
 }
 
 bool AP_UAVCAN::led_out_sem_take()
@@ -749,7 +749,7 @@ void AP_UAVCAN::led_out_send()
             }
         }
 
-        rgb_led[_uavcan_i]->broadcast(msg);
+        rgb_led[_driver_index]->broadcast(msg);
         _led_conf.last_update = AP_HAL::micros64();
     }
 }
@@ -761,11 +761,11 @@ uavcan::ISystemClock & AP_UAVCAN::get_system_clock()
 
 uavcan::ICanDriver * AP_UAVCAN::get_can_driver()
 {
-    if (_parent_can_mgr != nullptr) {
-        if (_parent_can_mgr->is_initialized() == false) {
+    if (hal.can_mgr[_driver_index] != nullptr) {
+        if (hal.can_mgr[_driver_index]->is_initialized() == false) {
             return nullptr;
         } else {
-            return _parent_can_mgr->get_driver();
+            return hal.can_mgr[_driver_index]->get_driver();
         }
     }
     return nullptr;
@@ -1417,12 +1417,13 @@ bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t
     return true;
 }
 
-AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t iface)
+AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t driver_index)
 {
-    if (iface >= MAX_NUMBER_OF_CAN_INTERFACES || !hal.can_mgr[iface]) {
+    if (driver_index >= AP::can().get_num_drivers() ||
+        AP::can().get_protocol_type(driver_index) != AP_BoardConfig_CAN::Protocol_Type_UAVCAN) {
         return nullptr;
     }
-    return hal.can_mgr[iface]->get_UAVCAN();
+    return static_cast<AP_UAVCAN*>(AP::can().get_driver(driver_index));
 }
 
 #endif // HAL_WITH_UAVCAN
