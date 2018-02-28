@@ -17,7 +17,6 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 class Variometer {
 
     AP_AHRS &_ahrs;
-    AP_SpdHgtControl &_spdHgt;
     const AP_Vehicle::FixedWing &_aparm;
 
     // store time of last update
@@ -31,7 +30,7 @@ class Variometer {
     float _last_total_E;
 
 public:
-    Variometer(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
+    Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms);
     float alt;
     float reading;
     float filtered_reading;
