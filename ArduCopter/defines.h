@@ -475,13 +475,6 @@ enum LoggingParameters {
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL      4
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND     5
 
-// Battery failsafe definitions (FS_BATT_ENABLE parameter)
-#define FS_BATT_DISABLED                    0       // battery failsafe disabled
-#define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
-#define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
-#define FS_BATT_SMARTRTL_OR_RTL             3       // switch to SmartRTL, if can't, switch to RTL
-#define FS_BATT_SMARTRTL_OR_LAND            4       // switch to SmartRTL, if can't, swtich to LAND
-
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED                        0
 #define FS_GCS_ENABLED_ALWAYS_RTL              1

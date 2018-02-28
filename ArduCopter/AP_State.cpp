@@ -71,13 +71,6 @@ void Copter::set_failsafe_radio(bool b)
 
 
 // ---------------------------------------------
-void Copter::set_failsafe_battery(bool b)
-{
-    failsafe.battery = b;
-    AP_Notify::flags.failsafe_battery = b;
-}
-
-// ---------------------------------------------
 void Copter::set_failsafe_gcs(bool b)
 {
     failsafe.gcs = b;

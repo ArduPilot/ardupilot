@@ -103,7 +103,7 @@ void Copter::init_ardupilot()
     snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", fwver.fw_string, get_frame_string());
     frsky_telemetry.init(serial_manager, firmware_buf,
                          get_frame_mav_type(),
-                         &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value);
+                         &ap.value);
 #endif
 
 #if LOGGING_ENABLED == ENABLED
