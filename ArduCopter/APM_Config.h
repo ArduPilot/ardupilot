@@ -32,9 +32,9 @@
 //#define MODE_GUIDED_NOGPS_ENABLED   DISABLED      // disable guided/nogps mode support
 //#define MODE_LOITER_ENABLED   DISABLED            // disable loiter mode support
 //#define MODE_POSHOLD_ENABLED  DISABLED            // disable poshold mode support
-//#define MODE_RTL_ENABLED DISABLED                 // disable rtl mode support
+//#define MODE_RTL_ENABLED      DISABLED            // disable rtl mode support
 //#define MODE_SMARTRTL_ENABLED DISABLED            // disable smartrtl mode support
-//#define MODE_SPORT_ENABLED DISABLED               // disable sport mode support
+//#define MODE_SPORT_ENABLED    DISABLED            // disable sport mode support
 
 
 // features below are disabled by default on all boards

@@ -59,7 +59,6 @@
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_Stats/AP_Stats.h>     // statistics library
-#include <AP_Beacon/AP_Beacon.h>
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
@@ -71,7 +70,6 @@
 #include <AC_WPNav/AC_WPNav.h>           // ArduCopter waypoint navigation library
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
-#include <AC_Avoidance/AC_Avoid.h>           // Arducopter stop at fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify/AP_Notify.h>          // Notify library
@@ -97,6 +95,12 @@
 #include "AP_Arming.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
+#if BEACON_ENABLED == ENABLED
+ #include <AP_Beacon/AP_Beacon.h>
+#endif
+#if AC_AVOID_ENABLED == ENABLED
+ #include <AC_Avoidance/AC_Avoid.h>
+#endif
 #if SPRAYER == ENABLED
  # include <AC_Sprayer/AC_Sprayer.h>
 #endif
@@ -520,7 +524,11 @@ private:
 #endif
 
 #if AC_AVOID_ENABLED == ENABLED
+# if BEACON_ENABLED == ENABLED
     AC_Avoid avoid{ahrs, fence, g2.proximity, &g2.beacon};
+# else
+    AC_Avoid avoid{ahrs, fence, g2.proximity};
+# endif
 #endif
 
     // Rally library
