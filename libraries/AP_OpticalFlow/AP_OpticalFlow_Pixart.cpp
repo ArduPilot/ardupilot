@@ -309,11 +309,14 @@ void AP_OpticalFlow_Pixart::timer(void)
     }
     
 #if 0
+    static uint32_t last_print_ms;
     static int fd = -1;
     if (fd == -1) {
         fd = open("/dev/ttyACM0", O_WRONLY);
     }
     // used for debugging
+    static int32_t sum_x;
+    static int32_t sum_y;
     sum_x += burst.delta_x;
     sum_y += burst.delta_y;
     
