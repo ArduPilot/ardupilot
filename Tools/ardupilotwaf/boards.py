@@ -247,6 +247,12 @@ class sitl(Board):
                 'winmm',
             ]
 
+
+        if 'clang++' in cfg.env.COMPILER_CXX:
+            print("Disabling SLP for clang++")
+            env.CXXFLAGS += [
+                '-fno-slp-vectorize' # compiler bug when trying to use SLP
+            ]
 class chibios(Board):
     toolchain = 'arm-none-eabi'
 
