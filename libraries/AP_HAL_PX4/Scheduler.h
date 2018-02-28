@@ -60,8 +60,6 @@ public:
     void     system_initialized();
     void     hal_initialized() { _hal_initialized = true; }
 
-    void create_uavcan_thread() override;
-
     /*
       disable interrupts and return a context that can be used to
       restore the interrupt state. This can be used to protect
@@ -99,18 +97,11 @@ private:
     pthread_t _io_thread_ctx;
     pthread_t _storage_thread_ctx;
     pthread_t _uart_thread_ctx;
-    pthread_t _uavcan_thread_ctx;
-
-    struct _uavcan_thread_arg {
-        PX4Scheduler *sched;
-        uint8_t uavcan_number;
-    };
 
     static void *_timer_thread(void *arg);
     static void *_io_thread(void *arg);
     static void *_storage_thread(void *arg);
     static void *_uart_thread(void *arg);
-    static void *_uavcan_thread(void *arg);
 
     void _run_timers();
     void _run_io(void);

@@ -35,8 +35,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
-
 extern "C" {
     static int can1_irq(const int irq, void*);
 #if CAN_STM32_NUM_IFACES > 1
@@ -826,7 +824,7 @@ int32_t PX4CAN::tx_pending()
 
 PX4CANManager::PX4CANManager() :
     AP_HAL::CANManager(this), update_event_(*this), if0_(bxcan::Can[0], nullptr, 0, CAN_STM32_RX_QUEUE_SIZE), if1_(
-    bxcan::Can[1], nullptr, 1, CAN_STM32_RX_QUEUE_SIZE), initialized_(false), p_uavcan(nullptr)
+    bxcan::Can[1], nullptr, 1, CAN_STM32_RX_QUEUE_SIZE), initialized_(false)
 {
     uavcan::StaticAssert<(CAN_STM32_RX_QUEUE_SIZE <= PX4CAN::MaxRxQueueCapacity)>::check();
 
@@ -1074,16 +1072,6 @@ bool PX4CANManager::is_initialized()
 void PX4CANManager::initialized(bool val)
 {
     initialized_ = val;
-}
-
-AP_UAVCAN *PX4CANManager::get_UAVCAN(void)
-{
-    return p_uavcan;
-}
-
-void PX4CANManager::set_UAVCAN(AP_UAVCAN *uavcan)
-{
-    p_uavcan = uavcan;
 }
 
 /*
