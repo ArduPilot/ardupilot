@@ -52,3 +52,5 @@ DMA_PRIORITY SPI2_*
 DMA_NOSHARE SPI2_*
 undef PA1
 PA1 UART4_RX UART4 NODMA
+
+env DEFAULT_PARAMETERS '../../Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
