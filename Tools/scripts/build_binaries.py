@@ -68,14 +68,21 @@ class build_binaries(object):
         while True:
             x = p.stdout.readline()
             if len(x) == 0:
-                if os.waitpid(p.pid, 0):
+                returncode = os.waitpid(p.pid, 0)
+                if returncode:
                     break
                     # select not available on Windows... probably...
-                    time.sleep(0.1)
-                    continue
+                time.sleep(0.1)
+                continue
             output += x
             x = x.rstrip()
             print("%s: %s" % (prefix, x))
+        (_, status) = returncode
+        if status != 0:
+            self.progress("Process failed (%s)" %
+                          str(returncode))
+            raise subprocess.CalledProcessError(
+                returncode, cmd_list)
         return output
 
     def run_make(self, args):
