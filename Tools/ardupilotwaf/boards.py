@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 from collections import OrderedDict
-import sys
+import sys, os
 
 import waflib
 from waflib.Configure import conf
@@ -203,8 +203,25 @@ class Board:
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
+def add_dynamic_boards():
+    '''add boards based on existance of hwdef.dat in subdirectories for ChibiOS'''
+    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
+    for d in dirlist:
+        if d in _board_classes.keys():
+            continue
+        hwdef = os.path.join(dirname, d, 'hwdef.dat')
+        if os.path.exists(hwdef):
+            newclass = type(d, (chibios,), {'name': d})
+
 def get_boards_names():
-    return sorted(list(_board_classes.keys()))
+    add_dynamic_boards()
+    ret = sorted(list(_board_classes.keys()))
+    # some board types should not be selected
+    hidden = ['chibios']
+    for h in hidden:
+        if h in ret:
+            ret.remove(h)
+    return ret        
 
 @conf
 def get_board(ctx):
@@ -377,69 +394,6 @@ class chibios(Board):
         fun = getattr(module, 'pre_build', None)
         if fun:
             fun(bld)
-
-class skyviper_f412(chibios):
-    name = 'skyviper-f412'
-    def configure_env(self, cfg, env):
-        super(skyviper_f412, self).configure_env(cfg, env)
-
-class skyviper_f412_rev1(skyviper_f412):
-    name = 'skyviper-f412-rev1'
-    def configure_env(self, cfg, env):
-        super(skyviper_f412_rev1, self).configure_env(cfg, env)
-
-class fmuv3(chibios):
-    name = 'fmuv3'
-    def __init__(self):
-        super(fmuv3, self).__init__()
-
-    def configure_env(self, cfg, env):
-        super(fmuv3, self).configure_env(cfg, env)
-
-class fmuv2(fmuv3):
-    name = 'fmuv2'
-    def __init__(self):
-        super(fmuv2, self).__init__()
-
-class skyviper_v2450(fmuv3):
-    name = 'skyviper-v2450'
-    def __init__(self):
-        super(skyviper_v2450, self).__init__()
-        
-class fmuv4(chibios):
-    name = 'fmuv4'
-    def configure_env(self, cfg, env):
-        super(fmuv4, self).configure_env(cfg, env)
-
-class mindpx_v2(chibios):
-    name = 'mindpx-v2'
-    def configure_env(self, cfg, env):
-        super(mindpx_v2, self).configure_env(cfg, env)
-
-class sparky2(chibios):
-    name = 'sparky2'
-    def configure_env(self, cfg, env):
-        super(sparky2, self).configure_env(cfg, env)
-
-class revo_mini(chibios):
-    name = 'revo-mini'
-    def configure_env(self, cfg, env):
-        super(revo_mini, self).configure_env(cfg, env)
-
-class crazyflie2(chibios):
-    name = 'crazyflie2'
-    def configure_env(self, cfg, env):
-        super(crazyflie2, self).configure_env(cfg, env)
-
-class mini_pix(chibios):
-    name = 'mini-pix'
-    def configure_env(self, cfg, env):
-        super(mini_pix, self).configure_env(cfg, env)
-
-class OMNIBUSF7V2(chibios):
-    name = 'OMNIBUSF7V2'
-    def configure_env(self, cfg, env):
-        super(OMNIBUSF7V2, self).configure_env(cfg, env)
 
 class linux(Board):
     def configure_env(self, cfg, env):
