@@ -450,9 +450,6 @@ define AP_FEATURE_RTSCTS 1
 # enable SBUS_OUT on IOMCU (if you have an IOMCU)
 define AP_FEATURE_SBUS_OUT 1
 
-# enable UAVCAN support if you have setup some CAN devices above
-define HAL_WITH_UAVCAN 1
-
 # now setup the default battery pins driver analog pins and default
 # scaling for the power brick
 define HAL_BATT_VOLT_PIN 2
