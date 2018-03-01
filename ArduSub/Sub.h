@@ -493,7 +493,6 @@ private:
     void gcs_check_input(void);
     void do_erase_logs(void);
     void Log_Write_Optflow();
-    void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
     void Log_Write_Attitude();
