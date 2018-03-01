@@ -57,10 +57,6 @@ public:
     void set_dt(float delta_sec);
     float get_dt() const { return _dt; }
 
-    /// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
-    void set_dt_xy(float dt_xy);
-    float get_dt_xy() const { return _dt_xy; }
-
     ///
     /// z position controller
     ///
@@ -385,7 +381,6 @@ protected:
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
-    float       _dt_xy;                 // time difference (in seconds) between update_xy_controller and update_vel_controller_xyz calls
     uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
     uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
     float       _speed_down_cms;        // max descent rate in cm/s
