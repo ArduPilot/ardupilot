@@ -106,6 +106,37 @@ def chibios_firmware(self):
                                 src=self.objcopy_target)
         _upload_task.set_run_after(generate_fw_task)
 
+def setup_can_build(cfg):
+    '''enable CAN build. By doing this here we can auto-enable CAN in
+    the build based on the presence of CAN pins in hwdef.dat'''
+    env = cfg.env
+    env.AP_LIBRARIES += [
+        'AP_UAVCAN',
+        'modules/uavcan/libuavcan/src/**/*.cpp',
+        'modules/uavcan/libuavcan_drivers/stm32/driver/src/*.cpp'
+        ]
+
+    env.CFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
+                   '-DUAVCAN_STM32_NUM_IFACES=2']
+
+    env.CXXFLAGS += [
+        '-Wno-error=cast-align',
+        '-DUAVCAN_STM32_CHIBIOS=1',
+        '-DUAVCAN_STM32_NUM_IFACES=2'
+        ]
+
+    env.DEFINES += [
+        'UAVCAN_CPP_VERSION=UAVCAN_CPP03',
+        'UAVCAN_NO_ASSERTIONS=1',
+        'UAVCAN_NULLPTR=nullptr'
+        ]
+
+    env.INCLUDES += [
+        cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath(),
+        cfg.srcnode.find_dir('modules/uavcan/libuavcan_drivers/stm32/driver/include').abspath()
+        ]
+    cfg.get_board().with_uavcan = True
+
 def load_env_vars(env):
     '''optionally load extra environment variables from env.py in the build directory'''
     print("Checking for env.py")
@@ -191,9 +222,14 @@ def configure(cfg):
         print("Failed to generate hwdef.h")
 
     load_env_vars(cfg.env)
+    if env.HAL_WITH_UAVCAN:
+        setup_can_build(cfg)
 
 def build(bld):
     load_env_vars(bld.env)
+
+    if bld.env.HAL_WITH_UAVCAN:
+        bld.get_board().with_uavcan = True
     
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
