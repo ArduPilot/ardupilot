@@ -383,11 +383,6 @@ class skyviper_f412(chibios):
     name = 'skyviper-f412'
     def configure_env(self, cfg, env):
         super(skyviper_f412, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412',
-        )
-        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
-        env.DEFAULT_PARAMETERS = '../../Tools/Frame_params/SkyViper-F412/defaults.parm'
 
 class skyviper_f412_rev1(skyviper_f412):
     name = 'skyviper-f412-rev1'
