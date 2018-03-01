@@ -1210,7 +1210,7 @@ Format characters in the format string for binary log messages
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
       "CAM", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
     { LOG_TRIGGER_MSG, sizeof(log_Camera), \
-            "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
+      "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), "ARSP",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
     { LOG_ASP2_MSG, sizeof(log_AIRSPEED), "ASP2",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
@@ -1251,7 +1251,7 @@ Format characters in the format string for binary log messages
     { LOG_POS_MSG, sizeof(log_POS), \
       "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGGBBB" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
-"SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????" }, \
+      "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????" }, \
     { LOG_NKF1_MSG, sizeof(log_EKF1), \
       "NKF1","QccCfffffffccce","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "sddhnnnnmmmkkkm", "FBBB0000000BBBB" }, \
     { LOG_NKF2_MSG, sizeof(log_NKF2), \
@@ -1299,13 +1299,13 @@ Format characters in the format string for binary log messages
     { LOG_XKFD_MSG, sizeof(log_ekfBodyOdomDebug), \
       "XKFD","Qffffff","TimeUS,IX,IY,IZ,IVX,IVY,IVZ", "s------", "F------" }, \
     { LOG_XKV1_MSG, sizeof(log_ekfStateVar), \
-            "XKV1","Qffffffffffff","TimeUS,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s------------", "F------------" }, \
+      "XKV1","Qffffffffffff","TimeUS,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s------------", "F------------" }, \
     { LOG_XKV2_MSG, sizeof(log_ekfStateVar), \
       "XKV2","Qffffffffffff","TimeUS,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23", "s------------", "F------------" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
-"UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s------", "F------"  }, \
+      "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s------", "F------"  }, \
     { LOG_GPS_UBX2_MSG, sizeof(log_Ubx2), \
       "UBX2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ", "s-----", "F-----" }, \
     { LOG_GPS2_UBX1_MSG, sizeof(log_Ubx1), \
@@ -1395,9 +1395,10 @@ Format characters in the format string for binary log messages
     { LOG_RATE_MSG, sizeof(log_Rate), \
       "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
-            "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
+      "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
-            "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }
+      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }
+
 
 // #if SBP_HW_LOGGING
 #define LOG_SBP_STRUCTURES \
