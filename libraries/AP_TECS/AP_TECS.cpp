@@ -238,6 +238,13 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("SYNAIRSPEED", 27, AP_TECS, _use_synthetic_airspeed, 0),
+
+    // @Param: SYNAIRSPEED
+    // @DisplayName: Enable the use of synthetic airspeed
+    // @Description: This enable the use of synthetic airspeed for aircraft that don't have a real airspeed sensor. This is useful for development testing where the user is aware of the considerable limitations of the synthetic airspeed system, such as very poor estimates when a wind estimate is not accurate. Do not enable this option unless you fully understand the limitations of a synthetic airspeed estimate.
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("MAX_HEIGHT", 28, AP_TECS, _mxheight, 0),
     
     AP_GROUPEND
 };
@@ -320,6 +327,46 @@ void AP_TECS::update_50hz(void)
             _height_filter.height += integ3_input*DT;
         }
     }
+
+    // Update and average speed rate of change
+    // Get DCM
+    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
+    // Calculate speed rate of change
+    float temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins().get_accel().x;
+    // take 5 point moving average
+    _vel_dot = _vdot_filter.apply(temp);
+
+}
+
+void AP_TECS::update_50hz(float vz, float pz)
+{
+    // Implement third order complementary filter for height and height rate
+    // estimated height rate = _climb_rate
+    // estimated height above field elevation  = _height
+    // Reference Paper :
+    // Optimizing the Gains of the Baro-Inertial Vertical Channel
+    // Widnall W.S, Sinha P.K,
+    // AIAA Journal of Guidance and Control, 78-1307R
+
+    /*
+      if we have a vertical position estimate from the EKF then use
+      it, otherwise use barometric altitude
+     */
+    //_ahrs.get_relative_position_D_home(_height);
+    _height = pz;
+
+    // Calculate time in seconds since last update
+    uint64_t now = AP_HAL::micros64();
+    float DT = (now - _update_50hz_last_usec) * 1.0e-6f;
+    if (DT > 1.0f) {
+        _climb_rate = 0.0f;
+        _height_filter.dd_height = 0.0f;
+        DT            = 0.02f; // when first starting TECS, use a
+        // small time constant
+    }
+    _update_50hz_last_usec = now;
+
+    _climb_rate = vz;
 
     // Update and average speed rate of change
     // Get DCM
@@ -579,6 +626,8 @@ float AP_TECS::timeConstant(void) const
     }
     return _timeConst;
 }
+
+// ## TO-DO : Change Airplane State Behaviors to how hydrofoil will perform
 
 /*
   calculate throttle demand - airspeed enabled case

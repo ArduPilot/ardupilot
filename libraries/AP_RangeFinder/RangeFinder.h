@@ -21,7 +21,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 
 // Maximum number of range finder instances available on this platform
-#define RANGEFINDER_MAX_INSTANCES 2
+#define RANGEFINDER_MAX_INSTANCES 4
 #define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10
 #define RANGEFINDER_PREARM_ALT_MAX_CM           200
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
@@ -99,7 +99,14 @@ public:
     AP_Int16 _powersave_range;
     AP_Vector3f _pos_offset[RANGEFINDER_MAX_INSTANCES]; // position offset in body frame
     AP_Int8  _orientation[RANGEFINDER_MAX_INSTANCES];
-
+    AP_Float _dist2hll;
+    AP_Int8 _flpread[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _expo[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _expo_v[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _offa[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _offb[RANGEFINDER_MAX_INSTANCES];
+    AP_Float _offc[RANGEFINDER_MAX_INSTANCES];
+    
     static const struct AP_Param::GroupInfo var_info[];
     
     // Return the number of range finder instances
@@ -114,6 +121,20 @@ public:
     // 10Hz from main loop
     void update(void);
 
+    float get_hull_offset(void) { return _dist2hll; }
+
+    float get_expo(uint8_t instance) { return _expo[instance]; }
+
+    float get_expo_vel(uint8_t instance) { return _expo_v[instance]; }
+
+    float get_offa(uint8_t instance) { return _offa[instance]; }
+
+    float get_offb(uint8_t instance) { return _offb[instance]; }
+
+    float get_offc(uint8_t instance) { return _offc[instance]; }
+
+    bool flip_measurement(uint8_t instance);
+        
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(mavlink_message_t *msg);
 

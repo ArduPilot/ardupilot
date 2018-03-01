@@ -318,6 +318,14 @@ private:
         uint16_t ch2_temp;
     } elevon { 1500, 1500, 1500, 1500 };
 
+
+//Global Variable for Hydrofoil Project/////////
+float dist_above_water = 0.0;
+float vel_above_water = 0.0;
+float prev_rng_time =0.0;
+//End of Global Variables///////////////////////
+
+
     // Failsafe
     struct {
         // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
@@ -856,19 +864,25 @@ private:
     int32_t get_RTL_altitude();
     float relative_ground_altitude(bool use_rangefinder_if_available);
     void set_target_altitude_current(void);
+    void set_target_altitude_current_water(void);
     void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);
     int32_t relative_target_altitude_cm(void);
+    int32_t relative_target_altitude_cm_water(void);
     void change_target_altitude(int32_t change_cm);
     void set_target_altitude_proportion(const Location &loc, float proportion);
     void constrain_target_altitude_location(const Location &loc1, const Location &loc2);
     int32_t calc_altitude_error_cm(void);
+    int32_t calc_altitude_error_cm_water(void);
     void check_minimum_altitude(void);
+    void check_minimum_altitude_water(void);
+    void check_maximum_altitude_water(void);
     void reset_offset_altitude(void);
     void set_offset_altitude_location(const Location &loc);
     bool above_location_current(const Location &loc);
     void setup_terrain_target_alt(Location &loc);
     int32_t adjusted_altitude_cm(void);
+    int32_t adjusted_altitude_cm_water(void);
     int32_t adjusted_relative_altitude_cm(void);
     float mission_alt_offset(void);
     float height_above_target(void);
@@ -934,6 +948,7 @@ private:
     void update_loiter(uint16_t radius);
     void update_cruise();
     void update_fbwb_speed_height(void);
+    void update_fbwb_speed_height_water(void);
     void setup_turn_angle(void);
     bool reached_loiter_target(void);
     bool print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...);

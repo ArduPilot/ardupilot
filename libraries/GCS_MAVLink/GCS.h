@@ -155,7 +155,7 @@ public:
     void send_distance_sensor(const RangeFinder &rangefinder, const uint8_t instance) const;
     bool send_distance_sensor(const RangeFinder &rangefinder) const;
     void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
-    void send_rangefinder_downward(const RangeFinder &rangefinder) const;
+    void send_rangefinder_downward(const RangeFinder &rangefinder,AP_AHRS &ahrs) const;
     bool send_proximity(const AP_Proximity &proximity) const;
     void send_ahrs2(AP_AHRS &ahrs);
     bool send_gps_raw(AP_GPS &gps);

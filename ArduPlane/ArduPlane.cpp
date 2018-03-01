@@ -56,7 +56,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(compass_accumulate,     50,    200),
     SCHED_TASK(barometer_accumulate,   50,    150),
     SCHED_TASK(update_notify,          50,    300),
-    SCHED_TASK(read_rangefinder,       50,    100),
+    SCHED_TASK(read_rangefinder,       20,    100),
     SCHED_TASK(ice_update,             10,    100),
     SCHED_TASK(compass_cal_update,     50,    50),
     SCHED_TASK(accel_cal_update,       10,    50),
@@ -202,7 +202,7 @@ void Plane::update_speed_height(void)
 	    // Call TECS 50Hz update. Note that we call this regardless of
 	    // throttle suppressed, as this needs to be running for
 	    // takeoff detection
-        SpdHgt_Controller->update_50hz();
+        SpdHgt_Controller->update_50hz(vel_above_water*0.01,dist_above_water*0.01);
     }
 }
 
@@ -706,7 +706,7 @@ void Plane::update_flight_mode(void)
         nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
         update_load_factor();
-        update_fbwb_speed_height();
+        update_fbwb_speed_height_water();
         break;
         
     case CRUISE:
@@ -727,7 +727,7 @@ void Plane::update_flight_mode(void)
         } else {
             calc_nav_roll();
         }
-        update_fbwb_speed_height();
+        update_fbwb_speed_height_water();
         break;
         
     case STABILIZE:
@@ -933,7 +933,7 @@ void Plane::update_alt()
             distance_beyond_land_wp = get_distance(current_loc, next_WP_loc);
         }
 
-        SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm(),
+        SpdHgt_Controller->update_pitch_throttle(relative_target_altitude_cm_water(),
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  distance_beyond_land_wp,

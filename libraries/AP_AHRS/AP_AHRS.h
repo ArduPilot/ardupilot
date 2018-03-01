@@ -259,10 +259,22 @@ public:
     float pitch;
     float yaw;
 
+    //Hydrofoil Altitude Params
+    float h_water;
+    float h_dot_water;
+
+    //Hydrofoil Altitude functions
+    void set_h_water(float hw) {h_water = hw;}
+    void set_h_dot_water(float hwd) {h_dot_water = hwd;}
+    float get_h_water(void) { return h_water;}
+    float get_h_dot_water(void) { return h_dot_water;}
+	
+
     // integer Euler angles (Degrees * 100)
     int32_t roll_sensor;
     int32_t pitch_sensor;
     int32_t yaw_sensor;
+
 
     // return a smoothed and corrected gyro vector
     virtual const Vector3f &get_gyro(void) const = 0;
