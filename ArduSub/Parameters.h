@@ -167,9 +167,9 @@ public:
         k_param_fs_ekf_thresh,
         k_param_fs_ekf_action,
         k_param_fs_crash_check,
-        k_param_failsafe_battery_enabled,
-        k_param_fs_batt_mah,
-        k_param_fs_batt_voltage,
+        k_param_failsafe_battery_enabled, // unused - moved to AP_BattMonitor
+        k_param_fs_batt_mah,              // unused - moved to AP_BattMonitor
+        k_param_fs_batt_voltage,          // unused - moved to AP_BattMonitor
         k_param_failsafe_pilot_input,
         k_param_failsafe_pilot_input_timeout,
 
@@ -227,10 +227,6 @@ public:
 #if RANGEFINDER_ENABLED == ENABLED
     AP_Float        rangefinder_gain;
 #endif
-
-    AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
-    AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
-    AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
 
     AP_Int8         failsafe_leak;              // leak detection failsafe behavior
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior

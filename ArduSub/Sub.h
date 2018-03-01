@@ -265,26 +265,24 @@ private:
 
     // Failsafe
     struct {
-        uint8_t pilot_input          : 1; // true if pilot input failsafe is active, handles things like joystick being disconnected during operation
-        uint8_t battery              : 1; // 2   // A status flag for the battery failsafe
-        uint8_t gcs                  : 1; // 4   // A status flag for the ground station failsafe
-        uint8_t ekf                  : 1; // 5   // true if ekf failsafe has occurred
-        uint8_t terrain              : 1; // 6   // true if the missing terrain data failsafe has occurred
-        uint8_t leak                 : 1; // true if leak recently detected
-        uint8_t internal_pressure    : 1; // true if internal pressure is over threshold
-        uint8_t internal_temperature : 1; // true if temperature is over threshold
-        uint8_t crash                : 1; // true if we are crashed
-        uint8_t sensor_health        : 1; // true if at least one sensor has triggered a failsafe (currently only used for depth in depth enabled modes)
-
         uint32_t last_leak_warn_ms;      // last time a leak warning was sent to gcs
         uint32_t last_gcs_warn_ms;
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
         uint32_t last_pilot_input_ms; // last time we received pilot input in the form of MANUAL_CONTROL or RC_CHANNELS_OVERRIDE messages
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
-        uint32_t last_battery_warn_ms; // last time a battery failsafe warning was sent to gcs
         uint32_t last_crash_warn_ms; // last time a crash warning was sent to gcs
         uint32_t last_ekf_warn_ms; // last time an ekf warning was sent to gcs
+
+        uint8_t pilot_input          : 1; // true if pilot input failsafe is active, handles things like joystick being disconnected during operation
+        uint8_t gcs                  : 1; // A status flag for the ground station failsafe
+        uint8_t ekf                  : 1; // true if ekf failsafe has occurred
+        uint8_t terrain              : 1; // true if the missing terrain data failsafe has occurred
+        uint8_t leak                 : 1; // true if leak recently detected
+        uint8_t internal_pressure    : 1; // true if internal pressure is over threshold
+        uint8_t internal_temperature : 1; // true if temperature is over threshold
+        uint8_t crash                : 1; // true if we are crashed
+        uint8_t sensor_health        : 1; // true if at least one sensor has triggered a failsafe (currently only used for depth in depth enabled modes)
     } failsafe;
 
     // sensor health for logging
@@ -327,7 +325,9 @@ private:
     uint32_t nav_delay_time_start;
 
     // Battery Sensors
-    AP_BattMonitor battery{MASK_LOG_CURRENT};
+    AP_BattMonitor battery{MASK_LOG_CURRENT,
+                           FUNCTOR_BIND_MEMBER(&Sub::handle_battery_failsafe, void, const char*, const int8_t),
+                           _failsafe_priorities};
 
     AP_Arming_Sub arming{ahrs, compass, battery};
 
@@ -581,7 +581,7 @@ private:
     void failsafe_sensors_check(void);
     void failsafe_crash_check();
     void failsafe_ekf_check(void);
-    void failsafe_battery_check(void);
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
     void failsafe_gcs_check();
     void failsafe_pilot_input_check(void);
     void set_neutral_controls(void);
@@ -628,7 +628,6 @@ private:
     void init_optflow();
     void update_optical_flow(void);
 #endif
-    void read_battery(void);
     void terrain_update();
     void terrain_logging();
     bool terrain_use();
@@ -705,6 +704,25 @@ private:
     uint16_t get_pilot_speed_dn();
 
     void convert_old_parameters(void);
+
+    enum Failsafe_Action {
+        Failsafe_Action_None    = 0,
+        Failsafe_Action_Warn    = 1,
+        Failsafe_Action_Disarm  = 2,
+        Failsafe_Action_Surface = 3
+    };
+
+    static constexpr int8_t _failsafe_priorities[] = {
+                                                      Failsafe_Action_Disarm,
+                                                      Failsafe_Action_Surface,
+                                                      Failsafe_Action_Warn,
+                                                      Failsafe_Action_None,
+                                                      -1 // the priority list must end with a sentinel of -1
+                                                     };
+
+    static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
+                  "_failsafe_priorities is missing the sentinel");
+
 
 public:
     void mavlink_delay_cb();

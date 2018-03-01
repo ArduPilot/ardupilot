@@ -216,17 +216,6 @@ enum LoggingParameters {
 // Baro specific error codes
 #define ERROR_CODE_BAD_DEPTH              0
 
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef FS_BATT_VOLTAGE_DEFAULT
-# define FS_BATT_VOLTAGE_DEFAULT       0       // default battery voltage below which failsafe will be triggered
-#endif
-
-#ifndef FS_BATT_MAH_DEFAULT
-# define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
-#endif
-
 // GCS failsafe
 #ifndef FS_GCS
 # define FS_GCS                        DISABLED
@@ -255,12 +244,6 @@ enum LoggingParameters {
 #ifndef FS_EKF_THRESHOLD_DEFAULT
 # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif
-
-// Battery failsafe definitions (FS_BATT_ENABLE parameter)
-#define FS_BATT_DISABLED                    0       // battery failsafe disabled
-#define FS_BATT_WARN_ONLY                   1       // only warn gcs on battery failsafe
-#define FS_BATT_DISARM                      2       // disarm on battery failsafe
-#define FS_BATT_SURFACE                     3       // switch to SURFACE mode on battery failsafe
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED     0 // Disabled

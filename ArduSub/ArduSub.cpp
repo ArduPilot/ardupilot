@@ -80,6 +80,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #endif
 };
 
+constexpr int8_t Sub::_failsafe_priorities[5];
 
 void Sub::setup()
 {
@@ -166,7 +167,7 @@ void Sub::fifty_hz_loop()
 void Sub::update_batt_compass(void)
 {
     // read battery before compass because it may be used for motor interference compensation
-    read_battery();
+    battery.read();
 
     if (g.compass_enabled) {
         // update compass with throttle value - used for compassmot
