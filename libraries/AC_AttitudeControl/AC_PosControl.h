@@ -296,6 +296,9 @@ public:
     // time_since_last_xy_update - returns time in seconds since the horizontal position controller was last run
     float time_since_last_xy_update() const;
 
+    // write log to dataflash
+    void write_log();
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
