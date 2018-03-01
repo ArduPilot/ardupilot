@@ -72,9 +72,13 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     if (_compass._per_motor.enabled() && i == 0) {
         // per-motor correction is only valid for first compass
         _compass._per_motor.compensate(state.motor_offset);
-    } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE ||
-               _compass._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
-        state.motor_offset = mot * _compass._thr_or_curr;
+    } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
+        state.motor_offset = mot * _compass._thr;
+    } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
+        AP_BattMonitor &battery = AP::battery();
+        if (battery.has_current()) {
+            state.motor_offset = mot * battery.current_amps();
+        }
     }
 
     /*
