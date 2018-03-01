@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PosControl.h"
 #include <AP_Math/AP_Math.h>
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -834,6 +835,34 @@ float AC_PosControl::time_since_last_xy_update() const
 {
     uint32_t now = AP_HAL::millis();
     return (now - _last_update_xy_ms)*0.001f;
+}
+
+// write log to dataflash
+void AC_PosControl::write_log()
+{
+    const Vector3f &pos_target = get_pos_target();
+    const Vector3f &vel_target = get_vel_target();
+    const Vector3f &accel_target = get_accel_target();
+    const Vector3f &position = _inav.get_position();
+    const Vector3f &velocity = _inav.get_velocity();
+    float accel_x, accel_y;
+    lean_angles_to_accel(accel_x, accel_y);
+
+    DataFlash_Class::instance()->Log_Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
+                                           "smmmmnnnnoooo", "FBBBBBBBBBBBB", "Qffffffffffff",
+                                           AP_HAL::micros64(),
+                                           (double)pos_target.x,
+                                           (double)pos_target.y,
+                                           (double)position.x,
+                                           (double)position.y,
+                                           (double)vel_target.x,
+                                           (double)vel_target.y,
+                                           (double)velocity.x,
+                                           (double)velocity.y,
+                                           (double)accel_target.x,
+                                           (double)accel_target.y,
+                                           (double)accel_x,
+                                           (double)accel_y);
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
