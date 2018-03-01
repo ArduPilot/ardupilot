@@ -225,12 +225,13 @@ def configure(cfg):
     if env.HAL_WITH_UAVCAN:
         setup_can_build(cfg)
 
-def build(bld):
+def pre_build(bld):
+    '''pre-build hook to change dynamic sources'''
     load_env_vars(bld.env)
-
     if bld.env.HAL_WITH_UAVCAN:
         bld.get_board().with_uavcan = True
-    
+
+def build(bld):    
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD')),
