@@ -252,6 +252,8 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
+
+
 class chibios(Board):
     toolchain = 'arm-none-eabi'
 
@@ -359,7 +361,6 @@ class chibios(Board):
             'ChibiOS',
         ]
         cfg.load('chibios')
-        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=yes'
 
     def build(self, bld):
         super(chibios, self).build(bld)
@@ -382,9 +383,6 @@ class fmuv3(chibios):
 
     def configure_env(self, cfg, env):
         super(fmuv3, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3',
-        )
 
 class fmuv2(fmuv3):
     name = 'fmuv2'
@@ -396,69 +394,40 @@ class skyviper_v2450(fmuv3):
     def __init__(self):
         super(skyviper_v2450, self).__init__()
         
-    def configure_env(self, cfg, env):
-        super(skyviper_v2450, self).configure_env(cfg, env)
-        env.DEFAULT_PARAMETERS = '../../Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
-        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
-
 class fmuv4(chibios):
     name = 'fmuv4'
     def configure_env(self, cfg, env):
         super(fmuv4, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4',
-        )
 
 class mindpx_v2(chibios):
     name = 'mindpx-v2'
     def configure_env(self, cfg, env):
         super(mindpx_v2, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_MINDPXV2',
-        )
 
 class sparky2(chibios):
     name = 'sparky2'
     def configure_env(self, cfg, env):
         super(sparky2, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_SPARKY2',
-        )
-        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
 
 class revo_mini(chibios):
     name = 'revo-mini'
     def configure_env(self, cfg, env):
         super(revo_mini, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_REVOMINI',
-        )
-        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
 
 class crazyflie2(chibios):
     name = 'crazyflie2'
     def configure_env(self, cfg, env):
         super(crazyflie2, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_CRAZYFLIE2',
-        )
-        env.CHIBIOS_FATFS_FLAG = 'USE_FATFS=no'
 
 class mini_pix(chibios):
     name = 'mini-pix'
     def configure_env(self, cfg, env):
         super(mini_pix, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_MINIPIX',
-        )
 
 class OMNIBUSF7V2(chibios):
     name = 'OMNIBUSF7V2'
     def configure_env(self, cfg, env):
         super(OMNIBUSF7V2, self).configure_env(cfg, env)
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_CHIBIOS_OMNIBUSF7V2',
-        )
 
 class linux(Board):
     def configure_env(self, cfg, env):
