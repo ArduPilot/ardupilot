@@ -197,7 +197,6 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _p_pos_xy(POSCONTROL_POS_XY_P),
     _pid_vel_xy(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ, POSCONTROL_DT_50HZ),
     _dt(POSCONTROL_DT_400HZ),
-    _dt_xy(POSCONTROL_DT_50HZ),
     _last_update_xy_ms(0),
     _last_update_z_ms(0),
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
@@ -242,18 +241,12 @@ void AC_PosControl::set_dt(float delta_sec)
 {
     _dt = delta_sec;
 
-    // update rate controller's dt
+    // update PID controller dt
     _pid_accel_z.set_dt(_dt);
+    _pid_vel_xy.set_dt(_dt);
 
     // update rate z-axis velocity error and accel error filters
     _vel_error_filter.set_cutoff_frequency(POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
-}
-
-/// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
-void AC_PosControl::set_dt_xy(float dt_xy)
-{
-    _dt_xy = dt_xy;
-    _pid_vel_xy.set_dt(dt_xy);
 }
 
 /// set_speed_z - sets maximum climb and descent rates
@@ -811,10 +804,9 @@ void AC_PosControl::update_xy_controller(float ekfNavVelGainScaler)
     // compute dt
     uint32_t now = AP_HAL::millis();
     float dt = (now - _last_update_xy_ms)*0.001f;
-    _last_update_xy_ms = now;
 
-    // sanity check dt - expect to be called faster than ~5hz
-    if (dt > POSCONTROL_ACTIVE_TIMEOUT_MS*1.0e-3f) {
+    // sanity check dt
+    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_MS*1.0e-3f) {
         dt = 0.0f;
     }
 
@@ -829,6 +821,9 @@ void AC_PosControl::update_xy_controller(float ekfNavVelGainScaler)
 
     // run horizontal position controller
     run_xy_controller(dt, ekfNavVelGainScaler);
+
+    // update xy update time
+    _last_update_xy_ms = now;
 }
 
 float AC_PosControl::time_since_last_xy_update() const
@@ -907,29 +902,26 @@ void AC_PosControl::update_vel_controller_xy(float ekfNavVelGainScaler)
     uint32_t now = AP_HAL::millis();
     float dt = (now - _last_update_xy_ms)*0.001f;
 
-    // call xy controller
-    if (dt >= get_dt_xy()) {
-        // sanity check dt
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // check for ekf xy position reset
-        check_for_ekf_xy_reset();
-
-        // check if xy leash needs to be recalculated
-        calc_leash_length_xy();
-
-        // apply desired velocity request to position target
-        // TODO: this will need to be removed and added to the calling function.
-        desired_vel_to_pos(dt);
-
-        // run position controller
-        run_xy_controller(dt, ekfNavVelGainScaler);
-
-        // update xy update time
-        _last_update_xy_ms = now;
+    // sanity check dt
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // check for ekf xy position reset
+    check_for_ekf_xy_reset();
+
+    // check if xy leash needs to be recalculated
+    calc_leash_length_xy();
+
+    // apply desired velocity request to position target
+    // TODO: this will need to be removed and added to the calling function.
+    desired_vel_to_pos(dt);
+
+    // run position controller
+    run_xy_controller(dt, ekfNavVelGainScaler);
+
+    // update xy update time
+    _last_update_xy_ms = now;
 }
 
 
