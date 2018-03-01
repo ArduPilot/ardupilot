@@ -277,6 +277,10 @@ def get_config(name, column=0, required=True, default=None, type=None):
             error("Badly formed config value %s (got %s)" % (name, ret))
     return ret
 
+def enable_can(f):
+    '''setup for a CAN enabled board'''
+    f.write('#define HAL_WITH_UAVCAN 1\n')
+    env_vars['HAL_WITH_UAVCAN'] = '1'
 
 def write_mcu_config(f):
     '''write MCU config defines'''
@@ -303,6 +307,8 @@ def write_mcu_config(f):
         f.write('#define HAL_USE_SERIAL_USB TRUE\n')
     if 'OTG2' in bytype:
         f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
+    if 'CAN1' in bytype or 'CAN2' in bytype or 'CAN3' in bytype:
+        enable_can(f)
     # write any custom STM32 defines
     for d in alllines:
         if d.startswith('STM32_'):
