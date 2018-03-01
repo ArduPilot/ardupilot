@@ -64,7 +64,6 @@ class Board:
             cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
         ])
 
-
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the convetional list for definitions to
         # make easy to override them. Convert back to list before consumption.
@@ -267,14 +266,6 @@ class chibios(Board):
             HAVE_STD_NULLPTR_T = 0,
         )
 
-        if self.with_uavcan:
-            env.AP_LIBRARIES += [
-                'modules/uavcan/libuavcan_drivers/stm32/driver/src/*.cpp'
-                ]
-            env.INCLUDES += [
-                cfg.srcnode.find_dir('modules/uavcan/libuavcan_drivers/stm32/driver/include').abspath()
-            ]
-
         env.AP_LIBRARIES += [
             'AP_HAL_ChibiOS',
         ]
@@ -363,11 +354,6 @@ class chibios(Board):
         ]
 
         env.LIB += ['gcc', 'm']
-        if self.with_uavcan:
-            env.CFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
-                           '-DUAVCAN_STM32_NUM_IFACES=2']
-            env.CXXFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
-                             '-DUAVCAN_STM32_NUM_IFACES=2']
 
         env.GIT_SUBMODULES += [
             'ChibiOS',
@@ -393,7 +379,6 @@ class fmuv3(chibios):
     name = 'fmuv3'
     def __init__(self):
         super(fmuv3, self).__init__()
-        self.with_uavcan = True
 
     def configure_env(self, cfg, env):
         super(fmuv3, self).configure_env(cfg, env)
@@ -410,7 +395,6 @@ class skyviper_v2450(fmuv3):
     name = 'skyviper-v2450'
     def __init__(self):
         super(skyviper_v2450, self).__init__()
-        self.with_uavcan = False
         
     def configure_env(self, cfg, env):
         super(skyviper_v2450, self).configure_env(cfg, env)
