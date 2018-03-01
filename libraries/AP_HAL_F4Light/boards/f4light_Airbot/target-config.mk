@@ -1,10 +1,14 @@
 # Board-specific configuration values.  Flash and SRAM sizes in bytes.
 
-   MCU            := STM32F405RG
-   PRODUCT_ID     := 0003
-   DENSITY        := STM32_HIGH_DENSITY
-   FLASH_SIZE     := 1048576
-   SRAM_SIZE      := 131072
+    MCU            := STM32F405RG
+    PRODUCT_ID     := 0003
+    DENSITY        := STM32_HIGH_DENSITY
+    FLASH_SIZE     := 1048576
+    SRAM_SIZE      := 131072
+
+    BOARD_TYPE     := 70
+    BOARD_REV      := 0
+    BOOTLOADER     := revo405_bl
 
 # Memory target-specific configuration values
 
