@@ -12,6 +12,8 @@ import os
 import shutil
 import sys
 import re
+import pickle
+
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
@@ -104,6 +106,31 @@ def chibios_firmware(self):
                                 src=self.objcopy_target)
         _upload_task.set_run_after(generate_fw_task)
 
+def load_env_vars(env):
+    '''optionally load extra environment variables from env.py in the build directory'''
+    print("Checking for env.py")
+    env_py = os.path.join(env.BUILDROOT, 'env.py')
+    if not os.path.exists(env_py):
+        print("No env.py found")
+        return
+    e = pickle.load(open(env_py, 'r'))
+    for k in e.keys():
+        v = e[k]
+        if k in env:
+            if isinstance(env[k], dict):
+                a = v.split('=')
+                env[k][a[0]] = '='.join(a[1:])
+                print("env updated %s=%s" % (k, v))
+            elif isinstance(env[k], list):
+                env[k].append(v)
+                print("env appended %s=%s" % (k, v))
+            else:
+                env[k] = v
+                print("env added %s=%s" % (k, v))
+        else:
+            env[k] = v
+            print("env set %s=%s" % (k, v))
+
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
@@ -163,7 +190,11 @@ def configure(cfg):
     except Exception:
         print("Failed to generate hwdef.h")
 
+    load_env_vars(cfg.env)
+
 def build(bld):
+    load_env_vars(bld.env)
+    
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD')),
