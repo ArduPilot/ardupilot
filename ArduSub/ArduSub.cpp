@@ -204,7 +204,7 @@ void Sub::ten_hz_logging_loop()
         DataFlash.Log_Write_RCOUT();
     }
     if (should_log(MASK_LOG_NTUN) && mode_requires_GPS(control_mode)) {
-        Log_Write_Nav_Tuning();
+        pos_control.write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_Vibration(ins);
