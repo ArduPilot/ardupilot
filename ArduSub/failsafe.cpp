@@ -148,49 +148,21 @@ void Sub::failsafe_ekf_check(void)
     }
 }
 
-// Battery failsafe check
-// Check the battery voltage and remaining capacity
-void Sub::failsafe_battery_check(void)
+// Battery failsafe handler
+void Sub::handle_battery_failsafe(const char* type_str, const int8_t action)
 {
-    // Do nothing if the failsafe is disabled, or if we are disarmed
-    if (g.failsafe_battery_enabled == FS_BATT_DISABLED || !motors.armed()) {
-        failsafe.battery = false;
-        AP_Notify::flags.failsafe_battery = false;
-        return; // Failsafe disabled, nothing to do
-    }
-
-    if (!battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
-        failsafe.battery = false;
-        AP_Notify::flags.failsafe_battery = false;
-        return; // Battery is doing well
-    }
-
-    // Always warn when failsafe condition is met
-    if (AP_HAL::millis() > failsafe.last_battery_warn_ms + 20000) {
-        failsafe.last_battery_warn_ms = AP_HAL::millis();
-        gcs().send_text(MAV_SEVERITY_WARNING, "Low battery");
-    }
-
-    // Don't do anything if failsafe has already been set
-    if (failsafe.battery) {
-        return;
-    }
-
-    failsafe.battery = true;
-    AP_Notify::flags.failsafe_battery = true;
-
-    // Log failsafe
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
-    switch(g.failsafe_battery_enabled) {
-    case FS_BATT_SURFACE:
-        set_mode(SURFACE, MODE_REASON_BATTERY_FAILSAFE);
-        break;
-    case FS_BATT_DISARM:
-        init_disarm_motors();
-        break;
-    default:
-        break;
+    switch((Failsafe_Action)action) {
+        case Failsafe_Action_Surface:
+            set_mode(SURFACE, MODE_REASON_BATTERY_FAILSAFE);
+            break;
+        case Failsafe_Action_Disarm:
+            init_disarm_motors();
+            break;
+        case Failsafe_Action_Warn:
+        case Failsafe_Action_None:
+            break;
     }
 }
 
