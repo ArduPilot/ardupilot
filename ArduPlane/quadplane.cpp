@@ -2245,6 +2245,9 @@ void QuadPlane::Log_Write_QControl_Tuning()
         throttle_mix        : attitude_control->get_throttle_mix(),
     };
     plane.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+
+    // write multicopter position control message
+    pos_control->write_log();
 }
 
 
