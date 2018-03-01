@@ -298,6 +298,7 @@ def write_mcu_config(f):
         f.write('// SDIO available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
+        env_vars['CHIBIOS_FATFS_FLAG'] = 'USE_FATFS=yes'
     else:
         f.write('#define HAL_USE_SDC FALSE\n')
         env_vars['CHIBIOS_FATFS_FLAG'] = 'USE_FATFS=no'
