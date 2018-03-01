@@ -189,6 +189,10 @@ class Board:
         cfg.define('__STDC_FORMAT_MACROS', 1)
 
 
+    def pre_build(self, bld):
+        '''pre-build hook that gets called before dynamic sources'''
+        pass
+
     def build(self, bld):
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
         import time
@@ -365,6 +369,14 @@ class chibios(Board):
     def build(self, bld):
         super(chibios, self).build(bld)
         bld.load('chibios')
+
+    def pre_build(self, bld):
+        '''pre-build hook that gets called before dynamic sources'''
+        from waflib.Context import load_tool
+        module = load_tool('chibios', [], with_sys_path=True)
+        fun = getattr(module, 'pre_build', None)
+        if fun:
+            fun(bld)
 
 class skyviper_f412(chibios):
     name = 'skyviper-f412'
