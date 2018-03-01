@@ -3,7 +3,7 @@
 setup board.h for chibios
 '''
 
-import argparse, sys, fnmatch, os, dma_resolver, shlex
+import argparse, sys, fnmatch, os, dma_resolver, shlex, pickle
 
 parser = argparse.ArgumentParser("chibios_pins.py")
 parser.add_argument(
@@ -55,6 +55,9 @@ spi_list = []
 
 # all config lines in order
 alllines = []
+
+# allow for extra env vars
+env_vars = {}
 
 mcu_type = None
 
@@ -293,6 +296,7 @@ def write_mcu_config(f):
         f.write('#define HAL_USE_SDC TRUE\n')
     else:
         f.write('#define HAL_USE_SDC FALSE\n')
+        env_vars['CHIBIOS_FATFS_FLAG'] = 'USE_FATFS=no'
     if 'OTG1' in bytype:
         f.write('#define STM32_USB_USE_OTG1                  TRUE\n')
         f.write('#define HAL_USE_USB TRUE\n')
@@ -942,6 +946,11 @@ def process_line(line):
                 continue
             newpins.append(pin)
         allpins = newpins
+    if a[0] == 'env':
+        print("Adding environment %s" % ' '.join(a[1:]))
+        if len(a[1:]) < 2:
+            error("Bad env line for %s" % a[0])
+        env_vars[a[1]] = ' '.join(a[2:])
 
 
 def process_file(filename):
@@ -988,4 +997,7 @@ write_hwdef_header(os.path.join(outdir, "hwdef.h"))
 
 # write out ldscript.ld
 write_ldscript(os.path.join(outdir, "ldscript.ld"))
+
+# write out env.py
+pickle.dump(env_vars, open(os.path.join(outdir, "env.py"), "w"))
 
