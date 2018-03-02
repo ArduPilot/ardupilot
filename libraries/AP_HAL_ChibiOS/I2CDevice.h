@@ -30,9 +30,9 @@
 
 #if HAL_USE_I2C == TRUE
 
-using namespace ChibiOS;
+namespace ChibiOS {
 
-class ChibiOS::I2CBus : public ChibiOS::DeviceBus {
+class I2CBus : public DeviceBus {
 public:
     I2CConfig i2ccfg;
     uint8_t busnum;
@@ -46,7 +46,7 @@ public:
     static void clear_bus(ioline_t scl_line, uint8_t scl_af);
 };
     
-class ChibiOS::I2CDevice : public AP_HAL::I2CDevice {
+class I2CDevice : public AP_HAL::I2CDevice {
 public:
     static I2CDevice *from(AP_HAL::I2CDevice *dev)
     {
@@ -102,7 +102,7 @@ private:
     uint32_t _timeout_ms;
 };
 
-class ChibiOS::I2CDeviceManager : public AP_HAL::I2CDeviceManager {
+class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
 public:
     friend class I2CDevice;
 
@@ -121,6 +121,7 @@ public:
                                                  bool use_smbus = false,
                                                  uint32_t timeout_ms=4) override;
 };
+}
 
 #endif // HAL_USE_I2C
 
