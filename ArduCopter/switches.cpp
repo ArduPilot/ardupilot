@@ -249,6 +249,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             }
             break;
 
+#if MODE_AUTO_ENABLED == ENABLED
         case AUXSW_SAVE_WP:
             // save waypoint when switch is brought high
             if (ch_flag == AUX_SWITCH_HIGH) {
@@ -302,6 +303,13 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 }
             }
             break;
+
+        case AUXSW_MISSION_RESET:
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                mission.reset();
+            }
+            break;
+#endif
 
         case AUXSW_CAMERA_TRIGGER:
 #if CAMERA == ENABLED
@@ -451,12 +459,6 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 #endif
             break;
 
-        case AUXSW_MISSION_RESET:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                mission.reset();
-            }
-            break;
-
         case AUXSW_ATTCON_FEEDFWD:
             // enable or disable feed forward
             attitude_control->bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
@@ -554,6 +556,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_AVOID_ADSB:
+#if ADSB_ENABLED == ENABLED
             // enable or disable AP_Avoidance
             if (ch_flag == AUX_SWITCH_HIGH) {
                 avoidance_adsb.enable();
@@ -562,10 +565,11 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 avoidance_adsb.disable();
                 Log_Write_Event(DATA_AVOIDANCE_ADSB_DISABLE);
             }
+#endif
             break;
 
         case AUXSW_PRECISION_LOITER:
-#if PRECISION_LANDING == ENABLED
+#if PRECISION_LANDING == ENABLED && MODE_LOITER_ENABLED == ENABLED
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH:
                     mode_loiter.set_precision_loiter_enabled(true);

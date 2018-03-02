@@ -68,14 +68,21 @@ class build_binaries(object):
         while True:
             x = p.stdout.readline()
             if len(x) == 0:
-                if os.waitpid(p.pid, 0):
+                returncode = os.waitpid(p.pid, 0)
+                if returncode:
                     break
                     # select not available on Windows... probably...
-                    time.sleep(0.1)
-                    continue
+                time.sleep(0.1)
+                continue
             output += x
             x = x.rstrip()
             print("%s: %s" % (prefix, x))
+        (_, status) = returncode
+        if status != 0:
+            self.progress("Process failed (%s)" %
+                          str(returncode))
+            raise subprocess.CalledProcessError(
+                returncode, cmd_list)
         return output
 
     def run_make(self, args):
@@ -219,7 +226,8 @@ is bob we will attempt to checkout bob-AVR'''
             if match is None:
                 self.progress("Failed to retrieve THISFIRMWARE from version.h")
                 self.progress("Content: (%s)" % content)
-            self.progress("Writing version info to %s" % (gitversion_filepath,))
+            self.progress("Writing version info to %s" %
+                          (gitversion_filepath,))
             gitversion_content += "\nAPMVERSION: %s\n" % (match.group(1))
         else:
             self.progress("%s does not exist" % versionfile)
@@ -231,7 +239,7 @@ is bob we will attempt to checkout bob-AVR'''
         versionfile = os.path.join(src, "version.h")
         if not os.path.exists(versionfile):
             self.progress("%s does not exist" % (versionfile,))
-            return;
+            return
         ss = ".*define +FIRMWARE_VERSION[	 ]+(?P<major>\d+)[ ]*,[ 	]*" \
              "(?P<minor>\d+)[ ]*,[	 ]*(?P<point>\d+)[ ]*,[	 ]*" \
              "(?P<type>[A-Z_]+)[	 ]*"
@@ -275,7 +283,7 @@ is bob we will attempt to checkout bob-AVR'''
             # we keep a permanent archive of all "latest" builds,
             # their path including a build timestamp:
             distutils.dir_util.mkpath(adir)
-            self.progress("Copying $file to $adir")
+            self.progress("Copying %s to %s" % (afile, adir,))
             shutil.copy(afile, adir)
             self.addfwversion(adir, src)
         # the most recent build of every tag is kept around:
@@ -399,7 +407,11 @@ is bob we will attempt to checkout bob-AVR'''
                     path = px4_path
                 else:
                     path = bare_path
-                self.copyit(path, ddir, tag, vehicle)
+                try:
+                    self.copyit(path, ddir, tag, vehicle)
+                except Exception as e:
+                    self.progress("Failed to copy %s to %s: %s",
+                                  path, ddir, str(e))
                 # why is touching this important? -pb20170816
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
@@ -576,7 +588,7 @@ is bob we will attempt to checkout bob-AVR'''
                     self.progress("%s: split failed: %s" % (filepath, str(e)))
                     continue
                 value = value.rstrip()
-                self.progress("%s: %s=%s" % (filepath, name,value))
+                self.progress("%s: %s=%s" % (filepath, name, value))
                 os.environ[name] = value
 
     def run(self):

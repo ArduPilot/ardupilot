@@ -58,25 +58,19 @@
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
-#include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
-#include <AP_Proximity/AP_Proximity.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
 #include <AP_Beacon/AP_Beacon.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>           // APM relay
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Camera/AP_Camera.h>          // Photo or video camera
-#include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Airspeed/AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>           // ArduCopter waypoint navigation library
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
-#include <AC_Fence/AC_Fence.h>           // Arducopter Fence library
 #include <AC_Avoidance/AC_Avoid.h>           // Arducopter stop at fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
@@ -85,14 +79,11 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_ADSB/AP_ADSB.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 #include <AP_Button/AP_Button.h>
 #include <AP_Arming/AP_Arming.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
 
@@ -107,38 +98,64 @@
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if SPRAYER == ENABLED
-#include <AC_Sprayer/AC_Sprayer.h>         // crop sprayer library
+ # include <AC_Sprayer/AC_Sprayer.h>
 #endif
 #if GRIPPER_ENABLED == ENABLED
-#include <AP_Gripper/AP_Gripper.h>             // gripper stuff
+ # include <AP_Gripper/AP_Gripper.h>
 #endif
 #if PARACHUTE == ENABLED
-#include <AP_Parachute/AP_Parachute.h>       // Parachute release library
+ # include <AP_Parachute/AP_Parachute.h>
 #endif
 #if PRECISION_LANDING == ENABLED
-#include <AC_PrecLand/AC_PrecLand.h>
-#include <AP_IRLock/AP_IRLock.h>
+ # include <AC_PrecLand/AC_PrecLand.h>
+ # include <AP_IRLock/AP_IRLock.h>
 #endif
 #if FRSKY_TELEM_ENABLED == ENABLED
-#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+ # include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #endif
-
+#if ADSB_ENABLED == ENABLED
+ # include <AP_ADSB/AP_ADSB.h>
+#endif
+#if AC_FENCE == ENABLED
+ # include <AC_Fence/AC_Fence.h>
+#endif
+#if AC_TERRAIN == ENABLED
+ # include <AP_Terrain/AP_Terrain.h>
+#endif
+#if OPTFLOW == ENABLED
+ # include <AP_OpticalFlow/AP_OpticalFlow.h>
+#endif
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+ # include <AP_VisualOdom/AP_VisualOdom.h>
+#endif
+#if RANGEFINDER_ENABLED == ENABLED
+ # include <AP_RangeFinder/AP_RangeFinder.h>
+#endif
+#if PROXIMITY_ENABLED == ENABLED
+ # include <AP_Proximity/AP_Proximity.h>
+#endif
+#if MOUNT == ENABLED
+ #include <AP_Mount/AP_Mount.h>
+#endif
+#if CAMERA == ENABLED
+ # include <AP_Camera/AP_Camera.h>
+#endif
 #if ADVANCED_FAILSAFE == ENABLED
-#include "afs_copter.h"
+ # include "afs_copter.h"
 #endif
-
 #if TOY_MODE_ENABLED == ENABLED
-#include "toy_mode.h"
+ # include "toy_mode.h"
 #endif
-
 #if WINCH_ENABLED == ENABLED
-#include <AP_WheelEncoder/AP_WheelEncoder.h>
-#include <AP_Winch/AP_Winch.h>
+ # include <AP_WheelEncoder/AP_WheelEncoder.h>
+ # include <AP_Winch/AP_Winch.h>
 #endif
 
 // Local modules
 #include "Parameters.h"
+#if ADSB_ENABLED == ENABLED
 #include "avoidance_adsb.h"
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -224,6 +241,7 @@ private:
 #endif
 
     // Mission library
+#if MODE_AUTO_ENABLED == ENABLED
     AP_Mission mission{ahrs,
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
@@ -238,6 +256,7 @@ private:
     void exit_mission() {
         mode_auto.exit_mission();
     }
+#endif
 
     // Arming/Disarming mangement class
     AP_Arming_Copter arming{ahrs, barometer, compass, battery, inertial_nav, ins};
@@ -254,7 +273,7 @@ private:
     float ekfNavVelGainScaler;
 
     // system time in milliseconds of last recorded yaw reset from ekf
-    uint32_t ekfYawReset_ms = 0;
+    uint32_t ekfYawReset_ms;
     int8_t ekf_primary_core;
 
     AP_SerialManager serial_manager;
@@ -366,7 +385,7 @@ private:
     struct {
         uint8_t baro        : 1;    // true if baro is healthy
         uint8_t compass     : 1;    // true if compass is healthy
-        uint8_t primary_gps;        // primary gps index
+        uint8_t primary_gps : 2;    // primary gps index
     } sensor_health;
 
     // Motor Output
@@ -466,7 +485,9 @@ private:
     AC_AttitudeControl_t *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
+#if MODE_CIRCLE_ENABLED == ENABLED
     AC_Circle *circle_nav;
+#endif
 
     // System Timers
     // --------------
@@ -489,7 +510,7 @@ private:
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
-    // current_loc uses the baro/gps soloution for altitude rather than gps only.
+    // current_loc uses the baro/gps solution for altitude rather than gps only.
     AP_Mount camera_mount{ahrs, current_loc};
 #endif
 
@@ -539,10 +560,12 @@ private:
     AC_InputManager_Heli input_manager;
 #endif
 
+#if ADSB_ENABLED == ENABLED
     AP_ADSB adsb{ahrs};
 
     // avoidance of adsb enabled vehicles (normally manned vehicles)
     AP_Avoidance_Copter avoidance_adsb{ahrs, adsb};
+#endif
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
@@ -639,8 +662,10 @@ private:
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn();
 
+#if ADSB_ENABLED == ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
+#endif
 
     // baro_ground_effect.cpp
     void update_ground_effect_detector(void);
@@ -772,7 +797,6 @@ private:
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool position_ok);
     void Log_Write_Proximity();
-    void Log_Write_Beacon();
     void Log_Write_Vehicle_Startup_Messages();
     void log_init(void);
 
@@ -858,7 +882,6 @@ private:
     void init_proximity();
     void update_proximity();
     void update_sensor_status_flags(void);
-    void init_beacon();
     void init_visual_odom();
     void update_visual_odom();
     void winch_init();
@@ -933,29 +956,53 @@ private:
     ModeAcro mode_acro;
 #endif
     ModeAltHold mode_althold;
+#if MODE_AUTO_ENABLED == ENABLED
     ModeAuto mode_auto;
+#endif
 #if AUTOTUNE_ENABLED == ENABLED
     ModeAutoTune mode_autotune;
 #endif
+#if MODE_BRAKE_ENABLED == ENABLED
     ModeBrake mode_brake;
+#endif
+#if MODE_CIRCLE_ENABLED == ENABLED
     ModeCircle mode_circle;
+#endif
+#if MODE_DRIFT_ENABLED == ENABLED
     ModeDrift mode_drift;
+#endif
     ModeFlip mode_flip;
+#if MODE_GUIDED_ENABLED == ENABLED
     ModeGuided mode_guided;
+#endif
     ModeLand mode_land;
+#if MODE_LOITER_ENABLED == ENABLED
     ModeLoiter mode_loiter;
+#endif
+#if MODE_POSHOLD_ENABLED == ENABLED
     ModePosHold mode_poshold;
+#endif
+#if MODE_RTL_ENABLED == ENABLED
     ModeRTL mode_rtl;
+#endif
 #if FRAME_CONFIG == HELI_FRAME
     ModeStabilize_Heli mode_stabilize;
 #else
     ModeStabilize mode_stabilize;
 #endif
+#if MODE_SPORT_ENABLED == ENABLED
     ModeSport mode_sport;
+#endif
+#if ADSB_ENABLED == ENABLED
     ModeAvoidADSB mode_avoid_adsb;
+#endif
     ModeThrow mode_throw;
+#if MODE_GUIDED_NOGPS_ENABLED == ENABLED
     ModeGuidedNoGPS mode_guided_nogps;
+#endif
+#if MODE_SMARTRTL_ENABLED == ENABLED
     ModeSmartRTL mode_smartrtl;
+#endif
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     ModeFlowHold mode_flowhold;
 #endif

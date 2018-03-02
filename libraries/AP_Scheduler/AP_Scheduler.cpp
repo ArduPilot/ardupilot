@@ -273,7 +273,8 @@ void AP_Scheduler::Log_Write_Performance()
         num_loops        : perf_info.get_num_loops(),
         max_time         : perf_info.get_max_time(),
         ins_error_count  : AP::ins().error_count(),
-        mem_avail        : hal.util->available_memory()
+        mem_avail        : hal.util->available_memory(),
+        load             : (uint16_t)(load_average() * 1000)
     };
     DataFlash_Class::instance()->WriteCriticalBlock(&pkt, sizeof(pkt));
 }

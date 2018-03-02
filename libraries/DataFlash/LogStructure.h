@@ -60,7 +60,7 @@ struct PACKED log_Format_Units {
 
 struct UnitStructure {
     const char ID;
-    const char unit[64];
+    const char *unit;
 };
 
 struct MultiplierStructure {
@@ -92,6 +92,7 @@ const struct UnitStructure log_Units[] = {
     // { 'N', "N" },          // Newton
     { 'o', "m/s/s" },         // metres per second per second
     { 'O', "degC" },          // degrees Celsius. Not SI, but Kelvin is too cumbersome for most users
+    { '%', "%" },             // percent
     { 'S', "satellites" },    // number of satellites
     { 's', "s" },             // seconds
     { 'q', "rpm" },           // rounds per minute. Not SI, but sometimes more intuitive than Hertz
@@ -112,9 +113,9 @@ const struct UnitStructure log_Units[] = {
 // tl;dr a GCS shouldn't/mustn't infer any scaling from the unit name
 
 const struct MultiplierStructure log_Multipliers[] = {
-// <leave a gap here, just in case....>
     { '-', 0 },       // no multiplier e.g. a string
     { '?', 1 },       // multipliers which haven't been worked out yet....
+// <leave a gap here, just in case....>
     { '2', 1e2 },
     { '1', 1e1 },
     { '0', 1e0 },
@@ -1018,6 +1019,7 @@ struct PACKED log_Performance {
     uint32_t max_time;
     uint16_t ins_error_count;
     uint32_t mem_avail;
+    uint16_t load;
 };
 
 struct PACKED log_SRTL {
@@ -1233,7 +1235,7 @@ Format characters in the format string for binary log messages
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
       "PRX", "QBfffffffffff", "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s-mmmmmmmmmhm", "F-BBBBBBBBB00" }, \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
-      "PM",  "QHHIHI",    "TimeUS,NLon,NLoop,MaxT,INSErr,Mem", "s----b", "F----0" }, \
+      "PM",  "QHHIHIH", "TimeUS,NLon,NLoop,MaxT,INSErr,Mem,Load", "s----b%", "F----0A" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }
 

@@ -4,6 +4,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_SPARKY2
+
 # board ID for firmware load
 APJ_BOARD_ID 11
 

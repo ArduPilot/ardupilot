@@ -70,6 +70,8 @@
 #define HAL_BOARD_SUBTYPE_CHIBIOS_REVOMINI      5005
 #define HAL_BOARD_SUBTYPE_CHIBIOS_MINIPIX       5006
 #define HAL_BOARD_SUBTYPE_CHIBIOS_CRAZYFLIE2    5007
+#define HAL_BOARD_SUBTYPE_CHIBIOS_OMNIBUSF7V2   5008
+#define HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC       5009
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -112,6 +114,7 @@
 #define HAL_BARO_20789_I2C_I2C  14
 #define HAL_BARO_20789_I2C_SPI  15
 #define HAL_BARO_LPS22H_SPI	16
+#define HAL_BARO_LPS25H_IMU_I2C 17
 
 /* Compass driver types */
 #define HAL_COMPASS_NONE                0

@@ -386,32 +386,32 @@ private:
     AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
 
     // Tuning parameters
-    const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
-    const float gpsDVelVarAccScale;     // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
-    const float gpsPosVarAccScale;      // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
-    const uint16_t magDelay_ms;         // Magnetometer measurement delay (msec)
-    const uint16_t tasDelay_ms;         // Airspeed measurement delay (msec)
-    const uint16_t tiltDriftTimeMax_ms;    // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
-    const uint16_t posRetryTimeUseVel_ms;  // Position aiding retry time with velocity measurements (msec)
-    const uint16_t posRetryTimeNoVel_ms;   // Position aiding retry time without velocity measurements (msec)
-    const uint16_t hgtRetryTimeMode0_ms;   // Height retry time with vertical velocity measurement (msec)
-    const uint16_t hgtRetryTimeMode12_ms;  // Height retry time without vertical velocity measurement (msec)
-    const uint16_t tasRetryTime_ms;     // True airspeed timeout and retry interval (msec)
-    const uint32_t magFailTimeLimit_ms; // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
-    const float magVarRateScale;        // scale factor applied to magnetometer variance due to angular rate
-    const float gyroBiasNoiseScaler;    // scale factor applied to gyro bias state process noise when on ground
-    const uint16_t hgtAvg_ms;           // average number of msec between height measurements
-    const uint16_t betaAvg_ms;          // average number of msec between synthetic sideslip measurements
-    const float covTimeStepMax;         // maximum time (sec) between covariance prediction updates
-    const float covDelAngMax;           // maximum delta angle between covariance prediction updates
-    const float DCM33FlowMin;           // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
-    const float fScaleFactorPnoise;     // Process noise added to focal length scale factor state variance at each time step
-    const uint8_t flowTimeDeltaAvg_ms;  // average interval between optical flow measurements (msec)
-    const uint32_t flowIntervalMax_ms;  // maximum allowable time between flow fusion events
-    const uint16_t gndEffectTimeout_ms; // time in msec that ground effect mode is active after being activated
-    const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
-    const uint8_t gndGradientSigma;     // RMS terrain gradient percentage assumed by the terrain height estimation
-    const uint8_t fusionTimeStep_ms;    // The minimum time interval between covariance predictions and measurement fusions in msec
+    const float gpsNEVelVarAccScale = 0.05f;       // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
+    const float gpsDVelVarAccScale = 0.07f;        // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
+    const float gpsPosVarAccScale = 0.05f;         // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
+    const uint8_t magDelay_ms = 60;               // Magnetometer measurement delay (msec)
+    const uint8_t tasDelay_ms = 240;              // Airspeed measurement delay (msec)
+    const uint16_t tiltDriftTimeMax_ms = 15000;    // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
+    const uint16_t posRetryTimeUseVel_ms = 10000;  // Position aiding retry time with velocity measurements (msec)
+    const uint16_t posRetryTimeNoVel_ms = 7000;    // Position aiding retry time without velocity measurements (msec)
+    const uint16_t hgtRetryTimeMode0_ms = 10000;   // Height retry time with vertical velocity measurement (msec)
+    const uint16_t hgtRetryTimeMode12_ms = 5000;   // Height retry time without vertical velocity measurement (msec)
+    const uint16_t tasRetryTime_ms = 5000;         // True airspeed timeout and retry interval (msec)
+    const uint16_t magFailTimeLimit_ms = 10000;    // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
+    const float magVarRateScale = 0.005f;          // scale factor applied to magnetometer variance due to angular rate
+    const float gyroBiasNoiseScaler = 2.0f;        // scale factor applied to gyro bias state process noise when on ground
+    const uint8_t hgtAvg_ms = 100;                // average number of msec between height measurements
+    const uint8_t betaAvg_ms = 100;               // average number of msec between synthetic sideslip measurements
+    const float covTimeStepMax = 0.1f;             // maximum time (sec) between covariance prediction updates
+    const float covDelAngMax = 0.05f;              // maximum delta angle between covariance prediction updates
+    const float DCM33FlowMin = 0.71f;              // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
+    const float fScaleFactorPnoise = 1e-10f;       // Process noise added to focal length scale factor state variance at each time step
+    const uint8_t flowTimeDeltaAvg_ms = 100;       // average interval between optical flow measurements (msec)
+    const uint8_t flowIntervalMax_ms = 100;       // maximum allowable time between flow fusion events
+    const uint16_t gndEffectTimeout_ms = 1000;     // time in msec that ground effect mode is active after being activated
+    const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
+    const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
+    const uint8_t fusionTimeStep_ms = 10;          // The minimum time interval between covariance predictions and measurement fusions in msec
 
     struct {
         bool enabled:1;

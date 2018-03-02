@@ -174,7 +174,7 @@ void GCS_MAVLINK::send_meminfo(void)
 {
     unsigned __brkval = 0;
     uint32_t memory = hal.util->available_memory();
-    mavlink_msg_meminfo_send(chan, __brkval, memory & 0xFFFF, memory);
+    mavlink_msg_meminfo_send(chan, __brkval, MIN(memory, 0xFFFFU), memory);
 }
 
 // report power supply status
@@ -2156,6 +2156,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         result = handle_command_preflight_set_sensor_offsets(packet);
         break;
     }
+
+    case MAV_CMD_PREFLIGHT_STORAGE:
+        if (is_equal(packet.param1, 2.0f)) {
+            AP_Param::erase_all();
+            send_text(MAV_SEVERITY_WARNING, "All parameters reset, reboot board");
+            result= MAV_RESULT_ACCEPTED;
+        }
+        break;
 
     case MAV_CMD_DO_SET_SERVO:
         /* fall through */

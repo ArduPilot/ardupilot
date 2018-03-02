@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include "hwdef.h"
+
 #define _CHIBIOS_RT_CONF_
 
 /*===========================================================================*/
@@ -340,7 +342,9 @@
  *
  * @note    The default is @p FALSE.
  */
-#define CH_DBG_SYSTEM_STATE_CHECK           TRUE
+#ifndef CH_DBG_SYSTEM_STATE_CHECK
+#define CH_DBG_SYSTEM_STATE_CHECK           FALSE
+#endif
 
 /**
  * @brief   Debug option, parameters checks.
@@ -349,7 +353,10 @@
  *
  * @note    The default is @p FALSE.
  */
-#define CH_DBG_ENABLE_CHECKS                TRUE
+#ifndef CH_DBG_ENABLE_CHECKS
+#define CH_DBG_ENABLE_CHECKS                FALSE
+#endif
+
 
 /**
  * @brief   Debug option, consistency checks.
@@ -359,7 +366,9 @@
  *
  * @note    The default is @p FALSE.
  */
-#define CH_DBG_ENABLE_ASSERTS               TRUE
+#ifndef CH_DBG_ENABLE_ASSERTS
+#define CH_DBG_ENABLE_ASSERTS               FALSE
+#endif
 
 /**
  * @brief   Debug option, trace buffer.
@@ -386,7 +395,9 @@
  * @note    The default failure mode is to halt the system with the global
  *          @p panic_msg variable set to @p NULL.
  */
-#define CH_DBG_ENABLE_STACK_CHECK           TRUE
+#ifndef CH_DBG_ENABLE_STACK_CHECK
+#define CH_DBG_ENABLE_STACK_CHECK           FALSE
+#endif
 
 /**
  * @brief   Debug option, stacks initialization.

@@ -50,37 +50,51 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_althold;
             break;
 
+#if MODE_AUTO_ENABLED == ENABLED
         case AUTO:
             ret = &mode_auto;
             break;
+#endif
 
+#if MODE_CIRCLE_ENABLED == ENABLED
         case CIRCLE:
             ret = &mode_circle;
             break;
+#endif
 
+#if MODE_LOITER_ENABLED == ENABLED
         case LOITER:
             ret = &mode_loiter;
             break;
+#endif
 
+#if MODE_GUIDED_ENABLED == ENABLED
         case GUIDED:
             ret = &mode_guided;
             break;
+#endif
 
         case LAND:
             ret = &mode_land;
             break;
 
+#if MODE_RTL_ENABLED == ENABLED
         case RTL:
             ret = &mode_rtl;
             break;
+#endif
 
+#if MODE_DRIFT_ENABLED == ENABLED
         case DRIFT:
             ret = &mode_drift;
             break;
+#endif
 
+#if MODE_SPORT_ENABLED == ENABLED
         case SPORT:
             ret = &mode_sport;
             break;
+#endif
 
         case FLIP:
             ret = &mode_flip;
@@ -92,29 +106,39 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_POSHOLD_ENABLED == ENABLED
         case POSHOLD:
             ret = &mode_poshold;
             break;
+#endif
 
+#if MODE_BRAKE_ENABLED == ENABLED
         case BRAKE:
             ret = &mode_brake;
             break;
+#endif
 
         case THROW:
             ret = &mode_throw;
             break;
 
+#if ADSB_ENABLED == ENABLED
         case AVOID_ADSB:
             ret = &mode_avoid_adsb;
             break;
+#endif
 
+#if MODE_GUIDED_NOGPS_ENABLED == ENABLED
         case GUIDED_NOGPS:
             ret = &mode_guided_nogps;
             break;
+#endif
 
+#if MODE_SMARTRTL_ENABLED == ENABLED
         case SMART_RTL:
             ret = &mode_smartrtl;
             break;
+#endif
 
 #if OPTFLOW == ENABLED
         case FLOWHOLD:
@@ -175,9 +199,11 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     flightmode = new_flightmode;
     control_mode = mode;
     control_mode_reason = reason;
-    DataFlash.Log_Write_Mode(control_mode);
+    DataFlash.Log_Write_Mode(control_mode, reason);
 
+#if ADSB_ENABLED == ENABLED
     adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
+#endif
 
 #if AC_FENCE == ENABLED
     // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
@@ -221,6 +247,7 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
 #endif
 
     // stop mission when we leave auto mode
+#if MODE_AUTO_ENABLED == ENABLED
     if (old_flightmode == &mode_auto) {
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
@@ -229,6 +256,7 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
         camera_mount.set_mode_to_default();
 #endif  // MOUNT == ENABLED
     }
+#endif
 
     // smooth throttle transition when switching from manual to automatic flight modes
     if (old_flightmode->has_manual_throttle() && !new_flightmode->has_manual_throttle() && motors->armed() && !ap.land_complete) {
@@ -239,10 +267,12 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     // cancel any takeoffs in progress
     takeoff_stop();
 
+#if MODE_SMARTRTL_ENABLED == ENABLED
     // call smart_rtl cleanup
     if (old_flightmode == &mode_smartrtl) {
         mode_smartrtl.exit();
     }
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.

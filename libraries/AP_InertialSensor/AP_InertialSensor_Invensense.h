@@ -105,8 +105,6 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    uint16_t _error_count;
-
     float temp_sensitivity = 1.0/340; // degC/LSB
     float temp_zero = 36.53; // degC
     

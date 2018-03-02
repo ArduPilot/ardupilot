@@ -6,6 +6,7 @@ class Mode {
     friend class Copter;
     friend class AP_Arming_Copter;
     friend class ToyMode;
+    friend class GCS_MAVLINK_Copter;
 
     // constructor
     Mode(void);
@@ -32,6 +33,7 @@ protected:
     virtual void run_autopilot() {}
     virtual uint32_t wp_distance() const { return 0; }
     virtual int32_t wp_bearing() const { return 0; }
+    virtual bool in_guided_mode() const { return false; }
 
     // convenience references to avoid code churn in conversion:
     Parameters &g;
@@ -178,6 +180,7 @@ public:
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; };
+    bool in_guided_mode() const { return mode() == Auto_NavGuided; }
 
     // Auto
     AutoMode mode() const { return _mode; }
@@ -368,8 +371,10 @@ private:
     void twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
     void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
 
+#if LOGGING_ENABLED == ENABLED
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
+#endif
 
     void send_step_string();
     const char *level_issue_string() const;
@@ -680,6 +685,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return from_gcs; }
     bool is_autopilot() const override { return true; }
+    bool in_guided_mode() const { return true; }
 
     void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);

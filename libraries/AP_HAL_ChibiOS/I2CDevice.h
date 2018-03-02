@@ -28,6 +28,8 @@
 #include "Device.h"
 #include "shared_dma.h"
 
+#if HAL_USE_I2C == TRUE
+
 namespace ChibiOS {
 
 class I2CBus : public DeviceBus {
@@ -119,5 +121,7 @@ public:
                                                  bool use_smbus = false,
                                                  uint32_t timeout_ms=4) override;
 };
-
 }
+
+#endif // HAL_USE_I2C
+

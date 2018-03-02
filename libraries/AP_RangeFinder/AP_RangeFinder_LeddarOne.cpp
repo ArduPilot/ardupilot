@@ -25,12 +25,13 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_LeddarOne::AP_RangeFinder_LeddarOne(RangeFinder::RangeFinder_State &_state,
-                                                   AP_SerialManager &serial_manager) :
+                                                   AP_SerialManager &serial_manager,
+                                                   uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state)
 {
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, 0);
+    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
     if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar, 0));
+        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
     }
 }
 
@@ -39,9 +40,9 @@ AP_RangeFinder_LeddarOne::AP_RangeFinder_LeddarOne(RangeFinder::RangeFinder_Stat
    trying to take a reading on Serial. If we get a result the sensor is
    there.
 */
-bool AP_RangeFinder_LeddarOne::detect(AP_SerialManager &serial_manager)
+bool AP_RangeFinder_LeddarOne::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
 {
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, 0) != nullptr;
+    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 // read - return last value measured by sensor

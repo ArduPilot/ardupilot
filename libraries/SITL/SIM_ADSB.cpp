@@ -27,8 +27,7 @@ namespace SITL {
 
 SITL *_sitl;
 
-ADSB::ADSB(const struct sitl_fdm &_fdm, const char *_home_str) :
-    fdm(_fdm)
+ADSB::ADSB(const struct sitl_fdm &_fdm, const char *_home_str)
 {
     float yaw_degrees;
     Aircraft::parse_home(_home_str, home, yaw_degrees);

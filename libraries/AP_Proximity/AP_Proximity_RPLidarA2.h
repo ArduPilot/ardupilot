@@ -85,15 +85,10 @@ private:
     char _rp_systeminfo[63];
     bool _descriptor_data;
     bool _information_data;
-    bool _payload_data;
     bool _resetted;
     bool _initialised;
-    bool _skip;
-    bool _rp_reset;
     bool _sector_initialised;
 
-    uint8_t _element_len[2];
-    uint8_t _element_num;
     uint8_t _payload_length;
     uint8_t _cnt;
     uint8_t _sync_error ;

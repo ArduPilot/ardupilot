@@ -453,8 +453,10 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_ADSB_VEHICLE:
+#if ADSB_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         copter.adsb.send_adsb_vehicle(chan);
+#endif
         break;
     case MSG_BATTERY_STATUS:
         send_battery_status(copter.battery);
@@ -667,7 +669,11 @@ GCS_MAVLINK_Copter::data_stream_send(void)
 
 bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
+#if MODE_AUTO_ENABLED == ENABLED
     return copter.mode_auto.do_guided(cmd);
+#else
+    return false;
+#endif
 }
 
 void GCS_MAVLINK_Copter::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
@@ -683,10 +689,12 @@ void GCS_MAVLINK_Copter::handle_change_alt_request(AP_Mission::Mission_Command &
 void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
                                         mavlink_message_t &msg)
 {
+#if ADSB_ENABLED == ENABLED
     if (copter.g2.dev_options.get() & DevOptionADSBMAVLink) {
         // optional handling of GLOBAL_POSITION_INT as a MAVLink based avoidance source
         copter.avoidance_adsb.handle_msg(msg);
     }
+#endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
@@ -1021,6 +1029,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 #endif
             break;
 
+#if MODE_AUTO_ENABLED == ENABLED
         case MAV_CMD_MISSION_START:
             if (copter.motors->armed() && copter.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
                 copter.set_auto_armed(true);
@@ -1030,6 +1039,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
+#endif
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
             // exit immediately if armed
@@ -1293,11 +1303,15 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                     bool shot_mode = (!is_zero(packet.param1) && (copter.control_mode == GUIDED || copter.control_mode == GUIDED_NOGPS));
 
                     if (!shot_mode) {
+#if MODE_BRAKE_ENABLED == ENABLED
                         if (copter.set_mode(BRAKE, MODE_REASON_GCS_COMMAND)) {
                             copter.mode_brake.timeout_to_loiter_ms(2500);
                         } else {
                             copter.set_mode(ALT_HOLD, MODE_REASON_GCS_COMMAND);
                         }
+#else
+                        copter.set_mode(ALT_HOLD, MODE_REASON_GCS_COMMAND);
+#endif
                     } else {
                         // SoloLink is expected to handle pause in shots
                     }
@@ -1331,6 +1345,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+#if MODE_GUIDED_ENABLED == ENABLED
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:   // MAV ID: 82
     {
         // decode packet
@@ -1338,7 +1353,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_msg_set_attitude_target_decode(msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
-        if ((copter.control_mode != GUIDED) && (copter.control_mode != GUIDED_NOGPS) && !(copter.control_mode == AUTO && copter.mode_auto.mode() == Auto_NavGuided)) {
+        if (!copter.flightmode->in_guided_mode()) {
             break;
         }
 
@@ -1380,7 +1395,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
-        if ((copter.control_mode != GUIDED) && !(copter.control_mode == AUTO && copter.mode_auto.mode() == Auto_NavGuided)) {
+        if (!copter.flightmode->in_guided_mode()) {
             break;
         }
 
@@ -1477,7 +1492,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_msg_set_position_target_global_int_decode(msg, &packet);
 
         // exit if vehicle is not in Guided mode or Auto-Guided mode
-        if ((copter.control_mode != GUIDED) && !(copter.control_mode == AUTO && copter.mode_auto.mode() == Auto_NavGuided)) {
+        if (!copter.flightmode->in_guided_mode()) {
             break;
         }
 
@@ -1571,6 +1586,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
         break;
     }
+#endif
 
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
     {
@@ -1789,7 +1805,11 @@ bool GCS_MAVLINK_Copter::accept_packet(const mavlink_status_t &status, mavlink_m
 
 AP_Mission *GCS_MAVLINK_Copter::get_mission()
 {
+#if MODE_AUTO_ENABLED == ENABLED
     return &copter.mission;
+#else
+    return nullptr;
+#endif
 }
 
 Compass *GCS_MAVLINK_Copter::get_compass() const

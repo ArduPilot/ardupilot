@@ -23,7 +23,7 @@
 #include <unistd.h>
 
 
-#ifdef __CYGWIN__
+#if defined(__CYGWIN__) || defined(__CYGWIN64__)
 #include <windows.h>
 #include <time.h>
 #include <mmsystem.h>
@@ -54,7 +54,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     rate_hz(1200.0f),
     autotest_dir(nullptr),
     frame(frame_str),
-#ifdef __CYGWIN__
+#if defined(__CYGWIN__) || defined(__CYGWIN64__)
     min_sleep_time(20000)
 #else
     min_sleep_time(5000)
@@ -62,7 +62,15 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
 {
     // make the SIM_* variables available to simulator backends
     sitl = (SITL *)AP_Param::find_object("SIM_");
-    parse_home(home_str, home, home_yaw);
+
+    if (!parse_home(home_str, home, home_yaw)) {
+        ::printf("Failed to parse home string (%s).  Should be LAT,LON,ALT,HDG e.g. 37.4003371,-122.0800351,0,353\n", home_str);
+    }
+    ::printf("Home: %f %f alt=%fm hdg=%f\n",
+             home.lat*1e-7,
+             home.lng*1e-7,
+             home.alt*0.01,
+             home_yaw);
     location = home;
     ground_level = home.alt * 0.01f;
 
@@ -90,26 +98,31 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
     char *s = strdup(home_str);
     if (!s) {
         free(s);
+        ::printf("No home string supplied\n");
         return false;
     }
     char *lat_s = strtok_r(s, ",", &saveptr);
     if (!lat_s) {
         free(s);
+        ::printf("Failed to parse latitude\n");
         return false;
     }
     char *lon_s = strtok_r(nullptr, ",", &saveptr);
     if (!lon_s) {
         free(s);
+        ::printf("Failed to parse longitude\n");
         return false;
     }
     char *alt_s = strtok_r(nullptr, ",", &saveptr);
     if (!alt_s) {
         free(s);
+        ::printf("Failed to parse altitude\n");
         return false;
     }
     char *yaw_s = strtok_r(nullptr, ",", &saveptr);
     if (!yaw_s) {
         free(s);
+        ::printf("Failed to parse yaw\n");
         return false;
     }
 
@@ -416,7 +429,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 
 uint64_t Aircraft::get_wall_time_us() const
 {
-#ifdef __CYGWIN__
+#if defined(__CYGWIN__) || defined(__CYGWIN64__)
     static DWORD tPrev;
     static uint64_t last_ret_us;
     if (tPrev == 0) {

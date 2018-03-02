@@ -1422,6 +1422,31 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             }
             break;
             
+#if GRIPPER_ENABLED == ENABLED
+        case MAV_CMD_DO_GRIPPER:
+            // param1 : gripper number (ignored)
+            // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
+            if(!plane.g2.gripper.enabled()) {
+                result = MAV_RESULT_FAILED;
+            } else {
+                result = MAV_RESULT_ACCEPTED;
+                switch ((uint8_t)packet.param2) {
+                    case GRIPPER_ACTION_RELEASE:
+                        plane.g2.gripper.release();
+                        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Released");
+                        break;
+                    case GRIPPER_ACTION_GRAB:
+                        plane.g2.gripper.grab();
+                        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Grabbed");
+                        break;
+                    default:
+                        result = MAV_RESULT_FAILED;
+                        break;
+                }
+            }
+            break;
+#endif
+
         default:
             result = handle_command_long_message(packet);
             break;

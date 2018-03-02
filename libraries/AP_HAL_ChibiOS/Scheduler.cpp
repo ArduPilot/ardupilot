@@ -309,7 +309,7 @@ void Scheduler::_timer_thread(void *arg)
 void Scheduler::_uavcan_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    sched->_rcin_thread_ctx->name = "apm_uavcan";
+    sched->_uavcan_thread_ctx->name = "apm_uavcan";
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(20000);
     }

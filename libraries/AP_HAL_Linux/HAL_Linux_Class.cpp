@@ -274,14 +274,18 @@ void _usage(void)
     printf("\tcustom terrain path:\n");
     printf("\t                   --terrain-directory /var/APM/terrain\n");
     printf("\t                   -t /var/APM/terrain\n");
+#if AP_MODULE_SUPPORTED
     printf("\tmodule support:\n");
     printf("\t                   --module-directory %s\n", AP_MODULE_DEFAULT_DIRECTORY);
     printf("\t                   -M %s\n", AP_MODULE_DEFAULT_DIRECTORY);
+#endif
 }
 
 void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
+#if AP_MODULE_SUPPORTED
     const char *module_path = AP_MODULE_DEFAULT_DIRECTORY;
+#endif
     
     assert(callbacks);
 
@@ -344,9 +348,11 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         case 't':
             utilInstance.set_custom_terrain_directory(gopt.optarg);
             break;
+#if AP_MODULE_SUPPORTED
         case 'M':
             module_path = gopt.optarg;
             break;
+#endif
         case 'h':
             _usage();
             exit(0);
@@ -374,13 +380,19 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     scheduler->system_initialized();
 
     // possibly load external modules
+#if AP_MODULE_SUPPORTED
     if (module_path != nullptr) {
         AP_Module::init(module_path);
     }
+#endif
 
+#if AP_MODULE_SUPPORTED
     AP_Module::call_hook_setup_start();
+#endif
     callbacks->setup();
+#if AP_MODULE_SUPPORTED
     AP_Module::call_hook_setup_complete();
+#endif
 
     while (!_should_exit) {
         callbacks->loop();
