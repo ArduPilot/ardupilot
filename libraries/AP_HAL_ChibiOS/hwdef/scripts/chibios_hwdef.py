@@ -214,6 +214,13 @@ class generic_pin(object):
         v = 'FLOATING'
         if self.is_CS():
             v = "PULLUP"
+        if (self.type.startswith('USART') or
+            self.type.startswith('UART')) and (
+            (self.label.endswith('_TX') or
+             self.label.endswith('_RX'))):
+            # default RX/TX lines to pullup, to prevent spurious bytes
+            # on disconnected ports
+            v = "PULLUP"
         for e in self.extra:
             if e in values:
                 v = e
