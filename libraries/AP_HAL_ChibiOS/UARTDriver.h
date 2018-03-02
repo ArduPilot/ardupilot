@@ -112,7 +112,7 @@ private:
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
     bool _in_timer;
-    bool _nonblocking_writes;
+    bool _blocking_writes;
     bool _initialised;
     bool _device_initialised;
     bool _lock_rx_in_timer_tick = false;
