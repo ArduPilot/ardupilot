@@ -151,7 +151,9 @@ private:
 #endif
 
     // Battery Sensors
-    AP_BattMonitor battery{MASK_LOG_CURRENT};
+    AP_BattMonitor battery{MASK_LOG_CURRENT,
+                           FUNCTOR_BIND_MEMBER(&Tracker::handle_battery_failsafe, void, const char*, const int8_t),
+                           nullptr};
 
     struct Location current_loc;
 
@@ -263,6 +265,7 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void log_init(void);
     bool should_log(uint32_t mask);
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
 
 public:
     void mavlink_snoop(const mavlink_message_t* msg);
