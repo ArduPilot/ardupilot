@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "---------- install-prereqs-ubuntu.sh start ----------"
+echo "---------- $0 start ----------"
 set -e
 set -x
 
@@ -134,4 +134,4 @@ apt-cache search arm-none-eabi
  git submodule init
  git submodule update
 )
-echo "---------- install-prereqs-ubuntu.sh end ----------"
+echo "---------- $0 end ----------"

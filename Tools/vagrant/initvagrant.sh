@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "---------- initvagrant.sh start ----------"
+echo "---------- $0 start ----------"
 
 # this script is run by the root user in the virtual machine
 
@@ -65,5 +65,5 @@ touch /ardupilot.vagrant
 
 # Now you can run
 # vagrant ssh -c "screen -d -R"
-echo "---------- initvagrant.sh end ----------"
+echo "---------- $0 end ----------"
 

@@ -2,7 +2,7 @@
 
 set -e
 set -x
-echo "---------- build-jsbsim.sh start ----------"
+echo "---------- $0 start ----------"
 
 # don't waste time rebuilding jsbsim if we already have a working copy of it
 # this can save ~10 or minutes on some hardware
@@ -18,4 +18,4 @@ else
     ./autogen.sh
     make -j2
 fi
-echo "---------- build-jsbsim.sh end ----------"
+echo "---------- $0 end ----------"
