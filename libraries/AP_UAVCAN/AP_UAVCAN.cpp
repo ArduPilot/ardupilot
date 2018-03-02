@@ -1322,23 +1322,26 @@ bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t
     color.green = (green >> 2);
     color.blue = (blue >> 3);
 
-    // check if device exists. if so, update here and return
-    for (uint8_t i = 0; i < _led_conf.devices_count; i++) {
-        if (!_led_conf.devices[i].enabled || (_led_conf.devices[i].led_index == led_index)) {
-            _led_conf.devices[i].led_index = led_index;
-            _led_conf.devices[i].rgb565_color = color;
-            _led_conf.devices[i].enabled = true;
-            _led_conf.broadcast_enabled = true;
-            led_out_sem_give();
-            return true;
+    // check if a device instance exists. if so, break so the instance index is remembered
+    uint8_t instance = 0;
+    for (; instance < _led_conf.devices_count; instance++) {
+        if (!_led_conf.devices[instance].enabled || (_led_conf.devices[instance].led_index == led_index)) {
+            break;
         }
     }
     
-    // no existing device found, add it
-    _led_conf.devices[_led_conf.devices_count].led_index = led_index;
-    _led_conf.devices[_led_conf.devices_count].rgb565_color = color;
-    _led_conf.devices[_led_conf.devices_count].enabled = true;
-    _led_conf.devices_count++;
+    // load into the correct instance.
+    // if an existing instance was found in above for loop search,
+    // then instance value is < _led_conf.devices_count.
+    // otherwise a new one was just found so we increment the count.
+    // Either way, the correct instance is the cirrent value of instance
+    _led_conf.devices[instance].led_index = led_index;
+    _led_conf.devices[instance].rgb565_color = color;
+    _led_conf.devices[instance].enabled = true;
+    if (instance == _led_conf.devices_count) {
+        _led_conf.devices_count++;
+    }
+
     _led_conf.broadcast_enabled = true;
     led_out_sem_give();
     return true;
