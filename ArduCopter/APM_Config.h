@@ -11,8 +11,8 @@
 //#define CAMERA                DISABLED            // disable camera trigger to save 1k of flash
 //#define RANGEFINDER_ENABLED   DISABLED            // disable rangefinder to save 1k of flash
 //#define PROXIMITY_ENABLED     DISABLED            // disable proximity sensors
-//#define POSHOLD_ENABLED       DISABLED            // disable PosHold flight mode to save 4.5k of flash
 //#define AC_RALLY              DISABLED            // disable rally points library (must also disable terrain which relies on rally)
+//#define AC_AVOID_ENABLED      DISABLED            // disable stop-at-fence library
 //#define AC_TERRAIN            DISABLED            // disable terrain library
 //#define PARACHUTE             DISABLED            // disable parachute release to save 1k of flash
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
@@ -21,7 +21,21 @@
 //#define FRSKY_TELEM_ENABLED   DISABLED            // disable FRSky telemetry
 //#define ADSB_ENABLED          DISABLED            // disable ADSB support
 //#define PRECISION_LANDING     DISABLED            // disable precision landing using companion computer or IRLock sensor
+//#define BEACON_ENABLED        DISABLED            // disable beacon support
 //#define SPRAYER               DISABLED            // disable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
+//#define WINCH_ENABLED         DISABLED            // disable winch support
+//#define MODE_AUTO_ENABLED     DISABLED            // disable auto mode support
+//#define MODE_BRAKE_ENABLED    DISABLED            // disable brake mode support
+//#define MODE_CIRCLE_ENABLED   DISABLED            // disable circle mode support
+//#define MODE_DRIFT_ENABLED    DISABLED            // disable drift mode support
+//#define MODE_GUIDED_ENABLED   DISABLED            // disable guided mode support
+//#define MODE_GUIDED_NOGPS_ENABLED   DISABLED      // disable guided/nogps mode support
+//#define MODE_LOITER_ENABLED   DISABLED            // disable loiter mode support
+//#define MODE_POSHOLD_ENABLED  DISABLED            // disable poshold mode support
+//#define MODE_RTL_ENABLED DISABLED                 // disable rtl mode support
+//#define MODE_SMARTRTL_ENABLED DISABLED            // disable smartrtl mode support
+//#define MODE_SPORT_ENABLED DISABLED               // disable sport mode support
+
 
 // features below are disabled by default on all boards
 //#define CAL_ALWAYS_REBOOT                         // flight controller will reboot after compass or accelerometer calibration completes

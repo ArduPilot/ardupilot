@@ -1,5 +1,4 @@
 #include "Plane.h"
-#include "version.h"
 
 #if LOGGING_ENABLED == ENABLED
 
@@ -28,27 +27,16 @@ void Plane::Log_Write_Attitude(void)
         DataFlash.Log_Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
         DataFlash.Log_Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
         DataFlash.Log_Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIQA_MSG, quadplane.pid_accel_z.get_pid_info() );
+        DataFlash.Log_Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
     }
 
     DataFlash.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
     DataFlash.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
     DataFlash.Log_Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
     DataFlash.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
-        const DataFlash_Class::PID_Info *landing_info;
-        landing_info = landing.get_pid_info();
-        if (landing_info != nullptr) { // only log LANDING PID's while in landing
-            DataFlash.Log_Write_PID(LOG_PIDL_MSG, *landing_info);
-        }
-    }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
- #if OPTFLOW == ENABLED
-    DataFlash.Log_Write_EKF(ahrs,optflow.enabled());
- #else
-    DataFlash.Log_Write_EKF(ahrs,false);
- #endif
+    DataFlash.Log_Write_EKF(ahrs);
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -65,33 +53,6 @@ void Plane::Log_Write_Fast(void)
     }
 }
 
-
-struct PACKED log_Performance {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint16_t num_long;
-    uint16_t main_loop_count;
-    uint32_t g_dt_max;
-    uint32_t g_dt_min;
-    uint32_t log_dropped;
-    uint32_t mem_avail;
-};
-
-// Write a performance monitoring packet. Total length : 19 bytes
-void Plane::Log_Write_Performance()
-{
-    struct log_Performance pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
-        time_us         : AP_HAL::micros64(),
-        num_long        : perf.num_long,
-        main_loop_count : perf.mainLoop_count,
-        g_dt_max        : perf.G_Dt_max,
-        g_dt_min        : perf.G_Dt_min,
-        log_dropped     : DataFlash.num_dropped() - perf.last_log_dropped,
-        hal.util->available_memory()
-    };
-    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
-}
 
 struct PACKED log_Startup {
     LOG_PACKET_HEADER;
@@ -121,11 +82,15 @@ struct PACKED log_Control_Tuning {
     int16_t throttle_out;
     int16_t rudder_out;
     int16_t throttle_dem;
+    float airspeed_estimate;
 };
 
 // Write a control tuning packet. Total length : 22 bytes
 void Plane::Log_Write_Control_Tuning()
 {
+    float est_airspeed = 0;
+    ahrs.airspeed_estimate(&est_airspeed);
+    
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
         time_us         : AP_HAL::micros64(),
@@ -135,7 +100,8 @@ void Plane::Log_Write_Control_Tuning()
         pitch           : (int16_t)ahrs.pitch_sensor,
         throttle_out    : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),
         rudder_out      : (int16_t)SRV_Channels::get_output_scaled(SRV_Channel::k_rudder),
-        throttle_dem    : (int16_t)SpdHgt_Controller->get_throttle_demand()
+        throttle_dem    : (int16_t)SpdHgt_Controller->get_throttle_demand(),
+        airspeed_estimate : est_airspeed
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -270,14 +236,6 @@ struct PACKED log_Arm_Disarm {
     uint16_t arm_checks;
 };
 
-void Plane::Log_Write_Current()
-{
-    DataFlash.Log_Write_Current(battery);
-
-    // also write power status
-    DataFlash.Log_Write_Power();
-}
-
 void Plane::Log_Arm_Disarm() {
     struct log_Arm_Disarm pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
@@ -372,49 +330,50 @@ void Plane::Log_Write_Home_And_Origin()
     }
 }
 
+// type and unit information can be found in
+// libraries/DataFlash/Logstructure.h; search for "log_Units" for
+// units and "Format characters" for field type information
 const struct LogStructure Plane::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-    { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QHHIIII",  "TimeUS,NLon,NLoop,MaxT,MinT,LogDrop,Mem" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
-      "STRT", "QBH",         "TimeUS,SType,CTot" },
+      "STRT", "QBH",         "TimeUS,SType,CTot", "s--", "F--" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
-      "CTUN", "Qcccchhh",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem" },
+      "CTUN", "Qcccchhhf",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem,Aspd", "sdddd---n", "FBBBB---0" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "Qfcccfff",  "TimeUS,WpDist,TargBrg,NavBrg,AltErr,XT,XTi,ArspdErr" },
+      "NTUN", "Qfcccfff",  "TimeUS,WpDist,TargBrg,NavBrg,AltErr,XT,XTi,ArspdErr", "smddmmmn", "F0BBB0B0" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
-      "SONR", "QffBf",   "TimeUS,Dist,Volt,Cnt,Corr" },
+      "SONR", "QffBf",   "TimeUS,Dist,Volt,Cnt,Corr", "smv--", "FB0--" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
-      "ARM", "QBH", "TimeUS,ArmState,ArmChecks" },
+      "ARM", "QBH", "TimeUS,ArmState,ArmChecks", "s--", "F--" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
-      "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P" },
+      "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P", "s---dd-", "F---00-" },
     { LOG_STATUS_MSG, sizeof(log_Status),
-      "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit" },
+      "STAT", "QBfBBBBBB",  "TimeUS,isFlying,isFlyProb,Armed,Safety,Crash,Still,Stage,Hit", "s--------", "F--------" },
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
-      "QTUN", "Qffffhhfffff", "TimeUS,AngBst,ThrOut,DAlt,Alt,DCRt,CRt,DVx,DVy,DAx,DAy,TMix" },
+      "QTUN", "Qffffhhfffff", "TimeUS,AngBst,ThrOut,DAlt,Alt,DCRt,CRt,DVx,DVy,DAx,DAy,TMix", "s--mmnnnnoo-", "F--BBBB0000-" },
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA),
-      "AOA", "Qff", "TimeUS,AOA,SSA" },
+      "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" },
 #endif
     { LOG_PIQR_MSG, sizeof(log_PID), \
-      "PIQR", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+      "PIQR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS },  \
     { LOG_PIQP_MSG, sizeof(log_PID), \
-      "PIQP", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+      "PIQP", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_PIQY_MSG, sizeof(log_PID), \
-      "PIQY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+      "PIQY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_PIQA_MSG, sizeof(log_PID), \
-      "PIQA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+      "PIQA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_AETR_MSG, sizeof(log_AETR), \
-      "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap" }, \
+      "AETR", "Qhhhhh",  "TimeUS,Ail,Elev,Thr,Rudd,Flap", "s-----", "F-----" },  \
 };
 
 void Plane::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-    DataFlash.Log_Write_Mode(control_mode);
+    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
     DataFlash.Log_Write_Rally(rally);
     Log_Write_Home_And_Origin();
     gps.Write_DataFlash_Log_Startup_messages();
@@ -443,7 +402,6 @@ void Plane::Log_Write_Sonar() {}
 void Plane::Log_Write_Optflow() {}
  #endif
 
-void Plane::Log_Write_Current() {}
 void Plane::Log_Arm_Disarm() {}
 void Plane::Log_Write_GPS(uint8_t instance) {}
 void Plane::Log_Write_IMU() {}

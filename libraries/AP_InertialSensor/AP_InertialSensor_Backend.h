@@ -28,6 +28,13 @@
 
 #include "AP_InertialSensor.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
+#include <AP_HAL_F4Light/AP_HAL_F4Light.h>
+#include <AP_HAL_F4Light/GPIO.h>
+#include <AP_HAL_F4Light/Scheduler.h>
+using namespace F4Light;
+#endif
+
 class AuxiliaryBus;
 class DataFlash_Class;
 
@@ -88,9 +95,14 @@ public:
         DEVTYPE_ACC_BMA180   = 0x12,
         DEVTYPE_ACC_MPU6000  = 0x13,
         DEVTYPE_ACC_MPU9250  = 0x16,
+        DEVTYPE_ACC_IIS328DQ = 0x17,
+        DEVTYPE_ACC_LSM9DS1  = 0x18,
         DEVTYPE_GYR_MPU6000  = 0x21,
         DEVTYPE_GYR_L3GD20   = 0x22,
-        DEVTYPE_GYR_MPU9250  = 0x24
+        DEVTYPE_GYR_MPU9250  = 0x24,
+        DEVTYPE_GYR_I3G4250D = 0x25,
+        DEVTYPE_GYR_LSM9DS1  = 0x26,
+        DEVTYPE_INS_ICM20789 = 0x27
     };
         
 protected:
@@ -142,11 +154,21 @@ protected:
         return _imu._accel_raw_sample_rates[instance];
     }
 
+    // set accelerometer raw sample rate
+    void _set_accel_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
+        _imu._accel_raw_sample_rates[instance] = rate_hz;
+    }
+    
     // get gyroscope raw sample rate
     uint32_t _gyro_raw_sample_rate(uint8_t instance) const {
         return _imu._gyro_raw_sample_rates[instance];
     }
 
+    // set gyro raw sample rate
+    void _set_gyro_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
+        _imu._gyro_raw_sample_rates[instance] = rate_hz;
+    }
+    
     // publish a temperature value
     void _publish_temperature(uint8_t instance, float temperature);
 
@@ -173,10 +195,6 @@ protected:
 
     // return the requested sample rate in Hz
     uint16_t get_sample_rate_hz(void) const;
-
-    // access to frontend dataflash.  If raw-imu logging is not
-    // enabled, nullptr is returned
-    DataFlash_Class *get_dataflash() const;
 
     // common gyro update function for all backends
     void update_gyro(uint8_t instance);
@@ -216,4 +234,11 @@ protected:
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available
+
+private:
+
+    bool should_log_imu_raw() const;
+    void log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel);
+    void log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gryo);
+
 };

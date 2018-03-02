@@ -141,7 +141,6 @@ void AP_Compass_LSM9DS1::_update(void)
 {
     struct sample_regs regs;
     Vector3f raw_field;
-    uint32_t time_us = AP_HAL::micros();
 
     if (!_block_read(LSM9DS1M_STATUS_REG_M, (uint8_t *) &regs, sizeof(regs))) {
         return;
@@ -163,7 +162,7 @@ void AP_Compass_LSM9DS1::_update(void)
     rotate_field(raw_field, _compass_instance);
 
     // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, time_us, _compass_instance);
+    publish_raw_field(raw_field, _compass_instance);
 
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);

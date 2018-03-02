@@ -36,7 +36,8 @@ public:
     enum vehicle_type {
         ArduCopter,
         APMrover2,
-        ArduPlane
+        ArduPlane,
+        ArduSub
     };
 
     int gps_pipe(void);
@@ -44,6 +45,7 @@ public:
     ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
+    bool output_ready = false;
     bool new_rc_input;
     void loop_hook(void);
     uint16_t base_port(void) const {

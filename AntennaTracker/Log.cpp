@@ -11,7 +11,7 @@ void Tracker::Log_Write_Attitude()
     targets.y = nav_status.pitch * 100.0f;
     targets.z = wrap_360_cd(nav_status.bearing * 100.0f);
     DataFlash.Log_Write_Attitude(ahrs, targets);
-    DataFlash.Log_Write_EKF(ahrs,false);
+    DataFlash.Log_Write_EKF(ahrs);
     DataFlash.Log_Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE(&DataFlash);
@@ -70,17 +70,20 @@ void Tracker::Log_Write_Vehicle_Pos(int32_t lat, int32_t lng, int32_t alt, const
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+// type and unit information can be found in
+// libraries/DataFlash/Logstructure.h; search for "log_Units" for
+// units and "Format characters" for field type information
 const struct LogStructure Tracker::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     {LOG_V_BAR_MSG, sizeof(log_Vehicle_Baro),
-        "VBAR", "Qff", "TimeUS,Press,AltDiff" },
+        "VBAR", "Qff", "TimeUS,Press,AltDiff", "sPm", "F00" },
     {LOG_V_POS_MSG, sizeof(log_Vehicle_Pos),
-        "VPOS", "QLLefff", "TimeUS,Lat,Lng,Alt,VelX,VelY,VelZ" }
+        "VPOS", "QLLefff", "TimeUS,Lat,Lng,Alt,VelX,VelY,VelZ", "sddmnnn", "FGGB000" }
 };
 
 void Tracker::Log_Write_Vehicle_Startup_Messages()
 {
-    DataFlash.Log_Write_Mode(control_mode);
+    DataFlash.Log_Write_Mode(control_mode, MODE_REASON_INITIALISED);
     gps.Write_DataFlash_Log_Startup_messages();
 }
 

@@ -31,11 +31,12 @@
 /// @class  AC_Sprayer
 /// @brief  Object managing a crop sprayer comprised of a spinner and a pump both controlled by pwm
 class AC_Sprayer {
-
 public:
+    AC_Sprayer(const AP_InertialNav *inav);
 
-    /// Constructor
-    AC_Sprayer(const AP_InertialNav* inav);
+    /* Do not allow copies */
+    AC_Sprayer(const AC_Sprayer &other) = delete;
+    AC_Sprayer &operator=(const AC_Sprayer&) = delete;
 
     /// run - allow or disallow spraying to occur
     void run(bool true_false);

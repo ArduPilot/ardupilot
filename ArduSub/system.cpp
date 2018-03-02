@@ -1,5 +1,4 @@
 #include "Sub.h"
-#include "version.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -23,9 +22,10 @@ void Sub::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    hal.console->printf("\n\nInit " FIRMWARE_STRING
-                      "\n\nFree RAM: %u\n",
-                      (unsigned)hal.util->available_memory());
+    hal.console->printf("\n\nInit %s"
+                        "\n\nFree RAM: %u\n",
+                        fwver.fw_string,
+                        (unsigned)hal.util->available_memory());
 
     // load parameters from EEPROM
     load_parameters();
@@ -33,6 +33,20 @@ void Sub::init_ardupilot()
     BoardConfig.init();
 #if HAL_WITH_UAVCAN
     BoardConfig_CAN.init();
+#endif
+
+#if AP_FEATURE_BOARD_DETECT
+    // Detection won't work until after BoardConfig.init()
+    switch (AP_BoardConfig::get_board_type()) {
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
+        AP_Param::set_by_name("GND_EXT_BUS", 0);
+        break;
+    default:
+        AP_Param::set_by_name("GND_EXT_BUS", 1);
+        break;
+    }
+#else
+    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
 #endif
 
     // identify ourselves correctly with the ground station
@@ -121,7 +135,7 @@ void Sub::init_ardupilot()
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(&DataFlash, serial_manager);
+    camera_mount.init(serial_manager);
 #endif
 
 #ifdef USERHOOK_INIT
@@ -215,7 +229,7 @@ void Sub::startup_INS_ground()
     ahrs.reset();
 }
 
-// calibrate gyros - returns true if succesfully calibrated
+// calibrate gyros - returns true if successfully calibrated
 bool Sub::calibrate_gyros()
 {
     // gyro offset calibration

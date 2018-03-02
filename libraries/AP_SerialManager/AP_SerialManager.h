@@ -63,16 +63,23 @@
 #define AP_SERIALMANAGER_SToRM32_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_SToRM32_BUFSIZE_TX     128
 
-// Aerotenne uLanding Altimeter
-// Note that size of UART FIFO is 128 for Altera-OcPoc board
-#define AP_SERIALMANAGER_ULANDING_BAUD           115200
-#define AP_SERIALMANAGER_ULANDING_BUFSIZE_RX     128
-#define AP_SERIALMANAGER_ULANDING_BUFSIZE_TX     128
+#define AP_SERIALMANAGER_VOLZ_BAUD           115
+#define AP_SERIALMANAGER_VOLZ_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_VOLZ_BUFSIZE_TX     128
+
+// SBUS servo outputs
+#define AP_SERIALMANAGER_SBUS1_BAUD           100000
+#define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
+#define AP_SERIALMANAGER_SBUS1_BUFSIZE_TX     32
 
 
 class AP_SerialManager {
-
 public:
+    AP_SerialManager();
+
+    /* Do not allow copies */
+    AP_SerialManager(const AP_SerialManager &other) = delete;
+    AP_SerialManager &operator=(const AP_SerialManager&) = delete;
 
     enum SerialProtocol {
         SerialProtocol_None = -1,
@@ -85,16 +92,20 @@ public:
         SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
-        SerialProtocol_Lidar = 9,
+        SerialProtocol_Rangefinder = 9,
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
-        SerialProtocol_Lidar360 = 11,                // Lightware SF40C or TeraRanger Tower
-        SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
-        SerialProtocol_Beacon = 13
+        SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
+        SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support - deprecated, users should use Rangefinder
+        SerialProtocol_Beacon = 13,
+        SerialProtocol_Volz = 14,                    // Volz servo protocol
+        SerialProtocol_Sbus1 = 15
     };
 
-    // Constructor
-    AP_SerialManager();
-
+    // get singleton instance
+    static AP_SerialManager *get_instance(void) {
+        return _instance;
+    }
+    
     // init_console - initialise console at default baud rate
     void init_console();
 
@@ -130,7 +141,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-
+    static AP_SerialManager *_instance;
+    
     // array of uart info
     struct {
         AP_Int8 protocol;
@@ -142,4 +154,8 @@ private:
 
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
+};
+
+namespace AP {
+    AP_SerialManager &serialmanager();
 };

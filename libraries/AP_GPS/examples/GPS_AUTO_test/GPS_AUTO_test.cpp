@@ -25,7 +25,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/AP_BoardLED.h>
-#include <AP_Rally/AP_Rally.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -37,21 +36,22 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+static AP_BoardConfig board_config;
+
 // create board led object
 AP_BoardLED board_led;
 
 // This example uses GPS system. Create it.
-AP_GPS gps;
-
+static AP_GPS gps;
 // Serial manager is needed for UART comunications
-AP_SerialManager serial_manager;
+static AP_SerialManager serial_manager;
 
 
 void setup()
 {
     hal.console->printf("GPS AUTO library test\n");
 
-    AP_BoardConfig{}.init();
+    board_config.init();
 
     // Initialise the leds
     board_led.init();

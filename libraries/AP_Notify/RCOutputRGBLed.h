@@ -13,11 +13,21 @@ public:
 protected:
     bool hw_init() override;
     virtual bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) override;
+    virtual uint16_t get_duty_cycle_for_color(const uint8_t color, const uint16_t usec_period) const;
 
 private:
     uint8_t _red_channel;
     uint8_t _green_channel;
     uint8_t _blue_channel;
+};
+
+class RCOutputRGBLedInverted : public RCOutputRGBLed {
+public:
+    RCOutputRGBLedInverted(uint8_t red_channel, uint8_t green_channel, uint8_t blue_channel)
+        : RCOutputRGBLed(red_channel, green_channel, blue_channel)
+    { }
+protected:
+    virtual uint16_t get_duty_cycle_for_color(const uint8_t color, const uint16_t usec_period) const override;
 };
 
 class RCOutputRGBLedOff : public RCOutputRGBLed {

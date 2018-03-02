@@ -25,6 +25,7 @@ class AP_MotorsHeli_RSC {
 public:
     friend class AP_MotorsHeli_Single;
     friend class AP_MotorsHeli_Dual;
+    friend class AP_MotorsHeli_Quad;
     
     AP_MotorsHeli_RSC(SRV_Channel::Aux_servo_function_t aux_fn,
                       uint8_t default_channel) :
@@ -102,10 +103,6 @@ private:
     uint16_t        _power_slewrate = 0;        // slewrate for throttle (percentage per second)
     float           _load_feedforward = 0.0f;   // estimate of motor load, range 0-1.0f
 
-    AP_Int16        _pwm_min;
-    AP_Int16        _pwm_max;
-    AP_Int8         _pwm_rev;
-    
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
 

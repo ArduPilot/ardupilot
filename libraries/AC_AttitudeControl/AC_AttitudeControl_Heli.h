@@ -22,6 +22,7 @@
 #define AC_ATC_HELI_RATE_YAW_FF                     0.024f
 #define AC_ATC_HELI_RATE_YAW_FILT_HZ                20.0f
 
+#define AC_ATTITUDE_HELI_ANGLE_LIMIT_THROTTLE_MAX   0.95f    // Heli's use 95% of max collective before limiting frame angle
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER          10.0f
@@ -95,6 +96,17 @@ public:
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
+    // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
+    void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain) override;
+
+    // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
+    void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw, float smoothing_gain) override;
+    
+    // enable/disable inverted flight
+    void set_inverted_flight(bool inverted) override {
+        _inverted_flight = inverted;
+    }
+    
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

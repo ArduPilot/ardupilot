@@ -49,7 +49,7 @@ bool Plane::stick_mixing_enabled(void)
         }
     }
 
-    if (failsafe.ch3_failsafe && g.short_fs_action == 2) {
+    if (failsafe.rc_failsafe && g.fs_action_short == FS_ACTION_SHORT_FBWA) {
         // don't do stick mixing in FBWA glide mode
         return false;
     }
@@ -364,15 +364,25 @@ void Plane::stabilize()
     }
     float speed_scaler = get_speed_scaler();
 
+    if (quadplane.in_tailsitter_vtol_transition()) {
+        /*
+          during transition to vtol in a tailsitter try to raise the
+          nose rapidly while keeping the wings level
+         */
+        nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
+        nav_roll_cd = 0;
+    }
+    
     if (control_mode == TRAINING) {
         stabilize_training(speed_scaler);
     } else if (control_mode == ACRO) {
         stabilize_acro(speed_scaler);
-    } else if (control_mode == QSTABILIZE ||
-               control_mode == QHOVER ||
-               control_mode == QLOITER ||
-               control_mode == QLAND ||
-               control_mode == QRTL) {
+    } else if ((control_mode == QSTABILIZE ||
+                control_mode == QHOVER ||
+                control_mode == QLOITER ||
+                control_mode == QLAND ||
+                control_mode == QRTL) &&
+               !quadplane.in_tailsitter_vtol_transition()) {
         quadplane.control_run();
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != STABILIZE) {
@@ -663,6 +673,15 @@ void Plane::update_load_factor(void)
     }
     aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
 
+    if (quadplane.in_transition() &&
+        (quadplane.options & QuadPlane::OPTION_LEVEL_TRANSITION)) {
+        /*
+          the user has asked for transitions to be kept level to
+          within LEVEL_ROLL_LIMIT
+         */
+        roll_limit_cd = MIN(roll_limit_cd, g.level_roll_limit*100);
+    }
+    
     if (!aparm.stall_prevention) {
         // stall prevention is disabled
         return;
@@ -677,7 +696,7 @@ void Plane::update_load_factor(void)
     }
        
 
-    float max_load_factor = smoothed_airspeed / aparm.airspeed_min;
+    float max_load_factor = smoothed_airspeed / MAX(aparm.airspeed_min, 1);
     if (max_load_factor <= 1) {
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees

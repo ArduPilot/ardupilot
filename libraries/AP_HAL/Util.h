@@ -67,11 +67,6 @@ public:
     virtual bool get_system_id(char buf[40]) { return false; }
 
     /**
-       how much free memory do we have in bytes. If unknown return 4096
-     */
-    virtual uint32_t available_memory(void) { return 4096; }
-
-    /**
        return commandline arguments, if available
      */
     virtual void commandline_arguments(uint8_t &argc, char * const *&argv) { argc = 0; }
@@ -112,9 +107,17 @@ public:
     virtual Semaphore *new_semaphore(void) { return nullptr; }
 
     // allocate and free DMA-capable memory if possible. Otherwise return normal memory
-    virtual void *dma_allocate(size_t size) { return malloc(size); }
-    virtual void dma_free(void *ptr, size_t size) { return free(ptr); }
-    
+    enum Memory_Type {
+        MEM_DMA_SAFE,
+        MEM_FAST
+    };
+    virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
+    virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
+
+    /**
+       how much free memory do we have in bytes. If unknown return 4096
+     */
+    virtual uint32_t available_memory(void) { return 4096; }
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started

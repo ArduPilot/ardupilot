@@ -312,7 +312,7 @@ int32_t Plane::calc_altitude_error_cm(void)
 /*
   check for FBWB_min_altitude_cm violation
  */
-void Plane::check_minimum_altitude(void)
+void Plane::check_fbwb_minimum_altitude(void)
 {
     if (g.FBWB_min_altitude_cm == 0) {
         return;
@@ -603,7 +603,7 @@ void Plane::rangefinder_height_update(void)
                 (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
                  control_mode == QLAND ||
                  control_mode == QRTL ||
-                 (control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND)) &&
+                 (control_mode == AUTO && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);

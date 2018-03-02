@@ -2,6 +2,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
+#include <AP_HAL/utility/RCOutput_Tap.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
@@ -13,7 +14,6 @@
 #include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
-#include "RCOutput_Tap.h"
 #include "AnalogIn.h"
 #include "Util.h"
 #include "GPIO.h"
@@ -34,6 +34,7 @@
 #include <drivers/drv_hrt.h>
 
 using namespace PX4;
+using namespace ap;
 
 //static Empty::GPIO gpioDriver;
 
@@ -58,7 +59,7 @@ static PX4::SPIDeviceManager spi_mgr_instance;
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
 #define UARTD_DEFAULT_DEVICE "/dev/ttyS2"
 #define UARTE_DEFAULT_DEVICE "/dev/ttyS6"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
+#define UARTF_DEFAULT_DEVICE "/dev/ttyS5"
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
@@ -152,9 +153,11 @@ static int main_loop(int argc, char **argv)
     hal.uartC->begin(57600);
     hal.uartD->begin(57600);
     hal.uartE->begin(57600);
-    hal.uartF->begin(57600);
     hal.scheduler->init();
 
+    // init the I2C wrapper class
+    PX4_I2C::init_lock();
+    
     /*
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run

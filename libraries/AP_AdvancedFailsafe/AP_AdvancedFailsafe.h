@@ -45,6 +45,11 @@ public:
         STATE_GPS_LOSS        = 3
     };
 
+    enum terminate_action {
+        TERMINATE_ACTION_TERMINATE = 42,
+        TERMINATE_ACTION_LAND      = 43
+    };
+
     // Constructor
     AP_AdvancedFailsafe(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap) :
         mission(_mission),

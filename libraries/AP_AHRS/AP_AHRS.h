@@ -53,7 +53,7 @@ public:
     friend class AP_AHRS_View;
     
     // Constructor
-    AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
+    AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro) :
         roll(0.0f),
         pitch(0.0f),
         yaw(0.0f),
@@ -68,7 +68,6 @@ public:
         _compass_last_update(0),
         _ins(ins),
         _baro(baro),
-        _gps(gps),
         _cos_roll(1.0f),
         _cos_pitch(1.0f),
         _cos_yaw(1.0f),
@@ -201,10 +200,6 @@ public:
         return _beacon;
     }
 
-    const AP_GPS &get_gps() const {
-        return _gps;
-    }
-
     const AP_InertialSensor &get_ins() const {
         return _ins;
     }
@@ -302,7 +297,7 @@ public:
     virtual bool get_position(struct Location &loc) const = 0;
 
     // return a wind estimation vector, in m/s
-    virtual Vector3f wind_estimate(void) = 0;
+    virtual Vector3f wind_estimate(void) const = 0;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
@@ -448,17 +443,17 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // return secondary attitude solution if available, as eulers in radians
-    virtual bool get_secondary_attitude(Vector3f &eulers) {
+    virtual bool get_secondary_attitude(Vector3f &eulers) const {
         return false;
     }
 
     // return secondary attitude solution if available, as quaternion
-    virtual bool get_secondary_quaternion(Quaternion &quat) {
+    virtual bool get_secondary_quaternion(Quaternion &quat) const {
         return false;
     }
     
     // return secondary position solution if available
-    virtual bool get_secondary_position(struct Location &loc) {
+    virtual bool get_secondary_position(struct Location &loc) const {
         return false;
     }
 
@@ -477,6 +472,9 @@ public:
     // be called when the EKF has no absolute position reference (i.e. GPS)
     // from which to decide the origin on its own
     virtual bool set_origin(const Location &loc) { return false; }
+
+    // returns the inertial navigation origin in lat/lon/alt
+    virtual bool get_origin(Location &ret) const { return false; }
 
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
@@ -531,8 +529,8 @@ public:
     }
     
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
-    // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
-    // inconsistency that will be accpeted by the filter
+    // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
+    // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
     virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const {
         return false;
@@ -558,7 +556,20 @@ public:
     // return calculated SSA
     float getSSA(void);
 
+    // rotate a 2D vector from earth frame to body frame
+    // in result, x is forward, y is right
+    Vector2f rotate_earth_to_body2D(const Vector2f &ef_vector) const;
+
+    // rotate a 2D vector from earth frame to body frame
+    // in input, x is forward, y is right
+    Vector2f rotate_body_to_earth2D(const Vector2f &bf) const;
+    
     virtual void update_AOA_SSA(void);
+
+    // get_hgt_ctrl_limit - get maximum height to be observed by the
+    // control loops in meters and a validity flag.  It will return
+    // false when no limiting is required
+    virtual bool get_hgt_ctrl_limit(float &limit) const { return false; };
 
 protected:
     AHRS_VehicleClass _vehicle_class;
@@ -620,7 +631,6 @@ protected:
     //       IMU under us without our noticing.
     AP_InertialSensor   &_ins;
     AP_Baro             &_baro;
-    const AP_GPS        &_gps;
 
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;

@@ -51,9 +51,10 @@ extern const AP_HAL::HAL &hal;
 #define REG_CONVERT_PRESSURE    REG_CONVERT_D1_OSR_1024
 #define REG_CONVERT_TEMPERATURE REG_CONVERT_D2_OSR_1024
 
-AP_Airspeed_MS5525::AP_Airspeed_MS5525(AP_Airspeed &_frontend) :
-    AP_Airspeed_Backend(_frontend)
+AP_Airspeed_MS5525::AP_Airspeed_MS5525(AP_Airspeed &_frontend, uint8_t _instance, MS5525_ADDR address) :
+    AP_Airspeed_Backend(_frontend, _instance)
 {
+    _address = address;
 }
 
 // probe and initialise the sensor
@@ -62,6 +63,9 @@ bool AP_Airspeed_MS5525::init()
     const uint8_t addresses[] = { MS5525D0_I2C_ADDR_1, MS5525D0_I2C_ADDR_2 };
     bool found = false;
     for (uint8_t i=0; i<ARRAY_SIZE(addresses); i++) {
+        if (_address != MS5525_ADDR_AUTO && i != (uint8_t)_address) {
+            continue;
+        }
         dev = hal.i2c_mgr->get_device(get_bus(), addresses[i]);
         if (!dev) {
             continue;
@@ -90,6 +94,7 @@ bool AP_Airspeed_MS5525::init()
     uint8_t reg = REG_CONVERT_TEMPERATURE;
     dev->transfer(&reg, 1, nullptr, 0);
     state = 0;
+    command_send_us = AP_HAL::micros();
 
     // drop to 2 retries for runtime
     dev->set_retries(2);
@@ -226,30 +231,54 @@ void AP_Airspeed_MS5525::calculate(void)
 // 50Hz timer
 void AP_Airspeed_MS5525::timer()
 {
+    if (AP_HAL::micros() - command_send_us < 10000) {
+        // we should avoid trying to read the ADC too soon after
+        // sending the command
+        return;
+    }
+    
     uint32_t adc_val = read_adc();
 
+    if (adc_val == 0) {
+        // we have either done a read too soon after sending the
+        // request or we have tried to read the same sample twice. We
+        // re-send the command now as we don't know what state the
+        // sensor is in, and we do want to trigger it sending a value,
+        // which we will discard
+        if (dev->transfer(&cmd_sent, 1, nullptr, 0)) {
+            command_send_us = AP_HAL::micros();
+        }
+        // when we get adc_val == 0 then then both the current value and
+        // the next value we read from the sensor are invalid
+        ignore_next = true;
+        return;
+    }
+    
     /*
      * If read fails, re-initiate a read command for current state or we are
      * stuck
      */
-    uint8_t next_state = state;
-    if (adc_val != 0) {
-        next_state = (state + 1) % 5;
-
-        if (state == 0) {
+    if (!ignore_next) {
+        if (cmd_sent == REG_CONVERT_TEMPERATURE) {
             D2 = adc_val;
-        } else {
+        } else if (cmd_sent == REG_CONVERT_PRESSURE) {
             D1 = adc_val;
             calculate();
         }
     }
 
-    uint8_t next_cmd = next_state == 0 ? REG_CONVERT_TEMPERATURE : REG_CONVERT_PRESSURE;
-    if (!dev->transfer(&next_cmd, 1, nullptr, 0)) {
+    ignore_next = false;
+    
+    cmd_sent = (state == 0) ? REG_CONVERT_TEMPERATURE : REG_CONVERT_PRESSURE;
+    if (!dev->transfer(&cmd_sent, 1, nullptr, 0)) {
+        // we don't know for sure what state the sensor is in when we
+        // fail to send the command, so ignore the next response
+        ignore_next = true;
         return;
     }
+    command_send_us = AP_HAL::micros();
 
-    state = next_state;
+    state = (state + 1) % 5;
 }
 
 // return the current differential_pressure in Pascal

@@ -26,15 +26,14 @@ public:
     Compass compass;
     AP_InertialSensor ins;
     AP_SerialManager serial_manager;
-    RangeFinder sonar {serial_manager, ROTATION_PITCH_270};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF2, EKF3,
-                        AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    RangeFinder sonar{serial_manager, ROTATION_PITCH_270};
+    AP_AHRS_NavEKF ahrs{ins, barometer, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
     NavEKF2 EKF2{&ahrs, barometer, sonar};
     NavEKF3 EKF3{&ahrs, barometer, sonar};
 };
 
 static DummyVehicle vehicle;
-static OpticalFlow optflow(vehicle.ahrs);
+static OpticalFlow optflow{vehicle.ahrs};
 
 void setup()
 {

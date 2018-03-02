@@ -11,16 +11,17 @@
 
 #include "CompassCalibrator.h"
 #include "AP_Compass_Backend.h"
+#include "Compass_PerMotor.h"
 
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
 #define AP_COMPASS_MOT_COMP_THROTTLE    0x01
 #define AP_COMPASS_MOT_COMP_CURRENT     0x02
+#define AP_COMPASS_MOT_COMP_PER_MOTOR   0x03
 
 // setup default mag orientation for some board types
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-# define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#ifndef MAG_BOARD_ORIENTATION
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 # define MAG_BOARD_ORIENTATION ROTATION_YAW_90
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI)
@@ -28,6 +29,8 @@
 #else
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
+#endif
+
 
 // define default compass calibration fitness and consistency checks
 #define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
@@ -46,9 +49,13 @@ class Compass
 {
 friend class AP_Compass_Backend;
 public:
-    /// Constructor
-    ///
     Compass();
+
+    /* Do not allow copies */
+    Compass(const Compass &other) = delete;
+    Compass &operator=(const Compass&) = delete;
+
+    friend class CompassLearn;
 
     /// Initialize the compass device.
     ///
@@ -112,6 +119,17 @@ public:
     // compass calibrator interface
     void compass_cal_update();
 
+    // per-motor calibration access
+    void per_motor_calibration_start(void) {
+        _per_motor.calibration_start();
+    }
+    void per_motor_calibration_update(void) {
+        _per_motor.calibration_update();
+    }
+    void per_motor_calibration_end(void) {
+        _per_motor.calibration_end();
+    }
+    
     void start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
 
     void cancel_calibration_all();
@@ -142,6 +160,12 @@ public:
     const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
     const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
 
+    const Vector3f &get_diagonals(uint8_t i) const { return _state[i].diagonals; }
+    const Vector3f &get_diagonals(void) const { return get_diagonals(get_primary()); }
+
+    const Vector3f &get_offdiagonals(uint8_t i) const { return _state[i].offdiagonals; }
+    const Vector3f &get_offdiagonals(void) const { return get_offdiagonals(get_primary()); }
+    
     /// Sets the initial location used to get declination
     ///
     /// @param  latitude             GPS Latitude.
@@ -163,13 +187,13 @@ public:
     // learn offsets accessor
     bool learn_offsets_enabled() const { return _learn; }
 
-    /// Perform automatic offset updates
-    ///
-    void learn_offsets(void);
-
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(uint8_t i) const;
     bool use_for_yaw(void) const;
+
+    void set_use_for_yaw(uint8_t i, bool use) {
+        _state[i].use_for_yaw.set(use);
+    }
 
     /// Sets the local magnetic field declination.
     ///
@@ -235,6 +259,11 @@ public:
         }
     }
 
+    /// Set the battery voltage for per-motor compensation
+    void set_voltage(float voltage) {
+        _per_motor.set_voltage(voltage);
+    }
+    
     /// Returns True if the compasses have been configured (i.e. offsets saved)
     ///
     /// @returns                    True if compass has been configured
@@ -277,7 +306,8 @@ public:
     enum LearnType {
         LEARN_NONE=0,
         LEARN_INTERNAL=1,
-        LEARN_EKF=2
+        LEARN_EKF=2,
+        LEARN_INFLIGHT=3
     };
 
     // return the chosen learning type
@@ -285,6 +315,15 @@ public:
         return (enum LearnType)_learn.get();
     }
 
+    // set the learning type
+    void set_learn_type(enum LearnType type, bool save) {
+        if (save) {
+            _learn.set_and_save((int8_t)type);
+        } else {
+            _learn.set((int8_t)type);
+        }
+    }
+    
     // return maximum allowed compass offsets
     uint16_t get_offsets_max(void) const {
         return (uint16_t)_offset_max.get();
@@ -309,6 +348,9 @@ private:
     bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
     bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
     bool _auto_reboot() { return _compass_cal_autoreboot; }
+
+    // see if we already have probed a driver by bus type
+    bool _have_driver(AP_HAL::Device::BusType bus_type, uint8_t bus_num, uint8_t address, uint8_t devtype) const;
 
 
     //keep track of which calibrators have been saved
@@ -336,6 +378,7 @@ private:
         DRIVER_UAVCAN   =11,
         DRIVER_QMC5883  =12,
         DRIVER_SITL     =13,
+        DRIVER_MAG3110  =14,
     };
 
     bool _driver_enabled(enum DriverType driver_type);
@@ -414,6 +457,9 @@ private:
 
     CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];
 
+    // per-motor compass compensation
+    Compass_PerMotor _per_motor{*this};
+    
     // if we want HIL only
     bool _hil_mode:1;
 

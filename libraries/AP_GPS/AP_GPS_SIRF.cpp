@@ -83,7 +83,7 @@ AP_GPS_SIRF::read(void)
                 break;
             }
             _step = 0;
-        // FALLTHROUGH
+            FALLTHROUGH;
         case 0:
             if(PREAMBLE1 == data)
                 _step++;
@@ -204,48 +204,49 @@ AP_GPS_SIRF::_accumulate(uint8_t val)
 /*
   detect a SIRF GPS
  */
-bool
-AP_GPS_SIRF::_detect(struct SIRF_detect_state &state, uint8_t data)
+bool AP_GPS_SIRF::_detect(struct SIRF_detect_state &state, uint8_t data)
 {
-	switch (state.step) {
-	case 1:
-		if (PREAMBLE2 == data) {
-			state.step++;
-			break;
-		}
-		state.step = 0;
-	case 0:
-		state.payload_length = state.payload_counter = state.checksum = 0;
-		if (PREAMBLE1 == data)
-			state.step++;
-		break;
-	case 2:
-		state.step++;
-		if (data != 0) {
-			// only look for short messages
-			state.step = 0;
-		}
-		break;
-	case 3:
-		state.step++;
-		state.payload_length = data;
-		break;
-	case 4:
-		state.checksum = (state.checksum + data) & 0x7fff;
-		if (++state.payload_counter == state.payload_length)
-			state.step++;
-		break;
-	case 5:
-		state.step++;
-		if ((state.checksum >> 8) != data) {
-			state.step = 0;
-		}
-		break;
-	case 6:
-		state.step = 0;
-		if ((state.checksum & 0xff) == data) {
-			return true;
-		}
+    switch (state.step) {
+    case 1:
+        if (PREAMBLE2 == data) {
+            state.step++;
+            break;
+        }
+        state.step = 0;
+        FALLTHROUGH;
+    case 0:
+        state.payload_length = state.payload_counter = state.checksum = 0;
+        if (PREAMBLE1 == data)
+            state.step++;
+        break;
+    case 2:
+        state.step++;
+        if (data != 0) {
+            // only look for short messages
+            state.step = 0;
+        }
+        break;
+    case 3:
+        state.step++;
+        state.payload_length = data;
+        break;
+    case 4:
+        state.checksum = (state.checksum + data) & 0x7fff;
+        if (++state.payload_counter == state.payload_length) {
+            state.step++;
+        }
+        break;
+    case 5:
+        state.step++;
+        if ((state.checksum >> 8) != data) {
+            state.step = 0;
+        }
+        break;
+    case 6:
+        state.step = 0;
+        if ((state.checksum & 0xff) == data) {
+            return true;
+        }
     }
     return false;
 }

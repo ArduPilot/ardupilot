@@ -43,7 +43,9 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
 
     // Check for significant change in GPS position if disarmed which indicates bad GPS
     // This check can only be used when the vehicle is stationary
-    const struct Location &gpsloc = _ahrs->get_gps().location(); // Current location
+    const AP_GPS &gps = AP::gps();
+
+    const struct Location &gpsloc = gps.location(); // Current location
     const float posFiltTimeConst = 10.0f; // time constant used to decay position drift
     // calculate time lapsesd since last update and limit to prevent numerical errors
     float deltaTime = constrain_float(float(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);
@@ -71,18 +73,18 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
 
     // Check that the vertical GPS vertical velocity is reasonable after noise filtering
     bool gpsVertVelFail;
-    if (_ahrs->get_gps().have_vertical_velocity() && onGround) {
+    if (gps.have_vertical_velocity() && onGround) {
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
         gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
-    } else if ((frontend->_fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity()) {
+    } else if ((frontend->_fusionModeGPS == 0) && !gps.have_vertical_velocity()) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
         gpsVertVelFail = true;
         // if we have a 3D fix with no vertical velocity and
         // EK3_GPS_TYPE=0 then change it to 1. It means the GPS is not
         // capable of giving a vertical velocity
-        if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             frontend->_fusionModeGPS.set(1);
             gcs().send_text(MAV_SEVERITY_WARNING, "EK3: Changed EK3_GPS_TYPE to 1");
         }
@@ -124,7 +126,7 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
     // fail if horiziontal position accuracy not sufficient
     float hAcc = 0.0f;
     bool hAccFail;
-    if (_ahrs->get_gps().horizontal_accuracy(hAcc)) {
+    if (gps.horizontal_accuracy(hAcc)) {
         hAccFail = (hAcc > 5.0f*checkScaler)  && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
     } else {
         hAccFail =  false;
@@ -144,7 +146,7 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
     // Check for vertical GPS accuracy
     float vAcc = 0.0f;
     bool vAccFail = false;
-    if (_ahrs->get_gps().vertical_accuracy(vAcc)) {
+    if (gps.vertical_accuracy(vAcc)) {
         vAccFail = (vAcc > 7.5f * checkScaler)  && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
     }
     // Report check result as a text string and bitmask
@@ -171,24 +173,24 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
     }
 
     // fail if satellite geometry is poor
-    bool hdopFail = (_ahrs->get_gps().get_hdop() > 250)  && (frontend->_gpsCheck & MASK_GPS_HDOP);
+    bool hdopFail = (gps.get_hdop() > 250)  && (frontend->_gpsCheck & MASK_GPS_HDOP);
 
     // Report check result as a text string and bitmask
     if (hdopFail) {
         hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
-                           "GPS HDOP %.1f (needs 2.5)", (double)(0.01f * _ahrs->get_gps().get_hdop()));
+                           "GPS HDOP %.1f (needs 2.5)", (double)(0.01f * gps.get_hdop()));
         gpsCheckStatus.bad_hdop = true;
     } else {
         gpsCheckStatus.bad_hdop = false;
     }
 
     // fail if not enough sats
-    bool numSatsFail = (_ahrs->get_gps().num_sats() < 6) && (frontend->_gpsCheck & MASK_GPS_NSATS);
+    bool numSatsFail = (gps.num_sats() < 6) && (frontend->_gpsCheck & MASK_GPS_NSATS);
 
     // Report check result as a text string and bitmask
     if (numSatsFail) {
         hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
-                           "GPS numsats %u (needs 6)", _ahrs->get_gps().num_sats());
+                           "GPS numsats %u (needs 6)", gps.num_sats());
         gpsCheckStatus.bad_sats = true;
     } else {
         gpsCheckStatus.bad_sats = false;
@@ -250,7 +252,7 @@ void NavEKF3_core::calcGpsGoodForFlight(void)
 
     // get the receivers reported speed accuracy
     float gpsSpdAccRaw;
-    if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {
+    if (!AP::gps().speed_accuracy(gpsSpdAccRaw)) {
         gpsSpdAccRaw = 0.0f;
     }
 

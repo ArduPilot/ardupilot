@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AP_HAL_Namespace.h"
+#include <stdint.h>
 
 #define RC_OUTPUT_MIN_PULSEWIDTH 400
 #define RC_OUTPUT_MAX_PULSEWIDTH 2100
@@ -114,9 +115,9 @@ public:
     virtual float    scale_esc_to_unity(uint16_t pwm) { return 0; }
 
     /*
-      enable SBUS out at the given rate
+      enable PX4IO SBUS out at the given rate
      */
-    virtual bool     enable_sbus_out(uint16_t rate_hz) { return false; }
+    virtual bool enable_px4io_sbus_out(uint16_t rate_hz) { return false; }
 
     /*
      * Optional method to control the update of the motors. Derived classes

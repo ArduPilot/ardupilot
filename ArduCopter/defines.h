@@ -24,8 +24,6 @@ enum autopilot_yaw_mode {
 // Ch6... Ch12 aux switch control
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
 #define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled
-#define CH6_PWM_TRIGGER_HIGH    1800
-#define CH6_PWM_TRIGGER_LOW     1200
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
 #define AUX_SWITCH_LOW              0       // indicates auxiliary switch is in the low position (pwm <1200)
@@ -72,6 +70,11 @@ enum aux_sw_func {
     AUXSW_PRECISION_LOITER =    39,  // enable precision loiter
     AUXSW_AVOID_PROXIMITY =     40,  // enable object avoidance using proximity sensors (ie. horizontal lidar)
     AUXSW_ARMDISARM =           41,  // arm or disarm vehicle
+    AUXSW_SMART_RTL =           42, // change to SmartRTL flight mode
+    AUXSW_INVERTED  =           43,  // enable inverted flight
+    AUXSW_WINCH_ENABLE =        44, // winch enable/disable
+    AUXSW_WINCH_CONTROL =       45, // winch control
+    AUXSW_RC_OVERRIDE_ENABLE =  46, // enable RC Override
     AUXSW_SWITCH_MAX,
 };
 
@@ -104,6 +107,8 @@ enum control_mode_t {
     THROW =        18,  // throw to launch mode using inertial/GPS system, no pilot input
     AVOID_ADSB =   19,  // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
     GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
+    SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
+    FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
 };
 
 enum mode_reason_t {
@@ -124,6 +129,8 @@ enum mode_reason_t {
     MODE_REASON_AVOIDANCE,
     MODE_REASON_AVOIDANCE_RECOVERY,
     MODE_REASON_THROW_COMPLETE,
+    MODE_REASON_TERMINATE,
+    MODE_REASON_TMODE,
 };
 
 // Tuning enumeration
@@ -167,7 +174,8 @@ enum tuning_func {
     TUNING_RATE_ROLL_FF =               53, // body frame roll rate controller FF term
     TUNING_RATE_YAW_FF =                54, // body frame yaw rate controller FF term
     TUNING_RATE_MOT_YAW_HEADROOM =      55, // motors yaw headroom minimum
-    TUNING_RATE_YAW_FILT =              56  // yaw rate input filter
+    TUNING_RATE_YAW_FILT =              56, // yaw rate input filter
+    TUNING_WINCH =                      57  // winch control (not actually a value to be tuned)
 };
 
 // Acro Trainer types
@@ -218,6 +226,15 @@ enum RTLState {
     RTL_LoiterAtHome,
     RTL_FinalDescent,
     RTL_Land
+};
+
+// Safe RTL states
+enum SmartRTLState {
+    SmartRTL_WaitForPathCleanup,
+    SmartRTL_PathFollow,
+    SmartRTL_PreLandPosition,
+    SmartRTL_Descend,
+    SmartRTL_Land
 };
 
 // Alt_Hold states
@@ -298,7 +315,6 @@ enum DevOptions {
 #define TYPE_GROUNDSTART_MSG            0x01
 #define LOG_CONTROL_TUNING_MSG          0x04
 #define LOG_NAV_TUNING_MSG              0x05
-#define LOG_PERFORMANCE_MSG             0x06
 #define LOG_OPTFLOW_MSG                 0x0C
 #define LOG_EVENT_MSG                   0x0D
 #define LOG_PID_MSG                     0x0E    // deprecated
@@ -393,9 +409,9 @@ enum DevOptions {
 #define DATA_AVOIDANCE_PROXIMITY_ENABLE     65
 #define DATA_AVOIDANCE_PROXIMITY_DISABLE    66
 #define DATA_GPS_PRIMARY_CHANGED            67
-
-// Centi-degrees to radians
-#define DEGX100 5729.57795f
+#define DATA_WINCH_RELAXED                  68
+#define DATA_WINCH_LENGTH_CONTROL           69
+#define DATA_WINCH_RATE_CONTROL             70
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
@@ -460,20 +476,26 @@ enum DevOptions {
 #define ERROR_CODE_GPS_GLITCH               2
 
 // Radio failsafe definitions (FS_THR parameter)
-#define FS_THR_DISABLED                    0
-#define FS_THR_ENABLED_ALWAYS_RTL          1
-#define FS_THR_ENABLED_CONTINUE_MISSION    2
-#define FS_THR_ENABLED_ALWAYS_LAND         3
+#define FS_THR_DISABLED                            0
+#define FS_THR_ENABLED_ALWAYS_RTL                  1
+#define FS_THR_ENABLED_CONTINUE_MISSION            2
+#define FS_THR_ENABLED_ALWAYS_LAND                 3
+#define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL      4
+#define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND     5
 
 // Battery failsafe definitions (FS_BATT_ENABLE parameter)
 #define FS_BATT_DISABLED                    0       // battery failsafe disabled
 #define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
 #define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
+#define FS_BATT_SMARTRTL_OR_RTL             3       // switch to SmartRTL, if can't, switch to RTL
+#define FS_BATT_SMARTRTL_OR_LAND            4       // switch to SmartRTL, if can't, swtich to LAND
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
-#define FS_GCS_DISABLED                     0
-#define FS_GCS_ENABLED_ALWAYS_RTL           1
-#define FS_GCS_ENABLED_CONTINUE_MISSION     2
+#define FS_GCS_DISABLED                        0
+#define FS_GCS_ENABLED_ALWAYS_RTL              1
+#define FS_GCS_ENABLED_CONTINUE_MISSION        2
+#define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL  3
+#define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND 4
 
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe

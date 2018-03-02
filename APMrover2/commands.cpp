@@ -17,8 +17,13 @@ bool Rover::set_home_to_current_location(bool lock)
 {
     // use position from EKF if available otherwise use GPS
     Location temp_loc;
-    if (ahrs.get_position(temp_loc)) {
-        return set_home(temp_loc, lock);
+    if (ahrs.have_inertial_nav() && ahrs.get_position(temp_loc)) {
+        if (!set_home(temp_loc, lock)) {
+            return false;
+        }
+        // we have successfully set AHRS home, set it for SmartRTL
+        g2.smart_rtl.set_home(true);
+        return true;
     }
     return false;
 }
@@ -35,10 +40,10 @@ bool Rover::set_home(const Location& loc, bool lock)
         return false;
     }
 
-    // set EKF origin to home if it hasn't been set yet
+    // check if EKF origin has been set
     Location ekf_origin;
     if (!ahrs.get_origin(ekf_origin)) {
-        ahrs.set_origin(loc);
+        return false;
     }
 
     // set ahrs home
@@ -69,8 +74,9 @@ bool Rover::set_home(const Location& loc, bool lock)
     // log ahrs home and ekf origin dataflash
     Log_Write_Home_And_Origin();
 
-    // send new home location to GCS
+    // send new home and ekf origin to GCS
     gcs().send_home(loc);
+    gcs().send_ekf_origin(loc);
 
     // send text of home position to ground stations
     gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
@@ -80,6 +86,32 @@ bool Rover::set_home(const Location& loc, bool lock)
 
     // return success
     return true;
+}
+
+// sets ekf_origin if it has not been set.
+//  should only be used when there is no GPS to provide an absolute position
+void Rover::set_ekf_origin(const Location& loc)
+{
+    // check location is valid
+    if (!check_latlng(loc)) {
+        return;
+    }
+
+    // check if EKF origin has already been set
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        return;
+    }
+
+    if (!ahrs.set_origin(loc)) {
+        return;
+    }
+
+    // log ahrs home and ekf origin dataflash
+    Log_Write_Home_And_Origin();
+
+    // send ekf origin to GCS
+    gcs().send_ekf_origin(loc);
 }
 
 // checks if we should update ahrs/RTL home position from GPS

@@ -6,6 +6,7 @@
 // Anonymous namespace to hold variables used only in this file
 namespace {
 float cam_tilt = 1500.0;
+float cam_pan = 1500.0;
 int16_t lights1 = 1100;
 int16_t lights2 = 1100;
 int16_t rollTrim = 0;
@@ -16,7 +17,6 @@ int16_t yTrim = 0;
 int16_t video_switch = 1100;
 int16_t x_last, y_last, z_last;
 uint16_t buttons_prev;
-float gain;
 
 // Servo control output channels
 // TODO: Allow selecting output channels
@@ -30,6 +30,9 @@ uint8_t roll_pitch_flag = false; // Flag to adjust roll/pitch instead of forward
 void Sub::init_joystick()
 {
     default_js_buttons();
+
+    lights1 = RC_Channels::rc_channel(8)->get_radio_min();
+    lights2 = RC_Channels::rc_channel(9)->get_radio_min();
 
     set_mode(MANUAL, MODE_REASON_TX_COMMAND); // Initialize flight mode
 
@@ -52,51 +55,52 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     int16_t channels[11];
 
-    uint32_t tnow_ms = millis();
-
     float rpyScale = 0.4*gain; // Scale -1000-1000 to -400-400 with gain
     float throttleScale = 0.8*gain*g.throttle_gain; // Scale 0-1000 to 0-800 times gain
     int16_t rpyCenter = 1500;
     int16_t throttleBase = 1500-500*throttleScale;
 
     bool shift = false;
-    static uint32_t buttonDebounce;
 
-    // Debouncing timer
-    if (tnow_ms - buttonDebounce > 100) {
-        // Detect if any shift button is pressed
-        for (uint8_t i = 0 ; i < 16 ; i++) {
-            if ((buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift) {
-                shift = true;
-            }
+    // Neutralize camera tilt and pan speed setpoint
+    cam_tilt = 1500;
+    cam_pan = 1500;
+
+    // Detect if any shift button is pressed
+    for (uint8_t i = 0 ; i < 16 ; i++) {
+        if ((buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift) {
+            shift = true;
         }
-
-        // Act if button is pressed
-        // Only act upon pressing button and ignore holding. This provides compatibility with Taranis as joystick.
-        for (uint8_t i = 0 ; i < 16 ; i++) {
-            if ((buttons & (1 << i))) {
-                handle_jsbutton_press(i,shift,(buttons_prev & (1 << i)));
-                buttonDebounce = tnow_ms;
-            }
-        }
-
-        buttons_prev = buttons;
     }
 
-    // Set channels to override
-    if (!roll_pitch_flag) {
-        channels[0] = 1500 + pitchTrim; // pitch
-        channels[1] = 1500 + rollTrim;  // roll
-    } else {
-        // adjust roll and pitch with joystick input instead of forward and lateral
-        channels[0] = constrain_int16((x+pitchTrim)*rpyScale+rpyCenter,1100,1900);
-        channels[1] = constrain_int16((y+rollTrim)*rpyScale+rpyCenter,1100,1900);
+    // Act if button is pressed
+    // Only act upon pressing button and ignore holding. This provides compatibility with Taranis as joystick.
+    for (uint8_t i = 0 ; i < 16 ; i++) {
+        if ((buttons & (1 << i))) {
+            handle_jsbutton_press(i,shift,(buttons_prev & (1 << i)));
+            // buttonDebounce = tnow_ms;
+        } else if (buttons_prev & (1 << i)) {
+            handle_jsbutton_release(i, shift);
+        }
     }
+
+    buttons_prev = buttons;
+
+    // attitude mode:
+    if (roll_pitch_flag == 1) {
+    // adjust roll/pitch trim with joystick input instead of forward/lateral
+        pitchTrim = -x * rpyScale;
+        rollTrim  =  y * rpyScale;
+    }
+
+    channels[0] = constrain_int16(pitchTrim + rpyCenter,1100,1900); // pitch
+    channels[1] = constrain_int16(rollTrim  + rpyCenter,1100,1900); // roll
 
     channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900); // throttle
     channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                 // yaw
 
-    if (!roll_pitch_flag) {
+    // maneuver mode:
+    if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
         channels[4] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900); // forward for ROV
         channels[5] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900); // lateral for ROV
@@ -106,7 +110,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         channels[5] = constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900); // lateral for ROV
     }
 
-    channels[6] = 0;             // Unused
+    channels[6] = cam_pan;       // camera pan
     channels[7] = cam_tilt;      // camera tilt
     channels[8] = lights1;       // lights 1
     channels[9] = lights2;       // lights 2
@@ -117,7 +121,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     y_last = y;
     z_last = z;
 
-    hal.rcin->set_overrides(channels, 10);
+    hal.rcin->set_overrides(channels, 11);
 }
 
 void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
@@ -164,38 +168,16 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         break;
 
     case JSButton::button_function_t::k_mount_center:
-        cam_tilt = g.cam_tilt_center;
+        camera_mount.set_angle_targets(0, 0, 0);
+        // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
+        camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
         break;
-    case JSButton::button_function_t::k_mount_tilt_up: {
-        uint8_t i;
-
-        // Find the first aux channel configured as mount tilt, if any
-        if (SRV_Channels::find_channel(SRV_Channel::k_mount_tilt, i)) {
-
-            // Get the channel output limits
-            SRV_Channel *ch = SRV_Channels::srv_channel(i);
-            uint16_t min = ch->get_output_min();
-            uint16_t max = ch->get_output_max();
-
-            cam_tilt = constrain_int16(cam_tilt-g.cam_tilt_step,min,max);
-        }
-    }
-    break;
-    case JSButton::button_function_t::k_mount_tilt_down: {
-        uint8_t i;
-
-        // Find the first aux channel configured as mount tilt, if any
-        if (SRV_Channels::find_channel(SRV_Channel::k_mount_tilt, i)) {
-
-            // Get the channel output limits
-            SRV_Channel *ch = SRV_Channels::srv_channel(i);
-            uint16_t min = ch->get_output_min();
-            uint16_t max = ch->get_output_max();
-
-            cam_tilt = constrain_int16(cam_tilt+g.cam_tilt_step,min,max);
-        }
-    }
-    break;
+    case JSButton::button_function_t::k_mount_tilt_up:
+        cam_tilt = 1900;
+        break;
+    case JSButton::button_function_t::k_mount_tilt_down:
+        cam_tilt = 1100;
+        break;
     case JSButton::button_function_t::k_camera_trigger:
         break;
     case JSButton::button_function_t::k_camera_source_toggle:
@@ -212,55 +194,79 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         }
         break;
     case JSButton::button_function_t::k_mount_pan_right:
-        // Not implemented
+        cam_pan = 1900;
         break;
     case JSButton::button_function_t::k_mount_pan_left:
-        // Not implemented
+        cam_pan = 1100;
         break;
     case JSButton::button_function_t::k_lights1_cycle:
         if (!held) {
             static bool increasing = true;
+            RC_Channel* chan = RC_Channels::rc_channel(8);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
+            uint16_t step = (max - min) / g.lights_steps;
             if (increasing) {
-                lights1 = constrain_float(lights1+g.lights_step,1100,1900);
+                lights1 = constrain_float(lights1 + step, min, max);
             } else {
-                lights1 = constrain_float(lights1-g.lights_step,1100,1900);
+                lights1 = constrain_float(lights1 - step, min, max);
             }
-            if (lights1 >= 1900 || lights1 <= 1100) {
+            if (lights1 >= max || lights1 <= min) {
                 increasing = !increasing;
             }
         }
         break;
     case JSButton::button_function_t::k_lights1_brighter:
         if (!held) {
-            lights1 = constrain_float(lights1+g.lights_step,1100,1900);
+            RC_Channel* chan = RC_Channels::rc_channel(8);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
+            uint16_t step = (max - min) / g.lights_steps;
+            lights1 = constrain_float(lights1 + step, min, max);
         }
         break;
     case JSButton::button_function_t::k_lights1_dimmer:
         if (!held) {
-            lights1 = constrain_float(lights1-g.lights_step,1100,1900);
+            RC_Channel* chan = RC_Channels::rc_channel(8);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
+            uint16_t step = (max - min) / g.lights_steps;
+            lights1 = constrain_float(lights1 - step, min, max);
         }
         break;
     case JSButton::button_function_t::k_lights2_cycle:
         if (!held) {
             static bool increasing = true;
+            RC_Channel* chan = RC_Channels::rc_channel(9);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
+            uint16_t step = (max - min) / g.lights_steps;
             if (increasing) {
-                lights2 = constrain_float(lights2+g.lights_step,1100,1900);
+                lights2 = constrain_float(lights2 + step, min, max);
             } else {
-                lights2 = constrain_float(lights2-g.lights_step,1100,1900);
+                lights2 = constrain_float(lights2 - step, min, max);
             }
-            if (lights2 >= 1900 || lights2 <= 1100) {
+            if (lights2 >= max || lights2 <= min) {
                 increasing = !increasing;
             }
         }
         break;
     case JSButton::button_function_t::k_lights2_brighter:
         if (!held) {
-            lights2 = constrain_float(lights2+g.lights_step,1100,1900);
+            RC_Channel* chan = RC_Channels::rc_channel(9);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
+            uint16_t step = (max - min) / g.lights_steps;
+            lights2 = constrain_float(lights2 + step, min, max);
         }
         break;
     case JSButton::button_function_t::k_lights2_dimmer:
         if (!held) {
-            lights2 = constrain_float(lights2-g.lights_step,1100,1900);
+            RC_Channel* chan = RC_Channels::rc_channel(9);
+            uint16_t min = chan->get_radio_min();
+            uint16_t max = chan->get_radio_max();
+            uint16_t step = (max - min) / g.lights_steps;
+            lights2 = constrain_float(lights2 - step, min, max);
         }
         break;
     case JSButton::button_function_t::k_gain_toggle:
@@ -319,12 +325,21 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     case JSButton::button_function_t::k_trim_pitch_dec:
         pitchTrim = constrain_float(pitchTrim-10,-200,200);
         break;
-    case JSButton::button_function_t::k_input_hold_toggle:
+    case JSButton::button_function_t::k_input_hold_set:
+        if(!motors.armed()) {
+            break;
+        }
         if (!held) {
-            zTrim = z_last-500;
-            xTrim = x_last;
-            yTrim = y_last;
-            gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
+            zTrim = abs(z_last-500) > 50 ? z_last-500 : 0;
+            xTrim = abs(x_last) > 50 ? x_last : 0;
+            yTrim = abs(y_last) > 50 ? y_last : 0;
+            bool input_hold_engaged_last = input_hold_engaged;
+            input_hold_engaged = zTrim || xTrim || yTrim;
+            if (input_hold_engaged) {
+                gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Set");
+            } else if (input_hold_engaged_last) {
+                gcs().send_text(MAV_SEVERITY_INFO,"#Input Hold Disabled");
+            }
         }
         break;
     case JSButton::button_function_t::k_relay_1_on:
@@ -338,6 +353,11 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
             relay.toggle(0);
         }
         break;
+    case JSButton::button_function_t::k_relay_1_momentary:
+        if (!held) {
+            relay.on(0);
+        }
+        break;
     case JSButton::button_function_t::k_relay_2_on:
         relay.on(1);
         break;
@@ -347,6 +367,43 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     case JSButton::button_function_t::k_relay_2_toggle:
         if (!held) {
             relay.toggle(1);
+        }
+        break;
+    case JSButton::button_function_t::k_relay_2_momentary:
+        if (!held) {
+            relay.on(1);
+        }
+        break;
+    case JSButton::button_function_t::k_relay_3_on:
+        relay.on(2);
+        break;
+    case JSButton::button_function_t::k_relay_3_off:
+        relay.off(2);
+        break;
+    case JSButton::button_function_t::k_relay_3_toggle:
+        if (!held) {
+            relay.toggle(2);
+        }
+        break;
+    case JSButton::button_function_t::k_relay_3_momentary:
+        if (!held) {
+            relay.on(2);
+        }
+        break;
+    case JSButton::button_function_t::k_relay_4_on:
+        relay.on(3);
+        break;
+    case JSButton::button_function_t::k_relay_4_off:
+        relay.off(3);
+        break;
+    case JSButton::button_function_t::k_relay_4_toggle:
+        if (!held) {
+            relay.toggle(3);
+        }
+        break;
+    case JSButton::button_function_t::k_relay_4_momentary:
+        if (!held) {
+            relay.on(3);
         }
         break;
 
@@ -370,16 +427,38 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     }
         break;
     case JSButton::button_function_t::k_servo_1_min:
+    case JSButton::button_function_t::k_servo_1_min_momentary:
     {
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
         ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_output_min()); // 1-indexed
     }
         break;
+    case JSButton::button_function_t::k_servo_1_min_toggle:
+        if(!held) {
+            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+            if(chan->get_output_pwm() != chan->get_output_min()) {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_output_min()); // 1-indexed
+            } else {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_trim()); // 1-indexed
+            }
+        }
+        break;
     case JSButton::button_function_t::k_servo_1_max:
+    case JSButton::button_function_t::k_servo_1_max_momentary:
     {
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
         ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_output_max()); // 1-indexed
     }
+        break;
+    case JSButton::button_function_t::k_servo_1_max_toggle:
+        if(!held) {
+            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+            if(chan->get_output_pwm() != chan->get_output_max()) {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_output_max()); // 1-indexed
+            } else {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_trim()); // 1-indexed
+            }
+        }
         break;
     case JSButton::button_function_t::k_servo_1_center:
     {
@@ -405,12 +484,14 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     }
         break;
     case JSButton::button_function_t::k_servo_2_min:
+    case JSButton::button_function_t::k_servo_2_min_momentary:
     {
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
         ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_min()); // 1-indexed
     }
         break;
     case JSButton::button_function_t::k_servo_2_max:
+    case JSButton::button_function_t::k_servo_2_max_momentary:
     {
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
         ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_max()); // 1-indexed
@@ -440,12 +521,14 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     }
         break;
     case JSButton::button_function_t::k_servo_3_min:
+    case JSButton::button_function_t::k_servo_3_min_momentary:
     {
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
         ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_min()); // 1-indexed
     }
         break;
     case JSButton::button_function_t::k_servo_3_max:
+    case JSButton::button_function_t::k_servo_3_max_momentary:
     {
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
         ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_max()); // 1-indexed
@@ -481,6 +564,46 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         break;
     case JSButton::button_function_t::k_custom_6:
         // Not implemented
+        break;
+    }
+}
+
+void Sub::handle_jsbutton_release(uint8_t button, bool shift) {
+
+    // Act based on the function assigned to this button
+    switch (get_button(button)->function(shift)) {
+    case JSButton::button_function_t::k_relay_1_momentary:
+        relay.off(0);
+        break;
+    case JSButton::button_function_t::k_relay_2_momentary:
+        relay.off(1);
+        break;
+    case JSButton::button_function_t::k_relay_3_momentary:
+        relay.off(2);
+        break;
+    case JSButton::button_function_t::k_relay_4_momentary:
+        relay.off(3);
+        break;
+    case JSButton::button_function_t::k_servo_1_min_momentary:
+    case JSButton::button_function_t::k_servo_1_max_momentary:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_1, chan->get_trim()); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_2_min_momentary:
+    case JSButton::button_function_t::k_servo_2_max_momentary:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_trim()); // 1-indexed
+    }
+        break;
+    case JSButton::button_function_t::k_servo_3_min_momentary:
+    case JSButton::button_function_t::k_servo_3_max_momentary:
+    {
+        SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+        ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
+    }
         break;
     }
 }
@@ -539,9 +662,9 @@ void Sub::default_js_buttons()
         {JSButton::button_function_t::k_arm,                    JSButton::button_function_t::k_none},
         {JSButton::button_function_t::k_mount_center,           JSButton::button_function_t::k_none},
 
-        {JSButton::button_function_t::k_input_hold_toggle,      JSButton::button_function_t::k_none},
-        {JSButton::button_function_t::k_mount_tilt_down,        JSButton::button_function_t::k_none},
-        {JSButton::button_function_t::k_mount_tilt_up,          JSButton::button_function_t::k_none},
+        {JSButton::button_function_t::k_input_hold_set,         JSButton::button_function_t::k_none},
+        {JSButton::button_function_t::k_mount_tilt_down,        JSButton::button_function_t::k_mount_pan_left},
+        {JSButton::button_function_t::k_mount_tilt_up,          JSButton::button_function_t::k_mount_pan_right},
         {JSButton::button_function_t::k_gain_inc,               JSButton::button_function_t::k_trim_pitch_dec},
 
         {JSButton::button_function_t::k_gain_dec,               JSButton::button_function_t::k_trim_pitch_inc},
@@ -567,7 +690,17 @@ void Sub::set_neutral_controls()
         channels[i] = 0xffff;
     }
 
-    channels[4] = 0xffff; // Leave mode switch where it was
-
     hal.rcin->set_overrides(channels, 10);
+
+    // Clear pitch/roll trim settings
+    pitchTrim = 0;
+    rollTrim  = 0;
+}
+
+void Sub::clear_input_hold()
+{
+    xTrim = 0;
+    yTrim = 0;
+    zTrim = 0;
+    input_hold_engaged = false;
 }

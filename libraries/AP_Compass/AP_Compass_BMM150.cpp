@@ -286,8 +286,6 @@ int16_t AP_Compass_BMM150::_compensate_z(int16_t z, uint32_t rhall)
 
 void AP_Compass_BMM150::_update()
 {
-    const uint32_t time_usec = AP_HAL::micros();
-
     le16_t data[4];
     bool ret = _dev->read_registers(DATA_X_LSB_REG, (uint8_t *) &data, sizeof(data));
 
@@ -323,7 +321,7 @@ void AP_Compass_BMM150::_update()
     rotate_field(raw_field, _compass_instance);
 
     /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(raw_field, time_usec, _compass_instance);
+    publish_raw_field(raw_field, _compass_instance);
 
     /* correct raw_field for known errors */
     correct_field(raw_field, _compass_instance);

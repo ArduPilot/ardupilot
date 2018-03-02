@@ -72,6 +72,7 @@ public:
     virtual void stop_logging(void) = 0;
 
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
+    void Log_Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only DataFlash_File support this:
@@ -87,6 +88,12 @@ public:
 
     uint8_t num_types() const;
     const struct LogStructure *structure(uint8_t structure) const;
+
+    uint8_t num_units() const;
+    const struct UnitStructure *unit(uint8_t unit) const;
+
+    uint8_t num_multipliers() const;
+    const struct MultiplierStructure *multiplier(uint8_t multiplier) const;
 
     void Log_Write_EntireMission(const AP_Mission &mission);
     bool Log_Write_Format(const struct LogStructure *structure);
@@ -121,9 +128,12 @@ public:
 
     virtual void vehicle_was_disarmed() { };
 
+    bool Log_Write_Unit(const struct UnitStructure *s);
+    bool Log_Write_Multiplier(const struct MultiplierStructure *s);
+    bool Log_Write_Format_Units(const struct LogStructure *structure);
+
+
 protected:
-    uint32_t dropped;
-    uint8_t internal_errors; // uint8_t - wishful thinking?
 
     DataFlash_Class &_front;
 
@@ -138,7 +148,7 @@ protected:
                           print_mode_fn print_mode,
                           AP_HAL::BetterStream *port);
 
-    bool ShouldLog() const;
+    bool ShouldLog(bool is_critical);
     virtual bool WritesOK() const = 0;
     virtual bool StartNewLogOK() const;
 
@@ -154,7 +164,7 @@ protected:
     DFMessageWriter_DFLogStart *_startup_messagewriter;
     bool _writing_startup_messages;
 
-    uint32_t _internal_errors;
+    uint8_t _internal_errors;
     uint32_t _dropped;
 
     // must be called when a new log is being started:
@@ -168,5 +178,5 @@ private:
 
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
-
+    bool have_logged_armed;
 };

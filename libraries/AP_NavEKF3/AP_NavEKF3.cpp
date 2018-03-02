@@ -5,6 +5,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <DataFlash/DataFlash.h>
+#include <new>
 
 /*
   parameter defaults for different types of vehicle. The
@@ -629,7 +630,7 @@ void NavEKF3::check_log_write(void)
         logging.log_compass = false;
     }
     if (logging.log_gps) {
-        DataFlash_Class::instance()->Log_Write_GPS(_ahrs->get_gps(), _ahrs->get_gps().primary_sensor(), imuSampleTime_us);
+        DataFlash_Class::instance()->Log_Write_GPS(AP::gps(), AP::gps().primary_sensor(), imuSampleTime_us);
         logging.log_gps = false;
     }
     if (logging.log_baro) {
@@ -697,15 +698,18 @@ bool NavEKF3::InitialiseFilter(void)
             _enable.set(0);
             return false;
         }
-        
-        // create the cores
-        core = new NavEKF3_core[num_cores];
-        if (core == nullptr) {
+
+        //try to allocate from CCM RAM, fallback to Normal RAM if not available or full
+        core = (NavEKF3_core*)hal.util->malloc_type(sizeof(NavEKF3_core)*num_cores, AP_HAL::Util::MEM_FAST);
+            if (core == nullptr) {
             _enable.set(0);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: allocation failed");
             return false;
         }
-
+        for (uint8_t i = 0; i < num_cores; i++) {
+            //Call Constructors
+            new (&core[i]) NavEKF3_core();
+        }
     }
 
     // Set up any cores that have been created

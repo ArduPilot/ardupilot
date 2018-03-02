@@ -52,7 +52,8 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_GPS_50Hz,        50,   2500),
     SCHED_TASK(update_GPS_10Hz,        10,   2500),
     SCHED_TASK(update_alt,             10,   3400),
-    SCHED_TASK(update_beacon,          50,     50),
+    SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,   50),
+    SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,   50),
     SCHED_TASK(update_visual_odom,     50,     50),
     SCHED_TASK(update_wheel_encoder,   20,     50),
     SCHED_TASK(update_compass,         10,   2000),
@@ -63,28 +64,40 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(gcs_update,             50,   1700),
     SCHED_TASK(gcs_data_stream_send,   50,   3000),
     SCHED_TASK(read_control_switch,     7,   1000),
-    SCHED_TASK(read_trim_switch,       10,   1000),
-    SCHED_TASK(read_battery,           10,   1000),
+    SCHED_TASK(read_aux_switch,        10,    100),
+    SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10, 1000),
     SCHED_TASK(read_receiver_rssi,     10,   1000),
-    SCHED_TASK(update_events,          50,   1000),
+    SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50, 1000),
     SCHED_TASK(check_usb_mux,           3,   1000),
-    SCHED_TASK(mount_update,           50,    600),
-    SCHED_TASK(update_trigger,         50,    600),
+#if MOUNT == ENABLED
+    SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  600),
+#endif
+#if CAMERA == ENABLED
+    SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update_trigger, 50,  600),
+#endif
     SCHED_TASK(gcs_failsafe_check,     10,    600),
+    SCHED_TASK(fence_check,            10,    100),
     SCHED_TASK(compass_accumulate,     50,    900),
-    SCHED_TASK(update_notify,          50,    300),
+    SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  100),
+    SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300),
     SCHED_TASK(one_second_loop,         1,   3000),
     SCHED_TASK(compass_cal_update,     50,    100),
     SCHED_TASK(accel_cal_update,       10,    100),
-    SCHED_TASK(dataflash_periodic,     50,    300),
-    SCHED_TASK(button_update,           5,    100),
+    SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
+    SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,       50,   50),
+    SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1,  75),
+    SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  100),
+#if STATS_ENABLED == ENABLED
     SCHED_TASK(stats_update,            1,    100),
+#endif
     SCHED_TASK(crash_check,            10,   1000),
+    SCHED_TASK(cruise_learn_update,    50,     50),
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,           10,    100),
 #endif
 };
 
+#if STATS_ENABLED == ENABLED
 /*
   update AP_Stats
 */
@@ -93,6 +106,7 @@ void Rover::stats_update(void)
     g2.stats.set_flying(motor_active());
     g2.stats.update();
 }
+#endif
 
 /*
   setup is called when the sketch starts
@@ -105,7 +119,7 @@ void Rover::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
 }
 
 /*
@@ -113,34 +127,8 @@ void Rover::setup()
  */
 void Rover::loop()
 {
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    const uint32_t timer = AP_HAL::micros();
-
-    delta_us_fast_loop  = timer - fast_loopTimer_us;
-    G_Dt                = delta_us_fast_loop * 1.0e-6f;
-    fast_loopTimer_us   = timer;
-
-    if (delta_us_fast_loop > G_Dt_max) {
-        G_Dt_max = delta_us_fast_loop;
-    }
-
-    mainLoop_count++;
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    // run all the tasks that are due to run. Note that we only
-    // have to call this once per loop, as the tasks are scheduled
-    // in multiples of the main loop tick. So if they don't run on
-    // the first call to the scheduler they won't run on a later
-    // call until scheduler.tick() is called again
-    uint32_t remaining = (timer + 20000) - micros();
-    if (remaining > 19500) {
-        remaining = 19500;
-    }
-    scheduler.run(remaining);
+    scheduler.loop();
+    G_Dt = scheduler.get_last_loop_time_s();
 }
 
 void Rover::update_soft_armed()
@@ -188,26 +176,6 @@ void Rover::ahrs_update()
     }
 }
 
-/*
-  update camera mount - 50Hz
- */
-void Rover::mount_update(void)
-{
-#if MOUNT == ENABLED
-    camera_mount.update();
-#endif
-}
-
-/*
-  update camera trigger - 50Hz
- */
-void Rover::update_trigger(void)
-{
-#if CAMERA == ENABLED
-    camera.update_trigger();
-#endif
-}
-
 void Rover::update_alt()
 {
     barometer.update();
@@ -234,12 +202,9 @@ void Rover::update_compass(void)
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
         // update offsets
-        compass.learn_offsets();
         if (should_log(MASK_LOG_COMPASS)) {
             DataFlash.Log_Write_Compass(compass);
         }
-    } else {
-        ahrs.set_compass(nullptr);
     }
 }
 
@@ -252,9 +217,10 @@ void Rover::update_logging1(void)
         Log_Write_Attitude();
     }
 
-    if (should_log(MASK_LOG_CTUN)) {
-        Log_Write_Control_Tuning();
+    if (should_log(MASK_LOG_THR)) {
+        Log_Write_Throttle();
         Log_Write_Beacon();
+        Log_Write_Proximity();
     }
 
     if (should_log(MASK_LOG_NTUN)) {
@@ -268,9 +234,7 @@ void Rover::update_logging1(void)
 void Rover::update_logging2(void)
 {
     if (should_log(MASK_LOG_STEERING)) {
-        if (!control_mode->manual_steering()) {
-            Log_Write_Steering();
-        }
+        Log_Write_Steering();
     }
 
     if (should_log(MASK_LOG_RC)) {
@@ -297,9 +261,6 @@ void Rover::update_aux(void)
  */
 void Rover::one_second_loop(void)
 {
-    if (should_log(MASK_LOG_CURRENT)) {
-        Log_Write_Current();
-    }
     // send a heartbeat
     gcs().send_message(MSG_HEARTBEAT);
 
@@ -323,18 +284,6 @@ void Rover::one_second_loop(void)
 
     counter++;
 
-    // write perf data every 20s
-    if (counter % 10 == 0) {
-        if (scheduler.debug() != 0) {
-            hal.console->printf("G_Dt_max=%u\n", G_Dt_max);
-        }
-        if (should_log(MASK_LOG_PM)) {
-            Log_Write_Performance();
-        }
-        G_Dt_max = 0;
-        resetPerfData();
-    }
-
     // save compass offsets once a minute
     if (counter >= 60) {
         if (g.compass_enabled) {
@@ -355,11 +304,6 @@ void Rover::one_second_loop(void)
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
     update_sensor_status_flags();
-}
-
-void Rover::dataflash_periodic(void)
-{
-    DataFlash.periodic_tasks();
 }
 
 void Rover::update_GPS_50Hz(void)

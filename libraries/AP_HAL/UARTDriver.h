@@ -45,10 +45,31 @@ public:
     virtual void set_flow_control(enum flow_control flow_control_setting) {};
     virtual enum flow_control get_flow_control(void) { return FLOW_CONTROL_DISABLE; }
 
+    virtual void configure_parity(uint8_t v){};
+    virtual void set_stop_bits(int n){};
+
+    /* unbuffered writes bypass the ringbuffer and go straight to the
+     * file descriptor
+     */
+    virtual bool set_unbuffered_writes(bool on){ return false; };
+
     /* Implementations of BetterStream virtual methods. These are
      * provided by AP_HAL to ensure consistency between ports to
      * different boards
      */
     void printf(const char *s, ...) FMT_PRINTF(2, 3);
     void vprintf(const char *s, va_list ap);
+
+    /*
+      wait for at least n bytes of incoming data, with timeout in
+      milliseconds. Return true if n bytes are available, false if
+      timeout
+     */
+    virtual bool wait_timeout(uint16_t n, uint32_t timeout_ms) { return false; }
+
+    /*
+     * Optional method to control the update of the motors. Derived classes
+     * can implement it if their HAL layer requires.
+     */
+    virtual void _timer_tick(void) { }
 };

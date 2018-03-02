@@ -99,7 +99,7 @@ public:
         k_param_throttle_accel_enabled,     // deprecated - remove
         k_param_wp_yaw_behavior,
         k_param_acro_trainer,
-        k_param_pilot_velocity_z_max,
+        k_param_pilot_speed_up,    // renamed from k_param_pilot_velocity_z_max
         k_param_circle_rate,                // deprecated - remove
         k_param_rangefinder_gain,
         k_param_ch8_option,
@@ -313,6 +313,7 @@ public:
         k_param_flight_mode5,
         k_param_flight_mode6,
         k_param_simple_modes,
+        k_param_flight_mode_chan,
 
         //
         // 210: Waypoint data
@@ -340,25 +341,25 @@ public:
         k_param_p_stabilize_roll,   // remove
         k_param_p_stabilize_pitch,  // remove
         k_param_p_stabilize_yaw,    // remove
-        k_param_p_pos_xy,
+        k_param_p_pos_xy,           // remove
         k_param_p_loiter_lon,       // remove
         k_param_pid_loiter_rate_lat,    // remove
         k_param_pid_loiter_rate_lon,    // remove
         k_param_pid_nav_lat,        // remove
         k_param_pid_nav_lon,        // remove
-        k_param_p_alt_hold,
-        k_param_p_vel_z,
+        k_param_p_alt_hold,             // remove
+        k_param_p_vel_z,                // remove
         k_param_pid_optflow_roll,       // remove
         k_param_pid_optflow_pitch,      // remove
         k_param_acro_balance_roll_old,  // remove
         k_param_acro_balance_pitch_old, // remove
-        k_param_pid_accel_z,
+        k_param_pid_accel_z,            // remove
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
         k_param_acro_yaw_p,
         k_param_autotune_axis_bitmask,
         k_param_autotune_aggressiveness,
-        k_param_pi_vel_xy,
+        k_param_pi_vel_xy,              // remove
         k_param_fs_ekf_action,
         k_param_rtl_climb_min,
         k_param_rpm_sensor,
@@ -414,7 +415,7 @@ public:
     AP_Int32        rtl_loiter_time;
     AP_Int16        land_speed;
     AP_Int16        land_speed_high;
-    AP_Int16        pilot_velocity_z_max;        // maximum vertical velocity the pilot may request
+    AP_Int16        pilot_speed_up;    // maximum vertical ascending velocity the pilot may request
     AP_Int16        pilot_accel_z;               // vertical acceleration the pilot may request
 
     // Throttle
@@ -432,6 +433,7 @@ public:
     AP_Int8         flight_mode5;
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
+    AP_Int8         flight_mode_chan;
 
     // Misc
     //
@@ -468,15 +470,6 @@ public:
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
 
-    // PI/D controllers
-    AC_PI_2D                pi_vel_xy;
-
-    AC_P                    p_vel_z;
-    AC_PID                  pid_accel_z;
-
-    AC_P                    p_pos_xy;
-    AC_P                    p_alt_hold;
-
     // Autotune
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
@@ -484,19 +477,7 @@ public:
 
     // Note: keep initializers here in the same order as they are declared
     // above.
-    Parameters() :
-        // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
-        //---------------------------------------------------------------------------------------------------------------------------------
-        pi_vel_xy               (VEL_XY_P,        VEL_XY_I,                         VEL_XY_IMAX,        VEL_XY_FILT_HZ,     WPNAV_LOITER_UPDATE_TIME),
-
-        p_vel_z                 (VEL_Z_P),
-        pid_accel_z             (ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    MAIN_LOOP_SECONDS),
-
-        // P controller	        initial P
-        //----------------------------------------------------------------------
-        p_pos_xy                (POS_XY_P),
-
-        p_alt_hold              (ALT_HOLD_P)
+    Parameters()
     {
     }
 };
@@ -517,8 +498,10 @@ public:
     // button checking
     AP_Button button;
 
+#if STATS_ENABLED == ENABLED
     // vehicle statistics
     AP_Stats stats;
+#endif
 
 #if GRIPPER_ENABLED
     AP_Gripper gripper;
@@ -531,8 +514,10 @@ public:
     // ground effect compensation enable/disable
     AP_Int8 gndeffect_comp_enabled;
 
+#if BEACON_ENABLED == ENABLED
     // beacon (non-GPS positioning) library
     AP_Beacon beacon;
+#endif
 
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
     // Visual Odometry camera
@@ -567,6 +552,35 @@ public:
     
     // control over servo output ranges
     SRV_Channels servo_channels;
+
+#if MODE_SMARTRTL_ENABLED == ENABLED
+    // Safe RTL library
+    AP_SmartRTL smart_rtl;
+#endif
+
+    // wheel encoder and winch
+#if WINCH_ENABLED == ENABLED
+    AP_WheelEncoder wheel_encoder;
+    AP_Winch winch;
+#endif
+
+    // Additional pilot velocity items
+    AP_Int16    pilot_speed_dn;
+
+    // Land alt final stage
+    AP_Int16 land_alt_low;
+
+    // temperature calibration handling
+    AP_TempCalibration temp_calibration;
+
+#if TOY_MODE_ENABLED == ENABLED
+    ToyMode toy_mode;
+#endif
+
+#if OPTFLOW == ENABLED
+    // we need a pointer to the mode for the G2 table
+    void *mode_flowhold_ptr;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];

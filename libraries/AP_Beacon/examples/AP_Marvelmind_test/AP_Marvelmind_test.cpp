@@ -5,9 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Beacon/AP_Beacon_Marvelmind.h>
 #include <AP_Beacon/AP_Beacon.h>
-#if HAL_OS_POSIX_IO
 #include <stdio.h>
-#endif
 
 void setup();
 void loop();

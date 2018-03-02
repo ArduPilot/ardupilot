@@ -22,18 +22,3 @@ float Sub::pv_alt_above_origin(float alt_above_home_cm)
     return alt_above_home_cm + (ahrs.get_home().alt - origin.alt);
 }
 
-// pv_get_bearing_cd - return bearing in centi-degrees between two positions
-float Sub::pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
-{
-    float bearing = atan2f(destination.y-origin.y, destination.x-origin.x) * DEGX100;
-    if (bearing < 0) {
-        bearing += 36000;
-    }
-    return bearing;
-}
-
-// pv_get_horizontal_distance_cm - return distance between two positions in cm
-float Sub::pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
-{
-    return norm(destination.x-origin.x,destination.y-origin.y);
-}

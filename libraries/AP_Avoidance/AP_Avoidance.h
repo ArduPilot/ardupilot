@@ -39,9 +39,7 @@
 #define AP_AVOIDANCE_ESCAPE_TIME_SEC                        2       // vehicle runs from thread for 2 seconds
 
 class AP_Avoidance {
-
 public:
-
     // obstacle class to hold latest information for a known obstacles
     class Obstacle {
     public:
@@ -61,8 +59,6 @@ public:
         uint32_t last_gcs_report_time; // millis
     };
 
-    // constructor
-    AP_Avoidance(AP_AHRS &ahrs, class AP_ADSB &adsb);
 
     // add obstacle to the list of known obstacles
     void add_obstacle(uint32_t obstacle_timestamp_ms,
@@ -96,6 +92,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
+    // constructor
+    AP_Avoidance(AP_AHRS &ahrs, class AP_ADSB &adsb);
 
     // top level avoidance handler.  This calls the vehicle specific handle_avoidance with requested action
     void handle_avoidance_local(AP_Avoidance::Obstacle *threat);
@@ -191,6 +189,7 @@ private:
     AP_Int8     _fail_time_horizon;
     AP_Int16    _fail_distance_xy;
     AP_Int16    _fail_distance_z;
+    AP_Int16    _fail_altitude_minimum;
 
     AP_Int8     _warn_action;
     AP_Int8     _warn_time_horizon;

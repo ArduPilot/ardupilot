@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: GPS_USE
     // @DisplayName: AHRS use GPS for navigation
-    // @Description: This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight.
+    // @Description: This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight. Currently this affects only the DCM-based AHRS: the EKF uses GPS whenever it is available.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("GPS_USE",  3, AP_AHRS, _gps_use, 1),
@@ -134,7 +134,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
 Vector3f AP_AHRS::get_gyro_latest(void) const
 {
-    uint8_t primary_gyro = get_primary_gyro_index();
+    const uint8_t primary_gyro = get_primary_gyro_index();
     return get_ins().get_gyro(primary_gyro) + get_gyro_drift();
 }
 
@@ -143,10 +143,10 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
 {
     if (airspeed_sensor_enabled()) {
         *airspeed_ret = _airspeed->get_airspeed();
-        if (_wind_max > 0 && _gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
+        if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
             // constrain the airspeed by the ground speed
             // and AHRS_WIND_MAX
-            float gnd_speed = _gps.ground_speed();
+            const float gnd_speed = AP::gps().ground_speed();
             float true_airspeed = *airspeed_ret * get_EAS2TAS();
             true_airspeed = constrain_float(true_airspeed,
                                             gnd_speed - _wind_max,
@@ -192,19 +192,19 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     Vector2f gndVelADS;
     Vector2f gndVelGPS;
     float airspeed;
-    bool gotAirspeed = airspeed_estimate_true(&airspeed);
-    bool gotGPS = (_gps.status() >= AP_GPS::GPS_OK_FIX_2D);
+    const bool gotAirspeed = airspeed_estimate_true(&airspeed);
+    const bool gotGPS = (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D);
     if (gotAirspeed) {
-        Vector3f wind = wind_estimate();
-        Vector2f wind2d = Vector2f(wind.x, wind.y);
-        Vector2f airspeed_vector = Vector2f(cosf(yaw), sinf(yaw)) * airspeed;
+        const Vector3f wind = wind_estimate();
+        const Vector2f wind2d(wind.x, wind.y);
+        const Vector2f airspeed_vector(cosf(yaw) * airspeed, sinf(yaw) * airspeed);
         gndVelADS = airspeed_vector - wind2d;
     }
 
     // Generate estimate of ground speed vector using GPS
     if (gotGPS) {
-        float cog = radians(_gps.ground_course_cd()*0.01f);
-        gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * _gps.ground_speed();
+        const float cog = radians(AP::gps().ground_course_cd()*0.01f);
+        gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * AP::gps().ground_speed();
     }
     // If both ADS and GPS data is available, apply a complementary filter
     if (gotAirspeed && gotGPS) {
@@ -245,24 +245,22 @@ void AP_AHRS::calc_trig(const Matrix3f &rot,
                         float &cr, float &cp, float &cy,
                         float &sr, float &sp, float &sy) const
 {
-    Vector2f yaw_vector;
+    Vector2f yaw_vector(rot.a.x, rot.b.x);
 
-    yaw_vector.x = rot.a.x;
-    yaw_vector.y = rot.b.x;
     if (fabsf(yaw_vector.x) > 0 ||
         fabsf(yaw_vector.y) > 0) {
         yaw_vector.normalize();
     }
-    sy = constrain_float(yaw_vector.y, -1.0, 1.0);
-    cy = constrain_float(yaw_vector.x, -1.0, 1.0);
+    sy = constrain_float(yaw_vector.y, -1.0f, 1.0f);
+    cy = constrain_float(yaw_vector.x, -1.0f, 1.0f);
 
     // sanity checks
     if (yaw_vector.is_inf() || yaw_vector.is_nan()) {
         sy = 0.0f;
         cy = 1.0f;
     }
-    
-    float cx2 = rot.c.x * rot.c.x;
+
+    const float cx2 = rot.c.x * rot.c.x;
     if (cx2 >= 1.0f) {
         cp = 0;
         cr = 1.0f;
@@ -270,8 +268,8 @@ void AP_AHRS::calc_trig(const Matrix3f &rot,
         cp = safe_sqrt(1 - cx2);
         cr = rot.c.z / cp;
     }
-    cp = constrain_float(cp, 0, 1.0);
-    cr = constrain_float(cr, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing
+    cp = constrain_float(cp, 0.0f, 1.0f);
+    cr = constrain_float(cr, -1.0f, 1.0f); // this relies on constrain_float() of infinity doing the right thing
 
     sp = -rot.c.x;
 
@@ -343,7 +341,7 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation)
 void AP_AHRS::update_AOA_SSA(void)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (now - _last_AOA_update_ms < 50) {
         // don't update at more than 20Hz
         return;
@@ -366,7 +364,7 @@ void AP_AHRS::update_AOA_SSA(void)
 
     // calculate relative velocity in body coordinates
     aoa_velocity = aoa_velocity - aoa_wind;
-    float vel_len = aoa_velocity.length();
+    const float vel_len = aoa_velocity.length();
 
     // do not calculate if speed is too low
     if (vel_len < 2.0) {
@@ -398,4 +396,18 @@ float AP_AHRS::getSSA(void)
 {
     update_AOA_SSA();
     return _SSA;
+}
+
+// rotate a 2D vector from earth frame to body frame
+Vector2f AP_AHRS::rotate_earth_to_body2D(const Vector2f &ef) const
+{
+    return Vector2f(ef.x * _cos_yaw + ef.y * _sin_yaw,
+                    -ef.x * _sin_yaw + ef.y * _cos_yaw);
+}
+
+// rotate a 2D vector from earth frame to body frame
+Vector2f AP_AHRS::rotate_body_to_earth2D(const Vector2f &bf) const
+{
+    return Vector2f(bf.x * _cos_yaw - bf.y * _sin_yaw,
+                    bf.x * _sin_yaw + bf.y * _cos_yaw);
 }

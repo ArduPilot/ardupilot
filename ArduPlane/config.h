@@ -78,37 +78,6 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-//////////////////////////////////////////////////////////////////////////////
-// Radio channel limits
-//
-// Note that these are not called out in APM_Config.h.reference.
-//
-#ifndef CH5_MIN
- # define CH5_MIN        1000
-#endif
-#ifndef CH5_MAX
- # define CH5_MAX        2000
-#endif
-#ifndef CH6_MIN
- # define CH6_MIN        1000
-#endif
-#ifndef CH6_MAX
- # define CH6_MAX        2000
-#endif
-#ifndef CH7_MIN
- # define CH7_MIN        1000
-#endif
-#ifndef CH7_MAX
- # define CH7_MAX        2000
-#endif
-#ifndef CH8_MIN
- # define CH8_MIN        1000
-#endif
-#ifndef CH8_MAX
- # define CH8_MAX        2000
-#endif
-
-
 #ifndef FLAP_1_PERCENT
  # define FLAP_1_PERCENT 0
 #endif
@@ -217,14 +186,6 @@
 // FLIGHT AND NAVIGATION CONTROL
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// Altitude measurement and control.
-//
-#ifndef ALTITUDE_MIX
- # define ALTITUDE_MIX                   1
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_CRUISE
@@ -379,9 +340,22 @@
 #define PARACHUTE ENABLED
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// Payload Gripper
+#ifndef GRIPPER_ENABLED
+ #if HAL_MINIMIZE_FEATURES
+  # define GRIPPER_ENABLED DISABLED
+ #else 
+  # define GRIPPER_ENABLED ENABLED
+ #endif
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
 # define HAVE_PX4_MIXER 1
 #else
 # define HAVE_PX4_MIXER 0
 #endif
 
+#ifndef STATS_ENABLED
+ # define STATS_ENABLED ENABLED
+#endif

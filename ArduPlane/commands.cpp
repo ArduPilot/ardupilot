@@ -9,16 +9,16 @@
  */
 void Plane::set_next_WP(const struct Location &loc)
 {
-    if (auto_state.next_wp_no_crosstrack) {
+    if (auto_state.next_wp_crosstrack) {
+        // copy the current WP into the OldWP slot
+        prev_WP_loc = next_WP_loc;
+        auto_state.crosstrack = true;
+    } else {
         // we should not try to cross-track for this waypoint
         prev_WP_loc = current_loc;
         // use cross-track for the next waypoint
-        auto_state.next_wp_no_crosstrack = false;
-        auto_state.no_crosstrack = true;
-    } else {
-        // copy the current WP into the OldWP slot
-        prev_WP_loc = next_WP_loc;
-        auto_state.no_crosstrack = false;
+        auto_state.next_wp_crosstrack = true;
+        auto_state.crosstrack = false;
     }
 
     // Load the next_WP slot
@@ -91,6 +91,9 @@ void Plane::set_guided_WP(void)
     setup_glide_slope();
     setup_turn_angle();
 
+    // disable crosstrack, head directly to the point
+    auto_state.crosstrack = false;
+
     // reset loiter start time.
     loiter.start_time_ms = 0;
 
@@ -126,7 +129,9 @@ void Plane::init_home()
 */
 void Plane::update_home()
 {
-    if (fabsf(barometer.get_altitude()) > 2) {
+    if ((g2.home_reset_threshold == -1) ||
+        ((g2.home_reset_threshold > 0) &&
+         (fabsf(barometer.get_altitude()) > g2.home_reset_threshold))) {
         // don't auto-update if we have changed barometer altitude
         // significantly. This allows us to cope with slow baro drift
         // but not re-do home and the baro if we have changed height
@@ -142,4 +147,30 @@ void Plane::update_home()
         }
     }
     barometer.update_calibration();
+}
+
+// sets ekf_origin if it has not been set.
+//  should only be used when there is no GPS to provide an absolute position
+void Plane::set_ekf_origin(const Location& loc)
+{
+    // check location is valid
+    if (!check_latlng(loc)) {
+        return;
+    }
+
+    // check if EKF origin has already been set
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        return;
+    }
+
+    if (!ahrs.set_origin(loc)) {
+        return;
+    }
+
+    // log ahrs home and ekf origin dataflash
+    Log_Write_Home_And_Origin();
+
+    // send ekf origin to GCS
+    gcs().send_ekf_origin(loc);
 }

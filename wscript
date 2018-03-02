@@ -117,6 +117,10 @@ order to save typing.
         default=False,
         help='Force a static build')
 
+    g.add_option('--default-parameters',
+        default=None,
+        help='set default parameters to embed in the firmware')
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
@@ -268,7 +272,7 @@ def _build_dynamic_sources(bld):
         ],
     )
 
-    if bld.get_board().with_uavcan:
+    if bld.get_board().with_uavcan or bld.env.HAL_WITH_UAVCAN==True:
         bld(
             features='uavcangen',
             source=bld.srcnode.ant_glob('modules/uavcan/dsdl/uavcan/**/*.uavcan'),
@@ -366,6 +370,12 @@ def _build_post_funs(bld):
     if bld.env.SUBMODULE_UPDATE:
         bld.git_submodule_post_fun()
 
+def load_pre_build(bld):
+    '''allow for a pre_build() function in build modules'''
+    brd = bld.get_board()
+    if getattr(brd, 'pre_build', None):
+        brd.pre_build(bld)    
+
 def build(bld):
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
     bld.env.CCDEPS = config_hash
@@ -379,7 +389,9 @@ def build(bld):
         use=['mavlink'],
         cxxflags=['-include', 'ap_config.h'],
     )
-    
+
+    load_pre_build(bld)
+
     if bld.get_board().with_uavcan:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
 

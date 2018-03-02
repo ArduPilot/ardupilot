@@ -336,9 +336,14 @@ class DataflashLogHelper:
         if not "GPS" in logdata.channels:
             raise Exception("no GPS log data found")
         # older logs use 'TIme', newer logs use 'TimeMS'
-        timeLabel = "TimeMS"
-        if "Time" in logdata.channels["GPS"]:
-            timeLabel = "Time"
+        # even newer logs use TimeUS
+        timeLabel = None
+        for possible in "TimeMS", "Time", "TimeUS":
+            if possible in logdata.channels["GPS"]:
+                timeLabel = possible
+                break
+        if timeLabel is None:
+            raise Exception("Unable to get time label")
         while lineNumber <= logdata.lineCount:
             if lineNumber in logdata.channels["GPS"][timeLabel].dictData:
                 return logdata.channels["GPS"][timeLabel].dictData[lineNumber]
@@ -429,6 +434,7 @@ class DataflashLog(object):
         self.lineCount    = 0
         self.skippedLines = 0
         self.backpatch_these_modechanges = []
+        self.frame   = None
 
         if logfile:
             self.read(logfile, format, ignoreBadlines)
@@ -450,6 +456,23 @@ class DataflashLog(object):
             return "octo"
         else:
             return ""
+
+    def num_motor_channels(self):
+        motor_channels_for_frame = {
+            "QUAD": 4,
+            "HEXA": 6,
+            "Y6": 6,
+            "OCTA": 8,
+            "OCTA_QUAD": 8,
+#            "HELI": 1,
+#            "HELI_DUAL": 2,
+            "TRI": 3,
+            "SINGLE": 1,
+            "COAX": 2,
+            "TAILSITTER": 1,
+            "DODECA_HEXA" : 12,
+        }
+        return motor_channels_for_frame[self.frame]
 
     def read(self, logfile, format="auto", ignoreBadlines=False):
         '''returns on successful log read (including bad lines if ignoreBadlines==True), will throw an Exception otherwise'''
@@ -535,7 +558,12 @@ class DataflashLog(object):
                     13:'SPORT',
                     14:'FLIP',
                     15:'AUTOTUNE',
-                    16:'HYBRID',}
+                    16:'POSHOLD',
+                    17:'BRAKE',
+                    18:'THROW',
+                    19:'AVOID_ADSB',
+                    20:'GUIDED_NOGPS',
+                    21:'SMART_RTL'}
                 if hasattr(e, 'ThrCrs'):
                     self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ThrCrs)
                 else:
@@ -546,7 +574,8 @@ class DataflashLog(object):
                     self.modeChanges[lineNumber] = (e.Mode, e.ThrCrs)
                 else:
                     # assume it has ModeNum:
-                    self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
+                    print("Unknown mode=%u" % e.ModeNum)
+                    self.modeChanges[lineNumber] = (e.Mode, "mode=%u" % e.ModeNum)
         elif self.vehicleType in [VehicleType.Plane, VehicleType.Copter, VehicleType.Rover]:
             self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
         else:
@@ -557,6 +586,9 @@ class DataflashLog(object):
     def backPatchModeChanges(self):
         for (lineNumber, e) in self.backpatch_these_modechanges:
             self.handleModeChange(lineNumber, e)
+
+    def set_frame(self, frame):
+        self.frame = frame
 
     def process(self, lineNumber, e):
         if e.NAME == 'FMT':
@@ -569,12 +601,15 @@ class DataflashLog(object):
         elif e.NAME == "PARM":
             self.parameters[e.Name] = e.Value
         elif e.NAME == "MSG":
+            tokens = e.Message.split(' ')
+            if not self.frame:
+                if "Frame" in tokens[0]:
+                    self.set_frame(tokens[1])
             if not self.vehicleType:
-                tokens = e.Message.split(' ')
                 try:
                     self.set_vehicleType_from_MSG_vehicle(tokens[0]);
                 except ValueError:
-                    pass
+                    return
                 self.backPatchModeChanges()
                 self.firmwareVersion = tokens[1]
                 if len(tokens) == 3:

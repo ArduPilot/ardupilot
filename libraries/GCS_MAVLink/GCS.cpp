@@ -22,16 +22,21 @@ void GCS::send_text(MAV_SEVERITY severity, const char *fmt, ...)
             if (!chan(i).initialised) {              \
                 continue;                            \
             }                                        \
-            if (!(GCS_MAVLINK::active_channel_mask() & (chan(i).get_chan()-MAVLINK_COMM_0))) { \
+            if (!(GCS_MAVLINK::active_channel_mask() & (1 << (chan(i).get_chan()-MAVLINK_COMM_0)))) { \
                 continue;                            \
             }                                        \
             chan(i).methodcall;                      \
         }                                            \
-    } while (0);
+    } while (0)
 
 void GCS::send_home(const Location &home) const
 {
     FOR_EACH_ACTIVE_CHANNEL(send_home(home));
+}
+
+void GCS::send_ekf_origin(const Location &ekf_origin) const
+{
+    FOR_EACH_ACTIVE_CHANNEL(send_ekf_origin(ekf_origin));
 }
 
 #undef FOR_EACH_ACTIVE_CHANNEL

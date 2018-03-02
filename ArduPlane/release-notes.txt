@@ -1,3 +1,170 @@
+Release 3.8.5beta1, 16th January 2018
+--------------------------------
+
+This is a minor release with three new features, all related to
+airspeed.
+
+The first is to support the MS5525 sensor on multiple I2C
+addresses. Two new values of the ARSDP_TYPE are introduced (4 and 5)
+for specific I2C addresses. This allows you to deconflict the MS5525
+from a MS5611 barometer on the same bus.
+
+The second is the addition of a driver for the SDP33 airspeed
+sensor. This is an interesting sensor sold by Drotek that doesn't need
+zero offset calibration for each flight. It is still considered
+experimental.
+
+The third new feature is dual airspeed sensor support, which allows
+you to have two independent airspeed sensors. At the moment the
+failover between the sensors is very simple (it will only failover if
+the primary stops communicating). More sophisticated failover methods
+will be introduced in the future. To enable a 2nd airspeed sensor set
+the ARSPD2_TYPE parameter to the type of the 2nd sensor. You can
+combine any types of sensor.
+
+Release 3.8.4, 9th January 2018
+-------------------------------
+
+This is a minor release with just two small changes.
+
+The first change is to fix a timing bug in the MS5525 airspeed sensor
+driver. That bug was causing unreliable airspeed sensing. Thanks to
+David Ingraham for providing logs that helped find the issue.
+
+The second change is to fix transitions in AUTO mode in
+tailsitter. The transition for tailsitters was causing instability on
+transition from vertical takeoff to forward flight.
+
+
+Release 3.8.3, 13th November 2017
+---------------------------------
+
+This is a minor release with a number of important bug fixes and some
+small feature additions.
+
+The most important general fixes are for an I2C device detection bug
+and fixing the implementation of MANUAL_RCMASK.
+
+There are quite a number of small fixes in lots of areas, plus big
+improvements to the handling of tailsitter transitions.
+
+Another significant change is to the handling of transitions from RTL
+to QRTL when Q_RTL_MODE=1. We now transition to QRTL at a distance
+which is the maximum of RTL_RADIUS and a distance calculated based on
+a new Q_TRANS_DECEL "transition deceleration" parameter. That allows
+you to tune the amount of deceleration you want in the transition
+according to how much drag your quadplane has. This also means it
+automatically accounts for wind speed and approach speed in
+calculating the transition point.
+
+We have also added a new Q_OPTIONS parameter which is a bitmask of
+option flags to control quadplane behaviour. We have three options so
+far. The first is to allow for keeping the wings within
+LEVEL_ROLL_LIMIT degrees during transitions, for users that prefer
+transitions to be kept level. The 2nd and 3rd options are to treat
+NAV_TAKEOFF as NAV_VTOL_TAKEOFF and NAV_LAND as NAV_VTOL_LAND in
+quadplane missions, so that you can use GCS software that doesn't know
+about the VTOL takeoff and land commands.
+
+ - allow vertical takeoffs in GUIDED mode with Q_GUIDED_MODE=0
+
+ - fixed a bug in implementation of MANUAL_RCMASK
+
+ - eliminate airspeed positive bias after offset zero
+
+ - prevent quadplane controller windup on the ground
+
+ - added Q_MAV_TYPE for setup of VTOL vehicle type for QGC
+
+ - improved performance of FlightAxis SITL
+
+ - support LOITER_TO_ALT in quadplanes
+
+ - fixed a bug in TECS related to descending quadplane transitions
+
+ - added Q_OPTIONS for controlling roll during transitions and
+   allowing for fixed wing takeoff and landing
+
+ - fixed a race condition in IMU logging
+
+ - fixed a race in i2c device probing
+
+ - log critical messages while disarmed
+
+ - added IST8310 compass on FMUv3 I2C
+
+ - probe for QMC5883 by default
+
+ - avoid double detection of AK09916 compass
+
+ - smooth out tailsitter transitions in both directions
+
+ - fixed use of RTL_RADIUS for QRTL threshold and added Q_TRANS_DECEL
+
+ - fixed course unlocking with rudder in CRUISE mode
+
+We hope you have as much fun flying this release as we had producing
+it. Happy flying!
+
+Release 3.8.2, 11th September 2017
+----------------------------------
+
+This is a minor release, with a few small fixes and one important
+crash bug fix.
+
+The crash bug is in the Septentrio (SBF) GPS driver. Anyone flying
+with an SBF GPS should update to this release. The driver had a bug
+that could cause a in-flight crash under some circumstances.
+
+Other changes in this release are:
+
+ - support takeoff in GUIDED mode for quadplanes
+
+ - support changing target altitude while hovering in GUIDED mode for
+   quadplanes
+
+ - improved descent rate control in QRTL and QLAND modes. This fixes
+   an issue with higher than configured descent rates, and smoothes
+   out the change in descent rate for the change to the final landing
+   stage
+
+ - smooth out the transition to QLOITER or QLAND when transitioning
+   from fixed wing mode. This prevents the sudden nose up when
+   changing to QLOITER or QLAND mode while flying at high speed.
+
+ - added MANUAL_CONTROL support, allowing for joystick control from QGroundControl
+
+Happy flying!
+
+Release 3.8.1, 3rd September 2017
+---------------------------------
+
+This is a bugfix release for 3.8.0, with just a few small changes, and
+only one new feature.
+
+The bug fixes are:
+
+ - removed TRIM_RC_AT_START option, as this was causing significant
+   issues
+
+ - fixed bug in TRIM_AUTO support with differential spoilers
+
+ - fixed bug with RCn_TRIM == RCn_MIN in MANUAL mode
+
+ - fixed combination of TKOFF_THR_MINACC and TKOFF_THR_DELAY
+
+ - fixed a bug in sending STATUSTEXT messages on all MAVLink channels
+
+The new feature is that you can set the protocol for the debug UART on
+FMUv2 or FMUv3 board (such as a Pixhawk or Cube) to allow allow UART5
+to be used for arbitrary protocols. To use this fetaure just set
+SERIAL5_PROTOCOL to the desired serial protocol. This should be useful
+to users who have multiple serial devices (such as rangefinders) they
+want to connect and have run out of UARTs.
+
+Happy flying!
+
+
 Release 3.8.0, 5th August 2017
 ------------------------------
 

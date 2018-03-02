@@ -11,8 +11,6 @@
 #define AC_CIRCLE_RATE_DEFAULT      20.0f       // turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
 #define AC_CIRCLE_ANGULAR_ACCEL_MIN 2.0f        // angular acceleration should never be less than 2deg/sec
 
-#define AC_CIRCLE_DEGX100           5729.57795f // constant to convert from radians to centi-degrees
-
 class AC_Circle
 {
 public:

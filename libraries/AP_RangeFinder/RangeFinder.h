@@ -26,14 +26,18 @@
 #define RANGEFINDER_PREARM_ALT_MAX_CM           200
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 
-class AP_RangeFinder_Backend; 
- 
+class AP_RangeFinder_Backend;
+
 class RangeFinder
 {
-public:
     friend class AP_RangeFinder_Backend;
 
+public:
     RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default);
+
+    /* Do not allow copies */
+    RangeFinder(const RangeFinder &other) = delete;
+    RangeFinder &operator=(const RangeFinder&) = delete;
 
     // RangeFinder driver types
     enum RangeFinder_Type {
@@ -163,7 +167,7 @@ private:
     AP_SerialManager &serial_manager;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 
-    void detect_instance(uint8_t instance);
+    void detect_instance(uint8_t instance, uint8_t& serial_instance);
     void update_instance(uint8_t instance);  
 
     bool _add_backend(AP_RangeFinder_Backend *driver);

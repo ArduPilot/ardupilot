@@ -18,7 +18,7 @@
 #include "utility/print_vprintf.h"
 #include "UARTDriver.h"
 
-/* 
+/*
    BetterStream method implementations
    These are implemented in AP_HAL to ensure consistent behaviour on
    all boards, although they can be overridden by a port

@@ -83,6 +83,8 @@ public:
 
     Tracker(void);
 
+    static const AP_FWVersion fwver;
+
     // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;
@@ -92,7 +94,7 @@ private:
 
     // main loop scheduler
     AP_Scheduler scheduler;
- 
+
     // notification object for LEDs, buzzers etc
     AP_Notify notify;
 
@@ -110,15 +112,15 @@ private:
 
     AP_InertialSensor ins;
 
-    RangeFinder rng {serial_manager, ROTATION_NONE};
+    RangeFinder rng{serial_manager, ROTATION_NONE};
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF2 EKF2{&ahrs, barometer, rng};
     NavEKF3 EKF3{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rng, EKF2, EKF3};
+    AP_AHRS_NavEKF ahrs{ins, barometer, EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs{ins, barometer, gps};
+    AP_AHRS_DCM ahrs{ins, barometer};
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -147,6 +149,9 @@ private:
     // board specific config for CAN bus
     AP_BoardConfig_CAN BoardConfig_CAN;
 #endif
+
+    // Battery Sensors
+    AP_BattMonitor battery{MASK_LOG_CURRENT};
 
     struct Location current_loc;
 
@@ -193,11 +198,11 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
-    void dataflash_periodic(void);
     void one_second_loop();
     void ten_hz_logging_loop();
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
+    void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
@@ -221,7 +226,6 @@ private:
     void update_compass(void);
     void compass_accumulate(void);
     void accel_cal_update(void);
-    void barometer_accumulate(void);
     void update_GPS(void);
     void init_servos();
     void update_pitch_servo(float pitch);
@@ -233,14 +237,14 @@ private:
     void update_yaw_cr_servo(float yaw);
     void update_yaw_onoff_servo(float yaw);
     void init_tracker();
-    void update_notify();
     bool get_home_eeprom(struct Location &loc);
     void set_home_eeprom(struct Location temp);
     void set_home(struct Location temp);
+    void set_ekf_origin(const Location& loc);
     void arm_servos();
     void disarm_servos();
     void prepare_servos();
-    void set_mode(enum ControlMode mode);
+    void set_mode(enum ControlMode mode, mode_reason_t reason);
     void check_usb_mux(void);
     void update_vehicle_pos_estimate();
     void update_tracker_position();

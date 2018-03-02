@@ -297,12 +297,15 @@ float AP_MotorsMulticopter::apply_thrust_curve_and_volt_scaling(float thrust) co
 {
     float throttle_ratio = thrust;
     // apply thrust curve - domain 0.0 to 1.0, range 0.0 to 1.0
-    if (_thrust_curve_expo > 0.0f){
-        if(!is_zero(_batt_voltage_filt.get())) {
-            throttle_ratio = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*thrust))/(2.0f*_thrust_curve_expo*_batt_voltage_filt.get());
-        } else {
-            throttle_ratio = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*thrust))/(2.0f*_thrust_curve_expo);
-        }
+    float thrust_curve_expo = constrain_float(_thrust_curve_expo, -1.0f, 1.0f);
+    if (fabsf(thrust_curve_expo) < 0.001) {
+        // zero expo means linear, avoid floating point exception for small values
+        return thrust;
+    }
+    if(!is_zero(_batt_voltage_filt.get())) {
+        throttle_ratio = ((thrust_curve_expo-1.0f) + safe_sqrt((1.0f-thrust_curve_expo)*(1.0f-thrust_curve_expo) + 4.0f*thrust_curve_expo*_lift_max*thrust))/(2.0f*thrust_curve_expo*_batt_voltage_filt.get());
+    } else {
+        throttle_ratio = ((thrust_curve_expo-1.0f) + safe_sqrt((1.0f-thrust_curve_expo)*(1.0f-thrust_curve_expo) + 4.0f*thrust_curve_expo*_lift_max*thrust))/(2.0f*thrust_curve_expo);
     }
 
     return constrain_float(throttle_ratio, 0.0f, 1.0f);
@@ -328,7 +331,8 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
     float batt_voltage_filt = _batt_voltage_filt.apply(_batt_voltage_resting_estimate/_batt_voltage_max, 1.0f/_loop_rate);
 
     // calculate lift max
-    _lift_max = batt_voltage_filt*(1-_thrust_curve_expo) + _thrust_curve_expo*batt_voltage_filt*batt_voltage_filt;
+    float thrust_curve_expo = constrain_float(_thrust_curve_expo, -1.0f, 1.0f);
+    _lift_max = batt_voltage_filt*(1-thrust_curve_expo) + thrust_curve_expo*batt_voltage_filt*batt_voltage_filt;
 }
 
 float AP_MotorsMulticopter::get_compensation_gain() const

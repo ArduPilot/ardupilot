@@ -32,11 +32,16 @@ extern const AP_HAL::HAL& hal;
 const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_CHEK_MSG, sizeof(log_Chek),
-      "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }
+      "CHEK",
+      "QccCLLffff",
+      "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD",
+      "sdddDUmnnn",
+      "FBBBGGB000"}
 };
 
 LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, 
                      AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const char **&_nottypes):
+    DataFlashFileReader(),
     vehicle(VehicleType::VEHICLE_UNKNOWN),
     ahrs(_ahrs),
     ins(_ins),
@@ -83,8 +88,6 @@ void LogReader::maybe_install_vehicle_specific_parsers() {
 	installed_vehicle_specific_parsers = true;
     }
 }
-
-LR_MsgHandler_PARM *parameter_handler;
 
 /*
   messages which we will be generating, so should be discarded
@@ -170,9 +173,12 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 
 	// map from format name to a parser subclass:
 	if (streq(name, "PARM")) {
-            parameter_handler = new LR_MsgHandler_PARM(formats[f.type], dataflash,
-                                                    last_timestamp_usec);
-	    msgparser[f.type] = parameter_handler;
+            msgparser[f.type] = new LR_MsgHandler_PARM
+                (formats[f.type], dataflash,
+                 last_timestamp_usec,
+                 [this](const char *xname, const float xvalue) {
+                    return set_parameter(xname, xvalue);
+                 });
 	} else if (streq(name, "GPS")) {
 	    msgparser[f.type] = new LR_MsgHandler_GPS(formats[f.type],
                                                       dataflash,
@@ -322,14 +328,34 @@ bool LogReader::wait_type(const char *wtype)
     return true;
 }
 
-
 bool LogReader::set_parameter(const char *name, float value)
 {
-    if (parameter_handler == NULL) {
-        ::printf("No parameter format message found");
+    enum ap_var_type var_type;
+    AP_Param *vp = AP_Param::find(name, &var_type);
+    if (vp == NULL) {
         return false;
     }
-    return parameter_handler->set_parameter(name, value);
+    float old_value = 0;
+    if (var_type == AP_PARAM_FLOAT) {
+        old_value = ((AP_Float *)vp)->cast_to_float();
+        ((AP_Float *)vp)->set(value);
+    } else if (var_type == AP_PARAM_INT32) {
+        old_value = ((AP_Int32 *)vp)->cast_to_float();
+        ((AP_Int32 *)vp)->set(value);
+    } else if (var_type == AP_PARAM_INT16) {
+        old_value = ((AP_Int16 *)vp)->cast_to_float();
+        ((AP_Int16 *)vp)->set(value);
+    } else if (var_type == AP_PARAM_INT8) {
+        old_value = ((AP_Int8 *)vp)->cast_to_float();
+        ((AP_Int8 *)vp)->set(value);
+    } else {
+        // we don't support mavlink set on this parameter
+        return false;
+    }
+    if (fabsf(old_value - value) > 1.0e-12) {
+        ::printf("Changed %s to %.8f from %.8f\n", name, value, old_value);
+    }
+    return true;
 }
 
 /*

@@ -30,8 +30,11 @@ class OpticalFlow
     friend class OpticalFlow_backend;
 
 public:
-    // constructor
     OpticalFlow(AP_AHRS_NavEKF& ahrs);
+
+    /* Do not allow copies */
+    OpticalFlow(const OpticalFlow &other) = delete;
+    OpticalFlow &operator=(const OpticalFlow&) = delete;
 
     // init - initialise sensor
     void init(void);
@@ -60,9 +63,6 @@ public:
     // last_update() - returns system time of last sensor update
     uint32_t last_update() const { return _last_update_ms; }
 
-    // parameter var info table
-    static const struct AP_Param::GroupInfo var_info[];
-
     struct OpticalFlow_state {
         uint8_t device_id;          // device id
         uint8_t  surface_quality;   // image quality (below TBD you can't trust the dx,dy values returned)
@@ -74,6 +74,9 @@ public:
     const Vector3f &get_pos_offset(void) const {
         return _pos_offset;
     }
+
+    // parameter var info table
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
     AP_AHRS_NavEKF &_ahrs;
@@ -89,7 +92,7 @@ private:
     AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
     AP_Int16 _yawAngle_cd;          // yaw angle of sensor X axis with respect to vehicle X axis - centi degrees
     AP_Vector3f _pos_offset;        // position offset of the flow sensor in the body frame
-    AP_Int8  _bus_id;               // ID on bus (some sensors only)
+    AP_Int8  _address;              // address on the bus (allows selecting between 8 possible I2C addresses for px4flow)
 
     // state filled in by backend
     struct OpticalFlow_state _state;

@@ -48,9 +48,10 @@
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>         // Mission command library
-#include <AC_PID/AC_PID.h>             // PID library
-#include <AC_PID/AC_PI_2D.h>           // PID library (2-axis)
 #include <AC_PID/AC_P.h>               // P library
+#include <AC_PID/AC_PID.h>             // PID library
+#include <AC_PID/AC_PI_2D.h>           // PI library (2-axis)
+#include <AC_PID/AC_PID_2D.h>          // PID library (2-axis)
 #include <AC_AttitudeControl/AC_AttitudeControl_Sub.h> // Attitude control library
 #include <AC_AttitudeControl/AC_PosControl_Sub.h>      // Position control library
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
@@ -66,6 +67,7 @@
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AC_Fence/AC_Fence.h>           // Fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
+#include <AP_Scheduler/PerfInfo.h>       // loop perf monitoring
 #include <AP_Notify/AP_Notify.h>          // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
@@ -135,6 +137,8 @@ public:
     void loop() override;
 
 private:
+    static const AP_FWVersion fwver;
+
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
 
@@ -143,7 +147,7 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler scheduler{FUNCTOR_BIND_MEMBER(&Sub::fast_loop, void)};
 
     // AP_Notify instance
     AP_Notify notify;
@@ -168,7 +172,7 @@ private:
     Compass compass;
     AP_InertialSensor ins;
 
-    RangeFinder rangefinder {serial_manager, ROTATION_PITCH_270};
+    RangeFinder rangefinder{serial_manager, ROTATION_PITCH_270};
     struct {
         bool enabled:1;
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
@@ -182,20 +186,23 @@ private:
 #endif
 
     // Inertial Navigation EKF
-    NavEKF2 EKF2 {&ahrs, barometer, rangefinder};
-    NavEKF3 EKF3 {&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
+    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs{ins, barometer, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
 #endif
 
     // Mission library
-    AP_Mission mission;
+    AP_Mission mission{ahrs,
+            FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Sub::verify_command_callback, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void)};
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
-    OpticalFlow optflow {ahrs};
+    OpticalFlow optflow{ahrs};
 #endif
 
     // gnd speed limit required to observe optical flow sensor limits
@@ -207,9 +214,9 @@ private:
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms = 0;
 
-    // GCS selection
     AP_SerialManager serial_manager;
 
+    // GCS selection
     GCS_Sub _gcs; // avoid using this; use gcs()
     GCS_Sub &gcs() { return _gcs; }
 
@@ -321,9 +328,9 @@ private:
     uint32_t nav_delay_time_start;
 
     // Battery Sensors
-    AP_BattMonitor battery;
+    AP_BattMonitor battery{MASK_LOG_CURRENT};
 
-    AP_Arming_Sub arming {ahrs, barometer, compass, battery};
+    AP_Arming_Sub arming{ahrs, barometer, compass, battery};
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
@@ -333,6 +340,12 @@ private:
     // Turn counter
     int32_t quarter_turn_count;
     uint8_t last_turn_state;
+
+    // Input gain
+    float gain;
+
+    // Flag indicating if we are currently using input hold
+    bool input_hold_engaged;
 
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
@@ -379,60 +392,47 @@ private:
 
     AC_PosControl_Sub pos_control;
 
-#if AVOIDANCE_ENABLED == ENABLED
-    AC_Avoid avoid;
-#endif
-
     AC_WPNav wp_nav;
     AC_Circle circle_nav;
-
-    // Performance monitoring
-    int16_t pmTest1;
-
-    // System Timers
-    // --------------
-    // Time in microseconds of main control loop
-    uint32_t fast_loopTimer;
-    // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-    uint16_t mainLoop_count;
 
     // Reference to the relay object
     AP_Relay relay;
 
     // handle repeated servo and relay events
-    AP_ServoRelayEvents ServoRelayEvents;
+    AP_ServoRelayEvents ServoRelayEvents{relay};
 
-    // Reference to the camera object (it uses the relay object inside it)
+    // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera;
+    AP_Camera camera{&relay, MASK_LOG_CAMERA, current_loc, ahrs};
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
-    AP_Mount camera_mount;
+    AP_Mount camera_mount{ahrs, current_loc};
 #endif
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence    fence;
+    AC_Fence fence{ahrs};
+#endif
+
+#if AVOIDANCE_ENABLED == ENABLED
+    AC_Avoid avoid{ahrs, inertial_nav, fence, g2.proximity, &g2.beacon};
 #endif
 
     // Rally library
 #if AC_RALLY == ENABLED
-    AP_Rally rally;
+    AP_Rally rally{ahrs};
 #endif
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    AP_Terrain terrain;
+    AP_Terrain terrain{ahrs, mission, rally};
 #endif
 
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
-
-    // true if we are out of time in our event timeslice
-    bool gcs_out_of_time;
 
     // Top-level logic
     // setup the var_info table
@@ -448,11 +448,8 @@ private:
 
     void compass_accumulate(void);
     void compass_cal_update(void);
-    void barometer_accumulate(void);
-    void perf_update(void);
     void fast_loop();
     void fifty_hz_loop();
-    void update_mount();
     void update_batt_compass(void);
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
@@ -490,11 +487,11 @@ private:
     void rpm_update();
 #endif
     void send_temperature(mavlink_channel_t chan);
+    bool send_info(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
     void do_erase_logs(void);
-    void Log_Write_Current();
     void Log_Write_Optflow();
     void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();
@@ -524,6 +521,7 @@ private:
     void set_home_to_current_location_inflight();
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
+    void set_ekf_origin(const Location& loc);
     bool far_from_EKF_origin(const Location& loc);
     void set_system_time_from_GPS();
     void exit_mission();
@@ -565,7 +563,7 @@ private:
     bool guided_set_destination(const Vector3f& destination);
     bool guided_set_destination(const Location_Class& dest_loc);
     void guided_set_velocity(const Vector3f& velocity);
-    void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
+    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
     void guided_set_angle(const Quaternion &q, float climb_rate_cms);
     void guided_run();
     void guided_pos_control_run();
@@ -609,30 +607,21 @@ private:
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
-    void update_notify();
     bool init_arm_motors(bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
-    void perf_info_reset();
-    void perf_ignore_this_loop();
-    void perf_info_check_loop_time(uint32_t time_in_micros);
-    uint16_t perf_info_get_num_loops();
-    uint32_t perf_info_get_max_time();
-    uint32_t perf_info_get_min_time();
-    uint16_t perf_info_get_num_long_running();
-    uint32_t perf_info_get_num_dropped();
     Vector3f pv_location_to_vector(const Location& loc);
     float pv_alt_above_origin(float alt_above_home_cm);
-    float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
-    float pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
     void init_rc_in();
     void init_rc_out();
     void enable_motor_output();
     void init_joystick();
     void transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons);
     void handle_jsbutton_press(uint8_t button,bool shift=false,bool held=false);
+    void handle_jsbutton_release(uint8_t button, bool shift);
     JSButton* get_button(uint8_t index);
     void default_js_buttons(void);
+    void clear_input_hold();
     void init_barometer(bool save);
     void read_barometer(void);
     void init_rangefinder(void);
@@ -644,9 +633,6 @@ private:
     void update_optical_flow(void);
 #endif
     void read_battery(void);
-#if GRIPPER_ENABLED == ENABLED
-    void gripper_update();
-#endif
     void terrain_update();
     void terrain_logging();
     bool terrain_use();
@@ -684,7 +670,6 @@ private:
 #if CAMERA == ENABLED
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-    void update_trigger();
 #endif
 
 #if GRIPPER_ENABLED == ENABLED
@@ -704,7 +689,6 @@ private:
     void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
     void log_init(void);
     void init_capabilities(void);
-    void dataflash_periodic(void);
     void accel_cal_update(void);
 
     void failsafe_leak_check();
@@ -721,6 +705,8 @@ private:
 
     bool surface_init(void);
     void surface_run();
+
+    uint16_t get_pilot_speed_dn();
 
     void convert_old_parameters(void);
 

@@ -6,12 +6,10 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_Fence/AC_PolyFence_loader.h>
 #include <AP_Common/Location.h>
 
 // bit masks for enabled fence types.  Used for TYPE parameter
-#define AC_FENCE_TYPE_NONE                          0       // fence disabled
 #define AC_FENCE_TYPE_ALT_MAX                       1       // high alt fence which usually initiates an RTL
 #define AC_FENCE_TYPE_CIRCLE                        2       // circular horizontal fence (usually initiates an RTL)
 #define AC_FENCE_TYPE_POLYGON                       4       // polygon horizontal fence
@@ -35,9 +33,11 @@
 class AC_Fence
 {
 public:
+    AC_Fence(const AP_AHRS_NavEKF &ahrs);
 
-    /// Constructor
-    AC_Fence(const AP_AHRS& ahrs, const AP_InertialNav& inav);
+    /* Do not allow copies */
+    AC_Fence(const AC_Fence &other) = delete;
+    AC_Fence &operator=(const AC_Fence&) = delete;
 
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
     void enable(bool value);
@@ -55,9 +55,8 @@ public:
     /// methods to check we are within the boundaries and recover
     ///
 
-    /// check_fence - returns the fence type that has been breached (if any)
-    ///     curr_alt is the altitude above home in meters
-    uint8_t check_fence(float curr_alt);
+    /// check - returns the fence type that has been breached (if any)
+    uint8_t check();
 
     // returns true if the destination is within fence (used to reject waypoints outside the fence)
     bool check_destination_within_fence(const Location_Class& loc);
@@ -95,13 +94,6 @@ public:
     void manual_recovery_start();
 
     ///
-    /// time saving methods to piggy-back on main code's calculations
-    ///
-
-    /// set_home_distance - update vehicle's distance from home in meters - required for circular horizontal fence monitoring
-    void set_home_distance(float distance) { _home_distance = distance; }
-
-    ///
     /// polygon related methods
     ///
 
@@ -116,7 +108,21 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    bool sys_status_present() const;
+    bool sys_status_enabled() const;
+    bool sys_status_failed() const;
+
 private:
+
+    /// check_fence_alt_max - true if alt fence has been newly breached
+    bool check_fence_alt_max();
+
+    /// check_fence_polygon - true if polygon fence has been newly breached
+    bool check_fence_polygon();
+
+    /// check_fence_circle - true if circle fence has been newly breached
+    bool check_fence_circle();
 
     /// record_breach - update breach bitmask, time and count
     void record_breach(uint8_t fence_type);
@@ -124,12 +130,16 @@ private:
     /// clear_breach - update breach bitmask, time and count
     void clear_breach(uint8_t fence_type);
 
+    // additional checks for the different fence types:
+    bool pre_arm_check_polygon(const char* &fail_msg) const;
+    bool pre_arm_check_circle(const char* &fail_msg) const;
+    bool pre_arm_check_alt(const char* &fail_msg) const;
+
     /// load polygon points stored in eeprom into boundary array and perform validation.  returns true if load successfully completed
     bool load_polygon_from_eeprom(bool force_reload = false);
 
     // pointers to other objects we depend upon
-    const AP_AHRS& _ahrs;
-    const AP_InertialNav& _inav;
+    const AP_AHRS_NavEKF& _ahrs;
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control
@@ -151,6 +161,8 @@ private:
 
     // other internal variables
     float           _home_distance;         // distance from home in meters (provided by main code)
+    float _curr_alt;
+
 
     // breach information
     uint8_t         _breached_fences;       // bitmask holding the fence type that was breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)

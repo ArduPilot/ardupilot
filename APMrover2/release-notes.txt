@@ -1,3 +1,69 @@
+APMrover2 Release Notes:
+========================
+APM:Rover V3.2.1 29-Jan-2018 / V3.2.1-rc1 24-Jan-2018 
+Changes from 3.2.0:
+1) Fix mode switch logic to allow Auto, Guided, RTL, SmartRTL, Steering, Acro using non-GPS navigation (i.e. wheel encoders, visual odometry)
+--------------------------------
+APM:Rover V3.2.0 13-Jan-2018
+Changes from 3.2.0-rc4:
+1) Here GPS/compass default orientation fix (ICM20948)
+2) PID values sent to ground station regardless of mode (see GCS_PID_MASK parameter)
+3) Steering PID min and max ranges expanded
+4) Mavlink message definition update
+--------------------------------
+APM:Rover V3.2.0-rc4 05-Jan-2018
+Changes from 3.2.0-rc3:
+1) Steering controller supports feed-forward (reduces wobble)
+2) WP_SPEED, RTL_SPEED parameters allow speed independent of CRUISE_SPEED
+3) Dataflash logging improvements for steering and throttle
+4) Remove auto-trim at startup
+5) GPS reports healthy even without 3d lock
+---------------------------------
+APM:Rover V3.2.0-rc3 05-Dec-2017
+Changes from 3.2.0-rc2:
+1) SmartRTL mode (retraces path back to home)
+2) Acro mode (pilot controls speed and turn rate)
+3) Guided mode ROS integration fixes
+4) Steering mode allows pivot turns
+5) Auto mode pivots on sharp corners
+6) Aux switch allows arming/disarming and mode change
+7) PILOT_STEER_TYPE parameter allows controlling turn direction when backing up
+8) Mixer change to allow steering to use full motor range (removes need for MOT_SKID_FRIC)
+---------------------------------
+APM:Rover V3.2.0-rc2 28-Oct-2017
+Changes from 3.2.0-rc1:
+1) MOT_SKID_FRIC parameter allows increasing power for skid-steer vehicle pivot-turns
+2) Bug Fixes:
+    a) speed nudging fix in AUTO mode
+    b) throttle slew range fix (was slightly incorrect when output range was not 1100 ~ 1900)
+    c) PID desired and achieved reported to GCS when GCS_PID_MASK param set to non-zero value
+    d) use-pivot fix to use absolute angle error
+---------------------------------
+APM:Rover V3.2.0-rc1 25-Aug-2017
+Changes from 3.1.2:
+1) Skid-steering vehicle support added (i.e. tank track or R2D2 style vehicles)
+2) Brushless motor support
+3) Improved speed/throttle and steering controllers:
+    a) layered P and PID controllers with optional feedforward, input filtering and saturation handling (reduces unnecessary I-term build-up) 
+    b) forward-back acceleration limited (see ATC_ACCEL_MAX parameter)
+    c) pro-active slowing before waypoint in order to keep overshoot at or below WP_OVERSHOOT distance
+    d) proper output scaling for skid-steering vs regular car steering controls
+    e) TURN_RADIUS parameter added to allow better control of turn in Steering mode
+    f) speed along forward-back axis used instead of total ground speed (resolves unusual behaviour for boats being washed downstream)
+4) Auxiliary switch changes (see CH7_OPTION parameter):
+    a) "Save Waypoint" saves the current location as a waypoint in all modes except AUTO if the vehicle is armed.  If disarmed the mission is cleared and home is set to the current location.
+    b) "Learn Cruise" sets the THROTTLE_CRUISE and SPEED_CRUISE parameter values to the vehicle's current speed and throttle level 
+5) Wheel encoder supported for non-GPS navigation (can also be used with GPS)
+6) Visual Odometry support for non-GPS navigation (can also be used with GPS)
+7) Guided mode improvements:
+    a) for SET_ATTITUDE_TARGET accepts quaternions for target heading, valid thrust changed to -1 ~ +1 range (was previously 0 ~ 1)
+    b) COMMAND_LONG.SET_YAW_SPEED support fixes (thrust field accepted as target speed in m/s)
+    c) SET_POSITION_TARGET_GLOBAL_INT, _LOCAL_NED fixes and added support for yaw and yaw-rate fields
+8) Bug Fixes:
+    a) resolve occasional start of motors after power-on
+    b) steering mode turn direction fix while reversing
+    c) reversing in auto mode fixes (see DO_REVERSE mission command)
+----------------------------------------------------------
 Release 3.1.2, 15 March 2017
 ============================
 Minor bugfix release.

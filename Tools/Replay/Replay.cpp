@@ -102,11 +102,11 @@ void ReplayVehicle::load_parameters(void)
 
 static const struct LogStructure min_log_structure[] = {
     { LOG_FORMAT_MSG, sizeof(log_Format),
-      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },
+      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns", "-b---", "-----" },
     { LOG_PARAMETER_MSG, sizeof(log_Parameter),
-      "PARM", "QNf",        "TimeUS,Name,Value" }, 
+      "PARM", "QNf",        "TimeUS,Name,Value", "s--", "F--" },
     { LOG_MESSAGE_MSG, sizeof(log_Message),
-      "MSG",  "QZ",     "TimeUS,Message"},
+      "MSG",  "QZ",     "TimeUS,Message", "s-", "F-" },
 };
 
 void ReplayVehicle::setup(void) 
@@ -156,6 +156,7 @@ void Replay::usage(void)
     ::printf("\t--logmatch         match logging rate to source\n");
     ::printf("\t--no-params        don't use parameters from the log\n");
     ::printf("\t--no-fpe           do not generate floating point exceptions\n");
+    ::printf("\t--packet-counts    print packet counts at end of processing\n");
 }
 
 
@@ -171,6 +172,7 @@ enum {
     OPT_NOPARAMS,
     OPT_PARAM_FILE,
     OPT_NO_FPE,
+    OPT_PACKET_COUNTS,
 };
 
 void Replay::flush_dataflash(void) {
@@ -227,6 +229,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"logmatch",        false,  0, OPT_LOGMATCH},
         {"no-params",       false,  0, OPT_NOPARAMS},
         {"no-fpe",          false,  0, OPT_NO_FPE},
+        {"packet-counts",   false,  0, OPT_PACKET_COUNTS},
         {0, false, 0, 0}
     };
 
@@ -308,6 +311,10 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
             
         case OPT_NO_FPE:
             generate_fpe = false;
+            break;
+
+        case OPT_PACKET_COUNTS:
+            packet_counts = true;
             break;
 
         case 'h':
@@ -551,17 +558,10 @@ void Replay::set_ins_update_rate(uint16_t _update_rate) {
 }
 
 void Replay::inhibit_gyro_cal() {
-    // swiped from LR_MsgHandler.cpp; until we see PARM messages, we
-    // don't have a PARM handler available to set parameters.
-    enum ap_var_type var_type;
-    AP_Param *vp = AP_Param::find("INS_GYR_CAL", &var_type);
-    if (vp == NULL) {
-        ::fprintf(stderr, "No GYR_CAL parameter found\n");
+    if (!logreader.set_parameter("INS_GYR_CAL", AP_InertialSensor::GYRO_CAL_NEVER)) {
+        ::fprintf(stderr, "Failed to set GYR_CAL parameter\n");
         abort();
     }
-    ((AP_Float *)vp)->set(AP_InertialSensor::GYRO_CAL_NEVER);
-
-    // logreader.set_parameter("GYR_CAL", AP_InertialSensor::GYRO_CAL_NEVER);
 }
 
 /*
@@ -613,7 +613,7 @@ void Replay::set_signal_handlers(void)
 void Replay::write_ekf_logs(void)
 {
     if (!LogReader::in_list("EKF", nottypes)) {
-        _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs,false);
+        _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs);
     }
     if (!LogReader::in_list("AHRS2", nottypes)) {
         _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
@@ -780,7 +780,28 @@ void Replay::flush_and_exit()
         report_checks();
     }
 
+    if (packet_counts) {
+        show_packet_counts();
+    }
+
     exit(0);
+}
+
+void Replay::show_packet_counts()
+{
+    uint64_t counts[LOGREADER_MAX_FORMATS];
+    logreader.get_packet_counts(counts);
+    char format_type[5];
+    uint64_t total = 0;
+    for(uint16_t i=0;i<LOGREADER_MAX_FORMATS;i++) {
+        if (counts[i] != 0) {
+            logreader.format_type(i, format_type);
+            printf("%10ld %s\n", counts[i], format_type);
+            total += counts[i];
+        }
+    }
+
+    printf("%ld total\n", total);
 }
 
 void Replay::loop()
@@ -813,7 +834,6 @@ void Replay::loop()
     if (!streq(type,"ATT")) {
         return;
     }
-
 }
 
 

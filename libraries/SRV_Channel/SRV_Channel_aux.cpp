@@ -38,10 +38,6 @@ void SRV_Channel::output_ch(void)
     case k_rcin1 ... k_rcin16: // rc pass-thru
         passthrough_from = int8_t(function - k_rcin1);
         break;
-    case k_motor1 ... k_motor8:
-    case k_motor9 ... k_motor12:
-        // handled by AP_Motors::rc_write()
-        return;
     }
     if (passthrough_from != -1) {
         // we are doing passthrough from input to output for this channel
@@ -132,6 +128,9 @@ void SRV_Channel::aux_servo_function_setup(void)
 /// setup the output range types of all functions
 void SRV_Channels::update_aux_servo_function(void)
 {
+    if (!channels) {
+        return;
+    }
     function_mask.clearall();
 
     for (uint8_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
@@ -412,6 +411,7 @@ bool SRV_Channels::set_aux_channel_default(SRV_Channel::Aux_servo_function_t fun
     channels[channel].function.set(function);
     channels[channel].aux_servo_function_setup();
     function_mask.set((uint8_t)function);
+    functions[function].channel_mask |= 1U<<channel;
     return true;
 }
 
@@ -463,6 +463,21 @@ int16_t SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t functi
     }
     return 0;
 }
+
+/*
+  get mask of output channels for a function
+ */
+uint16_t SRV_Channels::get_output_channel_mask(SRV_Channel::Aux_servo_function_t function)
+{
+    if (!initialised) {
+        update_aux_servo_function();
+    }
+    if (function < SRV_Channel::k_nr_aux_servo_functions) {
+        return functions[function].channel_mask;
+    }
+    return 0;
+}
+
 
 // set the trim for a function channel to given pwm
 void SRV_Channels::set_trim_to_pwm_for(SRV_Channel::Aux_servo_function_t function, int16_t pwm)

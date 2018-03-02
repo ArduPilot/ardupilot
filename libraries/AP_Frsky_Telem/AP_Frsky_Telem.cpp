@@ -123,9 +123,16 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 return;
             }
             if ((now - _passthrough.batt_timer) >= 1000) {
-                send_uint32(DIY_FIRST_ID+3, calc_batt());
+                send_uint32(DIY_FIRST_ID+3, calc_batt(0));
                 _passthrough.batt_timer = AP_HAL::millis();
                 return;
+            }
+            if (_battery.num_instances() > 1) {
+                if ((now - _passthrough.batt_timer2) >= 1000) {
+                    send_uint32(DIY_FIRST_ID+8, calc_batt(1));
+                    _passthrough.batt_timer2 = AP_HAL::millis();
+                    return;
+                }
             }
             if ((now - _passthrough.gps_status_timer) >= 1000) {
                 send_uint32(DIY_FIRST_ID+2, calc_gps_status());
@@ -250,7 +257,7 @@ void AP_Frsky_Telem::send_SPort(void)
                 case SENSOR_ID_SP2UR:
                     switch (_SPort.various_call) {
                         case 0 :
-                            send_uint32(DATA_ID_TEMP2, (uint16_t)(_ahrs.get_gps().num_sats() * 10 + _ahrs.get_gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
+                            send_uint32(DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
                             break;
                         case 1:
                             send_uint32(DATA_ID_TEMP1, _ap.control_mode); // send flight mode
@@ -276,7 +283,7 @@ void AP_Frsky_Telem::send_D(void)
     // send frame1 every 200ms
     if (now - _D.last_200ms_frame >= 200) {
         _D.last_200ms_frame = now;
-        send_uint16(DATA_ID_TEMP2, (uint16_t)(_ahrs.get_gps().num_sats() * 10 + _ahrs.get_gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
+        send_uint16(DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
         send_uint16(DATA_ID_TEMP1, _ap.control_mode); // send flight mode
         send_uint16(DATA_ID_FUEL, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining
         send_uint16(DATA_ID_VFAS, (uint16_t)roundf(_battery.voltage() * 10.0f)); // send battery voltage
@@ -290,7 +297,7 @@ void AP_Frsky_Telem::send_D(void)
         _D.last_1000ms_frame = now;
         send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)((_ahrs.yaw_sensor / 100) % 360)); // send heading in degree based on AHRS and not GPS
         calc_gps_position();
-        if (_ahrs.get_gps().status() >= 3) {
+        if (AP::gps().status() >= 3) {
             send_uint16(DATA_ID_GPS_LAT_BP, _gps.latdddmm); // send gps lattitude degree and minute integer part
             send_uint16(DATA_ID_GPS_LAT_AP, _gps.latmmmm); // send gps lattitude minutes decimal part
             send_uint16(DATA_ID_GPS_LAT_NS, _gps.lat_ns); // send gps North / South information
@@ -567,13 +574,13 @@ uint32_t AP_Frsky_Telem::calc_param(void)
     uint32_t param = 0;
 
     // cycle through paramIDs
-    if (_paramID >= 4) {
+    if (_paramID >= 5) {
         _paramID = 0;
     }
     _paramID++;
     switch(_paramID) {
     case 1:
-        param = _params.mav_type;                                    // frame type (see MAV_TYPE in Mavlink definition file common.h)
+        param = _params.mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
         break;
     case 2:
         if (_params.fs_batt_voltage != nullptr) {
@@ -582,15 +589,18 @@ uint32_t AP_Frsky_Telem::calc_param(void)
         break;
     case 3:
         if (_params.fs_batt_mah != nullptr) {
-            param = (uint32_t)roundf((*_params.fs_batt_mah));              // battery failsafe capacity in mAh
+            param = (uint32_t)roundf((*_params.fs_batt_mah)); // battery failsafe capacity in mAh
         }
         break;
     case 4:
-        param = (uint32_t)roundf(_battery.pack_capacity_mah());      // battery pack capacity in mAh as configured by user
+        param = (uint32_t)roundf(_battery.pack_capacity_mah(0)); // battery pack capacity in mAh
+        break;
+    case 5:
+        param = (uint32_t)roundf(_battery.pack_capacity_mah(1)); // battery pack capacity in mAh
         break;
     }
     //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
-    param = (_paramID << 24) | (param & 0xFFFFFF);
+    param = (_paramID << PARAM_ID_OFFSET) | (param & PARAM_VALUE_LIMIT);
     
     return param;
 }
@@ -602,21 +612,21 @@ uint32_t AP_Frsky_Telem::calc_param(void)
 uint32_t AP_Frsky_Telem::calc_gps_latlng(bool *send_latitude)
 {
     uint32_t latlng;
-    const Location &loc = _ahrs.get_gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
+    const Location &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
 
     // alternate between latitude and longitude
     if ((*send_latitude) == true) {
         if (loc.lat < 0) {
-            latlng = ((abs(loc.lat)/100)*6) | 0x40000000;
+            latlng = ((labs(loc.lat)/100)*6) | 0x40000000;
         } else {
-            latlng = ((abs(loc.lat)/100)*6);
+            latlng = ((labs(loc.lat)/100)*6);
         }
         (*send_latitude) = false;
     } else {
         if (loc.lng < 0) {
-            latlng = ((abs(loc.lng)/100)*6) | 0xC0000000;
+            latlng = ((labs(loc.lng)/100)*6) | 0xC0000000;
         } else {
-            latlng = ((abs(loc.lng)/100)*6) | 0x80000000;
+            latlng = ((labs(loc.lng)/100)*6) | 0x80000000;
         }
         (*send_latitude) = true;
     }
@@ -629,18 +639,20 @@ uint32_t AP_Frsky_Telem::calc_gps_latlng(bool *send_latitude)
  */
 uint32_t AP_Frsky_Telem::calc_gps_status(void)
 {
+    const AP_GPS &gps = AP::gps();
+
     uint32_t gps_status;
 
     // number of GPS satellites visible (limit to 15 (0xF) since the value is stored on 4 bits)
-    gps_status = (_ahrs.get_gps().num_sats() < GPS_SATS_LIMIT) ? _ahrs.get_gps().num_sats() : GPS_SATS_LIMIT;
+    gps_status = (gps.num_sats() < GPS_SATS_LIMIT) ? gps.num_sats() : GPS_SATS_LIMIT;
     // GPS receiver status (limit to 0-3 (0x3) since the value is stored on 2 bits: NO_GPS = 0, NO_FIX = 1, GPS_OK_FIX_2D = 2, GPS_OK_FIX_3D or GPS_OK_FIX_3D_DGPS or GPS_OK_FIX_3D_RTK_FLOAT or GPS_OK_FIX_3D_RTK_FIXED = 3)
-    gps_status |= ((_ahrs.get_gps().status() < GPS_STATUS_LIMIT) ? _ahrs.get_gps().status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
+    gps_status |= ((gps.status() < GPS_STATUS_LIMIT) ? gps.status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
     // GPS horizontal dilution of precision in dm
-    gps_status |= prep_number(roundf(_ahrs.get_gps().get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET; 
+    gps_status |= prep_number(roundf(gps.get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET; 
     // GPS receiver advanced status (0: no advanced fix, 1: GPS_OK_FIX_3D_DGPS, 2: GPS_OK_FIX_3D_RTK_FLOAT, 3: GPS_OK_FIX_3D_RTK_FIXED)
-    gps_status |= ((_ahrs.get_gps().status() > GPS_STATUS_LIMIT) ? _ahrs.get_gps().status()-GPS_STATUS_LIMIT : 0)<<GPS_ADVSTATUS_OFFSET;
+    gps_status |= ((gps.status() > GPS_STATUS_LIMIT) ? gps.status()-GPS_STATUS_LIMIT : 0)<<GPS_ADVSTATUS_OFFSET;
     // Altitude MSL in dm
-    const Location &loc = _ahrs.get_gps().location();
+    const Location &loc = gps.location();
     gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET; 
     return gps_status;
 }
@@ -649,16 +661,16 @@ uint32_t AP_Frsky_Telem::calc_gps_status(void)
  * prepare battery data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_batt(void)
+uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
 {
     uint32_t batt;
     
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
-    batt = (((uint16_t)roundf(_battery.voltage() * 10.0f)) & BATT_VOLTAGE_LIMIT);
+    batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
     // battery current draw in deciamps
-    batt |= prep_number(roundf(_battery.current_amps() * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET; 
+    batt |= prep_number(roundf(_battery.current_amps(instance) * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET; 
     // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
-    batt |= ((_battery.current_total_mah() < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.current_total_mah()) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
+    batt |= ((_battery.current_total_mah(instance) < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.current_total_mah(instance)) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
     return batt;
 }
 
@@ -863,8 +875,8 @@ void AP_Frsky_Telem::calc_gps_position(void)
     float alt;
     float speed;
 
-    if (_ahrs.get_gps().status() >= 3) {
-        const Location &loc = _ahrs.get_gps().location(); //get gps instance 0
+    if (AP::gps().status() >= 3) {
+        const Location &loc = AP::gps().location(); //get gps instance 0
         lat = format_gps(fabsf(loc.lat/10000000.0f));
         _gps.latdddmm = lat;
         _gps.latmmmm = (lat - _gps.latdddmm) * 10000;
@@ -879,7 +891,7 @@ void AP_Frsky_Telem::calc_gps_position(void)
         _gps.alt_gps_meters = (int16_t)alt;
         _gps.alt_gps_cm = (alt - _gps.alt_gps_meters) * 100;
 
-        speed = _ahrs.get_gps().ground_speed();
+        speed = AP::gps().ground_speed();
         _gps.speed_in_meter = speed;
         _gps.speed_in_centimeter = (speed - _gps.speed_in_meter) * 100;
     } else {

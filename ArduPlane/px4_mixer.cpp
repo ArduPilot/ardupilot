@@ -269,8 +269,9 @@ bool Plane::setup_failsafe_mixing(void)
     enum AP_HAL::Util::safety_state old_state = hal.util->safety_switch_state();
     struct pwm_output_values pwm_values = {.values = {0}, .channel_count = 8};
     unsigned mixer_status = 0;
+    uint16_t manual_mask = uint16_t(g2.manual_rc_mask.get());
 
-    buf = (char *)malloc(buf_size);
+    buf = (char *)calloc(1, buf_size);
     if (buf == nullptr) {
         goto failed;
     }
@@ -364,6 +365,13 @@ bool Plane::setup_failsafe_mixing(void)
             config.rc_reverse = true;
             config.rc_max = 1813; // round 1812.5 up to grant > 1750
             config.rc_min = 1000;
+            config.rc_trim = 1500;
+        } else if (manual_mask & (1U<<i)) {
+            // use fixed limits for manual_mask channels
+            config.rc_assignment = i;
+            config.rc_reverse = i==1?true:false;
+            config.rc_max = PX4_LIM_RC_MAX;
+            config.rc_min = PX4_LIM_RC_MIN;
             config.rc_trim = 1500;
         } else {
             config.rc_assignment = i;

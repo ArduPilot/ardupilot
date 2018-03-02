@@ -60,6 +60,9 @@
   #define MAV_SYSTEM_ID    1
 #endif
 
+#ifndef ARM_DELAY_MS
+  #define ARM_DELAY_MS  2000
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // FrSky telemetry support
@@ -92,26 +95,6 @@
   #error XXX You must set MODE_CHANNEL to 5, 6, 7 or 8
   #error XXX
 #endif
-
-#if !defined(MODE_1)
-  #define MODE_1    LEARNING
-#endif
-#if !defined(MODE_2)
-  #define MODE_2    LEARNING
-#endif
-#if !defined(MODE_3)
-  #define MODE_3    LEARNING
-#endif
-#if !defined(MODE_4)
-  #define MODE_4    LEARNING
-#endif
-#if !defined(MODE_5)
-  #define MODE_5    LEARNING
-#endif
-#if !defined(MODE_6)
-  #define MODE_6    MANUAL
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -182,4 +165,8 @@
 
 #ifndef ADVANCED_FAILSAFE
   #define ADVANCED_FAILSAFE DISABLED
+#endif
+
+#ifndef STATS_ENABLED
+ # define STATS_ENABLED ENABLED
 #endif

@@ -198,7 +198,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         int32_t     altitude_msl;
         uint32_t    horizontal_accuracy;
         uint32_t    vertical_accuracy;
-    } pos;
+    } pos {};
     struct PACKED ubx_nav_status {
         uint32_t    time;               // GPS msToW
         uint8_t     fix_type;
@@ -207,7 +207,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         uint8_t     res;
         uint32_t    time_to_first_fix;
         uint32_t    uptime;             // milliseconds
-    } status;
+    } status {};
     struct PACKED ubx_nav_velned {
         uint32_t    time;               // GPS msToW
         int32_t     ned_north;
@@ -218,7 +218,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         int32_t     heading_2d;
         uint32_t    speed_accuracy;
         uint32_t    heading_accuracy;
-    } velned;
+    } velned {};
     struct PACKED ubx_nav_solution {
         uint32_t time;
         int32_t time_nsec;
@@ -237,7 +237,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         uint8_t res;
         uint8_t satellites;
         uint32_t res2;
-    } sol;
+    } sol {};
     struct PACKED ubx_nav_dop {
         uint32_t time;                                  // GPS msToW
         uint16_t gDOP;
@@ -247,7 +247,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         uint16_t hDOP;
         uint16_t nDOP;
         uint16_t eDOP;
-    } dop;
+    } dop {};
     struct PACKED ubx_nav_pvt {
         uint32_t itow; 
         uint16_t year; 
@@ -270,13 +270,35 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         uint8_t reserved1[6]; 
         uint32_t headVeh;
         uint8_t reserved2[4]; 
-    } pvt;
+    } pvt {};
+    const uint8_t SV_COUNT = 10;
+    struct PACKED ubx_nav_svinfo {
+        uint32_t itow;
+        uint8_t numCh;
+        uint8_t globalFlags;
+        uint8_t reserved1[2];
+        // repeated block
+        struct PACKED svinfo_sv {
+            uint8_t chn;
+            uint8_t svid;
+            uint8_t flags;
+            uint8_t quality;
+            uint8_t cno;
+            int8_t elev;
+            int16_t azim;
+            int32_t prRes;
+        } sv[SV_COUNT];
+    } svinfo {};
     const uint8_t MSG_POSLLH = 0x2;
     const uint8_t MSG_STATUS = 0x3;
     const uint8_t MSG_DOP = 0x4;
     const uint8_t MSG_VELNED = 0x12;
     const uint8_t MSG_SOL = 0x6;
     const uint8_t MSG_PVT = 0x7;
+    const uint8_t MSG_SVINFO = 0x30;
+
+    static uint32_t _next_nav_sv_info_time = 0;
+
     uint16_t time_week;
     uint32_t time_week_ms;
 
@@ -365,6 +387,26 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     _gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol), instance);
     _gps_send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop), instance);
     _gps_send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt), instance);
+
+    if (time_week_ms > _next_nav_sv_info_time) {
+        svinfo.itow = time_week_ms;
+        svinfo.numCh = 32;
+        svinfo.globalFlags = 4; // u-blox 8/M8
+        // fill in the SV's with some data even though firmware does not currently use it
+        // note that this is not using num_sats as we aren't dynamically creating this to match
+        for (uint8_t i = 0; i < SV_COUNT; i++) {
+            svinfo.sv[i].chn = i;
+            svinfo.sv[i].svid = i;
+            svinfo.sv[i].flags = (i < _sitl->gps_numsats) ? 0x7 : 0x6; // sv used, diff correction data, orbit information
+            svinfo.sv[i].quality = 7; // code and carrier lock and time synchronized
+            svinfo.sv[i].cno = MAX(20, 30 - i);
+            svinfo.sv[i].elev = MAX(30, 90 - i);
+            svinfo.sv[i].azim = i;
+            // not bothering to fill in prRes
+        }
+        _gps_send_ubx(MSG_SVINFO, (uint8_t*)&svinfo, sizeof(svinfo), instance);
+        _next_nav_sv_info_time = time_week_ms + 10000; // 10 second delay
+    }
 }
 
 static void swap_uint32(uint32_t *v, uint8_t n)
@@ -1126,6 +1168,8 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     if (AP_HAL::millis() < _sitl->gps_lock_time*1000UL) {
         have_lock = false;
     }
+
+    altitude += _sitl->gps_alt_offset;
     
     //Capture current position as basestation location for
     if (!_gps_has_basestation_position) {

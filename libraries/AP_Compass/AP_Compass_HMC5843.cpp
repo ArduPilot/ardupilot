@@ -211,7 +211,7 @@ bool AP_Compass_HMC5843::init()
     _bus->register_periodic_callback(13333,
                                      FUNCTOR_BIND_MEMBER(&AP_Compass_HMC5843::_timer, void));
 
-    hal.console->printf("HMC5843 found on bus 0x%x\n", _bus->get_bus_id());
+    hal.console->printf("HMC5843 found on bus 0x%x\n", (unsigned)_bus->get_bus_id());
     
     return true;
 
@@ -236,8 +236,6 @@ void AP_Compass_HMC5843::_timer()
         return;
     }
 
-    uint32_t tnow = AP_HAL::micros();    
-
     // the _mag_N values are in the range -2048 to 2047, so we can
     // accumulate up to 15 of them in an int16_t. Let's make it 14
     // for ease of calculation. We expect to do reads at 10Hz, and
@@ -256,7 +254,7 @@ void AP_Compass_HMC5843::_timer()
     rotate_field(raw_field, _compass_instance);
     
     // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, tnow, _compass_instance);
+    publish_raw_field(raw_field, _compass_instance);
     
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);

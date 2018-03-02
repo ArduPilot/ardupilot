@@ -62,6 +62,7 @@ public:
         Invensense_MPU9250,
         Invensense_ICM20608,
         Invensense_ICM20602,
+        Invensense_ICM20789,
     };
     
 private:
@@ -104,8 +105,6 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    uint16_t _error_count;
-
     float temp_sensitivity = 1.0/340; // degC/LSB
     float temp_zero = 36.53; // degC
     
@@ -124,6 +123,12 @@ private:
 
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
+
+    // what downsampling rate are we using from the FIFO?
+    uint8_t _fifo_downsample_rate;
+
+    // what rate are we generating samples into the backend?
+    uint16_t _backend_rate_hz;
 
     // Last status from register user control
     uint8_t _last_stat_user_ctrl;    
@@ -173,6 +178,7 @@ class AP_Invensense_AuxiliaryBus : public AuxiliaryBus
 
 public:
     AP_HAL::Semaphore *get_semaphore() override;
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb) override;
 
 protected:
     AP_Invensense_AuxiliaryBus(AP_InertialSensor_Invensense &backend, uint32_t devid);
@@ -187,3 +193,7 @@ private:
     static const uint8_t MAX_EXT_SENS_DATA = 24;
     uint8_t _ext_sens_data = 0;
 };
+
+#ifndef INS_INVENSENSE_20789_I2C_ADDR
+#define INS_INVENSENSE_20789_I2C_ADDR 0x68
+#endif

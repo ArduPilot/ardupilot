@@ -34,6 +34,7 @@
 #define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
 #define GPS_UNKNOWN_DOP UINT16_MAX // set unknown DOP's to maximum value, which is also correct for MAVLink
 #define GPS_WORST_LAG_SEC 0.22f // worst lag value any GPS driver is expected to return, expressed in seconds
+#define GPS_MAX_DELTA_MS 245 // 200 ms (5Hz) + 45 ms buffer
 
 // the number of GPS leap seconds
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
@@ -46,8 +47,6 @@ class AP_GPS_Backend;
 /// GPS driver main class
 class AP_GPS
 {
-public:
-
     friend class AP_GPS_ERB;
     friend class AP_GPS_GSOF;
     friend class AP_GPS_MAV;
@@ -64,8 +63,16 @@ public:
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
 
-    // constructor
-	AP_GPS();
+public:
+    AP_GPS();
+
+    /* Do not allow copies */
+    AP_GPS(const AP_GPS &other) = delete;
+    AP_GPS &operator=(const AP_GPS&) = delete;
+
+    static AP_GPS &gps() {
+        return *_singleton;
+    }
 
     // GPS driver types
     enum GPS_Type {
@@ -144,8 +151,16 @@ public:
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
 
         // all the following fields must only all be filled by RTK capable backend drivers
+        uint32_t rtk_time_week_ms;         ///< GPS Time of Week of last baseline in milliseconds
+        uint16_t rtk_week_number;          ///< GPS Week Number of last baseline
         uint32_t rtk_age_ms;               ///< GPS age of last baseline correction in milliseconds  (0 when no corrections, 0xFFFFFFFF indicates overflow)
         uint8_t  rtk_num_sats;             ///< Current number of satellites used for RTK calculation
+        uint8_t  rtk_baseline_coords_type; ///< Coordinate system of baseline. 0 == ECEF, 1 == NED
+        int32_t  rtk_baseline_x_mm;        ///< Current baseline in ECEF x or NED north component in mm
+        int32_t  rtk_baseline_y_mm;        ///< Current baseline in ECEF y or NED east component in mm
+        int32_t  rtk_baseline_z_mm;        ///< Current baseline in ECEF z or NED down component in mm
+        uint32_t rtk_accuracy;             ///< Current estimate of 3D baseline accuracy (receiver dependent, typical 0 to 9999)
+        int32_t  rtk_iar_num_hypotheses;   ///< Current number of integer ambiguity hypotheses
     };
 
     /// Startup initialisation.
@@ -301,6 +316,14 @@ public:
         return last_message_time_ms(primary_instance);
     }
 
+    // system time delta between the last two reported positions
+    uint16_t last_message_delta_time_ms(uint8_t instance) const {
+        return timing[instance].delta_time_ms;
+    }
+    uint16_t last_message_delta_time_ms(void) const {
+        return last_message_delta_time_ms(primary_instance);
+    }
+
     // return true if the GPS supports vertical velocity values
     bool have_vertical_velocity(uint8_t instance) const {
         return state[instance].have_vertical_velocity;
@@ -350,8 +373,7 @@ public:
     void send_mavlink_gps_raw(mavlink_channel_t chan);
     void send_mavlink_gps2_raw(mavlink_channel_t chan);
 
-    void send_mavlink_gps_rtk(mavlink_channel_t chan);
-    void send_mavlink_gps2_rtk(mavlink_channel_t chan);
+    void send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst);
 
     // Returns the index of the first unconfigured GPS (returns GPS_ALL_CONFIGURED if all instances report as being configured)
     uint8_t first_unconfigured_gps(void) const;
@@ -388,6 +410,14 @@ public:
     // indicate which bit in LOG_BITMASK indicates gps logging enabled
     void set_log_gps_bit(uint32_t bit) { _log_gps_bit = bit; }
 
+    // report if the gps is healthy (this is defined as existing, an update at a rate greater than 4Hz,
+    // as well as any driver specific behaviour)
+    bool is_healthy(uint8_t instance) const;
+    bool is_healthy(void) const { return is_healthy(primary_instance); }
+
+    // returns true if all GPS instances have passed all final arming checks/state changes
+    bool prepare_for_arming(void);
+
 protected:
 
     // configuration parameters
@@ -413,6 +443,8 @@ protected:
     uint32_t _log_gps_bit = -1;
 
 private:
+    static AP_GPS *_singleton;
+
     // returns the desired gps update rate in milliseconds
     // this does not provide any guarantee that the GPS is updating at the requested
     // rate it is simply a helper for use in the backends for determining what rate
@@ -425,6 +457,9 @@ private:
 
         // the time we got our last message in system milliseconds
         uint32_t last_message_time_ms;
+
+        // delta time between the last pair of GPS updates in system milliseconds
+        uint16_t delta_time_ms;
     };
     // Note allowance for an additional instance to contain blended data
     GPS_timing timing[GPS_MAX_RECEIVERS+1];
@@ -447,9 +482,11 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
+#if !HAL_MINIMIZE_FEATURES
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
+#endif // !HAL_MINIMIZE_FEATURES
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
         struct SBP2_detect_state sbp2_detect_state;
@@ -520,4 +557,8 @@ private:
         GPS_AUTO_CONFIG_ENABLE  = 1
     };
 
+};
+
+namespace AP {
+    AP_GPS &gps();
 };

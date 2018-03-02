@@ -1,7 +1,7 @@
 #include "Sub.h"
 
 /*
- * control_guided.pde - init and run calls for guided flight mode
+ * Init and run calls for guided flight mode
  */
 
 #ifndef GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM
@@ -77,7 +77,7 @@ void Sub::guided_vel_control_start()
     guided_mode = Guided_Velocity;
 
     // initialize vertical speeds and leash lengths
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // initialise velocity controller
@@ -212,18 +212,32 @@ void Sub::guided_set_velocity(const Vector3f& velocity)
 }
 
 // set guided mode posvel target
-void Sub::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity)
+bool Sub::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity)
 {
     // check we are in velocity control mode
     if (guided_mode != Guided_PosVel) {
         guided_posvel_control_start();
     }
 
+#if AC_FENCE == ENABLED
+    // reject destination if outside the fence
+    Location_Class dest_loc(destination);
+    if (!fence.check_destination_within_fence(dest_loc)) {
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
+        // failure is propagated to GCS with NAK
+        return false;
+    }
+#endif
+
     posvel_update_time_ms = millis();
     posvel_pos_target_cm = destination;
     posvel_vel_target_cms = velocity;
 
     pos_control.set_pos_target(posvel_pos_target_cm);
+
+    // log target
+    Log_Write_GuidedTarget(guided_mode, destination, velocity);
+    return true;
 }
 
 // set guided mode angle target
@@ -557,7 +571,7 @@ bool Sub::guided_limit_check()
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        float horiz_move = pv_get_horizontal_distance_cm(guided_limit.start_pos, curr_pos);
+        float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos, curr_pos);
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }

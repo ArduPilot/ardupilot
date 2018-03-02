@@ -181,8 +181,6 @@ void AP_Compass_QMC5883L::timer()
 	  return ;
   }
 
-    uint32_t now = AP_HAL::micros();
-
     auto x = -static_cast<int16_t>(le16toh(buffer.rx));
     auto y = static_cast<int16_t>(le16toh(buffer.ry));
     auto z = -static_cast<int16_t>(le16toh(buffer.rz));
@@ -204,7 +202,7 @@ void AP_Compass_QMC5883L::timer()
     rotate_field(field, _instance);
 
     /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, now, _instance);
+    publish_raw_field(field, _instance);
 
     /* correct raw_field for known errors */
     correct_field(field, _instance);

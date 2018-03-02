@@ -86,6 +86,7 @@ public:
     AP_Float arspd_fail_pitot_pressure; // pitot tube failure pressure
     AP_Float gps_noise; // amplitude of the gps altitude error
     AP_Int16 gps_lock_time; // delay in seconds before GPS gets lock
+    AP_Int16 gps_alt_offset; // gps alt error
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Float mag_error;   // in degrees
@@ -127,10 +128,12 @@ public:
     // wind control
     float wind_speed_active;
     float wind_direction_active;
+    float wind_dir_z_active;
     AP_Float wind_speed;
     AP_Float wind_direction;
     AP_Float wind_turbulance;
     AP_Float gps_drift_alt;
+    AP_Float wind_dir_z;
 
     AP_Int16  baro_delay; // barometer data delay in ms
     AP_Int16  mag_delay; // magnetometer data delay in ms
@@ -158,6 +161,9 @@ public:
     AP_Float temp_tconst;
     AP_Float temp_baro_factor;
     
+    // differential pressure sensor tube order
+    AP_Int8 arspd_signflip;
+
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);

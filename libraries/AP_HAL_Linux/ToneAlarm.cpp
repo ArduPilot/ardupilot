@@ -38,9 +38,13 @@ bool ToneAlarm::tune_repeat[TONE_NUMBER_OF_TUNES] = {false,true,false,false,fals
 
 ToneAlarm::ToneAlarm()
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     period_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/period",O_WRONLY|O_CLOEXEC);
     duty_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/duty",O_WRONLY|O_CLOEXEC);
     run_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/run",O_WRONLY|O_CLOEXEC);
+#endif
 
     tune_num = -1;                    //initialy no tune to play
     tune_pos = 0;
@@ -49,8 +53,12 @@ ToneAlarm::ToneAlarm()
 bool ToneAlarm::init()
 {
     tune_num = 0;                    //play startup tune
-    if((period_fd == -1) || (duty_fd == -1) || (run_fd == -1)){
+    if ((period_fd == -1) || (duty_fd == -1) || (run_fd == -1)) {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
         hal.console->printf("ToneAlarm: Error!! please check if PWM overlays are loaded correctly");
+#endif
         return false;
     }
     return true;

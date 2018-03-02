@@ -16,36 +16,27 @@
  */
 void Rover::failsafe_check()
 {
-    static uint16_t last_mainLoop_count;
+    static uint16_t last_ticks;
     static uint32_t last_timestamp;
-    static bool in_failsafe;
     const uint32_t tnow = AP_HAL::micros();
 
-    if (mainLoop_count != last_mainLoop_count) {
+    const uint16_t ticks = scheduler.ticks();
+    if (ticks != last_ticks) {
         // the main loop is running, all is OK
-        last_mainLoop_count = mainLoop_count;
+        last_ticks = ticks;
         last_timestamp = tnow;
-        in_failsafe = false;
         return;
     }
 
     if (tnow - last_timestamp > 200000) {
         // we have gone at least 0.2 seconds since the main loop
         // ran. That means we're in trouble, or perhaps are in
-        // an initialisation routine or log erase. Start passing RC
-        // inputs through to outputs
-        in_failsafe = true;
-    }
-
-    if (in_failsafe && tnow - last_timestamp > 20000 &&
-        channel_throttle->read() >= static_cast<uint16_t>(g.fs_throttle_value)) {
-        // pass RC inputs to outputs every 20ms
-        last_timestamp = tnow;
-        hal.rcin->clear_overrides();
-        for (uint8_t ch = 0; ch < 4; ch++) {
-            hal.rcout->write(ch, hal.rcin->read(ch));
+        // an initialisation routine or log erase. disarm the motors
+        // To-Do: log error to dataflash
+        if (arming.is_armed()) {
+            // disarm motors
+            disarm_motors();
         }
-        SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);
     }
 }
 
@@ -82,10 +73,24 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
             case 0:
                 break;
             case 1:
-                set_mode(mode_rtl, MODE_REASON_FAILSAFE);
+                if (!set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
+                    set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                }
                 break;
             case 2:
                 set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                break;
+            case 3:
+                if (!set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
+                    if (!set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
+                        set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                    }
+                }
+                break;
+            case 4:
+                if (!set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
+                    set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                }
                 break;
         }
     }
@@ -98,6 +103,6 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
 void Rover::afs_fs_check(void)
 {
     // perform AFS failsafe checks
-    g2.afs.check(rover.last_heartbeat_ms, false, failsafe.last_valid_rc_ms);  // Rover don't have fence
+    g2.afs.check(rover.last_heartbeat_ms, rover.g2.fence.get_breaches() != 0, failsafe.last_valid_rc_ms);
 }
 #endif

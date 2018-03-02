@@ -8,13 +8,13 @@
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
-AP_InertialSensor ins;
+static AP_InertialSensor ins;
 
 static void display_offsets_and_scaling();
 static void run_test();
 
 // board specific config
-AP_BoardConfig BoardConfig;
+static AP_BoardConfig BoardConfig;
 
 void setup(void);
 void loop(void);
@@ -161,6 +161,8 @@ static void run_test()
 
             hal.console->printf("   Gyro (%c) : X:%6.2f Y:%6.2f Z:%6.2f\n",
                                 state, (double)gyro.x, (double)gyro.y, (double)gyro.z);
+            auto temp = ins.get_temperature(ii);
+            hal.console->printf("   t:%6.2f\n", (double)temp);
         }
     }
 

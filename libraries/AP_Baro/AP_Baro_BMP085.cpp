@@ -33,11 +33,33 @@ extern const AP_HAL::HAL &hal;
 #define OVERSAMPLING BMP085_OVERSAMPLING_HIGHRES
 #endif
 
-AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : AP_Baro_Backend(baro)
     , _dev(std::move(dev))
+{ }
+
+AP_Baro_Backend * AP_Baro_BMP085::probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
 {
-    uint8_t buff[22];
+
+    if (!dev) {
+        return nullptr;
+    }
+
+    AP_Baro_BMP085 *sensor = new AP_Baro_BMP085(baro, std::move(dev));
+    if (!sensor || !sensor->_init()) {
+        delete sensor;
+        return nullptr;
+    }
+    return sensor;
+
+}
+
+bool AP_Baro_BMP085::_init()
+{
+    union {
+        uint8_t buff[22];
+        uint16_t wb[11];
+    } bb;
 
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore *sem = _dev->get_semaphore();
@@ -52,36 +74,103 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
         _eoc->mode(HAL_GPIO_INPUT);
     }
 
-    // We read the calibration data registers
-    if (!_dev->read_registers(0xAA, buff, sizeof(buff))) {
-        AP_HAL::panic("BMP085: bad calibration registers");
+
+    uint8_t id;
+
+    if (!_dev->read_registers(0xD0, &id, 1)) {
+        sem->give();
+        return false;
     }
 
-    ac1 = ((int16_t)buff[0] << 8) | buff[1];
-    ac2 = ((int16_t)buff[2] << 8) | buff[3];
-    ac3 = ((int16_t)buff[4] << 8) | buff[5];
-    ac4 = ((int16_t)buff[6] << 8) | buff[7];
-    ac5 = ((int16_t)buff[8] << 8) | buff[9];
-    ac6 = ((int16_t)buff[10] << 8) | buff[11];
-    b1 = ((int16_t)buff[12] << 8) | buff[13];
-    b2 = ((int16_t)buff[14] << 8) | buff[15];
-    mb = ((int16_t)buff[16] << 8) | buff[17];
-    mc = ((int16_t)buff[18] << 8) | buff[19];
-    md = ((int16_t)buff[20] << 8) | buff[21];
+    if (id!=0x55) {
+        return false;    // not BMP180
+    }
+
+
+    _dev->read_registers(0xD1, &_vers, 1);
+
+    bool prom_ok=false;
+    _type=0;
+
+    // We read the calibration data registers
+    if (_dev->read_registers(0xAA, bb.buff, sizeof(bb.buff))) {
+        prom_ok=true;
+
+    }
+
+    if (!prom_ok) {
+        if (_read_prom((uint16_t *)&bb.wb[0]))  { // BMP180 requires reads by 2 bytes
+            prom_ok=true;
+            _type=1;
+        }
+    }
+    if (!prom_ok) {
+        sem->give();
+        return false;
+    }
+
+    ac1 = ((int16_t)bb.buff[0] << 8) | bb.buff[1];
+    ac2 = ((int16_t)bb.buff[2] << 8) | bb.buff[3];
+    ac3 = ((int16_t)bb.buff[4] << 8) | bb.buff[5];
+    ac4 = ((int16_t)bb.buff[6] << 8) | bb.buff[7];
+    ac5 = ((int16_t)bb.buff[8] << 8) | bb.buff[9];
+    ac6 = ((int16_t)bb.buff[10]<< 8) | bb.buff[11];
+    b1 = ((int16_t)bb.buff[12] << 8) | bb.buff[13];
+    b2 = ((int16_t)bb.buff[14] << 8) | bb.buff[15];
+    mb = ((int16_t)bb.buff[16] << 8) | bb.buff[17];
+    mc = ((int16_t)bb.buff[18] << 8) | bb.buff[19];
+    md = ((int16_t)bb.buff[20] << 8) | bb.buff[21];
+
+    if ((ac1==0 || ac1==-1) ||
+        (ac2==0 || ac2==-1) ||
+        (ac3==0 || ac3==-1) ||
+        (ac4==0 || ac4==0xFFFF) ||
+        (ac5==0 || ac5==0xFFFF) ||
+        (ac6==0 || ac6==0xFFFF)) {
+        return false;
+    }
 
     _last_press_read_command_time = 0;
     _last_temp_read_command_time = 0;
-
-    _instance = _frontend.register_sensor();
 
     // Send a command to read temperature
     _cmd_read_temp();
 
     _state = 0;
 
+    _instance = _frontend.register_sensor();
+
     sem->give();
 
     _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP085::_timer, void));
+    return true;
+}
+
+uint16_t AP_Baro_BMP085::_read_prom_word(uint8_t word)
+{
+    const uint8_t reg = 0xAA + (word << 1);
+    uint8_t val[2];
+    if (!_dev->transfer(&reg, 1, val, sizeof(val))) {
+        return 0;
+    }
+    return (val[0] << 8) | val[1];
+}
+
+bool AP_Baro_BMP085::_read_prom(uint16_t *prom)
+{
+    bool all_zero = true;
+    for (uint8_t i = 0; i < 11; i++) {
+        prom[i] = _read_prom_word(i);
+        if (prom[i] != 0) {
+            all_zero = false;
+        }
+    }
+
+    if (all_zero) {
+        return false;
+    }
+
+    return true;
 }
 
 /*
@@ -138,17 +227,24 @@ void AP_Baro_BMP085::_cmd_read_pressure()
 bool AP_Baro_BMP085::_read_pressure()
 {
     uint8_t buf[3];
-
-    if (!_dev->read_registers(0xF6, buf, sizeof(buf))) {
-        _retry_time = AP_HAL::millis() + 1000;
-        _dev->set_speed(AP_HAL::Device::SPEED_LOW);
-        return false;
+    if (_dev->read_registers(0xF6, buf, sizeof(buf))) {
+        _raw_pressure = (((uint32_t)buf[0] << 16)
+                         | ((uint32_t)buf[1] << 8)
+                         | ((uint32_t)buf[2])) >> (8 - OVERSAMPLING);
+        return true;
     }
 
-    _raw_pressure = (((uint32_t)buf[0] << 16)
-                     | ((uint32_t)buf[1] << 8)
-                     | ((uint32_t)buf[2])) >> (8 - OVERSAMPLING);
-    return true;
+    uint8_t xlsb;
+    if (_dev->read_registers(0xF6, buf, 2) && _dev->read_registers(0xF8, &xlsb, 1)) {
+        _raw_pressure = (((uint32_t)buf[0] << 16)
+                         | ((uint32_t)buf[1] << 8)
+                         | ((uint32_t)xlsb)) >> (8 - OVERSAMPLING);
+        return true;
+    }
+
+    _last_press_read_command_time = AP_HAL::millis() + 1000;
+    _dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    return false;
 }
 
 // Send Command to Read Temperature
@@ -202,7 +298,7 @@ void AP_Baro_BMP085::_calculate()
     x1 = ac3 * b6 >> 13;
     x2 = (b1 * (b6 * b6 >> 12)) >> 16;
     x3 = ((x1 + x2) + 2) >> 2;
-    b4 = (ac4 * (uint32_t) (x3 + 32768)) >> 15;
+    b4 = (ac4 * (uint32_t)(x3 + 32768)) >> 15;
     b7 = ((uint32_t) _raw_pressure - b3) * (50000 >> OVERSAMPLING);
     p = b7 < 0x80000000 ? (b7 * 2) / b4 : (b7 / b4) * 2;
 

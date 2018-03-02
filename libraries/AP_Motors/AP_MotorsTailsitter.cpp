@@ -49,12 +49,13 @@ void AP_MotorsTailsitter::output_to_motors()
     if (!_flags.initialised_ok) {
         return;
     }
+    float throttle = _throttle;
     float throttle_left  = 0;
     float throttle_right = 0;
     
     switch (_spool_mode) {
         case SHUT_DOWN:
-            _throttle = 0;
+            throttle = 0;
             // set limits flags
             limit.roll_pitch = true;
             limit.yaw = true;
@@ -63,7 +64,7 @@ void AP_MotorsTailsitter::output_to_motors()
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
-            _throttle = constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
+            throttle = constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
             // set limits flags
             limit.roll_pitch = true;
             limit.yaw = true;
@@ -72,21 +73,23 @@ void AP_MotorsTailsitter::output_to_motors()
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
-        case SPOOL_DOWN:
-            throttle_left  = constrain_float(_throttle + _rudder*0.5, 0, 1);
-            throttle_right = constrain_float(_throttle - _rudder*0.5, 0, 1);
+        case SPOOL_DOWN: {
+            throttle = _spin_min + throttle * (1 - _spin_min);
+            throttle_left  = constrain_float(throttle + _rudder*0.5, _spin_min, 1);
+            throttle_right = constrain_float(throttle - _rudder*0.5, _spin_min, 1);
             // initialize limits flags
             limit.roll_pitch = false;
             limit.yaw = false;
             limit.throttle_lower = false;
             limit.throttle_upper = false;
             break;
+        }
     }
     // outputs are setup here, and written to the HAL by the plane servos loop
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  _aileron*SERVO_OUTPUT_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, _elevator*SERVO_OUTPUT_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder,   _rudder*SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, _throttle*THROTTLE_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle*THROTTLE_RANGE);
 
     // also support differential roll with twin motors
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  throttle_left*THROTTLE_RANGE);

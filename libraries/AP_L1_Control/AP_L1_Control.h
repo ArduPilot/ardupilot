@@ -21,12 +21,16 @@
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    AP_L1_Control(AP_AHRS &ahrs, const AP_SpdHgtControl * spdHgtControl)
-        : _ahrs(ahrs),
-          _spdHgtControl(spdHgtControl)
+    AP_L1_Control(AP_AHRS &ahrs, const AP_SpdHgtControl *spdHgtControl)
+        : _ahrs(ahrs)
+        , _spdHgtControl(spdHgtControl)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
+
+    /* Do not allow copies */
+    AP_L1_Control(const AP_L1_Control &other) = delete;
+    AP_L1_Control &operator=(const AP_L1_Control&) = delete;
 
     /* see AP_Navigation.h for the definitions and units of these
      * functions */

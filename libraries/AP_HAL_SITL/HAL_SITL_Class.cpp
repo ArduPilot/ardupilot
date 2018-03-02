@@ -86,6 +86,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 
     for (;;) {
         callbacks->loop();
+        sitlScheduler._run_io_procs(false);
     }
 }
 

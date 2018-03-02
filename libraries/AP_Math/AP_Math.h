@@ -154,13 +154,13 @@ inline int32_t constrain_int32(const int32_t amt, const int32_t low, const int32
 }
 
 // degrees -> radians
-static inline float radians(float deg)
+static inline constexpr float radians(float deg)
 {
     return deg * DEG_TO_RAD;
 }
 
 // radians -> degrees
-static inline float degrees(float rad)
+static inline constexpr float degrees(float rad)
 {
     return rad * RAD_TO_DEG;
 }

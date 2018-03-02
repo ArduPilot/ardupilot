@@ -51,7 +51,7 @@ PX4_V4PRO_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v4pro_APM.mk
 # because this platform lacks most of the standard library and STL. Hence we need to force C++03 mode.
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -DUAVCAN_CPP_VERSION=UAVCAN_CPP03 -DUAVCAN_NO_ASSERTIONS -DUAVCAN_NULLPTR=nullptr -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 
-WARNFLAGS = -Wall -Wextra -Wlogical-op -Werror -Wno-unknown-pragmas -Wno-redundant-decls -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function
+WARNFLAGS = -Wall -Wextra -Wlogical-op -Werror -Wno-attributes -Wno-unknown-pragmas -Wno-redundant-decls -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function -Wno-trigraphs
 OPTFLAGS = -fsingle-precision-constant
 
 # avoid PX4 submodules
@@ -123,7 +123,7 @@ px4-v4: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(UAVCAN_HEADER
 	$(v) arm-none-eabi-size $(PX4_ROOT)/Build/px4fmu-v4_APM.build/firmware.elf
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v4_APM.px4 $(SKETCH)-v4.px4
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/bootloader/
-	$(v) cp $(SKETCHBOOK)/mk/PX4/bootloader/px4fmuv4_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
+	$(v) cp $(SKETCHBOOK)/Tools/bootloaders/px4fmuv4_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v4.px4" "$(SKETCH)-v4.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v4.px4"
 
@@ -136,7 +136,7 @@ px4-v4pro: $(BUILDROOT)/make.flags CHECK_MODULES $(MAVLINK_HEADERS) $(UAVCAN_HEA
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v4pro_APM.px4 $(SKETCH)-v4pro.px4
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v4pro.px4" "$(SKETCH)-v4pro.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v4pro.px4"
-	
+
 # force the 3 build types to not run in parallel. We got bad binaries with incorrect parameter handling
 # when these were allowed to happen in parallel
 px4:
@@ -149,6 +149,7 @@ px4:
 px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build $(PX4_ROOT)/Images/*.px4 $(PX4_ROOT)/Images/*.bin
 	$(v) /bin/rm -rf $(PX4_ROOT)/src/modules/uORB/topics $(PX4_ROOT)/src/platforms/nuttx/px4_messages
+	$(v) /bin/rm -rf $(SKETCHBOOK)/modules/uavcan/libuavcan/include/dsdlc_generated
 	$(v) /bin/rm -f $(SRCROOT)/*.o
 
 px4-cleandep: clean
@@ -156,6 +157,7 @@ px4-cleandep: clean
 	$(v) find $(PX4_ROOT)/Build -type f -name '*.d' | xargs rm -f
 	$(v) find $(UAVCAN_DIRECTORY) -type f -name '*.d' | xargs rm -f
 	$(v) find $(SKETCHBOOK)/$(SKETCH) -type f -name '*.d' | xargs rm -f
+	$(v) /bin/rm -rf $(SKETCHBOOK)/modules/uavcan/libuavcan/include/dsdlc_generated
 
 px4-v2-upload-solo: px4-v2
 	scp $(SKETCH)-v2.px4 root@10.1.1.10:/tmp/
@@ -181,7 +183,7 @@ px4-v4-upload: px4-v4
 px4-v4pro-upload: px4-v4pro
 	$(RULEHDR)
 	$(v) $(PX4_MAKE) px4fmu-v4pro_APM upload	
-	
+
 px4-upload: px4-v1-upload
 
 px4-archives-clean:
@@ -194,7 +196,7 @@ px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/px4io/
 	$(v) cp px4io-v1.bin $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/bootloader/
-	$(v) cp $(SKETCHBOOK)/mk/PX4/bootloader/px4fmu_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
+	$(v) cp $(SKETCHBOOK)/Tools/bootloaders/px4fmu_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) echo "PX4IOv1 Firmware is in px4io-v1.bin"
 
 
@@ -205,7 +207,7 @@ px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/px4io/
 	$(v) cp px4io-v2.bin $(MK_DIR)/PX4/ROMFS/px4io/px4io.bin
 	$(v) mkdir -p $(MK_DIR)/PX4/ROMFS/bootloader/
-	$(v) cp $(SKETCHBOOK)/mk/PX4/bootloader/px4fmuv2_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
+	$(v) cp $(SKETCHBOOK)/Tools/bootloaders/px4fmuv2_bl.bin $(MK_DIR)/PX4/ROMFS/bootloader/fmu_bl.bin
 	$(v) echo "PX4IOv2 Firmware is in px4io-v2.bin"
 
 px4-io: px4-io-v1 px4-io-v2
@@ -241,7 +243,7 @@ $(PX4_ROOT)/Archives/px4fmu-v4.export:
 
 $(PX4_ROOT)/Archives/px4fmu-v4pro.export:
 	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4fmu-v4pro"
-	
+
 $(PX4_ROOT)/Archives/px4io-v1.export:
 	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v1"
 

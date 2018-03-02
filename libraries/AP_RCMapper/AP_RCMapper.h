@@ -4,12 +4,13 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 
-class RCMapper
-{
+class RCMapper {
 public:
-    /// Constructor
-    ///
     RCMapper();
+
+    /* Do not allow copies */
+    RCMapper(const RCMapper &other) = delete;
+    RCMapper &operator=(const RCMapper&) = delete;
 
     /// roll - return input channel number for roll / aileron input
     uint8_t roll() const { return _ch_roll; }

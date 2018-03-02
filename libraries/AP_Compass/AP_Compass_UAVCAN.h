@@ -24,7 +24,6 @@ private:
     int      _mag_fd;
     Vector3f _sum;
     uint32_t _count;
-    uint64_t _last_timestamp;
 
     bool _initialized;
     uint8_t _manager;

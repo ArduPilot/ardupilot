@@ -1,6 +1,43 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.5.2 31-October-2017
+
+Changes from 3.5.1:
+
+- Bugfix output conflicts between motors and servo channel function assignments
+- Bugfix Notify leak flag logic
+- Bugfix COMPASS_OFFS_MAX should default to 1000
+- Don't emit tether turn status via audible STATUSTEXT messages
+- Increase threshold for input hold engaged flag
+- Announce input hold engaged/disengaged
+- Force correct GND_EXT_BUS parameter at boot for Pixhawk 1 and 2
+- Rework camera tilt input and slew limiting. This fixes mount stabilization.
+- Clear and disable input hold when disarmed
+- Allow adjusting PWM output range for lights channels
+- Always neutralize control inputs during pilot input failsafe
+- Add joystick button functions for relays 3 and 4
+- Clear roll/pitch inputs when switching to manual or acro mode
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.5.1 12-September-2017 / Sub 3.5.1beta1 29-August-2017
+
+Changes from 3.5:
+
+- Various parameter metadata and default value corrections
+- Add support for PLAY_TUNE and LED_CONTROL mavlink commands
+- Send sub-specific telemetry via NAMED_VALUE_FLOAT (tether turns, camera tilt angle etc.)
+- Support for Keller LD pressure sensors enabling depth measurement to 200 bar / 2 km
+- Relax arming checks, no sensor checks required by default
+- Increase pilot input failsafe timeout from 1 second to 3 seconds
+- Default INS_GYR_CAL behavior to 'Never' (0)
+- Bug fix neutralization of forward input channel during failsafe
+- Bug fix notify LED status code does not reflect leak fault resolution
+- Set GND_EXT_BUS appropriately at boot for both Pixhawk 1 and Pixhawk 2
+- Bug fix sensor health flag with no pressure sensor detected at boot
+- Acknowledge MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN before shutting down
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 3.5 09-May-2017 / Sub 3.5-rc2 04-May-2017
 
 Changes from 3.5-rc1:
@@ -51,7 +88,7 @@ Other changes:
 - Implement battery failsafe
 - Implement relay joystick button functions
 - Add joystick button functions to control servos
-- Add joystick button function to toggle between foward/lateral input and roll/pitch input
+- Add joystick button function to toggle between forward/lateral input and roll/pitch input
 - Remove BASE_RESET and BASE_PRESS baro parameters. Barometer reset is now done via mavlink cmd.
 - Implement parameter reset to defaults via mavlink cmd.
 - Fixed bug with camera tilt smoothing conflicting with RC_OVERRIDE messages
@@ -309,7 +346,7 @@ Changes from 3.3-rc3
     b) H_COLYAW param can be float 
 8) Small Improvements / Bug Fixes:
     a) reduced spline overshoot after very long track followed by very short track
-    b) log entire mission to dataflash whenver it's uploaded
+    b) log entire mission to dataflash whenever it's uploaded
     c) altitude reported if vehicle takes off before GPS lock
     d) high speed logging of IMU
     e) STOP flight mode renamed to BRAKE and aux switch option added
@@ -463,7 +500,7 @@ Changes from 3.2-rc7
 3) sensor health flags sent to GCS only after initialisation to remove false alerts 
 4) suppress bad terrain data alerts
 5) Bug Fix:
-    a)PX4 dataflash RAM useage reduced to 8k so it works again  
+    a)PX4 dataflash RAM usage reduced to 8k so it works again  
 ------------------------------------------------------------------
 ArduCopter 3.2-rc7 04-Sep-2014
 Changes from 3.2-rc6
@@ -690,7 +727,7 @@ ArduCopter 3.1-rc6 16-Nov-2013
 Improvements over 3.1-rc5
 1) Heli improvements:
     a) support for direct drive tails (uses TAIL_TYPE and TAIL_SPEED parameters)
-    b) smooth main rotor ramp-up for those without external govenor (RSC_RAMP_TIME)
+    b) smooth main rotor ramp-up for those without external governor (RSC_RAMP_TIME)
     c) internal estimate of rotor speed configurable with RSC_RUNUP_TIME parameter to ensure rotor at top speed before starting missions
     d) LAND_COL_MIN collective position used when landed (reduces chance copter will push too hard into the ground when landing or before starting missions)
     e) reduced collective while in stabilize mode (STAB_COL_MIN, STAB_COL_MAX) for more precise throttle control
@@ -825,7 +862,7 @@ Improvements over 3.0.0-rc3
 6) RTL returns to initial yaw heading before descending
 7) safe features:
     i) check for gps lock when entering failsafe
-    ii) pre-arm check for mag field lenght
+    ii) pre-arm check for mag field length
     iii) pre-arm check for board voltage between 4.5v ~ 5.8V
     iv) beep twice during arming
     v) GPS failsafe enabled by default (will LAND if loses GPS in Loiter, AUTO, Guided modes)
@@ -925,7 +962,7 @@ Improvements over 2.9-rc3:
 ArduCopter 2.9-rc3 11-Jan-2013
 Improvements over 2.9-rc2:
 1) alt hold with sonar improvements - now on by default (Leonard/Randy)
-2) performance and memory useage improvements (Tridge/Randy)
+2) performance and memory usage improvements (Tridge/Randy)
 3) increase APM1 baro pressure read from 5hz to 8.3hz to improve alt hold (Randy)
 4) bug fix: altitude error reported to GCS (Randy)
 5) limit inertial nav's max accel offset correction to 100cm/s/s to speed up recovery after hard impacts (Randy)_

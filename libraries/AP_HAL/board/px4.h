@@ -39,6 +39,7 @@
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_AEROFC_V1
 #define HAL_STORAGE_SIZE            16384
 #define USE_FLASH_STORAGE           1
+#define HAL_RCOUTPUT_TAP_DEVICE "/dev/ttyS0"
 // we don't have any sdcard
 #undef HAL_BOARD_LOG_DIRECTORY
 #undef HAL_BOARD_TERRAIN_DIRECTORY
@@ -49,8 +50,8 @@
 #define HAL_GPIO_A_LED_PIN        27
 #define HAL_GPIO_B_LED_PIN        26
 #define HAL_GPIO_C_LED_PIN        25
-#define HAL_GPIO_LED_ON           LOW
-#define HAL_GPIO_LED_OFF          HIGH
+#define HAL_GPIO_LED_ON           0
+#define HAL_GPIO_LED_OFF          1
 
 #define HAL_BARO_MS5611_NAME "ms5611"
 #define HAL_BARO_MS5611_SPI_INT_NAME "ms5611_int"
@@ -96,7 +97,7 @@
 #define HAL_BARO_MS5607_I2C_BUS  0
 #define HAL_COMPASS_IST8310_I2C_ADDR 0x0E
 #define HAL_COMPASS_IST8310_I2C_BUS 1
-#define HAL_SERIAL0_BAUD_DEFAULT 460800
+#define HAL_SERIAL0_BAUD_DEFAULT 921600
 
 #define HAL_HAVE_BOARD_VOLTAGE 0
 #define HAL_HAVE_SAFETY_SWITCH 0
@@ -104,6 +105,15 @@
 #define HAL_PX4_HAVE_PX4IO 0
 #define HAL_PX4_HAVE_PWM_INPUT 0
 #endif
+
+/* AP_Radio configuration */
+
+#ifdef HAL_RCINPUT_WITH_AP_RADIO
+// this is the SPI bus for cypress on the skyviper-v2450
+# define CYRF_SPI_PX4_SPI_BUS        2
+# define CYRF_SPI_PX4_SPIDEV_EXT     (spi_dev_e)1
+# define CYRF_IRQ_INPUT (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTD|GPIO_PIN15)
+#endif // HAL_RCINPUT_WITH_AP_RADIO
 
 /* default values */
 #ifndef HAL_SERIAL0_BAUD_DEFAULT
@@ -128,4 +138,12 @@
 
 #ifndef HAL_HAVE_SAFETY_SWITCH
 #define HAL_HAVE_SAFETY_SWITCH 1
+#endif
+
+#ifndef AP_FEATURE_RTSCTS
+#define AP_FEATURE_RTSCTS 1
+#endif
+
+#ifndef AP_FEATURE_SBUS_OUT
+#define AP_FEATURE_SBUS_OUT 1
 #endif

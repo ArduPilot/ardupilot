@@ -15,6 +15,7 @@
 #include <AP_GPS/GPS_Backend.h>
 #include <AP_Baro/AP_Baro_Backend.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_BattMonitor/AP_BattMonitor_Backend.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
@@ -34,6 +35,7 @@
 #define AP_UAVCAN_MAX_GPS_NODES 4
 #define AP_UAVCAN_MAX_MAG_NODES 4
 #define AP_UAVCAN_MAX_BARO_NODES 4
+#define AP_UAVCAN_MAX_BI_NUMBER 4
 
 #define AP_UAVCAN_SW_VERS_MAJOR 1
 #define AP_UAVCAN_SW_VERS_MINOR 0
@@ -89,14 +91,33 @@ public:
 
     uint8_t register_mag_listener(AP_Compass_Backend* new_listener, uint8_t preferred_channel);
     void remove_mag_listener(AP_Compass_Backend* rem_listener);
-    Mag_Info *find_mag_node(uint8_t node);
+    Mag_Info *find_mag_node(uint8_t node, uint8_t sensor_id);
     uint8_t find_smallest_free_mag_node();
     uint8_t register_mag_listener_to_node(AP_Compass_Backend* new_listener, uint8_t node);
-    void update_mag_state(uint8_t node);
+    void update_mag_state(uint8_t node, uint8_t sensor_id);
+
+    struct BatteryInfo_Info {
+        float temperature;
+        float voltage;
+        float current;
+        float remaining_capacity_wh;
+        float full_charge_capacity_wh;
+        uint8_t status_flags;
+    };
+
+    uint8_t register_BM_bi_listener_to_id(AP_BattMonitor_Backend* new_listener, uint8_t id);
+    void remove_BM_bi_listener(AP_BattMonitor_Backend* rem_listener);
+    BatteryInfo_Info *find_bi_id(uint8_t id);
+    uint8_t find_smallest_free_bi_id();
+    void update_bi_state(uint8_t id);
 
     // synchronization for RC output
     bool rc_out_sem_take();
     void rc_out_sem_give();
+
+    // output from do_cyclic
+    void rc_out_send_servos();
+    void rc_out_send_esc();
 
 private:
     // ------------------------- GPS
@@ -123,8 +144,17 @@ private:
     uint8_t _mag_nodes[AP_UAVCAN_MAX_MAG_NODES];
     uint8_t _mag_node_taken[AP_UAVCAN_MAX_MAG_NODES];
     Mag_Info _mag_node_state[AP_UAVCAN_MAX_MAG_NODES];
+    uint8_t _mag_node_max_sensorid_count[AP_UAVCAN_MAX_MAG_NODES];
     uint8_t _mag_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
     AP_Compass_Backend* _mag_listeners[AP_UAVCAN_MAX_LISTENERS];
+    uint8_t _mag_listener_sensor_ids[AP_UAVCAN_MAX_LISTENERS];
+
+    // ------------------------- BatteryInfo
+    uint16_t _bi_id[AP_UAVCAN_MAX_BI_NUMBER];
+    uint16_t _bi_id_taken[AP_UAVCAN_MAX_BI_NUMBER];
+    BatteryInfo_Info _bi_id_state[AP_UAVCAN_MAX_BI_NUMBER];
+    uint16_t _bi_BM_listener_to_id[AP_UAVCAN_MAX_LISTENERS];
+    AP_BattMonitor_Backend* _bi_BM_listeners[AP_UAVCAN_MAX_LISTENERS];
 
     struct {
         uint16_t pulse;

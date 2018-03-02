@@ -101,8 +101,8 @@ RCOutput_AeroIO::RCOutput_AeroIO()
 
 RCOutput_AeroIO::~RCOutput_AeroIO()
 {
-    delete _freq_buffer;
-    delete _duty_buffer;
+    delete[] _freq_buffer;
+    delete[] _duty_buffer;
 }
 
 void RCOutput_AeroIO::init()

@@ -35,6 +35,7 @@
 #include <netinet/tcp.h>
 #include <sys/select.h>
 #include <termios.h>
+#include <sys/time.h>
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
@@ -152,7 +153,19 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     if (size <= 0) {
         return 0;
     }
-    _writebuffer.write(buffer, size);
+    if (_unbuffered_writes) {
+        // write buffer straight to the file descriptor
+        const ssize_t nwritten = ::write(_fd, buffer, size);
+        if (nwritten == -1 && errno != EAGAIN && _uart_path) {
+            close(_fd);
+            _fd = -1;
+            _connected = false;
+        }
+        // these have no effect
+        tcdrain(_fd);
+    } else {
+        _writebuffer.write(buffer, size);
+    }
     return size;
 }
 
@@ -335,9 +348,7 @@ void UARTDriver::_uart_start_connection(void)
     tcsetattr(_fd, TCSANOW, &t);
 
     // set baudrate
-    tcgetattr(_fd, &t);
-    cfsetspeed(&t, _uart_baudrate);
-    tcsetattr(_fd, TCSANOW, &t);
+    set_speed(_uart_baudrate);
 
     _connected = true;
     _use_send_recv = false;
@@ -392,6 +403,23 @@ void UARTDriver::_set_nonblocking(int fd)
 {
     unsigned v = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, v | O_NONBLOCK);
+}
+
+bool UARTDriver::set_unbuffered_writes(bool on) {
+    if (_fd == -1) {
+        return false;
+    }
+    _unbuffered_writes = on;
+
+    // this has no effect
+    unsigned v = fcntl(_fd, F_GETFL, 0);
+    v &= ~O_NONBLOCK;
+#if defined(__APPLE__) && defined(__MACH__)
+    fcntl(_fd, F_SETFL | F_NOCACHE, v | O_SYNC);
+#else
+    fcntl(_fd, F_SETFL, v | O_DIRECT | O_SYNC);
+#endif
+    return _unbuffered_writes;
 }
 
 void UARTDriver::_check_reconnect(void)

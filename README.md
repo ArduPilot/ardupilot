@@ -2,7 +2,7 @@
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ArduPilot/ardupilot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![Build SemaphoreCI](https://semaphoreci.com/api/v1/projects/4d28a40d-b6a6-4bfb-9780-95d92aabb178/667563/badge.svg)](https://semaphoreci.com/diydrones/ardupilot)
+[![Build SemaphoreCI](https://semaphoreci.com/api/v1/ardupilot/ardupilot/branches/master/badge.svg)](https://semaphoreci.com/ardupilot/ardupilot)
 
 [![Build Travis](https://travis-ci.org/ArduPilot/ardupilot.svg?branch=master)](https://travis-ci.org/ArduPilot/ardupilot)
 
@@ -74,8 +74,6 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Board***: APM1, APM2, Pixhawk, Pixhawk2, PixRacer
 - [Randy Mackay](https://github.com/rmackay9)
   - ***Vehicle***: Copter, AntennaTracker
-- [Robert Lefebvre](https://github.com/R-Lefebvre)
-  - ***Vehicle***: TradHeli
 - [Grant Morphett](https://github.com/gmorph):
   - ***Vehicle***: Rover
 - [Tom Pittenger](https://github.com/magicrub)
@@ -101,15 +99,13 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
 - [Víctor Mayoral Vilches](https://github.com/vmayoral)
   - ***Board***: PXF, Erle-Brain 2, PXFmini
 - [Mirko Denecke](https://github.com/mirkix)
-  - ***Board***: BBBmini, BeagleBone Blue
+  - ***Board***: BBBmini, BeagleBone Blue, PocketPilot
 - [Georgii Staroselskii](https://github.com/staroselskii)
   - ***Board***: NavIO
 - [Emile Castelnuovo](https://github.com/emilecastelnuovo)
   - ***Board***: VRBrain
 - [Julien BERAUD](https://github.com/jberaud)
   - ***Board***: Bebop & Bebop 2
-- [Pritam Ghanghas](https://github.com/pritamghanghas)
-  - ***Board***: Raspilot
 - [Matt Lawrence](https://github.com/Pedals2Paddles)
   - ***Vehicle***: 3DR Solo & Solo based vehicles
 - [Gustavo José de Sousa](https://github.com/guludo)

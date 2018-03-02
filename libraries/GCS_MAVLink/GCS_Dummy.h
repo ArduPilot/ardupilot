@@ -1,5 +1,14 @@
 #include "GCS.h"
 
+const AP_FWVersion fwver
+{
+    major: 3,
+    minor: 1,
+    patch: 4,
+    fw_type: FIRMWARE_VERSION_TYPE_DEV,
+    fw_string: "Dummy GCS"
+};
+
 /*
  *  GCS backend used for many examples and tools
  */
@@ -17,9 +26,10 @@ protected:
     Compass *get_compass() const override { return nullptr; };
     AP_Mission *get_mission() override { return nullptr; }
     AP_Rally *get_rally() const override { return nullptr; };
-    AP_GPS *get_gps() const override { return nullptr; };
     AP_Camera *get_camera() const override { return nullptr; };
     AP_ServoRelayEvents *get_servorelayevents() const override { return nullptr; }
+    const AP_FWVersion &get_fwver() const override { return fwver; }
+    void set_ekf_origin(const Location& loc) override { };
 
     uint8_t sysid_my_gcs() const override { return 1; }
     bool set_mode(uint8_t mode) override { return false; };

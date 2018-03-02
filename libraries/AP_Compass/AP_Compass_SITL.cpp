@@ -70,7 +70,7 @@ void AP_Compass_SITL::_timer()
 
     for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
         rotate_field(new_mag_data, _compass_instance[i]);
-        publish_raw_field(new_mag_data, AP_HAL::micros(), _compass_instance[i]);
+        publish_raw_field(new_mag_data, _compass_instance[i]);
         correct_field(new_mag_data, _compass_instance[i]);
     }
 

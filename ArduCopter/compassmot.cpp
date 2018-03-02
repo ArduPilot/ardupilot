@@ -9,7 +9,7 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
 {
 #if FRAME_CONFIG == HELI_FRAME
     // compassmot not implemented for tradheli
-    return MAV_RESULT_TEMPORARILY_REJECTED;
+    return MAV_RESULT_UNSUPPORTED;
 #else
     int8_t   comp_type;                 // throttle or current based compensation
     Vector3f compass_base[COMPASS_MAX_INSTANCES];           // compass vector when throttle is zero
@@ -58,8 +58,7 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     }
 
     // check if radio is calibrated
-    arming.pre_arm_rc_checks(true);
-    if (!ap.pre_arm_rc_check) {
+    if (!arming.rc_calibration_checks(true)) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "RC not calibrated");
         ap.compass_mot = false;
         return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -157,9 +156,9 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
         read_radio();
         
         // pass through throttle to motors
-        hal.rcout->cork();
+        SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
-        hal.rcout->push();
+        SRV_Channels::push();
         
         // read some compass values
         compass.read();

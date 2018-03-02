@@ -398,7 +398,7 @@ AP_GPS_UBLOX::read(void)
             }
             _step = 0;
             Debug("reset %u", __LINE__);
-            /* no break */
+            FALLTHROUGH;
         case 0:
             if(PREAMBLE1 == data)
                 _step++;
@@ -494,6 +494,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
         jamInd     : _buffer.mon_hw_60.jamInd,
         aPower     : _buffer.mon_hw_60.aPower,
         agcCnt     : _buffer.mon_hw_60.agcCnt,
+        config     : _unconfigured_messages,
     };
     if (_payload_length == 68) {
         pkt.noisePerMS = _buffer.mon_hw_68.noisePerMS;
@@ -1215,7 +1216,7 @@ reset:
                 break;
             }
             state.step = 0;
-            /* no break */
+            FALLTHROUGH;
         case 0:
             if (PREAMBLE1 == data)
                 state.step++;

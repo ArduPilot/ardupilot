@@ -43,6 +43,7 @@ public:
         MOTOR_FRAME_TAILSITTER = 10,
         MOTOR_FRAME_HELI_DUAL = 11,
         MOTOR_FRAME_DODECAHEXA = 12,
+        MOTOR_FRAME_HELI_QUAD = 13,
     };
     enum motor_frame_type {
         MOTOR_FRAME_TYPE_PLUS = 0,
@@ -140,9 +141,6 @@ public:
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
     virtual void        set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) = 0;
 
-    // enable - starts allowing signals to be sent to motors
-    virtual void        enable() = 0;
-
     // output - sends commands to the motors
     virtual void        output() = 0;
 
@@ -172,7 +170,6 @@ protected:
     virtual void        output_armed_stabilizing()=0;
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
     virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
-    virtual void        rc_enable_ch(uint8_t chan);
     virtual uint32_t    rc_map_mask(uint32_t mask) const;
 
     // add a motor to the motor map
@@ -217,9 +214,7 @@ protected:
     float               _batt_resistance;       // latest battery resistance estimate in ohms
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
 
-    // mapping to output channels
-    uint8_t             _motor_map[AP_MOTORS_MAX_NUM_MOTORS];
-    uint16_t            _motor_map_mask;
+    // mask of what channels need fast output
     uint16_t            _motor_fast_mask;
 
     // pass through variables

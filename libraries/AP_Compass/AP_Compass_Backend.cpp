@@ -26,7 +26,7 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
     }
 }
 
-void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint32_t time_us, uint8_t instance)
+void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint8_t instance)
 {
     Compass::mag_state &state = _compass._state[instance];
 
@@ -51,18 +51,10 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     const Vector3f &offdiagonals = state.offdiagonals.get();
     const Vector3f &mot = state.motor_compensation.get();
 
-    /*
-     * note that _motor_offset[] is kept even if compensation is not
-     * being applied so it can be logged correctly
-     */
+    // add in the basic offsets
     mag += offsets;
-    if(_compass._motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && !is_zero(_compass._thr_or_curr)) {
-        state.motor_offset = mot * _compass._thr_or_curr;
-        mag += state.motor_offset;
-    } else {
-        state.motor_offset.zero();
-    }
 
+    // apply eliptical correction
     Matrix3f mat(
         diagonals.x, offdiagonals.x, offdiagonals.y,
         offdiagonals.x,    diagonals.y, offdiagonals.z,
@@ -70,6 +62,28 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     );
 
     mag = mat * mag;
+
+    /*
+      calculate motor-power based compensation
+      note that _motor_offset[] is kept even if compensation is not
+      being applied so it can be logged correctly
+    */    
+    state.motor_offset.zero();
+    if (_compass._per_motor.enabled() && i == 0) {
+        // per-motor correction is only valid for first compass
+        _compass._per_motor.compensate(state.motor_offset);
+    } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE ||
+               _compass._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
+        state.motor_offset = mot * _compass._thr_or_curr;
+    }
+
+    /*
+      we apply the motor offsets after we apply the eliptical
+      correction. This is needed to match the way that the motor
+      compensation values are calculated, as they are calculated based
+      on final field outputs, not on the raw outputs
+    */
+    mag += state.motor_offset;
 }
 
 /*

@@ -25,6 +25,11 @@ class AC_PrecLand
     friend class AC_PrecLand_SITL;
 
 public:
+    AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav);
+
+    /* Do not allow copies */
+    AC_PrecLand(const AC_PrecLand &other) = delete;
+    AC_PrecLand &operator=(const AC_PrecLand&) = delete;
 
     // precision landing behaviours (held in PRECLAND_ENABLED parameter)
     enum PrecLandBehaviour {
@@ -41,9 +46,6 @@ public:
         PRECLAND_TYPE_SITL_GAZEBO,
         PRECLAND_TYPE_SITL,
     };
-
-    // constructor
-    AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav);
 
     // perform any required initialisation of landing controllers
     void init();

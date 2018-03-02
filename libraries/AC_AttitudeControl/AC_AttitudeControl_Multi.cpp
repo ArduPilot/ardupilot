@@ -10,14 +10,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_RLL_P
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
-    // @Range: 0.08 0.30
+    // @Range: 0.05 0.5
     // @Increment: 0.005
     // @User: Standard
 
     // @Param: RAT_RLL_I
     // @DisplayName: Roll axis rate controller I gain
     // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate
-    // @Range: 0.01 0.5
+    // @Range: 0.01 2.0
     // @Increment: 0.01
     // @User: Standard
 
@@ -55,14 +55,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
     // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
-    // @Range: 0.08 0.30
+    // @Range: 0.05 0.50
     // @Increment: 0.005
     // @User: Standard
 
     // @Param: RAT_PIT_I
     // @DisplayName: Pitch axis rate controller I gain
     // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate
-    // @Range: 0.01 0.5
+    // @Range: 0.01 2.0
     // @Increment: 0.01
     // @User: Standard
 
@@ -100,14 +100,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
     // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
-    // @Range: 0.10 0.50
+    // @Range: 0.10 2.50
     // @Increment: 0.005
     // @User: Standard
 
     // @Param: RAT_YAW_I
     // @DisplayName: Yaw axis rate controller I gain
     // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate
-    // @Range: 0.010 0.05
+    // @Range: 0.010 1.0
     // @Increment: 0.01
     // @User: Standard
 
@@ -136,7 +136,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: RAT_YAW_FILT
     // @DisplayName: Yaw axis rate controller input frequency in Hz
     // @Description: Yaw axis rate controller input frequency in Hz
-    // @Range: 1 100
+    // @Range: 1 10
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -159,7 +159,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Param: THR_MIX_MAN
     // @DisplayName: Throttle Mix Manual
     // @Description: Throttle vs attitude control prioritisation used during manual flight (higher values mean we prioritise attitude control over throttle)
-    // @Range: 0.5 0.9
+    // @Range: 0.1 0.9
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 

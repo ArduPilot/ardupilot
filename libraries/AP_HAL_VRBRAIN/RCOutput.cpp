@@ -9,10 +9,16 @@
 #include <unistd.h>
 
 #include <drivers/drv_pwm_output.h>
-#include <uORB/topics/actuator_direct.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
 #include <drivers/drv_sbus.h>
+
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
+#if HAL_WITH_UAVCAN
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -38,7 +44,8 @@ void VRBRAINRCOutput::init()
         hal.console->printf("RCOutput: Unable to setup IO arming OK\n");
     }
 
-    _rate_mask = 0;
+    _rate_mask_main = 0;
+    _rate_mask_alt = 0;
     _alt_fd = -1;    
     _servo_count = 0;
     _alt_servo_count = 0;
@@ -53,24 +60,22 @@ void VRBRAINRCOutput::init()
     }
 
 
-//    _alt_fd = open("/dev/px4fmu", O_RDWR);
-//    if (_alt_fd == -1) {
-//        hal.console->printf("RCOutput: failed to open /dev/px4fmu");
-//        return;
-//    }
+
+
+
+
+
+
+
+
+
 
 
     // ensure not to write zeros to disabled channels
-    _enabled_channels = 0;
     for (uint8_t i=0; i < VRBRAIN_NUM_OUTPUT_CHANNELS; i++) {
         _period[i] = PWM_IGNORE_THIS_CHANNEL;
+        _last_sent[i] = PWM_IGNORE_THIS_CHANNEL;
     }
-
-    // publish actuator vaules on demand
-    _actuator_direct_pub = nullptr;
-
-    // and armed state
-    _actuator_armed_pub = nullptr;
 }
 
 
@@ -95,8 +100,14 @@ void VRBRAINRCOutput::_init_alt_channels(void)
 /*
   set output frequency on outputs associated with fd
  */
-void VRBRAINRCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz) 
+void VRBRAINRCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_t &rate_mask) 
 {
+    if (_output_mode == MODE_PWM_BRUSHED) {
+        freq_hz /= 8; // divide by 8 for 8MHz clock
+        // remember max period
+        _period_max = 1000000UL/freq_hz;
+    }
+    
     // we can't set this per channel
     if (freq_hz > 50 || freq_hz == 1) {
         // we're being asked to set the alt rate
@@ -108,7 +119,7 @@ void VRBRAINRCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
              */
             freq_hz = 1;
         }
-        //::printf("SET_UPDATE_RATE %u\n", (unsigned)freq_hz);
+        //::printf("SET_UPDATE_RATE %d %u\n", fd, (unsigned)freq_hz);
         if (ioctl(fd, PWM_SERVO_SET_UPDATE_RATE, (unsigned long)freq_hz) != 0) {
             hal.console->printf("RCOutput: Unable to set alt rate to %uHz\n", (unsigned)freq_hz);
             return;
@@ -118,10 +129,15 @@ void VRBRAINRCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
 
     /* work out the new rate mask. The outputs have 4 groups of servos. 
 
+       Group 0: channels 0 1 2 3
+       Group 1: channels 4 5
+       Group 2: channels 6 7
+       Group 3: channels 8 9 10
+
        Group 0: channels 0 1 2
        Group 1: channels 3 4 5
        Group 2: channels 6 7
-       Group 8: channels 8 9 10 11
+       Group 3: channels 8 9 10 11
 
        Channels within a group must be set to the same rate.
 
@@ -130,39 +146,72 @@ void VRBRAINRCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz)
      */
     if (freq_hz > 50 || freq_hz == 1) {
         // we are setting high rates on the given channels
-        _rate_mask |= chmask & 0xFF;
-        if (_rate_mask & 0x07) {
-            _rate_mask |= 0x07;
+        rate_mask |= chmask & 0xFFF;
+#if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+        if (rate_mask & 0x0F) {
+            rate_mask |= 0x0F;
         }
-        if (_rate_mask & 0x38) {
-            _rate_mask |= 0x38;
+        if (rate_mask & 0x30) {
+            rate_mask |= 0x30;
         }
-        if (_rate_mask & 0xC0) {
-            _rate_mask |= 0xC0;
+        if (rate_mask & 0xC0) {
+            rate_mask |= 0xC0;
         }
-        if (_rate_mask & 0xF00) {
-            _rate_mask |= 0xF00;
+        if (rate_mask & 0x700) {
+            rate_mask |= 0x700;
         }
+#else
+        if (rate_mask & 0x07) {
+            rate_mask |= 0x07;
+        }
+        if (rate_mask & 0x38) {
+            rate_mask |= 0x38;
+        }
+        if (rate_mask & 0xC0) {
+            rate_mask |= 0xC0;
+        }
+        if (rate_mask & 0xF00) {
+            rate_mask |= 0xF00;
+        }
+#endif
     } else {
         // we are setting low rates on the given channels
-        if (chmask & 0x07) {
-            _rate_mask &= ~0x07;
+#if defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+        if (chmask & 0x0F) {
+            rate_mask &= ~0x0F;
         }
-        if (chmask & 0x38) {
-            _rate_mask &= ~0x38;
+        if (chmask & 0x30) {
+            rate_mask &= ~0x30;
         }
         if (chmask & 0xC0) {
-            _rate_mask &= ~0xC0;
+            rate_mask &= ~0xC0;
+        }
+        if (chmask & 0x700) {
+            rate_mask &= ~0x700;
+        }
+#else
+        if (chmask & 0x07) {
+            rate_mask &= ~0x07;
+        }
+        if (chmask & 0x38) {
+            rate_mask &= ~0x38;
+        }
+        if (chmask & 0xC0) {
+            rate_mask &= ~0xC0;
         }
         if (chmask & 0xF00) {
-            _rate_mask &= ~0xF00;
+            rate_mask &= ~0xF00;
         }
+#endif
     }
 
-    //::printf("SELECT_UPDATE_RATE 0x%02x\n", (unsigned)_rate_mask);
-    if (ioctl(fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
-        hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)_rate_mask);
+    if (ioctl(fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, rate_mask) != 0) {
+        hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)rate_mask);
     }
+
+    if (_output_mode == MODE_PWM_BRUSHED) {
+        ioctl(fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
+    }    
 }
 
 /*
@@ -180,30 +229,32 @@ void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         hal.console->printf("RCOutput: Unable to get servo count\n");        
         return;
     }
-    if (_alt_fd != -1 && ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count) != 0) {
-        hal.console->printf("RCOutput: Unable to get alt servo count\n");        
-        return;
-    }
     
     // greater than 400 doesn't give enough room at higher periods for
     // the down pulse
-    if (freq_hz > 400) {
+    if (freq_hz > 400 && _output_mode != MODE_PWM_BRUSHED) {
         freq_hz = 400;
     }
     uint32_t primary_mask = chmask & ((1UL<<_servo_count)-1);
     uint32_t alt_mask = chmask >> _servo_count;
     if (primary_mask && _pwm_fd != -1) {
-        set_freq_fd(_pwm_fd, primary_mask, freq_hz);
+        set_freq_fd(_pwm_fd, primary_mask, freq_hz, _rate_mask_main);
     }
     if (alt_mask && _alt_fd != -1) {
-        set_freq_fd(_alt_fd, alt_mask, freq_hz);
+        set_freq_fd(_alt_fd, alt_mask, freq_hz, _rate_mask_alt);
     }
 }
 
 uint16_t VRBRAINRCOutput::get_freq(uint8_t ch)
 {
-    if (_rate_mask & (1U<<ch)) {
-        return _freq_hz;
+    if (ch < _servo_count) {
+        if (_rate_mask_main & (1U<<ch)) {
+            return _freq_hz;
+        }
+    } else if (_alt_fd != -1) {
+        if (_rate_mask_alt & (1U<<(ch-_servo_count))) {
+            return _freq_hz;
+        }
     }
     return 50;
 }
@@ -222,6 +273,7 @@ void VRBRAINRCOutput::enable_ch(uint8_t ch)
     _enabled_channels |= (1U<<ch);
     if (_period[ch] == PWM_IGNORE_THIS_CHANNEL) {
         _period[ch] = 0;
+        _last_sent[ch] = 0;
     }
 }
 
@@ -283,19 +335,20 @@ void VRBRAINRCOutput::force_safety_off(void)
 void VRBRAINRCOutput::force_safety_pending_requests(void)
 {
     // check if there is a pending saftey_state change. If so (timer != 0) then set it.
+    uint32_t now = AP_HAL::millis();
     if (_safety_state_request_last_ms != 0 &&
-            AP_HAL::millis() - _safety_state_request_last_ms >= 100) {
-        if (hal.util->safety_switch_state() == _safety_state_request) {
-            // current switch state matches request, stop attempting
+        now - _safety_state_request_last_ms >= 100) {
+        if (hal.util->safety_switch_state() == _safety_state_request &&
+            _safety_state_request_last_ms != 1) {
             _safety_state_request_last_ms = 0;
         } else if (_safety_state_request == AP_HAL::Util::SAFETY_DISARMED) {
             // current != requested, set it
             ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_ON, 0);
-            _safety_state_request_last_ms = AP_HAL::millis();
+            _safety_state_request_last_ms = now;
         } else if (_safety_state_request == AP_HAL::Util::SAFETY_ARMED) {
             // current != requested, set it
             ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
-            _safety_state_request_last_ms = AP_HAL::millis();
+            _safety_state_request_last_ms = now;
         }
     }
 }
@@ -320,6 +373,24 @@ void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us)
     if (ch >= _max_channel) {
         _max_channel = ch + 1;
     }
+
+    // keep unscaled value
+    _last_sent[ch] = period_us;
+        
+    if (_output_mode == MODE_PWM_BRUSHED) {
+        // map from the PWM range to 0 t0 100% duty cycle. For 16kHz
+        // this ends up being 0 to 500 pulse width in units of
+        // 125usec.
+        if (period_us <= _esc_pwm_min) {
+            period_us = 0;
+        } else if (period_us >= _esc_pwm_max) {
+            period_us = _period_max;
+        } else {
+            uint32_t pdiff = period_us - _esc_pwm_min;
+            period_us = pdiff*_period_max/(_esc_pwm_max - _esc_pwm_min);
+        }
+    }
+    
     /*
       only mark an update is needed if there has been a change, or we
       are in oneshot mode. In oneshot mode we always need to send the
@@ -329,7 +400,7 @@ void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us)
         _output_mode == MODE_PWM_ONESHOT) {
         _period[ch] = period_us;
         _need_update = true;
-        up_pwm_servo_set(ch, period_us);
+//        up_pwm_servo_set(ch, period_us);
     }
 }
 
@@ -364,7 +435,7 @@ uint16_t VRBRAINRCOutput::read_last_sent(uint8_t ch)
         return 0;
     }
 
-    return _period[ch];
+    return _last_sent[ch];
 }
 
 void VRBRAINRCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
@@ -386,7 +457,11 @@ void VRBRAINRCOutput::_arm_actuators(bool arm)
 
 	_armed.timestamp = hrt_absolute_time();
     _armed.armed = arm;
-    _armed.ready_to_arm = arm;
+    if (arm) {
+        // this latches ready_to_arm to true once set once. Otherwise
+        // we have a race condition with px4io safety switch update
+        _armed.ready_to_arm = true;
+    }
     _armed.lockdown = false;
     _armed.force_failsafe = false;
 
@@ -394,51 +469,6 @@ void VRBRAINRCOutput::_arm_actuators(bool arm)
         _actuator_armed_pub = orb_advertise(ORB_ID(actuator_armed), &_armed);
     } else {
         orb_publish(ORB_ID(actuator_armed), _actuator_armed_pub, &_armed);
-    }
-}
-
-/*
-  publish new outputs to the actuator_direct topic
- */
-void VRBRAINRCOutput::_publish_actuators(void)
-{
-	struct actuator_direct_s actuators;
-
-    if (_esc_pwm_min == 0 ||
-        _esc_pwm_max == 0) {
-        // not initialised yet
-        return;
-    }
-
-	actuators.nvalues = _max_channel;
-    if (actuators.nvalues > actuators.NUM_ACTUATORS_DIRECT) {
-        actuators.nvalues = actuators.NUM_ACTUATORS_DIRECT;
-    }
-    // don't publish more than 8 actuators for now, as the uavcan ESC
-    // driver refuses to update any motors if you try to publish more
-    // than 8
-    if (actuators.nvalues > 8) {
-        actuators.nvalues = 8;
-    }
-    bool armed = hal.util->get_soft_armed();
-	actuators.timestamp = hrt_absolute_time();
-    for (uint8_t i=0; i<actuators.nvalues; i++) {
-        if (!armed) {
-            actuators.values[i] = 0;
-        } else {
-            actuators.values[i] = (_period[i] - _esc_pwm_min) / (float)(_esc_pwm_max - _esc_pwm_min);
-        }
-        // actuator values are from -1 to 1
-        actuators.values[i] = actuators.values[i]*2 - 1;
-    }
-
-    if (_actuator_direct_pub == nullptr) {
-        _actuator_direct_pub = orb_advertise(ORB_ID(actuator_direct), &actuators);
-    } else {
-        orb_publish(ORB_ID(actuator_direct), _actuator_direct_pub, &actuators);
-    }
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-        _arm_actuators(true);
     }
 }
 
@@ -478,7 +508,7 @@ void VRBRAINRCOutput::_send_outputs(void)
         }
         if (to_send > 0) {
             for (int i=to_send-1; i >= 0; i--) {
-                if (_period[i] == 0 || _period[i] == PWM_IGNORE_THIS_CHANNEL) {
+                if (_period[i] == PWM_IGNORE_THIS_CHANNEL) {
                     to_send = i;
                 } else {
                     break;
@@ -486,6 +516,8 @@ void VRBRAINRCOutput::_send_outputs(void)
             }
         }
         if (to_send > 0) {
+            _arm_actuators(true);
+
             ::write(_pwm_fd, _period, to_send*sizeof(_period[0]));
         }
         if (_max_channel > _servo_count) {
@@ -501,8 +533,35 @@ void VRBRAINRCOutput::_send_outputs(void)
             }
         }
 
-        // also publish to actuator_direct
-        _publish_actuators();
+#if HAL_WITH_UAVCAN
+        if (AP_BoardConfig_CAN::get_can_num_ifaces() >= 1)
+        {
+            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+                if (hal.can_mgr[i] != nullptr)
+                {
+                    AP_UAVCAN *ap_uc = hal.can_mgr[i]->get_UAVCAN();
+                    if (ap_uc != nullptr)
+                    {
+                        if (ap_uc->rc_out_sem_take())
+                        {
+                            for (uint8_t j = 0; j < _max_channel; j++)
+                            {
+                                ap_uc->rco_write(_period[j], j);
+                            }
+
+                            if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+                                ap_uc->rco_arm_actuators(true);
+                            } else {
+                                ap_uc->rco_arm_actuators(false);
+                            }
+
+                            ap_uc->rc_out_sem_give();
+                        }
+                    }
+                }
+            }
+        }
+#endif // HAL_WITH_UAVCAN
 
         perf_end(_perf_rcout);
         _last_output = now;
@@ -531,21 +590,20 @@ void VRBRAINRCOutput::cork()
 
 void VRBRAINRCOutput::push()
 {
-    if (!_corking) {
-        return;
-    }
 #if RCOUT_DEBUG_LATENCY
     hal.gpio->pinMode(55, HAL_GPIO_OUTPUT);
     hal.gpio->write(55, 0);
 #endif
-    _corking = false;
-    if (_output_mode == MODE_PWM_ONESHOT) {
-        // run timer immediately in oneshot mode
-        _send_outputs();
+    if (_corking) {
+        _corking = false;
+        if (_output_mode == MODE_PWM_ONESHOT) {
+            // run timer immediately in oneshot mode
+            _send_outputs();
+        }
     }
 }
 
-void VRBRAINRCOutput::_timer_tick(void)
+void VRBRAINRCOutput::timer_tick(void)
 {
     if (_output_mode != MODE_PWM_ONESHOT && !_corking) {
         /* in oneshot mode the timer does nothing as the outputs are
@@ -559,7 +617,7 @@ void VRBRAINRCOutput::_timer_tick(void)
 /*
   enable sbus output
  */
-bool VRBRAINRCOutput::enable_sbus_out(uint16_t rate_hz)
+bool VRBRAINRCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
 {
     int fd = open("/dev/px4io", 0);
     if (fd == -1) {
@@ -596,22 +654,48 @@ void VRBRAINRCOutput::set_output_mode(enum output_mode mode)
         // mean the timer is constantly reset, so no pulses are
         // produced except when triggered by push() when the main loop
         // is running
-        set_freq(_rate_mask, 1);
+        set_freq_fd(_pwm_fd, _rate_mask_main, 1, _rate_mask_main);
+        if (_alt_fd != -1) {
+            set_freq_fd(_alt_fd, _rate_mask_alt, 1, _rate_mask_alt);
+        }
     }
     _output_mode = mode;
-    if (_output_mode == MODE_PWM_ONESHOT) {
-        //::printf("enable oneshot\n");
+    switch (_output_mode) {
+    case MODE_PWM_ONESHOT:
         ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 1);
         if (_alt_fd != -1) {
             ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 1);
         }
-    } else {
+        break;
+    case MODE_PWM_NORMAL:
         ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 0);
         if (_alt_fd != -1) {
             ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 0);
         }
+        break;
+    case MODE_PWM_BRUSHED:
+        // setup an 8MHz clock. This has the effect of scaling all outputs by 8x
+        ioctl(_pwm_fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
+        if (_alt_fd != -1) {
+            ioctl(_alt_fd, PWM_SERVO_SET_UPDATE_CLOCK, 8);
+        }
+        break;
     }
 }
 
+
+// set default output update rate
+void VRBRAINRCOutput::set_default_rate(uint16_t rate_hz)
+{
+    if (rate_hz != _default_rate_hz) {
+        // set servo update rate for first 8 pwm channels
+        ioctl(_pwm_fd, PWM_SERVO_SET_DEFAULT_UPDATE_RATE, rate_hz);
+        if (_alt_fd != -1) {
+            // set servo update rate for auxiliary channels
+            ioctl(_alt_fd, PWM_SERVO_SET_DEFAULT_UPDATE_RATE, rate_hz);
+        }
+        _default_rate_hz = rate_hz;
+    }
+}
 
 #endif // CONFIG_HAL_BOARD

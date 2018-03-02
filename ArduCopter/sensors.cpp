@@ -139,11 +139,6 @@ void Copter::compass_accumulate(void)
 void Copter::init_optflow()
 {
 #if OPTFLOW == ENABLED
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
     // initialise optical flow sensor
     optflow.init();
 #endif      // OPTFLOW == ENABLED
@@ -184,17 +179,14 @@ void Copter::read_battery(void)
 {
     battery.read();
 
-    // update compass with current value
-    if (battery.has_current()) {
-        compass.set_current(battery.current_amps());
+    // update motors with voltage and current
+    if (battery.get_type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
+        motors->set_voltage(battery.voltage());
     }
 
-    // update motors with voltage and current
-    if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
-        motors->set_voltage(battery.voltage());
-        AP_Notify::flags.battery_voltage = battery.voltage();
-    }
     if (battery.has_current()) {
+        compass.set_current(battery.current_amps());
+
         motors->set_current(battery.current_amps());
         motors->set_resistance(battery.get_resistance());
         motors->set_voltage_resting_estimate(battery.voltage_resting_estimate());
@@ -204,11 +196,6 @@ void Copter::read_battery(void)
     // we only check when we're not powered by USB to avoid false alarms during bench tests
     if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
         failsafe_battery_event();
-    }
-
-    // log battery info to the dataflash
-    if (should_log(MASK_LOG_CURRENT)) {
-        Log_Write_Current();
     }
 }
 
@@ -267,36 +254,12 @@ void Copter::accel_cal_update()
 #endif
 }
 
-#if GRIPPER_ENABLED == ENABLED
-// gripper update
-void Copter::gripper_update()
-{
-    g2.gripper.update();
-}
-#endif
-
-/*
-  update AP_Button
- */
-void Copter::button_update(void)
-{
-    g2.button.update();
-}
-
 // initialise proximity sensor
 void Copter::init_proximity(void)
 {
 #if PROXIMITY_ENABLED == ENABLED
     g2.proximity.init();
     g2.proximity.set_rangefinder(&rangefinder);
-#endif
-}
-
-// update proximity sensor
-void Copter::update_proximity(void)
-{
-#if PROXIMITY_ENABLED == ENABLED
-    g2.proximity.update();
 #endif
 }
 
@@ -345,14 +308,19 @@ void Copter::update_sensor_status_flags(void)
     if (copter.battery.healthy()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
-
+#if AC_FENCE == ENABLED
+    if (copter.fence.sys_status_present()) {
+        control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
+    }
+#endif
 
     // all present sensors enabled by default except altitude and position control and motors which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
                                                          ~MAV_SYS_STATUS_LOGGING &
-                                                         ~MAV_SYS_STATUS_SENSOR_BATTERY);
+                                                         ~MAV_SYS_STATUS_SENSOR_BATTERY &
+                                                         ~MAV_SYS_STATUS_GEOFENCE);
 
     switch (control_mode) {
     case AUTO:
@@ -365,6 +333,7 @@ void Copter::update_sensor_status_flags(void)
     case POSHOLD:
     case BRAKE:
     case THROW:
+    case SMART_RTL:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
@@ -372,6 +341,7 @@ void Copter::update_sensor_status_flags(void)
     case GUIDED_NOGPS:
     case SPORT:
     case AUTOTUNE:
+    case FLOWHOLD:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     default:
@@ -391,7 +361,11 @@ void Copter::update_sensor_status_flags(void)
     if (g.fs_batt_voltage > 0 || g.fs_batt_mah > 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
-
+#if AC_FENCE == ENABLED
+    if (copter.fence.sys_status_enabled()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
+    }
+#endif
 
 
     // default to all healthy
@@ -403,7 +377,7 @@ void Copter::update_sensor_status_flags(void)
     if (!g.compass_enabled || !compass.healthy() || !ahrs.use_compass()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (gps.status() == AP_GPS::NO_GPS) {
+    if (!gps.is_healthy()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_GPS;
     }
     if (!ap.rc_receiver_present || failsafe.radio) {
@@ -481,23 +455,16 @@ void Copter::update_sensor_status_flags(void)
 
     if (copter.failsafe.battery) {
          control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;                                                                    }
-    
+#if AC_FENCE == ENABLED
+    if (copter.fence.sys_status_failed()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;
+    }
+#endif
+
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry
     frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
 #endif
-}
-
-// init beacons used for non-gps position estimates
-void Copter::init_beacon()
-{
-    g2.beacon.init();
-}
-
-// update beacons
-void Copter::update_beacon()
-{
-    g2.beacon.update();
 }
 
 // init visual odometry sensor
@@ -528,5 +495,23 @@ void Copter::update_visual_odom()
                                        g2.visual_odom.get_position_delta(),
                                        g2.visual_odom.get_confidence());
     }
+#endif
+}
+
+// winch and wheel encoder initialisation
+void Copter::winch_init()
+{
+#if WINCH_ENABLED == ENABLED
+    g2.wheel_encoder.init();
+    g2.winch.init(&g2.wheel_encoder);
+#endif
+}
+
+// winch and wheel encoder update
+void Copter::winch_update()
+{
+#if WINCH_ENABLED == ENABLED
+    g2.wheel_encoder.update();
+    g2.winch.update();
 #endif
 }

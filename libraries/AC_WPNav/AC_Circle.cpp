@@ -144,7 +144,7 @@ void AC_Circle::update()
             _pos_control.set_xy_target(target.x, target.y);
 
             // heading is 180 deg from vehicles target position around circle
-            _yaw = wrap_PI(_angle-M_PI) * AC_CIRCLE_DEGX100;
+            _yaw = wrap_PI(_angle-M_PI) * DEGX100;
         }else{
             // set target position to center
             Vector3f target;
@@ -156,7 +156,7 @@ void AC_Circle::update()
             _pos_control.set_xy_target(target.x, target.y);
 
             // heading is same as _angle but converted to centi-degrees
-            _yaw = _angle * AC_CIRCLE_DEGX100;
+            _yaw = _angle * DEGX100;
         }
 
         // update position controller

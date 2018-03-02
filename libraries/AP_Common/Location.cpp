@@ -190,24 +190,26 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
     }
 }
 
-bool Location_Class::get_vector_xy_from_origin_NEU(Vector3f &vec_neu) const
+bool Location_Class::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
 {
-    // convert to neu
     Location ekf_origin;
     if (!_ahrs->get_origin(ekf_origin)) {
         return false;
     }
-    vec_neu.x = (lat-ekf_origin.lat) * LATLON_TO_CM;
-    vec_neu.y = (lng-ekf_origin.lng) * LATLON_TO_CM * longitude_scale(ekf_origin);
+    vec_ne.x = (lat-ekf_origin.lat) * LATLON_TO_CM;
+    vec_ne.y = (lng-ekf_origin.lng) * LATLON_TO_CM * longitude_scale(ekf_origin);
     return true;
 }
 
 bool Location_Class::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 {
     // convert lat, lon
-    if (!get_vector_xy_from_origin_NEU(vec_neu)) {
+    Vector2f vec_ne;
+    if (!get_vector_xy_from_origin_NE(vec_ne)) {
         return false;
     }
+    vec_neu.x = vec_ne.x;
+    vec_neu.y = vec_ne.y;
 
     // convert altitude
     int32_t alt_above_origin_cm = 0;

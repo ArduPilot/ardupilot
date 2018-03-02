@@ -244,18 +244,26 @@ extern "C" {
   allocate DMA-capable memory if possible. Otherwise return normal
   memory.
 */
-void *PX4Util::dma_allocate(size_t size)
+void *PX4Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
 {
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    return fat_dma_alloc(size);
+    if (mem_type == AP_HAL::Util::MEM_DMA_SAFE) {
+        return fat_dma_alloc(size);
+    } else {
+        return calloc(1, size);
+    }
 #else
-    return malloc(size);
+    return calloc(1, size);
 #endif
 }
-void PX4Util::dma_free(void *ptr, size_t size)
+void PX4Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 {
 #if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    fat_dma_free(ptr, size);
+    if (mem_type == AP_HAL::Util::MEM_DMA_SAFE) {
+        return fat_dma_free(ptr, size);
+    } else {
+        return free(ptr);
+    }    
 #else
     return free(ptr);
 #endif

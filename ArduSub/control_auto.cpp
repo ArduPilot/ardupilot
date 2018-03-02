@@ -599,7 +599,7 @@ float Sub::get_auto_heading(void)
     case AUTO_YAW_CORRECT_XTRACK: {
         // TODO return current yaw if not in appropriate mode
         // Bearing of current track (centidegrees)
-        float track_bearing = wp_nav.get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
+        float track_bearing = get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
 
         // Bearing from current position towards intermediate position target (centidegrees)
         float desired_angle = wp_nav.get_loiter_bearing_to_target();

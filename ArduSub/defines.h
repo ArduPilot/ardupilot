@@ -112,7 +112,6 @@ enum RTLState {
 #define TYPE_GROUNDSTART_MSG            0x01
 #define LOG_CONTROL_TUNING_MSG          0x04
 #define LOG_NAV_TUNING_MSG              0x05
-#define LOG_PERFORMANCE_MSG             0x06
 #define LOG_OPTFLOW_MSG                 0x0C
 #define LOG_EVENT_MSG                   0x0D
 #define LOG_ERROR_MSG                   0x13
@@ -169,9 +168,6 @@ enum RTLState {
 #define DATA_NOT_SURFACED                   64
 #define DATA_BOTTOMED                       65
 #define DATA_NOT_BOTTOMED                   66
-
-// Centi-degrees to radians
-#define DEGX100 5729.57795f
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
@@ -282,7 +278,7 @@ enum RTLState {
 
 // Leak failsafe definitions (FS_LEAK_ENABLE parameter)
 #define FS_LEAK_DISABLED    0 // Disabled
-#define FS_LEAK_WARN_ONLY   1 // Only send waring to gcs
+#define FS_LEAK_WARN_ONLY   1 // Only send warning to gcs
 #define FS_LEAK_SURFACE     2 // Switch to surface mode
 
 // Internal pressure failsafe threshold (FS_PRESS_MAX parameter)

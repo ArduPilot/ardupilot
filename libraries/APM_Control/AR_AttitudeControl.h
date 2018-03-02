@@ -7,17 +7,19 @@
 
 // attitude control default definition
 #define AR_ATTCONTROL_STEER_ANG_P       1.00f
+#define AR_ATTCONTROL_STEER_RATE_FF     0.20f
 #define AR_ATTCONTROL_STEER_RATE_P      1.00f
 #define AR_ATTCONTROL_STEER_RATE_I      0.50f
 #define AR_ATTCONTROL_STEER_RATE_IMAX   1.00f
 #define AR_ATTCONTROL_STEER_RATE_D      0.00f
-#define AR_ATTCONTROL_STEER_RATE_FILT   5.00f
+#define AR_ATTCONTROL_STEER_RATE_FILT   50.00f
 #define AR_ATTCONTROL_THR_SPEED_P       0.20f
 #define AR_ATTCONTROL_THR_SPEED_I       0.20f
 #define AR_ATTCONTROL_THR_SPEED_IMAX    1.00f
 #define AR_ATTCONTROL_THR_SPEED_D       0.00f
-#define AR_ATTCONTROL_THR_SPEED_FILT    5.00f
+#define AR_ATTCONTROL_THR_SPEED_FILT    50.00f
 #define AR_ATTCONTROL_DT                0.02f
+#define AR_ATTCONTROL_TIMEOUT_MS        200
 
 // throttle/speed control maximum acceleration/deceleration (in m/s) (_ACCEL_MAX parameter default)
 #define AR_ATTCONTROL_THR_ACCEL_MAX     5.00f
@@ -33,26 +35,35 @@ class AR_AttitudeControl {
 public:
 
     // constructor
-	AR_AttitudeControl(AP_AHRS &ahrs);
+    AR_AttitudeControl(AP_AHRS &ahrs);
 
-	//
-	// steering controller
-	//
+    //
+    // steering controller
+    //
 
     // return a steering servo output from -1.0 to +1.0 given a desired lateral acceleration rate in m/s/s.
     // positive lateral acceleration is to the right.
-	float get_steering_out_lat_accel(float desired_accel, bool skid_steering, bool motor_limit_left, bool motor_limit_right);
+    float get_steering_out_lat_accel(float desired_accel, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed);
 
     // return a steering servo output from -1 to +1 given a yaw error in radians
-    float get_steering_out_angle_error(float angle_err, bool skid_steering, bool motor_limit_left, bool motor_limit_right);
+    float get_steering_out_angle_error(float angle_err, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed);
 
-	// return a steering servo output from -1 to +1 given a
+    // return a steering servo output from -1 to +1 given a
     // desired yaw rate in radians/sec. Positive yaw is to the right.
-	float get_steering_out_rate(float desired_rate, bool skid_steering, bool motor_limit_left, bool motor_limit_right);
+    float get_steering_out_rate(float desired_rate, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed);
 
-	//
-	// throttle / speed controller
-	//
+    // get latest desired turn rate in rad/sec recorded during calls to get_steering_out_rate.  For reporting purposes only
+    float get_desired_turn_rate() const;
+
+    // get latest desired lateral acceleration in m/s/s recorded during calls to get_steering_out_lat_accel.  For reporting purposes only
+    float get_desired_lat_accel() const;
+
+    // get actual lateral acceleration in m/s/s.  returns true on success.  For reporting purposes only
+    bool get_lat_accel(float &lat_accel) const;
+
+    //
+    // throttle / speed controller
+    //
 
     // set limits used by throttle controller
     //   forward/back acceleration max in m/s/s
@@ -60,13 +71,12 @@ public:
     void set_throttle_limits(float throttle_accel_max, float throttle_decel_max);
 
     // return a throttle output from -1 to +1 given a desired speed in m/s (use negative speeds to travel backwards)
-    //   skid_steering should be true for skid-steer vehicles
     //   motor_limit should be true if motors have hit their upper or lower limits
     //   cruise speed should be in m/s, cruise throttle should be a number from -1 to +1
-    float get_throttle_out_speed(float desired_speed, bool skid_steering, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle);
+    float get_throttle_out_speed(float desired_speed, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle);
 
     // return a throttle output from -1 to +1 to perform a controlled stop.  stopped is set to true once stop has been completed
-    float get_throttle_out_stop(bool skid_steering, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, bool &stopped);
+    float get_throttle_out_stop(bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, bool &stopped);
 
     // low level control accessors for reporting and logging
     AC_P& get_steering_angle_p() { return _steer_angle_p; }
@@ -79,24 +89,30 @@ public:
     // get throttle/speed controller maximum acceleration (also used for deceleration)
     float get_accel_max() const { return MAX(_throttle_accel_max, 0.0f); }
 
+    // get latest desired speed recorded during call to get_throttle_out_speed.  For reporting purposes only
+    float get_desired_speed() const;
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
     // external references
-    AP_AHRS &_ahrs;
+    const AP_AHRS &_ahrs;
 
     // parameters
     AC_P     _steer_angle_p;        // steering angle controller
-	AC_PID   _steer_rate_pid;       // steering rate controller
-	AC_PID   _throttle_speed_pid;   // throttle speed controller
-	AP_Float _throttle_accel_max;   // speed/throttle control acceleration (and deceleration) maximum in m/s/s.  0 to disable limits
-	AP_Int8  _brake_enable;         // speed control brake enable/disable. if set to 1 a reversed output to the motors to slow the vehicle.
-	AP_Float _stop_speed;           // speed control stop speed.  Motor outputs to zero once vehicle speed falls below this value
+    AC_PID   _steer_rate_pid;       // steering rate controller
+    AC_PID   _throttle_speed_pid;   // throttle speed controller
+    AP_Float _throttle_accel_max;   // speed/throttle control acceleration (and deceleration) maximum in m/s/s.  0 to disable limits
+    AP_Int8  _brake_enable;         // speed control brake enable/disable. if set to 1 a reversed output to the motors to slow the vehicle.
+    AP_Float _stop_speed;           // speed control stop speed.  Motor outputs to zero once vehicle speed falls below this value
 
     // steering control
+    uint32_t _steer_lat_accel_last_ms;  // system time of last call to lateral acceleration controller (i.e. get_steering_out_lat_accel)
     uint32_t _steer_turn_last_ms;   // system time of last call to steering rate controller
+    float    _desired_lat_accel;    // desired lateral acceleration from latest call to get_steering_out_lat_accel (for reporting purposes)
+    float    _desired_turn_rate;    // desired turn rate either from external caller or from lateral acceleration controller (for reporting purpose)
 
     // throttle control
     uint32_t _speed_last_ms;        // system time of last call to get_throttle_out_speed

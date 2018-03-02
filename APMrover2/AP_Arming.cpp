@@ -57,3 +57,67 @@ bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
     }
     return true;
 }
+
+// performs pre_arm gps related checks and returns true if passed
+bool AP_Arming_Rover::gps_checks(bool display_failure)
+{
+    if (!rover.control_mode->requires_position() && !rover.control_mode->requires_velocity()) {
+        // we don't care!
+        return true;
+    }
+
+    // call parent gps checks
+    return AP_Arming::gps_checks(display_failure);
+}
+
+bool AP_Arming_Rover::pre_arm_checks(bool report)
+{
+    return (AP_Arming::pre_arm_checks(report)
+            & rover.g2.motors.pre_arm_check(report)
+            & fence_checks(report)
+            & proximity_check(report));
+}
+
+bool AP_Arming_Rover::fence_checks(bool report)
+{
+    // check fence is initialised
+    const char *fail_msg = nullptr;
+    if (!_fence.pre_arm_check(fail_msg)) {
+        if (report && fail_msg != nullptr) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Fence : %s", fail_msg);
+        }
+        return false;
+    }
+    return true;
+}
+
+// check nothing is too close to vehicle
+bool AP_Arming_Rover::proximity_check(bool report)
+{
+    // return true immediately if no sensor present
+    if (rover.g2.proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
+        return true;
+    }
+
+    // return false if proximity sensor unhealthy
+    if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: check proximity sensor");
+        }
+        return false;
+    }
+
+    // get closest object if we might use it for avoidance
+    float angle_deg, distance;
+    if (rover.g2.avoid.proximity_avoidance_enabled() && rover.g2.proximity.get_closest_object(angle_deg, distance)) {
+        // display error if something is within 60cm
+        if (distance <= 0.6f) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Proximity %d deg, %4.2fm", static_cast<int32_t>(angle_deg), static_cast<double>(distance));
+            }
+            return false;
+        }
+    }
+
+    return true;
+}

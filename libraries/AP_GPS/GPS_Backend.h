@@ -44,9 +44,8 @@ public:
     virtual void inject_data(const uint8_t *data, uint16_t len);
 
     //MAVLink methods
-    virtual void send_mavlink_gps_rtk(mavlink_channel_t chan) { return ; }
-
-    virtual void send_mavlink_gps2_rtk(mavlink_channel_t chan) { return ; }
+    virtual bool supports_mavlink_gps_rtk_message() { return false; }
+    virtual void send_mavlink_gps_rtk(mavlink_channel_t chan);
 
     virtual void broadcast_configuration_failure_reason(void) const { return ; }
 
@@ -56,10 +55,15 @@ public:
     // driver specific lag, returns true if the driver is confident in the provided lag
     virtual bool get_lag(float &lag) const { lag = 0.2f; return true; }
 
+    // driver specific health, returns true if the driver is healthy
+    virtual bool is_healthy(void) const { return true; }
+
     virtual const char *name() const = 0;
 
     void broadcast_gps_type() const;
     virtual void Write_DataFlash_Log_Startup_messages() const;
+
+    virtual bool prepare_for_arming(void) { return true; }
 
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to

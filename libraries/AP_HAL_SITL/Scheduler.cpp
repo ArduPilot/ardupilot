@@ -201,12 +201,12 @@ void Scheduler::_run_io_procs(bool called_from_isr)
 
     _in_io_proc = false;
 
-    UARTDriver::from(hal.uartA)->_timer_tick();
-    UARTDriver::from(hal.uartB)->_timer_tick();
-    UARTDriver::from(hal.uartC)->_timer_tick();
-    UARTDriver::from(hal.uartD)->_timer_tick();
-    UARTDriver::from(hal.uartE)->_timer_tick();
-    UARTDriver::from(hal.uartF)->_timer_tick();
+    hal.uartA->_timer_tick();
+    hal.uartB->_timer_tick();
+    hal.uartC->_timer_tick();
+    hal.uartD->_timer_tick();
+    hal.uartE->_timer_tick();
+    hal.uartF->_timer_tick();
 }
 
 /*
@@ -215,7 +215,10 @@ void Scheduler::_run_io_procs(bool called_from_isr)
 void Scheduler::stop_clock(uint64_t time_usec)
 {
     _stopped_clock_usec = time_usec;
-    _run_io_procs(false);
+    if (time_usec - _last_io_run > 10000) {
+        _last_io_run = time_usec;
+        _run_io_procs(false);
+    }
 }
 
 #endif

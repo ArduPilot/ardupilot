@@ -6,7 +6,7 @@
  */
 
 static bool failsafe_enabled = false;
-static uint16_t failsafe_last_mainLoop_count;
+static uint16_t failsafe_last_ticks;
 static uint32_t failsafe_last_timestamp;
 static bool in_failsafe;
 
@@ -30,9 +30,10 @@ void Sub::mainloop_failsafe_check()
 {
     uint32_t tnow = AP_HAL::micros();
 
-    if (mainLoop_count != failsafe_last_mainLoop_count) {
+    const uint16_t ticks = scheduler.ticks();
+    if (ticks != failsafe_last_ticks) {
         // the main loop is running, all is OK
-        failsafe_last_mainLoop_count = mainLoop_count;
+        failsafe_last_ticks = ticks;
         failsafe_last_timestamp = tnow;
         if (in_failsafe) {
             in_failsafe = false;
@@ -216,8 +217,9 @@ void Sub::failsafe_pilot_input_check()
     Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
 
+    set_neutral_controls();
+
     if(g.failsafe_pilot_input == FS_PILOT_INPUT_DISARM) {
-        set_neutral_controls();
         init_disarm_motors();
     }
 #endif
@@ -287,7 +289,7 @@ void Sub::failsafe_internal_temperature_check()
     }
 }
 
-// Check if we are leaking and perform appropiate action
+// Check if we are leaking and perform appropriate action
 void Sub::failsafe_leak_check()
 {
     bool status = leak_detector.get_status();
@@ -297,6 +299,7 @@ void Sub::failsafe_leak_check()
         if (failsafe.leak) {
             Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_LEAK, ERROR_CODE_FAILSAFE_RESOLVED);
         }
+        AP_Notify::flags.leak_detected = false;
         failsafe.leak = false;
         return;
     }

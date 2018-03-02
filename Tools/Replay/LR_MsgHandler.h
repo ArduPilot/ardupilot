@@ -2,13 +2,14 @@
 
 #include "MsgHandler.h"
 
+#include <functional>
+
 class LR_MsgHandler : public MsgHandler {
 public:
     LR_MsgHandler(struct log_Format &f,
                   DataFlash_Class &_dataflash,
                   uint64_t &last_timestamp_usec);
     virtual void process_message(uint8_t *msg) = 0;
-    bool set_parameter(const char *name, float value);
 
     // state for CHEK message
     struct CheckState {
@@ -430,9 +431,18 @@ private:
 class LR_MsgHandler_PARM : public LR_MsgHandler
 {
 public:
-    LR_MsgHandler_PARM(log_Format &_f, DataFlash_Class &_dataflash, uint64_t &_last_timestamp_usec) : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec) {};
+    LR_MsgHandler_PARM(log_Format &_f, DataFlash_Class &_dataflash,
+                       uint64_t &_last_timestamp_usec,
+                       const std::function<bool(const char *name, const float)>&set_parameter_callback) :
+        LR_MsgHandler(_f, _dataflash, _last_timestamp_usec),
+        _set_parameter_callback(set_parameter_callback)
+        {};
 
     virtual void process_message(uint8_t *msg);
+
+private:
+    bool set_parameter(const char *name, const float value);
+    const std::function<bool(const char *name, const float)>_set_parameter_callback;
 };
 
 class LR_MsgHandler_PM : public LR_MsgHandler

@@ -97,8 +97,8 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     AP_GROUPINFO("LOIT_MINA",   9, AC_WPNav, _loiter_accel_min_cmss, WPNAV_LOITER_ACCEL_MIN),
 
     // @Param: RFND_USE
-    // @DisplayName: Use rangefinder for terrain following
-    // @Description: This controls the use of a rangefinder for terrain following
+    // @DisplayName: Waypoint missions use rangefinder for terrain following
+    // @Description: This controls if waypoint missions use rangefinder for terrain following
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("RFND_USE",   10, AC_WPNav, _rangefinder_use, 1),
@@ -302,7 +302,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 
     // Limit the velocity to prevent fence violations
     if (_avoid != nullptr) {
-        _avoid->adjust_velocity(_pos_control.get_pos_xy_kP(), _loiter_accel_cmss, desired_vel);
+        _avoid->adjust_velocity(_pos_control.get_pos_xy_p().kP(), _loiter_accel_cmss, desired_vel, nav_dt);
     }
 
     // send adjusted feed forward velocity back to position controller
@@ -370,7 +370,7 @@ void AC_WPNav::update_brake(float ekfGndSpdLimit, float ekfNavVelGainScaler)
     if (dt >= _pos_control.get_dt_xy()) {
 
         // send adjusted feed forward velocity back to position controller
-        _pos_control.set_desired_velocity_xy(0,0);
+        _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
         _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_LIMITED_AND_VEL_FF, ekfNavVelGainScaler, false);
     }
 }
@@ -468,6 +468,13 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
 
     // set origin and destination
     return set_wp_origin_and_destination(origin, destination, terrain_alt);
+}
+
+/// set waypoint destination using NED position vector from ekf origin in meters
+bool AC_WPNav::set_wp_destination_NED(const Vector3f& destination_NED)
+{
+    // convert NED to NEU and do not use terrain following
+    return set_wp_destination(Vector3f(destination_NED.x * 100.0f, destination_NED.y * 100.0f, -destination_NED.z * 100.0f), false);
 }
 
 /// set_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
@@ -624,7 +631,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 
     // calculate point at which velocity switches from linear to sqrt
     float linear_velocity = _wp_speed_cms;
-    float kP = _pos_control.get_pos_xy_kP();
+    float kP = _pos_control.get_pos_xy_p().kP();
     if (kP >= 0.0f) {   // avoid divide by zero
         linear_velocity = _track_accel/kP;
     }
@@ -1086,7 +1093,15 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         // update target position and velocity from spline calculator
         calc_spline_pos_vel(_spline_time, target_pos, target_vel);
 
-        _pos_delta_unit = target_vel/target_vel.length();
+        // if target velocity is zero the origin and destination must be the same
+        // so flag reached destination (and protect against divide by zero)
+        float target_vel_length = target_vel.length();
+        if (is_zero(target_vel_length)) {
+            _flags.reached_destination = true;
+            return true;
+        }
+
+        _pos_delta_unit = target_vel / target_vel_length;
         calculate_wp_leash_length();
 
         // get current location
@@ -1142,10 +1157,7 @@ bool AC_WPNav::advance_spline_target_along_track(float dt)
         _spline_vel_scaler = constrain_float(_spline_vel_scaler, 0.0f, vel_limit);
 
         // scale the spline_time by the velocity we've calculated vs the velocity that came out of the spline calculator
-        float target_vel_length = target_vel.length();
-        if (!is_zero(target_vel_length)) {
-            _spline_time_scale = _spline_vel_scaler/target_vel_length;
-        }
+        _spline_time_scale = _spline_vel_scaler / target_vel_length;
 
         // update target position
         target_pos.z += terr_offset;
@@ -1225,9 +1237,9 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
 //      returns false if conversion failed (likely because terrain data was not available)
 bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &terrain_alt)
 {
-    // convert location to NEU vector3f
-    Vector3f res_vec;
-    if (!loc.get_vector_xy_from_origin_NEU(res_vec)) {
+    // convert location to NE vector2f
+    Vector2f res_vec;
+    if (!loc.get_vector_xy_from_origin_NE(res_vec)) {
         return false;
     }
 
@@ -1259,17 +1271,6 @@ bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &te
 ///
 /// shared methods
 ///
-
-// get_bearing_cd - return bearing in centi-degrees between two positions
-// To-Do: move this to math library
-float AC_WPNav::get_bearing_cd(const Vector3f &origin, const Vector3f &destination) const
-{
-    float bearing = 9000 + atan2f(-(destination.x-origin.x), destination.y-origin.y) * 5729.57795f;
-    if (bearing < 0) {
-        bearing += 36000;
-    }
-    return bearing;
-}
 
 /// calc_slow_down_distance - calculates distance before waypoint that target point should begin to slow-down assuming it is travelling at full speed
 void AC_WPNav::calc_slow_down_distance(float speed_cms, float accel_cmss)

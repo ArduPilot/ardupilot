@@ -308,6 +308,7 @@ bool AP_Landing::is_on_approach(void) const
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_on_approach();
     case TYPE_DEEPSTALL:
+        return deepstall.is_on_approach();
     default:
         return false;
     }
@@ -580,6 +581,8 @@ void AP_Landing::log(void) const
         type_slope_log();
         break;
     case TYPE_DEEPSTALL:
+        deepstall.log();
+        break;
     default:
         break;
     }
@@ -619,5 +622,19 @@ bool AP_Landing::is_flying_forward(void) const
     case TYPE_STANDARD_GLIDE_SLOPE:
     default:
         return true;
+    }
+}
+
+/*
+ * attempt to terminate flight with an immediate landing
+ * returns true if the landing library can and is terminating the landing
+ */
+bool AP_Landing::terminate(void) {
+    switch (type) {
+    case TYPE_DEEPSTALL:
+        return deepstall.terminate();
+    case TYPE_STANDARD_GLIDE_SLOPE:
+    default:
+        return false;
     }
 }

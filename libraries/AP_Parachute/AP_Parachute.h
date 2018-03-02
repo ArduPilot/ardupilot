@@ -25,18 +25,21 @@
 class AP_Parachute {
 
 public:
-
     /// Constructor
-    AP_Parachute(AP_Relay& relay) :
-        _relay(relay),
-        _release_time(0),
-        _release_initiated(false),
-        _release_in_progress(false),
-        _released(false)
+    AP_Parachute(AP_Relay &relay)
+        : _relay(relay)
+        , _release_time(0)
+        , _release_initiated(false)
+        , _release_in_progress(false)
+        , _released(false)
     {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
     }
+
+    /* Do not allow copies */
+    AP_Parachute(const AP_Parachute &other) = delete;
+    AP_Parachute &operator=(const AP_Parachute&) = delete;
 
     /// enabled - enable or disable parachute release
     void enabled(bool on_off);
