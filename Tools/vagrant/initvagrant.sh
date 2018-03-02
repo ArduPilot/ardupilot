@@ -1,24 +1,36 @@
 #!/bin/bash
+echo "---------- initvagrant.sh start ----------"
 
 # this script is run by the root user in the virtual machine
 
 set -e
 set -x
 
+who=$(whoami)
 echo "Initial setup of SITL-vagrant instance."
+if [ $who != 'root' ]; then
+    echo "SORRY, MUST RUN THIS SCRIPT AS ROOT, GIVING UP"
+    exit 1
+fi
 
 VAGRANT_USER=ubuntu
 if [ -e /home/vagrant ]; then
     # prefer vagrant user
     VAGRANT_USER=vagrant
 fi
+echo USING VAGRANT_USER:$VAGRANT_USER
+
+cd /home/$VAGRANT_USER
+
 
 # artful rootfs is 2GB without resize:
 sudo resize2fs /dev/sda1
 
 usermod -a -G dialout $VAGRANT_USER
 
+echo "calling pre-reqs script..."
 /vagrant/Tools/scripts/install-prereqs-ubuntu.sh -y
+echo "...pre-reqs script done... initvagrant.sh continues."
 
 # run-in-terminal-window uses xterm:
 apt-get install -y xterm
@@ -34,6 +46,7 @@ apt-get install -y gcovr lcov
 
 # install pexpect for autotest.py
 pip install pexpect
+
 
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
@@ -52,3 +65,5 @@ touch /ardupilot.vagrant
 
 # Now you can run
 # vagrant ssh -c "screen -d -R"
+echo "---------- initvagrant.sh end ----------"
+
