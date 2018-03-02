@@ -100,6 +100,12 @@ def get_alt_function(mcu, pin, function):
             return alt_map[s]
     return None
 
+def have_type_prefix(ptype):
+    '''return True if we have a peripheral starting with the given peripheral type'''
+    for t in bytype.keys():
+        if t.startswith(ptype):
+            return True
+    return False
 
 def get_ADC1_chan(mcu, pin):
     '''return ADC1 channel for an analog pin'''
@@ -290,10 +296,10 @@ def write_mcu_config(f):
     f.write('// crystal frequency\n')
     f.write('#define STM32_HSECLK %sU\n\n' % get_config('OSCILLATOR_HZ'))
     f.write('// UART used for stdout (printf)\n')
-    f.write('#define HAL_STDOUT_SERIAL %s\n\n' % get_config('STDOUT_SERIAL'))
-    f.write('// baudrate used for stdout (printf)\n')
-    f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % get_config(
-        'STDOUT_BAUDRATE', type=int))
+    if get_config('STDOUT_SERIAL', required=False):
+        f.write('#define HAL_STDOUT_SERIAL %s\n\n' % get_config('STDOUT_SERIAL'))
+        f.write('// baudrate used for stdout (printf)\n')
+        f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % get_config('STDOUT_BAUDRATE', type=int))
     if 'SDIO' in bytype:
         f.write('// SDIO available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
@@ -308,7 +314,7 @@ def write_mcu_config(f):
         f.write('#define HAL_USE_SERIAL_USB TRUE\n')
     if 'OTG2' in bytype:
         f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
-    if 'CAN1' in bytype or 'CAN2' in bytype or 'CAN3' in bytype:
+    if have_type_prefix('CAN'):
         enable_can(f)
     # write any custom STM32 defines
     for d in alllines:
@@ -362,7 +368,7 @@ INCLUDE common.ld
 
 def write_USB_config(f):
     '''write USB config defines'''
-    if not 'OTG1' in bytype:
+    if not have_type_prefix('OTG'):
         return;
     f.write('// USB configuration\n')
     f.write('#define HAL_USB_VENDOR_ID %s\n' % get_config('USB_VENDOR', default=0x0483)) # default to ST
@@ -505,13 +511,16 @@ def write_UART_config(f):
 
 def write_I2C_config(f):
     '''write I2C config defines'''
+    if not have_type_prefix('I2C'):
+        print("No I2C peripherals")
+        f.write('#define HAL_USE_I2C FALSE\n')
+        return
     if not 'I2C_ORDER' in config:
         error("Missing I2C_ORDER config")
     i2c_list = config['I2C_ORDER']
     f.write('// I2C configuration\n')
     if len(i2c_list) == 0:
-        f.write('#define HAL_USE_I2C FALSE\n')
-        return
+        error("I2C_ORDER invalid")
     devlist = []
     for dev in i2c_list:
         if not dev.startswith('I2C') or dev[3] not in "1234":
@@ -547,6 +556,11 @@ def write_PWM_config(f):
                     pwm_out.append(p)
                 if p.type not in pwm_timers:
                     pwm_timers.append(p.type)
+
+    if not pwm_out:
+        print("No PWM output defined")
+        f.write('#define HAL_USE_PWM FALSE\n')
+        
     if rc_in is not None:
         a = rc_in.label.split('_')
         chan_str = a[1][2:]

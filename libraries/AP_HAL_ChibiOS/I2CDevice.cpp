@@ -22,6 +22,8 @@
 #include "ch.h"
 #include "hal.h"
 
+#if HAL_USE_I2C == TRUE
+
 static const struct I2CInfo {
     struct I2CDriver *i2c;
     uint8_t dma_channel_rx;
@@ -283,3 +285,5 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
     auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
     return dev;
 }
+
+#endif // HAL_USE_I2C

@@ -21,11 +21,11 @@
 #include "Scheduler.h"
 #include "Device.h"
 
-namespace ChibiOS {
+#if HAL_USE_SPI == TRUE
 
-class SPIDesc;
+using namespace ChibiOS;
 
-class SPIBus : public DeviceBus {
+class ChibiOS::SPIBus : public ChibiOS::DeviceBus {
 public:
     SPIBus(uint8_t bus);
     struct spi_dev_s *dev;
@@ -36,7 +36,7 @@ public:
     bool spi_started;
 };
 
-struct SPIDesc {
+struct ChibiOS::SPIDesc {
     SPIDesc(const char *_name, uint8_t _bus,
             uint8_t _device, ioline_t _pal_line,
             uint16_t _mode, uint32_t _lowspeed, uint32_t _highspeed)
@@ -56,7 +56,7 @@ struct SPIDesc {
 };
 
 
-class SPIDevice : public AP_HAL::SPIDevice {
+class ChibiOS::SPIDevice : public AP_HAL::SPIDevice {
 public:
     SPIDevice(SPIBus &_bus, SPIDesc &_device_desc);
 
@@ -101,7 +101,7 @@ private:
     uint16_t derive_freq_flag(uint32_t _frequency);
 };
 
-class SPIDeviceManager : public AP_HAL::SPIDeviceManager {
+class ChibiOS::SPIDeviceManager : public AP_HAL::SPIDeviceManager {
 public:
     friend class SPIDevice;
 
@@ -117,4 +117,5 @@ private:
     SPIBus *buses;
 };
 
-}
+
+#endif // HAL_USE_SPI
