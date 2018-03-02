@@ -826,4 +826,4 @@ void AP_Camera::send_feedback(mavlink_channel_t chan) {}
 /* end dummy methods to avoid having to link against AP_Camera */
 
 // dummy method to avoid linking AFS
-bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate) {return false;}
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}
