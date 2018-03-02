@@ -71,3 +71,7 @@
 #define HAL_COMPASS_LIS3MDL_NAME "lis3mdl"
 
 
+#ifndef CONFIG_HAL_BOARD_SUBTYPE
+// allow for generic boards
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC
+#endif
