@@ -873,6 +873,8 @@ void Compass::_detect_backends(void)
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BMM150_I2C
     ADD_BACKEND(DRIVER_BMM150, AP_Compass_BMM150::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_BMM150_I2C_BUS, HAL_COMPASS_BMM150_I2C_ADDR)),
                 AP_Compass_BMM150::name, true);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NONE
+    // no compass
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
