@@ -546,7 +546,10 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     if (tx_len == 0) {
         return;
     }
-    dma_handle->lock();
+    if (!dma_handle->lock_nonblock()) {
+        tx_len = 0;
+        return;
+    }
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
     dmaStreamSetMemory0(txdma, tx_bounce_buf);
