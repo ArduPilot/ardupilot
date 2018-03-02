@@ -32,8 +32,19 @@ static HAL_UARTC_DRIVER;
 static HAL_UARTD_DRIVER;
 static HAL_UARTE_DRIVER;
 static HAL_UARTF_DRIVER;
+
+#if HAL_USE_I2C == TRUE
 static ChibiOS::I2CDeviceManager i2cDeviceManager;
+#else
+static Empty::I2CDeviceManager i2cDeviceManager;
+#endif
+
+#if HAL_USE_SPI == TRUE
 static ChibiOS::SPIDeviceManager spiDeviceManager;
+#else
+static Empty::SPIDeviceManager spiDeviceManager;
+#endif
+
 static ChibiOS::AnalogIn analogIn;
 #ifdef HAL_USE_EMPTY_STORAGE
 static Empty::Storage storageDriver;
@@ -42,7 +53,13 @@ static ChibiOS::Storage storageDriver;
 #endif
 static ChibiOS::GPIO gpioDriver;
 static ChibiOS::RCInput rcinDriver;
+
+#if HAL_USE_PWM == TRUE
 static ChibiOS::RCOutput rcoutDriver;
+#else
+static Empty::RCOutput rcoutDriver;
+#endif
+
 static ChibiOS::Scheduler schedulerInstance;
 static ChibiOS::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
@@ -168,6 +185,8 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
      * - Kernel initialization, the main() function becomes a thread and the
      *   RTOS is active.
      */
+
+#ifdef HAL_STDOUT_SERIAL
     //STDOUT Initialistion
     SerialConfig stdoutcfg =
     {
@@ -177,6 +196,7 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
       0
     };
     sdStart((SerialDriver*)&HAL_STDOUT_SERIAL, &stdoutcfg);
+#endif
 
     //Setup SD Card and Initialise FATFS bindings
     /*

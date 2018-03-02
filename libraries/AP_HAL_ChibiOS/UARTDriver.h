@@ -90,7 +90,9 @@ private:
     
     uint32_t _baudrate;
     uint16_t tx_len;
+#if HAL_USE_SERIAL == TRUE
     SerialConfig sercfg;
+#endif
     const thread_t* _uart_owner_thd;
 
     struct {
