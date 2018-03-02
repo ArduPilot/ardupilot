@@ -99,7 +99,12 @@ int asprintf(char **strp, const char *fmt, ...)
 
 int vprintf(const char *fmt, va_list arg)
 {
+#ifdef HAL_STDOUT_SERIAL
   return chvprintf ((BaseSequentialStream*)&HAL_STDOUT_SERIAL, fmt, arg);
+#else
+  (void)arg;
+  return strlen(fmt);
+#endif
 }
 
 int printf(const char *fmt, ...)
