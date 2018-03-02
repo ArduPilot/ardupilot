@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "---------- $0 start ----------"
 set -e
 set -x
 
@@ -127,3 +128,4 @@ apt-cache search arm-none-eabi
  git submodule init
  git submodule update
 )
+echo "---------- $0 end ----------"
