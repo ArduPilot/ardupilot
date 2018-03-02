@@ -183,9 +183,12 @@ private:
     uint16_t _bi_BM_listener_to_id[AP_UAVCAN_MAX_LISTENERS];
     AP_BattMonitor_Backend* _bi_BM_listeners[AP_UAVCAN_MAX_LISTENERS];
 
-    uint64_t fix_out_next_send_time_ms = AP_HAL::millis64();
-    uint64_t fix2_out_next_send_time_ms = AP_HAL::millis64();
-    uint64_t att_out_next_send_time_ms = AP_HAL::millis64();
+    uint32_t fix_out_send_last_ms;
+    uint32_t fix_out_send_delta_ms;
+    uint32_t fix2_out_send_last_ms;
+    uint32_t fix2_out_send_delta_ms;
+    uint32_t att_out_send_last_ms;
+    uint32_t att_out_send_delta_ms;
 
     struct {
         uint16_t pulse;

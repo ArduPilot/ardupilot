@@ -922,6 +922,8 @@ void AP_UAVCAN::do_cyclic(void)
 		return;
 	}
 
+    uint32_t now = AP_HAL::millis();
+
 	if (rc_out_sem_take()) {
 
 		if (_rco_armed) {
@@ -951,30 +953,35 @@ void AP_UAVCAN::do_cyclic(void)
     	led_out_sem_give();
     }
 
-	uint64_t now = AP_HAL::millis64();
 
     if (fix_out_sem_take()) {
-        if (fix_out_array[_uavcan_i] != nullptr && _broadcast_fix_rate > 0
-                && now >= fix_out_next_send_time_ms) {
-            fix_out_next_send_time_ms = now + (1000 / _broadcast_fix_rate);
+        if (fix_out_array[_uavcan_i] != nullptr &&
+                _broadcast_fix_rate != 0 &&
+                now - fix_out_send_last_ms >= fix_out_send_delta_ms) {
+            fix_out_send_last_ms = now;
+            fix_out_send_delta_ms = 1000U / (uint16_t)_broadcast_fix_rate;
             fix_out_array[_uavcan_i]->broadcast(_fix_state);
         }
 
-        if (fix2_out_array[_uavcan_i] != nullptr && _broadcast_fix2_rate > 0
-                && now >= fix2_out_next_send_time_ms) {
-            fix2_out_next_send_time_ms = now + (1000 / _broadcast_fix_rate);
+
+        if (fix2_out_array[_uavcan_i] != nullptr &&
+                _broadcast_fix2_rate != 0 &&
+                now - fix2_out_send_last_ms >= fix2_out_send_delta_ms) {
+            fix2_out_send_last_ms = now;
+            fix2_out_send_delta_ms = 1000U / (uint16_t)_broadcast_fix2_rate;
             fix2_out_array[_uavcan_i]->broadcast(_fix2_state);
         }
 
         fix_out_sem_give();
     }
 
-    if (att_out_sem_take()) {
-        if (attitude_out_array[_uavcan_i] != nullptr && _broadcast_att_rate > 0
-                && now >= att_out_next_send_time_ms) {
-            att_out_next_send_time_ms = now + (1000 / _broadcast_fix_rate);
-            attitude_out_array[_uavcan_i]->broadcast(_att_state);
-        }
+    if (att_out_sem_take() &&
+            attitude_out_array[_uavcan_i] != nullptr &&
+            _broadcast_att_rate != 0 &&
+            now - att_out_send_last_ms >= att_out_send_delta_ms) {
+        att_out_send_last_ms = now;
+        att_out_send_delta_ms = 1000U / (uint16_t)_broadcast_att_rate;
+        attitude_out_array[_uavcan_i]->broadcast(_att_state);
 
         att_out_sem_give();
 	}
