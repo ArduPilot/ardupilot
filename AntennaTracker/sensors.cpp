@@ -127,3 +127,10 @@ void Tracker::update_GPS(void)
     }
 }
 
+void Tracker::handle_battery_failsafe(const char* type_str, const int8_t action)
+{
+    // NOP
+    // useful failsafes in the future would include actually recalling the vehicle
+    // that is tracked before the tracker loses power to continue tracking it
+}
+
