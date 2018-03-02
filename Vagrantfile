@@ -66,16 +66,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     
   end
 
-  # NO LONGER AVAILABLE FOR DOWNLOAD, EOL January 2018
-  #config.vm.define "zesty32", autostart: false do |zesty32|
-  #  config.vm.box = "ubuntu/zesty32"
-  #  config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-  #
-  #  config.vm.provider "virtualbox" do |vb|
-  #      vb.name = "ArduPilot (Zesty32)"
-  #      vb.gui = true
-  #  end
-  # 
+  # NO LONGER AVAILABLE FOR DOWNLOAD , EOL January 2018
+  # Only kept around for those few dev's who have already got this image and continue to use it.
+  config.vm.define "zesty32", autostart: false do |zesty32|
+    config.vm.box = "ubuntu/zesty32"
+    config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+  
+    config.vm.provider "virtualbox" do |vb|
+        vb.name = "ArduPilot (Zesty32)"
+        vb.gui = true
+    end
+   
   #end
 
   # 17.10, EOL July 2018
