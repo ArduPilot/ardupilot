@@ -97,6 +97,8 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
 };
 
+constexpr int8_t Rover::_failsafe_priorities[7];
+
 #if STATS_ENABLED == ENABLED
 /*
   update AP_Stats

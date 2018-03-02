@@ -292,7 +292,9 @@ private:
     aux_switch_pos aux_ch7;
 
     // Battery Sensors
-    AP_BattMonitor battery{MASK_LOG_CURRENT};
+    AP_BattMonitor battery{MASK_LOG_CURRENT,
+                           FUNCTOR_BIND_MEMBER(&Rover::handle_battery_failsafe, void, const char*, const int8_t),
+                           _failsafe_priorities};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
@@ -457,6 +459,7 @@ private:
 
     // failsafe.cpp
     void failsafe_trigger(uint8_t failsafe_type, bool on);
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
@@ -552,6 +555,28 @@ private:
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
     bool is_boat() const;
+
+    enum Failsafe_Action {
+        Failsafe_Action_None          = 0,
+        Failsafe_Action_RTL           = 1,
+        Failsafe_Action_Hold          = 2,
+        Failsafe_Action_SmartRTL      = 3,
+        Failsafe_Action_SmartRTL_Hold = 4,
+        Failsafe_Action_Terminate     = 5
+    };
+
+    static constexpr int8_t _failsafe_priorities[] = {
+                                                       Failsafe_Action_Terminate,
+                                                       Failsafe_Action_Hold,
+                                                       Failsafe_Action_RTL,
+                                                       Failsafe_Action_SmartRTL_Hold,
+                                                       Failsafe_Action_SmartRTL,
+                                                       Failsafe_Action_None,
+                                                       -1 // the priority list must end with a sentinel of -1
+                                                      };
+    static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
+                  "_failsafe_priorities is missing the sentinel");
+
 
 public:
     void mavlink_delay_cb();
