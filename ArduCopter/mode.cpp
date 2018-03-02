@@ -343,14 +343,14 @@ void Copter::Mode::zero_throttle_and_relax_ac()
 // pass-through functions to reduce code churn on conversion;
 // these are candidates for moving into the Mode base
 // class.
-void Copter::Mode::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
+void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
 
-float Copter::Mode::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
+float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
 {
     return copter.get_surface_tracking_climb_rate(target_rate, current_alt_target, dt);
 }
 
-float Copter::Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
+float get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
     return copter.get_pilot_desired_yaw_rate(stick_angle);
 }
