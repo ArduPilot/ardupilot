@@ -50,7 +50,7 @@ void loop()
         hal.console->printf("\nVoltage: %.2f \tCurrent: %.2f \tTotCurr:%.2f",
                             (double)battery_mon.voltage(),
                             (double)battery_mon.current_amps(),
-                            (double)battery_mon.current_total_mah());
+                            (double)battery_mon.consumed_mah());
     }
 
     // delay 1ms

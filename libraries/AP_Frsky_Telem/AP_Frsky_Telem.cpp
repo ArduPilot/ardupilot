@@ -670,7 +670,7 @@ uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
     // battery current draw in deciamps
     batt |= prep_number(roundf(_battery.current_amps(instance) * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET; 
     // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
-    batt |= ((_battery.current_total_mah(instance) < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.current_total_mah(instance)) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
+    batt |= ((_battery.consumed_mah(instance) < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(_battery.consumed_mah(instance)) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
     return batt;
 }
 
