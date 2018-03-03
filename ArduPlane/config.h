@@ -332,7 +332,13 @@
  # define RESET_SWITCH_CHAN_PWM 1750
 #endif
 
-#define HIL_SUPPORT ENABLED
+#ifndef HIL_SUPPORT
+#if HAL_MINIMIZE_FEATURES
+# define HIL_SUPPORT DISABLED
+#else
+# define HIL_SUPPORT ENABLED
+#endif
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Parachute release
