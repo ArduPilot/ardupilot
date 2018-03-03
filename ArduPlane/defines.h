@@ -126,7 +126,7 @@ enum tuning_pid_bits {
     TUNING_BITS_END // dummy just used for static checking
 };
 
-static_assert(TUNING_BITS_END <= (1 << 24) + 1, "Tuning bit mask is to large to be set by MAVLink");
+static_assert(TUNING_BITS_END <= (1 << 24) + 1, "Tuning bit mask is too large to be set by MAVLink");
 
 // Logging message types
 enum log_messages {
