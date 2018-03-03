@@ -92,7 +92,7 @@ def get_alt_function(mcu, pin, function):
         # we do software RTS
         return None
 
-    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'OTG', 'JT', 'TIM', 'CAN']
+    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN']
     for l in af_labels:
         if function.startswith(l):
             s = pin + ":" + function
@@ -313,7 +313,7 @@ def write_mcu_config(f):
         f.write('#define HAL_STDOUT_SERIAL %s\n\n' % get_config('STDOUT_SERIAL'))
         f.write('// baudrate used for stdout (printf)\n')
         f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % get_config('STDOUT_BAUDRATE', type=int))
-    if 'SDIO' in bytype:
+    if have_type_prefix('SDIO') or have_type_prefix('SDMMC'):
         f.write('// SDIO available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
@@ -935,7 +935,7 @@ def build_peripheral_list():
                 peripherals.append(type + "_RX")
         if type.startswith('ADC'):
             peripherals.append(type)
-        if type.startswith('SDIO'):
+        if type.startswith('SDIO') or type.startswith('SDMMC'):
             peripherals.append(type)
         if type.startswith('TIM'):
             if p.has_extra('RCIN'):
