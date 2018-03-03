@@ -57,6 +57,8 @@
   this driver has been tested with STM32F427 and STM32F412
  */
 
+#ifndef HAL_USE_EMPTY_STORAGE
+
 #ifndef BOARD_FLASH_SIZE
 #error "You must define BOARD_FLASH_SIZE in kbyte"
 #endif
@@ -322,3 +324,5 @@ failed:
 #endif
     return -1;
 }
+
+#endif // HAL_USE_EMPTY_STORAGE
