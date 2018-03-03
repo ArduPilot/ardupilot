@@ -67,7 +67,7 @@ void AP_BattMonitor_UAVCAN::handle_bi_msg(float voltage, float current, float te
     if (_state.last_time_micros != 0 && dt < 2000000) {
         // .0002778 is 1/3600 (conversion to hours)
         float mah = (float) ((double) _state.current_amps * (double) dt * (double) 0.0000002778f);
-        _state.current_total_mah += mah;
+        _state.consumed_mah += mah;
         _state.consumed_wh  += 0.001f * mah * _state.voltage;
     }
 
