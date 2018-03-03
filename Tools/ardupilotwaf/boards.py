@@ -698,6 +698,9 @@ class px4(Board):
             'uavcan',
         ]
 
+        if sys.platform == 'cygwin':
+            env.CXXFLAGS += ['-DCYGWIN_BUILD']
+
         env.ROMFS_EXCLUDE = self.ROMFS_EXCLUDE
 
         env.PX4_BOOTLOADER_NAME = self.bootloader_name
