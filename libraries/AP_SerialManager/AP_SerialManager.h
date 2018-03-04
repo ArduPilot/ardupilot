@@ -72,7 +72,6 @@
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_TX     32
 
-
 class AP_SerialManager {
 public:
     AP_SerialManager();
@@ -99,7 +98,8 @@ public:
         SerialProtocol_Beacon = 13,
         SerialProtocol_Volz = 14,                    // Volz servo protocol
         SerialProtocol_Sbus1 = 15,
-        SerialProtocol_ESCTelemetry = 16
+        SerialProtocol_ESCTelemetry = 16,
+        SerialProtocol_Devo_Telem = 17,
     };
 
     // get singleton instance
