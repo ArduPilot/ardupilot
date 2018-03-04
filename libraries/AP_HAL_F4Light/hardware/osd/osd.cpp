@@ -44,8 +44,6 @@ using namespace F4Light;
 
 namespace OSDns {
 
-class BetterStream : AP_HAL::BetterStream {};
-
 #include "osd_core/GCS_MAVLink.h"
 
 #include "osd_core/OSD_Max7456.h"
@@ -880,24 +878,24 @@ void osd_loop() {
     }
 #endif
 
-    if(lflags.got_data){ // были свежие данные - обработать
+    if(lflags.got_data){ // if new data comes
 
-        pan_toggle(); // проверить переключение экранов
+        pan_toggle(); // check for screen toggle
 
         if(!lflags.need_redraw) {
             lflags.need_redraw=1;
-            vsync_wait=1; // будем ждать прерывания
+            vsync_wait=1; // will wait for interrupt
         }
 
-        lflags.got_data=0; // данные обработаны
+        lflags.got_data=0; // data parsed
     }
     
     if( lflags.need_redraw) {                 
-        lflags.need_redraw=0; // экран перерисован
+        lflags.need_redraw=0; // screen drawn
 
         setHomeVars();   // calculate and set Distance from home and Direction to home
 
-        setFdataVars();  // накопление статистики и рекордов
+        setFdataVars();  // statistics and min/max 
 
         writePanels();   // writing enabled panels (check OSD_Panels Tab)
 
@@ -905,17 +903,17 @@ void osd_loop() {
         prepare_dma_buffer(); // prepare diff with addresses
 #endif
 
-        update_screen = 1; // пришли данные, надо перерисовать экран
+        update_screen = 1; // data comes, wee need to redraw screen
     }
 
     if(pt > timer_20ms){
         timer_20ms+=20;
         On20ms();
         
-        if(update_screen && vsync_wait && (millis() - vsync_time)>50){ // прерывания остановились - с последнего прошло более 50мс
+        if(update_screen && vsync_wait && (millis() - vsync_time)>50){ // interrupts stopped - more than 50 ms passed from the last one
             vsync_wait=0; // хватит ждать
             Scheduler::set_task_priority(task_handle, OSD_HIGH_PRIORITY); // equal to main 
-            OSD::update(); // обновим принудительно (и далее будем обновлять каждые 20мс)
+            OSD::update(); // update compulsorily (and then update every 20ms)
             update_screen = 0;
             Scheduler::set_task_priority(task_handle, OSD_LOW_PRIORITY);
         }
@@ -945,7 +943,7 @@ void osd_loop() {
 
     if(pt > timer_500ms){
         timer_500ms+= 500;
-        lflags.got_data=1; // каждые полсекунды принудительно
+        lflags.got_data=1; // every half second forcibly
         update_screen = 1; 
 
         lflags.flag_05s = 1;
@@ -959,8 +957,8 @@ void osd_loop() {
 
             if(lflags.got_date) day_seconds++; // if we has GPS time - let it ticks
 
-            if( vas_vsync && vsync_count < 5) { // при частоте кадров их должно быть 25 или 50
-                                                    // но есть платы где эта нога не подключена. Китай...
+            if( vas_vsync && vsync_count < 5) { // at a frame rate they should be 25 or 50
+                                                    // but there are boards where this pin is not connected. China...
                 max7456_err_count++;
                 if(max7456_err_count>3) { // 3 seconds bad sync
 #ifdef DEBUG   
@@ -982,10 +980,10 @@ void osd_loop() {
 
 void vsync_ISR(){
     vas_vsync=true;
-    vsync_wait=0;       // отметить его наличие
+    vsync_wait=0;       // note its presence
 
-    vsync_count++; // считаем кадровые прерывания
-    vsync_time=millis(); // и отметим его время
+    vsync_count++; // count VSYNC interrupts
+    vsync_time=millis(); // and note a time
 
     if(update_screen) { // there is data for screen
         osd_need_redraw=true;
@@ -1054,53 +1052,7 @@ void update_max_buffer(const uint8_t *buffer, uint16_t len){
     uint16_t cnt=0;
     
     
-#if defined(OSD_DMA_TRANSFER) && 0
-//    MAX_write(MAX7456_DMM_reg, 0); 
-//    MAX_write(MAX7456_VM1_reg, B01000111);  - in dma_buffer
-
-    if(!diff_done){
-        prepare_dma_buffer(); 
-    }
-
-    if(dma_transfer_length) {
-        osd_spi->transfer(dma_buffer, dma_transfer_length, NULL, 0);    // diff already prepared
-
-        dma_transfer_length = 0;
-    }
-    diff_done = false;
-
-
-    max7456_cs_off();
-    uint8_t patt = MAX7456_ENABLE_display | MAX7456_SYNC_autosync | OSD::video_mode;
-    max7456_cs_on();
-    uint8_t vm0 = MAX_read(MAX7456_VM0_reg | MAX7456_reg_read);
-    max7456_cs_off();
-        
-    if(vm0 != patt) {
-        max_err_cnt++;
-        if(max_err_cnt<3) {
-            OSD::hw_init(); // first try without reset
-        } else {
-                // 3 errors together - nothing helps :(
-#ifdef BOARD_OSD_RESET_PIN
-            {
-                const stm32_pin_info &pp = PIN_MAP[BOARD_OSD_RESET_PIN];
-                gpio_write_bit(pp.gpio_device, pp.gpio_bit, LOW);
-                delayMicroseconds(50);
-                gpio_write_bit(pp.gpio_device, pp.gpio_bit, HIGH);
-                delayMicroseconds(120);
-            }
-#endif
-            OSD::init();
-            max_err_cnt=0; 
-            write_buff_to_MAX(false); // restore screen
-        }
-//            MAX_write(MAX7456_VM0_reg, patt);         
-    } else {
-        max_err_cnt=0;
-    }
-
-#elif 1
+#if 1
     uint8_t patt = MAX7456_ENABLE_display | MAX7456_SYNC_autosync | OSD::video_mode;
     max7456_cs_on();
     uint8_t vm0 = MAX_read(MAX7456_VM0_reg | MAX7456_reg_read);
@@ -1129,7 +1081,7 @@ void update_max_buffer(const uint8_t *buffer, uint16_t len){
 
     MAX_write(MAX7456_DMAH_reg, 0);
     MAX_write(MAX7456_DMAL_reg, 0);
-    MAX_write(MAX7456_DMM_reg, 1); // автоинкремент адреса
+    MAX_write(MAX7456_DMM_reg, 1); // set address auto-increment
 
     max7456_cs_off();
     
@@ -1167,7 +1119,7 @@ void update_max_buffer(const uint8_t *buffer, uint16_t len){
 // a try to do writes in software strobe mode
     MAX_write(MAX7456_DMAH_reg, 0);
     MAX_write(MAX7456_DMAL_reg, 0);
-    MAX_write(MAX7456_DMM_reg, 1); // автоинкремент адреса
+    MAX_write(MAX7456_DMM_reg, 1); // set address auto-increment
     max7456_cs_off();
     while(len--){
         max7456_cs_on();
@@ -1179,7 +1131,7 @@ void update_max_buffer(const uint8_t *buffer, uint16_t len){
         max7456_cs_off();
     }
     max7456_cs_on();
-    MAX_write(MAX7456_DMM_reg, 0); // автоинкремент адреса
+    MAX_write(MAX7456_DMM_reg, 0); // clear address auto-increment
 #else
 // just write all to MAX
     MAX_write(MAX7456_DMAH_reg, 0);
