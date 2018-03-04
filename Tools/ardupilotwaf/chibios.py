@@ -270,7 +270,7 @@ def build(bld):
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule='touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f ${BOARD_MK}',
+        rule='touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f ${BOARD_MK}',
         group='dynamic_sources',
         target='modules/ChibiOS/include_dirs'
     )
@@ -283,7 +283,7 @@ def build(bld):
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     ch_task = bld(
         # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f ${BOARD_MK}",
+        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f ${BOARD_MK}",
         group='dynamic_sources',
         source=common_src,
         target='modules/ChibiOS/libch.a'
