@@ -966,6 +966,13 @@ def build_peripheral_list():
 
 def write_env_py(filename):
     '''write out env.py for environment variables to control the build process'''
+
+    # see if board has a defaults.parm file
+    defaults_filename = os.path.join(os.path.dirname(args.hwdef), 'defaults.parm')
+    if os.path.exists(defaults_filename):
+        print("Adding defaults.parm")
+        env_vars['DEFAULT_PARAMETERS'] = os.path.abspath(defaults_filename)
+    
     # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
     env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(build_flags)
     pickle.dump(env_vars, open(filename, "wb"))
