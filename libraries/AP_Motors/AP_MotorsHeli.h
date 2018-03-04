@@ -165,6 +165,9 @@ protected:
     // run spool logic
     void                output_logic();
 
+    // output_to_motors - sends commands to the motors
+    virtual void        output_to_motors() = 0;
+
     // reset_flight_controls - resets all controls and scalars to flight status
     void reset_flight_controls();
 

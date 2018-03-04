@@ -271,6 +271,9 @@ void AP_MotorsHeli::output()
     } else {
         output_disarmed();
     }
+    
+    output_to_motors();
+
 };
 
 // sends commands to the motors
@@ -389,7 +392,6 @@ void AP_MotorsHeli::output_logic()
             // Motors should be stationary.
             // Servos set to their trim values or in a test condition.
 
-            update_motor_control(ROTOR_CONTROL_STOP);
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DESIRED_SHUT_DOWN) {
                 _spool_mode = SPIN_WHEN_ARMED;
@@ -401,7 +403,6 @@ void AP_MotorsHeli::output_logic()
         case SPIN_WHEN_ARMED: {
             // Motors should be stationary or at spin when armed.
             // Servos should be moving to correct the current attitude.
-            update_motor_control(ROTOR_CONTROL_IDLE);
             if (_spool_desired == DESIRED_SHUT_DOWN){
                 _spool_mode = SHUT_DOWN;
             } else if(_spool_desired == DESIRED_THROTTLE_UNLIMITED) {
@@ -416,7 +417,6 @@ void AP_MotorsHeli::output_logic()
             // Maximum throttle should move from minimum to maximum.
             // Servos should exhibit normal flight behavior.
 
-            update_motor_control(ROTOR_CONTROL_ACTIVE);
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DESIRED_THROTTLE_UNLIMITED ){
                 _spool_mode = SPOOL_DOWN;
@@ -432,7 +432,6 @@ void AP_MotorsHeli::output_logic()
             // Throttle should exhibit normal flight behavior.
             // Servos should exhibit normal flight behavior.
 
-            update_motor_control(ROTOR_CONTROL_ACTIVE);
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DESIRED_THROTTLE_UNLIMITED) {
                 _spool_mode = SPOOL_DOWN;
@@ -446,7 +445,6 @@ void AP_MotorsHeli::output_logic()
             // Maximum throttle should move from maximum to minimum.
             // Servos should exhibit normal flight behavior.
 
-            update_motor_control(ROTOR_CONTROL_IDLE);
             // make sure the motors are spooling in the correct direction
             if (_spool_desired == DESIRED_THROTTLE_UNLIMITED) {
                 _spool_mode = SPOOL_UP;

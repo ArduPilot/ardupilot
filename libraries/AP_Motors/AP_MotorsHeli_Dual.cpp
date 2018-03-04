@@ -507,23 +507,47 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     _rotor.set_collective(fabsf(collective_out));
 
     // swashplate servos
-    float servo_out[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
-    
     for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        servo_out[i] = (_rollFactor[i] * roll_out + _pitchFactor[i] * pitch_out + _yawFactor[i] * yaw_out)*0.45f + _collectiveFactor[i] * collective_out_scaled;
+        _servo_out[i] = (_rollFactor[i] * roll_out + _pitchFactor[i] * pitch_out + _yawFactor[i] * yaw_out)*0.45f + _collectiveFactor[i] * collective_out_scaled;
     }
 
     // rescale from -1..1, so we can use the pwm calc that includes trim
     for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        servo_out[i] = 2*servo_out[i] - 1;
-    }
-
-    // actually move the servos.  PWM is sent based on nominal 1500 center.  servo output shifts center based on trim value.
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        rc_write_swash(i, servo_out[i]);
+        _servo_out[i] = 2*_servo_out[i] - 1;
     }
 }
 
+void AP_MotorsHeli_Dual::output_to_motors()
+{
+    if (!_flags.initialised_ok) {
+        return;
+    }
+    // actually move the servos.  PWM is sent based on nominal 1500 center.  servo output shifts center based on trim value.
+    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+        rc_write_swash(i, _servo_out[i]);
+    }
+
+    switch (_spool_mode) {
+        case SHUT_DOWN:
+            // sends minimum values out to the motors
+            update_motor_control(ROTOR_CONTROL_STOP);
+            break;
+        case SPIN_WHEN_ARMED:
+            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
+            update_motor_control(ROTOR_CONTROL_IDLE);
+            break;
+        case SPOOL_UP:
+        case THROTTLE_UNLIMITED:
+            // set motor output based on thrust requests
+            update_motor_control(ROTOR_CONTROL_ACTIVE);
+            break;
+        case SPOOL_DOWN:
+            // sends idle output to motors and wait for rotor to stop
+            update_motor_control(ROTOR_CONTROL_IDLE);
+            break;
+
+    }
+}
 
 // servo_test - move servos through full range of movement
 void AP_MotorsHeli_Dual::servo_test()
