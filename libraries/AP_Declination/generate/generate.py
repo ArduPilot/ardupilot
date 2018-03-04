@@ -14,12 +14,14 @@ if not os.path.isfile("AP_Declination.h"):
     print("Please run this tool from the AP_Declination directory")
     sys.exit(1)
 
-def field_to_angles(x,y,z):
+
+def field_to_angles(x, y, z):
     intensity = sqrt(x**2+y**2+z**2)
     r2d = 180.0 / pi
     declination = r2d * atan2(y, x)
     inclination = r2d * asin(z / intensity)
     return [intensity, inclination, declination]
+
 
 isv = 0
 date = datetime.datetime.now()
@@ -49,7 +51,7 @@ for i in range(NUM_LAT):
         inclination_table[i][j] = I
         declination_table[i][j] = D
 
-tfile = open("tables.cpp",'w')
+tfile = open("tables.cpp", 'w')
 tfile.write('''// this is an auto-generated file from the IGRF tables. Do not edit
 // To re-generate run generate/generate.py
 
@@ -70,9 +72,11 @@ const float AP_Declination::SAMPLING_MAX_LON = %u;
        SAMPLING_MIN_LON,
        SAMPLING_MAX_LON))
 
+
 def write_table(name, table):
     '''write one table'''
-    tfile.write("const float AP_Declination::%s[%u][%u] = {\n" % (name, NUM_LAT, NUM_LON));
+    tfile.write("const float AP_Declination::%s[%u][%u] = {\n" %
+                (name, NUM_LAT, NUM_LON))
     for i in range(NUM_LAT):
         tfile.write("    {")
         for j in range(NUM_LON):
@@ -85,11 +89,10 @@ def write_table(name, table):
         tfile.write("\n")
     tfile.write("};\n\n")
 
+
 write_table('declination_table', declination_table)
 write_table('inclination_table', inclination_table)
 write_table('intensity_table', intensity_table)
 
 
 tfile.close()
-
-
