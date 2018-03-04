@@ -20,10 +20,10 @@
 #define MAVLINK_COMM_NUM_BUFFERS 1
 
 /// MAVLink stream used for HIL interaction
-extern BetterStream	*mavlink_comm_0_port;
+extern AP_HAL::BetterStream	*mavlink_comm_0_port;
 
 /// MAVLink stream used for ground control communication
-extern BetterStream	*mavlink_comm_1_port;
+extern AP_HAL::BetterStream	*mavlink_comm_1_port;
 
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
