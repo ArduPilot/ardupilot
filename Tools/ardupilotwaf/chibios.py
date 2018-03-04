@@ -144,7 +144,7 @@ def load_env_vars(env):
     if not os.path.exists(env_py):
         print("No env.py found")
         return
-    e = pickle.load(open(env_py, 'r'))
+    e = pickle.load(open(env_py, 'rb'))
     for k in e.keys():
         v = e[k]
         if k in env:
