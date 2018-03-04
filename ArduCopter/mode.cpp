@@ -225,6 +225,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode);
 #endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    devo_telemetry.update_control_mode(control_mode);
+#endif
+
 #if CAMERA == ENABLED
     camera.set_is_auto_mode(control_mode == AUTO);
 #endif
