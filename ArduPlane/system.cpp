@@ -119,6 +119,9 @@ void Plane::init_ardupilot()
     frsky_telemetry.init(serial_manager, fwver.fw_string,
                          MAV_TYPE_FIXED_WING);
 #endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    devo_telemetry.init(serial_manager);
+#endif
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
@@ -301,6 +304,10 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode);
 #endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    devo_telemetry.update_control_mode(control_mode);
+#endif
+
 #if CAMERA == ENABLED
     camera.set_is_auto_mode(control_mode == AUTO);
 #endif
