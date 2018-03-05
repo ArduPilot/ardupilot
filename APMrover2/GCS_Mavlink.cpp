@@ -345,12 +345,12 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure(rover.barometer);
+        send_scaled_pressure();
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
+        send_sensor_offsets(rover.ins, rover.compass);
         break;
 
     case MSG_SIMSTATE:
