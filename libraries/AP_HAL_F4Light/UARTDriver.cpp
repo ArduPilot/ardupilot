@@ -114,15 +114,15 @@ size_t UARTDriver::write(uint8_t c) {
         n = usart_putc(_usart_device, c);
         if(n==0) { // no place for character
             hal_yield(0);
-            if(!_blocking) tr--; // при неблокированном выводе уменьшим счетчик попыток
-        } else break; // успешно отправили
+            if(!_blocking) tr--; // in unlocking mode we reduce the retry count
+        } else break; // sent!
     } 
     return n;
 }
 
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
-    uint16_t tr=2; // попыток
+    uint16_t tr=2; // tries
     uint16_t n;
     uint16_t sent=0;
     while(tr && size) {
@@ -130,8 +130,8 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         n = usart_tx(_usart_device, buffer, size);
         if(n<size) { // no place for character
             hal_yield(0);
-            if(!_blocking) tr--; // при неблокированном выводе уменьшим счетчик попыток
-        } else break; // успешно отправили
+            if(!_blocking) tr--; // in unlocking mode we reduce the retry count
+        } else break; // sent
         buffer+=n;
         sent+=n;
         size-=n;
