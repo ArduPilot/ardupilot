@@ -38,39 +38,69 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # to update the submodules in order to build. Older versions of git
   # use absolute paths for submodules which confuses things.
 
-  # removing this line causes "A box must be specified." error:
+  # removing this line causes "A box must be specified." error
+  # and this is the default box that will be booted if no name is specified
   config.vm.box = "ubuntu/artful32"
 
-  # LTS, EOL April, 2019:
+  # 14.04.5 LTS, EOL April, 2019:
   config.vm.define "trusty64", autostart: false do |trusty64|
     config.vm.box = "ubuntu/trusty64"
     config.vm.provision "trusty64", type: "shell", path: "Tools/vagrant/initvagrant.sh"
-    config.vm.name = "ArduPilot (Trusty64)"
+    
+    config.vm.provider "virtualbox" do |vb|
+        vb.name = "ArduPilot (Trusty64)"
+        vb.gui = true
+    end
+    
   end
 
   # LTS, EOL April 2021
   config.vm.define "xenial32", autostart: false do |xenial32|
     config.vm.box = "ubuntu/xenial32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    config.vm.name = "ArduPilot (Xenial32)"
-    config.vm.gui = true
+
+    config.vm.provider "virtualbox" do |vb|
+        vb.name = "ArduPilot (Xenial32)"
+        vb.gui = true
+    end
+    
   end
 
-  # EOL January 2018
+  # NO LONGER AVAILABLE FOR DOWNLOAD , EOL January 2018
+  # Only kept around for those few dev's who have already got this image and continue to use it.
   config.vm.define "zesty32", autostart: false do |zesty32|
     config.vm.box = "ubuntu/zesty32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-  end
+  
+    config.vm.provider "virtualbox" do |vb|
+        vb.name = "ArduPilot (Zesty32)"
+        vb.gui = true
+    end
+   
+  #end
 
-  # EOL July 2018
+  # 17.10, EOL July 2018
   config.vm.define "artful32", primary: true do |artful32|
     config.vm.box = "ubuntu/artful32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    
+    config.vm.provider "virtualbox" do |vb|
+        vb.name = "ArduPilot (Artful32)"
+        vb.gui = true
+    end
+    
   end
 
+  # 18.04 LTS , bleeding edge.
   config.vm.define "bionic32", autostart: false do |bionic32|
     config.vm.box = "ubuntu/bionic32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    
+    config.vm.provider "virtualbox" do |vb|
+        vb.name = "ArduPilot (Bionic32)"
+        vb.gui = true
+    end
+    
   end
 
 end
