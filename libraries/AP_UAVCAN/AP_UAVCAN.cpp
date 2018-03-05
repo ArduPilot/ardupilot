@@ -17,12 +17,10 @@
 
 // Zubax GPS and other GPS, baro, magnetic sensors
 #include <uavcan/equipment/gnss/Fix.hpp>
-#include <uavcan/equipment/gnss/Fix2.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
 
 #include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
 #include <uavcan/equipment/ahrs/MagneticFieldStrength2.hpp>
-#include <uavcan/equipment/ahrs/Solution.hpp>
 #include <uavcan/equipment/air_data/StaticPressure.hpp>
 #include <uavcan/equipment/air_data/StaticTemperature.hpp>
 
@@ -73,223 +71,8 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ESC_BM", 3, AP_UAVCAN, _esc_bm, 255),
 
-    // @Param: NODE
-    // @DisplayName: UAVCAN GNSS Fix broadcast rate
-    // @Description: UAVCAN GNSS Fix broadcast rate in times per second. 0 - disable broadcast.
-    // @Range: 0 20
-    // @User: Advanced
-    AP_GROUPINFO("BR_FIX_R", 4, AP_UAVCAN, _broadcast_fix_rate, 10),
-
-    // @Param: NODE
-    // @DisplayName: UAVCAN GNSS Fix2 broadcast rate
-    // @Description: UAVCAN GNSS Fix2 broadcast rate in times per second. 0 - disable broadcast.
-    // @Range: 0 20
-    // @User: Advanced
-    AP_GROUPINFO("BR_FIX2_R", 5, AP_UAVCAN, _broadcast_fix2_rate, 10),
-
-    // @Param: NODE
-    // @DisplayName: UAVCAN attitude broadcast rate
-    // @Description: UAVCAN attitude broadcast rate in times per second. 0 - disable broadcast.
-    // @Range: 0 20
-    // @User: Advanced
-    AP_GROUPINFO("BR_ATT_R", 6, AP_UAVCAN, _broadcast_att_rate, 10),
-
     AP_GROUPEND
 };
-
-// publisher interfaces
-static uavcan::Publisher<uavcan::equipment::gnss::Fix> *fix_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
-static uavcan::Publisher<uavcan::equipment::gnss::Fix2> *fix2_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
-static uavcan::Publisher<uavcan::equipment::ahrs::Solution> *attitude_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
-
-static uavcan::equipment::gnss::Fix _fix_state;
-static uavcan::equipment::gnss::Fix2 _fix2_state;
-static uavcan::equipment::ahrs::Solution _att_state;
-
-void AP_UAVCAN::UAVCAN_AHRS_update(const AP_AHRS_NavEKF &ahrs)
-{
-    if (_fix_out_sem->take(1) &&
-            (fix_out_array[_uavcan_i] != nullptr || fix2_out_array[_uavcan_i] != nullptr)) {
-        const AP_GPS &cgps = AP::gps();
-        Location loc;
-        Vector3f vel_NED;
-
-        if (ahrs.healthy() && ahrs.get_location(loc)
-                && ahrs.get_velocity_NED(vel_NED)) {
-            float velVar, posVar, hgtVar;
-            Vector3f magVar;
-            float tasVar;
-            Vector2f offset;
-            ahrs.get_variances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-
-            // Manual resize to diagonal form
-            _fix_state.position_covariance.resize(3);
-            _fix_state.position_covariance[0] = posVar;
-            _fix_state.position_covariance[1] = posVar;
-            _fix_state.position_covariance[2] = hgtVar;
-
-            // Manual resize to diagonal form
-            _fix_state.velocity_covariance.resize(3);
-            _fix_state.velocity_covariance[0] = velVar;
-            _fix_state.velocity_covariance[1] = velVar;
-            _fix_state.velocity_covariance[2] = velVar;
-
-            // Manual resize to diagonal form
-            _fix2_state.covariance.resize(6);
-            _fix2_state.covariance[0] = posVar;
-            _fix2_state.covariance[1] = posVar;
-            _fix2_state.covariance[2] = hgtVar;
-            _fix2_state.covariance[3] = velVar;
-            _fix2_state.covariance[4] = velVar;
-            _fix2_state.covariance[5] = velVar;
-        } else {
-            loc = cgps.location();
-            vel_NED = cgps.velocity();
-
-            float vel_acc, hacc, vert_acc;
-            cgps.horizontal_accuracy(hacc);
-            cgps.vertical_accuracy(vert_acc);
-            cgps.speed_accuracy(vel_acc);
-
-            // Manual resize to diagonal form
-            _fix_state.position_covariance.resize(3);
-            _fix_state.position_covariance[0] = hacc * hacc;
-            _fix_state.position_covariance[1] = _fix_state.position_covariance[0];
-            _fix_state.position_covariance[2] = vert_acc * vert_acc;
-
-            // Manual resize to diagonal form
-            _fix_state.velocity_covariance.resize(3);
-            _fix_state.velocity_covariance[0] = vel_acc * vel_acc;
-            _fix_state.velocity_covariance[1] = _fix_state.velocity_covariance[0];
-            _fix_state.velocity_covariance[2] = _fix_state.velocity_covariance[0];
-
-            // Manual resize to diagonal form
-            _fix2_state.covariance.resize(6);
-            _fix2_state.covariance[0] = _fix_state.position_covariance[0];
-            _fix2_state.covariance[1] = _fix_state.position_covariance[1];
-            _fix2_state.covariance[2] = _fix_state.position_covariance[2];
-            _fix2_state.covariance[3] = _fix_state.velocity_covariance[0];
-            _fix2_state.covariance[4] = _fix_state.velocity_covariance[1];
-            _fix2_state.covariance[5] = _fix_state.velocity_covariance[2];
-        }
-
-        _fix_state.height_msl_mm = loc.alt * 10;
-        _fix_state.latitude_deg_1e8 = ((uint64_t) loc.lat) * 10;
-        _fix_state.longitude_deg_1e8 = ((uint64_t) loc.lng) * 10;
-
-        _fix2_state.height_msl_mm = loc.alt * 10;
-        _fix2_state.latitude_deg_1e8 = ((uint64_t) loc.lat) * 10;
-        _fix2_state.longitude_deg_1e8 = ((uint64_t) loc.lng) * 10;
-
-        // Not saved in AP
-        //_fix_state.height_ellipsoid_mm
-
-        _fix_state.ned_velocity[0] = vel_NED.x;
-        _fix_state.ned_velocity[1] = vel_NED.y;
-        _fix_state.ned_velocity[2] = vel_NED.z;
-
-        _fix2_state.ned_velocity[0] = vel_NED.x;
-        _fix2_state.ned_velocity[1] = vel_NED.y;
-        _fix2_state.ned_velocity[2] = vel_NED.z;
-
-        _fix_state.sats_used = cgps.num_sats();
-        _fix_state.pdop = cgps.get_hdop();
-
-        _fix2_state.sats_used = _fix_state.sats_used;
-        _fix2_state.pdop = _fix_state.pdop;
-
-        switch(cgps.status()) {
-            case AP_GPS::GPS_Status::NO_GPS:
-                _fix_state.status = uavcan::equipment::gnss::Fix::STATUS_NO_FIX;
-                break;
-            case AP_GPS::GPS_Status::NO_FIX:
-                _fix_state.status = uavcan::equipment::gnss::Fix::STATUS_NO_FIX;
-                break;
-            case AP_GPS::GPS_Status::GPS_OK_FIX_2D:
-                _fix_state.status = uavcan::equipment::gnss::Fix::STATUS_2D_FIX;
-                break;
-            case AP_GPS::GPS_Status::GPS_OK_FIX_3D:
-            case AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS:
-            case AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT:
-            case AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED:
-                _fix_state.status = uavcan::equipment::gnss::Fix::STATUS_3D_FIX;
-                break;
-        }
-
-        switch(cgps.status()) {
-            case AP_GPS::GPS_Status::NO_GPS:
-            case AP_GPS::GPS_Status::NO_FIX:
-            case AP_GPS::GPS_Status::GPS_OK_FIX_2D:
-            case AP_GPS::GPS_Status::GPS_OK_FIX_3D:
-                _fix2_state.mode = uavcan::equipment::gnss::Fix2::MODE_SINGLE;
-                _fix2_state.sub_mode = uavcan::equipment::gnss::Fix2::SUB_MODE_DGPS_OTHER;
-                break;
-            case AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS:
-                _fix2_state.mode = uavcan::equipment::gnss::Fix2::MODE_DGPS;
-                _fix2_state.sub_mode = uavcan::equipment::gnss::Fix2::SUB_MODE_DGPS_OTHER;
-                break;
-            case AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT:
-                _fix2_state.mode = uavcan::equipment::gnss::Fix2::MODE_RTK;
-                _fix2_state.sub_mode = uavcan::equipment::gnss::Fix2::SUB_MODE_RTK_FLOAT;
-                break;
-            case AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED:
-                _fix2_state.mode = uavcan::equipment::gnss::Fix2::MODE_RTK;
-                _fix2_state.sub_mode = uavcan::equipment::gnss::Fix2::SUB_MODE_RTK_FIXED;
-                break;
-        }
-
-        _fix_state.gnss_time_standard = uavcan::equipment::gnss::Fix::GNSS_TIME_STANDARD_UTC;
-        _fix2_state.gnss_time_standard = _fix_state.gnss_time_standard;
-        uavcan::Timestamp ts;
-        ts.usec = 1000ULL * ((cgps.time_week() * AP_MSEC_PER_WEEK + cgps.time_week_ms()) + UNIX_OFFSET_MSEC);
-        _fix_state.gnss_timestamp = ts;
-        _fix2_state.gnss_timestamp = ts;
-
-        _fix_state.num_leap_seconds = 0;
-        _fix2_state.num_leap_seconds = 0;
-        ts.usec = 0;
-        _fix_state.timestamp = ts;
-        _fix2_state.timestamp = ts;
-
-        _fix_out_sem->give();
-    }
-
-    if (_att_out_sem->take(1) && (attitude_out_array[_uavcan_i] != nullptr)) {
-        uavcan::Timestamp ts;
-        ts.usec = AP_HAL::micros64();
-        _att_state.timestamp = ts;
-
-        Quaternion qt;
-        Matrix3f rot = ahrs.get_rotation_body_to_ned();
-        qt.from_rotation_matrix(rot);
-        _att_state.orientation_xyzw[0] = qt.q1;
-        _att_state.orientation_xyzw[1] = qt.q2;
-        _att_state.orientation_xyzw[2] = qt.q3;
-        _att_state.orientation_xyzw[3] = qt.q4;
-
-        // TODO: extract from EKF
-        //_att_state.orientation_covariance
-
-        Vector3f av = ahrs.get_gyro();
-        _att_state.angular_velocity[0] = av.x;
-        _att_state.angular_velocity[1] = av.y;
-        _att_state.angular_velocity[2] = av.z;
-
-        // TODO: extract from EKF
-        //_att_state.angular_velocity_covariance
-
-        Vector3f la = ahrs.get_accel_ef();
-        _att_state.linear_acceleration[0] = la.x;
-        _att_state.linear_acceleration[1] = la.y;
-        _att_state.linear_acceleration[2] = la.z;
-
-        // TODO: extract from EKF
-        //_att_state.linear_acceleration_covariance
-
-        _att_out_sem->give();
-    }
-
-}
 
 static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
 {
@@ -605,8 +388,6 @@ AP_UAVCAN::AP_UAVCAN() :
     }
 
     _rc_out_sem = hal.util->new_semaphore();
-    _fix_out_sem = hal.util->new_semaphore();
-    _att_out_sem = hal.util->new_semaphore();
     _led_out_sem = hal.util->new_semaphore();
 
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
@@ -730,25 +511,8 @@ bool AP_UAVCAN::try_init(void)
                     rgb_led[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*node);
                     rgb_led[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
                     rgb_led[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
                     _led_conf.devices_count = 0;
-
-                    if(_broadcast_bm & AP_UAVCAN_BROADCAST_POSITION_FIX) {
-                        fix_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::gnss::Fix>(*node);
-                        fix_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
-                        fix_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
-                    }
-
-                    if(_broadcast_bm & AP_UAVCAN_BROADCAST_POSITION_FIX2) {
-                        fix2_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::gnss::Fix2>(*node);
-                        fix2_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
-                        fix2_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
-                    }
-
-                    if(_broadcast_bm & AP_UAVCAN_BROADCAST_ATTITUDE) {
-                        attitude_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::ahrs::Solution>(*node);
-                        attitude_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
-                        attitude_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
-                    }
 
                     /*
                      * Informing other nodes that we're ready to work.
@@ -771,34 +535,6 @@ bool AP_UAVCAN::try_init(void)
     }
 
     return false;
-}
-
-bool AP_UAVCAN::att_out_sem_take()
-{
-    bool sem_ret = _att_out_sem->take(10);
-    if (!sem_ret) {
-        debug_uavcan(1, "AP_UAVCAN attitude semaphore fail\n\r");
-    }
-    return sem_ret;
-}
-
-void AP_UAVCAN::att_out_sem_give()
-{
-    _att_out_sem->give();
-}
-
-bool AP_UAVCAN::fix_out_sem_take()
-{
-    bool sem_ret = _fix_out_sem->take(10);
-    if (!sem_ret) {
-        debug_uavcan(1, "AP_UAVCAN GNSS fix semaphore fail\n\r");
-    }
-    return sem_ret;
-}
-
-void AP_UAVCAN::fix_out_sem_give()
-{
-    _fix_out_sem->give();
 }
 
 bool AP_UAVCAN::rc_out_sem_take()
@@ -922,8 +658,6 @@ void AP_UAVCAN::do_cyclic(void)
 		return;
 	}
 
-    uint32_t now = AP_HAL::millis();
-
 	if (rc_out_sem_take()) {
 
 		if (_rco_armed) {
@@ -953,38 +687,6 @@ void AP_UAVCAN::do_cyclic(void)
     	led_out_sem_give();
     }
 
-
-    if (fix_out_sem_take()) {
-        if (fix_out_array[_uavcan_i] != nullptr &&
-                _broadcast_fix_rate != 0 &&
-                now - fix_out_send_last_ms >= fix_out_send_delta_ms) {
-            fix_out_send_last_ms = now;
-            fix_out_send_delta_ms = 1000U / (uint16_t)_broadcast_fix_rate;
-            fix_out_array[_uavcan_i]->broadcast(_fix_state);
-        }
-
-
-        if (fix2_out_array[_uavcan_i] != nullptr &&
-                _broadcast_fix2_rate != 0 &&
-                now - fix2_out_send_last_ms >= fix2_out_send_delta_ms) {
-            fix2_out_send_last_ms = now;
-            fix2_out_send_delta_ms = 1000U / (uint16_t)_broadcast_fix2_rate;
-            fix2_out_array[_uavcan_i]->broadcast(_fix2_state);
-        }
-
-        fix_out_sem_give();
-    }
-
-    if (att_out_sem_take() &&
-            attitude_out_array[_uavcan_i] != nullptr &&
-            _broadcast_att_rate != 0 &&
-            now - att_out_send_last_ms >= att_out_send_delta_ms) {
-        att_out_send_last_ms = now;
-        att_out_send_delta_ms = 1000U / (uint16_t)_broadcast_att_rate;
-        attitude_out_array[_uavcan_i]->broadcast(_att_state);
-
-        att_out_sem_give();
-	}
 }
 
 bool AP_UAVCAN::led_out_sem_take()
