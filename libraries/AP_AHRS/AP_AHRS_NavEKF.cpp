@@ -25,10 +25,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Module/AP_Module.h>
 
-#if HAL_WITH_UAVCAN
-#include <AP_UAVCAN/AP_UAVCAN.h>
-#endif
-
 #if AP_AHRS_NAVEKF_AVAILABLE
 
 extern const AP_HAL::HAL& hal;
@@ -125,19 +121,6 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
         // update optional alternative attitude view
         _view->update(skip_ins_update);
     }
-
-#if HAL_WITH_UAVCAN
-    if (hal.can_mgr != nullptr) {
-        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (hal.can_mgr[i] != nullptr) {
-                AP_UAVCAN *ap_uavcan = hal.can_mgr[i]->get_UAVCAN();
-                if (ap_uavcan != nullptr && ap_uavcan->need_AHRS_update()) {
-                    ap_uavcan->UAVCAN_AHRS_update(*this);
-                }
-            }
-        }
-    }
-#endif
 }
 
 void AP_AHRS_NavEKF::update_DCM(bool skip_ins_update)
