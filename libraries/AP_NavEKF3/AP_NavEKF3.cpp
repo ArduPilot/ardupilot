@@ -579,9 +579,8 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     AP_GROUPEND
 };
 
-NavEKF3::NavEKF3(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
+NavEKF3::NavEKF3(const AP_AHRS *ahrs, const RangeFinder &rng) :
     _ahrs(ahrs),
-    _baro(baro),
     _rng(rng),
     gpsNEVelVarAccScale(0.05f),     // Scale factor applied to horizontal velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
     gpsDVelVarAccScale(0.07f),      // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
@@ -634,7 +633,7 @@ void NavEKF3::check_log_write(void)
         logging.log_gps = false;
     }
     if (logging.log_baro) {
-        DataFlash_Class::instance()->Log_Write_Baro(_baro, imuSampleTime_us);
+        DataFlash_Class::instance()->Log_Write_Baro(imuSampleTime_us);
         logging.log_baro = false;
     }
     if (logging.log_imu) {
