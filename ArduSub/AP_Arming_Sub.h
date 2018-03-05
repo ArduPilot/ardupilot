@@ -12,7 +12,7 @@ public:
 
     /* Do not allow copies */
     AP_Arming_Sub(const AP_Arming_Sub &other) = delete;
-    AP_Arming_Sub &operator=(const AP_Baro&) = delete;
+    AP_Arming_Sub &operator=(const AP_Arming_Sub&) = delete;
 
     bool rc_calibration_checks(bool report) override;
     bool pre_arm_checks(bool report) override;
