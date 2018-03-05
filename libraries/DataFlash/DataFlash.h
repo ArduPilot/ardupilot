@@ -121,7 +121,7 @@ public:
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
     void Log_Write_RSSI(AP_RSSI &rssi);
-    void Log_Write_Baro(AP_Baro &baro, uint64_t time_us=0);
+    void Log_Write_Baro(uint64_t time_us=0);
     void Log_Write_Power(void);
     void Log_Write_AHRS2(AP_AHRS &ahrs);
     void Log_Write_POS(AP_AHRS &ahrs);
@@ -295,7 +295,7 @@ private:
     void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs);
 #endif
 
-    void Log_Write_Baro_instance(AP_Baro &baro, uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
+    void Log_Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
     void Log_Write_IMU_instance(const AP_InertialSensor &ins,
                                 uint64_t time_us,
                                 uint8_t imu_instance,
