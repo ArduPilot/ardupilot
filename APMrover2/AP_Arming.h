@@ -18,7 +18,7 @@ public:
 
     /* Do not allow copies */
     AP_Arming_Rover(const AP_Arming_Rover &other) = delete;
-    AP_Arming_Rover &operator=(const AP_Baro&) = delete;
+    AP_Arming_Rover &operator=(const AP_Arming_Rover&) = delete;
 
     bool pre_arm_checks(bool report) override;
     bool pre_arm_rc_checks(const bool display_failure);
