@@ -19,6 +19,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 
 #include "GCS.h"
 
@@ -1069,11 +1070,18 @@ void GCS_MAVLINK::send_scaled_pressure()
     uint32_t now = AP_HAL::millis();
     const AP_Baro &barometer = AP::baro();
     float pressure = barometer.get_pressure(0);
+    float diff_pressure = 0; // pascal
+
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed != nullptr) {
+        diff_pressure = airspeed->get_differential_pressure();
+    }
+
     mavlink_msg_scaled_pressure_send(
         chan,
         now,
         pressure*0.01f, // hectopascal
-        (pressure - barometer.get_ground_pressure(0))*0.01f, // hectopascal
+        diff_pressure*0.01f, // hectopascal
         barometer.get_temperature(0)*100); // 0.01 degrees C
 
     if (barometer.num_instances() > 1 &&
