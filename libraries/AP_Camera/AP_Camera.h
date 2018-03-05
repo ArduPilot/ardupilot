@@ -98,6 +98,7 @@ private:
     uint32_t        _last_photo_time;   // last time a photo was taken
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
+    uint16_t        _feedback_events;   // number of feedback events since boot
 
     // pin number for accurate camera feedback messages
     AP_Int8         _feedback_pin;
