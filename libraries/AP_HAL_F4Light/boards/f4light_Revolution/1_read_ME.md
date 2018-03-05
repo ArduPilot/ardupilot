@@ -36,11 +36,14 @@ binding of DSM satellite can be done in 2 ways:
 1. with some additional hardware - managed stabilizer 3.3 volts. 
 2. directly connected to 3.3v, binding will require short power off
 
-Connection to OpLink port
+Connection to OpLink port (RevoMini)
 Pin 1 is Gnd, 
-pin 2 is +5(DSM sat requires 3.3!)
-pin 3 is Rx 
-pin 4 is Enable for 3.3 stab.
+pin 2 is +5   (DSM sat requires 3.3!)
+pin 3 is PD2  (pin 54) Rx 
+pin 4 is PA15 (pin 50) Enable for 3.3 stab.
+pin 5 is PC10 (pin 51) SCK
+pin 6 is PC12 (pin 53) MOSI
+pin 7 is PC11 (pin 52) MISO
 
 Also Oplink port can be used as external SPI
 

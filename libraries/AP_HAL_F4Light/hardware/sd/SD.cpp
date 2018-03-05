@@ -184,8 +184,8 @@ File SDClass::open(const char *filepath, uint8_t mode)
         if( lastError != FR_OK) file.close();
     } else { // dir not exists - regular file
     
-        if((mode & FILE_WRITE) && lastError==FR_OK) { // режимы открытия файла отличаются. если существует файл
-            mode &= ~FA_CREATE_NEW;                  //  то убираем флаг создания - а то ошибка будет "файл существует"            
+        if((mode & FILE_WRITE) && lastError==FR_OK) { // the modes of opening the file are different. if a file exists
+            mode &= ~FA_CREATE_NEW;                  //  then remove the creation flag - or we will got error "file exists"
         }
 
         lastError = f_open(&file._d.fil, filepath, mode);

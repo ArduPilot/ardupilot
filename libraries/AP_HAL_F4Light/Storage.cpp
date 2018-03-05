@@ -86,7 +86,7 @@ void Storage::late_init(bool defer) {
 
 void Storage::error_parse(uint16_t status){
     switch(status) {
-    case EEPROM_NO_VALID_PAGE: // несмотря на неоднократные попытки, EEPROM не работает, а должен
+    case EEPROM_NO_VALID_PAGE: // despite repeated attempts, EEPROM does not work, but should
         AP_HAL::panic("EEPROM Error: no valid page\r\n");
         break;
 

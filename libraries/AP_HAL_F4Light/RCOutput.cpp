@@ -559,7 +559,7 @@ void RCOutput::set_pwm(uint8_t ch, uint16_t pwm){
     const stm32_pin_info &p = PIN_MAP[pin];
     const timer_dev *dev = p.timer_device;
 
-    pwm *= dev->state->freq_scale; // учесть неточность установки частоты таймера для малых прескалеров
+    pwm *= dev->state->freq_scale; // take into account the inaccuracy of setting the timer frequency for small prescalers
     timer_set_compare(dev, p.timer_channel, pwm); 
 }
 

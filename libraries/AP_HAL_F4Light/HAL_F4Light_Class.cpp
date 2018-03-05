@@ -38,7 +38,6 @@
 #include "massstorage/mass_storage.h"
 #endif
 
-
 using namespace F4Light;
 
 
@@ -314,10 +313,7 @@ void HAL_F4Light::run(int argc,char* const argv[], Callbacks* callbacks) const
 }
 
 
-
 static bool lateInitDone=false;
-
-
 
 void HAL_F4Light::lateInit() {
     
@@ -419,7 +415,6 @@ void HAL_F4Light::lateInit() {
         }
     }
 #endif
-
 
     RCOutput::lateInit(); // 2nd stage - now with loaded parameters
 
