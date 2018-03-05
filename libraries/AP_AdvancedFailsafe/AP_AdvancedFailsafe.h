@@ -51,9 +51,8 @@ public:
     };
 
     // Constructor
-    AP_AdvancedFailsafe(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap) :
+    AP_AdvancedFailsafe(AP_Mission &_mission, const AP_GPS &_gps, const RCMapper &_rcmap) :
         mission(_mission),
-        baro(_baro),
         gps(_gps),
         rcmap(_rcmap),
         _gps_loss_count(0),
@@ -96,7 +95,6 @@ protected:
     enum state _state;
 
     AP_Mission &mission;
-    AP_Baro &baro;
     const AP_GPS &gps;
     const RCMapper &rcmap;
 
