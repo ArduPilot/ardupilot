@@ -297,7 +297,7 @@ void Plane::Log_Write_RC(void)
 void Plane::Log_Write_Baro(void)
 {
     if (!ahrs.have_ekf_logging()) {
-        DataFlash.Log_Write_Baro(barometer);
+        DataFlash.Log_Write_Baro();
     }
 }
 
