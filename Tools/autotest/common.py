@@ -413,8 +413,12 @@ class Autotest(ABC):
     def wait_mode(self, mode, timeout=None):
         """Wait for mode to change."""
         progress("Waiting for mode %s" % mode)
-        self.mav.wait_heartbeat()
-        self.mav.recv_match(condition='MAV.flightmode.upper()=="%s".upper()' % mode, timeout=timeout, blocking=True)
+        tstart = self.get_sim_time()
+        hastimeout = False
+        while self.mav.flightmode.upper() != mode.upper() and not hastimeout:
+            if timeout is not None:
+                hastimeout = self.get_sim_time() > tstart + timeout
+            self.mav.wait_heartbeat()
         progress("Got mode %s" % mode)
         return self.mav.flightmode
 
