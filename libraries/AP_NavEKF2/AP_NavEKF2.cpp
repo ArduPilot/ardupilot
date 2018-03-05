@@ -555,9 +555,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     AP_GROUPEND
 };
 
-NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
+NavEKF2::NavEKF2(const AP_AHRS *ahrs, const RangeFinder &rng) :
     _ahrs(ahrs),
-    _baro(baro),
     _rng(rng)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -580,7 +579,7 @@ void NavEKF2::check_log_write(void)
         logging.log_gps = false;
     }
     if (logging.log_baro) {
-        DataFlash_Class::instance()->Log_Write_Baro(_baro, imuSampleTime_us);
+        DataFlash_Class::instance()->Log_Write_Baro(imuSampleTime_us);
         logging.log_baro = false;
     }
     if (logging.log_imu) {
