@@ -15,11 +15,12 @@ import sys
 import time
 import traceback
 
-import apmrover2
-import arducopter
-import arduplane
-import quadplane
-import ardusub
+from apmrover2 import *
+from arducopter import *
+from quadplane import *
+from arduplane import *
+from ardusub import *
+
 from pysim import util
 from pymavlink import mavutil
 from pymavlink.generator import mavtemplate
@@ -260,22 +261,28 @@ def run_step(step):
         fly_opts["speedup"] = opts.speedup
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(binary, frame=opts.frame, **fly_opts)
+        arducopter = AutotestCopter(binary, frame=opts.frame, **fly_opts)
+        return arducopter.autotest()
 
     if step == 'fly.CopterAVC':
-        return arducopter.fly_CopterAVC(binary, **fly_opts)
+        arducopter = AutotestCopter(binary, **fly_opts)
+        return arducopter.autotest_heli()
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(binary, **fly_opts)
+        arduplane = AutotestPlane(binary, **fly_opts)
+        return arduplane.autotest()
 
     if step == 'fly.QuadPlane':
-        return quadplane.fly_QuadPlane(binary, **fly_opts)
+        quadplane = AutotestQuadPlane(binary, **fly_opts)
+        return quadplane.autotest()
 
     if step == 'drive.APMrover2':
-        return apmrover2.drive_APMrover2(binary, frame=opts.frame, **fly_opts)
+        apmrover2 = AutotestRover(binary, frame=opts.frame, **fly_opts)
+        return apmrover2.autotest()
 
     if step == 'dive.ArduSub':
-        return ardusub.dive_ArduSub(binary, **fly_opts)
+        ardusub = AutotestSub(binary, **fly_opts)
+        return ardusub.autotest()
 
     if step == 'build.All':
         return build_all()
