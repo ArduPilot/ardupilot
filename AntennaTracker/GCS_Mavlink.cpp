@@ -202,12 +202,12 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure(tracker.barometer);
+        send_scaled_pressure();
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
+        send_sensor_offsets(tracker.ins, tracker.compass);
         break;
 
     case MSG_SIMSTATE:
