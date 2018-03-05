@@ -186,9 +186,9 @@ private:
 #endif
 
     // Inertial Navigation EKF
-    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, barometer, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF2 EKF2{&ahrs, rangefinder};
+    NavEKF3 EKF3{&ahrs, rangefinder};
+    AP_AHRS_NavEKF ahrs{ins, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
@@ -330,7 +330,7 @@ private:
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT};
 
-    AP_Arming_Sub arming{ahrs, barometer, compass, battery};
+    AP_Arming_Sub arming{ahrs, compass, battery};
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP

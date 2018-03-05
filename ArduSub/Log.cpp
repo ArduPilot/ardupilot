@@ -318,7 +318,7 @@ void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 void Sub::Log_Write_Baro(void)
 {
     if (!ahrs.have_ekf_logging()) {
-        DataFlash.Log_Write_Baro(barometer);
+        DataFlash.Log_Write_Baro();
     }
 }
 

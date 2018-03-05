@@ -544,13 +544,13 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure(sub.barometer);
+        send_scaled_pressure();
         sub.send_temperature(chan);
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(sub.ins, sub.compass, sub.barometer);
+        send_sensor_offsets(sub.ins, sub.compass);
         break;
 
     case MSG_RANGEFINDER:
