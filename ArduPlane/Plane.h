@@ -122,7 +122,7 @@
 class AP_AdvancedFailsafe_Plane : public AP_AdvancedFailsafe
 {
 public:
-    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap);
+    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, const AP_GPS &_gps, const RCMapper &_rcmap);
 
     // called to set all outputs to termination state
     void terminate_vehicle(void);
@@ -214,11 +214,11 @@ private:
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, barometer, EKF2, EKF3};
+    NavEKF2 EKF2{&ahrs, rangefinder};
+    NavEKF3 EKF3{&ahrs, rangefinder};
+    AP_AHRS_NavEKF ahrs{ins, EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs{ins, barometer};
+    AP_AHRS_DCM ahrs{ins};
 #endif
 
     AP_TECS TECS_controller{ahrs, aparm, landing, g2.soaring_controller};
@@ -632,7 +632,7 @@ private:
     AP_Avoidance_Plane avoidance_adsb{ahrs, adsb};
 
     // Outback Challenge Failsafe Support
-    AP_AdvancedFailsafe_Plane afs {mission, barometer, gps, rcmap};
+    AP_AdvancedFailsafe_Plane afs {mission, gps, rcmap};
 
     /*
       meta data to support counting the number of circles in a loiter
@@ -752,7 +752,7 @@ private:
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming_Plane arming{ahrs, barometer, compass, battery};
+    AP_Arming_Plane arming{ahrs, compass, battery};
 
     AP_Param param_loader {var_info};
 
