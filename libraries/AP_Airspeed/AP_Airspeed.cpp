@@ -201,6 +201,11 @@ AP_Airspeed::AP_Airspeed()
         state[i].EAS2TAS = 1;
     }
     AP_Param::setup_object_defaults(this, var_info);
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_Airspeed must be singleton");
+    }
+    _singleton = this;
 }
 
 
@@ -449,3 +454,7 @@ bool AP_Airspeed::all_healthy(void) const
     }
     return true;
 }
+
+// singleton instance
+AP_Airspeed *AP_Airspeed::_singleton;
+
