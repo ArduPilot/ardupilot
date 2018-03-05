@@ -53,7 +53,7 @@ public:
     friend class AP_AHRS_View;
     
     // Constructor
-    AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro) :
+    AP_AHRS(AP_InertialSensor &ins) :
         roll(0.0f),
         pitch(0.0f),
         yaw(0.0f),
@@ -67,7 +67,6 @@ public:
         _beacon(nullptr),
         _compass_last_update(0),
         _ins(ins),
-        _baro(baro),
         _cos_roll(1.0f),
         _cos_pitch(1.0f),
         _cos_yaw(1.0f),
@@ -209,10 +208,6 @@ public:
 
     const AP_InertialSensor &get_ins() const {
         return _ins;
-    }
-
-    const AP_Baro &get_baro() const {
-        return _baro;
     }
 
     // get the index of the current primary accelerometer sensor
@@ -639,7 +634,6 @@ protected:
     // note: we use ref-to-pointer here so that our caller can change the GPS without our noticing
     //       IMU under us without our noticing.
     AP_InertialSensor   &_ins;
-    AP_Baro             &_baro;
 
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;
