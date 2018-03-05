@@ -105,7 +105,7 @@ void LR_MsgHandler_BARO::process_message(uint8_t *msg)
     if (!field_value(msg, "SMS", last_update_ms)) {
         last_update_ms = 0;
     }
-    baro.setHIL(0,
+    AP::baro().setHIL(0,
 		require_field_float(msg, "Press"),
 		require_field_int16_t(msg, "Temp") * 0.01f,
 		require_field_float(msg, "Alt"),
