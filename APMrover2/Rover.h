@@ -169,15 +169,15 @@ private:
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, barometer, EKF2, EKF3};
+    NavEKF2 EKF2{&ahrs, rangefinder};
+    NavEKF3 EKF3{&ahrs, rangefinder};
+    AP_AHRS_NavEKF ahrs{ins, EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs{ins, barometer};
+    AP_AHRS_DCM ahrs{ins};
 #endif
 
     // Arming/Disarming management class
-    AP_Arming_Rover arming{ahrs, barometer, compass, battery, g2.fence};
+    AP_Arming_Rover arming{ahrs, compass, battery, g2.fence};
 
     AP_L1_Control L1_controller{ahrs, nullptr};
 
