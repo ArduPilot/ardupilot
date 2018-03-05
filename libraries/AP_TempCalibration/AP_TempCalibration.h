@@ -27,7 +27,7 @@ class AP_TempCalibration
 {
 public:
     // constructor
-    AP_TempCalibration(AP_Baro &baro, AP_InertialSensor &ins);
+    AP_TempCalibration(AP_InertialSensor &ins);
 
     // settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -41,7 +41,6 @@ public:
     };
     
 private:
-    AP_Baro &baro;
     AP_InertialSensor &ins;
 
     AP_Int8 enabled;
