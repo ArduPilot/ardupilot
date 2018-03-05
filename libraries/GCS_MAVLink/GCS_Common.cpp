@@ -1064,9 +1064,10 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.z);        
 }
 
-void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
+void GCS_MAVLINK::send_scaled_pressure()
 {
     uint32_t now = AP_HAL::millis();
+    const AP_Baro &barometer = AP::baro();
     float pressure = barometer.get_pressure(0);
     mavlink_msg_scaled_pressure_send(
         chan,
@@ -1098,7 +1099,7 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
     }
 }
 
-void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer)
+void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass)
 {
     // run this message at a much lower rate - otherwise it
     // pointlessly wastes quite a lot of bandwidth
@@ -1111,6 +1112,8 @@ void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compas
     const Vector3f &mag_offsets = compass.get_offsets(0);
     const Vector3f &accel_offsets = ins.get_accel_offsets(0);
     const Vector3f &gyro_offsets = ins.get_gyro_offsets(0);
+
+    const AP_Baro &barometer = AP::baro();
 
     mavlink_msg_sensor_offsets_send(chan,
                                     mag_offsets.x,
