@@ -61,7 +61,7 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
-    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
+    AP_Arming(const AP_AHRS &ahrs_ref, Compass &compass,
               const AP_BattMonitor &battery);
 
     // Parameters
@@ -72,7 +72,6 @@ protected:
 
     // references
     const AP_AHRS           &ahrs;
-    const AP_Baro           &barometer;
     Compass                 &_compass;
     const AP_BattMonitor    &_battery;
 
