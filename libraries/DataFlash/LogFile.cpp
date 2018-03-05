@@ -425,8 +425,9 @@ void DataFlash_Class::Log_Write_RSSI(AP_RSSI &rssi)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void DataFlash_Class::Log_Write_Baro_instance(AP_Baro &baro, uint64_t time_us, uint8_t baro_instance, enum LogMessages type)
+void DataFlash_Class::Log_Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enum LogMessages type)
 {
+    AP_Baro &baro = AP::baro();
     float climbrate = baro.get_climb_rate();
     float drift_offset = baro.get_baro_drift_offset();
     float ground_temp = baro.get_ground_temperature();
@@ -445,17 +446,18 @@ void DataFlash_Class::Log_Write_Baro_instance(AP_Baro &baro, uint64_t time_us, u
 }
 
 // Write a BARO packet
-void DataFlash_Class::Log_Write_Baro(AP_Baro &baro, uint64_t time_us)
+void DataFlash_Class::Log_Write_Baro(uint64_t time_us)
 {
     if (time_us == 0) {
         time_us = AP_HAL::micros64();
     }
-    Log_Write_Baro_instance(baro, time_us, 0, LOG_BARO_MSG);
+    const AP_Baro &baro = AP::baro();
+    Log_Write_Baro_instance(time_us, 0, LOG_BARO_MSG);
     if (baro.num_instances() > 1 && baro.healthy(1)) {
-        Log_Write_Baro_instance(baro, time_us, 1, LOG_BAR2_MSG);
+        Log_Write_Baro_instance(time_us, 1, LOG_BAR2_MSG);
     }
     if (baro.num_instances() > 2 && baro.healthy(2)) {
-        Log_Write_Baro_instance(baro, time_us, 2, LOG_BAR3_MSG);
+        Log_Write_Baro_instance(time_us, 2, LOG_BAR3_MSG);
     }
 }
 
