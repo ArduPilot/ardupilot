@@ -296,7 +296,7 @@ void AP_TECS::update_50hz(void)
           use a complimentary filter to calculate climb_rate. This is
           designed to minimise lag
          */
-        float baro_alt = _ahrs.get_baro().get_altitude();
+        const float baro_alt = AP::baro().get_altitude();
         // Get height acceleration
         float hgt_ddot_mea = -(_ahrs.get_accel_ef().z + GRAVITY_MSS);
         // Perform filter calculation using backwards Euler integration
