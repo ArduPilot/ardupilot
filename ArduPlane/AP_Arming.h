@@ -23,7 +23,7 @@ public:
 
     /* Do not allow copies */
     AP_Arming_Plane(const AP_Arming_Plane &other) = delete;
-    AP_Arming_Plane &operator=(const AP_Baro&) = delete;
+    AP_Arming_Plane &operator=(const AP_Arming_Plane&) = delete;
 
     bool pre_arm_checks(bool report);
 
