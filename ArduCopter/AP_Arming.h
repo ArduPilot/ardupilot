@@ -19,7 +19,7 @@ public:
 
     /* Do not allow copies */
     AP_Arming_Copter(const AP_Arming_Copter &other) = delete;
-    AP_Arming_Copter &operator=(const AP_Baro&) = delete;
+    AP_Arming_Copter &operator=(const AP_Arming_Copter&) = delete;
 
     void update(void);
     bool all_checks_passing(bool arming_from_gcs);
