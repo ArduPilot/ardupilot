@@ -206,6 +206,69 @@ class AutotestRover(Autotest):
     ##########################################################
     #   TESTS DRIVE
     ##########################################################
+    # Drive a square in manual mode
+    def drive_square(self, side=50):
+        """Drive a square, Driving N then E ."""
+        progress("TEST SQUARE")
+        success = True
+
+        # use LEARNING Mode
+        self.mavproxy.send('switch 5\n')
+        self.wait_mode('MANUAL')
+
+        # first aim north
+        progress("\nTurn right towards north")
+        if not self.reach_heading_manual(10):
+            success = False
+
+        # save bottom left corner of box as waypoint
+        progress("Save WP 1 & 2")
+        self.save_wp()
+
+        # pitch forward to fly north
+        progress("\nGoing north %u meters" % side)
+        if not self.reach_distance_manual(side):
+            success = False
+
+        # save top left corner of square as waypoint
+        progress("Save WP 3")
+        self.save_wp()
+
+        # roll right to fly east
+        progress("\nGoing east %u meters" % side)
+        if not self.reach_heading_manual(100):
+            success = False
+        if not self.reach_distance_manual(side):
+            success = False
+
+        # save top right corner of square as waypoint
+        progress("Save WP 4")
+        self.save_wp()
+
+        # pitch back to fly south
+        progress("\nGoing south %u meters" % side)
+        if not self.reach_heading_manual(190):
+            success = False
+        if not self.reach_distance_manual(side):
+            success = False
+
+        # save bottom right corner of square as waypoint
+        progress("Save WP 5")
+        self.save_wp()
+
+        # roll left to fly west
+        progress("\nGoing west %u meters" % side)
+        if not self.reach_heading_manual(280):
+            success = False
+        if not self.reach_distance_manual(side):
+            success = False
+
+        # save bottom left corner of square (should be near home) as waypoint
+        progress("Save WP 6")
+        self.save_wp()
+
+        return success
+
     def drive_left_circuit(self):
         """Drive a left circuit, 50m on a side."""
         self.mavproxy.send('switch 6\n')
@@ -447,6 +510,11 @@ class AutotestRover(Autotest):
             progress("#")
             progress("########## Drive a square and save WPs with CH7 switch  ##########")
             progress("#")
+            # Drive a square in learning mode
+            # self.reset_and_arm()
+            if not self.drive_square():
+                progress("Failed drive square")
+                failed = True
 
             if not self.drive_mission(os.path.join(testdir, "rover1.txt")):
                 progress("Failed mission")
