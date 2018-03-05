@@ -82,7 +82,7 @@ size_t USBDriver::write(const uint8_t *buffer, size_t size)
             
             uint32_t now = Scheduler::_micros();
             if(k==0) {
-                if(!_blocking && now - t > 5000 ){        // время ожидания превысило 5мс - что-то пошло не так...
+                if(!_blocking && now - t > 5000 ){        // the waiting time exceeded 5ms - something went wrong ...
                     reset_usb_opened();
                     return n;
                 }
