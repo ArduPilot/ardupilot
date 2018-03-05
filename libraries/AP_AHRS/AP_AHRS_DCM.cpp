@@ -956,7 +956,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
 {
     loc.lat = _last_lat;
     loc.lng = _last_lng;
-    loc.alt = _baro.get_altitude() * 100 + _home.alt;
+    loc.alt = AP::baro().get_altitude() * 100 + _home.alt;
     loc.flags.relative_alt = 0;
     loc.flags.terrain_alt = 0;
     location_offset(loc, _position_offset_north, _position_offset_east);
@@ -1010,7 +1010,7 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 //  a relative ground position to home in meters, Down
 void AP_AHRS_DCM::get_relative_position_D_home(float &posD) const
 {
-    posD = -_baro.get_altitude();
+    posD = -AP::baro().get_altitude();
 }
 
 /*
