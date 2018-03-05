@@ -325,6 +325,7 @@ AP_AdvancedFailsafe::check_altlimit(void)
     }
 
     // see if the barometer is dead
+    const AP_Baro &baro = AP::baro();
     if (AP_HAL::millis() - baro.get_last_update() > 5000) {
         // the barometer has been unresponsive for 5 seconds. See if we can switch to GPS
         if (_amsl_margin_gps != -1 &&
