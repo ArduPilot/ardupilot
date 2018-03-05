@@ -116,11 +116,11 @@ private:
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2{&ahrs, barometer, rng};
-    NavEKF3 EKF3{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs{ins, barometer, EKF2, EKF3};
+    NavEKF2 EKF2{&ahrs, rng};
+    NavEKF3 EKF3{&ahrs, rng};
+    AP_AHRS_NavEKF ahrs{ins, EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs{ins, barometer};
+    AP_AHRS_DCM ahrs{ins};
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
