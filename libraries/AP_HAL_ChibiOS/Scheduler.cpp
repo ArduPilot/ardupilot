@@ -15,7 +15,6 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 #include "AP_HAL_ChibiOS.h"
 #include "Scheduler.h"
@@ -31,6 +30,8 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "shared_dma.h"
+
+#if CH_CFG_USE_DYNAMIC == TRUE
 
 using namespace ChibiOS;
 
@@ -285,8 +286,10 @@ void Scheduler::_run_timers(bool called_from_timer_thread)
         _failsafe();
     }
 
+#if HAL_USE_ADC == TRUE
     // process analog input
     ((AnalogIn *)hal.analogin)->_timer_tick();
+#endif
 
     _in_timer_proc = false;
 }
@@ -294,7 +297,7 @@ void Scheduler::_run_timers(bool called_from_timer_thread)
 void Scheduler::_timer_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    sched->_timer_thread_ctx->name = "apm_timer";
+    chRegSetThreadName("apm_timer");
 
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
@@ -313,7 +316,7 @@ void Scheduler::_timer_thread(void *arg)
 void Scheduler::_uavcan_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    sched->_uavcan_thread_ctx->name = "apm_uavcan";
+    chRegSetThreadName("apm_uavcan");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(20000);
     }
@@ -331,7 +334,7 @@ void Scheduler::_uavcan_thread(void *arg)
 void Scheduler::_rcin_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    sched->_rcin_thread_ctx->name = "apm_rcin";
+    chRegSetThreadName("apm_rcin");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(20000);
     }
@@ -345,7 +348,7 @@ void Scheduler::_rcin_thread(void *arg)
 void Scheduler::_toneAlarm_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    sched->_toneAlarm_thread_ctx->name = "toneAlarm";
+    chRegSetThreadName("toneAlarm");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(20000);
     }
@@ -379,7 +382,7 @@ void Scheduler::_run_io(void)
 void Scheduler::_io_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    sched->_io_thread_ctx->name = "apm_io";
+    chRegSetThreadName("apm_io");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
@@ -394,7 +397,7 @@ void Scheduler::_io_thread(void* arg)
 void Scheduler::_storage_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    sched->_storage_thread_ctx->name = "apm_storage";
+    chRegSetThreadName("apm_storage");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(10000);
     }
@@ -438,4 +441,4 @@ void Scheduler::restore_interrupts(void *state)
     chSysRestoreStatusX((syssts_t)(uintptr_t)state);
 }
 
-#endif
+#endif // CH_CFG_USE_DYNAMIC

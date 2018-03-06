@@ -15,6 +15,10 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <AP_HAL/AP_HAL.h>
+#include "ch.h"
+#include "hal.h"
+
+#if HAL_USE_ADC == TRUE
 
 #include "AnalogIn.h"
 
@@ -357,3 +361,5 @@ void AnalogIn::update_power_flags(void)
     }
     _power_flags = flags;
 }
+#endif // HAL_USE_ADC
+
