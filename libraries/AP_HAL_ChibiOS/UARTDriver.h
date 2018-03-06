@@ -20,6 +20,7 @@
 
 #include "AP_HAL_ChibiOS.h"
 #include "shared_dma.h"
+#include "Semaphores.h"
 
 #define RX_BOUNCE_BUFSIZE 128
 #define TX_BOUNCE_BUFSIZE 64
@@ -119,7 +120,7 @@ private:
     uint8_t tx_bounce_buf[TX_BOUNCE_BUFSIZE];
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
-    mutex_t _write_mutex;
+    Semaphore _write_mutex;
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
     bool _in_timer;

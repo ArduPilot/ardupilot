@@ -62,7 +62,6 @@ _initialised(false)
 {
     osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many UART drivers");
     uart_drivers[serial_num] = this;
-    chMtxObjectInit(&_write_mutex);
 }
 
 /*
@@ -104,12 +103,14 @@ void UARTDriver::thread_init(void)
         // already initialised
         return;
     }
+#if CH_CFG_USE_HEAP == TRUE
     uart_thread_ctx = chThdCreateFromHeap(NULL,
                                           THD_WORKING_AREA_SIZE(2048),
                                           "apm_uart",
                                           APM_UART_PRIORITY,
                                           uart_thread,
                                            this);
+#endif
 }
 
 
@@ -447,18 +448,18 @@ int16_t UARTDriver::read()
 /* Empty implementations of Print virtual methods */
 size_t UARTDriver::write(uint8_t c)
 {
-    if (lock_key != 0 || !chMtxTryLock(&_write_mutex)) {
+    if (lock_key != 0 || !_write_mutex.take_nonblocking()) {
         return 0;
     }
     
     if (!_initialised) {
-        chMtxUnlock(&_write_mutex);
+        _write_mutex.give();
         return 0;
     }
 
     while (_writebuf.space() == 0) {
         if (!_blocking_writes) {
-            chMtxUnlock(&_write_mutex);
+            _write_mutex.give();
             return 0;
         }
         hal.scheduler->delay(1);
@@ -467,7 +468,7 @@ size_t UARTDriver::write(uint8_t c)
     if (unbuffered_writes) {
         write_pending_bytes();
     }
-    chMtxUnlock(&_write_mutex);
+    _write_mutex.give();
     return ret;
 }
 
@@ -477,7 +478,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 		return 0;
 	}
 
-    if (!chMtxTryLock(&_write_mutex)) {
+    if (!_write_mutex.take_nonblocking()) {
         return 0;
     }
 
@@ -485,7 +486,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         /*
           use the per-byte delay loop in write() above for blocking writes
          */
-        chMtxUnlock(&_write_mutex);
+        _write_mutex.give();
         size_t ret = 0;
         while (size--) {
             if (write(*buffer++) != 1) break;
@@ -498,7 +499,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     if (unbuffered_writes) {
         write_pending_bytes();
     }
-    chMtxUnlock(&_write_mutex);
+    _write_mutex.give();
     return ret;
 }
 
@@ -524,12 +525,12 @@ size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key
     if (lock_key != 0 && key != lock_key) {
         return 0;
     }
-    if (!chMtxTryLock(&_write_mutex)) {
+    if (!_write_mutex.take_nonblocking()) {
         return 0;
     }
     size_t ret = _writebuf.write(buffer, size);
 
-    chMtxUnlock(&_write_mutex);
+    _write_mutex.give();
 
     return ret;
 }
@@ -774,9 +775,9 @@ void UARTDriver::_timer_tick(void)
         // provided by the write() call, but if the write is larger
         // than the DMA buffer size then there can be extra bytes to
         // send here, and they must be sent with the write lock held
-        chMtxLock(&_write_mutex);
+        _write_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
         write_pending_bytes();
-        chMtxUnlock(&_write_mutex);
+        _write_mutex.give();
     } else {
         write_pending_bytes();
     }

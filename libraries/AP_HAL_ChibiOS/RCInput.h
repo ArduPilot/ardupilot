@@ -18,6 +18,7 @@
 
 #include "AP_HAL_ChibiOS.h"
 #include "SoftSigReader.h"
+#include "Semaphores.h"
 
 #ifdef HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
@@ -59,7 +60,7 @@ private:
     uint64_t _last_read;
     bool _override_valid;
     uint8_t _num_channels;
-    mutex_t rcin_mutex;
+    Semaphore rcin_mutex;
     int16_t _rssi = -1;
     uint32_t _rcin_timestamp_last_signal;
     bool _init;

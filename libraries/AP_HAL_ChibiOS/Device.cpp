@@ -21,6 +21,7 @@
 #include "Semaphores.h"
 #include "Util.h"
 
+#if HAL_USE_I2C == TRUE || HAL_USE_SPI == TRUE
 
 using namespace ChibiOS;
 
@@ -188,3 +189,5 @@ void DeviceBus::bouncebuffer_rx_copy(uint8_t *buf_rx, uint16_t rx_len)
 {
     memcpy(buf_rx, bounce_buffer_rx, rx_len);
 }
+
+#endif // HAL_USE_I2C || HAL_USE_SPI

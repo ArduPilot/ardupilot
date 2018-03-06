@@ -18,19 +18,25 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "AP_HAL_ChibiOS.h"
+
 
 class ChibiOS::Semaphore : public AP_HAL::Semaphore {
 public:
     Semaphore() {
+#if CH_CFG_USE_MUTEXES == TRUE
         chMtxObjectInit(&_lock);
+#endif
     }
     bool give();
     bool take(uint32_t timeout_ms);
     bool take_nonblocking();
     bool check_owner(void) {
+#if CH_CFG_USE_MUTEXES == TRUE
         return _lock.owner == chThdGetSelfX();
+#else
+        return true;
+#endif
     }
     void assert_owner(void) {
         osalDbgAssert(check_owner(), "owner");
@@ -38,4 +44,3 @@ public:
 private:
     mutex_t _lock;
 };
-#endif // CONFIG_HAL_BOARD
