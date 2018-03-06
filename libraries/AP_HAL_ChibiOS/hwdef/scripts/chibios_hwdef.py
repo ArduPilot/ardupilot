@@ -353,6 +353,9 @@ def write_mcu_config(f):
         'CCM_RAM_SIZE_KB', default=def_ccm_size, required=False, type=int)
     if ccm_size is not None:
         f.write('#define CCM_RAM_SIZE %u\n' % ccm_size)
+    flash_reserve_start = get_config(
+        'FLASH_RESERVE_START_KB', default=16, type=int)
+    f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % flash_reserve_start)
     f.write('\n')
 
     lib = get_mcu_lib(mcu_type)
