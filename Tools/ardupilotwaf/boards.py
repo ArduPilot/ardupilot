@@ -261,7 +261,7 @@ class sitl(Board):
             'SITL',
         ]
 
-        if sys.platform == 'cygwin':
+        if (sys.platform == 'cygwin') or (sys.platform == 'msys'):
             env.LIB += [
                 'winmm',
             ]

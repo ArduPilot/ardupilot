@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<UrusStudio_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="JoypadA" />
+		<Option makefile="MAKEFILE" />
+		<Option pch_mode="2" />
+		<Option compiler="avr-gcc" />
+		<Build>
+			<Target title="apm2_rel">
+				<Option output="../../../../build/bin/Release/joypadA.elf" prefix_auto="1" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="../../../../build/obj/Release/" />
+				<Option type="5" />
+				<Option compiler="avr-gcc" />
+				<Compiler>
+					<Add option="-mcall-prologues" />
+					<Add option="-Os" />
+					<Add option='-Wl,&quot;--gc-sections, --relax&quot;' />
+					<Add option="-std=gnu++11" />
+					<Add option="-ffunction-sections" />
+					<Add option="-fdata-sections" />
+					<Add option="-fno-exceptions" />
+					<Add option="-fsigned-char" />
+					<Add option="-fno-use-cxa-atexit" />
+					<Add option="-fpermissive" />
+					<Add option="-Wformat" />
+					<Add option="-Wshadow" />
+					<Add option="-Wpointer-arith" />
+					<Add option="-Wcast-align" />
+					<Add option="-Wwrite-strings" />
+					<Add option="-Wno-unused-parameter" />
+					<Add option="-fno-threadsafe-statics" />
+					<Add option="-mmcu=atmega2560" />
+					<Add option="-Wno-unknown-pragmas" />
+					<Add option="-Wno-overflow" />
+					<Add option="-D__STDC_FORMAT_MACROS=1" />
+					<Add option="-DWAF_BUILD=0" />
+					<Add option="-D_GNU_SOURCE=1" />
+					<Add option="-DSHAL_CORE_APM2=1" />
+					<Add option="-DCONFIG_HAL_BOARD_SUBTYPE=HAL_BOARD_SUBTYPE_NONE" />
+					<Add option="-DCONFIG_SHAL_CORE=SHAL_CORE_APM" />
+					<Add option="-DCONFIG_HAL_BOARD=HAL_BOARD_URUS" />
+					<Add option="-DHAVE_TYPE_TRAITS_H=0" />
+					<Add option="-DHAVE_CMATH_H=0" />
+					<Add option="-DHAVE_STD_NULLPTR_T=0" />
+					<Add option="-DHAVE_CMATH_ISNAN=1" />
+					<Add option="-DHAL_OS_POSIX_IO=0" />
+					<Add option="-DHAVE_STD_MOVE=0" />
+					<Add option="-DHAVE_STD_REMOVE_REFERENCE=0" />
+					<Add option="-DHAL_MINIMIZE_FEATURES=1" />
+					<Add option="-DHAL_MINIMIZE_FEATURES_AVR=1" />
+					<Add directory="../../../../libraries" />
+					<Add directory="../../../../libraries/AP_Common/missing" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-mmcu=atmega2560" />
+					<Add library="MasterLibUrus" />
+					<Add directory="../../../../build/bin/Release" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="avr-size --mcu=atmega2560 --format=avr $(TARGET_OUTPUT_FILE)" />
+					<Add after="avr-objcopy -R .eeprom -R .fuse -R .lock -R .signature -O ihex $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).hex" />
+					<Add after="avr-objcopy --no-change-warnings -j .eeprom --change-section-lma .eeprom=0 -O ihex $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).eep" />
+					<Mode after="always" />
+				</ExtraCommands>
+			</Target>
+			<Target title="apm328p_rel">
+				<Option output="../../../../build/bin/Release/joypadA.elf" prefix_auto="1" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="../../../../build/obj/Release/" />
+				<Option type="5" />
+				<Option compiler="avr-gcc" />
+				<Compiler>
+					<Add option="-mcall-prologues" />
+					<Add option="-Os" />
+					<Add option='-Wl,&quot;--gc-sections, --relax&quot;' />
+					<Add option="-std=gnu++11" />
+					<Add option="-ffunction-sections" />
+					<Add option="-fdata-sections" />
+					<Add option="-fno-exceptions" />
+					<Add option="-fsigned-char" />
+					<Add option="-fno-use-cxa-atexit" />
+					<Add option="-fpermissive" />
+					<Add option="-Wformat" />
+					<Add option="-Wshadow" />
+					<Add option="-Wpointer-arith" />
+					<Add option="-Wcast-align" />
+					<Add option="-Wwrite-strings" />
+					<Add option="-Wno-unused-parameter" />
+					<Add option="-fno-threadsafe-statics" />
+					<Add option="-mmcu=atmega328p" />
+					<Add option="-Wno-unknown-pragmas" />
+					<Add option="-Wno-overflow" />
+					<Add option="-D__STDC_FORMAT_MACROS=1" />
+					<Add option="-DWAF_BUILD=0" />
+					<Add option="-D_GNU_SOURCE=1" />
+					<Add option="-DSHAL_CORE_APM328=1" />
+					<Add option="-DCONFIG_HAL_BOARD_SUBTYPE=HAL_BOARD_SUBTYPE_NONE" />
+					<Add option="-DCONFIG_SHAL_CORE=SHAL_CORE_APM" />
+					<Add option="-DCONFIG_HAL_BOARD=HAL_BOARD_URUS" />
+					<Add option="-DHAVE_TYPE_TRAITS_H=0" />
+					<Add option="-DHAVE_CMATH_H=0" />
+					<Add option="-DHAVE_STD_NULLPTR_T=0" />
+					<Add option="-DHAVE_CMATH_ISNAN=1" />
+					<Add option="-DHAL_OS_POSIX_IO=0" />
+					<Add option="-DHAVE_STD_MOVE=0" />
+					<Add option="-DHAVE_STD_REMOVE_REFERENCE=0" />
+					<Add option="-DHAL_MINIMIZE_FEATURES=1" />
+					<Add option="-DHAL_MINIMIZE_FEATURES_AVR=1" />
+					<Add directory="../../../../libraries" />
+					<Add directory="../../../../libraries/AP_Common/missing" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-mmcu=atmega328p" />
+					<Add library="MasterLibUrus" />
+					<Add directory="../../../../build/bin/Release" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="avr-size --mcu=atmega328p --format=avr $(TARGET_OUTPUT_FILE)" />
+					<Add after="avr-objcopy -R .eeprom -R .fuse -R .lock -R .signature -O ihex $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).hex" />
+					<Add after="avr-objcopy --no-change-warnings -j .eeprom --change-section-lma .eeprom=0 -O ihex $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).eep" />
+					<Mode after="always" />
+				</ExtraCommands>
+			</Target>
+			<Target title="apm16u2_rel">
+				<Option output="../../../../build/bin/Release/joypadA.elf" prefix_auto="1" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="../../../../build/obj/Release/" />
+				<Option type="5" />
+				<Option compiler="avr-gcc" />
+				<Compiler>
+					<Add option="-mcall-prologues" />
+					<Add option="-Os" />
+					<Add option='-Wl,&quot;--gc-sections, --relax&quot;' />
+					<Add option="-std=gnu++11" />
+					<Add option="-ffunction-sections" />
+					<Add option="-fdata-sections" />
+					<Add option="-fno-exceptions" />
+					<Add option="-fsigned-char" />
+					<Add option="-fno-use-cxa-atexit" />
+					<Add option="-fpermissive" />
+					<Add option="-Wformat" />
+					<Add option="-Wshadow" />
+					<Add option="-Wpointer-arith" />
+					<Add option="-Wcast-align" />
+					<Add option="-Wwrite-strings" />
+					<Add option="-Wno-unused-parameter" />
+					<Add option="-fno-threadsafe-statics" />
+					<Add option="-mmcu=atmega16u2" />
+					<Add option="-Wno-unknown-pragmas" />
+					<Add option="-Wno-overflow" />
+					<Add option="-maccumulate-args" />
+					<Add option="-D__STDC_FORMAT_MACROS=1" />
+					<Add option="-DWAF_BUILD=0" />
+					<Add option="-D_GNU_SOURCE=1" />
+					<Add option="-DSHAL_CORE_APM16U=1" />
+					<Add option="-DCONFIG_HAL_BOARD_SUBTYPE=HAL_BOARD_SUBTYPE_NONE" />
+					<Add option="-DCONFIG_SHAL_CORE=SHAL_CORE_APM" />
+					<Add option="-DCONFIG_HAL_BOARD=HAL_BOARD_URUS" />
+					<Add option="-DHAVE_TYPE_TRAITS_H=0" />
+					<Add option="-DHAVE_CMATH_H=0" />
+					<Add option="-DHAVE_STD_NULLPTR_T=0" />
+					<Add option="-DHAVE_CMATH_ISNAN=1" />
+					<Add option="-DHAL_OS_POSIX_IO=0" />
+					<Add option="-DHAVE_STD_MOVE=0" />
+					<Add option="-DHAVE_STD_REMOVE_REFERENCE=0" />
+					<Add option="-DHAL_MINIMIZE_FEATURES=1" />
+					<Add option="-DHAL_MINIMIZE_FEATURES_AVR=1" />
+					<Add directory="../../../../libraries" />
+					<Add directory="../../../../libraries/AP_Common/missing" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-mmcu=atmega16u2" />
+					<Add library="MasterLibUrus" />
+					<Add directory="../../../../build/bin/Release" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="avr-size --mcu=atmega16u2 --format=avr $(TARGET_OUTPUT_FILE)" />
+					<Add after="avr-objcopy -R .eeprom -R .fuse -R .lock -R .signature -O ihex $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).hex" />
+					<Add after="avr-objcopy --no-change-warnings -j .eeprom --change-section-lma .eeprom=0 -O ihex $(TARGET_OUTPUT_FILE) $(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).eep" />
+					<Mode after="always" />
+				</ExtraCommands>
+			</Target>
+			<Environment>
+				<Variable name="MCU" value="atmega2560" />
+			</Environment>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-DF_CPU=16000000UL" />
+		</Compiler>
+		<Unit filename="joypadA.cpp" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</UrusStudio_project_file>
