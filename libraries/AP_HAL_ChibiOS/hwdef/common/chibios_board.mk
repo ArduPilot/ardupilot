@@ -92,10 +92,10 @@ PROJECT = ch
 
 # Imported source files and paths
 # Startup files.
-include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk
+include $(CHIBIOS)/$(CHIBIOS_STARTUP_MK)
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
-include $(CHIBIOS)/os/hal/ports/STM32/STM32F4xx/platform.mk
+include $(CHIBIOS)/$(CHIBIOS_PLATFORM_MK)
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk

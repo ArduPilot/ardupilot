@@ -60,6 +60,9 @@ alllines = []
 # allow for extra env vars
 env_vars = {}
 
+# build flags for ChibiOS makefiles
+build_flags = []
+
 mcu_type = None
 
 
@@ -78,14 +81,18 @@ def error(str):
     sys.exit(1)
 
 
-def get_alt_function(mcu, pin, function):
-    '''return alternative function number for a pin'''
+def get_mcu_lib(mcu):
+    '''get library file for the chosen MCU'''
     import importlib
     try:
-        lib = importlib.import_module(mcu)
-        alt_map = lib.AltFunction_map
+        return importlib.import_module(mcu)
     except ImportError:
         error("Unable to find module for MCU %s" % mcu)
+
+def get_alt_function(mcu, pin, function):
+    '''return alternative function number for a pin'''
+    lib = get_mcu_lib(mcu)
+    alt_map = lib.AltFunction_map
 
     if function and function.endswith("_RTS") and (
             function.startswith('USART') or function.startswith('UART')):
@@ -317,10 +324,10 @@ def write_mcu_config(f):
         f.write('// SDIO available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
-        env_vars['CHIBIOS_FATFS_FLAG'] = 'USE_FATFS=yes'
+        build_flags.append('USE_FATFS=yes')
     else:
         f.write('#define HAL_USE_SDC FALSE\n')
-        env_vars['CHIBIOS_FATFS_FLAG'] = 'USE_FATFS=no'
+        build_flags.append('USE_FATFS=no')
     if 'OTG1' in bytype:
         f.write('#define STM32_USB_USE_OTG1                  TRUE\n')
         f.write('#define HAL_USE_USB TRUE\n')
@@ -348,6 +355,11 @@ def write_mcu_config(f):
         f.write('#define CCM_RAM_SIZE %u\n' % ccm_size)
     f.write('\n')
 
+    lib = get_mcu_lib(mcu_type)
+    build_info = lib.build
+    # setup build variables
+    for v in build_info.keys():
+        build_flags.append('%s=%s' % (v, build_info[v]))
 
 def write_ldscript(fname):
     '''write ldscript.ld for this board'''
@@ -952,6 +964,12 @@ def build_peripheral_list():
     return peripherals
 
 
+def write_env_py(filename):
+    '''write out env.py for environment variables to control the build process'''
+    # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
+    env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(build_flags)
+    pickle.dump(env_vars, open(filename, "wb"))
+
 def process_line(line):
     '''process one line of pin definition file'''
     global allpins
@@ -1065,6 +1083,5 @@ write_ldscript(os.path.join(outdir, "ldscript.ld"))
 # exist in the same directory as the ldscript.ld file we generate.
 copy_common_linkerscript(outdir, args.hwdef)
 
-# write out env.py
-pickle.dump(env_vars, open(os.path.join(outdir, "env.py"), "wb"))
+write_env_py(os.path.join(outdir, "env.py"))
 
