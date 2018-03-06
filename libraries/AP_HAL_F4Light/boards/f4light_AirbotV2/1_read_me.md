@@ -19,7 +19,7 @@ Built-in OSD can be configured via files in root directory of SD card:
 - font.mcm is font (select one of https://github.com/night-ghost/minimosd-extra/tree/master/Released/FW_%2B_Char). This file will be deleted after flashing.
 
 Firmware supports connection to built-in OSD with CT from my MinimOSD (https://github.com/night-ghost/minimosd-extra). To do this:
-- set HAL_CONNECT_COM parameter to 4, then reboot / power cycle
+- set BRD_CONNECT_COM parameter to 4, then reboot / power cycle
 - USB will be connected to OSD after reboot, supported load/store/fonts in MAVLink mode
 
 OSD will work better when VSYNC out from MAX connected to PC3 (R8 to Vcc).
