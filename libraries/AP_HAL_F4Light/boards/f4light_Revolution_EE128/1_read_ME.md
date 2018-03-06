@@ -1,3 +1,5 @@
+this is for Revolution/RevoMini board with removed 25q16 and soldered 25q128 or 25q256. This is very easy!
+
 I tried to maintain compatibility with the OpenPilot documentation. The main difference - FlexiPort can 
 be Serial and external I2C port is on pins 7&8 of Input port. But this can be changed by HAL_FLEXI_I2C parameter
 

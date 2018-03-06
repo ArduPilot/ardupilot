@@ -1,8 +1,10 @@
+this is for Revolution/RevoMini board with connected SD card adapter. Internal Dataflash is not used.
+
 I tried to maintain compatibility with the OpenPilot documentation. The main difference - FlexiPort can 
-be Serial and external I2C port is on pins 7&8 of Input port. But this can be changed by HAL_FLEXI_I2C parameter
+be Serial and external I2C port is on pins 7&8 of Input port. But this can be changed by BRD_FLEXI_I2C parameter
 
 
-Main Port        - telemetry, Serial1. As a variant it can be used as SBUS input with hardware inverter (Parameter HAL_UART_SBUS)
+Main Port        - telemetry, Serial1. As a variant it can be used as SBUS input with hardware inverter (Parameter BRD_UART_SBUS)
 FlexiPort        - OSD, Serial2
 Uart6 (pins 5&6) - GPS
 
@@ -17,7 +19,7 @@ pins 7&8 of Input port are SCL and SDA of external I2C (or Tx and Rx for SoftSer
 
 
 Output Port for MOTORs
-Connect to PWM output pins in ArduCopter, CleanFlight or OpenPilot order, and set parameter HAL_MOTOR_LAYOUT accordingly
+Connect to PWM output pins in ArduCopter, CleanFlight or OpenPilot order, and set parameter BRD_MOTOR_LAYOUT accordingly
 
 5&6 PWM Output pins are Rx and Tx of Serial4 - but only for quads (except motor layout 1, see below) or planes
 
@@ -30,22 +32,15 @@ PWM input is not supported - this is general trend
 
 OpLink port
 
-DSM satellite can be connected to Oplink port (hardware Serial5) or to PPM inputs (pins 3&4 of input port)
-
-binding of DSM satellite can be done in 2 ways:
-1. with some additional hardware - managed stabilizer 3.3 volts. 
-2. directly connected to 3.3v, binding will require short power off
-
-Connection to OpLink port (RevoMini)
+Connection to OpLink port (RevoMini) - used as external SPI for SD card
 Pin 1 is Gnd, 
-pin 2 is +5   (DSM sat requires 3.3!)
-pin 3 is PD2  (pin 54) Rx 
-pin 4 is PA15 (pin 50) Enable for 3.3 stab.
+pin 2 is +5   (SD card requires 3.3!)
+pin 3 is PD2  (pin 54) detect 
+pin 4 is PA15 (pin 50) CS 
 pin 5 is PC10 (pin 51) SCK
 pin 6 is PC12 (pin 53) MOSI
 pin 7 is PC11 (pin 52) MISO
 
-Also Oplink port can be used as external SPI
 
 Airspeed & RSSI 
 
