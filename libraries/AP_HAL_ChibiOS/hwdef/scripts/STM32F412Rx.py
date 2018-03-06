@@ -4,6 +4,12 @@ these tables are generated from the STM32 datasheet RM0402 in en.DM00180369.pdf 
 STM32F412
 '''
 
+# additional build information for ChibiOS
+build = {
+    "CHIBIOS_STARTUP_MK"  : "os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk",
+    "CHIBIOS_PLATFORM_MK" : "os/hal/ports/STM32/STM32F4xx/platform.mk"
+}
+
 DMA_Map = {
 	# format is (DMA_TABLE, StreamNum, Channel)
 	# extracted from tabula-stm32f412-ref-manual-196.csv

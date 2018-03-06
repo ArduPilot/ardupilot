@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 '''
-these tables are generated from the STM32 datasheet DM00071990.pdf for the
-STM32F427 and STM32F4279
+these tables are generated from the STM32 datasheets for the
+STM32F42x
 '''
+
+# additional build information for ChibiOS
+build = {
+    "CHIBIOS_STARTUP_MK"  : "os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk",
+    "CHIBIOS_PLATFORM_MK" : "os/hal/ports/STM32/STM32F4xx/platform.mk"
+    }
 
 DMA_Map = {
 	# format is (DMA_TABLE, StreamNum, Channel)
