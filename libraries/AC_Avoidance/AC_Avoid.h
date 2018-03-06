@@ -39,8 +39,8 @@ public:
      * before the fence/object.
      * Note: Vector3f version is for convenience and only adjusts x and y axis
      */
-    void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel, float dt);
-    void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel, float dt);
+    void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt);
+    void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel_cms, float dt);
 
     // adjust desired horizontal speed so that the vehicle stops before the fence or object
     // accel (maximum acceleration/deceleration) is in m/s/s
@@ -64,11 +64,11 @@ public:
 
     // helper functions
 
-    // Limits the component of desired_vel in the direction of the unit vector
-    // limit_direction to be at most the maximum speed permitted by the limit_distance.
+    // Limits the component of desired_vel_cms in the direction of the unit vector
+    // limit_direction to be at most the maximum speed permitted by the limit_distance_cm.
     // uses velocity adjustment idea from Randy's second email on this thread:
     //   https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
-    void limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f& limit_direction, float limit_distance, float dt) const;
+    void limit_velocity(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f& limit_direction, float limit_distance_cm, float dt) const;
 
      // compute the speed such that the stopping distance of the vehicle will
      // be exactly the input distance.
@@ -87,29 +87,29 @@ private:
     /*
      * Adjusts the desired velocity for the circular fence.
      */
-    void adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f &desired_vel, float dt);
+    void adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt);
 
     /*
      * Adjusts the desired velocity for the polygon fence.
      */
-    void adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2f &desired_vel, float dt);
+    void adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt);
 
     /*
      * Adjusts the desired velocity for the beacon fence.
      */
-    void adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel, float dt);
+    void adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt);
 
     /*
      * Adjusts the desired velocity based on output from the proximity sensor
      */
-    void adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &desired_vel, float dt);
+    void adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &desired_vel_cms, float dt);
 
     /*
      * Adjusts the desired velocity given an array of boundary points
      *   earth_frame should be true if boundary is in earth-frame, false for body-frame
      *   margin is the distance (in meters) that the vehicle should stop short of the polygon
      */
-    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt);
+    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f* boundary, uint16_t num_points, bool earth_frame, float margin, float dt);
 
     /*
      * Computes distance required to stop, given current speed.

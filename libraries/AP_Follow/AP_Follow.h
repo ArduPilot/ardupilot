@@ -49,10 +49,10 @@ public:
     bool have_target() const;
 
     // get target's estimated location and velocity (in NED)
-    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
+    bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned_ms) const;
 
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
-    bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
+    bool get_target_dist_and_vel_ned(Vector3f &dist_ned_m, Vector3f &dist_with_offs_ned_m, Vector3f &vel_ned_ms);
 
     // get position controller.  this controller is not used within this library but it is convenient to hold it here
     const AC_P& get_pos_p() const { return _p_pos; }
@@ -65,7 +65,7 @@ public:
     YawBehave get_yaw_behave() const { return (YawBehave)_yaw_behave.get(); }
 
     // get target's heading in degrees (0 = north, 90 = east)
-    bool get_target_heading(float &heading) const;
+    bool get_target_heading_deg(float &heading) const;
 
     // parse mavlink messages which may hold target's position, velocity and attitude
     void handle_msg(const mavlink_message_t &msg);
@@ -79,13 +79,13 @@ public:
 private:
 
     // get velocity estimate in m/s in NED frame using dt since last update
-    bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
+    bool get_velocity_ned(Vector3f& vel_ned_ms, float dt) const;
 
     // initialise offsets to provided distance vector (in meters in NED frame) if required
-    void init_offsets_if_required(const Vector3f &dist_vec_ned);
+    void init_offsets_if_required(const Vector3f& dist_vec_ned_m);
 
     // get offsets in meters in NED frame
-    bool get_offsets_ned(Vector3f &offsets) const;
+    bool get_offsets_ned(Vector3f& offset_ned_m) const;
 
     // references
     const AP_AHRS &_ahrs;
@@ -96,7 +96,7 @@ private:
     AP_Float    _dist_max;          // maximum distance to target.  targets further than this will be ignored
     AP_Int8     _offset_type;       // offset frame type (0:North-East-Down, 1:RelativeToLeadVehicleHeading)
     AP_Vector3f _offset;            // offset from lead vehicle in meters
-    AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour
+    AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour (see YAW_BEHAVE enum)
     AC_P        _p_pos;             // position error P controller
 
     // local variables

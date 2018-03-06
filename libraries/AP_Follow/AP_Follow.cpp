@@ -123,7 +123,7 @@ AP_Follow::AP_Follow(const AP_AHRS &ahrs) :
 }
 
 // get target's estimated location
-bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
+bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f& vel_ned_ms) const
 {
     // exit immediately if not enabled
     if (!_enabled) {
@@ -139,14 +139,14 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
     const float dt = (AP_HAL::millis() - _last_location_update_ms) * 0.001f;
 
     // get velocity estimate
-    if (!get_velocity_ned(vel_ned, dt)) {
+    if (!get_velocity_ned(vel_ned_ms, dt)) {
         return false;
     }
 
     // project the vehicle position
     Location last_loc = _target_location;
-    location_offset(last_loc, vel_ned.x * dt, vel_ned.y * dt);
-    last_loc.alt -= vel_ned.z * 10.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
+    location_offset(last_loc, vel_ned_ms.x * dt, vel_ned_ms.y * dt);
+    last_loc.alt -= vel_ned_ms.z * 10.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
 
     // return latest position estimate
     loc = last_loc;
@@ -154,7 +154,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 }
 
 // get distance vector to target (in meters) and target's velocity all in NED frame
-bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_offs, Vector3f &vel_ned)
+bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned_m, Vector3f &dist_with_offs_ned_m, Vector3f &vel_ned_ms)
 {
     // get our location
     Location current_loc;
@@ -187,14 +187,14 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     }
 
     // return results
-    dist_ned = dist_vec;
-    dist_with_offs = dist_vec + offsets;
-    vel_ned = veh_vel;
+    dist_ned_m = dist_vec;
+    dist_with_offs_ned_m = dist_vec + offsets;
+    vel_ned_ms = veh_vel;
     return true;
 }
 
 // get target's heading in degrees (0 = north, 90 = east)
-bool AP_Follow::get_target_heading(float &heading) const
+bool AP_Follow::get_target_heading_deg(float &heading) const
 {
     // exit immediately if not enabled
     if (!_enabled) {
@@ -298,28 +298,28 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 }
 
 // get velocity estimate in m/s in NED frame using dt since last update
-bool AP_Follow::get_velocity_ned(Vector3f &vel_ned, float dt) const
+bool AP_Follow::get_velocity_ned(Vector3f &vel_ned_ms, float dt) const
 {
-    vel_ned = _target_velocity_ned + (_target_accel_ned * dt);
+    vel_ned_ms = _target_velocity_ned + (_target_accel_ned * dt);
     return true;
 }
 
 // initialise offsets to provided distance vector (in meters in NED frame) if required
-void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
+void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned_m)
 {
     if (_offset.get().is_zero()) {
-        _offset = dist_vec_ned;
+        _offset = dist_vec_ned_m;
     }
 }
 
 // get offsets in meters in NED frame
-bool AP_Follow::get_offsets_ned(Vector3f &offset) const
+bool AP_Follow::get_offsets_ned(Vector3f& offset_ned_m) const
 {
     const Vector3f &off = _offset.get();
 
     // if offsets are zero or type if NED, simply return offset vector
     if (off.is_zero() || (_offset_type == AP_FOLLOW_OFFSET_TYPE_NED)) {
-        offset = off;
+        offset_ned_m = off;
         return true;
     }
 
@@ -332,8 +332,8 @@ bool AP_Follow::get_offsets_ned(Vector3f &offset) const
     // rotate roll, pitch input from north facing to vehicle's perspective
     const float veh_cos_yaw = cosf(radians(_target_heading));
     const float veh_sin_yaw = sinf(radians(_target_heading));
-    offset.x = (off.x * veh_cos_yaw) - (off.y * veh_sin_yaw);
-    offset.y = (off.y * veh_cos_yaw) + (off.x * veh_sin_yaw);
-    offset.z = off.z;
+    offset_ned_m.x = (off.x * veh_cos_yaw) - (off.y * veh_sin_yaw);
+    offset_ned_m.y = (off.y * veh_cos_yaw) + (off.x * veh_sin_yaw);
+    offset_ned_m.z = off.z;
     return true;
 }
