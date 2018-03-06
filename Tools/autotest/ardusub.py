@@ -209,6 +209,7 @@ class AutotestSub(Autotest):
         try:
             progress("Waiting for a heartbeat with mavlink protocol %s" % self.mav.WIRE_PROTOCOL_VERSION)
             self.mav.wait_heartbeat()
+            self.mavproxy.send('param set FS_GCS_ENABLE 0\n')
             progress("Waiting for GPS fix")
             self.mav.wait_gps_fix()
 
