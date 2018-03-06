@@ -24,6 +24,8 @@
 // number of samples on each channel to gather on each DMA callback
 #define ADC_DMA_BUF_DEPTH 8
 
+#if HAL_USE_ADC == TRUE
+
 class ChibiOS::AnalogSource : public AP_HAL::AnalogSource {
 public:
     friend class ChibiOS::AnalogIn;
@@ -90,3 +92,5 @@ private:
     static uint32_t sample_sum[];
     static uint32_t sample_count;
 };
+
+#endif // HAL_USE_ADC

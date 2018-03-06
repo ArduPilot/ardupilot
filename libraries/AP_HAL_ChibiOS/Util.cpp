@@ -17,7 +17,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "Util.h"
 #include <chheap.h>
 #include "ToneAlarm.h"
@@ -31,6 +30,8 @@ extern AP_IOMCU iomcu;
 extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
+
+#if CH_CFG_USE_HEAP == TRUE
 
 extern "C" {
     size_t mem_available(void);
@@ -76,6 +77,8 @@ void* Util::try_alloc_from_ccm_ram(size_t size)
     }
     return ret;
 }
+
+#endif // CH_CFG_USE_HEAP
 
 /*
   get safety switch state
@@ -177,4 +180,4 @@ void Util::_toneAlarm_timer_tick() {
 
 }
 #endif // HAL_PWM_ALARM
-#endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+
