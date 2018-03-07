@@ -1468,4 +1468,24 @@ void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing)
     }
 }
 
+/*
+ * Write position and quaternion data from an external navigation system
+ *
+ * pos        : position in the RH navigation frame. Frame is assumed to be NED if frameIsNED is true. (m)
+ * quat       : quaternion desribing the the rotation from navigation frame to body frame
+ * posErr     : 1-sigma spherical position error (m)
+ * angErr     : 1-sigma spherical angle error (rad)
+ * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+ * resetTime_ms : system time of the last position reset request (mSec)
+ *
+*/
+void NavEKF2::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].writeExtNavData(sensOffset, pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
+        }
+    }
+}
+
 #endif //HAL_CPU_CLASS
