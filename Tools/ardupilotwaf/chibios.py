@@ -232,7 +232,9 @@ def configure(cfg):
         cmd = 'python %s -D %s %s' % (hwdef_script, hwdef_out, hwdef)
         ret = subprocess.call(cmd, shell=True)
     except Exception:
-        print("Failed to generate hwdef.h")
+        cfg.fatal("Failed to process hwdef.dat")
+    if ret != 0:
+        cfg.fatal("Failed to process hwdef.dat ret=%d" % ret)
 
     load_env_vars(cfg.env)
     if env.HAL_WITH_UAVCAN:
