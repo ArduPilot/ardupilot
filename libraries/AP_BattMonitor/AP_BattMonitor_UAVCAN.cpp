@@ -38,7 +38,7 @@ void AP_BattMonitor_UAVCAN::init()
         switch (_type) {
             case UAVCAN_BATTERY_INFO:
                 if (ap_uavcan->register_BM_bi_listener_to_id(this, _params._serial_number)) {
-                    debug_bm_uavcan(2, "UAVCAN BattMonitor BatteryInfo registered id: %d\n\r", _params._serial_number);
+                    debug_bm_uavcan(2, "UAVCAN BattMonitor BatteryInfo registered id: %d\n\r", _params._serial_number.get());
                 }
                 break;
         }
