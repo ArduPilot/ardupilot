@@ -226,6 +226,9 @@ protected:
         return (_imu._fast_sampling_mask & (1U<<instance)) != 0;
     }
 
+    void _notify_new_accel_fast_sample(uint8_t instance, const Vector3f &accel);
+    void _notify_new_gyro_fast_sample(uint8_t instance, const Vector3f &gyro);
+
     /*
       notify of a FIFO reset so we don't use bad data to update observed sensor rate
     */

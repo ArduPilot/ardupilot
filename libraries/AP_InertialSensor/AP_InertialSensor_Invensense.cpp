@@ -476,11 +476,16 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
                 clipped = true;
             }
             _accum.accel += _accum.accel_filter.apply(a);
+            Vector3f a2 = a * _accel_scale;
+            _notify_new_accel_fast_sample(_accel_instance, a2);
         }
 
         Vector3f g(int16_val(data, 5),
                    int16_val(data, 4),
                    -int16_val(data, 6));
+
+        Vector3f g2 = g * GYRO_SCALE;
+        _notify_new_gyro_fast_sample(_gyro_instance, g2);
 
         _accum.gyro += _accum.gyro_filter.apply(g);
         _accum.count++;
