@@ -1359,10 +1359,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         rover.g2.proximity.handle_msg(msg);
         break;
 
-    case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
-        rover.g2.visual_odom.handle_msg(msg);
-        break;
-
     default:
         handle_common_message(msg);
         break;
@@ -1464,6 +1460,15 @@ AP_AdvancedFailsafe *GCS_MAVLINK_Rover::get_advanced_failsafe() const
 {
 #if ADVANCED_FAILSAFE == ENABLED
     return &rover.g2.afs;
+#else
+    return nullptr;
+#endif
+}
+
+AP_VisualOdom *GCS_MAVLINK_Rover::get_visual_odom() const
+{
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    return &rover.g2.visual_odom;
 #else
     return nullptr;
 #endif

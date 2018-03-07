@@ -22,6 +22,7 @@ protected:
     AP_Camera *get_camera() const override;
     AP_ServoRelayEvents *get_servorelayevents() const override;
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
+    AP_VisualOdom *get_visual_odom() const override;
     const AP_FWVersion &get_fwver() const override;
     void set_ekf_origin(const Location& loc) override;
 
