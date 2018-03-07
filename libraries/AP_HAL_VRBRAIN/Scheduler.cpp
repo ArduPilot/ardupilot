@@ -24,11 +24,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#if HAL_WITH_UAVCAN
-#include "CAN.h"
-#include <AP_UAVCAN/AP_UAVCAN.h>
-#endif
-
 using namespace VRBRAIN;
 
 extern const AP_HAL::HAL& hal;
@@ -88,34 +83,6 @@ void VRBRAINScheduler::init()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     pthread_create(&_storage_thread_ctx, &thread_attr, &VRBRAIN::VRBRAINScheduler::_storage_thread, this);
-}
-
-void VRBRAINScheduler::create_uavcan_thread()
-{
-#if HAL_WITH_UAVCAN
-    pthread_attr_t thread_attr;
-    struct sched_param param;
-
-     //the UAVCAN thread runs at medium priority
-    pthread_attr_init(&thread_attr);
-    pthread_attr_setstacksize(&thread_attr, 8192);
-
-    param.sched_priority = APM_CAN_PRIORITY;
-    (void) pthread_attr_setschedparam(&thread_attr, &param);
-    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
-
-    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-        if (AP_UAVCAN::get_uavcan(i) == nullptr) {
-            continue;
-        }
-
-        _uavcan_thread_arg *arg = new _uavcan_thread_arg;
-        arg->sched = this;
-        arg->uavcan_number = i;
-
-        pthread_create(&_uavcan_thread_ctx, &thread_attr, &VRBRAINScheduler::_uavcan_thread, arg);
-    }
-#endif
 }
 
 /**
@@ -379,36 +346,6 @@ void *VRBRAINScheduler::_storage_thread(void *arg)
     }
     return nullptr;
 }
-
-#if HAL_WITH_UAVCAN
-void *VRBRAINScheduler::_uavcan_thread(void *arg)
-{
-    VRBRAINScheduler *sched = ((_uavcan_thread_arg *) arg)->sched;
-    uint8_t uavcan_number = ((_uavcan_thread_arg *) arg)->uavcan_number;
-
-    char name[15];
-    snprintf(name, sizeof(name), "apm_uavcan:%u", uavcan_number);
-    pthread_setname_np(pthread_self(), name);
-
-    while (!sched->_hal_initialized) {
-        poll(nullptr, 0, 1);
-    }
-
-    while (!_px4_thread_should_exit) {
-        if (((VRBRAINCANManager *)hal.can_mgr[uavcan_number])->is_initialized()) {
-            if (((VRBRAINCANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN() != nullptr) {
-                (((VRBRAINCANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN())->do_cyclic();
-            } else {
-                sched->delay_microseconds_semaphore(10000);
-            }
-        } else {
-            sched->delay_microseconds_semaphore(10000);
-        }
-    }
-
-    return nullptr;
-}
-#endif
 
 bool VRBRAINScheduler::in_main_thread() const
 {

@@ -59,8 +59,6 @@ public:
     void     system_initialized();
     void     hal_initialized() { _hal_initialized = true; }
 
-    void create_uavcan_thread() override;
-
 private:
     bool _initialized;
     volatile bool _hal_initialized;
@@ -79,18 +77,11 @@ private:
     pthread_t _io_thread_ctx;
     pthread_t _storage_thread_ctx;
     pthread_t _uart_thread_ctx;
-    pthread_t _uavcan_thread_ctx;
-
-    struct _uavcan_thread_arg {
-        VRBRAINScheduler *sched;
-        uint8_t uavcan_number;
-    };
 
     static void *_timer_thread(void *arg);
     static void *_io_thread(void *arg);
     static void *_storage_thread(void *arg);
     static void *_uart_thread(void *arg);
-    static void *_uavcan_thread(void *arg);
 
     void _run_timers();
     void _run_io(void);
