@@ -234,7 +234,7 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
         };
         dataflash->WriteBlock(&pkt, sizeof(pkt));
     } else {
-        _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
+        //_imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
     }
 }
 
@@ -327,6 +327,16 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     log_accel_raw(instance, sample_us, accel);
 }
 
+void AP_InertialSensor_Backend::_notify_new_accel_fast_sample(uint8_t instance, const Vector3f &accel)
+{
+    _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, AP_HAL::micros64(), accel);
+}
+
+void AP_InertialSensor_Backend::_notify_new_gyro_fast_sample(uint8_t instance, const Vector3f &gyro)
+{
+    _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, AP_HAL::micros64(), gyro);
+}
+
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)
 {
     DataFlash_Class *dataflash = DataFlash_Class::instance();
@@ -346,7 +356,7 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
         };
         dataflash->WriteBlock(&pkt, sizeof(pkt));
     } else {
-        _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
+        //_imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
     }
 }
 
