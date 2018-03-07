@@ -18,6 +18,13 @@ const AP_Param::GroupInfo AP_InertialSensor::BatchSampler::var_info[] = {
     // @Bitmask: 0:IMU1,1:IMU2,2:IMU3
     AP_GROUPINFO("BAT_MASK",  2, AP_InertialSensor::BatchSampler, _sensor_mask,   DEFAULT_IMU_LOG_BAT_MASK),
 
+    // @Param: BAT_RAW
+    // @DisplayName: Enable raw batch logging
+    // @Description: This allows 4kHz IMU logging on supported sensors
+    // @User: Advanced
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("BAT_RAW",  3, AP_InertialSensor::BatchSampler, _batch_raw, 0),
+    
     AP_GROUPEND
 };
 
@@ -135,10 +142,10 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
         float sample_rate = 0; // avoid warning about uninitialised values
         switch(type) {
         case IMU_SENSOR_TYPE_GYRO:
-            sample_rate = _imu._gyro_raw_sample_rates[instance];
+            sample_rate = _imu._gyro_raw_sample_rates[instance] * 8;
             break;
         case IMU_SENSOR_TYPE_ACCEL:
-            sample_rate = _imu._accel_raw_sample_rates[instance];
+            sample_rate = _imu._accel_raw_sample_rates[instance] * 4;
             break;
         }
         if (!dataflash->Log_Write_ISBH(isb_seqnum,
