@@ -18,7 +18,6 @@ def build(bld):
             'AC_PID',
             'AP_Stats',
             'AP_Beacon',
-            'AP_VisualOdom',
             'AP_AdvancedFailsafe',
             'AP_WheelEncoder',
             'AP_SmartRTL',
