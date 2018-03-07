@@ -135,6 +135,12 @@ static THD_FUNCTION(main_loop,arg)
     ChibiOS::Shared_DMA::init();
     
     hal.uartA->begin(115200);
+
+#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+    // optional test of SPI clock frequencies
+    ChibiOS::SPIDevice::test_clock_freq();
+#endif
+    
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
     hal.analogin->init();
