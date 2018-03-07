@@ -300,6 +300,7 @@ public:
         // Parameters
         AP_Int16 _required_count;
         AP_Int8 _sensor_mask;
+        AP_Int8 _batch_raw;
         // end Parameters
 
     private:
@@ -336,7 +337,7 @@ public:
         // you are running a on an FMU with three IMUs then you
         // will loop back around to the first sensor after about
         // twenty seconds.
-        const uint8_t push_interval_ms = 100;
+        const uint8_t push_interval_ms = 20;
         const uint16_t samples_per_msg = 32;
 
         const AP_InertialSensor &_imu;
