@@ -634,7 +634,7 @@ private:
     void set_auto_armed(bool b);
     void set_simple_mode(uint8_t b);
     void set_failsafe_radio(bool b);
-    void set_failsafe_battery(bool b);
+    void set_low_battery(bool b);
     void set_failsafe_gcs(bool b);
     void update_using_interlock();
     void set_motor_emergency_stop(bool b);

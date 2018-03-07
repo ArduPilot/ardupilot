@@ -157,7 +157,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     failsafe_disable();
 
     // reset battery failsafe
-    set_failsafe_battery(false);
+    set_low_battery(false);
 
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
