@@ -39,9 +39,9 @@ class build_binaries(object):
         return self.run_program("BB-GIT", cmd_list)
 
     def board_branch_bit(self, board):
-        '''return a fragment which might modify the branch name'''
-        if board in ["apm1", "apm2"]:
-            return "-AVR"
+        '''return a fragment which might modify the branch name.
+        this was previously used to have a master-AVR branch etc
+        if the board type was apm1 or apm2'''
         return None
 
     def board_options(self, board):
@@ -300,34 +300,6 @@ is bob we will attempt to checkout bob-AVR'''
             with open(filepath, "a"):
                 pass
 
-    def build_vehicle_apm(self, tag, vehicle, board,
-                          vehicle_binaries_subdir, binaryname):
-        self.progress("Building %s %s %s binaries" % (vehicle, tag, board))
-        if not self.checkout(vehicle, tag, board):
-            self.progress("Failed checkout of %s %s %s" %
-                          (vehicle, board, tag))
-            self.error_count += 1
-            return
-        framesuffix = ""
-        ddir = os.path.join(self.binaries,
-                            vehicle_binaries_subdir,
-                            self.hdate_ym,
-                            self.hdate_ymdhm,
-                            "".join([board, framesuffix]))
-        if self.skip_build(tag, ddir):
-            return
-
-        self.run_make(["-C", vehicle, "clean"])
-        self.run_make(["-C", vehicle, "-j4", board])
-
-        binaryname = vehicle  # HACK!  make targets are mixed-case
-        path = os.path.join(self.tmpdir,
-                            "".join([vehicle, ".build"]),
-                            "".join([binaryname, framesuffix, ".hex"]))
-        self.copyit(path, ddir, tag, vehicle)
-        self.touch_filepath(os.path.join(self.binaries,
-                                         vehicle_binaries_subdir, tag))
-
     def build_vehicle(self, tag, vehicle, boards, vehicle_binaries_subdir,
                       binaryname, px4_binaryname, frames=[None]):
         '''build vehicle binaries'''
@@ -344,11 +316,6 @@ is bob we will attempt to checkout bob-AVR'''
         # # end pointless checkout
 
         for board in boards:
-            if "apm" in board:
-                # apm does't do frames
-                self.build_vehicle_apm(tag, vehicle, board,
-                                       vehicle_binaries_subdir, binaryname)
-                continue
             self.progress("Building board: %s" % board)
             for frame in frames:
                 if frame is not None:
@@ -522,7 +489,6 @@ is bob we will attempt to checkout bob-AVR'''
     def build_antennatracker(self, tag):
         '''build Tracker binaries'''
         boards = ['navio', 'navio2']
-        boards.append('apm2')
         self.build_vehicle(tag,
                            "AntennaTracker",
                            boards,
@@ -533,7 +499,6 @@ is bob we will attempt to checkout bob-AVR'''
     def build_rover(self, tag):
         '''build Rover binaries'''
         boards = self.common_boards()
-        boards.extend(['apm1', 'apm2'])
         self.build_vehicle(tag,
                            "APMrover2",
                            boards,
