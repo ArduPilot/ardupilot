@@ -17,8 +17,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 
-#include <AP_BoardConfig/AP_BoardConfig.h>
-
 #if HAL_WITH_UAVCAN
 #include "UAVCAN_RGB_LED.h"
 
@@ -56,14 +54,12 @@ bool UAVCAN_RGB_LED::hw_init()
 bool UAVCAN_RGB_LED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     bool success = false;
-    if (AP_BoardConfig_CAN::get_can_num_ifaces() != 0) {
-        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (hal.can_mgr[i] != nullptr) {
-                AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
-                if (uavcan != nullptr) {
-                    success = uavcan->led_write(_led_index, red, green, blue) || success;
-                }
-            }
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
+
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
+        AP_UAVCAN *uavcan = AP_UAVCAN::get_uavcan(i);
+        if (uavcan != nullptr) {
+            success = uavcan->led_write(_led_index, red, green, blue) || success;
         }
     }
     return success;
