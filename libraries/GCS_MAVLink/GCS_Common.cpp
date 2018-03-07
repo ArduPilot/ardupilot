@@ -1863,7 +1863,15 @@ void GCS_MAVLINK::handle_data_packet(mavlink_message_t *msg)
 #endif
 }
 
+void GCS_MAVLINK::handle_vision_position_delta(mavlink_message_t *msg)
+{
+    AP_VisualOdom *visual_odom = get_visual_odom();
+    if (visual_odom == nullptr) {
+        return;
+    }
 
+    visual_odom->handle_msg(msg);
+}
 
 /*
   handle messages which don't require vehicle specific data
@@ -1983,6 +1991,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_DATA96:
         handle_data_packet(msg);
         break;        
+
+    case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
+        handle_vision_position_delta(msg);
+        break;
     }
 
 }
