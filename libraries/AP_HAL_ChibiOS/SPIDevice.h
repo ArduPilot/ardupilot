@@ -88,6 +88,11 @@ public:
 
     bool set_chip_select(bool set) override;
 
+#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+    // used to measure clock frequencies
+    static void test_clock_freq(void);
+#endif
+    
 private:
     SPIBus &bus;
     SPIDesc &device_desc;
