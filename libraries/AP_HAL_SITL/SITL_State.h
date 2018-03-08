@@ -67,6 +67,8 @@ public:
     uint16_t airspeed_2_pin_value; // pin 2
     uint16_t voltage_pin_value;  // pin 13
     uint16_t current_pin_value;  // pin 12
+    uint16_t voltage2_pin_value;  // pin 15
+    uint16_t current2_pin_value;  // pin 14
 
     // return TCP client address for uartC
     const char *get_client_address(void) const { return _client_address; }
