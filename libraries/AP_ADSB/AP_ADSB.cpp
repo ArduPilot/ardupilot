@@ -506,7 +506,7 @@ void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
     const uint64_t gps_time = gps.time_epoch_usec();
     const uint32_t utcTime = gps_time / 1000000ULL;
 
-    const AP_Baro &baro = AP::ahrs().get_baro();
+    const AP_Baro &baro = AP::baro();
     int32_t altPres = INT_MAX;
     if (baro.healthy()) {
         // Altitude difference between 101325 (Pascals) and current pressure. Result in millimeters
