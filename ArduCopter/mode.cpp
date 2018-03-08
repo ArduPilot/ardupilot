@@ -192,6 +192,12 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     }
 #endif
 
+    if (new_flightmode->requires_GPS() && (!compass.use_for_yaw())) {
+    	gcs().send_text(MAV_SEVERITY_WARNING,"Compass Disabled! Flight mode change failed");
+    	Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+    	return false;
+    }
+
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
