@@ -35,6 +35,8 @@
 
 #include <uavcan/equipment/power/BatteryInfo.hpp>
 
+#include <uavcan/equipment/air_data/RawAirData.hpp>
+
 extern const AP_HAL::HAL& hal;
 
 #define debug_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { hal.console->printf(fmt, ##args); }} while (0)
@@ -348,6 +350,17 @@ static void battery_info_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equi
 {   battery_info_st_cb(msg, 1); }
 static void (*battery_info_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::power::BatteryInfo>& msg)
         = { battery_info_st_cb0, battery_info_st_cb1 };
+        
+static void airdata_info_st_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::RawAirData>& msg, uint8_t mgr)
+{
+}
+
+static void airdata_info_st_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::RawAirData>& msg)
+{   airdata_info_st_cb(msg, 0); }
+static void airdata_info_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::RawAirData>& msg)
+{   airdata_info_st_cb(msg, 1); }
+static void (*airdata_info_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::RawAirData>& msg)
+        = { airdata_info_st_cb0, airdata_info_st_cb1 };
 
 // publisher interfaces
 static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
@@ -380,6 +393,11 @@ AP_UAVCAN::AP_UAVCAN() :
         _mag_node_taken[i] = 0;
         _mag_node_max_sensorid_count[i] = 1;
     }
+    
+     for (uint8_t i = 0; i < AP_UAVCAN_MAX_BARO_NODES; i++) {
+        _airspeed_nodes[i] = UINT8_MAX;
+        _airspeed_node_taken[i] = 0;
+    }
 
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
         _gps_listener_to_node[i] = UINT8_MAX;
@@ -391,6 +409,9 @@ AP_UAVCAN::AP_UAVCAN() :
         _mag_listener_to_node[i] = UINT8_MAX;
         _mag_listeners[i] = nullptr;
         _mag_listener_sensor_ids[i] = 0;
+        
+        _airspeed_listener_to_node[i] = UINT8_MAX;
+        _airspeed_listeners[i] = nullptr;
     }
 
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
@@ -510,6 +531,14 @@ bool AP_UAVCAN::try_init(void)
                     const int battery_info_start_res = battery_info_st->start(battery_info_st_cb_arr[_uavcan_i]);
                     if (battery_info_start_res < 0) {
                         debug_uavcan(1, "UAVCAN BatteryInfo subscriber start problem\n\r");
+                        return false;
+                    }
+                    
+                    uavcan::Subscriber<uavcan::equipment::air_data::RawAirData> *airdata_info_st;
+                    airdata_info_st = new uavcan::Subscriber<uavcan::equipment::air_data::RawAirData>(*node);
+                    const int airdata_info_start_res = airdata_info_st->start(airdata_info_st_cb_arr[_uavcan_i]);
+                    if (airdata_info_start_res < 0) {
+                        debug_uavcan(1, "UAVCAN RawAirData subscriber start problem\n\r");
                         return false;
                     }
 

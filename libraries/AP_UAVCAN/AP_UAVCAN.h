@@ -16,6 +16,7 @@
 #include <AP_Baro/AP_Baro_Backend.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_BattMonitor/AP_BattMonitor_Backend.h>
+#include <AP_Airspeed/AP_Airspeed_Backend.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 #include <uavcan/equipment/indication/RGB565.hpp>
@@ -36,6 +37,7 @@
 #define AP_UAVCAN_MAX_GPS_NODES 4
 #define AP_UAVCAN_MAX_MAG_NODES 4
 #define AP_UAVCAN_MAX_BARO_NODES 4
+#define AP_UAVCAN_MAX_AIRSPEED_NODES 4
 #define AP_UAVCAN_MAX_BI_NUMBER 4
 
 #define AP_UAVCAN_SW_VERS_MAJOR 1
@@ -117,6 +119,24 @@ public:
     BatteryInfo_Info *find_bi_id(uint8_t id);
     uint8_t find_smallest_free_bi_id();
     void update_bi_state(uint8_t id);
+    
+    struct AirSpeed_Info {
+        uint8_t flags;
+        double static_pressure;
+        double differential_pressure;
+        float static_pressure_sensor_temperature;
+        float differential_pressure_sensor_temperature;
+        float static_air_temperature;
+        float pitot_temperature;
+        float covariance[16];
+    };
+
+    uint8_t register_airspeed_listener(AP_Airspeed_Backend* new_listener, uint8_t preferred_channel);
+    void remove_airspeed_listener(AP_Airspeed_Backend* rem_listener);
+    AirSpeed_Info *find_airspeed_node(uint8_t node, uint8_t sensor_id);
+    uint8_t find_smallest_free_airspeed_node();
+    uint8_t register_airspeed_listener_to_node(AP_Airspeed_Backend* new_listener, uint8_t node);
+    void update_airspeed_state(uint8_t node, uint8_t sensor_id);
 
     // synchronization for RC output
     void SRV_sem_take();
@@ -167,6 +187,13 @@ private:
     BatteryInfo_Info _bi_id_state[AP_UAVCAN_MAX_BI_NUMBER];
     uint16_t _bi_BM_listener_to_id[AP_UAVCAN_MAX_LISTENERS];
     AP_BattMonitor_Backend* _bi_BM_listeners[AP_UAVCAN_MAX_LISTENERS];
+    
+    // ------------------------- AirSpeed
+    uint8_t _airspeed_nodes[AP_UAVCAN_MAX_AIRSPEED_NODES];
+    uint8_t _airspeed_node_taken[AP_UAVCAN_MAX_AIRSPEED_NODES];
+    AirSpeed_Info _airspeed_node_state[AP_UAVCAN_MAX_AIRSPEED_NODES];
+    uint8_t _airspeed_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
+    AP_Airspeed_Backend* _airspeed_listeners[AP_UAVCAN_MAX_LISTENERS];
 
     struct {
         uint16_t pulse;
