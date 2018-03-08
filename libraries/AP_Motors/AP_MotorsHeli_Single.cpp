@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     AP_NESTEDGROUPINFO(AP_MotorsHeli, 0),
-    
+
     // @Param: SV1_POS
     // @DisplayName: Servo 1 Position
     // @Description: Angular location of swash servo #1
@@ -50,7 +50,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeli_Single, _servo3_pos, AP_MOTORS_HELI_SINGLE_SERVO3_POS),
-  
+
     // @Param: TAIL_TYPE
     // @DisplayName: Tail Type
     // @Description: Tail type selection.  Simpler yaw controller used if external gyro is selected
@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Values: 0:NoFlybar,1:Flybar
     // @User: Standard
     AP_GROUPINFO("FLYBAR_MODE", 9, AP_MotorsHeli_Single, _flybar_mode, AP_MOTORS_HELI_NOFLYBAR),
-  
+
     // @Param: TAIL_SPEED
     // @DisplayName: Direct Drive VarPitch Tail ESC speed
     // @Description: Direct Drive VarPitch Tail ESC speed in PWM microseconds.  Only used when TailType is DirectDrive VarPitch
@@ -105,7 +105,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("TAIL_SPEED", 10, AP_MotorsHeli_Single, _direct_drive_tailspeed, AP_MOTORS_HELI_SINGLE_DDVPT_SPEED_DEFAULT),
+    AP_GROUPINFO("TAIL_SPEED", 10, AP_MotorsHeli_Single, _direct_drive_tailspeed, AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT),
 
     // @Param: GYR_GAIN_ACRO
     // @DisplayName: External Gyro Gain for ACRO
@@ -222,7 +222,7 @@ void AP_MotorsHeli_Single::set_desired_rotor_speed(float desired_speed)
 {
     _main_rotor.set_desired_speed(desired_speed);
 
-    // always send desired speed to tail rotor control, will do nothing if not DDVPT not enabled
+    // always send desired speed to tail rotor control, will do nothing if not DDVP not enabled
     _tail_rotor.set_desired_speed(_direct_drive_tailspeed/1000.0f);
 }
 
@@ -256,12 +256,12 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // send setpoints to main rotor controller and trigger recalculation of scalars
     _main_rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
     calculate_armed_scalars();
-    
-    // send setpoints to tail rotor controller and trigger recalculation of scalars
+
+    // send setpoints to DDVP rotor controller and trigger recalculation of scalars
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SPEED_SETPOINT);
-        _tail_rotor.set_ramp_time(AP_MOTORS_HELI_SINGLE_DDVPT_RAMP_TIME);
-        _tail_rotor.set_runup_time(AP_MOTORS_HELI_SINGLE_DDVPT_RUNUP_TIME);
+        _tail_rotor.set_ramp_time(_rsc_ramp_time);
+        _tail_rotor.set_runup_time(_rsc_runup_time);
         _tail_rotor.set_critical_speed(_rsc_critical/1000.0f);
         _tail_rotor.set_idle_output(_rsc_idle_output/1000.0f);
     } else {
@@ -360,7 +360,7 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     if (_heliflags.inverted_flight) {
         coll_in = 1 - coll_in;
     }
-        
+ 
     // rescale roll_out and pitch_out into the min and max ranges to provide linear motion
     // across the input range instead of stopping when the input hits the constrain value
     // these calculations are based on an assumption of the user specified cyclic_max
@@ -432,7 +432,7 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     servo1_out = 2*servo1_out - 1;
     servo2_out = 2*servo2_out - 1;
     servo3_out = 2*servo3_out - 1;
-    
+
     // actually move the servos
     rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(servo1_out, _swash_servo_1));
     rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(servo2_out, _swash_servo_2));
