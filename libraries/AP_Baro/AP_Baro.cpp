@@ -679,3 +679,11 @@ void AP_Baro::set_pressure_correction(uint8_t instance, float p_correction)
     }
 }
 
+namespace AP {
+
+AP_Baro &baro()
+{
+    return *AP_Baro::get_instance();
+}
+
+};
