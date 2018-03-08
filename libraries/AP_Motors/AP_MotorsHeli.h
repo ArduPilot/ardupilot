@@ -121,7 +121,7 @@ public:
 
     // ext_gyro_gain - set external gyro gain in range 0 ~ 1
     virtual void ext_gyro_gain(float gain) {}
-    
+
     // output - sends commands to the motors
     void output();
 
@@ -195,7 +195,7 @@ protected:
     AP_Int8         _servo_mode;              // Pass radio inputs directly to servos during set-up through mission planner
     AP_Int16        _rsc_setpoint;              // rotor speed when RSC mode is set to is enabledv
     AP_Int8         _rsc_mode;                  // Which main rotor ESC control mode is active
-    AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach full speed
+    AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach setpoint
     AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int16        _rsc_critical;              // Rotor speed below which flight is not possible

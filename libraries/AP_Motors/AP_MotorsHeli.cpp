@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MIN
     // @DisplayName: Collective Pitch Minimum
-    // @Description: Lowest possible servo position for the swashplate
+    // @Description: Lowest possible servo position in PWM microseconds for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MAX
     // @DisplayName: Collective Pitch Maximum
-    // @Description: Highest possible servo position for the swashplate
+    // @Description: Highest possible servo position in PWM microseconds for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MID
     // @DisplayName: Collective Pitch Mid-Point
-    // @Description: Swash servo position corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
+    // @Description: Swash servo position in PWM microseconds corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: RSC_SETPOINT
     // @DisplayName: External Motor Governor Setpoint
-    // @Description: PWM passed to the external motor governor when external governor is enabled
+    // @Description: PWM in microseconds passed to the external motor governor when external governor is enabled
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 10
@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: LAND_COL_MIN
     // @DisplayName: Landing Collective Minimum
-    // @Description: Minimum collective position while landed or landing
+    // @Description: Minimum collective position in PWM microseconds while landed or landing
     // @Range: 0 500
     // @Units: pwm
     // @Increment: 1
@@ -129,7 +129,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("RSC_POWER_LOW", 14, AP_MotorsHeli, _rsc_power_low, AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT),
-    
+
     // @Param: RSC_POWER_HIGH
     // @DisplayName: Throttle Servo High Power Position
     // @Description: Throttle output at maximum collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX.
@@ -170,7 +170,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("RSC_SLEWRATE", 19, AP_MotorsHeli, _rsc_slewrate, 0),
-    
+
     AP_GROUPEND
 };
 
