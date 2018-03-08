@@ -585,6 +585,9 @@ public:
     // false when no limiting is required
     virtual bool get_hgt_ctrl_limit(float &limit) const { return false; };
 
+    // Write position and quaternion data from an external navigation system
+    virtual void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) { }
+
 protected:
     AHRS_VehicleClass _vehicle_class;
 
