@@ -219,3 +219,7 @@ private:
 
     bool _add_backend(AP_Baro_Backend *backend);
 };
+
+namespace AP {
+    AP_Baro &baro();
+};
