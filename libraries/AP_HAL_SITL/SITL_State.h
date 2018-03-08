@@ -22,6 +22,7 @@
 #include <SITL/SITL.h>
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
+#include <SITL/SIM_Vicon.h>
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
@@ -209,6 +210,9 @@ private:
 
     // simulated ADSb
     SITL::ADSB *adsb;
+
+    // simulated vicon system:
+    SITL::Vicon *vicon;
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
