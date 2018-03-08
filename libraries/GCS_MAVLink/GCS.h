@@ -433,6 +433,17 @@ private:
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
     void handle_common_mission_message(mavlink_message_t *msg);
 
+    void handle_vicon_position_estimate(mavlink_message_t *msg);
+    void handle_vision_position_estimate(mavlink_message_t *msg);
+    void handle_global_vision_position_estimate(mavlink_message_t *msg);
+    void handle_att_pos_mocap(mavlink_message_t *msg);
+    void _handle_common_vision_position_estimate_data(const uint64_t usec,
+                                                      const float x,
+                                                      const float y,
+                                                      const float z,
+                                                      const float roll,
+                                                      const float pitch,
+                                                      const float yaw);
     void push_deferred_messages();
 
     void lock_channel(mavlink_channel_t chan, bool lock);
