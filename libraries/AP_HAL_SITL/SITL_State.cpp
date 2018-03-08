@@ -194,6 +194,13 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
 #define streq(a, b) (!strcmp(a, b))
 int SITL_State::sim_fd(const char *name, const char *arg)
 {
+    if (streq(name, "vicon")) {
+        if (vicon != nullptr) {
+            AP_HAL::panic("Only one vicon system at a time");
+        }
+        vicon = new SITL::Vicon();
+        return vicon->fd();
+    }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
 
@@ -297,6 +304,13 @@ void SITL_State::_fdm_input_local(void)
     }
     if (adsb != nullptr) {
         adsb->update();
+    }
+    if (vicon != nullptr) {
+        Quaternion attitude;
+        sitl_model->get_attitude(attitude);
+        vicon->update(sitl_model->get_location(),
+                      sitl_model->get_position(),
+                      attitude);
     }
 
     if (_sitl && _use_fg_view) {
