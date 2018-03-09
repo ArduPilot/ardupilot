@@ -27,11 +27,15 @@ void SITL_State::_update_airspeed(float airspeed)
 {
     const float airspeed_ratio = 1.9936f;
     const float airspeed_offset = 2013.0f;
+    
+    float airspeed2 = airspeed;
 
     // Check sensor failure
     airspeed = is_zero(_sitl->arspd_fail) ? airspeed : _sitl->arspd_fail;
+    airspeed2 = is_zero(_sitl->arspd2_fail) ? airspeed2 : _sitl->arspd2_fail;
     // Add noise
     airspeed = airspeed + (_sitl->arspd_noise * rand_float());
+    airspeed2 = airspeed2 + (_sitl->arspd_noise * rand_float());
 
     if (!is_zero(_sitl->arspd_fail_pressure)) {
         // compute a realistic pressure report given some level of trapper air pressure in the tube and our current altitude
@@ -39,15 +43,28 @@ void SITL_State::_update_airspeed(float airspeed)
         float tube_pressure = abs(_sitl->arspd_fail_pressure - _barometer->get_pressure() + _sitl->arspd_fail_pitot_pressure);
         airspeed = 340.29409348 * sqrt(5 * (pow((tube_pressure / 101325.01576 + 1), 2.0/7.0) - 1.0));
     }
+    if (!is_zero(_sitl->arspd2_fail_pressure)) {
+        // compute a realistic pressure report given some level of trapper air pressure in the tube and our current altitude
+        // algorithm taken from https://en.wikipedia.org/wiki/Calibrated_airspeed#Calculation_from_impact_pressure
+        float tube_pressure = abs(_sitl->arspd2_fail_pressure - _barometer->get_pressure() + _sitl->arspd2_fail_pitot_pressure);
+        airspeed2 = 340.29409348 * sqrt(5 * (pow((tube_pressure / 101325.01576 + 1), 2.0/7.0) - 1.0));
+    }
 
     float airspeed_pressure = (airspeed * airspeed) / airspeed_ratio;
+    float airspeed2_pressure = (airspeed2 * airspeed2) / airspeed_ratio;
 
     // flip sign here for simulating reversed pitot/static connections
     if (_sitl->arspd_signflip) airspeed_pressure *= -1;
+    if (_sitl->arspd_signflip) airspeed2_pressure *= -1;
 
     float airspeed_raw = airspeed_pressure + airspeed_offset;
+    float airspeed2_raw = airspeed2_pressure + airspeed_offset;
     if (airspeed_raw / 4 > 0xFFFF) {
         airspeed_pin_value = 0xFFFF;
+        return;
+    }
+    if (airspeed2_raw / 4 > 0xFFFF) {
+        airspeed_2_pin_value = 0xFFFF;
         return;
     }
     // add delay
@@ -63,6 +80,8 @@ void SITL_State::_update_airspeed(float airspeed)
         }
         buffer_wind[store_index_wind].data = airspeed_raw;  // add data to current index
         buffer_wind[store_index_wind].time = last_store_time_wind;  // add time to current index
+        buffer_wind_2[store_index_wind].data = airspeed2_raw;  // add data to current index
+        buffer_wind_2[store_index_wind].time = last_store_time_wind;  // add time to current index
         store_index_wind = store_index_wind + 1;  // increment index
     }
 
@@ -81,9 +100,11 @@ void SITL_State::_update_airspeed(float airspeed)
     }
     if (best_time_delta_wind < 200) {  // only output stored state if < 200 msec retrieval error
         airspeed_raw = buffer_wind[best_index_wind].data;
+        airspeed2_raw = buffer_wind_2[best_index_wind].data;
     }
 
     airspeed_pin_value = airspeed_raw / 4;
+    airspeed_2_pin_value = airspeed2_raw / 4;
 }
 
 #endif
