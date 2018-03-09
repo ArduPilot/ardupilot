@@ -234,7 +234,6 @@ private:
             uint8_t compass_mot         : 1; // true if we are currently performing compassmot calibration
             uint8_t motor_test          : 1; // true if we are currently performing the motors test
             uint8_t initialised         : 1; // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
-            uint8_t system_time_set     : 1; // true if the system time has been set from the GPS
             uint8_t gps_base_pos_set    : 1; // true when the gps base position has been set (used for RTK gps only)
             uint8_t at_bottom           : 1; // true if we are at the bottom
             uint8_t at_surface          : 1; // true if we are at the surface
@@ -519,7 +518,6 @@ private:
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
     bool far_from_EKF_origin(const Location& loc);
-    void set_system_time_from_GPS();
     void exit_mission();
     bool verify_loiter_unlimited();
     bool verify_loiter_time();
