@@ -421,6 +421,7 @@ public:
     static void cork();
 
     static void push();
+    static void push_UAVCAN(void);
 
     // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
     static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
