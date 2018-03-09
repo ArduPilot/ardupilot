@@ -306,8 +306,6 @@ void Rover::update_GPS(void)
     if (gps.last_message_time_ms() != last_gps_msg_ms) {
         last_gps_msg_ms = gps.last_message_time_ms();
 
-        // set system time if necessary
-        set_system_time_from_GPS();
 #if CAMERA == ENABLED
         camera.update();
 #endif
