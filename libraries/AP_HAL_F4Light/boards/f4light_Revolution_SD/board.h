@@ -208,8 +208,8 @@
 
 #define BOARD_HAL_VARINFO \
     AP_GROUPINFO("FLEXI_I2C",    30, AP_Param_Helper, _flexi_i2c, 0),  \
-    AP_GROUPINFO("USB_STORAGE",  30, AP_Param_Helper, _usb_storage, 0), \
-    AP_GROUPINFO("SD_REFORMAT",  31, AP_Param_Helper, _sd_format, 0),
+    AP_GROUPINFO("USB_STORAGE",  31, AP_Param_Helper, _usb_storage, 0), \
+    AP_GROUPINFO("SD_REFORMAT",  32, AP_Param_Helper, _sd_format, 0),
     
 
 // parameters

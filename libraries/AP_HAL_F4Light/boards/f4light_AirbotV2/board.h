@@ -194,8 +194,8 @@
 
 */
 #define BOARD_HAL_VARINFO \
-    AP_GROUPINFO("USB_STORAGE",  8, AP_Param_Helper, _usb_storage, 0), \
-    AP_GROUPINFO("SD_REFORMAT",  17, AP_Param_Helper, _sd_format, 0),
+    AP_GROUPINFO("USB_STORAGE",  30, AP_Param_Helper, _usb_storage, 0), \
+    AP_GROUPINFO("SD_REFORMAT",  31, AP_Param_Helper, _sd_format, 0),
     
 
 // parameters
