@@ -105,15 +105,17 @@ void PX4Scheduler::create_uavcan_thread()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-        if (hal.can_mgr[i] != nullptr) {
-            if (hal.can_mgr[i]->get_UAVCAN() != nullptr) {
-                _uavcan_thread_arg *arg = new _uavcan_thread_arg;
-                arg->sched = this;
-                arg->uavcan_number = i;
-
-                pthread_create(&_uavcan_thread_ctx, &thread_attr, &PX4Scheduler::_uavcan_thread, arg);
-            }
+        if (hal.can_mgr[i] == nullptr) {
+            continue;
         }
+        if (hal.can_mgr[i]->get_UAVCAN() == nullptr) {
+            continue;
+        }
+        _uavcan_thread_arg *arg = new _uavcan_thread_arg;
+        arg->sched = this;
+        arg->uavcan_number = i;
+
+        pthread_create(&_uavcan_thread_ctx, &thread_attr, &PX4Scheduler::_uavcan_thread, arg);
     }
 #endif
 }

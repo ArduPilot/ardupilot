@@ -518,7 +518,7 @@ void PX4RCOutput::_send_outputs(void)
                 }
             }
         }
-
+        
         perf_end(_perf_rcout);
         _last_output = now;
     }
