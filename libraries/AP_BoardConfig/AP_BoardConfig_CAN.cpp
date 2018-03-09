@@ -127,29 +127,29 @@ void AP_BoardConfig_CAN::setup_canbus(void)
 
     if (initret) {
         for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (hal.can_mgr[i] != nullptr) {
-                hal.can_mgr[i]->initialized(true);
-                printf("can_mgr %d initialized well\n\r", i + 1);
+            if (hal.can_mgr[i] == nullptr) {
+                continue;
+            }
+            hal.can_mgr[i]->initialized(true);
+            printf("can_mgr %d initialized well\n\r", i + 1);
 
-                if (_var_info_can_protocol[i]._protocol == UAVCAN_PROTOCOL_ENABLE) {
-                    _var_info_can_protocol[i]._uavcan = new AP_UAVCAN;
+            if (_var_info_can_protocol[i]._protocol == UAVCAN_PROTOCOL_ENABLE) {
+                _var_info_can_protocol[i]._uavcan = new AP_UAVCAN;
 
-                    if (_var_info_can_protocol[i]._uavcan != nullptr)
-                    {
-                        AP_Param::load_object_from_eeprom(_var_info_can_protocol[i]._uavcan, AP_UAVCAN::var_info);
+                if (_var_info_can_protocol[i]._uavcan == nullptr) {
+                    AP_HAL::panic("Failed to allocate uavcan %d\n\r", i + 1);
+                    continue;
+                }
+                
+                AP_Param::load_object_from_eeprom(_var_info_can_protocol[i]._uavcan, AP_UAVCAN::var_info);
 
-                        hal.can_mgr[i]->set_UAVCAN(_var_info_can_protocol[i]._uavcan);
-                        _var_info_can_protocol[i]._uavcan->set_parent_can_mgr(hal.can_mgr[i]);
+                hal.can_mgr[i]->set_UAVCAN(_var_info_can_protocol[i]._uavcan);
+                _var_info_can_protocol[i]._uavcan->set_parent_can_mgr(hal.can_mgr[i]);
 
-                        if (_var_info_can_protocol[i]._uavcan->try_init() == true) {
-                            any_uavcan_present = true;
-                        } else {
-                            printf("Failed to initialize uavcan interface %d\n\r", i + 1);
-                        }
-
-                    } else {
-                        AP_HAL::panic("Failed to allocate uavcan %d\n\r", i + 1);
-                    }
+                if (_var_info_can_protocol[i]._uavcan->try_init() == true) {
+                    any_uavcan_present = true;
+                } else {
+                    printf("Failed to initialize uavcan interface %d\n\r", i + 1);
                 }
             }
         }
