@@ -164,22 +164,15 @@ AP_Baro *AP_Baro::_instance;
 /*
   AP_Baro constructor
  */
-AP_Baro::AP_Baro(AP_GPS &gps) :
-        _gps(&gps),
-        _gps_available(true)
-{
-    AP_Param::setup_object_defaults(this, var_info);
-    for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
-        _gps_alt_error[i].set_cutoff_frequency(BARO_LOOP_FREQ, 1.f/float(_gps_adj_timeconstant.get()));
-    }
-}
-
-AP_Baro::AP_Baro() :
-        _gps_available(false)
+AP_Baro::AP_Baro()
 {
     _instance = this;
     
     AP_Param::setup_object_defaults(this, var_info);
+    
+    for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
+        _gps_alt_error[i].set_cutoff_frequency(BARO_LOOP_FREQ, 1.f/float(_gps_adj_timeconstant.get()));
+    }
 }
 
 // calibrate the barometer. This must be called at least once before
@@ -249,10 +242,8 @@ void AP_Baro::calibrate(bool save)
 
     _guessed_ground_temperature = get_external_temperature();
 
-    if (_gps_available) {
-        update_gps_calibration();
-    }
-
+    update_gps_calibration();
+    
     // panic if all sensors are not calibrated
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].calibrated) {
@@ -286,10 +277,8 @@ void AP_Baro::update_calibration()
     // always update the guessed ground temp
     _guessed_ground_temperature = get_external_temperature();
 
-    if (_gps_available) {
-        update_gps_calibration();
-    }
-
+    update_gps_calibration();
+    
     // force EAS2TAS to recalculate
     _EAS2TAS = 0;
 
@@ -301,13 +290,13 @@ void AP_Baro::update_calibration()
 void AP_Baro::update_gps_calibration()
 {
     float vacc;
-    const bool gps_vacc_ret = _gps->vertical_accuracy(vacc);
-    const uint32_t last_fix = _gps->last_fix_time_ms();
+    const bool gps_vacc_ret = AP_GPS::gps().vertical_accuracy(vacc);
+    const uint32_t last_fix = AP_GPS::gps().last_fix_time_ms();
     const uint32_t now = AP_HAL::millis();
 
     // Make sure the vertical accuracy is within limits
     if (gps_vacc_ret && vacc < BARO_MAX_GPS_ACCURACY && (now - last_fix) < BARO_MAX_GPS_DELAY) {
-        const Location loc = _gps->location();
+        const Location loc = AP_GPS::gps().location();
         _gps_calibration_altitude = float(loc.alt) / 100.0;
         for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
             _gps_alt_error[i].reset();
@@ -659,11 +648,11 @@ void AP_Baro::update(void)
     bool process_gps_alt = false;
     if (!is_zero(_gps_adj_step) && _gps_calibrated) {
         float gps_vacc;
-        if (_gps->vertical_accuracy(gps_vacc)) {
-            const uint32_t last_fix = _gps->last_fix_time_ms();
+        if (AP_GPS::gps().vertical_accuracy(gps_vacc)) {
+            const uint32_t last_fix = AP_GPS::gps().last_fix_time_ms();
 
             if (gps_vacc < BARO_MAX_GPS_ACCURACY && (now - last_fix) < BARO_MAX_GPS_DELAY) {
-                const Location loc = _gps->location();
+                const Location loc = AP_GPS::gps().location();
                 gps_alt = float(loc.alt) * 1e-2;
                 process_gps_alt = true;
             }

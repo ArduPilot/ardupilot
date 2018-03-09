@@ -33,7 +33,6 @@ class AP_Baro
 
 public:
     AP_Baro();
-    AP_Baro(AP_GPS &gps);
 
     /* Do not allow copies */
     AP_Baro(const AP_Baro &other) = delete;
@@ -231,8 +230,7 @@ private:
 
     bool _add_backend(AP_Baro_Backend *backend);
 
-    AP_GPS *_gps;
-    bool _gps_calibrated, _gps_available;
+    bool _gps_calibrated;
     float _gps_calibration_altitude;
     LowPassFilterFloat _gps_alt_error[BARO_MAX_INSTANCES];
     AP_Float _gps_adj_step;
