@@ -59,6 +59,7 @@ public:
     // simulated airspeed, sonar and battery monitor
     uint16_t sonar_pin_value;    // pin 0
     uint16_t airspeed_pin_value; // pin 1
+    uint16_t airspeed_2_pin_value; // pin 2
     uint16_t voltage_pin_value;  // pin 13
     uint16_t current_pin_value;  // pin 12
 
@@ -191,6 +192,7 @@ private:
     uint8_t store_index_wind;
     uint32_t last_store_time_wind;
     VectorN<readings_wind,wind_buffer_length> buffer_wind;
+    VectorN<readings_wind,wind_buffer_length> buffer_wind_2;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
 
