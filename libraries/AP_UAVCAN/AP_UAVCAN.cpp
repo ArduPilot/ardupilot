@@ -17,10 +17,12 @@
 
 // Zubax GPS and other GPS, baro, magnetic sensors
 #include <uavcan/equipment/gnss/Fix.hpp>
+#include <uavcan/equipment/gnss/Fix2.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
 
 #include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
 #include <uavcan/equipment/ahrs/MagneticFieldStrength2.hpp>
+#include <uavcan/equipment/ahrs/Solution.hpp>
 #include <uavcan/equipment/air_data/StaticPressure.hpp>
 #include <uavcan/equipment/air_data/StaticTemperature.hpp>
 
@@ -103,6 +105,27 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Range: 0 20
     // @User: Advanced
     AP_GROUPINFO("ATT_R", 7, AP_UAVCAN, _broadcast_att_rate, 0),
+
+    // @Param: FIX_R
+    // @DisplayName: UAVCAN GNSS Fix broadcast rate
+    // @Description: UAVCAN GNSS Fix broadcast rate in times per second. 0 - disable broadcast.
+    // @Range: 0 20
+    // @User: Advanced
+    AP_GROUPINFO("FIX_R", 4, AP_UAVCAN, _broadcast_fix_rate, 0),
+
+    // @Param: FIX2_R
+    // @DisplayName: UAVCAN GNSS Fix2 broadcast rate
+    // @Description: UAVCAN GNSS Fix2 broadcast rate in times per second. 0 - disable broadcast.
+    // @Range: 0 20
+    // @User: Advanced
+    AP_GROUPINFO("FIX2_R", 5, AP_UAVCAN, _broadcast_fix2_rate, 0),
+
+    // @Param: ATT_R
+    // @DisplayName: UAVCAN attitude broadcast rate
+    // @Description: UAVCAN attitude broadcast rate in times per second. 0 - disable broadcast.
+    // @Range: 0 20
+    // @User: Advanced
+    AP_GROUPINFO("ATT_R", 6, AP_UAVCAN, _broadcast_att_rate, 0),
 
     AP_GROUPEND
 };
@@ -305,7 +328,6 @@ void AP_UAVCAN::UAVCAN_AHRS_update(const AP_AHRS_NavEKF &ahrs)
     if (sem_ret) {
         _att_out_sem->give();
     }
-
 }
 
 static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
@@ -623,6 +645,8 @@ AP_UAVCAN::AP_UAVCAN() :
     }
 
     SRV_sem = hal.util->new_semaphore();
+    _fix_out_sem = hal.util->new_semaphore();
+    _att_out_sem = hal.util->new_semaphore();
     _led_out_sem = hal.util->new_semaphore();
 
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
@@ -746,8 +770,25 @@ bool AP_UAVCAN::try_init(void)
                     rgb_led[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*node);
                     rgb_led[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(CAN_PERIODIC_TX_TIMEOUT_MS));
                     rgb_led[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
-
                     _led_conf.devices_count = 0;
+
+                    if(_broadcast_bm & AP_UAVCAN_BROADCAST_POSITION_FIX) {
+                        fix_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::gnss::Fix>(*node);
+                        fix_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                        fix_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+                    }
+
+                    if(_broadcast_bm & AP_UAVCAN_BROADCAST_POSITION_FIX2) {
+                        fix2_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::gnss::Fix2>(*node);
+                        fix2_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                        fix2_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+                    }
+
+                    if(_broadcast_bm & AP_UAVCAN_BROADCAST_ATTITUDE) {
+                        attitude_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::ahrs::Solution>(*node);
+                        attitude_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                        attitude_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+                    }
 
                     /*
                      * Informing other nodes that we're ready to work.
@@ -770,6 +811,34 @@ bool AP_UAVCAN::try_init(void)
     }
 
     return false;
+}
+
+bool AP_UAVCAN::att_out_sem_take()
+{
+    bool sem_ret = _att_out_sem->take(10);
+    if (!sem_ret) {
+        debug_uavcan(1, "AP_UAVCAN attitude semaphore fail\n\r");
+    }
+    return sem_ret;
+}
+
+void AP_UAVCAN::att_out_sem_give()
+{
+    _att_out_sem->give();
+}
+
+bool AP_UAVCAN::fix_out_sem_take()
+{
+    bool sem_ret = _fix_out_sem->take(10);
+    if (!sem_ret) {
+        debug_uavcan(1, "AP_UAVCAN GNSS fix semaphore fail\n\r");
+    }
+    return sem_ret;
+}
+
+void AP_UAVCAN::fix_out_sem_give()
+{
+    _fix_out_sem->give();
 }
 
 void AP_UAVCAN::SRV_sem_take()
@@ -935,7 +1004,6 @@ void AP_UAVCAN::do_cyclic(void)
             fix_out_send_delta_ms = 1000U / (uint16_t)_broadcast_fix_rate;
             fix_out_array[_uavcan_i]->broadcast(_fix_state);
         }
-
 
         if (fix2_out_array[_uavcan_i] != nullptr &&
                 _broadcast_fix2_rate != 0 &&
