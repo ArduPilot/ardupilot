@@ -612,6 +612,9 @@ class pxfmini(linux):
         )
 
 class aero(linux):
+    def __init__(self):
+        self.with_uavcan = True
+
     def configure_env(self, cfg, env):
         super(aero, self).configure_env(cfg, env)
 
