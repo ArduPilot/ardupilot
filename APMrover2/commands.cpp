@@ -118,7 +118,7 @@ void Rover::set_ekf_origin(const Location& loc)
 void Rover::set_system_time_from_GPS()
 {
     // exit immediately if system time already set
-    if (system_time_set) {
+    if (hal.util->system_time_was_set()) {
         return;
     }
 
@@ -131,8 +131,6 @@ void Rover::set_system_time_from_GPS()
 
         // update signing timestamp
         GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
-
-        system_time_set = true;
     }
 }
 

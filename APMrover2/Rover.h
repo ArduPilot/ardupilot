@@ -318,9 +318,6 @@ private:
     // The home location used for RTL.  The location is set when we first get stable GPS lock
     const struct Location &home;
 
-    // true if the system time has been set from the GPS
-    bool system_time_set;
-
     // true if the compass's initial location has been set
     bool compass_init_location;
 
