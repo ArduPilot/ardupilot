@@ -133,10 +133,10 @@ public:
 
     uint8_t register_airspeed_listener(AP_Airspeed_Backend* new_listener, uint8_t preferred_channel);
     void remove_airspeed_listener(AP_Airspeed_Backend* rem_listener);
-    AirSpeed_Info *find_airspeed_node(uint8_t node, uint8_t sensor_id);
+    AirSpeed_Info *find_airspeed_node(uint8_t node);
     uint8_t find_smallest_free_airspeed_node();
     uint8_t register_airspeed_listener_to_node(AP_Airspeed_Backend* new_listener, uint8_t node);
-    void update_airspeed_state(uint8_t node, uint8_t sensor_id);
+    void update_airspeed_state(uint8_t node);
 
     // synchronization for RC output
     void SRV_sem_take();
