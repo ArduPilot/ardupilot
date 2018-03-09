@@ -536,24 +536,20 @@ void Copter::ModeGuided::posvel_control_run()
     // calculate dt
     float dt = pos_control->time_since_last_xy_update();
 
-    // update at poscontrol update rate
-    if (dt >= pos_control->get_dt_xy()) {
-        // sanity check dt
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // advance position target using velocity target
-        guided_pos_target_cm += guided_vel_target_cms * dt;
-
-        // send position and velocity targets to position controller
-        pos_control->set_pos_target(guided_pos_target_cm);
-        pos_control->set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
-
-        // run position controller
-        pos_control->update_xy_controller(ekfNavVelGainScaler);
+    // sanity check dt
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
 
+    // advance position target using velocity target
+    guided_pos_target_cm += guided_vel_target_cms * dt;
+
+    // send position and velocity targets to position controller
+    pos_control->set_pos_target(guided_pos_target_cm);
+    pos_control->set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
+
+    // run position controllers
+    pos_control->update_xy_controller(ekfNavVelGainScaler);
     pos_control->update_z_controller();
 
     // call attitude controller
