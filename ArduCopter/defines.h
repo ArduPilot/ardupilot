@@ -334,7 +334,7 @@ enum LoggingParameters {
 
 // DATA - event logging
 #define DATA_AP_STATE                       7
-#define DATA_SYSTEM_TIME_SET                8
+// 8 was DATA_SYSTEM_TIME_SET
 #define DATA_INIT_SIMPLE_BEARING            9
 #define DATA_ARMED                          10
 #define DATA_DISARMED                       11
