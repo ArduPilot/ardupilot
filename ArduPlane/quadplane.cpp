@@ -1726,6 +1726,7 @@ void QuadPlane::vtol_position_controller(void)
     float ekfGndSpdLimit, ekfNavVelGainScaler;    
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
+    // horizontal position control
     switch (poscontrol.state) {
 
     case QPOS_POSITION1: {
