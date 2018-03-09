@@ -460,6 +460,7 @@ Compass::Compass(void) :
     _backend_count(0),
     _compass_count(0),
     _board_orientation(ROTATION_NONE),
+    _custom_rotation(nullptr),
     _null_init_done(false),
     _hil_mode(false)
 {
@@ -1210,7 +1211,11 @@ void Compass::setHIL(uint8_t instance, float roll, float pitch, float yaw)
 
     if (!_state[0].external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
-        _hil.field[instance].rotate(_board_orientation);
+        if (_board_orientation == ROTATION_CUSTOM && _custom_rotation) {
+            _hil.field[instance] = *_custom_rotation * _hil.field[instance];
+        } else {
+            _hil.field[instance].rotate(_board_orientation);
+        }
     }
     _hil.healthy[instance] = true;
 }
