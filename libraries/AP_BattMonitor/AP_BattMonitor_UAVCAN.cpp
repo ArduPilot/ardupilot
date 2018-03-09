@@ -25,20 +25,25 @@ AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor
 
 void AP_BattMonitor_UAVCAN::init()
 {
-    if (AP_BoardConfig_CAN::get_can_num_ifaces() != 0) {
-        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (hal.can_mgr[i] != nullptr) {
-                AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
-                if (uavcan != nullptr) {
-                    switch (_type) {
-                        case UAVCAN_BATTERY_INFO:
-                            if (uavcan->register_BM_bi_listener_to_id(this, _params._serial_number)) {
-                                debug_bm_uavcan(2, "UAVCAN BattMonitor BatteryInfo registered id: %d\n\r", _params._serial_number);
-                            }
-                            break;
-                    }
+    if (AP_BoardConfig_CAN::get_can_num_ifaces() == 0) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+        if (hal.can_mgr[i] == nullptr) {
+            continue;
+        }
+        AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
+        if (uavcan == nullptr) {
+            continue;
+        }
+
+        switch (_type) {
+            case UAVCAN_BATTERY_INFO:
+                if (uavcan->register_BM_bi_listener_to_id(this, _params._serial_number)) {
+                    debug_bm_uavcan(2, "UAVCAN BattMonitor BatteryInfo registered id: %d\n\r", _params._serial_number);
                 }
-            }
+                break;
         }
     }
 }
