@@ -54,6 +54,9 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // Return uavcan from @iface or nullptr if it's not ready or doesn't exist
+    static AP_UAVCAN *get_uavcan(uint8_t iface);
+
     // this function will register the listening class on a first free channel or on the specified channel
     // if preferred_channel = 0 then free channel will be searched for
     // if preferred_channel > 0 then listener will be added to specific channel

@@ -1347,4 +1347,12 @@ bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t
     return true;
 }
 
+AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t iface)
+{
+    if (iface >= MAX_NUMBER_OF_CAN_INTERFACES || !hal.can_mgr[iface]) {
+        return nullptr;
+    }
+    return hal.can_mgr[iface]->get_UAVCAN();
+}
+
 #endif // HAL_WITH_UAVCAN
