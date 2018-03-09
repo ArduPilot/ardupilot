@@ -30,7 +30,6 @@
 #include "AP_Airspeed_SDP3X.h"
 #include "AP_Airspeed_analog.h"
 #include "AP_Airspeed_Backend.h"
-#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -192,24 +191,18 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("2_BUS",  20, AP_Airspeed, param[1].bus, 1),
     
-    // @Param: _BLEND
-    // @DisplayName: Blending of airspeed sensors
-    // @Description: Sets the configuration for enable the blending of multiple airspeed sensors
-    // @Values: 0:Blend disabled,1:Full blending
-    // @User: Advanced
-    AP_GROUPINFO("_BLEND",  21, AP_Airspeed, blend_enable, 0),
-
     AP_GROUPEND
 };
+
 
 AP_Airspeed::AP_Airspeed()
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         state[i].EAS2TAS = 1;
-        state[i].blend_healthy = true;
     }
     AP_Param::setup_object_defaults(this, var_info);
 }
+
 
 /*
   this scaling factor converts from the old system where we used a
@@ -273,9 +266,6 @@ float AP_Airspeed::get_pressure(uint8_t i)
     float pressure = 0;
     if (sensor[i]) {
         state[i].healthy = sensor[i]->get_differential_pressure(pressure);
-        if (!state[i].healthy) {
-            state[i].blend_healthy = false;
-        }
     }
     return pressure;
 }
@@ -382,7 +372,6 @@ void AP_Airspeed::read(uint8_t i)
             // we're reading more than about -8m/s. The user probably has
             // the ports the wrong way around
             state[i].healthy = false;
-            state[i].blend_healthy = false;
         }
         break;
     case PITOT_TUBE_ORDER_AUTO:
@@ -394,23 +383,6 @@ void AP_Airspeed::read(uint8_t i)
     }
 
     state[i].last_update_ms = AP_HAL::millis();
-}
-
-void AP_Airspeed::process_no_blend(void)
-{
-    // setup primary
-    if (healthy(primary_sensor.get())) {
-        primary = primary_sensor.get();
-    } else {
-        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-            if (healthy(i)) {
-                primary = i;
-                break;
-            }
-        }
-    }
-    
-    blend_state.active = false;
 }
 
 // read all airspeed sensors
@@ -427,116 +399,15 @@ void AP_Airspeed::read(void)
     }
 #endif
 
-    if (blend_enable == BLEND_NONE ||
-        !AP::ahrs().have_inertial_nav()) {
-        process_no_blend();
+    // setup primary
+    if (healthy(primary_sensor.get())) {
+        primary = primary_sensor.get();
         return;
     }
-    
-    // blend the airspeed from several sensors and EKF
-    Vector3f velocity, wind;
-    if (AP::ahrs().get_velocity_NED(velocity) == false) {
-        process_no_blend();
-        return;
-    }
-    wind = AP::ahrs().wind_estimate();
-    velocity -= wind;
-    float airspeed_ekf = velocity.length();
-
-    float ekf_sensor_airspeed_diff[AIRSPEED_MAX_SENSORS];
-    uint8_t healthy_sens_num = 0;
-    for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
-        if (!state[i].healthy) {
-            state[i].blend_healthy = false;
-        }
-        
-        if (state[i].blend_healthy) {
-            healthy_sens_num++;
-        }
-    }
-    
-    // calculating difference
-    for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
-        ekf_sensor_airspeed_diff[i] = fabsf(state[i].airspeed - airspeed_ekf);
-    }
-    
-    if (healthy_sens_num > 0)
-    {
-        const float airspeed_avg_limit = airspeed_ekf * AIRSPEED_BLEND_DIFF_LIMIT;
-
-        // look for healthy sensors that might be failing
-
-        // Idea is to find the sensor which differs much both from other sensors and from ekf value
-        // If there are two sensors then the first check will be true for both, however
-        // the second check will be true only for the sensor which really failed
-        for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
-            if (state[i].blend_healthy &&
-                    ekf_sensor_airspeed_diff[i] > airspeed_avg_limit && state[i].airspeed > AIRSPEED_BLEND_MIN_SPEED) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Airspeed[%u] sensor blending unhealthy", i);
-                state[i].blend_healthy = false;
-            }
-        }
-        
-        blend_state_t blend_state_temp {};
-        healthy_sens_num = 0;
-        uint8_t healthy_sens_temperature_num = 0;
-
-        for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
-            if (!state[i].blend_healthy) {
-                continue;
-            }
-            
-            blend_state_temp.airspeed += state[i].airspeed;
-            blend_state_temp.raw_airspeed += state[i].raw_airspeed;
-
-            float temperature;
-            if (get_temperature(i, temperature)) {
-                blend_state_temp.temperature += temperature;
-                healthy_sens_temperature_num++;
-            }
-
-            blend_state_temp.last_pressure += state[i].last_pressure;
-            blend_state_temp.corrected_pressure += state[i].corrected_pressure;
-            blend_state_temp.EAS2TAS += state[i].EAS2TAS;
-            
-            blend_state_temp.ratio += param[i].ratio;
-            blend_state_temp.offset += param[i].offset;
-
-            healthy_sens_num++;
-        }
-        
-        if (healthy_sens_num > 0) {
-            float div2mul_factor = 1.0 / healthy_sens_num;
-            blend_state_temp.airspeed *= div2mul_factor;
-            blend_state_temp.raw_airspeed *= div2mul_factor;
-            blend_state_temp.last_pressure *= div2mul_factor;
-            blend_state_temp.corrected_pressure *= div2mul_factor;
-            blend_state_temp.EAS2TAS *= div2mul_factor;
-            blend_state_temp.ratio *= div2mul_factor;
-            blend_state_temp.offset *= div2mul_factor;
-            
-            if (healthy_sens_temperature_num) {
-                blend_state_temp.temperature /= healthy_sens_temperature_num;
-            }
-            
-            blend_state_temp.active = true;
-            
-            memcpy(&blend_state, &blend_state_temp, sizeof(blend_state));
-        } else {
-            process_no_blend();
-        }
-    } else
-    {
-        process_no_blend();
-    }
-    
-    // Check if any unhealthy sensors came back into range
-    for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
-        if (!state[i].blend_healthy && ekf_sensor_airspeed_diff[i] < AIRSPEED_BLEND_ABS_DIFF_LIMIT &&
-            state[i].airspeed > AIRSPEED_BLEND_MIN_SPEED && state[i].healthy)
-        {
-            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed[%u] sensor blending back healthy", i);
-            state[i].blend_healthy = true;
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (healthy(i)) {
+            primary = i;
+            break;
         }
     }
 }
