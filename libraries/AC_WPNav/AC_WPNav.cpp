@@ -378,22 +378,16 @@ void AC_WPNav::update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler)
 {
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();
-
-    // run at poscontrol update rate.
-    // TODO: run on user input to reduce latency, maybe if (user_input || dt >= _pos_control.get_dt_xy())
-    if (dt >= _pos_control.get_dt_xy()) {
-        // sanity check dt
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // initialise pos controller speed and acceleration
-        _pos_control.set_speed_xy(_loiter_speed_cms);
-        _pos_control.set_accel_xy(_loiter_accel_cmss);
-
-        calc_loiter_desired_velocity(dt,ekfGndSpdLimit);
-        _pos_control.update_xy_controller(ekfNavVelGainScaler);
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // initialise pos controller speed and acceleration
+    _pos_control.set_speed_xy(_loiter_speed_cms);
+    _pos_control.set_accel_xy(_loiter_accel_cmss);
+
+    calc_loiter_desired_velocity(dt,ekfGndSpdLimit);
+    _pos_control.update_xy_controller(ekfNavVelGainScaler);
 }
 
 /// init_brake_target - initializes stop position from current position and velocity
@@ -422,14 +416,13 @@ void AC_WPNav::update_brake(float ekfGndSpdLimit, float ekfNavVelGainScaler)
 {
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();
-
-    // run at poscontrol update rate.
-    if (dt >= _pos_control.get_dt_xy()) {
-
-        // send adjusted feed forward velocity back to position controller
-        _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
-        _pos_control.update_xy_controller(ekfNavVelGainScaler);
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // send adjusted feed forward velocity back to position controller
+    _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
+    _pos_control.update_xy_controller(ekfNavVelGainScaler);
 }
 
 ///
@@ -794,40 +787,35 @@ int32_t AC_WPNav::get_wp_bearing_to_destination() const
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
 bool AC_WPNav::update_wpnav()
 {
-    // calculate dt
-    float dt = _pos_control.time_since_last_xy_update();
     bool ret = true;
 
-    // update at poscontrol update rate
-    if (dt >= _pos_control.get_dt_xy()) {
-        // allow the accel and speed values to be set without changing
-        // out of auto mode. This makes it easier to tune auto flight
-        _pos_control.set_accel_xy(_wp_accel_cms);
-        _pos_control.set_accel_z(_wp_accel_z_cms);
-    
-        // sanity check dt
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // advance the target if necessary
-        if (!advance_wp_target_along_track(dt)) {
-            // To-Do: handle inability to advance along track (probably because of missing terrain data)
-            ret = false;
-        }
-
-        // freeze feedforwards during known discontinuities
-        // TODO: why always consider Z axis discontinuous?
-        if (_flags.new_wp_destination) {
-            _flags.new_wp_destination = false;
-        }
-        _pos_control.freeze_ff_z();
-
-        _pos_control.update_xy_controller(1.0f);
-        check_wp_leash_length();
-
-        _wp_last_update = AP_HAL::millis();
+    // calculate dt
+    float dt = _pos_control.time_since_last_xy_update();
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // allow the accel and speed values to be set without changing
+    // out of auto mode. This makes it easier to tune auto flight
+    _pos_control.set_accel_xy(_wp_accel_cms);
+    _pos_control.set_accel_z(_wp_accel_z_cms);
+
+    // advance the target if necessary
+    if (!advance_wp_target_along_track(dt)) {
+        // To-Do: handle inability to advance along track (probably because of missing terrain data)
+        ret = false;
+    }
+
+    // freeze feedforwards during known discontinuities
+    if (_flags.new_wp_destination) {
+        _flags.new_wp_destination = false;
+        _pos_control.freeze_ff_z();
+    }
+
+    _pos_control.update_xy_controller(1.0f);
+    check_wp_leash_length();
+
+    _wp_last_update = AP_HAL::millis();
 
     return ret;
 }
@@ -976,7 +964,11 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
 {
     // mission is "active" if wpnav has been called recently and vehicle reached the previous waypoint
     bool prev_segment_exists = (_flags.reached_destination && ((AP_HAL::millis() - _wp_last_update) < 1000));
-    float dt = _pos_control.get_dt_xy();
+
+    float dt = _pos_control.time_since_last_xy_update();
+    if (dt >= 0.2f) {
+        dt = 0.0f;
+    }
 
     // check _wp_accel_cms is reasonable to avoid divide by zero
     if (_wp_accel_cms <= 0) {
@@ -1091,34 +1083,31 @@ bool AC_WPNav::update_spline()
         return false;
     }
 
-    float dt = _pos_control.time_since_last_xy_update();
     bool ret = true;
 
-    // run at poscontrol update rate
-    if (dt >= _pos_control.get_dt_xy()) {
-        // sanity check dt
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // advance the target if necessary
-        if (!advance_spline_target_along_track(dt)) {
-            // To-Do: handle failure to advance along track (due to missing terrain data)
-            ret = false;
-        }
-
-        // freeze feedforwards during known discontinuities
-        // TODO: why always consider Z axis discontinuous?
-        if (_flags.new_wp_destination) {
-            _flags.new_wp_destination = false;
-        }
-        _pos_control.freeze_ff_z();
-
-        // run horizontal position controller
-        _pos_control.update_xy_controller(1.0f);
-
-        _wp_last_update = AP_HAL::millis();
+    // calculate dt
+    float dt = _pos_control.time_since_last_xy_update();
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // advance the target if necessary
+    if (!advance_spline_target_along_track(dt)) {
+        // To-Do: handle failure to advance along track (due to missing terrain data)
+        ret = false;
+    }
+
+    // freeze feedforwards during known discontinuities
+    if (_flags.new_wp_destination) {
+        _flags.new_wp_destination = false;
+        _pos_control.freeze_ff_z();
+    }
+
+    // run horizontal position controller
+    _pos_control.update_xy_controller(1.0f);
+
+    _wp_last_update = AP_HAL::millis();
+
     return ret;
 }
 
