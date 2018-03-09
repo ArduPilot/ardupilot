@@ -29,6 +29,9 @@
 #include "AP_Airspeed_MS5525.h"
 #include "AP_Airspeed_SDP3X.h"
 #include "AP_Airspeed_analog.h"
+#if HAL_WITH_UAVCAN
+#include "AP_Airspeed_UAVCAN.h"
+#endif
 #include "AP_Airspeed_Backend.h"
 
 extern const AP_HAL::HAL &hal;
@@ -55,7 +58,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:UAVCAN
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
@@ -194,7 +197,6 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     AP_GROUPEND
 };
 
-
 AP_Airspeed::AP_Airspeed()
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
@@ -207,7 +209,6 @@ AP_Airspeed::AP_Airspeed()
     }
     _singleton = this;
 }
-
 
 /*
   this scaling factor converts from the old system where we used a
@@ -249,6 +250,12 @@ void AP_Airspeed::init()
         case TYPE_I2C_SDP3X:
             sensor[i] = new AP_Airspeed_SDP3X(*this, i);
             break;
+#if HAL_WITH_UAVCAN
+        case TYPE_UAVCAN:
+            sensor[i] = new AP_Airspeed_UAVCAN(*this, i);
+            // TODO
+            break;
+#endif
         }
         if (sensor[i] && !sensor[i]->init()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Airspeed[%u] init failed", i);
