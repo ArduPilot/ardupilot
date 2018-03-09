@@ -428,28 +428,31 @@ void AP_GPS::detect_instance(uint8_t instance)
     // user has to explicitly set the UAVCAN type, do not use AUTO
     case GPS_TYPE_UAVCAN:
         dstate->auto_detected_baud = false; // specified, not detected
-        if (AP_BoardConfig_CAN::get_can_num_ifaces() >= 1) {
-            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-                if (hal.can_mgr[i] != nullptr) {
-                    AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
+        if (AP_BoardConfig_CAN::get_can_num_ifaces() == 0) {
+            return;
+        }
+        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+            if (hal.can_mgr[i] == nullptr) {
+                continue;
+            }
+            AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
+            if (uavcan == nullptr) {
+                continue;
+            }
+            uint8_t gps_node = uavcan->find_gps_without_listener();
+            if (gps_node == UINT8_MAX) {
+                continue;
+            }
 
-                    if (uavcan != nullptr) {
-                        uint8_t gps_node = uavcan->find_gps_without_listener();
-
-                        if (gps_node != UINT8_MAX) {
-                            new_gps = new AP_GPS_UAVCAN(*this, state[instance], nullptr);
-                            ((AP_GPS_UAVCAN*) new_gps)->set_uavcan_manager(i);
-                            if (uavcan->register_gps_listener_to_node(new_gps, gps_node)) {
-                                if (AP_BoardConfig_CAN::get_can_debug() >= 2) {
-                                    printf("AP_GPS_UAVCAN registered\n\r");
-                                }
-                                goto found_gps;
-                            } else {
-                                delete new_gps;
-                            }
-                        }
-                    }
+            new_gps = new AP_GPS_UAVCAN(*this, state[instance], nullptr);
+            ((AP_GPS_UAVCAN*) new_gps)->set_uavcan_manager(i);
+            if (uavcan->register_gps_listener_to_node(new_gps, gps_node)) {
+                if (AP_BoardConfig_CAN::get_can_debug() >= 2) {
+                    printf("AP_GPS_UAVCAN registered\n\r");
                 }
+                goto found_gps;
+            } else {
+                delete new_gps;
             }
         }
         return;
