@@ -37,14 +37,16 @@ AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UA
 // For each instance we need to deregister from AP_UAVCAN class
 AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
 {
-    if (hal.can_mgr[_manager] != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            ap_uavcan->remove_gps_listener(this);
-
-            debug_gps_uavcan(2, "AP_GPS_UAVCAN destructed\n\r");
-        }
+    if (hal.can_mgr[_manager] == nullptr) {
+        return;
     }
+    AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
+    if (ap_uavcan == nullptr) {
+        return;
+    }
+
+    ap_uavcan->remove_gps_listener(this);
+    debug_gps_uavcan(2, "AP_GPS_UAVCAN destructed\n\r");
 }
 
 void AP_GPS_UAVCAN::set_uavcan_manager(uint8_t mgr)
