@@ -209,7 +209,7 @@
 */
 #define BOARD_HAL_VARINFO \
     AP_GROUPINFO("USB_STORAGE",  30, AP_Param_Helper, _usb_storage, 0), \
-    AP_GROUPINFO("FLEXI_I2C",    30, AP_Param_Helper, _flexi_i2c, 0), 
+    AP_GROUPINFO("FLEXI_I2C",    31, AP_Param_Helper, _flexi_i2c, 0), 
 
 // parameters
 #define BOARD_HAL_PARAMS \

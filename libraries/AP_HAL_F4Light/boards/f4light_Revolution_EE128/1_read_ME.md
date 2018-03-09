@@ -1,10 +1,10 @@
 this is for Revolution/RevoMini board with removed 25q16 and soldered 25q128 or 25q256. This is very easy!
 
 I tried to maintain compatibility with the OpenPilot documentation. The main difference - FlexiPort can 
-be Serial and external I2C port is on pins 7&8 of Input port. But this can be changed by HAL_FLEXI_I2C parameter
+be Serial and external I2C port is on pins 7&8 of Input port. But this can be changed by BRD_FLEXI_I2C parameter
 
 
-Main Port        - telemetry, Serial1. As a variant it can be used as SBUS input with hardware inverter (Parameter HAL_UART_SBUS)
+Main Port        - telemetry, Serial1. As a variant it can be used as SBUS input with hardware inverter (Parameter BRD_UART_SBUS)
 FlexiPort        - OSD, Serial2
 Uart6 (pins 5&6) - GPS
 
@@ -19,7 +19,7 @@ pins 7&8 of Input port are SCL and SDA of external I2C (or Tx and Rx for SoftSer
 
 
 Output Port for MOTORs
-Connect to PWM output pins in ArduCopter, CleanFlight or OpenPilot order, and set parameter HAL_MOTOR_LAYOUT accordingly
+Connect to PWM output pins in ArduCopter, CleanFlight or OpenPilot order, and set parameter BRD_MOTOR_LAYOUT accordingly
 
 5&6 PWM Output pins are Rx and Tx of Serial4 - but only for quads (except motor layout 1, see below) or planes
 
