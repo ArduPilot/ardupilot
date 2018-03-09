@@ -319,14 +319,14 @@ private:
             uint8_t throttle_zero           : 1; // 15      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
             uint8_t system_time_set         : 1; // 16      // true if the system time has been set from the GPS
             uint8_t gps_glitching           : 1; // 17      // true if GPS glitching is affecting navigation accuracy
-            uint8_t using_interlock         : 1; // 20      // aux switch motor interlock function is in use
-            uint8_t motor_emergency_stop    : 1; // 21      // motor estop switch, shuts off motors when enabled
-            uint8_t land_repo_active        : 1; // 22      // true if the pilot is overriding the landing position
-            uint8_t motor_interlock_switch  : 1; // 23      // true if pilot is requesting motor interlock enable
-            uint8_t in_arming_delay         : 1; // 24      // true while we are armed but waiting to spin motors
-            uint8_t initialised_params      : 1; // 25      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
-            uint8_t compass_init_location   : 1; // 26      // true when the compass's initial location has been set
-            uint8_t rc_override_enable      : 1; // 27      // aux switch rc_override is allowed
+            uint8_t using_interlock         : 1; // 18      // aux switch motor interlock function is in use
+            uint8_t motor_emergency_stop    : 1; // 19      // motor estop switch, shuts off motors when enabled
+            uint8_t land_repo_active        : 1; // 20      // true if the pilot is overriding the landing position
+            uint8_t motor_interlock_switch  : 1; // 21      // true if pilot is requesting motor interlock enable
+            uint8_t in_arming_delay         : 1; // 22      // true while we are armed but waiting to spin motors
+            uint8_t initialised_params      : 1; // 23      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
+            uint8_t compass_init_location   : 1; // 24      // true when the compass's initial location has been set
+            uint8_t rc_override_enable      : 1; // 25      // aux switch rc_override is allowed
         };
         uint32_t value;
     } ap_t;
@@ -363,7 +363,7 @@ private:
 
     // intertial nav alt when we armed
     float arming_altitude_m;
-    
+
     // board specific config
     AP_BoardConfig BoardConfig;
 
@@ -632,7 +632,7 @@ private:
 
     // set when we are upgrading parameters from 3.4
     bool upgrading_frame_params;
-    
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];

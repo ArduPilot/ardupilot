@@ -154,7 +154,7 @@ bool Copter::far_from_EKF_origin(const Location& loc)
 void Copter::set_system_time_from_GPS()
 {
     // exit immediately if system time already set
-    if (ap.system_time_set) {
+    if (hal.util->system_time_was_set()) {
         return;
     }
 
@@ -162,13 +162,12 @@ void Copter::set_system_time_from_GPS()
     if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         // set system clock for log timestamps
         uint64_t gps_timestamp = gps.time_epoch_usec();
-                
+
         hal.util->set_system_clock(gps_timestamp);
-                
+
         // update signing timestamp
         GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
 
-        ap.system_time_set = true;
         Log_Write_Event(DATA_SYSTEM_TIME_SET);
     }
 }
