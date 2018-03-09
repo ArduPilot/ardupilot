@@ -86,28 +86,6 @@ bool Rover::set_home(const Location& loc, bool lock)
     return true;
 }
 
-// checks if we should update ahrs/RTL home position from GPS
-void Rover::set_system_time_from_GPS()
-{
-    // exit immediately if system time already set
-    if (system_time_set) {
-        return;
-    }
-
-    // if we have a 3d lock and valid location
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        // set system clock for log timestamps
-        const uint64_t gps_timestamp = gps.time_epoch_usec();
-
-        hal.util->set_system_clock(gps_timestamp);
-
-        // update signing timestamp
-        GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
-
-        system_time_set = true;
-    }
-}
-
 /*
   update home location from GPS
   this is called as long as we have 3D lock and the arming switch is
