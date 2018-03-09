@@ -201,7 +201,7 @@ private:
     // flight modes convenience array
     AP_Int8 *flight_modes = &g.flight_mode1;
 
-    AP_Baro barometer{gps};
+    AP_Baro barometer;
     Compass compass;
 
     AP_InertialSensor ins;
