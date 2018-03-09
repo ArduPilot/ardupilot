@@ -131,10 +131,10 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// AIRSPEED_CRUISE
+// CRUISE_SPEED default
 //
-#ifndef SPEED_CRUISE
-  #define SPEED_CRUISE    5  // in m/s
+#ifndef CRUISE_SPEED
+  #define CRUISE_SPEED    2  // in m/s
 #endif
 
 #ifndef TURN_GAIN
