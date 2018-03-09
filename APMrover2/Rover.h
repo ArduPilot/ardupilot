@@ -158,7 +158,7 @@ private:
 
     // sensor drivers
     AP_GPS gps;
-    AP_Baro barometer{gps};
+    AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
     RangeFinder rangefinder{serial_manager, ROTATION_NONE};

@@ -20,7 +20,7 @@ static AP_InertialSensor ins;
 static Compass compass;
 
 static AP_GPS gps;
-static AP_Baro barometer{gps};
+static AP_Baro barometer;
 static AP_SerialManager serial_manager;
 
 class DummyVehicle {
