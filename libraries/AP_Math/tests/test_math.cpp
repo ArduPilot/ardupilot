@@ -61,6 +61,7 @@ TEST(VectorTest, Rotations)
     TEST_ROTATION(ROTATION_ROLL_90_PITCH_68_YAW_293, -0.4066309f, -1.5839677f, -0.5706992f);
     TEST_ROTATION(ROTATION_PITCH_315, 0, 1, SQRT_2);
     TEST_ROTATION(ROTATION_ROLL_90_PITCH_315, 0, -1, SQRT_2);
+    TEST_ROTATION(ROTATION_CUSTOM, 1, 1, 1); // No effect
 
     EXPECT_EQ(ROTATION_MAX, rotation_count) << "All rotations are expect to be tested";
 }

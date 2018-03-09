@@ -244,6 +244,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         x = tmp;
         return;
     }
+    case ROTATION_CUSTOM: // no-op; caller should perform custom rotations via matrix multiplication
+        return;
     }
 }
 
