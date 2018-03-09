@@ -44,45 +44,52 @@ AP_Compass_UAVCAN::AP_Compass_UAVCAN(Compass &compass):
 
 AP_Compass_UAVCAN::~AP_Compass_UAVCAN()
 {
-    if (_initialized)
-    {
-        if (hal.can_mgr[_manager] != nullptr) {
-            AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
-            if (ap_uavcan != nullptr) {
-                ap_uavcan->remove_mag_listener(this);
-
-                debug_mag_uavcan(2, "AP_Compass_UAVCAN destructed\n\r");
-            }
-        }
+    if (!_initialized) {
+        return;
     }
+    if (hal.can_mgr[_manager] == nullptr) {
+        return;
+    }
+    AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
+    if (ap_uavcan == nullptr) {
+        return;
+    }
+
+    ap_uavcan->remove_mag_listener(this);
+    debug_mag_uavcan(2, "AP_Compass_UAVCAN destructed\n\r");
 }
 
 AP_Compass_Backend *AP_Compass_UAVCAN::probe(Compass &compass)
 {
-    AP_Compass_UAVCAN *sensor = nullptr;
+    if (AP_BoardConfig_CAN::get_can_num_ifaces() == 0) {
+        return nullptr;
+    }
 
-    if (AP_BoardConfig_CAN::get_can_num_ifaces() != 0) {
-        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (hal.can_mgr[i] != nullptr) {
-                AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
-                if (uavcan != nullptr) {
-                    uint8_t freemag = uavcan->find_smallest_free_mag_node();
-                    if (freemag != UINT8_MAX) {
-                        sensor = new AP_Compass_UAVCAN(compass);
-                        if (sensor->register_uavcan_compass(i, freemag)) {
-                            debug_mag_uavcan(2, "AP_Compass_UAVCAN probed, drv: %d, node: %d\n\r", i, freemag);
-                            return sensor;
-                        } else {
-                            delete sensor;
-                            sensor = nullptr;
-                        }
-                    }
-                }
-            }
+    AP_Compass_UAVCAN *sensor;
+
+    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+        if (hal.can_mgr[i] == nullptr) {
+            continue;
+        }
+        AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
+        if (uavcan == nullptr) {
+            continue;
+        }
+        uint8_t freemag = uavcan->find_smallest_free_mag_node();
+        if (freemag == UINT8_MAX) {
+            continue;
+        }
+        sensor = new AP_Compass_UAVCAN(compass);
+        
+        if (sensor->register_uavcan_compass(i, freemag)) {
+            debug_mag_uavcan(2, "AP_Compass_UAVCAN probed, drv: %d, node: %d\n\r", i, freemag);
+            return sensor;
+        } else {
+            delete sensor;
         }
     }
 
-    return sensor;
+    return nullptr;
 }
 
 bool AP_Compass_UAVCAN::register_uavcan_compass(uint8_t mgr, uint8_t node)
