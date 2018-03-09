@@ -427,23 +427,20 @@ void Sub::guided_posvel_control_run()
     // calculate dt
     float dt = pos_control.time_since_last_xy_update();
 
-    // update at poscontrol update rate
-    if (dt >= pos_control.get_dt_xy()) {
-        // sanity check dt
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // advance position target using velocity target
-        posvel_pos_target_cm += posvel_vel_target_cms * dt;
-
-        // send position and velocity targets to position controller
-        pos_control.set_pos_target(posvel_pos_target_cm);
-        pos_control.set_desired_velocity_xy(posvel_vel_target_cms.x, posvel_vel_target_cms.y);
-
-        // run position controller
-        pos_control.update_xy_controller(ekfNavVelGainScaler);
+    // sanity check dt
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // advance position target using velocity target
+    posvel_pos_target_cm += posvel_vel_target_cms * dt;
+
+    // send position and velocity targets to position controller
+    pos_control.set_pos_target(posvel_pos_target_cm);
+    pos_control.set_desired_velocity_xy(posvel_vel_target_cms.x, posvel_vel_target_cms.y);
+
+    // run position controller
+    pos_control.update_xy_controller(ekfNavVelGainScaler);
 
     float lateral_out, forward_out;
     translate_pos_control_rp(lateral_out, forward_out);
