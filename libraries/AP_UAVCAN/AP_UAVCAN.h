@@ -28,8 +28,8 @@
 #define UAVCAN_NODE_POOL_BLOCK_SIZE 256
 #endif
 
-#ifndef UAVCAN_RCO_NUMBER
-#define UAVCAN_RCO_NUMBER 18
+#ifndef UAVCAN_SRV_NUMBER
+#define UAVCAN_SRV_NUMBER 18
 #endif
 
 #define AP_UAVCAN_MAX_LISTENERS 4
@@ -119,8 +119,8 @@ public:
     void update_bi_state(uint8_t id);
 
     // synchronization for RC output
-    bool rc_out_sem_take();
-    void rc_out_sem_give();
+    bool SRV_sem_take();
+    void SRV_sem_give();
     
     // synchronization for LED output
     bool led_out_sem_take();
@@ -128,8 +128,8 @@ public:
     void led_out_send();
 
     // output from do_cyclic
-    void rc_out_send_servos();
-    void rc_out_send_esc();
+    void SRV_send_servos();
+    void SRV_send_esc();
 
 private:
     // ------------------------- GPS
@@ -173,11 +173,11 @@ private:
         uint16_t safety_pulse;
         uint16_t failsafe_pulse;
         bool active;
-    } _rco_conf[UAVCAN_RCO_NUMBER];
+    } _SRV_conf[UAVCAN_SRV_NUMBER];
 
     bool _initialized;
-    uint8_t _rco_armed;
-    uint8_t _rco_safety;
+    uint8_t _SRV_armed;
+    uint8_t _SRV_safety;
 
     typedef struct {
         bool enabled;
@@ -192,7 +192,7 @@ private:
         uint64_t last_update;
     } _led_conf;
 
-    AP_HAL::Semaphore *_rc_out_sem;
+    AP_HAL::Semaphore *SRV_sem;
     AP_HAL::Semaphore *_led_out_sem;
 
     class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
@@ -263,12 +263,12 @@ public:
     void do_cyclic(void);
     bool try_init(void);
 
-    void rco_set_safety_pwm(uint32_t chmask, uint16_t pulse_len);
-    void rco_set_failsafe_pwm(uint32_t chmask, uint16_t pulse_len);
-    void rco_force_safety_on(void);
-    void rco_force_safety_off(void);
-    void rco_arm_actuators(bool arm);
-    void rco_write(uint16_t pulse_len, uint8_t ch);
+    void SRV_set_safety_pwm(uint32_t chmask, uint16_t pulse_len);
+    void SRV_set_failsafe_pwm(uint32_t chmask, uint16_t pulse_len);
+    void SRV_force_safety_on(void);
+    void SRV_force_safety_off(void);
+    void SRV_arm_actuators(bool arm);
+    void SRV_write(uint16_t pulse_len, uint8_t ch);
     bool led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue);
 
     void set_parent_can_mgr(AP_HAL::CANManager* parent_can_mgr)
