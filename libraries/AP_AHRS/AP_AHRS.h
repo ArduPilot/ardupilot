@@ -161,12 +161,7 @@ public:
 
     // allow for runtime change of orientation
     // this makes initial config easier
-    void set_orientation() {
-        AP::ins().set_board_orientation((enum Rotation)_board_orientation.get());
-        if (_compass != nullptr) {
-            _compass->set_board_orientation((enum Rotation)_board_orientation.get());
-        }
-    }
+    void set_orientation();
 
     void set_airspeed(AP_Airspeed *airspeed) {
         _airspeed = airspeed;
@@ -583,6 +578,11 @@ protected:
     AP_Int8 _gps_minsats;
     AP_Int8 _gps_delay;
     AP_Int8 _ekf_type;
+    AP_Float _custom_roll;
+    AP_Float _custom_pitch;
+    AP_Float _custom_yaw;
+
+    Matrix3f _custom_rotation;
 
     // flags structure
     struct ahrs_flags {
