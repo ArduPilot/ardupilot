@@ -250,12 +250,12 @@ void AP_Airspeed::init()
         case TYPE_I2C_SDP3X:
             sensor[i] = new AP_Airspeed_SDP3X(*this, i);
             break;
-#if HAL_WITH_UAVCAN
         case TYPE_UAVCAN:
+#if HAL_WITH_UAVCAN
             sensor[i] = new AP_Airspeed_UAVCAN(*this, i);
             // TODO
-            break;
 #endif
+            break;
         }
         if (sensor[i] && !sensor[i]->init()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Airspeed[%u] init failed", i);
