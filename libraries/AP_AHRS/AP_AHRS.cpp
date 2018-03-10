@@ -135,7 +135,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 Vector3f AP_AHRS::get_gyro_latest(void) const
 {
     const uint8_t primary_gyro = get_primary_gyro_index();
-    return get_ins().get_gyro(primary_gyro) + get_gyro_drift();
+    return AP::ins().get_gyro(primary_gyro) + get_gyro_drift();
 }
 
 // return airspeed estimate if available
