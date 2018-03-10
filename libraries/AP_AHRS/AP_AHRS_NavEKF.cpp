@@ -30,11 +30,10 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins,
-                               NavEKF2 &_EKF2,
+AP_AHRS_NavEKF::AP_AHRS_NavEKF(NavEKF2 &_EKF2,
                                NavEKF3 &_EKF3,
                                Flags flags) :
-    AP_AHRS_DCM(ins),
+    AP_AHRS_DCM(),
     EKF2(_EKF2),
     EKF3(_EKF3),
     _ekf2_started(false),
@@ -168,6 +167,8 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             // Use the primary EKF to select the primary gyro
             const int8_t primary_imu = EKF2.getPrimaryCoreIMUIndex();
 
+            const AP_InertialSensor &_ins = AP::ins();
+
             // get gyro bias for primary EKF and change sign to give gyro drift
             // Note sign convention used by EKF is bias = measurement - truth
             _gyro_drift.zero();
@@ -235,6 +236,8 @@ void AP_AHRS_NavEKF::update_EKF3(void)
 
             update_cd_values();
             update_trig();
+
+            const AP_InertialSensor &_ins = AP::ins();
 
             // Use the primary EKF to select the primary gyro
             const int8_t primary_imu = EKF3.getPrimaryCoreIMUIndex();
@@ -1248,6 +1251,7 @@ void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) cons
             return;
         }
         ret.zero();
+        const AP_InertialSensor &_ins = AP::ins();
         _ins.get_delta_velocity((uint8_t)imu_idx, ret);
         dt = _ins.get_delta_velocity_dt((uint8_t)imu_idx);
         ret -= accel_bias*dt;
@@ -1605,7 +1609,7 @@ uint8_t AP_AHRS_NavEKF::get_primary_IMU_index() const
         break;
     }
     if (imu == -1) {
-        imu = _ins.get_primary_accel();
+        imu = AP::ins().get_primary_accel();
     }
     return imu;
 }
@@ -1623,7 +1627,7 @@ uint8_t AP_AHRS_NavEKF::get_primary_accel_index(void) const
     if (ekf_type() != 0) {
         return get_primary_IMU_index();
     }
-    return _ins.get_primary_accel();
+    return AP::ins().get_primary_accel();
 }
 
 // get the index of the current primary gyro sensor
@@ -1632,7 +1636,7 @@ uint8_t AP_AHRS_NavEKF::get_primary_gyro_index(void) const
     if (ekf_type() != 0) {
         return get_primary_IMU_index();
     }
-    return _ins.get_primary_gyro();
+    return AP::ins().get_primary_gyro();
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
