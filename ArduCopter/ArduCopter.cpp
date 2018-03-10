@@ -345,7 +345,7 @@ void Copter::ten_hz_logging_loop()
         Log_Write_Nav_Tuning();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_Vibration(ins);
+        DataFlash.Log_Write_Vibration();
     }
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control->control_monitor_log();
@@ -378,7 +378,7 @@ void Copter::twentyfive_hz_logging()
 
     // log IMU data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_IMU(ins);
+        DataFlash.Log_Write_IMU();
     }
 #endif
 
