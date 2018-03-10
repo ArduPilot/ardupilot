@@ -289,7 +289,6 @@ private:
 
     AP_HAL::CANManager* _parent_can_mgr;
 
-    AP_Int16 _broadcast_bm;
     AP_Int16 _broadcast_fix_rate;
     AP_Int16 _broadcast_fix2_rate;
     AP_Int16 _broadcast_att_rate;

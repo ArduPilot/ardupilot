@@ -772,19 +772,19 @@ bool AP_UAVCAN::try_init(void)
                     rgb_led[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
                     _led_conf.devices_count = 0;
 
-                    if(_broadcast_bm & AP_UAVCAN_BROADCAST_POSITION_FIX) {
+                    if(_broadcast_fix_rate > 0) {
                         fix_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::gnss::Fix>(*node);
                         fix_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
                         fix_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
                     }
 
-                    if(_broadcast_bm & AP_UAVCAN_BROADCAST_POSITION_FIX2) {
+                    if(_broadcast_fix2_rate > 0) {
                         fix2_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::gnss::Fix2>(*node);
                         fix2_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
                         fix2_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
                     }
 
-                    if(_broadcast_bm & AP_UAVCAN_BROADCAST_ATTITUDE) {
+                    if(_broadcast_att_rate > 0) {
                         attitude_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::ahrs::Solution>(*node);
                         attitude_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
                         attitude_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
