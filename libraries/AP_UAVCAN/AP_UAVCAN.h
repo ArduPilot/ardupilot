@@ -146,7 +146,7 @@ public:
     void att_out_sem_give();
 
     bool need_AHRS_update(void) {
-        return (_broadcast_bm != 0);
+        return (_broadcast_fix_rate > 0 || _broadcast_fix2_rate > 0 || _broadcast_att_rate > 0);
     }
 
 private:
