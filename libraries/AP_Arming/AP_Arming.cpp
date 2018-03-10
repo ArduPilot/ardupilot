@@ -172,7 +172,7 @@ bool AP_Arming::ins_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
-        const AP_InertialSensor &ins = ahrs.get_ins();
+        const AP_InertialSensor &ins = AP::ins();
         if (!ins.get_gyro_health_all()) {
             if (report) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Gyros not healthy");
