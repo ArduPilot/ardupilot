@@ -461,8 +461,9 @@ void DataFlash_Class::Log_Write_Baro(uint64_t time_us)
     }
 }
 
-void DataFlash_Class::Log_Write_IMU_instance(const AP_InertialSensor &ins, const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
+void DataFlash_Class::Log_Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
 {
+    const AP_InertialSensor &ins = AP::ins();
     const Vector3f &gyro = ins.get_gyro(imu_instance);
     const Vector3f &accel = ins.get_accel(imu_instance);
     struct log_IMU pkt = {
@@ -486,27 +487,30 @@ void DataFlash_Class::Log_Write_IMU_instance(const AP_InertialSensor &ins, const
 }
 
 // Write an raw accel/gyro data packet
-void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
+void DataFlash_Class::Log_Write_IMU()
 {
     uint64_t time_us = AP_HAL::micros64();
 
-    Log_Write_IMU_instance(ins, time_us, 0, LOG_IMU_MSG);
+    const AP_InertialSensor &ins = AP::ins();
+
+    Log_Write_IMU_instance(time_us, 0, LOG_IMU_MSG);
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
         return;
     }
 
-    Log_Write_IMU_instance(ins, time_us, 1, LOG_IMU2_MSG);
+    Log_Write_IMU_instance(time_us, 1, LOG_IMU2_MSG);
 
     if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
         return;
     }
 
-    Log_Write_IMU_instance(ins, time_us, 2, LOG_IMU3_MSG);
+    Log_Write_IMU_instance(time_us, 2, LOG_IMU3_MSG);
 }
 
 // Write an accel/gyro delta time data packet
-void DataFlash_Class::Log_Write_IMUDT_instance(const AP_InertialSensor &ins, const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
+void DataFlash_Class::Log_Write_IMUDT_instance(const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
 {
+    const AP_InertialSensor &ins = AP::ins();
     float delta_t = ins.get_delta_time();
     float delta_vel_t = ins.get_delta_velocity_dt(imu_instance);
     float delta_ang_t = ins.get_delta_angle_dt(imu_instance);
@@ -530,17 +534,18 @@ void DataFlash_Class::Log_Write_IMUDT_instance(const AP_InertialSensor &ins, con
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t time_us, uint8_t imu_mask)
+void DataFlash_Class::Log_Write_IMUDT(uint64_t time_us, uint8_t imu_mask)
 {
+    const AP_InertialSensor &ins = AP::ins();
     if (imu_mask & 1) {
-        Log_Write_IMUDT_instance(ins, time_us, 0, LOG_IMUDT_MSG);
+        Log_Write_IMUDT_instance(time_us, 0, LOG_IMUDT_MSG);
     }
     if ((ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) || !ins.use_gyro(1)) {
         return;
     }
 
     if (imu_mask & 2) {
-        Log_Write_IMUDT_instance(ins, time_us, 1, LOG_IMUDT2_MSG);
+        Log_Write_IMUDT_instance(time_us, 1, LOG_IMUDT2_MSG);
     }
 
     if ((ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) || !ins.use_gyro(2)) {
@@ -548,14 +553,15 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins, uint64_t tim
     }
 
     if (imu_mask & 4) {
-        Log_Write_IMUDT_instance(ins, time_us, 2, LOG_IMUDT3_MSG);
+        Log_Write_IMUDT_instance(time_us, 2, LOG_IMUDT3_MSG);
     }
 }
 
-void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
+void DataFlash_Class::Log_Write_Vibration()
 {
     uint64_t time_us = AP_HAL::micros64();
-    Vector3f vibration = ins.get_vibration_levels();
+    const AP_InertialSensor &ins = AP::ins();
+    const Vector3f vibration = ins.get_vibration_levels();
     struct log_Vibe pkt = {
         LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
         time_us     : time_us,
