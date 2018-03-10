@@ -118,9 +118,9 @@ private:
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF2 EKF2{&ahrs, rng};
     NavEKF3 EKF3{&ahrs, rng};
-    AP_AHRS_NavEKF ahrs{ins, EKF2, EKF3};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs{ins};
+    AP_AHRS_DCM ahrs;
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
