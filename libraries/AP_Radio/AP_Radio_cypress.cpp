@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
 
 #include <AP_Math/AP_Math.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4

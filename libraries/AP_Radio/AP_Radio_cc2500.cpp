@@ -8,7 +8,7 @@
 // #pragma GCC optimize("O0")
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
 
 #include <AP_Math/AP_Math.h>
 #include "AP_Radio_cc2500.h"
