@@ -62,7 +62,7 @@ bool RCInput::new_input()
     _override_valid = false;
     rcin_mutex.give();
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (!_radio_init) {
         _radio_init = true;
         radio = AP_Radio::instance();
@@ -102,7 +102,7 @@ uint16_t RCInput::read(uint8_t channel)
     }
     uint16_t v = _rc_values[channel];
     rcin_mutex.give();
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (radio && channel == 0) {
         // hook to allow for update of radio on main thread, for mavlink sends
         radio->update();
@@ -177,7 +177,7 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (radio && radio->last_recv_us() != last_radio_us) {
         last_radio_us = radio->last_recv_us();
         rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
@@ -214,7 +214,7 @@ bool RCInput::rc_bind(int dsmMode)
     rcin_prot.start_bind();
 #endif
     
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (radio) {
         radio->start_recv_bind();
     }
