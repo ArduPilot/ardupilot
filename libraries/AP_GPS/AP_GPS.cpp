@@ -437,14 +437,14 @@ void AP_GPS::detect_instance(uint8_t instance)
                 continue;
             }
             
-            uint8_t gps_node = uavcan->find_gps_without_listener();
+            uint8_t gps_node = ap_uavcan->find_gps_without_listener();
             if (gps_node == UINT8_MAX) {
                 continue;
             }
 
             new_gps = new AP_GPS_UAVCAN(*this, state[instance], nullptr);
             ((AP_GPS_UAVCAN*) new_gps)->set_uavcan_manager(i);
-            if (uavcan->register_gps_listener_to_node(new_gps, gps_node)) {
+            if (ap_uavcan->register_gps_listener_to_node(new_gps, gps_node)) {
                 if (AP_BoardConfig_CAN::get_can_debug() >= 2) {
                     printf("AP_GPS_UAVCAN registered\n\r");
                 }
