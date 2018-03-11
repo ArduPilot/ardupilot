@@ -353,10 +353,7 @@ static void (*battery_info_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uav
         
 static void airdata_info_st_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::RawAirData>& msg, uint8_t mgr)
 {
-    if (hal.can_mgr[mgr] == nullptr) {
-        return;
-    }
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
         return;
     }
