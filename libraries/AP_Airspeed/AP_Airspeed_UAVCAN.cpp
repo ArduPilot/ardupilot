@@ -42,11 +42,7 @@ AP_Airspeed_UAVCAN::~AP_Airspeed_UAVCAN()
         return;
     }
     
-    if (hal.can_mgr[_manager] == nullptr) {
-        return;
-    }
-    
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(_manager);
     if (ap_uavcan == nullptr) {
         return;
     }
@@ -89,13 +85,9 @@ bool AP_Airspeed_UAVCAN::init()
 
 bool AP_Airspeed_UAVCAN::register_uavcan_airspeed(uint8_t mgr, uint8_t node)
 {
-    if (hal.can_mgr[mgr] == nullptr) {
-        return false;
-    }
-    
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
-        return false;
+        return;
     }
     
     _manager = mgr;
