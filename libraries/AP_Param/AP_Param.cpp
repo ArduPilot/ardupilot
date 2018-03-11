@@ -1043,7 +1043,7 @@ bool AP_Param::save(bool force_save)
             v2 = get_default_value(this, &info->def_value);
         }
         if (is_equal(v1,v2) && !force_save) {
-            GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);
+            gcs().send_parameter_value(name, (enum ap_var_type)info->type, v2);
             return true;
         }
         if (!force_save &&
@@ -1051,7 +1051,7 @@ bool AP_Param::save(bool force_save)
              (fabsf(v1-v2) < 0.0001f*fabsf(v1)))) {
             // for other than 32 bit integers, we accept values within
             // 0.01 percent of the current value as being the same
-            GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);
+            gcs().send_parameter_value(name, (enum ap_var_type)info->type, v2);
             return true;
         }
     }
@@ -2060,7 +2060,7 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     }
     if (var_type != AP_PARAM_VECTOR3F) {
         // nice and simple for scalar types
-        GCS_MAVLINK::send_parameter_value_all(name, var_type, cast_to_float(var_type));
+        gcs().send_parameter_value(name, var_type, cast_to_float(var_type));
         return;
     }
 
@@ -2075,11 +2075,11 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     char &name_axis = name2[strlen(name)-1];
     
     name_axis = 'X';
-    GCS_MAVLINK::send_parameter_value_all(name2, AP_PARAM_FLOAT, v.x);
+    gcs().send_parameter_value(name2, AP_PARAM_FLOAT, v.x);
     name_axis = 'Y';
-    GCS_MAVLINK::send_parameter_value_all(name2, AP_PARAM_FLOAT, v.y);
+    gcs().send_parameter_value(name2, AP_PARAM_FLOAT, v.y);
     name_axis = 'Z';
-    GCS_MAVLINK::send_parameter_value_all(name2, AP_PARAM_FLOAT, v.z);
+    gcs().send_parameter_value(name2, AP_PARAM_FLOAT, v.z);
 }
 
 /*
