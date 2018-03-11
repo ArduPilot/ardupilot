@@ -432,13 +432,11 @@ void AP_GPS::detect_instance(uint8_t instance)
             return;
         }
         for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (hal.can_mgr[i] == nullptr) {
+            AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+            if (ap_uavcan == nullptr) {
                 continue;
             }
-            AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
-            if (uavcan == nullptr) {
-                continue;
-            }
+            
             uint8_t gps_node = uavcan->find_gps_without_listener();
             if (gps_node == UINT8_MAX) {
                 continue;
