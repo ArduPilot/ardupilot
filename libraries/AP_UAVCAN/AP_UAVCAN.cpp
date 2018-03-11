@@ -88,13 +88,11 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
 
 static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
 {
-    if (hal.can_mgr[mgr] == nullptr) {
-        return;
-    }
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
         return;
     }
+    
     AP_GPS::GPS_State *state = ap_uavcan->find_gps_node(msg.getSrcNodeID().get());
     if (state == nullptr) {
         return;
@@ -200,13 +198,11 @@ static void (*gnss_fix_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::eq
 
 static void gnss_aux_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Auxiliary>& msg, uint8_t mgr)
 {
-    if (hal.can_mgr[mgr] == nullptr) {
-        return;
-    }
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
         return;
     }
+    
     AP_GPS::GPS_State *state = ap_uavcan->find_gps_node(msg.getSrcNodeID().get());
     if (state == nullptr) {
         return;
@@ -230,13 +226,11 @@ static void (*gnss_aux_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::eq
 
 static void magnetic_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength>& msg, uint8_t mgr)
 {
-    if (hal.can_mgr[mgr] == nullptr) {
-        return;
-    }
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
         return;
     }
+    
     AP_UAVCAN::Mag_Info *state = ap_uavcan->find_mag_node(msg.getSrcNodeID().get(), 0);
     if (state == nullptr) {
         return;
@@ -259,13 +253,11 @@ static void (*magnetic_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::eq
         
 static void magnetic_cb_2(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength2>& msg, uint8_t mgr)
 {
-    if (hal.can_mgr[mgr] == nullptr) {
-        return;
-    }
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
         return;
     }
+    
     AP_UAVCAN::Mag_Info *state = ap_uavcan->find_mag_node(msg.getSrcNodeID().get(), msg.sensor_id);
     if (state == nullptr) {
         return;
@@ -288,13 +280,11 @@ static void (*magnetic_cb_2_arr[2])(const uavcan::ReceivedDataStructure<uavcan::
 
 static void air_data_sp_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticPressure>& msg, uint8_t mgr)
 {
-    if (hal.can_mgr[mgr] == nullptr) {
-        return;
-    }
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
         return;
     }
+    
     AP_UAVCAN::Baro_Info *state = ap_uavcan->find_baro_node(msg.getSrcNodeID().get());
     if (state == nullptr) {
         return;
@@ -317,13 +307,11 @@ static void (*air_data_sp_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan:
 // Temperature is not main parameter so do not update listeners when it is received
 static void air_data_st_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticTemperature>& msg, uint8_t mgr)
 {
-    if (hal.can_mgr[mgr] == nullptr) {
-        return;
-    }
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
         return;
     }
+    
     AP_UAVCAN::Baro_Info *state = ap_uavcan->find_baro_node(msg.getSrcNodeID().get());
     if (state == nullptr) {
         return;
@@ -342,13 +330,11 @@ static void (*air_data_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan:
 
 static void battery_info_st_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::power::BatteryInfo>& msg, uint8_t mgr)
 {
-    if (hal.can_mgr[mgr] == nullptr) {
-        return;
-    }
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
         return;
     }
+    
     AP_UAVCAN::BatteryInfo_Info *state = ap_uavcan->find_bi_id((uint16_t) msg.battery_id);
     if (state == nullptr) {
         return;
