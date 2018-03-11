@@ -50,7 +50,7 @@
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
-#define BARO_LOOP_FREQ    10.f                  // GPS loop frequency in Hz
+#define BARO_LOOP_FREQ    10.f                  // low pass filter frequency for GPS data in Hz
 #define ADJ_RATE_DEFAULT  0                     // disabled
 #define ADJ_TC_DEFAULT    300                   // default GPS filtering TC (=5 minutes)
 
@@ -142,9 +142,9 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Param: ADJ_RATE
     // @DisplayName: baro adjustment rate
     // @Description: Rate of barometer adjustment using GPS. If enabled (>=0.1), the barometer ground pressure is slowly adjusted with GPS altitude.  Recommended value: 1cm/sec
-    // @Units: cm/s
-    // @Range: 0 10
-    // @Increment: 0.1
+    // @Units: m/s
+    // @Range: 0 1
+    // @Increment: 0.01
     AP_GROUPINFO("ADJ_RATE", 13, AP_Baro, _gps_adj_step, ADJ_RATE_DEFAULT),
 
     // @Param: ADJ_TC
@@ -291,11 +291,10 @@ void AP_Baro::update_gps_calibration()
 {
     float vacc;
     const bool gps_vacc_ret = AP_GPS::gps().vertical_accuracy(vacc);
-    const uint32_t last_fix = AP_GPS::gps().last_fix_time_ms();
     const uint32_t now = AP_HAL::millis();
 
     // Make sure the vertical accuracy is within limits
-    if (gps_vacc_ret && vacc < BARO_MAX_GPS_ACCURACY && (now - last_fix) < BARO_MAX_GPS_DELAY) {
+    if (gps_vacc_ret && vacc < BARO_MAX_GPS_ACCURACY && AP_GPS::gps().is_healthy()) {
         const Location loc = AP_GPS::gps().location();
         _gps_calibration_altitude = float(loc.alt) / 100.0;
         for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
@@ -636,22 +635,13 @@ void AP_Baro::update(void)
         }
     }
 
-    // consider a sensor as healthy if it has had an update in the
-    // last 0.5 seconds
-    uint32_t now = AP_HAL::millis();
-    for (uint8_t i=0; i<_num_sensors; i++) {
-        sensors[i].healthy = (now - sensors[i].last_update_ms < 500) && !is_zero(sensors[i].pressure);
-    }
-
     // find current GPS altitude
     float gps_alt = 0.0f;
     bool process_gps_alt = false;
     if (!is_zero(_gps_adj_step) && _gps_calibrated) {
         float gps_vacc;
         if (AP_GPS::gps().vertical_accuracy(gps_vacc)) {
-            const uint32_t last_fix = AP_GPS::gps().last_fix_time_ms();
-
-            if (gps_vacc < BARO_MAX_GPS_ACCURACY && (now - last_fix) < BARO_MAX_GPS_DELAY) {
+            if (gps_vacc < BARO_MAX_GPS_ACCURACY && AP_GPS::gps().is_healthy()) {
                 const Location loc = AP_GPS::gps().location();
                 gps_alt = float(loc.alt) * 1e-2;
                 process_gps_alt = true;
@@ -659,8 +649,7 @@ void AP_Baro::update(void)
         }
     }
 
-    // convert from cm/s to m/sample
-    const float gps_adj_step = float(_gps_adj_step) / BARO_LOOP_FREQ / 100.0;
+    const float gps_adj_step = float(_gps_adj_step) / BARO_LOOP_FREQ;
 
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].healthy) {
