@@ -249,33 +249,29 @@ void SRV_Channels::push_UAVCAN(void)
     }
     
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-        if (hal.can_mgr[i] == nullptr) {
-            continue;
+        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+        if (ap_uavcan == nullptr) {
+            return;
         }
         
-        AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
-        if (uavcan == nullptr) {
-            continue;
-        }
-        
-        if (!uavcan->SRV_sem_take()) {
+        if (!ap_uavcan->SRV_sem_take()) {
             continue;
         }
         
         for (uint8_t j = 0; j < NUM_SERVO_CHANNELS; j++) {
             // Check if this channels has any function assigned
             if (channel_function(j)) {
-                uavcan->SRV_write(channels[j].get_output_pwm(), j);
+                ap_uavcan->SRV_write(channels[j].get_output_pwm(), j);
             }
         }
         
         if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-            uavcan->SRV_arm_actuators(true);
+            ap_uavcan->SRV_arm_actuators(true);
         } else {
-            uavcan->SRV_arm_actuators(false);
+            ap_uavcan->SRV_arm_actuators(false);
         }
         
-        uavcan->SRV_sem_give();
+        ap_uavcan->SRV_sem_give();
     }
 #endif // HAL_WITH_UAVCAN
 }
