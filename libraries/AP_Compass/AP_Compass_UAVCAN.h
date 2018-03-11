@@ -28,5 +28,5 @@ private:
     bool _initialized;
     uint8_t _manager;
 
-    AP_HAL::Semaphore *_mag_baro;
+    AP_HAL::Semaphore *_sem_mag;
 };
