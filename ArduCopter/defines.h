@@ -335,7 +335,8 @@ enum log_messages{
     LOG_PRECLAND_MSG          = 0x21
     LOG_GUIDEDTARGET_MSG      = 0x22
     LOG_THROW_MSG             = 0x23
-}
+};
+
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
 #define MASK_LOG_GPS                    (1<<2)
