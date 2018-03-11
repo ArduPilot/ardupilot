@@ -1440,6 +1440,7 @@ AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t iface)
         return nullptr;
     }
     return hal.can_mgr[iface]->get_UAVCAN();
+}
 
 uint8_t AP_UAVCAN::register_airspeed_listener(AP_Airspeed_Backend* new_listener, uint8_t preferred_channel)
 {
