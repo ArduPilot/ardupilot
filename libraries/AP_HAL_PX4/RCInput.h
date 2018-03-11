@@ -45,7 +45,7 @@ private:
     uint8_t last_input_source = input_rc_s::RC_INPUT_SOURCE_UNKNOWN;
     const char *input_source_name(uint8_t id) const;
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     AP_Radio *radio;
     uint32_t last_radio_us;
 #endif
