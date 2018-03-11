@@ -108,22 +108,22 @@ enum RTLState {
 };
 
 enum log_messages{
-    TYPE_AIRSTART_MSG      = 0x00
-    TYPE_GROUNDSTART_MSG   = 0x01
-    LOG_CONTROL_TUNING_MSG = 0x04
-    LOG_NAV_TUNING_MSG     = 0x05
-    LOG_OPTFLOW_MSG        = 0x0C
-    LOG_EVENT_MSG          = 0x0D
-    LOG_ERROR_MSG          = 0x13
-    LOG_DATA_INT16_MSG     = 0x14
-    LOG_DATA_UINT16_MSG    = 0x15
-    LOG_DATA_INT32_MSG     = 0x16
-    LOG_DATA_UINT32_MSG    = 0x17
-    LOG_DATA_FLOAT_MSG     = 0x18
-    LOG_MOTBATT_MSG        = 0x1E
-    LOG_PARAMTUNE_MSG      = 0x1F
-    LOG_GUIDEDTARGET_MSG   = 0x22
-    LOG_PROXIMITY_MSG      = 0x24
+    TYPE_AIRSTART_MSG      = 0x00,
+    TYPE_GROUNDSTART_MSG   = 0x01,
+    LOG_CONTROL_TUNING_MSG = 0x04,
+    LOG_NAV_TUNING_MSG     = 0x05,
+    LOG_OPTFLOW_MSG        = 0x0C,
+    LOG_EVENT_MSG          = 0x0D,
+    LOG_ERROR_MSG          = 0x13,
+    LOG_DATA_INT16_MSG     = 0x14,
+    LOG_DATA_UINT16_MSG    = 0x15,
+    LOG_DATA_INT32_MSG     = 0x16,
+    LOG_DATA_UINT32_MSG    = 0x17,
+    LOG_DATA_FLOAT_MSG     = 0x18,
+    LOG_MOTBATT_MSG        = 0x1E,
+    LOG_PARAMTUNE_MSG      = 0x1F,
+    LOG_GUIDEDTARGET_MSG   = 0x22,
+    LOG_PROXIMITY_MSG      = 0x24,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
