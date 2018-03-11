@@ -31,15 +31,15 @@ AP_Baro_UAVCAN::~AP_Baro_UAVCAN()
     if (!_initialized) {
         return;
     }
-    if (hal.can_mgr[_manager] == nullptr) {
-        return;
-    }
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
+    
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(_manager);
     if (ap_uavcan == nullptr) {
         return;
     }
-
+    
     ap_uavcan->remove_baro_listener(this);
+    delete _sem_baro;
+    
     debug_baro_uavcan(2, "AP_Baro_UAVCAN destructed\n\r");
 }
 
@@ -52,14 +52,12 @@ AP_Baro_Backend *AP_Baro_UAVCAN::probe(AP_Baro &baro)
 
     AP_Baro_UAVCAN *sensor;
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-        if (hal.can_mgr[i] == nullptr) {
+        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+        if (ap_uavcan == nullptr) {
             continue;
         }
-        AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
-        if (uavcan == nullptr) {
-            continue;
-        }
-        uint8_t freebaro = uavcan->find_smallest_free_baro_node();
+        
+        uint8_t freebaro = ap_uavcan->find_smallest_free_baro_node();
         if (freebaro == UINT8_MAX) {
             continue;
         }
@@ -98,11 +96,7 @@ void AP_Baro_UAVCAN::handle_baro_msg(float pressure, float temperature)
 
 bool AP_Baro_UAVCAN::register_uavcan_baro(uint8_t mgr, uint8_t node)
 {
-    if (hal.can_mgr[mgr] == nullptr) {
-        return false;
-    }
-    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
-
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
         return false;
     }
