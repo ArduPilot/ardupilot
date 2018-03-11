@@ -105,10 +105,7 @@ void VRBRAINScheduler::create_uavcan_thread()
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-        if (hal.can_mgr[i] == nullptr) {
-            continue;
-        }
-        if (hal.can_mgr[i]->get_UAVCAN() == nullptr) {
+        if (AP_UAVCAN::get_uavcan(i) == nullptr) {
             continue;
         }
 
