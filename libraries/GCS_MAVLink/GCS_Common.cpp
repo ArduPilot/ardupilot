@@ -31,7 +31,7 @@
 #include <fcntl.h>
 #endif
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #endif
@@ -1958,7 +1958,7 @@ void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t *msg)
  */
 void GCS_MAVLINK::handle_data_packet(mavlink_message_t *msg)
 {
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     mavlink_data96_t m;
     mavlink_msg_data96_decode(msg, &m);
     switch (m.type) {
