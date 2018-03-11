@@ -72,7 +72,7 @@ AP_Compass_Backend *AP_Compass_UAVCAN::probe(Compass &compass)
         if (ap_uavcan == nullptr) {
             continue;
         }
-        uint8_t freemag = uavcan->find_smallest_free_mag_node();
+        uint8_t freemag = ap_uavcan->find_smallest_free_mag_node();
         if (freemag == UINT8_MAX) {
             continue;
         }
@@ -93,7 +93,7 @@ bool AP_Compass_UAVCAN::register_uavcan_compass(uint8_t mgr, uint8_t node)
 {
     AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
-        return;
+        return false;
     }
     _manager = mgr;
 
