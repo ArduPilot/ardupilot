@@ -128,11 +128,9 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
 #if HAL_WITH_UAVCAN
     if (hal.can_mgr != nullptr) {
         for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (hal.can_mgr[i] != nullptr) {
-                AP_UAVCAN *ap_uavcan = hal.can_mgr[i]->get_UAVCAN();
-                if (ap_uavcan != nullptr && ap_uavcan->need_AHRS_update()) {
-                    ap_uavcan->UAVCAN_AHRS_update(*this);
-                }
+            AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+            if (ap_uavcan != nullptr && ap_uavcan->need_AHRS_update()) {
+                ap_uavcan->UAVCAN_AHRS_update(*this);
             }
         }
     }
