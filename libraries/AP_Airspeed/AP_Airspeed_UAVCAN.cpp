@@ -87,7 +87,7 @@ bool AP_Airspeed_UAVCAN::register_uavcan_airspeed(uint8_t mgr, uint8_t node)
 {
     AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
     if (ap_uavcan == nullptr) {
-        return;
+        return false;
     }
     
     _manager = mgr;
