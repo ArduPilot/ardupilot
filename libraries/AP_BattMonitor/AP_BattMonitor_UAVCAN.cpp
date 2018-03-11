@@ -30,17 +30,14 @@ void AP_BattMonitor_UAVCAN::init()
     }
 
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-        if (hal.can_mgr[i] == nullptr) {
+        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+        if (ap_uavcan == nullptr) {
             continue;
         }
-        AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
-        if (uavcan == nullptr) {
-            continue;
-        }
-
+        
         switch (_type) {
             case UAVCAN_BATTERY_INFO:
-                if (uavcan->register_BM_bi_listener_to_id(this, _params._serial_number)) {
+                if (ap_uavcan->register_BM_bi_listener_to_id(this, _params._serial_number)) {
                     debug_bm_uavcan(2, "UAVCAN BattMonitor BatteryInfo registered id: %d\n\r", _params._serial_number);
                 }
                 break;
