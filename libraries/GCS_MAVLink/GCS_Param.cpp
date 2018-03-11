@@ -323,14 +323,15 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 /*
   send a parameter value message to all active MAVLink connections
  */
-void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value)
+void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, float param_value)
 {
+    const uint8_t mavlink_active = GCS_MAVLINK::active_channel_mask();
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         if ((1U<<i) & mavlink_active) {
-            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
-            if (HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+            const mavlink_channel_t _chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+            if (HAVE_PAYLOAD_SPACE(_chan, PARAM_VALUE)) {
                 mavlink_msg_param_value_send(
-                    chan,
+                    _chan,
                     param_name,
                     param_value,
                     mav_var_type(param_type),

@@ -188,9 +188,6 @@ public:
     // return a bitmap of streaming channels
     static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
 
-    // send a PARAM_VALUE message to all active MAVLink connections.
-    static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
-
     // send queued parameters if needed
     void send_queued_parameters(void);
 
@@ -478,6 +475,11 @@ public:
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_home(const Location &home) const;
     void send_ekf_origin(const Location &ekf_origin) const;
+
+    void send_parameter_value(const char *param_name,
+                              ap_var_type param_type,
+                              float param_value);
+
     // push send_message() messages and queued statustext messages etc:
     void retry_deferred();
     void data_stream_send();
