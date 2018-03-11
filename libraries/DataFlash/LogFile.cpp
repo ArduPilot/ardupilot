@@ -441,7 +441,7 @@ void DataFlash_Class::Log_Write_Baro_instance(uint64_t time_us, uint8_t baro_ins
         sample_time_ms: baro.get_last_update(baro_instance),
         drift_offset  : drift_offset,
         ground_temp   : ground_temp,
-        gps_corr      : baro.get_gps_offset(0),
+        gps_corr      : baro.get_gps_offset(baro_instance),
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
