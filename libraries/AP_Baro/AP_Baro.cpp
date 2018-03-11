@@ -291,7 +291,6 @@ void AP_Baro::update_gps_calibration()
 {
     float vacc;
     const bool gps_vacc_ret = AP_GPS::gps().vertical_accuracy(vacc);
-    const uint32_t now = AP_HAL::millis();
 
     // Make sure the vertical accuracy is within limits
     if (gps_vacc_ret && vacc < BARO_MAX_GPS_ACCURACY && AP_GPS::gps().is_healthy()) {
