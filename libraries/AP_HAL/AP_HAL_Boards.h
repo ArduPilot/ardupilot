@@ -207,6 +207,10 @@
 #define HAL_WITH_UAVCAN 0
 #endif
 
+#ifndef HAL_RCINPUT_WITH_AP_RADIO
+#define HAL_RCINPUT_WITH_AP_RADIO 0
+#endif
+
 #ifndef HAL_WITH_IO_MCU
 #define HAL_WITH_IO_MCU 0
 #endif
