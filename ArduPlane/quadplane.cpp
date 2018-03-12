@@ -2157,11 +2157,23 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
  */
 void QuadPlane::check_land_complete(void)
 {
+    const uint32_t now = AP_HAL::millis();
+
+    if (poscontrol.state == QPOS_LAND_COMPLETE &&
+    		plane.arming.is_armed() &&
+            plane.landing.get_disarm_delay() > 0 &&
+            now - landing_detect.lower_limit_start_ms >= plane.landing.get_disarm_delay()*1000UL) {
+        // disarm after user-defined delay
+        if (plane.disarm_motors()) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Auto disarmed");
+        }
+    }
+
     if (poscontrol.state != QPOS_LAND_FINAL) {
         // only apply to final landing phase
         return;
     }
-    const uint32_t now = AP_HAL::millis();
+
     bool might_be_landed =  (landing_detect.lower_limit_start_ms != 0 &&
                              now - landing_detect.lower_limit_start_ms > 1000);
     if (!might_be_landed) {
@@ -2190,7 +2202,6 @@ void QuadPlane::check_land_complete(void)
     landing_detect.land_start_ms = 0;
     // motors have been at zero for 5s, and we have had less than 0.3m
     // change in altitude for last 4s. We are landed.
-    plane.disarm_motors();
     poscontrol.state = QPOS_LAND_COMPLETE;
     gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
     // reload target airspeed which could have been modified by the mission
