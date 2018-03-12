@@ -123,7 +123,6 @@ enum log_messages{
     LOG_MOTBATT_MSG,        
     LOG_PARAMTUNE_MSG,      
     LOG_GUIDEDTARGET_MSG,   
-    LOG_PROXIMITY_MSG,      
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
