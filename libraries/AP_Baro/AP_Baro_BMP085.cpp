@@ -15,6 +15,7 @@
 #include "AP_Baro_BMP085.h"
 
 #include <utility>
+#include <stdio.h>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -306,6 +307,10 @@ void AP_Baro_BMP085::_calculate()
     x1 = (x1 * 3038) >> 16;
     x2 = (-7357 * p) >> 16;
     p += ((x1 + x2 + 3791) >> 4);
+
+    if (!pressure_ok(p)) {
+        return;
+    }
 
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _pressure_filter.apply(p);

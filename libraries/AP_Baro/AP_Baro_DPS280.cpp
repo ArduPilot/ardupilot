@@ -205,6 +205,11 @@ void AP_Baro_DPS280::timer(void)
     float pressure, temperature;
 
     calculate_PT(temp, press, pressure, temperature);
+
+    if (!pressure_ok(pressure)) {
+        return;
+    }
+
     if (_sem->take_nonblocking()) {
         pressure_sum += pressure;
         temperature_sum += temperature;
