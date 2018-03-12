@@ -76,7 +76,7 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
             throttle_out = 0.5f * (left_paddle + right_paddle) * 100.0f;
 
             const float steering_dir = is_negative(throttle_out) ? -1 : 1;
-            steering_out = steering_dir * (left_paddle - right_paddle) * 4500.0f;
+            steering_out = steering_dir * (left_paddle - right_paddle) * 0.5f * 4500.0f;
             break;
         }
 
