@@ -312,29 +312,29 @@ enum DevOptions {
 };
 
 enum log_messages{
-    TYPE_AIRSTART_MSG         = 0x00,
-    TYPE_GROUNDSTART_MSG      = 0x01,
-    LOG_CONTROL_TUNING_MSG    = 0x04,
-    LOG_NAV_TUNING_MSG        = 0x05,
-    LOG_OPTFLOW_MSG           = 0x0C,
-    LOG_EVENT_MSG             = 0x0D,
-    LOG_PID_MSG               = 0x0E,    // deprecated
-    LOG_INAV_MSG              = 0x11,    // deprecated
-    LOG_CAMERA_MSG_DEPRECATED = 0x12,    // deprecated
-    LOG_ERROR_MSG             = 0x13,
-    LOG_DATA_INT16_MSG        = 0x14,
-    LOG_DATA_UINT16_MSG       = 0x15,
-    LOG_DATA_INT32_MSG        = 0x16,
-    LOG_DATA_UINT32_MSG       = 0x17,
-    LOG_DATA_FLOAT_MSG        = 0x18,
-    LOG_AUTOTUNE_MSG          = 0x19,
-    LOG_AUTOTUNEDETAILS_MSG   = 0x1A,
-    LOG_MOTBATT_MSG           = 0x1E,
-    LOG_PARAMTUNE_MSG         = 0x1F,
-    LOG_HELI_MSG              = 0x20,
-    LOG_PRECLAND_MSG          = 0x21,
-    LOG_GUIDEDTARGET_MSG      = 0x22,
-    LOG_THROW_MSG             = 0x23,
+    TYPE_AIRSTART_MSG,
+    TYPE_GROUNDSTART_MSG, 
+    LOG_CONTROL_TUNING_MSG,   
+    LOG_NAV_TUNING_MSG,       
+    LOG_OPTFLOW_MSG,           
+    LOG_EVENT_MSG,             
+    LOG_PID_MSG,                   // deprecated
+    LOG_INAV_MSG,                  // deprecated
+    LOG_CAMERA_MSG_DEPRECATED,     // deprecated
+    LOG_ERROR_MSG,             
+    LOG_DATA_INT16_MSG,        
+    LOG_DATA_UINT16_MSG,       
+    LOG_DATA_INT32_MSG,        
+    LOG_DATA_UINT32_MSG,       
+    LOG_DATA_FLOAT_MSG,        
+    LOG_AUTOTUNE_MSG,       
+    LOG_AUTOTUNEDETAILS_MSG,   
+    LOG_MOTBATT_MSG,           
+    LOG_PARAMTUNE_MSG,         
+    LOG_HELI_MSG,              
+    LOG_PRECLAND_MSG,          
+    LOG_GUIDEDTARGET_MSG,      
+    LOG_THROW_MSG,             
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
