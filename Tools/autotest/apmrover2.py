@@ -87,7 +87,7 @@ def do_get_banner(mavproxy, mav):
     start = time.time()
     while True:
         m = mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
-        if m is not None and "APM:Rover" in m.text:
+        if m is not None and "ArduRover" in m.text:
             progress("banner received: %s" % (m.text))
             return True
         if time.time() - start > 10:
