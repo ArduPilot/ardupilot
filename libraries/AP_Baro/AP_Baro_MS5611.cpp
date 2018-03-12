@@ -309,8 +309,10 @@ void AP_Baro_MS56XX::_timer(void)
             _update_and_wrap_accumulator(&_accum.s_D2, adc_val,
                                          &_accum.d2_count, 32);
         } else {
-            _update_and_wrap_accumulator(&_accum.s_D1, adc_val,
-                                         &_accum.d1_count, 128);
+            if (pressure_ok(adc_val)) {
+                _update_and_wrap_accumulator(&_accum.s_D1, adc_val,
+                                             &_accum.d1_count, 128);
+            }
         }
         _sem->give();
         _state = next_state;
@@ -506,5 +508,6 @@ void AP_Baro_MS56XX::_calculate_5837()
     int32_t pressure = ((int64_t)raw_pressure * SENS / (int64_t)2097152 - OFF) / (int64_t)8192;
     pressure = pressure * 10; // MS5837 only reports to 0.1 mbar
     float temperature = TEMP * 0.01f;
+
     _copy_to_frontend(_instance, (float)pressure, temperature);
 }

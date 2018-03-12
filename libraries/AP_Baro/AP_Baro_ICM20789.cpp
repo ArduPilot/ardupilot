@@ -301,8 +301,7 @@ void AP_Baro_ICM20789::convert_data(uint32_t Praw, uint32_t Traw)
     // pressure involves a few more calculations
     float P = get_pressure(Praw, Traw);
 
-    if (isinf(P) || isnan(P)) {
-        // really bad data
+    if (!pressure_ok(P)) {
         return;
     }
 
@@ -313,7 +312,7 @@ void AP_Baro_ICM20789::convert_data(uint32_t Praw, uint32_t Traw)
         dd.P = P;
         dd.T = T;
 #endif
-
+        
         accum.psum += P;
         accum.tsum += T;
         accum.count++;

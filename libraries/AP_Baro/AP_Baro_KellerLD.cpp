@@ -188,12 +188,14 @@ bool AP_Baro_KellerLD::_read()
         return false;
     }
 
+    if (!pressure_ok(pressure_raw)) {
+        return false;
+    }
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _update_and_wrap_accumulator(pressure_raw, temperature_raw, 128);
         _sem->give();
         return true;
     }
-
     return false;
 }
 
