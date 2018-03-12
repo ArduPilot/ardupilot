@@ -205,52 +205,31 @@ void AP_Compass_MAG3110::_update()
 
     Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z) * MAG_SCALE;
 
-
-    bool ret=true;
-
-#if MAG3110_ENABLE_LEN_FILTER
-    float len = raw_field.length();
-    if(is_zero(compass_len)) {
-        compass_len=len;
-    } else {
-#define FILTER_KOEF 0.1
-
-        float d = abs(compass_len-len)/(compass_len+len);
-        if(d*100 > 25) { // difference more than 50% from mean value
-            printf("\ncompass len error: mean %f got %f\n", compass_len, len );
-            ret= false;
-            float k = FILTER_KOEF / (d*10); // 2.5 and more, so one bad sample never change mean more than 4%
-            compass_len = compass_len * (1-k) + len*k; // complimentary filter 1/k on bad samples
-        } else {
-            compass_len = compass_len * (1-FILTER_KOEF) + len*FILTER_KOEF; // complimentary filter 1/10 on good samples
-        }
-    }
-#endif
+    // rotate raw_field from sensor frame to body frame
+    rotate_field(raw_field, _compass_instance);
     
-    if(ret) {
+    // publish raw_field (uncorrected point sample) for calibration use
+    publish_raw_field(raw_field, _compass_instance);
+    
+    // correct raw_field for known errors
+    correct_field(raw_field, _compass_instance);
 
-        // rotate raw_field from sensor frame to body frame
-        rotate_field(raw_field, _compass_instance);
-
-        // publish raw_field (uncorrected point sample) for calibration use
-        publish_raw_field(raw_field, _compass_instance);
-
-        // correct raw_field for known errors
-        correct_field(raw_field, _compass_instance);
-
-        if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-            _mag_x_accum += raw_field.x;
-            _mag_y_accum += raw_field.y;
-            _mag_z_accum += raw_field.z;
-            _accum_count++;
-            if (_accum_count == 10) {
-                _mag_x_accum /= 2;
-                _mag_y_accum /= 2;
-                _mag_z_accum /= 2;
-                _accum_count /= 2;
-            }
-            _sem->give();
+    if (!field_ok(raw_field)) {
+        return;
+    }
+    
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        _mag_x_accum += raw_field.x;
+        _mag_y_accum += raw_field.y;
+        _mag_z_accum += raw_field.z;
+        _accum_count++;
+        if (_accum_count == 10) {
+            _mag_x_accum /= 2;
+            _mag_y_accum /= 2;
+            _mag_z_accum /= 2;
+            _accum_count /= 2;
         }
+        _sem->give();
     }
 }
 

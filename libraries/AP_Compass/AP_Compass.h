@@ -322,6 +322,8 @@ public:
         return (uint16_t)_offset_max.get();
     }
 
+    uint8_t get_filter_range() const { return uint8_t(_filter_range.get()); }
+
 private:
     /// Register a new compas driver, allocating an instance number
     ///
@@ -460,4 +462,6 @@ private:
 
     // mask of driver types to not load. Bit positions match DEVTYPE_ in backend
     AP_Int32 _driver_type_mask;
+    
+    AP_Int8 _filter_range;
 };

@@ -259,19 +259,24 @@ void AP_Compass_HMC5843::_timer()
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
     
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _mag_x_accum += raw_field.x;
-        _mag_y_accum += raw_field.y;
-        _mag_z_accum += raw_field.z;
-        _accum_count++;
-        if (_accum_count == 14) {
-            _mag_x_accum /= 2;
-            _mag_y_accum /= 2;
-            _mag_z_accum /= 2;
-            _accum_count = 7;
-        }
-        _sem->give();
+    if (!field_ok(raw_field)) {
+        return;
     }
+
+    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return; 
+    }
+    _mag_x_accum += raw_field.x;
+    _mag_y_accum += raw_field.y;
+    _mag_z_accum += raw_field.z;
+    _accum_count++;
+    if (_accum_count == 14) {
+        _mag_x_accum /= 2;
+        _mag_y_accum /= 2;
+        _mag_z_accum /= 2;
+        _accum_count = 7;
+    }
+    _sem->give();
 }
 
 /*
