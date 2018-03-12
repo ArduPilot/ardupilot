@@ -148,7 +148,7 @@ def set_rc_default(mavproxy):
         mavproxy.send('rc %u 1500\n' % chan)
 
 
-def set_rc(mavproxy, mav, chan, pwm, timeout=2):
+def set_rc(mavproxy, mav, chan, pwm, timeout=5):
     """Setup a simulated RC control to a PWM value"""
     tstart = get_sim_time(mav)
     while get_sim_time(mav) < tstart + timeout:
