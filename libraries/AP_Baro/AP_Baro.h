@@ -172,6 +172,8 @@ public:
     // set a pressure correction from AP_TempCalibration
     void set_pressure_correction(uint8_t instance, float p_correction);
 
+    uint8_t get_filter_range() const { return _filter_range; }
+
 private:
     // singleton
     static AP_Baro *_instance;
@@ -218,6 +220,7 @@ private:
     uint32_t                            _last_notify_ms;
 
     bool _add_backend(AP_Baro_Backend *backend);
+    AP_Int8                            _filter_range;  // valid value range from mean value
 };
 
 namespace AP {

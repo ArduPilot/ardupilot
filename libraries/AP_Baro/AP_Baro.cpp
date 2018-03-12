@@ -20,6 +20,7 @@
 #include "AP_Baro.h"
 
 #include <utility>
+#include <stdio.h>
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Common/AP_Common.h>
@@ -51,6 +52,9 @@
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
+#ifndef HAL_BARO_FILTER_DEFAULT
+ #define HAL_BARO_FILTER_DEFAULT 0 // turned off by default
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -136,6 +140,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 
     // Slot 12 used to be TEMP3
 #endif
+
+    // @Param: FLTR_RNG
+    // @DisplayName: Range in which sample is accepted
+    // @Description: This sets the range around the average value that new samples must be within to be accepted. This can help reduce the impact of noise on sensors that are on long I2C cables. The value is a percentage from the average value. A value of zero disables this filter.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    AP_GROUPINFO("FLTR_RNG", 13, AP_Baro, _filter_range, HAL_BARO_FILTER_DEFAULT),
 
     AP_GROUPEND
 };
