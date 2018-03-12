@@ -581,7 +581,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     //check if compass has calibrated and requires reboot
     if (_compass.compass_cal_requires_reboot()) {
         if (display_failure) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Compass calibrated requires reboot");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Arm: Compass calibrated requires reboot");
         }
         return false;
     }
