@@ -461,3 +461,18 @@ float AR_AttitudeControl::get_desired_speed() const
     }
     return _desired_speed;
 }
+
+// get minimum stopping distance (in meters) given a speed (in m/s)
+float AR_AttitudeControl::get_stopping_distance(float speed)
+{
+    // get maximum vehicle deceleration
+    const float accel_max = get_accel_max();
+
+    // avoid divide by zero
+    if ((accel_max <= 0.0f) || is_zero(speed)) {
+        return 0.0f;
+    }
+
+    // assume linear deceleration
+    return 0.5f * sq(speed) / accel_max;
+}
