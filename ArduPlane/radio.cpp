@@ -29,6 +29,9 @@ void Plane::set_control_channels(void)
     } else {
         // reverse thrust
         channel_throttle->set_angle(100);
+        SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
+        SRV_Channels::set_angle(SRV_Channel::k_throttleLeft, 100);
+        SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 100);
     }
 
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
@@ -87,7 +90,7 @@ void Plane::init_rc_out_aux()
     update_aux();
     SRV_Channels::enable_aux_servos();
 
-    hal.rcout->cork();
+    SRV_Channels::cork();
     
     // Initialization of servo outputs
     SRV_Channels::output_trim_all();
@@ -169,11 +172,11 @@ void Plane::rudder_arm_disarm_check()
 void Plane::read_radio()
 {
     if (!hal.rcin->new_input()) {
-        control_failsafe(channel_throttle->get_radio_in());
+        control_failsafe();
         return;
     }
 
-    if(!failsafe.ch3_failsafe)
+    if(!failsafe.rc_failsafe)
     {
         failsafe.AFS_last_valid_rc_ms = millis();
     }
@@ -184,15 +187,8 @@ void Plane::read_radio()
     elevon.ch2_temp = channel_pitch->read();
     uint16_t pwm_roll, pwm_pitch;
 
-    if (g.mix_mode == 0) {
-        pwm_roll = elevon.ch1_temp;
-        pwm_pitch = elevon.ch2_temp;
-    }else{
-        pwm_roll = BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) 
-         - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
-        pwm_pitch = (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int16_t(elevon.ch2_temp - elevon.trim2) 
-         + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int16_t(elevon.ch1_temp - elevon.trim1)) / 2 + 1500;
-    }
+    pwm_roll = elevon.ch1_temp;
+    pwm_pitch = elevon.ch2_temp;
 
     RC_Channels::set_pwm_all();
     
@@ -208,7 +204,7 @@ void Plane::read_radio()
         channel_pitch->set_pwm(pwm_pitch);
     }
 
-    control_failsafe(channel_throttle->get_radio_in());
+    control_failsafe();
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in());
 
@@ -237,11 +233,14 @@ void Plane::read_radio()
         rudder_input = 0;
     }
 
+    // potentially swap inputs for tailsitters
+    quadplane.tailsitter_check_input();
+    
     // check for transmitter tuning changes
     tuning.check_input(control_mode);
 }
 
-void Plane::control_failsafe(uint16_t pwm)
+void Plane::control_failsafe()
 {
     if (millis() - failsafe.last_valid_rc_ms > 1000 || rc_failsafe_active()) {
         // we do not have valid RC input. Set all primary channel
@@ -265,27 +264,27 @@ void Plane::control_failsafe(uint16_t pwm)
         if (rc_failsafe_active()) {
             // we detect a failsafe from radio
             // throttle has dropped below the mark
-            failsafe.ch3_counter++;
-            if (failsafe.ch3_counter == 10) {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Throttle failsafe on %u", (unsigned)pwm);
-                failsafe.ch3_failsafe = true;
+            failsafe.throttle_counter++;
+            if (failsafe.throttle_counter == 10) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe on");
+                failsafe.rc_failsafe = true;
                 AP_Notify::flags.failsafe_radio = true;
             }
-            if (failsafe.ch3_counter > 10) {
-                failsafe.ch3_counter = 10;
+            if (failsafe.throttle_counter > 10) {
+                failsafe.throttle_counter = 10;
             }
 
-        }else if(failsafe.ch3_counter > 0) {
+        }else if(failsafe.throttle_counter > 0) {
             // we are no longer in failsafe condition
             // but we need to recover quickly
-            failsafe.ch3_counter--;
-            if (failsafe.ch3_counter > 3) {
-                failsafe.ch3_counter = 3;
+            failsafe.throttle_counter--;
+            if (failsafe.throttle_counter > 3) {
+                failsafe.throttle_counter = 3;
             }
-            if (failsafe.ch3_counter == 1) {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Throttle failsafe off %u", (unsigned)pwm);
-            } else if(failsafe.ch3_counter == 0) {
-                failsafe.ch3_failsafe = false;
+            if (failsafe.throttle_counter == 1) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe off");
+            } else if(failsafe.throttle_counter == 0) {
+                failsafe.rc_failsafe = false;
                 AP_Notify::flags.failsafe_radio = false;
             }
         }
@@ -308,42 +307,38 @@ void Plane::trim_control_surfaces()
         return;
     }
 
-    // Store control surface trim values
-    // ---------------------------------
-    if(g.mix_mode == 0) {
-        if (channel_roll->get_radio_in() != 0) {
-            channel_roll->set_radio_trim(channel_roll->get_radio_in());
-        }
-        if (channel_pitch->get_radio_in() != 0) {
-            channel_pitch->set_radio_trim(channel_pitch->get_radio_in());
-        }
+    // trim main surfaces
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_aileron);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevator);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_rudder);
 
-        // the secondary aileron/elevator is trimmed only if it has a
-        // corresponding transmitter input channel, which k_aileron
-        // doesn't have
-        SRV_Channels::set_trim_to_radio_in_for(SRV_Channel::k_aileron_with_input);
-        SRV_Channels::set_trim_to_radio_in_for(SRV_Channel::k_elevator_with_input);
-    } else{
-        if (elevon.ch1_temp != 0) {
-            elevon.trim1 = elevon.ch1_temp;
-        }
-        if (elevon.ch2_temp != 0) {
-            elevon.trim2 = elevon.ch2_temp;
-        }
-        //Recompute values here using new values for elevon1_trim and elevon2_trim
-        //We cannot use radio_in[CH_ROLL] and radio_in[CH_PITCH] values from read_radio() because the elevon trim values have changed
-        uint16_t center                         = 1500;
-        channel_roll->set_radio_trim(center);
-        channel_pitch->set_radio_trim(center);
-    }
-    if (channel_rudder->get_radio_in() != 0) {
-        channel_rudder->set_radio_trim(channel_rudder->get_radio_in());
+    // trim elevons
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevon_left);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevon_right);
+
+    // trim vtail
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_vtail_left);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_vtail_right);
+    
+    if (SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) == 0) {
+        // trim differential spoilers if no rudder input
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerLeft1);
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerLeft2);
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerRight1);
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerRight2);
     }
 
-    // save to eeprom
-    channel_roll->save_eeprom();
-    channel_pitch->save_eeprom();
-    channel_rudder->save_eeprom();
+    if (SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto) == 0 &&
+        SRV_Channels::get_output_scaled(SRV_Channel::k_flap) == 0) {
+        // trim flaperons if no flap input
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_flaperon_left);
+        SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_flaperon_right);
+    }
+
+    // now save input trims, as these have been moved to the outputs
+    channel_roll->set_and_save_trim();
+    channel_pitch->set_and_save_trim();
+    channel_rudder->set_and_save_trim();
 }
 
 void Plane::trim_radio()

@@ -48,6 +48,8 @@ void Plane::throttle_slew_limit(void)
    *       4 - We are not performing a takeoff in Auto mode or takeoff speed/accel not yet reached
    *       OR
    *       5 - Home location is not set
+   *       OR
+   *       6- Landing does not want to allow throttle
 */
 bool Plane::suppress_throttle(void)
 {
@@ -58,6 +60,10 @@ bool Plane::suppress_throttle(void)
         return true;
     }
 #endif
+
+    if (landing.is_throttle_suppressed()) {
+        return true;
+    }
 
     if (!throttle_suppressed) {
         // we've previously met a condition for unsupressing the throttle
@@ -101,7 +107,7 @@ bool Plane::suppress_throttle(void)
         return true;
     }
     
-    if (relative_altitude_abs_cm() >= 1000) {
+    if (fabsf(relative_altitude) >= 10.0f) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
         return false;
@@ -127,99 +133,33 @@ bool Plane::suppress_throttle(void)
     return true;
 }
 
+
 /*
-  implement a software VTail or elevon mixer. There are 4 different mixing modes
+  mixer for elevon and vtail channels setup using designated servo
+  function values. This mixer operates purely on scaled values,
+  allowing the user to trim and limit individual servos using the
+  SERVOn_* parameters
  */
-void Plane::channel_output_mixer_pwm(uint8_t mixing_type, uint16_t & chan1_out, uint16_t & chan2_out) const
+void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
+                                   SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out)
 {
-    int16_t c1, c2;
-    int16_t v1, v2;
+    // the order is setup so that non-reversed servos go "up", and
+    // func1 is the "left" channel. Users can adjust with channel
+    // reversal as needed
+    float in1 = SRV_Channels::get_output_scaled(func1_in);
+    float in2 = SRV_Channels::get_output_scaled(func2_in);
 
-    // first get desired elevator and rudder as -500..500 values
-    c1 = chan1_out - 1500;
-    c2 = chan2_out - 1500;
-
-    // apply MIXING_OFFSET to input channels using long-integer version
-    //  of formula:  x = x * (g.mixing_offset/100.0 + 1.0)
-    //  -100 => 2x on 'c1', 100 => 2x on 'c2'
+    // apply MIXING_OFFSET to input channels
     if (g.mixing_offset < 0) {
-        c1 = (int16_t)(((int32_t)c1) * (-g.mixing_offset+100) / 100);
+        in2 *= (100 - g.mixing_offset) * 0.01;
     } else if (g.mixing_offset > 0) {
-        c2 = (int16_t)(((int32_t)c2) * (g.mixing_offset+100) / 100);
+        in1 *= (100 + g.mixing_offset) * 0.01;
     }
-
-    v1 = (c1 - c2) * g.mixing_gain;
-    v2 = (c1 + c2) * g.mixing_gain;
-
-    // now map to mixed output
-    switch (mixing_type) {
-    case MIXING_DISABLED:
-        return;
-
-    case MIXING_UPUP:
-        break;
-
-    case MIXING_UPDN:
-        v2 = -v2;
-        break;
-
-    case MIXING_DNUP:
-        v1 = -v1;
-        break;
-
-    case MIXING_DNDN:
-        v1 = -v1;
-        v2 = -v2;
-        break;
-
-    case MIXING_UPUP_SWP:
-        std::swap(v1, v2);
-        break;
-
-    case MIXING_UPDN_SWP:
-        v2 = -v2;
-        std::swap(v1, v2);        
-        break;
-
-    case MIXING_DNUP_SWP:
-        v1 = -v1;
-        std::swap(v1, v2);        
-        break;
-
-    case MIXING_DNDN_SWP:
-        v1 = -v1;
-        v2 = -v2;
-        std::swap(v1, v2);        
-        break;
-    }
-
-    // scale for a 1500 center and 900..2100 range, symmetric
-    v1 = constrain_int16(v1, -600, 600);
-    v2 = constrain_int16(v2, -600, 600);
-
-    chan1_out = 1500 + v1;
-    chan2_out = 1500 + v2;
-}
-
-/*
-  output mixer based on two channel output types
- */
-void Plane::channel_output_mixer(uint8_t mixing_type, SRV_Channel::Aux_servo_function_t func1, SRV_Channel::Aux_servo_function_t func2)
-{
-    SRV_Channel *chan1, *chan2;
-    if (!(chan1 = SRV_Channels::get_channel_for(func1)) ||
-        !(chan2 = SRV_Channels::get_channel_for(func2))) {
-        return;
-    }
-
-    uint16_t chan1_out, chan2_out;
-    chan1_out = chan1->get_output_pwm();
-    chan2_out = chan2->get_output_pwm();
     
-    channel_output_mixer_pwm(mixing_type, chan1_out, chan2_out);
-
-    chan1->set_output_pwm(chan1_out);
-    chan2->set_output_pwm(chan2_out);
+    float out1 = constrain_float((in2 - in1) * g.mixing_gain, -4500, 4500);
+    float out2 = constrain_float((in2 + in1) * g.mixing_gain, -4500, 4500);
+    SRV_Channels::set_output_scaled(func1_out, out1);
+    SRV_Channels::set_output_scaled(func2_out, out2);
 }
 
 
@@ -228,29 +168,56 @@ void Plane::channel_output_mixer(uint8_t mixing_type, SRV_Channel::Aux_servo_fun
  */
 void Plane::flaperon_update(int8_t flap_percent)
 {
-    if (!SRV_Channels::function_assigned(SRV_Channel::k_flaperon1) ||
-        !SRV_Channels::function_assigned(SRV_Channel::k_flaperon2)) {
+    if (!SRV_Channels::function_assigned(SRV_Channel::k_flaperon_left) &&
+        !SRV_Channels::function_assigned(SRV_Channel::k_flaperon_right)) {
         return;
     }
-    uint16_t ch1, ch2;
     /*
       flaperons are implemented as a mixer between aileron and a
       percentage of flaps. Flap input can come from a manual channel
       or from auto flaps.
-
-      Use k_flaperon1 and k_flaperon2 channel trims to center servos.
-      Then adjust aileron trim for level flight (note that aileron trim is affected
-      by mixing gain). flapin_channel's trim is not used.
      */
-     
-    if (!SRV_Channels::get_output_pwm(SRV_Channel::k_aileron, ch1)) {
+    float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    float flaperon_left  = constrain_float(aileron + flap_percent * 45, -4500, 4500);
+    float flaperon_right = constrain_float(aileron - flap_percent * 45, -4500, 4500);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_right, flaperon_right);
+}
+
+
+/*
+  setup differential spoiler output channels
+
+  Differential spoilers are a type of elevon that is split on each
+  wing to give yaw control, mixed from rudder
+ */
+void Plane::dspoiler_update(void)
+{
+    // just check we have a left dspoiler, and if so calculate all outputs
+    if (!SRV_Channels::function_assigned(SRV_Channel::k_dspoilerLeft1)) {
         return;
     }
-    // The *5 is to take a percentage to a value from -500 to 500 for the mixer
-    ch2 = 1500 - flap_percent * 5;
-    channel_output_mixer_pwm(g.flaperon_output, ch1, ch2);
-    SRV_Channels::set_output_pwm_trimmed(SRV_Channel::k_flaperon1, ch1);
-    SRV_Channels::set_output_pwm_trimmed(SRV_Channel::k_flaperon2, ch2);
+    float elevon_left = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_left);
+    float elevon_right = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_right);
+    float rudder_rate = g.dspoiler_rud_rate * 0.01f;
+    float rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) * rudder_rate;
+    float dspoiler1_left = elevon_left;
+    float dspoiler2_left = elevon_left;
+    float dspoiler1_right = elevon_right;
+    float dspoiler2_right = elevon_right;
+    if (rudder > 0) {
+        // apply rudder to right wing
+        dspoiler1_right = constrain_float(elevon_right + rudder, -4500, 4500);
+        dspoiler2_right = constrain_float(elevon_right - rudder, -4500, 4500);
+    } else {
+        // apply rudder to left wing
+        dspoiler1_left = constrain_float(elevon_left + rudder, -4500, 4500);
+        dspoiler2_left = constrain_float(elevon_left - rudder, -4500, 4500);
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft1, dspoiler1_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft2, dspoiler2_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight1, dspoiler1_right);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight2, dspoiler2_right);
 }
 
 /*
@@ -295,53 +262,7 @@ void Plane::set_servos_manual_passthrough(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in_zero_dz());
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, channel_rudder->get_control_in_zero_dz());
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
-    
-    // this variant assumes you have the corresponding
-    // input channel setup in your transmitter for manual control
-    // of the 2nd aileron
-    SRV_Channels::copy_radio_in_out(SRV_Channel::k_aileron_with_input);
-    SRV_Channels::copy_radio_in_out(SRV_Channel::k_elevator_with_input);
 }
-
-/*
-  old (deprecated) elevon support
- */
-void Plane::set_servos_old_elevons(void)
-{
-    /*Elevon mode*/
-    float ch1;
-    float ch2;
-    int16_t roll  = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-    int16_t pitch = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-    ch1 = pitch - (BOOL_TO_SIGN(g.reverse_elevons) * roll);
-    ch2 = pitch + (BOOL_TO_SIGN(g.reverse_elevons) * roll);
-    
-    /* Differential Spoilers
-       If differential spoilers are setup, then we translate
-       rudder control into splitting of the two ailerons on
-       the side of the aircraft where we want to induce
-       additional drag.
-    */
-    if (SRV_Channels::function_assigned(SRV_Channel::k_dspoiler1) && SRV_Channels::function_assigned(SRV_Channel::k_dspoiler2)) {
-        float ch3 = ch1;
-        float ch4 = ch2;
-        int16_t rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
-        if (BOOL_TO_SIGN(g.reverse_elevons) * rudder < 0) {
-            ch1 += abs(rudder);
-            ch3 -= abs(rudder);
-        } else {
-            ch2 += abs(rudder);
-            ch4 -= abs(rudder);
-        }
-        SRV_Channels::set_output_scaled(SRV_Channel::k_dspoiler1, ch3);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_dspoiler2, ch4);
-    }
-    
-    // directly set the radio_out values for elevon mode
-    SRV_Channels::set_output_pwm_first(SRV_Channel::k_aileron, elevon.trim1 + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0f/ SERVO_MAX)));
-    SRV_Channels::set_output_pwm_first(SRV_Channel::k_elevator, elevon.trim2 + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0f/ SERVO_MAX)));
-}
-
 
 /*
   calculate any throttle limits based on the watt limiter
@@ -398,14 +319,9 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
  */
 void Plane::set_servos_controlled(void)
 {
-    if (g.mix_mode != 0) {
-        set_servos_old_elevons();
-    } else {
-        // both types of secondary aileron are slaved to the roll servo out
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron_with_input, SRV_Channels::get_output_scaled(SRV_Channel::k_aileron));
-        
-        // both types of secondary elevator are slaved to the pitch servo out
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator_with_input, SRV_Channels::get_output_scaled(SRV_Channel::k_elevator));
+    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        // allow landing to override servos if it would like to
+        landing.override_servos();
     }
 
     // convert 0 to 100% (or -100 to +100) into PWM
@@ -452,7 +368,7 @@ void Plane::set_servos_controlled(void)
                 control_mode == ACRO ||
                 control_mode == FLY_BY_WIRE_A ||
                 control_mode == AUTOTUNE) &&
-               !failsafe.ch3_counter) {
+               !failsafe.throttle_counter) {
         // manual pass through of throttle while in FBWA or
         // STABILIZE mode with THR_PASS_STAB set
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
@@ -462,7 +378,16 @@ void Plane::set_servos_controlled(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
     } else if (quadplane.in_vtol_mode()) {
         // ask quadplane code for forward throttle
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, quadplane.forward_throttle_pct());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 
+            constrain_int16(quadplane.forward_throttle_pct(), min_throttle, max_throttle));
+    }
+
+    // suppress throttle when soaring is active
+    if ((control_mode == FLY_BY_WIRE_B || control_mode == CRUISE ||
+        control_mode == AUTO || control_mode == LOITER) &&
+        g2.soaring_controller.is_active() &&
+        g2.soaring_controller.get_throttle_suppressed()) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
     }
 }
 
@@ -477,7 +402,7 @@ void Plane::set_servos_flaps(void)
 
     // work out any manual flap input
     RC_Channel *flapin = RC_Channels::rc_channel(g.flapin_channel-1);
-    if (flapin != nullptr && !failsafe.ch3_failsafe && failsafe.ch3_counter == 0) {
+    if (flapin != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
         flapin->input();
         manual_flap_percent = flapin->percent_input();
     }
@@ -513,7 +438,7 @@ void Plane::set_servos_flaps(void)
                 }
                 break;
             case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
-                if (auto_flap_percent != 0 && in_preLaunch_flight_stage()) {
+                if (g.takeoff_flap_percent != 0 && in_preLaunch_flight_stage()) {
                     // TODO: move this to a new FLIGHT_PRE_TAKEOFF stage
                     auto_flap_percent = g.takeoff_flap_percent;
                 }
@@ -537,9 +462,8 @@ void Plane::set_servos_flaps(void)
         SRV_Channels::limit_slew_rate(SRV_Channel::k_flap, g.flap_slewrate, G_Dt);
     }    
 
-    if (g.flaperon_output != MIXING_DISABLED && g.elevon_output == MIXING_DISABLED && g.mix_mode == 0) {
-        flaperon_update(auto_flap_percent);
-    }
+    // output to flaperons, if any
+    flaperon_update(auto_flap_percent);
 }
 
 
@@ -549,50 +473,39 @@ void Plane::set_servos_flaps(void)
  */
 void Plane::servo_output_mixers(void)
 {
-    if (g.vtail_output != MIXING_DISABLED) {
-        channel_output_mixer(g.vtail_output, SRV_Channel::k_elevator, SRV_Channel::k_rudder);
-    } else if (g.elevon_output != MIXING_DISABLED) {
-        channel_output_mixer(g.elevon_output, SRV_Channel::k_elevator, SRV_Channel::k_aileron);
-        // if (both) differential spoilers setup then apply rudder
-        //  control into splitting the two elevons on the side of
-        //  the aircraft where we want to induce additional drag:
-        uint16_t ch3, ch4;
-        
-        if (SRV_Channels::function_assigned(SRV_Channel::k_dspoiler1) &&
-            SRV_Channels::function_assigned(SRV_Channel::k_dspoiler2) &&
-            SRV_Channels::get_output_pwm(SRV_Channel::k_aileron, ch3) &&
-            SRV_Channels::get_output_pwm(SRV_Channel::k_elevator, ch4)) {
-            // convert rudder-servo output (-4500 to 4500) to PWM offset
-            //  value (-500 to 500) and multiply by DSPOILR_RUD_RATE/100
-            //  (rudder->servo_out * 500 / SERVO_MAX * dspoiler_rud_rate/100):
-            int16_t ruddVal = (int16_t)(int32_t(SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)) *
-                                        g.dspoiler_rud_rate / (SERVO_MAX/5));
-            if (ruddVal != 0) {   //if nonzero rudder then apply to spoilers
-                int16_t ch1 = ch3;          //elevon 1
-                int16_t ch2 = ch4;          //elevon 2
-                if (ruddVal > 0) {     //apply rudder to right or left side
-                    ch1 += ruddVal;
-                    ch3 -= ruddVal;
-                } else {
-                    ch2 += ruddVal;
-                    ch4 -= ruddVal;
-                }
-                // change elevon 1 & 2 positions; constrain min/max:
-                SRV_Channels::set_output_pwm_first(SRV_Channel::k_aileron, constrain_int16(ch1, 900, 2100));
-                SRV_Channels::set_output_pwm_first(SRV_Channel::k_elevator, constrain_int16(ch2, 900, 2100));
-                // constrain min/max for intermediate dspoiler positions:
-                ch3 = constrain_int16(ch3, 900, 2100);
-                ch4 = constrain_int16(ch4, 900, 2100);
-            }
-            // set positions of differential spoilers (convert PWM
-            //  900-2100 range to servo output (-4500 to 4500)
-            //  and use function that supports rev/min/max/trim):
-            SRV_Channels::set_output_scaled(SRV_Channel::k_dspoiler1,
-                                                (int16_t(ch3)-1500) * (int16_t)(SERVO_MAX/300) / (int16_t)2);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_dspoiler2,
-                                                (int16_t(ch4)-1500) * (int16_t)(SERVO_MAX/300) / (int16_t)2);
-        }
+    // mix elevons and vtail channels
+    channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right);
+    channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
+
+    // implement differential spoilers
+    dspoiler_update();
+}
+
+/*
+  support for twin-engine planes
+ */
+void Plane::servos_twin_engine_mix(void)
+{
+    float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+    float rud_gain = float(plane.g2.rudd_dt_gain) / 100;
+    float rudder = rud_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / float(SERVO_MAX);
+
+    float throttle_left, throttle_right;
+
+    if (throttle < 0 && aparm.throttle_min < 0) {
+        // doing reverse thrust
+        throttle_left  = constrain_float(throttle + 50 * rudder, -100, 0);
+        throttle_right = constrain_float(throttle - 50 * rudder, -100, 0);
+    } else if (throttle <= 0) {
+        throttle_left  = throttle_right = 0;
+    } else {
+        // doing forward thrust
+        throttle_left  = constrain_float(throttle + 50 * rudder, 0, 100);
+        throttle_right = constrain_float(throttle - 50 * rudder, 0, 100);
     }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
+
 }
 
 
@@ -613,7 +526,7 @@ void Plane::set_servos(void)
     // start with output corked. the cork is released when we run
     // servos_output(), which is run from all code paths in this
     // function
-    hal.rcout->cork();
+    SRV_Channels::cork();
     
     // this is to allow the failsafe module to deliberately crash 
     // the plane. Only used in extreme circumstances to meet the
@@ -668,7 +581,7 @@ void Plane::set_servos(void)
     // setup flap outputs
     set_servos_flaps();
     
-    if (control_mode >= FLY_BY_WIRE_B ||
+    if (auto_throttle_mode ||
         quadplane.in_assisted_flight() ||
         quadplane.in_vtol_mode()) {
         /* only do throttle slew limiting in modes where throttle
@@ -717,9 +630,9 @@ void Plane::set_servos(void)
         // after an auto land and auto disarm, set the servos to be neutral just
         // in case we're upside down or some crazy angle and straining the servos.
         if (landing.get_then_servos_neutral() == 1) {
-            SRV_Channels::set_output_limit(SRV_Channel::k_aileron, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_elevator, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-            SRV_Channels::set_output_limit(SRV_Channel::k_rudder, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
         } else if (landing.get_then_servos_neutral() == 2) {
             SRV_Channels::set_output_limit(SRV_Channel::k_aileron, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_elevator, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
@@ -745,19 +658,30 @@ void Plane::set_servos(void)
  */
 void Plane::servos_output(void)
 {
-    hal.rcout->cork();
+    SRV_Channels::cork();
 
+    // support twin-engine aircraft
+    servos_twin_engine_mix();
+
+    // cope with tailsitters
+    quadplane.tailsitter_output();
+    
     // the mixers need pwm to be calculated now
     SRV_Channels::calc_pwm();
     
     // run vtail and elevon mixers
     servo_output_mixers();
 
-    SRV_Channels::calc_pwm();
+    // support MANUAL_RCMASK
+    if (g2.manual_rc_mask.get() != 0 && control_mode == MANUAL) {
+        SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
+    }
     
+    SRV_Channels::calc_pwm();
+
     SRV_Channels::output_ch_all();
     
-    hal.rcout->push();
+    SRV_Channels::push();
 
     if (g2.servo_channels.auto_trim_enabled()) {
         servos_auto_trim();
@@ -800,9 +724,26 @@ void Plane::servos_auto_trim(void)
     }
 
     // adjust trim on channels by a small amount according to I value
-    g2.servo_channels.adjust_trim(SRV_Channel::k_aileron, rollController.get_pid_info().I);
-    g2.servo_channels.adjust_trim(SRV_Channel::k_elevator, pitchController.get_pid_info().I);
+    float roll_I = rollController.get_pid_info().I;
+    float pitch_I = pitchController.get_pid_info().I;
+    
+    g2.servo_channels.adjust_trim(SRV_Channel::k_aileron, roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_elevator, pitch_I);
 
+    g2.servo_channels.adjust_trim(SRV_Channel::k_elevon_left,  pitch_I - roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_elevon_right, pitch_I + roll_I);
+
+    g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_left,  pitch_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_right, pitch_I);
+
+    g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_left,  roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_right, -roll_I);
+
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerLeft1,  pitch_I - roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerLeft2,  pitch_I - roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerRight1, pitch_I + roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_dspoilerRight2, pitch_I + roll_I);
+    
     auto_trim.last_trim_check = now;
 
     if (now - auto_trim.last_trim_save > 10000) {

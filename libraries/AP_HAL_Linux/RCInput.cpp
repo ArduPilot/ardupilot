@@ -448,6 +448,7 @@ bool RCInput::add_sumd_input(const uint8_t *bytes, size_t nbytes)
             _num_channels = channel_count;
             rc_input_count++;
             ret = true;
+            _rssi = rssi;
         }
         nbytes--;
     }
@@ -478,6 +479,7 @@ bool RCInput::add_st24_input(const uint8_t *bytes, size_t nbytes)
             _num_channels = channel_count;
             rc_input_count++;
             ret = true;
+            _rssi = rssi;
         }
         nbytes--;
     }

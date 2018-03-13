@@ -29,21 +29,21 @@
 
 #include <AP_Buffer/AP_Buffer.h>
 
-class AP_ADSB
-{
+class AP_ADSB {
 public:
+    AP_ADSB()
+    {
+        AP_Param::setup_object_defaults(this, var_info);
+    }
+
+    /* Do not allow copies */
+    AP_ADSB(const AP_ADSB &other) = delete;
+    AP_ADSB &operator=(const AP_ADSB&) = delete;
+
     struct adsb_vehicle_t {
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
     };
-
-
-    // Constructor
-    AP_ADSB(const AP_AHRS &ahrs) :
-        _ahrs(ahrs)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    }
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -75,7 +75,6 @@ public:
     void handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg);
 
 private:
-
     // initialize _vehicle_list
     void init();
 
@@ -108,10 +107,6 @@ private:
 
     // handle ADS-B transceiver report for ping2020
     void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
-
-    // reference to AHRS, so we can ask for our position,
-    // heading and speed
-    const AP_AHRS &_ahrs;
 
     AP_Int8     _enabled;
 

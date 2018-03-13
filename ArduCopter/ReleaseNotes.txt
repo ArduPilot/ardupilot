@@ -1,5 +1,190 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.5.5-rc1 24-Jan-2018
+Changes from 3.5.4
+1) ICM20948 compass orientation fix
+2) LIS3MDL compass support on Pixracer
+3) support for easy embedding of defaults in firmware binary
+4) do-mount-control control command sets copter yaw when using 2-axis gimbal
+5) TradHeli fix for direct drive variable pitch tail rotors
+------------------------------------------------------------------
+Copter 3.5.4 23-Nov-2017 / 3.5.4-rc2 17-Nov-2017
+Changes from 3.5.3
+1) Compass improvements / bug fixes:
+    a) probe for LIS3MDL on I2C address 0x1e
+    b) bug fix pixracer compass detection
+------------------------------------------------------------------
+Copter 3.5.4-rc1 08-Nov-2017
+Changes from 3.5.3
+1) Compass improvements:
+    a) support added for QMC5883L, LIS3MDL, IST8310
+    b) COMPASS_TYPEMASK parameter allows enabling/disabling individual compass drivers
+2) LightWare and MaxBotix range finders supported on both I2C buses
+3) Serial port 5 can be used for telemetry or sensors (previously was only for NuttX console)
+4) px4pro flight controller supported
+5) TradHeli fixes:
+    a) motor runup check applies to all flight modes (previously only loiter, poshold, althold)
+    b) swashplate behaviour changes when on ground in acro, stabilize and althold
+    c) servo test function fixed
+    d) direct drive fixed pitch tail fix
+    e) Z-axis Accel P gain default lowered to 0.3
+6) EKF origin set using SET_GPS_GLOBAL_ORIGIN mavlink message instead of SET_HOME_POSITION
+7) Intel Aero supports 921600 baud rate between main flight controller and companion computer
+8) Bug fix to I2C race condition on Pixhawk that could occasionally cause I2C device to not be detected
+------------------------------------------------------------------
+Copter 3.5.3 21-Sep-2017 / Copter 3.5.3-rc1 12-Sep-2017
+Changes from 3.5.2
+1) Guided mode support yaw and yaw-rate fields from set-position-target message
+2) Optical Flow startup retries 10 times 
+3) Bug fixes:
+    a) Septentrio RTK GPS driver robustness improvements for long messages
+    b) dataflash not-logging checks if not initialised
+    c) fix reporting of relative-position-NE-to-home (most users will not notice this difference) 
+------------------------------------------------------------------
+Copter 3.5.2 14-Aug-2017 / Copter 3.5.2-rc1 05-Aug-2017
+Changes from 3.5.1
+1) GPS glitch arming check and notification (flashing blue-yellow LED, message on HUD)
+2) Arming check for minimum voltage (see ARMING_VOLT_MIN parameter)
+3) Landing Gear startup behaviour now configurable (see LGR_STARTUP parameter)
+4) Solo LED fix when using "boat" mode
+5) Intel Aero RTF gets one more I2C bus
+6) Bug fixes:
+    a) resolve barometer floating point exception when ground pressure set to be negative
+    b) resolve freeze if SERVOx_FUNCTION is set above 80   
+------------------------------------------------------------------
+Copter 3.5.1 31-July-2017 / 3.5.1-rc1 24-July-2017
+Changes from 3.5.0
+1) fix to RC input corruption when using Spektrum DSMx with Pixracer 
+------------------------------------------------------------------
+Copter 3.5.0 17-July-2017 / 3.5.0-rc11 12-July-2017
+Changes from 3.5-rc10
+1) GPS fixes:
+    a) Re-enable auto detection of NMEA GPS (revert change from -rc9)
+    b) Fix SBF race condition on start (this should resolve SBF GPS detection issues for some users)
+2) SF40c driver fix to ignore zero distances
+------------------------------------------------------------------
+Copter 3.5.0-rc10 08-July-2017
+Changes from 3.5-rc9
+1) Intel Aero build and default parameter updates
+2) EKF final yaw reset lowered from 5m to 2.5m to speed up bad compass detection after takeoff
+------------------------------------------------------------------
+Copter 3.5.0-rc9 03-July-2017
+Changes from 3.5-rc8
+1) AutoTune improvement when using position hold (twitches in body-frame instead of earth-frame)
+2) GPS fixes:
+    a) RTK GPS fix when large RTK correction messages are sent
+    b) auto-detection for NMEA disabled (NMEA users must explicitly set GPS_TYPE to 5)
+3) EKF bug fixes:
+    a) fix bug preventing use of optical flow for terrain height estimation
+    b) fix bug affecting accuracy of optical flow estimated height during climb/descent
+    c) fix range beacon fusion bugs
+4) return accel filter (INS_ACCEL_FILT) to 20hz (some users were seeing oscillations at 10hz)
+------------------------------------------------------------------
+Copter 3.5.0-rc8 15-Jun-2017
+Changes from 3.5-rc7
+1) Solo on Master:
+    a) add/fix tones and LED support
+    b) resolve dataflash health reporting issue
+2) Allow flight controller to boot even if critical sensors fail (previously stopped at startup and displayed message people could rarely see)
+3) Minor enhancements:
+    a) Landing Gear retracts/deploys only when pilot first moves switch (previously would always deploy on startup)
+    b) BeagleBoneBlue supports external compass, OLED display 
+4) Bug fixes:
+    a) increase pilot stick dead zones for roll, pitch and yaw (still slightly more narrow than AC3.4)
+    b) increase default roll, pitch and yaw rate IMAX values to 0.5, reduce default yaw rate filter to 2.5hz
+    c) reduce accel filter from 20hz to 10hz (smoothes throttle in AltHold)
+    d) fix EKF declination fusion
+    e) object avoidance fix to ignore old distance measurements and out-of-range distances from range finder
+    f) fix poxyz west-east processing (it was backwards)
+------------------------------------------------------------------
+Copter 3.5-rc7 25-May-2017
+Changes from 3.5-rc6
+1) Bug fixes and minor enhancements:
+    a) fix OneShot ESC calibration and compass-mot calibration
+    b) fix Navio2 and ErleBrain crashes caused by insufficient memory allocated to scheduler
+    c) AutoTune with position hold only resets target position when roll and/or pitch sticks moved
+    d) fix Acro, Sport trainer mode to stop attitude targets going beyond angle limits
+    e) sanity check WPNAV_RADIUS is non-zero
+    f) MarvelMind driver fixes (still a work-in-progress)
+    g) Sanity check command when resuming mission in Auto
+------------------------------------------------------------------
+Copter 3.5-rc6 15-May-2017
+Changes from 3.5-rc5
+1) Bug fixes and minor enhancements:
+    a) ESC calibration fix when not using safety switch (was waiting for safety switch to be pushed)
+    b) Parameter loading improvements (responds sooner after startup, counts parameters in separate thread)
+    c) Pilot radio passthrough fix for tradheli, single copter, coax copter
+------------------------------------------------------------------
+Copter 3.5-rc5 03-May-2017
+Changes from 3.5-rc4
+1) Intel Aero RTF support
+2) Smart battery fetches serial number, temperature and individual cell voltages
+3) Vehicle heads towards target point instead of next waypoint during straight line waypoint mission commands in AUTO
+4) Visual Odometry supported using VISION_POSITION_DELTA mavlink message
+5) Do-Set-Home sets EKF origin allowing user to specify vehicle starting position without GPS
+6) Object avoidance parameter (AVOID_MARGIN) allows configuring distance to maintain from objects
+7) Motor output can be duplicated to multiple channels
+8) IRLock can be connected to any I2C bus
+9) Piksi "Multi" GPS support
+10) Performance Improvements:
+    a) inter-EKF scheduling cooperation (improves load balancing when using multiple EKFs)
+    b) parameter requests from GCS processed asynchronously (resolves bad flight behaviour when fetching params in-flight) 
+    c) display performance improvements
+1) Bug fixes including:
+    a) LSM303D (Pixhawk's backup IMU) timing fixes
+    b) auxiliary PWM outputs update even when RC input stops
+    c) dataflash log over mavlink fixes
+    d) EKF recovery from severe errors
+    e) reduce twitch when transitioning from spline to straight line waypoints in AUTO
+    f) enable motors after initialisation completes (resolves some BLHeli ESC initialisation and calibration issues)
+------------------------------------------------------------------
+Copter 3.5-rc4 08-Apr-2017
+Changes from 3.5-rc3
+1) Bug fixes including:
+    a) Baro based altitude estimate fixes including limiting ground temperature to reasonable value
+    b) Fix 0.6ms lag reduction
+    c) Fix Invensense IMU driver temperature reading
+    d) Fix semaphore take during interrupts that may have caused very occasional main loop rate issues
+    e) Return Home if GCS asks for first (i.e. zero-ith) mission command (required for Solo)
+------------------------------------------------------------------
+Copter 3.5-rc3 24-Mar-2017
+Changes from 3.5-rc2
+1) OLED Display fixes:
+    a) can be connected to either I2C bus
+    b) last character on line correctly cleared
+2) bug fix to detect SBUS failsafe on Pixracer
+3) bug fix to Gimbal servo reversing
+4) ensure WPNAV_LOIT_SPEED is non-zero to avoid divide-by-zero
+5) Fence pre-arm check failure messages clarified 
+------------------------------------------------------------------
+Copter 3.5-rc2 13-Mar-2017
+Changes from 3.5-rc1
+1) Improved dual GPS support including blending (set GPS_TYPE2=1, GPS_AUTO_SWITCH=2)
+2) AutoTune with position hold (enter AutoTune from Loiter or PosHold modes to enable light position hold)
+3) New boards/drivers:
+    a) PixhawkMini support
+    b) AUAV2.1 board support (for AUAV2.1 set BRD_TYPE to 20 to distinguish from PixhawkMini)
+    c) Garmin LidarLiteV3 support
+    d) Maxell Smart Battery support
+    e) Invensense ICM-20602 IMU and ST L3GD20H gyro drivers added
+4) IMU to Motor lag reduced by 0.6ms
+5) Object Avoidance:
+    a) support TeraRanger Tower sensor
+    b) support using normal (1-dimensional lidar/sonar)
+6) Minor changes/enhancements:
+    a) add MOT_SPOOL_TIME parameter to allow users to control spool-up time of motors
+    b) remove Solo gimbal from -v2 because of 1MB Flash limit on many Pixhawk1s
+    c) altitude check for Guided mode takeoff (must be at least 1m)
+    d) auxiliary switch to arm/disarm vehicle (set CH7_OPT to 41)
+    e) change battery alarm tone to reduce impact on IMU
+    f) add battery monitor health reporting
+    g) support DO-FENCE-ENABLE mission command to enable/disable fence during missions
+7) Bug Fixes:
+    a) OLED Display clears messages after 10seconds
+    b) Servo Gimbal output range fix (could attempt to push servos beyond their limits)
+    c) fix do-set-servo
+    d) fix dataflash log time (was always appearing as 1970)
+------------------------------------------------------------------
 Copter 3.5-rc1 28-Jan-2017
 Changes from 3.4.4
 1) Multicopter firmware consolidated into single binary, users must set FRAME_CLASS parameter (1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri)
@@ -36,6 +221,14 @@ Changes from 3.4.4
 11) Technical improvements (users may not see a functional change):
     a) in-tree drivers lead to improved sharing of drivers with Linux boards
     b) copter arming checks consolidated with other vehicles
+------------------------------------------------------------------
+Copter 3.4.6 15-Mar-2017
+Changes from 3.4.5
+1) ensure WPNAV_LOIT_SPEED is non-zero to avoid divide-by-zero
+------------------------------------------------------------------
+Copter 3.4.5 11-Feb-2017
+Changes from 3.4.4
+1) Bug fix to Guided mode that could lead to crash after take-off completes if MOT_THST_HOVER too high 
 ------------------------------------------------------------------
 Copter 3.4.4 06-Jan-2017 / Copter 3.4.4-rc1 21-Dec-2016
 Changes from 3.4.3
@@ -118,7 +311,7 @@ Changes from 3.4.0-rc4
 ------------------------------------------------------------------
 Copter 3.4.0-rc4 06-Sep-2016
 Changes from 3.4.0-rc3
-1) Intel Aero flight controller support
+1) Intel Aero flight controller support (not Intel Aero RTF, that was done in a later release)
 2) Bug fixes, minor improvements:
     a) resolve unlikely endless-climb in AltHold, Loiter by ensuring Z-axis accelerometer IMAX can always overpower hover throttle
     b) fix auto build issue that could lead to parameter corruption

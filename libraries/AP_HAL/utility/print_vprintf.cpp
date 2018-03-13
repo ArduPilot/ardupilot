@@ -428,7 +428,8 @@ flt_oper:
                     goto ultoa;
                 case 'p':
                     flags |= FL_ALT;
-                    /* no break */
+
+                    FALLTHROUGH;
                 case 'x':
                     if (flags & FL_ALT)
                         flags |= FL_ALTHEX;

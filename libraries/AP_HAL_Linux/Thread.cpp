@@ -172,7 +172,7 @@ bool Thread::start(const char *name, int policy, int prio)
     if (geteuid() == 0) {
         if ((r = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED)) != 0 ||
             (r = pthread_attr_setschedpolicy(&attr, policy)) != 0 ||
-            (r = pthread_attr_setschedparam(&attr, &param) != 0)) {
+            (r = pthread_attr_setschedparam(&attr, &param)) != 0) {
             AP_HAL::panic("Failed to set attributes for thread '%s': %s",
                           name, strerror(r));
         }

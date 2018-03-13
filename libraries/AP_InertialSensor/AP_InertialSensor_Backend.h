@@ -28,6 +28,13 @@
 
 #include "AP_InertialSensor.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
+#include <AP_HAL_F4Light/AP_HAL_F4Light.h>
+#include <AP_HAL_F4Light/GPIO.h>
+#include <AP_HAL_F4Light/Scheduler.h>
+using namespace F4Light;
+#endif
+
 class AuxiliaryBus;
 class DataFlash_Class;
 
@@ -70,6 +77,9 @@ public:
      */
     int16_t get_id() const { return _id; }
 
+    // notify of a fifo reset
+    void notify_fifo_reset(void);
+    
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -85,9 +95,14 @@ public:
         DEVTYPE_ACC_BMA180   = 0x12,
         DEVTYPE_ACC_MPU6000  = 0x13,
         DEVTYPE_ACC_MPU9250  = 0x16,
+        DEVTYPE_ACC_IIS328DQ = 0x17,
+        DEVTYPE_ACC_LSM9DS1  = 0x18,
         DEVTYPE_GYR_MPU6000  = 0x21,
         DEVTYPE_GYR_L3GD20   = 0x22,
-        DEVTYPE_GYR_MPU9250  = 0x24
+        DEVTYPE_GYR_MPU9250  = 0x24,
+        DEVTYPE_GYR_I3G4250D = 0x25,
+        DEVTYPE_GYR_LSM9DS1  = 0x26,
+        DEVTYPE_INS_ICM20789 = 0x27
     };
         
 protected:
@@ -103,10 +118,12 @@ protected:
     // rotate gyro vector, offset and publish
     void _publish_gyro(uint8_t instance, const Vector3f &gyro);
 
-    // this should be called every time a new gyro raw sample is available -
-    // be it published or not
-    // the sample is raw in the sense that it's not filtered yet, but it must
-    // be rotated and corrected (_rotate_and_correct_gyro)
+    // this should be called every time a new gyro raw sample is
+    // available - be it published or not the sample is raw in the
+    // sense that it's not filtered yet, but it must be rotated and
+    // corrected (_rotate_and_correct_gyro)
+    // The sample_us value must be provided for non-FIFO based
+    // sensors, and should be set to zero for FIFO based sensors
     void _notify_new_gyro_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0);
 
     // rotate accel vector, scale, offset and publish
@@ -116,8 +133,19 @@ protected:
     // be it published or not
     // the sample is raw in the sense that it's not filtered yet, but it must
     // be rotated and corrected (_rotate_and_correct_accel)
+    // The sample_us value must be provided for non-FIFO based
+    // sensors, and should be set to zero for FIFO based sensors
     void _notify_new_accel_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0, bool fsync_set=false);
 
+    // set the amount of oversamping a accel is doing
+    void _set_accel_oversampling(uint8_t instance, uint8_t n);
+
+    // set the amount of oversamping a gyro is doing
+    void _set_gyro_oversampling(uint8_t instance, uint8_t n);
+    
+    // update the sensor rate for FIFO sensors
+    void _update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz);
+    
     // set accelerometer max absolute offset for calibration
     void _set_accel_max_abs_offset(uint8_t instance, float offset);
 
@@ -126,11 +154,21 @@ protected:
         return _imu._accel_raw_sample_rates[instance];
     }
 
+    // set accelerometer raw sample rate
+    void _set_accel_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
+        _imu._accel_raw_sample_rates[instance] = rate_hz;
+    }
+    
     // get gyroscope raw sample rate
     uint32_t _gyro_raw_sample_rate(uint8_t instance) const {
         return _imu._gyro_raw_sample_rates[instance];
     }
 
+    // set gyro raw sample rate
+    void _set_gyro_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
+        _imu._gyro_raw_sample_rates[instance] = rate_hz;
+    }
+    
     // publish a temperature value
     void _publish_temperature(uint8_t instance, float temperature);
 
@@ -157,11 +195,6 @@ protected:
 
     // return the requested sample rate in Hz
     uint16_t get_sample_rate_hz(void) const;
-
-    // access to frontend dataflash
-    DataFlash_Class *get_dataflash(void) const {
-        return _imu._log_raw_data? _imu._dataflash : nullptr;
-    }
 
     // common gyro update function for all backends
     void update_gyro(uint8_t instance);
@@ -191,8 +224,21 @@ protected:
     bool enable_fast_sampling(uint8_t instance) {
         return (_imu._fast_sampling_mask & (1U<<instance)) != 0;
     }
+
+    /*
+      notify of a FIFO reset so we don't use bad data to update observed sensor rate
+    */
+    void notify_accel_fifo_reset(uint8_t instance);
+    void notify_gyro_fifo_reset(uint8_t instance);
     
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available
+
+private:
+
+    bool should_log_imu_raw() const;
+    void log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel);
+    void log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gryo);
+
 };

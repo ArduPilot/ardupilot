@@ -10,7 +10,7 @@
 void Copter::tuning() {
     RC_Channel *rc6 = RC_Channels::rc_channel(CH_6);
 
-    // exit immediately if not using tuning function, or when radio failsafe is invoked, so tuning values are not set to zero    
+    // exit immediately if not using tuning function, or when radio failsafe is invoked, so tuning values are not set to zero
     if ((g.radio_tuning <= 0) || failsafe.radio || failsafe.radio_counter != 0 || rc6->get_radio_in() == 0) {
         return;
     }
@@ -63,36 +63,36 @@ void Copter::tuning() {
 
     // Altitude and throttle tuning
     case TUNING_ALTITUDE_HOLD_KP:
-        g.p_alt_hold.kP(tuning_value);
+        pos_control->get_pos_z_p().kP(tuning_value);
         break;
 
     case TUNING_THROTTLE_RATE_KP:
-        g.p_vel_z.kP(tuning_value);
+        pos_control->get_vel_z_p().kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KP:
-        g.pid_accel_z.kP(tuning_value);
+        pos_control->get_accel_z_pid().kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KI:
-        g.pid_accel_z.kI(tuning_value);
+        pos_control->get_accel_z_pid().kI(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KD:
-        g.pid_accel_z.kD(tuning_value);
+        pos_control->get_accel_z_pid().kD(tuning_value);
         break;
 
     // Loiter and navigation tuning
     case TUNING_LOITER_POSITION_KP:
-        g.p_pos_xy.kP(tuning_value);
+        pos_control->get_pos_xy_p().kP(tuning_value);
         break;
 
     case TUNING_VEL_XY_KP:
-        g.pi_vel_xy.kP(tuning_value);
+        pos_control->get_vel_xy_pid().kP(tuning_value);
         break;
 
     case TUNING_VEL_XY_KI:
-        g.pi_vel_xy.kI(tuning_value);
+        pos_control->get_vel_xy_pid().kI(tuning_value);
         break;
 
     case TUNING_WP_SPEED:
@@ -133,10 +133,12 @@ void Copter::tuning() {
         compass.set_declination(ToRad((2.0f * control_in - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
         break;
 
+#if MODE_CIRCLE_ENABLED == ENABLED
     case TUNING_CIRCLE_RATE:
         // set circle rate up to approximately 45 deg/sec in either direction
         circle_nav->set_rate((float)control_in/25.0f-20.0f);
         break;
+#endif
 
     case TUNING_RANGEFINDER_GAIN:
         // set rangefinder gain
@@ -212,5 +214,19 @@ void Copter::tuning() {
      case TUNING_RATE_YAW_FILT:
          attitude_control->get_rate_yaw_pid().filt_hz(tuning_value);
          break;
-    }
+
+#if WINCH_ENABLED == ENABLED
+     case TUNING_WINCH: {
+         float desired_rate = 0.0f;
+         if (v > 0.6f) {
+             desired_rate = g2.winch.get_rate_max() * (v - 0.6f) / 0.4f;
+         }
+         if (v < 0.4f) {
+             desired_rate = g2.winch.get_rate_max() * (v - 0.4) / 0.4f;
+         }
+         g2.winch.set_desired_rate(desired_rate);
+         break;
+         }
+#endif
+     }
 }

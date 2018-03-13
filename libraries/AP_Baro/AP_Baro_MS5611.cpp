@@ -81,7 +81,7 @@ bool AP_Baro_MS56XX::_init()
         return false;
     }
 
-    if (!_dev->get_semaphore()->take(0)) {
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
     }
 
@@ -98,8 +98,13 @@ bool AP_Baro_MS56XX::_init()
     switch (_ms56xx_type) {
     case BARO_MS5607:
         name = "MS5607";
+        FALLTHROUGH;
     case BARO_MS5611:
         prom_read_ok = _read_prom_5611(prom);
+        break;
+    case BARO_MS5837:
+        name = "MS5837";
+        prom_read_ok = _read_prom_5637(prom);
         break;
     case BARO_MS5637:
         name = "MS5637";
@@ -130,13 +135,17 @@ bool AP_Baro_MS56XX::_init()
 
     _instance = _frontend.register_sensor();
 
+    if (_ms56xx_type == BARO_MS5837) {
+        _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
+    }
+
     // lower retries for run
     _dev->set_retries(3);
     
     _dev->get_semaphore()->give();
 
     /* Request 100Hz update */
-    _dev->register_periodic_callback(10 * USEC_PER_MSEC,
+    _dev->register_periodic_callback(10 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void));
     return true;
 }
@@ -324,7 +333,7 @@ void AP_Baro_MS56XX::update()
     uint32_t sD1, sD2;
     uint8_t d1count, d2count;
 
-    if (!_sem->take(0)) {
+    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
@@ -358,6 +367,8 @@ void AP_Baro_MS56XX::update()
     case BARO_MS5637:
         _calculate_5637();
         break;
+    case BARO_MS5837:
+        _calculate_5837();
     }
 }
 
@@ -460,6 +471,40 @@ void AP_Baro_MS56XX::_calculate_5637()
     }
 
     int32_t pressure = ((int64_t)raw_pressure * SENS / (int64_t)2097152 - OFF) / (int64_t)32768;
+    float temperature = TEMP * 0.01f;
+    _copy_to_frontend(_instance, (float)pressure, temperature);
+}
+
+// Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
+void AP_Baro_MS56XX::_calculate_5837()
+{
+    int32_t dT, TEMP;
+    int64_t OFF, SENS;
+    int32_t raw_pressure = _D1;
+    int32_t raw_temperature = _D2;
+
+    // Formulas from manufacturer datasheet
+    // sub -15c temperature compensation is not included
+
+    dT = raw_temperature - (((uint32_t)_cal_reg.c5) << 8);
+    TEMP = 2000 + ((int64_t)dT * (int64_t)_cal_reg.c6) / 8388608;
+    OFF = (int64_t)_cal_reg.c2 * (int64_t)65536 + ((int64_t)_cal_reg.c4 * (int64_t)dT) / (int64_t)128;
+    SENS = (int64_t)_cal_reg.c1 * (int64_t)32768 + ((int64_t)_cal_reg.c3 * (int64_t)dT) / (int64_t)256;
+
+    if (TEMP < 2000) {
+        // second order temperature compensation when under 20 degrees C
+        int32_t T2 = ((int64_t)3 * ((int64_t)dT * (int64_t)dT) / (int64_t)8589934592);
+        int64_t aux = (TEMP - 2000) * (TEMP - 2000);
+        int64_t OFF2 = 3 * aux / 2;
+        int64_t SENS2 = 5 * aux / 8;
+
+        TEMP = TEMP - T2;
+        OFF = OFF - OFF2;
+        SENS = SENS - SENS2;
+    }
+
+    int32_t pressure = ((int64_t)raw_pressure * SENS / (int64_t)2097152 - OFF) / (int64_t)8192;
+    pressure = pressure * 10; // MS5837 only reports to 0.1 mbar
     float temperature = TEMP * 0.01f;
     _copy_to_frontend(_instance, (float)pressure, temperature);
 }

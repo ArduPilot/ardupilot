@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @DisplayName: Time to run starter
     // @Description: This is the number of seconds to run the starter when trying to start the engine
     // @User: Standard
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.1 5
     AP_GROUPINFO("STARTER_TIME", 2, AP_ICEngine, starter_time, 3),
 
@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @DisplayName: Time to wait between starts
     // @Description: Delay between start attempts
     // @User: Standard
-    // @Units: Seconds
+    // @Units: s
     // @Range: 1 10
     AP_GROUPINFO("START_DELAY", 3, AP_ICEngine, starter_delay, 2),
     
@@ -152,12 +152,12 @@ void AP_ICEngine::update(void)
         Vector3f pos;
         if (!should_run) {
             state = ICE_OFF;
-        } else if (ahrs.get_relative_position_NED(pos)) {
+        } else if (ahrs.get_relative_position_NED_origin(pos)) {
             if (height_pending) {
                 height_pending = false;
                 initial_height = -pos.z;
             } else if ((-pos.z) >= initial_height + height_required) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Starting height reached %.1f",
+                gcs().send_text(MAV_SEVERITY_INFO, "Starting height reached %.1f",
                                                  (double)(-pos.z - initial_height));
                 state = ICE_STARTING;
             }
@@ -169,7 +169,7 @@ void AP_ICEngine::update(void)
         if (!should_run) {
             state = ICE_OFF;
         } else if (now - starter_last_run_ms >= starter_delay*1000) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Starting engine");
+            gcs().send_text(MAV_SEVERITY_INFO, "Starting engine");
             state = ICE_STARTING;
         }
         break;
@@ -185,7 +185,7 @@ void AP_ICEngine::update(void)
     case ICE_RUNNING:
         if (!should_run) {
             state = ICE_OFF;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Stopped engine");
+            gcs().send_text(MAV_SEVERITY_INFO, "Stopped engine");
         } else if (rpm_instance > 0) {
             // check RPM to see if still running
             if (!rpm.healthy(rpm_instance-1) ||
@@ -201,7 +201,7 @@ void AP_ICEngine::update(void)
         if (state == ICE_START_HEIGHT_DELAY) {
             // when disarmed we can be waiting for takeoff
             Vector3f pos;
-            if (ahrs.get_relative_position_NED(pos)) {
+            if (ahrs.get_relative_position_NED_origin(pos)) {
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }
@@ -272,7 +272,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     if (start_chan != 0) {
         // get starter control channel
         if (hal.rcin->read(start_chan-1) <= 1300) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Engine: start control disabled");
+            gcs().send_text(MAV_SEVERITY_INFO, "Engine: start control disabled");
             return false;
         }
     }
@@ -281,7 +281,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         initial_height = 0;
         height_required = height_delay;
         state = ICE_START_HEIGHT_DELAY;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Takeoff height set to %.1fm", (double)height_delay);
+        gcs().send_text(MAV_SEVERITY_INFO, "Takeoff height set to %.1fm", (double)height_delay);
         return true;
     }
     state = ICE_STARTING;

@@ -25,16 +25,22 @@
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <DataFlash/DataFlash.h>
 #include <AP_Landing/AP_Landing.h>
+#include <AP_Soaring/AP_Soaring.h>
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing) :
-        _ahrs(ahrs),
-        aparm(parms),
-        _landing(landing)
+    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing, const SoaringController &soaring_controller)
+        : _ahrs(ahrs)
+        , aparm(parms)
+        , _landing(landing)
+        , _soaring_controller(soaring_controller)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
+
+    /* Do not allow copies */
+    AP_TECS(const AP_TECS &other) = delete;
+    AP_TECS &operator=(const AP_TECS&) = delete;
 
     // Update of the estimated height and height rate internal state
     // Update of the inertial speed rate internal state
@@ -78,6 +84,11 @@ public:
         return _maxClimbRate;
     }
 
+    // added to let SoaringContoller reset pitch integrator to zero
+    void reset_pitch_I(void) {
+        _integSEB_state = 0.0f;
+    }
+    
     // return landing sink rate
     float get_land_sinkrate(void) const {
         return _land_sink;
@@ -128,6 +139,9 @@ private:
 
     // reference to const AP_Landing to access it's params
     const AP_Landing &_landing;
+    
+    // reference to const SoaringController to access its state
+    const SoaringController &_soaring_controller;
 
     // TECS tuning parameters
     AP_Float _hgtCompFiltOmega;
@@ -360,4 +374,3 @@ private:
     // current time constant
     float timeConstant(void) const;
 };
-

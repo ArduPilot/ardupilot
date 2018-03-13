@@ -76,44 +76,51 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Param: W_TIME
     // @DisplayName: Time Horizon Warn
     // @Description: Aircraft velocity vectors are multiplied by this time to determine closest approach.  If this results in an approach closer than W_DIST_XY or W_DIST_Z then W_ACTION is undertaken (assuming F_ACTION is not undertaken)
-    // @Units: seconds
+    // @Units: s
     // @User: Advanced
     AP_GROUPINFO("W_TIME",      6, AP_Avoidance, _warn_time_horizon, AP_AVOIDANCE_WARN_TIME_DEFAULT),
 
     // @Param: F_TIME
     // @DisplayName: Time Horizon Fail
     // @Description: Aircraft velocity vectors are multiplied by this time to determine closest approach.  If this results in an approach closer than F_DIST_XY or F_DIST_Z then F_ACTION is undertaken
-    // @Units: seconds
+    // @Units: s
     // @User: Advanced
     AP_GROUPINFO("F_TIME",      7, AP_Avoidance, _fail_time_horizon, AP_AVOIDANCE_FAIL_TIME_DEFAULT),
 
     // @Param: W_DIST_XY
     // @DisplayName: Distance Warn XY
     // @Description: Closest allowed projected distance before W_ACTION is undertaken
-    // @Units: meters
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("W_DIST_XY",   8, AP_Avoidance, _warn_distance_xy, AP_AVOIDANCE_WARN_DISTANCE_XY_DEFAULT),
 
     // @Param: F_DIST_XY
     // @DisplayName: Distance Fail XY
     // @Description: Closest allowed projected distance before F_ACTION is undertaken
-    // @Units: meters
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("F_DIST_XY",   9, AP_Avoidance, _fail_distance_xy, AP_AVOIDANCE_FAIL_DISTANCE_XY_DEFAULT),
 
     // @Param: W_DIST_Z
     // @DisplayName: Distance Warn Z
     // @Description: Closest allowed projected distance before BEHAVIOUR_W is undertaken
-    // @Units: meters
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("W_DIST_Z",    10, AP_Avoidance, _warn_distance_z, AP_AVOIDANCE_WARN_DISTANCE_Z_DEFAULT),
 
     // @Param: F_DIST_Z
     // @DisplayName: Distance Fail Z
     // @Description: Closest allowed projected distance before BEHAVIOUR_F is undertaken
-    // @Units: meters
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("F_DIST_Z",    11, AP_Avoidance, _fail_distance_z, AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT),
+    
+    // @Param: F_ALT_MIN
+    // @DisplayName: ADS-B avoidance minimum altitude
+    // @Description: Minimum altitude for ADS-B avoidance. If the vehicle is below this altitude, no avoidance action will take place. Useful to prevent ADS-B avoidance from activating while below the tree line or around structures. Default of 0 is no minimum.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("F_ALT_MIN",    12, AP_Avoidance, _fail_altitude_minimum, 0),
 
     AP_GROUPEND
 };
@@ -213,15 +220,15 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
         } else if (oldest_timestamp < obstacle_timestamp_ms) {
             // replace this very old entry with this new data
             index = oldest_index;
+        } else {
+            // no room for this (old?!) data
+            return;
         }
+
         _obstacles[index].src = src;
         _obstacles[index].src_id = src_id;
     }
 
-    if (index == -1) {
-        // no room for this (old?!) data
-        return;
-    }
     _obstacles[index]._location = loc;
     _obstacles[index]._velocity = vel_ned;
     _obstacles[index].timestamp_ms = obstacle_timestamp_ms;
@@ -511,7 +518,13 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
         new_threat_level = threat->threat_level;
         if (new_threat_level == MAV_COLLISION_THREAT_LEVEL_HIGH) {
             action = (MAV_COLLISION_ACTION)_fail_action.get();
-        }
+            Location my_loc;
+            if (action != MAV_COLLISION_ACTION_NONE && _fail_altitude_minimum > 0 &&
+             _ahrs.get_position(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
+                // disable avoidance when close to ground, report only
+                action = MAV_COLLISION_ACTION_REPORT;
+			}
+		}
     }
 
     uint32_t now = AP_HAL::millis();
@@ -571,72 +584,6 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
                  msg.sysid,
                  loc,
                  vel);
-}
-
-// wp_speeds in cm/s
-bool AP_Avoidance::get_destination_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &newdest_neu, const float wp_speed_xy, const float wp_speed_z, const uint8_t _minimum_avoid_height)
-{
-    if (obstacle == nullptr) {
-        // why where we called?!
-        return false;
-    }
-
-    Location my_abs_pos;
-    if (! _ahrs.get_position(my_abs_pos)) {
-        // we should not get to here!  If we don't know our position
-        // we can't know if there are any threats, for starters!
-        return false;
-    }
-
-    Vector3f my_pos_ned;
-    if (! _ahrs.get_relative_position_NED(my_pos_ned)) {
-        // we should not get to here!  If we don't know our position
-        // we know if there are any threats, for starters!
-        return false;
-    }
-
-    // if their velocity is moving around close to zero then flying
-    // perpendicular to that velocity may mean we do weird things.
-    // Instead, we will fly directly away from them:
-    if (obstacle->_velocity.length() < _low_velocity_threshold) {
-        const Vector2f delta_pos_xy =  location_diff(obstacle->_location, my_abs_pos);
-        const float delta_pos_z = my_abs_pos.alt - obstacle->_location.alt;
-        Vector3f delta_pos_xyz = Vector3f(delta_pos_xy[0],delta_pos_xy[1],delta_pos_z);
-        // avoid divide by zero
-        if (delta_pos_xyz.is_zero()) {
-            return false;
-        }
-        delta_pos_xyz.normalize();
-        newdest_neu[0] = my_pos_ned[0]*100 + delta_pos_xyz[0] * wp_speed_xy * AP_AVOIDANCE_ESCAPE_TIME_SEC;
-        newdest_neu[1] = my_pos_ned[1]*100 + delta_pos_xyz[1] * wp_speed_xy * AP_AVOIDANCE_ESCAPE_TIME_SEC;
-        newdest_neu[2] = -my_pos_ned[2]*100 + delta_pos_xyz[2] * wp_speed_z * AP_AVOIDANCE_ESCAPE_TIME_SEC;
-        if(newdest_neu[2] < _minimum_avoid_height*100) {
-            newdest_neu[0] = my_pos_ned[0]*100 + delta_pos_xy[0] * wp_speed_xy * AP_AVOIDANCE_ESCAPE_TIME_SEC;
-            newdest_neu[1] = my_pos_ned[1]*100 + delta_pos_xy[1] * wp_speed_xy * AP_AVOIDANCE_ESCAPE_TIME_SEC;
-            newdest_neu[2] = -my_pos_ned[2]*100;
-        }
-        return true;
-    }
-
-    {
-        Vector3f perp_xyz = perpendicular_xyz(obstacle->_location, obstacle->_velocity, my_abs_pos);
-        perp_xyz.normalize();
-        newdest_neu[0] = my_pos_ned[0]*100 + perp_xyz[0] * wp_speed_xy * AP_AVOIDANCE_ESCAPE_TIME_SEC;
-        newdest_neu[1] = my_pos_ned[1]*100 + perp_xyz[1] * wp_speed_xy * AP_AVOIDANCE_ESCAPE_TIME_SEC;
-        newdest_neu[2] =  -my_pos_ned[2]*100 + perp_xyz[2] * wp_speed_z * AP_AVOIDANCE_ESCAPE_TIME_SEC;
-    }
-
-    if (newdest_neu[2] < _minimum_avoid_height*100) {
-        // too close to the ground to do 3D avoidance
-        // GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "AVOID: PERPENDICULAR: 2D");
-        Vector2f perp_xy = perpendicular_xy(obstacle->_location, obstacle->_velocity, my_abs_pos);
-        perp_xy.normalize();
-        newdest_neu[0] = my_pos_ned[0]*100 + perp_xy[0] * wp_speed_xy * AP_AVOIDANCE_ESCAPE_TIME_SEC;
-        newdest_neu[1] = my_pos_ned[1]*100 + perp_xy[1] * wp_speed_xy * AP_AVOIDANCE_ESCAPE_TIME_SEC;
-        newdest_neu[2] = -my_pos_ned[2]*100;
-    }
-
-    return true;
 }
 
 // get unit vector away from the nearest obstacle

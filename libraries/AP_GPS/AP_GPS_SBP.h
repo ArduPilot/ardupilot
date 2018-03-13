@@ -31,6 +31,8 @@ public:
 
     AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
+    bool supports_mavlink_gps_rtk_message() { return true; }
+
     // Methods
     bool read();
 
@@ -38,12 +40,14 @@ public:
 
     static bool _detect(struct SBP_detect_state &state, uint8_t data);
 
+    const char *name() const override { return "SBP"; }
+
 private:
 
    // ************************************************************************
     // Swift Navigation SBP protocol types and definitions
     // ************************************************************************
-  
+
     struct sbp_parser_state_t {
       enum {
         WAITING = 0,
@@ -62,10 +66,10 @@ private:
     } parser_state;
 
     static const uint8_t SBP_PREAMBLE = 0x55;
-    
+
     //Message types supported by this driver
-    static const uint16_t SBP_STARTUP_MSGTYPE        = 0xFF00;    
-    static const uint16_t SBP_HEARTBEAT_MSGTYPE      = 0xFFFF;    
+    static const uint16_t SBP_STARTUP_MSGTYPE        = 0xFF00;
+    static const uint16_t SBP_HEARTBEAT_MSGTYPE      = 0xFFFF;
     static const uint16_t SBP_GPS_TIME_MSGTYPE       = 0x0100;
     static const uint16_t SBP_DOPS_MSGTYPE           = 0x0206;
     static const uint16_t SBP_POS_ECEF_MSGTYPE       = 0x0200;
@@ -76,7 +80,21 @@ private:
     static const uint16_t SBP_VEL_NED_MSGTYPE        = 0x0205;
     static const uint16_t SBP_TRACKING_STATE_MSGTYPE = 0x0016;
     static const uint16_t SBP_IAR_STATE_MSGTYPE      = 0x0019;
-    
+
+    // Heartbeat
+    // struct sbp_heartbeat_t {
+    //     uint32_t flags; //< Status flags (reserved)
+    // }; // 4 bytes
+    struct PACKED sbp_heartbeat_t {
+        bool sys_error : 1;
+        bool io_error : 1;
+        bool nap_error : 1;
+        uint8_t res : 5;
+        uint8_t protocol_minor : 8;
+        uint8_t protocol_major : 8;
+        uint8_t res2 : 7;
+        bool ext_antenna : 1;
+    }; // 4 bytes
 
     // GPS Time
     struct PACKED sbp_gps_time_t {
@@ -116,7 +134,7 @@ private:
         int32_t d;             //< Velocity Down coordinate  (unit: mm/s)
         uint16_t h_accuracy;   //< Horizontal velocity accuracy estimate (unit: mm/s)
         uint16_t v_accuracy;   //< Vertical velocity accuracy estimate (unit: mm/s)
-        uint8_t n_sats;        //< Number of satellites used in solution 
+        uint8_t n_sats;        //< Number of satellites used in solution
         uint8_t flags;         //< Status flags (reserved)
     }; // 22 bytes
 
@@ -164,6 +182,6 @@ private:
 
     void logging_log_full_update();
     void logging_log_raw_sbp(uint16_t msg_type, uint16_t sender_id, uint8_t msg_len, uint8_t *msg_buff);
-   
+
 
 };

@@ -1,5 +1,7 @@
 /*
-  24 state EKF based on https://github.com/priseborough/InertialNav
+  24 state EKF based on the derivation in https://github.com/priseborough/
+  InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/
+  GenerateNavFilterEquations.m
 
   Converted from Matlab to C++ by Paul Riseborough
 
@@ -34,7 +36,7 @@
 #define MASK_GPS_HDOP       (1<<1)
 #define MASK_GPS_SPD_ERR    (1<<2)
 #define MASK_GPS_POS_ERR    (1<<3)
-#define MASK_GPS_YAW_ERR 	(1<<4)
+#define MASK_GPS_YAW_ERR    (1<<4)
 #define MASK_GPS_POS_DRIFT  (1<<5)
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
@@ -44,6 +46,12 @@
 #define HGT_SOURCE_RNG  1
 #define HGT_SOURCE_GPS  2
 #define HGT_SOURCE_BCN  3
+
+// target EKF update time step
+#define EKF_TARGET_DT 0.01f
+
+// mag fusion final reset altitude
+#define EKF2_MAG_FINAL_RESET_ALT 2.5f
 
 class AP_AHRS;
 
@@ -154,10 +162,10 @@ public:
     bool getOriginLLH(struct Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
+    // All NED positions calculated by the filter will be relative to this location
     // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
     // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(struct Location &loc);
+    bool setOriginLLH(const Location &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -294,6 +302,9 @@ public:
 
     // get the IMU index
     uint8_t getIMUIndex(void) const { return imu_index; }
+
+    // get timing statistics structure
+    void getTimingStatistics(struct ekf_timing &timing);
     
 private:
     // Reference to the global EKF frontend for parameters
@@ -533,7 +544,7 @@ private:
 
     // helper functions for readIMUData
     bool readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt);
-    bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng);
+    bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng_dt);
 
     // helper functions for correcting IMU data
     void correctDeltaAngle(Vector3f &delAng, float delAngDT);
@@ -683,8 +694,8 @@ private:
     // calculate a filtered offset between baro height measurement and EKF height estimate
     void calcFiltBaroOffset();
 
-    // calculate a filtered offset between GPS height measurement and EKF height estimate
-    void calcFiltGpsHgtOffset();
+    // correct the height of the EKF origin to be consistent with GPS Data using a Bayes filter.
+    void correctEkfOriginHeight();
 
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
@@ -700,6 +711,9 @@ private:
 
     // effective value of MAG_CAL
     uint8_t effective_magCal(void) const;
+
+    // update timing statistics structure
+    void updateTimingStatistics(void);
     
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH
@@ -719,8 +733,6 @@ private:
     bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool badMagYaw;                 // boolean true if the magnetometer is declared to be producing bad data
     bool badIMUdata;                // boolean true if the bad IMU data is detected
-
-    const float EKF_TARGET_DT = 0.01f;    // target EKF update time step
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Vector28 Kfusion;               // Kalman gain vector
@@ -795,7 +807,8 @@ private:
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
-    struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
+    uint8_t last_gps_idx;           // sensor ID of the GPS receiver used for the last fusion or reset
+    struct Location EKF_origin;     // LLH origin of the NED axis system
     bool validOrigin;               // true when the EKF origin is valid
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     float gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
@@ -875,6 +888,7 @@ private:
     bool delAngBiasLearned;         // true when the gyro bias has been learned
     nav_filter_status filterStatus; // contains the status of various filter outputs
     float ekfOriginHgtVar;          // Variance of the the EKF WGS-84 origin height estimate (m^2)
+    double ekfGpsRefHgt;            // floating point representation of the WGS-84 reference height used to convert GPS height to local height (m)
     uint32_t lastOriginHgtTime_ms;  // last time the ekf's WGS-84 origin height was corrected
     Vector3f outputTrackError;      // attitude (rad), velocity (m/s) and position (m) tracking error magnitudes from the output observer
     Vector3f velOffsetNED;          // This adds to the earth frame velocity estimate at the IMU to give the velocity at the body origin (m/s)
@@ -915,8 +929,6 @@ private:
     bool fuseOptFlowData;           // this boolean causes the last optical flow measurement to be fused
     float auxFlowObsInnov;          // optical flow rate innovation from 1-state terrain offset estimator
     float auxFlowObsInnovVar;       // innovation variance for optical flow observations from 1-state terrain offset estimator
-    Vector2 flowRadXYcomp;          // motion compensated optical flow angular rates(rad/sec)
-    Vector2 flowRadXY;              // raw (non motion compensated) optical flow angular rates (rad/sec)
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
@@ -1064,6 +1076,7 @@ private:
     struct {
         bool bad_sAcc:1;
         bool bad_hAcc:1;
+        bool bad_vAcc:1;
         bool bad_yaw:1;
         bool bad_sats:1;
         bool bad_VZ:1;
@@ -1109,6 +1122,9 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
     AP_HAL::Util::perf_counter_t  _perf_test[10];
 
+    // timing statistics
+    struct ekf_timing timing;
+    
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 

@@ -1,6 +1,7 @@
 from LogAnalyzer import Test,TestResult
 import DataflashLog
 
+from functools import reduce
 import math
 
 
@@ -86,25 +87,30 @@ class TestCompass(Test):
                         if index == 0:
                             (minMagField, maxMagField) = (mf,mf)
                     index += 1
-                percentDiff = (maxMagField-minMagField) / minMagField
-                if percentDiff > percentDiffThresholdFAIL:
+                if minMagField is None:
                     FAIL()
-                    self.result.statusMessage = self.result.statusMessage + "Large change in mag_field (%.2f%%)\n" % (percentDiff*100)
-                elif percentDiff > percentDiffThresholdWARN:
-                    WARN()
-                    self.result.statusMessage = self.result.statusMessage + "Moderate change in mag_field (%.2f%%)\n" % (percentDiff*100)
+                    self.result.statusMessage = self.result.statusMessage + "No valid mag data found\n"
                 else:
-                    self.result.statusMessage = self.result.statusMessage + "mag_field interference within limits (%.2f%%)\n" % (percentDiff*100)
-                if minMagField < minMagFieldThreshold:
-                    self.result.statusMessage = self.result.statusMessage + "Min mag field length (%.2f) < recommended (%.2f)\n" % (minMagField,minMagFieldThreshold)
-                if maxMagField > maxMagFieldThreshold:
-                    self.result.statusMessage = self.result.statusMessage + "Max mag field length (%.2f) > recommended (%.2f)\n" % (maxMagField,maxMagFieldThreshold)
+                    percentDiff = (maxMagField-minMagField) / minMagField
+                    if percentDiff > percentDiffThresholdFAIL:
+                        FAIL()
+                        self.result.statusMessage = self.result.statusMessage + "Large change in mag_field (%.2f%%)\n" % (percentDiff*100)
+                    elif percentDiff > percentDiffThresholdWARN:
+                        WARN()
+                        self.result.statusMessage = self.result.statusMessage + "Moderate change in mag_field (%.2f%%)\n" % (percentDiff*100)
+                    else:
+                        self.result.statusMessage = self.result.statusMessage + "mag_field interference within limits (%.2f%%)\n" % (percentDiff*100)
+                    if minMagField < minMagFieldThreshold:
+                        self.result.statusMessage = self.result.statusMessage + "Min mag field length (%.2f) < recommended (%.2f)\n" % (minMagField,minMagFieldThreshold)
+                    if maxMagField > maxMagFieldThreshold:
+                        self.result.statusMessage = self.result.statusMessage + "Max mag field length (%.2f) > recommended (%.2f)\n" % (maxMagField,maxMagFieldThreshold)
+                    if verbose:
+                        self.result.statusMessage = self.result.statusMessage + "Min mag_field of %.2f on line %d\n" % (minMagField,minMagFieldLine)
+                        self.result.statusMessage = self.result.statusMessage + "Max mag_field of %.2f on line %d\n" % (maxMagField,maxMagFieldLine)
                 if zerosFound:
-                    WARN()
+                    if self.result.status == TestResult.StatusType.GOOD:
+                        WARN()
                     self.result.statusMessage = self.result.statusMessage + "All zeros found in MAG X/Y/Z log data\n"
-                if verbose:
-                    self.result.statusMessage = self.result.statusMessage + "Min mag_field of %.2f on line %d\n" % (minMagField,minMagFieldLine)
-                    self.result.statusMessage = self.result.statusMessage + "Max mag_field of %.2f on line %d\n" % (maxMagField,maxMagFieldLine)
 
             else:
                 self.result.statusMessage = self.result.statusMessage + "No MAG data, unable to test mag_field interference\n"
@@ -112,13 +118,3 @@ class TestCompass(Test):
         except KeyError as e:
             self.result.status = TestResult.StatusType.FAIL
             self.result.statusMessage = str(e) + ' not found'
-
-
-
-
-
-
-
-
-
-

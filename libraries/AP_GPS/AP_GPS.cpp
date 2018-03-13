@@ -19,6 +19,8 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <climits>
 
 #include "AP_GPS_NOVA.h"
 #include "AP_GPS_ERB.h"
@@ -26,31 +28,55 @@
 #include "AP_GPS_MTK.h"
 #include "AP_GPS_MTK19.h"
 #include "AP_GPS_NMEA.h"
-#include "AP_GPS_PX4.h"
 #include "AP_GPS_QURT.h"
 #include "AP_GPS_SBF.h"
 #include "AP_GPS_SBP.h"
+#include "AP_GPS_SBP2.h"
 #include "AP_GPS_SIRF.h"
 #include "AP_GPS_UBLOX.h"
 #include "AP_GPS_MAV.h"
 #include "GPS_Backend.h"
 
+#if HAL_WITH_UAVCAN
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#include "AP_GPS_UAVCAN.h"
+#endif
+
+#define GPS_BAUD_TIME_MS 1200
+#define GPS_TIMEOUT_MS 4000u
+
+// defines used to specify the mask position for use of different accuracy metrics in the blending algorithm
+#define BLEND_MASK_USE_HPOS_ACC     1
+#define BLEND_MASK_USE_VPOS_ACC     2
+#define BLEND_MASK_USE_SPD_ACC      4
+#define BLEND_COUNTER_FAILURE_INCREMENT 10
+
 extern const AP_HAL::HAL &hal;
+
+// baudrates to try to detect GPSes with
+const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57600U, 230400U};
+
+// initialisation blobs to send to the GPS to try to get it into the
+// right mode
+const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
+
+AP_GPS *AP_GPS::_singleton;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
+    AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], HAL_GPS_TYPE_DEFAULT),
 
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
@@ -65,7 +91,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
     // @Description: Automatic switchover to GPS reporting best lock
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:UseBest,2:Blend
     // @User: Advanced
     AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, 1),
 
@@ -88,7 +114,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @DisplayName: Minimum elevation
     // @Description: This sets the minimum elevation of satellites above the horizon for them to be used for navigation. Setting this to -100 leaves the minimum elevation set to the GPS modules default.
     // @Range: -100 90
-    // @Units: Degrees
+    // @Units: deg
     // @User: Advanced
     AP_GROUPINFO("MIN_ELEV", 6, AP_GPS, _min_elevation, -100),
 
@@ -102,14 +128,14 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: SBP_LOGMASK
     // @DisplayName: Swift Binary Protocol Logging Mask
     // @Description: Masked with the SBP msg_type field to determine whether SBR1/SBR2 data is logged
-    // @Values: 0x0000:None, 0xFFFF:All, 0xFF00:External only
+    // @Values: 0:None (0x0000),-1:All (0xFFFF),-256:External only (0xFF00)
     // @User: Advanced
     AP_GROUPINFO("SBP_LOGMASK", 8, AP_GPS, _sbp_logmask, 0xFF00),
 
     // @Param: RAW_DATA
     // @DisplayName: Raw data logging
-    // @Description: Enable logging of RXM raw data from uBlox which includes carrier phase and pseudo range information. This allows for post processing of dataflash logs for more precise positioning. Note that this requires a raw capable uBlox such as the 6P or 6T.
-    // @Values: 0:Disabled,1:log every sample,5:log every 5 samples
+    // @Description: Handles logging raw data; on uBlox chips that support raw data this will log RXM messages into dataflash log; on Septentrio this will log on the equipment's SD card and when set to 2, the autopilot will try to stop logging after disarming and restart after arming
+    // @Values: 0:Ignore,1:Always log,2:Stop logging when disarmed (SBF only),5:Only log every five samples (uBlox only)
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("RAW_DATA", 9, AP_GPS, _raw_data, 0),
@@ -127,7 +153,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: Determines whether the configuration for this GPS should be written to non-volatile memory on the GPS. Currently working for UBlox 6 series and above.
     // @Values: 0:Do not save config,1:Save config,2:Save only when needed
     // @User: Advanced
-    AP_GROUPINFO("SAVE_CFG", 11, AP_GPS, _save_config, 0),
+    AP_GROUPINFO("SAVE_CFG", 11, AP_GPS, _save_config, 2),
 
     // @Param: GNSS_MODE2
     // @DisplayName: GNSS system configuration
@@ -147,16 +173,18 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: RATE_MS
     // @DisplayName: GPS update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
-    // @Units: milliseconds
+    // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
+    // @Range: 50 200
     // @User: Advanced
     AP_GROUPINFO("RATE_MS", 14, AP_GPS, _rate_ms[0], 200),
 
     // @Param: RATE_MS2
     // @DisplayName: GPS 2 update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
-    // @Units: milliseconds
+    // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
+    // @Range: 50 200
     // @User: Advanced
     AP_GROUPINFO("RATE_MS2", 15, AP_GPS, _rate_ms[1], 200),
 
@@ -201,39 +229,141 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: DELAY_MS
     // @DisplayName: GPS delay in milliseconds
     // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.
-    // @Units: milliseconds
+    // @Units: ms
     // @Range: 0 250
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("DELAY_MS", 18, AP_GPS, _delay_ms[0], 0),
 
     // @Param: DELAY_MS2
     // @DisplayName: GPS 2 delay in milliseconds
     // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.
-    // @Units: milliseconds
+    // @Units: ms
     // @Range: 0 250
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("DELAY_MS2", 19, AP_GPS, _delay_ms[1], 0),
+
+    // @Param: BLEND_MASK
+    // @DisplayName: Multi GPS Blending Mask
+    // @Description: Determines which of the accuracy measures Horizontal position, Vertical Position and Speed are used to calculate the weighting on each GPS receiver when soft switching has been selected by setting GPS_AUTO_SWITCH to 2
+    // @Bitmask: 0:Horiz Pos,1:Vert Pos,2:Speed
+    // @User: Advanced
+    AP_GROUPINFO("BLEND_MASK", 20, AP_GPS, _blend_mask, 5),
+
+    // @Param: BLEND_TC
+    // @DisplayName: Blending time constant
+    // @Description: Controls the slowest time constant applied to the calculation of GPS position and height offsets used to adjust different GPS receivers for steady state position differences.
+    // @Units: s
+    // @Range: 5.0 30.0
+    // @User: Advanced
+    AP_GROUPINFO("BLEND_TC", 21, AP_GPS, _blend_tc, 10.0f),
+
     AP_GROUPEND
 };
 
-/// Startup initialisation.
-void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager)
+// constructor
+AP_GPS::AP_GPS()
 {
-    _DataFlash = dataflash;
+    static_assert((sizeof(_initialisation_blob) * (CHAR_BIT + 2)) < (4800 * GPS_BAUD_TIME_MS * 1e-3),
+                    "GPS initilisation blob is to large to be completely sent before the baud rate changes");
+
+    AP_Param::setup_object_defaults(this, var_info);
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_GPS must be singleton");
+    }
+    _singleton = this;
+}
+
+/// Startup initialisation.
+void AP_GPS::init(const AP_SerialManager& serial_manager)
+{
     primary_instance = 0;
 
     // search for serial ports with gps protocol
     _port[0] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 0);
     _port[1] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 1);
     _last_instance_swap_ms = 0;
+
+    // Initialise class variables used to do GPS blending
+    _omega_lpf = 1.0f / constrain_float(_blend_tc, 5.0f, 30.0f);
+
+    // prep the state instance fields
+    for (uint8_t i = 0; i < GPS_MAX_INSTANCES; i++) {
+        state[i].instance = i;
+    }
+
+    // sanity check update rate
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (_rate_ms[i] <= 0 || _rate_ms[i] > GPS_MAX_RATE_MS) {
+            _rate_ms[i] = GPS_MAX_RATE_MS;
+        }
+    }
 }
 
-// baudrates to try to detect GPSes with
-const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9600U, 230400U};
+// return number of active GPS sensors. Note that if the first GPS
+// is not present but the 2nd is then we return 2. Note that a blended
+// GPS solution is treated as an additional sensor.
+uint8_t AP_GPS::num_sensors(void) const
+{
+    if (!_output_is_blended) {
+        return num_instances;
+    } else {
+        return num_instances+1;
+    }
+}
 
-// initialisation blobs to send to the GPS to try to get it into the
-// right mode
-const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
+bool AP_GPS::speed_accuracy(uint8_t instance, float &sacc) const
+{
+    if (state[instance].have_speed_accuracy) {
+        sacc = state[instance].speed_accuracy;
+        return true;
+    }
+    return false;
+}
+
+bool AP_GPS::horizontal_accuracy(uint8_t instance, float &hacc) const
+{
+    if (state[instance].have_horizontal_accuracy) {
+        hacc = state[instance].horizontal_accuracy;
+        return true;
+    }
+    return false;
+}
+
+bool AP_GPS::vertical_accuracy(uint8_t instance, float &vacc) const
+{
+    if (state[instance].have_vertical_accuracy) {
+        vacc = state[instance].vertical_accuracy;
+        return true;
+    }
+    return false;
+}
+
+
+/**
+   convert GPS week and milliseconds to unix epoch in milliseconds
+ */
+uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
+{
+    uint64_t fix_time_ms = UNIX_OFFSET_MSEC + gps_week * AP_MSEC_PER_WEEK + gps_ms;
+    return fix_time_ms;
+}
+
+/**
+   calculate current time since the unix epoch in microseconds
+ */
+uint64_t AP_GPS::time_epoch_usec(uint8_t instance) const
+{
+    const GPS_State &istate = state[instance];
+    if (istate.last_gps_time_ms == 0) {
+        return 0;
+    }
+    uint64_t fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
+    // add in the milliseconds since the last fix
+    return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
+}
 
 /*
   send some more initialisation string bytes if there is room in the
@@ -276,27 +406,20 @@ void AP_GPS::send_blob_update(uint8_t instance)
   will fill in drivers[instance] and change state[instance].status
   from NO_GPS to NO_FIX.
  */
-void
-AP_GPS::detect_instance(uint8_t instance)
+void AP_GPS::detect_instance(uint8_t instance)
 {
     AP_GPS_Backend *new_gps = nullptr;
     struct detect_state *dstate = &detect_state[instance];
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
+    state[instance].status = NO_GPS;
+    state[instance].hdop = GPS_UNKNOWN_DOP;
+    state[instance].vdop = GPS_UNKNOWN_DOP;
+    
     switch (_type[instance]) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    case GPS_TYPE_PX4:
-        // check for explicitly chosen PX4 GPS beforehand
-        // it is not possible to autodetect it, nor does it require a real UART
-        _broadcast_gps_type("PX4", instance, -1); // baud rate isn't valid
-        new_gps = new AP_GPS_PX4(*this, state[instance], _port[instance]);
-        goto found_gps;
-        break;
-#endif
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
     case GPS_TYPE_QURT:
-        _broadcast_gps_type("QURTGPS", instance, -1); // baud rate isn't valid
+        dstate->auto_detected_baud = false; // specified, not detected
         new_gps = new AP_GPS_QURT(*this, state[instance], _port[instance]);
         goto found_gps;
         break;
@@ -305,10 +428,41 @@ AP_GPS::detect_instance(uint8_t instance)
     // user has to explicitly set the MAV type, do not use AUTO
     // do not try to detect the MAV type, assume it's there
     case GPS_TYPE_MAV:
-        _broadcast_gps_type("MAV", instance, -1);
+        dstate->auto_detected_baud = false; // specified, not detected
         new_gps = new AP_GPS_MAV(*this, state[instance], nullptr);
         goto found_gps;
         break;
+
+#if HAL_WITH_UAVCAN
+    // user has to explicitly set the UAVCAN type, do not use AUTO
+    case GPS_TYPE_UAVCAN:
+        dstate->auto_detected_baud = false; // specified, not detected
+        if (AP_BoardConfig_CAN::get_can_num_ifaces() >= 1) {
+            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+                if (hal.can_mgr[i] != nullptr) {
+                    AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
+
+                    if (uavcan != nullptr) {
+                        uint8_t gps_node = uavcan->find_gps_without_listener();
+
+                        if (gps_node != UINT8_MAX) {
+                            new_gps = new AP_GPS_UAVCAN(*this, state[instance], nullptr);
+                            ((AP_GPS_UAVCAN*) new_gps)->set_uavcan_manager(i);
+                            if (uavcan->register_gps_listener_to_node(new_gps, gps_node)) {
+                                if (AP_BoardConfig_CAN::get_can_debug() >= 2) {
+                                    printf("AP_GPS_UAVCAN registered\n\r");
+                                }
+                                goto found_gps;
+                            } else {
+                                delete new_gps;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return;
+#endif
 
     default:
         break;
@@ -319,35 +473,26 @@ AP_GPS::detect_instance(uint8_t instance)
         return;
     }
 
-    state[instance].instance = instance;
-    state[instance].status = NO_GPS;
-    state[instance].hdop = 9999;
+    // all remaining drivers automatically cycle through baud rates to detect
+    // the correct baud rate, and should have the selected baud broadcast
+    dstate->auto_detected_baud = true;
 
     switch (_type[instance]) {
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
-        _broadcast_gps_type("SBF", instance, -1); // baud rate isn't valid
         new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance]);
         break;
 
     case GPS_TYPE_GSOF:
-        _broadcast_gps_type("GSOF", instance, -1); // baud rate isn't valid
         new_gps = new AP_GPS_GSOF(*this, state[instance], _port[instance]);
         break;
 
     case GPS_TYPE_NOVA:
-        _broadcast_gps_type("NOVA", instance, -1); // baud rate isn't valid
         new_gps = new AP_GPS_NOVA(*this, state[instance], _port[instance]);
         break;
 
     default:
         break;
-    }
-
-    // record the time when we started detection. This is used to try
-    // to avoid initialising a uBlox as a NMEA GPS
-    if (dstate->detect_started_ms == 0) {
-        dstate->detect_started_ms = now;
     }
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
@@ -363,17 +508,17 @@ AP_GPS::detect_instance(uint8_t instance)
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
-        if (_auto_config == 1) {
+        if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
             send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
         }
     }
 
-    if (_auto_config == 1) {
+    if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
         send_blob_update(instance);
     }
 
     while (initblob_state[instance].remaining == 0 && _port[instance]->available() > 0
-            && new_gps == nullptr) {
+           && new_gps == nullptr) {
         uint8_t data = _port[instance]->read();
         /*
           running a uBlox at less than 38400 will lead to packet
@@ -386,48 +531,39 @@ AP_GPS::detect_instance(uint8_t instance)
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
              _baudrates[dstate->current_baud] == 115200) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
-            _broadcast_gps_type("u-blox", instance, dstate->current_baud);
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
-        } 
+        }
 #if !HAL_MINIMIZE_FEATURES
         // we drop the MTK drivers when building a small build as they are so rarely used
         // and are surprisingly large
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
                  AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
-            _broadcast_gps_type("MTK19", instance, dstate->current_baud);
             new_gps = new AP_GPS_MTK19(*this, state[instance], _port[instance]);
-        } 
-        else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK) &&
-                 AP_GPS_MTK::_detect(dstate->mtk_detect_state, data)) {
-            _broadcast_gps_type("MTK", instance, dstate->current_baud);
+        } else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK) &&
+                   AP_GPS_MTK::_detect(dstate->mtk_detect_state, data)) {
             new_gps = new AP_GPS_MTK(*this, state[instance], _port[instance]);
         }
 #endif
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
+                 AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
+            new_gps = new AP_GPS_SBP2(*this, state[instance], _port[instance]);
+        }
+        else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
-            _broadcast_gps_type("SBP", instance, dstate->current_baud);
             new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
 #if !HAL_MINIMIZE_FEATURES
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
-            _broadcast_gps_type("SIRF", instance, dstate->current_baud);
             new_gps = new AP_GPS_SIRF(*this, state[instance], _port[instance]);
         }
 #endif
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
-            _broadcast_gps_type("ERB", instance, dstate->current_baud);
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
-        }
-        else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
-            // prevent false detection of NMEA mode in
-            // a MTK or UBLOX which has booted in NMEA mode
-            if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
-                AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
-                _broadcast_gps_type("NMEA", instance, dstate->current_baud);
-                new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
-            }
+        } else if (_type[instance] == GPS_TYPE_NMEA &&
+                   AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
+            new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
         }
     }
 
@@ -436,33 +572,23 @@ found_gps:
         state[instance].status = NO_FIX;
         drivers[instance] = new_gps;
         timing[instance].last_message_time_ms = now;
+        timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
+        new_gps->broadcast_gps_type();
     }
 }
 
-AP_GPS::GPS_Status 
-AP_GPS::highest_supported_status(uint8_t instance) const
+AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
 {
-    if (drivers[instance] != nullptr) {
+    if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
         return drivers[instance]->highest_supported_status();
     }
     return AP_GPS::GPS_OK_FIX_3D;
 }
 
-AP_GPS::GPS_Status 
-AP_GPS::highest_supported_status(void) const
-{
-    if (drivers[primary_instance] != nullptr) {
-        return drivers[primary_instance]->highest_supported_status();
-    }
-    return AP_GPS::GPS_OK_FIX_3D;
-}
-
-
 /*
   update one GPS instance. This should be called at 10Hz or greater
  */
-void
-AP_GPS::update_instance(uint8_t instance)
+void AP_GPS::update_instance(uint8_t instance)
 {
     if (_type[instance] == GPS_TYPE_HIL) {
         // in HIL, leave info alone
@@ -471,7 +597,8 @@ AP_GPS::update_instance(uint8_t instance)
     if (_type[instance] == GPS_TYPE_NONE) {
         // not enabled
         state[instance].status = NO_GPS;
-        state[instance].hdop = 9999;
+        state[instance].hdop = GPS_UNKNOWN_DOP;
+        state[instance].vdop = GPS_UNKNOWN_DOP;
         return;
     }
     if (locked_ports & (1U<<instance)) {
@@ -486,19 +613,19 @@ AP_GPS::update_instance(uint8_t instance)
         return;
     }
 
-    if (_auto_config == 1) {
+    if (_auto_config == GPS_AUTO_CONFIG_ENABLE) {
         send_blob_update(instance);
     }
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
-    uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::millis();
 
     // if we did not get a message, and the idle timer of 2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
     // detection to run again
     if (!result) {
-        if (tnow - timing[instance].last_message_time_ms > 2000) {
+        if (tnow - timing[instance].last_message_time_ms > GPS_TIMEOUT_MS) {
             // free the driver before we run the next detection, so we
             // don't end up with two allocated at any time
             delete drivers[instance];
@@ -506,10 +633,14 @@ AP_GPS::update_instance(uint8_t instance)
             memset(&state[instance], 0, sizeof(state[instance]));
             state[instance].instance = instance;
             state[instance].status = NO_GPS;
-            state[instance].hdop = 9999;
+            state[instance].hdop = GPS_UNKNOWN_DOP;
+            state[instance].vdop = GPS_UNKNOWN_DOP;
             timing[instance].last_message_time_ms = tnow;
+            timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
         }
     } else {
+        // delta will only be correct after parsing two messages
+        timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
         if (state[instance].status >= GPS_OK_FIX_2D) {
             timing[instance].last_fix_time_ms = tnow;
@@ -520,87 +651,150 @@ AP_GPS::update_instance(uint8_t instance)
 /*
   update all GPS instances
  */
-void
-AP_GPS::update(void)
+void AP_GPS::update(void)
 {
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         update_instance(i);
     }
 
-    // work out which GPS is the primary, and how many sensors we have
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+    // calculate number of instances
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (state[i].status != NO_GPS) {
             num_instances = i+1;
         }
-        if (_auto_switch) {            
-            if (i == primary_instance) {
-                continue;
-            }
-            if (state[i].status > state[primary_instance].status) {
-                // we have a higher status lock, change GPS
-                primary_instance = i;
-                continue;
-            }
+    }
 
-            bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
+    // if blending is requested, attempt to calculate weighting for each GPS
+    if (_auto_switch == 2) {
+        _output_is_blended = calc_blend_weights();
+        // adjust blend health counter
+        if (!_output_is_blended) {
+            _blend_health_counter = MIN(_blend_health_counter+BLEND_COUNTER_FAILURE_INCREMENT, 100);
+        } else if (_blend_health_counter > 0) {
+            _blend_health_counter--;
+        }
+        // stop blending if unhealthy
+        if (_blend_health_counter >= 50) {
+            _output_is_blended = false;
+        }
+    } else {
+        _output_is_blended = false;
+        _blend_health_counter = 0;
+    }
 
-            if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
+    if (_output_is_blended) {
+        // Use the weighting to calculate blended GPS states
+        calc_blended_state();
+        // set primary to the virtual instance
+        primary_instance = GPS_BLENDED_INSTANCE;
+    } else {
+        // use switch logic to find best GPS
+        uint32_t now = AP_HAL::millis();
+        if (_auto_switch >= 1) {
+            // handling switching away from blended GPS
+            if (primary_instance == GPS_BLENDED_INSTANCE) {
+                primary_instance = 0;
+                for (uint8_t i=1; i<GPS_MAX_RECEIVERS; i++) {
+                    // choose GPS with highest state or higher number of satellites
+                    if ((state[i].status > state[primary_instance].status) ||
+                        ((state[i].status == state[primary_instance].status) && (state[i].num_sats > state[primary_instance].num_sats))) {
+                        primary_instance = i;
+                        _last_instance_swap_ms = now;
+                    }
+                }
+            } else {
+                // handle switch between real GPSs
+                for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+                    if (i == primary_instance) {
+                        continue;
+                    }
+                    if (state[i].status > state[primary_instance].status) {
+                        // we have a higher status lock, or primary is set to the blended GPS, change GPS
+                        primary_instance = i;
+                        _last_instance_swap_ms = now;
+                        continue;
+                    }
 
-                uint32_t now = AP_HAL::millis();
-                bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
+                    bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
 
-                if ( (another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
-                     (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000 ) ) {
-                // this GPS has more satellites than the
-                // current primary, switch primary. Once we switch we will
-                // then tend to stick to the new GPS as primary. We don't
-                // want to switch too often as it will look like a
-                // position shift to the controllers.
-                primary_instance = i;
-                _last_instance_swap_ms = now;
+                    if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
+
+                        bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
+
+                        if ((another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
+                            (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000)) {
+                            // this GPS has more satellites than the
+                            // current primary, switch primary. Once we switch we will
+                            // then tend to stick to the new GPS as primary. We don't
+                            // want to switch too often as it will look like a
+                            // position shift to the controllers.
+                            primary_instance = i;
+                            _last_instance_swap_ms = now;
+                        }
+                    }
                 }
             }
         } else {
+            // AUTO_SWITCH is 0 so no switching of GPSs
             primary_instance = 0;
         }
+
+        // copy the primary instance to the blended instance in case it is enabled later
+        state[GPS_BLENDED_INSTANCE] = state[primary_instance];
+        _blended_antenna_offset = _antenna_offset[primary_instance];
     }
 
     // update notify with gps status. We always base this on the primary_instance
     AP_Notify::flags.gps_status = state[primary_instance].status;
     AP_Notify::flags.gps_num_sats = state[primary_instance].num_sats;
+
+}
+
+void AP_GPS::handle_gps_inject(const mavlink_message_t *msg)
+{
+    mavlink_gps_inject_data_t packet;
+    mavlink_msg_gps_inject_data_decode(msg, &packet);
+    //TODO: check target
+
+    inject_data(packet.data, packet.len);
 }
 
 /*
   pass along a mavlink message (for MAV type)
  */
-void
-AP_GPS::handle_msg(const mavlink_message_t *msg)
+void AP_GPS::handle_msg(const mavlink_message_t *msg)
 {
-    if (msg->msgid == MAVLINK_MSG_ID_GPS_RTCM_DATA) {
+    switch (msg->msgid) {
+    case MAVLINK_MSG_ID_GPS_RTCM_DATA:
         // pass data to de-fragmenter
         handle_gps_rtcm_data(msg);
-        return;
-    }
-    uint8_t i;
-    for (i=0; i<num_instances; i++) {
-        if ((drivers[i] != nullptr) && (_type[i] != GPS_TYPE_NONE)) {
-            drivers[i]->handle_msg(msg);
+        break;
+    case MAVLINK_MSG_ID_GPS_INJECT_DATA:
+        handle_gps_inject(msg);
+        break;
+    default: {
+        uint8_t i;
+        for (i=0; i<num_instances; i++) {
+            if ((drivers[i] != nullptr) && (_type[i] != GPS_TYPE_NONE)) {
+                drivers[i]->handle_msg(msg);
+            }
         }
+        break;
+    }
     }
 }
 
 /*
   set HIL (hardware in the loop) status for a GPS instance
  */
-void 
-AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms, 
-               const Location &_location, const Vector3f &_velocity, uint8_t _num_sats, 
-               uint16_t hdop)
+void AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
+                    const Location &_location, const Vector3f &_velocity, uint8_t _num_sats,
+                    uint16_t hdop)
 {
-    if (instance >= GPS_MAX_INSTANCES) {
+    if (instance >= GPS_MAX_RECEIVERS) {
         return;
     }
-    uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::millis();
     GPS_State &istate = state[instance];
     istate.status = _status;
     istate.location = _location;
@@ -611,9 +805,9 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     istate.hdop = hdop;
     istate.num_sats = _num_sats;
     istate.last_gps_time_ms = tnow;
-    uint64_t gps_time_ms = time_epoch_ms - (17000ULL*86400ULL + 52*10*7000ULL*86400ULL - GPS_LEAPSECONDS_MILLIS);
-    istate.time_week     = gps_time_ms / (86400*7*(uint64_t)1000);
-    istate.time_week_ms  = gps_time_ms - istate.time_week*(86400*7*(uint64_t)1000);
+    uint64_t gps_time_ms = time_epoch_ms - UNIX_OFFSET_MSEC;
+    istate.time_week     = gps_time_ms / AP_MSEC_PER_WEEK;
+    istate.time_week_ms  = gps_time_ms - istate.time_week * AP_MSEC_PER_WEEK;
     timing[instance].last_message_time_ms = tnow;
     timing[instance].last_fix_time_ms = tnow;
     _type[instance].set(GPS_TYPE_HIL);
@@ -622,6 +816,9 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
 // set accuracy for HIL
 void AP_GPS::setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vacc, float sacc, bool _have_vertical_velocity, uint32_t sample_ms)
 {
+    if (instance >= GPS_MAX_RECEIVERS) {
+        return;
+    }
     GPS_State &istate = state[instance];
     istate.vdop = vdop * 100;
     istate.horizontal_accuracy = hacc;
@@ -638,15 +835,14 @@ void AP_GPS::setHIL_Accuracy(uint8_t instance, float vdop, float hacc, float vac
 }
 
 /**
-   Lock a GPS port, prevening the GPS driver from using it. This can
+   Lock a GPS port, preventing the GPS driver from using it. This can
    be used to allow a user to control a GPS port via the
    SERIAL_CONTROL protocol
  */
-void 
-AP_GPS::lock_port(uint8_t instance, bool lock)
+void AP_GPS::lock_port(uint8_t instance, bool lock)
 {
 
-    if (instance >= GPS_MAX_INSTANCES) {
+    if (instance >= GPS_MAX_RECEIVERS) {
         return;
     }
     if (lock) {
@@ -656,13 +852,12 @@ AP_GPS::lock_port(uint8_t instance, bool lock)
     }
 }
 
-    //Inject a packet of raw binary to a GPS
-void 
-AP_GPS::inject_data(uint8_t *data, uint8_t len)
+// Inject a packet of raw binary to a GPS
+void AP_GPS::inject_data(uint8_t *data, uint16_t len)
 {
     //Support broadcasting to all GPSes.
     if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
-        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             inject_data(i, data, len);
         }
     } else {
@@ -670,16 +865,14 @@ AP_GPS::inject_data(uint8_t *data, uint8_t len)
     }
 }
 
-void 
-AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint8_t len)
+void AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint16_t len)
 {
-    if (instance < GPS_MAX_INSTANCES && drivers[instance] != nullptr) {
+    if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
         drivers[instance]->inject_data(data, len);
     }
-}  
+}
 
-void 
-AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
+void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 {
     static uint32_t last_send_time_ms[MAVLINK_COMM_NUM_BUFFERS];
     if (status(0) > AP_GPS::NO_GPS) {
@@ -697,6 +890,12 @@ AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         last_send_time_ms[chan] = now;
     }
     const Location &loc = location(0);
+    float hacc = 0.0f;
+    float vacc = 0.0f;
+    float sacc = 0.0f;
+    horizontal_accuracy(0, hacc);
+    vertical_accuracy(0, vacc);
+    speed_accuracy(0, sacc);
     mavlink_msg_gps_raw_int_send(
         chan,
         last_fix_time_ms(0)*(uint64_t)1000,
@@ -708,14 +907,18 @@ AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         get_vdop(0),
         ground_speed(0)*100,  // cm/s
         ground_course(0)*100, // 1/100 degrees,
-        num_sats(0));
+        num_sats(0),
+        0,                    // TODO: Elipsoid height in mm
+        hacc * 1000,          // one-sigma standard deviation in mm
+        vacc * 1000,          // one-sigma standard deviation in mm
+        sacc * 1000,          // one-sigma standard deviation in mm/s
+        0);                   // TODO one-sigma heading accuracy standard deviation
 }
 
-void 
-AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
+void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 {
     static uint32_t last_send_time_ms[MAVLINK_COMM_NUM_BUFFERS];
-    if (num_sensors() < 2 || status(1) <= AP_GPS::NO_GPS) {
+    if (num_instances < 2 || status(1) <= AP_GPS::NO_GPS) {
         return;
     }
     // when we have a GPS then only send new data
@@ -737,68 +940,63 @@ AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         ground_speed(1)*100,  // cm/s
         ground_course(1)*100, // 1/100 degrees,
         num_sats(1),
-        0,
-        0);
+        rtk_num_sats(1),
+        rtk_age_ms(1));
 }
 
-void 
-AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan)
+void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
-    if (drivers[0] != nullptr && drivers[0]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
-        drivers[0]->send_mavlink_gps_rtk(chan);
+    if (inst >= GPS_MAX_RECEIVERS) {
+        return;
+    }
+    if (drivers[inst] != nullptr && drivers[inst]->supports_mavlink_gps_rtk_message()) {
+        drivers[inst]->send_mavlink_gps_rtk(chan);
     }
 }
 
-void 
-AP_GPS::send_mavlink_gps2_rtk(mavlink_channel_t chan)
+uint8_t AP_GPS::first_unconfigured_gps(void) const
 {
-    if (drivers[1] != nullptr && drivers[1]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
-        drivers[1]->send_mavlink_gps_rtk(chan);
-    }
-}
-
-uint8_t
-AP_GPS::first_unconfigured_gps(void) const
-{
-    for(int i = 0; i < GPS_MAX_INSTANCES; i++) {
-        if(_type[i] != GPS_TYPE_NONE && (drivers[i] == nullptr || !drivers[i]->is_configured())) {
+    for (int i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        if (_type[i] != GPS_TYPE_NONE && (drivers[i] == nullptr || !drivers[i]->is_configured())) {
             return i;
         }
     }
     return GPS_ALL_CONFIGURED;
 }
 
-void
-AP_GPS::broadcast_first_configuration_failure_reason(void) const {
-    uint8_t unconfigured = first_unconfigured_gps();
+void AP_GPS::broadcast_first_configuration_failure_reason(void) const
+{
+    const uint8_t unconfigured = first_unconfigured_gps();
     if (drivers[unconfigured] == nullptr) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
+        gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: was not found", unconfigured + 1);
     } else {
         drivers[unconfigured]->broadcast_configuration_failure_reason();
     }
 }
 
-void
-AP_GPS::_broadcast_gps_type(const char *type, uint8_t instance, int8_t baud_index)
+// pre-arm check that all GPSs are close to each other.  farthest distance between GPSs (in meters) is returned
+bool AP_GPS::all_consistent(float &distance) const
 {
-    char buffer[64];
-    if (baud_index >= 0) {
-        hal.util->snprintf(buffer, sizeof(buffer),
-                 "GPS %d: detected as %s at %d baud",
-                 instance,
-                 type,
-                 _baudrates[baud_index]);
-    } else {
-        hal.util->snprintf(buffer, sizeof(buffer),
-                 "GPS %d: detected as %s",
-                 instance,
-                 type);
+    // return true immediately if only one valid receiver
+    if (num_instances <= 1 ||
+        drivers[0] == nullptr || _type[0] == GPS_TYPE_NONE) {
+        distance = 0;
+        return true;
     }
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, buffer);
+
+    // calculate distance
+    distance = location_3d_diff_NED(state[0].location, state[1].location).length();
+    // success if distance is within 50m
+    return (distance < 50);
 }
 
+// pre-arm check of GPS blending.  True means healthy or that blending is not being used
+bool AP_GPS::blend_health_check() const
+{
+    return (_blend_health_counter < 50);
+}
 
-/* 
+/*
    re-assemble GPS_RTCM_DATA message
  */
 void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
@@ -810,10 +1008,10 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
         // invalid packet
         return;
     }
-    
+
     if ((packet.flags & 1) == 0) {
         // it is not fragmented, pass direct
-        inject_data_all(packet.data, packet.len);
+        inject_data(packet.data, packet.len);
         return;
     }
 
@@ -832,7 +1030,7 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
     // see if this fragment is consistent with existing fragments
     if (rtcm_buffer->fragments_received &&
         (rtcm_buffer->sequence != sequence ||
-         rtcm_buffer->fragments_received & (1U<<fragment))) {
+        (rtcm_buffer->fragments_received & (1U<<fragment)))) {
         // we have one or more partial fragments already received
         // which conflict with the new fragment, discard previous fragments
         memset(rtcm_buffer, 0, sizeof(*rtcm_buffer));
@@ -863,39 +1061,471 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
     if (rtcm_buffer->fragment_count != 0 &&
         rtcm_buffer->fragments_received == (1U << rtcm_buffer->fragment_count) - 1) {
         // we have them all, inject
-        inject_data_all(rtcm_buffer->buffer, rtcm_buffer->total_length);
+        inject_data(rtcm_buffer->buffer, rtcm_buffer->total_length);
         memset(rtcm_buffer, 0, sizeof(*rtcm_buffer));
     }
 }
 
-/*
-  inject data into all backends
-*/
-void AP_GPS::inject_data_all(const uint8_t *data, uint16_t len)
+void AP_GPS::Write_DataFlash_Log_Startup_messages()
 {
-    uint8_t i;
-    for (i=0; i<num_instances; i++) {
-        if ((drivers[i] != nullptr) && (_type[i] != GPS_TYPE_NONE)) {
-            drivers[i]->inject_data(data, len);
+    for (uint8_t instance=0; instance<num_instances; instance++) {
+        if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
+            continue;
         }
+        drivers[instance]->Write_DataFlash_Log_Startup_messages();
     }
-    
 }
 
 /*
-  return expected lag from a GPS
+  return the expected lag (in seconds) in the position and velocity readings from the gps
+  return true if the GPS hardware configuration is known or the delay parameter has been set
  */
-float AP_GPS::get_lag(uint8_t instance) const
+bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 {
+    // return lag of blended GPS
+    if (instance == GPS_BLENDED_INSTANCE) {
+        lag_sec = _blended_lag_sec;
+        // auto switching uses all GPS receivers, so all must be configured
+        return all_configured();
+    }
+
     if (_delay_ms[instance] > 0) {
         // if the user has specified a non zero time delay, always return that value
-        return 0.001f * (float)_delay_ms[instance];
+        lag_sec = 0.001f * (float)_delay_ms[instance];
+        // the user is always right !!
+        return true;
     } else if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
-        // no GPS was detected in this instance
-        // so return a default delay of 1 measurement interval
-        return 0.001f * (float)_rate_ms[instance];
+        // no GPS was detected in this instance so return the worst possible lag term
+        if (_type[instance] == GPS_TYPE_NONE) {
+            lag_sec = 0.0f;
+            return true;
+        } else {
+            lag_sec = GPS_WORST_LAG_SEC;
+        }
+        return _type[instance] == GPS_TYPE_AUTO;
     } else {
         // the user has not specified a delay so we determine it from the GPS type
-        return drivers[instance]->get_lag();
+        return drivers[instance]->get_lag(lag_sec);
     }
 }
+
+// return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
+const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
+{
+    if (instance == GPS_MAX_RECEIVERS) {
+        // return an offset for the blended GPS solution
+        return _blended_antenna_offset;
+    } else {
+        return _antenna_offset[instance];
+    }
+}
+
+/*
+  returns the desired gps update rate in milliseconds
+  this does not provide any guarantee that the GPS is updating at the requested
+  rate it is simply a helper for use in the backends for determining what rate
+  they should be configuring the GPS to run at
+*/
+uint16_t AP_GPS::get_rate_ms(uint8_t instance) const
+{
+    // sanity check
+    if (instance >= num_instances || _rate_ms[instance] <= 0) {
+        return GPS_MAX_RATE_MS;
+    }
+    return MIN(_rate_ms[instance], GPS_MAX_RATE_MS);
+}
+
+/*
+ calculate the weightings used to blend GPSs location and velocity data
+*/
+bool AP_GPS::calc_blend_weights(void)
+{
+    // zero the blend weights
+    memset(&_blend_weights, 0, sizeof(_blend_weights));
+
+    // exit immediately if not enough receivers to do blending
+    if (num_instances < 2 || drivers[1] == nullptr || _type[1] == GPS_TYPE_NONE) {
+        return false;
+    }
+
+    // Use the oldest non-zero time, but if time difference is excessive, use newest to prevent a disconnected receiver from blocking updates
+    uint32_t max_ms = 0; // newest non-zero system time of arrival of a GPS message
+    uint32_t min_ms = -1; // oldest non-zero system time of arrival of a GPS message
+    int16_t max_rate_ms = 0; // largest update interval of a GPS receiver
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        // Find largest and smallest times
+        if (state[i].last_gps_time_ms > max_ms) {
+            max_ms = state[i].last_gps_time_ms;
+        }
+        if ((state[i].last_gps_time_ms < min_ms) && (state[i].last_gps_time_ms > 0)) {
+            min_ms = state[i].last_gps_time_ms;
+        }
+        if (get_rate_ms(i) > max_rate_ms) {
+            max_rate_ms = get_rate_ms(i);
+        }
+    }
+    if ((int32_t)(max_ms - min_ms) < (int32_t)(2 * max_rate_ms)) {
+        // data is not too delayed so use the oldest time_stamp to give a chance for data from that receiver to be updated
+        state[GPS_BLENDED_INSTANCE].last_gps_time_ms = min_ms;
+    } else {
+        // receiver data has timed out so fail out of blending
+        return false;
+    }
+
+    // calculate the sum squared speed accuracy across all GPS sensors
+    float speed_accuracy_sum_sq = 0.0f;
+    if (_blend_mask & BLEND_MASK_USE_SPD_ACC) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+            if (state[i].status >= GPS_OK_FIX_3D) {
+                if (state[i].have_speed_accuracy && state[i].speed_accuracy > 0.0f) {
+                    speed_accuracy_sum_sq += state[i].speed_accuracy * state[i].speed_accuracy;
+                } else {
+                    // not all receivers support this metric so set it to zero and don't use it
+                    speed_accuracy_sum_sq = 0.0f;
+                    break;
+                }
+            }
+        }
+    }
+
+    // calculate the sum squared horizontal position accuracy across all GPS sensors
+    float horizontal_accuracy_sum_sq = 0.0f;
+    if (_blend_mask & BLEND_MASK_USE_HPOS_ACC) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+            if (state[i].status >= GPS_OK_FIX_2D) {
+                if (state[i].have_horizontal_accuracy && state[i].horizontal_accuracy > 0.0f) {
+                    horizontal_accuracy_sum_sq += state[i].horizontal_accuracy * state[i].horizontal_accuracy;
+                } else {
+                    // not all receivers support this metric so set it to zero and don't use it
+                    horizontal_accuracy_sum_sq = 0.0f;
+                    break;
+                }
+            }
+        }
+    }
+
+    // calculate the sum squared vertical position accuracy across all GPS sensors
+    float vertical_accuracy_sum_sq = 0.0f;
+    if (_blend_mask & BLEND_MASK_USE_VPOS_ACC) {
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+            if (state[i].status >= GPS_OK_FIX_3D) {
+                if (state[i].have_vertical_accuracy && state[i].vertical_accuracy > 0.0f) {
+                    vertical_accuracy_sum_sq += state[i].vertical_accuracy * state[i].vertical_accuracy;
+                } else {
+                    // not all receivers support this metric so set it to zero and don't use it
+                    vertical_accuracy_sum_sq = 0.0f;
+                    break;
+                }
+            }
+        }
+    }
+    // Check if we can do blending using reported accuracy
+    bool can_do_blending = (horizontal_accuracy_sum_sq > 0.0f || vertical_accuracy_sum_sq > 0.0f || speed_accuracy_sum_sq > 0.0f);
+
+    // if we can't do blending using reported accuracy, return false and hard switch logic will be used instead
+    if (!can_do_blending) {
+        return false;
+    }
+
+    float sum_of_all_weights = 0.0f;
+
+    // calculate a weighting using the reported horizontal position
+    float hpos_blend_weights[GPS_MAX_RECEIVERS] = {};
+    if (horizontal_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_HPOS_ACC)) {
+        // calculate the weights using the inverse of the variances
+        float sum_of_hpos_weights = 0.0f;
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+            if (state[i].status >= GPS_OK_FIX_2D && state[i].horizontal_accuracy >= 0.001f) {
+                hpos_blend_weights[i] = horizontal_accuracy_sum_sq / (state[i].horizontal_accuracy * state[i].horizontal_accuracy);
+                sum_of_hpos_weights += hpos_blend_weights[i];
+            }
+        }
+        // normalise the weights
+        if (sum_of_hpos_weights > 0.0f) {
+            for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+                hpos_blend_weights[i] = hpos_blend_weights[i] / sum_of_hpos_weights;
+            }
+            sum_of_all_weights += 1.0f;
+        }
+    }
+
+    // calculate a weighting using the reported vertical position accuracy
+    float vpos_blend_weights[GPS_MAX_RECEIVERS] = {};
+    if (vertical_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_VPOS_ACC)) {
+        // calculate the weights using the inverse of the variances
+        float sum_of_vpos_weights = 0.0f;
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+            if (state[i].status >= GPS_OK_FIX_3D && state[i].vertical_accuracy >= 0.001f) {
+                vpos_blend_weights[i] = vertical_accuracy_sum_sq / (state[i].vertical_accuracy * state[i].vertical_accuracy);
+                sum_of_vpos_weights += vpos_blend_weights[i];
+            }
+        }
+        // normalise the weights
+        if (sum_of_vpos_weights > 0.0f) {
+            for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+                vpos_blend_weights[i] = vpos_blend_weights[i] / sum_of_vpos_weights;
+            }
+            sum_of_all_weights += 1.0f;
+        };
+    }
+
+    // calculate a weighting using the reported speed accuracy
+    float spd_blend_weights[GPS_MAX_RECEIVERS] = {};
+    if (speed_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_SPD_ACC)) {
+        // calculate the weights using the inverse of the variances
+        float sum_of_spd_weights = 0.0f;
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+            if (state[i].status >= GPS_OK_FIX_3D && state[i].speed_accuracy >= 0.001f) {
+                spd_blend_weights[i] = speed_accuracy_sum_sq / (state[i].speed_accuracy * state[i].speed_accuracy);
+                sum_of_spd_weights += spd_blend_weights[i];
+            }
+        }
+        // normalise the weights
+        if (sum_of_spd_weights > 0.0f) {
+            for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+                spd_blend_weights[i] = spd_blend_weights[i] / sum_of_spd_weights;
+            }
+            sum_of_all_weights += 1.0f;
+        }
+    }
+
+    // calculate an overall weight
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        _blend_weights[i] = (hpos_blend_weights[i] + vpos_blend_weights[i] + spd_blend_weights[i]) / sum_of_all_weights;
+    }
+
+    return true;
+}
+
+/*
+ calculate a blended GPS state
+*/
+void AP_GPS::calc_blended_state(void)
+{
+    // initialise the blended states so we can accumulate the results using the weightings for each GPS receiver
+    state[GPS_BLENDED_INSTANCE].instance = GPS_BLENDED_INSTANCE;
+    state[GPS_BLENDED_INSTANCE].status = NO_FIX;
+    state[GPS_BLENDED_INSTANCE].time_week_ms = 0;
+    state[GPS_BLENDED_INSTANCE].time_week = 0;
+    state[GPS_BLENDED_INSTANCE].ground_speed = 0.0f;
+    state[GPS_BLENDED_INSTANCE].ground_course = 0.0f;
+    state[GPS_BLENDED_INSTANCE].hdop = GPS_UNKNOWN_DOP;
+    state[GPS_BLENDED_INSTANCE].vdop = GPS_UNKNOWN_DOP;
+    state[GPS_BLENDED_INSTANCE].num_sats = 0;
+    state[GPS_BLENDED_INSTANCE].velocity.zero();
+    state[GPS_BLENDED_INSTANCE].speed_accuracy = 1e6f;
+    state[GPS_BLENDED_INSTANCE].horizontal_accuracy = 1e6f;
+    state[GPS_BLENDED_INSTANCE].vertical_accuracy = 1e6f;
+    state[GPS_BLENDED_INSTANCE].have_vertical_velocity = false;
+    state[GPS_BLENDED_INSTANCE].have_speed_accuracy = false;
+    state[GPS_BLENDED_INSTANCE].have_horizontal_accuracy = false;
+    state[GPS_BLENDED_INSTANCE].have_vertical_accuracy = false;
+    memset(&state[GPS_BLENDED_INSTANCE].location, 0, sizeof(state[GPS_BLENDED_INSTANCE].location));
+
+    _blended_antenna_offset.zero();
+    _blended_lag_sec = 0;
+
+    timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = 0;
+    timing[GPS_BLENDED_INSTANCE].last_message_time_ms = 0;
+
+    // combine the states into a blended solution
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        // use the highest status
+        if (state[i].status > state[GPS_BLENDED_INSTANCE].status) {
+            state[GPS_BLENDED_INSTANCE].status = state[i].status;
+        }
+
+        // calculate a blended average velocity
+        state[GPS_BLENDED_INSTANCE].velocity += state[i].velocity * _blend_weights[i];
+
+        // report the best valid accuracies and DOP metrics
+
+        if (state[i].have_horizontal_accuracy && state[i].horizontal_accuracy > 0.0f && state[i].horizontal_accuracy < state[GPS_BLENDED_INSTANCE].horizontal_accuracy) {
+            state[GPS_BLENDED_INSTANCE].have_horizontal_accuracy = true;
+            state[GPS_BLENDED_INSTANCE].horizontal_accuracy = state[i].horizontal_accuracy;
+        }
+
+        if (state[i].have_vertical_accuracy && state[i].vertical_accuracy > 0.0f && state[i].vertical_accuracy < state[GPS_BLENDED_INSTANCE].vertical_accuracy) {
+            state[GPS_BLENDED_INSTANCE].have_vertical_accuracy = true;
+            state[GPS_BLENDED_INSTANCE].vertical_accuracy = state[i].vertical_accuracy;
+        }
+
+        if (state[i].have_vertical_velocity) {
+            state[GPS_BLENDED_INSTANCE].have_vertical_velocity = true;
+        }
+
+        if (state[i].have_speed_accuracy && state[i].speed_accuracy > 0.0f && state[i].speed_accuracy < state[GPS_BLENDED_INSTANCE].speed_accuracy) {
+            state[GPS_BLENDED_INSTANCE].have_speed_accuracy = true;
+            state[GPS_BLENDED_INSTANCE].speed_accuracy = state[i].speed_accuracy;
+        }
+
+        if (state[i].hdop > 0 && state[i].hdop < state[GPS_BLENDED_INSTANCE].hdop) {
+            state[GPS_BLENDED_INSTANCE].hdop = state[i].hdop;
+        }
+
+        if (state[i].vdop > 0 && state[i].vdop < state[GPS_BLENDED_INSTANCE].vdop) {
+            state[GPS_BLENDED_INSTANCE].vdop = state[i].vdop;
+        }
+
+        if (state[i].num_sats > 0 && state[i].num_sats > state[GPS_BLENDED_INSTANCE].num_sats) {
+            state[GPS_BLENDED_INSTANCE].num_sats = state[i].num_sats;
+        }
+
+        // report a blended average GPS antenna position
+        Vector3f temp_antenna_offset = _antenna_offset[i];
+        temp_antenna_offset *= _blend_weights[i];
+        _blended_antenna_offset += temp_antenna_offset;
+
+        // blend the timing data
+        if (timing[i].last_fix_time_ms > timing[GPS_BLENDED_INSTANCE].last_fix_time_ms) {
+            timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = timing[i].last_fix_time_ms;
+        }
+        if (timing[i].last_message_time_ms > timing[GPS_BLENDED_INSTANCE].last_message_time_ms) {
+            timing[GPS_BLENDED_INSTANCE].last_message_time_ms = timing[i].last_message_time_ms;
+        }
+
+    }
+
+    /*
+     * Calculate an instantaneous weighted/blended average location from the available GPS instances and store in the _output_state.
+     * This will be statistically the most likely location, but will be not stable enough for direct use by the autopilot.
+    */
+
+    // Use the GPS with the highest weighting as the reference position
+    float best_weight = 0.0f;
+    uint8_t best_index = 0;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (_blend_weights[i] > best_weight) {
+            best_weight = _blend_weights[i];
+            best_index = i;
+            state[GPS_BLENDED_INSTANCE].location = state[i].location;
+        }
+    }
+
+    // Calculate the weighted sum of horizontal and vertical position offsets relative to the reference position
+    Vector2f blended_NE_offset_m;
+    float blended_alt_offset_cm = 0.0f;
+    blended_NE_offset_m.zero();
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (_blend_weights[i] > 0.0f && i != best_index) {
+            blended_NE_offset_m += location_diff(state[GPS_BLENDED_INSTANCE].location, state[i].location) * _blend_weights[i];
+            blended_alt_offset_cm += (float)(state[i].location.alt - state[GPS_BLENDED_INSTANCE].location.alt) * _blend_weights[i];
+        }
+    }
+
+    // Add the sum of weighted offsets to the reference location to obtain the blended location
+    location_offset(state[GPS_BLENDED_INSTANCE].location, blended_NE_offset_m.x, blended_NE_offset_m.y);
+    state[GPS_BLENDED_INSTANCE].location.alt += (int)blended_alt_offset_cm;
+
+    // Calculate ground speed and course from blended velocity vector
+    state[GPS_BLENDED_INSTANCE].ground_speed = norm(state[GPS_BLENDED_INSTANCE].velocity.x, state[GPS_BLENDED_INSTANCE].velocity.y);
+    state[GPS_BLENDED_INSTANCE].ground_course = wrap_360(degrees(atan2f(state[GPS_BLENDED_INSTANCE].velocity.y, state[GPS_BLENDED_INSTANCE].velocity.x)));
+
+    /*
+     * The blended location in _output_state.location is not stable enough to be used by the autopilot
+     * as it will move around as the relative accuracy changes. To mitigate this effect a low-pass filtered
+     * offset from each GPS location to the blended location is calculated and the filtered offset is applied
+     * to each receiver.
+    */
+
+    // Calculate filter coefficients to be applied to the offsets for each GPS position and height offset
+    // A weighting of 1 will make the offset adjust the slowest, a weighting of 0 will make it adjust with zero filtering
+    float alpha[GPS_MAX_RECEIVERS] = {};
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (state[i].last_gps_time_ms - _last_time_updated[i] > 0) {
+            float min_alpha = constrain_float(_omega_lpf * 0.001f * (float)(state[i].last_gps_time_ms - _last_time_updated[i]), 0.0f, 1.0f);
+            if (_blend_weights[i] > min_alpha) {
+                alpha[i] = min_alpha / _blend_weights[i];
+            } else {
+                alpha[i] = 1.0f;
+            }
+            _last_time_updated[i] = state[i].last_gps_time_ms;
+        }
+    }
+
+    // Calculate the offset from each GPS solution to the blended solution
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        _NE_pos_offset_m[i] = location_diff(state[i].location, state[GPS_BLENDED_INSTANCE].location) * alpha[i] + _NE_pos_offset_m[i] * (1.0f - alpha[i]);
+        _hgt_offset_cm[i] = (float)(state[GPS_BLENDED_INSTANCE].location.alt - state[i].location.alt) *  alpha[i] + _hgt_offset_cm[i] * (1.0f - alpha[i]);
+    }
+
+    // Calculate a corrected location for each GPS
+    Location corrected_location[GPS_MAX_RECEIVERS];
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        corrected_location[i] = state[i].location;
+        location_offset(corrected_location[i], _NE_pos_offset_m[i].x, _NE_pos_offset_m[i].y);
+        corrected_location[i].alt += (int)(_hgt_offset_cm[i]);
+    }
+
+    // If the GPS week is the same then use a blended time_week_ms
+    // If week is different, then use time stamp from GPS with largest weighting
+    // detect inconsistent week data
+    uint8_t last_week_instance = 0;
+    bool weeks_consistent = true;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (last_week_instance == 0 && _blend_weights[i] > 0) {
+            // this is our first valid sensor week data
+            last_week_instance = state[i].time_week;
+        } else if (last_week_instance != 0 && _blend_weights[i] > 0 && last_week_instance != state[i].time_week) {
+            // there is valid sensor week data that is inconsistent
+            weeks_consistent = false;
+        }
+    }
+    // calculate output
+    if (!weeks_consistent) {
+        // use data from highest weighted sensor
+        state[GPS_BLENDED_INSTANCE].time_week = state[best_index].time_week;
+        state[GPS_BLENDED_INSTANCE].time_week_ms = state[best_index].time_week_ms;
+    } else {
+        // use week number from highest weighting GPS (they should all have the same week number)
+        state[GPS_BLENDED_INSTANCE].time_week = state[best_index].time_week;
+        // calculate a blended value for the number of ms lapsed in the week
+        double temp_time_0 = 0.0;
+        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+            if (_blend_weights[i] > 0.0f) {
+                temp_time_0 += (double)state[i].time_week_ms * (double)_blend_weights[i];
+            }
+        }
+        state[GPS_BLENDED_INSTANCE].time_week_ms = (uint32_t)temp_time_0;
+    }
+
+    // calculate a blended value for the timing data and lag
+    double temp_time_1 = 0.0;
+    double temp_time_2 = 0.0;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (_blend_weights[i] > 0.0f) {
+            temp_time_1 += (double)timing[i].last_fix_time_ms * (double) _blend_weights[i];
+            temp_time_2 += (double)timing[i].last_message_time_ms * (double)_blend_weights[i];
+            float gps_lag_sec = 0;
+            get_lag(i, gps_lag_sec);
+            _blended_lag_sec += gps_lag_sec * _blend_weights[i];
+        }
+    }
+    timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = (uint32_t)temp_time_1;
+    timing[GPS_BLENDED_INSTANCE].last_message_time_ms = (uint32_t)temp_time_2;
+}
+
+bool AP_GPS::is_healthy(uint8_t instance) const {
+    return drivers[instance] != nullptr &&
+           last_message_delta_time_ms(instance) < GPS_MAX_DELTA_MS &&
+           drivers[instance]->is_healthy();
+}
+
+bool AP_GPS::prepare_for_arming(void) {
+    bool all_passed = true;
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        if (drivers[i] != nullptr) {
+            all_passed &= drivers[i]->prepare_for_arming();
+        }
+    }
+    return all_passed;
+}
+
+namespace AP {
+
+AP_GPS &gps()
+{
+    return AP_GPS::gps();
+}
+
+};

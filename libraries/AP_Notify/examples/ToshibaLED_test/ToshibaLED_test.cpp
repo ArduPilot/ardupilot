@@ -2,9 +2,14 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/ToshibaLED_I2C.h>
 
+void setup();
+void loop();
+void full_spectrum();
+void blink();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static ToshibaLED_I2C toshiba_led;
+static ToshibaLED_I2C toshiba_led(1);
 
 void setup(void)
 {
@@ -49,10 +54,10 @@ void loop(void)
 void full_spectrum()
 {
     // go through the full range of colours but only up to the dim light level
-    for (uint8_t red=0; red<=0x05; red++) {
-        for (uint8_t green=0; green<=0x05; green++) {
-            for (uint8_t blue=0; blue<=0x05; blue++) {
-                toshiba_led.set_rgb(red,green,blue);
+    for (uint8_t red = 0; red <= 0x05; red++) {
+        for (uint8_t green = 0; green <= 0x05; green++) {
+            for (uint8_t blue = 0; blue <= 0x05; blue++) {
+                toshiba_led.set_rgb(red, green, blue);
                 hal.scheduler->delay(5);
             }
         }
@@ -65,16 +70,16 @@ void full_spectrum()
 void blink()
 {
     // set colour to red
-    toshiba_led.set_rgb(LED_DIM,0,0);
+    toshiba_led.set_rgb(LED_DIM, 0, 0);
 
     // full spectrum test
     for (uint8_t c=0; c<=2; c++ ) {
-        if (c==0) {
-            toshiba_led.set_rgb(LED_DIM,0,0);   // red
+        if (c == 0) {
+            toshiba_led.set_rgb(LED_DIM, 0, 0);   // red
         }else if (c==1) {
-            toshiba_led.set_rgb(0,LED_DIM,0);   // green
+            toshiba_led.set_rgb(0, LED_DIM, 0);   // green
         }else{
-            toshiba_led.set_rgb(0,0,LED_DIM);   // blue
+            toshiba_led.set_rgb(0, 0, LED_DIM);   // blue
         }
     }
 }

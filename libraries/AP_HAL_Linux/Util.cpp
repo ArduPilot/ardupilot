@@ -10,7 +10,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "Heat_Pwm.h"
-#include "ToneAlarm_Raspilot.h"
 #include "ToneAlarm_Disco.h"
 #include "Util.h"
 
@@ -19,9 +18,7 @@ using namespace Linux;
 extern const AP_HAL::HAL& hal;
 
 static int state;
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-ToneAlarm_Raspilot Util::_toneAlarm;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 ToneAlarm_Disco Util::_toneAlarm;
 #else
 ToneAlarm Util::_toneAlarm;
@@ -98,8 +95,8 @@ void Util::set_system_clock(uint64_t time_utc_usec)
 {
 #if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     timespec ts;
-    ts.tv_sec = time_utc_usec/1.0e6;
-    ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
+    ts.tv_sec = time_utc_usec/1000000ULL;
+    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
     clock_settime(CLOCK_REALTIME, &ts);    
 #endif    
 }

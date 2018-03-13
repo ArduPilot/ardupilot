@@ -26,7 +26,7 @@
 /*
   NuttX on STM32 doesn't produce the exact SPI bus frequency
   requested. This is a table mapping requested to achieved SPI
-  frequency:
+  frequency for a 168 MHz processor :
 
   2  -> 1.3 MHz
   4  -> 2.6 MHz
@@ -42,6 +42,25 @@
   20 -> 10
   21 -> 20
   28 -> 20
+
+For a 180 MHz processor :
+
+ 2  -> 1.4 MHz
+ 4  -> 2.8 MHz
+ 6  -> 5.6 MHz
+ 8  -> 5.6 MHz
+ 10 -> 5.6 MHz
+ 11 -> 5.6 MHz
+ 12 -> 11.25 MHz
+ 13 -> 11.25 MHz
+ 14 -> 11.25 MHz
+ 16 -> 11.25 MHz
+ 18 -> 11.25 MHz
+ 20 -> 11.25 MHz
+ 22 -> 11.25 MHz
+ 24 -> 22.5 MHz
+ 28 -> 22.5 MHz
+
  */
 
 namespace PX4 {
@@ -50,30 +69,45 @@ namespace PX4 {
 #define KHZ (1000U)
 
 SPIDesc SPIDeviceManager::device_table[] = {
+#if defined(PX4_SPIDEV_MPU)
     SPIDesc("mpu6000",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 500*KHZ, 8*MHZ),
+#endif
 #if defined(PX4_SPIDEV_EXT_BARO)
     SPIDesc("ms5611_ext",   PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
 #endif
 #if defined(PX4_SPIDEV_ICM)
     SPIDesc("icm20608",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ICM, SPIDEV_MODE3, 500*KHZ, 8*MHZ),
 #endif
+#if defined(PX4_SPIDEV_ACCEL_MAG)
     // ICM20608 on the ACCEL_MAG
     SPIDesc("icm20608-am",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ACCEL_MAG, SPIDEV_MODE3, 500*KHZ, 8*MHZ),
+#endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
     SPIDesc("ms5611_int",   PX4_SPI_BUS_BARO, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
+#ifdef PX4_SPIDEV_HMC
+    // r15 has LIS3MDL in place of HMC
+	SPIDesc("lis3mdl",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_HMC, SPIDEV_MODE3, 500*KHZ, 500*KHZ),
+#endif
 #endif
 #ifdef PX4_SPIDEV_BARO
     SPIDesc("ms5611",       PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
 #endif
+#if defined(PX4_SPIDEV_ACCEL_MAG)
     SPIDesc("lsm9ds0_am",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ACCEL_MAG, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
+#endif
 #ifdef PX4_SPIDEV_EXT_ACCEL_MAG
     SPIDesc("lsm9ds0_ext_am", PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_ACCEL_MAG, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
 #endif
+#if defined(PX4_SPIDEV_GYRO)
     SPIDesc("lsm9ds0_g",    PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_GYRO, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
+#endif
 #ifdef PX4_SPIDEV_EXT_GYRO
     SPIDesc("lsm9ds0_ext_g",PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_GYRO, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
 #endif
+#if defined(PX4_SPIDEV_MPU)
     SPIDesc("mpu9250",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 1*MHZ, 8*MHZ),
+    SPIDesc("mpu6500",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 1*MHZ, 8*MHZ),
+#endif
 #ifdef PX4_SPIDEV_EXT_MPU
     SPIDesc("mpu6000_ext",  PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 500*KHZ, 8*MHZ),
     SPIDesc("mpu9250_ext",  PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_MPU, SPIDEV_MODE3, 1*MHZ, 8*MHZ),
@@ -81,6 +115,9 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #endif
 #ifdef PX4_SPIDEV_HMC
     SPIDesc("hmc5843",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_HMC, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
+#endif
+#ifdef PX4_SPIDEV_LIS
+	SPIDesc("lis3mdl",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_LIS, SPIDEV_MODE3, 500*KHZ, 500*KHZ),
 #endif
 
 #ifdef PX4_SPI_BUS_EXT
@@ -99,6 +136,10 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #ifdef PX4_SPIDEV_EXT3
     SPIDesc("external3",    PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT3, SPIDEV_MODE3, 2*MHZ, 2*MHZ),
 #endif
+#endif
+
+#ifdef CYRF_SPI_PX4_SPI_BUS
+    SPIDesc("cypress",   CYRF_SPI_PX4_SPI_BUS,  CYRF_SPI_PX4_SPIDEV_EXT, SPIDEV_MODE0, 2*MHZ, 2*MHZ),
 #endif
 
     SPIDesc(nullptr, 0, (spi_dev_e)0, (spi_mode_e)0, 0, 0),
@@ -228,7 +269,7 @@ AP_HAL::Device::PeriodicHandle SPIDevice::register_periodic_callback(uint32_t pe
 
 bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
 {
-    return false;
+    return bus.adjust_timer(h, period_usec);
 }
 
 /*

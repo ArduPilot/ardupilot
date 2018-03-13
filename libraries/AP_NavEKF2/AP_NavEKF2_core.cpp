@@ -274,6 +274,7 @@ void NavEKF2_core::InitialiseVariables()
     memset(&storedRngMeas, 0, sizeof(storedRngMeas));
     terrainHgtStable = true;
     ekfOriginHgtVar = 0.0f;
+    ekfGpsRefHgt = 0.0;
     velOffsetNED.zero();
     posOffsetNED.zero();
 
@@ -314,6 +315,7 @@ void NavEKF2_core::InitialiseVariables()
     OffsetMinInnovFilt = 0.0f;
     rngBcnFuseDataReportIndex = 0;
     memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
+    last_gps_idx = 0;
 
     // zero data buffers
     storedIMU.reset();
@@ -331,9 +333,23 @@ void NavEKF2_core::InitialiseVariables()
 bool NavEKF2_core::InitialiseFilterBootstrap(void)
 {
     // If we are a plane and don't have GPS lock then don't initialise
-    if (assume_zero_sideslip() && _ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+    if (assume_zero_sideslip() && AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "EKF2 init failure: No GPS lock");
         statesInitialised = false;
         return false;
+    }
+
+    if (statesInitialised) {
+        // we are initialised, but we don't return true until the IMU
+        // buffer has been filled. This prevents a timing
+        // vulnerability with a pause in IMU data during filter startup
+        readIMUData();
+        readMagData();
+        readGpsData();
+        readBaroData();
+        return storedIMU.is_filled();
     }
 
     // set re-used variables to zero
@@ -405,20 +421,16 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     // set to true now that states have be initialised
     statesInitialised = true;
 
-    return true;
+    // we initially return false to wait for the IMU buffer to fill
+    return false;
 }
 
 // initialise the covariance matrix
 void NavEKF2_core::CovarianceInit()
 {
     // zero the matrix
-    for (uint8_t i=1; i<=stateIndexLim; i++)
-    {
-        for (uint8_t j=0; j<=stateIndexLim; j++)
-        {
-            P[i][j] = 0.0f;
-        }
-    }
+    memset(P, 0, sizeof(P));
+
     // attitude error
     P[0][0]   = 0.1f;
     P[1][1]   = 0.1f;

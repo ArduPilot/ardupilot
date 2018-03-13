@@ -35,6 +35,8 @@ Plane::Plane(const char *home_str, const char *frame_str) :
     thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     frame_height = 0.1f;
 
+    ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
+    
     if (strstr(frame_str, "-heavy")) {
         mass = 8;
     }
@@ -45,12 +47,33 @@ Plane::Plane(const char *home_str, const char *frame_str) :
         elevons = true;
     } else if (strstr(frame_str, "-vtail")) {
         vtail = true;
+    } else if (strstr(frame_str, "-dspoilers")) {
+        dspoilers = true;
     }
     if (strstr(frame_str, "-elevrev")) {
         reverse_elevator_rudder = true;
     }
+    if (strstr(frame_str, "-catapult")) {
+        have_launcher = true;
+        launch_accel = 15;
+        launch_time = 2;
+    }
+    if (strstr(frame_str, "-bungee")) {
+        have_launcher = true;
+        launch_accel = 7;
+        launch_time = 4;
+    }
+    if (strstr(frame_str, "-throw")) {
+        have_launcher = true;
+        launch_accel = 10;
+        launch_time = 1;
+    }
+   if (strstr(frame_str, "-tailsitter")) {
+       tailsitter = true;
+       ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
+       thrust_scale *= 1.5;
+   }
 
-    ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
     if (strstr(frame_str, "-ice")) {
         ice_engine = true;
     }
@@ -67,7 +90,14 @@ float Plane::liftCoeff(float alpha) const
     const float M = coefficient.mcoeff;
     const float c_lift_0 = coefficient.c_lift_0;
     const float c_lift_a0 = coefficient.c_lift_a;
-    
+
+    // clamp the value of alpha to avoid exp(90) in calculation of sigmoid
+    const float max_alpha_delta = 0.8f;
+    if (alpha-alpha0 > max_alpha_delta) {
+        alpha = alpha0 + max_alpha_delta;
+    } else if (alpha0-alpha > max_alpha_delta) {
+        alpha = alpha0 - max_alpha_delta;
+    }
 	double sigmoid = ( 1+exp(-M*(alpha-alpha0))+exp(M*(alpha+alpha0)) ) / (1+exp(-M*(alpha-alpha0))) / (1+exp(M*(alpha+alpha0)));
 	double linear = (1.0-sigmoid) * (c_lift_0 + c_lift_a0*alpha); //Lift at small AoA
 	double flatPlate = sigmoid*(2*copysign(1,alpha)*pow(sin(alpha),2)*cos(alpha)); //Lift beyond stall
@@ -92,9 +122,23 @@ float Plane::dragCoeff(float alpha) const
 }
 
 // Torque calculation function
-Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRudder, const Vector3f &force) const
+Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRudder, float inputThrust, const Vector3f &force) const
 {
-    const float alpha = angle_of_attack;
+    float alpha = angle_of_attack;
+
+	//calculate aerodynamic torque
+    float effective_airspeed = airspeed;
+
+    if (tailsitter) {
+        /*
+          tailsitters get airspeed from prop-wash
+         */
+        effective_airspeed += inputThrust * 20;
+
+        // reduce effective angle of attack as thrust increases
+        alpha *= constrain_float(1 - inputThrust, 0, 1);
+    }
+    
     const float s = coefficient.s;
     const float c = coefficient.c;
     const float b = coefficient.b;
@@ -123,10 +167,9 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	double q = gyro.y;
 	double r = gyro.z;
 
-	//calculate aerodynamic torque
-	double qbar = 1.0/2.0*rho*pow(airspeed,2)*s; //Calculate dynamic pressure
+	double qbar = 1.0/2.0*rho*pow(effective_airspeed,2)*s; //Calculate dynamic pressure
 	double la, na, ma;
-	if (is_zero(airspeed))
+	if (is_zero(effective_airspeed))
 	{
 		la = 0;
 		ma = 0;
@@ -134,9 +177,9 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	}
 	else
 	{
-		la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*airspeed) + c_l_r*b*r/(2*airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
-		ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*airspeed) + c_m_deltae*inputElevator);
-		na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*airspeed) + c_n_r*b*r/(2*airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
+		la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*effective_airspeed) + c_l_r*b*r/(2*effective_airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
+		ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*effective_airspeed) + c_m_deltae*inputElevator);
+		na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*effective_airspeed) + c_n_r*b*r/(2*effective_airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
 	}
 
 
@@ -209,6 +252,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float aileron  = filtered_servo_angle(input, 0);
     float elevator = filtered_servo_angle(input, 1);
     float rudder   = filtered_servo_angle(input, 3);
+    bool launch_triggered = input.servos[6] > 1700;
     float throttle;
     if (reverse_elevator_rudder) {
         elevator = -elevator;
@@ -231,7 +275,19 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         // this matches VTAIL_OUTPUT==2
         elevator = (ch2-ch1)/2.0f;
         rudder   = (ch2+ch1)/2.0f;
+    } else if (dspoilers) {
+        // fake a differential spoiler plane. Use outputs 1, 2, 4 and 5
+        float dspoiler1_left = filtered_servo_angle(input, 0);
+        float dspoiler1_right = filtered_servo_angle(input, 1);
+        float dspoiler2_left = filtered_servo_angle(input, 3);
+        float dspoiler2_right = filtered_servo_angle(input, 4);
+        float elevon_left  = (dspoiler1_left + dspoiler2_left)/2;
+        float elevon_right = (dspoiler1_right + dspoiler2_right)/2;
+        aileron  = (elevon_right-elevon_left)/2;
+        elevator = (elevon_left+elevon_right)/2;
+        rudder = fabsf(dspoiler1_right - dspoiler2_right)/2 - fabsf(dspoiler1_left - dspoiler2_left)/2;
     }
+    //printf("Aileron: %.1f elevator: %.1f rudder: %.1f\n", aileron, elevator, rudder);
 
     if (reverse_thrust) {
         throttle = filtered_servo_angle(input, 2);
@@ -248,10 +304,38 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     // calculate angle of attack
     angle_of_attack = atan2f(velocity_air_bf.z, velocity_air_bf.x);
     beta = atan2f(velocity_air_bf.y,velocity_air_bf.x);
+
+    if (tailsitter) {
+        /*
+          tailsitters get 4x the control surfaces
+         */
+        aileron *= 4;
+        elevator *= 4;
+        rudder *= 4;
+    }
     
     Vector3f force = getForce(aileron, elevator, rudder);
-    rot_accel = getTorque(aileron, elevator, rudder, force);
+    rot_accel = getTorque(aileron, elevator, rudder, thrust, force);
 
+    if (have_launcher) {
+        /*
+          simple simulation of a launcher
+         */
+        if (launch_triggered) {
+            uint64_t now = AP_HAL::millis64();
+            if (launch_start_ms == 0) {
+                launch_start_ms = now;
+            }
+            if (now - launch_start_ms < launch_time*1000) {
+                force.x += launch_accel;
+                force.z += launch_accel/3;
+            }
+        } else {
+            // allow reset of catapult
+            launch_start_ms = 0;
+        }
+    }
+    
     // simulate engine RPM
     rpm1 = thrust * 7000;
     
@@ -266,7 +350,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         add_noise(fabsf(thrust) / thrust_scale);
     }
 
-    if (on_ground()) {
+    if (on_ground() && !tailsitter) {
         // add some ground friction
         Vector3f vel_body = dcm.transposed() * velocity_ef;
         accel_body.x -= vel_body.x * 0.3f;
@@ -288,6 +372,7 @@ void Plane::update(const struct sitl_input &input)
     
     // update lat/lon/altitude
     update_position();
+    time_advance();
 
     // update magnetic field
     update_mag_field_bf();

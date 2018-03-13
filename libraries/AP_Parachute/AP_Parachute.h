@@ -25,18 +25,21 @@
 class AP_Parachute {
 
 public:
-
     /// Constructor
-    AP_Parachute(AP_Relay& relay) :
-        _relay(relay),
-        _release_time(0),
-        _release_initiated(false),
-        _release_in_progress(false),
-        _released(false)
+    AP_Parachute(AP_Relay &relay)
+        : _relay(relay)
+        , _release_time(0)
+        , _release_initiated(false)
+        , _release_in_progress(false)
+        , _released(false)
     {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
     }
+
+    /* Do not allow copies */
+    AP_Parachute(const AP_Parachute &other) = delete;
+    AP_Parachute &operator=(const AP_Parachute&) = delete;
 
     /// enabled - enable or disable parachute release
     void enabled(bool on_off);
@@ -52,6 +55,9 @@ public:
     
     /// release_initiated - true if the parachute release sequence has been initiated (may wait before actual release)
     bool release_initiated() const { return _release_initiated; }
+
+    /// release_in_progress - true if the parachute release sequence is in progress
+    bool release_in_progress() const { return _release_in_progress; }
     
     /// update - shuts off the trigger should be called at about 10hz
     void update();

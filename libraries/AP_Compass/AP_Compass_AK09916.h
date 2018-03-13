@@ -26,6 +26,11 @@
 # define HAL_COMPASS_AK09916_I2C_ADDR 0x0C
 #endif
 
+// the AK09916 can be connected via an ICM20948
+#ifndef HAL_COMPASS_ICM20948_I2C_ADDR
+# define HAL_COMPASS_ICM20948_I2C_ADDR 0x69
+#endif
+
 class AP_Compass_AK09916 : public AP_Compass_Backend
 {
 public:
@@ -34,16 +39,32 @@ public:
                                      bool force_external = false,
                                      enum Rotation rotation = ROTATION_NONE);
 
+    // separate probe function for when behind a ICM20948 IMU
+    static AP_Compass_Backend *probe_ICM20948(Compass &compass,
+                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
+                                              bool force_external = false,
+                                              enum Rotation rotation = ROTATION_NONE);
+    
     void read() override;
 
     static constexpr const char *name = "AK09916";
 
 private:
-    AP_Compass_AK09916(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    enum bus_type {
+        AK09916_I2C=0,
+        AK09916_ICM20948_I2C,
+    } bus_type;
+    
+    AP_Compass_AK09916(Compass &compass,
+                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                       AP_HAL::OwnPtr<AP_HAL::Device> dev_icm,
                        bool force_external,
-                       enum Rotation rotation);
+                       enum Rotation rotation,
+                       enum bus_type bus_type);
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::OwnPtr<AP_HAL::Device> dev_icm;
     
     /**
      * Device periodic callback to read data from the sensor.

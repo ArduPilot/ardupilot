@@ -60,6 +60,15 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ICEngine',
     'AP_Frsky_Telem',
     'AP_FlashStorage',
+    'AP_Relay',
+    'AP_ServoRelayEvents',
+    'AP_Volz_Protocol',
+    'AP_SBusOut',
+    'AP_IOMCU',
+    'AP_RAMTRON',
+    'AP_RCProtocol',
+    'AP_Radio',
+    'AP_TempCalibration',
 ]
 
 def get_legacy_defines(sketch_name):
@@ -71,7 +80,6 @@ def get_legacy_defines(sketch_name):
 
 IGNORED_AP_LIBRARIES = [
     'doc',
-    'GCS_Console',
 ]
 
 @conf
@@ -91,7 +99,15 @@ def ap_get_all_libraries(bld):
 
 @conf
 def ap_common_vehicle_libraries(bld):
-    return COMMON_VEHICLE_DEPENDENT_LIBRARIES
+    libraries = COMMON_VEHICLE_DEPENDENT_LIBRARIES
+
+    if bld.env.DEST_BINFMT == 'pe':
+        libraries += [
+            'AP_Proximity',
+            'AC_Fence',
+        ]
+
+    return libraries
 
 _grouped_programs = {}
 
@@ -224,9 +240,21 @@ def ap_version_append_str(ctx, k, v):
     ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k, v)))]
 
 @conf
+def ap_version_append_int(ctx, k, v):
+    ctx.env['AP_VERSION_ITEMS'] += [(k,v)]
+
+@conf
 def write_version_header(ctx, tgt):
     with open(tgt, 'w') as f:
-        print('#pragma once\n', file=f)
+        print(
+'''// auto-generated header, do not edit
+
+#pragma once
+
+#ifndef FORCE_VERSION_H_INCLUDE
+#error ap_version.h should never be included directly. You probably want to include AP_Common/AP_FWVersion.h
+#endif
+''', file=f)
 
         for k, v in ctx.env['AP_VERSION_ITEMS']:
             print('#define {} {}'.format(k, v), file=f)

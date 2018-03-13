@@ -61,7 +61,6 @@ AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 
     //Externally visible state
     state.status = AP_GPS::NO_FIX;
-    state.have_vertical_velocity = true;
     state.last_gps_time_ms = last_heatbeat_received_ms = AP_HAL::millis();
 
 }
@@ -83,7 +82,7 @@ AP_GPS_SBP::read(void)
 
 }
 
-void 
+void
 AP_GPS_SBP::inject_data(const uint8_t *data, uint16_t len)
 {
 
@@ -99,7 +98,7 @@ AP_GPS_SBP::inject_data(const uint8_t *data, uint16_t len)
 //This attempts to reads all SBP messages from the incoming port.
 //Returns true if a new message was read, false if we failed to read a message.
 void
-AP_GPS_SBP::_sbp_process() 
+AP_GPS_SBP::_sbp_process()
 {
 
     while (port->available() > 0) {
@@ -223,9 +222,9 @@ AP_GPS_SBP::_sbp_process_message() {
         }
 
         default:
-            // log anyway if it's an unsupported message. 
+            // log anyway if it's an unsupported message.
             // The log mask will be used to adjust or suppress logging
-            break; 
+            break;
     }
 
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
@@ -245,7 +244,7 @@ AP_GPS_SBP::_attempt_state_update()
 
     if (now - last_heatbeat_received_ms > SBP_TIMEOUT_HEATBEAT) {
 
-        state.status = AP_GPS::NO_GPS;
+        state.status = AP_GPS::NO_FIX;
         Debug("No Heartbeats from Piksi! Driver Ready to Die!");
 
     } else if (last_pos_llh_rtk.tow == last_vel_ned.tow
@@ -263,9 +262,10 @@ AP_GPS_SBP::_attempt_state_update()
         state.hdop              = last_dops.hdop;
 
         // Update velocity state
-        state.velocity[0]       = (float)(last_vel_ned.n / 1000.0);
-        state.velocity[1]       = (float)(last_vel_ned.e / 1000.0);
-        state.velocity[2]       = (float)(last_vel_ned.d / 1000.0);
+        state.velocity[0]       = (float)(last_vel_ned.n * 1.0e-3);
+        state.velocity[1]       = (float)(last_vel_ned.e * 1.0e-3);
+        state.velocity[2]       = (float)(last_vel_ned.d * 1.0e-3);
+        state.have_vertical_velocity = true;
 
         float ground_vector_sq = state.velocity[0]*state.velocity[0] + state.velocity[1]*state.velocity[1];
         state.ground_speed = safe_sqrt(ground_vector_sq);
@@ -289,6 +289,7 @@ AP_GPS_SBP::_attempt_state_update()
 
         last_full_update_tow = last_vel_ned.tow;
         last_full_update_cpu_ms = now;
+        state.rtk_iar_num_hypotheses = last_iar_num_hypotheses;
 
         logging_log_full_update();
         ret = true;
@@ -329,6 +330,7 @@ AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data)
             break;
 
         case SBP_detect_state::GET_TYPE:
+            *((uint8_t*)&(state.msg_type) + state.n_read) = data;
             state.crc_so_far = crc16_ccitt(&data, 1, state.crc_so_far);
             state.n_read += 1;
             if (state.n_read >= 2) {
@@ -354,6 +356,9 @@ AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data)
             break;
 
         case SBP_detect_state::GET_MSG:
+            if (state.msg_type == SBP_HEARTBEAT_MSGTYPE && state.n_read < 4) {
+                *((uint8_t*)&(state.heartbeat_buff) + state.n_read) = data;
+            }
             state.crc_so_far = crc16_ccitt(&data, 1, state.crc_so_far);
             state.n_read += 1;
             if (state.n_read >= state.msg_len) {
@@ -367,7 +372,12 @@ AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data)
             state.n_read += 1;
             if (state.n_read >= 2) {
                 state.state = SBP_detect_state::WAITING;
-                return state.crc == state.crc_so_far;
+                if (state.crc == state.crc_so_far
+                        && state.msg_type == SBP_HEARTBEAT_MSGTYPE) {
+                    struct sbp_heartbeat_t* heartbeat = ((struct sbp_heartbeat_t*)state.heartbeat_buff);
+                    return heartbeat->protocol_major == 0;
+                }
+                return false;
             }
             break;
 
@@ -380,12 +390,12 @@ AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data)
 
 #if SBP_HW_LOGGING
 
-void 
+void
 AP_GPS_SBP::logging_log_full_update()
 {
 
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
-      return;
+    if (!should_df_log()) {
+        return;
     }
 
     struct log_SbpHealth pkt = {
@@ -395,18 +405,17 @@ AP_GPS_SBP::logging_log_full_update()
         last_injected_data_ms      : last_injected_data_ms,
         last_iar_num_hypotheses    : last_iar_num_hypotheses,
     };
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
 
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 };
 
 void
-AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type, 
-        uint16_t sender_id, 
-        uint8_t msg_len, 
+AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
+        uint16_t sender_id,
+        uint8_t msg_len,
         uint8_t *msg_buff) {
-
-    if (gps._DataFlash == nullptr || !gps._DataFlash->logging_started()) {
-      return;
+    if (!should_df_log()) {
+        return;
     }
 
     //MASK OUT MESSAGES WE DON'T WANT TO LOG
@@ -415,30 +424,37 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
     }
 
     uint64_t time_us = AP_HAL::micros64();
+    uint8_t pages = 1;
 
-    struct log_SbpRAW1 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW1),
+    if (msg_len > 48) {
+        pages += (msg_len - 48) / 104 + 1;
+    }
+
+    struct log_SbpRAWH pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWH),
         time_us         : time_us,
         msg_type        : msg_type,
         sender_id       : sender_id,
+        index           : 1,
+        pages           : pages,
         msg_len         : msg_len,
     };
-    memcpy(pkt.data1, msg_buff, MIN(msg_len,64)); 
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
+    memcpy(pkt.data, msg_buff, MIN(msg_len, 48));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 
-    if (msg_len > 64) {
-
-        struct log_SbpRAW2 pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW2),
+    for (uint8_t i = 0; i < pages - 1; i++) {
+        struct log_SbpRAWM pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWM),
             time_us         : time_us,
             msg_type        : msg_type,
+            sender_id       : sender_id,
+            index           : uint8_t(i + 2),
+            pages           : pages,
+            msg_len         : msg_len,
         };
-        memcpy(pkt2.data2, &msg_buff[64], msg_len - 64);
-        gps._DataFlash->WriteBlock(&pkt2, sizeof(pkt2));    
-
+        memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
+        DataFlash_Class::instance()->WriteBlock(&pkt2, sizeof(pkt2));
     }
-
 };
-
 
 #endif // SBP_HW_LOGGING

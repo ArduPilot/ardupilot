@@ -38,10 +38,6 @@ void Scheduler::suspend_timer_procs()
 void Scheduler::resume_timer_procs()
 {}
 
-bool Scheduler::in_timerprocess() {
-    return false;
-}
-
 void Scheduler::system_initialized()
 {}
 

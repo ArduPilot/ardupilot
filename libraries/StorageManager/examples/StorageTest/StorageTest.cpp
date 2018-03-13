@@ -5,6 +5,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <StorageManager/StorageManager.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define DO_INITIALISATION 1
@@ -43,10 +46,10 @@ void setup(void)
 {
     hal.console->printf("StorageTest startup...\n");
 #if DO_INITIALISATION
-    for (uint8_t type=0; type<4; type++) {
+    for (uint8_t type = 0; type < 4; type++) {
         const StorageAccess &storage = all_storage[type];
         hal.console->printf("Init type %u\n", (unsigned)type);
-        for (uint16_t i=0; i<storage.size(); i++) {
+        for (uint16_t i = 0; i < storage.size(); i++) {
             storage.write_byte(i, pvalue(i));
         }
     }

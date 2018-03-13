@@ -59,6 +59,19 @@ void Matrix3<T>::to_euler(float *roll, float *pitch, float *yaw) const
     }
 }
 
+template <typename T>
+void Matrix3<T>::from_rotation(enum Rotation rotation)
+{
+    (*this).a(1,0,0);
+    (*this).b(0,1,0);
+    (*this).c(0,0,1);
+
+    (*this).a.rotate(rotation);
+    (*this).b.rotate(rotation);
+    (*this).c.rotate(rotation);
+    (*this).transpose();
+}
+
 /*
   calculate Euler angles (312 convention) for the matrix.
   See http://www.atacolorado.com/eulersequences.doc
@@ -260,6 +273,7 @@ template void Matrix3<float>::rotate(const Vector3<float> &g);
 template void Matrix3<float>::normalize(void);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw) const;
+template void Matrix3<float>::from_rotation(enum Rotation rotation);
 template void Matrix3<float>::from_euler312(float roll, float pitch, float yaw);
 template void Matrix3<float>::from_axis_angle(const Vector3<float> &v, float theta);
 template Vector3<float> Matrix3<float>::to_euler312(void) const;

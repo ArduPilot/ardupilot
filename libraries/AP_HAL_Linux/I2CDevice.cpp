@@ -154,6 +154,11 @@ I2CDevice::~I2CDevice()
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+    if (_split_transfers && send_len > 0 && recv_len > 0) {
+        return transfer(send, send_len, nullptr, 0) &&
+            transfer(nullptr, 0, recv, recv_len);
+    }
+
     struct i2c_msg msgs[2] = { };
     unsigned nmsgs = 0;
 
@@ -339,7 +344,10 @@ I2CDeviceManager::get_device(std::vector<const char *> devpaths, uint8_t address
 }
 
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
-I2CDeviceManager::get_device(uint8_t bus, uint8_t address)
+I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
+                             uint32_t bus_clock,
+                             bool use_smbus,
+                             uint32_t timeout_ms)
 {
     for (uint8_t i = 0, n = _buses.size(); i < n; i++) {
         if (_buses[i]->bus == bus) {

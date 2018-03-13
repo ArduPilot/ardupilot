@@ -34,7 +34,7 @@ public:
     // Methods
     bool read();
 
-    void inject_data(const uint8_t *data, uint16_t len) override;
+    const char *name() const override { return "GSOF"; }
 
 private:
 
@@ -81,6 +81,4 @@ private:
     uint32_t gsofmsg_time = 0;
     uint8_t gsofmsgreq_index = 0;
     uint8_t gsofmsgreq[5] = {1,2,8,9,12};
-
-    uint32_t last_injected_data_ms = 0;
 };

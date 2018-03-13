@@ -37,6 +37,9 @@
 
 #define AP_MISSION_RESTART_DEFAULT          0       // resume the mission from the last command run by default
 
+#define AP_MISSION_OPTIONS_DEFAULT          0       // Do not clear the mission when rebooting
+#define AP_MISSION_MASK_MISSION_CLEAR       (1<<0)  // If set then Clear the mission on boot
+
 /// @class    AP_Mission
 /// @brief    Object managing Mission
 class AP_Mission {
@@ -173,7 +176,22 @@ public:
         bool cold_start; // use cold start procedure
         uint16_t height_delay_cm; // height delay for start
     };
-    
+
+    // NAV_SET_YAW_SPEED support
+    struct PACKED Set_Yaw_Speed {
+        float angle_deg;        // target angle in degrees (0=north, 90=east)
+        float speed;            // speed in meters/second
+        uint8_t relative_angle; // 0 = absolute angle, 1 = relative angle
+    };
+
+    // winch command structure
+    struct PACKED Winch_Command {
+        uint8_t num;            // winch number
+        uint8_t action;         // action (0 = relax, 1 = length control, 2 = rate control)
+        float release_length;   // cable distance to unwind in meters, negative numbers to wind in cable
+        float release_rate;     // release rate in meters/second
+    };
+
     union PACKED Content {
         // jump structure
         Jump_Command jump;
@@ -228,12 +246,18 @@ public:
 
         // DO_ENGINE_CONTROL
         Do_Engine_Control do_engine_control;
-        
-        // location
-        Location location;      // Waypoint location
 
         // navigation delay
         Navigation_Delay_Command nav_delay;
+
+        // navigation delay
+        Set_Yaw_Speed set_yaw_speed;
+
+        // do-winch
+        Winch_Command winch;
+
+        // location
+        Location location;      // Waypoint location
 
         // raw bytes, for reading/writing to eeprom. Note that only 10 bytes are available
         // if a 16 bit command ID is used
@@ -246,20 +270,17 @@ public:
         uint16_t id;                // mavlink command id
         uint16_t p1;                // general purpose parameter 1
         Content content;
+
+        // return a human-readable interpretation of the ID stored in this command
+        const char *type() const;
     };
+
 
     // main program function pointers
     FUNCTOR_TYPEDEF(mission_cmd_fn_t, bool, const Mission_Command&);
     FUNCTOR_TYPEDEF(mission_complete_fn_t, void);
 
-    // mission state enumeration
-    enum mission_state {
-        MISSION_STOPPED=0,
-        MISSION_RUNNING=1,
-        MISSION_COMPLETE=2
-    };
-
-    /// constructor
+    // constructor
     AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
         _ahrs(ahrs),
         _cmd_start_fn(cmd_start_fn),
@@ -282,6 +303,17 @@ public:
         _flags.nav_cmd_loaded = false;
         _flags.do_cmd_loaded = false;
     }
+
+    /* Do not allow copies */
+    AP_Mission(const AP_Mission &other) = delete;
+    AP_Mission &operator=(const AP_Mission&) = delete;    
+    
+    // mission state enumeration
+    enum mission_state {
+        MISSION_STOPPED=0,
+        MISSION_RUNNING=1,
+        MISSION_COMPLETE=2
+    };
 
     ///
     /// public mission methods
@@ -494,6 +526,7 @@ private:
     // parameters
     AP_Int16                _cmd_total;  // total number of commands in the mission
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
+    AP_Int16                _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started

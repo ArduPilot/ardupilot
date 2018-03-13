@@ -3,7 +3,7 @@
 import re
 
 from emit import Emit
-from param import known_param_fields
+from param import known_param_fields, known_units
 
 
 # Emit docs in a form acceptable to the APM wiki site
@@ -63,6 +63,11 @@ class WikiEmit(Emit):
                         for value in values:
                             v = value.split(':')
                             t += "|| " + v[0] + " || " + self.camelcase_escape(v[1]) + " ||\n"
+                    elif field == 'Units':
+                        abreviated_units = param.__dict__[field]
+                        if abreviated_units != '':
+                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abreviated unit into a full textual one
+                            t += " * %s: %s\n" % (self.camelcase_escape(field), self.wikichars_escape(units))
                     else:
                         t += " * %s: %s\n" % (self.camelcase_escape(field), self.wikichars_escape(param.__dict__[field]))
 

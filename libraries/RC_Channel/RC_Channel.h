@@ -95,10 +95,12 @@ public:
     void       set_radio_trim(int16_t val) { radio_trim.set(val);}
     void       save_radio_trim() { radio_trim.save();}
 
-    bool min_max_configured() const
-    {
-        return radio_min.configured() && radio_max.configured();
-    }
+    void       set_and_save_trim() { radio_trim.set_and_save_ifchanged(radio_in);}
+
+    // set and save trim if changed
+    void       set_and_save_radio_trim(int16_t val) { radio_trim.set_and_save_ifchanged(val);}
+    
+    bool min_max_configured() const;
     
 private:
 
@@ -120,6 +122,9 @@ private:
 
     // the input channel this corresponds to
     uint8_t     ch_in;
+
+    // bits set when channel has been identified as configured
+    static uint32_t configured_mask;
 
     int16_t pwm_to_angle();
     int16_t pwm_to_angle_dz(uint16_t dead_zone);

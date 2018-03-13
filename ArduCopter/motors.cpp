@@ -13,6 +13,13 @@ void Copter::arm_motors_check()
 {
     static int16_t arming_counter;
 
+#if TOY_MODE_ENABLED == ENABLED
+    if (g2.toy_mode.enabled()) {
+        // not armed with sticks in toy mode
+        return;
+    }
+#endif
+    
     // ensure throttle is down
     if (channel_throttle->get_control_in() > 0) {
         arming_counter = 0;
@@ -46,7 +53,7 @@ void Copter::arm_motors_check()
 
     // full left
     }else if (tmp < -4000) {
-        if (!mode_has_manual_throttle(control_mode) && !ap.land_complete) {
+        if (!flightmode->has_manual_throttle() && !ap.land_complete) {
             arming_counter = 0;
             return;
         }
@@ -98,10 +105,10 @@ void Copter::auto_disarm_check()
     } else {
         bool sprung_throttle_stick = (g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0;
         bool thr_low;
-        if (mode_has_manual_throttle(control_mode) || !sprung_throttle_stick) {
+        if (flightmode->has_manual_throttle() || !sprung_throttle_stick) {
             thr_low = ap.throttle_zero;
         } else {
-            float deadband_top = channel_throttle->get_control_mid() + g.throttle_deadzone;
+            float deadband_top = get_throttle_mid() + g.throttle_deadzone;
             thr_low = channel_throttle->get_control_in() <= deadband_top;
         }
 
@@ -154,13 +161,13 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
-    // call update_notify a few times to ensure the message gets out
+    // call notify update a few times to ensure the message gets out
     for (uint8_t i=0; i<=10; i++) {
-        update_notify();
+        notify.update();
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
+    gcs().send_text(MAV_SEVERITY_INFO, "Arming motors");
 #endif
 
     // Remember Orientation
@@ -173,11 +180,22 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
         ahrs.resetHeightDatum();
         Log_Write_Event(DATA_EKF_ALT_RESET);
+
+        // we have reset height, so arming height is zero
+        arming_altitude_m = 0;        
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location();
+        set_home_to_current_location(false);
+
+        // remember the height when we armed
+        arming_altitude_m = inertial_nav.get_altitude() * 0.01;
     }
-    calc_distance_and_bearing();
+    update_super_simple_bearing(false);
+
+    // Reset SmartRTL return location. If activated, SmartRTL will ultimately try to land at this point
+#if MODE_SMARTRTL_ENABLED == ENABLED
+    g2.smart_rtl.set_home(position_ok());
+#endif
 
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
@@ -204,7 +222,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     failsafe_enable();
 
     // perf monitor ignores delay due to arming
-    perf_ignore_this_loop();
+    scheduler.perf_info.ignore_this_loop();
 
     // flag exiting this function
     in_arm_motors = false;
@@ -228,7 +246,7 @@ void Copter::init_disarm_motors()
     }
 
 #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
+    gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
     // save compass offsets learned by the EKF if enabled
@@ -243,7 +261,7 @@ void Copter::init_disarm_motors()
 
 #if AUTOTUNE_ENABLED == ENABLED
     // save auto tuned parameters
-    autotune_save_tuning_gains();
+    mode_autotune.save_tuning_gains();
 #endif
 
     // we are not in the air
@@ -256,13 +274,11 @@ void Copter::init_disarm_motors()
     // send disarm command to motors
     motors->armed(false);
 
+#if MODE_AUTO_ENABLED == ENABLED
     // reset the mission
     mission.reset();
+#endif
 
-    // suspend logging
-    if (!DataFlash.log_while_disarmed()) {
-        DataFlash.EnableWrites(false);
-    }
     DataFlash_Class::instance()->set_vehicle_armed(false);
 
     // disable gps velocity based centrefugal force compensation
@@ -276,7 +292,7 @@ void Copter::init_disarm_motors()
 void Copter::motors_output()
 {
 #if ADVANCED_FAILSAFE == ENABLED
-    // this is to allow the failsafe module to deliberately crash 
+    // this is to allow the failsafe module to deliberately crash
     // the vehicle. Only used in extreme circumstances to meet the
     // OBC rules
     if (g2.afs.should_crash_vehicle()) {
@@ -289,6 +305,15 @@ void Copter::motors_output()
     if (ap.in_arming_delay && (!motors->armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || control_mode == THROW)) {
         ap.in_arming_delay = false;
     }
+
+    // output any servo channels
+    SRV_Channels::calc_pwm();
+
+    // cork now, so that all channel outputs happen at once
+    SRV_Channels::cork();
+
+    // update output on any aux channels, for manual passthru
+    SRV_Channels::output_ch_all();
 
     // check if we are performing the motor test
     if (ap.motor_test) {
@@ -306,6 +331,9 @@ void Copter::motors_output()
         // send output signals to motors
         motors->output();
     }
+
+    // push all channels
+    SRV_Channels::push();
 }
 
 // check for pilot stick input to trigger lost vehicle alarm
@@ -323,7 +351,7 @@ void Copter::lost_vehicle_check()
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;
-                gcs_send_text(MAV_SEVERITY_NOTICE,"Locate Copter alarm");
+                gcs().send_text(MAV_SEVERITY_NOTICE,"Locate Copter alarm");
             }
         } else {
             soundalarm_counter++;

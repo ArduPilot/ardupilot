@@ -17,7 +17,22 @@ protected:
     uint32_t telem_delay() const override;
 
     bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) override;
-    
+
+    AP_Mission *get_mission() override;
+    void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg) override;
+
+    Compass *get_compass() const override;
+    AP_Camera *get_camera() const override;
+    AP_ServoRelayEvents *get_servorelayevents() const override;
+    AP_AdvancedFailsafe *get_advanced_failsafe() const override;
+    AP_Rally *get_rally() const override;
+    const AP_FWVersion &get_fwver() const override;
+    void set_ekf_origin(const Location& loc) override;
+
+    uint8_t sysid_my_gcs() const override;
+
+    bool set_mode(uint8_t mode) override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;

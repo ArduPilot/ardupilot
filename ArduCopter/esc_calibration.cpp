@@ -18,10 +18,21 @@ enum ESCCalibrationModes {
 // check if we should enter esc calibration mode
 void Copter::esc_calibration_startup_check()
 {
+    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_BRUSHED) {
+        // ESC cal not valid for brushed motors
+        return;
+    }
+
 #if FRAME_CONFIG != HELI_FRAME
+    // delay up to 2 second for first radio input
+    uint8_t i = 0;
+    while ((i++ < 100) && (last_radio_update_ms == 0)) {
+        delay(20);
+        read_radio();
+    }
+
     // exit immediately if pre-arm rc checks fail
-    arming.pre_arm_rc_checks(true);
-    if (!ap.pre_arm_rc_check) {
+    if (!arming.rc_calibration_checks(true)) {
         // clear esc flag for next time
         if ((g.esc_calibrate != ESCCAL_NONE) && (g.esc_calibrate != ESCCAL_DISABLED)) {
             g.esc_calibrate.set_and_save(ESCCAL_NONE);
@@ -37,7 +48,7 @@ void Copter::esc_calibration_startup_check()
                 // we will enter esc_calibrate mode on next reboot
                 g.esc_calibrate.set_and_save(ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH);
                 // send message to gcs
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"ESC calibration: Restart board");
+                gcs().send_text(MAV_SEVERITY_CRITICAL,"ESC calibration: Restart board");
                 // turn on esc calibration notification
                 AP_Notify::flags.esc_calibration = true;
                 // block until we restart
@@ -88,31 +99,31 @@ void Copter::esc_calibration_passthrough()
     }
 
     // send message to GCS
-    gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Passing pilot throttle to ESCs");
+    gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Passing pilot throttle to ESCs");
+
+    // disable safety if requested
+    BoardConfig.init_safety();
 
     // arm motors
     motors->armed(true);
-    motors->enable();
+    SRV_Channels::enable_by_mask(motors->get_motor_mask());
+    hal.util->set_soft_armed(true);
 
-    uint32_t last_notify_update_ms = 0;
     while(1) {
-        // flash LEDS
-        AP_Notify::flags.esc_calibration = true;
-        uint32_t now = AP_HAL::millis();
-        if (now - last_notify_update_ms > 20) {
-            last_notify_update_ms = now;
-            update_notify();
-        }
+        // flash LEDs
+        esc_calibration_notify();
 
         // read pilot input
         read_radio();
 
-        // we run at high rate do make oneshot ESCs happy. Normal ESCs
+        // we run at high rate to make oneshot ESCs happy. Normal ESCs
         // will only see pulses at the RC_SPEED
         delay(3);
 
         // pass through to motors
+        SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
+        SRV_Channels::push();
     }
 #endif  // FRAME_CONFIG != HELI_FRAME
 }
@@ -123,6 +134,9 @@ void Copter::esc_calibration_auto()
 #if FRAME_CONFIG != HELI_FRAME
     bool printed_msg = false;
 
+    // clear esc flag for next time
+    g.esc_calibrate.set_and_save(ESCCAL_NONE);
+
     if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
         // run at full speed for oneshot ESCs (actually done on push)
         motors->set_update_rate(g.rc_speed);
@@ -132,14 +146,18 @@ void Copter::esc_calibration_auto()
     }
 
     // send message to GCS
-    gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Auto calibration");
+    gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Auto calibration");
+
+    // disable safety if requested
+    BoardConfig.init_safety();
 
     // arm and enable motors
     motors->armed(true);
-    motors->enable();
+    SRV_Channels::enable_by_mask(motors->get_motor_mask());
+    hal.util->set_soft_armed(true);
 
-    // flash LEDS
-    AP_Notify::flags.esc_calibration = true;
+    // flash LEDs
+    esc_calibration_notify();
 
     // raise throttle to maximum
     delay(10);
@@ -147,10 +165,13 @@ void Copter::esc_calibration_auto()
     // wait for safety switch to be pressed
     while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         if (!printed_msg) {
-            gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
+            gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
             printed_msg = true;
         }
+        SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(1.0f);
+        SRV_Channels::push();
+        esc_calibration_notify();
         delay(3);
     }
 
@@ -158,19 +179,29 @@ void Copter::esc_calibration_auto()
     uint32_t tstart = millis();
     while (millis() - tstart < 5000) {
         motors->set_throttle_passthrough_for_esc_calibration(1.0f);
+        esc_calibration_notify();
         delay(3);
     }
 
     // reduce throttle to minimum
     motors->set_throttle_passthrough_for_esc_calibration(0.0f);
 
-    // clear esc parameter
-    g.esc_calibrate.set_and_save(ESCCAL_NONE);
-
     // block until we restart
     while(1) {
-        delay(3);
         motors->set_throttle_passthrough_for_esc_calibration(0.0f);
+        esc_calibration_notify();
+        delay(3);
     }
 #endif // FRAME_CONFIG != HELI_FRAME
+}
+
+// flash LEDs to notify the user that ESC calibration is happening
+void Copter::esc_calibration_notify()
+{
+    AP_Notify::flags.esc_calibration = true;
+    uint32_t now = AP_HAL::millis();
+    if (now - esc_calibration_notify_update_ms > 20) {
+        esc_calibration_notify_update_ms = now;
+        notify.update();
+    }
 }

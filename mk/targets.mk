@@ -15,80 +15,13 @@ apm1 apm1-1280 apm2 apm2beta:
 flymaple flymaple-hil:
 	$(error $@ is deprecated on master branch; use master-AVR)
 
-linux: HAL_BOARD = HAL_BOARD_LINUX
-linux: TOOLCHAIN = NATIVE
-linux: BUILDSYS_DEPRECATED = 1
-linux: all
-
-erleboard: HAL_BOARD = HAL_BOARD_LINUX
-erleboard: TOOLCHAIN = BBONE
-erleboard: BUILDSYS_DEPRECATED = 1
-erleboard: all
-
-zynq: HAL_BOARD = HAL_BOARD_LINUX
-zynq: TOOLCHAIN = ZYNQ
-zynq: all
-zynq-hil: EXTRAFLAGS += "-DHILMODE=HIL_MODE_ATTITUDE -DHIL_MODE=HIL_MODE_SENSORS "
-zynq-hil : zynq
-
-pxf: HAL_BOARD = HAL_BOARD_LINUX
-pxf: TOOLCHAIN = BBONE
-pxf: BUILDSYS_DEPRECATED = 1
-pxf: all
-
-bebop: HAL_BOARD = HAL_BOARD_LINUX
-bebop: TOOLCHAIN = BBONE
-bebop: LDFLAGS += "-static"
-bebop: BUILDSYS_DEPRECATED = 1
-bebop: all
-
-minlure: HAL_BOARD = HAL_BOARD_LINUX
-minlure: TOOLCHAIN = NATIVE
-minlure: BUILDSYS_DEPRECATED = 1
-minlure: all
-
-navio: HAL_BOARD = HAL_BOARD_LINUX
-navio: TOOLCHAIN = RPI
-navio: BUILDSYS_DEPRECATED = 1
-navio: all
-
-navio2: HAL_BOARD = HAL_BOARD_LINUX
-navio2: TOOLCHAIN = RPI
-navio2: BUILDSYS_DEPRECATED = 1
-navio2: all
-
-raspilot: HAL_BOARD = HAL_BOARD_LINUX
-raspilot: TOOLCHAIN = RPI
-raspilot: BUILDSYS_DEPRECATED = 1
-raspilot: all
-
-erlebrain2: HAL_BOARD = HAL_BOARD_LINUX
-erlebrain2: TOOLCHAIN = RPI
-erlebrain2: BUILDSYS_DEPRECATED  = 1
-erlebrain2: all
-
-bbbmini: HAL_BOARD = HAL_BOARD_LINUX
-bbbmini: TOOLCHAIN = BBONE
-bbbmini: BUILDSYS_DEPRECATED  = 1
-bbbmini: all
-
-bhat: HAL_BOARD = HAL_BOARD_LINUX
-bhat: TOOLCHAIN = RPI
-bhat: BUILDSYS_DEPRECATED  = 1
-bhat: all
-
-pxfmini: HAL_BOARD = HAL_BOARD_LINUX
-pxfmini: TOOLCHAIN = RPI
-pxfmini: BUILDSYS_DEPRECATED  = 1
-pxfmini: all
+f4light: HAL_BOARD = HAL_BOARD_F4LIGHT
+f4light: TOOLCHAIN = ARM
+f4light: all
 
 qflight: HAL_BOARD = HAL_BOARD_LINUX
 qflight: TOOLCHAIN = QFLIGHT
 qflight: all
-
-empty: HAL_BOARD = HAL_BOARD_EMPTY
-empty: TOOLCHAIN = AVR
-empty: all
 
 qurt: HAL_BOARD = HAL_BOARD_QURT
 qurt: TOOLCHAIN = QURT
@@ -110,9 +43,9 @@ qurt: all
 
 # cope with copter and hil targets
 FRAMES = heli
-BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 px4-v3 px4-v4 sitl flymaple linux erle pxf navio navio2 raspilot bbbmini minlure erlebrain2 bhat qflight pxfmini
+BOARDS = apm1 apm2 apm2beta apm1-1280 px4-v1 px4-v2 px4-v3 px4-v4 px4-v4pro sitl flymaple
 BOARDS += vrbrain
-BOARDS += vrbrain-v51 vrbrain-v52 vrbrain-v54
+BOARDS += vrbrain-v51 vrbrain-v52 vrbrain-v52E vrbrain-v54
 BOARDS += vrcore-v10
 BOARDS += vrubrain-v51 vrubrain-v52
 
@@ -139,8 +72,7 @@ endef
 
 USED_BOARDS := $(foreach board,$(BOARDS), $(findstring $(board), $(MAKECMDGOALS)))
 USED_FRAMES := $(foreach frame,$(FRAMES), $(findstring $(frame), $(MAKECMDGOALS)))
-#$(warning $(USED_BOARDS))
-#$(warning $(USED_FRAMES))
+
 # generate targets of the form BOARD-FRAME and BOARD-FRAME-HIL
 $(foreach board,$(USED_BOARDS),$(eval $(call board_template,$(board))))
 $(foreach board,$(USED_BOARDS),$(foreach frame,$(USED_FRAMES),$(eval $(call frame_template,$(board),$(frame)))))
@@ -158,4 +90,5 @@ clean:
 	@rm -fr $(BUILDROOT)
 
 include $(MK_DIR)/modules.mk
+include $(MK_DIR)/uavcangen.mk
 include $(MK_DIR)/mavgen.mk

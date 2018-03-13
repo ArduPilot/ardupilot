@@ -25,6 +25,8 @@
  */
 void Plane::adjust_altitude_target()
 {
+    Location target_location;
+
     if (control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE) {
         return;
@@ -36,6 +38,8 @@ void Plane::adjust_altitude_target()
     } else if (landing.is_on_approach()) {
         landing.setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude.offset_cm);
         landing.adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, auto_state.wp_distance, target_altitude.offset_cm);
+    } else if (landing.get_target_altitude_location(target_location)) {
+       set_target_altitude_location(target_location);
     } else if (reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
         // altitude target
@@ -115,23 +119,6 @@ int32_t Plane::get_RTL_altitude()
     return g.RTL_altitude_cm + home.alt;
 }
 
-
-/*
-  return relative altitude in meters (relative to home)
- */
-float Plane::relative_altitude(void)
-{
-    return (current_loc.alt - home.alt) * 0.01f;
-}
-
-/*
-  return relative altitude in centimeters, absolute value
- */
-int32_t Plane::relative_altitude_abs_cm(void)
-{
-    return labs(current_loc.alt - home.alt);
-}
-
 /*
   return relative altitude in meters (relative to terrain, if available,
   or home otherwise)
@@ -150,7 +137,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
         return altitude;
     }
 #endif
-    return relative_altitude();
+    return relative_altitude;
 }
 
 /*
@@ -325,7 +312,7 @@ int32_t Plane::calc_altitude_error_cm(void)
 /*
   check for FBWB_min_altitude_cm violation
  */
-void Plane::check_minimum_altitude(void)
+void Plane::check_fbwb_minimum_altitude(void)
 {
     if (g.FBWB_min_altitude_cm == 0) {
         return;
@@ -456,7 +443,7 @@ int32_t Plane::adjusted_altitude_cm(void)
  */
 int32_t Plane::adjusted_relative_altitude_cm(void)
 {
-    return adjusted_altitude_cm() - home.alt;
+    return (relative_altitude - mission_alt_offset())*100;
 }
 
 
@@ -585,9 +572,9 @@ float Plane::rangefinder_correction(void)
  */
 void Plane::rangefinder_height_update(void)
 {
-    float distance = rangefinder.distance_cm()*0.01f;
+    float distance = rangefinder.distance_cm_orient(ROTATION_PITCH_270)*0.01f;
     
-    if ((rangefinder.status() == RangeFinder::RangeFinder_Good) && home_is_set != HOME_UNSET) {
+    if ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && home_is_set != HOME_UNSET) {
         if (!rangefinder_state.have_initial_reading) {
             rangefinder_state.have_initial_reading = true;
             rangefinder_state.initial_range = distance;
@@ -603,10 +590,10 @@ void Plane::rangefinder_height_update(void)
         // to misconfiguration or a faulty sensor
         if (rangefinder_state.in_range_count < 10) {
             if (!is_equal(distance, rangefinder_state.last_distance) &&
-                fabsf(rangefinder_state.initial_range - distance) > 0.05f * rangefinder.max_distance_cm()*0.01f) {
+                fabsf(rangefinder_state.initial_range - distance) > 0.05f * rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)*0.01f) {
                 rangefinder_state.in_range_count++;
             }
-            if (fabsf(rangefinder_state.last_distance - distance) > rangefinder.max_distance_cm()*0.01*0.2) {
+            if (fabsf(rangefinder_state.last_distance - distance) > rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)*0.01*0.2) {
                 // changes by more than 20% of full range will reset counter
                 rangefinder_state.in_range_count = 0;
             }
@@ -616,10 +603,10 @@ void Plane::rangefinder_height_update(void)
                 (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
                  control_mode == QLAND ||
                  control_mode == QRTL ||
-                 (control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND)) &&
+                 (control_mode == AUTO && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
+                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
             }
         }
         rangefinder_state.last_distance = distance;
@@ -631,7 +618,7 @@ void Plane::rangefinder_height_update(void)
     if (rangefinder_state.in_range) {
         // base correction is the difference between baro altitude and
         // rangefinder estimate
-        float correction = relative_altitude() - rangefinder_state.height_estimate;
+        float correction = relative_altitude - rangefinder_state.height_estimate;
 
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
@@ -656,7 +643,7 @@ void Plane::rangefinder_height_update(void)
             if (fabsf(rangefinder_state.correction - rangefinder_state.initial_correction) > 30) {
                 // the correction has changed by more than 30m, reset use of Lidar. We may have a bad lidar
                 if (rangefinder_state.in_use) {
-                    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", (double)rangefinder_state.height_estimate);
+                    gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", (double)rangefinder_state.height_estimate);
                 }
                 memset(&rangefinder_state, 0, sizeof(rangefinder_state));
             }

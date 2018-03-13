@@ -6,17 +6,10 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // parameters from parent vehicle
     AP_NESTEDGROUPINFO(AC_AttitudeControl, 0),
 
-    // @Param: PIRO_COMP
-    // @DisplayName: Piro Comp Enable
-    // @Description: Pirouette compensation enabled
-    // @Values: 0:Disabled 1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO("PIRO_COMP",    0, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
-
     // @Param: HOVR_ROL_TRM
     // @DisplayName: Hover Roll Trim
     // @Description: Trim the hover roll angle to counter tail rotor thrust in a hover
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: 0 1000
     // @User: Advanced
     AP_GROUPINFO("HOVR_ROL_TRM",    1, AC_AttitudeControl_Heli, _hover_roll_trim, AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT),
@@ -49,9 +42,16 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
+    // @Param: RAT_RLL_FF
+    // @DisplayName: Roll axis rate controller feed forward
+    // @Description: Roll axis rate controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
     // @Param: RAT_RLL_FILT
-    // @DisplayName: Roll axis rate conroller input frequency in Hz
-    // @Description: Roll axis rate conroller input frequency in Hz
+    // @DisplayName: Roll axis rate controller input frequency in Hz
+    // @Description: Roll axis rate controller input frequency in Hz
     // @Units: Hz
     // @Range: 1 20
     // @Increment: 1
@@ -85,9 +85,16 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
+    // @Param: RAT_PIT_FF
+    // @DisplayName: Pitch axis rate controller feed forward
+    // @Description: Pitch axis rate controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
     // @Param: RAT_PIT_FILT
-    // @DisplayName: Pitch axis rate conroller input frequency in Hz
-    // @Description: Pitch axis rate conroller input frequency in Hz
+    // @DisplayName: Pitch axis rate controller input frequency in Hz
+    // @Description: Pitch axis rate controller input frequency in Hz
     // @Units: Hz
     // @Range: 1 20
     // @Increment: 1
@@ -121,14 +128,28 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
+    // @Param: RAT_YAW_FF
+    // @DisplayName: Yaw axis rate controller feed forward
+    // @Description: Yaw axis rate controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
     // @Param: RAT_YAW_FILT
-    // @DisplayName: Yaw axis rate conroller input frequency in Hz
-    // @Description: Yaw axis rate conroller input frequency in Hz
+    // @DisplayName: Yaw axis rate controller input frequency in Hz
+    // @Description: Yaw axis rate controller input frequency in Hz
     // @Units: Hz
     // @Range: 1 20
     // @Increment: 1
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 4, AC_AttitudeControl_Heli, AC_HELI_PID),
 
+    // @Param: PIRO_COMP
+    // @DisplayName: Piro Comp Enable
+    // @Description: Pirouette compensation enabled
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("PIRO_COMP",    5, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
+    
     AP_GROUPEND
 };
 
@@ -227,25 +248,27 @@ void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cd
 // should be called at 100hz or more
 void AC_AttitudeControl_Heli::rate_controller_run()
 {	
+    Vector3f gyro_latest = _ahrs.get_gyro_latest();
+
     // call rate controllers and send output to motors object
     // if using a flybar passthrough roll and pitch directly to motors
     if (_flags_heli.flybar_passthrough) {
         _motors.set_roll(_passthrough_roll/4500.0f);
         _motors.set_pitch(_passthrough_pitch/4500.0f);
     } else {
-        rate_bf_to_motor_roll_pitch(_rate_target_ang_vel.x, _rate_target_ang_vel.y);
+        rate_bf_to_motor_roll_pitch(gyro_latest, _rate_target_ang_vel.x, _rate_target_ang_vel.y);
     }
     if (_flags_heli.tail_passthrough) {
         _motors.set_yaw(_passthrough_yaw/4500.0f);
     } else {
-        _motors.set_yaw(rate_target_to_motor_yaw(_rate_target_ang_vel.z));
+        _motors.set_yaw(rate_target_to_motor_yaw(gyro_latest.z, _rate_target_ang_vel.z));
     }
 }
 
 // Update Alt_Hold angle maximum
 void AC_AttitudeControl_Heli::update_althold_lean_angle_max(float throttle_in)
 {
-    float althold_lean_angle_max = acos(constrain_float(_throttle_in/AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX, 0.0f, 1.0f));
+    float althold_lean_angle_max = acos(constrain_float(_throttle_in/AC_ATTITUDE_HELI_ANGLE_LIMIT_THROTTLE_MAX, 0.0f, 1.0f));
     _althold_lean_angle_max = _althold_lean_angle_max + (_dt/(_dt+_angle_limit_tc))*(althold_lean_angle_max-_althold_lean_angle_max);
 }
 
@@ -258,17 +281,16 @@ void AC_AttitudeControl_Heli::update_althold_lean_angle_max(float throttle_in)
 //
 
 // rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target rate in radians/second
-void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target_rads, float rate_pitch_target_rads)
+void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_rads, float rate_roll_target_rads, float rate_pitch_target_rads)
 {
     float roll_pd, roll_i, roll_ff;             // used to capture pid values
     float pitch_pd, pitch_i, pitch_ff;          // used to capture pid values
     float rate_roll_error_rads, rate_pitch_error_rads;    // simply target_rate - current_rate
     float roll_out, pitch_out;
-    const Vector3f& gyro = _ahrs.get_gyro();     // get current rates
 
     // calculate error
-    rate_roll_error_rads = rate_roll_target_rads - gyro.x;
-    rate_pitch_error_rads = rate_pitch_target_rads - gyro.y;
+    rate_roll_error_rads = rate_roll_target_rads - rate_rads.x;
+    rate_pitch_error_rads = rate_pitch_target_rads - rate_rads.y;
 
     // pass error to PID controller
     _pid_rate_roll.set_input_filter_all(rate_roll_error_rads);
@@ -305,8 +327,8 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     }
     
     // For legacy reasons, we convert to centi-degrees before inputting to the feedforward
-    roll_ff = roll_feedforward_filter.apply(_pid_rate_roll.get_vff(rate_roll_target_rads), _dt);
-    pitch_ff = pitch_feedforward_filter.apply(_pid_rate_pitch.get_vff(rate_pitch_target_rads), _dt);
+    roll_ff = roll_feedforward_filter.apply(_pid_rate_roll.get_ff(rate_roll_target_rads), _dt);
+    pitch_ff = pitch_feedforward_filter.apply(_pid_rate_pitch.get_ff(rate_pitch_target_rads), _dt);
 
     // add feed forward and final output
     roll_out = roll_pd + roll_i + roll_ff;
@@ -342,8 +364,8 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
         piro_pitch_i = pitch_i;
 
         Vector2f yawratevector;
-        yawratevector.x     = cosf(-_ahrs.get_gyro().z * _dt);
-        yawratevector.y     = sinf(-_ahrs.get_gyro().z * _dt);
+        yawratevector.x     = cosf(-rate_rads.z * _dt);
+        yawratevector.y     = sinf(-rate_rads.z * _dt);
         yawratevector.normalize();
 
         roll_i      = piro_roll_i * yawratevector.x - piro_pitch_i * yawratevector.y;
@@ -356,19 +378,14 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 }
 
 // rate_bf_to_motor_yaw - ask the rate controller to calculate the motor outputs to achieve the target rate in radians/second
-float AC_AttitudeControl_Heli::rate_target_to_motor_yaw(float rate_target_rads)
+float AC_AttitudeControl_Heli::rate_target_to_motor_yaw(float rate_yaw_actual_rads, float rate_target_rads)
 {
     float pd,i,vff;     // used to capture pid values for logging
-    float current_rate_rads;     // this iteration's rate
     float rate_error_rads;       // simply target_rate - current_rate
     float yaw_out;
 
-    // get current rate
-    // To-Do: make getting gyro rates more efficient?
-    current_rate_rads = _ahrs.get_gyro().z;
-
     // calculate error and call pid controller
-    rate_error_rads  = rate_target_rads - current_rate_rads;
+    rate_error_rads  = rate_target_rads - rate_yaw_actual_rads;
 
     // pass error to PID controller
     _pid_rate_yaw.set_input_filter_all(rate_error_rads);
@@ -390,7 +407,7 @@ float AC_AttitudeControl_Heli::rate_target_to_motor_yaw(float rate_target_rads)
     }
     
     // For legacy reasons, we convert to centi-degrees before inputting to the feedforward
-    vff = yaw_velocity_feedforward_filter.apply(_pid_rate_yaw.get_vff(rate_target_rads), _dt);
+    vff = yaw_velocity_feedforward_filter.apply(_pid_rate_yaw.get_ff(rate_target_rads), _dt);
     
     // add feed forward
     yaw_out = pd + i + vff;
@@ -419,4 +436,22 @@ void AC_AttitudeControl_Heli::set_throttle_out(float throttle_in, bool apply_ang
     _motors.set_throttle(throttle_in);
     // Clear angle_boost for logging purposes
     _angle_boost = 0.0f;
+}
+
+// Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
+void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain)
+{
+    if (_inverted_flight) {
+        euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
+    }
+    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_rate_cds, smoothing_gain);
+}
+
+// Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
+void AC_AttitudeControl_Heli::input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw, float smoothing_gain)
+{
+    if (_inverted_flight) {
+        euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
+    }
+    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_angle_cd, slew_yaw, smoothing_gain);
 }

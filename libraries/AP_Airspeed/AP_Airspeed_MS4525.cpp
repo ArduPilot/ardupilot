@@ -29,14 +29,8 @@ extern const AP_HAL::HAL &hal;
 
 #define MS4525D0_I2C_ADDR 0x28
 
-#ifdef HAL_AIRSPEED_MS4515DO_I2C_BUS
-#define MS4525D0_I2C_BUS HAL_AIRSPEED_MS4515DO_I2C_BUS
-#else
-#define MS4525D0_I2C_BUS 1
-#endif
-
-AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend) :
-    AP_Airspeed_Backend(_frontend)
+AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend, uint8_t _instance) :
+    AP_Airspeed_Backend(_frontend, _instance)
 {
 }
 
@@ -49,6 +43,7 @@ bool AP_Airspeed_MS4525::init()
     } addresses[] = {
         { 1, MS4525D0_I2C_ADDR },
         { 0, MS4525D0_I2C_ADDR },
+        { 2, MS4525D0_I2C_ADDR },
     };
     bool found = false;
     for (uint8_t i=0; i<ARRAY_SIZE(addresses); i++) {
@@ -56,7 +51,7 @@ bool AP_Airspeed_MS4525::init()
         if (!_dev) {
             continue;
         }
-        if (!_dev->get_semaphore()->take(0)) {
+        if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
             continue;
         }
 
@@ -98,18 +93,52 @@ void AP_Airspeed_MS4525::_measure()
     }
 }
 
+/*
+  this equation is an inversion of the equation in the
+  pressure transfer function figure on page 4 of the datasheet
+  
+  We negate the result so that positive differential pressures
+  are generated when the bottom port is used as the static
+  port on the pitot and top port is used as the dynamic port
+*/
+float AP_Airspeed_MS4525::_get_pressure(int16_t dp_raw) const
+{
+    const float P_max = get_psi_range();
+    const float P_min = - P_max;
+    const float PSI_to_Pa = 6894.757f;
+
+    float diff_press_PSI  = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
+    float press  = diff_press_PSI * PSI_to_Pa;
+    return press;
+}
+
+/*
+  convert raw temperature to temperature in degrees C
+ */
+float AP_Airspeed_MS4525::_get_temperature(int16_t dT_raw) const
+{
+    float temp  = ((200.0f * dT_raw) / 2047) - 50;
+    return temp;
+}
+
 // read the values from the sensor
 void AP_Airspeed_MS4525::_collect()
 {
     uint8_t data[4];
+    uint8_t data2[4];
 
     _measurement_started_ms = 0;
 
     if (!_dev->transfer(nullptr, 0, data, sizeof(data))) {
         return;
     }
+    // reread the data, so we can attempt to detect bad inputs
+    if (!_dev->transfer(nullptr, 0, data2, sizeof(data2))) {
+        return;
+    }
 
     uint8_t status = (data[0] & 0xC0) >> 6;
+    // only check the status on the first read, the second read is expected to be stale
     if (status == 2 || status == 3) {
         return;
     }
@@ -120,29 +149,38 @@ void AP_Airspeed_MS4525::_collect()
     dT_raw = (data[2] << 8) + data[3];
     dT_raw = (0xFFE0 & dT_raw) >> 5;
 
-    const float P_max = get_psi_range();
-    const float P_min = - P_max;
-    const float PSI_to_Pa = 6894.757f;
-    /*
-      this equation is an inversion of the equation in the
-      pressure transfer function figure on page 4 of the datasheet
+    int16_t dp_raw2, dT_raw2;
+    dp_raw2 = (data2[0] << 8) + data2[1];
+    dp_raw2 = 0x3FFF & dp_raw2;
+    dT_raw2 = (data2[2] << 8) + data2[3];
+    dT_raw2 = (0xFFE0 & dT_raw2) >> 5;
 
-      We negate the result so that positive differential pressures
-      are generated when the bottom port is used as the static
-      port on the pitot and top port is used as the dynamic port
-     */
-    float diff_press_PSI = -((dp_raw - 0.1f*16383) * (P_max-P_min)/(0.8f*16383) + P_min);
+    // reject any values that are the absolute minimum or maximums these
+    // can happen due to gnd lifts or communication errors on the bus
+    if (dp_raw  == 0x3FFF || dp_raw  == 0 || dT_raw  == 0x7FF || dT_raw == 0 ||
+        dp_raw2 == 0x3FFF || dp_raw2 == 0 || dT_raw2 == 0x7FF || dT_raw2 == 0) {
+        return;
+    }
 
-    float press = diff_press_PSI * PSI_to_Pa;
-    float temp = ((200.0f * dT_raw) / 2047) - 50;
+    // reject any double reads where the value has shifted in the upper more than
+    // 0xFF
+    if (abs(dp_raw - dp_raw2) > 0xFF || abs(dT_raw - dT_raw2) > 0xFF) {
+        return;
+    }
+
+    float press  = _get_pressure(dp_raw);
+    float press2 = _get_pressure(dp_raw2);
+    float temp  = _get_temperature(dT_raw);
+    float temp2 = _get_temperature(dT_raw2);
     
     _voltage_correction(press, temp);
+    _voltage_correction(press2, temp2);
 
-    if (sem->take(0)) {
-        _press_sum += press;
-        _temp_sum += temp;
-        _press_count++;
-        _temp_count++;
+    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        _press_sum += press + press2;
+        _temp_sum += temp + temp2;
+        _press_count += 2;
+        _temp_count += 2;
         sem->give();
     }
     
@@ -192,7 +230,7 @@ bool AP_Airspeed_MS4525::get_differential_pressure(float &pressure)
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(0)) {
+    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         if (_press_count > 0) {
             _pressure = _press_sum / _press_count;
             _press_count = 0;
@@ -210,7 +248,7 @@ bool AP_Airspeed_MS4525::get_temperature(float &temperature)
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(0)) {
+    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         if (_temp_count > 0) {
             _temperature = _temp_sum / _temp_count;
             _temp_count = 0;

@@ -22,7 +22,7 @@ public:
 
     CompassCalibrator();
 
-    void start(bool retry=false, float delay=0.0f);
+    void start(bool retry, float delay, uint16_t offset_max);
     void clear();
 
     void update(bool &failure);
@@ -82,6 +82,7 @@ private:
     bool _retry;
     float _tolerance;
     uint8_t _attempt;
+    uint16_t _offset_max;
 
     completion_mask_t _completion_mask;
 

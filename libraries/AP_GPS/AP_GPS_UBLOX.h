@@ -48,7 +48,6 @@
 #define UBX_MSG_TYPES 2
 
 #define UBLOX_MAX_PORTS 6
-#define MINIMUM_MEASURE_RATE_MS 200
 
 #define RATE_POSLLH 1
 #define RATE_STATUS 1
@@ -73,6 +72,8 @@
 #define CONFIG_GNSS          (1<<11)
 #define CONFIG_SBAS          (1<<12)
 #define CONFIG_RATE_PVT      (1<<13)
+
+#define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
 #define CONFIG_ALL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_SOL | CONFIG_RATE_VELNED \
                     | CONFIG_RATE_DOP | CONFIG_RATE_MON_HW | CONFIG_RATE_MON_HW2 | CONFIG_RATE_RAW | CONFIG_VERSION \
@@ -100,20 +101,25 @@ public:
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
-    void inject_data(const uint8_t *data, uint16_t len) override;
-    
     bool is_configured(void) {
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         if (!gps._auto_config) {
             return true;
         } else {
             return !_unconfigured_messages;
         }
+#else
+        return true;
+#endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
     }
 
     void broadcast_configuration_failure_reason(void) const override;
+    void Write_DataFlash_Log_Startup_messages() const override;
 
-    // return velocity lag
-    float get_lag(void) const override;
+    // get the velocity lag, returns true if the driver is confident in the returned value
+    bool get_lag(float &lag_sec) const override;
+
+    const char *name() const override { return "u-blox"; }
 
 private:
     // u-blox UBX protocol essentials
@@ -471,21 +477,23 @@ private:
         UBLOX_5,
         UBLOX_6,
         UBLOX_7,
-        UBLOX_M8
+        UBLOX_M8,
+        UBLOX_UNKNOWN_HARDWARE_GENERATION = 0xff // not in the ublox spec used for
+                                                 // flagging state in the driver
     };
 
     enum config_step {
         STEP_PVT = 0,
+        STEP_NAV_RATE, // poll NAV rate
         STEP_SOL,
         STEP_PORT,
-        STEP_POSLLH,
         STEP_STATUS,
+        STEP_POSLLH,
         STEP_VELNED,
         STEP_POLL_SVINFO, // poll svinfo
         STEP_POLL_SBAS, // poll SBAS
         STEP_POLL_NAV, // poll NAV settings
         STEP_POLL_GNSS, // poll GNSS
-        STEP_NAV_RATE, // poll NAV rate
         STEP_DOP,
         STEP_MON_HW,
         STEP_MON_HW2,
@@ -517,6 +525,7 @@ private:
     uint8_t         _next_message;
     uint8_t         _ublox_port;
     bool            _have_version;
+    struct ubx_mon_ver _version;
     uint32_t        _unconfigured_messages;
     uint8_t         _hardware_generation;
 
@@ -544,7 +553,7 @@ private:
     void        _configure_rate(void);
     void        _configure_sbas(bool enable);
     void        _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);
-    void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
+    bool        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
     void	send_next_rate_update(void);
     bool        _request_message_rate(uint8_t msg_class, uint8_t msg_id);
     void        _request_next_config(void);
@@ -554,10 +563,8 @@ private:
     void        _verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
 
     void unexpected_message(void);
-    void write_logging_headers(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
-    void log_mon_ver(void);
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
     void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
 

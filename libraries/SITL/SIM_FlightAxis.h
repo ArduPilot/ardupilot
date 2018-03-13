@@ -90,7 +90,7 @@ public:
     } state;
 
     static const uint16_t num_keys = sizeof(state)/sizeof(double);
-    
+
     struct keytable {
         const char *key;
         double &ref;
@@ -150,25 +150,38 @@ public:
         { "m-flightAxisControllerIsActive", state.m_flightAxisControllerIsActive },
         { "m-resetButtonHasBeenPressed", state.m_resetButtonHasBeenPressed },
     };
-    
+
 private:
     char *soap_request(const char *action, const char *fmt, ...);
     void exchange_data(const struct sitl_input &input);
     void parse_reply(const char *reply);
 
-    double initial_time_s = 0;
-    double last_time_s = 0;
-    bool heli_demix = false;
-    bool rev4_servos = false;
-    bool controller_started = false;
-    uint64_t frame_counter = 0;
-    uint64_t activation_frame_counter = 0;
-    double last_frame_count_s = 0;
+    static void *update_thread(void *arg);
+    void update_loop(void);
+    void report_FPS(void);
+
+    struct sitl_input last_input;
+
+    double average_frame_time_s;
+    double extrapolated_s;
+    double initial_time_s;
+    double last_time_s;
+    bool heli_demix;
+    bool rev4_servos;
+    bool controller_started;
+    uint64_t frame_counter;
+    uint64_t activation_frame_counter;
+    uint64_t socket_frame_counter;
+    uint64_t last_socket_frame_counter;
+    double last_frame_count_s;
     Vector3f position_offset;
     Vector3f last_velocity_ef;
 
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;
+
+    pthread_t thread;
+    AP_HAL::Semaphore *mutex;
 };
 
 

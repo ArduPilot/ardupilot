@@ -63,6 +63,12 @@ public:
     {
         return nullptr;
     }
+
+    /* Return the number of SPI devices currently registered. */
+    virtual uint8_t get_count() { return 0; }
+
+    /* Get spi device name at @idx */
+    virtual const char *get_device_name(uint8_t idx) { return nullptr; }
 };
 
 }

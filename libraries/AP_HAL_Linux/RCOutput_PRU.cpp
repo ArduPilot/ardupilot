@@ -99,6 +99,9 @@ void RCOutput_PRU::cork(void)
 
 void RCOutput_PRU::push(void)
 {
+    if (!corked) {
+        return;
+    }
     corked = false;
     for (uint8_t i=0; i<ARRAY_SIZE(pending); i++) {
         if (pending_mask & (1U << i)) {

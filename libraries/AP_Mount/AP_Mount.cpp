@@ -19,7 +19,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _RETRACT_X
     // @DisplayName: Mount roll angle when in retracted position
     // @Description: Mount roll angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _RETRACT_Y
     // @DisplayName: Mount tilt/pitch angle when in retracted position
     // @Description: Mount tilt/pitch angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _RETRACT_Z
     // @DisplayName: Mount yaw/pan angle when in retracted position
     // @Description: Mount yaw/pan angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _NEUTRAL_X
     // @DisplayName: Mount roll angle when in neutral position
     // @Description: Mount roll angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _NEUTRAL_Y
     // @DisplayName: Mount tilt/pitch angle when in neutral position
     // @Description: Mount tilt/pitch angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _NEUTRAL_Z
     // @DisplayName: Mount pan/yaw angle when in neutral position
     // @Description: Mount pan/yaw angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -99,7 +99,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMIN_ROL
     // @DisplayName: Minimum roll angle
     // @Description: Minimum physical roll angular position of mount.
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -108,7 +108,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMAX_ROL
     // @DisplayName: Maximum roll angle
     // @Description: Maximum physical roll angular position of the mount
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -124,7 +124,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMIN_TIL
     // @DisplayName: Minimum tilt angle
     // @Description: Minimum physical tilt (pitch) angular position of mount.
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMAX_TIL
     // @DisplayName: Maximum tilt angle
     // @Description: Maximum physical tilt (pitch) angular position of the mount
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -149,7 +149,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMIN_PAN
     // @DisplayName: Minimum pan angle
     // @Description: Minimum physical pan (yaw) angular position of mount.
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -158,7 +158,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _ANGMAX_PAN
     // @DisplayName: Maximum pan angle
     // @Description: Maximum physical pan (yaw) angular position of the mount
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -175,7 +175,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _LEAD_RLL
     // @DisplayName: Roll stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate, compensating for servo delay. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -184,7 +184,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _LEAD_PTCH
     // @DisplayName: Pitch stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -219,7 +219,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_RETRACT_X
     // @DisplayName: Mount2 roll angle when in retracted position
     // @Description: Mount2 roll angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -227,7 +227,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_RETRACT_Y
     // @DisplayName: Mount2 tilt/pitch angle when in retracted position
     // @Description: Mount2 tilt/pitch angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -235,7 +235,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_RETRACT_Z
     // @DisplayName: Mount2 yaw/pan angle when in retracted position
     // @Description: Mount2 yaw/pan angle when in retracted position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -244,7 +244,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_NEUTRAL_X
     // @DisplayName: Mount2 roll angle when in neutral position
     // @Description: Mount2 roll angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -252,7 +252,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_NEUTRAL_Y
     // @DisplayName: Mount2 tilt/pitch angle when in neutral position
     // @Description: Mount2 tilt/pitch angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -260,7 +260,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_NEUTRAL_Z
     // @DisplayName: Mount2 pan/yaw angle when in neutral position
     // @Description: Mount2 pan/yaw angle when in neutral position
-    // @Units: Degrees
+    // @Units: deg
     // @Range: -180.00 179.99
     // @Increment: 1
     // @User: Standard
@@ -299,7 +299,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMIN_ROL
     // @DisplayName: Mount2's minimum roll angle
     // @Description: Mount2's minimum physical roll angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -308,7 +308,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMAX_ROL
     // @DisplayName: Mount2's maximum roll angle
     // @Description: Mount2's maximum physical roll angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -324,7 +324,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMIN_TIL
     // @DisplayName: Mount2's minimum tilt angle
     // @Description: Mount2's minimum physical tilt (pitch) angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -333,7 +333,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMAX_TIL
     // @DisplayName: Mount2's maximum tilt angle
     // @Description: Mount2's maximum physical tilt (pitch) angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -349,7 +349,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMIN_PAN
     // @DisplayName: Mount2's minimum pan angle
     // @Description: Mount2's minimum physical pan (yaw) angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -358,7 +358,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_ANGMAX_PAN
     // @DisplayName: Mount2's maximum pan angle
     // @Description: MOunt2's maximum physical pan (yaw) angular position
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Range: -18000 17999
     // @Increment: 1
     // @User: Standard
@@ -367,7 +367,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_LEAD_RLL
     // @DisplayName: Mount2's Roll stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate, compensating for servo delay. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -376,7 +376,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_LEAD_PTCH
     // @DisplayName: Mount2's Pitch stabilization lead time
     // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: Seconds
+    // @Units: s
     // @Range: 0.0 0.2
     // @Increment: .005
     // @User: Standard
@@ -408,14 +408,14 @@ AP_Mount::AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc)
 }
 
 // init - detect and initialise all mounts
-void AP_Mount::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager)
+void AP_Mount::init(const AP_SerialManager& serial_manager)
 {
     // check init has not been called before
     if (_num_instances != 0) {
         return;
     }
 
-    _dataflash = dataflash;
+    _dataflash = DataFlash_Class::instance();
 
     // default mount to servo mount if rc output channels to control roll, tilt or pan have been defined
     if (!state[0]._type.configured()) {
@@ -442,11 +442,13 @@ void AP_Mount::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_m
             _num_instances++;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
+#if !HAL_MINIMIZE_FEATURES
         // check for MAVLink mounts
         } else if (mount_type == Mount_Type_SoloGimbal) {
             _backends[instance] = new AP_Mount_SoloGimbal(*this, state[instance], instance);
             _num_instances++;
-#endif
+#endif // HAL_MINIMIZE_FEATURES
+#endif // AP_AHRS_NAVEKF_AVAILABLE
 
         // check for Alexmos mounts
         } else if (mount_type == Mount_Type_Alexmos) {

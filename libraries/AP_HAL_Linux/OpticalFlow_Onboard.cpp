@@ -15,8 +15,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #include "OpticalFlow_Onboard.h"
 
 #include <fcntl.h>
@@ -93,8 +92,7 @@ void OpticalFlow_Onboard::init()
         AP_HAL::panic("OpticalFlow_Onboard: couldn't set subdev fmt\n");
     }
     _format = V4L2_PIX_FMT_NV12;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
     std::vector<uint32_t> pixel_formats;
 
     _videoin->get_pixel_formats(&pixel_formats);
@@ -285,7 +283,7 @@ void OpticalFlow_Onboard::_run_optflow()
             convert_buffer_size = _width * _height;
         }
 
-        convert_buffer = (uint8_t *)malloc(convert_buffer_size);
+        convert_buffer = (uint8_t *)calloc(1, convert_buffer_size);
         if (!convert_buffer) {
             AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate conversion buffer\n");
         }
@@ -295,7 +293,7 @@ void OpticalFlow_Onboard::_run_optflow()
         output_buffer_size = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH *
             HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
 
-        output_buffer = (uint8_t *)malloc(output_buffer_size);
+        output_buffer = (uint8_t *)calloc(1, output_buffer_size);
         if (!output_buffer) {
             if (convert_buffer) {
                 free(convert_buffer);

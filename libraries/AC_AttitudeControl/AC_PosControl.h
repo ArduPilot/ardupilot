@@ -3,9 +3,10 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AC_PID/AC_PID.h>             // PID library
-#include <AC_PID/AC_PI_2D.h>           // PID library (2-axis)
 #include <AC_PID/AC_P.h>               // P library
+#include <AC_PID/AC_PID.h>             // PID library
+#include <AC_PID/AC_PI_2D.h>           // PI library (2-axis)
+#include <AC_PID/AC_PID_2D.h>          // PID library (2-axis)
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include "AC_AttitudeControl.h" // Attitude control library
 #include <AP_Motors/AP_Motors.h>          // motors library
@@ -16,9 +17,8 @@
 #define POSCONTROL_ACCELERATION_MIN             50.0f   // minimum horizontal acceleration in cm/s/s - used for sanity checking acceleration in leash length calculation
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
 #define POSCONTROL_ACCEL_XY_MAX                 980.0f  // max horizontal acceleration in cm/s/s that the position velocity controller will ask from the lower accel controller
-#define POSCONTROL_STOPPING_DIST_Z_MAX          200.0f  // max stopping distance vertically   
-                                                        // should be 1.5 times larger than POSCONTROL_ACCELERATION.
-                                                        // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
+#define POSCONTROL_STOPPING_DIST_UP_MAX         300.0f  // max stopping distance (in cm) vertically while climbing
+#define POSCONTROL_STOPPING_DIST_DOWN_MAX       200.0f  // max stopping distance (in cm) vertically while descending
 #define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // default jerk limit on horizontal acceleration (unit: m/s/s/s)
 
 #define POSCONTROL_SPEED                        500.0f  // default horizontal speed in cm/s
@@ -47,10 +47,8 @@ class AC_PosControl
 public:
 
     /// Constructor
-    AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
-                  const AP_Motors& motors, AC_AttitudeControl& attitude_control,
-                  AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
-                  AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);
+    AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
+                  const AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
     // xy_mode - specifies behavior of xy position controller
     enum xy_mode {
@@ -115,14 +113,14 @@ public:
     ///     actual position target will be moved no faster than the speed_down and speed_up
     ///     target will also be stopped if the motors hit their limits or leash length is exceeded
     ///     set force_descend to true during landing to allow target to move low enough to slow the motors
-    void set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend);
+    virtual void set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend);
 
     /// set_alt_target_from_climb_rate_ff - adjusts target up or down using a climb rate in cm/s using feed-forward
     ///     should be called continuously (with dt set to be the expected time between calls)
     ///     actual position target will be moved no faster than the speed_down and speed_up
     ///     target will also be stopped if the motors hit their limits or leash length is exceeded
     ///     set force_descend to true during landing to allow target to move low enough to slow the motors
-    void set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend);
+    virtual void set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend);
 
     /// add_takeoff_climb_rate - adjusts alt target up or down using a climb rate in cm/s
     ///     should be called continuously (with dt set to be the expected time between calls)
@@ -166,9 +164,6 @@ public:
     // get_leash_down_z, get_leash_up_z - returns vertical leash lengths in cm
     float get_leash_down_z() const { return _leash_down_z; }
     float get_leash_up_z() const { return _leash_up_z; }
-
-    /// get_pos_z_kP - returns z position controller's kP gain
-    float get_pos_z_kP() const { return _p_pos_z.kP(); }
 
     ///
     /// xy position controller
@@ -220,6 +215,9 @@ public:
     /// set_desired_velocity_z - sets desired velocity in cm/s in z axis
     void set_desired_velocity_z(float vel_z_cms) {_vel_desired.z = vel_z_cms;}
 
+    // clear desired velocity feed-forward in z axis
+    void clear_desired_velocity_ff_z() { _flags.use_desvel_ff_z = false; }
+
     /// set_desired_velocity_xy - sets desired velocity in cm/s in lat and lon directions
     ///     when update_xy_controller is next called the position target is moved based on the desired velocity and
     ///     the desired velocities are fed forward into the rate_to_accel step
@@ -258,11 +256,20 @@ public:
     /// get_distance_to_target - get horizontal distance to position target in cm (used for reporting)
     float get_distance_to_target() const;
 
+    /// get_bearing_to_target - get bearing to target position in centi-degrees
+    int32_t get_bearing_to_target() const;
+
     /// xyz velocity controller
 
     /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
     void init_vel_controller_xyz();
 
+    /// update_velocity_controller_xy - run the XY velocity controller - should be called at 100hz or higher
+    ///     velocity targets should we set using set_desired_velocity_xy() method
+    ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
+    ///     throttle targets will be sent directly to the motors
+    void update_vel_controller_xy(float ekfNavVelGainScaler);
+    
     /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
     ///     velocity targets should we set using set_desired_velocity_xyz() method
     ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
@@ -276,8 +283,12 @@ public:
     // get_leash_xy - returns horizontal leash length in cm
     float get_leash_xy() const { return _leash; }
 
-    /// get_pos_xy_kP - returns xy position controller's kP gain
-    float get_pos_xy_kP() const { return _p_pos_xy.kP(); }
+    /// get pid controllers
+    AC_P& get_pos_z_p() { return _p_pos_z; }
+    AC_P& get_vel_z_p() { return _p_vel_z; }
+    AC_PID& get_accel_z_pid() { return _pid_accel_z; }
+    AC_P& get_pos_xy_p() { return _p_pos_xy; }
+    AC_PID_2D& get_vel_xy_pid() { return _pid_vel_xy; }
 
     /// accessors for reporting
     const Vector3f& get_vel_target() const { return _vel_target; }
@@ -291,7 +302,7 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-private:
+protected:
 
     // general purpose flags
     struct poscontrol_flags {
@@ -366,20 +377,18 @@ private:
     void check_for_ekf_z_reset();
 
     // references to inertial nav and ahrs libraries
-    const AP_AHRS&              _ahrs;
+    const AP_AHRS_View &        _ahrs;
     const AP_InertialNav&       _inav;
     const AP_Motors&            _motors;
     AC_AttitudeControl&         _attitude_control;
 
-    // references to pid controllers
-    AC_P&       _p_pos_z;
-    AC_P&       _p_vel_z;
-    AC_PID&     _pid_accel_z;
-    AC_P&       _p_pos_xy;
-    AC_PI_2D&   _pi_vel_xy;
-
     // parameters
     AP_Float    _accel_xy_filt_hz;      // XY acceleration filter cutoff frequency
+    AC_P        _p_pos_z;
+    AC_P        _p_vel_z;
+    AC_PID      _pid_accel_z;
+    AC_P        _p_pos_xy;
+    AC_PID_2D   _pid_vel_xy;
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
@@ -408,9 +417,9 @@ private:
     Vector3f    _vel_target;            // velocity target in cm/s calculated by pos_to_rate step
     Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s
     Vector3f    _vel_last;              // previous iterations velocity in cm/s
-    Vector3f    _accel_target;          // desired acceleration in cm/s/s  // To-Do: are xy actually required?
-    Vector3f    _accel_error;           // desired acceleration in cm/s/s  // To-Do: are xy actually required?
     Vector3f    _accel_feedforward;     // feedforward acceleration in cm/s/s
+    Vector3f    _accel_target;          // acceleration target in cm/s/s
+    Vector3f    _accel_error;           // acceleration error in cm/s/s
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
     float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error

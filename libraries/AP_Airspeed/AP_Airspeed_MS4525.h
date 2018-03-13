@@ -30,7 +30,7 @@
 class AP_Airspeed_MS4525 : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_MS4525(AP_Airspeed &frontend);
+    AP_Airspeed_MS4525(AP_Airspeed &frontend, uint8_t _instance);
     ~AP_Airspeed_MS4525(void) {}
     
     // probe and initialise the sensor
@@ -47,6 +47,8 @@ private:
     void _collect();
     void _timer();
     void _voltage_correction(float &diff_press_pa, float &temperature);
+    float _get_pressure(int16_t dp_raw) const;
+    float _get_temperature(int16_t dT_raw) const;
 
     float _temp_sum;
     float _press_sum;

@@ -176,8 +176,10 @@ void RCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
     _pulses_buffer[ch] = period_us;
     _pending_write_mask |= (1U << ch);
 
-    if (!_corking)
+    if (!_corking) {
+        _corking = true;
         push();
+    }
 }
 
 void RCOutput_PCA9685::cork()
@@ -187,6 +189,9 @@ void RCOutput_PCA9685::cork()
 
 void RCOutput_PCA9685::push()
 {
+    if (!_corking) {
+        return;
+    }
     _corking = false;
 
     if (_pending_write_mask == 0)

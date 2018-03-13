@@ -4,6 +4,7 @@
 #include <drivers/drv_rc_input.h>
 #include <systemlib/perf_counter.h>
 #include <pthread.h>
+#include <AP_Radio/AP_Radio.h>
 
 
 #ifndef RC_INPUT_MAX_CHANNELS
@@ -18,6 +19,11 @@ public:
     uint16_t read(uint8_t ch) override;
     uint8_t read(uint16_t* periods, uint8_t len) override;
 
+    int16_t get_rssi(void) override {
+        return _rssi;
+    }
+        
+    
     bool set_overrides(int16_t *overrides, uint8_t len) override;
     bool set_override(uint8_t channel, int16_t override) override;
     void clear_overrides() override;
@@ -35,4 +41,13 @@ private:
     bool _override_valid;
     perf_counter_t _perf_rcin;
     pthread_mutex_t rcin_mutex;
+    int16_t _rssi = -1;
+
+    uint8_t last_input_source = input_rc_s::RC_INPUT_SOURCE_UNKNOWN;
+    const char *input_source_name(uint8_t id) const;
+
+#if HAL_RCINPUT_WITH_AP_RADIO
+    AP_Radio *radio;
+    uint32_t last_radio_us;
+#endif
 };

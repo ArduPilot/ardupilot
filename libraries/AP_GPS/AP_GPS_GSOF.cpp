@@ -298,7 +298,7 @@ AP_GPS_GSOF::process_message(void)
                 state.location.lng = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(gsof_msg.data, a + 8)) * (double)1e7);
                 state.location.alt = (int32_t)(SwapDouble(gsof_msg.data, a + 16) * 100);
 
-                state.last_gps_time_ms = state.time_week_ms;
+                state.last_gps_time_ms = AP_HAL::millis();
 
                 valid++;
             }
@@ -342,13 +342,3 @@ AP_GPS_GSOF::process_message(void)
     return false;
 }
 
-void
-AP_GPS_GSOF::inject_data(const uint8_t *data, uint16_t len)
-{
-    if (port->txspace() > len) {
-        last_injected_data_ms = AP_HAL::millis();
-        port->write(data, len);
-    } else {
-        Debug("GSOF: Not enough TXSPACE");
-    }
-}

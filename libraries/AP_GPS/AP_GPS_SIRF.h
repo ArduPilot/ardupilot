@@ -35,6 +35,8 @@ public:
 
 	static bool _detect(struct SIRF_detect_state &state, uint8_t data);
 
+    const char *name() const override { return "SIRF"; }
+
 private:
     struct PACKED sirf_geonav {
         uint16_t fix_invalid;

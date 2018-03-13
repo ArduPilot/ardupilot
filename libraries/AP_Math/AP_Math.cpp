@@ -7,7 +7,7 @@
  * compatibility with old code. Expands to the same as comparing the values
  * directly
  */
-template <class Arithmetic1, class Arithmetic2>
+template <typename Arithmetic1, typename Arithmetic2>
 typename std::enable_if<std::is_integral<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value ,bool>::type
 is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 {
@@ -19,7 +19,7 @@ is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
  * is_equal(): double/float implementation - takes into account
  * std::numeric_limits<T>::epsilon() to return if 2 values are equal.
  */
-template <class Arithmetic1, class Arithmetic2>
+template <typename Arithmetic1, typename Arithmetic2>
 typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
 is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 {
@@ -33,10 +33,11 @@ is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 
 template bool is_equal<int>(const int v_1, const int v_2);
 template bool is_equal<short>(const short v_1, const short v_2);
+template bool is_equal<long>(const long v_1, const long v_2);
 template bool is_equal<float>(const float v_1, const float v_2);
 template bool is_equal<double>(const double v_1, const double v_2);
 
-template <class T>
+template <typename T>
 float safe_asin(const T v)
 {
     const float f = static_cast<const float>(v);
@@ -57,7 +58,7 @@ template float safe_asin<short>(const short v);
 template float safe_asin<float>(const float v);
 template float safe_asin<double>(const double v);
 
-template <class T>
+template <typename T>
 float safe_sqrt(const T v)
 {
     float ret = sqrtf(static_cast<float>(v));
@@ -89,7 +90,7 @@ float linear_interpolate(float low_output, float high_output,
     return low_output + p * (high_output - low_output);
 }
 
-template <class T>
+template <typename T>
 float wrap_180(const T angle, float unit_mod)
 {
     auto res = wrap_360(angle, unit_mod);
@@ -104,7 +105,7 @@ template float wrap_180<short>(const short angle, float unit_mod);
 template float wrap_180<float>(const float angle, float unit_mod);
 template float wrap_180<double>(const double angle, float unit_mod);
 
-template <class T>
+template <typename T>
 auto wrap_180_cd(const T angle) -> decltype(wrap_180(angle, 100.f))
 {
     return wrap_180(angle, 100.f);
@@ -112,10 +113,11 @@ auto wrap_180_cd(const T angle) -> decltype(wrap_180(angle, 100.f))
 
 template auto wrap_180_cd<float>(const float angle) -> decltype(wrap_180(angle, 100.f));
 template auto wrap_180_cd<int>(const int angle) -> decltype(wrap_180(angle, 100.f));
+template auto wrap_180_cd<long>(const long angle) -> decltype(wrap_180(angle, 100.f));
 template auto wrap_180_cd<short>(const short angle) -> decltype(wrap_180(angle, 100.f));
 template auto wrap_180_cd<double>(const double angle) -> decltype(wrap_360(angle, 100.f));
 
-template <class T>
+template <typename T>
 float wrap_360(const T angle, float unit_mod)
 {
     const float ang_360 = 360.f * unit_mod;
@@ -128,10 +130,11 @@ float wrap_360(const T angle, float unit_mod)
 
 template float wrap_360<int>(const int angle, float unit_mod);
 template float wrap_360<short>(const short angle, float unit_mod);
+template float wrap_360<long>(const long angle, float unit_mod);
 template float wrap_360<float>(const float angle, float unit_mod);
 template float wrap_360<double>(const double angle, float unit_mod);
 
-template <class T>
+template <typename T>
 auto wrap_360_cd(const T angle) -> decltype(wrap_360(angle, 100.f))
 {
     return wrap_360(angle, 100.f);
@@ -139,10 +142,11 @@ auto wrap_360_cd(const T angle) -> decltype(wrap_360(angle, 100.f))
 
 template auto wrap_360_cd<float>(const float angle) -> decltype(wrap_360(angle, 100.f));
 template auto wrap_360_cd<int>(const int angle) -> decltype(wrap_360(angle, 100.f));
+template auto wrap_360_cd<long>(const long angle) -> decltype(wrap_360(angle, 100.f));
 template auto wrap_360_cd<short>(const short angle) -> decltype(wrap_360(angle, 100.f));
 template auto wrap_360_cd<double>(const double angle) -> decltype(wrap_360(angle, 100.f));
 
-template <class T>
+template <typename T>
 float wrap_PI(const T radian)
 {
     auto res = wrap_2PI(radian);
@@ -157,7 +161,7 @@ template float wrap_PI<short>(const short radian);
 template float wrap_PI<float>(const float radian);
 template float wrap_PI<double>(const double radian);
 
-template <class T>
+template <typename T>
 float wrap_2PI(const T radian)
 {
     float res = fmodf(static_cast<float>(radian), M_2PI);
@@ -172,7 +176,7 @@ template float wrap_2PI<short>(const short radian);
 template float wrap_2PI<float>(const float radian);
 template float wrap_2PI<double>(const double radian);
 
-template <class T>
+template <typename T>
 T constrain_value(const T amt, const T low, const T high)
 {
     // the check for NaN as a float prevents propagation of floating point
@@ -194,6 +198,7 @@ T constrain_value(const T amt, const T low, const T high)
 }
 
 template int constrain_value<int>(const int amt, const int low, const int high);
+template long constrain_value<long>(const long amt, const long low, const long high);
 template short constrain_value<short>(const short amt, const short low, const short high);
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
@@ -211,3 +216,22 @@ uint16_t get_random16(void)
     return ((m_z << 16) + m_w) & 0xFFFF;
 }
 
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// generate a random float between -1 and 1, for use in SITL
+float rand_float(void)
+{
+    return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
+}
+
+Vector3f rand_vec3f(void)
+{
+    Vector3f v = Vector3f(rand_float(),
+                          rand_float(),
+                          rand_float());
+    if (v.length() != 0.0f) {
+        v.normalize();
+    }
+    return v;
+}
+#endif

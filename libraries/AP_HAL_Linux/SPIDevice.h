@@ -99,6 +99,12 @@ public:
      */
     void teardown();
 
+    /* See AP_HAL::SPIDeviceManager::get_count() */
+    uint8_t get_count();
+
+    /* See AP_HAL::SPIDeviceManager::get_device_name() */
+    const char *get_device_name(uint8_t idx);
+
 protected:
     void _unregister(SPIBus &b);
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _create_device(SPIBus &b, SPIDesc &device_desc) const;

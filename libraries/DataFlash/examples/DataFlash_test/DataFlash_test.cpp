@@ -5,6 +5,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
+#include <stdio.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -19,7 +21,12 @@ struct PACKED log_Test {
 static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_TEST_MSG, sizeof(log_Test),       
-    "TEST", "HHHHii",        "V1,V2,V3,V4,L1,L2" }
+      "TEST",
+      "HHHHii",
+      "V1,V2,V3,V4,L1,L2",
+      "------",
+      "------"
+    }
 };
 
 #define NUM_PACKETS 500
@@ -33,7 +40,8 @@ public:
 
 private:
 
-    DataFlash_Class dataflash{"DF Test 0.1"};
+    AP_Int32 log_bitmask;
+    DataFlash_Class dataflash{"DF Test 0.1", log_bitmask};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 };
 
@@ -41,22 +49,19 @@ static DataFlashTest dataflashtest;
 
 void DataFlashTest::setup(void)
 {
-    dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
-
     hal.console->printf("Dataflash Log Test 1.0\n");
+
+    log_bitmask = (uint32_t)-1;
+    dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
+    dataflash.set_vehicle_armed(true);
+    dataflash.Log_Write_Message("DataFlash Test");
 
     // Test
     hal.scheduler->delay(20);
     dataflash.ShowDeviceInfo(hal.console);
 
-    if (dataflash.NeedPrep()) {
-        hal.console->printf("Preparing dataflash...\n");
-        dataflash.Prep();
-    }
-
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
-    dataflash.StartNewLog();
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
     hal.console->printf("After testing perform erase before using DataFlash for logging!\n");
@@ -129,5 +134,10 @@ void loop()
 {
     dataflashtest.loop();
 }
+
+const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+    AP_GROUPEND
+};
+GCS_Dummy _gcs;
 
 AP_HAL_MAIN();

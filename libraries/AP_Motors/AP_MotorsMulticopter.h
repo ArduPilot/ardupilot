@@ -27,7 +27,7 @@
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
 
 // spool definition
-#define AP_MOTORS_SPOOL_UP_TIME         0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
+#define AP_MOTORS_SPOOL_UP_TIME_DEFAULT 0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
 
 /// @class      AP_MotorsMulticopter
 class AP_MotorsMulticopter : public AP_Motors {
@@ -72,9 +72,6 @@ public:
     // get_batt_voltage_filt - get battery voltage ratio - for logging purposes only
     float               get_batt_voltage_filt() const { return _batt_voltage_filt.get(); }
 
-    // get_batt_resistance - get battery resistance approximation - for logging purposes only
-    float               get_batt_resistance() const { return _batt_resistance; }
-
     // get throttle limit imposed by battery current limiting.  This is a number from 0 ~ 1 where 0 means hover throttle, 1 means full throttle (i.e. not limited)
     float               get_throttle_limit() const { return _throttle_limit; }
 
@@ -87,7 +84,7 @@ public:
     // output a thrust to all motors that match a given motor
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
-    void                output_motor_mask(float thrust, uint8_t mask);
+    virtual void        output_motor_mask(float thrust, uint8_t mask);
 
     // get minimum or maximum pwm value that can be output to motors
     int16_t             get_pwm_output_min() const;
@@ -122,9 +119,6 @@ protected:
     // update_lift_max_from_batt_voltage - used for voltage compensation
     void                update_lift_max_from_batt_voltage();
 
-    // update_battery_resistance - calculate battery resistance when throttle is above hover_out
-    void                update_battery_resistance();
-
     // return gain scheduling gain based on voltage and air density
     float               get_compensation_gain() const;
 
@@ -137,6 +131,9 @@ protected:
     // apply any thrust compensation for the frame
     virtual void        thrust_compensation(void) {}
 
+    // output booster throttle, if any
+    virtual void        output_boost_throttle(void);
+    
     // save parameters as part of disarming
     void save_params_on_disarm();
 
@@ -165,6 +162,12 @@ protected:
 
     // Maximum lean angle of yaw servo in degrees. This is specific to tricopter
     AP_Float            _yaw_servo_angle_max_deg;
+
+    // time to spool motors to min throttle
+    AP_Float            _spool_up_time;
+
+    // scaling for booster motor throttle
+    AP_Float            _boost_scale;
     
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
@@ -176,11 +179,7 @@ protected:
     float               _spin_up_ratio;      // throttle percentage (0 ~ 1) between zero and throttle_min
 
     // battery voltage, current and air pressure compensation variables
-    float               _batt_voltage_resting;  // battery voltage reading at minimum throttle
     LowPassFilterFloat  _batt_voltage_filt;     // filtered battery voltage expressed as a percentage (0 ~ 1.0) of batt_voltage_max
-    float               _batt_current_resting;  // battery's current when motors at minimum
-    float               _batt_resistance;       // battery's resistance calculated by comparing resting voltage vs in flight voltage
-    int16_t             _batt_timer;            // timer used in battery resistance calcs
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
     float               _throttle_thrust_max;   // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max

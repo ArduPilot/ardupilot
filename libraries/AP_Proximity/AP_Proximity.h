@@ -19,11 +19,13 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 #define PROXIMITY_MAX_INSTANCES             1   // Maximum number of proximity sensor instances available on this platform
 #define PROXIMITY_YAW_CORRECTION_DEFAULT    22  // default correction for sensor error in yaw
 #define PROXIMITY_MAX_IGNORE                6   // up to six areas can be ignored
+#define PROXIMITY_MAX_DIRECTION 8
+#define PROXIMITY_SENSOR_ID_START 10
 
 class AP_Proximity_Backend;
 
@@ -40,6 +42,8 @@ public:
         Proximity_Type_SF40C   = 1,
         Proximity_Type_MAV     = 2,
         Proximity_Type_TRTOWER = 3,
+        Proximity_Type_RangeFinder = 4,
+        Proximity_Type_RPLidarA2 = 5,
         Proximity_Type_SITL    = 10,
     };
 
@@ -49,11 +53,21 @@ public:
         Proximity_Good
     };
 
+    // structure holding distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
+    struct Proximity_Distance_Array {
+        uint8_t orientation[PROXIMITY_MAX_DIRECTION]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)
+        float distance[PROXIMITY_MAX_DIRECTION];      // distance in meters
+    };
+
     // detect and initialise any available proximity sensors
     void init(void);
 
     // update state of all proximity sensors. Should be called at high rate from main loop
     void update(void);
+
+    // set pointer to rangefinder object
+    void set_rangefinder(const RangeFinder *rangefinder) { _rangefinder = rangefinder; }
+    const RangeFinder *get_rangefinder() const { return _rangefinder; }
 
     // return sensor orientation and yaw correction
     uint8_t get_orientation(uint8_t instance) const;
@@ -73,6 +87,9 @@ public:
     bool get_horizontal_distance(uint8_t instance, float angle_deg, float &distance) const;
     bool get_horizontal_distance(float angle_deg, float &distance) const;
 
+    // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
+    bool get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const;
+
     // get boundary points around vehicle for use by avoidance
     //   returns nullptr and sets num_points to zero if no boundary can be returned
     const Vector2f* get_boundary_points(uint8_t instance, uint16_t& num_points) const;
@@ -85,15 +102,6 @@ public:
     // get number of objects, angle and distance - used for non-GPS avoidance
     uint8_t get_object_count() const;
     bool get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
-
-    // structure holding distances in 8 directions
-    struct Proximity_Distance_Array {
-        uint8_t orientation[8]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)
-        float distance[8];      // distance in meters
-    };
-
-    // get distances in 8 directions. used for sending distances to ground station
-    bool get_distances(Proximity_Distance_Array &prx_dist_array) const;
 
     // get maximum and minimum distances (in meters) of primary sensor
     float distance_max() const;
@@ -122,6 +130,7 @@ public:
 private:
     Proximity_State state[PROXIMITY_MAX_INSTANCES];
     AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
+    const RangeFinder *_rangefinder;
     uint8_t primary_instance:3;
     uint8_t num_instances:3;
     AP_SerialManager &serial_manager;

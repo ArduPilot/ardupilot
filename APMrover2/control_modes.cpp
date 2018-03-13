@@ -1,9 +1,48 @@
 #include "Rover.h"
 
+static const int16_t CH_7_PWM_TRIGGER = 1800;
+
+Mode *Rover::mode_from_mode_num(const enum mode num)
+{
+    Mode *ret = nullptr;
+    switch (num) {
+    case MANUAL:
+        ret = &mode_manual;
+        break;
+    case ACRO:
+        ret = &mode_acro;
+        break;
+    case STEERING:
+        ret = &mode_steering;
+        break;
+    case HOLD:
+        ret = &mode_hold;
+        break;
+    case AUTO:
+        ret = &mode_auto;
+        break;
+    case RTL:
+        ret = &mode_rtl;
+        break;
+    case SMART_RTL:
+        ret = &mode_smartrtl;
+        break;
+    case GUIDED:
+       ret = &mode_guided;
+        break;
+    case INITIALISING:
+        ret = &mode_initializing;
+        break;
+    default:
+        break;
+    }
+    return ret;
+}
+
 void Rover::read_control_switch()
 {
     static bool switch_debouncer;
-    uint8_t switchPosition = readSwitch();
+    const uint8_t switchPosition = readSwitch();
 
     // If switchPosition = 255 this indicates that the mode control channel input was out of range
     // If we get this value we do not want to change modes.
@@ -34,20 +73,19 @@ void Rover::read_control_switch()
             return;
         }
 
-        set_mode((enum mode)modes[switchPosition].get());
+        Mode *new_mode = mode_from_mode_num((enum mode)modes[switchPosition].get());
+        if (new_mode != nullptr) {
+            set_mode(*new_mode, MODE_REASON_TX_COMMAND);
+        }
 
         oldSwitchPosition = switchPosition;
-        prev_WP = current_loc;
-
-        // reset speed integrator
-        g.pidSpeedThrottle.reset_I();
     }
 
     switch_debouncer = false;
 }
 
 uint8_t Rover::readSwitch(void) {
-    uint16_t pulsewidth = hal.rcin->read(g.mode_channel - 1);
+    const uint16_t pulsewidth = hal.rcin->read(g.mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) {
         return 255;  // This is an error condition
     }
@@ -75,74 +113,182 @@ void Rover::reset_control_switch()
     read_control_switch();
 }
 
-#define CH_7_PWM_TRIGGER 1800
-
-// read at 10 hz
-// set this to your trainer switch
-void Rover::read_trim_switch()
+// ready auxiliary switch's position
+aux_switch_pos Rover::read_aux_switch_pos()
 {
+    const uint16_t radio_in = channel_aux->get_radio_in();
+    if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;
+    if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;
+    return AUX_SWITCH_MIDDLE;
+}
+
+// initialise position of auxiliary switch
+void Rover::init_aux_switch()
+{
+    aux_ch7 = read_aux_switch_pos();
+}
+
+// read ch7 aux switch
+void Rover::read_aux_switch()
+{
+    // do not consume input during rc or throttle failsafe
+    if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (failsafe.bits & FAILSAFE_EVENT_RC)) {
+        return;
+    }
+
+    // get ch7's current position
+    aux_switch_pos aux_ch7_pos = read_aux_switch_pos();
+
+    // return if no change to switch position
+    if (aux_ch7_pos == aux_ch7) {
+        return;
+    }
+    aux_ch7 = aux_ch7_pos;
+
     switch ((enum ch7_option)g.ch7_option.get()) {
     case CH7_DO_NOTHING:
         break;
     case CH7_SAVE_WP:
-        if (channel_learn->get_radio_in() > CH_7_PWM_TRIGGER) {
-            // switch is engaged
-            ch7_flag = true;
-        } else {  // switch is disengaged
-            if (ch7_flag) {
-                ch7_flag = false;
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            // do nothing if in AUTO mode
+            if (control_mode == &mode_auto) {
+                return;
+            }
 
-                switch (control_mode) {
-                case MANUAL:
-                    hal.console->printf("Erasing waypoints\n");
-                    // if SW7 is ON in MANUAL = Erase the Flight Plan
-                    mission.clear();
-                    if (channel_steer->get_control_in() > 3000) {
-                        // if roll is full right store the current location as home
-                        init_home();
-                    }
-                    break;
+            // if disarmed clear mission and set home to current location
+            if (!arming.is_armed()) {
+                mission.clear();
+                set_home_to_current_location(false);
+                return;
+            }
 
-                case LEARNING:
-                case STEERING: {
-                    // if SW7 is ON in LEARNING = record the Wp
+            // record the waypoint if not in auto mode
+            if (control_mode != &mode_auto) {
+                // create new mission command
+                AP_Mission::Mission_Command cmd = {};
 
-                    // create new mission command
-                    AP_Mission::Mission_Command cmd = {};
+                // set new waypoint to current location
+                cmd.content.location = current_loc;
 
-                    // set new waypoint to current location
-                    cmd.content.location = current_loc;
+                // make the new command to a waypoint
+                cmd.id = MAV_CMD_NAV_WAYPOINT;
 
-                    // make the new command to a waypoint
-                    cmd.id = MAV_CMD_NAV_WAYPOINT;
-
-                    // save command
-                    if (mission.add_cmd(cmd)) {
-                        hal.console->printf("Learning waypoint %u", (unsigned) mission.num_commands());
-                    }
-                    break;
-                }
-                case AUTO:
-                    // if SW7 is ON in AUTO = set to RTL
-                    set_mode(RTL);
-                    break;
-
-                default:
-                    break;
+                // save command
+                if (mission.add_cmd(cmd)) {
+                    hal.console->printf("Added waypoint %u", static_cast<uint32_t>(mission.num_commands()));
                 }
             }
+        }
+        break;
+
+    // learn cruise speed and throttle
+    case CH7_LEARN_CRUISE:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            cruise_learn_start();
+        } else if (aux_ch7 == AUX_SWITCH_LOW) {
+            cruise_learn_complete();
+        }
+        break;
+
+    // arm or disarm the motors
+    case CH7_ARM_DISARM:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            arm_motors(AP_Arming::RUDDER);
+        } else if (aux_ch7 == AUX_SWITCH_LOW) {
+            disarm_motors();
+        }
+        break;
+
+    // set mode to Manual
+    case CH7_MANUAL:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_manual, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_manual)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Acro
+    case CH7_ACRO:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_acro, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_acro)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Steering
+    case CH7_STEERING:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_steering, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_steering)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Hold
+    case CH7_HOLD:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_hold, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_hold)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Auto
+    case CH7_AUTO:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_auto, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_auto)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to RTL
+    case CH7_RTL:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_rtl, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_rtl)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to SmartRTL
+    case CH7_SMART_RTL:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_smartrtl, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_smartrtl)) {
+            reset_control_switch();
+        }
+        break;
+
+    // set mode to Guided
+    case CH7_GUIDED:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_guided, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_guided)) {
+            reset_control_switch();
         }
         break;
     }
 }
 
+// return true if motors are moving
 bool Rover::motor_active()
 {
-    // Check if armed and throttle is not neutral
-    if (hal.util->get_soft_armed()) {
-        if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != channel_throttle->get_radio_trim()) {
-            return true;
-        }
+    // if soft disarmed, motors not active
+    if (!hal.util->get_soft_armed()) {
+        return false;
+    }
+
+    // check throttle is active
+    if (!is_zero(g2.motors.get_throttle())) {
+        return true;
+    }
+
+    // skid-steering vehicles active when steering
+    if (g2.motors.have_skid_steering() && !is_zero(g2.motors.get_steering())) {
+        return true;
     }
 
     return false;

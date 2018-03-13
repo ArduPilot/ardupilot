@@ -11,9 +11,6 @@
 #include "AP_Motors_Class.h"
 #include "AP_MotorsHeli_RSC.h"
 
-// maximum number of swashplate servos
-#define AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS    3
-
 // servo output rates
 #define AP_MOTORS_HELI_SPEED_DEFAULT            125     // default servo update rate for helicopters
 
@@ -71,9 +68,6 @@ public:
     // set update rate to motors - a value in hertz
     virtual void set_update_rate( uint16_t speed_hz ) = 0;
 
-    // enable - starts allowing signals to be sent to motors
-    virtual void enable() = 0;
-
     // output_min - sets servos to neutral point with motors stopped
     void output_min();
 
@@ -95,6 +89,9 @@ public:
     // set_collective_for_landing - limits collective from going too low if we know we are landed
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
 
+    // set_inverted_flight - enables/disables inverted flight
+    void set_inverted_flight(bool inverted) { _heliflags.inverted_flight = inverted; }
+    
     // get_rsc_mode - gets the rotor speed control method (AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH or AP_MOTORS_HELI_RSC_MODE_SETPOINT)
     uint8_t get_rsc_mode() const { return _rsc_mode; }
 
@@ -120,6 +117,11 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t get_motor_mask() = 0;
 
+    virtual void set_acro_tail(bool set) {}
+
+    // ext_gyro_gain - set external gyro gain in range 0 ~ 1
+    virtual void ext_gyro_gain(float gain) {}
+    
     // output - sends commands to the motors
     void output();
 
@@ -183,6 +185,7 @@ protected:
     struct heliflags_type {
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum
         uint8_t rotor_runup_complete    : 1;    // true if the rotors have had enough time to wind up
+        uint8_t inverted_flight         : 1;    // true for inverted flight
     } _heliflags;
 
     // parameters
@@ -205,9 +208,8 @@ protected:
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
 
     // internal variables
-    float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
-    float           _pitchFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
-    float           _collectiveFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     float           _collective_mid_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
+
+    motor_frame_type _frame_type;
 };

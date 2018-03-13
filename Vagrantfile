@@ -1,17 +1,20 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+# Testing an ArduPilot VM:
+# sim_vehicle.py # in the starting directory should start a Copter simulation
+# xterm # X11 forwarding should work
+# sim_vehicle.py --debug --gdb
+# sim_vehicle.py --valgrind
+# cd /vagrant && ./waf configure --board=px4-v2 && ./waf build --target=bin/ardusub
+# cd /vagrant ./waf configure --board=navio2 && ./waf build --target=bin/arduplane
+# cd /vagrant ./Tools/autotest/sim_vehicle.py -v ArduPlane # should test JSBSim
+# cd /vagrant ./Tools/autotest/autotest.py build.APMrover2 drive.APMrover2
+
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-
-  config.vm.box = "ubuntu/yakkety32"
-  # push.app = "geeksville/ardupilot-sitl"
-
-  # The following forwarding is not necessary (or possible), because our sim_vehicle.py is smart enough to send packets
-  # out to the containing OS
-  # config.vm.network "forwarded_port", guest: 14550, host: 14550, protocol: "udp"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -31,14 +34,44 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-on-restore", "1"]
   end
 
-  # The created VM sets PX4_WINTOOL=y to allow builds to proceed using shared folders with using symlinks.
-  # However shared folders are quite slow. If you have rsync installed then this is a faster way of building.
-  # In addition there are problems with px4-clean when using shared folders. Using rsync avoids this.
-  # config.vm.synced_folder ".", "/vagrant", type: "rsync", rsync__auto: true
-  
-  # If you are on windows then you must use a version of git >= 1.8.x to update the submodules
-  # in order to build. Older versions of git use absolute paths for submodules which confuses things.
+  # If you are on windows then you must use a version of git >= 1.8.x
+  # to update the submodules in order to build. Older versions of git
+  # use absolute paths for submodules which confuses things.
 
-  config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"  
+  # removing this line causes "A box must be specified." error:
+  config.vm.box = "ubuntu/artful32"
+
+  # LTS, EOL April, 2019:
+  config.vm.define "trusty64", autostart: false do |trusty64|
+    config.vm.box = "ubuntu/trusty64"
+    config.vm.provision "trusty64", type: "shell", path: "Tools/vagrant/initvagrant.sh"
+    config.vm.name = "ArduPilot (Trusty64)"
+  end
+
+  # LTS, EOL April 2021
+  config.vm.define "xenial32", autostart: false do |xenial32|
+    config.vm.box = "ubuntu/xenial32"
+    config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    config.vm.name = "ArduPilot (Xenial32)"
+    config.vm.gui = true
+  end
+
+  # EOL January 2018
+  config.vm.define "zesty32", autostart: false do |zesty32|
+    config.vm.box = "ubuntu/zesty32"
+    config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+  end
+
+  # EOL July 2018
+  config.vm.define "artful32", primary: true do |artful32|
+    config.vm.box = "ubuntu/artful32"
+    config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+  end
+
+  config.vm.define "bionic32", autostart: false do |bionic32|
+    config.vm.box = "ubuntu/bionic32"
+    config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+  end
+
 end
 

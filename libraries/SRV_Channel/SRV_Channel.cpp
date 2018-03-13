@@ -20,6 +20,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Math/AP_Math.h>
 #include "SRV_Channel.h"
 
 extern const AP_HAL::HAL& hal;
@@ -29,8 +30,8 @@ SRV_Channel::servo_mask_t SRV_Channel::have_pwm_mask;
 const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Param: MIN
     // @DisplayName: Minimum PWM
-    // @Description: minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Description: minimum PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
@@ -38,8 +39,8 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
 
     // @Param: MAX
     // @DisplayName: Maximum PWM
-    // @Description: maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Description: maximum PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
@@ -47,13 +48,13 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
 
     // @Param: TRIM
     // @DisplayName: Trim PWM
-    // @Description: Trim PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Description: Trim PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("TRIM",  3, SRV_Channel, servo_trim, 1500),
-    
+
     // @Param: REVERSED
     // @DisplayName: Servo reverse
     // @Description: Reverse servo operation. Set to 0 for normal operation. Set to 1 to reverse this output channel.
@@ -64,10 +65,10 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Param: FUNCTION
     // @DisplayName: Servo output function
     // @Description: Function assigned to this servo. Seeing this to Disabled(0) will setup this output for control by auto missions or MAVLink servo set commands. any other value will enable the corresponding function
-    // @Values: 0:Disabled,1:RCPassThru,2:Flap,3:Flap_auto,4:Aileron,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release,12:mount2_pan,13:mount2_tilt,14:mount2_roll,15:mount2_open,16:DifferentialSpoiler1,17:DifferentialSpoiler2,18:AileronWithInput,19:Elevator,20:ElevatorWithInput,21:Rudder,24:Flaperon1,25:Flaperon2,26:GroundSteering,27:Parachute,28:EPM,29:LandingGear,30:EngineRunEnable,31:HeliRSC,32:HeliTailRSC,33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7,40:Motor8,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,67:Ignition,68:Choke,69:Starter,70:Throttle,71:TrackerYaw,72:TrackerPitch
+    // @Values: 0:Disabled,1:RCPassThru,2:Flap,3:Flap_auto,4:Aileron,6:mount_pan,7:mount_tilt,8:mount_roll,9:mount_open,10:camera_trigger,11:release,12:mount2_pan,13:mount2_tilt,14:mount2_roll,15:mount2_open,16:DifferentialSpoilerLeft1,17:DifferentialSpoilerRight1,86:DifferentialSpoilerLeft2,87:DifferentialSpoilerRight2,19:Elevator,21:Rudder,24:FlaperonLeft,25:FlaperonRight,26:GroundSteering,27:Parachute,28:EPM,29:LandingGear,30:EngineRunEnable,31:HeliRSC,32:HeliTailRSC,33:Motor1,34:Motor2,35:Motor3,36:Motor4,37:Motor5,38:Motor6,39:Motor7,40:Motor8,41:MotorTilt,51:RCIN1,52:RCIN2,53:RCIN3,54:RCIN4,55:RCIN5,56:RCIN6,57:RCIN7,58:RCIN8,59:RCIN9,60:RCIN10,61:RCIN11,62:RCIN12,63:RCIN13,64:RCIN14,65:RCIN15,66:RCIN16,67:Ignition,68:Choke,69:Starter,70:Throttle,71:TrackerYaw,72:TrackerPitch,73:ThrottleLeft,74:ThrottleRight,75:tiltMotorLeft,76:tiltMotorRight,77:ElevonLeft,78:ElevonRight,79:VTailLeft,80:VTailRight,81:BoostThrottle,82:Motor9,83:Motor10,84:Motor11,85:Motor12,88:Winch
     // @User: Standard
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
-    
+
     AP_GROUPEND
 };
 
@@ -79,19 +80,13 @@ SRV_Channel::SRV_Channel(void)
     have_pwm_mask = ~uint16_t(0);
 }
 
-
 // convert a 0..range_max to a pwm
 uint16_t SRV_Channel::pwm_from_range(int16_t scaled_value) const
 {
     if (servo_max <= servo_min || high_out == 0) {
         return servo_min;
     }
-    if (scaled_value >= high_out) {
-        scaled_value = high_out;
-    }
-    if (scaled_value < 0) {
-        scaled_value = 0;
-    }
+    scaled_value = constrain_int16(scaled_value, 0, high_out);
     if (reversed) {
         scaled_value = high_out - scaled_value;
     }
@@ -104,6 +99,7 @@ uint16_t SRV_Channel::pwm_from_angle(int16_t scaled_value) const
     if (reversed) {
         scaled_value = -scaled_value;
     }
+    scaled_value = constrain_int16(scaled_value, -high_out, high_out);
     if (scaled_value > 0) {
         return servo_trim + ((int32_t)scaled_value * (int32_t)(servo_max - servo_trim)) / (int32_t)high_out;
     } else {
@@ -185,3 +181,9 @@ uint16_t SRV_Channel::get_limit_pwm(LimitValue limit) const
     }
 }
 
+// return true if function is for a multicopter motor
+bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
+{
+    return ((function >= SRV_Channel::k_motor1 && function <= SRV_Channel::k_motor8) ||
+            (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12));
+}

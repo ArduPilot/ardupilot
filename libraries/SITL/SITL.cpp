@@ -88,9 +88,33 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("SONAR_POS",     55, SITL,  rngfnd_pos_offset, 0),
     AP_GROUPINFO("FLOW_POS",      56, SITL,  optflow_pos_offset, 0),
     AP_GROUPINFO("ACC2_BIAS",     57, SITL,  accel2_bias, 0),
+    AP_GROUPINFO("GPS_NOISE",     58, SITL,  gps_noise, 0),
+    AP_GROUPINFO("GP2_GLITCH",    59, SITL,  gps2_glitch,  0),
+    AP_GROUPINFO("ENGINE_FAIL",   60, SITL,  engine_fail,  0),
+    AP_GROUPINFO("GPS2_TYPE",     61, SITL,  gps2_type,  SITL::GPS_TYPE_UBLOX),
+    AP_GROUPINFO("ODOM_ENABLE",   62, SITL,  odom_enable, 0),
+    AP_SUBGROUPEXTENSION("",      63, SITL,  var_info2),
     AP_GROUPEND
 };
 
+// second table of user settable parameters for SITL. 
+const AP_Param::GroupInfo SITL::var_info2[] = {
+    AP_GROUPINFO("TEMP_START",   1, SITL,  temp_start,  25),
+    AP_GROUPINFO("TEMP_FLIGHT",  2, SITL,  temp_flight, 35),
+    AP_GROUPINFO("TEMP_TCONST",  3, SITL,  temp_tconst, 30),
+    AP_GROUPINFO("TEMP_BFACTOR", 4, SITL,  temp_baro_factor, 0),
+    AP_GROUPINFO("GPS_LOCKTIME", 5, SITL,  gps_lock_time, 0),
+    AP_GROUPINFO("ARSPD_FAIL_P", 6, SITL,  arspd_fail_pressure, 0),
+    AP_GROUPINFO("ARSPD_PITOT",  7, SITL,  arspd_fail_pitot_pressure, 0),
+    AP_GROUPINFO("GPS_ALT_OFS",  8, SITL,  gps_alt_offset, 0),
+    AP_GROUPINFO("ARSPD_SIGN",   9, SITL,  arspd_signflip, 0),
+    AP_GROUPINFO("WIND_DIR_Z",  10, SITL,  wind_dir_z,     0),
+    AP_GROUPINFO("ARSPD2_FAIL", 11, SITL,  arspd2_fail, 0),
+    AP_GROUPINFO("ARSPD2_FAILP",12, SITL,  arspd2_fail_pressure, 0),
+    AP_GROUPINFO("ARSPD2_PITOT",13, SITL,  arspd2_fail_pitot_pressure, 0),
+    AP_GROUPEND
+};
+    
 
 /* report SITL state via MAVLink */
 void SITL::simstate_send(mavlink_channel_t chan)
@@ -136,7 +160,11 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class *DataFlash)
         yaw     : (uint16_t)(wrap_360_cd(yaw*100)),
         alt     : (float)state.altitude,
         lat     : (int32_t)(state.latitude*1.0e7),
-        lng     : (int32_t)(state.longitude*1.0e7)
+        lng     : (int32_t)(state.longitude*1.0e7),
+        q1      : state.quaternion.q1,
+        q2      : state.quaternion.q2,
+        q3      : state.quaternion.q3,
+        q4      : state.quaternion.q4,
     };
     DataFlash->WriteBlock(&pkt, sizeof(pkt));
 }

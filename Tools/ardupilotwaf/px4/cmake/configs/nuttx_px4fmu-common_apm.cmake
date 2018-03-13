@@ -16,8 +16,6 @@ set(config_module_list
     drivers/stm32/tone_alarm
     drivers/led
     drivers/px4fmu
-    drivers/mkblctrl
-    drivers/batt_smbus
 
 #
 # System commands
@@ -49,8 +47,6 @@ set(config_extra_builtin_cmds
 set(config_extra_libs
     ${APM_PROGRAM_LIB}
 )
-
-set(config_uavcan_num_ifaces 2)
 
 add_custom_target(sercon)
 set_target_properties(sercon PROPERTIES

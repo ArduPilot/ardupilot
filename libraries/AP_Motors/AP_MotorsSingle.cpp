@@ -42,7 +42,7 @@ void AP_MotorsSingle::init(motor_frame_class frame_class, motor_frame_type frame
     _servo3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
     _servo4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
     if (!_servo1 || !_servo2 || !_servo3 || !_servo4) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ERROR, "MotorsSingle: unable to setup output channels");
+        gcs().send_text(MAV_SEVERITY_ERROR, "MotorsSingle: unable to setup output channels");
         // don't set initialised_ok
         return;
     }
@@ -78,18 +78,6 @@ void AP_MotorsSingle::set_update_rate( uint16_t speed_hz )
     rc_set_freq(mask, _speed_hz);
 }
 
-// enable - starts allowing signals to be sent to motors
-void AP_MotorsSingle::enable()
-{
-    // enable output channels
-    rc_enable_ch(AP_MOTORS_MOT_1);
-    rc_enable_ch(AP_MOTORS_MOT_2);
-    rc_enable_ch(AP_MOTORS_MOT_3);
-    rc_enable_ch(AP_MOTORS_MOT_4);
-    rc_enable_ch(AP_MOTORS_MOT_5);
-    rc_enable_ch(AP_MOTORS_MOT_6);
-}
-
 void AP_MotorsSingle::output_to_motors()
 {
     if (!_flags.initialised_ok) {
@@ -98,38 +86,32 @@ void AP_MotorsSingle::output_to_motors()
     switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors
-            hal.rcout->cork();
             rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_roll_radio_passthrough - _yaw_radio_passthrough, _servo1));
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_pitch_radio_passthrough - _yaw_radio_passthrough, _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(-_roll_radio_passthrough - _yaw_radio_passthrough, _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(-_pitch_radio_passthrough - _yaw_radio_passthrough, _servo4));
             rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_6, get_pwm_output_min());
-            hal.rcout->push();
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
-            hal.rcout->cork();
             rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[0], _servo1));
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[1], _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[2], _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[3], _servo4));
             rc_write(AP_MOTORS_MOT_5, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_6, calc_spin_up_to_pwm());
-            hal.rcout->push();
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
             // set motor output based on thrust requests
-            hal.rcout->cork();
             rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_actuator_out[0], _servo1));
             rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_actuator_out[1], _servo2));
             rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_actuator_out[2], _servo3));
             rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_actuator_out[3], _servo4));
             rc_write(AP_MOTORS_MOT_5, calc_thrust_to_pwm(_thrust_out));
             rc_write(AP_MOTORS_MOT_6, calc_thrust_to_pwm(_thrust_out));
-            hal.rcout->push();
             break;
     }
 }
@@ -155,6 +137,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     float   pitch_thrust;               // pitch thrust input value, +/- 1.0
     float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
     float   throttle_thrust;            // throttle thrust input value, 0.0 - 1.0
+    float   throttle_avg_max;           // throttle thrust average maximum value, 0.0 - 1.0
     float   thrust_min_rpy;              // the minimum throttle setting that will not limit the roll and pitch output
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
     float   rp_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
@@ -163,10 +146,12 @@ void AP_MotorsSingle::output_armed_stabilizing()
     float   actuator_max = 0.0f;        // maximum actuator value
 
     // apply voltage and air pressure compensation
-    roll_thrust = _roll_in * get_compensation_gain();
-    pitch_thrust = _pitch_in * get_compensation_gain();
-    yaw_thrust = _yaw_in * get_compensation_gain();
-    throttle_thrust = get_throttle() * get_compensation_gain();
+    const float compensation_gain = get_compensation_gain();
+    roll_thrust = _roll_in * compensation_gain;
+    pitch_thrust = _pitch_in * compensation_gain;
+    yaw_thrust = _yaw_in * compensation_gain;
+    throttle_thrust = get_throttle() * compensation_gain;
+    throttle_avg_max = _throttle_avg_max * compensation_gain;
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {
@@ -178,7 +163,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
         limit.throttle_upper = true;
     }
 
-    _throttle_avg_max = constrain_float(_throttle_avg_max, throttle_thrust, _throttle_thrust_max);
+    throttle_avg_max = constrain_float(throttle_avg_max, throttle_thrust, _throttle_thrust_max);
 
     float rp_thrust_max = MAX(fabsf(roll_thrust), fabsf(pitch_thrust));
 
@@ -212,15 +197,15 @@ void AP_MotorsSingle::output_armed_stabilizing()
     // calculate the minimum thrust that doesn't limit the roll, pitch and yaw forces
     thrust_min_rpy = MAX(MAX(fabsf(actuator[0]), fabsf(actuator[1])), MAX(fabsf(actuator[2]), fabsf(actuator[3])));
 
-    thr_adj = throttle_thrust - _throttle_avg_max;
-    if (thr_adj < (thrust_min_rpy - _throttle_avg_max)) {
+    thr_adj = throttle_thrust - throttle_avg_max;
+    if (thr_adj < (thrust_min_rpy - throttle_avg_max)) {
         // Throttle can't be reduced to the desired level because this would mean roll or pitch control
         // would not be able to reach the desired level because of lack of thrust.
-        thr_adj = MIN(thrust_min_rpy, _throttle_avg_max) - _throttle_avg_max;
+        thr_adj = MIN(thrust_min_rpy, throttle_avg_max) - throttle_avg_max;
     }
 
     // calculate the throttle setting for the lift fan
-    _thrust_out = _throttle_avg_max + thr_adj;
+    _thrust_out = throttle_avg_max + thr_adj;
 
     if (is_zero(_thrust_out)) {
         limit.roll_pitch = true;
@@ -228,7 +213,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     }
 
     // limit thrust out for calculation of actuator gains
-    float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5f,_thrust_out), 0.1f, 1.0f);
+    float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5f,_thrust_out), 0.5f, 1.0f);
 
     // calculate the maximum allowed actuator output and maximum requested actuator output
     for (uint8_t i=0; i<NUM_ACTUATORS; i++) {

@@ -119,6 +119,11 @@ PID::reset_I()
     _pid_info.I = 0;
 }
 
+void PID::reset() {
+    memset(&_pid_info, 0, sizeof(_pid_info));
+    reset_I();
+}
+
 void
 PID::load_gains()
 {

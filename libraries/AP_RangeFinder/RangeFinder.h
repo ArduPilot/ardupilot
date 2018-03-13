@@ -26,14 +26,18 @@
 #define RANGEFINDER_PREARM_ALT_MAX_CM           200
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 
-class AP_RangeFinder_Backend; 
- 
+class AP_RangeFinder_Backend;
+
 class RangeFinder
 {
-public:
     friend class AP_RangeFinder_Backend;
 
-    RangeFinder(AP_SerialManager &_serial_manager);
+public:
+    RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default);
+
+    /* Do not allow copies */
+    RangeFinder(const RangeFinder &other) = delete;
+    RangeFinder &operator=(const RangeFinder&) = delete;
 
     // RangeFinder driver types
     enum RangeFinder_Type {
@@ -51,7 +55,9 @@ public:
         RangeFinder_TYPE_ULANDING= 11,
         RangeFinder_TYPE_LEDDARONE = 12,
         RangeFinder_TYPE_MBSER  = 13,
-        RangeFinder_TYPE_TRONE  = 14
+        RangeFinder_TYPE_TRI2C  = 14,
+        RangeFinder_TYPE_PLI2CV3= 15,
+        RangeFinder_TYPE_VL53L0X = 16
     };
 
     enum RangeFinder_Function {
@@ -79,24 +85,26 @@ public:
         bool                   pre_arm_check;   // true if sensor has passed pre-arm checks
         uint16_t               pre_arm_distance_min;    // min distance captured during pre-arm checks
         uint16_t               pre_arm_distance_max;    // max distance captured during pre-arm checks
+
+        AP_Int8  type;
+        AP_Int8  pin;
+        AP_Int8  ratiometric;
+        AP_Int8  stop_pin;
+        AP_Int16 settle_time_ms;
+        AP_Float scaling;
+        AP_Float offset;
+        AP_Int8  function;
+        AP_Int16 min_distance_cm;
+        AP_Int16 max_distance_cm;
+        AP_Int8  ground_clearance_cm;
+        AP_Int8  address;
+        AP_Vector3f pos_offset; // position offset in body frame
+        AP_Int8  orientation;
     };
 
-    // parameters for each instance
-    AP_Int8  _type[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _pin[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _ratiometric[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _stop_pin[RANGEFINDER_MAX_INSTANCES];
-    AP_Int16 _settle_time_ms[RANGEFINDER_MAX_INSTANCES];
-    AP_Float _scaling[RANGEFINDER_MAX_INSTANCES];
-    AP_Float _offset[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _function[RANGEFINDER_MAX_INSTANCES];
-    AP_Int16 _min_distance_cm[RANGEFINDER_MAX_INSTANCES];
-    AP_Int16 _max_distance_cm[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _ground_clearance_cm[RANGEFINDER_MAX_INSTANCES];
-    AP_Int8  _address[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _powersave_range;
-    AP_Vector3f _pos_offset[RANGEFINDER_MAX_INSTANCES]; // position offset in body frame
 
+    // parameters for each instance
     static const struct AP_Param::GroupInfo var_info[];
     
     // Return the number of range finder instances
@@ -114,65 +122,26 @@ public:
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(mavlink_message_t *msg);
 
-#define _RangeFinder_STATE(instance) state[instance]
+    // return true if we have a range finder with the specified orientation
+    bool has_orientation(enum Rotation orientation) const;
 
-    uint8_t get_primary(void) const {
-        return primary_instance;
-    }
-    
-    uint16_t distance_cm(uint8_t instance) const {
-        return (instance<num_instances? _RangeFinder_STATE(instance).distance_cm : 0);
-    }
-    uint16_t distance_cm() const {
-        return distance_cm(primary_instance);
-    }
+    // find first range finder instance with the specified orientation
+    AP_RangeFinder_Backend *find_instance(enum Rotation orientation) const;
 
-    uint16_t voltage_mv(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).voltage_mv;
-    }
-    uint16_t voltage_mv() const {
-        return voltage_mv(primary_instance);
-    }
+    AP_RangeFinder_Backend *get_backend(uint8_t id) const;
 
-    int16_t max_distance_cm(uint8_t instance) const {
-        return _max_distance_cm[instance];
-    }
-    int16_t max_distance_cm() const {
-        return max_distance_cm(primary_instance);
-    }
-
-    int16_t min_distance_cm(uint8_t instance) const {
-        return _min_distance_cm[instance];
-    }
-    int16_t min_distance_cm() const {
-        return min_distance_cm(primary_instance);
-    }
-    int16_t ground_clearance_cm(uint8_t instance) const {
-        return _ground_clearance_cm[instance];
-    }
-    int16_t ground_clearance_cm() const {
-        return _ground_clearance_cm[primary_instance];
-    }
-
-    // query status
-    RangeFinder_Status status(uint8_t instance) const;
-    RangeFinder_Status status(void) const {
-        return status(primary_instance);
-    }
-
-    // true if sensor is returning data
-    bool has_data(uint8_t instance) const;
-    bool has_data() const {
-        return has_data(primary_instance);
-    }
-
-    // returns count of consecutive good readings
-    uint8_t range_valid_count() const {
-        return range_valid_count(primary_instance);
-    }
-    uint8_t range_valid_count(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).range_valid_count;
-    }
+    // methods to return a distance on a particular orientation from
+    // any sensor which can current supply it
+    uint16_t distance_cm_orient(enum Rotation orientation) const;
+    uint16_t voltage_mv_orient(enum Rotation orientation) const;
+    int16_t max_distance_cm_orient(enum Rotation orientation) const;
+    int16_t min_distance_cm_orient(enum Rotation orientation) const;
+    int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
+    MAV_DISTANCE_SENSOR get_mav_distance_sensor_type_orient(enum Rotation orientation) const;
+    RangeFinder_Status status_orient(enum Rotation orientation) const;
+    bool has_data_orient(enum Rotation orientation) const;
+    uint8_t range_valid_count_orient(enum Rotation orientation) const;
+    const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
 
     /*
       set an externally estimated terrain height. Used to enable power
@@ -189,25 +158,17 @@ public:
      */
     bool pre_arm_check() const;
 
-    // return a 3D vector defining the position offset of the sensor in metres relative to the body frame origin
-    const Vector3f &get_pos_offset(uint8_t instance) const {
-        return _pos_offset[instance];
-    }
-    const Vector3f &get_pos_offset(void) const {
-        return _pos_offset[primary_instance];
-    }
 
 private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
-    uint8_t primary_instance:3;
     uint8_t num_instances:3;
     float estimated_terrain_height;
     AP_SerialManager &serial_manager;
+    Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 
-    void detect_instance(uint8_t instance);
+    void detect_instance(uint8_t instance, uint8_t& serial_instance);
     void update_instance(uint8_t instance);  
 
-    void update_pre_arm_check(uint8_t instance);
     bool _add_backend(AP_RangeFinder_Backend *driver);
 };

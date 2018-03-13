@@ -5,6 +5,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 /*
@@ -59,7 +62,7 @@ static const struct {
  */
 void setup(void)
 {
-    unsigned i, count;
+    uint32_t count;
     bool all_passed = true;
     uint32_t start_time;
 
@@ -75,13 +78,12 @@ void setup(void)
         all_passed = false;
     }
 
-    for (i=0; i<ARRAY_SIZE(test_points); i++) {
-        bool result;
-        result = Polygon_outside(test_points[i].point,
+    for (uint32_t i = 0; i < ARRAY_SIZE(test_points); i++) {
+        bool result = Polygon_outside(test_points[i].point,
                 OBC_boundary, ARRAY_SIZE(OBC_boundary));
         hal.console->printf("%10f,%10f  %s  %s\n",
-                        1.0e-7f*test_points[i].point.x,
-                        1.0e-7f*test_points[i].point.y,
+                            (double)(1.0e-7f * test_points[i].point.x),
+                            (double)(1.0e-7f * test_points[i].point.y),
                         result ? "OUTSIDE" : "INSIDE ",
                         result == test_points[i].outside ? "PASS" : "FAIL");
         if (result != test_points[i].outside) {
@@ -92,10 +94,9 @@ void setup(void)
 
     hal.console->printf("Speed test:\n");
     start_time = AP_HAL::micros();
-    for (count=0; count<1000; count++) {
-        for (i=0; i<ARRAY_SIZE(test_points); i++) {
-            bool result;
-            result = Polygon_outside(test_points[i].point,
+    for (count = 0; count < 1000; count++) {
+        for (uint32_t i = 0; i < ARRAY_SIZE(test_points); i++) {
+            bool result = Polygon_outside(test_points[i].point,
                     OBC_boundary, ARRAY_SIZE(OBC_boundary));
             if (result != test_points[i].outside) {
                 all_passed = false;
@@ -103,7 +104,7 @@ void setup(void)
         }
     }
     hal.console->printf("%u usec/call\n", (unsigned)((AP_HAL::micros()
-                    - start_time)/(count*ARRAY_SIZE(test_points))));
+                    - start_time)/(count * ARRAY_SIZE(test_points))));
     hal.console->printf("%s\n", all_passed ? "ALL TESTS PASSED" : "TEST FAILED");
 }
 

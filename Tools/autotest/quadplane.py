@@ -1,4 +1,6 @@
-# fly ArduPlane QuadPlane in SITL
+#!/usr/bin/env python
+
+# Fly ArduPlane QuadPlane in SITL
 from __future__ import print_function
 import os
 import pexpect
@@ -22,7 +24,7 @@ homeloc = None
 
 def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     """Fly a mission from a file."""
-    print("Flying mission %s" % filename)
+    progress("Flying mission %s" % filename)
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('Flight plan received')
     mavproxy.send('fence load %s\n' % fence)
@@ -35,16 +37,15 @@ def fly_mission(mavproxy, mav, filename, fence, height_accuracy=-1):
     mavproxy.expect('DISARMED')
     # wait for blood sample here
     mavproxy.send('wp set 20\n')
-    mavproxy.send('arm throttle\n')
-    mavproxy.expect('ARMED')
+    arm_vehicle(mavproxy, mav)
     if not wait_waypoint(mav, 20, 34, max_dist=60, timeout=1200):
         return False
     mavproxy.expect('DISARMED')
-    print("Mission OK")
+    progress("Mission OK")
     return True
 
 
-def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False):
+def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=False, gdbserver=False, speedup=10):
     """Fly QuadPlane in SITL.
 
     you can pass viewerip as an IP address to optionally send fg and
@@ -58,15 +59,15 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     if use_map:
         options += ' --map'
 
-    sitl = util.start_SITL(binary, model='quadplane', wipe=True, home=HOME_LOCATION, speedup=10,
-                          defaults_file=os.path.join(testdir, 'default_params/quadplane.parm'), valgrind=valgrind, gdb=gdb)
+    sitl = util.start_SITL(binary, model='quadplane', wipe=True, home=HOME_LOCATION, speedup=speedup,
+                          defaults_file=os.path.join(testdir, 'default_params/quadplane.parm'), valgrind=valgrind, gdb=gdb, gdbserver=gdbserver)
     mavproxy = util.start_MAVProxy_SITL('QuadPlane', options=options)
     mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
-    print("LOGFILE %s" % logfile)
+    progress("LOGFILE %s" % logfile)
 
     buildlog = util.reltopdir("../buildlogs/QuadPlane-test.tlog")
-    print("buildlog=%s" % buildlog)
+    progress("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
         os.unlink(buildlog)
     try:
@@ -81,13 +82,13 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     expect_list_clear()
     expect_list_extend([sitl, mavproxy])
 
-    print("Started simulator")
+    progress("Started simulator")
 
     # get a mavlink connection going
     try:
         mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
     except Exception as msg:
-        print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+        progress("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
         raise
     mav.message_hooks.append(message_hook)
     mav.idle_hooks.append(idle_hook)
@@ -95,29 +96,28 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
     failed = False
     e = 'None'
     try:
-        print("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
+        progress("Waiting for a heartbeat with mavlink protocol %s" % mav.WIRE_PROTOCOL_VERSION)
         mav.wait_heartbeat()
-        print("Waiting for GPS fix")
+        progress("Waiting for GPS fix")
         mav.recv_match(condition='VFR_HUD.alt>10', blocking=True)
         mav.wait_gps_fix()
         while mav.location().alt < 10:
             mav.wait_gps_fix()
         homeloc = mav.location()
-        print("Home location: %s" % homeloc)
+        progress("Home location: %s" % homeloc)
 
         # wait for EKF and GPS checks to pass
         wait_seconds(mav, 30)
 
-        mavproxy.send('arm throttle\n')
-        mavproxy.expect('ARMED')
+        arm_vehicle(mavproxy, mav)
 
         if not fly_mission(mavproxy, mav,
                            os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016.txt"),
                            os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016-fence.txt")):
-            print("Failed mission")
+            progress("Failed mission")
             failed = True
     except pexpect.TIMEOUT as e:
-        print("Failed with timeout")
+        progress("Failed with timeout")
         failed = True
 
     mav.close()
@@ -130,6 +130,6 @@ def fly_QuadPlane(binary, viewerip=None, use_map=False, valgrind=False, gdb=Fals
         shutil.copy(valgrind_log, util.reltopdir("../buildlogs/QuadPlane-valgrind.log"))
 
     if failed:
-        print("FAILED: %s" % e)
+        progress("FAILED: %s" % e)
         return False
     return True

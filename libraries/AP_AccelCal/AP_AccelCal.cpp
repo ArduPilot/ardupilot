@@ -156,6 +156,23 @@ void AP_AccelCal::update()
                 fail();
                 return;
         }
+    } else if (_last_result != ACCEL_CAL_NOT_STARTED) {
+        // only continuously report if we have ever completed a calibration
+        uint32_t now = AP_HAL::millis();
+        if (now - _last_position_request_ms > AP_ACCELCAL_POSITION_REQUEST_INTERVAL_MS) {
+            _last_position_request_ms = now;
+            switch (_last_result) {
+                case ACCEL_CAL_SUCCESS:
+                    _gcs->send_accelcal_vehicle_position(ACCELCAL_VEHICLE_POS_SUCCESS);
+                    break;
+                case ACCEL_CAL_FAILED:
+                    _gcs->send_accelcal_vehicle_position(ACCELCAL_VEHICLE_POS_FAILED);
+                    break;
+                default:
+                    // should never hit this state
+                    break;
+            }
+        }
     }
 }
 
@@ -181,6 +198,8 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
     _last_position_request_ms = 0;
     _step = 0;
 
+    _last_result = ACCEL_CAL_NOT_STARTED;
+
     update_status();
 }
 
@@ -191,6 +210,8 @@ void AP_AccelCal::success()
     for(uint8_t i=0 ; i < _num_clients ; i++) {
         _clients[i]->_acal_event_success();
     }
+
+    _last_result = ACCEL_CAL_SUCCESS;
 
     clear();
 }
@@ -203,6 +224,8 @@ void AP_AccelCal::cancel()
         _clients[i]->_acal_event_cancellation();
     }
 
+    _last_result = ACCEL_CAL_NOT_STARTED;
+
     clear();
 }
 
@@ -213,6 +236,8 @@ void AP_AccelCal::fail()
     for(uint8_t i=0 ; i < _num_clients ; i++) {
         _clients[i]->_acal_event_failure();
     }
+
+    _last_result = ACCEL_CAL_FAILED;
 
     clear();
 }
@@ -227,8 +252,6 @@ void AP_AccelCal::clear()
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         cal->clear();
     }
-
-    _gcs = nullptr;
 
     _step = 0;
     _started = false;

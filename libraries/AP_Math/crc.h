@@ -16,5 +16,5 @@
   interfaces to ArduPilot collection of CRCs. 
  */
 
-uint8_t crc_crc8(uint8_t *p, uint8_t len);
+uint8_t crc_crc8(const uint8_t *p, uint8_t len);
 

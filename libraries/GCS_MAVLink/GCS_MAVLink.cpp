@@ -46,12 +46,6 @@ static uint8_t mavlink_locked_mask;
 // routing table
 MAVLink_routing GCS_MAVLINK::routing;
 
-// static dataflash pointer to support logging text messages
-DataFlash_Class *GCS_MAVLINK::dataflash_p;
-
-// static frsky_telem pointer to support queueing text messages
-AP_Frsky_Telem *GCS_MAVLINK::frsky_telemetry_p;
- 
 // static AP_SerialManager pointer
 const AP_SerialManager *GCS_MAVLINK::serialmanager_p;
 

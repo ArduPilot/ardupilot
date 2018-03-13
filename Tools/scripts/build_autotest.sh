@@ -91,7 +91,7 @@ popd
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 
 echo "Updating pymavlink"
-pushd APM/mavlink/pymavlink
+pushd APM/modules/mavlink/pymavlink
 git show
 python setup.py build install --user
 popd
@@ -132,9 +132,6 @@ echo $githash > "buildlogs/history/$hdate/githash.txt"
 (cd APM && Tools/scripts/build_docs.sh)
 
 killall -9 JSBSim || /bin/true
-
-# setup for libiio on Parrot boards
-export PKG_CONFIG_PATH=$HOME/APM/ParrotLib/lib
 
 # raise core limit
 ulimit -c 10000000

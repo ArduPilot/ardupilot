@@ -5,6 +5,7 @@
 /Tools/autotest/param_metadata/Parameters.html
 /Tools/autotest/param_metadata/Parameters.rst
 /Tools/autotest/param_metadata/Parameters.wiki
+/Tools/autotest/param_metadata/Parameters.md
 /Tools/autotest/param_metadata/apm.pdef.xml
 /Tools/autotest/jsb_sim/fgout.xml
 /Tools/autotest/jsb_sim/rascal_test.xml
@@ -32,6 +33,8 @@
 *~
 .*.swo
 .*.swp
+*.i
+*.ii
 .DS_Store
 .autotools
 .built
@@ -48,6 +51,7 @@
 APMrover2/test.APMrover2/
 APMrover2/way.txt
 ArduCopter/Debug/
+ArduCopter/arducopter.exe.stackdump
 ArduCopter/fence.txt
 ArduCopter/ral.txt
 ArduCopter/test.ArduCopter/
@@ -60,6 +64,7 @@ Build.APMrover2/*
 Build.AntennaTracker/*
 Build.ArduCopter/*
 Build.ArduPlane/*
+Build.ArduSub/*
 CMakeCache.txt
 CMakeFiles
 LASTLOG.TXT
@@ -86,3 +91,8 @@ status.txt
 tags
 terrain/
 test.ArduCopter/*
+GPATH
+GRTAGS
+GTAGS
+config.mk
+*.apj

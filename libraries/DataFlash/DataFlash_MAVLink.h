@@ -19,7 +19,6 @@ extern const AP_HAL::HAL& hal;
 
 class DataFlash_MAVLink : public DataFlash_Backend
 {
-    friend class DataFlash_Class; // for access to stats on Log_Df_Mav_Stats
 public:
     // constructor
     DataFlash_MAVLink(DataFlash_Class &front, DFMessageWriter_DFLogStart *writer) :
@@ -32,16 +31,16 @@ public:
     // initialisation
     void Init() override;
 
-    bool logging_started() { return _logging_started; }
+    bool logging_started() const override { return _logging_started; }
 
-    void stop_logging();
+    void stop_logging() override;
 
     /* Write a block of data at current offset */
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size,
+    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size,
                                bool is_critical) override;
 
     // initialisation
-    bool CardInserted(void) override { return true; }
+    bool CardInserted(void) const override { return true; }
 
     // erase handling
     void EraseAll() override {}
@@ -64,26 +63,26 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port) override {}
     void ListAvailableLogs(AP_HAL::BetterStream *port) override {}
 
-    // enum dm_block_state {
-    //     BLOCK_STATE_FREE = 17,
-    //     BLOCK_STATE_FILLING,
-    //     BLOCK_STATE_SEND_PENDING,
-    //     BLOCK_STATE_SEND_RETRY,
-    //     BLOCK_STATE_SENT
-    // };
+    void push_log_blocks() override;
+
+    void remote_log_block_status_msg(mavlink_channel_t chan, mavlink_message_t* msg) override;
+
+protected:
+
+    bool WritesOK() const override;
+
+private:
+
     struct dm_block {
         uint32_t seqno;
         uint8_t buf[MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN];
         uint32_t last_sent;
         struct dm_block *next;
     };
-    void push_log_blocks();
-    virtual bool send_log_block(struct dm_block &block);
-    virtual void handle_ack(mavlink_channel_t chan, mavlink_message_t* msg, uint32_t seqno);
-    virtual void handle_retry(uint32_t block_num);
+    bool send_log_block(struct dm_block &block);
+    void handle_ack(mavlink_channel_t chan, mavlink_message_t* msg, uint32_t seqno);
+    void handle_retry(uint32_t block_num);
     void do_resends(uint32_t now);
-    virtual void set_channel(mavlink_channel_t chan);
-    virtual void remote_log_block_status_msg(mavlink_channel_t chan, mavlink_message_t* msg) override;
     void free_all_blocks();
 
     // a stack for free blocks, queues for pending, sent, retries and sent
@@ -106,7 +105,6 @@ public:
     dm_block_queue_t _blocks_pending;
     dm_block_queue_t _blocks_retry;
 
-protected:
     struct _stats {
         // the following are reset any time we log stats (see "reset_stats")
         uint32_t resends;
@@ -126,15 +124,12 @@ protected:
     } stats;
 
     // this method is used when reporting system status over mavlink
-    bool logging_enabled() const { return true; }
-    bool logging_failed() const;
+    bool logging_enabled() const override { return true; }
+    bool logging_failed() const override;
 
-private:
     mavlink_channel_t _chan;
     uint8_t _target_system_id;
     uint8_t _target_component_id;
-
-    bool _initialised;
 
     // this controls the maximum number of blocks we will push from
     // the pending and send queues in any call to push_log_blocks.
@@ -155,8 +150,7 @@ private:
     bool _sending_to_client;
 
     void Log_Write_DF_MAV(DataFlash_MAVLink &df);
-    
-    void internal_error();
+
     uint32_t bufferspace_available() override; // in bytes
     uint8_t remaining_space_in_current_block();
     // write buffer
@@ -166,9 +160,9 @@ private:
     struct dm_block *_current_block;
     struct dm_block *next_block();
 
-    void periodic_10Hz(uint32_t now);
-    void periodic_1Hz(uint32_t now);
-    void periodic_fullrate(uint32_t now);
+    void periodic_10Hz(uint32_t now) override;
+    void periodic_1Hz(uint32_t now) override;
+    void periodic_fullrate(uint32_t now) override;
     
     void stats_init();
     void stats_reset();
@@ -191,6 +185,8 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_errors;
     AP_HAL::Util::perf_counter_t  _perf_packing;
     AP_HAL::Util::perf_counter_t  _perf_overruns;
+
+    AP_HAL::Semaphore *semaphore;
 };
 
 #endif // DATAFLASH_MAVLINK_SUPPORT

@@ -67,14 +67,6 @@ extern const AP_HAL::HAL& hal;
 ///////////////////// PUBLIC INTERFACE /////////////////////
 ////////////////////////////////////////////////////////////
 
-#ifdef AP_ARMING_COMPASS_OFFSETS_MAX
-#define COMPASS_CALIBRATOR_OFS_MAX AP_ARMING_COMPASS_OFFSETS_MAX
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define COMPASS_CALIBRATOR_OFS_MAX 2000
-#else
-#define COMPASS_CALIBRATOR_OFS_MAX 1000
-#endif
-
 CompassCalibrator::CompassCalibrator():
 _tolerance(COMPASS_CAL_DEFAULT_TOLERANCE),
 _sample_buffer(nullptr)
@@ -86,10 +78,11 @@ void CompassCalibrator::clear() {
     set_status(COMPASS_CAL_NOT_STARTED);
 }
 
-void CompassCalibrator::start(bool retry, float delay) {
+void CompassCalibrator::start(bool retry, float delay, uint16_t offset_max) {
     if(running()) {
         return;
     }
+    _offset_max = offset_max;
     _attempt = 1;
     _retry = retry;
     _delay_start_sec = delay;
@@ -287,8 +280,7 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
 
             if (_sample_buffer == nullptr) {
                 _sample_buffer =
-                        (CompassSample*) malloc(sizeof(CompassSample) *
-                                                COMPASS_CAL_NUM_SAMPLES);
+                    (CompassSample*) calloc(COMPASS_CAL_NUM_SAMPLES, sizeof(CompassSample));
             }
 
             if(_sample_buffer != nullptr) {
@@ -347,9 +339,9 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
 bool CompassCalibrator::fit_acceptable() {
     if( !isnan(_fitness) &&
         _params.radius > 150 && _params.radius < 950 && //Earth's magnetic field strength range: 250-850mG
-        fabsf(_params.offset.x) < COMPASS_CALIBRATOR_OFS_MAX &&
-        fabsf(_params.offset.y) < COMPASS_CALIBRATOR_OFS_MAX &&
-        fabsf(_params.offset.z) < COMPASS_CALIBRATOR_OFS_MAX &&
+        fabsf(_params.offset.x) < _offset_max &&
+        fabsf(_params.offset.y) < _offset_max &&
+        fabsf(_params.offset.z) < _offset_max &&
         _params.diag.x > 0.2f && _params.diag.x < 5.0f &&
         _params.diag.y > 0.2f && _params.diag.y < 5.0f &&
         _params.diag.z > 0.2f && _params.diag.z < 5.0f &&

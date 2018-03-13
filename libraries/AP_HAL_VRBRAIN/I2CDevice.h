@@ -21,9 +21,9 @@
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/OwnPtr.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include "Semaphores.h"
 #include "I2CWrapper.h"
+#include "Device.h"
 
 namespace VRBRAIN {
 
@@ -41,7 +41,7 @@ public:
     void set_address(uint8_t address) override { _address = address; }
 
     /* See AP_HAL::I2CDevice::set_retries() */
-    void set_retries(uint8_t retries) override { _retries = retries; }
+    void set_retries(uint8_t retries) override { _vrbraindev.set_retries(retries); }
 
     /* See AP_HAL::Device::set_speed(): Empty implementation, not supported. */
     bool set_speed(enum Device::Speed speed) override { return true; }
@@ -55,27 +55,30 @@ public:
 
     /* See AP_HAL::Device::register_periodic_callback() */
     AP_HAL::Device::PeriodicHandle register_periodic_callback(
-        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override
-    {
-        /* Not implemented yet */
-        return nullptr;
-    }
+        uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
 
     /* See AP_HAL::Device::adjust_periodic_callback() */
-    bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override
-    {
-        /* Not implemented yet */
-        return false;
+    bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
+
+    AP_HAL::Semaphore* get_semaphore() override {
+        // if asking for invalid bus number use bus 0 semaphore
+        return &businfo[_busnum<num_buses?_busnum:0].semaphore;
     }
 
-    AP_HAL::Semaphore* get_semaphore() override { return &semaphore; }
-
+    void set_split_transfers(bool set) override {
+        _split_transfers = set;
+    }
+    
 private:
-    // we use an empty semaphore as the underlying I2C class already has a semaphore
-    Empty::Semaphore semaphore;
-    VRBRAIN_I2C _bus;
+    static const uint8_t num_buses = 3;
+    static DeviceBus businfo[num_buses];
+    
+    uint8_t _busnum;
+    VRBRAIN_I2C _vrbraindev;
     uint8_t _address;
-    uint8_t _retries = 0;
+    perf_counter_t perf;
+    char *pname;
+    bool _split_transfers;
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
@@ -87,7 +90,10 @@ public:
         return static_cast<I2CDeviceManager*>(i2c_mgr);
     }
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) override;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
+                                                 uint32_t bus_clock=400000,
+                                                 bool use_smbus = false,
+                                                 uint32_t timeout_ms=4) override;
 };
 
 }

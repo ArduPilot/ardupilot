@@ -71,10 +71,16 @@ public:
     bool adjust_periodic_callback(
         AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
+    /* set split transfers flag */
+    void set_split_transfers(bool set) override {
+        _split_transfers = set;
+    }
+    
 protected:
     I2CBus &_bus;
     uint8_t _address;
     uint8_t _retries = 0;
+    bool _split_transfers = false;
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
@@ -99,7 +105,10 @@ public:
             std::vector<const char *> devpaths, uint8_t address);
 
     /* AP_HAL::I2CDeviceManager implementation */
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) override;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
+                                                 uint32_t bus_clock=400000,
+                                                 bool use_smbus = false,
+                                                 uint32_t timeout_ms=4) override;
 
     /*
      * Stop all I2C threads and block until they are finalized. This doesn't

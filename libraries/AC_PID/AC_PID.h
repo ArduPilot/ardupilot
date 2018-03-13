@@ -18,7 +18,7 @@ class AC_PID {
 public:
 
     // Constructor for PID
-    AC_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt);
+    AC_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff = 0);
 
     // set_dt - set time step in seconds
     void        set_dt(float dt);
@@ -39,12 +39,13 @@ public:
     float       get_p();
     float       get_i();
     float       get_d();
-
+    float       get_ff(float requested_rate);
+    
     // reset_I - reset the integrator
     void        reset_I();
 
     // reset_filter - input filter will be reset to the next value provided to set_input()
-    void        reset_filter();
+    void        reset_filter() { _flags._reset_filter = true; }
 
     // load gain from eeprom
     void        load_gains();
@@ -53,7 +54,7 @@ public:
     void        save_gains();
 
     /// operator function call for easy initialisation
-    void operator() (float p, float i, float d, float imaxval, float input_filt_hz, float dt );
+    void operator() (float p, float i, float d, float imaxval, float input_filt_hz, float dt, float ffval = 0);
 
     // get accessors
     AP_Float   &kP() { return _kp; }
@@ -62,7 +63,7 @@ public:
     AP_Float   &filt_hz() { return _filt_hz; }
     float       imax() const { return _imax.get(); }
     float       get_filt_alpha() const;
-    float       ff() const { return _vff.get(); }
+    float       ff() const { return _ff.get(); }
 
     // set accessors
     void        kP(const float v) { _kp.set(v); }
@@ -70,7 +71,7 @@ public:
     void        kD(const float v) { _kd.set(v); }
     void        imax(const float v) { _imax.set(fabsf(v)); }
     void        filt_hz(const float v);
-    void        ff(const float v) { _vff.set(v); }
+    void        ff(const float v) { _ff.set(v); }
 
     float       get_integrator() const { return _integrator; }
     void        set_integrator(float i) { _integrator = i; }
@@ -91,7 +92,7 @@ protected:
     AP_Float        _kd;
     AP_Float        _imax;
     AP_Float        _filt_hz;                   // PID Input filter frequency in Hz
-    AP_Float        _vff; // only used by heli
+    AP_Float        _ff;
 
     // flags
     struct ac_pid_flags {

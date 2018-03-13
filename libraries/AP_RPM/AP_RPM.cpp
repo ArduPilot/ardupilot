@@ -15,6 +15,7 @@
 
 #include "AP_RPM.h"
 #include "RPM_PX4_PWM.h"
+#include "RPM_Pin.h"
 #include "RPM_SITL.h"
 
 extern const AP_HAL::HAL& hal;
@@ -24,7 +25,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PX4-PWM
+    // @Values: 0:None,1:PX4-PWM,2:AUXPIN
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, AP_RPM, _type[0], 0),
 
@@ -56,11 +57,18 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_MIN_QUAL", 4, AP_RPM, _quality_min[0], 0.5),
 
+    // @Param: _PIN
+    // @DisplayName: Input pin number
+    // @Description: Which pin to use
+    // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
+    // @User: Standard
+    AP_GROUPINFO("_PIN",    5, AP_RPM, _pin[0], 54),
+    
 #if RPM_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PX4-PWM
+    // @Values: 0:None,1:PX4-PWM,2:AUXPIN
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    10, AP_RPM, _type[1], 0),
 
@@ -72,6 +80,13 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     AP_GROUPINFO("2_SCALING", 11, AP_RPM, _scaling[1], 1.0f),
 #endif
 
+    // @Param: 2_PIN
+    // @DisplayName: RPM2 input pin number
+    // @Description: Which pin to use
+    // @Values: -1:Disabled,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6
+    // @User: Standard
+    AP_GROUPINFO("2_PIN",    12, AP_RPM, _pin[1], -1),
+    
     AP_GROUPEND
 };
 
@@ -95,13 +110,16 @@ void AP_RPM::init(void)
         return;
     }
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if (CONFIG_HAL_BOARD == HAL_BOARD_PX4) || ((CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN) && (!defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) && !defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)))
         uint8_t type = _type[num_instances];
         uint8_t instance = num_instances;
 
         if (type == RPM_TYPE_PX4_PWM) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RPM_PX4_PWM(*this, instance, state[instance]);
+        } else if (type == RPM_TYPE_PIN) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RPM_Pin(*this, instance, state[instance]);
         }
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

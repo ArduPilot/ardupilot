@@ -38,6 +38,9 @@
 // COLYAW parameter min and max values
 #define AP_MOTORS_HELI_SINGLE_COLYAW_RANGE             10.0f
 
+// maximum number of swashplate servos
+#define AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS    3
+
 /// @class      AP_MotorsHeli_Single
 class AP_MotorsHeli_Single : public AP_MotorsHeli {
 public:
@@ -52,51 +55,48 @@ public:
     };
 
     // set update rate to motors - a value in hertz
-    void set_update_rate(uint16_t speed_hz);
-
-    // enable - starts allowing signals to be sent to motors and servos
-    void enable();
+    void set_update_rate(uint16_t speed_hz) override;
 
     // output_test - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    void output_test(uint8_t motor_seq, int16_t pwm);
+    void output_test(uint8_t motor_seq, int16_t pwm) override;
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
-    void set_desired_rotor_speed(float desired_speed);
+    void set_desired_rotor_speed(float desired_speed) override;
 
     // get_main_rotor_speed - gets estimated or measured main rotor speed
-    float get_main_rotor_speed() const { return _main_rotor.get_rotor_speed(); }
+    float get_main_rotor_speed() const  override { return _main_rotor.get_rotor_speed(); }
 
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
-    float get_desired_rotor_speed() const { return _main_rotor.get_desired_speed(); }
+    float get_desired_rotor_speed() const  override { return _main_rotor.get_desired_speed(); }
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
-    bool rotor_speed_above_critical() const { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
+    bool rotor_speed_above_critical() const  override { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
 
     // calculate_scalars - recalculates various scalars used
-    void calculate_scalars();
+    void calculate_scalars() override;
 
     // calculate_armed_scalars - recalculates scalars that can change while armed
-    void calculate_armed_scalars();
+    void calculate_armed_scalars() override;
     
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    uint16_t get_motor_mask();
+    uint16_t get_motor_mask() override;
 
     // ext_gyro_gain - set external gyro gain in range 0 ~ 1
-    void ext_gyro_gain(float gain) { _ext_gyro_gain_std = gain * 1000.0f; }
+    void ext_gyro_gain(float gain)  override { _ext_gyro_gain_std = gain * 1000.0f; }
 
     // has_flybar - returns true if we have a mechical flybar
-    bool has_flybar() const { return _flybar_mode; }
+    bool has_flybar() const  override { return _flybar_mode; }
 
     // supports_yaw_passthrought - returns true if we support yaw passthrough
-    bool supports_yaw_passthrough() const { return _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO; }
+    bool supports_yaw_passthrough() const override { return _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO; }
 
-    void set_acro_tail(bool set) { _acro_tail = set; }
+    void set_acro_tail(bool set) override { _acro_tail = set; }
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    bool parameter_check(bool display_msg) const;
+    bool parameter_check(bool display_msg) const override;
     
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
@@ -107,13 +107,13 @@ protected:
     bool init_outputs() override;
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(RotorControlState state);
+    void update_motor_control(RotorControlState state) override;
 
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
-    void calculate_roll_pitch_collective_factors();
+    void calculate_roll_pitch_collective_factors() override;
 
     // heli_move_actuators - moves swash plate and tail rotor
-    void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out);
+    void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) override;
 
     // move_yaw - moves the yaw servo
     void move_yaw(float yaw_out);
@@ -122,7 +122,7 @@ protected:
     void write_aux(float servo_out);
 
     // servo_test - move servos through full range of movement
-    void servo_test();
+    void servo_test() override;
 
     // external objects we depend upon
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
@@ -156,4 +156,7 @@ protected:
     SRV_Channel    *_servo_aux;
     
     bool            _acro_tail = false;
+    float           _rollFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
+    float           _pitchFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
+    float           _collectiveFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
 };

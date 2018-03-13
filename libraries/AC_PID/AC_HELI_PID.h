@@ -19,9 +19,6 @@ public:
     /// Constructor for PID
     AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff);
 
-    /// get_vff - return Velocity FeedForward Term 
-    float       get_vff(float requested_rate);
-
     /// get_leaky_i - replacement for get_i but output is leaded at leak_rate
     float       get_leaky_i(float leak_rate);
 

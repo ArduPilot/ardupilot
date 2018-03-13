@@ -17,7 +17,7 @@
   # define AC_ATC_MULTI_RATE_RP_D           0.0036f
 #endif
 #ifndef AC_ATC_MULTI_RATE_RP_IMAX
- # define AC_ATC_MULTI_RATE_RP_IMAX         0.444f
+ # define AC_ATC_MULTI_RATE_RP_IMAX         0.5f
 #endif
 #ifndef AC_ATC_MULTI_RATE_RP_FILT_HZ
  # define AC_ATC_MULTI_RATE_RP_FILT_HZ      20.0f
@@ -32,16 +32,16 @@
  # define AC_ATC_MULTI_RATE_YAW_D           0.0f
 #endif
 #ifndef AC_ATC_MULTI_RATE_YAW_IMAX
- # define AC_ATC_MULTI_RATE_YAW_IMAX        0.222f
+ # define AC_ATC_MULTI_RATE_YAW_IMAX        0.5f
 #endif
 #ifndef AC_ATC_MULTI_RATE_YAW_FILT_HZ
- # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     5.0f
+ # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     2.5f
 #endif
 
 
 class AC_AttitudeControl_Multi : public AC_AttitudeControl {
 public:
-	AC_AttitudeControl_Multi(AP_AHRS &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
+	AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
 
 	// empty destructor to suppress compiler warning
 	virtual ~AC_AttitudeControl_Multi() {}
@@ -66,6 +66,8 @@ public:
     void set_throttle_mix_min() override { _throttle_rpy_mix_desired = _thr_mix_min; }
     void set_throttle_mix_man() override { _throttle_rpy_mix_desired = _thr_mix_man; }
     void set_throttle_mix_max() override { _throttle_rpy_mix_desired = _thr_mix_max; }
+    void set_throttle_mix_value(float value) override { _throttle_rpy_mix_desired = _throttle_rpy_mix = value; }
+    float get_throttle_mix(void) const override { return _throttle_rpy_mix; }
 
     // are we producing min throttle?
     bool is_throttle_mix_min() const override { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }

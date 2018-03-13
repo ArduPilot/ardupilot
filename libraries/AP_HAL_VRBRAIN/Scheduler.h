@@ -13,6 +13,9 @@
 #define APM_MAIN_PRIORITY_BOOST 241
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      181
+#define APM_SPI_PRIORITY        242
+#define APM_CAN_PRIORITY        179
+#define APM_I2C_PRIORITY        178
 #define APM_UART_PRIORITY        60
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
@@ -55,10 +58,12 @@ public:
     void     resume_timer_procs();
     void     reboot(bool hold_in_bootloader);
 
-    bool     in_timerprocess();
+    bool     in_main_thread() const override;
     void     system_initialized();
     void     hal_initialized() { _hal_initialized = true; }
-    
+
+    void create_uavcan_thread() override;
+
 private:
     bool _initialized;
     volatile bool _hal_initialized;
@@ -83,11 +88,18 @@ private:
     pthread_t _io_thread_ctx;
     pthread_t _storage_thread_ctx;
     pthread_t _uart_thread_ctx;
+    pthread_t _uavcan_thread_ctx;
+
+    struct _uavcan_thread_arg {
+        VRBRAINScheduler *sched;
+        uint8_t uavcan_number;
+    };
 
     static void *_timer_thread(void *arg);
     static void *_io_thread(void *arg);
     static void *_storage_thread(void *arg);
     static void *_uart_thread(void *arg);
+    static void *_uavcan_thread(void *arg);
 
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);

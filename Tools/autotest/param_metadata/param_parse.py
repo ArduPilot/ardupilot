@@ -7,27 +7,30 @@ import sys
 from optparse import OptionParser
 
 from param import (Library, Parameter, Vehicle, known_group_fields,
-                   known_param_fields, required_param_fields)
+                   known_param_fields, required_param_fields, known_units)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
 from wikiemit import WikiEmit
 from xmlemit import XmlEmit
+from mdemit import MDEmit
 
 parser = OptionParser("param_parse.py [options]")
 parser.add_option("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
 parser.add_option("--vehicle", default='*',  help="Vehicle type to generate for")
+parser.add_option("--no-emit", dest='emit_params', action='store_false', default=True, help="don't emit parameter documention, just validate")
 (opts, args) = parser.parse_args()
 
 
 # Regular expressions for parsing the parameter metadata
 
-prog_param = re.compile(r"@Param: *(\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
+prog_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
+# match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): (.*)")
+# match e.g @Value{ArduCopter}: 0=Volcano, 1=Peppermint
+prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: (.*)")
 
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
-
-prog_group_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % opts.vehicle)
@@ -55,11 +58,22 @@ def error(str_to_print):
     error_count += 1
     print(str_to_print)
 
+truename_map = {
+    "APMrover2": "Rover",
+    "ArduSub": "Sub",
+    "ArduCopter": "Copter",
+    "ArduPlane": "Plane",
+    "AntennaTracker": "Tracker",
+}
 for vehicle_path in vehicle_paths:
     name = os.path.basename(os.path.dirname(vehicle_path))
     path = os.path.normpath(os.path.dirname(vehicle_path))
-    vehicles.append(Vehicle(name, path))
+    vehicles.append(Vehicle(name, path, truename_map[name]))
     debug('Found vehicle type %s' % name)
+
+if len(vehicles) > 1:
+    print("Single vehicle only, please")
+    sys.exit(1)
 
 for vehicle in vehicles:
     debug("===\n\n\nProcessing %s" % vehicle.name)
@@ -79,7 +93,7 @@ for vehicle in vehicles:
             if field[0] in known_group_fields:
                 setattr(l, field[0], field[1])
             else:
-                error("unknown parameter metadata field '%s'" % field[0])
+                error("group: unknown parameter metadata field '%s'" % field[0])
         if not any(l.name == parsed_l.name for parsed_l in libraries):
             libraries.append(l)
 
@@ -94,7 +108,7 @@ for vehicle in vehicles:
             if field[0] in known_param_fields:
                 setattr(p, field[0], field[1])
             else:
-                error("unknown parameter metadata field '%s'" % field[0])
+                error("param: unknown parameter metadata field '%s'" % field[0])
         for req_field in required_param_fields:
             if req_field not in field_list:
                 error("missing parameter metadata field '%s' in %s" % (req_field, field_text))
@@ -107,7 +121,9 @@ debug("Found %u documented libraries" % len(libraries))
 
 alllibs = libraries[:]
 
-def process_library(library, pathprefix=None):
+vehicle = vehicles[0]
+
+def process_library(vehicle, library, pathprefix=None):
     '''process one library'''
     paths = library.Path.split(',')
     for path in paths:
@@ -130,7 +146,7 @@ def process_library(library, pathprefix=None):
             error("Path %s not found for library %s" % (path, library.name))
             continue
 
-        param_matches = prog_group_param.findall(p_text)
+        param_matches = prog_param.findall(p_text)
         debug("Found %u documented parameters" % len(param_matches))
         for param_match in param_matches:
             p = Parameter(library.name+param_match[0])
@@ -141,7 +157,22 @@ def process_library(library, pathprefix=None):
                 if field[0] in known_param_fields:
                     setattr(p, field[0], field[1])
                 else:
-                    error("unknown parameter metadata field %s" % field[0])
+                    error("param: unknown parameter metadata field %s" % field[0])
+            debug("matching %s" % field_text)
+            fields = prog_param_tagged_fields.findall(field_text)
+            for field in fields:
+                only_for_vehicles = field[1].split(",")
+                only_for_vehicles = [ x.rstrip().lstrip() for x in only_for_vehicles ]
+                delta = set(only_for_vehicles) - set(truename_map.values())
+                if len(delta):
+                    error("Unknown vehicles (%s)" % delta)
+                debug("field[0]=%s vehicle=%s truename=%s field[1]=%s only_for_vehicles=%s\n" % (field[0], vehicle.name,vehicle.truename,field[1], str(only_for_vehicles)))
+                if vehicle.truename not in only_for_vehicles:
+                    continue;
+                if field[0] in known_param_fields:
+                    setattr(p, field[0], field[2])
+                else:
+                    error("tagged param: unknown parameter metadata field '%s'" % field[0])
             library.params.append(p)
 
         group_matches = prog_groups.findall(p_text)
@@ -160,14 +191,14 @@ def process_library(library, pathprefix=None):
             if not any(l.name == parsed_l.name for parsed_l in libraries):
                 l.name = library.name + l.name
                 debug("Group name: %s" % l.name)
-                process_library(l, os.path.dirname(libraryfname))
+                process_library(vehicle, l, os.path.dirname(libraryfname))
                 alllibs.append(l)
 
 for library in libraries:
     debug("===\n\n\nProcessing library %s" % library.name)
 
     if hasattr(library, 'Path'):
-        process_library(library)
+        process_library(vehicle, library)
     else:
         error("Skipped: no Path found")
 
@@ -203,6 +234,10 @@ def validate(param):
         if not is_number(max_value):
             error("Max value not number: %s %s" % (param.name, max_value))
             return
+    # Validate units
+    if (hasattr(param, "Units")):
+        if (param.__dict__["Units"] != "") and (param.__dict__["Units"] not in known_units):
+            error("unknown units field '%s'" % param.__dict__["Units"])
 
 for vehicle in vehicles:
     for param in vehicle.params:
@@ -225,9 +260,11 @@ def do_emit(emit):
 
     emit.close()
 
-do_emit(XmlEmit())
-do_emit(WikiEmit())
-do_emit(HtmlEmit())
-do_emit(RSTEmit())
+if opts.emit_params:
+    do_emit(XmlEmit())
+    do_emit(WikiEmit())
+    do_emit(HtmlEmit())
+    do_emit(RSTEmit())
+    do_emit(MDEmit())
 
 sys.exit(error_count)

@@ -62,7 +62,7 @@ Compass::_start_calibration(uint8_t i, bool retry, float delay)
         _calibrator[i].set_tolerance(_calibration_threshold*2);
     }
     _cal_saved[i] = false;
-    _calibrator[i].start(retry, delay);
+    _calibrator[i].start(retry, delay, get_offsets_max());
 
     // disable compass learning both for calibration and after completion
     _learn.set_and_save(0);
@@ -267,9 +267,9 @@ Compass::_get_cal_mask() const
 /*
   handle an incoming MAG_CAL command
  */
-uint8_t Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
+MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
 {
-    uint8_t result = MAV_RESULT_FAILED;
+    MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
     case MAV_CMD_DO_START_MAG_CAL: {

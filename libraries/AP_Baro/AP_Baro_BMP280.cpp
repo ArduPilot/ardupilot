@@ -66,7 +66,7 @@ AP_Baro_Backend *AP_Baro_BMP280::probe(AP_Baro &baro,
 
 bool AP_Baro_BMP280::_init()
 {
-    if (!_dev | !_dev->get_semaphore()->take(0)) {
+    if (!_dev | !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
@@ -115,7 +115,7 @@ bool AP_Baro_BMP280::_init()
     _dev->get_semaphore()->give();
 
     // request 50Hz update
-    _dev->register_periodic_callback(20 * USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
+    _dev->register_periodic_callback(20 * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
 
     return true;
 }
@@ -158,7 +158,7 @@ void AP_Baro_BMP280::_update_temperature(int32_t temp_raw)
     var2 = (((((temp_raw >> 4) - ((int32_t)_t1)) * ((temp_raw >> 4) - ((int32_t)_t1))) >> 12) * ((int32_t)_t3)) >> 14;
     _t_fine = var1 + var2;
     t = (_t_fine * 5 + 128) >> 8;
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _temperature = ((float)t) / 100;
         _sem->give();
     }
@@ -187,7 +187,7 @@ void AP_Baro_BMP280::_update_pressure(int32_t press_raw)
     var2 = (((int64_t)_p8) * p) >> 19;
     p = ((p + var1 + var2) >> 8) + (((int64_t)_p7) << 4);
 
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _pressure = (float)p / 25600;
         _has_sample = true;
         _sem->give();

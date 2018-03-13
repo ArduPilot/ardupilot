@@ -38,6 +38,9 @@ public:
     // backends
     virtual void accumulate(void) {};
 
+    // callback for UAVCAN messages
+    virtual void handle_mag_msg(Vector3f &mag) {};
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as COMPASS*ID* parameters to
@@ -56,9 +59,13 @@ public:
         DEVTYPE_LIS3MDL = 0x08,
         DEVTYPE_AK09916 = 0x09,
         DEVTYPE_IST8310 = 0x0A,
+        DEVTYPE_ICM20948 = 0x0B,
+        DEVTYPE_MMC3416 = 0x0C,
+	DEVTYPE_QMC5883L = 0x0D,
+	DEVTYPE_MAG3110  = 0x0E,
     };
-    
-    
+
+
 protected:
 
     /*
@@ -75,7 +82,7 @@ protected:
      */
 
     void rotate_field(Vector3f &mag, uint8_t instance);
-    void publish_raw_field(const Vector3f &mag, uint32_t time_us, uint8_t instance);
+    void publish_raw_field(const Vector3f &mag, uint8_t instance);
     void correct_field(Vector3f &mag, uint8_t i);
     void publish_filtered_field(const Vector3f &mag, uint8_t instance);
     void set_last_update_usec(uint32_t last_update, uint8_t instance);
@@ -94,13 +101,13 @@ protected:
 
     // set rotation of an instance
     void set_rotation(uint8_t instance, enum Rotation rotation);
-    
+
     // access to frontend
     Compass &_compass;
 
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *_sem;    
-    
+    AP_HAL::Semaphore *_sem;
+
 private:
     void apply_corrections(Vector3f &mag, uint8_t i);
 };

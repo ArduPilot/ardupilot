@@ -45,10 +45,14 @@ public:
         STATE_GPS_LOSS        = 3
     };
 
+    enum terminate_action {
+        TERMINATE_ACTION_TERMINATE = 42,
+        TERMINATE_ACTION_LAND      = 43
+    };
+
     // Constructor
-    AP_AdvancedFailsafe(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap) :
+    AP_AdvancedFailsafe(AP_Mission &_mission, const AP_GPS &_gps, const RCMapper &_rcmap) :
         mission(_mission),
-        baro(_baro),
         gps(_gps),
         rcmap(_rcmap),
         _gps_loss_count(0),
@@ -71,12 +75,15 @@ public:
 
     // return true if we are terminating (deliberately crashing the vehicle)
     bool should_crash_vehicle(void);
-    
-    // for holding parameters
-    static const struct AP_Param::GroupInfo var_info[];
+
+    // enables or disables a GCS based termination, returns true if AFS is in the desired termination state
+    bool gcs_terminate(bool should_terminate);
 
     // called to set all outputs to termination state
     virtual void terminate_vehicle(void) = 0;
+
+    // for holding parameters
+    static const struct AP_Param::GroupInfo var_info[];
         
 protected:
     // setup failsafe values for if FMU firmware stops running
@@ -88,7 +95,6 @@ protected:
     enum state _state;
 
     AP_Mission &mission;
-    AP_Baro &baro;
     const AP_GPS &gps;
     const RCMapper &rcmap;
 

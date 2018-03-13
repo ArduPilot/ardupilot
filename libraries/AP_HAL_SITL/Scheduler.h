@@ -27,10 +27,9 @@ public:
     void suspend_timer_procs();
     void resume_timer_procs();
 
-    bool in_timerprocess();
-
     void register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
 
+    bool in_main_thread() const override { return !_in_timer_proc && !_in_io_proc; };
     void system_initialized();
 
     void reboot(bool hold_in_bootloader);
@@ -51,6 +50,8 @@ public:
 
     uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
 
+    static void _run_io_procs(bool called_from_isr);
+    
 private:
     SITL_State *_sitlState;
     uint8_t _nested_atomic_ctr;
@@ -59,7 +60,6 @@ private:
     static AP_HAL::Proc _failsafe;
 
     static void _run_timer_procs(bool called_from_isr);
-    static void _run_io_procs(bool called_from_isr);
 
     static volatile bool _timer_suspended;
     static volatile bool _timer_event_missed;
@@ -74,5 +74,6 @@ private:
 
     bool _initialized;
     uint64_t _stopped_clock_usec;
+    uint64_t _last_io_run;
 };
 #endif  // CONFIG_HAL_BOARD

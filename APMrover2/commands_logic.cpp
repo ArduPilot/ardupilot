@@ -1,5 +1,15 @@
 #include "Rover.h"
 
+// update mission including starting or stopping commands. called by scheduler at 10Hz
+void Rover::update_mission(void)
+{
+    if (control_mode == &mode_auto) {
+        if (home_is_set != HOME_UNSET && mission.num_commands() > 1) {
+            mission.update();
+        }
+    }
+}
+
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
@@ -10,31 +20,25 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
-    // exit immediately if not in AUTO mode
-    if (control_mode != AUTO) {
-        return false;
-    }
-
-    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Executing command ID #%i", cmd.id);
-
-    // remember the course of our next navigation leg
-    next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
+    gcs().send_text(MAV_SEVERITY_INFO, "Executing %s(ID=%i)",
+                    cmd.type(), cmd.id);
 
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:  // Navigate to Waypoint
-        do_nav_wp(cmd);
+        do_nav_wp(cmd, false);
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         do_RTL();
         break;
 
-    case MAV_CMD_NAV_LOITER_UNLIM:              // Loiter indefinitely
-        do_loiter_unlimited(cmd);
+    case MAV_CMD_NAV_LOITER_UNLIM:  // Loiter indefinitely
+    case MAV_CMD_NAV_LOITER_TIME:   // Loiter for specified time
+        do_nav_wp(cmd, true);
         break;
 
-    case MAV_CMD_NAV_LOITER_TIME:
-        do_loiter_time(cmd);
+    case MAV_CMD_NAV_SET_YAW_SPEED:
+        do_nav_set_yaw_speed(cmd);
         break;
 
     // Conditional commands
@@ -113,6 +117,16 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_reverse(cmd);
         break;
 
+    case MAV_CMD_DO_FENCE_ENABLE:
+        if (cmd.p1 == 0) {  //disable
+            g2.fence.enable(false);
+            gcs().send_text(MAV_SEVERITY_INFO, "Fence Disabled");
+        } else {  //enable fence
+            g2.fence.enable(true);
+            gcs().send_text(MAV_SEVERITY_INFO, "Fence Enabled");
+        }
+        break;
+
     default:
         // return false for unhandled commands
         return false;
@@ -123,30 +137,24 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 }
 
 // exit_mission - callback function called from ap-mission when the mission has completed
-//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 void Rover::exit_mission()
 {
-    if (control_mode == AUTO) {
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "No commands. Can't set AUTO. Setting HOLD");
-        set_mode(HOLD);
-    }
+    gcs().send_text(MAV_SEVERITY_NOTICE, "Mission Complete");
+    set_mode(mode_hold, MODE_REASON_MISSION_END);
 }
 
 // verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 bool Rover::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
-    if (control_mode == AUTO) {
-        bool cmd_complete = verify_command(cmd);
+    const bool cmd_complete = verify_command(cmd);
 
-        // send message to GCS
-        if (cmd_complete) {
-            gcs_send_mission_item_reached_message(cmd.index);
-        }
-
-        return cmd_complete;
+    // send message to GCS
+    if (cmd_complete) {
+        gcs().send_mission_item_reached_message(cmd.index);
     }
-    return false;
+
+    return cmd_complete;
 }
 
 /*******************************************************************************
@@ -179,6 +187,9 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
 
+    case MAV_CMD_NAV_SET_YAW_SPEED:
+        return verify_nav_set_yaw_speed();
+
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
@@ -192,11 +203,12 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_REVERSE:
+    case MAV_CMD_DO_FENCE_ENABLE:
         return true;
 
     default:
         // error message
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Skipping invalid cmd #%i", cmd.id);
+        gcs().send_text(MAV_SEVERITY_WARNING, "Skipping invalid cmd #%i", cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
         return true;
     }
@@ -208,12 +220,11 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 
 void Rover::do_RTL(void)
 {
-    prev_WP = current_loc;
-    control_mode = RTL;
-    next_WP = home;
+    // start rtl in auto mode
+    mode_auto.start_RTL();
 }
 
-void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
+void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination)
 {
     // just starting so we haven't previously reached the waypoint
     previously_reached_wp = false;
@@ -224,28 +235,36 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this is the delay, stored in seconds
     loiter_duration = cmd.p1;
 
-    // this is the distance we travel past the waypoint - not there yet so 0 initially
-    distance_past_wp = 0;
+    // get heading to following waypoint (auto mode reduces speed to allow corning without large overshoot)
+    // in case of non-zero loiter duration, we provide heading-unknown to signal we should stop at the point
+    float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN;
+    if (!always_stop_at_destination && loiter_duration == 0) {
+        next_leg_bearing_cd = mission.get_next_ground_course_cd(MODE_NEXT_HEADING_UNKNOWN);
+    }
 
+    // retrieve and sanitize target location
     Location cmdloc = cmd.content.location;
     location_sanitize(current_loc, cmdloc);
-    set_next_WP(cmdloc);
+    mode_auto.set_desired_location(cmdloc, next_leg_bearing_cd);
 }
 
-void Rover::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
+// do_set_yaw_speed - turn to a specified heading and achieve and given speed
+void Rover::do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd)
 {
-    active_loiter = true;
-    do_nav_wp(cmd);
-    loiter_duration = 100;  // an arbitrary large loiter time
-}
+    float desired_heading_cd;
 
-// do_loiter_time - initiate loitering at a point for a given time period
-// if the vehicle is moved off the loiter point (i.e. a boat in a current)
-// then the vehicle will actively return to the loiter coords.
-void Rover::do_loiter_time(const AP_Mission::Mission_Command& cmd)
-{
-    active_loiter = true;
-    do_nav_wp(cmd);
+    // get final angle, 1 = Relative, 0 = Absolute
+    if (cmd.content.set_yaw_speed.relative_angle > 0) {
+        // relative angle
+        desired_heading_cd = wrap_180_cd(ahrs.yaw_sensor + cmd.content.set_yaw_speed.angle_deg * 100.0f);
+    } else {
+        // absolute angle
+        desired_heading_cd = cmd.content.set_yaw_speed.angle_deg * 100.0f;
+    }
+
+    // set auto target
+    const float speed_max = control_mode->get_speed_default();
+    mode_auto.set_desired_heading_and_speed(desired_heading_cd, constrain_float(cmd.content.set_yaw_speed.speed, -speed_max, speed_max));
 }
 
 /********************************************************************************/
@@ -253,102 +272,44 @@ void Rover::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 /********************************************************************************/
 bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    // Have we reached the waypoint i.e. are we within waypoint_radius of the waypoint
-    if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
+    // exit immediately if we haven't reached the destination
+    if (!mode_auto.reached_destination()) {
+        return false;
+    }
+
+    // Check if this is the first time we have noticed reaching the waypoint
+    if (!previously_reached_wp) {
+        previously_reached_wp = true;
+
         // check if we are loitering at this waypoint - the message sent to the GCS is different
         if (loiter_duration > 0) {
-            // Check if this is the first time we have reached the waypoint
-            if (!previously_reached_wp) {
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i. Loiter for %i seconds",
-                                  (unsigned)cmd.index,
-                                  (unsigned)loiter_duration);
-                // record the current time i.e. start timer
-                loiter_start_time = millis();
-                previously_reached_wp = true;
-            }
-
-            distance_past_wp = wp_distance;
-
-            // Check if we have loiter long enough
-            if (((millis() - loiter_start_time) / 1000) < loiter_duration) {
-                return false;
-            }
-        } else {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i. Distance %um",
-                              (unsigned)cmd.index,
-                              (unsigned)get_distance(current_loc, next_WP));
-        }
-        // set loiter_duration to 0 so we know we aren't or have finished loitering
-        loiter_duration = 0;
-        return true;
-    }
-
-    // have we gone past the waypoint?
-    // We should always go through the waypoint i.e. the above code
-    // first before we go past it but sometimes we don't.
-    // OR have we reached the waypoint previously be we aren't actively loitering
-    // This second check is required for when we roll past the waypoint radius
-    if (location_passed_point(current_loc, prev_WP, next_WP) ||
-        (!active_loiter && previously_reached_wp)) {
-        // As we have passed the waypoint navigation needs to be done from current location
-        prev_WP = current_loc;
-        // Check if this is the first time we have reached the waypoint even though we have gone past it
-        if (!previously_reached_wp) {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i. Loiter for %i seconds",
-                              (unsigned)cmd.index,
-                              (unsigned)loiter_duration);
+            // send message including loiter time
+            gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%u. Loiter for %u seconds",
+                    static_cast<uint32_t>(cmd.index),
+                    static_cast<uint32_t>(loiter_duration));
             // record the current time i.e. start timer
             loiter_start_time = millis();
-            previously_reached_wp = true;
-            distance_past_wp = wp_distance;
+        } else {
+            // send simpler message to GCS
+            gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%u", static_cast<uint32_t>(cmd.index));
         }
-
-        // check if distance to the WP has changed and output new message if it has
-        float dist_to_wp = get_distance(current_loc, next_WP);
-        if ((uint32_t)distance_past_wp != (uint32_t)dist_to_wp) {
-            distance_past_wp = dist_to_wp;
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i. Distance %um",
-                              (unsigned)cmd.index,
-                              (unsigned)distance_past_wp);
-        }
-
-        // Check if we need to loiter at this waypoint
-        if (loiter_duration > 0) {
-            if (((millis() - loiter_start_time) / 1000) < loiter_duration) {
-                return false;
-            }
-        }
-        // set loiter_duration to 0 so we know we aren't or have finished loitering
-        loiter_duration = 0;
-        return true;
     }
 
-    return false;
+    // Check if we have loitered long enough
+    if (loiter_duration == 0) {
+        return true;
+    } else {
+        return (((millis() - loiter_start_time) / 1000) >= loiter_duration);
+    }
 }
 
 bool Rover::verify_RTL()
 {
-    if (wp_distance <= g.waypoint_radius) {
-        gcs_send_text(MAV_SEVERITY_INFO, "Reached destination");
-        rtl_complete = true;
-        return true;
-    }
-
-    // have we gone past the waypoint?
-    if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached destination. Distance away %um",
-                          (unsigned)get_distance(current_loc, next_WP));
-        rtl_complete = true;
-        return true;
-    }
-
-    return false;
+    return mode_auto.reached_destination();
 }
 
 bool Rover::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
-    // Continually set loiter start time to now so it never finishes
-    loiter_start_time += millis();
     verify_nav_wp(cmd);
     return false;
 }
@@ -356,37 +317,17 @@ bool Rover::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 // verify_loiter_time - check if we have loitered long enough
 bool Rover::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
-    bool result = verify_nav_wp(cmd);
+    const bool result = verify_nav_wp(cmd);
     if (result) {
-        gcs_send_text(MAV_SEVERITY_WARNING, "Finished active loiter\n");
-        // if we have finished active loitering - turn it off
-        active_loiter = false;
+        gcs().send_text(MAV_SEVERITY_WARNING, "Finished active loiter");
     }
     return result;
 }
 
-void Rover::nav_set_yaw_speed()
+// verify_yaw - return true if we have reached the desired heading
+bool Rover::verify_nav_set_yaw_speed()
 {
-    // if we haven't received a MAV_CMD_NAV_SET_YAW_SPEED message within the last 3 seconds bring the rover to a halt
-    if ((millis() - guided_yaw_speed.msg_time_ms) > 3000) {
-        gcs_send_text(MAV_SEVERITY_WARNING, "NAV_SET_YAW_SPEED not recvd last 3secs, stopping");
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,g.throttle_min.get());
-        SRV_Channels::set_output_scaled(SRV_Channel::k_steering,0);
-        lateral_acceleration = 0;
-        return;
-    }
-
-    int32_t steering = steerController.get_steering_out_angle_error(guided_yaw_speed.turn_angle);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering,steering);
-
-    // speed param in the message gives speed as a proportion of cruise speed.
-    // 0.5 would set speed to the cruise speed
-    // 1 is double the cruise speed.
-    float target_speed = g.speed_cruise * guided_yaw_speed.target_speed * 2;
-    calc_throttle(target_speed);
-
-    Log_Write_GuidedTarget(guided_mode, Vector3f(steering, 0, 0), Vector3f(target_speed, 0, 0));
-    return;
+    return mode_auto.reached_heading();
 }
 
 /********************************************************************************/
@@ -396,12 +337,12 @@ void Rover::nav_set_yaw_speed()
 void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
     condition_start = millis();
-    condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
+    condition_value = static_cast<int32_t>(cmd.content.delay.seconds * 1000);  // convert seconds to milliseconds
 }
 
 void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
-    condition_value  = cmd.content.distance.meters;
+    condition_value = cmd.content.distance.meters;
 }
 
 /********************************************************************************/
@@ -410,7 +351,7 @@ void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 
 bool Rover::verify_wait_delay()
 {
-    if ((uint32_t)(millis() - condition_start) > (uint32_t)condition_value) {
+    if (static_cast<uint32_t>(millis() - condition_start) > static_cast<uint32_t>(condition_value)) {
         condition_value = 0;
         return true;
     }
@@ -419,12 +360,13 @@ bool Rover::verify_wait_delay()
 
 bool Rover::verify_within_distance()
 {
-    if (wp_distance < condition_value) {
+    if (mode_auto.get_distance_to_destination() < condition_value) {
         condition_value = 0;
         return true;
     }
     return false;
 }
+
 
 /********************************************************************************/
 //  Do (Now) commands
@@ -432,26 +374,19 @@ bool Rover::verify_within_distance()
 
 void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.content.speed.target_ms > 0) {
-        g.speed_cruise.set(cmd.content.speed.target_ms);
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise speed: %.1f m/s", (double)g.speed_cruise.get());
-    }
-
-    if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {
-        g.throttle_cruise.set(cmd.content.speed.throttle_pct);
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise throttle: %.1f", g.throttle_cruise.get());
+    // set speed for active mode
+    if ((cmd.content.speed.target_ms >= 0.0f) && (cmd.content.speed.target_ms <= rover.control_mode->get_speed_default())) {
+        control_mode->set_desired_speed(cmd.content.speed.target_ms);
+        gcs().send_text(MAV_SEVERITY_INFO, "speed: %.1f m/s", static_cast<double>(cmd.content.speed.target_ms));
     }
 }
 
 void Rover::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 && have_position) {
-        init_home();
+        set_home_to_current_location(false);
     } else {
-        ahrs.set_home(cmd.content.location);
-        home_is_set = HOME_SET_NOT_LOCKED;
-        Log_Write_Home_And_Origin();
-        GCS_MAVLINK::send_home_all(cmd.content.location);
+        set_home(cmd.content.location, false);
     }
 }
 
@@ -472,45 +407,18 @@ void Rover::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 // do_digicam_control Send Digicam Control message with the camera library
 void Rover::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
-    if (camera.control(cmd.content.digicam_control.session,
-                       cmd.content.digicam_control.zoom_pos,
-                       cmd.content.digicam_control.zoom_step,
-                       cmd.content.digicam_control.focus_lock,
-                       cmd.content.digicam_control.shooting_cmd,
-                       cmd.content.digicam_control.cmd_id)) {
-        log_picture();
-    }
-}
-
-// do_take_picture - take a picture with the camera library
-void Rover::do_take_picture()
-{
-    camera.trigger_pic(true);
-    log_picture();
-}
-
-// log_picture - log picture taken and send feedback to GCS
-void Rover::log_picture()
-{
-    if (!camera.using_feedback_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    } else {
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
-        }
-    }
+    camera.control(cmd.content.digicam_control.session,
+                   cmd.content.digicam_control.zoom_pos,
+                   cmd.content.digicam_control.zoom_step,
+                   cmd.content.digicam_control.focus_lock,
+                   cmd.content.digicam_control.shooting_cmd,
+                   cmd.content.digicam_control.cmd_id);
 }
 
 #endif
 
 void Rover::do_set_reverse(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.p1 == 1) {
-        set_reverse(true);
-    } else {
-        set_reverse(false);
-    }
+    mode_auto.set_reversed(cmd.p1 == 1);
+    set_reverse(cmd.p1 == 1);
 }

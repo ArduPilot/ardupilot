@@ -7,6 +7,10 @@ name="$1"
 shift
 echo "RiTW: Starting $name : $*"
 
+if [ -z "$SITL_RITW_MINIMIZE" ]; then
+    SITL_RITW_MINIMIZE=1
+fi
+
 if [ -n "$SITL_RITW_TERMINAL" ]; then
   # create a small shell script containing the command to run; this
   # avoids problems where "screen" expects arguments in
@@ -21,13 +25,16 @@ if [ -n "$SITL_RITW_TERMINAL" ]; then
   FILENAME="ritw-`date '+%Y%m%d%H%M%S'`"
   FILEPATH="$TMPDIR/$FILENAME"
   echo "#!/bin/sh" >"$FILEPATH"
-  echo "$*" >>"$FILEPATH"
+  printf "%q " "$@" >>"$FILEPATH"
   chmod +x "$FILEPATH"
   $SITL_RITW_TERMINAL "$FILEPATH" &
 elif [ -n "$DISPLAY" -a -n "$(which osascript)" ]; then
   osascript -e 'tell application "Terminal" to do script "'"$* "'"'
 elif [ -n "$DISPLAY" -a -n "$(which xterm)" ]; then
-  xterm -iconic -xrm 'XTerm*selectToClipboard: true' -xrm 'XTerm*initialFont: 6' -n "$name" -name "$name" -T "$name" -hold -e $* &
+  if [ $SITL_RITW_MINIMIZE -eq 1 ]; then
+      ICONIC=-iconic
+  fi
+  xterm $ICONIC -xrm 'XTerm*selectToClipboard: true' -xrm 'XTerm*initialFont: 6' -n "$name" -name "$name" -T "$name" -hold -e $* &
 elif [ -n "$DISPLAY" -a -n "$(which konsole)" ]; then
   konsole --hold -e $*
 elif [ -n "$DISPLAY" -a -n "$(which gnome-terminal)" ]; then

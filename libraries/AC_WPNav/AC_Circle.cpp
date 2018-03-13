@@ -30,7 +30,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control) :
+AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
     _inav(inav),
     _ahrs(ahrs),
     _pos_control(pos_control),
@@ -144,7 +144,7 @@ void AC_Circle::update()
             _pos_control.set_xy_target(target.x, target.y);
 
             // heading is 180 deg from vehicles target position around circle
-            _yaw = wrap_PI(_angle-M_PI) * AC_CIRCLE_DEGX100;
+            _yaw = wrap_PI(_angle-M_PI) * DEGX100;
         }else{
             // set target position to center
             Vector3f target;
@@ -156,7 +156,7 @@ void AC_Circle::update()
             _pos_control.set_xy_target(target.x, target.y);
 
             // heading is same as _angle but converted to centi-degrees
-            _yaw = _angle * AC_CIRCLE_DEGX100;
+            _yaw = _angle * DEGX100;
         }
 
         // update position controller

@@ -1,5 +1,8 @@
 /*
-  24 state EKF based on https://github.com/priseborough/InertialNav
+  24 state EKF based on the derivation in https://github.com/priseborough/
+  InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/
+  GenerateNavFilterEquations.m
+
   Converted from Matlab to C++ by Paul Riseborough
 
   EKF Tuning parameters refactored by Tom Cauchois
@@ -31,13 +34,17 @@
 class NavEKF2_core;
 class AP_AHRS;
 
-class NavEKF2
-{
-public:
+class NavEKF2 {
     friend class NavEKF2_core;
-    static const struct AP_Param::GroupInfo var_info[];
 
-    NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
+public:
+    NavEKF2(const AP_AHRS *ahrs, const RangeFinder &rng);
+
+    /* Do not allow copies */
+    NavEKF2(const NavEKF2 &other) = delete;
+    NavEKF2 &operator=(const NavEKF2&) = delete;
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     // allow logging to determine the number of active cores
     uint8_t activeCores(void) const {
@@ -119,6 +126,10 @@ public:
     // Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
     uint8_t setInhibitGPS(void);
 
+    // Set the argument to true to prevent the EKF using the GPS vertical velocity
+    // This can be used for situations where GPS velocity errors are causing problems with height accuracy
+    void setInhibitGpsVertVelUse(const bool varIn) { inhibitGpsVertVelUse = varIn; };
+
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
@@ -153,16 +164,17 @@ public:
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
     bool getLLH(struct Location &loc) const;
 
-    // return the latitude and longitude and height used to set the NED origin
+    // Return the latitude and longitude and height used to set the NED origin for the specified instance
+    // An out of range instance (eg -1) returns data for the the primary instance
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(struct Location &loc) const;
+    bool getOriginLLH(int8_t instance, struct Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calcualted by the filter will be relative to this location
+    // All NED positions calculated by the filter will be relative to this location
     // The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
     // Returns false if the filter has rejected the attempt to set the origin
-    bool setOriginLLH(struct Location &loc);
+    bool setOriginLLH(const Location &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -170,13 +182,13 @@ public:
 
     // return the Euler roll, pitch and yaw angle in radians for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
-    void getEulerAngles(int8_t instance, Vector3f &eulers);
+    void getEulerAngles(int8_t instance, Vector3f &eulers) const;
 
     // return the transformation matrix from XYZ (body) to NED axes
     void getRotationBodyToNED(Matrix3f &mat) const;
 
     // return the quaternions defining the rotation from NED to XYZ (body) axes
-    void getQuaternion(Quaternion &quat) const;
+    void getQuaternion(int8_t instance, Quaternion &quat) const;
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the the primary instance
@@ -299,19 +311,27 @@ public:
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const;
 
+    // set and save the _baroAltNoise parameter
+    void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
+
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set(enable); }
 
     // are we doing sensor logging inside the EKF?
     bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
-    
+
+    // get timing statistics structure
+    void getTimingStatistics(int8_t instance, struct ekf_timing &timing);
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF2_core *core = nullptr;
     const AP_AHRS *_ahrs;
-    AP_Baro &_baro;
     const RangeFinder &_rng;
+
+    uint32_t _frameTimeUsec;        // time per IMU frame
+    uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
 
     // EKF Mavlink Tuneable Parameters
     AP_Int8  _enable;               // zero to disable EKF2
@@ -361,34 +381,36 @@ private:
     AP_Int16 _rngBcnInnovGate;      // Percentage number of standard deviations applied to range beacon innovation consistency check
     AP_Int8  _rngBcnDelay_ms;       // effective average delay of range beacon measurements rel to IMU (msec)
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
+    AP_Int8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
+    AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
 
     // Tuning parameters
-    const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
-    const float gpsDVelVarAccScale;     // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
-    const float gpsPosVarAccScale;      // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
-    const uint16_t magDelay_ms;         // Magnetometer measurement delay (msec)
-    const uint16_t tasDelay_ms;         // Airspeed measurement delay (msec)
-    const uint16_t tiltDriftTimeMax_ms;    // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
-    const uint16_t posRetryTimeUseVel_ms;  // Position aiding retry time with velocity measurements (msec)
-    const uint16_t posRetryTimeNoVel_ms;   // Position aiding retry time without velocity measurements (msec)
-    const uint16_t hgtRetryTimeMode0_ms;   // Height retry time with vertical velocity measurement (msec)
-    const uint16_t hgtRetryTimeMode12_ms;  // Height retry time without vertical velocity measurement (msec)
-    const uint16_t tasRetryTime_ms;     // True airspeed timeout and retry interval (msec)
-    const uint32_t magFailTimeLimit_ms; // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
-    const float magVarRateScale;        // scale factor applied to magnetometer variance due to angular rate
-    const float gyroBiasNoiseScaler;    // scale factor applied to gyro bias state process noise when on ground
-    const uint16_t hgtAvg_ms;           // average number of msec between height measurements
-    const uint16_t betaAvg_ms;          // average number of msec between synthetic sideslip measurements
-    const float covTimeStepMax;         // maximum time (sec) between covariance prediction updates
-    const float covDelAngMax;           // maximum delta angle between covariance prediction updates
-    const float DCM33FlowMin;           // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
-    const float fScaleFactorPnoise;     // Process noise added to focal length scale factor state variance at each time step
-    const uint8_t flowTimeDeltaAvg_ms;  // average interval between optical flow measurements (msec)
-    const uint32_t flowIntervalMax_ms;  // maximum allowable time between flow fusion events
-    const uint16_t gndEffectTimeout_ms; // time in msec that ground effect mode is active after being activated
-    const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
-    const uint8_t gndGradientSigma;     // RMS terrain gradient percentage assumed by the terrain height estimation
-    const uint8_t fusionTimeStep_ms;    // The minimum time interval between covariance predictions and measurement fusions in msec
+    const float gpsNEVelVarAccScale = 0.05f;       // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
+    const float gpsDVelVarAccScale = 0.07f;        // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
+    const float gpsPosVarAccScale = 0.05f;         // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
+    const uint8_t magDelay_ms = 60;               // Magnetometer measurement delay (msec)
+    const uint8_t tasDelay_ms = 240;              // Airspeed measurement delay (msec)
+    const uint16_t tiltDriftTimeMax_ms = 15000;    // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
+    const uint16_t posRetryTimeUseVel_ms = 10000;  // Position aiding retry time with velocity measurements (msec)
+    const uint16_t posRetryTimeNoVel_ms = 7000;    // Position aiding retry time without velocity measurements (msec)
+    const uint16_t hgtRetryTimeMode0_ms = 10000;   // Height retry time with vertical velocity measurement (msec)
+    const uint16_t hgtRetryTimeMode12_ms = 5000;   // Height retry time without vertical velocity measurement (msec)
+    const uint16_t tasRetryTime_ms = 5000;         // True airspeed timeout and retry interval (msec)
+    const uint16_t magFailTimeLimit_ms = 10000;    // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
+    const float magVarRateScale = 0.005f;          // scale factor applied to magnetometer variance due to angular rate
+    const float gyroBiasNoiseScaler = 2.0f;        // scale factor applied to gyro bias state process noise when on ground
+    const uint8_t hgtAvg_ms = 100;                // average number of msec between height measurements
+    const uint8_t betaAvg_ms = 100;               // average number of msec between synthetic sideslip measurements
+    const float covTimeStepMax = 0.1f;             // maximum time (sec) between covariance prediction updates
+    const float covDelAngMax = 0.05f;              // maximum delta angle between covariance prediction updates
+    const float DCM33FlowMin = 0.71f;              // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
+    const float fScaleFactorPnoise = 1e-10f;       // Process noise added to focal length scale factor state variance at each time step
+    const uint8_t flowTimeDeltaAvg_ms = 100;       // average interval between optical flow measurements (msec)
+    const uint8_t flowIntervalMax_ms = 100;       // maximum allowable time between flow fusion events
+    const uint16_t gndEffectTimeout_ms = 1000;     // time in msec that ground effect mode is active after being activated
+    const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
+    const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
+    const uint8_t fusionTimeStep_ms = 10;          // The minimum time interval between covariance predictions and measurement fusions in msec
 
     struct {
         bool enabled:1;
@@ -423,6 +445,8 @@ private:
     } pos_down_reset_data;
 
     bool runCoreSelection; // true when the primary core has stabilised and the core selection logic can be started
+
+    bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
 
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary

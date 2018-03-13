@@ -161,37 +161,33 @@ def check_package(cfg, env, libname):
     '''use pkg-config to look for an installed library that has a LIBNAME.pc file'''
     capsname = libname.upper()
 
-    # we don't want check_cfg() changing the global environment during
-    # this test, in case it fails in the 2nd link step
     cfg.env.stash()
 
-    cfg.check_cfg(package=libname, mandatory=False, global_define=True,
-                  args=['--libs', '--cflags'], uselib_store=capsname)
+    if not cfg.check_cfg(package=libname, mandatory=False, global_define=True,
+                         args=['--libs', '--cflags'], uselib_store=capsname):
+        # Don't even try to link if check_cfg fails
+        cfg.env.revert()
+        return False
 
-    # we need to also check that we can link against the lib. We may
-    # have a pc file for the package, but its the wrong
-    # architecture. This can happen as PKG_CONFIG_PATH is not
-    # architecture specific
-    cfg.env.LIB += cfg.env['LIB_%s' % capsname]
-    cfg.env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
-    cfg.env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
-    cfg.env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
+    if not cfg.check(compiler='cxx',
+            fragment='''int main() { return 0; }''',
+            msg='Checking link with %s' % libname,
+            mandatory=False,
+            lib=libname,
+            use=capsname):
+        cfg.env.revert()
+        return False
 
-    ret = cfg.check(
-        compiler='cxx',
-        fragment='''int main() { return 0; }''',
-        msg='Testing link with %s' % libname,
-        mandatory=False,
-        lib='dl'
-    )
+    cfg.env.commit()
 
-    if ret:
-        env.LIB += cfg.env['LIB_%s' % capsname]
-        env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
-        env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
-        env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
+    # Add to global environment:
+    # we always want to use the library for all targets
+    env.LIB += cfg.env['LIB_%s' % capsname]
+    env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
+    env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
+    env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
 
-    cfg.env.revert()
+    return True
 
 @conf
 def check_lttng(cfg, env):
@@ -203,8 +199,7 @@ def check_lttng(cfg, env):
         cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
         return False
 
-    check_package(cfg, env, 'lttng-ust')
-    return True
+    return check_package(cfg, env, 'lttng-ust')
 
 @conf
 def check_libiio(cfg, env):
@@ -216,8 +211,7 @@ def check_libiio(cfg, env):
         cfg.msg("Checking for 'libiio':", 'disabled', color='YELLOW')
         return False
 
-    check_package(cfg, env, 'libiio')
-    return True
+    return check_package(cfg, env, 'libiio')
 
 @conf
 def check_libdl(cfg, env):

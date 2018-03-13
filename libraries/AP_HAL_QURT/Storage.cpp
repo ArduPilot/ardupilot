@@ -39,7 +39,7 @@ void Storage::write_block(uint16_t loc, const void *src, size_t n)
         return;
     }
     if (memcmp(src, &buffer[loc], n) != 0) {
-        lock.take(0);
+        lock.take(HAL_SEMAPHORE_BLOCK_FOREVER);
         memcpy(&buffer[loc], src, n);
         dirty = true;
         lock.give();

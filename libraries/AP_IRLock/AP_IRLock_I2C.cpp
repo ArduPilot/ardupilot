@@ -32,9 +32,13 @@ extern const AP_HAL::HAL& hal;
 
 #define IRLOCK_SYNC			0xAA55AA55
 
-void AP_IRLock_I2C::init()
+void AP_IRLock_I2C::init(int8_t bus)
 {
-    dev = std::move(hal.i2c_mgr->get_device(1, IRLOCK_I2C_ADDRESS));
+    if (bus < 0) {
+        // default to i2c external bus
+        bus = 1;
+    }
+    dev = std::move(hal.i2c_mgr->get_device(bus, IRLOCK_I2C_ADDRESS));
     if (!dev) {
         return;
     }
@@ -128,7 +132,7 @@ void AP_IRLock_I2C::read_frames(void)
     pixel_to_1M_plane(corner1_pix_x, corner1_pix_y, corner1_pos_x, corner1_pos_y);
     pixel_to_1M_plane(corner2_pix_x, corner2_pix_y, corner2_pos_x, corner2_pos_y);
 
-    if (sem->take(0)) {
+    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         /* convert to angles */
         _target_info.timestamp = AP_HAL::millis();
         _target_info.pos_x = 0.5f*(corner1_pos_x+corner2_pos_x);
@@ -157,7 +161,7 @@ bool AP_IRLock_I2C::update()
     if (!dev || !sem) {
         return false;
     }
-    if (sem->take(0)) {
+    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         if (_last_update_ms != _target_info.timestamp) {
             new_data = true;
         }

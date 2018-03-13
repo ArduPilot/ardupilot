@@ -1,7 +1,0 @@
-int32 a
-rosgraph_msgs/Log log
-string s
-rosgraph_msgs/Clock time
-int32 b
-duration d
-time t

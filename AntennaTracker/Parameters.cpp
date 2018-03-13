@@ -21,7 +21,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: SYSID_SW_TYPE
     // @DisplayName: Software Type
     // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
-    // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover
+    // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover,40:ArduSub
     // @User: Advanced
     // @ReadOnly: True
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
@@ -57,7 +57,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: YAW_SLEW_TIME
     // @DisplayName: Time for yaw to slew through its full range
     // @Description: This controls how rapidly the tracker will change the servo output for yaw. It is set as the number of seconds to do a full rotation. You can use this parameter to slow the trackers movements, which may help with some types of trackers. A value of zero will allow for unlimited servo movement per update.
-    // @Units: seconds
+    // @Units: s
     // @Increment: 0.1
     // @Range: 0 20
     // @User: Standard
@@ -66,7 +66,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH_SLEW_TIME
     // @DisplayName: Time for pitch to slew through its full range
     // @Description: This controls how rapidly the tracker will change the servo output for pitch. It is set as the number of seconds to do a full range of pitch movement. You can use this parameter to slow the trackers movements, which may help with some types of trackers. A value of zero will allow for unlimited servo movement per update.
-    // @Units: seconds
+    // @Units: s
     // @Increment: 0.1
     // @Range: 0 20
     // @User: Standard
@@ -75,7 +75,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: SCAN_SPEED
     // @DisplayName: Speed at which to rotate in scan mode
     // @Description: This controls how rapidly the tracker will move the servos in SCAN mode
-    // @Units: degrees/second
+    // @Units: deg/s
     // @Increment: 1
     // @Range: 0 100
     // @User: Standard
@@ -84,7 +84,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: MIN_REVERSE_TIME
     // @DisplayName: Minimum time to apply a yaw reversal
     // @Description: When the tracker detects it has reached the limit of servo movement in yaw it will reverse and try moving to the other extreme of yaw. This parameter controls the minimum time it should reverse for. It is used to cope with trackers that have a significant lag in movement to ensure they do move all the way around.
-    // @Units: seconds
+    // @Units: s
     // @Increment: 1
     // @Range: 0 20
     // @User: Standard
@@ -93,7 +93,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: START_LATITUDE
     // @DisplayName: Initial Latitude before GPS lock
     // @Description: Combined with START_LONGITUDE this parameter allows for an initial position of the tracker to be set. This position will be used until the GPS gets lock. It can also be used to run a stationary tracker with no GPS attached.
-    // @Units: degrees
+    // @Units: deg
     // @Increment: 0.000001
     // @Range: -90 90
     // @User: Standard
@@ -102,7 +102,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: START_LONGITUDE
     // @DisplayName: Initial Longitude before GPS lock
     // @Description: Combined with START_LATITUDE this parameter allows for an initial position of the tracker to be set. This position will be used until the GPS gets lock. It can also be used to run a stationary tracker with no GPS attached.
-    // @Units: degrees
+    // @Units: deg
     // @Increment: 0.000001
     // @Range: -180 180
     // @User: Standard
@@ -111,7 +111,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: STARTUP_DELAY
     // @DisplayName: Delay before first servo movement from trim
     // @Description: This parameter can be used to force the servos to their trim value for a time on startup. This can help with some servo types
-    // @Units: seconds
+    // @Units: s
     // @Increment: 0.1
     // @Range: 0 10
     // @User: Standard
@@ -134,7 +134,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: ONOFF_YAW_RATE
     // @DisplayName: Yaw rate for on/off servos
     // @Description: Rate of change of yaw in degrees/second for on/off servos
-    // @Units: degrees/second
+    // @Units: deg/s
     // @Increment: 0.1
     // @Range: 0 50
     // @User: Standard
@@ -143,7 +143,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: ONOFF_PITCH_RATE
     // @DisplayName: Pitch rate for on/off servos
     // @Description: Rate of change of pitch in degrees/second for on/off servos
-    // @Units: degrees/second
+    // @Units: deg/s
     // @Increment: 0.1
     // @Range: 0 50
     // @User: Standard
@@ -152,7 +152,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: ONOFF_YAW_MINT
     // @DisplayName: Yaw minimum movement time
     // @Description: Minimum amount of time in seconds to move in yaw
-    // @Units: seconds
+    // @Units: s
     // @Increment: 0.01
     // @Range: 0 2
     // @User: Standard
@@ -161,7 +161,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: ONOFF_PITCH_MINT
     // @DisplayName: Pitch minimum movement time
     // @Description: Minimim amount of time in seconds to move in pitch
-    // @Units: seconds
+    // @Units: s
     // @Increment: 0.01
     // @Range: 0 2
     // @User: Standard
@@ -170,7 +170,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: YAW_TRIM
     // @DisplayName: Yaw trim
     // @Description: Amount of extra yaw to add when tracking. This allows for small adjustments for an out of trim compass.
-    // @Units: degrees
+    // @Units: deg
     // @Increment: 0.1
     // @Range: -10 10
     // @User: Standard
@@ -179,7 +179,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH_TRIM
     // @DisplayName: Pitch trim
     // @Description: Amount of extra pitch to add when tracking. This allows for small adjustments for a badly calibrated barometer.
-    // @Units: degrees
+    // @Units: deg
     // @Increment: 0.1
     // @Range: -10 10
     // @User: Standard
@@ -188,7 +188,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: YAW_RANGE
     // @DisplayName: Yaw Angle Range
     // @Description: Yaw axis total range of motion in degrees
-    // @Units: degrees
+    // @Units: deg
     // @Increment: 0.1
     // @Range: 0 360
     // @User: Standard
@@ -197,7 +197,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: DISTANCE_MIN
     // @DisplayName: Distance minimum to target
     // @Description: Tracker will track targets at least this distance away
-    // @Units: meters
+    // @Units: m
     // @Increment: 1
     // @Range: 0 100
     // @User: Standard
@@ -222,7 +222,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH_MIN
     // @DisplayName: Minimum Pitch Angle
     // @Description: The lowest angle the pitch can reach
-    // @Units: Degrees
+    // @Units: deg
     // @Increment: 1
     // @Range: -90 0
     // @User: Standard
@@ -231,7 +231,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH_MAX
     // @DisplayName: Maximum Pitch Angle
     // @Description: The highest angle the pitch can reach
-    // @Units: Degrees
+    // @Units: deg
     // @Increment: 1
     // @Range: 0 90
     // @User: Standard
@@ -253,25 +253,25 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[0], gcs0,        "SR0_",     GCS_MAVLINK),
+    GOBJECTN(gcs().chan(0), gcs0,        "SR0_",     GCS_MAVLINK),
 
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
+    GOBJECTN(gcs().chan(1),  gcs1,       "SR1_",     GCS_MAVLINK),
 
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
+    GOBJECTN(gcs().chan(2),  gcs2,       "SR2_",     GCS_MAVLINK),
 
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
-    GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
+    GOBJECTN(gcs().chan(3),  gcs3,       "SR3_",     GCS_MAVLINK),
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 4 byte bitmap of log types to enable
-    // @Values: 63:Default,0:Disabled
-    // @Bitmask: 0:ATTITUDE,1:GPS,2:RCIN,3:IMU,4:RCOUT,5:COMPASS
+    // @Values: 127:Default,0:Disabled
+    // @Bitmask: 0:ATTITUDE,1:GPS,2:RCIN,3:IMU,4:RCOUT,5:COMPASS,6:Battery
     // @User: Standard
     GSCALAR(log_bitmask, "LOG_BITMASK", DEFAULT_LOG_BITMASK),
 
@@ -292,6 +292,12 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Group: BRD_
     // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
     GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
+
+#if HAL_WITH_UAVCAN
+    // @Group: CAN_
+    // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig_CAN.cpp
+    GOBJECT(BoardConfig_CAN,        "CAN_",       AP_BoardConfig_CAN),
+#endif
 
     // GPS driver
     // @Group: GPS_
@@ -331,7 +337,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Description: Pitch axis controller I gain maximum.  Constrains the maximum pwm change that the I gain will output
     // @Range: 0 4000
     // @Increment: 10
-    // @Units: Percent*10
+    // @Units: d%
     // @User: Standard
 
     // @Param: PITCH2SRV_D
@@ -361,7 +367,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Description: Yaw axis controller I gain maximum.  Constrains the maximum pwm change that the I gain will output
     // @Range: 0 4000
     // @Increment: 10
-    // @Units: Percent*10
+    // @Units: d%
     // @User: Standard
 
     // @Param: YAW2SRV_D
@@ -379,6 +385,9 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Advanced
     GSCALAR(command_total,          "CMD_TOTAL",      0),
 
+    // @Group: BATT
+    // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
+    GOBJECT(battery,                "BATT", AP_BattMonitor),
 
     AP_VAREND
 };

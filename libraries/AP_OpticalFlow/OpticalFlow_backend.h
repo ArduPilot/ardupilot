@@ -54,8 +54,8 @@ protected:
     // get access to AHRS object
     AP_AHRS_NavEKF &get_ahrs(void) { return frontend._ahrs; }
 
-    // get bus ID parameter
-    uint8_t get_bus_id(void) const { return frontend._bus_id; }
+    // get ADDR parameter value
+    uint8_t get_address(void) const { return frontend._address; }
     
     // semaphore for access to shared frontend data
     AP_HAL::Semaphore *_sem;

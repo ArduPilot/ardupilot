@@ -14,12 +14,9 @@ def build(bld):
             'AP_Arming',
             'AP_Camera',
             'AP_L1_Control',
-            'AP_Menu',
             'AP_Navigation',
             'AP_Parachute',
             'AP_RCMapper',
-            'AP_Relay',
-            'AP_ServoRelayEvents',
             'AP_SpdHgtControl',
             'AP_TECS',
             'AP_InertialNav',
@@ -33,6 +30,9 @@ def build(bld):
             'AP_Stats',
             'AP_Landing',
             'AP_Beacon',
+            'PID',
+            'AP_Soaring',
+            'AP_Gripper'
         ],
     )
 

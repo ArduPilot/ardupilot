@@ -21,8 +21,8 @@
 
 // PWM
 
-// 920 us
-#define PWM_PULSE_DEFAULT (920 * TICK_PER_US)
+// 0 us
+#define PWM_PULSE_DEFAULT (0 * TICK_PER_US)
 
 // 50 Hz
 #define PWM_FREQ_DEFAULT (20 * TICK_PER_MS)
@@ -152,6 +152,15 @@
 #define RC_CH_8_PIN r30.t5
 #endif
 
+#ifdef POCKET
+#define RC_CH_1_PIN r30.t9
+#define RC_CH_2_PIN r30.t11
+#define RC_CH_3_PIN r30.t15
+#define RC_CH_4_PIN r30.t14
+#define RC_CH_5_PIN r30.t10
+#define RC_CH_6_PIN r30.t8
+#endif
+
 // RCOut enable bits
 #define RC_CH_1_ENABLE register.ch_enable.t0
 #define RC_CH_2_ENABLE register.ch_enable.t1
@@ -213,6 +222,9 @@ pwm:
 
          // Calculate time to next event
          add CH_X_NEXT_TIME, CH_X_NEXT_TIME, register.temp
+
+         // Do not set pin if pulse time is 0
+         qbeq pwmend, register.temp, 0
 
          // Check if channel is enabled 
          qbbc pwmend, CH_X_ENABLE
@@ -330,7 +342,7 @@ rcin_ecap_end:
    mov register.ch_enable, 0x0
    sbco register.ch_enable, RAM, CH_ENABLE_RAM_OFFSET, 4
 
-   // Initialize PWM pulse (920us)
+   // Initialize PWM pulse (0us)
    mov register.temp, PWM_PULSE_DEFAULT
    sbco register.temp, RAM, CH_1_PULSE_TIME_RAM_OFFSET, 4 
    sbco register.temp, RAM, CH_2_PULSE_TIME_RAM_OFFSET, 4
@@ -387,9 +399,13 @@ mainloop:
    RCOUT_PWM RC_CH_4_PIN, register.ch_4_next_time, RC_CH_4_ENABLE, CH_4_PULSE_TIME_RAM_OFFSET, CH_4_T_TIME_RAM_OFFSET
    RCOUT_PWM RC_CH_5_PIN, register.ch_5_next_time, RC_CH_5_ENABLE, CH_5_PULSE_TIME_RAM_OFFSET, CH_5_T_TIME_RAM_OFFSET
    RCOUT_PWM RC_CH_6_PIN, register.ch_6_next_time, RC_CH_6_ENABLE, CH_6_PULSE_TIME_RAM_OFFSET, CH_6_T_TIME_RAM_OFFSET
+#ifdef BBBLUE
    RCOUT_PWM RC_CH_7_PIN, register.ch_7_next_time, RC_CH_7_ENABLE, CH_7_PULSE_TIME_RAM_OFFSET, CH_7_T_TIME_RAM_OFFSET
    RCOUT_PWM RC_CH_8_PIN, register.ch_8_next_time, RC_CH_8_ENABLE, CH_8_PULSE_TIME_RAM_OFFSET, CH_8_T_TIME_RAM_OFFSET
+#endif
 #ifdef BBBMINI
+   RCOUT_PWM RC_CH_7_PIN, register.ch_7_next_time, RC_CH_7_ENABLE, CH_7_PULSE_TIME_RAM_OFFSET, CH_7_T_TIME_RAM_OFFSET
+   RCOUT_PWM RC_CH_8_PIN, register.ch_8_next_time, RC_CH_8_ENABLE, CH_8_PULSE_TIME_RAM_OFFSET, CH_8_T_TIME_RAM_OFFSET
    RCOUT_PWM RC_CH_9_PIN, register.ch_9_next_time, RC_CH_9_ENABLE, CH_9_PULSE_TIME_RAM_OFFSET, CH_9_T_TIME_RAM_OFFSET
    RCOUT_PWM RC_CH_10_PIN, register.ch_10_next_time, RC_CH_10_ENABLE, CH_10_PULSE_TIME_RAM_OFFSET, CH_10_T_TIME_RAM_OFFSET
    RCOUT_PWM RC_CH_11_PIN, register.ch_11_next_time, RC_CH_11_ENABLE, CH_11_PULSE_TIME_RAM_OFFSET, CH_11_T_TIME_RAM_OFFSET

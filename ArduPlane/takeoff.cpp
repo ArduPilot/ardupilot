@@ -17,7 +17,6 @@ bool Plane::auto_takeoff_check(void)
 
     // Reset states if process has been interrupted
     if (takeoff_state.last_check_ms && (now - takeoff_state.last_check_ms) > 200) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timer interrupted AUTO");
 	    takeoff_state.launchTimerStarted = false;
 	    takeoff_state.last_tkoff_arm_time = 0;
         takeoff_state.last_check_ms = now;
@@ -33,7 +32,8 @@ bool Plane::auto_takeoff_check(void)
     }
 
     // Check for launch acceleration if set. NOTE: relies on TECS 50Hz processing
-    if (!is_zero(g.takeoff_throttle_min_accel) &&
+    if (!takeoff_state.launchTimerStarted &&
+        !is_zero(g.takeoff_throttle_min_accel) &&
         SpdHgt_Controller->get_VXdot() < g.takeoff_throttle_min_accel) {
         goto no_launch;
     }
@@ -43,7 +43,7 @@ bool Plane::auto_takeoff_check(void)
         takeoff_state.launchTimerStarted = true;
         takeoff_state.last_tkoff_arm_time = now;
         if (now - takeoff_state.last_report_ms > 2000) {
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec",
+            gcs().send_text(MAV_SEVERITY_INFO, "Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec",
                               (double)SpdHgt_Controller->get_VXdot(), (double)(wait_time_ms*0.001f));
             takeoff_state.last_report_ms = now;
         }
@@ -52,24 +52,26 @@ bool Plane::auto_takeoff_check(void)
     // Only perform velocity check if not timed out
     if ((now - takeoff_state.last_tkoff_arm_time) > wait_time_ms+100U) {
         if (now - takeoff_state.last_report_ms > 2000) {
-            gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timeout AUTO");
+            gcs().send_text(MAV_SEVERITY_WARNING, "Timeout AUTO");
             takeoff_state.last_report_ms = now;
         }
         goto no_launch;
     }
 
-    // Check aircraft attitude for bad launch
-    if (ahrs.pitch_sensor <= -3000 ||
-        ahrs.pitch_sensor >= 4500 ||
-        (!fly_inverted() && labs(ahrs.roll_sensor) > 3000)) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad launch AUTO");
-        goto no_launch;
+    if (!quadplane.is_tailsitter()) {
+        // Check aircraft attitude for bad launch
+        if (ahrs.pitch_sensor <= -3000 ||
+            ahrs.pitch_sensor >= 4500 ||
+            (!fly_inverted() && labs(ahrs.roll_sensor) > 3000)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Bad launch AUTO");
+            goto no_launch;
+        }
     }
 
     // Check ground speed and time delay
     if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
         ((now - takeoff_state.last_tkoff_arm_time) >= wait_time_ms)) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
+        gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
         takeoff_state.launchTimerStarted = false;
         takeoff_state.last_tkoff_arm_time = 0;
         steer_state.locked_course_err = 0; // use current heading without any error offset
@@ -142,6 +144,20 @@ void Plane::takeoff_calc_pitch(void)
         nav_pitch_cd = ((gps.ground_speed()*100) / (float)aparm.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
         nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
     }
+
+    if (aparm.stall_prevention != 0) {
+        if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF) {
+            // during takeoff we want to prioritise roll control over
+            // pitch. Apply a reduction in pitch demand if our roll is
+            // significantly off. The aim of this change is to
+            // increase the robustness of hand launches, particularly
+            // in cross-winds. If we start to roll over then we reduce
+            // pitch demand until the roll recovers
+            float roll_error_rad = radians(constrain_float(labs(nav_roll_cd - ahrs.roll_sensor) * 0.01, 0, 90));
+            float reduction = sq(cosf(roll_error_rad));
+            nav_pitch_cd *= reduction;
+        }
+    }
 }
 
 /*
@@ -171,7 +187,7 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
                 relative_alt_cm >= 1000 &&
                 sec_to_target <= g.takeoff_pitch_limit_reduction_sec) {
                 // make a note of that altitude to use it as a start height for scaling
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", remaining_height_to_target_cm/100);
+                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", remaining_height_to_target_cm/100);
                 auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
             }
         }
@@ -216,7 +232,7 @@ int8_t Plane::takeoff_tail_hold(void)
 
 return_zero:
     if (auto_state.fbwa_tdrag_takeoff_mode) {
-        gcs_send_text(MAV_SEVERITY_NOTICE, "FBWA tdrag off");
+        gcs().send_text(MAV_SEVERITY_NOTICE, "FBWA tdrag off");
         auto_state.fbwa_tdrag_takeoff_mode = false;
     }
     return 0;
@@ -231,9 +247,9 @@ void Plane::complete_auto_takeoff(void)
 #if GEOFENCE_ENABLED == ENABLED
     if (g.fence_autoenable > 0) {
         if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
-            gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
         } else {
-            gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");
+            gcs().send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");
         }
     }
 #endif

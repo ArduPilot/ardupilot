@@ -63,7 +63,7 @@ void SITL_State::_sitl_setup(const char *home_str)
 {
     _home_str = home_str;
 
-#ifndef __CYGWIN__
+#if !defined(__CYGWIN__) && !defined(__CYGWIN64__)
     _parent_pid = getppid();
 #endif
     _rcout_addr.sin_family = AF_INET;
@@ -87,10 +87,9 @@ void SITL_State::_sitl_setup(const char *home_str)
     if (_sitl != nullptr) {
         // setup some initial values
 #ifndef HIL_MODE
-        _update_barometer(100);
-        _update_ins(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0, 100);
-        _update_compass(0, 0, 0);
+        _update_airspeed(0);
         _update_gps(0, 0, 0, 0, 0, 0, false);
+        _update_rangefinder(0);
 #endif
         if (enable_gimbal) {
             gimbal = new SITL::Gimbal(_sitl->state);
@@ -100,6 +99,8 @@ void SITL_State::_sitl_setup(const char *home_str)
             fg_socket.connect("127.0.0.1", _fg_view_port);
         }
 
+        fprintf(stdout, "Using Irlock at port : %d\n", _irlock_port);
+        _sitl->irlock_port = _irlock_port;
     }
 
     if (_synthetic_clock_mode) {
@@ -116,7 +117,8 @@ void SITL_State::_sitl_setup(const char *home_str)
 void SITL_State::_setup_fdm(void)
 {
     if (!_sitl_rc_in.bind("0.0.0.0", _rcin_port)) {
-        fprintf(stderr, "SITL: socket bind failed - %s\n", strerror(errno));
+        fprintf(stderr, "SITL: socket bind failed on RC in port : %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Abording launch...\n");
         exit(1);
     }
     _sitl_rc_in.reuseaddress();
@@ -153,7 +155,6 @@ void SITL_State::_fdm_input_step(void)
 
     if (_update_count == 0 && _sitl != nullptr) {
         _update_gps(0, 0, 0, 0, 0, 0, false);
-        _update_barometer(0);
         _scheduler->timer_event();
         _scheduler->sitl_end_atomic();
         return;
@@ -164,12 +165,8 @@ void SITL_State::_fdm_input_step(void)
                     _sitl->state.altitude,
                     _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
                     !_sitl->gps_disable);
-        _update_ins(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg,
-                    _sitl->state.rollRate, _sitl->state.pitchRate, _sitl->state.yawRate,
-                    _sitl->state.xAccel, _sitl->state.yAccel, _sitl->state.zAccel,
-                    _sitl->state.airspeed, _sitl->state.altitude);
-        _update_barometer(_sitl->state.altitude);
-        _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
+        _update_airspeed(_sitl->state.airspeed);
+        _update_rangefinder(_sitl->state.range);
 
         if (_sitl->adsb_plane_count >= 0 &&
             adsb == nullptr) {
@@ -326,7 +323,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
      * to change */
     uint8_t i;
 
-    if (last_update_usec == 0) {
+    if (last_update_usec == 0 || !output_ready) {
         for (i=0; i<SITL_NUM_CHANNELS; i++) {
             pwm_output[i] = 1000;
         }
@@ -346,10 +343,12 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     float altitude = _barometer?_barometer->get_altitude():0;
     float wind_speed = 0;
     float wind_direction = 0;
+    float wind_dir_z = 0;
     if (_sitl) {
         // The EKF does not like step inputs so this LPF keeps it happy.
-        wind_speed = _sitl->wind_speed_active = (0.95f*_sitl->wind_speed_active) + (0.05f*_sitl->wind_speed);
+        wind_speed =     _sitl->wind_speed_active     = (0.95f*_sitl->wind_speed_active)     + (0.05f*_sitl->wind_speed);
         wind_direction = _sitl->wind_direction_active = (0.95f*_sitl->wind_direction_active) + (0.05f*_sitl->wind_direction);
+        wind_dir_z =     _sitl->wind_dir_z_active     = (0.95f*_sitl->wind_dir_z_active)     + (0.05f*_sitl->wind_dir_z);
     }
 
     if (altitude < 0) {
@@ -362,6 +361,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     input.wind.speed = wind_speed;
     input.wind.direction = wind_direction;
     input.wind.turbulence = _sitl?_sitl->wind_turbulance:0;
+    input.wind.dir_z = wind_dir_z;
 
     for (i=0; i<SITL_NUM_CHANNELS; i++) {
         if (pwm_output[i] == 0xFFFF) {
@@ -372,27 +372,27 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     }
 
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
+    uint8_t engine_fail = _sitl?_sitl->engine_fail.get():0;
     bool motors_on = false;
     
+    if (engine_fail >= ARRAY_SIZE(input.servos)) {
+        engine_fail = 0;
+    }
+    // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
+    if (_vehicle != APMrover2) {
+        input.servos[engine_fail] = ((input.servos[engine_fail]-1000) * engine_mul) + 1000;
+    } else {
+        input.servos[engine_fail] = static_cast<uint16_t>(((input.servos[engine_fail] - 1500) * engine_mul) + 1500);
+    }
+    
     if (_vehicle == ArduPlane) {
-        // add in engine multiplier
-        if (input.servos[2] > 1000) {
-            input.servos[2] = ((input.servos[2]-1000) * engine_mul) + 1000;
-            if (input.servos[2] > 2000) input.servos[2] = 2000;
-        }
-        motors_on = ((input.servos[2]-1000)/1000.0f) > 0;
+        motors_on = ((input.servos[2] - 1000) / 1000.0f) > 0;
     } else if (_vehicle == APMrover2) {
-        // add in engine multiplier
-        if (input.servos[2] != 1500) {
-            input.servos[2] = ((input.servos[2]-1500) * engine_mul) + 1500;
-            if (input.servos[2] > 2000) input.servos[2] = 2000;
-            if (input.servos[2] < 1000) input.servos[2] = 1000;
-        }
-        motors_on = ((input.servos[2]-1500)/500.0f) != 0;
+        input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
+        input.servos[0] = static_cast<uint16_t>(constrain_int16(input.servos[0], 1000, 2000));
+        motors_on = ((input.servos[2] - 1500) / 500.0f) != 0;
     } else {
         motors_on = false;
-        // apply engine multiplier to first motor
-        input.servos[0] = ((input.servos[0]-1000) * engine_mul) + 1000;
         // run checks on each motor
         for (i=0; i<4; i++) {
             // check motors do not exceed their limits
@@ -413,13 +413,27 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     
     if (_sitl != nullptr) {
         if (_sitl->state.battery_voltage <= 0) {
-            // simulate simple battery setup
-            float throttle = motors_on?(input.servos[2]-1000) / 1000.0f:0;
-            // lose 0.7V at full throttle
-            voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
-            
-            // assume 50A at full throttle
-            _current = 50.0f * fabsf(throttle);
+            if (_vehicle == ArduSub) {
+                voltage = _sitl->batt_voltage;
+                for (i = 0; i < 6; i++) {
+                    float pwm = input.servos[i];
+                    //printf("i: %d, pwm: %.2f\n", i, pwm);
+                    float fraction = fabsf((pwm - 1500) / 500.0f);
+
+                    voltage -= fraction * 0.5f;
+
+                    float draw = fraction * 15;
+                    _current += draw;
+                }
+            } else {
+                // simulate simple battery setup
+                float throttle = motors_on?(input.servos[2]-1000) / 1000.0f:0;
+                // lose 0.7V at full throttle
+                voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
+
+                // assume 50A at full throttle
+                _current = 50.0f * fabsf(throttle);
+            }
         } else {
             // FDM provides voltage and current
             voltage = _sitl->state.battery_voltage;
@@ -431,26 +445,6 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     voltage_pin_value = ((voltage / 10.1f) / 5.0f) * 1024;
     current_pin_value = ((_current / 17.0f) / 5.0f) * 1024;
 }
-
-
-// generate a random float between -1 and 1
-float SITL_State::_rand_float(void)
-{
-    return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
-}
-
-// generate a random Vector3f of size 1
-Vector3f SITL_State::_rand_vec3f(void)
-{
-    Vector3f v = Vector3f(_rand_float(),
-                          _rand_float(),
-                          _rand_float());
-    if (v.length() != 0.0f) {
-        v.normalize();
-    }
-    return v;
-}
-
 
 void SITL_State::init(int argc, char * const argv[])
 {

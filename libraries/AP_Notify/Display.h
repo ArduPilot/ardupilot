@@ -5,7 +5,7 @@
 #define ROW(Y)    ((Y * 10) + 6)
 #define COLUMN(X) ((X *  7) + 0)
 
-#define DISPLAY_MESSAGE_SIZE 18
+#define DISPLAY_MESSAGE_SIZE 19
 
 class Display_Backend;
 
@@ -28,13 +28,17 @@ private:
     void update_battery(uint8_t r);
     void update_mode(uint8_t r);
     void update_text(uint8_t r);
+    void update_text_empty(uint8_t r);
 
     Display_Backend *_driver;
 
     bool _healthy;
 
-    uint8_t _mstartpos;
-    uint8_t _movedelay;
+    uint8_t _mstartpos; // ticker shift position
+    uint8_t _movedelay; // ticker delay before shifting after new message displayed
     uint8_t _screenpage;
+
+    // stop showing text in display after this many millis:
+    const uint16_t _send_text_valid_millis = 20000;
 };
 

@@ -29,9 +29,6 @@ public:
     // you must have setup_motors before calling this
     void                set_update_rate(uint16_t speed_hz);
 
-    // enable - starts allowing signals to be sent to motors
-    void                enable();
-
     // output_test - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
@@ -61,7 +58,7 @@ protected:
     void                remove_motor(int8_t motor_num);
 
     // configures the motors for the defined frame_class and frame_type
-    void                setup_motors(motor_frame_class frame_class, motor_frame_type frame_type);
+    virtual void        setup_motors(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // normalizes the roll, pitch and yaw factors so maximum magnitude is 0.5
     void                normalise_rpy_factors();
