@@ -97,8 +97,13 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
 // set desired location
 void Mode::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
-    // record targets
-    _origin = rover.current_loc;
+    // set origin to last destination if waypoint controller active
+    if ((AP_HAL::millis() - last_steer_to_wp_ms < 100) && _reached_destination) {
+        _origin = _destination;
+    } else {
+        // otherwise use reasonable stopping point
+        calc_stopping_location(_origin);
+    }
     _destination = destination;
 
     // initialise distance
@@ -302,6 +307,9 @@ float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
 // this function updates the _yaw_error_cd value
 void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed)
 {
+    // record system time of call
+    last_steer_to_wp_ms = AP_HAL::millis();
+
     // Calculate the required turn of the wheels
     // negative error = left turn
     // positive error = right turn
@@ -350,4 +358,29 @@ void Mode::calc_steering_to_heading(float desired_heading_cd, bool reversed)
     const float yaw_error = wrap_PI(radians((desired_heading_cd - ahrs.yaw_sensor) * 0.01f));
     const float steering_out = attitude_control.get_steering_out_angle_error(yaw_error, g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right, reversed);
     g2.motors.set_steering(steering_out * 4500.0f);
+}
+
+// calculate vehicle stopping point using current location, velocity and maximum acceleration
+void Mode::calc_stopping_location(Location& stopping_loc)
+{
+    // default stopping location
+    stopping_loc = rover.current_loc;
+
+    // get current velocity vector and speed
+    const Vector2f velocity = ahrs.groundspeed_vector();
+    const float speed = velocity.length();
+
+    // avoid divide by zero
+    if (!is_positive(speed)) {
+        stopping_loc = rover.current_loc;
+        return;
+    }
+
+    // get stopping distance in meters
+    const float stopping_dist = attitude_control.get_stopping_distance(speed);
+
+    // calculate stopping position from current location in meters
+    const Vector2f stopping_offset = velocity.normalized() * stopping_dist;
+
+    location_offset(stopping_loc, stopping_offset.x, stopping_offset.y);
 }

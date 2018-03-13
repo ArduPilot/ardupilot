@@ -136,6 +136,9 @@ protected:
     // relies on these internal members being updated: lateral_acceleration, _yaw_error_cd, _distance_to_destination
     float calc_reduced_speed_for_turn_or_distance(float desired_speed);
 
+    // calculate vehicle stopping location using current location, velocity and maximum acceleration
+    void calc_stopping_location(Location& stopping_loc);
+
     // references to avoid code churn:
     class AP_AHRS &ahrs;
     class Parameters &g;
@@ -156,6 +159,7 @@ protected:
     float _desired_speed;       // desired speed in m/s
     float _desired_speed_final; // desired speed in m/s when we reach the destination
     float _speed_error;         // ground speed error in m/s
+    uint32_t last_steer_to_wp_ms;   // system time of last call to calc_steering_to_waypoint
 };
 
 
