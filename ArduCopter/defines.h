@@ -311,30 +311,28 @@ enum DevOptions {
     DevOptionADSBMAVLink = 1,
 };
 
-//  Logging parameters
-#define TYPE_AIRSTART_MSG               0x00
-#define TYPE_GROUNDSTART_MSG            0x01
-#define LOG_CONTROL_TUNING_MSG          0x04
-#define LOG_NAV_TUNING_MSG              0x05
-#define LOG_OPTFLOW_MSG                 0x0C
-#define LOG_EVENT_MSG                   0x0D
-#define LOG_PID_MSG                     0x0E    // deprecated
-#define LOG_INAV_MSG                    0x11    // deprecated
-#define LOG_CAMERA_MSG_DEPRECATED       0x12    // deprecated
-#define LOG_ERROR_MSG                   0x13
-#define LOG_DATA_INT16_MSG              0x14
-#define LOG_DATA_UINT16_MSG             0x15
-#define LOG_DATA_INT32_MSG              0x16
-#define LOG_DATA_UINT32_MSG             0x17
-#define LOG_DATA_FLOAT_MSG              0x18
-#define LOG_AUTOTUNE_MSG                0x19
-#define LOG_AUTOTUNEDETAILS_MSG         0x1A
-#define LOG_MOTBATT_MSG                 0x1E
-#define LOG_PARAMTUNE_MSG               0x1F
-#define LOG_HELI_MSG                    0x20
-#define LOG_PRECLAND_MSG                0x21
-#define LOG_GUIDEDTARGET_MSG            0x22
-#define LOG_THROW_MSG                   0x23
+enum log_messages{
+    TYPE_AIRSTART_MSG,
+    TYPE_GROUNDSTART_MSG, 
+    LOG_CONTROL_TUNING_MSG,   
+    LOG_NAV_TUNING_MSG,       
+    LOG_OPTFLOW_MSG,           
+    LOG_EVENT_MSG,
+    LOG_ERROR_MSG,             
+    LOG_DATA_INT16_MSG,        
+    LOG_DATA_UINT16_MSG,       
+    LOG_DATA_INT32_MSG,        
+    LOG_DATA_UINT32_MSG,       
+    LOG_DATA_FLOAT_MSG,        
+    LOG_AUTOTUNE_MSG,       
+    LOG_AUTOTUNEDETAILS_MSG,   
+    LOG_MOTBATT_MSG,           
+    LOG_PARAMTUNE_MSG,         
+    LOG_HELI_MSG,              
+    LOG_PRECLAND_MSG,          
+    LOG_GUIDEDTARGET_MSG,      
+    LOG_THROW_MSG,             
+};
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
