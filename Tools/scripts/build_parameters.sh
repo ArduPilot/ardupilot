@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-# set -x
+set -x
 
 WP_Auth_Dir="$HOME/WP_Auth"
 PARAMS_DIR="../buildlogs/Parameters"
