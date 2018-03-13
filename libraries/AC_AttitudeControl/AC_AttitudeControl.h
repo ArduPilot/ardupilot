@@ -258,7 +258,7 @@ public:
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     virtual void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) {};
-    
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -379,10 +379,14 @@ protected:
     */
     struct {
         float rms_roll_P;
+        float rms_roll_I;
         float rms_roll_D;
         float rms_pitch_P;
+        float rms_pitch_I;
         float rms_pitch_D;
-        float rms_yaw;
+        float rms_yaw_P;
+        float rms_yaw_I;
+        float rms_yaw_D;
     } _control_monitor;
 
     // update state in ControlMonitor
