@@ -92,6 +92,9 @@ public:
     // get latest desired speed recorded during call to get_throttle_out_speed.  For reporting purposes only
     float get_desired_speed() const;
 
+    // get minimum stopping distance (in meters) given a speed (in m/s)
+    float get_stopping_distance(float speed);
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
