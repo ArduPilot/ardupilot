@@ -317,10 +317,7 @@ enum log_messages{
     LOG_CONTROL_TUNING_MSG,   
     LOG_NAV_TUNING_MSG,       
     LOG_OPTFLOW_MSG,           
-    LOG_EVENT_MSG,             
-    LOG_PID_MSG,                   // deprecated
-    LOG_INAV_MSG,                  // deprecated
-    LOG_CAMERA_MSG_DEPRECATED,     // deprecated
+    LOG_EVENT_MSG,
     LOG_ERROR_MSG,             
     LOG_DATA_INT16_MSG,        
     LOG_DATA_UINT16_MSG,       
