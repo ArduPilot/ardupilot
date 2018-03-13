@@ -267,7 +267,7 @@ void Copter::ModeFlowHold::run()
     int16_t roll_in = copter.channel_roll->get_control_in();
     int16_t pitch_in = copter.channel_pitch->get_control_in();
     float angle_max = copter.attitude_control->get_althold_lean_angle_max();
-    copter.get_pilot_desired_lean_angles(roll_in, pitch_in,
+    get_pilot_desired_lean_angles(roll_in, pitch_in,
                                          bf_angles.x, bf_angles.y,
                                          angle_max);
     
