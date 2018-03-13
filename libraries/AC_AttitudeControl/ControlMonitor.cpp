@@ -27,13 +27,17 @@ void AC_AttitudeControl::control_monitor_update(void)
     const DataFlash_Class::PID_Info &iroll  = get_rate_roll_pid().get_pid_info();
     control_monitor_filter_pid(iroll.P + iroll.FF,  _control_monitor.rms_roll_P);
     control_monitor_filter_pid(iroll.D,             _control_monitor.rms_roll_D);
+    control_monitor_filter_pid(iroll.I,             _control_monitor.rms_roll_I);
 
     const DataFlash_Class::PID_Info &ipitch = get_rate_pitch_pid().get_pid_info();
     control_monitor_filter_pid(ipitch.P + iroll.FF,  _control_monitor.rms_pitch_P);
     control_monitor_filter_pid(ipitch.D,             _control_monitor.rms_pitch_D);
+    control_monitor_filter_pid(ipitch.I,             _control_monitor.rms_pitch_I);
 
     const DataFlash_Class::PID_Info &iyaw   = get_rate_yaw_pid().get_pid_info();
-    control_monitor_filter_pid(iyaw.P + iyaw.D + iyaw.FF,  _control_monitor.rms_yaw);
+    control_monitor_filter_pid(iyaw.P + iyaw.FF,  _control_monitor.rms_yaw_P);
+    control_monitor_filter_pid(iyaw.D,  _control_monitor.rms_yaw_D);
+    control_monitor_filter_pid(iyaw.I,  _control_monitor.rms_yaw_I);
 }
 
 /*
@@ -41,13 +45,17 @@ void AC_AttitudeControl::control_monitor_update(void)
  */
 void AC_AttitudeControl::control_monitor_log(void)
 {
-    DataFlash_Class::instance()->Log_Write("CTRL", "TimeUS,RMSRollP,RMSRollD,RMSPitchP,RMSPitchD,RMSYaw", "Qfffff",
+    DataFlash_Class::instance()->Log_Write("CTRL", "TimeUS,RMSRollP,RMSRollI,RMSRollD,RMSPitchP,RMSPitchI,RMSPitchD,RMSYawP,RMSYawI,RMSYawD,", "Qfffffffff",
                                            AP_HAL::micros64(),
                                            (double)sqrtf(_control_monitor.rms_roll_P),
+                                           (double)sqrtf(_control_monitor.rms_roll_I),
                                            (double)sqrtf(_control_monitor.rms_roll_D),
                                            (double)sqrtf(_control_monitor.rms_pitch_P),
+                                           (double)sqrtf(_control_monitor.rms_pitch_I),
                                            (double)sqrtf(_control_monitor.rms_pitch_D),
-                                           (double)sqrtf(_control_monitor.rms_yaw));
+                                           (double)sqrtf(_control_monitor.rms_yaw_P),
+                                           (double)sqrtf(_control_monitor.rms_yaw_I),
+                                           (double)sqrtf(_control_monitor.rms_yaw_D));
 
 }
 
@@ -104,5 +112,5 @@ float AC_AttitudeControl::control_monitor_rms_output_pitch_D(void) const
  */
 float AC_AttitudeControl::control_monitor_rms_output_yaw(void) const
 {
-    return sqrtf(_control_monitor.rms_yaw);
+    return sqrtf(_control_monitor.rms_yaw_P + _control_monitor.rms_yaw_D);
 }

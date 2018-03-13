@@ -387,10 +387,14 @@ protected:
     */
     struct {
         float rms_roll_P;
+        float rms_roll_I;
         float rms_roll_D;
         float rms_pitch_P;
+        float rms_pitch_I;
         float rms_pitch_D;
-        float rms_yaw;
+        float rms_yaw_P;
+        float rms_yaw_I;
+        float rms_yaw_D;
     } _control_monitor;
 
     // update state in ControlMonitor
