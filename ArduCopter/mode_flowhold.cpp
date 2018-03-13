@@ -103,9 +103,6 @@ bool Copter::ModeFlowHold::init(bool ignore_checks)
     quality_filtered = 0;
     flow_pi_xy.reset_I();
     limited = false;
-    
-    // stop takeoff if running
-    copter.takeoff_stop();
 
     flow_pi_xy.set_dt(1.0/copter.scheduler.get_loop_rate_hz());
 

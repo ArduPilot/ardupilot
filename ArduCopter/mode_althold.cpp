@@ -18,9 +18,6 @@ bool Copter::ModeAltHold::init(bool ignore_checks)
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
     }
 
-    // stop takeoff if running
-    takeoff_stop();
-
     return true;
 }
 
