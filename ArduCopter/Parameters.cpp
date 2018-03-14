@@ -113,6 +113,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
+#if MODE_RTL_ENABLED == ENABLED
     // @Param: RTL_ALT
     // @DisplayName: RTL Altitude
     // @Description: The minimum relative altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
@@ -139,6 +140,34 @@ const AP_Param::Info Copter::var_info[] = {
     // @Increment: 50
     // @User: Standard
     GSCALAR(rtl_speed_cms,   "RTL_SPEED",     0),
+
+    // @Param: RTL_ALT_FINAL
+    // @DisplayName: RTL Final Altitude
+    // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission.  Set to zero to land.
+    // @Units: cm
+    // @Range: -1 1000
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
+
+    // @Param: RTL_CLIMB_MIN
+    // @DisplayName: RTL minimum climb
+    // @Description: The vehicle will climb this many cm during the initial climb portion of the RTL
+    // @Units: cm
+    // @Range: 0 3000
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(rtl_climb_min,  "RTL_CLIMB_MIN",    RTL_CLIMB_MIN_DEFAULT),
+
+    // @Param: RTL_LOIT_TIME
+    // @DisplayName: RTL loiter time
+    // @Description: Time (in milliseconds) to loiter above home before beginning final descent
+    // @Units: ms
+    // @Range: 0 60000
+    // @Increment: 1000
+    // @User: Standard
+    GSCALAR(rtl_loiter_time,      "RTL_LOIT_TIME",    RTL_LOITER_TIME),
+#endif
 
     // @Param: RNGFND_GAIN
     // @DisplayName: Rangefinder gain
@@ -199,39 +228,12 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(super_simple,   "SUPER_SIMPLE",     0),
 
-    // @Param: RTL_ALT_FINAL
-    // @DisplayName: RTL Final Altitude
-    // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission.  Set to zero to land.
-    // @Units: cm
-    // @Range: -1 1000
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
-
-    // @Param: RTL_CLIMB_MIN
-    // @DisplayName: RTL minimum climb
-    // @Description: The vehicle will climb this many cm during the initial climb portion of the RTL
-    // @Units: cm
-    // @Range: 0 3000
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(rtl_climb_min,  "RTL_CLIMB_MIN",    RTL_CLIMB_MIN_DEFAULT),
-
     // @Param: WP_YAW_BEHAVIOR
     // @DisplayName: Yaw behaviour during missions
     // @Description: Determines how the autopilot controls the yaw during missions and RTL
     // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL, 3:Face along GPS course
     // @User: Standard
     GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
-
-    // @Param: RTL_LOIT_TIME
-    // @DisplayName: RTL loiter time
-    // @Description: Time (in milliseconds) to loiter above home before beginning final descent
-    // @Units: ms
-    // @Range: 0 60000
-    // @Increment: 1000
-    // @User: Standard
-    GSCALAR(rtl_loiter_time,      "RTL_LOIT_TIME",    RTL_LOITER_TIME),
 
     // @Param: LAND_SPEED
     // @DisplayName: Land speed
