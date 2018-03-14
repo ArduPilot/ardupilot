@@ -313,6 +313,38 @@ void Copter::Mode::update_navigation()
     run_autopilot();
 }
 
+// get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
+// returns desired angle in centi-degrees
+void Copter::Mode::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
+{
+    AP_Vehicle::MultiCopter &aparm = copter.aparm;
+    // sanity check angle max parameter
+    aparm.angle_max = constrain_int16(aparm.angle_max,1000,8000);
+
+    // limit max lean angle
+    angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
+
+    // scale roll_in, pitch_in to ANGLE_MAX parameter range
+    const float scaler = aparm.angle_max/(float)ROLL_PITCH_YAW_INPUT_MAX;
+    roll_in *= scaler;
+    pitch_in *= scaler;
+
+    // do circular limit
+    const float total_in = norm(pitch_in, roll_in);
+    if (total_in > angle_max) {
+        float ratio = angle_max / total_in;
+        roll_in *= ratio;
+        pitch_in *= ratio;
+    }
+
+    // do lateral tilt to euler roll conversion
+    roll_in = (18000/M_PI) * atanf(cosf(pitch_in*(M_PI/18000))*tanf(roll_in*(M_PI/18000)));
+
+    // return
+    roll_out = roll_in;
+    pitch_out = pitch_in;
+}
+
 bool Copter::Mode::takeoff_triggered(const float target_climb_rate) const
 {
     if (!ap.land_complete) {
@@ -343,38 +375,6 @@ void Copter::Mode::zero_throttle_and_relax_ac()
     // multicopters do not stabilize roll/pitch/yaw when disarmed
     attitude_control->set_throttle_out_unstabilized(0.0f, true, copter.g.throttle_filt);
 #endif
-}
-
-// get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
-// returns desired angle in centi-degrees
-void Copter::Mode::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
-{
-	AP_Vehicle::MultiCopter &aparm = copter.aparm;
-	// sanity check angle max parameter
-	aparm.angle_max = constrain_int16(aparm.angle_max,1000,8000);
-
-	// limit max lean angle
-	angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
-
-	// scale roll_in, pitch_in to ANGLE_MAX parameter range
-	float scaler = aparm.angle_max/(float)ROLL_PITCH_YAW_INPUT_MAX;
-	roll_in *= scaler;
-	pitch_in *= scaler;
-
-	// do circular limit
-	float total_in = norm(pitch_in, roll_in);
-	if (total_in > angle_max) {
-		float ratio = angle_max / total_in;
-		roll_in *= ratio;
-		pitch_in *= ratio;
-	}
-
-	// do lateral tilt to euler roll conversion
-	roll_in = (18000/M_PI) * atanf(cosf(pitch_in*(M_PI/18000))*tanf(roll_in*(M_PI/18000)));
-
-	// return
-	roll_out = roll_in;
-	pitch_out = pitch_in;
 }
 
 // pass-through functions to reduce code churn on conversion;
