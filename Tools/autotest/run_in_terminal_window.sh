@@ -50,6 +50,6 @@ else
 # the following "true" is to avoid bash optimising the following call
 # to avoid creating a subshell.  We need that subshell, or
 # _fdm_input_step sees ArduPilot has no parent and kills ArduPilot!
-  ( : ; $cmd $* &>"$filename" < /dev/null ) &
+  ( : ; "$cmd" $* &>"$filename" < /dev/null ) &
 fi
 exit 0
