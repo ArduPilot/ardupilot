@@ -31,8 +31,8 @@ public:
     struct spi_dev_s *dev;
     uint8_t bus;
     SPIConfig spicfg;
-    void dma_allocate(void);
-    void dma_deallocate(void);
+    void dma_allocate(Shared_DMA *ctx);
+    void dma_deallocate(Shared_DMA *ctx);
     bool spi_started;
 };
 

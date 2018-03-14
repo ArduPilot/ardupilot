@@ -56,15 +56,15 @@ SPIBus::SPIBus(uint8_t _bus) :
     // allow for sharing of DMA channels with other peripherals
     dma_handle = new Shared_DMA(spi_devices[bus].dma_channel_rx,
                                 spi_devices[bus].dma_channel_tx,
-                                FUNCTOR_BIND_MEMBER(&SPIBus::dma_allocate, void),
-                                FUNCTOR_BIND_MEMBER(&SPIBus::dma_deallocate, void));
+                                FUNCTOR_BIND_MEMBER(&SPIBus::dma_allocate, void, Shared_DMA *),
+                                FUNCTOR_BIND_MEMBER(&SPIBus::dma_deallocate, void, Shared_DMA *));
         
 }
 
 /*
   allocate DMA channel
  */
-void SPIBus::dma_allocate(void)
+void SPIBus::dma_allocate(Shared_DMA *ctx)
 {
     // nothing to do as we call spiStart() on each transaction
 }
@@ -72,7 +72,7 @@ void SPIBus::dma_allocate(void)
 /*
   deallocate DMA channel
  */
-void SPIBus::dma_deallocate(void)
+void SPIBus::dma_deallocate(Shared_DMA *ctx)
 {
     // another non-SPI peripheral wants one of our DMA channels
     if (spi_started) {

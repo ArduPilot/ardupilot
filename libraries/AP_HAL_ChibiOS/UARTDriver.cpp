@@ -208,8 +208,8 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                     // cannot be shared
                     dma_handle = new Shared_DMA(sdef.dma_tx_stream_id,
                                                 SHARED_DMA_NONE,
-                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_allocate, void),
-                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_deallocate, void));
+                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_allocate, void, Shared_DMA *),
+                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_deallocate, void, Shared_DMA *));
                 }
                 _device_initialised = true;
             }
@@ -261,7 +261,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     set_flow_control(_flow_control);
 }
 
-void UARTDriver::dma_tx_allocate(void)
+void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
 {
 #if HAL_USE_SERIAL == TRUE
     osalDbgAssert(txdma == nullptr, "double DMA allocation");
@@ -277,7 +277,7 @@ void UARTDriver::dma_tx_allocate(void)
 #endif // HAL_USE_SERIAL
 }
 
-void UARTDriver::dma_tx_deallocate(void)
+void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 {
     chSysLock();
     dmaStreamRelease(txdma);
