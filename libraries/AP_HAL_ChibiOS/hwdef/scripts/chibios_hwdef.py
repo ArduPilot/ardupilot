@@ -101,6 +101,7 @@ def get_alt_function(mcu, pin, function):
             return alt_map[s]
     return None
 
+
 def have_type_prefix(ptype):
     '''return True if we have a peripheral starting with the given peripheral type'''
     for t in bytype.keys():
@@ -589,15 +590,13 @@ def write_PWM_config(f):
             error(
                 "Bad channel number, only channel 1 and 2 supported for RCIN")
         n = int(a[0][3:])
-        dma_chan_str = rc_in.extra_prefix('DMA_CH')[6:]
-        dma_chan = int(dma_chan_str)
         f.write('// RC input config\n')
         f.write('#define HAL_USE_ICU TRUE\n')
         f.write('#define STM32_ICU_USE_TIM%u TRUE\n' % n)
         f.write('#define RCIN_ICU_TIMER ICUD%u\n' % n)
-        f.write(
-            '#define RCIN_ICU_CHANNEL ICU_CHANNEL_%u\n' % int(chan_str))
-        f.write('#define STM32_RCIN_DMA_CHANNEL %u' % dma_chan)
+        f.write('#define RCIN_ICU_CHANNEL ICU_CHANNEL_%u\n' % int(chan_str))
+        f.write('#define STM32_RCIN_DMA_STREAM STM32_TIM_TIM%u_CH%u_DMA_STREAM\n' % (n, int(chan_str)))
+        f.write('#define STM32_RCIN_DMA_CHANNEL STM32_TIM_TIM%u_CH%u_DMA_CHAN\n' % (n, int(chan_str)))
         f.write('\n')
     if alarm is not None:
 
@@ -833,7 +832,7 @@ def write_hwdef_header(outfilename):
 
     dma_resolver.write_dma_header(f, periph_list, mcu_type,
                                   dma_exclude=get_dma_exclude(periph_list),
-                                  dma_priority=get_config('DMA_PRIORITY',default=''),
+                                  dma_priority=get_config('DMA_PRIORITY',default='TIM* SPI*'),
                                   dma_noshare=get_config('DMA_NOSHARE',default=''))
 
     write_UART_config(f)
@@ -915,11 +914,17 @@ def build_peripheral_list():
             peripherals.append(type)
         if type.startswith('SDIO'):
             peripherals.append(type)
-        if type.startswith('TIM') and p.has_extra('RCIN'):
-            label = p.label
-            if label[-1] == 'N':
-                label = label[:-1]
-            peripherals.append(label)
+        if type.startswith('TIM'):
+            if p.has_extra('RCIN'):
+                label = p.label
+                if label[-1] == 'N':
+                    label = label[:-1]
+                peripherals.append(label)
+            else:
+                # get the TIMn_UP DMA channels for DShot
+                label = type + '_UP'
+                if not label in peripherals:
+                    peripherals.append(label)
         done.add(type)
     return peripherals
 
