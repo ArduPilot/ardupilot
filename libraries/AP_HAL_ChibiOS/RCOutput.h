@@ -17,6 +17,7 @@
 #pragma once
 
 #include "AP_HAL_ChibiOS.h"
+#include "shared_dma.h"
 #include "ch.h"
 #include "hal.h"
 
@@ -38,7 +39,7 @@ public:
         _esc_pwm_min = min_pwm;
         _esc_pwm_max = max_pwm;
     }
-    void set_output_mode(enum output_mode mode) override;
+    void set_output_mode(uint16_t mask, enum output_mode mode) override;
 
     float scale_esc_to_unity(uint16_t pwm) override {
         return 2.0 * ((float) pwm - _esc_pwm_min) / (_esc_pwm_max - _esc_pwm_min) - 1.0;
@@ -76,8 +77,16 @@ private:
         uint8_t chan[4]; // chan number, zero based, 255 for disabled
         PWMConfig pwm_cfg;
         PWMDriver* pwm_drv;
+        bool have_up_dma; // can we do DMAR outputs for DShot?
+        uint8_t dma_up_stream_id;
+        uint8_t dma_up_channel;
+        enum output_mode current_mode;
+        uint16_t ch_mask;
+        const stm32_dma_stream_t *dma;
+        Shared_DMA *dma_handle;
+        uint32_t *dma_buffer;
+        bool have_lock;
     };
-    enum output_mode _output_mode = MODE_PWM_NORMAL;
 
     static pwm_group pwm_group_list[];
     uint16_t _esc_pwm_min;
@@ -107,16 +116,33 @@ private:
     mutex_t trigger_mutex;
 
     // which output groups need triggering
-    uint8_t trigger_groups;
+    uint8_t trigger_groupmask;
 
+    // mask of groups needing retriggering for DShot
+    uint8_t dshot_delayed_trigger_mask;
+    
     // widest pulse for oneshot triggering
     uint16_t trigger_widest_pulse;
-    
+
     // push out values to local PWM
     void push_local(void);
 
-    // trigger oneshot pulses
-    void trigger_oneshot(void);
+    // trigger group pulses
+    void trigger_groups(void);
+
+    /*
+      DShot handling
+     */
+    const uint8_t dshot_post = 2;
+    const uint16_t dshot_bit_length = 16 + dshot_post;
+    const uint16_t dshot_buffer_length = dshot_bit_length*4*sizeof(uint32_t);
+    uint32_t dshot_pulse_time_us;
+    void dma_allocate(Shared_DMA *ctx);
+    void dma_deallocate(Shared_DMA *ctx);    
+    uint16_t create_dshot_packet(const uint16_t value);
+    void fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t packet);
+    void dshot_send(pwm_group &group, bool blocking);
+    static void dma_irq_callback(void *p, uint32_t flags);
 };
 
 #endif // HAL_USE_PWM

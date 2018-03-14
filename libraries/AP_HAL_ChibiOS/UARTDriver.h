@@ -132,8 +132,8 @@ private:
     static void rxbuff_full_irq(void* self, uint32_t flags);
     static void tx_complete(void* self, uint32_t flags);
 
-    void dma_tx_allocate(void);
-    void dma_tx_deallocate(void);
+    void dma_tx_allocate(Shared_DMA *ctx);
+    void dma_tx_deallocate(Shared_DMA *ctx);
     void update_rts_line(void);
 
     void check_dma_tx_completion(void);

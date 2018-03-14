@@ -26,8 +26,8 @@
 class ChibiOS::Shared_DMA
 {
 public:
-    FUNCTOR_TYPEDEF(dma_allocate_fn_t, void);
-    FUNCTOR_TYPEDEF(dma_deallocate_fn_t, void);
+    FUNCTOR_TYPEDEF(dma_allocate_fn_t, void, Shared_DMA *);
+    FUNCTOR_TYPEDEF(dma_deallocate_fn_t, void, Shared_DMA *);
 
     // the use of two stream IDs is for support of peripherals that
     // need both a RX and TX DMA channel
