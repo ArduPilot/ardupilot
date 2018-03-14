@@ -9,8 +9,9 @@ import shutil
 import pexpect
 from pymavlink import mavutil
 
-from common import *
 from pysim import util
+
+from common import AutoTest
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -18,11 +19,21 @@ HOME = mavutil.location(-35.362938, 149.165085, 585, 354)
 WIND = "0,180,0.2"  # speed,direction,variance
 
 
-class AutotestPlane(Autotest):
-    def __init__(self, binary, viewerip=None, use_map=False, valgrind=False, gdb=False, speedup=10, frame=None, params=None, gdbserver=False):
-        super(AutotestPlane, self).__init__()
+class AutoTestPlane(AutoTest):
+    def __init__(self,
+                 binary,
+                 viewerip=None,
+                 use_map=False,
+                 valgrind=False,
+                 gdb=False,
+                 speedup=10,
+                 frame=None,
+                 params=None,
+                 gdbserver=False):
+        super(AutoTestPlane, self).__init__()
         self.binary = binary
-        self.options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=10'
+        self.options = ('--sitl=127.0.0.1:5501 --out=127.0.0.1:19550'
+                        ' --streamrate=10')
         self.viewerip = viewerip
         self.use_map = use_map
         self.valgrind = valgrind
@@ -31,7 +42,10 @@ class AutotestPlane(Autotest):
         self.params = params
         self.gdbserver = gdbserver
 
-        self.home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+        self.home = "%f,%f,%u,%u" % (HOME.lat,
+                                     HOME.lng,
+                                     HOME.alt,
+                                     HOME.heading)
         self.homeloc = None
         self.speedup = speedup
         self.speedup_default = 10
@@ -48,16 +62,25 @@ class AutotestPlane(Autotest):
         if self.use_map:
             self.options += ' --map'
 
-        self.sitl = util.start_SITL(self.binary, wipe=True, model=self.frame, home=self.home, speedup=self.speedup,
-                                    defaults_file=os.path.join(testdir, 'default_params/plane-jsbsim.parm'),
-                                    valgrind=self.valgrind, gdb=self.gdb, gdbserver=self.gdbserver)
-        self.mavproxy = util.start_MAVProxy_SITL('ArduPlane', options=self.options)
+        defaults_file = os.path.join(testdir,
+                                     'default_params/plane-jsbsim.parm')
+        self.sitl = util.start_SITL(self.binary,
+                                    wipe=True,
+                                    model=self.frame,
+                                    home=self.home,
+                                    speedup=self.speedup,
+                                    defaults_file=defaults_file,
+                                    valgrind=self.valgrind,
+                                    gdb=self.gdb,
+                                    gdbserver=self.gdbserver)
+        self.mavproxy = util.start_MAVProxy_SITL('ArduPlane',
+                                                 options=self.options)
         self.mavproxy.expect('Telemetry log: (\S+)')
         logfile = self.mavproxy.match.group(1)
-        progress("LOGFILE %s" % logfile)
+        self.progress("LOGFILE %s" % logfile)
 
-        buildlog = util.reltopdir("../buildlogs/ArduPlane-test.tlog")
-        progress("buildlog=%s" % buildlog)
+        buildlog = self.buildlogs_path("ArduPlane-test.tlog")
+        self.progress("buildlog=%s" % buildlog)
         if os.path.exists(buildlog):
             os.unlink(buildlog)
         try:
@@ -67,23 +90,26 @@ class AutotestPlane(Autotest):
 
         self.mavproxy.expect('Received [0-9]+ parameters')
 
-        util.expect_setup_callback(self.mavproxy, expect_callback)
+        util.expect_setup_callback(self.mavproxy, self.expect_callback)
 
-        expect_list_clear()
-        expect_list_extend([self.sitl, self.mavproxy])
+        self.expect_list_clear()
+        self.expect_list_extend([self.sitl, self.mavproxy])
 
-        progress("Started simulator")
+        self.progress("Started simulator")
 
         # get a mavlink connection going
+        connection_string = '127.0.0.1:19550'
         try:
-            self.mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
+            self.mav = mavutil.mavlink_connection(connection_string,
+                                                  robust_parsing=True)
         except Exception as msg:
-            progress("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+            self.progress("Failed to start mavlink connection on %s: %s"
+                          % (connection_string, msg))
             raise
-        self.mav.message_hooks.append(message_hook)
-        self.mav.idle_hooks.append(idle_hook)
+        self.mav.message_hooks.append(self.message_hook)
+        self.mav.idle_hooks.append(self.idle_hook)
         self.hasInit = True
-        progress("Ready to start testing!")
+        self.progress("Ready to start testing!")
 
     def close(self):
         if self.use_map:
@@ -94,10 +120,12 @@ class AutotestPlane(Autotest):
         util.pexpect_close(self.mavproxy)
         util.pexpect_close(self.sitl)
 
-        valgrind_log = util.valgrind_log_filepath(binary=self.binary, model=self.frame)
+        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
+                                                  model=self.frame)
         if os.path.exists(valgrind_log):
             os.chmod(valgrind_log, 0o644)
-            shutil.copy(valgrind_log, util.reltopdir("../buildlogs/ArduPlane-valgrind.log"))
+            shutil.copy(valgrind_log,
+                        self.buildlogs_path("ArduPlane-valgrind.log"))
 
     def takeoff(self):
         """Takeoff get to 30m altitude."""
@@ -128,13 +156,15 @@ class AutotestPlane(Autotest):
         self.set_rc(3, 2000)
 
         # gain a bit of altitude
-        if not self.wait_altitude(self.homeloc.alt+150, self.homeloc.alt+180, timeout=30):
+        if not self.wait_altitude(self.homeloc.alt+150,
+                                  self.homeloc.alt+180,
+                                  timeout=30):
             return False
 
         # level off
         self.set_rc(2, 1500)
 
-        progress("TAKEOFF COMPLETE")
+        self.progress("TAKEOFF COMPLETE")
         return True
 
     def fly_left_circuit(self):
@@ -144,43 +174,45 @@ class AutotestPlane(Autotest):
         self.set_rc(3, 2000)
         if not self.wait_level_flight():
             return False
-    
-        progress("Flying left circuit")
+
+        self.progress("Flying left circuit")
         # do 4 turns
         for i in range(0, 4):
             # hard left
-            progress("Starting turn %u" % i)
+            self.progress("Starting turn %u" % i)
             self.set_rc(1, 1000)
             if not self.wait_heading(270 - (90*i), accuracy=10):
                 return False
             self.set_rc(1, 1500)
-            progress("Starting leg %u" % i)
+            self.progress("Starting leg %u" % i)
             if not self.wait_distance(100, accuracy=20):
                 return False
-        progress("Circuit complete")
+        self.progress("Circuit complete")
         return True
 
     def fly_RTL(self):
         """Fly to home."""
-        progress("Flying home in RTL")
+        self.progress("Flying home in RTL")
         self.mavproxy.send('switch 2\n')
         self.wait_mode('RTL')
-        if not self.wait_location(self.homeloc, accuracy=120,
-                                  target_altitude=self.homeloc.alt+100, height_accuracy=20,
+        if not self.wait_location(self.homeloc,
+                                  accuracy=120,
+                                  target_altitude=self.homeloc.alt+100,
+                                  height_accuracy=20,
                                   timeout=180):
             return False
-        progress("RTL Complete")
+        self.progress("RTL Complete")
         return True
 
     def fly_LOITER(self, num_circles=4):
         """Loiter where we are."""
-        progress("Testing LOITER for %u turns" % num_circles)
+        self.progress("Testing LOITER for %u turns" % num_circles)
         self.mavproxy.send('loiter\n')
         self.wait_mode('LOITER')
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         initial_alt = m.alt
-        progress("Initial altitude %u\n" % initial_alt)
+        self.progress("Initial altitude %u\n" % initial_alt)
 
         while num_circles > 0:
             if not self.wait_heading(0, accuracy=10, timeout=60):
@@ -188,31 +220,32 @@ class AutotestPlane(Autotest):
             if not self.wait_heading(180, accuracy=10, timeout=60):
                 return False
             num_circles -= 1
-            progress("Loiter %u circles left" % num_circles)
+            self.progress("Loiter %u circles left" % num_circles)
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         final_alt = m.alt
-        progress("Final altitude %u initial %u\n" % (final_alt, initial_alt))
+        self.progress("Final altitude %u initial %u\n" %
+                      (final_alt, initial_alt))
 
         self.mavproxy.send('mode FBWA\n')
         self.wait_mode('FBWA')
 
         if abs(final_alt - initial_alt) > 20:
-            progress("Failed to maintain altitude")
+            self.progress("Failed to maintain altitude")
             return False
 
-        progress("Completed Loiter OK")
+        self.progress("Completed Loiter OK")
         return True
 
     def fly_CIRCLE(self, num_circles=1):
         """Circle where we are."""
-        progress("Testing CIRCLE for %u turns" % num_circles)
+        self.progress("Testing CIRCLE for %u turns" % num_circles)
         self.mavproxy.send('mode CIRCLE\n')
         self.wait_mode('CIRCLE')
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         initial_alt = m.alt
-        progress("Initial altitude %u\n" % initial_alt)
+        self.progress("Initial altitude %u\n" % initial_alt)
 
         while num_circles > 0:
             if not self.wait_heading(0, accuracy=10, timeout=60):
@@ -220,26 +253,27 @@ class AutotestPlane(Autotest):
             if not self.wait_heading(180, accuracy=10, timeout=60):
                 return False
             num_circles -= 1
-            progress("CIRCLE %u circles left" % num_circles)
+            self.progress("CIRCLE %u circles left" % num_circles)
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         final_alt = m.alt
-        progress("Final altitude %u initial %u\n" % (final_alt, initial_alt))
+        self.progress("Final altitude %u initial %u\n" %
+                      (final_alt, initial_alt))
 
         self.mavproxy.send('mode FBWA\n')
         self.wait_mode('FBWA')
 
         if abs(final_alt - initial_alt) > 20:
-            progress("Failed to maintain altitude")
+            self.progress("Failed to maintain altitude")
             return False
 
-        progress("Completed CIRCLE OK")
+        self.progress("Completed CIRCLE OK")
         return True
 
     def wait_level_flight(self, accuracy=5, timeout=30):
         """Wait for level flight."""
         tstart = self.get_sim_time()
-        progress("Waiting for level flight")
+        self.progress("Waiting for level flight")
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
         self.set_rc(4, 1500)
@@ -247,11 +281,11 @@ class AutotestPlane(Autotest):
             m = self.mav.recv_match(type='ATTITUDE', blocking=True)
             roll = math.degrees(m.roll)
             pitch = math.degrees(m.pitch)
-            progress("Roll=%.1f Pitch=%.1f" % (roll, pitch))
+            self.progress("Roll=%.1f Pitch=%.1f" % (roll, pitch))
             if math.fabs(roll) <= accuracy and math.fabs(pitch) <= accuracy:
-                progress("Attained level flight")
+                self.progress("Attained level flight")
                 return True
-        progress("Failed to attain level flight")
+        self.progress("Failed to attain level flight")
         return False
 
     def change_altitude(self, altitude, accuracy=30):
@@ -266,7 +300,8 @@ class AutotestPlane(Autotest):
         if not self.wait_altitude(altitude-accuracy/2, altitude+accuracy/2):
             return False
         self.set_rc(2, 1500)
-        progress("Reached target altitude at %u" % self.mav.messages['VFR_HUD'].alt)
+        self.progress("Reached target altitude at %u" %
+                      self.mav.messages['VFR_HUD'].alt)
         return self.wait_level_flight()
 
     def axial_left_roll(self, count=1):
@@ -281,7 +316,7 @@ class AutotestPlane(Autotest):
         self.wait_mode('MANUAL')
 
         while count > 0:
-            progress("Starting roll")
+            self.progress("Starting roll")
             self.set_rc(1, 1000)
             if not self.wait_roll(-150, accuracy=90):
                 self.set_rc(1, 1500)
@@ -313,7 +348,7 @@ class AutotestPlane(Autotest):
         self.wait_mode('MANUAL')
 
         while count > 0:
-            progress("Starting loop")
+            self.progress("Starting loop")
             self.set_rc(2, 1000)
             if not self.wait_pitch(-60, accuracy=20):
                 return False
@@ -342,7 +377,7 @@ class AutotestPlane(Autotest):
 
         count = 1
         while count > 0:
-            progress("Starting roll")
+            self.progress("Starting roll")
             self.set_rc(1, 2000)
             if not self.wait_roll(-150, accuracy=90):
                 return False
@@ -376,7 +411,7 @@ class AutotestPlane(Autotest):
 
         count = 1
         while count > 0:
-            progress("Starting roll")
+            self.progress("Starting roll")
             self.set_rc(1, 1000)
             if not self.wait_roll(-150, accuracy=90):
                 return False
@@ -398,7 +433,7 @@ class AutotestPlane(Autotest):
 
         count = 2
         while count > 0:
-            progress("Starting loop")
+            self.progress("Starting loop")
             self.set_rc(2, 1000)
             if not self.wait_pitch(-60, accuracy=20):
                 return False
@@ -429,55 +464,56 @@ class AutotestPlane(Autotest):
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         initial_alt = m.alt
-        progress("Initial altitude %u\n" % initial_alt)
+        self.progress("Initial altitude %u\n" % initial_alt)
 
-        progress("Flying right circuit")
+        self.progress("Flying right circuit")
         # do 4 turns
         for i in range(0, 4):
             # hard left
-            progress("Starting turn %u" % i)
+            self.progress("Starting turn %u" % i)
             self.set_rc(1, 1800)
             if not self.wait_heading(0 + (90*i), accuracy=20, timeout=60):
                 self.set_rc(1, 1500)
                 return False
             self.set_rc(1, 1500)
-            progress("Starting leg %u" % i)
+            self.progress("Starting leg %u" % i)
             if not self.wait_distance(100, accuracy=20):
                 return False
-        progress("Circuit complete")
+        self.progress("Circuit complete")
 
-        progress("Flying rudder left circuit")
+        self.progress("Flying rudder left circuit")
         # do 4 turns
         for i in range(0, 4):
             # hard left
-            progress("Starting turn %u" % i)
+            self.progress("Starting turn %u" % i)
             self.set_rc(4, 1900)
             if not self.wait_heading(360 - (90*i), accuracy=20, timeout=60):
                 self.set_rc(4, 1500)
                 return False
             self.set_rc(4, 1500)
-            progress("Starting leg %u" % i)
+            self.progress("Starting leg %u" % i)
             if not self.wait_distance(100, accuracy=20):
                 return False
-        progress("Circuit complete")
+        self.progress("Circuit complete")
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         final_alt = m.alt
-        progress("Final altitude %u initial %u\n" % (final_alt, initial_alt))
+        self.progress("Final altitude %u initial %u\n" %
+                      (final_alt, initial_alt))
 
         # back to FBWA
         self.mavproxy.send('mode FBWA\n')
         self.wait_mode('FBWA')
 
         if abs(final_alt - initial_alt) > 20:
-            progress("Failed to maintain altitude")
+            self.progress("Failed to maintain altitude")
             return False
 
         return self.wait_level_flight()
 
     def fly_mission(self, filename, height_accuracy=-1, target_altitude=None):
         """Fly a mission from a file."""
-        progress("Flying mission %s" % filename)
+        self.progress("Flying mission %s" % filename)
         self.mavproxy.send('wp load %s\n' % filename)
         self.mavproxy.expect('Flight plan received')
         self.mavproxy.send('wp list\n')
@@ -489,7 +525,7 @@ class AutotestPlane(Autotest):
         if not self.wait_groundspeed(0, 0.5, timeout=60):
             return False
         self.mavproxy.expect("Auto disarmed")
-        progress("Mission OK")
+        self.progress("Mission OK")
         return True
 
     def autotest(self):
@@ -501,81 +537,83 @@ class AutotestPlane(Autotest):
         fail_list = []
         e = 'None'
         try:
-            progress("Waiting for a heartbeat with mavlink protocol %s" % self.mav.WIRE_PROTOCOL_VERSION)
+            self.progress("Waiting for a heartbeat with mavlink protocol %s"
+                          % self.mav.WIRE_PROTOCOL_VERSION)
             self.mav.wait_heartbeat()
-            progress("Setting up RC parameters")
+            self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(3, 1000)
             self.set_rc(8, 1800)
-            progress("Waiting for GPS fix")
+            self.progress("Waiting for GPS fix")
             self.mav.recv_match(condition='VFR_HUD.alt>10', blocking=True)
             self.mav.wait_gps_fix()
             while self.mav.location().alt < 10:
                 self.mav.wait_gps_fix()
             self.homeloc = self.mav.location()
-            progress("Home location: %s" % self.homeloc)
+            self.progress("Home location: %s" % self.homeloc)
             if not self.takeoff():
-                progress("Failed takeoff")
+                self.progress("Failed takeoff")
                 failed = True
                 fail_list.append("takeoff")
             if not self.fly_left_circuit():
-                progress("Failed left circuit")
+                self.progress("Failed left circuit")
                 failed = True
                 fail_list.append("left_circuit")
             if not self.axial_left_roll(1):
-                progress("Failed left roll")
+                self.progress("Failed left roll")
                 failed = True
                 fail_list.append("left_roll")
             if not self.inside_loop():
-                progress("Failed inside loop")
+                self.progress("Failed inside loop")
                 failed = True
                 fail_list.append("inside_loop")
             if not self.test_stabilize():
-                progress("Failed stabilize test")
+                self.progress("Failed stabilize test")
                 failed = True
                 fail_list.append("stabilize")
             if not self.test_acro():
-                progress("Failed ACRO test")
+                self.progress("Failed ACRO test")
                 failed = True
                 fail_list.append("acro")
             if not self.test_FBWB():
-                progress("Failed FBWB test")
+                self.progress("Failed FBWB test")
                 failed = True
                 fail_list.append("fbwb")
             if not self.test_FBWB(mode='CRUISE'):
-                progress("Failed CRUISE test")
+                self.progress("Failed CRUISE test")
                 failed = True
                 fail_list.append("cruise")
             if not self.fly_RTL():
-                progress("Failed RTL")
+                self.progress("Failed RTL")
                 failed = True
                 fail_list.append("RTL")
             if not self.fly_LOITER():
-                progress("Failed LOITER")
+                self.progress("Failed LOITER")
                 failed = True
                 fail_list.append("LOITER")
             if not self.fly_CIRCLE():
-                progress("Failed CIRCLE")
+                self.progress("Failed CIRCLE")
                 failed = True
                 fail_list.append("LOITER")
-            if not self.fly_mission(os.path.join(testdir, "ap1.txt"), height_accuracy=10,
+            if not self.fly_mission(os.path.join(testdir, "ap1.txt"),
+                                    height_accuracy=10,
                                     target_altitude=self.homeloc.alt+100):
-                progress("Failed mission")
+                self.progress("Failed mission")
                 failed = True
                 fail_list.append("mission")
-            if not self.log_download(util.reltopdir("../buildlogs/ArduPlane-log.bin")):
-                progress("Failed log download")
+            if not self.log_download(self.buildlogs_path("ArduPlane-log.bin")):
+                self.progress("Failed log download")
                 failed = True
                 fail_list.append("log_download")
         except pexpect.TIMEOUT as e:
-            progress("Failed with timeout")
+            self.progress("Failed with timeout")
             failed = True
             fail_list.append("timeout")
 
         self.close()
 
         if failed:
-            progress("FAILED: %s" % e)
-            progress("Fail list: %s" % fail_list)
+            self.progress("FAILED: %s" % e)
+            self.progress("Fail list: %s" % fail_list)
             return False
         return True
