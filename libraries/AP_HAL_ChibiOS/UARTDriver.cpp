@@ -519,12 +519,12 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
 }
 
 /*
-  write out pending bytes with DMA
+  check for DMA completed for TX
  */
-void UARTDriver::write_pending_bytes_DMA(uint32_t n)
+void UARTDriver::check_dma_tx_completion(void)
 {
     chSysLock();
-    if (!tx_bounce_buf_ready && txdma) {
+    if (!tx_bounce_buf_ready) {
         if (!(txdma->stream->CR & STM32_DMA_CR_EN)) {
             if (txdma->stream->NDTR == 0) {
                 tx_bounce_buf_ready = true;
@@ -533,12 +533,19 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
             }
         }
     }
+    chSysUnlock();
+}
+
+/*
+  write out pending bytes with DMA
+ */
+void UARTDriver::write_pending_bytes_DMA(uint32_t n)
+{
+    check_dma_tx_completion();
 
     if (!tx_bounce_buf_ready) {
-        chSysUnlock();
         return;
     }
-    chSysUnlock();
 
     /* TX DMA channel preparation.*/
     _writebuf.advance(tx_len);
@@ -549,6 +556,18 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     if (!dma_handle->lock_nonblock()) {
         tx_len = 0;
         return;
+    }
+    if (dma_handle->has_contention()) {
+        /*
+          someone else is using this same DMA channel. To reduce
+          latency we will drop the TX size with DMA on this UART to
+          keep TX times below 250us. This can still suffer from long
+          times due to CTS blockage
+         */
+        uint32_t max_tx_bytes = 1 + (_baudrate * 250UL / 1000000UL);
+        if (tx_len > max_tx_bytes) {
+            tx_len = max_tx_bytes;
+        }
     }
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
@@ -604,6 +623,10 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
 void UARTDriver::write_pending_bytes(void)
 {
     uint32_t n;
+
+    if (sdef.dma_tx) {
+        check_dma_tx_completion();
+    }
 
     // write any pending bytes
     n = _writebuf.available();
