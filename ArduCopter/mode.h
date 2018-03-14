@@ -102,6 +102,7 @@ protected:
 };
 
 
+#if MODE_ACRO_ENABLED == ENABLED
 class ModeAcro : public Mode {
 
 public:
@@ -126,6 +127,7 @@ protected:
 private:
 
 };
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
 class ModeAcro_Heli : public ModeAcro {
