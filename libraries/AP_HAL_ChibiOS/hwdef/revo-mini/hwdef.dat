@@ -34,7 +34,7 @@ UART_ORDER OTG1 USART3 USART1
 
 # rcinput is PC6, which is the 3rd "PWM IN" pin (the yellow wire on a
 # revolution board)
-PC6 TIM8_CH1 TIM8 RCIN FLOAT LOW DMA_CH0
+PC6 TIM8_CH1 TIM8 RCIN FLOAT LOW
 
 # analog pins
 PC3 VDD_5V_SENS ADC1
