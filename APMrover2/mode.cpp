@@ -113,13 +113,13 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
     // set final desired speed
     _desired_speed_final = 0.0f;
     if (!is_equal(next_leg_bearing_cd, MODE_NEXT_HEADING_UNKNOWN)) {
-        // if not turning can continue at full speed
-        if (is_zero(next_leg_bearing_cd)) {
+        const float curr_leg_bearing_cd = get_bearing_cd(_origin, _destination);
+        const float turn_angle_cd = wrap_180_cd(next_leg_bearing_cd - curr_leg_bearing_cd);
+        if (is_zero(turn_angle_cd)) {
+            // if not turning can continue at full speed
             _desired_speed_final = _desired_speed;
         } else {
             // calculate maximum speed that keeps overshoot within bounds
-            const float curr_leg_bearing_cd = get_bearing_cd(_origin, _destination);
-            const float turn_angle_cd = wrap_180_cd(next_leg_bearing_cd - curr_leg_bearing_cd);
             const float radius_m = fabsf(g.waypoint_overshoot / (cosf(radians(turn_angle_cd * 0.01f)) - 1.0f));
             _desired_speed_final = MIN(_desired_speed, safe_sqrt(g.turn_max_g * GRAVITY_MSS * radius_m));
         }
