@@ -124,7 +124,7 @@ private:
     bool _rts_is_active;
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
-
+    
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;
     
@@ -136,6 +136,7 @@ private:
     void dma_tx_deallocate(void);
     void update_rts_line(void);
 
+    void check_dma_tx_completion(void);
     void write_pending_bytes_DMA(uint32_t n);
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);
