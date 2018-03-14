@@ -1015,6 +1015,7 @@ ParametersG2::ParametersG2(void)
 #if MODE_SMARTRTL_ENABLED == ENABLED
     ,smart_rtl(copter.ahrs)
 #endif
+    ,temp_calibration(copter.barometer, copter.ins)
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     ,mode_flowhold_ptr(&copter.mode_flowhold)
 #endif
