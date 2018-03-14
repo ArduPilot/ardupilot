@@ -148,7 +148,14 @@ public:
     // set loop rate. Used to support loop rate as a parameter
     void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
 
-    enum pwm_type { PWM_TYPE_NORMAL=0, PWM_TYPE_ONESHOT=1, PWM_TYPE_ONESHOT125=2, PWM_TYPE_BRUSHED=3 };
+    enum pwm_type { PWM_TYPE_NORMAL     = 0,
+                    PWM_TYPE_ONESHOT    = 1,
+                    PWM_TYPE_ONESHOT125 = 2,
+                    PWM_TYPE_BRUSHED    = 3,
+                    PWM_TYPE_DSHOT150   = 4,
+                    PWM_TYPE_DSHOT300   = 5,
+                    PWM_TYPE_DSHOT600   = 6,
+                    PWM_TYPE_DSHOT1200  = 7};
     pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
     
 protected:
