@@ -67,15 +67,15 @@ public:
 
     void set_lockedToBody(bool val) { _lockedToBody = val; }
 
-    void write_logs(DataFlash_Class* dataflash);
+    void write_logs();
 
     float get_log_dt() { return _log_dt; }
 
     void disable_torque_report() { _gimbalParams.set_param(GMB_PARAM_GMB_SND_TORQUE, 0); }
     void fetch_params() { _gimbalParams.fetch_params(); }
 
-    void handle_param_value(DataFlash_Class *dataflash, mavlink_message_t *msg) {
-        _gimbalParams.handle_param_value(dataflash, msg);
+    void handle_param_value(mavlink_message_t *msg) {
+        _gimbalParams.handle_param_value(msg);
     }
 
 private:
