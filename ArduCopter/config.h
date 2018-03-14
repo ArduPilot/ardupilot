@@ -216,7 +216,7 @@
  # define OPTFLOW       ENABLED
 #endif
 #ifndef VISUAL_ODOMETRY_ENABLED
-# define VISUAL_ODOMETRY_ENABLED ENABLED
+# define VISUAL_ODOMETRY_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -258,13 +258,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // ADSB support
 #ifndef ADSB_ENABLED
-# define ADSB_ENABLED ENABLED
+# define ADSB_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
 #ifndef NAV_GUIDED
- # define NAV_GUIDED    ENABLED
+ # define NAV_GUIDED    !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -342,7 +342,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Beacon support - support for local positioning systems
 #ifndef BEACON_ENABLED
-# define BEACON_ENABLED ENABLED
+# define BEACON_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
