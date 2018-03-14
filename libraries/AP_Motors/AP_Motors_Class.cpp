@@ -107,16 +107,36 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
     if (freq_hz > 50) {
         _motor_fast_mask |= mask;
     }
+
     mask = rc_map_mask(mask);
     hal.rcout->set_freq(mask, freq_hz);
-    if ((_pwm_type == PWM_TYPE_ONESHOT ||
-         _pwm_type == PWM_TYPE_ONESHOT125) &&
-        freq_hz > 50 &&
-        mask != 0) {
-        // tell HAL to do immediate output
-        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_ONESHOT);
-    } else if (_pwm_type == PWM_TYPE_BRUSHED) {
-        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+
+    switch (pwm_type(_pwm_type.get())) {
+    case PWM_TYPE_ONESHOT:
+    case PWM_TYPE_ONESHOT125:
+        if (freq_hz > 50 && mask != 0) {
+            // tell HAL to do immediate output
+            hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+        }
+        break;
+    case PWM_TYPE_BRUSHED:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+        break;
+    case PWM_TYPE_DSHOT150:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT150);
+        break;
+    case PWM_TYPE_DSHOT300:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT300);
+        break;
+    case PWM_TYPE_DSHOT600:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT600);
+        break;
+    case PWM_TYPE_DSHOT1200:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
+        break;
+    default:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_NORMAL);
+        break;
     }
 }
 
