@@ -687,6 +687,11 @@ def write_PWM_config(f):
             advanced_timer = 'false'
         pwm_clock = 1000000
         period = 20000 * pwm_clock / 1000000
+        f.write('''#ifdef STM32_TIM_TIM%u_UP_DMA_STREAM
+# define HAL_PWM%u_DMA_CONFIG true, STM32_TIM_TIM%u_UP_DMA_STREAM, STM32_TIM_TIM%u_UP_DMA_CHAN
+#else
+# define HAL_PWM%u_DMA_CONFIG false, 0, 0
+#endif\n''' % (n, n, n, n, n))
         f.write('''#define HAL_PWM_GROUP%u { %s, \\
         {%u, %u, %u, %u}, \\
         /* Group Initial Config */ \\
@@ -700,10 +705,11 @@ def write_PWM_config(f):
            {%s, NULL}, \\
            {%s, NULL}, \\
            {%s, NULL}  \\
-          }, 0, 0}, &PWMD%u}\n''' %
+          }, 0, 0}, &PWMD%u, \\
+          HAL_PWM%u_DMA_CONFIG }\n''' %
                 (group, advanced_timer, chan_list[0], chan_list[1],
                  chan_list[2], chan_list[3], pwm_clock, period, chan_mode[0],
-                 chan_mode[1], chan_mode[2], chan_mode[3], n))
+                 chan_mode[1], chan_mode[2], chan_mode[3], n, n))
     f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
 
 
@@ -826,7 +832,6 @@ def write_hwdef_header(outfilename):
     write_USB_config(f)
     write_I2C_config(f)
     write_SPI_config(f)
-    write_PWM_config(f)
     write_ADC_config(f)
     write_GPIO_config(f)
 
@@ -838,6 +843,8 @@ def write_hwdef_header(outfilename):
                                   dma_priority=get_config('DMA_PRIORITY',default='TIM* SPI*'),
                                   dma_noshare=get_config('DMA_NOSHARE',default=''))
 
+    write_PWM_config(f)
+    
     write_UART_config(f)
 
     f.write('''

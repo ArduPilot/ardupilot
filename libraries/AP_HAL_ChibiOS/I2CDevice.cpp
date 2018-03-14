@@ -49,8 +49,8 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE_SIMPLE(I2CD)];
 void I2CBus::dma_init(void)
 {
     dma_handle = new Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx, 
-                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void),
-                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void));    
+                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void, Shared_DMA *),
+                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void, Shared_DMA *));    
 }
 
 // Clear Bus to avoid bus lockup
@@ -135,7 +135,7 @@ I2CDevice::~I2CDevice()
 /*
   allocate DMA channel
  */
-void I2CBus::dma_allocate(void)
+void I2CBus::dma_allocate(Shared_DMA *ctx)
 {
     if (!i2c_started) {
         osalDbgAssert(I2CD[busnum].i2c->state == I2C_STOP, "i2cStart state");
@@ -148,7 +148,7 @@ void I2CBus::dma_allocate(void)
 /*
   deallocate DMA channel
  */
-void I2CBus::dma_deallocate(void)
+void I2CBus::dma_deallocate(Shared_DMA *)
 {
     if (i2c_started) {
         osalDbgAssert(I2CD[busnum].i2c->state == I2C_READY, "i2cStart state");

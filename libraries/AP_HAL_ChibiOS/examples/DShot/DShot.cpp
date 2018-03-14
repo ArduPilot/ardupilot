@@ -14,9 +14,9 @@ void loop();
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // use TIM1_CH1 to TIM1_CH4
-#define DMA_STREAM STM32_DMA_STREAM_ID(2,5) // TIM1_UP DMA
+#define DMA_STREAM STM32_TIM_TIM1_UP_DMA_STREAM
 #define PWMD PWMD1
-#define DMA_CH 6 // TIM1_UP is on channel 6
+#define DMA_CH STM32_TIM_TIM1_UP_DMA_CHAN
 
 // choose DShot rate. Can be 150, 300, 600 or 1200
 #define DSHOT_RATE 600U
@@ -56,6 +56,10 @@ void setup(void) {
     hal.console->printf("Starting DShot test\n");
     dma = STM32_DMA_STREAM(DMA_STREAM);
     buffer = (uint32_t *)hal.util->malloc_type(buffer_length, AP_HAL::Util::MEM_DMA_SAFE);
+
+    dmaStreamAllocate(dma, 10, NULL, NULL);    
+
+    pwmStart(&PWMD, &pwm_config);
 }
 
 
@@ -99,7 +103,6 @@ static void test_dshot_send(void)
         fill_DMA_buffer_dshot(buffer + i, 4, packets[i]);
     }
     
-    dmaStreamAllocate(dma, 10, NULL, NULL);
     dmaStreamSetPeripheral(dma, &(PWMD.tim->DMAR));
     dmaStreamSetMemory0(dma, buffer);
     dmaStreamSetTransactionSize(dma, buffer_length/sizeof(uint32_t));
@@ -109,7 +112,6 @@ static void test_dshot_send(void)
                      STM32_DMA_CR_DIR_M2P | STM32_DMA_CR_PSIZE_WORD | STM32_DMA_CR_MSIZE_WORD |
                      STM32_DMA_CR_MINC | STM32_DMA_CR_PL(3));
 
-    pwmStart(&PWMD, &pwm_config);
     for (uint8_t i=0; i<4; i++) {
         pwmEnableChannel(&PWMD, i, 0);
     }
@@ -123,16 +125,16 @@ static void test_dshot_send(void)
 
 static void test_dshot_cleanup(void)
 {
-    pwmStop(&PWMD);
-    dmaStreamRelease(dma);
+    dmaStreamDisable(dma);
 }
 
 void loop(void)
 {
-    hal.console->printf(".");
+    hal.console->printf("tick\n");
     test_dshot_send();
     hal.scheduler->delay(1);
     test_dshot_cleanup();
+    hal.scheduler->delay(1000);
     if (hal.console->available() > 10) {
         hal.scheduler->reboot(false);
     }
