@@ -126,14 +126,18 @@ public:
     virtual void timer_tick(void) { }
 
     /*
-      output modes. Allows for support of oneshot
+      output modes. Allows for support of oneshot and dshot
      */
     enum output_mode {
         MODE_PWM_NORMAL,
         MODE_PWM_ONESHOT,
-        MODE_PWM_BRUSHED
+        MODE_PWM_BRUSHED,
+        MODE_PWM_DSHOT150,
+        MODE_PWM_DSHOT300,
+        MODE_PWM_DSHOT600,
+        MODE_PWM_DSHOT1200,
     };
-    virtual void    set_output_mode(enum output_mode mode) {}
+    virtual void    set_output_mode(uint16_t mask, enum output_mode mode) {}
 
     /*
       set default update rate
