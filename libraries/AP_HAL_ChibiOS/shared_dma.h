@@ -58,6 +58,10 @@ public:
     //should be called inside the destructor of Shared DMA participants
     void unregister(void);
 
+    // return true if this DMA channel is being actively contended for
+    // by multiple drivers
+    bool has_contention(void) const { return contention; }
+    
     // lock all shared DMA channels. Used on reboot
     static void lock_all(void);
     
@@ -67,6 +71,10 @@ private:
     uint8_t stream_id1;
     uint8_t stream_id2;
     bool have_lock;
+
+    // we set the contention flag if two drivers are fighting over a DMA channel.
+    // the UART driver uses this to change its max transmit size to reduce latency
+    bool contention;
 
     // core of lock call, after semaphores gained
     void lock_core(void);
