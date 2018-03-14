@@ -120,9 +120,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_THROW_ENABLED == ENABLED
         case THROW:
             ret = &mode_throw;
             break;
+#endif
 
 #if ADSB_ENABLED == ENABLED
         case AVOID_ADSB:
