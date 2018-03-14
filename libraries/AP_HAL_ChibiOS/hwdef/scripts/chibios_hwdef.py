@@ -930,7 +930,7 @@ def build_peripheral_list():
                 if label[-1] == 'N':
                     label = label[:-1]
                 peripherals.append(label)
-            else:
+            elif not p.has_extra('ALARM'):
                 # get the TIMn_UP DMA channels for DShot
                 label = type + '_UP'
                 if not label in peripherals:
