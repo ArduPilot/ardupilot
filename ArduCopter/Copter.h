@@ -1011,7 +1011,9 @@ private:
 #if ADSB_ENABLED == ENABLED
     ModeAvoidADSB mode_avoid_adsb;
 #endif
+#if MODE_THROW_ENABLED == ENABLED
     ModeThrow mode_throw;
+#endif
 #if MODE_GUIDED_NOGPS_ENABLED == ENABLED
     ModeGuidedNoGPS mode_guided_nogps;
 #endif

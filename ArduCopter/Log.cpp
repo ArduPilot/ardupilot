@@ -537,7 +537,8 @@ void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_tar
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// precision landing logging
+#if MODE_THROW_ENABLED == ENABLED
+// throw flight mode logging
 struct PACKED log_Throw {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -570,6 +571,7 @@ void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocit
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 
 // type and unit information can be found in
@@ -613,8 +615,10 @@ const struct LogStructure Copter::log_structure[] = {
       "PL",    "QBBffff",    "TimeUS,Heal,TAcq,pX,pY,vX,vY", "s--ddmm","F--00BB" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+#if MODE_THROW_ENABLED == ENABLED
     { LOG_THROW_MSG, sizeof(log_Throw),
       "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk", "s-nnoo----", "F-0000----" },
+#endif
 };
 
 void Copter::Log_Write_Vehicle_Startup_Messages()

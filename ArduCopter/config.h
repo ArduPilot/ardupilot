@@ -346,6 +346,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Throw - fly vehicle after throwing it in the air
+#ifndef MODE_THROW_ENABLED
+# define MODE_THROW_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Beacon support - support for local positioning systems
 #ifndef BEACON_ENABLED
 # define BEACON_ENABLED !HAL_MINIMIZE_FEATURES
