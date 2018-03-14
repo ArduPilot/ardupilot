@@ -1,5 +1,6 @@
 #include "Copter.h"
 
+#if MODE_THROW_ENABLED == ENABLED
 
 // throw_init - initialise throw controller
 bool Copter::ModeThrow::init(bool ignore_checks)
@@ -267,3 +268,4 @@ bool Copter::ModeThrow::throw_position_good()
     // check that our horizontal position error is within 50cm
     return (pos_control->get_horizontal_error() < 50.0f);
 }
+#endif

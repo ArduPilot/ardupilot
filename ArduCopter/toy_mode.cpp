@@ -489,10 +489,12 @@ void ToyMode::update()
         send_named_int("VIDEOTOG", 1);
         break;
 
+#if MODE_THROW_ENABLED == ENABLED
     case ACTION_MODE_ACRO:
         new_mode = ACRO;
         break;
-        
+#endif
+
     case ACTION_MODE_ALTHOLD:
         new_mode = ALT_HOLD;
         break;
@@ -537,9 +539,11 @@ void ToyMode::update()
         new_mode = BRAKE;
         break;
 
+#if MODE_THROW_ENABLED == ENABLED
     case ACTION_MODE_THROW:
         new_mode = THROW;
         break;
+#endif
 
     case ACTION_MODE_FLIP:
         new_mode = FLIP;
