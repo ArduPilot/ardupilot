@@ -221,8 +221,11 @@ class generic_pin(object):
             (self.label.endswith('_TX') or
              self.label.endswith('_RX'))):
             # default RX/TX lines to pullup, to prevent spurious bytes
-            # on disconnected ports
-            v = "PULLUP"
+            # on disconnected ports. CTS is the exception, which is pulldown
+            if self.label.endswith("CTS"):
+                v = "PULLDOWN"
+            else:
+                v = "PULLUP"
         for e in self.extra:
             if e in values:
                 v = e
