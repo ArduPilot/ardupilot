@@ -598,7 +598,7 @@ bool PX4RCOutput::enable_px4io_sbus_out(uint16_t rate_hz)
 /*
   setup output mode
  */
-void PX4RCOutput::set_output_mode(enum output_mode mode)
+void PX4RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
 {
     if (_output_mode == mode) {
         // no change
