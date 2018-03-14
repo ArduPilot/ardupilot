@@ -415,8 +415,6 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
         return;
     }
 
-    _dataflash = DataFlash_Class::instance();
-
     // default mount to servo mount if rc output channels to control roll, tilt or pan have been defined
     if (!state[0]._type.configured()) {
         if (SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t::k_mount_pan) ||
