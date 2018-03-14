@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_ACRO_ENABLED == ENABLED
+
 #if FRAME_CONFIG == HELI_FRAME
 /*
  * Init and run calls for acro flight mode for trad heli
@@ -98,3 +100,4 @@ void Copter::ModeAcro_Heli::run()
 }
 
 #endif  //HELI_FRAME
+#endif  //MODE_ACRO_ENABLED == ENABLED
