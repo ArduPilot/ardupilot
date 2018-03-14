@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#pragma GCC optimize("O0")
+// #pragma GCC optimize("O0")
 
 #ifdef HAL_USB_PRODUCT_ID
 
