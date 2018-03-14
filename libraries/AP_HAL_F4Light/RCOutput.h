@@ -56,7 +56,7 @@ public:
     
     static void    lateInit(); // 2nd stage with loaded parameters
     
-    void set_output_mode(enum output_mode mode) override { _set_output_mode(mode); };
+    void set_output_mode(uint16_t mask, enum output_mode mode) override { _set_output_mode(mode); };
     
     static void _set_output_mode(enum output_mode mode);
     
