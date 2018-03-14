@@ -329,11 +329,11 @@ void AP_MotorsUGV::setup_pwm_type()
     case PWM_TYPE_ONESHOT:
     case PWM_TYPE_ONESHOT125:
         // tell HAL to do immediate output
-        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+        hal.rcout->set_output_mode(0xFFFF, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
         break;
     case PWM_TYPE_BRUSHED_WITH_RELAY:
     case PWM_TYPE_BRUSHED_BIPOLAR:
-        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+        hal.rcout->set_output_mode(0xFFFF, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         /*
          * Group 0: channels 0 1
          * Group 1: channels 4 5 6 7
