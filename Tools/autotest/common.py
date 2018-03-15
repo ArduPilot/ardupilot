@@ -1,14 +1,15 @@
 from __future__ import print_function
+
+import abc
 import math
+import os
+import shutil
+import sys
 import time
 
 from pymavlink import mavwp, mavutil
 
 from pysim import util
-
-import sys
-import abc
-import os
 
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing
@@ -72,6 +73,24 @@ class AutoTest(ABC):
             ret.append('--map')
 
         return ret
+
+    def close(self):
+        '''tidy up after running all tests'''
+        if self.use_map:
+            self.mavproxy.send("module unload map\n")
+            self.mavproxy.expect("Unloaded module map")
+
+        self.mav.close()
+        util.pexpect_close(self.mavproxy)
+        util.pexpect_close(self.sitl)
+
+        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
+                                                  model=self.frame)
+        if os.path.exists(valgrind_log):
+            os.chmod(valgrind_log, 0o644)
+            shutil.copy(valgrind_log,
+                        self.buildlogs_path("%s-valgrind.log" %
+                                            self.log_name))
 
     #################################################
     # GENERAL UTILITIES
