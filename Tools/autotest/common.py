@@ -8,8 +8,7 @@ import sys
 import time
 
 from pymavlink import mavwp, mavutil
-
-from pysim import util
+from pysim import util, vehicleinfo
 
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing
@@ -73,6 +72,39 @@ class AutoTest(ABC):
             ret.append('--map')
 
         return ret
+
+    def vehicleinfo_key(self):
+        return self.log_name
+
+    def apply_parameters_using_sitl(self):
+        '''start SITL, apply parameter file, stop SITL'''
+        sitl = util.start_SITL(self.binary,
+                               wipe=True,
+                               model=self.frame,
+                               home=self.home,
+                               speedup=self.speedup_default)
+        self.mavproxy = util.start_MAVProxy_SITL(self.log_name)
+
+        self.progress("WAITING FOR PARAMETERS")
+        self.mavproxy.expect('Received [0-9]+ parameters')
+
+        # setup test parameters
+        vinfo = vehicleinfo.VehicleInfo()
+        if self.params is None:
+            frames = vinfo.options[self.vehicleinfo_key()]["frames"]
+            self.params = frames[self.frame]["default_params_filename"]
+        if not isinstance(self.params, list):
+            self.params = [self.params]
+        for x in self.params:
+            self.mavproxy.send("param load %s\n" % os.path.join(testdir, x))
+            self.mavproxy.expect('Loaded [0-9]+ parameters')
+        self.set_parameter('LOG_REPLAY', 1)
+        self.set_parameter('LOG_DISARMED', 1)
+
+        # kill this SITL instance off:
+        util.pexpect_close(self.mavproxy)
+        util.pexpect_close(sitl)
+        self.mavproxy = None
 
     def close(self):
         '''tidy up after running all tests'''
