@@ -92,7 +92,7 @@ class AutoTestSub(AutoTest):
         logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % logfile)
 
-        buildlog = util.reltopdir("../buildlogs/ArduSub-test.tlog")
+        buildlog = self.buildlogs_path("ArduSub-test.tlog")
         self.progress("buildlog=%s" % buildlog)
         if os.path.exists(buildlog):
             os.unlink(buildlog)
