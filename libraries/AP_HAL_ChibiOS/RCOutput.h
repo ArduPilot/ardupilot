@@ -134,6 +134,7 @@ private:
       DShot handling
      */
     const uint8_t dshot_post = 2;
+    const uint8_t dshot_clockmul = 2;
     const uint16_t dshot_bit_length = 16 + dshot_post;
     const uint16_t dshot_buffer_length = dshot_bit_length*4*sizeof(uint32_t);
     uint32_t dshot_pulse_time_us;

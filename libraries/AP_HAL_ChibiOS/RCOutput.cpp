@@ -414,8 +414,8 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
                 const uint32_t bit_period = 19;
                 // configure timer driver for DMAR at requested rate
                 pwmStop(group.pwm_drv);
-                group.pwm_cfg.frequency = rate * bit_period;
-                group.pwm_cfg.period = bit_period;
+                group.pwm_cfg.frequency = rate * bit_period * dshot_clockmul;
+                group.pwm_cfg.period = bit_period * dshot_clockmul;
                 group.pwm_cfg.dier = TIM_DIER_UDE;
                 group.pwm_cfg.cr2 = 0;
                 pwmStart(group.pwm_drv, &group.pwm_cfg);
@@ -623,8 +623,8 @@ uint16_t RCOutput::create_dshot_packet(const uint16_t value)
  */
 void RCOutput::fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t packet)
 {
-    const uint8_t DSHOT_MOTOR_BIT_0 = 7;
-    const uint8_t DSHOT_MOTOR_BIT_1 = 14;
+    const uint8_t DSHOT_MOTOR_BIT_0 = 7 * dshot_clockmul;
+    const uint8_t DSHOT_MOTOR_BIT_1 = 14 * dshot_clockmul;
     for (uint16_t i = 0; i < 16; i++) {
         buffer[i * stride] = (packet & 0x8000) ? DSHOT_MOTOR_BIT_1 : DSHOT_MOTOR_BIT_0;
         packet <<= 1;
