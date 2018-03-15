@@ -667,6 +667,13 @@ void VRBRAINRCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
             ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 1);
         }
         break;
+    case MODE_PWM_DSHOT150:
+    case MODE_PWM_DSHOT300:
+    case MODE_PWM_DSHOT600:
+    case MODE_PWM_DSHOT1200:
+        // treat as normal PWM for now
+        hal.console->printf("DShot not supported\n");
+        FALLTHROUGH;
     case MODE_PWM_NORMAL:
         ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 0);
         if (_alt_fd != -1) {
