@@ -54,6 +54,8 @@ class AutoTestRover(AutoTest):
         self.sitl = None
         self.hasInit = False
 
+        self.log_name = "APMrover2"
+
     def init(self):
         if self.frame is None:
             self.frame = 'rover'
@@ -130,22 +132,6 @@ class AutoTestRover(AutoTest):
         self.mav.idle_hooks.append(self.idle_hook)
         self.hasInit = True
         self.progress("Ready to start testing!")
-
-    def close(self):
-        if self.use_map:
-            self.mavproxy.send("module unload map\n")
-            self.mavproxy.expect("Unloaded module map")
-
-        self.mav.close()
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(self.sitl)
-
-        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
-                                                  model=self.frame)
-        if os.path.exists(valgrind_log):
-            os.chmod(valgrind_log, 0o644)
-            shutil.copy(valgrind_log,
-                        self.buildlogs_path("APMrover2-valgrind.log"))
 
     # def reset_and_arm(self):
     #     """Reset RC, set to MANUAL and arm."""

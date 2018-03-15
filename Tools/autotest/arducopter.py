@@ -159,20 +159,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Ready to start testing!")
 
     def close(self):
-        if self.use_map:
-            self.mavproxy.send("module unload map\n")
-            self.mavproxy.expect("Unloaded module map")
-
-        self.mav.close()
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(self.sitl)
-
-        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
-                                                  model=self.frame)
-        if os.path.exists(valgrind_log):
-            os.chmod(valgrind_log, 0o644)
-            shutil.copy(valgrind_log,
-                        self.buildlogs_path(self.log_name + "-valgrind.log"))
+        super(AutoTestCopter, self).close()
 
         # [2014/05/07] FC Because I'm doing a cross machine build
         # (source is on host, build is on guest VM) I cannot hard link
