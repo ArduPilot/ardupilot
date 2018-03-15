@@ -32,9 +32,13 @@ class AutoTest(ABC):
     """Base abstract class.
     It implements the common function for all vehicle types.
     """
-    def __init__(self):
+    def __init__(self,
+                 viewerip=None,
+                 use_map=False):
         self.mavproxy = None
         self.mav = None
+        self.viewerip = viewerip
+        self.use_map = use_map
 
     def progress(self, text):
         """Display autotest progress text."""
@@ -52,6 +56,22 @@ class AutoTest(ABC):
         else:
             bits.append(path)
         return os.path.join(*bits)
+
+    def sitl_streamrate(self):
+        '''allow subclasses to override SITL streamrate'''
+        return 10
+
+    def mavproxy_options(self):
+        '''returns options to be passed to the main ArduPilot process'''
+        ret = ['--sitl=127.0.0.1:5501',
+               '--out=127.0.0.1:19550',
+               '--streamrate=%u' % self.sitl_streamrate()]
+        if self.viewerip:
+            ret.append("--out=%s:14550" % self.viewerip)
+        if self.use_map:
+            ret.append('--map')
+
+        return ret
 
     #################################################
     # GENERAL UTILITIES
