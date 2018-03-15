@@ -169,6 +169,7 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(rtl_loiter_time,      "RTL_LOIT_TIME",    RTL_LOITER_TIME),
 #endif
 
+#if RANGEFINDER_ENABLED == ENABLED
     // @Param: RNGFND_GAIN
     // @DisplayName: Rangefinder gain
     // @Description: Used to adjust the speed with which the target altitude is changed when objects are sensed below the copter
@@ -176,6 +177,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Increment: 0.01
     // @User: Standard
     GSCALAR(rangefinder_gain, "RNGFND_GAIN", RANGEFINDER_GAIN_DEFAULT),
+#endif
 
     // @Param: FS_BATT_ENABLE
     // @DisplayName: Battery Failsafe Enable
@@ -777,6 +779,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Copter),
 #endif
 
+#if AUTOTUNE_ENABLED == ENABLED
     // @Param: AUTOTUNE_AXES
     // @DisplayName: Autotune axis bitmask
     // @Description: 1-byte bitmap of axes to autotune
@@ -798,6 +801,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 0.001 0.006
     // @User: Standard
     GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.001f),
+#endif
 
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
@@ -812,12 +816,14 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(throw_motor_start, "THROW_MOT_START", 0),
 #endif
 
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     // @Param: TERRAIN_FOLLOW
     // @DisplayName: Terrain Following use control
     // @Description: This enables terrain following for RTL and LAND flight modes. To use this option TERRAIN_ENABLE must be 1 and the GCS must  support sending terrain data to the aircraft.  In RTL the RTL_ALT will be considered a height above the terrain.  In LAND mode the vehicle will slow to LAND_SPEED 10m above terrain (instead of 10m above home).  This parameter does not affect AUTO and Guided which use a per-command flag to determine if the height is above-home, absolute or above-terrain.
     // @Values: 0:Do Not Use in RTL and Land,1:Use in RTL and Land
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
+#endif
 
     // @Group:
     // @Path: Parameters.cpp

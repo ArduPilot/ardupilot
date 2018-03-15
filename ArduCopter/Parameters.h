@@ -390,7 +390,9 @@ public:
     AP_Int16        rtl_altitude;
     AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
+#if RANGEFINDER_ENABLED == ENABLED
     AP_Float        rangefinder_gain;
+#endif
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
@@ -460,7 +462,10 @@ public:
 #if MODE_THROW_ENABLED == ENABLED
     AP_Int8         throw_motor_start;
 #endif
+
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     AP_Int8         terrain_follow;
+#endif
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
@@ -473,9 +478,11 @@ public:
     AP_Float                acro_rp_expo;
 
     // Autotune
+#if AUTOTUNE_ENABLED == ENABLED
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
     AP_Float                autotune_min_d;
+#endif
 
     // Note: keep initializers here in the same order as they are declared
     // above.
