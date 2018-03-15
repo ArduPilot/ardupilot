@@ -18,7 +18,7 @@ enum ESCCalibrationModes {
 // check if we should enter esc calibration mode
 void Copter::esc_calibration_startup_check()
 {
-    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_BRUSHED) {
+    if (motors->get_pwm_type() == AP_Motors::PWM_TYPE_BRUSHED) {
         // ESC cal not valid for brushed motors
         return;
     }
