@@ -10,7 +10,6 @@ import pexpect
 from pymavlink import mavutil
 
 from pysim import util
-from pysim import vehicleinfo
 
 from common import AutoTest
 
@@ -70,6 +69,9 @@ class AutoTestCopter(AutoTest):
     def sitl_streamrate(self):
         return 5
 
+    def vehicleinfo_key(self):
+        return 'ArduCopter'
+
     def init(self):
         if self.frame is None:
             self.frame = '+'
@@ -81,33 +83,7 @@ class AutoTestCopter(AutoTest):
                                          AVCHOME.alt,
                                          AVCHOME.heading)
 
-        self.sitl = util.start_SITL(self.binary,
-                                    wipe=True,
-                                    model=self.frame,
-                                    home=self.home,
-                                    speedup=self.speedup_default)
-        self.mavproxy = util.start_MAVProxy_SITL('ArduCopter')
-
-        self.progress("WAITING FOR PARAMETERS")
-        self.mavproxy.expect('Received [0-9]+ parameters')
-
-        # setup test parameters
-        vinfo = vehicleinfo.VehicleInfo()
-        if self.params is None:
-            frames = vinfo.options["ArduCopter"]["frames"]
-            self.params = frames[self.frame]["default_params_filename"]
-        if not isinstance(self.params, list):
-            self.params = [self.params]
-        for x in self.params:
-            self.mavproxy.send("param load %s\n" % os.path.join(testdir, x))
-            self.mavproxy.expect('Loaded [0-9]+ parameters')
-        self.set_parameter('LOG_REPLAY', 1)
-        self.set_parameter('LOG_DISARMED', 1)
-        self.progress("RELOADING SITL WITH NEW PARAMETERS")
-
-        # restart with new parms
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(self.sitl)
+        self.apply_parameters_using_sitl()
 
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
