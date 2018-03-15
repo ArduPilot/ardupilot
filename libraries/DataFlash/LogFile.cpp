@@ -1448,7 +1448,8 @@ bool DataFlash_Backend::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_missi
         param4          : (float)mav_cmd.param4,
         latitude        : (float)mav_cmd.x,
         longitude       : (float)mav_cmd.y,
-        altitude        : (float)mav_cmd.z
+        altitude        : (float)mav_cmd.z,
+        frame           : (uint8_t)mav_cmd.frame
     };
     return WriteBlock(&pkt, sizeof(pkt));
 }
