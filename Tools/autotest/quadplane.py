@@ -4,7 +4,6 @@
 from __future__ import print_function
 import os
 import pexpect
-import shutil
 from pymavlink import mavutil
 
 from common import AutoTest
@@ -44,7 +43,7 @@ class AutoTestQuadPlane(AutoTest):
         self.speedup = speedup
         self.speedup_default = 10
 
-        self.log_name = "ArduCopter"
+        self.log_name = "QuadPlane"
         self.logfile = None
         self.buildlog = None
         self.copy_tlog = False
@@ -103,22 +102,6 @@ class AutoTestQuadPlane(AutoTest):
         self.mav.idle_hooks.append(self.idle_hook)
         self.hasInit = True
         self.progress("Ready to start testing!")
-
-    def close(self):
-        if self.use_map:
-            self.mavproxy.send("module unload map\n")
-            self.mavproxy.expect("Unloaded module map")
-
-        self.mav.close()
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(self.sitl)
-
-        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
-                                                  model=self.frame)
-        if os.path.exists(valgrind_log):
-            os.chmod(valgrind_log, 0o644)
-            shutil.copy(valgrind_log,
-                        self.buildlogs_path("QuadPlane-valgrind.log"))
 
     # def test_arm_motors_radio(self):
     #     super(AutotestQuadPlane, self).test_arm_motors_radio()
