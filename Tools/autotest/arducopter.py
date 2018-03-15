@@ -1424,7 +1424,7 @@ class AutoTestCopter(AutoTest):
             # wait for disarm
             self.mav.motors_disarmed_wait()
 
-            log_filepath = util.reltopdir("../buildlogs/ArduCopter-log.bin")
+            log_filepath = self.buildlogs_path("ArduCopter-log.bin")
             if not self.log_download(log_filepath):
                 failed_test_msg = "log_download failed"
                 self.progress(failed_test_msg)
@@ -1484,7 +1484,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(8, 1000)
 
             # mission ends with disarm so should be ok to download logs now
-            log_path = util.reltopdir("../buildlogs/Helicopter-log.bin")
+            log_path = self.buildlogs_path("Helicopter-log.bin")
             if not self.log_download(log_path):
                 failed_test_msg = "log_download failed"
                 self.progress(failed_test_msg)

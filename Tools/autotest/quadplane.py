@@ -72,7 +72,7 @@ class AutoTestQuadPlane(AutoTest):
         logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % logfile)
 
-        buildlog = util.reltopdir("../buildlogs/QuadPlane-test.tlog")
+        buildlog = self.buildlogs_path("QuadPlane-test.tlog")
         self.progress("buildlog=%s" % buildlog)
         if os.path.exists(buildlog):
             os.unlink(buildlog)
