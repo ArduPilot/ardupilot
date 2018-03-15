@@ -1179,7 +1179,7 @@ void Copter::convert_pid_parameters(void)
     const AP_Param::ConversionInfo rc_feel_rp_conversion_info = { Parameters::k_param_rc_feel_rp, 0, AP_PARAM_INT8, "ATC_INPUT_TC" };
     AP_Int8 rc_feel_rp_old;
     if (AP_Param::find_old_parameter(&rc_feel_rp_conversion_info, &rc_feel_rp_old)) {
-        AP_Param::set_default_by_name(rc_feel_rp_conversion_info.new_name, (1.0f / (2.0f + rc_feel_rp_old.get() / 10.0f)));
+        AP_Param::set_default_by_name(rc_feel_rp_conversion_info.new_name, (1.0f / (2.0f + rc_feel_rp_old.get() * 0.1f)));
     }
 
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
