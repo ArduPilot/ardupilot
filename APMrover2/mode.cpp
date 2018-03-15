@@ -314,7 +314,7 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
     // negative error = left turn
     // positive error = right turn
     rover.nav_controller->set_reverse(reversed);
-    rover.nav_controller->update_waypoint(origin, destination);
+    rover.nav_controller->update_waypoint(origin, destination, g.waypoint_radius);
     float desired_lat_accel = rover.nav_controller->lateral_acceleration();
     float desired_heading = rover.nav_controller->target_bearing_cd();
     if (reversed) {
