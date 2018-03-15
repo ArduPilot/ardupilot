@@ -80,7 +80,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 
     // @Param: LOIT_MAXA
     // @DisplayName: Loiter maximum correction acceleration
-    // @Description: Loiter maximum correction acceleration in cm/s/s.  Higher values cause the copter to correct possition errors more aggressivly.
+    // @Description: Loiter maximum correction acceleration in cm/s/s.  Higher values cause the copter to correct position errors more aggressively.
     // @Units: cm/s/s
     // @Range: 100 981
     // @Increment: 1
