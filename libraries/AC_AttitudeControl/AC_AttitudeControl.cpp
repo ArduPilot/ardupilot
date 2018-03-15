@@ -957,7 +957,7 @@ float AC_AttitudeControl::stopping_point(float first_ord_mag, float p, float sec
         return first_ord_mag/p;
     } else {
         float linear_dist = second_ord_lim/sq(p);
-        float overshoot = (linear_dist/2.0f) + sq(first_ord_mag)/(2.0f*second_ord_lim);
+        float overshoot = (linear_dist*0.5f) + sq(first_ord_mag)/(2.0f*second_ord_lim);
         if (is_positive(first_ord_mag)){
             return overshoot;
         } else {
