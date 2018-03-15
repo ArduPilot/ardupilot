@@ -21,20 +21,15 @@ WIND = "0,180,0.2"  # speed,direction,variance
 class AutoTestQuadPlane(AutoTest):
     def __init__(self,
                  binary,
-                 viewerip=None,
-                 use_map=False,
                  valgrind=False,
                  gdb=False,
                  speedup=10,
                  frame=None,
                  params=None,
-                 gdbserver=False):
-        super(AutoTestQuadPlane, self).__init__()
+                 gdbserver=False,
+                 **kwargs):
+        super(AutoTestQuadPlane, self).__init__(**kwargs)
         self.binary = binary
-        self.options = ('--sitl=127.0.0.1:5501 --out=127.0.0.1:19550'
-                        ' --streamrate=10')
-        self.viewerip = viewerip
-        self.use_map = use_map
         self.valgrind = valgrind
         self.gdb = gdb
         self.frame = frame
@@ -61,11 +56,6 @@ class AutoTestQuadPlane(AutoTest):
         if self.frame is None:
             self.frame = 'quadplane'
 
-        if self.viewerip:
-            self.options += " --out=%s:14550" % self.viewerip
-        if self.use_map:
-            self.options += ' --map'
-
         defaults_file = os.path.join(testdir, 'default_params/quadplane.parm')
         self.sitl = util.start_SITL(self.binary,
                                     wipe=True,
@@ -76,8 +66,8 @@ class AutoTestQuadPlane(AutoTest):
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver)
-        self.mavproxy = util.start_MAVProxy_SITL('QuadPlane',
-                                                 options=self.options)
+        self.mavproxy = util.start_MAVProxy_SITL(
+            'QuadPlane', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)')
         logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % logfile)

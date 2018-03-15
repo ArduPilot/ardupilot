@@ -30,21 +30,15 @@ AVCHOME = mavutil.location(40.072842, -105.230575, 1586, 0)
 
 class AutoTestCopter(AutoTest):
     def __init__(self, binary,
-                 viewerip=None,
-                 use_map=False,
                  valgrind=False,
                  gdb=False,
                  speedup=10,
                  frame=None,
                  params=None,
-                 gdbserver=False):
-        super(AutoTestCopter, self).__init__()
+                 gdbserver=False,
+                 **kwargs):
+        super(AutoTestCopter, self).__init__(**kwargs)
         self.binary = binary
-        self.options = ('--sitl=127.0.0.1:5501 '
-                        ' --out=127.0.0.1:19550 '
-                        ' --streamrate=5')
-        self.viewerip = viewerip
-        self.use_map = use_map
         self.valgrind = valgrind
         self.gdb = gdb
         self.frame = frame
@@ -67,6 +61,15 @@ class AutoTestCopter(AutoTest):
         self.sitl = None
         self.hasInit = False
 
+    def mavproxy_options(self):
+        ret = super(AutoTestCopter, self).mavproxy_options()
+        if self.frame != 'heli':
+            ret.append('--quadcopter')
+        return ret
+
+    def sitl_streamrate(self):
+        return 5
+
     def init(self):
         if self.frame is None:
             self.frame = '+'
@@ -77,13 +80,6 @@ class AutoTestCopter(AutoTest):
                                          AVCHOME.lng,
                                          AVCHOME.alt,
                                          AVCHOME.heading)
-        else:
-            self.options += " --quadcopter"
-
-        if self.viewerip:
-            self.options += " --out=%s:14550" % self.viewerip
-        if self.use_map:
-            self.options += ' --map'
 
         self.sitl = util.start_SITL(self.binary,
                                     wipe=True,
@@ -120,8 +116,8 @@ class AutoTestCopter(AutoTest):
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver)
-        self.mavproxy = util.start_MAVProxy_SITL('ArduCopter',
-                                                 options=self.options)
+        self.mavproxy = util.start_MAVProxy_SITL(
+            'ArduCopter', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)')
         self.logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)
@@ -278,7 +274,7 @@ class AutoTestCopter(AutoTest):
     #   TESTS FLY
     #################################################
 
-    # fly a square in stabilize mode
+    # fly a square in alt_hold mode
     def fly_square(self, side=50, timeout=300):
         """Fly a square, flying N then E ."""
         tstart = self.get_sim_time()
