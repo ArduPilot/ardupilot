@@ -107,7 +107,7 @@ public:
         DESIRED_THROTTLE_UNLIMITED = 2,     // motors are no longer constrained by start up procedure
     };
 
-    virtual void set_desired_spool_state(enum spool_up_down_desired spool) { _spool_desired = spool; };
+    void set_desired_spool_state(enum spool_up_down_desired spool);
 
     enum spool_up_down_desired get_desired_spool_state(void) const { return _spool_desired; }
 
