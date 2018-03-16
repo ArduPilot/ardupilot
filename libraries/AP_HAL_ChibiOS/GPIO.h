@@ -47,8 +47,16 @@ public:
     bool    usb_connected(void) override;
 
     void set_usb_connected() { _usb_connected = true; }
+
+    /* 
+       set the output mode for a pin. Used to restore an alternate function
+       after using a pin as GPIO. Private to HAL_ChibiOS
+    */
+    void _set_mode(uint8_t pin, uint32_t mode);
+    
 private:
-    bool _usb_connected = false;
+    bool _usb_connected;
+    bool _ext_started;
 };
 
 class ChibiOS::DigitalSource : public AP_HAL::DigitalSource {

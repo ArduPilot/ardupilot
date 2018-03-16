@@ -219,7 +219,8 @@ class generic_pin(object):
         if (self.type.startswith('USART') or
             self.type.startswith('UART')) and (
             (self.label.endswith('_TX') or
-             self.label.endswith('_RX'))):
+             self.label.endswith('_RX') or
+             self.label.endswith('_CTS'))):
             # default RX/TX lines to pullup, to prevent spurious bytes
             # on disconnected ports. CTS is the exception, which is pulldown
             if self.label.endswith("CTS"):
@@ -667,6 +668,8 @@ def write_PWM_config(f):
             'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED',
             'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED'
         ]
+        alt_functions = [ 0, 0, 0, 0 ]
+        pal_lines = [ '0', '0', '0', '0' ]
         for p in pwm_out:
             if p.type != t:
                 continue
@@ -679,6 +682,8 @@ def write_PWM_config(f):
             pwm = p.extra_value('PWM', type=int)
             chan_list[chan - 1] = pwm - 1
             chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
+            alt_functions[chan - 1] = p.af
+            pal_lines[chan - 1] = 'PAL_LINE(GPIO%s, %uU)' % (p.port, p.pin)
         groups.append('HAL_PWM_GROUP%u' % group)
         if n in [1, 8]:
             # only the advanced timers do 8MHz clocks
@@ -706,10 +711,16 @@ def write_PWM_config(f):
            {%s, NULL}, \\
            {%s, NULL}  \\
           }, 0, 0}, &PWMD%u, \\
-          HAL_PWM%u_DMA_CONFIG }\n''' %
-                (group, advanced_timer, chan_list[0], chan_list[1],
-                 chan_list[2], chan_list[3], pwm_clock, period, chan_mode[0],
-                 chan_mode[1], chan_mode[2], chan_mode[3], n, n))
+          HAL_PWM%u_DMA_CONFIG, \\
+          { %u, %u, %u, %u }, \\
+          { %s, %s, %s, %s }}\n''' %
+                (group, advanced_timer,
+                 chan_list[0], chan_list[1], chan_list[2], chan_list[3],
+                 pwm_clock, period,
+                 chan_mode[0], chan_mode[1], chan_mode[2], chan_mode[3],
+                 n, n,
+                 alt_functions[0], alt_functions[1], alt_functions[2], alt_functions[3],
+                 pal_lines[0], pal_lines[1], pal_lines[2], pal_lines[3]))
     f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
 
 
@@ -756,10 +767,12 @@ def write_GPIO_config(f):
         pin = p.pin
         gpios.append((gpio, pwm, port, pin, p))
     gpios = sorted(gpios)
+    for (gpio, pwm, port, pin, p) in gpios:
+        f.write('#define HAL_GPIO_LINE_GPIO%u PAL_LINE(GPIO%s, %2uU)\n' % (gpio, port, pin))
     f.write('#define HAL_GPIO_PINS { \\\n')
     for (gpio, pwm, port, pin, p) in gpios:
-        f.write('{ %3u, true, %2u, PAL_LINE(GPIO%s, %2uU) }, /* %s */ \\\n' %
-                (gpio, pwm, port, pin, p))
+        f.write('{ %3u, true, %2u, PAL_LINE(GPIO%s, %2uU), EXT_MODE_GPIO%s }, /* %s */ \\\n' %
+                (gpio, pwm, port, pin, port, p))
     # and write #defines for use by config code
     f.write('}\n\n')
     f.write('// full pin define list\n')
