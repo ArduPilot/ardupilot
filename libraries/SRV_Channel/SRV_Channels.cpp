@@ -24,7 +24,6 @@
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #endif
 
@@ -226,9 +225,6 @@ void SRV_Channels::push()
 {
     hal.rcout->push();
     
-    // push outputs to UAVCAN as well
-    push_UAVCAN();
-
     // give volz library a chance to update
     volz_ptr->update();
 
@@ -239,39 +235,16 @@ void SRV_Channels::push()
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();
 #endif
-}
 
-void SRV_Channels::push_UAVCAN(void)
-{
 #if HAL_WITH_UAVCAN
-    if (AP_BoardConfig_CAN::get_can_num_ifaces() == 0) {
-        return;
-    }
-    
-    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+    // push outputs to UAVCAN
+    uint8_t can_num_ifaces = AP_BoardConfig_CAN::get_can_num_ifaces();
+    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS && i < can_num_ifaces; i++) {
         AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
         if (ap_uavcan == nullptr) {
-            return;
-        }
-        
-        if (!ap_uavcan->SRV_sem_take()) {
             continue;
         }
-        
-        for (uint8_t j = 0; j < NUM_SERVO_CHANNELS; j++) {
-            // Check if this channels has any function assigned
-            if (channel_function(j)) {
-                ap_uavcan->SRV_write(channels[j].get_output_pwm(), j);
-            }
-        }
-        
-        if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-            ap_uavcan->SRV_arm_actuators(true);
-        } else {
-            ap_uavcan->SRV_arm_actuators(false);
-        }
-        
-        ap_uavcan->SRV_sem_give();
+        ap_uavcan->SRV_push_servos();
     }
 #endif // HAL_WITH_UAVCAN
 }
