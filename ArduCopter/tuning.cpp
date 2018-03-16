@@ -15,10 +15,10 @@ void Copter::tuning() {
         return;
     }
 
-    uint16_t radio_in = rc6->get_radio_in();
-    float v = constrain_float((radio_in - rc6->get_radio_min()) / float(rc6->get_radio_max() - rc6->get_radio_min()), 0, 1);
-    int16_t control_in = g.radio_tuning_low + v * (g.radio_tuning_high - g.radio_tuning_low);
-    float tuning_value = control_in / 1000.0f;
+    const uint16_t radio_in = rc6->get_radio_in();
+    const float v = constrain_float((radio_in - rc6->get_radio_min()) / float(rc6->get_radio_max() - rc6->get_radio_min()), 0, 1);
+    const float control_in = g.radio_tuning_low + v * (g.radio_tuning_high - g.radio_tuning_low);
+    float tuning_value = 0.001f * control_in;
     
     // Tuning Value should never be outside the bounds of the specified low and high value
     tuning_value = constrain_float(tuning_value, g.radio_tuning_low/1000.0f, g.radio_tuning_high/1000.0f);
@@ -112,7 +112,7 @@ void Copter::tuning() {
 
 #if FRAME_CONFIG == HELI_FRAME
     case TUNING_HELI_EXTERNAL_GYRO:
-        motors->ext_gyro_gain((float)control_in / 1000.0f);
+        motors->ext_gyro_gain(0.001f * control_in);
         break;
 
     case TUNING_RATE_PITCH_FF:
@@ -136,7 +136,7 @@ void Copter::tuning() {
 #if MODE_CIRCLE_ENABLED == ENABLED
     case TUNING_CIRCLE_RATE:
         // set circle rate up to approximately 45 deg/sec in either direction
-        circle_nav->set_rate((float)control_in/25.0f-20.0f);
+        circle_nav->set_rate(control_in/25.0f-20.0f);
         break;
 #endif
 
