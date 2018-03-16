@@ -29,6 +29,7 @@
 #define CH_NONE 255
 #endif
 
+class ByteBuffer;
 
 class AP_HAL::RCOutput {
 public:
@@ -126,9 +127,42 @@ public:
     virtual void timer_tick(void) { }
 
     /*
-      output modes. Allows for support of oneshot and dshot
+      setup for serial output to an ESC using the given
+      baudrate. Assumes 1 start bit, 1 stop bit, LSB first and 8
+      databits. This is used for passthrough ESC configuration and
+      firmware flashing
+
+      While serial output is active normal output to this channel is
+      suspended. Output to some other channels (such as those in the
+      same channel timer group) may also be stopped, depending on the
+      implementation
+     */
+    virtual bool serial_setup_output(uint8_t chan, uint32_t baudrate) { return false; }
+
+    /*
+      write a set of bytes to an ESC, using settings from
+      serial_setup_output. This is a blocking call
+     */
+    virtual bool serial_write_bytes(const uint8_t *bytes, uint16_t len) { return false; }
+
+    /*
+      read a series of bytes from a port, using serial parameters from serial_setup_output()
+      return the number of bytes read. This is a blocking call
+     */
+    virtual uint16_t serial_read_bytes(uint8_t *buf, uint16_t len) { return 0; }
+    
+    /*
+      stop serial output. This restores the previous output mode for
+      the channel and any other channels that were stopped by
+      serial_setup_output()
+     */
+    virtual void serial_end(void) {}
+    
+    /*
+      output modes. Allows for support of PWM, oneshot and dshot 
      */
     enum output_mode {
+        MODE_PWM_NONE,
         MODE_PWM_NORMAL,
         MODE_PWM_ONESHOT,
         MODE_PWM_BRUSHED,
