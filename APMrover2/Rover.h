@@ -316,9 +316,6 @@ private:
     // The home location used for RTL.  The location is set when we first get stable GPS lock
     const struct Location &home;
 
-    // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState home_is_set = HOME_UNSET;
-
     // true if the system time has been set from the GPS
     bool system_time_set;
 
