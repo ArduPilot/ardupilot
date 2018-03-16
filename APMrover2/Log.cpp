@@ -231,7 +231,7 @@ void Rover::Log_Write_Home_And_Origin()
 #endif
 
     // log ahrs home if set
-    if (home_is_set != HOME_UNSET) {
+    if (ahrs.home_is_set()) {
         DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
     }
 }
