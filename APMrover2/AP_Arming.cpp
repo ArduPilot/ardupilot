@@ -1,11 +1,6 @@
 #include "AP_Arming.h"
 #include "Rover.h"
 
-enum HomeState AP_Arming_Rover::home_status() const
-{
-    return rover.home_is_set;
-}
-
 // perform pre_arm_rc_checks checks
 bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
 {
