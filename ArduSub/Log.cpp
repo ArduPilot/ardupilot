@@ -291,7 +291,7 @@ void Sub::Log_Write_Home_And_Origin()
     }
 
     // log ahrs home if set
-    if (ap.home_state != HOME_UNSET) {
+    if (ahrs.home_is_set()) {
         DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
     }
 }

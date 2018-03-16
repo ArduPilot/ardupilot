@@ -1,11 +1,6 @@
 #include "AP_Arming_Sub.h"
 #include "Sub.h"
 
-enum HomeState AP_Arming_Sub::home_status() const
-{
-    return sub.ap.home_state;
-}
-
 bool AP_Arming_Sub::rc_calibration_checks(bool display_failure)
 {
     const RC_Channel *channels[] = {
