@@ -462,6 +462,16 @@ public:
         return _home;
     }
 
+    enum HomeState home_status(void) const {
+        return _home_status;
+    }
+    void set_home_status(enum HomeState new_status) {
+        _home_status = new_status;
+    }
+    bool home_is_set(void) const {
+        return _home_status != HOME_UNSET;
+    }
+
     // set the home location in 10e7 degrees. This should be called
     // when the vehicle is at this position. It is assumed that the
     // current barometer and GPS altitudes correspond to this altitude
@@ -672,6 +682,9 @@ protected:
 
 private:
     static AP_AHRS *_singleton;
+
+    // Flag for if we have g_gps lock and have set the home location in AHRS
+    enum HomeState _home_status = HOME_UNSET;
 
 };
 
