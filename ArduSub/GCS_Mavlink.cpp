@@ -1193,17 +1193,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-        case MAV_CMD_GET_HOME_POSITION:
-            if (AP::ahrs().home_is_set()) {
-                send_home(sub.ahrs.get_home());
-                Location ekf_origin;
-                if (sub.ahrs.get_origin(ekf_origin)) {
-                    send_ekf_origin(ekf_origin);
-                }
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
             if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
                 // Send an invalid signal to the motors to prevent spinning due to neutral (1500) pwm pulse being cut short
