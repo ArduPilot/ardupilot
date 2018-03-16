@@ -269,6 +269,7 @@ public:
     void SRV_force_safety_off(void);
     void SRV_arm_actuators(bool arm);
     void SRV_write(uint16_t pulse_len, uint8_t ch);
+    void SRV_push_servos(void);
     bool led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue);
 
     void set_parent_can_mgr(AP_HAL::CANManager* parent_can_mgr)
