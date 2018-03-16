@@ -371,18 +371,16 @@ int CAN::_read(uavcan::CanFrame& frame, uavcan::UtcTime& ts_utc, bool& loopback)
     auto sockcan_frame = can_frame();
     iov.iov_base = &sockcan_frame;
     iov.iov_len  = sizeof(sockcan_frame);
-
-    struct Control
-    {
-        cmsghdr cm;
-        std::uint8_t data[sizeof(::timeval)];
+    union {
+        uint8_t data[CMSG_SPACE(sizeof(::timeval))];
+        struct cmsghdr align;
     } control;
 
     auto msg = msghdr();
     msg.msg_iov    = &iov;
     msg.msg_iovlen = 1;
-    msg.msg_control = &control;
-    msg.msg_controllen = sizeof(control);
+    msg.msg_control = control.data;
+    msg.msg_controllen = sizeof(control.data);
 
     const int res = recvmsg(_fd, &msg, MSG_DONTWAIT);
     if (res <= 0) {
