@@ -702,11 +702,6 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     return AP_Arming::arm_checks(arming_from_gcs);
 }
 
-enum HomeState AP_Arming_Copter::home_status() const
-{
-    return copter.ap.home_state;
-}
-
 void AP_Arming_Copter::set_pre_arm_check(bool b)
 {
     copter.ap.pre_arm_check = b;
