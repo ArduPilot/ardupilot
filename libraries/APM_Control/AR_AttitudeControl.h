@@ -47,8 +47,8 @@ public:
     // positive lateral acceleration is to the right.
     float get_steering_out_lat_accel(float desired_accel, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed);
 
-    // return a steering servo output from -1 to +1 given an angle error in radians
-    float get_steering_out_angle_error(float angle_err, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed);
+    // return a steering servo output from -1 to +1 given a heading in radians
+    float get_steering_out_heading(float heading_rad, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed);
 
     // return a steering servo output from -1 to +1 given a
     // desired yaw rate in radians/sec. Positive yaw is to the right.
