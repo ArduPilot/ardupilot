@@ -134,21 +134,27 @@ protected:
     ap_t &ap;
 
     // auto-takeoff support; takeoff state is shared across all mode instances
-    typedef struct {
-        bool running;
+    class _TakeOff {
+    public:
+        void start(float alt_cm);
+        void stop();
+        void get_climb_rates(float& pilot_climb_rate,
+                             float& takeoff_climb_rate);
+        bool triggered(float target_climb_rate) const;
+
+        bool running() const { return _running; }
+    private:
+        bool _running;
         float max_speed;
         float alt_delta;
         uint32_t start_ms;
-    } takeoff_state_t;
+    };
 
-    static takeoff_state_t takeoff_state;
+    static _TakeOff takeoff;
 
-    void takeoff_timer_start(float alt_cm);
-    void takeoff_stop();
-    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
+    static void takeoff_stop() { takeoff.stop(); }
 
     // takeoff support
-    bool takeoff_triggered(float target_climb_rate) const;
     virtual bool do_user_takeoff_start(float takeoff_alt_cm);
 
     // gnd speed limit required to observe optical flow sensor limits

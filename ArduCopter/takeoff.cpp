@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-Copter::Mode::takeoff_state_t Copter::Mode::takeoff_state;
+Copter::Mode::_TakeOff Copter::Mode::takeoff;
 
 // This file contains the high-level takeoff logic for Loiter, PosHold, AltHold, Sport modes.
 //   The take-off can be initiated from a GCS NAV_TAKEOFF command which includes a takeoff altitude
@@ -9,7 +9,7 @@ Copter::Mode::takeoff_state_t Copter::Mode::takeoff_state;
 
 bool Copter::Mode::do_user_takeoff_start(float takeoff_alt_cm)
 {
-    takeoff_timer_start(takeoff_alt_cm);
+    copter.flightmode->takeoff.start(takeoff_alt_cm);
     return true;
 }
 
@@ -48,60 +48,61 @@ bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 }
 
 // start takeoff to specified altitude above home in centimeters
-void Copter::Mode::takeoff_timer_start(float alt_cm)
+void Copter::Mode::_TakeOff::start(float alt_cm)
 {
     // calculate climb rate
-    float speed = MIN(wp_nav->get_speed_up(), MAX(g.pilot_speed_up*2.0f/3.0f, g.pilot_speed_up-50.0f));
+    const float speed = MIN(copter.wp_nav->get_speed_up(), MAX(copter.g.pilot_speed_up*2.0f/3.0f, copter.g.pilot_speed_up-50.0f));
 
     // sanity check speed and target
-    if (takeoff_state.running || speed <= 0.0f || alt_cm <= 0.0f) {
+    if (running() || speed <= 0.0f || alt_cm <= 0.0f) {
         return;
     }
 
     // initialise takeoff state
-    takeoff_state.running = true;
-    takeoff_state.max_speed = speed;
-    takeoff_state.start_ms = millis();
-    takeoff_state.alt_delta = alt_cm;
+    _running = true;
+    max_speed = speed;
+    start_ms = millis();
+    alt_delta = alt_cm;
 }
 
 // stop takeoff
-void Copter::Mode::takeoff_stop()
+void Copter::Mode::_TakeOff::stop()
 {
-    takeoff_state.running = false;
-    takeoff_state.start_ms = 0;
+    _running = false;
+    start_ms = 0;
 }
 
 // returns pilot and takeoff climb rates
 //  pilot_climb_rate is both an input and an output
 //  takeoff_climb_rate is only an output
 //  has side-effect of turning takeoff off when timeout as expired
-void Copter::Mode::takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
+void Copter::Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
+                                                  float& takeoff_climb_rate)
 {
     // return pilot_climb_rate if take-off inactive
-    if (!takeoff_state.running) {
+    if (!_running) {
         takeoff_climb_rate = 0.0f;
         return;
     }
 
     // acceleration of 50cm/s/s
-    static const float takeoff_accel = 50.0f;
-    float takeoff_minspeed = MIN(50.0f,takeoff_state.max_speed);
-    float time_elapsed = (millis()-takeoff_state.start_ms)*1.0e-3f;
-    float speed = MIN(time_elapsed*takeoff_accel+takeoff_minspeed, takeoff_state.max_speed);
+    static constexpr float TAKEOFF_ACCEL = 50.0f;
+    const float takeoff_minspeed = MIN(50.0f, max_speed);
+    const float time_elapsed = (millis() - start_ms) * 1.0e-3f;
+    const float speed = MIN(time_elapsed * TAKEOFF_ACCEL + takeoff_minspeed, max_speed);
 
-    float time_to_max_speed = (takeoff_state.max_speed-takeoff_minspeed)/takeoff_accel;
+    const float time_to_max_speed = (max_speed - takeoff_minspeed) / TAKEOFF_ACCEL;
     float height_gained;
     if (time_elapsed <= time_to_max_speed) {
-        height_gained = 0.5f*takeoff_accel*sq(time_elapsed) + takeoff_minspeed*time_elapsed;
+        height_gained = 0.5f * TAKEOFF_ACCEL * sq(time_elapsed) + takeoff_minspeed * time_elapsed;
     } else {
-        height_gained = 0.5f*takeoff_accel*sq(time_to_max_speed) + takeoff_minspeed*time_to_max_speed +
-                        (time_elapsed-time_to_max_speed)*takeoff_state.max_speed;
+        height_gained = 0.5f * TAKEOFF_ACCEL * sq(time_to_max_speed) + takeoff_minspeed * time_to_max_speed +
+                        (time_elapsed - time_to_max_speed) * max_speed;
     }
 
     // check if the takeoff is over
-    if (height_gained >= takeoff_state.alt_delta) {
-        takeoff_stop();
+    if (height_gained >= alt_delta) {
+        stop();
     }
 
     // if takeoff climb rate is zero return
@@ -118,7 +119,7 @@ void Copter::Mode::takeoff_get_climb_rates(float& pilot_climb_rate, float& takeo
         // if overall climb rate is still positive, move to take-off climb rate
         if (takeoff_climb_rate + pilot_climb_rate > 0.0f) {
             takeoff_climb_rate = takeoff_climb_rate + pilot_climb_rate;
-            pilot_climb_rate = 0;
+            pilot_climb_rate = 0.0f;
         } else {
             // if overall is negative, move to pilot climb rate
             pilot_climb_rate = pilot_climb_rate + takeoff_climb_rate;
