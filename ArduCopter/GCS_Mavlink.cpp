@@ -860,7 +860,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 new_home_loc.alt = packet.z * 100;
                 // handle relative altitude
                 if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                    if (copter.ap.home_state == HOME_UNSET) {
+                    if (!AP::ahrs().home_is_set()) {
                         // cannot use relative altitude if home is not set
                         break;
                     }
@@ -1126,7 +1126,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_GET_HOME_POSITION:
-            if (copter.ap.home_state != HOME_UNSET) {
+            if (AP::ahrs().home_is_set()) {
                 send_home(copter.ahrs.get_home());
                 Location ekf_origin;
                 if (copter.ahrs.get_origin(ekf_origin)) {
