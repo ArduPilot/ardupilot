@@ -2124,6 +2124,20 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_long_t 
     return _set_mode_common(base_mode, custom_mode);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_long_t &packet)
+{
+    if (!AP::ahrs().home_is_set()) {
+        return MAV_RESULT_FAILED;
+    }
+    send_home(AP::ahrs().get_home());
+
+    Location ekf_origin;
+    if (AP::ahrs().get_origin(ekf_origin)) {
+        send_ekf_origin(ekf_origin);
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
@@ -2166,6 +2180,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         result = handle_command_preflight_set_sensor_offsets(packet);
         break;
     }
+
+    case MAV_CMD_GET_HOME_POSITION:
+        result = handle_command_get_home_position(packet);
+        break;
 
     case MAV_CMD_PREFLIGHT_STORAGE:
         if (is_equal(packet.param1, 2.0f)) {
