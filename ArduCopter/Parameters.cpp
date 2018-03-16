@@ -1014,7 +1014,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
   constructor for g2 object
  */
 ParametersG2::ParametersG2(void)
-    : temp_calibration(copter.ins)
+    : temp_calibration() // this doesn't actually need constructing, but removing it here is problematic syntax-wise
 #if BEACON_ENABLED == ENABLED
     , beacon(copter.serial_manager)
 #endif
