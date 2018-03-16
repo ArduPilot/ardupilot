@@ -30,6 +30,46 @@ uint8_t maxell_cell_ids[] = { 0x3f,  // cell 1
  * #define BATTMONITOR_SMBUS_MAXELL_PF_STATUS             0x53    // safety status
 */
 
+/**
+ * detect if a Maxbotix rangefinder is connected. We'll detect by
+ * trying to take a reading on I2C. If we get a result the sensor is
+ * there.
+ *
+ * @param [in] mon
+ * @param [in] mon_state
+ * @param [in] params
+ * @param [in] dev
+ * @return sensor instance
+ */
+AP_BattMonitor_Backend *AP_BattMonitor_SMBus_Maxell::detect(AP_BattMonitor &mon,
+                                                            AP_BattMonitor::BattMonitor_State &mon_state,
+                                                            AP_BattMonitor_Params &params,
+                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+{
+    AP_BattMonitor_SMBus_Maxell *sensor = new AP_BattMonitor_SMBus_Maxell(mon, mon_state, params, std::move(dev));
+    if (!sensor) {
+        return nullptr;
+    }
+
+    if (sensor->_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        uint8_t manufactureName[2];
+        memset(manufactureName, 0, sizeof(manufactureName));
+        if (!sensor->_dev->read_registers(BATTMONITOR_SMBUS_MANUFACTURE_NAME, manufactureName, 2)) {
+            sensor->_dev->get_semaphore()->give();
+            delete sensor;
+            return nullptr;
+        }
+
+        sensor->_dev->get_semaphore()->give();
+        if (manufactureName[0] == 0 || manufactureName[0] > 32 || (manufactureName[1] != 'H' && manufactureName[1] != 'm' && manufactureName[1] != 'M')) {
+            delete sensor;
+            return nullptr;
+        }
+    }
+
+    return sensor;
+}
+
 // Constructor
 AP_BattMonitor_SMBus_Maxell::AP_BattMonitor_SMBus_Maxell(AP_BattMonitor &mon,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,

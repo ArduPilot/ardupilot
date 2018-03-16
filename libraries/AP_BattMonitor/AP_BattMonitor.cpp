@@ -76,10 +76,17 @@ AP_BattMonitor::init()
                 _num_instances++;
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_MAXELL:
-                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance],
-                                                                    hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR,
-                                                                                            100000, true, 20));
-                _num_instances++;
+                drivers[instance] = AP_BattMonitor_SMBus_Maxell::detect(*this, state[instance], _params[instance],
+                                                                        hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR,
+                                                                                                100000, true, 20));
+                if (drivers[instance] == nullptr) {
+                    drivers[instance] = AP_BattMonitor_SMBus_Maxell::detect(*this, state[instance], _params[instance],
+                                                                            hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR,
+                                                                                                    100000, true, 20));
+                }
+                if (drivers[instance] != nullptr) {
+                    _num_instances++;
+                }
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
