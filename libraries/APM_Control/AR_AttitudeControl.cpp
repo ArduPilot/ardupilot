@@ -206,11 +206,14 @@ float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool s
     return get_steering_out_rate(desired_rate, skid_steering, motor_limit_left, motor_limit_right, reversed);
 }
 
-// return a steering servo output from -1 to +1 given a yaw error in radians
-float AR_AttitudeControl::get_steering_out_angle_error(float angle_err, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed)
+// return a steering servo output from -1 to +1 given a heading in radians
+float AR_AttitudeControl::get_steering_out_heading(float heading_rad, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed)
 {
+    // calculate heading error (in radians)
+    const float yaw_error = wrap_PI(heading_rad - _ahrs.yaw);
+
     // Calculate the desired turn rate (in radians) from the angle error (also in radians)
-    const float desired_rate = _steer_angle_p.get_p(angle_err);
+    const float desired_rate = _steer_angle_p.get_p(yaw_error);
 
     return get_steering_out_rate(desired_rate, skid_steering, motor_limit_left, motor_limit_right, reversed);
 }
