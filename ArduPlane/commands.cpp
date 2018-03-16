@@ -110,7 +110,7 @@ void Plane::init_home()
     gcs().send_text(MAV_SEVERITY_INFO, "Init HOME");
 
     ahrs.set_home(gps.location());
-    home_is_set = HOME_SET_NOT_LOCKED;
+    ahrs.set_home_status(HOME_SET_NOT_LOCKED);
     Log_Write_Home_And_Origin();
     gcs().send_home(gps.location());
 
@@ -138,7 +138,7 @@ void Plane::update_home()
         // significantly
         return;
     }
-    if (home_is_set == HOME_SET_NOT_LOCKED) {
+    if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
         Location loc;
         if(ahrs.get_position(loc)) {
             ahrs.set_home(loc);
