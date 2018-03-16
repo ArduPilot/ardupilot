@@ -684,9 +684,6 @@ private:
     // Location structure defined in AP_Common
     const struct Location &home = ahrs.get_home();
 
-    // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState home_is_set = HOME_UNSET;
-
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
     Location prev_WP_loc {};
 

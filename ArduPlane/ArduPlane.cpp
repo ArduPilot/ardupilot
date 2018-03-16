@@ -756,7 +756,7 @@ void Plane::update_navigation()
     
     switch(control_mode) {
     case AUTO:
-        if (home_is_set != HOME_UNSET) {
+        if (ahrs.home_is_set()) {
             mission.update();
         }
         break;

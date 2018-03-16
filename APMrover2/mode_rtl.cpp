@@ -4,7 +4,7 @@
 bool ModeRTL::_enter()
 {
     // refuse RTL if home has not been set
-    if (rover.home_is_set == HOME_UNSET) {
+    if (!AP::ahrs().home_is_set()) {
         return false;
     }
 
