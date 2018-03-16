@@ -244,7 +244,7 @@ void Copter::ModeFlowHold::run()
     
     if (!copter.motors->armed() || !copter.motors->get_interlock()) {
         flowhold_state = FlowHold_MotorStopped;
-    } else if (takeoff_state.running || takeoff_triggered(target_climb_rate)) {
+    } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
         flowhold_state = FlowHold_Takeoff;
     } else if (!copter.ap.auto_armed || copter.ap.land_complete) {
         flowhold_state = FlowHold_Landed;
@@ -304,8 +304,8 @@ void Copter::ModeFlowHold::run()
         copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // initiate take-off
-        if (!takeoff_state.running) {
-            takeoff_timer_start(constrain_float(copter.g.pilot_takeoff_alt,0.0f,1000.0f));
+        if (!takeoff.running()) {
+            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
             // indicate we are taking off
             copter.set_land_complete(false);
             // clear i terms
@@ -313,7 +313,7 @@ void Copter::ModeFlowHold::run()
         }
 
         // get take-off adjusted pilot and takeoff climb rates
-        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
+        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // get avoidance adjusted climb rate
         target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);

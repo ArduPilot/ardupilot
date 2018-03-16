@@ -352,9 +352,9 @@ void Copter::Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_o
     // roll_out and pitch_out are returned
 }
 
-bool Copter::Mode::takeoff_triggered(const float target_climb_rate) const
+bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
 {
-    if (!ap.land_complete) {
+    if (!copter.ap.land_complete) {
         // can't take off if we're already flying
         return false;
     }
@@ -363,7 +363,7 @@ bool Copter::Mode::takeoff_triggered(const float target_climb_rate) const
         return false;
     }
 #if FRAME_CONFIG == HELI_FRAME
-    if (!motors->rotor_runup_complete()) {
+    if (!copter.motors->rotor_runup_complete()) {
         // hold heli on the ground until rotor speed runup has finished
         return false;
     }
