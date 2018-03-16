@@ -162,6 +162,13 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ARM_MAH", 19, AP_BattMonitor_Params, _arming_minimum_capacity, 0),
 
+    // @Param: BUS
+    // @DisplayName: Battery monitor I2C bus number
+    // @Description: Battery monitor I2C bus number
+    // @Range: 0 3
+    // @User: Standard
+    AP_GROUPINFO("BUS", 20, AP_BattMonitor_Params, _i2c_bus, 0),
+
     AP_GROUPEND
 
 };
