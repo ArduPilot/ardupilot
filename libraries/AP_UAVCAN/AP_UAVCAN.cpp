@@ -787,6 +787,28 @@ void AP_UAVCAN::SRV_write(uint16_t pulse_len, uint8_t ch)
     _SRV_conf[ch].active = true;
 }
 
+void AP_UAVCAN::SRV_push_servos()
+{
+    if (!SRV_sem_take()) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        // Check if this channels has any function assigned
+        if (SRV_Channels::channel_function(i)) {
+            SRV_write(SRV_Channels::srv_channel(i)->get_output_pwm(), i);
+        }
+    }
+
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+        SRV_arm_actuators(true);
+    } else {
+        SRV_arm_actuators(false);
+    }
+
+    SRV_sem_give();
+}
+
 uint8_t AP_UAVCAN::find_gps_without_listener(void)
 {
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
