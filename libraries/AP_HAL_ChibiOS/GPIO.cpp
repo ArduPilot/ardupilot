@@ -27,6 +27,7 @@ static struct gpio_entry {
     bool enabled;
     uint8_t pwm_num;
     ioline_t pal_line;
+    uint16_t port;
 } _gpio_tab[] = HAL_GPIO_PINS;
 
 #define NUM_PINS ARRAY_SIZE_SIMPLE(_gpio_tab)
@@ -50,60 +51,14 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num)
 
 static void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel);
 
-static AP_HAL::Proc ext_irq[22]; // ext int irq list
-static EXTConfig extcfg = {
-  {
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL}
-  }
-};
-
-static const uint32_t irq_port_list[] = {
-    HAL_GPIO_INTERRUPT_PORT, //Chan 0
-    HAL_GPIO_INTERRUPT_PORT, //Chan 1
-    HAL_GPIO_INTERRUPT_PORT, //Chan 2
-    HAL_GPIO_INTERRUPT_PORT, //Chan 3
-    HAL_GPIO_INTERRUPT_PORT, //Chan 4
-    HAL_GPIO_INTERRUPT_PORT, //Chan 5
-    HAL_GPIO_INTERRUPT_PORT, //Chan 6
-    HAL_GPIO_INTERRUPT_PORT, //Chan 7
-    HAL_GPIO_INTERRUPT_PORT, //Chan 8
-    HAL_GPIO_INTERRUPT_PORT, //Chan 9
-    HAL_GPIO_INTERRUPT_PORT, //Chan 10
-    HAL_GPIO_INTERRUPT_PORT, //Chan 11
-    HAL_GPIO_INTERRUPT_PORT, //Chan 12
-    HAL_GPIO_INTERRUPT_PORT, //Chan 13
-    HAL_GPIO_INTERRUPT_PORT, //Chan 14
-    HAL_GPIO_INTERRUPT_PORT  //Chan 15
-};
+static EXTConfig extcfg;
+static AP_HAL::Proc ext_irq[EXT_MAX_CHANNELS]; // ext int irq list
 
 GPIO::GPIO()
 {}
 
 void GPIO::init()
 {
-    extStart(&EXTD1, &extcfg);
     // auto-disable pins being used for PWM output based on BRD_PWM_COUNT parameter
     uint8_t pwm_count = AP_BoardConfig::get_pwm_count();
     for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(_gpio_tab); i++) {
@@ -162,28 +117,58 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t n) {
     return new DigitalSource(0);
 }
 
-/* Interrupt interface: */
-bool GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode) {
-    extStop(&EXTD1);
+extern const AP_HAL::HAL& hal;
+
+/* 
+   Attach an interrupt handler to a GPIO pin number. The pin number
+   must be one specified with a GPIO() marker in hwdef.dat
+ */
+bool GPIO::attach_interrupt(uint8_t pin, AP_HAL::Proc p, uint8_t mode)
+{
+    struct gpio_entry *g = gpio_by_pin_num(pin);
+    if (!g) {
+        return false;
+    }
+    uint8_t pad = PAL_PAD(g->pal_line);
+    if (p && ext_irq[pad] != nullptr && ext_irq[pad] != p) {
+        // already used
+        hal.console->printf("A fail\n");
+        return false;
+    } else if (!p && !ext_irq[pad]) {
+        // nothing to remove
+        hal.console->printf("D fail\n");
+        return false;
+    }
+    uint32_t chmode = 0;
     switch(mode) {
         case HAL_GPIO_INTERRUPT_LOW:
-            extcfg.channels[interrupt_num].mode = EXT_CH_MODE_LOW_LEVEL;
+            chmode = EXT_CH_MODE_LOW_LEVEL;
             break;
         case HAL_GPIO_INTERRUPT_FALLING:
-            extcfg.channels[interrupt_num].mode = EXT_CH_MODE_FALLING_EDGE;
+            chmode = EXT_CH_MODE_FALLING_EDGE;
             break;
         case HAL_GPIO_INTERRUPT_RISING:
-            extcfg.channels[interrupt_num].mode = EXT_CH_MODE_RISING_EDGE;
+            chmode = EXT_CH_MODE_RISING_EDGE;
             break;
         case HAL_GPIO_INTERRUPT_BOTH:
-            extcfg.channels[interrupt_num].mode = EXT_CH_MODE_BOTH_EDGES;
+            chmode = EXT_CH_MODE_BOTH_EDGES;
             break;
-        default: return false;
+        default:
+            if (p) {
+                return false;
+            }
+            break;
     }
-    extcfg.channels[interrupt_num].mode |= EXT_CH_MODE_AUTOSTART | irq_port_list[interrupt_num];
-    ext_irq[interrupt_num] = p;
-    extcfg.channels[interrupt_num].cb = ext_interrupt_cb;
+    if (_ext_started) {
+        extStop(&EXTD1);
+        _ext_started = false;
+    }
+    extcfg.channels[pad].mode = chmode;
+    extcfg.channels[pad].mode |= (p?EXT_CH_MODE_AUTOSTART:0) | g->port;
+    ext_irq[pad] = p;
+    extcfg.channels[pad].cb = ext_interrupt_cb;
     extStart(&EXTD1, &extcfg);
+    _ext_started = true;
     return true;
 }
 
@@ -211,9 +196,23 @@ void DigitalSource::toggle() {
     _v = !_v;
 }
 
-void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel) {
+void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel)
+{
     if (ext_irq[channel] != nullptr) {
         ext_irq[channel]();
     }
 }
+
+/* 
+   set the output mode for a pin. Used to restore an alternate function
+   after using a pin as GPIO. Private to HAL_ChibiOS
+*/
+void GPIO::_set_mode(uint8_t pin, uint32_t mode)
+{
+    struct gpio_entry *g = gpio_by_pin_num(pin);
+    if (g) {
+        palSetLineMode(g->pal_line, mode);
+    }
+}
+
 #endif //HAL_BOARD_ChibiOS
