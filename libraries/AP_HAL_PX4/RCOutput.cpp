@@ -628,6 +628,7 @@ void PX4RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
     case MODE_PWM_DSHOT300:
     case MODE_PWM_DSHOT600:
     case MODE_PWM_DSHOT1200:
+    case MODE_PWM_NONE:
         // treat as normal PWM for now
         hal.console->printf("DShot not supported\n");
         FALLTHROUGH;
