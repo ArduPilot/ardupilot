@@ -141,8 +141,8 @@ static uavcan::equipment::ahrs::Solution _att_state;
 
 void AP_UAVCAN::UAVCAN_AHRS_update(const AP_AHRS_NavEKF &ahrs)
 {
-    bool sem_ret;
-    if ((sem_ret = _fix_out_sem->take(1)) &&
+    bool sem_ret = _fix_out_sem->take(1);
+    if (sem_ret &&
             (fix_out_array[_uavcan_i] != nullptr || fix2_out_array[_uavcan_i] != nullptr)) {
         const AP_GPS &cgps = AP::gps();
         Location loc;
@@ -290,7 +290,8 @@ void AP_UAVCAN::UAVCAN_AHRS_update(const AP_AHRS_NavEKF &ahrs)
         _fix_out_sem->give();
     }
     
-    if ((sem_ret = _att_out_sem->take(1)) && (attitude_out_array[_uavcan_i] != nullptr)) {
+    sem_ret = _att_out_sem->take(1);
+    if (sem_ret && (attitude_out_array[_uavcan_i] != nullptr)) {
         uavcan::Timestamp ts;
         ts.usec = AP_HAL::micros64();
         _att_state.timestamp = ts;
