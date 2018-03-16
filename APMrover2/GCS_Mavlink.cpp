@@ -891,19 +891,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             }
             break;
 
-        case MAV_CMD_GET_HOME_POSITION:
-            if (AP::ahrs().home_is_set()) {
-                send_home(rover.ahrs.get_home());
-                Location ekf_origin;
-                if (rover.ahrs.get_origin(ekf_origin)) {
-                    send_ekf_origin(ekf_origin);
-                }
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
-            break;
-
         case MAV_CMD_DO_SET_HOME:
         {
             // param1 : use current (1=use current location, 0=use specified location)
