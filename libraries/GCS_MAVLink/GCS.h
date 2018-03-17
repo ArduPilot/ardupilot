@@ -297,6 +297,8 @@ protected:
     virtual uint32_t telem_delay() const = 0;
 
     MAV_RESULT handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet);
+
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
     MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
@@ -315,6 +317,8 @@ protected:
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
 private:
+
+    MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet);
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
 
