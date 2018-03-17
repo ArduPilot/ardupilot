@@ -633,7 +633,6 @@ private:
     bool terrain_use();
     void init_ardupilot();
     void startup_INS_ground();
-    bool calibrate_gyros();
     bool position_ok();
     bool ekf_position_ok();
     bool optflow_position_ok();
