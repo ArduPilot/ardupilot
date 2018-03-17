@@ -2219,6 +2219,21 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlin
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+{
+    return MAV_RESULT_UNSUPPORTED;
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+{
+    if (hal.util->get_soft_armed()) {
+        // *preflight*, remember?
+        return MAV_RESULT_FAILED;
+    }
+    // now call subclass methods:
+    return _handle_command_preflight_calibration(packet);
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
 {
     Compass *compass = get_compass();
@@ -2305,6 +2320,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         result = handle_command_request_autopilot_capabilities(packet);
         break;
     }
+
+    case MAV_CMD_PREFLIGHT_CALIBRATION:
+        result = handle_command_preflight_calibration(packet);
+        break;
 
     case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS: {
         result = handle_command_preflight_set_sensor_offsets(packet);
