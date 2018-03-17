@@ -301,21 +301,6 @@ void Copter::startup_INS_ground()
     ahrs.reset();
 }
 
-// calibrate gyros - returns true if successfully calibrated
-bool Copter::calibrate_gyros()
-{
-    // gyro offset calibration
-    copter.ins.init_gyro();
-
-    // reset ahrs gyro bias
-    if (copter.ins.gyro_calibrated_ok_all()) {
-        copter.ahrs.reset_gyro_drift();
-        return true;
-    }
-
-    return false;
-}
-
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
 bool Copter::position_ok()
 {
