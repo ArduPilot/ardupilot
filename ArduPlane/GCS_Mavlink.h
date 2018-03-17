@@ -33,6 +33,9 @@ protected:
 
     bool set_mode(uint8_t mode) override;
 
+    MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
+    MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
