@@ -208,7 +208,6 @@ private:
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
-    void mavlink_check_target(const mavlink_message_t* msg);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);
@@ -268,7 +267,6 @@ private:
     void handle_battery_failsafe(const char* type_str, const int8_t action);
 
 public:
-    void mavlink_snoop(const mavlink_message_t* msg);
     void mavlink_delay_cb();
 };
 
