@@ -331,6 +331,8 @@ private:
 
     MAV_RESULT handle_servorelay_message(mavlink_command_long_t &packet);
 
+    bool calibrate_gyros();
+
     /// The stream we are communicating over
     AP_HAL::UARTDriver *_port;
 
