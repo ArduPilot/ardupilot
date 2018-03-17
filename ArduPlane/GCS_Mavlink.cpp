@@ -851,18 +851,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink
 
 MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
-    if (is_equal(packet.param1,1.0f)) {
-        /*
-          gyro calibration
-        */
-        plane.ins.init_gyro();
-        if (!plane.ins.gyro_calibrated_ok_all()) {
-            return MAV_RESULT_FAILED;
-        }
-        plane.ahrs.reset_gyro_drift();
-        return MAV_RESULT_ACCEPTED;
-    }
-
     if (is_equal(packet.param3,1.0f)) {
         /*
           baro and airspeed calibration
@@ -880,43 +868,6 @@ MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration(const mavlin
         */
         plane.trim_radio();
         return MAV_RESULT_ACCEPTED;
-    }
-
-    if (is_equal(packet.param5,1.0f)) {
-        /*
-          accel calibration
-        */
-        // start with gyro calibration
-        plane.ins.init_gyro();
-        // reset ahrs gyro bias
-        if (!plane.ins.gyro_calibrated_ok_all()) {
-            return MAV_RESULT_FAILED;
-        }
-        plane.ahrs.reset_gyro_drift();
-        plane.ins.acal_init();
-        plane.ins.get_acal()->start(this);
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    if (is_equal(packet.param5,2.0f)) {
-        /*
-          ahrs trim
-        */
-        // start with gyro calibration
-        plane.ins.init_gyro();
-        // accel trim
-        float trim_roll, trim_pitch;
-        if(!plane.ins.calibrate_trim(trim_roll, trim_pitch)) {
-            return MAV_RESULT_FAILED;
-        }
-        // reset ahrs's trim to suggested values from calibration routine
-        plane.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    if (is_equal(packet.param5,4.0f)) {
-        // simple accel calibration
-        return plane.ins.simple_accel_cal(plane.ahrs);
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
