@@ -371,14 +371,15 @@ GCS_MAVLINK_Tracker::data_stream_send(void)
   We eavesdrop on MAVLINK_MSG_ID_GLOBAL_POSITION_INT and
   MAVLINK_MSG_ID_SCALED_PRESSUREs
 */
-void Tracker::mavlink_snoop(const mavlink_message_t* msg)
+void GCS_MAVLINK_Tracker::packetReceived(const mavlink_status_t &status,
+                                         mavlink_message_t &msg)
 {
     // return immediately if sysid doesn't match our target sysid
-    if ((g.sysid_target != 0) && (g.sysid_target != msg->sysid)) {
+    if ((tracker.g.sysid_target != 0) && (tracker.g.sysid_target != msg.sysid)) {
         return;
     }
 
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_HEARTBEAT:
     {
         mavlink_check_target(msg);
@@ -389,8 +390,8 @@ void Tracker::mavlink_snoop(const mavlink_message_t* msg)
     {
         // decode
         mavlink_global_position_int_t packet;
-        mavlink_msg_global_position_int_decode(msg, &packet);
-        tracking_update_position(packet);
+        mavlink_msg_global_position_int_decode(&msg, &packet);
+        tracker.tracking_update_position(packet);
         break;
     }
     
@@ -398,24 +399,25 @@ void Tracker::mavlink_snoop(const mavlink_message_t* msg)
     {
         // decode
         mavlink_scaled_pressure_t packet;
-        mavlink_msg_scaled_pressure_decode(msg, &packet);
-        tracking_update_pressure(packet);
+        mavlink_msg_scaled_pressure_decode(&msg, &packet);
+        tracker.tracking_update_pressure(packet);
         break;
     }
     }
+    GCS_MAVLINK::packetReceived(status, msg);
 }
 
 // locks onto a particular target sysid and sets it's position data stream to at least 1hz
-void Tracker::mavlink_check_target(const mavlink_message_t* msg)
+void GCS_MAVLINK_Tracker::mavlink_check_target(const mavlink_message_t &msg)
 {
     // exit immediately if the target has already been set
-    if (target_set) {
+    if (tracker.target_set) {
         return;
     }
 
     // decode
     mavlink_heartbeat_t packet;
-    mavlink_msg_heartbeat_decode(msg, &packet);
+    mavlink_msg_heartbeat_decode(&msg, &packet);
 
     // exit immediately if this is not a vehicle we would track
     if ((packet.type == MAV_TYPE_ANTENNA_TRACKER) ||
@@ -426,17 +428,17 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
     }
 
     // set our sysid to the target, this ensures we lock onto a single vehicle
-    if (g.sysid_target == 0) {
-        g.sysid_target = msg->sysid;
+    if (tracker.g.sysid_target == 0) {
+        tracker.g.sysid_target = msg.sysid;
     }
 
     // send data stream request to target on all channels
     //  Note: this doesn't check success for all sends meaning it's not guaranteed the vehicle's positions will be sent at 1hz
-    gcs().request_datastream_position(msg->sysid, msg->compid);
-    gcs().request_datastream_airpressure(msg->sysid, msg->compid);
+    tracker.gcs().request_datastream_position(msg.sysid, msg.compid);
+    tracker.gcs().request_datastream_airpressure(msg.sysid, msg.compid);
 
     // flag target has been set
-    target_set = true;
+    tracker.target_set = true;
 }
 
 uint8_t GCS_MAVLINK_Tracker::sysid_my_gcs() const
