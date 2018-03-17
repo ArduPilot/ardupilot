@@ -1869,7 +1869,6 @@ void GCS_MAVLINK::handle_vision_position_delta(mavlink_message_t *msg)
     if (visual_odom == nullptr) {
         return;
     }
-
     visual_odom->handle_msg(msg);
 }
 
@@ -1959,12 +1958,25 @@ void GCS_MAVLINK::handle_att_pos_mocap(mavlink_message_t *msg)
                                reset_timestamp_ms);
 }
 
+void GCS_MAVLINK::handle_command_ack(const mavlink_message_t* msg)
+{
+    AP_AccelCal *accelcal = AP::ins().get_acal();
+    if (accelcal != nullptr) {
+        accelcal->handleMessage(msg);
+    }
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
 void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
 {
     switch (msg->msgid) {
+    case MAVLINK_MSG_ID_COMMAND_ACK: {
+        handle_command_ack(msg);
+        break;
+    }
+
     case MAVLINK_MSG_ID_SETUP_SIGNING:
         handle_setup_signing(msg);
         break;
