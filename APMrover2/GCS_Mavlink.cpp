@@ -639,6 +639,46 @@ void GCS_MAVLINK_Rover::handle_change_alt_request(AP_Mission::Mission_Command &c
     // nothing to do
 }
 
+MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+{
+    if (is_equal(packet.param4, 1.0f)) {
+        rover.trim_radio();
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param5, 1.0f)) {
+        // start with gyro calibration
+        rover.ins.init_gyro();
+        if (!rover.ins.gyro_calibrated_ok_all()) {
+            return MAV_RESULT_FAILED;
+        }
+        // reset ahrs gyro bias
+        rover.ahrs.reset_gyro_drift();
+        rover.ins.acal_init();
+        rover.ins.get_acal()->start(this);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param5, 2.0f)) {
+        // start with gyro calibration
+        rover.ins.init_gyro();
+        // accel trim
+        float trim_roll, trim_pitch;
+        if (!rover.ins.calibrate_trim(trim_roll, trim_pitch)) {
+            return MAV_RESULT_FAILED;
+        }
+        // reset ahrs's trim to suggested values from calibration routine
+        rover.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param5,4.0f)) {
+        // simple accel calibration
+        return rover.ins.simple_accel_cal(rover.ahrs);
+    }
+    return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
+}
+
 void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
@@ -792,58 +832,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             case MAV_CMD_MISSION_START:
                 rover.set_mode(rover.mode_auto, MODE_REASON_GCS_COMMAND);
                 result = MAV_RESULT_ACCEPTED;
-                break;
-
-            case MAV_CMD_PREFLIGHT_CALIBRATION:
-                if (hal.util->get_soft_armed()) {
-                    result = MAV_RESULT_FAILED;
-                    break;
-                }
-                if (is_equal(packet.param1, 1.0f)) {
-                    rover.ins.init_gyro();
-                    if (rover.ins.gyro_calibrated_ok_all()) {
-                        rover.ahrs.reset_gyro_drift();
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
-                } else if (is_equal(packet.param3, 1.0f)) {
-                    rover.init_barometer(false);
-                    result = MAV_RESULT_ACCEPTED;
-                } else if (is_equal(packet.param4, 1.0f)) {
-                    rover.trim_radio();
-                    result = MAV_RESULT_ACCEPTED;
-                } else if (is_equal(packet.param5, 1.0f)) {
-                    result = MAV_RESULT_ACCEPTED;
-                    // start with gyro calibration
-                    rover.ins.init_gyro();
-                    // reset ahrs gyro bias
-                    if (rover.ins.gyro_calibrated_ok_all()) {
-                        rover.ahrs.reset_gyro_drift();
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
-                    rover.ins.acal_init();
-                    rover.ins.get_acal()->start(this);
-
-                } else if (is_equal(packet.param5, 2.0f)) {
-                    // start with gyro calibration
-                    rover.ins.init_gyro();
-                    // accel trim
-                    float trim_roll, trim_pitch;
-                    if (rover.ins.calibrate_trim(trim_roll, trim_pitch)) {
-                        // reset ahrs's trim to suggested values from calibration routine
-                        rover.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
-                } else if (is_equal(packet.param5,4.0f)) {
-                    // simple accel calibration
-                    result = rover.ins.simple_accel_cal(rover.ahrs);
-                } else {
-                    send_text(MAV_SEVERITY_WARNING, "Unsupported preflight calibration");
-                }
                 break;
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
