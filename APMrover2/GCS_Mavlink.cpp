@@ -646,36 +646,6 @@ MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlin
         return MAV_RESULT_ACCEPTED;
     }
 
-    if (is_equal(packet.param5, 1.0f)) {
-        // start with gyro calibration
-        rover.ins.init_gyro();
-        if (!rover.ins.gyro_calibrated_ok_all()) {
-            return MAV_RESULT_FAILED;
-        }
-        // reset ahrs gyro bias
-        rover.ahrs.reset_gyro_drift();
-        rover.ins.acal_init();
-        rover.ins.get_acal()->start(this);
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    if (is_equal(packet.param5, 2.0f)) {
-        // start with gyro calibration
-        rover.ins.init_gyro();
-        // accel trim
-        float trim_roll, trim_pitch;
-        if (!rover.ins.calibrate_trim(trim_roll, trim_pitch)) {
-            return MAV_RESULT_FAILED;
-        }
-        // reset ahrs's trim to suggested values from calibration routine
-        rover.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    if (is_equal(packet.param5,4.0f)) {
-        // simple accel calibration
-        return rover.ins.simple_accel_cal(rover.ahrs);
-    }
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
 }
 
