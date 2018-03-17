@@ -2219,8 +2219,54 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlin
     return MAV_RESULT_ACCEPTED;
 }
 
+bool GCS_MAVLINK::calibrate_gyros()
+{
+    AP::ins().init_gyro();
+    if (!AP::ins().gyro_calibrated_ok_all()) {
+        return false;
+    }
+    AP::ahrs().reset_gyro_drift();
+    return true;
+}
+
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
+    if (is_equal(packet.param1,1.0f)) {
+        if (!calibrate_gyros()) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param5,1.0f)) {
+        // start with gyro calibration
+        if (!calibrate_gyros()) {
+            return MAV_RESULT_FAILED;
+        }
+        // start accel cal
+        AP::ins().acal_init();
+        AP::ins().get_acal()->start(this);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param5,2.0f)) {
+        if (!calibrate_gyros()) {
+            return MAV_RESULT_FAILED;
+        }
+        float trim_roll, trim_pitch;
+        if (!AP::ins().calibrate_trim(trim_roll, trim_pitch)) {
+            return MAV_RESULT_FAILED;
+        }
+        // reset ahrs's trim to suggested values from calibration routine
+        AP::ahrs().set_trim(Vector3f(trim_roll, trim_pitch, 0));
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param5,4.0f)) {
+        // simple accel calibration
+        return AP::ins().simple_accel_cal();
+    }
+
     return MAV_RESULT_UNSUPPORTED;
 }
 
