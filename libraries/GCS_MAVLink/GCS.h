@@ -101,9 +101,6 @@ public:
     virtual void        data_stream_send(void) = 0;
     void        queued_param_send();
     void        queued_waypoint_send();
-    void        set_snoop(void (*_msg_snoop)(const mavlink_message_t* msg)) {
-        msg_snoop = _msg_snoop;
-    }
     // packetReceived is called on any successful decode of a mavlink message
     virtual void packetReceived(const mavlink_status_t &status,
                                 mavlink_message_t &msg);
@@ -425,10 +422,6 @@ private:
     
     // send an async parameter reply
     void send_parameter_reply(void);
-    
-    
-    // a vehicle can optionally snoop on messages for other systems
-    static void (*msg_snoop)(const mavlink_message_t* msg);
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
