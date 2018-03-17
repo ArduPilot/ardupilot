@@ -230,20 +230,6 @@ void Sub::startup_INS_ground()
 }
 
 // calibrate gyros - returns true if successfully calibrated
-bool Sub::calibrate_gyros()
-{
-    // gyro offset calibration
-    sub.ins.init_gyro();
-
-    // reset ahrs gyro bias
-    if (sub.ins.gyro_calibrated_ok_all()) {
-        sub.ahrs.reset_gyro_drift();
-        return true;
-    }
-
-    return false;
-}
-
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
 bool Sub::position_ok()
 {

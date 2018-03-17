@@ -863,53 +863,12 @@ void GCS_MAVLINK_Sub::handle_change_alt_request(AP_Mission::Mission_Command &cmd
 
 MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
-    if (is_equal(packet.param1,1.0f)) {
-        if (!sub.calibrate_gyros()) {
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_ACCEPTED;
-    }
-
     if (is_equal(packet.param3,1.0f)) {
         if (!sub.sensor_health.depth || sub.motors.armed()) {
             return MAV_RESULT_FAILED;
         }
         sub.init_barometer(true);
         return MAV_RESULT_ACCEPTED;
-    }
-
-    if (is_equal(packet.param4,1.0f)) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-
-    if (is_equal(packet.param5,1.0f)) {
-        // 3d accel calibration
-        if (!sub.calibrate_gyros()) {
-            return MAV_RESULT_FAILED;
-        }
-        sub.ins.acal_init();
-        sub.ins.get_acal()->start(this);
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    if (is_equal(packet.param5,2.0f)) {
-        // calibrate gyros
-        if (!sub.calibrate_gyros()) {
-            return MAV_RESULT_FAILED;
-        }
-        // accel trim
-        float trim_roll, trim_pitch;
-        if (!sub.ins.calibrate_trim(trim_roll, trim_pitch)) {
-            return MAV_RESULT_FAILED;
-        }
-        // reset ahrs's trim to suggested values from calibration routine
-        sub.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    if (is_equal(packet.param5,4.0f)) {
-        // simple accel calibration
-        return sub.ins.simple_accel_cal(sub.ahrs);
     }
 
     if (is_equal(packet.param6,1.0f)) {
