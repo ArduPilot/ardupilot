@@ -720,52 +720,12 @@ void GCS_MAVLINK_Copter::handle_command_ack(const mavlink_message_t* msg)
 
 MAV_RESULT GCS_MAVLINK_Copter::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
-    if (is_equal(packet.param1,1.0f)) {
-        if (!copter.calibrate_gyros()) {
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_ACCEPTED;
-    }
-
     if (is_equal(packet.param3,1.0f)) {
         // fast barometer calibration
         copter.init_barometer(false);
         return MAV_RESULT_ACCEPTED;
     }
 
-    if (is_equal(packet.param4,1.0f)) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-
-    if (is_equal(packet.param5,1.0f)) {
-        // 3d accel calibration
-        if (!copter.calibrate_gyros()) {
-            return MAV_RESULT_FAILED;
-        }
-        copter.ins.acal_init();
-        copter.ins.get_acal()->start(this);
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    if (is_equal(packet.param5,2.0f)) {
-        // calibrate gyros
-        if (!copter.calibrate_gyros()) {
-            return MAV_RESULT_FAILED;
-        }
-        // accel trim
-        float trim_roll, trim_pitch;
-        if(!copter.ins.calibrate_trim(trim_roll, trim_pitch)) {
-            return MAV_RESULT_FAILED;
-        }
-        // reset ahrs's trim to suggested values from calibration routine
-        copter.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    if (is_equal(packet.param5,4.0f)) {
-        // simple accel calibration
-        return copter.ins.simple_accel_cal(copter.ahrs);
-    }
     if (is_equal(packet.param6,1.0f)) {
         // compassmot calibration
         return copter.mavlink_compassmot(chan);
