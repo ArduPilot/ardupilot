@@ -252,6 +252,7 @@ protected:
 
     void handle_request_data_stream(mavlink_message_t *msg, bool save);
 
+    virtual void handle_command_ack(const mavlink_message_t* msg);
     void handle_set_mode(mavlink_message_t* msg);
     void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
