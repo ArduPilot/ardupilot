@@ -848,10 +848,6 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
             cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
         }
     }
-    // if a snoop handler has been setup then use it
-    if (msg_snoop != nullptr) {
-        msg_snoop(&msg);
-    }
     if (routing.check_and_forward(chan, &msg) &&
         accept_packet(status, msg)) {
         handleMessage(&msg);
