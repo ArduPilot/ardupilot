@@ -498,6 +498,7 @@ uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
 
     _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
     _gyro_over_sampling[_gyro_count] = 1;
+    _gyro_raw_sampling_multiplier[_gyro_count] = INT16_MAX/radians(2000);
 
     bool saved = _gyro_id[_gyro_count].load();
 
@@ -531,6 +532,7 @@ uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz,
 
     _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
     _accel_over_sampling[_accel_count] = 1;
+    _accel_raw_sampling_multiplier[_accel_count] = INT16_MAX/(16*GRAVITY_MSS);
 
     bool saved = _accel_id[_accel_count].load();
 

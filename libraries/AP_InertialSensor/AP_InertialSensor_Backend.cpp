@@ -54,7 +54,7 @@ void AP_InertialSensor_Backend::_set_gyro_oversampling(uint8_t instance, uint8_t
   sensor may vary slightly from the system clock. This slowly adjusts
   the rate to the observed rate
 */
-void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz)
+void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz) const
 {
     uint32_t now = AP_HAL::micros();
     if (start_us == 0) {
@@ -234,7 +234,9 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
         };
         dataflash->WriteBlock(&pkt, sizeof(pkt));
     } else {
-        //_imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
+        if (!_imu.batchsampler.doing_sensor_rate_logging()) {
+            _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
+        }
     }
 }
 
@@ -327,13 +329,20 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     log_accel_raw(instance, sample_us, accel);
 }
 
-void AP_InertialSensor_Backend::_notify_new_accel_fast_sample(uint8_t instance, const Vector3f &accel)
+void AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample(uint8_t instance, const Vector3f &accel)
 {
+    if (!_imu.batchsampler.doing_sensor_rate_logging()) {
+        return;
+    }
+
     _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, AP_HAL::micros64(), accel);
 }
 
-void AP_InertialSensor_Backend::_notify_new_gyro_fast_sample(uint8_t instance, const Vector3f &gyro)
+void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t instance, const Vector3f &gyro)
 {
+    if (!_imu.batchsampler.doing_sensor_rate_logging()) {
+        return;
+    }
     _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, AP_HAL::micros64(), gyro);
 }
 
@@ -356,7 +365,9 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
         };
         dataflash->WriteBlock(&pkt, sizeof(pkt));
     } else {
-        //_imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
+        if (!_imu.batchsampler.doing_sensor_rate_logging()) {
+            _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
+        }
     }
 }
 
