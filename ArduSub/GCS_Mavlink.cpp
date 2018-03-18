@@ -861,16 +861,18 @@ void GCS_MAVLINK_Sub::handle_change_alt_request(AP_Mission::Mission_Command &cmd
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
 }
 
-MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration_baro()
 {
-    if (is_equal(packet.param3,1.0f)) {
-        if (!sub.sensor_health.depth || sub.motors.armed()) {
-            return MAV_RESULT_FAILED;
-        }
-        sub.init_barometer(true);
-        return MAV_RESULT_ACCEPTED;
+    if (!sub.sensor_health.depth) {
+        return MAV_RESULT_FAILED;
     }
 
+    AP::baro().calibrate(true);
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+{
     if (is_equal(packet.param6,1.0f)) {
         // compassmot calibration
         //result = sub.mavlink_compassmot(chan);

@@ -1,12 +1,5 @@
 #include "Sub.h"
 
-void Sub::init_barometer(bool save)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    barometer.calibrate(save);
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 // return barometric altitude in centimeters
 void Sub::read_barometer(void)
 {

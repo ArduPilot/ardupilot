@@ -143,7 +143,7 @@ void Sub::init_ardupilot()
 #endif
 
     // Init baro and determine if we have external (depth) pressure sensor
-    init_barometer(false);
+    barometer.calibrate(false);
     barometer.update();
 
     for (uint8_t i = 0; i < barometer.num_instances(); i++) {
