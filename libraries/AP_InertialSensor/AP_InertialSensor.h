@@ -294,18 +294,37 @@ public:
         // a function called by the main thread at the main loop rate:
         void periodic();
 
+        bool doing_sensor_rate_logging() const { return _doing_sensor_rate_logging; }
+
         // class level parameters
         static const struct AP_Param::GroupInfo var_info[];
 
         // Parameters
         AP_Int16 _required_count;
         AP_Int8 _sensor_mask;
-        AP_Int8 _batch_raw;
+        AP_Int8 _batch_options_mask;
+
+        // Parameters controlling pushing data to DataFlash:
+        // Each DF message is ~ 108 bytes in size, so we use about 1kB/s of
+        // logging bandwidth with a 100ms interval.  If we are taking
+        // 1024 samples then we need to send 32 packets, so it will
+        // take ~3 seconds to push a complete batch to the log.  If
+        // you are running a on an FMU with three IMUs then you
+        // will loop back around to the first sensor after about
+        // twenty seconds.
+        AP_Int16 samples_per_msg;
+        AP_Int8 push_interval_ms;
+
         // end Parameters
 
     private:
 
+        enum batch_opt_t {
+            BATCH_OPT_SENSOR_RATE = (1<<0),
+        };
+
         void rotate_to_next_sensor();
+        void update_doing_sensor_rate_logging();
 
         bool should_log(uint8_t instance, IMU_SENSOR_TYPE type);
         void push_data_to_log();
@@ -314,6 +333,7 @@ public:
 
         bool initialised : 1;
         bool isbh_sent : 1;
+        bool _doing_sensor_rate_logging : 1;
         uint8_t instance : 3; // instance we are sending data for
         AP_InertialSensor::IMU_SENSOR_TYPE type : 1;
         uint16_t isb_seqnum;
@@ -325,20 +345,7 @@ public:
         uint32_t last_sent_ms;
 
         // all samples are multiplied by this
-        static const uint16_t multiplier_accel = INT16_MAX/(16*GRAVITY_MSS);
-        static const uint16_t multiplier_gyro = INT16_MAX/radians(2000);
-        uint16_t multiplier = multiplier_accel;
-
-        // push blocks to DataFlash at regular intervals.  each
-        // message is ~ 108 bytes in size, so we use about 1kB/s of
-        // logging bandwidth with a 100ms interval.  If we are taking
-        // 1024 samples then we need to send 32 packets, so it will
-        // take ~3 seconds to push a complete batch to the log.  If
-        // you are running a on an FMU with three IMUs then you
-        // will loop back around to the first sensor after about
-        // twenty seconds.
-        const uint8_t push_interval_ms = 20;
-        const uint16_t samples_per_msg = 32;
+        uint16_t multiplier; // initialised as part of init()
 
         const AP_InertialSensor &_imu;
     };
@@ -408,6 +415,14 @@ private:
     Vector3f _delta_angle_acc[INS_MAX_INSTANCES];
     Vector3f _last_delta_angle[INS_MAX_INSTANCES];
     Vector3f _last_raw_gyro[INS_MAX_INSTANCES];
+
+    // bitmask indicating if a sensor is doing sensor-rate sampling:
+    uint8_t _accel_sensor_rate_sampling_enabled;
+    uint8_t _gyro_sensor_rate_sampling_enabled;
+
+    // multipliers for data supplied via sensor-rate logging:
+    uint16_t _accel_raw_sampling_multiplier[INS_MAX_INSTANCES];
+    uint16_t _gyro_raw_sampling_multiplier[INS_MAX_INSTANCES];
 
     // product id
     AP_Int16 _old_product_id;
