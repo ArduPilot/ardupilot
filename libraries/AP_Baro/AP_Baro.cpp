@@ -21,6 +21,7 @@
 
 #include <utility>
 
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -156,6 +157,8 @@ AP_Baro::AP_Baro()
 // the altitude() or climb_rate() interfaces can be used
 void AP_Baro::calibrate(bool save)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
+
     // reset the altitude offset when we calibrate. The altitude
     // offset is supposed to be for within a flight
     _alt_offset.set_and_save(0);
@@ -222,6 +225,7 @@ void AP_Baro::calibrate(bool save)
     // panic if all sensors are not calibrated
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].calibrated) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
             return;
         }
     }
