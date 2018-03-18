@@ -849,19 +849,22 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink
     return ret;
 }
 
-MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration_baro()
 {
-    if (is_equal(packet.param3,1.0f)) {
-        /*
-          baro and airspeed calibration
-        */
-        plane.init_barometer(false);
+    /*
+      baro and airspeed calibration
+    */
+    MAV_RESULT ret = GCS_MAVLINK::_handle_command_preflight_calibration_baro();
+    if (ret == MAV_RESULT_ACCEPTED) {
         if (plane.airspeed.enabled()) {
             plane.zero_airspeed(false);
         }
-        return MAV_RESULT_ACCEPTED;
     }
+    return ret;
+}
 
+MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+{
     if (is_equal(packet.param4,1.0f)) {
         /*
           radio trim
