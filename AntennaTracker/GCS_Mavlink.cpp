@@ -446,19 +446,15 @@ uint8_t GCS_MAVLINK_Tracker::sysid_my_gcs() const
     return tracker.g.sysid_my_gcs;
 }
 
-MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro()
 {
-
-    if (is_equal(packet.param3,1.0f)) {
-        tracker.init_barometer(false);
+    MAV_RESULT ret = GCS_MAVLINK::_handle_command_preflight_calibration_baro();
+    if (ret == MAV_RESULT_ACCEPTED) {
         // zero the altitude difference on next baro update
         tracker.nav_status.need_altitude_calibration = true;
-        return MAV_RESULT_ACCEPTED;
     }
-
-    return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
+    return ret;
 }
-
 
 void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 {

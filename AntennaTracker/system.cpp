@@ -79,7 +79,7 @@ void Tracker::init_tracker()
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
-    init_barometer(true);
+    barometer.calibrate();
 
     // initialise DataFlash library
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
