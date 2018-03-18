@@ -1,16 +1,5 @@
 #include "Copter.h"
 
-void Copter::init_barometer(bool full_calibration)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
-    }else{
-        barometer.update_calibration();
-    }
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 // return barometric altitude in centimeters
 void Copter::read_barometer(void)
 {
