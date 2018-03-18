@@ -2229,6 +2229,16 @@ bool GCS_MAVLINK::calibrate_gyros()
     return true;
 }
 
+MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro()
+{
+    // fast barometer calibration
+    gcs().send_text(MAV_SEVERITY_INFO, "Updating barometer calibration");
+    AP::baro().update_calibration();
+    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
+
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
     if (is_equal(packet.param1,1.0f)) {
@@ -2236,6 +2246,10 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param3,1.0f)) {
+        return _handle_command_preflight_calibration_baro();
     }
 
     if (is_equal(packet.param5,1.0f)) {
