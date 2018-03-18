@@ -105,7 +105,7 @@ public:
         DEVTYPE_INS_ICM20789 = 0x27,
         DEVTYPE_INS_ICM20689 = 0x28,
     };
-        
+
 protected:
     // access to frontend
     AP_InertialSensor &_imu;
@@ -143,9 +143,35 @@ protected:
 
     // set the amount of oversamping a gyro is doing
     void _set_gyro_oversampling(uint8_t instance, uint8_t n);
-    
+
+    // indicate the backend is doing sensor-rate sampling for this accel
+    void _set_accel_sensor_rate_sampling_enabled(uint8_t instance, bool value) {
+        const uint8_t bit = (1<<instance);
+        if (value) {
+            _imu._accel_sensor_rate_sampling_enabled |= bit;
+        } else {
+            _imu._accel_sensor_rate_sampling_enabled &= ~bit;
+        }
+    }
+
+    void _set_gyro_sensor_rate_sampling_enabled(uint8_t instance, bool value) {
+        const uint8_t bit = (1<<instance);
+        if (value) {
+            _imu._gyro_sensor_rate_sampling_enabled |= bit;
+        } else {
+            _imu._gyro_sensor_rate_sampling_enabled &= ~bit;
+        }
+    }
+
+    void _set_raw_sample_accel_multiplier(uint8_t instance, uint16_t mul) {
+        _imu._accel_raw_sampling_multiplier[instance] = mul;
+    }
+    void _set_raw_sampl_gyro_multiplier(uint8_t instance, uint16_t mul) {
+        _imu._gyro_raw_sampling_multiplier[instance] = mul;
+    }
+
     // update the sensor rate for FIFO sensors
-    void _update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz);
+    void _update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz) const;
     
     // set accelerometer max absolute offset for calibration
     void _set_accel_max_abs_offset(uint8_t instance, float offset);
@@ -226,8 +252,10 @@ protected:
         return (_imu._fast_sampling_mask & (1U<<instance)) != 0;
     }
 
-    void _notify_new_accel_fast_sample(uint8_t instance, const Vector3f &accel);
-    void _notify_new_gyro_fast_sample(uint8_t instance, const Vector3f &gyro);
+    // called by subclass when data is received from the sensor, thus
+    // at the 'sensor rate'
+    void _notify_new_accel_sensor_rate_sample(uint8_t instance, const Vector3f &accel);
+    void _notify_new_gyro_sensor_rate_sample(uint8_t instance, const Vector3f &gyro);
 
     /*
       notify of a FIFO reset so we don't use bad data to update observed sensor rate
