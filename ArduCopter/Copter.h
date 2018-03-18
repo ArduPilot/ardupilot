@@ -899,7 +899,6 @@ private:
     int16_t get_throttle_mid(void);
 
     // sensors.cpp
-    void init_barometer(bool full_calibration);
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
