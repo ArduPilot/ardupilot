@@ -522,7 +522,6 @@ private:
     // sensors.cpp
     void init_compass(void);
     void compass_accumulate(void);
-    void init_barometer(bool full_calibration);
     void init_rangefinder(void);
     void init_beacon();
     void init_visual_odom();
