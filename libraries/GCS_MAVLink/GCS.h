@@ -303,6 +303,7 @@ protected:
     virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet);
 
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT _handle_command_preflight_calibration_baro();
 
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
