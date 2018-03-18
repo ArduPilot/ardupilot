@@ -59,3 +59,31 @@ uint8_t crc_crc8(const uint8_t *p, uint8_t len)
 
 	return crc & 0xFF;
 }
+
+/*
+  xmodem CRC thanks to avr-liberty
+  https://github.com/dreamiurg/avr-liberty
+ */
+uint16_t crc_xmodem_update(uint16_t crc, uint8_t data)
+{
+	crc = crc ^ ((uint16_t)data << 8);
+	for (uint16_t i=0; i<8; i++)
+	{
+		if(crc & 0x8000) {
+			crc = (crc << 1) ^ 0x1021;
+		} else {
+			crc <<= 1;
+        }
+	}
+
+	return crc;
+}
+
+uint16_t crc_xmodem(const uint8_t *data, uint16_t len)
+{
+    uint16_t crc = 0;
+    for (uint16_t i=0; i<len; i++) {
+        crc = crc_xmodem_update(crc, data[i]);
+    }
+    return crc;
+}
