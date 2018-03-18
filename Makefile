@@ -4,15 +4,15 @@
 all: sitl
 
 sitl: TARGET=sitl
-sitl: plane copter rover sub antennatracker
+sitl: plane copter rover sub antennatracker hau
 
 linux: TARGET=linux
-linux: plane copter rover sub antennatracker
+linux: plane copter rover sub antennatracker hau
 
 clean: TARGET=clean
-clean: plane copter rover sub antennatracker
+clean: plane copter rover sub antennatracker hau
 
-.PHONY: plane copter rover sub antennatracker
+.PHONY: plane copter rover sub antennatracker hau
 
 plane:
 	$(MAKE) -C ArduPlane $(TARGET)
@@ -28,3 +28,6 @@ sub:
 
 antennatracker:
 	$(MAKE) -C AntennaTracker $(TARGET)
+	
+hau:
+	$(MAKE) -C ArduHAU $(TARGET)
