@@ -209,7 +209,7 @@ void Copter::init_ardupilot()
 
     // read Baro pressure at ground
     //-----------------------------
-    init_barometer(true);
+    barometer.calibrate();
 
     // initialise rangefinder
     init_rangefinder();

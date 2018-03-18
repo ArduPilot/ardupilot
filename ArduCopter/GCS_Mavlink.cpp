@@ -720,12 +720,6 @@ void GCS_MAVLINK_Copter::handle_command_ack(const mavlink_message_t* msg)
 
 MAV_RESULT GCS_MAVLINK_Copter::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
-    if (is_equal(packet.param3,1.0f)) {
-        // fast barometer calibration
-        copter.init_barometer(false);
-        return MAV_RESULT_ACCEPTED;
-    }
-
     if (is_equal(packet.param6,1.0f)) {
         // compassmot calibration
         return copter.mavlink_compassmot(chan);
