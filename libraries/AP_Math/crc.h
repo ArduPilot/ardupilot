@@ -17,4 +17,7 @@
  */
 
 uint8_t crc_crc8(const uint8_t *p, uint8_t len);
+uint16_t crc_xmodem_update(uint16_t crc, uint8_t data);
+uint16_t crc_xmodem(const uint8_t *b, uint16_t len);
+
 
