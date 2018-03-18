@@ -43,8 +43,7 @@ void Copter::ModeStabilize::run()
     AP_Vehicle::MultiCopter &aparm = copter.aparm;
 
     // convert pilot input to lean angles
-    // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max, aparm.angle_max);
+    get_pilot_desired_lean_angles(target_roll, target_pitch, aparm.angle_max, aparm.angle_max);
 
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
