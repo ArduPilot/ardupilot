@@ -74,8 +74,8 @@ void Copter::ModeLand::gps_run()
         land_pause = false;
     }
     
-    copter.land_run_horizontal_control();
-    copter.land_run_vertical_control(land_pause);
+    land_run_horizontal_control();
+    land_run_vertical_control(land_pause);
 }
 
 // land_nogps_run - runs the land controller
@@ -136,13 +136,21 @@ void Copter::ModeLand::nogps_run()
         land_pause = false;
     }
 
-    copter.land_run_vertical_control(land_pause);
+    land_run_vertical_control(land_pause);
+}
+
+// do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
+//  called during GPS failsafe to ensure that if we were already in LAND mode that we do not use the GPS
+//  has no effect if we are not already in LAND mode
+void Copter::ModeLand::do_not_use_GPS()
+{
+    land_with_gps = false;
 }
 
 /*
   get a height above ground estimate for landing
  */
-int32_t Copter::ModeLand::get_alt_above_ground(void)
+int32_t Copter::Mode::get_alt_above_ground(void)
 {
     int32_t alt_above_ground;
     if (copter.rangefinder_alt_ok()) {
@@ -156,8 +164,10 @@ int32_t Copter::ModeLand::get_alt_above_ground(void)
     return alt_above_ground;
 }
 
-void Copter::land_run_vertical_control(bool pause_descent)
+void Copter::Mode::land_run_vertical_control(bool pause_descent)
 {
+    AC_PrecLand &precland = copter.precland;
+
 #if PRECISION_LANDING == ENABLED
     const bool navigating = pos_control->is_active_xy();
     bool doing_precision_landing = !ap.land_repo_active && precland.target_acquired() && navigating;
@@ -168,7 +178,7 @@ void Copter::land_run_vertical_control(bool pause_descent)
     // compute desired velocity
     const float precland_acceptable_error = 15.0f;
     const float precland_min_descent_speed = 10.0f;
-    int32_t alt_above_ground = mode_land.get_alt_above_ground();
+    const int32_t alt_above_ground = get_alt_above_ground();
 
     float cmb_rate = 0;
     if (!pause_descent) {
@@ -188,7 +198,7 @@ void Copter::land_run_vertical_control(bool pause_descent)
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
-        if (doing_precision_landing && rangefinder_alt_ok() && rangefinder_state.alt_cm > 35.0f && rangefinder_state.alt_cm < 200.0f) {
+        if (doing_precision_landing && copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
             float max_descent_speed = abs(g.land_speed)/2.0f;
             float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
@@ -200,8 +210,12 @@ void Copter::land_run_vertical_control(bool pause_descent)
     pos_control->update_z_controller();
 }
 
-void Copter::land_run_horizontal_control()
+void Copter::Mode::land_run_horizontal_control()
 {
+    AC_PrecLand &precland = copter.precland;
+    LowPassFilterFloat &rc_throttle_control_in_filter = copter.rc_throttle_control_in_filter;
+    AP_Vehicle::MultiCopter &aparm = copter.aparm;
+
     float target_roll = 0.0f;
     float target_pitch = 0.0f;
     float target_yaw_rate = 0;
@@ -212,9 +226,9 @@ void Copter::land_run_horizontal_control()
     }
     
     // process pilot inputs
-    if (!failsafe.radio) {
+    if (!copter.failsafe.radio) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
-            Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+            copter.Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
                 set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
@@ -226,7 +240,7 @@ void Copter::land_run_horizontal_control()
             update_simple_mode();
 
             // convert pilot input to lean angles
-            flightmode->get_pilot_desired_lean_angles(target_roll, target_pitch, wp_nav->get_loiter_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+            get_pilot_desired_lean_angles(target_roll, target_pitch, wp_nav->get_loiter_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
 
             // record if pilot has overriden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
@@ -272,7 +286,7 @@ void Copter::land_run_horizontal_control()
         // there is any position estimate drift after touchdown. We
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
-        int alt_above_ground = mode_land.get_alt_above_ground();
+        const int alt_above_ground = get_alt_above_ground();
         float attitude_limit_cd = linear_interpolate(700, aparm.angle_max, alt_above_ground,
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
         float total_angle_cd = norm(nav_roll, nav_pitch);
@@ -289,14 +303,6 @@ void Copter::land_run_horizontal_control()
     
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
-}
-
-// do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch
-//  called during GPS failsafe to ensure that if we were already in LAND mode that we do not use the GPS
-//  has no effect if we are not already in LAND mode
-void Copter::ModeLand::do_not_use_GPS()
-{
-    land_with_gps = false;
 }
 
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts

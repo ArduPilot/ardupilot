@@ -847,8 +847,6 @@ private:
     float get_auto_yaw_rate_cds();
 
     // mode_land.cpp
-    void land_run_vertical_control(bool pause_descent = false);
-    void land_run_horizontal_control();
     void set_mode_land_with_pause(mode_reason_t reason);
     bool landing_with_GPS();
 
