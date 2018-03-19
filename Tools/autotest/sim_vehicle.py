@@ -468,6 +468,7 @@ def run_in_terminal_window(autotest, name, cmd):
     if under_macos() and os.environ.get('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
         out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
+        out = out.decode('utf-8')
         import re
         p = re.compile('tab 1 of window id (.*)')
                         
