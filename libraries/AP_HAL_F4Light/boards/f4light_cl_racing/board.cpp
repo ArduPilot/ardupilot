@@ -178,8 +178,12 @@ void boardInit(void) {
 #endif
 
 #ifdef BOARD_MPU6000_DRDY_PIN
-    // Init MPU6000 DRDY pin - but it not used by driver
     gpio_set_mode(PIN_MAP[BOARD_MPU6000_DRDY_PIN].gpio_device, PIN_MAP[BOARD_MPU6000_DRDY_PIN].gpio_bit, GPIO_INPUT_PU);
+#endif
+
+#ifdef BOARD_BUZZER_PIN
+    gpio_set_mode(PIN_MAP[BOARD_BUZZER_PIN].gpio_device, PIN_MAP[BOARD_BUZZER_PIN].gpio_bit, GPIO_OUTPUT_PP);
+    gpio_write_bit(PIN_MAP[BOARD_BUZZER_PIN].gpio_device, PIN_MAP[BOARD_BUZZER_PIN].gpio_bit, HAL_BUZZER_OFF);
 #endif
 
 #ifdef BOARD_SBUS_INVERTER

@@ -49,3 +49,4 @@ TGT_BIN += $(OBJS_$(d))
 d               := $(dirstack_$(sp))
 sp              := $(basename $(sp))
 
+include $(HARDWARE_PATH)/massstorage/rules.mk
