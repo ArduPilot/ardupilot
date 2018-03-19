@@ -61,8 +61,6 @@
 
 
 
-
-
 #define BOARD_USB_SENSE 11      // PC5
 
 
@@ -75,17 +73,16 @@
 //#define BOARD_SOFTSERIAL_RX 15
 
 
-# define BOARD_BLUE_LED_PIN        36  // BLUE
-# define BOARD_GREEN_LED_PIN        6   // NC - PC0 pin 8
+# define BOARD_BLUE_LED_PIN      36  // BLUE
+# define BOARD_GREEN_LED_PIN     105   // NC - PC0 pin 8
 
 # define HAL_GPIO_A_LED_PIN      BOARD_BLUE_LED_PIN
 # define HAL_GPIO_B_LED_PIN      BOARD_GREEN_LED_PIN
 
-# define HAL_GPIO_LED_ON           LOW
-# define HAL_GPIO_LED_OFF          HIGH
+# define HAL_GPIO_LED_ON         LOW
+# define HAL_GPIO_LED_OFF        HIGH
 
-
-#define BOARD_NR_GPIO_PINS      109
+#define BOARD_NR_GPIO_PINS       109
 
 //TODO add #define BOARD_HAS_UART3 ?
 
@@ -118,15 +115,11 @@
 
 #define BOARD_INS_DEFAULT HAL_INS_MPU60XX_SPI
 #define BOARD_INS_ROTATION  ROTATION_NONE
-#define BOARD_INS_MPU60x0_NAME            "mpu6000"
-
-#define BOARD_MPU6000_CS_PIN	51  // PA4
-#define BOARD_MPU6000_DRDY_PIN	10  // PC4
-
-
+#define BOARD_INS_MPU60x0_NAME          "mpu6000"
+#define BOARD_MPU6000_CS_PIN	        51  // PA4
+#define BOARD_MPU6000_DRDY_PIN	        10  // PC4
 
 #define BOARD_STORAGE_SIZE            8192 // 4096 // EEPROM size
-
 
 #define BOARD_SDCARD_NAME "sdcard"
 #define BOARD_SDCARD_CS_PIN    2 // PB12
@@ -172,13 +165,8 @@
 #define SERVO_PIN_5 105 // PB4   - buzzer
 //#define SERVO_PIN_6 22 // PA8
 
-#if 1
  #define HAL_CONSOLE USB_Driver // console on USB
  #define HAL_CONSOLE_PORT 0
-#else
- #define HAL_CONSOLE uart1Driver // console on radio
- #define HAL_CONSOLE_PORT 1
-#endif
 
 /*
     // @Param: USB_STORAGE

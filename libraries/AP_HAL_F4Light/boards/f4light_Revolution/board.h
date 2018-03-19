@@ -148,17 +148,7 @@
 #define BOARD_DATAFLASH_NAME            "dataflash"
 #define BOARD_DATAFLASH_PAGES           0x2000
 #define BOARD_DATAFLASH_ERASE_SIZE (65536)// in bytes
-
-#if 0// use it as FAT and share it via USB
-#define BOARD_DATAFLASH_FATFS
-#define USB_MASSSTORAGE
-#define HAL_BOARD_LOG_DIRECTORY "0:/"
-#define HAL_BOARD_TERRAIN_DIRECTORY "0:/TERRAIN"
-//#define HAL_PARAM_DEFAULTS_PATH "0:/APM/defaults.parm"
-#else
-// old dataflash logs
-#endif
-
+#define HAL_BOARD_LOG_DIRECTORY "" // should be defined to logs works
 
 #define BOARD_UARTS_LAYOUT 1
 #define USE_SOFTSERIAL 1
@@ -186,10 +176,10 @@
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 
-//#define HAL_CONSOLE USB_Driver // console on USB
-//#define HAL_CONSOLE_PORT 0 // USB
-#define HAL_CONSOLE uart1Driver // console on radio
-#define HAL_CONSOLE_PORT 1 // console on radio
+#define HAL_CONSOLE USB_Driver // console on USB
+#define HAL_CONSOLE_PORT 0 // USB
+//#define HAL_CONSOLE uart1Driver // console on radio
+//#define HAL_CONSOLE_PORT 1 // console on radio
 
 /*
     // @Param: FLEXI_I2C
@@ -198,9 +188,8 @@
     // @Values: 0:USART, 1:I2C
     // @User: Advanced
     AP_GROUPINFO("FLEXI_I2C",    6, AP_Param_Helper, _flexi_i2c, 0) \
-
-
 */
+
 #define BOARD_HAL_VARINFO \
     AP_GROUPINFO("FLEXI_I2C",    30, AP_Param_Helper, _flexi_i2c, 0),
     

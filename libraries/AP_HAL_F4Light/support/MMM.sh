@@ -86,12 +86,10 @@ mkdir -p $ROOT/Release/Plane
  cp $ROOT/ArduPlane/f4light_cl_racing_bl.bin $ROOT/Release/Plane
  cp $ROOT/ArduPlane/f4light_cl_racing_bl.dfu $ROOT/Release/Plane
 
- make f4light-clean
-
  )
 ) && ( # AirBotF4 board
  cd $ROOT/ArduCopter
-# make f4light-clean
+ make f4light-clean
  make f4light VERBOSE=1 BOARD=f4light_AirbotV2  && (
 
  cp $ROOT/ArduCopter/f4light_AirbotV2.bin $ROOT/Release/Copter
