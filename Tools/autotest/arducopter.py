@@ -10,7 +10,6 @@ import pexpect
 from pymavlink import mavutil
 
 from pysim import util
-from pysim import vehicleinfo
 
 from common import AutoTest
 
@@ -30,21 +29,15 @@ AVCHOME = mavutil.location(40.072842, -105.230575, 1586, 0)
 
 class AutoTestCopter(AutoTest):
     def __init__(self, binary,
-                 viewerip=None,
-                 use_map=False,
                  valgrind=False,
                  gdb=False,
                  speedup=10,
                  frame=None,
                  params=None,
-                 gdbserver=False):
-        super(AutoTestCopter, self).__init__()
+                 gdbserver=False,
+                 **kwargs):
+        super(AutoTestCopter, self).__init__(**kwargs)
         self.binary = binary
-        self.options = ('--sitl=127.0.0.1:5501 '
-                        ' --out=127.0.0.1:19550 '
-                        ' --streamrate=5')
-        self.viewerip = viewerip
-        self.use_map = use_map
         self.valgrind = valgrind
         self.gdb = gdb
         self.frame = frame
@@ -67,6 +60,18 @@ class AutoTestCopter(AutoTest):
         self.sitl = None
         self.hasInit = False
 
+    def mavproxy_options(self):
+        ret = super(AutoTestCopter, self).mavproxy_options()
+        if self.frame != 'heli':
+            ret.append('--quadcopter')
+        return ret
+
+    def sitl_streamrate(self):
+        return 5
+
+    def vehicleinfo_key(self):
+        return 'ArduCopter'
+
     def init(self):
         if self.frame is None:
             self.frame = '+'
@@ -77,41 +82,8 @@ class AutoTestCopter(AutoTest):
                                          AVCHOME.lng,
                                          AVCHOME.alt,
                                          AVCHOME.heading)
-        else:
-            self.options += " --quadcopter"
 
-        if self.viewerip:
-            self.options += " --out=%s:14550" % self.viewerip
-        if self.use_map:
-            self.options += ' --map'
-
-        self.sitl = util.start_SITL(self.binary,
-                                    wipe=True,
-                                    model=self.frame,
-                                    home=self.home,
-                                    speedup=self.speedup_default)
-        self.mavproxy = util.start_MAVProxy_SITL('ArduCopter')
-
-        self.progress("WAITING FOR PARAMETERS")
-        self.mavproxy.expect('Received [0-9]+ parameters')
-
-        # setup test parameters
-        vinfo = vehicleinfo.VehicleInfo()
-        if self.params is None:
-            frames = vinfo.options["ArduCopter"]["frames"]
-            self.params = frames[self.frame]["default_params_filename"]
-        if not isinstance(self.params, list):
-            self.params = [self.params]
-        for x in self.params:
-            self.mavproxy.send("param load %s\n" % os.path.join(testdir, x))
-            self.mavproxy.expect('Loaded [0-9]+ parameters')
-        self.set_parameter('LOG_REPLAY', 1)
-        self.set_parameter('LOG_DISARMED', 1)
-        self.progress("RELOADING SITL WITH NEW PARAMETERS")
-
-        # restart with new parms
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(self.sitl)
+        self.apply_parameters_using_sitl()
 
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
@@ -120,8 +92,8 @@ class AutoTestCopter(AutoTest):
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver)
-        self.mavproxy = util.start_MAVProxy_SITL('ArduCopter',
-                                                 options=self.options)
+        self.mavproxy = util.start_MAVProxy_SITL(
+            'ArduCopter', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)')
         self.logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)
@@ -163,20 +135,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Ready to start testing!")
 
     def close(self):
-        if self.use_map:
-            self.mavproxy.send("module unload map\n")
-            self.mavproxy.expect("Unloaded module map")
-
-        self.mav.close()
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(self.sitl)
-
-        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
-                                                  model=self.frame)
-        if os.path.exists(valgrind_log):
-            os.chmod(valgrind_log, 0o644)
-            shutil.copy(valgrind_log,
-                        self.buildlogs_path(self.log_name + "-valgrind.log"))
+        super(AutoTestCopter, self).close()
 
         # [2014/05/07] FC Because I'm doing a cross machine build
         # (source is on host, build is on guest VM) I cannot hard link
@@ -278,7 +237,7 @@ class AutoTestCopter(AutoTest):
     #   TESTS FLY
     #################################################
 
-    # fly a square in stabilize mode
+    # fly a square in alt_hold mode
     def fly_square(self, side=50, timeout=300):
         """Fly a square, flying N then E ."""
         tstart = self.get_sim_time()
@@ -1177,7 +1136,7 @@ class AutoTestCopter(AutoTest):
                 failed = True
 
             self.progress("# Takeoff")
-            if not self.takeoff(10):
+            if not self.takeoff(20):
                 failed_test_msg = "takeoff failed"
                 self.progress(failed_test_msg)
                 failed = True
@@ -1428,7 +1387,7 @@ class AutoTestCopter(AutoTest):
             # wait for disarm
             self.mav.motors_disarmed_wait()
 
-            log_filepath = util.reltopdir("../buildlogs/ArduCopter-log.bin")
+            log_filepath = self.buildlogs_path("ArduCopter-log.bin")
             if not self.log_download(log_filepath):
                 failed_test_msg = "log_download failed"
                 self.progress(failed_test_msg)
@@ -1488,7 +1447,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(8, 1000)
 
             # mission ends with disarm so should be ok to download logs now
-            log_path = util.reltopdir("../buildlogs/Helicopter-log.bin")
+            log_path = self.buildlogs_path("Helicopter-log.bin")
             if not self.log_download(log_path):
                 failed_test_msg = "log_download failed"
                 self.progress(failed_test_msg)

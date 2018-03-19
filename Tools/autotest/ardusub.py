@@ -3,13 +3,11 @@
 # Dive ArduSub in SITL
 from __future__ import print_function
 import os
-import shutil
 
 import pexpect
 from pymavlink import mavutil
 
 from pysim import util
-from pysim import vehicleinfo
 
 from common import AutoTest
 
@@ -21,20 +19,15 @@ HOME = mavutil.location(33.810313, -118.393867, 0, 185)
 class AutoTestSub(AutoTest):
     def __init__(self,
                  binary,
-                 viewerip=None,
-                 use_map=False,
                  valgrind=False,
                  gdb=False,
                  speedup=10,
                  frame=None,
                  params=None,
-                 gdbserver=False):
-        super(AutoTestSub, self).__init__()
+                 gdbserver=False,
+                 **kwargs):
+        super(AutoTestSub, self).__init__(**kwargs)
         self.binary = binary
-        self.options = ('--sitl=127.0.0.1:5501 --out=127.0.0.1:19550'
-                        ' --streamrate=10')
-        self.viewerip = viewerip
-        self.use_map = use_map
         self.valgrind = valgrind
         self.gdb = gdb
         self.frame = frame
@@ -52,42 +45,13 @@ class AutoTestSub(AutoTest):
         self.sitl = None
         self.hasInit = False
 
+        self.log_name = "ArduSub"
+
     def init(self):
         if self.frame is None:
             self.frame = 'vectored'
 
-        if self.viewerip:
-            self.options += " --out=%s:14550" % self.viewerip
-        if self.use_map:
-            self.options += ' --map'
-
-        self.sitl = util.start_SITL(self.binary,
-                                    wipe=True,
-                                    model=self.frame,
-                                    home=self.home,
-                                    speedup=self.speedup_default)
-        self.mavproxy = util.start_MAVProxy_SITL('ArduSub')
-
-        self.progress("WAITING FOR PARAMETERS")
-        self.mavproxy.expect('Received [0-9]+ parameters')
-
-        # setup test parameters
-        vinfo = vehicleinfo.VehicleInfo()
-        if self.params is None:
-            frames = vinfo.options["ArduSub"]["frames"]
-            self.params = frames[self.frame]["default_params_filename"]
-        if not isinstance(self.params, list):
-            self.params = [self.params]
-        for x in self.params:
-            self.mavproxy.send("param load %s\n" % os.path.join(testdir, x))
-            self.mavproxy.expect('Loaded [0-9]+ parameters')
-        self.set_parameter('LOG_REPLAY', 1)
-        self.set_parameter('LOG_DISARMED', 1)
-        self.progress("RELOADING SITL WITH NEW PARAMETERS")
-
-        # restart with new parms
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(self.sitl)
+        self.apply_parameters_using_sitl()
 
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
@@ -96,13 +60,13 @@ class AutoTestSub(AutoTest):
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver)
-        self.mavproxy = util.start_MAVProxy_SITL('ArduSub',
-                                                 options=self.options)
+        self.mavproxy = util.start_MAVProxy_SITL(
+            'ArduSub', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)')
         logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % logfile)
 
-        buildlog = util.reltopdir("../buildlogs/ArduSub-test.tlog")
+        buildlog = self.buildlogs_path("ArduSub-test.tlog")
         self.progress("buildlog=%s" % buildlog)
         if os.path.exists(buildlog):
             os.unlink(buildlog)
@@ -133,22 +97,6 @@ class AutoTestSub(AutoTest):
         self.mav.idle_hooks.append(self.idle_hook)
         self.hasInit = True
         self.progress("Ready to start testing!")
-
-    def close(self):
-        if self.use_map:
-            self.mavproxy.send("module unload map\n")
-            self.mavproxy.expect("Unloaded module map")
-
-        self.mav.close()
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(self.sitl)
-
-        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
-                                                  model=self.frame)
-        if os.path.exists(valgrind_log):
-            os.chmod(valgrind_log, 0o644)
-            shutil.copy(valgrind_log,
-                        self.buildlogs_path("ArduSub-valgrind.log"))
 
     def dive_manual(self):
         self.set_rc(3, 1600)

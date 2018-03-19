@@ -246,7 +246,7 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
 
 
 def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
-                        options=None, logfile=sys.stdout):
+                        options=[], logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
     import pexpect
     global close_list
@@ -257,8 +257,7 @@ def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1
     if aircraft is None:
         aircraft = 'test.%s' % atype
     cmd += ' --aircraft=%s' % aircraft
-    if options is not None:
-        cmd += ' ' + options
+    cmd += ' ' + ' '.join(options)
     ret = pexpect.spawn(cmd, logfile=logfile, encoding=ENCODING, timeout=60)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)

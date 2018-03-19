@@ -4,7 +4,6 @@
 from __future__ import print_function
 import math
 import os
-import shutil
 
 import pexpect
 from pymavlink import mavutil
@@ -22,20 +21,15 @@ WIND = "0,180,0.2"  # speed,direction,variance
 class AutoTestPlane(AutoTest):
     def __init__(self,
                  binary,
-                 viewerip=None,
-                 use_map=False,
                  valgrind=False,
                  gdb=False,
                  speedup=10,
                  frame=None,
                  params=None,
-                 gdbserver=False):
-        super(AutoTestPlane, self).__init__()
+                 gdbserver=False,
+                 **kwargs):
+        super(AutoTestPlane, self).__init__(**kwargs)
         self.binary = binary
-        self.options = ('--sitl=127.0.0.1:5501 --out=127.0.0.1:19550'
-                        ' --streamrate=10')
-        self.viewerip = viewerip
-        self.use_map = use_map
         self.valgrind = valgrind
         self.gdb = gdb
         self.frame = frame
@@ -53,14 +47,11 @@ class AutoTestPlane(AutoTest):
         self.sitl = None
         self.hasInit = False
 
+        self.log_name = "ArduPlane"
+
     def init(self):
         if self.frame is None:
             self.frame = 'plane-elevrev'
-
-        if self.viewerip:
-            self.options += " --out=%s:14550" % self.viewerip
-        if self.use_map:
-            self.options += ' --map'
 
         defaults_file = os.path.join(testdir,
                                      'default_params/plane-jsbsim.parm')
@@ -73,8 +64,8 @@ class AutoTestPlane(AutoTest):
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver)
-        self.mavproxy = util.start_MAVProxy_SITL('ArduPlane',
-                                                 options=self.options)
+        self.mavproxy = util.start_MAVProxy_SITL(
+            'ArduPlane', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)')
         logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % logfile)
@@ -110,22 +101,6 @@ class AutoTestPlane(AutoTest):
         self.mav.idle_hooks.append(self.idle_hook)
         self.hasInit = True
         self.progress("Ready to start testing!")
-
-    def close(self):
-        if self.use_map:
-            self.mavproxy.send("module unload map\n")
-            self.mavproxy.expect("Unloaded module map")
-
-        self.mav.close()
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(self.sitl)
-
-        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
-                                                  model=self.frame)
-        if os.path.exists(valgrind_log):
-            os.chmod(valgrind_log, 0o644)
-            shutil.copy(valgrind_log,
-                        self.buildlogs_path("ArduPlane-valgrind.log"))
 
     def takeoff(self):
         """Takeoff get to 30m altitude."""

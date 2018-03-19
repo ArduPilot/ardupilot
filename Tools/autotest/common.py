@@ -1,14 +1,14 @@
 from __future__ import print_function
+
+import abc
 import math
+import os
+import shutil
+import sys
 import time
 
 from pymavlink import mavwp, mavutil
-
-from pysim import util
-
-import sys
-import abc
-import os
+from pysim import util, vehicleinfo
 
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing
@@ -32,9 +32,13 @@ class AutoTest(ABC):
     """Base abstract class.
     It implements the common function for all vehicle types.
     """
-    def __init__(self):
+    def __init__(self,
+                 viewerip=None,
+                 use_map=False):
         self.mavproxy = None
         self.mav = None
+        self.viewerip = viewerip
+        self.use_map = use_map
 
     def progress(self, text):
         """Display autotest progress text."""
@@ -52,6 +56,73 @@ class AutoTest(ABC):
         else:
             bits.append(path)
         return os.path.join(*bits)
+
+    def sitl_streamrate(self):
+        '''allow subclasses to override SITL streamrate'''
+        return 10
+
+    def mavproxy_options(self):
+        '''returns options to be passed to the main ArduPilot process'''
+        ret = ['--sitl=127.0.0.1:5501',
+               '--out=127.0.0.1:19550',
+               '--streamrate=%u' % self.sitl_streamrate()]
+        if self.viewerip:
+            ret.append("--out=%s:14550" % self.viewerip)
+        if self.use_map:
+            ret.append('--map')
+
+        return ret
+
+    def vehicleinfo_key(self):
+        return self.log_name
+
+    def apply_parameters_using_sitl(self):
+        '''start SITL, apply parameter file, stop SITL'''
+        sitl = util.start_SITL(self.binary,
+                               wipe=True,
+                               model=self.frame,
+                               home=self.home,
+                               speedup=self.speedup_default)
+        self.mavproxy = util.start_MAVProxy_SITL(self.log_name)
+
+        self.progress("WAITING FOR PARAMETERS")
+        self.mavproxy.expect('Received [0-9]+ parameters')
+
+        # setup test parameters
+        vinfo = vehicleinfo.VehicleInfo()
+        if self.params is None:
+            frames = vinfo.options[self.vehicleinfo_key()]["frames"]
+            self.params = frames[self.frame]["default_params_filename"]
+        if not isinstance(self.params, list):
+            self.params = [self.params]
+        for x in self.params:
+            self.mavproxy.send("param load %s\n" % os.path.join(testdir, x))
+            self.mavproxy.expect('Loaded [0-9]+ parameters')
+        self.set_parameter('LOG_REPLAY', 1)
+        self.set_parameter('LOG_DISARMED', 1)
+
+        # kill this SITL instance off:
+        util.pexpect_close(self.mavproxy)
+        util.pexpect_close(sitl)
+        self.mavproxy = None
+
+    def close(self):
+        '''tidy up after running all tests'''
+        if self.use_map:
+            self.mavproxy.send("module unload map\n")
+            self.mavproxy.expect("Unloaded module map")
+
+        self.mav.close()
+        util.pexpect_close(self.mavproxy)
+        util.pexpect_close(self.sitl)
+
+        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
+                                                  model=self.frame)
+        if os.path.exists(valgrind_log):
+            os.chmod(valgrind_log, 0o644)
+            shutil.copy(valgrind_log,
+                        self.buildlogs_path("%s-valgrind.log" %
+                                            self.log_name))
 
     #################################################
     # GENERAL UTILITIES
