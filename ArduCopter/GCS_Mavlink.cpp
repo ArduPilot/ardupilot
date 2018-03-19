@@ -560,10 +560,6 @@ GCS_MAVLINK_Copter::data_stream_send(void)
         return;
     }
 
-    if (!copter.in_mavlink_delay && !copter.motors->armed()) {
-        copter.DataFlash.handle_log_send(*this);
-    }
-
     gcs().set_out_of_time(false);
 
     send_queued_parameters();
