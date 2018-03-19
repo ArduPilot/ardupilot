@@ -222,7 +222,7 @@ public:
     void set_vehicle_armed(bool armed_state);
     bool vehicle_is_armed() const { return _armed; }
 
-    void handle_log_send(class GCS_MAVLINK &);
+    void handle_log_send();
     bool in_log_download() const { return _in_log_download; }
 
     float quiet_nanf() const { return nanf("0x4152"); } // "AR"
@@ -370,7 +370,7 @@ private:
     // start page of log data
     uint16_t _log_data_page;
 
-    int8_t _log_sending_chan = -1;
+    GCS_MAVLINK *_log_sending_link;
 
     bool should_handle_log_message();
     void handle_log_message(class GCS_MAVLINK &, mavlink_message_t *msg);
@@ -379,8 +379,8 @@ private:
     void handle_log_request_data(class GCS_MAVLINK &, mavlink_message_t *msg);
     void handle_log_request_erase(class GCS_MAVLINK &, mavlink_message_t *msg);
     void handle_log_request_end(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_log_send_listing(class GCS_MAVLINK &);
-    bool handle_log_send_data(class GCS_MAVLINK &);
+    void handle_log_send_listing();
+    bool handle_log_send_data();
 
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
 

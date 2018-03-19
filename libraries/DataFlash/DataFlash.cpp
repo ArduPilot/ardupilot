@@ -583,7 +583,8 @@ void DataFlash_Class::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* m
 }
 
 void DataFlash_Class::periodic_tasks() {
-     FOR_EACH_BACKEND(periodic_tasks());
+    handle_log_send();
+    FOR_EACH_BACKEND(periodic_tasks());
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
