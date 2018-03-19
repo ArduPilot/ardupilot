@@ -5,7 +5,6 @@
 
 #include <AP_HAL/HAL.h>
 
-#ifdef BOARD_SPEKTRUM_RX_PIN
 
 enum DSM_STATE {
     S_NONE,
@@ -39,5 +38,4 @@ private:
     
     static void _rc_bind(uint16_t dsmMode);    
 };
-#endif
 

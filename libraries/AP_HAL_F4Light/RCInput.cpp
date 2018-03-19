@@ -20,9 +20,6 @@
 #ifdef BOARD_SPEKTRUM_RX_PIN
  #include "RC_DSM_parser.h"
 #endif
-#ifdef BOARD_NRF_CS_PIN
- #include "RC_NRF_parser.h"
-#endif
 #ifdef BOARD_SBUS_UART
  #include "RC_SBUS_parser.h"
 #endif
