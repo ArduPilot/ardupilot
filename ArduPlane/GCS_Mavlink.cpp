@@ -686,10 +686,6 @@ GCS_MAVLINK_Plane::data_stream_send(void)
 {
     gcs().set_out_of_time(false);
 
-    if (!plane.in_mavlink_delay) {
-        plane.DataFlash.handle_log_send(*this);
-    }
-
     send_queued_parameters();
 
     if (gcs().out_of_time()) return;
