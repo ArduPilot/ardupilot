@@ -276,7 +276,9 @@ void AP_Beacon_Marvelmind::update(void)
                     break;
                 }
                 case AP_BEACON_MARVELMIND_DISTANCES_DATAGRAM_ID:
+                    FALLTHROUGH;
                 case AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID:
+                    FALLTHROUGH;
                 case AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID:
                     good_byte = true;
                     break;
