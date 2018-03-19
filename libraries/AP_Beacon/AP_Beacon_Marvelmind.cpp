@@ -328,6 +328,7 @@ void AP_Beacon_Marvelmind::update(void)
                         case AP_BEACON_MARVELMIND_DISTANCES_DATAGRAM_ID:
                         {
                             process_beacons_distances_datagram();
+                            break;
                         }
 
                         case AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID:
