@@ -25,6 +25,7 @@ public:
     enum Protocol_Type : uint8_t {
         Protocol_Type_None = 0,
         Protocol_Type_UAVCAN = 1,
+        Protocol_Type_KDECAN = 2,
     };
 
     void init(void);
@@ -120,6 +121,8 @@ private:
         AP_Int8 _protocol_type;
         Protocol_Type _protocol_type_cache;
         AP_HAL::CANProtocol* _driver;
+        AP_HAL::CANProtocol* _uavcan;
+        AP_HAL::CANProtocol* _kdecan;
     };
 
     Interface _interfaces[MAX_NUMBER_OF_CAN_INTERFACES];
