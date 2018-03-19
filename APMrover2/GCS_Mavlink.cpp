@@ -506,10 +506,6 @@ GCS_MAVLINK_Rover::data_stream_send(void)
 {
     gcs().set_out_of_time(false);
 
-    if (!rover.in_mavlink_delay) {
-        rover.DataFlash.handle_log_send(*this);
-    }
-
     send_queued_parameters();
 
     if (gcs().out_of_time()) {
