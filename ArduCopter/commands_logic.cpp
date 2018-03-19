@@ -349,7 +349,7 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
             target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
         }
     }
-    
+
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
@@ -358,8 +358,9 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // Set wp navigation target
     wp_start(target_loc);
 
-    // if no delay set the waypoint as "fast"
-    if (loiter_time_max == 0 ) {
+    // if no delay as well as not final waypoint set the waypoint as "fast"
+    AP_Mission::Mission_Command temp_cmd;
+    if (loiter_time_max == 0 && copter.mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
         copter.wp_nav->set_fast_waypoint(true);
     }
 }
