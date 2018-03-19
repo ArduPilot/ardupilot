@@ -238,6 +238,33 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("SYNAIRSPEED", 27, AP_TECS, _use_synthetic_airspeed, 0),
+           
+    // @Param: minGSPD_P
+    // @DisplayName: P term for minGSPD
+    // @Description: P term for gspd control algorithm
+    // @Units: % of throttle
+    // @Range: 0 5
+    // @Increment: .1
+    // @User: Advanced
+    AP_GROUPINFO("minGSPD_P",  28,  AP_TECS, _minGSPD_P, 1.0f),
+    
+    // @Param: minGSPD_I
+    // @DisplayName: I term for minGSPD
+    // @Description: I term for gspd control algorithm
+    // @Units: 
+    // @Range: 0 2
+    // @Increment: .1
+    // @User: Advanced
+    AP_GROUPINFO("minGSPD_I",  29,  AP_TECS, _minGSPD_I, 0.1f),
+    
+    // @Param: minGSPD
+    // @DisplayName: minimum ground speed during autonomus flight 
+    // @Description: minimum ground speed to attempt to hold while in auto -1 turns this off
+    // @Units: Meters-second
+    // @Range: -1 127
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("minGSPD",  30,  AP_TECS, _minGSPD, -1.0f),   
     
     AP_GROUPEND
 };
@@ -703,8 +730,10 @@ float AP_TECS::_get_i_gain(void)
 /*
   calculate throttle, non-airspeed case
  */
-void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
+void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, bool isflying)
 {
+    /*reference GPS for min GSPD*/
+    const AP_GPS &gps = _ahrs.get_gps();
     // Calculate throttle demand by interpolating between pitch and throttle limits
     float nomThr;
     //If landing and we don't have an airspeed sensor and we have a non-zero
@@ -727,7 +756,49 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
     {
         _throttle_dem = nomThr;
     }
+       if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && _minGSPD >= 0.0 && isflying && !_flags.is_doing_auto_land){ 
+       
+       
+            uint64_t now = AP_HAL::micros64();
+            float DT = MAX((now - _LAST_THR_UPDATE),0)*1.0e-6f;  
+        /*one second sample time*/
+        
 
+        if(DT>=SampleTime){
+            /*set up P & I term defaults*/
+            kp = _minGSPD_P;
+            ki = _minGSPD_I * SampleTime;
+            /*calc current gspd error*/
+            error = (_minGSPD - gps.ground_speed());
+            /*calculate error over time*/
+            err_time += (ki * error);
+            /*constrain error over time within positive values and max throttle*/
+            err_time = constrain_float(err_time, 0.0f, aparm.throttle_max);           
+            /*Compute Output*/
+            _gspd_nudge = kp * error + err_time;
+            /*constrain within positive values and max throttle*/
+            _gspd_nudge = constrain_float(_gspd_nudge, 0.0f, aparm.throttle_max);
+            /*throttle_DEM is calculated in percent*/
+            _gspd_nudge *= 0.01f;
+            /*record last speed and update last runtime*/
+            lastInput = gps.ground_speed();
+            _LAST_THR_UPDATE = now;
+       
+
+            if (gps.ground_speed() < _minGSPD + 1){  
+            /*add to throttle*/
+            _throttle_dem += _gspd_nudge;
+            
+            }
+        
+        }
+        else if (gps.ground_speed() < _minGSPD + 1)  {
+            _throttle_dem += _gspd_nudge;
+        }
+        
+        
+    }
+    
     // Calculate additional throttle for turn drag compensation including throttle nudging
     const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
     // Use the demanded rate of change of total energy as the feed-forward demand, but add
@@ -736,6 +807,9 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
     float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
     float STEdot_dem = _rollComp * (1.0f/constrain_float(cosPhi * cosPhi , 0.1f, 1.0f) - 1.0f);
     _throttle_dem = _throttle_dem + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
+    
+    //Constrain throttle between rational values
+    _throttle_dem = constrain_float(_throttle_dem, 0.0f, 1.0f);
 }
 
 void AP_TECS::_detect_bad_descent(void)
@@ -896,6 +970,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
     // Initialise states and variables if DT > 1 second or in climbout
     if (_DT > 1.0f)
     {
+        _gspd_nudge          = 0.0f;
         _integTHR_state      = 0.0f;
         _integSEB_state      = 0.0f;
         _last_throttle_dem = aparm.throttle_cruise * 0.01f;
@@ -946,7 +1021,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t ptchMinCO_cd,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
-                                    float load_factor)
+                                    float load_factor,
+                                    bool isflying)
 {
     // Calculate time in seconds since last update
     uint64_t now = AP_HAL::micros64();
@@ -1066,7 +1142,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _update_throttle_with_airspeed();
         _use_synthetic_airspeed_once = false;
     } else {
-        _update_throttle_without_airspeed(throttle_nudge);
+        _update_throttle_without_airspeed(throttle_nudge,isflying);
     }
 
     // Detect bad descent due to demanded airspeed being too high
@@ -1098,4 +1174,10 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                            (double)logging.SPE_error,
                                            (double)logging.SEB_delta,
                                            (double)load_factor);
+    DataFlash_Class::instance()->Log_Write("GSPD", "TimeUS,thrDem,GSPDthr,PErr,EDelta", "Qffff",
+                                           now,
+                                           (double)_throttle_dem,
+                                           (double)_gspd_nudge,
+                                           (double)error,
+                                           (double)err_time);
 }

@@ -26,6 +26,7 @@
 #include <DataFlash/DataFlash.h>
 #include <AP_Landing/AP_Landing.h>
 #include <AP_Soaring/AP_Soaring.h>
+#include <AP_GPS/AP_GPS.h>
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
@@ -54,7 +55,8 @@ public:
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
                                float hgt_afe,
-                               float load_factor);
+                               float load_factor,
+                               bool isflying);
 
     // demanded throttle in percentage
     // should return -100 to 100, usually positive unless reverse thrust is enabled via _THRminf < 0
@@ -179,7 +181,11 @@ private:
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
     AP_Float _maxSinkRate_approach;
-
+    AP_Float _minGSPD_P;
+    AP_Float _minGSPD_I;
+    AP_Float _minGSPD_D;
+    AP_Float _minGSPD;
+    
     // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
     int8_t _pitch_max_limit = 90;
     
@@ -310,6 +316,16 @@ private:
     float _SPEdot;
     float _SKEdot;
 
+    // minGSPD variables
+    float error;
+    float _LAST_THR_UPDATE;
+    float _gspd_nudge = 0.0f;
+    float err_time;
+    float lastInput;
+    float kp;
+    float ki;
+    float SampleTime = 1.0f; //1 sec
+    
     // Specific energy error quantities
     float _STE_error;
 
@@ -359,7 +375,7 @@ private:
     void _update_throttle_with_airspeed(void);
 
     // Update Demanded Throttle Non-Airspeed
-    void _update_throttle_without_airspeed(int16_t throttle_nudge);
+    void _update_throttle_without_airspeed(int16_t throttle_nudge, bool isflying);
 
     // get integral gain which is flight_stage dependent
     float _get_i_gain(void);

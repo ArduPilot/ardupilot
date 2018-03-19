@@ -942,7 +942,8 @@ void Plane::update_alt()
                                                  get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
-                                                 aerodynamic_load_factor);
+                                                 aerodynamic_load_factor,
+                                                 is_flying());
     }
 }
 
