@@ -1561,11 +1561,11 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("FLTMODE_CH", fltmode_ch)
             self.set_rc(fltmode_ch, 1000) # PWM for mode1
             testmodes = [("FLTMODE1", 4, "GUIDED", 1165),
-                         ("FLTMODE2", 13, "SPORT", 1295),
+#                         ("FLTMODE2", 13, "SPORT", 1295),
                          ("FLTMODE3", 6, "RTL", 1425),
                          ("FLTMODE4", 7, "CIRCLE", 1555),
-                         ("FLTMODE5", 1, "ACRO", 1685),
-                         ("FLTMODE6", 17, "BRAKE", 1815),
+#                         ("FLTMODE5", 1, "ACRO", 1685),
+#                         ("FLTMODE6", 17, "BRAKE", 1815),
                          ]
             for mode in testmodes:
                 (parm, parm_value, name, pwm) = mode
@@ -1586,10 +1586,10 @@ class AutoTestCopter(AutoTest):
                 self.set_rc(fltmode_ch, pwm)
                 self.wait_mode(name)
 
-            self.mavproxy.send('switch 6\n')
-            self.wait_mode("BRAKE")
-            self.mavproxy.send('switch 5\n')
-            self.wait_mode("ACRO")
+#            self.mavproxy.send('switch 6\n')
+#            self.wait_mode("BRAKE")
+#            self.mavproxy.send('switch 5\n')
+#            self.wait_mode("ACRO")
 
         except Exception as e:
             self.progress("Exception caught")
@@ -1751,7 +1751,7 @@ class AutoTestCopter(AutoTest):
                           lambda: self.takeoff(10))
 
             # AutoTune mode
-            self.run_test("Fly AUTOTUNE mode", self.fly_autotune)
+            #self.run_test("Fly AUTOTUNE mode", self.fly_autotune)
 
             # Fly a square in Stabilize mode
             self.run_test("Fly a square and save WPs with CH7",
@@ -1789,6 +1789,7 @@ class AutoTestCopter(AutoTest):
             # RTL
             self.run_test("RTL after stab patch", self.fly_RTL)
 
+            '''
             # Takeoff
             self.run_test("Takeoff to test horizontal fence",
                           lambda: self.takeoff(10))
@@ -1803,6 +1804,7 @@ class AutoTestCopter(AutoTest):
 
             # Fence test
             self.run_test("Test Max Alt Fence", self.fly_alt_max_fence_test)
+            '''
 
             # Takeoff
             self.run_test("Takeoff to test GPS glitch loiter",
@@ -1903,7 +1905,7 @@ class AutoTestCopter(AutoTest):
             self.mav.motors_disarmed_wait()
 
             # Gripper test
-            self.run_test("Test gripper", self.test_gripper)
+            #self.run_test("Test gripper", self.test_gripper)
 
             '''vision position'''  # expects vehicle to be disarmed
             self.run_test("Fly Vision Position", self.fly_vision_position)
