@@ -230,7 +230,7 @@ void AP_Beacon_Marvelmind::process_beacons_distances_datagram()
                 | (((uint32_t) input_buffer[ofs + 2]) << 8)
                 | (((uint32_t) input_buffer[ofs + 3]) << 16)
                 | (((uint32_t) input_buffer[ofs + 4]) << 24);
-        set_beacon_distance(i, raw_beacon_distances.beacon[i].distance / 1000.0f);  // millimeters -> meters
+        set_beacon_distance(i, raw_beacon_distances.beacon[i].distance * 0.001f);  // millimeters -> meters
     }
 }
 
@@ -397,18 +397,18 @@ void AP_Beacon_Marvelmind::set_stationary_beacons_positions()
 {
     if (vehicle_position_initialized && beacon_position_initialized) {
         if (hedge->_have_new_values) {
-            vehicle_position_NED__m = Vector3f(cur_position.y / 1000.0f,
-                                               cur_position.x / 1000.0f,
-                                              -cur_position.z / 1000.0f); //Transform Marvelmind ENU to Ardupilot NED
+            vehicle_position_NED__m = Vector3f(cur_position.y * 0.001f,
+                                               cur_position.x * 0.001f,
+                                              -cur_position.z * 0.001f); //Transform Marvelmind ENU to Ardupilot NED
             //TODO: Calculate Accuracy of the received signal. Marvelmind *advertises* +/- 2cms
             set_vehicle_position(vehicle_position_NED__m, 0.02f);
             last_update_ms = AP_HAL::millis();
         }
         for (uint8_t i=0; i < hedge->positions_beacons.num_beacons; ++i) {
             if (hedge->positions_beacons.updated) {
-                beacon_position_NED__m[i] = Vector3f(hedge->positions_beacons.beacons[i].y / 1000.0f,
-                                                     hedge->positions_beacons.beacons[i].x / 1000.0f,
-                                                    -hedge->positions_beacons.beacons[i].z / 1000.0f); //Transform Marvelmind ENU to Ardupilot NED
+                beacon_position_NED__m[i] = Vector3f(hedge->positions_beacons.beacons[i].y * 0.001f,
+                                                     hedge->positions_beacons.beacons[i].x * 0.001f,
+                                                    -hedge->positions_beacons.beacons[i].z * 0.001f); //Transform Marvelmind ENU to Ardupilot NED
                 set_beacon_position(i, beacon_position_NED__m[i]);
             }
         }
