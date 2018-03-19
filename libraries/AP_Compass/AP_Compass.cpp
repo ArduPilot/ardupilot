@@ -471,6 +471,13 @@ Compass::Compass(void)
     }
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
+
+    // Reset dev_id parameters' cached values to zero. This is here to address a potential
+    // edge case where a previously-detected compass is no longer present, but its dev_id
+    // is loaded from the parameter's stored value.
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        _state[i].dev_id = 0;
+    }
 }
 
 // Default init method
@@ -1084,6 +1091,7 @@ void
 Compass::save_offsets(uint8_t i)
 {
     _state[i].offset.save();  // save offsets
+    _state[i].dev_id.set_and_save(_state[i].detected_dev_id);
     _state[i].dev_id.save();  // save device id corresponding to these offsets
 }
 
@@ -1207,16 +1215,21 @@ bool Compass::configured(uint8_t i)
         return false;
     }
 
-    // backup detected dev_id
-    int32_t dev_id_orig = _state[i].dev_id;
+    // exit immediately if dev_id hasn't been detected
+    if (_state[i].detected_dev_id == 0) {
+        return false;
+    }
+
+    // back up cached value of dev_id
+    int32_t dev_id_cache_value = _state[i].dev_id;
 
     // load dev_id from eeprom
     _state[i].dev_id.load();
 
-    // if different then the device has not been configured
-    if (_state[i].dev_id != dev_id_orig) {
-        // restore device id
-        _state[i].dev_id = dev_id_orig;
+    // if dev_id loaded from eeprom is different from detected dev id or dev_id loaded from eeprom is different from cached dev_id, compass is unconfigured
+    if (_state[i].dev_id != _state[i].detected_dev_id || _state[i].dev_id != dev_id_cache_value) {
+        // restore cached value
+        _state[i].dev_id = dev_id_cache_value;
         // return failure
         return false;
     }
