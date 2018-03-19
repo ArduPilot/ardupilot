@@ -44,6 +44,12 @@ protected:
     // helper functions
     void zero_throttle_and_relax_ac();
 
+    // functions to control landing
+    // in modes that support landing
+    int32_t get_alt_above_ground(void);
+    void land_run_horizontal_control();
+    void land_run_vertical_control(bool pause_descent = false);
+
     // convenience references to avoid code churn in conversion:
     Parameters &g;
     ParametersG2 &g2;
@@ -777,8 +783,6 @@ public:
     float get_land_descent_speed();
     bool landing_with_GPS();
     void do_not_use_GPS();
-
-    int32_t get_alt_above_ground(void);
 
 protected:
 

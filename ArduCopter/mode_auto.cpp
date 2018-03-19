@@ -396,8 +396,8 @@ void Copter::ModeAuto::land_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
     
-    copter.land_run_horizontal_control();
-    copter.land_run_vertical_control();
+    land_run_horizontal_control();
+    land_run_vertical_control();
 }
 
 bool Copter::ModeAuto::landing_gear_should_be_deployed() const
@@ -856,7 +856,7 @@ void Copter::ModeAuto::payload_place_run()
 void Copter::ModeAuto::payload_place_run_loiter()
 {
     // loiter...
-    copter.land_run_horizontal_control();
+    land_run_horizontal_control();
 
     // run loiter controller
     wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
@@ -871,8 +871,8 @@ void Copter::ModeAuto::payload_place_run_loiter()
 
 void Copter::ModeAuto::payload_place_run_descend()
 {
-    copter.land_run_horizontal_control();
-    copter.land_run_vertical_control();
+    land_run_horizontal_control();
+    land_run_vertical_control();
 }
 
 #endif
