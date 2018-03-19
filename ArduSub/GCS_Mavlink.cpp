@@ -727,10 +727,6 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         return;
     }
 
-    if (!sub.in_mavlink_delay && !sub.motors.armed()) {
-        sub.DataFlash.handle_log_send(*this);
-    }
-
     gcs().set_out_of_time(false);
 
     send_queued_parameters();
