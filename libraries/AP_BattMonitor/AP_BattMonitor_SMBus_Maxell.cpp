@@ -31,8 +31,8 @@ uint8_t maxell_cell_ids[] = { 0x3f,  // cell 1
 */
 
 /**
- * detect if a Maxbotix rangefinder is connected. We'll detect by
- * trying to take a reading on I2C. If we get a result the sensor is
+ * detect if a Maxell battery is connected. We'll detect by
+ * trying to take a reading on I2C. If we get a result the battery is
  * there.
  *
  * @param [in] mon
@@ -52,8 +52,7 @@ AP_BattMonitor_Backend *AP_BattMonitor_SMBus_Maxell::detect(AP_BattMonitor &mon,
     }
 
     if (sensor->_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        uint8_t manufactureName[2];
-        memset(manufactureName, 0, sizeof(manufactureName));
+        uint8_t manufactureName[2] {};
         if (!sensor->_dev->read_registers(BATTMONITOR_SMBUS_MANUFACTURE_NAME, manufactureName, 2)) {
             sensor->_dev->get_semaphore()->give();
             delete sensor;
