@@ -489,11 +489,13 @@ void ToyMode::update()
         send_named_int("VIDEOTOG", 1);
         break;
 
-#if MODE_THROW_ENABLED == ENABLED
     case ACTION_MODE_ACRO:
+#if MODE_ACRO_ENABLED == ENABLED
         new_mode = ACRO;
-        break;
+#else
+        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: ACRO is disabled");
 #endif
+        break;
 
     case ACTION_MODE_ALTHOLD:
         new_mode = ALT_HOLD;
@@ -539,11 +541,13 @@ void ToyMode::update()
         new_mode = BRAKE;
         break;
 
-#if MODE_THROW_ENABLED == ENABLED
     case ACTION_MODE_THROW:
+#if MODE_THROW_ENABLED == ENABLED
         new_mode = THROW;
-        break;
+#else
+        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: THROW is disabled");
 #endif
+        break;
 
     case ACTION_MODE_FLIP:
         new_mode = FLIP;
