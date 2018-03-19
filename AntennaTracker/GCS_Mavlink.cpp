@@ -324,10 +324,6 @@ GCS_MAVLINK_Tracker::data_stream_send(void)
         return;
     }
 
-    if (!tracker.in_mavlink_delay) {
-        tracker.DataFlash.handle_log_send(*this);
-    }
-
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
         send_message(MSG_RAW_IMU2);
