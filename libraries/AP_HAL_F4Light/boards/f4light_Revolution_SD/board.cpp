@@ -158,7 +158,7 @@ extern const SPIDesc spi_device_table[] = {    // different SPI tables per board
 //              name            device   bus  mode         cs_pin                       speed_low       speed_high  dma                  priority         assert_dly  release_dly
      { BOARD_INS_MPU60x0_NAME,   _SPI1,   1,  SPI_MODE_0, BOARD_MPU6000_CS_PIN,         SPI_1_125MHZ,   SPI_9MHZ,  SPI_TRANSFER_DMA, DMA_Priority_VeryHigh, 1,         5 }, 
 //   { BOARD_DATAFLASH_NAME,     _SPI3,   3,  SPI_MODE_3, 255 /* caller controls CS */, SPI_1_125MHZ,   SPI_18MHZ, SPI_TRANSFER_DMA, DMA_Priority_Medium,   0,         1 }, // we can use dataflash as EEPROM
-     { BOARD_SDCARD_NAME,        _SPI2,   2,  SPI_MODE_0, 255,                          SPI_1_125MHZ,   SPI_18MHZ, SPI_TRANSFER_DMA, DMA_Priority_Medium,   0,         1 },
+     { BOARD_SDCARD_NAME,        _SPI3,   2,  SPI_MODE_3, 255,                          SPI_1_125MHZ,   SPI_18MHZ, SPI_TRANSFER_DMA, DMA_Priority_Medium,   0,         1 },
 };
 
 extern const uint8_t F4Light_SPI_DEVICE_NUM_DEVICES = ARRAY_SIZE(spi_device_table);
