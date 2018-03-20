@@ -9,7 +9,6 @@ based on build_binaries.sh by Andrew Tridgell, March 2013
 from __future__ import print_function
 
 import datetime
-import distutils.dir_util
 import optparse
 import os
 import re
@@ -274,6 +273,15 @@ is bob we will attempt to checkout bob-AVR'''
         '''returns true if string exists in the contents of filepath'''
         return string in self.read_string_from_filepath(filepath)
 
+    def mkpath(self, path):
+        '''make directory path and all elements leading to it'''
+        '''distutils.dir_util.mkpath was playing up'''
+        try:
+            os.makedirs(path)
+        except OSError as e:
+            if e.errno != 17:  # EEXIST
+                raise e
+
     def copyit(self, afile, adir, tag, src):
         '''copies afile into various places, adding metadata'''
         bname = os.path.basename(adir)
@@ -282,13 +290,13 @@ is bob we will attempt to checkout bob-AVR'''
         if tag == "latest":
             # we keep a permanent archive of all "latest" builds,
             # their path including a build timestamp:
-            distutils.dir_util.mkpath(adir)
+            self.mkpath(adir)
             self.progress("Copying %s to %s" % (afile, adir,))
             shutil.copy(afile, adir)
             self.addfwversion(adir, src)
         # the most recent build of every tag is kept around:
         self.progress("Copying %s to %s" % (afile, tdir))
-        distutils.dir_util.mkpath(tdir)
+        self.mkpath(tdir)
         self.addfwversion(tdir, src)
         shutil.copy(afile, tdir)
 
@@ -590,8 +598,8 @@ is bob we will attempt to checkout bob-AVR'''
         self.hdate_ym = now.strftime("%Y-%m")
         self.hdate_ymdhm = now.strftime("%Y-%m-%d-%H:%m")
 
-        distutils.dir_util.mkpath(os.path.join("binaries", self.hdate_ym,
-                                               self.hdate_ymdhm))
+        self.mkpath(os.path.join("binaries", self.hdate_ym,
+                                 self.hdate_ymdhm))
         self.binaries = os.path.join(os.getcwd(), "..", "buildlogs",
                                      "binaries")
         self.basedir = os.getcwd()
