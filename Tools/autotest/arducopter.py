@@ -94,7 +94,7 @@ class AutoTestCopter(AutoTest):
                                     gdbserver=self.gdbserver)
         self.mavproxy = util.start_MAVProxy_SITL(
             'ArduCopter', options=self.mavproxy_options())
-        self.mavproxy.expect('Telemetry log: (\S+)')
+        self.mavproxy.expect('Telemetry log: (\S+)\r\n')
         self.logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)
 
