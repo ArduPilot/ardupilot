@@ -4,6 +4,7 @@ setup board.h for chibios
 '''
 
 import argparse, sys, fnmatch, os, dma_resolver, shlex, pickle
+import shutil
 
 parser = argparse.ArgumentParser("chibios_pins.py")
 parser.add_argument(
@@ -369,8 +370,14 @@ MEMORY
     ram0  : org = 0x20000000, len = %uk
 }
 
-INCLUDE ../../libraries/AP_HAL_ChibiOS/hwdef/common/common.ld
+INCLUDE common.ld
 ''' % (flash_base, flash_length, ram_size))
+
+def copy_common_linkerscript(outdir, hwdef):
+    dirpath = os.path.dirname(hwdef)
+    shutil.copy(os.path.join(dirpath, "../common/common.ld"),
+                os.path.join(outdir, "common.ld"))
+
 
 
 def write_USB_config(f):
@@ -1025,6 +1032,10 @@ write_hwdef_header(os.path.join(outdir, "hwdef.h"))
 
 # write out ldscript.ld
 write_ldscript(os.path.join(outdir, "ldscript.ld"))
+
+# copy the shared linker script into the build directory; it must
+# exist in the same directory as the ldscript.ld file we generate.
+copy_common_linkerscript(outdir, args.hwdef)
 
 # write out env.py
 pickle.dump(env_vars, open(os.path.join(outdir, "env.py"), "wb"))
