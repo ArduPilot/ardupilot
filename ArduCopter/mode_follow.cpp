@@ -92,6 +92,7 @@ void Copter::ModeFollow::run()
             dir_to_target_neu /= dir_to_target_neu_len;
         }
 
+#if AC_AVOID_ENABLED == ENABLED
         // create horizontal desired velocity vector (required for slow down calculations)
         Vector2f desired_velocity_xy_cms(desired_velocity_neu_cms.x, desired_velocity_neu_cms.y);
 
@@ -103,6 +104,7 @@ void Copter::ModeFollow::run()
 
         // slow down horizontally as we approach target (use 1/2 of maximum deceleration for gentle slow down)
         const float dist_to_target_xy = Vector2f(dist_vec_offs_neu.x, dist_vec_offs_neu.y).length();
+
         copter.avoid.limit_velocity(pos_control->get_pos_xy_p().kP().get(), pos_control->get_accel_xy() * 0.5f, desired_velocity_xy_cms, dir_to_target_xy, dist_to_target_xy, copter.G_Dt);
 
         // limit the horizontal velocity to prevent fence violations
@@ -115,6 +117,7 @@ void Copter::ModeFollow::run()
         // limit vertical desired_velocity_neu_cms to slow as we approach target (we use 1/2 of maximum deceleration for gentle slow down)
         const float des_vel_z_max = copter.avoid.get_max_speed(pos_control->get_pos_z_p().kP().get(), pos_control->get_accel_z() * 0.5f, fabsf(dist_vec_offs_neu.z), copter.G_Dt);
         desired_velocity_neu_cms.z = constrain_float(desired_velocity_neu_cms.z, -des_vel_z_max, des_vel_z_max);
+#endif
 
         // get avoidance adjusted climb rate
         desired_velocity_neu_cms.z = get_avoidance_adjusted_climbrate(desired_velocity_neu_cms.z);
