@@ -379,15 +379,19 @@ is bob we will attempt to checkout bob-AVR'''
                                          board,
                                          "bin",
                                          "".join([binaryname, framesuffix]))
-                px4_path = "".join([bare_path, ".px4"])
-                if os.path.exists(px4_path):
-                    path = px4_path
-                else:
-                    path = bare_path
-                try:
-                    self.copyit(path, ddir, tag, vehicle)
-                except Exception as e:
-                    self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
+                files_to_copy = []
+                if os.path.exists(bare_path):
+                    files_to_copy.append(bare_path)
+                for extension in [".px4", ".apj", ".abin"]:
+                    filepath = "".join([bare_path, extension])
+                    if os.path.exists(filepath):
+                        files_to_copy.append(filepath)
+
+                for path in files_to_copy:
+                    try:
+                        self.copyit(path, ddir, tag, vehicle)
+                    except Exception as e:
+                        self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
                 # why is touching this important? -pb20170816
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
