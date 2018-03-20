@@ -54,7 +54,7 @@ void Copter::motor_test_output()
             case MOTOR_TEST_COMPASS_CAL:
                 compass.set_voltage(battery.voltage());
                 compass.per_motor_calibration_update();
-                // fall through 
+                FALLTHROUGH;
                 
             case MOTOR_TEST_THROTTLE_PERCENT:
                 // sanity check motor_test_throttle value
