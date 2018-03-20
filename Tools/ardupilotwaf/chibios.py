@@ -81,7 +81,7 @@ class generate_fw(Task.Task):
     run_str='${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
     python ${UPLOAD_TOOLS}/px_mkfw.py --image ${SRC}.bin \
     --prototype ${BUILDROOT}/apj.prototype > ${TGT} && \
-    ${TOOLS_SCRIPTS}/make_abin.sh ${SRC}.bin ${SRC}.abin'
+    cd ${TOOLS_SCRIPTS} && ./make_abin.sh $OLDPWD/${SRC}.bin $OLDPWD/${SRC}.abin'
     always_run = True
     def keyword(self):
         return "Generating"
