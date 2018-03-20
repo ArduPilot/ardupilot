@@ -44,7 +44,8 @@ enum mode {
     RTL          = 11,
     SMART_RTL    = 12,
     GUIDED       = 15,
-    INITIALISING = 16
+    INITIALISING = 16,
+    BREADCRUMB   = 17
 };
 
 // types of failsafe events
