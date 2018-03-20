@@ -308,6 +308,11 @@ is bob we will attempt to checkout bob-AVR'''
             with open(filepath, "a"):
                 pass
 
+    def board_is_chibios(self, board):
+        if board == 'skyviper-v2450':
+            return True;
+        return False
+
     def build_vehicle(self, tag, vehicle, boards, vehicle_binaries_subdir,
                       binaryname, px4_binaryname, frames=[None]):
         '''build vehicle binaries'''
@@ -354,6 +359,18 @@ is bob we will attempt to checkout bob-AVR'''
                     continue
                 self.progress("Configuring for %s in %s" %
                               (board, self.buildroot))
+                orig_path = os.environ["PATH"]
+                if self.board_is_chibios(board):
+                    # need to run a more modern compiler for ChibiOS:
+                    environ_varname = "CHIBIOS_GCC_DIRPATH"
+                    gcc_dirpath = os.getenv(environ_varname, None)
+                    if gcc_dirpath is None:
+                        self.progress("Skipping ChibiOS build %s (no %s)" %
+                                      (board, environ_varname))
+                        continue
+                    self.progress("Using ChibiOS GCC (%s)" % gcc_dirpath)
+                    os.environ['PATH'] = ":".join([os.path.join(gcc_dirpath,"bin"),
+                                                   orig_path])
                 try:
                     waf_opts = ["configure",
                                 "--board", board,
@@ -363,6 +380,7 @@ is bob we will attempt to checkout bob-AVR'''
                     self.run_waf(waf_opts)
                 except subprocess.CalledProcessError as e:
                     self.progress("waf configure failed")
+                    os.environ["PATH"] = orig_path
                     continue
                 try:
                     target = os.path.join("bin",
@@ -373,7 +391,9 @@ is bob we will attempt to checkout bob-AVR'''
                            (vehicle, board, framesuffix, tag))
                     self.progress(msg)
                     self.error_strings.append(msg)
+                    os.environ["PATH"] = orig_path
                     continue
+                os.environ["PATH"] = orig_path
 
                 bare_path = os.path.join(self.buildroot,
                                          board,
