@@ -124,13 +124,17 @@ void Plane::calc_airspeed_errors()
         target_airspeed_cm = aparm.airspeed_cruise_cm;
     }
 
+    target_airspeed_cm_base = target_airspeed_cm;
+    // this is used to keep pre-gndspd_undershoot target for gndspd_undershoot calculation
+
+
     // Set target to current airspeed + ground speed undershoot,
     // but only when this is faster than the target airspeed commanded
     // above.
     if (auto_throttle_mode &&
         aparm.min_gndspeed_cm > 0 &&
         control_mode != CIRCLE) {
-        int32_t min_gnd_target_airspeed = airspeed_measured*100 + groundspeed_undershoot;
+        int32_t min_gnd_target_airspeed = target_airspeed_cm_base + groundspeed_undershoot;
         if (min_gnd_target_airspeed > target_airspeed_cm) {
             target_airspeed_cm = min_gnd_target_airspeed;
         }
@@ -152,19 +156,47 @@ void Plane::calc_airspeed_errors()
 
 void Plane::calc_gndspeed_undershoot()
 {
+
     // Use the component of ground speed in the forward direction
     // This prevents flyaway if wind takes plane backwards
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-        Vector2f gndVel = ahrs.groundspeed_vector();
-        const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
-        Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
-        if (!yawVect.is_zero()) {
-            yawVect.normalize();
-            float gndSpdFwd = yawVect * gndVel;
-            groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
-        }
+    const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
+    Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
+
+    // Use integrator based gndspd_undershoot controller
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
+        is_flying() && !yawVect.is_zero() &&
+        (aparm.min_gndspeed_cm > 0)) {
+
+        float nav_bearing = radians(0.01f*nav_controller->target_bearing_cd());
+        Vector2f navVect = Vector2f(cosf(nav_bearing), sinf(nav_bearing));
+        navVect.normalize();
+
+        Vector2f gndSpdVect = ahrs.groundspeed_vector();
+        yawVect.normalize();
+
+        // Using the component of ground speed in the forward direction only
+        // prevents flyaway if wind takes plane backwards, but may
+        // result in underestimating the actual ground speed along track.
+        // Hence, use the max of both estimates.
+
+        float gndspd_forward     = yawVect * gndSpdVect;
+        float gndspd_along_track = navVect * gndSpdVect;
+        float gndSpdFwd = MAX(gndspd_forward, gndspd_along_track);
+
+        float gndspd_undershoot_error = aparm.min_gndspeed_cm - gndSpdFwd*100;
+        // compensate for the lag in airspeed controller (coverting to cm/sec)
+        gndspd_undershoot_error -= airspeed_error*100;
+
+        const float dt = 0.1f;  // this is running at 10Hz
+        const float K_I = 0.2f; // fixed integration gain
+
+        groundspeed_undershoot += gndspd_undershoot_error * K_I * dt;
+
+        // apply only positive correction (speed-up)
+        float max_correction = aparm.airspeed_max*100 - target_airspeed_cm_base;
+        groundspeed_undershoot = constrain_float(groundspeed_undershoot, 0, max_correction);
     } else {
-        groundspeed_undershoot = 0;
+        groundspeed_undershoot *= 0.8f; // Fade-out correction when not flying or GPS unavailable
     }
 }
 
