@@ -65,10 +65,16 @@ class upload_fw(Task.Task):
 
 class set_default_parameters(Task.Task):
     color='CYAN'
-    run_str='python ${APJ_TOOL} --set-file ${DEFAULT_PARAMETERS} ${SRC}'
     always_run = True
     def keyword(self):
         return "apj_tool"
+    def run(self):
+        rel_default_parameters = self.env.get_flat('DEFAULT_PARAMETERS')
+        abs_default_parameters = os.path.join(self.env.STANDARD_BUILDDIR,
+                                              rel_default_parameters)
+        run_str = ("python ${APJ_TOOL} --set-file %s ${SRC}" %
+                   (abs_default_parameters,))
+
 
 class generate_fw(Task.Task):
     color='CYAN'
@@ -188,6 +194,7 @@ def configure(cfg):
     env.TOOLS_SCRIPTS = srcpath('Tools/scripts')
     env.APJ_TOOL = srcpath('Tools/scripts/apj_tool.py')
     env.SERIAL_PORT = srcpath('/dev/serial/by-id/*_STLink*')
+    env.STANDARD_BUILDDIR = srcpath("build/some-board")
 
     # relative paths to pass to make, relative to directory that make is run from
     env.CH_ROOT_REL = os.path.relpath(env.CH_ROOT, env.BUILDROOT)
