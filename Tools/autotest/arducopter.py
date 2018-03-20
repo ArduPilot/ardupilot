@@ -427,7 +427,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(3, 1500)
 
         # enable battery failsafe
-        self.set_parameter('FS_BATT_ENABLE', 1)
+        self.set_parameter('BATT_FS_LOW_ACT', 1)
 
         # trigger low voltage
         self.set_parameter('SIM_BATT_VOLTAGE', 10)
@@ -438,7 +438,7 @@ class AutoTestCopter(AutoTest):
             success = True
 
         # disable battery failsafe
-        self.set_parameter('FS_BATT_ENABLE', 0)
+        self.set_parameter('BATT_FS_LOW_ACT', 0)
 
         # return status
         if success:
