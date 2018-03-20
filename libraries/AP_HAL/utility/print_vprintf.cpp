@@ -111,7 +111,7 @@ void print_vprintf(AP_HAL::Print *s, const char *fmt, va_list ap)
                         continue;
                     case '+':
                         flags |= FL_PLUS;
-                        /* FALLTHROUGH */
+                        FALLTHROUGH;
                     case ' ':
                         flags |= FL_SPACE;
                         continue;
