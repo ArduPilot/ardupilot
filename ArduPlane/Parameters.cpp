@@ -714,7 +714,22 @@ const AP_Param::Info Plane::var_info[] = {
     // @Range: -100 100
     // @User: User
     GSCALAR(dspoiler_rud_rate,      "DSPOILR_RUD_RATE",  DSPOILR_RUD_RATE_DEFAULT),
-
+    // @Param: k_param_mount_alt_open
+    // @DisplayName: mount alt open
+    // @Description: Altitude at which the mount will open then turn on camera
+    // @Units: Percent
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(mount_open_alt,   "MOUNT_OPEN_ALT",        0),
+    // @Param: k_param_mount_alt_close
+    // @DisplayName: mount alt close
+    // @Description: Altitude at which camera then mount will close
+    // @Units: Percent
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(mount_close_alt,   "MOUNT_CLOSE_ALT",        0),    
     // @Param: SYS_NUM_RESETS
     // @DisplayName: Num Resets
     // @Description: Number of APM board resets
