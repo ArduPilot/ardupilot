@@ -708,6 +708,12 @@ void GCS_MAVLINK_Copter::send_banner()
 }
 
 
+void GCS_MAVLINK_Copter::handle_command_ack(const mavlink_message_t* msg)
+{
+    copter.command_ack_counter++;
+    GCS_MAVLINK::handle_command_ack(msg);
+}
+
 void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
@@ -1334,12 +1340,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // send ACK or NAK
         mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
 
-        break;
-    }
-
-    case MAVLINK_MSG_ID_COMMAND_ACK:        // MAV ID: 77
-    {
-        copter.command_ack_counter++;
         break;
     }
 
