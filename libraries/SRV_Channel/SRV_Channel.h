@@ -258,6 +258,12 @@ public:
 
     // set output value for a function channel as a pwm value
     static void set_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t value);
+    
+    // set output value for a function channel as a pwm value
+    static void set_output_pwm_min(SRV_Channel::Aux_servo_function_t function);
+    
+    // set output value for a function channel as a pwm value
+    static void set_output_pwm_max(SRV_Channel::Aux_servo_function_t function);
 
     // set output value for a function channel as a pwm value on the first matching channel
     static void set_output_pwm_first(SRV_Channel::Aux_servo_function_t function, uint16_t value);
@@ -319,7 +325,7 @@ public:
 
     // set the trim for a function channel to min of the channel
     static void set_trim_to_min_for(SRV_Channel::Aux_servo_function_t function);
-
+    
     // set the trim for a function channel to given pwm
     static void set_trim_to_pwm_for(SRV_Channel::Aux_servo_function_t function, int16_t pwm);
 
