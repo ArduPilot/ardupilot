@@ -493,17 +493,18 @@ def run_in_terminal_window(autotest, name, cmd):
 tracker_uarta = None  # blemish
 
 
-def start_antenna_tracker(autotest, opts):
+def start_antenna_tracker(autotest, cmd_opts):
     """Compile and run the AntennaTracker, add tracker to mavproxy"""
+
     global tracker_uarta
     progress("Preparing antenna tracker")
     tracker_home = find_location_by_name(find_autotest_dir(),
-                                         opts.tracker_location)
+                                         cmd_opts.tracker_location)
     vehicledir = os.path.join(autotest, "../../" + "AntennaTracker")
     opts = vinfo.options["AntennaTracker"]
     tracker_default_frame = opts["default_frame"]
     tracker_frame_options = opts["frames"][tracker_default_frame]
-    do_build(vehicledir, opts, tracker_frame_options)
+    do_build(vehicledir, cmd_opts, tracker_frame_options)
     tracker_instance = 1
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
