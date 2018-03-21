@@ -214,18 +214,6 @@ void Plane::update_mount(void)
 #if MOUNT == ENABLED
     camera_mount.update();
 #endif
-
-	//under mount_close_alt close
-	if (relative_altitude <= g.mount_close_alt){
-        
-	SRV_Channels::set_output_pwm_max(SRV_Channel::k_unused1);
-	
-    }
-    if(relative_altitude > g.mount_open_alt){
-        SRV_Channels::set_output_pwm_min(SRV_Channel::k_unused1);
-		
-	} 
-    
 }
 
 /*

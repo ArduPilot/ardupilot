@@ -347,15 +347,12 @@ public:
 
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
-        k_param_mount_open_alt = 250,
-        k_param_mount_close_alt,
+
         k_param_DataFlash = 253, // Logging Group
 
         // 254,255: reserved
     };
-    
-    AP_Int8 mount_open_alt;
-    AP_Int8 mount_close_alt;
+
     AP_Int16 format_version;
     AP_Int8 software_type;
 
