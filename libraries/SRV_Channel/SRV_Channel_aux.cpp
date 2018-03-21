@@ -191,35 +191,6 @@ void SRV_Channels::set_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
 
 /*
   set radio_out for all channels matching the given function type
- */
-void SRV_Channels::set_output_pwm_max(SRV_Channel::Aux_servo_function_t function)
-{
-    if (!function_assigned(function)) {
-        return;
-    }
-    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        if (channels[i].function.get() == function) {
-            channels[i].set_output_pwm(channels[i].servo_max);
-            channels[i].output_ch();
-        }
-    }
-}
-void SRV_Channels::set_output_pwm_min(SRV_Channel::Aux_servo_function_t function)
-{
-    if (!function_assigned(function)) {
-        return;
-    }
-    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        if (channels[i].function.get() == function) {
-            channels[i].set_output_pwm(channels[i].servo_min);
-            channels[i].output_ch();
-        }
-    }
-}
-
-
-/*
-  set radio_out for all channels matching the given function type
   trim the output assuming a 1500 center on the given value
  */
 void
