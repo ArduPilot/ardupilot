@@ -103,20 +103,6 @@ public:
 
     enum spool_up_down_desired get_desired_spool_state(void) const { return _spool_desired; }
     
-    //
-    // voltage, current and air pressure compensation or limiting features - multicopters only
-    //
-    // set_voltage - set voltage to be used for output scaling
-    void                set_voltage(float volts){ _batt_voltage = volts; }
-    void                set_voltage_resting_estimate(float volts) { _batt_voltage_resting_estimate = volts; }
-
-    // set_current - set current to be used for output scaling
-    void                set_current(float current){ _batt_current = current; }
-
-    // get and set battery resistance estimate
-    float               get_batt_resistance() const { return _batt_resistance; }
-    void                set_resistance(float resistance){ _batt_resistance = resistance; }
-
     // set_density_ratio - sets air density as a proportion of sea level density
     void                set_air_density_ratio(float ratio) { _air_density_ratio = ratio; }
 
@@ -207,11 +193,7 @@ protected:
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     spool_up_down_desired _spool_desired;           // desired spool state
 
-    // battery voltage, current and air pressure compensation variables
-    float               _batt_voltage;          // latest battery voltage reading
-    float               _batt_voltage_resting_estimate; // estimated battery voltage with sag removed
-    float               _batt_current;          // latest battery current reading
-    float               _batt_resistance;       // latest battery resistance estimate in ohms
+    // air pressure compensation variables
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
 
     // mask of what channels need fast output
