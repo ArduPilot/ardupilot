@@ -21,6 +21,7 @@
 
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -265,20 +266,26 @@ void AP_MotorsMulticopter::update_throttle_filter()
 // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
 float AP_MotorsMulticopter::get_current_limit_max_throttle()
 {
-    // return maximum if current limiting is disabled
-    if (_batt_current_max <= 0) {
+    AP_BattMonitor &battery = AP::battery();
+
+    if (_batt_current_max <= 0 || // return maximum if current limiting is disabled
+        !_flags.armed || // remove throttle limit if disarmed
+        !battery.has_current()) { // no current monitoring is available
         _throttle_limit = 1.0f;
         return 1.0f;
     }
 
-    // remove throttle limit if disarmed
-    if (!_flags.armed) {
+    float _batt_resistance = battery.get_resistance();
+
+    if (is_zero(_batt_resistance)) {
         _throttle_limit = 1.0f;
         return 1.0f;
     }
+
+    float _batt_current = battery.current_amps();
 
     // calculate the maximum current to prevent voltage sag below _batt_voltage_min
-    float batt_current_max = MIN(_batt_current_max, _batt_current + (_batt_voltage-_batt_voltage_min)/_batt_resistance);
+    float batt_current_max = MIN(_batt_current_max, _batt_current + (battery.voltage()-_batt_voltage_min)/_batt_resistance);
 
     float batt_current_ratio = _batt_current/batt_current_max;
 
@@ -316,7 +323,7 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
 {
     // sanity check battery_voltage_min is not too small
     // if disabled or misconfigured exit immediately
-    if((_batt_voltage_max <= 0) || (_batt_voltage_min >= _batt_voltage_max) || (_batt_voltage < 0.25f*_batt_voltage_min)) {
+    if((_batt_voltage_max <= 0) || (_batt_voltage_min >= _batt_voltage_max) || (AP::battery().voltage() < 0.25f*_batt_voltage_min)) {
         _batt_voltage_filt.reset(1.0f);
         _lift_max = 1.0f;
         return;
@@ -325,7 +332,7 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
     _batt_voltage_min = MAX(_batt_voltage_min, _batt_voltage_max * 0.6f);
 
     // contrain resting voltage estimate (resting voltage is actual voltage with sag removed based on current draw and resistance)
-    _batt_voltage_resting_estimate = constrain_float(_batt_voltage_resting_estimate, _batt_voltage_min, _batt_voltage_max);
+    float _batt_voltage_resting_estimate = constrain_float(AP::battery().voltage_resting_estimate(), _batt_voltage_min, _batt_voltage_max);
 
     // filter at 0.5 Hz
     float batt_voltage_filt = _batt_voltage_filt.apply(_batt_voltage_resting_estimate/_batt_voltage_max, 1.0f/_loop_rate);
