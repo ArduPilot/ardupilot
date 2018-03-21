@@ -47,6 +47,8 @@
 //#define CAL_ALWAYS_REBOOT                         // flight controller will reboot after compass or accelerometer calibration completes
 //#define DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE   // disable mode changes from GCS during Radio failsafes.  Avoids a race condition for vehicle like Solo in which the RC and telemetry travel along the same link
 //#define ADVANCED_FAILSAFE     ENABLED             // enabled advanced failsafe which allows running a portion of the mission in failsafe events
+//#define ARM_GPS_ALL_MODES ENABLED // checks for GPS fix during arming even on modes which don't require GPS
+
 
 // other settings
 //#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)

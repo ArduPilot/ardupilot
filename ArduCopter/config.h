@@ -703,6 +703,10 @@
 # define ADVANCED_FAILSAFE DISABLED
 #endif
 
+#ifndef ARM_GPS_ALL_MODES
+# define ARM_GPS_ALL_MODES DISABLED
+#endif
+
 #ifndef CH_MODE_DEFAULT
  # define CH_MODE_DEFAULT   5
 #endif

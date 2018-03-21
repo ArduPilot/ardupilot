@@ -390,8 +390,13 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
     #endif
 
+    bool check_gps_all_modes = false;
+    #if ARM_GPS_ALL_MODES == ENABLED
+    check_gps_all_modes = true;
+    #endif
+
     // return true if GPS is not required
-    if (!mode_requires_gps && !fence_requires_gps) {
+    if (!mode_requires_gps && !fence_requires_gps && !check_gps_all_modes) {
         AP_Notify::flags.pre_arm_gps_check = true;
         return true;
     }
@@ -406,6 +411,8 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
                 if (!mode_requires_gps && fence_requires_gps) {
                     // clarify to user why they need GPS in non-GPS flight mode
                     gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Fence enabled, need 3D Fix");
+                } else if (!mode_requires_gps && check_gps_all_modes) {
+                    gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Checking for GPS on non-GPS modes enabled, need 3D Fix");
                 } else {
                     gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D Fix");
                 }
