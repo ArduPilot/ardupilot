@@ -10,8 +10,8 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-AP_Int32 log_bitmask;
-DataFlash_Class DataFlash{"Bob", log_bitmask};
+//AP_Int32 log_bitmask;
+//DataFlash_Class DataFlash{"Bob", log_bitmask};
 
 class SchedTest {
 public:
