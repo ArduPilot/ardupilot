@@ -33,11 +33,6 @@ extern const AP_HAL::HAL& hal;
 
 bool Buzzer::init()
 {
-    // this is for leds, not for buzzer! 
-//    if (!AP_Notify::flags.external_leds) {
-//        return false;
-//    }
-
 #if defined(BUZZER_PIN)
     _pin = BUZZER_PIN;
 #else
