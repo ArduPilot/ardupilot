@@ -70,6 +70,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Radio',
     'AP_TempCalibration',
     'AP_VisualOdom',
+    'AP_BLHeli',
 ]
 
 def get_legacy_defines(sketch_name):
