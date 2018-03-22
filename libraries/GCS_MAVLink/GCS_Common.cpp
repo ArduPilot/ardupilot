@@ -1516,17 +1516,17 @@ void GCS_MAVLINK::send_ekf_origin(const Location &ekf_origin) const
 }
 
 /*
-  wrapper for sending heartbeat
+  Send MAVLink heartbeat
  */
-void GCS_MAVLINK::send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status)
+void GCS_MAVLINK::send_heartbeat()
 {
     mavlink_msg_heartbeat_send(
         chan,
-        type,
+        frame_type(),
         MAV_AUTOPILOT_ARDUPILOTMEGA,
-        base_mode,
-        custom_mode,
-        system_status);
+        base_mode(),
+        custom_mode(),
+        system_status());
 }
 
 float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
