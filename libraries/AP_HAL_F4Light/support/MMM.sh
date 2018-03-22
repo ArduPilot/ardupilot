@@ -112,6 +112,28 @@ mkdir -p $ROOT/Release/Plane
  cp $ROOT/ArduPlane/f4light_AirbotV2_bl.dfu $ROOT/Release/Plane
  )
 
+) && ( # RevoMini board with SD card
+ cd $ROOT/ArduCopter
+ make f4light-clean
+ make f4light VERBOSE=1 BOARD=f4light_Revolution_SD && (
+
+ cp $ROOT/ArduCopter/f4light_Revolution_SD.bin $ROOT/Release/Copter
+ cp $ROOT/ArduCopter/f4light_Revolution_SD.hex $ROOT/Release/Copter
+ cp $ROOT/ArduCopter/f4light_Revolution_SD.dfu $ROOT/Release/Copter
+ cp $ROOT/ArduCopter/f4light_Revolution_SD_bl.bin $ROOT/Release/Copter
+ cp $ROOT/ArduCopter/f4light_Revolution_SD_bl.dfu $ROOT/Release/Copter
+ )
+) && (
+ cd $ROOT/ArduPlane
+ make f4light-clean
+ make f4light VERBOSE=1 BOARD=f4light_Revolution_SD && (
+
+ cp $ROOT/ArduPlane/f4light_Revolution_SD.bin $ROOT/Release/Plane
+ cp $ROOT/ArduPlane/f4light_Revolution_SD.hex $ROOT/Release/Plane
+ cp $ROOT/ArduPlane/f4light_Revolution_SD.dfu $ROOT/Release/Plane
+ cp $ROOT/ArduPlane/f4light_Revolution_SD_bl.bin $ROOT/Release/Plane
+ cp $ROOT/ArduPlane/f4light_Revolution_SD_bl.dfu $ROOT/Release/Plane
+ )
 ) && (
  cd $ROOT
 
