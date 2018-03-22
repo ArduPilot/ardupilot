@@ -14,3 +14,4 @@ LIBRARIES += AP_SBusOut
 LIBRARIES += AP_TempCalibration
 LIBRARIES += AP_Radio
 LIBRARIES += AP_Param_Helper
+LIBRARIES += AP_VisualOdom
