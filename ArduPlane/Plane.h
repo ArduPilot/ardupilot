@@ -355,6 +355,10 @@ private:
         uint32_t AFS_last_valid_rc_ms;
     } failsafe;
 
+    bool any_failsafe_triggered() {
+        return failsafe.state != FAILSAFE_NONE || battery.has_failsafed() || failsafe.adsb;
+    }
+
     // A counter used to count down valid gps fixes to allow the gps estimate to settle
     // before recording our home position (and executing a ground start if we booted with an air start)
     uint8_t ground_start_count = 5;
@@ -776,7 +780,6 @@ private:
     
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
-    void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_fence_status(mavlink_channel_t chan);
     void update_sensor_status_flags(void);
