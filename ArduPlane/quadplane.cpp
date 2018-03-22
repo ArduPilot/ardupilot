@@ -2483,12 +2483,12 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
 /*
   return mav_type for heartbeat
  */
-uint8_t QuadPlane::get_mav_type(void) const
+MAV_TYPE QuadPlane::get_mav_type(void) const
 {
     if (mav_type.get() == 0) {
         return MAV_TYPE_FIXED_WING;
     }
-    return uint8_t(mav_type.get());
+    return MAV_TYPE(mav_type.get());
 }
 
 /*

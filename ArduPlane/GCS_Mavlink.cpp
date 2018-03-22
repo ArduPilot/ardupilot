@@ -2,21 +2,14 @@
 
 #include "Plane.h"
 
-void Plane::send_heartbeat(mavlink_channel_t chan)
+MAV_TYPE GCS_MAVLINK_Plane::frame_type() const
+{
+    return plane.quadplane.get_mav_type();
+}
+
+MAV_MODE GCS_MAVLINK_Plane::base_mode() const
 {
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    uint8_t system_status;
-    uint32_t custom_mode = control_mode;
-    
-    if (failsafe.state != FAILSAFE_NONE || battery.has_failsafed() || failsafe.adsb) {
-        system_status = MAV_STATE_CRITICAL;
-    } else if (plane.crash_state.is_crashed) {
-        system_status = MAV_STATE_EMERGENCY;
-    } else if (is_flying()) {
-        system_status = MAV_STATE_ACTIVE;
-    } else {
-        system_status = MAV_STATE_STANDBY;
-    }
 
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
@@ -26,7 +19,7 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    switch (control_mode) {
+    switch (plane.control_mode) {
     case MANUAL:
     case TRAINING:
     case ACRO:
@@ -57,44 +50,64 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
         // positions", which APM does not currently do
         break;
     case INITIALISING:
-        system_status = MAV_STATE_CALIBRATING;
         break;
     }
 
-    if (!training_manual_pitch || !training_manual_roll) {
+    if (!plane.training_manual_pitch || !plane.training_manual_roll) {
         base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
     }
 
-    if (control_mode != MANUAL && control_mode != INITIALISING) {
+    if (plane.control_mode != MANUAL && plane.control_mode != INITIALISING) {
         // stabiliser of some form is enabled
         base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
 
-    if (g.stick_mixing != STICK_MIXING_DISABLED && control_mode != INITIALISING) {
+    if (plane.g.stick_mixing != STICK_MIXING_DISABLED && plane.control_mode != INITIALISING) {
         // all modes except INITIALISING have some form of manual
         // override if stick mixing is enabled
         base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
 
 #if HIL_SUPPORT
-    if (g.hil_mode == 1) {
+    if (plane.g.hil_mode == 1) {
         base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
     }
 #endif
 
     // we are armed if we are not initialising
-    if (control_mode != INITIALISING && arming.is_armed()) {
+    if (plane.control_mode != INITIALISING && plane.arming.is_armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(quadplane.get_mav_type(),
-                                                   base_mode,
-                                                   custom_mode,
-                                                   system_status);
+    return (MAV_MODE)base_mode;
 }
+
+uint32_t GCS_MAVLINK_Plane::custom_mode() const
+{
+    return plane.control_mode;
+}
+
+MAV_STATE GCS_MAVLINK_Plane::system_status() const
+{
+    if (plane.control_mode == INITIALISING) {
+        return MAV_STATE_CALIBRATING;
+    }
+    if (plane.any_failsafe_triggered()) {
+        return MAV_STATE_CRITICAL;
+    }
+    if (plane.crash_state.is_crashed) {
+        return MAV_STATE_EMERGENCY;
+    }
+    if (plane.is_flying()) {
+        return MAV_STATE_ACTIVE;
+    }
+
+    return MAV_STATE_STANDBY;
+}
+
 
 void Plane::send_attitude(mavlink_channel_t chan)
 {
@@ -404,7 +417,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
         last_heartbeat_time = AP_HAL::millis();
-        plane.send_heartbeat(chan);
+        send_heartbeat();
         return true;
 
     case MSG_EXTENDED_STATUS1:
