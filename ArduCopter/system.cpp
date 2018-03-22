@@ -446,7 +446,7 @@ void Copter::set_default_frame_class()
 }
 
 // return MAV_TYPE corresponding to frame class
-uint8_t Copter::get_frame_mav_type()
+MAV_TYPE Copter::get_frame_mav_type()
 {
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
         case AP_Motors::MOTOR_FRAME_QUAD:
