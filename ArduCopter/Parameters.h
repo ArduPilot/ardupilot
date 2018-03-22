@@ -552,7 +552,9 @@ public:
 
     // acro exponent parameters
     AP_Float acro_y_expo;
+#if MODE_ACRO_ENABLED == ENABLED
     AP_Float acro_thr_mid;
+#endif
 
     // frame class
     AP_Int8 frame_class;

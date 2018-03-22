@@ -899,12 +899,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ACRO_Y_EXPO", 9, ParametersG2, acro_y_expo, ACRO_Y_EXPO_DEFAULT),
 
+#if MODE_ACRO_ENABLED == ENABLED
     // @Param: ACRO_THR_MID
     // @DisplayName: Acro Thr Mid
     // @Description: Acro Throttle Mid
     // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("ACRO_THR_MID", 10, ParametersG2, acro_thr_mid, ACRO_THR_MID_DEFAULT),
+#endif
 
     // @Param: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
