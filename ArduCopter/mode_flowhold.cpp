@@ -43,6 +43,7 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @DisplayName: FlowHold Filter Frequency
     // @Description: Filter frequency for flow data
     // @Range: 1 100
+    // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_FILT_HZ", 3, Copter::ModeFlowHold, flow_filter_hz, 5),
 
