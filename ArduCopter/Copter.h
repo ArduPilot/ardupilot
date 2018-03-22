@@ -391,6 +391,10 @@ private:
         uint8_t adsb                : 1; // true if an adsb related failsafe has occurred
     } failsafe;
 
+    bool any_failsafe_triggered() const {
+        return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb;
+    }
+
     // sensor health for logging
     struct {
         uint8_t baro        : 1;    // true if baro is healthy
@@ -776,7 +780,6 @@ private:
     // GCS_Mavlink.cpp
     void gcs_send_heartbeat(void);
     void gcs_send_deferred(void);
-    void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_fence_status(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
@@ -949,7 +952,7 @@ private:
     void check_usb_mux(void);
     bool should_log(uint32_t mask);
     void set_default_frame_class();
-    uint8_t get_frame_mav_type();
+    MAV_TYPE get_frame_mav_type();
     const char* get_frame_string();
     void allocate_motors(void);
 
