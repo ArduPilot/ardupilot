@@ -25,16 +25,14 @@ void Sub::gcs_send_deferred(void)
  *  pattern below when adding any new messages
  */
 
-NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
+MAV_TYPE GCS_MAVLINK_Sub::frame_type() const
 {
-    uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    uint8_t system_status = motors.armed() ? MAV_STATE_STANDBY : MAV_STATE_ACTIVE;
-    uint32_t custom_mode = control_mode;
+    return MAV_TYPE_SUBMARINE;
+}
 
-    // set system as critical if any failsafe have triggered
-    if (failsafe.pilot_input || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain)  {
-        system_status = MAV_STATE_CRITICAL;
-    }
+MAV_MODE GCS_MAVLINK_Sub::base_mode() const
+{
+    uint8_t base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
 
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
@@ -44,8 +42,7 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
-    switch (control_mode) {
+    switch (sub.control_mode) {
     case AUTO:
     case GUIDED:
     case CIRCLE:
@@ -63,21 +60,33 @@ NOINLINE void Sub::send_heartbeat(mavlink_channel_t chan)
     // override if stick mixing is enabled
     base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
 
-    // we are armed if we are not initialising
-    if (motors.armed()) {
+    if (sub.motors.armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    uint8_t mav_type;
-    mav_type = MAV_TYPE_SUBMARINE;
+    return (MAV_MODE)base_mode;
+}
 
-    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(mav_type,
-                                            base_mode,
-                                            custom_mode,
-                                            system_status);
+uint32_t GCS_MAVLINK_Sub::custom_mode() const
+{
+    return sub.control_mode;
+}
+
+MAV_STATE GCS_MAVLINK_Sub::system_status() const
+{
+    // set system as critical if any failsafe have triggered
+    if (sub.any_failsafe_triggered())  {
+        return MAV_STATE_CRITICAL;
+    }
+
+    if (sub.motors.armed()) {
+        return MAV_STATE_ACTIVE;
+    }
+
+    return MAV_STATE_STANDBY;
 }
 
 NOINLINE void Sub::send_attitude(mavlink_channel_t chan)
@@ -500,7 +509,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
         last_heartbeat_time = AP_HAL::millis();
-        sub.send_heartbeat(chan);
+        send_heartbeat();
         sub.send_info(chan);
         break;
 

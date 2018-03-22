@@ -285,6 +285,10 @@ private:
         uint8_t sensor_health        : 1; // true if at least one sensor has triggered a failsafe (currently only used for depth in depth enabled modes)
     } failsafe;
 
+    bool any_failsafe_triggered() const {
+        return (failsafe.pilot_input || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain);
+    }
+
     // sensor health for logging
     struct {
         uint8_t baro        : 1;    // true if any single baro is healthy
