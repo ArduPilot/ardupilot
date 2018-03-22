@@ -115,7 +115,7 @@ void DataFlash_File::Init()
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // try to cope with an existing lowercase log directory
     // name. NuttX does not handle case insensitive VFAT well
     DIR *d = opendir("/fs/microsd/APM");
