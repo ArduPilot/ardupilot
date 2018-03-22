@@ -988,6 +988,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(follow, "FOLL", 27, ParametersG2, AP_Follow),
 #endif
 
+    // @Param: WP_YAW_DEADBAND
+    // @DisplayName: Yaw controller deadband during missions
+    // @Description: Stop yawing if within WP_YAW_DEADBAND of target yaw during missions
+    // @Units: cdeg
+    // @Range: 30 500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("WP_YAW_DEADBAND", 28, ParametersG2, wp_yaw_deadband, 200),
+
     AP_GROUPEND
 };
 

@@ -595,6 +595,8 @@ public:
     // follow
     AP_Follow follow;
 #endif
+
+    AP_Int16        wp_yaw_deadband;            // Stop yawing if within wp_yaw_deadband of target yaw during missions
 };
 
 extern const AP_Param::Info        var_info[];
