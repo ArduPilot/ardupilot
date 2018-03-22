@@ -4,14 +4,17 @@
 
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
-void Rover::send_heartbeat(mavlink_channel_t chan)
+MAV_TYPE GCS_MAVLINK_Rover::frame_type() const
+{
+    if (rover.is_boat()) {
+        return MAV_TYPE_SURFACE_BOAT;
+    }
+    return MAV_TYPE_GROUND_ROVER;
+}
+
+MAV_MODE GCS_MAVLINK_Rover::base_mode() const
 {
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    uint8_t system_status = MAV_STATE_ACTIVE;
-
-    if (failsafe.triggered != 0) {
-        system_status = MAV_STATE_CRITICAL;
-    }
 
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
@@ -21,11 +24,11 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    if (control_mode->has_manual_input()) {
+    if (rover.control_mode->has_manual_input()) {
         base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
 
-    if (control_mode->is_autopilot_mode()) {
+    if (rover.control_mode->is_autopilot_mode()) {
         base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
     }
 
@@ -40,25 +43,36 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
 #if HIL_MODE != HIL_MODE_DISABLED
     base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
 #endif
-    if (control_mode == &mode_initializing) {
-        system_status = MAV_STATE_CALIBRATING;
-    }
-    if (control_mode == &mode_hold) {
-        system_status = MAV_STATE_STANDBY;
-    }
+
     // we are armed if we are not initialising
-    if (control_mode != &mode_initializing && arming.is_armed()) {
+    if (rover.control_mode != &rover.mode_initializing && rover.arming.is_armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(
-                                            is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER,
-                                            base_mode,
-                                            control_mode->mode_number(),
-                                            system_status);
+return (MAV_MODE)base_mode;
+}
+
+uint32_t GCS_MAVLINK_Rover::custom_mode() const
+{
+    return rover.control_mode->mode_number();
+}
+
+MAV_STATE GCS_MAVLINK_Rover::system_status() const
+{
+    if (rover.failsafe.triggered != 0) {
+        return MAV_STATE_CRITICAL;
+    }
+    if (rover.control_mode == &rover.mode_initializing) {
+        return MAV_STATE_CALIBRATING;
+    }
+    if (rover.control_mode == &rover.mode_hold) {
+        return MAV_STATE_STANDBY;
+    }
+
+    return MAV_STATE_ACTIVE;
 }
 
 void Rover::send_attitude(mavlink_channel_t chan)
@@ -288,7 +302,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
         last_heartbeat_time = AP_HAL::millis();
-        rover.send_heartbeat(chan);
+        send_heartbeat();
         return true;
 
     case MSG_EXTENDED_STATUS1:

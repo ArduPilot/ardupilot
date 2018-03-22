@@ -469,7 +469,6 @@ private:
     void fence_send_mavlink_status(mavlink_channel_t chan);
 
     // GCS_Mavlink.cpp
-    void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
