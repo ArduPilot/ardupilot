@@ -149,6 +149,7 @@ public:
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
 
     // common send functions
+    void send_heartbeat(void);
     void send_meminfo(void);
     void send_power_status(void);
     void send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const;
@@ -174,7 +175,6 @@ public:
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
     void send_ekf_origin(const Location &ekf_origin) const;
-    void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
@@ -233,6 +233,11 @@ protected:
     virtual bool set_mode(uint8_t mode) = 0;
     virtual const AP_FWVersion &get_fwver() const = 0;
     virtual void set_ekf_origin(const Location& loc) = 0;
+
+    virtual MAV_TYPE frame_type() const = 0;
+    virtual MAV_MODE base_mode() const = 0;
+    virtual uint32_t custom_mode() const = 0;
+    virtual MAV_STATE system_status() const = 0;
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
