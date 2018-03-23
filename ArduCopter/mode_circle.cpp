@@ -34,6 +34,9 @@ void Copter::ModeCircle::run()
     float target_yaw_rate = 0;
     float target_climb_rate = 0;
 
+    float target_angular_acceleration = 0;
+    float target_angular_velocity = 0;
+
     // initialize speeds and accelerations
     pos_control->set_speed_xy(wp_nav->get_speed_xy());
     pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
@@ -59,6 +62,8 @@ void Copter::ModeCircle::run()
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
 
+        target_angular_acceleration = get_desired_angular_acceleration(channel_roll->norm_input_dz());
+
         // check for pilot requested take-off
         if (ap.land_complete && target_climb_rate > 0) {
             // indicate we are taking off
@@ -67,6 +72,10 @@ void Copter::ModeCircle::run()
             set_throttle_takeoff();
         }
     }
+
+    target_angular_velocity = get_target_angular_velocity(copter.circle_nav->get_rate(), 
+                                                          target_angular_acceleration, G_Dt);
+    copter.circle_nav->set_rate(target_angular_velocity);
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
@@ -103,6 +112,16 @@ uint32_t Copter::ModeCircle::wp_distance() const
 int32_t Copter::ModeCircle::wp_bearing() const
 {
     return wp_nav->get_loiter_bearing_to_target();
+}
+
+float Copter::ModeCircle::get_desired_angular_acceleration(float norm_pitch_input)
+{
+    return norm_pitch_input * AC_CIRCLE_ANGULAR_ACCEL_MIN;
+}
+
+float Copter::ModeCircle::get_target_angular_velocity(float current_angular_velocity, float angular_acceleration, float dt)
+{
+    return current_angular_velocity + angular_acceleration * dt;
 }
 
 #endif

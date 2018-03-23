@@ -40,6 +40,9 @@ public:
     /// set_circle_rate - set circle rate in degrees per second
     void set_rate(float deg_per_sec);
 
+    /// get angular velocity in degrees per second
+    float get_rate() { return _rate.get(); }
+
     /// get_angle_total - return total angle in radians that vehicle has circled
     float get_angle_total() const { return _angle_total; }
 

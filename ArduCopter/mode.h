@@ -536,6 +536,10 @@ private:
 
     // Circle
     bool pilot_yaw_override = false; // true if pilot is overriding yaw
+
+    // Used for changing the angular velocity from the input on the roll stick
+    float get_desired_angular_acceleration(float norm_pitch_input);
+    float get_target_angular_velocity(float current_angular_velocity, float angular_acceleration, float G_Dt);
 };
 
 
