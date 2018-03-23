@@ -535,6 +535,10 @@ private:
 
     // Circle
     bool pilot_yaw_override = false; // true if pilot is overriding yaw
+
+    // Used for changing the circle radius inflight from pitch inputs
+    float get_target_radius(float current_radius, float radial_velocity, float dt);
+    float get_desired_radial_velocity(float norm_pitch_input);
 };
 
 

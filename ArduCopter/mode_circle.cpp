@@ -35,6 +35,9 @@ void Copter::ModeCircle::run()
     float target_yaw_rate = 0;
     float target_climb_rate = 0;
 
+    float target_radial_velocity = 0;
+    float target_radius = 0;
+
     // initialize speeds and accelerations
     pos_control->set_speed_xy(wp_nav->get_speed_xy());
     pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
@@ -59,6 +62,7 @@ void Copter::ModeCircle::run()
 
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+        target_radial_velocity = get_desired_radial_velocity(channel_pitch->norm_input_dz()); 
 
         // check for pilot requested take-off
         if (ap.land_complete && target_climb_rate > 0) {
@@ -71,6 +75,9 @@ void Copter::ModeCircle::run()
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+    target_radius = get_target_radius(copter.circle_nav->get_radius(), target_radial_velocity, G_Dt);
+    copter.circle_nav->set_radius(target_radius);
 
     // run circle controller
     copter.circle_nav->update();
@@ -94,6 +101,16 @@ void Copter::ModeCircle::run()
     // update altitude target and call position controller
     pos_control->set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
     pos_control->update_z_controller();
+}
+
+float Copter::ModeCircle::get_desired_radial_velocity(float norm_pitch_input)
+{
+    return WPNAV_LOITER_SPEED * norm_pitch_input;
+}
+
+float Copter::ModeCircle::get_target_radius(float current_radius, float radial_velocity, float dt)
+{
+    return abs(current_radius + radial_velocity * dt);
 }
 
 uint32_t Copter::ModeCircle::wp_distance() const
