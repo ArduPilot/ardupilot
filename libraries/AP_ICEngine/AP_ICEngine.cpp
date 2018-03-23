@@ -132,9 +132,9 @@ void AP_ICEngine::update(void)
     bool should_run = false;
     uint32_t now = AP_HAL::millis();
 
-    if (state == ICE_OFF && cvalue >= 1700) {
+    if (state == ICE_OFF && cvalue >= RC_HIGH_SELECTOR) {
         should_run = true;
-    } else if (cvalue <= 1300) {
+    } else if (cvalue <= RC_LOW_SELECTOR) {
         should_run = false;
     } else if (state != ICE_OFF) {
         should_run = true;
@@ -271,7 +271,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     }
     if (start_chan != 0) {
         // get starter control channel
-        if (hal.rcin->read(start_chan-1) <= 1300) {
+        if (hal.rcin->read(start_chan-1) <= RC_LOW_SELECTOR) {
             gcs().send_text(MAV_SEVERITY_INFO, "Engine: start control disabled");
             return false;
         }
