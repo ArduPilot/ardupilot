@@ -69,7 +69,7 @@ void AP_Tuning::check_selector_switch(void)
         return;
     }
     uint16_t selector_in = selchan->get_radio_in();
-    if (selector_in >= 1700) {
+    if (selector_in >= RC_HIGH_SELECTOR) {
         // high selector
         if (selector_start_ms == 0) {
             selector_start_ms = AP_HAL::millis();
@@ -84,7 +84,7 @@ void AP_Tuning::check_selector_switch(void)
             changed = false;
             need_revert = 0;
         }
-    } else if (selector_in <= 1300) {
+    } else if (selector_in <= RC_LOW_SELECTOR) {
         // low selector
         if (selector_start_ms != 0) {
             uint32_t hold_time = AP_HAL::millis() - selector_start_ms;
