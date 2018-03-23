@@ -10,6 +10,9 @@
 
 #define NUM_RC_CHANNELS 16
 
+#define RC_LOW_SELECTOR  1300
+#define RC_HIGH_SELECTOR 1700
+
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
 class RC_Channel {
