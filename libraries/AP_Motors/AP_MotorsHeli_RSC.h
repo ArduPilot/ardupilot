@@ -26,7 +26,7 @@ public:
     friend class AP_MotorsHeli_Single;
     friend class AP_MotorsHeli_Dual;
     friend class AP_MotorsHeli_Quad;
-    
+
     AP_MotorsHeli_RSC(SRV_Channel::Aux_servo_function_t aux_fn,
                       uint8_t default_channel) :
         _aux_fn(aux_fn),
@@ -41,7 +41,7 @@ public:
 
     // set_critical_speed
     void        set_critical_speed(float critical_speed) { _critical_speed = critical_speed; }
-    
+
     // get_critical_speed
     float       get_critical_speed() const { return _critical_speed; }
 
@@ -70,22 +70,22 @@ public:
     // set_runup_time
     void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
 
-    // set_power_output_range
-    void        set_power_output_range(float power_low, float power_high, float power_negc, uint16_t slewrate);
+    // set_throttle_curve
+    void        set_throttle_curve(float thrcrv[5], uint16_t slewrate);
 
-    // set_motor_load. +ve numbers for +ve collective. -ve numbers for negative collective
-    void        set_motor_load(float load) { _load_feedforward = load; }
+    // set_collective. collective for throttle curve calculation
+    void        set_collective(float collective) { _collective_in = collective; }
 
     // output - update value to send to ESC/Servo
     void        output(RotorControlState state);
 
 private:
     uint64_t        _last_update_us;
-    
+
     // channel setup for aux function
     SRV_Channel::Aux_servo_function_t _aux_fn;
     uint8_t         _default_channel;
-    
+
     // internal variables
     RotorControlMode _control_mode = ROTOR_CONTROL_MODE_DISABLED;   // motor control mode, Passthrough or Setpoint
     float           _critical_speed = 0.0f;     // rotor speed below which flight is not possible
@@ -97,11 +97,9 @@ private:
     int8_t          _ramp_time = 0;             // time in seconds for the output to the main rotor's ESC to reach full speed
     int8_t          _runup_time = 0;            // time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     bool            _runup_complete = false;    // flag for determining if runup is complete
-    float           _power_output_low = 0.0f;   // setpoint for power output at minimum rotor power
-    float           _power_output_high = 0.0f;  // setpoint for power output at maximum rotor power
-    float           _power_output_negc = 0.0f;  // setpoint for power output at full negative collective
+    float           _thrcrv_poly[4][4];         // spline polynomials for throttle curve interpolation
     uint16_t        _power_slewrate = 0;        // slewrate for throttle (percentage per second)
-    float           _load_feedforward = 0.0f;   // estimate of motor load, range 0-1.0f
+    float           _collective_in;             // collective in for throttle curve calculation, range 0-1.0f
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
@@ -111,4 +109,7 @@ private:
 
     // write_rsc - outputs pwm onto output rsc channel. servo_out parameter is of the range 0 ~ 1
     void            write_rsc(float servo_out);
+
+    // calculate_desired_throttle - uses throttle curve and collective input to determine throttle setting
+    float           calculate_desired_throttle(float collective_in);
 };

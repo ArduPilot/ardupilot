@@ -260,11 +260,15 @@ void AP_MotorsHeli_Dual::set_desired_rotor_speed(float desired_speed)
 // calculate_armed_scalars
 void AP_MotorsHeli_Dual::calculate_armed_scalars()
 {
+    float thrcrv[5];
+    for (uint8_t i = 0; i < 5; i++) {
+        thrcrv[i]=_rsc_thrcrv[i]*0.001f;
+    } 
     _rotor.set_ramp_time(_rsc_ramp_time);
     _rotor.set_runup_time(_rsc_runup_time);
-    _rotor.set_critical_speed(_rsc_critical/1000.0f);
-    _rotor.set_idle_output(_rsc_idle_output/1000.0f);
-    _rotor.set_power_output_range(_rsc_power_low/1000.0f, _rsc_power_high/1000.0f, _rsc_power_high/1000.0f, 0);
+    _rotor.set_critical_speed(_rsc_critical*0.001f);
+    _rotor.set_idle_output(_rsc_idle_output*0.001f);
+    _rotor.set_throttle_curve(thrcrv, (uint16_t)_rsc_slewrate.get());
 }
 
 // calculate_scalars
@@ -477,22 +481,22 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
 
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < (_land_collective_min/1000.0f)) {
-        collective_out = _land_collective_min/1000.0f;
+    if (_heliflags.landing_collective && collective_out < (_land_collective_min*0.001f)) {
+        collective_out = _land_collective_min*0.001f;
         limit.throttle_lower = true;
     }
 
     // scale collective pitch for front swashplate (servos 1,2,3)
-    float collective_scaler = ((float)(_collective_max-_collective_min))/1000.0f;
-    float collective_out_scaled = collective_out * collective_scaler + (_collective_min - 1000)/1000.0f;
+    float collective_scaler = ((float)(_collective_max-_collective_min))*0.001f;
+    float collective_out_scaled = collective_out * collective_scaler + (_collective_min - 1000)*0.001f;
 
     // scale collective pitch for rear swashplate (servos 4,5,6)
-    float collective2_scaler = ((float)(_collective2_max-_collective2_min))/1000.0f;
-    float collective2_out_scaled = collective2_out * collective2_scaler + (_collective2_min - 1000)/1000.0f;
+    float collective2_scaler = ((float)(_collective2_max-_collective2_min))*0.001f;
+    float collective2_out_scaled = collective2_out * collective2_scaler + (_collective2_min - 1000)*0.001f;
 
     // feed power estimate into main rotor controller
     // ToDo: add main rotor cyclic power?
-    _rotor.set_motor_load(fabsf(collective_out - _collective_mid_pct));
+    _rotor.set_collective(fabsf(collective_out));
 
     // swashplate servos
     float servo1_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out + _yawFactor[CH_1] * yaw_out)*0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
