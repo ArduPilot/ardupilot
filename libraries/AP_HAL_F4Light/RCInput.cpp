@@ -285,7 +285,7 @@ uint16_t RCInput::read(uint8_t ch)
  Receiver-DEVO-RX719-for-Walkera-Aibao
  failsafe: mode below 1000 and throttle at 1500
 */            
-            if(last_4 < 990 && data >1300 && data < 1700){
+            if(last_4 < 990 && data >RC_LOW_SELECTOR && data < RC_HIGH_SELECTOR){
                 if(!aibao_fs_flag){
                     aibao_fs_flag=true;
                     printf("\nAibao failsafe! ch4=%d ch2=%d\n",last_4, data);
