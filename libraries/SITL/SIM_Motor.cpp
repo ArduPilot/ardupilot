@@ -93,9 +93,9 @@ uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_va
     }
     if (servo_type == SERVO_RETRACT) {
         // handle retract servos
-        if (demand > 1700) {
+        if (demand > RC_HIGH_SELECTOR) {
             demand = 2000;
-        } else if (demand < 1300) {
+        } else if (demand < RC_LOW_SELECTOR) {
             demand = 1000;
         } else {
             demand = last_value;

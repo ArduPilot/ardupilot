@@ -252,7 +252,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float aileron  = filtered_servo_angle(input, 0);
     float elevator = filtered_servo_angle(input, 1);
     float rudder   = filtered_servo_angle(input, 3);
-    bool launch_triggered = input.servos[6] > 1700;
+    bool launch_triggered = input.servos[6] > RC_HIGH_SELECTOR;
     float throttle;
     if (reverse_elevator_rudder) {
         elevator = -elevator;

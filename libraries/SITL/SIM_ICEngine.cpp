@@ -31,9 +31,9 @@ float ICEngine::update(const Aircraft::sitl_input &input)
     bool have_starter = starter_servo>=0;
     float throttle_demand = (input.servos[throttle_servo]-1000) * 0.001f;
 
-    state.ignition = have_ignition?input.servos[ignition_servo]>1700:true;
-    state.choke = have_choke?input.servos[choke_servo]>1700:false;
-    state.starter = have_starter?input.servos[starter_servo]>1700:false;
+    state.ignition = have_ignition?input.servos[ignition_servo]>RC_HIGH_SELECTOR:true;
+    state.choke = have_choke?input.servos[choke_servo]>RC_HIGH_SELECTOR:false;
+    state.starter = have_starter?input.servos[starter_servo]>RC_HIGH_SELECTOR:false;
 
     uint64_t now = AP_HAL::micros64();
     float dt = (now - last_update_us) * 1.0e-6f;

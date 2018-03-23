@@ -109,7 +109,7 @@ void SITL::Calibration::_angular_velocity_control(const struct sitl_input& in,
     Vector3f axis{(float)(in.servos[5] - 1500),
                   (float)(in.servos[6] - 1500),
                   (float)(in.servos[7] - 1500)};
-    float theta = MAX_ANGULAR_SPEED * (in.servos[4] - 1300) / 700.f;
+    float theta = MAX_ANGULAR_SPEED * (in.servos[4] - RC_LOW_SELECTOR) / 700.f;
     float dt = frame_time_us * 1.0e-6f;
 
     if (axis.length() > 0) {
