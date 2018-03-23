@@ -122,21 +122,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RSC_IDLE", 13, AP_MotorsHeli, _rsc_idle_output, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
 
-    // @Param: RSC_POWER_LOW
-    // @DisplayName: Throttle Servo Low Power Position
-    // @Description: Throttle output at zero collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX. Zero collective pitch is defined by H_COL_MID.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_POWER_LOW", 14, AP_MotorsHeli, _rsc_power_low, AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT),
+    // index 14 was RSC_POWER_LOW. Do not use this index in the future.
 
-    // @Param: RSC_POWER_HIGH
-    // @DisplayName: Throttle Servo High Power Position
-    // @Description: Throttle output at maximum collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_POWER_HIGH", 15, AP_MotorsHeli, _rsc_power_high, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
+    // index 15 was RSC_POWER_HIGH. Do not use this index in the future.
 
     // @Param: CYC_MAX
     // @DisplayName: Cyclic Pitch Angle Max
@@ -155,13 +143,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SV_TEST",  17, AP_MotorsHeli, _servo_test, 0),
 
-    // @Param: RSC_POWER_NEGC
-    // @DisplayName: Throttle servo negative collective power position
-    // @Description: Throttle output at full negative collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX. If this is equal to H_RSC_POWER_HIGH then you will have a symmetric V-curve for the throttle response.
-    // @Range: 1 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_POWER_NEGC", 18, AP_MotorsHeli, _rsc_power_negc, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
+    // index 18 was RSC_POWER_NEGC. Do not use this index in the future.
 
     // @Param: RSC_SLEWRATE
     // @DisplayName: Throttle servo slew rate
@@ -170,6 +152,46 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("RSC_SLEWRATE", 19, AP_MotorsHeli, _rsc_slewrate, 0),
+
+    // @Param: RSC_THRCRV_0
+    // @DisplayName: Throttle Servo Position for 0 percent collective
+    // @Description: Throttle Servo Position for 0 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_THRCRV_0", 20, AP_MotorsHeli, _rsc_thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
+
+    // @Param: RSC_THRCRV_25
+    // @DisplayName: Throttle Servo Position for 25 percent collective
+    // @Description: Throttle Servo Position for 25 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_THRCRV_25", 21, AP_MotorsHeli, _rsc_thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
+
+    // @Param: RSC_THRCRV_50
+    // @DisplayName: Throttle Servo Position for 50 percent collective
+    // @Description: Throttle Servo Position for 50 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_THRCRV_50", 22, AP_MotorsHeli, _rsc_thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
+
+    // @Param: RSC_THRCRV_75
+    // @DisplayName: Throttle Servo Position for 75 percent collective
+    // @Description: Throttle Servo Position for 75 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_THRCRV_75", 23, AP_MotorsHeli, _rsc_thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
+
+    // @Param: RSC_THRCRV_100
+    // @DisplayName: Throttle Servo Position for 100 percent collective
+    // @Description: Throttle Servo Position for 100 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_THRCRV_100", 24, AP_MotorsHeli, _rsc_thrcrv[4], AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT),
 
     AP_GROUPEND
 };
