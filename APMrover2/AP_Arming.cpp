@@ -25,13 +25,13 @@ bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
             }
             return false;
         }
-        if (channel->get_radio_min() > 1300) {
+        if (channel->get_radio_min() > RC_LOW_SELECTOR) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s radio min too high", channel_name);
             }
             return false;
         }
-        if (channel->get_radio_max() < 1700) {
+        if (channel->get_radio_max() < RC_HIGH_SELECTOR) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s radio max too low", channel_name);
             }
