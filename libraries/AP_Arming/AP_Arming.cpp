@@ -625,13 +625,13 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
             }
             ret = false;
         }
-        if (channel->get_radio_min() > 1300) {
+        if (channel->get_radio_min() > RC_LOW_SELECTOR) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: %s radio min too high", channel_name);
             }
             ret = false;
         }
-        if (channel->get_radio_max() < 1700) {
+        if (channel->get_radio_max() < RC_HIGH_SELECTOR) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: %s radio max too low", channel_name);
             }
