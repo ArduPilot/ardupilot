@@ -331,5 +331,5 @@ bool SoaringController::is_active() const
         return true;
     }
     // active when above 1700
-    return hal.rcin->read(soar_active_ch-1) >= 1700;
+    return hal.rcin->read(soar_active_ch-1) >= RC_HIGH_SELECTOR;
 }
