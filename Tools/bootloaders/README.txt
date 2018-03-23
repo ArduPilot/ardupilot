@@ -38,6 +38,11 @@ skyviper_v2450_bl.bin:
    reserves sectors 22 and 23 for ArduPilot storage
    board ID 9
 
+skyviperf412_bl.bin:
+   For F412 processors, setup to load on USART2 on pins PA2/PA3
+   Setup for code start at 0x0800C000
+   2 sectors reserved for storage, plus bootloader
+
 Bootloader update on px4 builds
 -------------------------------
 
