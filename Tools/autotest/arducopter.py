@@ -2698,6 +2698,29 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_throw_mode(self):
+        # test boomerang mode:
+        self.progress("Throwing vehicle away")
+        self.set_parameter("THROW_NEXTMODE", 6)
+        self.set_parameter("SIM_SHOVE_Z", -30)
+        self.set_parameter("SIM_SHOVE_X", -20)
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_parameter("SIM_SHOVE_TIME", 500)
+        tstart = self.get_sim_time()
+        self.wait_mode('RTL')
+        max_good_tdelta = 5
+        tdelta = self.get_sim_time() - tstart
+        self.progress("Vehicle in RTL")
+        self.mav.motors_disarmed_wait()
+        self.progress("Vehicle disarmed")
+        if tdelta > max_good_tdelta:
+            self.progress("Took too long to enter RTL: %u > %u" %
+                          (tdelta, max_good_tdelta))
+            raise NotAchievedException()
+        self.progress("Vehicle returned")
+
     def fly_precision_companion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
 
@@ -2849,6 +2872,8 @@ class AutoTestCopter(AutoTest):
              self.test_setting_modes_via_auxswitch),
 
             ("AutoTune", "Fly AUTOTUNE mode", self.fly_autotune),
+
+            ("ThrowMode", "Fly Throw Mode", self.fly_throw_mode),
 
             ("RecordThenPlayMission",
              "Use switches to toggle in mission, then fly it",
