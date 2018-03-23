@@ -60,7 +60,7 @@ void Plane::read_control_switch()
 
 #if PARACHUTE == ENABLED
     if (g.parachute_channel > 0) {
-        if (hal.rcin->read(g.parachute_channel-1) >= 1700) {
+        if (hal.rcin->read(g.parachute_channel-1) >= RC_HIGH_SELECTOR) {
             parachute_manual_release();
         }
     }
