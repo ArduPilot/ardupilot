@@ -70,10 +70,16 @@ class set_default_parameters(Task.Task):
         return "apj_tool"
     def run(self):
         rel_default_parameters = self.env.get_flat('DEFAULT_PARAMETERS')
-        abs_default_parameters = os.path.join(self.env.STANDARD_BUILDDIR,
-                                              rel_default_parameters)
-        run_str = ("python ${APJ_TOOL} --set-file %s ${SRC}" %
-                   (abs_default_parameters,))
+        abs_default_parameters = os.path.join(self.env.SRCROOT, rel_default_parameters)
+        apj_tool = self.env.APJ_TOOL
+        sys.path.append(os.path.dirname(apj_tool))
+        from apj_tool import embedded_defaults
+        defaults = embedded_defaults(self.inputs[0].abspath())
+        if not defaults.find():
+            print("Error: Param defaults support not found in firmware")
+            sys.exit(1)
+        defaults.set_file(abs_default_parameters)
+        defaults.save()
 
 
 class generate_fw(Task.Task):
@@ -188,13 +194,13 @@ def configure(cfg):
     env.AP_HAL_ROOT = srcpath('libraries/AP_HAL_ChibiOS')
     env.BUILDDIR = bldpath('modules/ChibiOS')
     env.BUILDROOT = bldpath('')
+    env.SRCROOT = srcpath('')
     env.PT_DIR = srcpath('Tools/ardupilotwaf/chibios/image')
     env.UPLOAD_TOOLS = srcpath('Tools/ardupilotwaf')
     env.CHIBIOS_SCRIPTS = srcpath('libraries/AP_HAL_ChibiOS/hwdef/scripts')
     env.TOOLS_SCRIPTS = srcpath('Tools/scripts')
     env.APJ_TOOL = srcpath('Tools/scripts/apj_tool.py')
     env.SERIAL_PORT = srcpath('/dev/serial/by-id/*_STLink*')
-    env.STANDARD_BUILDDIR = srcpath("build/some-board")
 
     # relative paths to pass to make, relative to directory that make is run from
     env.CH_ROOT_REL = os.path.relpath(env.CH_ROOT, env.BUILDROOT)
