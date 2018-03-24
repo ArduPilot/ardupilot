@@ -19,6 +19,7 @@
 #include <AP_Common/Bitmask.h>
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>
 #include <AP_SBusOut/AP_SBusOut.h>
+#include <AP_BLHeli/AP_BLHeli.h>
 
 #define NUM_SERVO_CHANNELS 16
 
@@ -445,6 +446,10 @@ private:
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
 
+    // support for BLHeli protocol
+    AP_BLHeli blheli;
+    static AP_BLHeli *blheli_ptr;
+    
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
     static struct srv_function {
