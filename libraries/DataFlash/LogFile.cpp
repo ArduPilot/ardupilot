@@ -1449,6 +1449,7 @@ bool DataFlash_Backend::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_missi
         latitude        : (float)mav_cmd.x,
         longitude       : (float)mav_cmd.y,
         altitude        : (float)mav_cmd.z
+        altitude_type   : (float)mav_cmd.frame//0 -> absolute altitude; 3 -> relative altitude; 10 -> terrain altitude
     };
     return WriteBlock(&pkt, sizeof(pkt));
 }
