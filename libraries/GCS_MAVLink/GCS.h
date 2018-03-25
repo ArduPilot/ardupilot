@@ -92,6 +92,7 @@ enum ap_message {
 class GCS_MAVLINK
 {
 public:
+    friend class GCS;
     GCS_MAVLINK();
     void        update(uint32_t max_time_us=1000);
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
@@ -218,6 +219,9 @@ public:
     // return current packet overhead for a channel
     static uint8_t packet_overhead_chan(mavlink_channel_t chan);
 
+    // alternative protocol function handler
+    FUNCTOR_TYPEDEF(protocol_handler_fn_t, bool, uint8_t, AP_HAL::UARTDriver *);
+    
 protected:
 
     // overridable method to check for packet acceptance. Allows for
@@ -327,6 +331,7 @@ protected:
     bool try_send_gps_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
+
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
@@ -467,6 +472,15 @@ private:
     void load_signing_key(void);
     bool signing_enabled(void) const;
     static void save_signing_timestamp(bool force_save_now);
+
+    // alternative protocol handler support
+    struct {
+        GCS_MAVLINK::protocol_handler_fn_t handler;
+        uint32_t last_mavlink_ms;
+        uint32_t last_alternate_ms;
+        bool active;
+    } alternative;
+    
 };
 
 /// @class GCS
@@ -536,6 +550,10 @@ public:
     // static frsky_telem pointer to support queueing text messages
     AP_Frsky_Telem *frsky_telemetry_p;
 
+    
+    // install an alternative protocol handler
+    bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
+    
 private:
 
     static GCS *_singleton;
@@ -555,7 +573,6 @@ private:
 
     // true if we are running short on time in our main loop
     bool _out_of_time;
-
 };
 
 GCS &gcs();
