@@ -1552,6 +1552,7 @@ void QuadPlane::motors_output(void)
     // see if motors should be shut down
     check_throttle_suppression();
     
+    // this eventually calls the AP_MotorsMulticopter child class output_to_motors()
     motors->output();
     if (motors->armed()) {
         plane.DataFlash.Log_Write_Rate(plane.ahrs, *motors, *attitude_control, *pos_control);
