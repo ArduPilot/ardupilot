@@ -553,7 +553,16 @@ void AP_InertialSensor_Invensense::_read_fifo()
             }
         } else {
             // this ensures we keep things nicely setup for DMA
-            uint8_t reg = MPUREG_FIFO_R_W | 0x80;
+            // NOTE: Fast sampling doesn't work with 0x80 mask
+            // on I2C Bus, bitmask 0x80 only work when read on SPI bus
+            // for hi speed at 20 Mhz.
+            uint8_t reg;
+            if (_fast_sampling) {
+                reg = MPUREG_FIFO_R_W | 0x80;
+            } else {
+                reg = MPUREG_FIFO_R_W;
+            }
+
             if (!_dev->transfer(&reg, 1, nullptr, 0)) {
                 _dev->set_chip_select(false);
                 goto check_registers;
