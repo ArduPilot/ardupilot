@@ -72,7 +72,7 @@ public:
     };
 
     // initialise scheduler
-    void init(const Task *tasks, uint8_t num_tasks, uint32_t log_performance_bit);
+    void init(const Task *tasks, uint8_t num_tasks, uint32_t log_performance_bit = (uint32_t)-1);
 
     // called by vehicle's main loop - which should be the only thing
     // that function does
