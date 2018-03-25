@@ -36,11 +36,11 @@ static struct gpio_entry {
 /*
   map a user pin number to a GPIO table entry
  */
-static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num)
+static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=true)
 {
     for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(_gpio_tab); i++) {
         if (pin_num == _gpio_tab[i].pin_num) {
-            if (!_gpio_tab[i].enabled) {
+            if (check_enabled && !_gpio_tab[i].enabled) {
                 return NULL;
             }
             return &_gpio_tab[i];
@@ -125,18 +125,16 @@ extern const AP_HAL::HAL& hal;
  */
 bool GPIO::attach_interrupt(uint8_t pin, AP_HAL::Proc p, uint8_t mode)
 {
-    struct gpio_entry *g = gpio_by_pin_num(pin);
+    struct gpio_entry *g = gpio_by_pin_num(pin, false);
     if (!g) {
         return false;
     }
     uint8_t pad = PAL_PAD(g->pal_line);
     if (p && ext_irq[pad] != nullptr && ext_irq[pad] != p) {
         // already used
-        hal.console->printf("A fail\n");
         return false;
     } else if (!p && !ext_irq[pad]) {
         // nothing to remove
-        hal.console->printf("D fail\n");
         return false;
     }
     uint32_t chmode = 0;
@@ -209,7 +207,7 @@ void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel)
 */
 void GPIO::_set_mode(uint8_t pin, uint32_t mode)
 {
-    struct gpio_entry *g = gpio_by_pin_num(pin);
+    struct gpio_entry *g = gpio_by_pin_num(pin, false);
     if (g) {
         palSetLineMode(g->pal_line, mode);
     }
