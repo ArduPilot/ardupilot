@@ -20,25 +20,6 @@ struct PACKED log_AutoTune {
     float   new_ddt;        // newly calculated gain
 };
 
-// Write an Autotune data packet
-void Copter::ModeAutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
-{
-    struct log_AutoTune pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
-        time_us     : AP_HAL::micros64(),
-        axis        : _axis,
-        tune_step   : tune_step,
-        meas_target : meas_target,
-        meas_min    : meas_min,
-        meas_max    : meas_max,
-        new_gain_rp : new_gain_rp,
-        new_gain_rd : new_gain_rd,
-        new_gain_sp : new_gain_sp,
-        new_ddt     : new_ddt
-    };
-    copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 struct PACKED log_AutoTuneDetails {
     LOG_PACKET_HEADER;
     uint64_t time_us;
