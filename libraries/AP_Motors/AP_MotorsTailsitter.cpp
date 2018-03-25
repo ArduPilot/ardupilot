@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 #define SERVO_OUTPUT_RANGE  4500
 #define THROTTLE_RANGE       100
 
-// init
+// init *** note that frame_type is ignored ***
 void AP_MotorsTailsitter::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // record successful initialisation if what we setup was the desired frame_class
@@ -42,6 +42,8 @@ AP_MotorsTailsitter::AP_MotorsTailsitter(uint16_t loop_rate, uint16_t speed_hz) 
 {
     SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleLeft, speed_hz);
     SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleRight, speed_hz);
+    SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleTop, speed_hz);
+    SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleBot, speed_hz);
 }
 
 void AP_MotorsTailsitter::output_to_motors()
@@ -52,7 +54,9 @@ void AP_MotorsTailsitter::output_to_motors()
     float throttle = _throttle;
     float throttle_left  = 0;
     float throttle_right = 0;
-    
+    float throttle_top   = 0;
+    float throttle_bot   = 0;
+
     switch (_spool_mode) {
         case SHUT_DOWN:
             throttle = 0;
@@ -77,6 +81,8 @@ void AP_MotorsTailsitter::output_to_motors()
             throttle = _spin_min + throttle * (1 - _spin_min);
             throttle_left  = constrain_float(throttle + _rudder*0.5, _spin_min, 1);
             throttle_right = constrain_float(throttle - _rudder*0.5, _spin_min, 1);
+            throttle_top   = constrain_float(throttle - _elevator*0.5, _spin_min, 1);
+            throttle_bot   = constrain_float(throttle + _elevator*0.5, _spin_min, 1);
             // initialize limits flags
             limit.roll_pitch = false;
             limit.yaw = false;
@@ -91,9 +97,13 @@ void AP_MotorsTailsitter::output_to_motors()
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder,   _rudder*SERVO_OUTPUT_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle*THROTTLE_RANGE);
 
-    // also support differential roll with twin motors
+    // also support differential roll with wing motors
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  throttle_left*THROTTLE_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right*THROTTLE_RANGE);
+
+    // and differential pitch with vertical tail motors
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleTop, throttle_top*THROTTLE_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleBot, throttle_bot*THROTTLE_RANGE);
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     SRV_Channels::calc_pwm();

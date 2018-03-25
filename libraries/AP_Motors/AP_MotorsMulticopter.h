@@ -90,6 +90,8 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask() override;
 
+    void enable_motor(uint8_t i, bool v) {motor_enabled[i] = v;}
+
     // get minimum or maximum pwm value that can be output to motors
     int16_t             get_pwm_output_min() const;
     int16_t             get_pwm_output_max() const;
