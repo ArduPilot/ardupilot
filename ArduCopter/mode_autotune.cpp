@@ -1523,6 +1523,25 @@ void Copter::ModeAutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch
     yaw_cd_out = target_yaw_cd;
 }
 
+struct PACKED log_AutoTuneDetails {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    angle_cd;      // lean angle in centi-degrees
+    float    rate_cds;      // current rotation rate in centi-degrees / second
+};
+
+// Write an Autotune data packet
+void Copter::ModeAutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
+{
+    struct log_AutoTuneDetails pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),
+        time_us     : AP_HAL::micros64(),
+        angle_cd    : angle_cd,
+        rate_cds    : rate_cds
+    };
+    copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 struct PACKED log_AutoTune {
     LOG_PACKET_HEADER;
     uint64_t time_us;
