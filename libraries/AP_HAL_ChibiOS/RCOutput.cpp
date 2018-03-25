@@ -294,6 +294,9 @@ void RCOutput::push_local(void)
 
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
+        if (serial_group == &group) {
+            continue;
+        }
         if (!group.pwm_started) {
             continue;
         }
@@ -671,6 +674,9 @@ void RCOutput::trigger_groups(void)
 
     for (uint8_t i = 0; i < NUM_GROUPS; i++) {
         pwm_group &group = pwm_group_list[i];
+        if (serial_group == &group) {
+            continue;
+        }
         if (group.current_mode >= MODE_PWM_DSHOT150 && group.current_mode <= MODE_PWM_DSHOT1200) {
             dshot_send(group, false);
         }
