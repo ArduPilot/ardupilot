@@ -86,6 +86,8 @@ public:
     // flight. Thrust is in the range 0 to 1
     virtual void        output_motor_mask(float thrust, uint8_t mask);
 
+    void enable_motor(uint8_t i, bool v) {motor_enabled[i] = v;}
+
     // get minimum or maximum pwm value that can be output to motors
     int16_t             get_pwm_output_min() const;
     int16_t             get_pwm_output_max() const;

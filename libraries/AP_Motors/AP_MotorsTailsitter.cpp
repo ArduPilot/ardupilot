@@ -42,6 +42,8 @@ AP_MotorsTailsitter::AP_MotorsTailsitter(uint16_t loop_rate, uint16_t speed_hz) 
 {
     SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleLeft, speed_hz);
     SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleRight, speed_hz);
+    SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleTop, speed_hz);
+    SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleBot, speed_hz);
 }
 
 void AP_MotorsTailsitter::output_to_motors()
@@ -52,7 +54,9 @@ void AP_MotorsTailsitter::output_to_motors()
     float throttle = _throttle;
     float throttle_left  = 0;
     float throttle_right = 0;
-    
+    float throttle_top   = 0;
+    float throttle_bot   = 0;
+
     switch (_spool_mode) {
         case SHUT_DOWN:
             throttle = 0;
@@ -77,6 +81,8 @@ void AP_MotorsTailsitter::output_to_motors()
             throttle = _spin_min + throttle * (1 - _spin_min);
             throttle_left  = constrain_float(throttle + _rudder*0.5, _spin_min, 1);
             throttle_right = constrain_float(throttle - _rudder*0.5, _spin_min, 1);
+            throttle_top   = constrain_float(throttle + _elevator*0.5, _spin_min, 1);
+            throttle_bot   = constrain_float(throttle - _elevator*0.5, _spin_min, 1);
             // initialize limits flags
             limit.roll_pitch = false;
             limit.yaw = false;
@@ -94,6 +100,17 @@ void AP_MotorsTailsitter::output_to_motors()
     // also support differential roll with twin motors
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  throttle_left*THROTTLE_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right*THROTTLE_RANGE);
+    // if the left/right motor pair controls roll in hover mode, the other pair controls the pitch axis
+    // call these motors top and bottom since they are dorsal and ventral, respectively
+    // Also note that this corresponds to "+" quadcopter configuration with top/bot == front/back
+    if (!motor_enabled[3]) {
+        throttle_top = 0;
+    }
+    if (!motor_enabled[4]) {
+        throttle_bot = 0;
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleTop, throttle_top*THROTTLE_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleBot, throttle_bot*THROTTLE_RANGE);
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     SRV_Channels::calc_pwm();
