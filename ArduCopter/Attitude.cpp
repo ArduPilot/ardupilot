@@ -1,12 +1,5 @@
 #include "Copter.h"
 
-// get_smoothing_gain - returns smoothing gain to be passed into attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw
-//      result is a number from 2 to 12 with 2 being very sluggish and 12 being very crisp
-float Copter::get_smoothing_gain()
-{
-    return (2.0f + (float)g.rc_feel_rp/10.0f);
-}
-
 // get_pilot_desired_heading - transform pilot's yaw input into a
 // desired yaw rate
 // returns desired yaw rate in centi-degrees per second

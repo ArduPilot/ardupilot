@@ -54,7 +54,8 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(MAV_TYPE_GROUND_ROVER,
+    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(
+                                            is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER,
                                             base_mode,
                                             control_mode->mode_number(),
                                             system_status);
@@ -691,7 +692,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             new_home_loc.alt = packet.z * 100;
             // handle relative altitude
             if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                if (rover.home_is_set == HOME_UNSET) {
+                if (!rover.ahrs.home_is_set()) {
                     // cannot use relative altitude if home is not set
                     break;
                 }
@@ -888,19 +889,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 default:
                     result = MAV_RESULT_FAILED;
                     break;
-            }
-            break;
-
-        case MAV_CMD_GET_HOME_POSITION:
-            if (rover.home_is_set != HOME_UNSET) {
-                send_home(rover.ahrs.get_home());
-                Location ekf_origin;
-                if (rover.ahrs.get_origin(ekf_origin)) {
-                    send_ekf_origin(ekf_origin);
-                }
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
             }
             break;
 
@@ -1371,10 +1359,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         rover.g2.proximity.handle_msg(msg);
         break;
 
-    case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
-        rover.g2.visual_odom.handle_msg(msg);
-        break;
-
     default:
         handle_common_message(msg);
         break;
@@ -1476,6 +1460,15 @@ AP_AdvancedFailsafe *GCS_MAVLINK_Rover::get_advanced_failsafe() const
 {
 #if ADVANCED_FAILSAFE == ENABLED
     return &rover.g2.afs;
+#else
+    return nullptr;
+#endif
+}
+
+AP_VisualOdom *GCS_MAVLINK_Rover::get_visual_odom() const
+{
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    return &rover.g2.visual_odom;
 #else
     return nullptr;
 #endif

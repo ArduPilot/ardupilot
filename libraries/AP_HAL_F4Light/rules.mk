@@ -22,7 +22,6 @@ cppSRCS_$(d) += I2CDriver.cpp
 cppSRCS_$(d) += RCInput.cpp
 cppSRCS_$(d) += RC_PPM_parser.cpp
 cppSRCS_$(d) += RC_DSM_parser.cpp
-cppSRCS_$(d) += RC_NRF_parser.cpp
 cppSRCS_$(d) += RC_SBUS_parser.cpp
 cppSRCS_$(d) += RCOutput.cpp
 cppSRCS_$(d) += Scheduler.cpp

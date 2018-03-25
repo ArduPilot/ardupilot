@@ -20,6 +20,7 @@
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Camera/AP_Camera.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Common/AP_FWVersion.h>
 
 // check if a message will fit in the payload space available
@@ -231,6 +232,7 @@ protected:
     virtual class AP_Camera *get_camera() const = 0;
     virtual AP_ServoRelayEvents *get_servorelayevents() const = 0;
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
+    virtual AP_VisualOdom *get_visual_odom() const { return nullptr; }
     virtual bool set_mode(uint8_t mode) = 0;
     virtual const AP_FWVersion &get_fwver() const = 0;
     virtual void set_ekf_origin(const Location& loc) = 0;
@@ -273,6 +275,7 @@ protected:
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(const mavlink_message_t *msg);
+    void handle_vision_position_delta(mavlink_message_t *msg);
 
     void handle_common_message(mavlink_message_t *msg);
     void handle_set_gps_global_origin(const mavlink_message_t *msg);
@@ -301,6 +304,7 @@ protected:
     MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_send_banner(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_get_home_position(const mavlink_command_long_t &packet);
 
     // vehicle-overridable message send function
     virtual bool try_send_message(enum ap_message id);

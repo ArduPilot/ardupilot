@@ -12,6 +12,7 @@ class embedded_defaults(object):
     def __init__(self, filename):
         self.filename = filename
         self.offset = 0
+        self.max_len = 0
         self.extension = os.path.splitext(filename)[1]
         if self.extension.lower() in ['.apj', '.px4']:
             self.load_apj()
@@ -22,7 +23,7 @@ class embedded_defaults(object):
 
     def load_binary(self):
         '''load firmware from binary file'''
-        f = open(self.filename,'r')
+        f = open(self.filename,'rb')
         self.firmware = f.read()
         f.close()
         print("Loaded binary file of length %u" % len(self.firmware))
@@ -91,6 +92,7 @@ class embedded_defaults(object):
         while True:
             i = self.firmware[self.offset:].find(magic_str)
             if i == -1:
+                print("No param area found")
                 return None
             matched = True
             for j in range(len(param_magic)):
@@ -195,37 +197,38 @@ def defaults_contents(firmware, ofs, length):
     '''return current defaults contents'''
     return firmware
 
-parser = argparse.ArgumentParser(description='manipulate parameter defaults in an ArduPilot firmware')
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='manipulate parameter defaults in an ArduPilot firmware')
 
-parser.add_argument('firmware_file')
-parser.add_argument('--set-file', type=str, default=None, help='replace parameter defaults from a file')
-parser.add_argument('--set', type=str, default=None, help='replace one parameter default, in form NAME=VALUE')
-parser.add_argument('--show', action='store_true', default=False, help='show current parameter defaults')
-parser.add_argument('--extract', action='store_true', default=False, help='extract firmware image to *.bin')
+    parser.add_argument('firmware_file')
+    parser.add_argument('--set-file', type=str, default=None, help='replace parameter defaults from a file')
+    parser.add_argument('--set', type=str, default=None, help='replace one parameter default, in form NAME=VALUE')
+    parser.add_argument('--show', action='store_true', default=False, help='show current parameter defaults')
+    parser.add_argument('--extract', action='store_true', default=False, help='extract firmware image to *.bin')
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-defaults = embedded_defaults(args.firmware_file)
+    defaults = embedded_defaults(args.firmware_file)
 
-if not defaults.find():
-    print("Error: Param defaults support not found in firmware")
-    sys.exit(1)
+    if not defaults.find():
+        print("Error: Param defaults support not found in firmware")
+        sys.exit(1)
     
-print("Found param defaults max_length=%u length=%u" % (defaults.max_len, defaults.length))
+    print("Found param defaults max_length=%u length=%u" % (defaults.max_len, defaults.length))
 
-if args.set_file:
-    # load new defaults from a file
-    defaults.set_file(args.set_file)
-    defaults.save()
+    if args.set_file:
+        # load new defaults from a file
+        defaults.set_file(args.set_file)
+        defaults.save()
 
-if args.set:
-    # set a single parameter
-    defaults.set_one(args.set)
-    defaults.save()
+    if args.set:
+        # set a single parameter
+        defaults.set_one(args.set)
+        defaults.save()
 
-if args.show:
-    # show all defaults
-    print(defaults.contents())
+    if args.show:
+        # show all defaults
+        print(defaults.contents())
 
-if args.extract:
-    defaults.extract()
+    if args.extract:
+        defaults.extract()

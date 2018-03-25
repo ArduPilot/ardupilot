@@ -209,7 +209,7 @@ void SoloGimbal::update_estimators()
 }
 
 void SoloGimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
-    const AP_InertialSensor &ins = _ahrs.get_ins();
+    const AP_InertialSensor &ins = AP::ins();
 
     if (ins_index < ins.get_gyro_count()) {
         if (!ins.get_delta_angle(ins_index,dAng)) {
@@ -219,7 +219,7 @@ void SoloGimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
 }
 
 void SoloGimbal::update_fast() {
-    const AP_InertialSensor &ins = _ahrs.get_ins();
+    const AP_InertialSensor &ins = AP::ins();
 
     if (ins.get_gyro_health(0) && ins.get_gyro_health(1)) {
         // dual gyro mode - average first two gyros

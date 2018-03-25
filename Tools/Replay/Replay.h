@@ -66,7 +66,7 @@ public:
     RangeFinder rng{serial_manager, ROTATION_PITCH_270};
     NavEKF2 EKF2{&ahrs, rng};
     NavEKF3 EKF3{&ahrs, rng};
-    AP_AHRS_NavEKF ahrs{ins, EKF2, EKF3};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;

@@ -319,34 +319,32 @@ void Copter::Mode::update_navigation()
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
-void Copter::Mode::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
+void Copter::Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const
 {
-    AP_Vehicle::MultiCopter &aparm = copter.aparm;
-    // sanity check angle max parameter
-    aparm.angle_max = constrain_int16(aparm.angle_max,1000,8000);
+    // fetch roll and pitch inputs
+    roll_out = channel_roll->get_control_in();
+    pitch_out = channel_pitch->get_control_in();
 
-    // limit max lean angle
-    angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
+	// limit max lean angle
+    angle_limit = constrain_float(angle_limit, 1000.0f, angle_max);
 
-    // scale roll_in, pitch_in to ANGLE_MAX parameter range
-    const float scaler = aparm.angle_max/(float)ROLL_PITCH_YAW_INPUT_MAX;
-    roll_in *= scaler;
-    pitch_in *= scaler;
+    // scale roll and pitch inputs to ANGLE_MAX parameter range
+    float scaler = angle_max/(float)ROLL_PITCH_YAW_INPUT_MAX;
+    roll_out *= scaler;
+    pitch_out *= scaler;
 
     // do circular limit
-    const float total_in = norm(pitch_in, roll_in);
-    if (total_in > angle_max) {
-        float ratio = angle_max / total_in;
-        roll_in *= ratio;
-        pitch_in *= ratio;
+    float total_in = norm(pitch_out, roll_out);
+    if (total_in > angle_limit) {
+        float ratio = angle_limit / total_in;
+        roll_out *= ratio;
+        pitch_out *= ratio;
     }
 
     // do lateral tilt to euler roll conversion
-    roll_in = (18000/M_PI) * atanf(cosf(pitch_in*(M_PI/18000))*tanf(roll_in*(M_PI/18000)));
+    roll_out = (18000/M_PI) * atanf(cosf(pitch_out*(M_PI/18000))*tanf(roll_out*(M_PI/18000)));
 
-    // return
-    roll_out = roll_in;
-    pitch_out = pitch_in;
+    // roll_out and pitch_out are returned
 }
 
 bool Copter::Mode::takeoff_triggered(const float target_climb_rate) const
@@ -372,7 +370,7 @@ void Copter::Mode::zero_throttle_and_relax_ac()
 {
 #if FRAME_CONFIG == HELI_FRAME
     // Helicopters always stabilize roll/pitch/yaw
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 #else
     motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
@@ -412,10 +410,6 @@ float Copter::Mode::get_non_takeoff_throttle()
 
 void Copter::Mode::update_simple_mode(void) {
     copter.update_simple_mode();
-}
-
-float Copter::Mode::get_smoothing_gain() {
-    return copter.get_smoothing_gain();
 }
 
 bool Copter::Mode::set_mode(control_mode_t mode, mode_reason_t reason)

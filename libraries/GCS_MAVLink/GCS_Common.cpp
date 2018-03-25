@@ -19,6 +19,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 
 #include "GCS.h"
 
@@ -1069,11 +1070,18 @@ void GCS_MAVLINK::send_scaled_pressure()
     uint32_t now = AP_HAL::millis();
     const AP_Baro &barometer = AP::baro();
     float pressure = barometer.get_pressure(0);
+    float diff_pressure = 0; // pascal
+
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed != nullptr) {
+        diff_pressure = airspeed->get_differential_pressure();
+    }
+
     mavlink_msg_scaled_pressure_send(
         chan,
         now,
         pressure*0.01f, // hectopascal
-        (pressure - barometer.get_ground_pressure(0))*0.01f, // hectopascal
+        diff_pressure*0.01f, // hectopascal
         barometer.get_temperature(0)*100); // 0.01 degrees C
 
     if (barometer.num_instances() > 1 &&
@@ -1855,7 +1863,15 @@ void GCS_MAVLINK::handle_data_packet(mavlink_message_t *msg)
 #endif
 }
 
+void GCS_MAVLINK::handle_vision_position_delta(mavlink_message_t *msg)
+{
+    AP_VisualOdom *visual_odom = get_visual_odom();
+    if (visual_odom == nullptr) {
+        return;
+    }
 
+    visual_odom->handle_msg(msg);
+}
 
 /*
   handle messages which don't require vehicle specific data
@@ -1975,6 +1991,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_DATA96:
         handle_data_packet(msg);
         break;        
+
+    case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
+        handle_vision_position_delta(msg);
+        break;
     }
 
 }
@@ -2124,6 +2144,20 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_long_t 
     return _set_mode_common(base_mode, custom_mode);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_long_t &packet)
+{
+    if (!AP::ahrs().home_is_set()) {
+        return MAV_RESULT_FAILED;
+    }
+    send_home(AP::ahrs().get_home());
+
+    Location ekf_origin;
+    if (AP::ahrs().get_origin(ekf_origin)) {
+        send_ekf_origin(ekf_origin);
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
@@ -2166,6 +2200,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         result = handle_command_preflight_set_sensor_offsets(packet);
         break;
     }
+
+    case MAV_CMD_GET_HOME_POSITION:
+        result = handle_command_get_home_position(packet);
+        break;
 
     case MAV_CMD_PREFLIGHT_STORAGE:
         if (is_equal(packet.param1, 2.0f)) {

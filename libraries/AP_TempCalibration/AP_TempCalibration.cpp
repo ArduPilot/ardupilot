@@ -77,11 +77,6 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
     AP_GROUPEND
 };
 
-AP_TempCalibration::AP_TempCalibration(AP_InertialSensor &_ins) :
-    ins(_ins)
-{
-}
-
 /*
   calculate the correction given an exponent and a temperature 
 
@@ -178,7 +173,7 @@ void AP_TempCalibration::learn_calibration(void)
 
     // if we have any movement then we reset learning
     if (learn_values == nullptr ||
-        !ins.is_still()) {
+        !AP::ins().is_still()) {
         debug("learn reset\n");
         setup_learning();
         if (learn_values == nullptr) {
@@ -238,7 +233,7 @@ void AP_TempCalibration::update(void)
         break;
     case TC_ENABLE_LEARN:
         learn_calibration();
-        // fall through
+        FALLTHROUGH;
     case TC_ENABLE_USE:
         apply_calibration();
         break;

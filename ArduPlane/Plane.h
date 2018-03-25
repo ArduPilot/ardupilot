@@ -216,9 +216,9 @@ private:
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF2 EKF2{&ahrs, rangefinder};
     NavEKF3 EKF3{&ahrs, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, EKF2, EKF3};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs{ins};
+    AP_AHRS_DCM ahrs;
 #endif
 
     AP_TECS TECS_controller{ahrs, aparm, landing, g2.soaring_controller};
@@ -683,9 +683,6 @@ private:
     // 3D Location vectors
     // Location structure defined in AP_Common
     const struct Location &home = ahrs.get_home();
-
-    // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState home_is_set = HOME_UNSET;
 
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
     Location prev_WP_loc {};

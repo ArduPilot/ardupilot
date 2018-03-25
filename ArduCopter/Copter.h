@@ -242,7 +242,7 @@ private:
     // Inertial Navigation EKF
     NavEKF2 EKF2{&ahrs, rangefinder};
     NavEKF3 EKF3{&ahrs, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
@@ -267,7 +267,7 @@ private:
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming_Copter arming{ahrs, compass, battery, inertial_nav, ins};
+    AP_Arming_Copter arming{ahrs, compass, battery, inertial_nav};
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
@@ -315,7 +315,6 @@ private:
             uint8_t throttle_zero           : 1; // 15      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
             uint8_t system_time_set         : 1; // 16      // true if the system time has been set from the GPS
             uint8_t gps_glitching           : 1; // 17      // true if the gps is glitching
-            enum HomeState home_state       : 2; // 18,19   // home status (unset, set, locked)
             uint8_t using_interlock         : 1; // 20      // aux switch motor interlock function is in use
             uint8_t motor_emergency_stop    : 1; // 21      // motor estop switch, shuts off motors when enabled
             uint8_t land_repo_active        : 1; // 22      // true if the pilot is overriding the landing position
@@ -630,8 +629,6 @@ private:
     static const struct LogStructure log_structure[];
 
     // AP_State.cpp
-    void set_home_state(enum HomeState new_home_state);
-    bool home_is_set();
     void set_auto_armed(bool b);
     void set_simple_mode(uint8_t b);
     void set_failsafe_radio(bool b);
@@ -658,7 +655,6 @@ private:
     void update_altitude();
 
     // Attitude.cpp
-    float get_smoothing_gain();
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_roi_yaw();
     float get_look_ahead_yaw();
@@ -784,7 +780,6 @@ private:
 
     // Log.cpp
     void Log_Write_Optflow();
-    void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
     void Log_Write_Attitude();

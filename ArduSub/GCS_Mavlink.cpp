@@ -968,7 +968,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             new_home_loc.alt = packet.z * 100;
             // handle relative altitude
             if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                if (sub.ap.home_state == HOME_UNSET) {
+                if (!AP::ahrs().home_is_set()) {
                     // cannot use relative altitude if home is not set
                     break;
                 }
@@ -1190,17 +1190,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_UNSUPPORTED;
-            }
-            break;
-
-        case MAV_CMD_GET_HOME_POSITION:
-            if (sub.ap.home_state != HOME_UNSET) {
-                send_home(sub.ahrs.get_home());
-                Location ekf_origin;
-                if (sub.ahrs.get_origin(ekf_origin)) {
-                    send_ekf_origin(ekf_origin);
-                }
-                result = MAV_RESULT_ACCEPTED;
             }
             break;
 

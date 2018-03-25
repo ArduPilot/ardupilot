@@ -69,32 +69,32 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ACCEL_Z",     6, AC_WPNav, _wp_accel_z_cms, WPNAV_WP_ACCEL_Z_DEFAULT),
 
-    // @Param: LOIT_JERK
-    // @DisplayName: Loiter maximum jerk
-    // @Description: Loiter maximum jerk in cm/s/s/s
+    // @Param: BRK_JERK
+    // @DisplayName: Loiter braking jerk
+    // @Description: Loiter braking jerk in cm/s/s/s. Higher values will remove braking faster if the pilot moves the sticks during a braking manuver.
     // @Units: cm/s/s/s
     // @Range: 500 5000
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("LOIT_JERK",   7, AC_WPNav, _loiter_jerk_max_cmsss, WPNAV_LOITER_JERK_MAX_DEFAULT),
+    AP_GROUPINFO("BRK_JERK",   7, AC_WPNav, _loiter_brake_jerk_max_cmsss, WPNAV_LOITER_BRAKE_JERK),
 
     // @Param: LOIT_MAXA
-    // @DisplayName: Loiter maximum acceleration
-    // @Description: Loiter maximum acceleration in cm/s/s.  Higher values cause the copter to accelerate and stop more quickly.
+    // @DisplayName: Loiter maximum correction acceleration
+    // @Description: Loiter maximum correction acceleration in cm/s/s.  Higher values cause the copter to correct position errors more aggressively.
     // @Units: cm/s/s
     // @Range: 100 981
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("LOIT_MAXA",   8, AC_WPNav, _loiter_accel_cmss, WPNAV_LOITER_ACCEL),
+    AP_GROUPINFO("LOIT_MAXA",   8, AC_WPNav, _loiter_accel_cmss, WPNAV_LOITER_ACCEL_MAX),
 
-    // @Param: LOIT_MINA
-    // @DisplayName: Loiter minimum acceleration
-    // @Description: Loiter minimum acceleration in cm/s/s. Higher values stop the copter more quickly when the stick is centered, but cause a larger jerk when the copter stops.
+    // @Param: BRK_ACCEL
+    // @DisplayName: Loiter braking acceleration
+    // @Description: Loiter braking acceleration in cm/s/s. Higher values stop the copter more quickly when the stick is centered.
     // @Units: cm/s/s
     // @Range: 25 250
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("LOIT_MINA",   9, AC_WPNav, _loiter_accel_min_cmss, WPNAV_LOITER_ACCEL_MIN),
+    AP_GROUPINFO("BRK_ACCEL",   9, AC_WPNav, _loiter_brake_accel_cmss, WPNAV_LOITER_BRAKE_ACCEL),
 
     // @Param: RFND_USE
     // @DisplayName: Waypoint missions use rangefinder for terrain following
@@ -102,7 +102,25 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("RFND_USE",   10, AC_WPNav, _rangefinder_use, 1),
-    
+
+    // @Param: BRK_DELAY
+    // @DisplayName: Loiter brake start delay (in seconds)
+    // @Description: Loiter brake start delay (in seconds)
+    // @Units: s
+    // @Range: 0 2
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("BRK_DELAY",  11, AC_WPNav, _loiter_brake_delay, WPNAV_LOITER_BRAKE_START_DELAY),
+
+    // @Param: LOIT_ANGM
+    // @DisplayName: Loiter Angle Max
+    // @Description: Loiter maximum lean angle. Set to zero for 2/3 of PSC_ANGLE_MAX or ANGLE_MAX
+    // @Units: deg
+    // @Range: 0 45
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("LOIT_ANGM",  12, AC_WPNav, _loiter_angle_max, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -115,8 +133,6 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
     _ahrs(ahrs),
     _pos_control(pos_control),
     _attitude_control(attitude_control),
-    _pilot_accel_fwd_cms(0),
-    _pilot_accel_rgt_cms(0),
     _wp_last_update(0),
     _wp_step(0),
     _track_length(0.0f),
@@ -144,6 +160,8 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
 
     // sanity check some parameters
     _loiter_speed_cms = MAX(_loiter_speed_cms, WPNAV_LOITER_SPEED_MIN);
+    _loiter_accel_cmss = MIN(_loiter_accel_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max() * 0.01f)));
+    _wp_accel_cms = MIN(_wp_accel_cms, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max() * 0.01f)));
     _wp_radius_cm = MAX(_wp_radius_cm, WPNAV_WP_RADIUS_MIN);
 }
 
@@ -152,29 +170,28 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
 ///
 
 /// init_loiter_target in cm from home
-void AC_WPNav::init_loiter_target(const Vector3f& position, bool reset_I)
+void AC_WPNav::init_loiter_target(const Vector3f& position)
 {
-    // initialise position controller
-    _pos_control.init_xy_controller(reset_I);
-
-    // initialise pos controller speed, acceleration and jerk
-    _pos_control.set_speed_xy(_loiter_speed_cms);
+    // initialise pos controller speed, acceleration
+    _pos_control.set_speed_xy(WPNAV_LOITER_VEL_CORRECTION_MAX);
     _pos_control.set_accel_xy(_loiter_accel_cmss);
-    _pos_control.set_jerk_xy(_loiter_jerk_max_cmsss);
+
+    // initialise desired acceleration and angles to zero to remain on station
+    _loiter_predicted_accel.x = 0.0f;
+    _loiter_predicted_accel.y = 0.0f;
+    _loiter_desired_accel = _loiter_predicted_accel;
+    _loiter_predicted_euler_angle.x = 0.0f;
+    _loiter_predicted_euler_angle.y = 0.0f;
 
     // set target position
     _pos_control.set_xy_target(position.x, position.y);
 
-    // initialise feed forward velocity to zero
-    _pos_control.set_desired_velocity_xy(0,0);
+    // set vehicle velocity and acceleration to zero
+    _pos_control.set_desired_velocity_xy(0.0f,0.0f);
+    _pos_control.set_desired_accel_xy(0.0f,0.0f);
 
-    // initialise desired accel and add fake wind
-    _loiter_desired_accel.x = 0;
-    _loiter_desired_accel.y = 0;
-
-    // initialise pilot input
-    _pilot_accel_fwd_cms = 0;
-    _pilot_accel_rgt_cms = 0;
+    // initialise position controller
+    _pos_control.init_xy_controller();
 }
 
 /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
@@ -183,30 +200,32 @@ void AC_WPNav::init_loiter_target()
     const Vector3f& curr_pos = _inav.get_position();
     const Vector3f& curr_vel = _inav.get_velocity();
 
-    // initialise position controller
-    _pos_control.init_xy_controller();
-
     // sanity check loiter speed
     _loiter_speed_cms = MAX(_loiter_speed_cms, WPNAV_LOITER_SPEED_MIN);
 
     // initialise pos controller speed and acceleration
-    _pos_control.set_speed_xy(_loiter_speed_cms);
+    _pos_control.set_speed_xy(WPNAV_LOITER_VEL_CORRECTION_MAX);
     _pos_control.set_accel_xy(_loiter_accel_cmss);
-    _pos_control.set_jerk_xy(_loiter_jerk_max_cmsss);
+    _pos_control.set_leash_length_xy(WPNAV_LOITER_POS_CORRECTION_MAX);
+
+    // initialise desired acceleration based on the current velocity and the artificial drag
+    float pilot_acceleration_max = GRAVITY_MSS*100.0f * tanf(radians(get_loiter_angle_max_cd()*0.01f));
+    _loiter_predicted_accel.x = pilot_acceleration_max*curr_vel.x/_loiter_speed_cms;
+    _loiter_predicted_accel.y = pilot_acceleration_max*curr_vel.y/_loiter_speed_cms;
+    _loiter_desired_accel = _loiter_predicted_accel;
+    // this should be the current roll and pitch angle.
+    _loiter_predicted_euler_angle.x = radians(_attitude_control.get_att_target_euler_cd().x*0.01f);
+    _loiter_predicted_euler_angle.y = radians(_attitude_control.get_att_target_euler_cd().y*0.01f);
 
     // set target position
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
 
-    // move current vehicle velocity into feed forward velocity
+    // set vehicle velocity and acceleration to current state
     _pos_control.set_desired_velocity_xy(curr_vel.x, curr_vel.y);
+    _pos_control.set_desired_accel_xy(_loiter_desired_accel.x,_loiter_desired_accel.y);
 
-    // initialise desired accel and add fake wind
-    _loiter_desired_accel.x = (_loiter_accel_cmss)*curr_vel.x/_loiter_speed_cms;
-    _loiter_desired_accel.y = (_loiter_accel_cmss)*curr_vel.y/_loiter_speed_cms;
-
-    // initialise pilot input
-    _pilot_accel_fwd_cms = 0;
-    _pilot_accel_rgt_cms = 0;
+    // initialise position controller
+    _pos_control.init_xy_controller();
 }
 
 /// loiter_soften_for_landing - reduce response for landing
@@ -216,21 +235,55 @@ void AC_WPNav::loiter_soften_for_landing()
 
     // set target position to current position
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
-    _pos_control.freeze_ff_xy();
 }
 
-/// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
-void AC_WPNav::set_pilot_desired_acceleration(float control_roll, float control_pitch)
+/// set pilot desired acceleration in centi-degrees
+//   dt should be the time (in seconds) since the last call to this function
+void AC_WPNav::set_pilot_desired_acceleration(float euler_roll_angle_cd, float euler_pitch_angle_cd, float dt)
 {
-    // convert pilot input to desired acceleration in cm/s/s
-    _pilot_accel_fwd_cms = -control_pitch * _loiter_accel_cmss / 4500.0f;
-    _pilot_accel_rgt_cms = control_roll * _loiter_accel_cmss / 4500.0f;
+    // Convert from centidegrees on public interface to radians
+    const float euler_roll_angle = radians(euler_roll_angle_cd*0.01f);
+    const float euler_pitch_angle = radians(euler_pitch_angle_cd*0.01f);
+
+    // difference between where we think we should be and where we want to be
+    Vector2f angle_error(wrap_PI(euler_roll_angle-_loiter_predicted_euler_angle.x), wrap_PI(euler_pitch_angle-_loiter_predicted_euler_angle.y));
+
+    // calculate the angular velocity that we would expect given our desired and predicted attitude
+    _attitude_control.input_shaping_rate_predictor(angle_error, _loiter_predicted_euler_rate, dt);
+
+    // update our predicted attitude based on our predicted angular velocity
+    _loiter_predicted_euler_angle += _loiter_predicted_euler_rate * dt;
+
+    // convert our desired attitude to an acceleration vector assuming we are hovering
+    const float pilot_cos_pitch_target = cosf(euler_pitch_angle);
+    const float pilot_accel_rgt_cms = GRAVITY_MSS*100.0f * tanf(euler_roll_angle)/pilot_cos_pitch_target;
+    const float pilot_accel_fwd_cms = -GRAVITY_MSS*100.0f * tanf(euler_pitch_angle);
+
+    // convert our predicted attitude to an acceleration vector assuming we are hovering
+    const float pilot_predicted_cos_pitch_target = cosf(_loiter_predicted_euler_angle.y);
+    const float pilot_predicted_accel_rgt_cms = GRAVITY_MSS*100.0f * tanf(_loiter_predicted_euler_angle.x)/pilot_predicted_cos_pitch_target;
+    const float pilot_predicted_accel_fwd_cms = -GRAVITY_MSS*100.0f * tanf(_loiter_predicted_euler_angle.y);
+
+    // rotate acceleration vectors input to lat/lon frame
+    _loiter_desired_accel.x = (pilot_accel_fwd_cms*_ahrs.cos_yaw() - pilot_accel_rgt_cms*_ahrs.sin_yaw());
+    _loiter_desired_accel.y = (pilot_accel_fwd_cms*_ahrs.sin_yaw() + pilot_accel_rgt_cms*_ahrs.cos_yaw());
+    _loiter_predicted_accel.x = (pilot_predicted_accel_fwd_cms*_ahrs.cos_yaw() - pilot_predicted_accel_rgt_cms*_ahrs.sin_yaw());
+    _loiter_predicted_accel.y = (pilot_predicted_accel_fwd_cms*_ahrs.sin_yaw() + pilot_predicted_accel_rgt_cms*_ahrs.cos_yaw());
 }
 
 /// get_loiter_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
 void AC_WPNav::get_loiter_stopping_point_xy(Vector3f& stopping_point) const
 {
-	_pos_control.get_stopping_point_xy(stopping_point);
+    _pos_control.get_stopping_point_xy(stopping_point);
+}
+
+/// get_loiter_angle_max - returns the maximum lean angle in loiter mode
+float AC_WPNav::get_loiter_angle_max_cd() const
+{
+    if (is_zero(_loiter_angle_max)){
+        return MIN(_attitude_control.lean_angle_max(), _pos_control.get_lean_angle_max_cd()) * (2.0f/3.0f);
+    }
+    return MIN(_loiter_angle_max*100.0f, _pos_control.get_lean_angle_max_cd());
 }
 
 /// calc_loiter_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
@@ -242,6 +295,8 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     float gnd_speed_limit_cms = MIN(_loiter_speed_cms,ekfGndSpdLimit*100.0f);
     gnd_speed_limit_cms = MAX(gnd_speed_limit_cms, WPNAV_LOITER_SPEED_MIN);
 
+    float pilot_acceleration_max = GRAVITY_MSS*100.0f * tanf(radians(get_loiter_angle_max_cd()*0.01f));
+
     // range check nav_dt
     if( nav_dt < 0 ) {
         return;
@@ -249,63 +304,66 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 
     _pos_control.set_speed_xy(gnd_speed_limit_cms);
     _pos_control.set_accel_xy(_loiter_accel_cmss);
-    _pos_control.set_jerk_xy(_loiter_jerk_max_cmsss);
+    _pos_control.set_leash_length_xy(WPNAV_LOITER_POS_CORRECTION_MAX);
 
-    // rotate pilot input to lat/lon frame
-    Vector2f desired_accel;
-    desired_accel.x = (_pilot_accel_fwd_cms*_ahrs.cos_yaw() - _pilot_accel_rgt_cms*_ahrs.sin_yaw());
-    desired_accel.y = (_pilot_accel_fwd_cms*_ahrs.sin_yaw() + _pilot_accel_rgt_cms*_ahrs.cos_yaw());
-
-    // calculate the difference
-    Vector2f des_accel_diff = (desired_accel - _loiter_desired_accel);
-
-    // constrain and scale the desired acceleration
-    float des_accel_change_total = norm(des_accel_diff.x, des_accel_diff.y);
-    float accel_change_max = _loiter_jerk_max_cmsss * nav_dt;
-
-    if (_loiter_jerk_max_cmsss > 0.0f && des_accel_change_total > accel_change_max && des_accel_change_total > 0.0f) {
-        des_accel_diff.x = accel_change_max * des_accel_diff.x/des_accel_change_total;
-        des_accel_diff.y = accel_change_max * des_accel_diff.y/des_accel_change_total;
-    }
-
-    // adjust the desired acceleration
-    _loiter_desired_accel += des_accel_diff;
-
-    // get pos_control's feed forward velocity
+    // get loiters desired velocity from the position controller where it is being stored.
     const Vector3f &desired_vel_3d = _pos_control.get_desired_velocity();
     Vector2f desired_vel(desired_vel_3d.x,desired_vel_3d.y);
 
-    // add pilot commanded acceleration
-    desired_vel.x += _loiter_desired_accel.x * nav_dt;
-    desired_vel.y += _loiter_desired_accel.y * nav_dt;
+    // update the desired velocity using our predicted acceleration
+    desired_vel.x += _loiter_predicted_accel.x * nav_dt;
+    desired_vel.y += _loiter_predicted_accel.y * nav_dt;
 
+    Vector2f loiter_accel_brake;
     float desired_speed = desired_vel.length();
-
     if (!is_zero(desired_speed)) {
         Vector2f desired_vel_norm = desired_vel/desired_speed;
-        float drag_speed_delta = -_loiter_accel_cmss*nav_dt*desired_speed/gnd_speed_limit_cms;
 
-        if (_pilot_accel_fwd_cms == 0 && _pilot_accel_rgt_cms == 0) {
-            drag_speed_delta = MIN(drag_speed_delta,MAX(-_loiter_accel_min_cmss*nav_dt, -2.0f*desired_speed*nav_dt));
+        // TODO: consider using a velocity squared relationship like
+        // pilot_acceleration_max*(desired_speed/gnd_speed_limit_cms)^2;
+        // the drag characteristic of a multirotor should be examined to generate a curve
+        // we could add a expo function here to fine tune it
+
+        // calculate a drag acceleration based on the desired speed.
+        float drag_decel = pilot_acceleration_max*desired_speed/gnd_speed_limit_cms;
+
+        // calculate a braking acceleration if sticks are at zero
+        float loiter_brake_accel = 0.0f;
+        if (_loiter_desired_accel.is_zero()) {
+            if((AP_HAL::millis()-_brake_timer) > _loiter_brake_delay * 1000.0f){
+                float brake_gain = _pos_control.get_vel_xy_pid().kP() * 0.5f;
+                loiter_brake_accel = constrain_float(AC_AttitudeControl::sqrt_controller(desired_speed, brake_gain, _loiter_brake_jerk_max_cmsss, nav_dt), 0.0f, _loiter_brake_accel_cmss);
+            }
+        } else {
+            loiter_brake_accel = 0.0f;
+            _brake_timer = AP_HAL::millis();
         }
+        _loiter_brake_accel += constrain_float(loiter_brake_accel-_loiter_brake_accel, -_loiter_brake_jerk_max_cmsss*nav_dt, _loiter_brake_jerk_max_cmsss*nav_dt);
+        loiter_accel_brake = desired_vel_norm*_loiter_brake_accel;
 
-        desired_speed = MAX(desired_speed+drag_speed_delta,0.0f);
+        // update the desired velocity using the drag and braking accelerations
+        desired_speed = MAX(desired_speed-(drag_decel+_loiter_brake_accel)*nav_dt,0.0f);
         desired_vel = desired_vel_norm*desired_speed;
     }
 
+    // add braking to the desired acceleration
+    _loiter_desired_accel -= loiter_accel_brake;
+
     // Apply EKF limit to desired velocity -  this limit is calculated by the EKF and adjusted as required to ensure certain sensor limits are respected (eg optical flow sensing)
-    float horizSpdDem = sqrtf(sq(desired_vel.x) + sq(desired_vel.y));
+    float horizSpdDem = desired_vel.length();
     if (horizSpdDem > gnd_speed_limit_cms) {
         desired_vel.x = desired_vel.x * gnd_speed_limit_cms / horizSpdDem;
         desired_vel.y = desired_vel.y * gnd_speed_limit_cms / horizSpdDem;
     }
 
     // Limit the velocity to prevent fence violations
+    // TODO: We need to also limit the _loiter_desired_accel
     if (_avoid != nullptr) {
         _avoid->adjust_velocity(_pos_control.get_pos_xy_p().kP(), _loiter_accel_cmss, desired_vel, nav_dt);
     }
 
-    // send adjusted feed forward velocity back to position controller
+    // send adjusted feed forward acceleration and velocity back to the Position Controller
+    _pos_control.set_desired_accel_xy(_loiter_desired_accel.x,_loiter_desired_accel.y);
     _pos_control.set_desired_velocity_xy(desired_vel.x,desired_vel.y);
 }
 
@@ -320,23 +378,16 @@ void AC_WPNav::update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler)
 {
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();
-
-    // run at poscontrol update rate.
-    // TODO: run on user input to reduce latency, maybe if (user_input || dt >= _pos_control.get_dt_xy())
-    if (dt >= _pos_control.get_dt_xy()) {
-        // sanity check dt
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // initialise pos controller speed and acceleration
-        _pos_control.set_speed_xy(_loiter_speed_cms);
-        _pos_control.set_accel_xy(_loiter_accel_cmss);
-        _pos_control.set_jerk_xy(_loiter_jerk_max_cmsss);
-
-        calc_loiter_desired_velocity(dt,ekfGndSpdLimit);
-        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_LIMITED_AND_VEL_FF, ekfNavVelGainScaler, true);
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // initialise pos controller speed and acceleration
+    _pos_control.set_speed_xy(_loiter_speed_cms);
+    _pos_control.set_accel_xy(_loiter_accel_cmss);
+
+    calc_loiter_desired_velocity(dt,ekfGndSpdLimit);
+    _pos_control.update_xy_controller(ekfNavVelGainScaler);
 }
 
 /// init_brake_target - initializes stop position from current position and velocity
@@ -346,12 +397,12 @@ void AC_WPNav::init_brake_target(float accel_cmss)
     Vector3f stopping_point;
 
     // initialise position controller
+    _pos_control.set_desired_accel_xy(0.0f,0.0f);
     _pos_control.init_xy_controller();
 
     // initialise pos controller speed and acceleration
     _pos_control.set_speed_xy(curr_vel.length());
     _pos_control.set_accel_xy(accel_cmss);
-    _pos_control.set_jerk_xy(_loiter_jerk_max_cmsss);
     _pos_control.calc_leash_length_xy();
 
     _pos_control.get_stopping_point_xy(stopping_point);
@@ -365,14 +416,13 @@ void AC_WPNav::update_brake(float ekfGndSpdLimit, float ekfNavVelGainScaler)
 {
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();
-
-    // run at poscontrol update rate.
-    if (dt >= _pos_control.get_dt_xy()) {
-
-        // send adjusted feed forward velocity back to position controller
-        _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
-        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_LIMITED_AND_VEL_FF, ekfNavVelGainScaler, false);
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // send adjusted feed forward velocity back to position controller
+    _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
+    _pos_control.update_xy_controller(ekfNavVelGainScaler);
 }
 
 ///
@@ -389,22 +439,17 @@ void AC_WPNav::wp_and_spline_init()
         _wp_accel_cms.set_and_save(WPNAV_ACCELERATION);
     }
 
-    // also limit the accel using the maximum lean angle. This
-    // prevents the navigation controller from trying to move the
-    // target point at an unachievable rate
-    float accel_limit_cms = GRAVITY_MSS * 100 * tanf(radians(_attitude_control.lean_angle_max()*0.01f));
-    if (_wp_accel_cms > accel_limit_cms) {
-        _wp_accel_cms.set(accel_limit_cms);
-    }
-
     // initialise position controller
+    _pos_control.set_desired_accel_xy(0.0f,0.0f);
     _pos_control.init_xy_controller();
     _pos_control.clear_desired_velocity_ff_z();
+
+    // initialise feed forward velocity to zero
+    _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
 
     // initialise position controller speed and acceleration
     _pos_control.set_speed_xy(_wp_speed_cms);
     _pos_control.set_accel_xy(_wp_accel_cms);
-    _pos_control.set_jerk_xy_to_default();
     _pos_control.set_speed_z(-_wp_speed_down_cms, _wp_speed_up_cms);
     _pos_control.set_accel_z(_wp_accel_z_cms);
     _pos_control.calc_leash_length_xy();
@@ -554,7 +599,6 @@ void AC_WPNav::shift_wp_origin_to_current_pos()
 
     // move pos controller target and disable feed forward
     _pos_control.set_pos_target(curr_pos);
-    _pos_control.freeze_ff_xy();
     _pos_control.freeze_ff_z();
 }
 
@@ -743,42 +787,35 @@ int32_t AC_WPNav::get_wp_bearing_to_destination() const
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
 bool AC_WPNav::update_wpnav()
 {
-    // calculate dt
-    float dt = _pos_control.time_since_last_xy_update();
     bool ret = true;
 
-    // update at poscontrol update rate
-    if (dt >= _pos_control.get_dt_xy()) {
-        // allow the accel and speed values to be set without changing
-        // out of auto mode. This makes it easier to tune auto flight
-        _pos_control.set_accel_xy(_wp_accel_cms);
-        _pos_control.set_jerk_xy_to_default();
-        _pos_control.set_accel_z(_wp_accel_z_cms);
-    
-        // sanity check dt
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // advance the target if necessary
-        if (!advance_wp_target_along_track(dt)) {
-            // To-Do: handle inability to advance along track (probably because of missing terrain data)
-            ret = false;
-        }
-
-        // freeze feedforwards during known discontinuities
-        // TODO: why always consider Z axis discontinuous?
-        if (_flags.new_wp_destination) {
-            _flags.new_wp_destination = false;
-            _pos_control.freeze_ff_xy();
-        }
-        _pos_control.freeze_ff_z();
-
-        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f, false);
-        check_wp_leash_length();
-
-        _wp_last_update = AP_HAL::millis();
+    // calculate dt
+    float dt = _pos_control.time_since_last_xy_update();
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // allow the accel and speed values to be set without changing
+    // out of auto mode. This makes it easier to tune auto flight
+    _pos_control.set_accel_xy(_wp_accel_cms);
+    _pos_control.set_accel_z(_wp_accel_z_cms);
+
+    // advance the target if necessary
+    if (!advance_wp_target_along_track(dt)) {
+        // To-Do: handle inability to advance along track (probably because of missing terrain data)
+        ret = false;
+    }
+
+    // freeze feedforwards during known discontinuities
+    if (_flags.new_wp_destination) {
+        _flags.new_wp_destination = false;
+        _pos_control.freeze_ff_z();
+    }
+
+    _pos_control.update_xy_controller(1.0f);
+    check_wp_leash_length();
+
+    _wp_last_update = AP_HAL::millis();
 
     return ret;
 }
@@ -927,7 +964,11 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
 {
     // mission is "active" if wpnav has been called recently and vehicle reached the previous waypoint
     bool prev_segment_exists = (_flags.reached_destination && ((AP_HAL::millis() - _wp_last_update) < 1000));
-    float dt = _pos_control.get_dt_xy();
+
+    float dt = _pos_control.time_since_last_xy_update();
+    if (dt >= 0.2f) {
+        dt = 0.0f;
+    }
 
     // check _wp_accel_cms is reasonable to avoid divide by zero
     if (_wp_accel_cms <= 0) {
@@ -1042,35 +1083,31 @@ bool AC_WPNav::update_spline()
         return false;
     }
 
-    float dt = _pos_control.time_since_last_xy_update();
     bool ret = true;
 
-    // run at poscontrol update rate
-    if (dt >= _pos_control.get_dt_xy()) {
-        // sanity check dt
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // advance the target if necessary
-        if (!advance_spline_target_along_track(dt)) {
-            // To-Do: handle failure to advance along track (due to missing terrain data)
-            ret = false;
-        }
-
-        // freeze feedforwards during known discontinuities
-        // TODO: why always consider Z axis discontinuous?
-        if (_flags.new_wp_destination) {
-            _flags.new_wp_destination = false;
-            _pos_control.freeze_ff_xy();
-        }
-        _pos_control.freeze_ff_z();
-
-        // run horizontal position controller
-        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f, false);
-
-        _wp_last_update = AP_HAL::millis();
+    // calculate dt
+    float dt = _pos_control.time_since_last_xy_update();
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // advance the target if necessary
+    if (!advance_spline_target_along_track(dt)) {
+        // To-Do: handle failure to advance along track (due to missing terrain data)
+        ret = false;
+    }
+
+    // freeze feedforwards during known discontinuities
+    if (_flags.new_wp_destination) {
+        _flags.new_wp_destination = false;
+        _pos_control.freeze_ff_z();
+    }
+
+    // run horizontal position controller
+    _pos_control.update_xy_controller(1.0f);
+
+    _wp_last_update = AP_HAL::millis();
+
     return ret;
 }
 

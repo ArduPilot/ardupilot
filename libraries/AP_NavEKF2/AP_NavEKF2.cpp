@@ -583,8 +583,7 @@ void NavEKF2::check_log_write(void)
         logging.log_baro = false;
     }
     if (logging.log_imu) {
-        const AP_InertialSensor &ins = _ahrs->get_ins();
-        DataFlash_Class::instance()->Log_Write_IMUDT(ins, imuSampleTime_us, _logging_mask.get());
+        DataFlash_Class::instance()->Log_Write_IMUDT(imuSampleTime_us, _logging_mask.get());
         logging.log_imu = false;
     }
 
@@ -599,7 +598,7 @@ bool NavEKF2::InitialiseFilter(void)
     if (_enable == 0) {
         return false;
     }
-    const AP_InertialSensor &ins = _ahrs->get_ins();
+    const AP_InertialSensor &ins = AP::ins();
 
     imuSampleTime_us = AP_HAL::micros64();
 
@@ -688,7 +687,7 @@ void NavEKF2::UpdateFilter(void)
 
     imuSampleTime_us = AP_HAL::micros64();
     
-    const AP_InertialSensor &ins = _ahrs->get_ins();
+    const AP_InertialSensor &ins = AP::ins();
 
     bool statePredictEnabled[num_cores];
     for (uint8_t i=0; i<num_cores; i++) {

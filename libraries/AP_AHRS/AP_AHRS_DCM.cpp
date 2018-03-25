@@ -57,8 +57,10 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 
     if (!skip_ins_update) {
         // tell the IMU to grab some data
-        _ins.update();
+        AP::ins().update();
     }
+
+    const AP_InertialSensor &_ins = AP::ins();
 
     // ask the IMU how much time this sensor reading represents
     delta_t = _ins.get_delta_time();
@@ -111,6 +113,7 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
     // noise
     uint8_t healthy_count = 0;
     Vector3f delta_angle;
+    const AP_InertialSensor &_ins = AP::ins();
     for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
         if (_ins.get_gyro_health(i) && healthy_count < 2) {
             Vector3f dangle;
@@ -153,6 +156,8 @@ AP_AHRS_DCM::reset(bool recover_eulers)
 
         // Use the measured accel due to gravity to calculate an initial
         // roll and pitch estimate
+
+        AP_InertialSensor &_ins = AP::ins();
 
         // Get body frame accel vector
         Vector3f initAccVec = _ins.get_accel();
@@ -575,6 +580,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // perform yaw drift correction if we have a new yaw reference
     // vector
     drift_correction_yaw();
+
+    const AP_InertialSensor &_ins = AP::ins();
 
     // rotate accelerometer values into the earth frame
     for (uint8_t i=0; i<_ins.get_accel_count(); i++) {

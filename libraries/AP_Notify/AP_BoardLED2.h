@@ -12,27 +12,31 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
-#include "AP_HAL.h"
 
-#include "utility/print_vprintf.h"
-#include "UARTDriver.h"
 
-/*
-   BetterStream method implementations
-   These are implemented in AP_HAL to ensure consistent behaviour on
-   all boards, although they can be overridden by a port
- */
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
 
-void AP_HAL::UARTDriver::printf(const char *fmt, ...) 
+#include "NotifyDevice.h"
+
+#define HIGH 1
+#define LOW 0
+
+class AP_BoardLED2: public NotifyDevice
 {
-    va_list ap;
-    va_start(ap, fmt);
-    vprintf(fmt, ap);
-    va_end(ap);
-}
+public:
+    // initialise the LED driver
+    bool init(void);
 
-void AP_HAL::UARTDriver::vprintf(const char *fmt, va_list ap) 
-{
-    print_vprintf(this, fmt, ap);
-}
+    // should be called at 50Hz
+    void update(void);
+
+private:
+    // counter incremented at 50Hz
+    uint8_t _counter;
+    uint16_t _sat_cnt;
+    uint8_t save_trim_counter;
+    uint8_t arm_counter = 0;
+};

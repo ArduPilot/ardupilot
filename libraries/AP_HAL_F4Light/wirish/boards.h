@@ -288,6 +288,8 @@ extern void systemInit(uint8_t oc);
 // *(uint32_t *)0x40002850 = 0xb007b007;
 #define BOOT_RTC_SIGNATURE      0xb007b007
 #define DFU_RTC_SIGNATURE       0xDEADBEEF
+#define FORCE_APP_RTC_SIGNATURE 0x4000AbbA
+
 
 #define DSM_BIND_SIGNATURE      0xD82B14D0 // "DSMBIND" last nibble for DSM code
 #define DSM_BIND_SIGN_MASK      0xF // mask for last nibble - DSM code

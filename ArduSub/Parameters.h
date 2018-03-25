@@ -224,7 +224,9 @@ public:
 
     AP_Float        throttle_filt;
 
+#if RANGEFINDER_ENABLED == ENABLED
     AP_Float        rangefinder_gain;
+#endif
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
@@ -266,7 +268,9 @@ public:
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     AP_Int8         terrain_follow;
+#endif
 
     AP_Int16        rc_speed; // speed of fast RC Channels in Hz
 

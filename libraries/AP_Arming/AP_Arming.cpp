@@ -172,7 +172,7 @@ bool AP_Arming::ins_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
-        const AP_InertialSensor &ins = ahrs.get_ins();
+        const AP_InertialSensor &ins = AP::ins();
         if (!ins.get_gyro_health_all()) {
             if (report) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Gyros not healthy");
@@ -346,7 +346,7 @@ bool AP_Arming::gps_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
         //GPS OK?
-        if (home_status() == HOME_UNSET ||
+        if (!AP::ahrs().home_is_set() ||
             gps.status() < AP_GPS::GPS_OK_FIX_3D) {
             if (report) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Bad GPS Position");

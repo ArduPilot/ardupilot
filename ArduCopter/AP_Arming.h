@@ -8,11 +8,9 @@ public:
     friend class Copter;
     friend class ToyMode;
     AP_Arming_Copter(const AP_AHRS_NavEKF &ahrs_ref, Compass &compass,
-                     const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav,
-                     const AP_InertialSensor &ins)
+                     const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav)
         : AP_Arming(ahrs_ref, compass, battery)
         , _inav(inav)
-        , _ins(ins)
         , _ahrs_navekf(ahrs_ref)
     {
     }
@@ -49,12 +47,9 @@ protected:
 
     void set_pre_arm_check(bool b);
 
-    enum HomeState home_status() const override;
-
 private:
 
     const AP_InertialNav_NavEKF &_inav;
-    const AP_InertialSensor &_ins;
     const AP_AHRS_NavEKF &_ahrs_navekf;
 
     void parameter_checks_pid_warning_message(bool display_failure, const char *error_msg);

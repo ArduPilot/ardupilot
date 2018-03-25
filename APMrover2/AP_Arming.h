@@ -25,7 +25,6 @@ public:
     bool gps_checks(bool display_failure) override;
 
 protected:
-    enum HomeState home_status() const override;
     bool fence_checks(bool report);
     bool proximity_check(bool report);
 

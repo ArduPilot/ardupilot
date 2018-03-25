@@ -171,9 +171,9 @@ private:
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF2 EKF2{&ahrs, rangefinder};
     NavEKF3 EKF3{&ahrs, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, EKF2, EKF3};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs{ins};
+    AP_AHRS_DCM ahrs;
 #endif
 
     // Arming/Disarming management class
@@ -315,9 +315,6 @@ private:
     // Location structure defined in AP_Common
     // The home location used for RTL.  The location is set when we first get stable GPS lock
     const struct Location &home;
-
-    // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState home_is_set = HOME_UNSET;
 
     // true if the system time has been set from the GPS
     bool system_time_set;

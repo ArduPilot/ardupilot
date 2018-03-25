@@ -36,7 +36,7 @@ protected:
     virtual bool in_guided_mode() const { return false; }
 
     // pilot input processing
-    void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
+    void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
 
     // takeoff support
     bool takeoff_triggered(float target_climb_rate) const;
@@ -84,7 +84,6 @@ protected:
     float get_pilot_desired_throttle(int16_t throttle_control, float thr_mid = 0.0f);
     float get_non_takeoff_throttle(void);
     void update_simple_mode(void);
-    float get_smoothing_gain(void);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     void set_land_complete(bool b);
     GCS_Copter &gcs();

@@ -212,7 +212,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
 
         // acro balance parameter check
-#if MODE_ACRO_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
         if ((copter.g.acro_balance_roll > copter.attitude_control->get_angle_roll_p().kP()) || (copter.g.acro_balance_pitch > copter.attitude_control->get_angle_pitch_p().kP())) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: ACRO_BAL_ROLL/PITCH");
@@ -583,7 +583,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     //check if compass has calibrated and requires reboot
     if (_compass.compass_cal_requires_reboot()) {
         if (display_failure) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Compass calibrated requires reboot");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Arm: Compass calibrated requires reboot");
         }
         return false;
     }
@@ -700,11 +700,6 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     // has side-effects which would need to be cleaned up if one of
     // our arm checks failed
     return AP_Arming::arm_checks(arming_from_gcs);
-}
-
-enum HomeState AP_Arming_Copter::home_status() const
-{
-    return copter.ap.home_state;
 }
 
 void AP_Arming_Copter::set_pre_arm_check(bool b)

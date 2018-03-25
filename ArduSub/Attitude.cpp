@@ -1,12 +1,5 @@
 #include "Sub.h"
 
-// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw
-//      result is a number from 2 to 12 with 2 being very sluggish and 12 being very crisp
-float Sub::get_smoothing_gain()
-{
-    return (2.0f + (float)g.rc_feel_rp/10.0f);
-}
-
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
 void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
@@ -50,10 +43,10 @@ float Sub::get_pilot_desired_yaw_rate(int16_t stick_angle)
 // check for ekf yaw reset and adjust target heading
 void Sub::check_ekf_yaw_reset()
 {
-    float yaw_angle_change_rad = 0.0f;
+    float yaw_angle_change_rad;
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control.shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
+        attitude_control.inertial_frame_reset();
         ekfYawReset_ms = new_ekfYawReset_ms;
     }
 }

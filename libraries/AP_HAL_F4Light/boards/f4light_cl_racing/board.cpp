@@ -154,7 +154,7 @@ extern const struct TIM_Channel PWM_Channels[] __FLASH__ =   {
 extern const SPIDesc spi_device_table[] = {    // different SPI tables per board subtype
 //               name            device   bus  mode         cs_pin                 speed_low       speed_high   dma               priority             assert_dly release_dly  
      { BOARD_INS_MPU60x0_NAME,   _SPI1,   1,  SPI_MODE_0, BOARD_MPU6000_CS_PIN,    SPI_1_125MHZ,   SPI_9MHZ,   SPI_TRANSFER_DMA, DMA_Priority_VeryHigh,   1,          5 }, 
-     { BOARD_SDCARD_NAME,        _SPI2,   2,  SPI_MODE_0, 255,                     SPI_562_500KHZ, SPI_36MHZ,  SPI_TRANSFER_DMA, DMA_Priority_Medium,     5,          5 }, 
+     { BOARD_SDCARD_NAME,        _SPI2,   2,  SPI_MODE_3, 255,                     SPI_562_500KHZ, SPI_36MHZ,  SPI_TRANSFER_DMA, DMA_Priority_Medium,     5,          5 }, 
      { BOARD_OSD_NAME,           _SPI3,   3,  SPI_MODE_0, BOARD_OSD_CS_PIN,        SPI_1_125MHZ,   SPI_4_5MHZ, SPI_TRANSFER_DMA, DMA_Priority_Low,        2,          2 },
 };
 
@@ -178,8 +178,12 @@ void boardInit(void) {
 #endif
 
 #ifdef BOARD_MPU6000_DRDY_PIN
-    // Init MPU6000 DRDY pin - but it not used by driver
     gpio_set_mode(PIN_MAP[BOARD_MPU6000_DRDY_PIN].gpio_device, PIN_MAP[BOARD_MPU6000_DRDY_PIN].gpio_bit, GPIO_INPUT_PU);
+#endif
+
+#ifdef BOARD_BUZZER_PIN
+    gpio_set_mode(PIN_MAP[BOARD_BUZZER_PIN].gpio_device, PIN_MAP[BOARD_BUZZER_PIN].gpio_bit, GPIO_OUTPUT_PP);
+    gpio_write_bit(PIN_MAP[BOARD_BUZZER_PIN].gpio_device, PIN_MAP[BOARD_BUZZER_PIN].gpio_bit, HAL_BUZZER_OFF);
 #endif
 
 #ifdef BOARD_SBUS_INVERTER

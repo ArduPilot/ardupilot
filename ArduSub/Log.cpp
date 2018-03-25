@@ -45,47 +45,6 @@ void Sub::Log_Write_Optflow()
 #endif     // OPTFLOW == ENABLED
 }
 
-struct PACKED log_Nav_Tuning {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float    desired_pos_x;
-    float    desired_pos_y;
-    float    pos_x;
-    float    pos_y;
-    float    desired_vel_x;
-    float    desired_vel_y;
-    float    vel_x;
-    float    vel_y;
-    float    desired_accel_x;
-    float    desired_accel_y;
-};
-
-// Write an Nav Tuning packet
-void Sub::Log_Write_Nav_Tuning()
-{
-    const Vector3f &pos_target = pos_control.get_pos_target();
-    const Vector3f &vel_target = pos_control.get_vel_target();
-    const Vector3f &accel_target = pos_control.get_accel_target();
-    const Vector3f &position = inertial_nav.get_position();
-    const Vector3f &velocity = inertial_nav.get_velocity();
-
-    struct log_Nav_Tuning pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
-        time_us         : AP_HAL::micros64(),
-        desired_pos_x   : pos_target.x,
-        desired_pos_y   : pos_target.y,
-        pos_x           : position.x,
-        pos_y           : position.y,
-        desired_vel_x   : vel_target.x,
-        desired_vel_y   : vel_target.y,
-        vel_x           : velocity.x,
-        vel_y           : velocity.y,
-        desired_accel_x : accel_target.x,
-        desired_accel_y : accel_target.y
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-
 struct PACKED log_Control_Tuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -332,7 +291,7 @@ void Sub::Log_Write_Home_And_Origin()
     }
 
     // log ahrs home if set
-    if (ap.home_state != HOME_UNSET) {
+    if (ahrs.home_is_set()) {
         DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
     }
 }
@@ -389,8 +348,6 @@ const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" },
-    { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
-      "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY", "smmmmnnnnoo", "FBBBBBBBBBB" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qfffffffccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BBBBBB" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
@@ -430,7 +387,6 @@ void Sub::log_init(void)
 #else // LOGGING_ENABLED
 
 void Sub::do_erase_logs(void) {}
-void Sub::Log_Write_Nav_Tuning() {}
 void Sub::Log_Write_Control_Tuning() {}
 void Sub::Log_Write_Performance() {}
 void Sub::Log_Write_Attitude(void) {}

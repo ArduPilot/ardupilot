@@ -34,6 +34,7 @@
 #include "Led_Sysfs.h"
 #include "UAVCAN_RGB_LED.h"
 #include <stdio.h>
+#include "AP_BoardLED2.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -61,6 +62,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BUZZ_ENABLE", 1, AP_Notify, _buzzer_enable, BUZZER_ON),
 
+
     // @Param: LED_OVERRIDE
     // @DisplayName: Setup for MAVLink LED override
     // @Description: This sets up the board RGB LED for override by MAVLink. Normal notify LED control is disabled
@@ -81,6 +83,15 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Values: 0:Disabled,1:Aircraft,2:Rover
     // @User: Advanced
     AP_GROUPINFO("OREO_THEME", 4, AP_Notify, _oreo_theme, 0),
+
+#if !defined(BUZZER_PIN)
+    // @Param: BUZZ_PIN
+    // @DisplayName: Buzzer pin
+    // @Description: Enables to connect active buzzer to arbitrary pin. Requires 3-pin buzzer or additional MOSFET!
+    // @Values: 0:Disabled, or pin number
+    // @User: Advanced
+    AP_GROUPINFO("BUZZ_PIN", 5, AP_Notify, _buzzer_pin, 0),
+#endif
 
     AP_GROUPEND
 };
@@ -235,7 +246,7 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
     ADD_BACKEND(new Display());
     ADD_BACKEND(new Buzzer());
-//    ADD_BACKEND(new AP_BoardLED2()); // needs AP_BoardLED2 in master
+    ADD_BACKEND(new AP_BoardLED2()); // needs AP_BoardLED2 in master
 #else
     ADD_BACKEND(new AP_BoardLED());
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));

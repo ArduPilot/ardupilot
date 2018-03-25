@@ -4,7 +4,7 @@
 void Rover::update_home_from_EKF()
 {
     // exit immediately if home already set
-    if (home_is_set != HOME_UNSET) {
+    if (ahrs.home_is_set()) {
         return;
     }
 
@@ -50,9 +50,9 @@ bool Rover::set_home(const Location& loc, bool lock)
     ahrs.set_home(loc);
 
     // init compass declination
-    if (home_is_set == HOME_UNSET) {
+    if (!ahrs.home_is_set()) {
         // record home is set
-        home_is_set = HOME_SET_NOT_LOCKED;
+        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
 
         // log new home position which mission library will pull from ahrs
         if (should_log(MASK_LOG_CMD)) {
@@ -65,7 +65,7 @@ bool Rover::set_home(const Location& loc, bool lock)
 
     // lock home position
     if (lock) {
-        home_is_set = HOME_SET_AND_LOCKED;
+        ahrs.set_home_status(HOME_SET_AND_LOCKED);
     }
 
     // Save Home to EEPROM
@@ -143,7 +143,7 @@ void Rover::set_system_time_from_GPS()
 */
 void Rover::update_home()
 {
-    if (home_is_set == HOME_SET_NOT_LOCKED) {
+    if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
         Location loc;
         if (ahrs.get_position(loc)) {
             if (get_distance(loc, ahrs.get_home()) > DISTANCE_HOME_MAX) {

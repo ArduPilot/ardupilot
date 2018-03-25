@@ -34,7 +34,6 @@ public:
 
 protected:
     bool ins_checks(bool report);
-    enum HomeState home_status() const override;
 
     // parameters
     AP_Int8                 rudder_arming_value;
