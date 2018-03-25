@@ -82,6 +82,11 @@ void RCOutput::init()
  */
 void RCOutput::set_freq_group(pwm_group &group)
 {
+    if (mode_requires_dma(group.current_mode)) {
+        // speed setup in DMA handler
+        return;
+    }
+    
     uint16_t freq_set = group.rc_frequency;
     uint32_t old_clock = group.pwm_cfg.frequency;
 
@@ -104,8 +109,17 @@ void RCOutput::set_freq_group(pwm_group &group)
         group.pwm_cfg.frequency /= 2;
         psc = (pwmp->clock / pwmp->config->frequency) - 1;
     }
+
+    bool force_reconfig = false;
+    for (uint8_t j=0; j<4; j++) {
+        if (group.pwm_cfg.channels[j].mode != PWM_OUTPUT_DISABLED &&
+            group.pwm_cfg.channels[j].mode == PWM_OUTPUT_ACTIVE_LOW) {
+            group.pwm_cfg.channels[j].mode = PWM_OUTPUT_ACTIVE_HIGH;
+            force_reconfig = true;
+        }
+    }
     
-    if (old_clock != group.pwm_cfg.frequency || !group.pwm_started) {
+    if (old_clock != group.pwm_cfg.frequency || !group.pwm_started || force_reconfig) {
         // we need to stop and start to setup the new clock
         if (group.pwm_started) {
             pwmStop(group.pwm_drv);
@@ -892,6 +906,10 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate)
     // find the channel group
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
+        if (group.current_mode == MODE_PWM_BRUSHED) {
+            // can't do serial output with brushed motors
+            continue;
+        }
         if (group.ch_mask & (1U<<chan)) {
             if (serial_group && serial_group != &group) {
                 // we're changing to a new group, end the previous output
@@ -1084,6 +1102,9 @@ bool RCOutput::serial_read_byte(uint8_t &b)
 */
 uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 {
+    if (serial_group == nullptr) {
+        return 0;
+    }
     pwm_group &group = *serial_group;
     uint8_t chan = group.chan[group.serial.chan];
     uint32_t gpio_mode = PAL_MODE_INPUT | PAL_STM32_OSPEED_LOWEST | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP;
@@ -1136,9 +1157,14 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 void RCOutput::serial_end(void)
 {
     if (serial_group) {
+        pwm_group &group = *serial_group;
         // restore normal output
-        set_group_mode(*serial_group);
-        set_freq_group(*serial_group);
+        if (group.pwm_started) {
+            pwmStop(group.pwm_drv);
+            group.pwm_started = false;
+        }
+        set_group_mode(group);
+        set_freq_group(group);
         irq.waiter = nullptr;
     }
     serial_group = nullptr;
