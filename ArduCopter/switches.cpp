@@ -1,17 +1,8 @@
 #include "Copter.h"
 
-#define CONTROL_SWITCH_DEBOUNCE_TIME_MS  200
+#include "AP_RCSwitch.h"
 
-//Documentation of Aux Switch Flags:
-struct {
-    uint8_t CH6_flag    : 2; // 0, 1    // ch6 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    uint8_t CH7_flag    : 2; // 2, 3    // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    uint8_t CH8_flag    : 2; // 4, 5    // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    uint8_t CH9_flag    : 2; // 6, 7    // ch9 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    uint8_t CH10_flag   : 2; // 8, 9    // ch10 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    uint8_t CH11_flag   : 2; // 10,11   // ch11 aux switch : 0 is low or false, 1 is center or true, 2 is high
-    uint8_t CH12_flag   : 2; // 12,13   // ch12 aux switch : 0 is low or false, 1 is center or true, 2 is high
-} aux_con;
+#define CONTROL_SWITCH_DEBOUNCE_TIME_MS  200
 
 void Copter::read_control_switch()
 {
@@ -44,7 +35,7 @@ void Copter::read_control_switch()
 
     if (control_switch_changed && sufficient_time_elapsed && failsafe_disengaged) {
         // set flight mode and simple mode setting
-        if (set_mode((control_mode_t)flight_modes[switch_position].get(), MODE_REASON_TX_COMMAND)) {
+        if (copter.set_mode((control_mode_t)flight_modes[switch_position].get(), MODE_REASON_TX_COMMAND)) {
             // play a tone
             if (control_switch_state.debounced_switch_position != -1) {
                 // alert user to mode change (except if autopilot is just starting up)
@@ -53,7 +44,8 @@ void Copter::read_control_switch()
                 }
             }
 
-            if (!check_if_auxsw_mode_used(AUXSW_SIMPLE_MODE) && !check_if_auxsw_mode_used(AUXSW_SUPERSIMPLE_MODE)) {
+            if (!rcswitch.find_channel_for_option(AP_RCSwitch::aux_func::SIMPLE_MODE) &&
+                !rcswitch.find_channel_for_option(AP_RCSwitch::aux_func::SUPERSIMPLE_MODE)) {
                 // if none of the Aux Switches are set to Simple or Super Simple Mode then
                 // set Simple Mode using stored parameters from EEPROM
                 if (BIT_IS_SET(g.super_simple, switch_position)) {
@@ -75,194 +67,116 @@ void Copter::read_control_switch()
     control_switch_state.last_switch_position = switch_position;
 }
 
-// check_if_auxsw_mode_used - Check to see if any of the Aux Switches are set to a given mode.
-bool Copter::check_if_auxsw_mode_used(uint8_t auxsw_mode_check)
+bool AP_RCSwitch_Copter::in_rc_failsafe() const
 {
-    bool ret = g.ch7_option == auxsw_mode_check || g.ch8_option == auxsw_mode_check || g.ch9_option == auxsw_mode_check
-                || g.ch10_option == auxsw_mode_check || g.ch11_option == auxsw_mode_check || g.ch12_option == auxsw_mode_check;
-
-    return ret;
-}
-
-// check_duplicate_auxsw - Check to see if any Aux Switch Functions are duplicated
-bool Copter::check_duplicate_auxsw(void)
-{
-    uint8_t auxsw_option_counts[AUXSW_SWITCH_MAX] = {};
-    auxsw_option_counts[g.ch7_option]++;
-    auxsw_option_counts[g.ch8_option]++;
-    auxsw_option_counts[g.ch9_option]++;
-    auxsw_option_counts[g.ch10_option]++;
-    auxsw_option_counts[g.ch11_option]++;
-    auxsw_option_counts[g.ch12_option]++;
-
-    for (uint8_t i=0; i<sizeof(auxsw_option_counts); i++) {
-        if (i == AUXSW_DO_NOTHING) {
-            continue;
-        }
-        if (auxsw_option_counts[i] > 1) {
-            return true;
-        }
+    if (copter.failsafe.radio || copter.failsafe.radio_counter != 0) {
+        return true;
     }
-   return false;
+    return false;
 }
 
-void Copter::reset_control_switch()
+void AP_RCSwitch_Copter::reset_control_switch()
 {
-    control_switch_state.last_switch_position = control_switch_state.debounced_switch_position = -1;
-    read_control_switch();
-}
-
-// read_3pos_switch
-uint8_t Copter::read_3pos_switch(uint8_t chan)
-{
-    uint16_t radio_in = RC_Channels::rc_channel(chan)->get_radio_in();
-    if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;      // switch is in low position
-    if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;    // switch is in high position
-    return AUX_SWITCH_MIDDLE;                                       // switch is in middle position
-}
-
-// can't take reference to a bitfield member, thus a #define:
-#define read_aux_switch(chan, flag, option)                           \
-    do {                                                            \
-        switch_position = read_3pos_switch(chan); \
-        if (flag != switch_position) {                              \
-            flag = switch_position;                                 \
-            do_aux_switch_function(option, flag);                   \
-        }                                                           \
-    } while (false)
-
-// read_aux_switches - checks aux switch positions and invokes configured actions
-void Copter::read_aux_switches()
-{
-    uint8_t switch_position;
-
-    // exit immediately during radio failsafe
-    if (failsafe.radio || failsafe.radio_counter != 0) {
-        return;
-    }
-
-    read_aux_switch(CH_7, aux_con.CH7_flag, g.ch7_option);
-    read_aux_switch(CH_8, aux_con.CH8_flag, g.ch8_option);
-    read_aux_switch(CH_9, aux_con.CH9_flag, g.ch9_option);
-    read_aux_switch(CH_10, aux_con.CH10_flag, g.ch10_option);
-    read_aux_switch(CH_11, aux_con.CH11_flag, g.ch11_option);
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    read_aux_switch(CH_12, aux_con.CH12_flag, g.ch12_option);
-#endif
-}
-
-#undef read_aux_switch
-
-// init_aux_switches - invoke configured actions at start-up for aux function where it is safe to do so
-void Copter::init_aux_switches()
-{
-    // set the CH7 ~ CH12 flags
-    aux_con.CH7_flag = read_3pos_switch(CH_7);
-    aux_con.CH8_flag = read_3pos_switch(CH_8);
-    aux_con.CH10_flag = read_3pos_switch(CH_10);
-    aux_con.CH11_flag = read_3pos_switch(CH_11);
-
-    // ch9, ch12 only supported on some boards
-    aux_con.CH9_flag = read_3pos_switch(CH_9);
-    aux_con.CH12_flag = read_3pos_switch(CH_12);
-
-    // initialise functions assigned to switches
-    init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
-    init_aux_switch_function(g.ch8_option, aux_con.CH8_flag);
-    init_aux_switch_function(g.ch10_option, aux_con.CH10_flag);
-    init_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
-
-    // ch9, ch12 only supported on some boards
-    init_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
-    init_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
+    copter.control_switch_state.last_switch_position = copter.control_switch_state.debounced_switch_position = -1;
+    copter.read_control_switch();
 }
 
 // init_aux_switch_function - initialize aux functions
-void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
+void AP_RCSwitch_Copter::init_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     // init channel options
     switch(ch_option) {
-        case AUXSW_SIMPLE_MODE:
-        case AUXSW_RANGEFINDER:
-        case AUXSW_FENCE:
-        case AUXSW_SUPERSIMPLE_MODE:
-        case AUXSW_ACRO_TRAINER:
-        case AUXSW_GRIPPER:
-        case AUXSW_SPRAYER:
-        case AUXSW_PARACHUTE_ENABLE:
-        case AUXSW_PARACHUTE_3POS:      // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
-        case AUXSW_RETRACT_MOUNT:
-        case AUXSW_MISSION_RESET:
-        case AUXSW_ATTCON_FEEDFWD:
-        case AUXSW_ATTCON_ACCEL_LIM:
-        case AUXSW_MOTOR_ESTOP:
-        case AUXSW_MOTOR_INTERLOCK:
-        case AUXSW_AVOID_ADSB:
-        case AUXSW_PRECISION_LOITER:
-        case AUXSW_AVOID_PROXIMITY:
-        case AUXSW_INVERTED:
-        case AUXSW_WINCH_ENABLE:
-        case AUXSW_RC_OVERRIDE_ENABLE:
-            do_aux_switch_function(ch_option, ch_flag);
-            break;
+    case SIMPLE_MODE:
+    case RANGEFINDER:
+    case FENCE:
+    case SUPERSIMPLE_MODE:
+    case ACRO_TRAINER:
+    case GRIPPER:
+    case SPRAYER:
+    case PARACHUTE_ENABLE:
+    case PARACHUTE_3POS:      // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
+    case RETRACT_MOUNT:
+    case MISSION_RESET:
+    case ATTCON_FEEDFWD:
+    case ATTCON_ACCEL_LIM:
+    case MOTOR_ESTOP:
+    case MOTOR_INTERLOCK:
+    case AVOID_ADSB:
+    case PRECISION_LOITER:
+    case AVOID_PROXIMITY:
+    case INVERTED:
+    case WINCH_ENABLE:
+    case RC_OVERRIDE_ENABLE:
+        do_aux_function(ch_option, ch_flag);
+        break;
+    // the following functions to not need to be initialised:
+    case FLIP:
+    case RTL:
+    case SAVE_TRIM:
+    case SAVE_WP:
+    case CAMERA_TRIGGER:
+    case RESETTOARMEDYAW:
+    case AUTO:
+        break;
+    default:
+        AP_RCSwitch::init_aux_function(ch_option, ch_flag);
+        break;
     }
 }
 
 // do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
-void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
+void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
-
-    switch(ch_function) {
-        case AUXSW_FLIP:
+    switch(ch_option) {
+        case FLIP:
             // flip if switch is on, positive throttle and we're actually flying
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(FLIP, MODE_REASON_TX_COMMAND);
+            if (ch_flag == aux_switch_pos::HIGH) {
+                copter.set_mode(control_mode_t::FLIP, MODE_REASON_TX_COMMAND);
             }
             break;
 
-        case AUXSW_SIMPLE_MODE:
+        case SIMPLE_MODE:
             // low = simple mode off, middle or high position turns simple mode on
-            set_simple_mode(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+            copter.set_simple_mode(ch_flag == HIGH || ch_flag == MIDDLE);
             break;
 
-        case AUXSW_SUPERSIMPLE_MODE:
+        case SUPERSIMPLE_MODE:
             // low = simple mode off, middle = simple mode, high = super simple mode
-            set_simple_mode(ch_flag);
+            copter.set_simple_mode(ch_flag);
             break;
 
-        case AUXSW_RTL:
+        case RTL:
 #if MODE_RTL_ENABLED == ENABLED
-            if (ch_flag == AUX_SWITCH_HIGH) {
+            if (ch_flag == HIGH) {
                 // engage RTL (if not possible we remain in current flight mode)
-                set_mode(RTL, MODE_REASON_TX_COMMAND);
+                copter.set_mode(control_mode_t::RTL, MODE_REASON_TX_COMMAND);
             } else {
                 // return to flight mode switch's flight mode if we are currently in RTL
-                if (control_mode == RTL) {
+                if (copter.control_mode == control_mode_t::RTL) {
                     reset_control_switch();
                 }
             }
 #endif
             break;
 
-        case AUXSW_SAVE_TRIM:
-            if ((ch_flag == AUX_SWITCH_HIGH) && (control_mode <= ACRO) && (channel_throttle->get_control_in() == 0)) {
-                save_trim();
+        case SAVE_TRIM:
+            if ((ch_flag == HIGH) && (copter.control_mode <= ACRO) && (copter.channel_throttle->get_control_in() == 0)) {
+                copter.save_trim();
             }
             break;
 
-        case AUXSW_SAVE_WP:
+        case SAVE_WP:
 #if MODE_AUTO_ENABLED == ENABLED
             // save waypoint when switch is brought high
-            if (ch_flag == AUX_SWITCH_HIGH) {
+            if (ch_flag == HIGH) {
 
                 // do not allow saving new waypoints while we're in auto or disarmed
-                if (control_mode == AUTO || !motors->armed()) {
+                if (copter.control_mode == control_mode_t::AUTO || !copter.motors->armed()) {
                     return;
                 }
 
                 // do not allow saving the first waypoint with zero throttle
-                if ((mission.num_commands() == 0) && (channel_throttle->get_control_in() == 0)) {
+                if ((copter.mission.num_commands() == 0) && (copter.channel_throttle->get_control_in() == 0)) {
                     return;
                 }
 
@@ -270,28 +184,28 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 AP_Mission::Mission_Command cmd  = {};
 
                 // if the mission is empty save a takeoff command
-                if (mission.num_commands() == 0) {
+                if (copter.mission.num_commands() == 0) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
                     cmd.id = MAV_CMD_NAV_TAKEOFF;
                     cmd.content.location.options = 0;
                     cmd.p1 = 0;
                     cmd.content.location.lat = 0;
                     cmd.content.location.lng = 0;
-                    cmd.content.location.alt = MAX(current_loc.alt,100);
+                    cmd.content.location.alt = MAX(copter.current_loc.alt,100);
 
                     // use the current altitude for the target alt for takeoff.
                     // only altitude will matter to the AP mission script for takeoff.
-                    if (mission.add_cmd(cmd)) {
+                    if (copter.mission.add_cmd(cmd)) {
                         // log event
-                        Log_Write_Event(DATA_SAVEWP_ADD_WP);
+                        copter.Log_Write_Event(DATA_SAVEWP_ADD_WP);
                     }
                 }
 
                 // set new waypoint to current location
-                cmd.content.location = current_loc;
+                cmd.content.location = copter.current_loc;
 
                 // if throttle is above zero, create waypoint command
-                if (channel_throttle->get_control_in() > 0) {
+                if (copter.channel_throttle->get_control_in() > 0) {
                     cmd.id = MAV_CMD_NAV_WAYPOINT;
                 } else {
                     // with zero throttle, create LAND command
@@ -299,405 +213,434 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 }
 
                 // save command
-                if (mission.add_cmd(cmd)) {
+                if (copter.mission.add_cmd(cmd)) {
                     // log event
-                    Log_Write_Event(DATA_SAVEWP_ADD_WP);
+                    copter.Log_Write_Event(DATA_SAVEWP_ADD_WP);
                 }
             }
 #endif
             break;
 
-        case AUXSW_MISSION_RESET:
+        case MISSION_RESET:
 #if MODE_AUTO_ENABLED == ENABLED
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                mission.reset();
+            if (ch_flag == HIGH) {
+                copter.mission.reset();
             }
 #endif
             break;
 
-        case AUXSW_AUTO:
+        case AUTO:
 #if MODE_AUTO_ENABLED == ENABLED
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(AUTO, MODE_REASON_TX_COMMAND);
+            if (ch_flag == HIGH) {
+                copter.set_mode(control_mode_t::AUTO, MODE_REASON_TX_COMMAND);
             } else {
                 // return to flight mode switch's flight mode if we are currently in AUTO
-                if (control_mode == AUTO) {
+                if (copter.control_mode == control_mode_t::AUTO) {
                     reset_control_switch();
                 }
             }
 #endif
             break;
 
-        case AUXSW_CAMERA_TRIGGER:
+        case CAMERA_TRIGGER:
 #if CAMERA == ENABLED
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                camera.take_picture();
+            if (ch_flag == HIGH) {
+                copter.camera.take_picture();
             }
 #endif
             break;
 
-        case AUXSW_RANGEFINDER:
+        case RANGEFINDER:
             // enable or disable the rangefinder
 #if RANGEFINDER_ENABLED == ENABLED
-            if ((ch_flag == AUX_SWITCH_HIGH) && rangefinder.has_orientation(ROTATION_PITCH_270)) {
-                rangefinder_state.enabled = true;
+            if ((ch_flag == HIGH) && copter.rangefinder.has_orientation(ROTATION_PITCH_270)) {
+                copter.rangefinder_state.enabled = true;
             } else {
-                rangefinder_state.enabled = false;
+                copter.rangefinder_state.enabled = false;
             }
 #endif
             break;
 
-        case AUXSW_FENCE:
+        case FENCE:
 #if AC_FENCE == ENABLED
             // enable or disable the fence
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                fence.enable(true);
-                Log_Write_Event(DATA_FENCE_ENABLE);
+            if (ch_flag == HIGH) {
+                copter.fence.enable(true);
+                copter.Log_Write_Event(DATA_FENCE_ENABLE);
             } else {
-                fence.enable(false);
-                Log_Write_Event(DATA_FENCE_DISABLE);
+                copter.fence.enable(false);
+                copter.Log_Write_Event(DATA_FENCE_DISABLE);
             }
 #endif
             break;
 
-        case AUXSW_ACRO_TRAINER:
+        case ACRO_TRAINER:
 #if MODE_ACRO_ENABLED == ENABLED
             switch(ch_flag) {
-                case AUX_SWITCH_LOW:
-                    g.acro_trainer = ACRO_TRAINER_DISABLED;
-                    Log_Write_Event(DATA_ACRO_TRAINER_DISABLED);
+                case LOW:
+                    copter.g.acro_trainer = ACRO_TRAINER_DISABLED;
+                    copter.Log_Write_Event(DATA_ACRO_TRAINER_DISABLED);
                     break;
-                case AUX_SWITCH_MIDDLE:
-                    g.acro_trainer = ACRO_TRAINER_LEVELING;
-                    Log_Write_Event(DATA_ACRO_TRAINER_LEVELING);
+                case MIDDLE:
+                    copter.g.acro_trainer = ACRO_TRAINER_LEVELING;
+                    copter.Log_Write_Event(DATA_ACRO_TRAINER_LEVELING);
                     break;
-                case AUX_SWITCH_HIGH:
-                    g.acro_trainer = ACRO_TRAINER_LIMITED;
-                    Log_Write_Event(DATA_ACRO_TRAINER_LIMITED);
+                case HIGH:
+                    copter.g.acro_trainer = ACRO_TRAINER_LIMITED;
+                    copter.Log_Write_Event(DATA_ACRO_TRAINER_LIMITED);
                     break;
             }
 #endif
             break;
 
-        case AUXSW_GRIPPER:
+        case GRIPPER:
 #if GRIPPER_ENABLED == ENABLED
             switch(ch_flag) {
-                case AUX_SWITCH_LOW:
-                    g2.gripper.release();
-                    Log_Write_Event(DATA_GRIPPER_RELEASE);
+                case LOW:
+                    copter.g2.gripper.release();
+                    copter.Log_Write_Event(DATA_GRIPPER_RELEASE);
                     break;
-                case AUX_SWITCH_HIGH:
-                    g2.gripper.grab();
-                    Log_Write_Event(DATA_GRIPPER_GRAB);
+                case MIDDLE:
+                    // nothing
+                    break;
+                case HIGH:
+                    copter.g2.gripper.grab();
+                    copter.Log_Write_Event(DATA_GRIPPER_GRAB);
                     break;
             }
 #endif
             break;
 
-        case AUXSW_SPRAYER:
-#if SPRAYER == ENABLED
-            sprayer.run(ch_flag == AUX_SWITCH_HIGH);
+        case SPRAYER:
+#if SPRAYER_ENABLED == ENABLED
+            copter.sprayer.run(ch_flag == HIGH);
             // if we are disarmed the pilot must want to test the pump
-            sprayer.test_pump((ch_flag == AUX_SWITCH_HIGH) && !motors->armed());
+            copter.sprayer.test_pump((ch_flag == HIGH) && !copter.motors->armed());
 #endif
             break;
 
-        case AUXSW_AUTOTUNE:
+        case AUTOTUNE:
 #if AUTOTUNE_ENABLED == ENABLED
             // turn on auto tuner
             switch(ch_flag) {
-                case AUX_SWITCH_LOW:
-                case AUX_SWITCH_MIDDLE:
+                case LOW:
+                case MIDDLE:
                     // restore flight mode based on flight mode switch position
-                    if (control_mode == AUTOTUNE) {
+                    if (copter.control_mode == control_mode_t::AUTOTUNE) {
                         reset_control_switch();
                     }
                     break;
-                case AUX_SWITCH_HIGH:
+                case HIGH:
                     // start an autotuning session
-                    set_mode(AUTOTUNE, MODE_REASON_TX_COMMAND);
+                    copter.set_mode(control_mode_t::AUTOTUNE, MODE_REASON_TX_COMMAND);
                     break;
             }
 #endif
             break;
 
-        case AUXSW_LAND:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(LAND, MODE_REASON_TX_COMMAND);
+        case LAND:
+            if (ch_flag == HIGH) {
+                copter.set_mode(control_mode_t::LAND, MODE_REASON_TX_COMMAND);
             } else {
                 // return to flight mode switch's flight mode if we are currently in LAND
-                if (control_mode == LAND) {
+                if (copter.control_mode == control_mode_t::LAND) {
                     reset_control_switch();
                 }
             }
             break;
 
-        case AUXSW_PARACHUTE_ENABLE:
+        case PARACHUTE_ENABLE:
 #if PARACHUTE == ENABLED
             // Parachute enable/disable
-            parachute.enabled(ch_flag == AUX_SWITCH_HIGH);
+            copter.parachute.enabled(ch_flag == HIGH);
 #endif
             break;
 
-        case AUXSW_PARACHUTE_RELEASE:
+        case PARACHUTE_RELEASE:
 #if PARACHUTE == ENABLED
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                parachute_manual_release();
+            if (ch_flag == HIGH) {
+                copter.parachute_manual_release();
             }
 #endif
             break;
 
-        case AUXSW_PARACHUTE_3POS:
+        case PARACHUTE_3POS:
 #if PARACHUTE == ENABLED
             // Parachute disable, enable, release with 3 position switch
             switch (ch_flag) {
-                case AUX_SWITCH_LOW:
-                    parachute.enabled(false);
-                    Log_Write_Event(DATA_PARACHUTE_DISABLED);
+                case LOW:
+                    copter.parachute.enabled(false);
+                    copter.Log_Write_Event(DATA_PARACHUTE_DISABLED);
                     break;
-                case AUX_SWITCH_MIDDLE:
-                    parachute.enabled(true);
-                    Log_Write_Event(DATA_PARACHUTE_ENABLED);
+                case MIDDLE:
+                    copter.parachute.enabled(true);
+                    copter.Log_Write_Event(DATA_PARACHUTE_ENABLED);
                     break;
-                case AUX_SWITCH_HIGH:
-                    parachute.enabled(true);
-                    parachute_manual_release();
+                case HIGH:
+                    copter.parachute.enabled(true);
+                    copter.parachute_manual_release();
                     break;
             }
 #endif
             break;
 
-        case AUXSW_ATTCON_FEEDFWD:
+        case ATTCON_FEEDFWD:
             // enable or disable feed forward
-            attitude_control->bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
+            copter.attitude_control->bf_feedforward(ch_flag == HIGH);
             break;
 
-        case AUXSW_ATTCON_ACCEL_LIM:
+        case ATTCON_ACCEL_LIM:
             // enable or disable accel limiting by restoring defaults
-            attitude_control->accel_limiting(ch_flag == AUX_SWITCH_HIGH);
+            copter.attitude_control->accel_limiting(ch_flag == HIGH);
             break;
 
-        case AUXSW_RETRACT_MOUNT:
+        case RETRACT_MOUNT:
 #if MOUNT == ENABLE
             switch (ch_flag) {
-                case AUX_SWITCH_HIGH:
-                    camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
+                case HIGH:
+                    copter.camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
                     break;
-                case AUX_SWITCH_LOW:
-                    camera_mount.set_mode_to_default();
+                case MIDDLE:
+                    // nothing
+                    break;
+                case LOW:
+                    copter.camera_mount.set_mode_to_default();
                     break;
             }
 #endif
             break;
 
-        case AUXSW_RELAY:
-            ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
+        case RELAY:
+            copter.ServoRelayEvents.do_set_relay(0, ch_flag == HIGH);
             break;
 
-        case AUXSW_RELAY2:
-            ServoRelayEvents.do_set_relay(1, ch_flag == AUX_SWITCH_HIGH);
+        case RELAY2:
+            copter.ServoRelayEvents.do_set_relay(1, ch_flag == HIGH);
             break;
 
-        case AUXSW_RELAY3:
-            ServoRelayEvents.do_set_relay(2, ch_flag == AUX_SWITCH_HIGH);
+        case RELAY3:
+            copter.ServoRelayEvents.do_set_relay(2, ch_flag == HIGH);
             break;
 
-	   case AUXSW_RELAY4:
-            ServoRelayEvents.do_set_relay(3, ch_flag == AUX_SWITCH_HIGH);
+	   case RELAY4:
+            copter.ServoRelayEvents.do_set_relay(3, ch_flag == HIGH);
             break;
 
-       case AUXSW_LANDING_GEAR:
+       case LANDING_GEAR:
             switch (ch_flag) {
-                case AUX_SWITCH_LOW:
-                    landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
+                case LOW:
+                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
                     break;
-                case AUX_SWITCH_HIGH:
-                    landinggear.set_position(AP_LandingGear::LandingGear_Retract);
+                case MIDDLE:
+                    // nothing
+                    break;
+                case HIGH:
+                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
                     break;
             }
             break;
 
-        case AUXSW_LOST_COPTER_SOUND:
+        case LOST_COPTER_SOUND:
             switch (ch_flag) {
-                case AUX_SWITCH_HIGH:
+                case HIGH:
                     AP_Notify::flags.vehicle_lost = true;
                     break;
-                case AUX_SWITCH_LOW:
+                case MIDDLE:
+                    // nothing
+                    break;
+                case LOW:
                     AP_Notify::flags.vehicle_lost = false;
                     break;
             }
             break;
 
-        case AUXSW_MOTOR_ESTOP:
+        case MOTOR_ESTOP:
             // Turn on Emergency Stop logic when channel is high
-            set_motor_emergency_stop(ch_flag == AUX_SWITCH_HIGH);
+            copter.set_motor_emergency_stop(ch_flag == HIGH);
             break;
 
-        case AUXSW_MOTOR_INTERLOCK:
+        case MOTOR_INTERLOCK:
             // Turn on when above LOW, because channel will also be used for speed
             // control signal in tradheli
-            ap.motor_interlock_switch = (ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+            copter.ap.motor_interlock_switch = (ch_flag == HIGH || ch_flag == MIDDLE);
             break;
 
-        case AUXSW_BRAKE:
+        case BRAKE:
 #if MODE_BRAKE_ENABLED == ENABLED
             // brake flight mode
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(BRAKE, MODE_REASON_TX_COMMAND);
+            if (ch_flag == HIGH) {
+                copter.set_mode(control_mode_t::BRAKE, MODE_REASON_TX_COMMAND);
             } else {
                 // return to flight mode switch's flight mode if we are currently in BRAKE
-                if (control_mode == BRAKE) {
+                if (copter.control_mode == control_mode_t::BRAKE) {
                     reset_control_switch();
                 }
             }
 #endif
             break;
 
-        case AUXSW_THROW:
+        case THROW:
 #if MODE_THROW_ENABLED == ENABLED
             // throw flight mode
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(THROW, MODE_REASON_TX_COMMAND);
+            if (ch_flag == HIGH) {
+                copter.set_mode(control_mode_t::THROW, MODE_REASON_TX_COMMAND);
             } else {
                 // return to flight mode switch's flight mode if we are currently in throw mode
-                if (control_mode == THROW) {
+                if (copter.control_mode == control_mode_t::THROW) {
                     reset_control_switch();
                 }
             }
 #endif
             break;
 
-        case AUXSW_AVOID_ADSB:
+        case AVOID_ADSB:
 #if ADSB_ENABLED == ENABLED
             // enable or disable AP_Avoidance
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                avoidance_adsb.enable();
-                Log_Write_Event(DATA_AVOIDANCE_ADSB_ENABLE);
+            if (ch_flag == HIGH) {
+                copter.avoidance_adsb.enable();
+                copter.Log_Write_Event(DATA_AVOIDANCE_ADSB_ENABLE);
             } else {
-                avoidance_adsb.disable();
-                Log_Write_Event(DATA_AVOIDANCE_ADSB_DISABLE);
+                copter.avoidance_adsb.disable();
+                copter.Log_Write_Event(DATA_AVOIDANCE_ADSB_DISABLE);
             }
 #endif
             break;
 
-        case AUXSW_PRECISION_LOITER:
+        case PRECISION_LOITER:
 #if PRECISION_LANDING == ENABLED && MODE_LOITER_ENABLED == ENABLED
             switch (ch_flag) {
-                case AUX_SWITCH_HIGH:
-                    mode_loiter.set_precision_loiter_enabled(true);
+                case HIGH:
+                    copter.mode_loiter.set_precision_loiter_enabled(true);
                     break;
-                case AUX_SWITCH_LOW:
-                    mode_loiter.set_precision_loiter_enabled(false);
+                case MIDDLE:
+                    // nothing
+                    break;
+                case LOW:
+                    copter.mode_loiter.set_precision_loiter_enabled(false);
                     break;
             }
 #endif
             break;
 
-        case AUXSW_AVOID_PROXIMITY:
+        case AVOID_PROXIMITY:
 #if PROXIMITY_ENABLED == ENABLED && AC_AVOID_ENABLED == ENABLED
             switch (ch_flag) {
-                case AUX_SWITCH_HIGH:
-                    avoid.proximity_avoidance_enable(true);
-                    Log_Write_Event(DATA_AVOIDANCE_PROXIMITY_ENABLE);
+                case HIGH:
+                    copter.avoid.proximity_avoidance_enable(true);
+                    copter.Log_Write_Event(DATA_AVOIDANCE_PROXIMITY_ENABLE);
                     break;
-                case AUX_SWITCH_LOW:
-                    avoid.proximity_avoidance_enable(false);
-                    Log_Write_Event(DATA_AVOIDANCE_PROXIMITY_DISABLE);
+                case MIDDLE:
+                    // nothing
+                    break;
+                case LOW:
+                    copter.avoid.proximity_avoidance_enable(false);
+                    copter.Log_Write_Event(DATA_AVOIDANCE_PROXIMITY_DISABLE);
                     break;
             }
 #endif
             break;
-        case AUXSW_ARMDISARM:
+        case ARMDISARM:
             // arm or disarm the vehicle
             switch (ch_flag) {
-            case AUX_SWITCH_HIGH:
-                init_arm_motors(false);
+            case HIGH:
+                copter.init_arm_motors(false);
                 break;
-            case AUX_SWITCH_LOW:
-                init_disarm_motors();
+            case MIDDLE:
+                // nothing
+                break;
+            case LOW:
+                copter.init_disarm_motors();
                 break;
             }
             break;
 
-        case AUXSW_SMART_RTL:
+        case SMART_RTL:
 #if MODE_SMARTRTL_ENABLED == ENABLED
-            if (ch_flag == AUX_SWITCH_HIGH) {
+            if (ch_flag == HIGH) {
                 // engage SmartRTL (if not possible we remain in current flight mode)
-                set_mode(SMART_RTL, MODE_REASON_TX_COMMAND);
+                copter.set_mode(control_mode_t::SMART_RTL, MODE_REASON_TX_COMMAND);
             } else {
                 // return to flight mode switch's flight mode if we are currently in RTL
-                if (control_mode == SMART_RTL) {
+                if (copter.control_mode == control_mode_t::SMART_RTL) {
                     reset_control_switch();
                 }
             }
 #endif
             break;
 
-        case AUXSW_INVERTED:
+        case INVERTED:
 #if FRAME_CONFIG == HELI_FRAME
             switch (ch_flag) {
-            case AUX_SWITCH_HIGH:
-                motors->set_inverted_flight(true);
-                attitude_control->set_inverted_flight(true);
-                heli_flags.inverted_flight = true;
+            case HIGH:
+                copter.motors->set_inverted_flight(true);
+                copter.attitude_control->set_inverted_flight(true);
+                copter.heli_flags.inverted_flight = true;
                 break;
-            case AUX_SWITCH_LOW:
-                motors->set_inverted_flight(false);
-                attitude_control->set_inverted_flight(false);
-                heli_flags.inverted_flight = false;
+            case MIDDLE:
+                // nothing
+                break;
+            case LOW:
+                copter.motors->set_inverted_flight(false);
+                copter.attitude_control->set_inverted_flight(false);
+                copter.heli_flags.inverted_flight = false;
                 break;
             }
 #endif
             break;
 
-        case AUXSW_WINCH_ENABLE:
+        case WINCH_ENABLE:
 #if WINCH_ENABLED == ENABLED
             switch (ch_flag) {
-                case AUX_SWITCH_HIGH:
+                case HIGH:
                     // high switch maintains current position
-                    g2.winch.release_length(0.0f);
-                    Log_Write_Event(DATA_WINCH_LENGTH_CONTROL);
+                    copter.g2.winch.release_length(0.0f);
+                    copter.Log_Write_Event(DATA_WINCH_LENGTH_CONTROL);
                     break;
                 default:
                     // all other position relax winch
-                    g2.winch.relax();
-                    Log_Write_Event(DATA_WINCH_RELAXED);
+                    copter.g2.winch.relax();
+                    copter.Log_Write_Event(DATA_WINCH_RELAXED);
                     break;
                 }
 #endif
             break;
 
-        case AUXSW_WINCH_CONTROL:
+        case WINCH_CONTROL:
 #if WINCH_ENABLED == ENABLED
             switch (ch_flag) {
-                case AUX_SWITCH_LOW:
+                case LOW:
                     // raise winch at maximum speed
-                    g2.winch.set_desired_rate(-g2.winch.get_rate_max());
+                    copter.g2.winch.set_desired_rate(-copter.g2.winch.get_rate_max());
                     break;
-                case AUX_SWITCH_HIGH:
+                case HIGH:
                     // lower winch at maximum speed
-                    g2.winch.set_desired_rate(g2.winch.get_rate_max());
+                    copter.g2.winch.set_desired_rate(copter.g2.winch.get_rate_max());
                     break;
-                case AUX_SWITCH_MIDDLE:
-                default:
-                    g2.winch.set_desired_rate(0.0f);
+                case MIDDLE:
+                    copter.g2.winch.set_desired_rate(0.0f);
                     break;
                 }
 #endif
             break;
 
-        case AUXSW_RC_OVERRIDE_ENABLE:
+        case RC_OVERRIDE_ENABLE:
             // Allow or disallow RC_Override
             switch (ch_flag) {
-                case AUX_SWITCH_HIGH: {
-                    ap.rc_override_enable = true;
+                case HIGH: {
+                    copter.ap.rc_override_enable = true;
                     break;
                 }
-                case AUX_SWITCH_LOW: {
-                    ap.rc_override_enable = false;
+                case MIDDLE:
+                    // nothing
+                    break;
+                case LOW: {
+                    copter.ap.rc_override_enable = false;
                     break;
                 }
             }
+            break;
+        case DO_NOTHING:
+        case RESETTOARMEDYAW:
             break;
     }
 }

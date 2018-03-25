@@ -167,6 +167,8 @@
 #include "avoidance_adsb.h"
 #endif
 
+#include "AP_RCSwitch.h"
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -186,6 +188,7 @@ public:
 #endif
     friend class AP_Arming_Copter;
     friend class ToyMode;
+    friend class AP_RCSwitch_Copter;
 
     Copter(void);
 
@@ -208,6 +211,8 @@ private:
 
     // AP_Notify instance
     AP_Notify notify;
+
+    AP_RCSwitch_Copter rcswitch;
 
     // used to detect MAVLink acks from GCS to stop compassmot
     uint8_t command_ack_counter;
@@ -898,14 +903,6 @@ private:
 
     // switches.cpp
     void read_control_switch();
-    bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check);
-    bool check_duplicate_auxsw(void);
-    void reset_control_switch();
-    uint8_t read_3pos_switch(uint8_t chan);
-    void read_aux_switches();
-    void init_aux_switches();
-    void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag);
-    void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag);
     void save_trim();
     void auto_trim();
 

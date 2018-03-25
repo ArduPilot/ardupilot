@@ -90,7 +90,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(update_optical_flow,  200,    160),
 #endif
     SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK(read_aux_switches,     10,     50),
+    SCHED_TASK_CLASS(AP_RCSwitch_Copter,   &copter.rcswitch,            read_aux_all,     10,     50),
     SCHED_TASK(arm_motors_check,      10,     50),
 #if TOY_MODE_ENABLED == ENABLED
     SCHED_TASK_CLASS(ToyMode,              &copter.g2.toy_mode,         update,          10,  50),

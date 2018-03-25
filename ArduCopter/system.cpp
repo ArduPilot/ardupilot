@@ -250,8 +250,7 @@ void Copter::init_ardupilot()
 
     // initialise the flight mode and aux switch
     // ---------------------------
-    reset_control_switch();
-    init_aux_switches();
+    rcswitch.init();
 
     startup_INS_ground();
 
