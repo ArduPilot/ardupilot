@@ -32,7 +32,7 @@ union nav_filter_status {
         uint16_t takeoff            : 1; // 11 - true if filter is compensating for baro errors during takeoff
         uint16_t touchdown          : 1; // 12 - true if filter is compensating for baro errors during touchdown
         uint16_t using_gps          : 1; // 13 - true if we are using GPS position
-        uint16_t gps_glitching      : 1; // 14 - true if the the GPS is glitching
+        uint16_t gps_glitching      : 1; // 14 - true if GPS glitching is affecting navigation accuracy
     } flags;
     uint16_t value;
 };
