@@ -1108,7 +1108,7 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
         if (filename != nullptr) {
                 struct stat st;
                 if (stat(filename, &st) == 0) {
-                    struct tm *tm = gmtime(&st.st_mtime);
+                    struct tm *tm = gmtime((time_t*)&st.st_mtime);
                     port->printf("Log %u in %s of size %u %u/%u/%u %u:%u\n",
                                    (unsigned)i,
                                    filename,
