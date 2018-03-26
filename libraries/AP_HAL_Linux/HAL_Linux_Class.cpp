@@ -195,12 +195,6 @@ static RCOutput_ZYNQ rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static RCOutput_Bebop rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_BEBOP_BLDC_I2C_BUS, HAL_RCOUT_BEBOP_BLDC_I2C_ADDR));
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-static const std::vector<const char *> i2c_devpaths({
-    /* UEFI with lpss set to ACPI */
-    "platform/80860F41:05",
-    /* UEFI with lpss set to PCI */
-    "pci0000:00/0000:00:18.6",
-});
 static RCOutput_PCA9685 rcoutDriver(i2c_mgr_instance.get_device(
     { /* UEFI with lpss set to ACPI */
       "platform/80860F41:05",
