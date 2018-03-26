@@ -79,7 +79,7 @@ public:
         uint32_t leak_detected      : 1;    // 1 if leak detected
         float    battery_voltage       ;    // battery voltage
         uint32_t gps_fusion         : 1;    // 0 = GPS fix rejected by EKF, not usable for flight. 1 = GPS in use by EKF, usable for flight
-        uint32_t gps_glitching      : 1;    // 1 if gps is glitching
+        uint32_t gps_glitching      : 1;    // 1 if GPS glitching is affecting navigation accuracy
         uint32_t have_pos_abs       : 1;    // 0 = no absolute position available, 1 = absolute position available
 
         // additional flags
