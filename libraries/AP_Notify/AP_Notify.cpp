@@ -88,7 +88,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: BUZZ_PIN
     // @DisplayName: Buzzer pin
     // @Description: Enables to connect active buzzer to arbitrary pin. Requires 3-pin buzzer or additional MOSFET!
-    // @Values: 0:Disabled, or pin number
+    // @Values: 0:Disabled
     // @User: Advanced
     AP_GROUPINFO("BUZZ_PIN", 5, AP_Notify, _buzzer_pin, 0),
 #endif
