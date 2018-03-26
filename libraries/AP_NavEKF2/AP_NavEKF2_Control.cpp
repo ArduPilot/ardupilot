@@ -169,7 +169,7 @@ void NavEKF2_core::setAidingMode()
         // GPS aiding is the preferred option unless excluded by the user
         bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit);
         bool canUseRangeBeacon = readyToUseRangeBeacon() && filterIsStable;
-        bool canUseExtNav = readyToUseExtNav() && tiltAlignComplete;
+        bool canUseExtNav = readyToUseExtNav();
         if(canUseGPS || canUseRangeBeacon || canUseExtNav) {
             PV_AidingMode = AID_ABSOLUTE;
         } else if (optFlowDataPresent() && filterIsStable) {
@@ -321,7 +321,7 @@ void NavEKF2_core::setAidingMode()
                 // handle yaw reset as special case
                 extNavYawResetRequest = true;
                 controlMagYawReset();
-                // handle height reset as sepcial case
+                // handle height reset as special case
                 hgtMea = -extNavDataDelayed.pos.z;
                 posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.1f, 10.0f));
                 ResetHeight();
