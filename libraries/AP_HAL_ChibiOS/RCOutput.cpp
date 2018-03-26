@@ -110,15 +110,16 @@ void RCOutput::set_freq_group(pwm_group &group)
         psc = (pwmp->clock / pwmp->config->frequency) - 1;
     }
 
+    group.pwm_cfg.period = group.pwm_cfg.frequency/freq_set;
+    
     bool force_reconfig = false;
     for (uint8_t j=0; j<4; j++) {
-        if (group.pwm_cfg.channels[j].mode != PWM_OUTPUT_DISABLED &&
-            group.pwm_cfg.channels[j].mode == PWM_OUTPUT_ACTIVE_LOW) {
+        if (group.pwm_cfg.channels[j].mode == PWM_OUTPUT_ACTIVE_LOW) {
             group.pwm_cfg.channels[j].mode = PWM_OUTPUT_ACTIVE_HIGH;
             force_reconfig = true;
         }
     }
-    
+
     if (old_clock != group.pwm_cfg.frequency || !group.pwm_started || force_reconfig) {
         // we need to stop and start to setup the new clock
         if (group.pwm_started) {
@@ -127,8 +128,7 @@ void RCOutput::set_freq_group(pwm_group &group)
         pwmStart(group.pwm_drv, &group.pwm_cfg);
         group.pwm_started = true;
     }
-    pwmChangePeriod(group.pwm_drv,
-                    group.pwm_cfg.frequency/freq_set);
+    pwmChangePeriod(group.pwm_drv, group.pwm_cfg.period);
 }
 
 /*
@@ -197,8 +197,10 @@ void RCOutput::set_default_rate(uint16_t freq_hz)
             // don't change fast channels
             continue;
         }
-        pwmChangePeriod(group.pwm_drv,
-                        group.pwm_cfg.frequency/freq_hz);
+        group.pwm_cfg.period = group.pwm_cfg.frequency/freq_hz;
+        if (group.pwm_started) {
+            pwmChangePeriod(group.pwm_drv, group.pwm_cfg.period);
+        }
     }
 }
 
@@ -544,7 +546,10 @@ void RCOutput::set_group_mode(pwm_group &group)
             
     case MODE_PWM_ONESHOT:
         // for oneshot we force 1Hz output and then trigger on each loop
-        pwmChangePeriod(group.pwm_drv, group.pwm_cfg.frequency);
+        group.pwm_cfg.period = group.pwm_cfg.frequency;
+        if (group.pwm_started) {
+            pwmChangePeriod(group.pwm_drv, group.pwm_cfg.period);
+        }
         break;
 
     case MODE_PWM_NORMAL:
