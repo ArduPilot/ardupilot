@@ -90,6 +90,7 @@ public:
     AP_Float gps_noise; // amplitude of the gps altitude error
     AP_Int16 gps_lock_time; // delay in seconds before GPS gets lock
     AP_Int16 gps_alt_offset; // gps alt error
+    AP_Int8  vicon_observation_history_length; // frame delay for vicon messages
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Float mag_error;   // in degrees
