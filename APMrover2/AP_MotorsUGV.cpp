@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
 
     // @Param: THR_MIN
     // @DisplayName: Throttle minimum
-    // @Description: Throttle minimum percentage the autopilot will apply. This is mostly useful for rovers with internal combustion motors, to prevent the motor from cutting out in auto mode.
+    // @Description: Throttle minimum percentage the autopilot will apply. This is useful for handling a deadzone around low throttle and for preventing internal combustion motors cutting out during missions.
     // @Units: %
     // @Range: 0 20
     // @Increment: 1
@@ -157,13 +157,6 @@ void AP_MotorsUGV::set_throttle(float throttle)
 
     // check throttle is between -_throttle_max ~ +_throttle_max but outside -throttle_min ~ +throttle_min
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
-    if ((_throttle_min > 0) && (fabsf(_throttle) < _throttle_min)) {
-        if (is_negative(_throttle)) {
-            _throttle = -_throttle_min;
-        } else {
-            _throttle = _throttle_min;
-        }
-    }
 }
 
 /*
@@ -501,10 +494,24 @@ void AP_MotorsUGV::set_limits_from_input(bool armed, float steering, float throt
     limit.throttle_upper = !armed || (throttle >= _throttle_max);
 }
 
-// scale a throttle using the _thrust_curve_expo parameter.  throttle should be in the range -100 to +100
+// scale a throttle using the _throttle_min and _thrust_curve_expo parameters.  throttle should be in the range -100 to +100
 float AP_MotorsUGV::get_scaled_throttle(float throttle) const
 {
-    // return immediatley if no scaling
+    // exit immediately if throttle is zero
+    if (is_zero(throttle)) {
+        return throttle;
+    }
+
+    // scale using throttle_min
+    if (_throttle_min > 0) {
+        if (is_negative(throttle)) {
+            throttle = -_throttle_min + (throttle * ((100.0f - _throttle_min) / 100.0f));
+        } else {
+            throttle = _throttle_min + (throttle * ((100.0f - _throttle_min) / 100.0f));
+        }
+    }
+
+    // skip further scaling if thrust curve disabled or invalid
     if (is_zero(_thrust_curve_expo) || (_thrust_curve_expo > 1.0f) || (_thrust_curve_expo < -1.0f)) {
         return throttle;
     }
