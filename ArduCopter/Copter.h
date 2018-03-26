@@ -314,7 +314,7 @@ private:
             uint8_t land_complete_maybe     : 1; // 14      // true if we may have landed (less strict version of land_complete)
             uint8_t throttle_zero           : 1; // 15      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
             uint8_t system_time_set         : 1; // 16      // true if the system time has been set from the GPS
-            uint8_t gps_glitching           : 1; // 17      // true if the gps is glitching
+            uint8_t gps_glitching           : 1; // 17      // true if GPS glitching is affecting navigation accuracy
             uint8_t using_interlock         : 1; // 20      // aux switch motor interlock function is in use
             uint8_t motor_emergency_stop    : 1; // 21      // motor estop switch, shuts off motors when enabled
             uint8_t land_repo_active        : 1; // 22      // true if the pilot is overriding the landing position
