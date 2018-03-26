@@ -472,7 +472,7 @@ void AP_MotorsUGV::slew_limit_throttle(float dt)
 {
     if (_slew_rate > 0) {
         // slew throttle
-        const float throttle_change_max = MAX(1.0f, _slew_rate * dt * 0.01f * (_throttle_max - _throttle_min));
+        const float throttle_change_max = MAX(1.0f, (float)_slew_rate * dt);
         if (_throttle > _throttle_prev + throttle_change_max) {
             _throttle = _throttle_prev + throttle_change_max;
             limit.throttle_upper = true;
