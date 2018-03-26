@@ -20,6 +20,8 @@
 
 #include "SIM_Aircraft.h"
 
+#include <SITL/SITL.h>
+
 #include <AP_HAL/utility/RingBuffer.h>
 
 namespace SITL {
@@ -37,6 +39,8 @@ public:
     int fd() { return fd_their_end; }
 
 private:
+
+    SITL *_sitl;
 
     // TODO: make these parameters:
     const uint8_t system_id = 17;
@@ -57,8 +61,7 @@ private:
     struct {
         const uint16_t observation_interval_ms = 20;
         // delay results by some multiplier of the observation_interval:
-        const uint8_t observation_history_length = 0;
-        ObjectArray<obs_elements> observation_history{observation_history_length};
+        ObjectArray<obs_elements> *observation_history;
         uint32_t last_observation_ms;
     } vicon;
 
@@ -69,6 +72,7 @@ private:
     void maybe_send_heartbeat();
     uint32_t last_heartbeat_ms;
 
+    bool init_sitl_pointer();
 };
 
 }

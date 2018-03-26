@@ -77,17 +77,17 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     vicon.last_observation_ms = now;
 
     obs_elements observation;
-    if (vicon.observation_history_length == 0) {
+    if (_sitl->vicon_observation_history_length == 0) {
         // no delay
         observation = new_obs;
     } else {
-        vicon.observation_history.push(new_obs);
+        vicon.observation_history->push(new_obs);
 
-        if (vicon.observation_history.space() != 0) {
+        if (vicon.observation_history->space() != 0) {
             ::fprintf(stderr, "Insufficient delay\n");
             return;
         }
-        if (!vicon.observation_history.pop(observation)) {
+        if (!vicon.observation_history->pop(observation)) {
             abort();
         }
     }
@@ -117,11 +117,38 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     }
 }
 
+bool Vicon::init_sitl_pointer()
+{
+    if (_sitl == nullptr) {
+        _sitl = (SITL *)AP_Param::find_object("SIM_");
+        if (_sitl == nullptr) {
+            return false;
+        }
+    }
+    if (_sitl->vicon_observation_history_length > 0 &&
+        vicon.observation_history == nullptr) {
+        const uint8_t maxlen = 100;
+        if (_sitl->vicon_observation_history_length > maxlen) {
+            ::fprintf(stderr, "Clamping history length to %u", maxlen);
+            _sitl->vicon_observation_history_length = maxlen;
+        }
+        vicon.observation_history = new ObjectArray<obs_elements>(_sitl->vicon_observation_history_length);
+        if (vicon.observation_history == nullptr) {
+            AP_HAL::panic("Failed to allocate history");
+        }
+    }
+    return true;
+}
+
 /*
   update vicon sensor state
  */
 void Vicon::update(const Location &loc, const Vector3f &position, const Quaternion &attitude)
 {
+    if (!init_sitl_pointer()) {
+        return;
+    }
+
     maybe_send_heartbeat();
     update_vicon_position_estimate(loc, position, attitude);
 }
