@@ -49,9 +49,9 @@ ifeq ($(USE_SMART_BUILD),)
   USE_SMART_BUILD = no
 endif
 
-ifeq ($(USE_FATFS),)
-  USE_FATFS = yes
-  FATFS_FLAGS=-DUSE_FATFS
+include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
+ifeq ($(USE_FATFS),yes)
+include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
 #
