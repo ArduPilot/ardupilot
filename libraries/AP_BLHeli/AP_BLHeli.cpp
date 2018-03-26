@@ -36,11 +36,18 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Param: MASK
     // @DisplayName: Channel Bitmask
-    // @Description: Enable of BLHeli servo protocol support to specific channels
+    // @Description: Enable of BLHeli pass-thru servo protocol support to specific channels. This mask is in addition to motors enabled using SERVO_BLH_AUTO (if any)
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
-    // @User: Standard
+    // @User: Advanced
     AP_GROUPINFO("MASK",  1, AP_BLHeli, channel_mask, 0),
 
+    // @Param: AUTO
+    // @DisplayName: auto-enable for multicopter motors
+    // @Description: If set to 1 this auto-enables BLHeli pass-thru support for all multicopter motors
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("AUTO",  2, AP_BLHeli, channel_auto, 0),
+    
     AP_GROUPEND
 };
 
@@ -975,7 +982,7 @@ void AP_BLHeli::update(void)
         hal.rcout->serial_end();
         serial_started = false;
     }
-    if (initialised || channel_mask.get() == 0) {
+    if (initialised || (channel_mask.get() == 0 && channel_auto.get() == 0)) {
         return;
     }
     initialised = true;
@@ -985,14 +992,20 @@ void AP_BLHeli::update(void)
                                                                bool, uint8_t, AP_HAL::UARTDriver *))) {
         debug("BLHeli installed");
     }
+
+    AP_Motors *motors = AP_Motors::get_instance();
+    uint16_t motors_mask = 0;
+    if (motors) {
+        motors_mask = motors->get_motor_mask();
+    }
     
-    // for testing without vehicle code
-    uint16_t mask = uint16_t(channel_mask.get());
+    // add motors from channel mask
+    uint16_t mask = uint16_t(channel_mask.get()) | motors_mask;
     for (uint8_t i=0; i<16 && num_motors < max_motors; i++) {
         if (mask & (1U<<i)) {
             motor_map[num_motors] = i;
             num_motors++;
         }
     }
-    debug("ESC: mapped %u motors", num_motors);
+    debug("ESC: mapped %u motors with mask 0x%04x", num_motors, mask);
 }

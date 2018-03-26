@@ -41,6 +41,7 @@ private:
 
     // mask of channels to use for BLHeli protocol
     AP_Int32 channel_mask;
+    AP_Int8 channel_auto;
     
     enum mspState {
         MSP_IDLE=0,
