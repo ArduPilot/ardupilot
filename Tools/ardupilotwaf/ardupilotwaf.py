@@ -394,18 +394,16 @@ def options(opt):
     g.add_option('--program-group',
         action='append',
         default=[],
-        help='''
-Select all programs that go in <PROGRAM_GROUP>/ for the build. Example: `waf
---program-group examples` builds all examples. The special group "all" selects
-all programs.
+        help='''Select all programs that go in <PROGRAM_GROUP>/ for the build.
+Example: `waf --program-group examples` builds all examples. The
+special group "all" selects all programs.
 ''')
 
     g.add_option('--upload',
         action='store_true',
-        help='''
-Upload applicable targets to a connected device. Not all platforms may support
-this. Example: `waf copter --upload` means "build arducopter and upload it to
-my board".
+        help='''Upload applicable targets to a connected device. Not all
+platforms may support this. Example: `waf copter --upload` means "build
+arducopter and upload it to my board".
 ''')
 
     g = opt.ap_groups['check']
@@ -418,12 +416,12 @@ my board".
 
     g.add_option('--clean-all-sigs',
         action='store_true',
-        help='''
-Clean signatures for all tasks. By default, tasks that scan for implicit
-dependencies (like the compilation tasks) keep the dependency information
-across clean commands, so that that information is changed only when really
-necessary. Also, some tasks that don't really produce files persist their
-signature. This option avoids that behavior when cleaning the build.
+        help='''Clean signatures for all tasks. By default, tasks that scan for
+implicit dependencies (like the compilation tasks) keep the dependency
+information across clean commands, so that that information is changed
+only when really necessary. Also, some tasks that don't really produce
+files persist their signature. This option avoids that behavior when
+cleaning the build.
 ''')
 
 def build(bld):
