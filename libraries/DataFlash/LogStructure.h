@@ -579,6 +579,19 @@ struct PACKED log_ekfBodyOdomDebug {
     float velInnovVarZ;
 };
 
+struct PACKED log_ekfExtNavScaleDebug {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float scaleLog;
+    float scaleLogSigma;
+    float innovX;
+    float innovY;
+    float innovZ;
+    float innovVarX;
+    float innovVarY;
+    float innovVarZ;
+};
+
 struct PACKED log_ekfStateVar {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1298,6 +1311,8 @@ Format characters in the format string for binary log messages
     { LOG_XKQ2_MSG, sizeof(log_Quaternion), "XKQ2", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_XKFD_MSG, sizeof(log_ekfBodyOdomDebug), \
       "XKFD","Qffffff","TimeUS,IX,IY,IZ,IVX,IVY,IVZ", "s------", "F------" }, \
+    { LOG_XKFR_MSG, sizeof(log_ekfExtNavScaleDebug), \
+      "XKFR","Qffffffff","TimeUS,LS,LSS,IX,IY,IZ,IVX,IVY,IVZ", "s--------", "F--------" }, \
     { LOG_XKV1_MSG, sizeof(log_ekfStateVar), \
       "XKV1","Qffffffffffff","TimeUS,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s------------", "F------------" }, \
     { LOG_XKV2_MSG, sizeof(log_ekfStateVar), \
@@ -1443,6 +1458,7 @@ enum LogMessages {
     LOG_XKQ1_MSG,
     LOG_XKQ2_MSG,
     LOG_XKFD_MSG,
+    LOG_XKFR_MSG,
     LOG_XKV1_MSG,
     LOG_XKV2_MSG,
 
