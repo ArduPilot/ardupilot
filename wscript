@@ -68,18 +68,17 @@ def options(opt):
         dest='autoconfig',
         action='store_false',
         default=True,
-        help='''
-Disable autoconfiguration feature. By default, the build system triggers a
-reconfiguration whenever it thinks it's necessary - this option disables that.
+        help='''Disable autoconfiguration feature. By default, the build system
+triggers a reconfiguration whenever it thinks it's necessary - this
+option disables that.
 ''')
 
     g.add_option('--no-submodule-update',
         dest='submodule_update',
         action='store_false',
         default=True,
-        help='''
-Don't update git submodules. Useful for building with submodules at specific
-revisions.
+        help='''Don't update git submodules. Useful for building with
+submodules at specific revisions.
 ''')
 
     g.add_option('--disable-header-checks', action='store_true',
@@ -96,9 +95,8 @@ revisions.
         dest='rsync_dest',
         action='store',
         default='',
-        help='''
-Destination for the rsync Waf command. It can be passed during configuration in
-order to save typing.
+        help='''Destination for the rsync Waf command. It can be passed during
+configuration in order to save typing.
 ''')
 
     g.add_option('--enable-benchmarks',
