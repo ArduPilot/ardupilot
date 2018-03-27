@@ -383,6 +383,7 @@ def _select_programs_from_group(bld):
 def options(opt):
     opt.ap_groups = {
         'configure': opt.add_option_group('Ardupilot configure options'),
+        'linux': opt.add_option_group('Linux boards configure options'),
         'build': opt.add_option_group('Ardupilot build options'),
         'check': opt.add_option_group('Ardupilot check options'),
         'clean': opt.add_option_group('Ardupilot clean options'),
