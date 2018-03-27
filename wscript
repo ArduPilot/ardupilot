@@ -82,6 +82,16 @@ Don't update git submodules. Useful for building with submodules at specific
 revisions.
 ''')
 
+    g.add_option('--disable-header-checks', action='store_true',
+        default=False,
+        help="Disable checking of headers")
+
+    g.add_option('--default-parameters',
+        default=None,
+        help='set default parameters to embed in the firmware')
+
+    g = opt.ap_groups['linux']
+
     g.add_option('--rsync-dest',
         dest='rsync_dest',
         action='store',
@@ -108,18 +118,10 @@ order to save typing.
         default=False,
         help="Disable compilation and test execution")
 
-    g.add_option('--disable-header-checks', action='store_true',
-        default=False,
-        help="Disable checking of headers")
-
     g.add_option('--static',
         action='store_true',
         default=False,
         help='Force a static build')
-
-    g.add_option('--default-parameters',
-        default=None,
-        help='set default parameters to embed in the firmware')
 
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
