@@ -400,32 +400,6 @@ private:
     // capabilities.cpp
     void init_capabilities(void);
 
-    // commands_logic.cpp
-    void update_mission(void);
-    bool start_command(const AP_Mission::Mission_Command& cmd);
-    void exit_mission();
-    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    bool verify_command(const AP_Mission::Mission_Command& cmd);
-    void do_RTL(void);
-    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
-    void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-    bool verify_RTL();
-    bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
-    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_set_yaw_speed();
-    void do_wait_delay(const AP_Mission::Mission_Command& cmd);
-    void do_within_distance(const AP_Mission::Mission_Command& cmd);
-    bool verify_wait_delay();
-    bool verify_within_distance();
-    void do_change_speed(const AP_Mission::Mission_Command& cmd);
-    void do_set_home(const AP_Mission::Mission_Command& cmd);
-#if CAMERA == ENABLED
-    void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
-    void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-#endif
-    void do_set_reverse(const AP_Mission::Mission_Command& cmd);
-
     // commands.cpp
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock);
