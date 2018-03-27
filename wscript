@@ -253,6 +253,17 @@ def collect_dirs_to_recurse(bld, globs, **kw):
 def list_boards(ctx):
     print(*boards.get_boards_names())
 
+def board(ctx):
+    env = ConfigSet.ConfigSet()
+    try:
+        p = os.path.join(Context.out_dir, Build.CACHE_DIR, Build.CACHE_SUFFIX)
+        env.load(p)
+    except:
+        print('No board currently configured')
+        return
+
+    print('Board configured to: {}'.format(env.VARIANT))
+
 def _build_cmd_tweaks(bld):
     if bld.cmd == 'check-all':
         bld.options.all_tests = True
