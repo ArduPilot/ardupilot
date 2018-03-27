@@ -447,7 +447,7 @@ bool NavEKF3_core::readyToUseGPS(void) const
 // return true if the filter to be ready to use the beacon range measurements
 bool NavEKF3_core::readyToUseRangeBeacon(void) const
 {
-    return tiltAlignComplete && yawAlignComplete && delAngBiasLearned && rngBcnGoodToAlign && rngBcnDataToFuse;
+    return tiltAlignComplete && yawAlignComplete && delAngBiasLearned && rngBcnAlignmentCompleted && rngBcnDataToFuse;
 }
 
 // return true if we should use the compass

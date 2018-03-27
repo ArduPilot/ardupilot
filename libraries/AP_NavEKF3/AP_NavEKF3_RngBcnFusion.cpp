@@ -24,7 +24,7 @@ void NavEKF3_core::SelectRngBcnFusion()
     if (rngBcnDataToFuse) {
         if (PV_AidingMode == AID_ABSOLUTE) {
             if (!filterStatus.flags.using_gps && rngBcnAlignmentCompleted) {
-                if (!bcnOriginEstInit && rngBcnAlignmentCompleted) {
+                if (!bcnOriginEstInit) {
                     bcnOriginEstInit = true;
                     bcnPosOffsetNED.x = receiverPos.x - stateStruct.position.x;
                     bcnPosOffsetNED.y = receiverPos.y - stateStruct.position.y;
