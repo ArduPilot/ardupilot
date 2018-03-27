@@ -91,6 +91,13 @@ submodules at specific revisions.
 
     g = opt.ap_groups['linux']
 
+    linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
+    for k in linux_options:
+        option = opt.parser.get_option(k)
+        if option:
+            opt.parser.remove_option(k)
+            g.add_option(option)
+
     g.add_option('--rsync-dest',
         dest='rsync_dest',
         action='store',
