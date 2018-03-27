@@ -106,9 +106,9 @@ order to save typing.
         default=False,
         help='Enable benchmarks.')
 
-    g.add_option('--disable-lttng', action='store_true',
+    g.add_option('--enable-lttng', action='store_true',
         default=False,
-        help="Don't use lttng even if supported by board and dependencies available")
+        help="Enable lttng integration")
 
     g.add_option('--disable-libiio', action='store_true',
         default=False,
