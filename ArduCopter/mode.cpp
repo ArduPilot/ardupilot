@@ -12,6 +12,7 @@ Copter::Mode::Mode(void) :
     g(copter.g),
     g2(copter.g2),
     wp_nav(copter.wp_nav),
+    loiter_nav(copter.loiter_nav),
     pos_control(copter.pos_control),
     inertial_nav(copter.inertial_nav),
     ahrs(copter.ahrs),
@@ -454,7 +455,7 @@ void Copter::Mode::land_run_horizontal_control()
 
     // relax loiter target if we might be landed
     if (ap.land_complete_maybe) {
-        wp_nav->loiter_soften_for_landing();
+        loiter_nav->soften_for_landing();
     }
 
     // process pilot inputs
@@ -472,7 +473,7 @@ void Copter::Mode::land_run_horizontal_control()
             update_simple_mode();
 
             // convert pilot input to lean angles
-            get_pilot_desired_lean_angles(target_roll, target_pitch, wp_nav->get_loiter_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
 
             // record if pilot has overriden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
@@ -503,13 +504,13 @@ void Copter::Mode::land_run_horizontal_control()
 #endif
 
     // process roll, pitch inputs
-    wp_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
+    loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
 
     // run loiter controller
-    wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
-    int32_t nav_roll  = wp_nav->get_roll();
-    int32_t nav_pitch = wp_nav->get_pitch();
+    int32_t nav_roll  = loiter_nav->get_roll();
+    int32_t nav_pitch = loiter_nav->get_pitch();
 
     if (g2.wp_navalt_min > 0) {
         // user has requested an altitude below which navigation
