@@ -58,6 +58,12 @@ public:
     //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
     void get_closest_point_on_circle(Vector3f &result);
 
+    /// get horizontal distance to loiter target in cm
+    float get_distance_to_target() const { return _pos_control.get_distance_to_target(); }
+
+    /// get bearing to target in centi-degrees
+    int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target(); }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
