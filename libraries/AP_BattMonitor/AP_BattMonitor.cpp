@@ -33,9 +33,9 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 //
 AP_BattMonitor::AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handler_fn_t battery_failsafe_handler_fn, const int8_t *failsafe_priorities) :
     _log_battery_bit(log_battery_bit),
+    _num_instances(0),
     _battery_failsafe_handler_fn(battery_failsafe_handler_fn),
-    _failsafe_priorities(failsafe_priorities),
-    _num_instances(0)
+    _failsafe_priorities(failsafe_priorities)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
