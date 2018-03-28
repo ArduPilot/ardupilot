@@ -445,6 +445,10 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
     GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
 
+    // @Group: LOIT_
+    // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
+    GOBJECT(loiter_nav, "LOITER_", AC_Loiter),
+
 #if CIRCLE_NAV_ENABLED == ENABLED
     // @Group: CIRCLE_
     // @Path: ../libraries/AC_WPNav/AC_Circle.cpp

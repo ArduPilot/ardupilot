@@ -64,6 +64,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>           // Waypoint navigation library
+#include <AC_WPNav/AC_Loiter.h>
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AC_Fence/AC_Fence.h>           // Fence library
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
@@ -396,6 +397,7 @@ private:
     AC_PosControl_Sub pos_control;
 
     AC_WPNav wp_nav;
+    AC_Loiter loiter_nav;
     AC_Circle circle_nav;
 
     // Reference to the relay object
