@@ -457,4 +457,23 @@ void PX4Scheduler::system_initialized()
     _initialized = true;
 }
 
+
+/*
+  disable interrupts and return a context that can be used to
+  restore the interrupt state. This can be used to protect
+  critical regions
+*/
+void *PX4Scheduler::disable_interrupts_save(void)
+{
+    return (void *)(uintptr_t)irqsave();
+}
+
+/*
+  restore interrupt state from disable_interrupts_save()
+*/
+void PX4Scheduler::restore_interrupts(void *state)
+{
+    irqrestore((irqstate_t)(uintptr_t)state);
+}
+
 #endif
