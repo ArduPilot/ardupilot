@@ -244,7 +244,7 @@ void Copter::ModeRTL::descent_start()
     _state_complete = false;
 
     // Set wp navigation target to above home
-    wp_nav->init_loiter_target(wp_nav->get_wp_destination());
+    loiter_nav->init_target(wp_nav->get_wp_destination());
 
     // initialise altitude target to stopping point
     pos_control->set_target_to_stopping_point_z();
@@ -265,7 +265,7 @@ void Copter::ModeRTL::descent_run()
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
         // set target to current position
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
         return;
     }
 
@@ -284,7 +284,7 @@ void Copter::ModeRTL::descent_run()
             update_simple_mode();
 
             // convert pilot input to lean angles
-            get_pilot_desired_lean_angles(target_roll, target_pitch, wp_nav->get_loiter_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
 
             // record if pilot has overriden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
@@ -300,17 +300,17 @@ void Copter::ModeRTL::descent_run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // process roll, pitch inputs
-    wp_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
+    loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
 
     // run loiter controller
-    wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call z-axis position controller
     pos_control->set_alt_target_with_slew(rtl_path.descent_target.alt, G_Dt);
     pos_control->update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
 
     // check if we've reached within 20cm of final altitude
     _state_complete = labs(rtl_path.descent_target.alt - copter.current_loc.alt) < 20;
@@ -323,7 +323,7 @@ void Copter::ModeRTL::land_start()
     _state_complete = false;
 
     // Set wp navigation target to above home
-    wp_nav->init_loiter_target(wp_nav->get_wp_destination());
+    loiter_nav->init_target(wp_nav->get_wp_destination());
 
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
@@ -356,7 +356,7 @@ void Copter::ModeRTL::land_run(bool disarm_on_land)
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
         // set target to current position
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
 
         // disarm when the landing detector says we've landed
         if (ap.land_complete && disarm_on_land) {

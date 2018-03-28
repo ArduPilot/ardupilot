@@ -218,7 +218,7 @@ void Copter::ModeAuto::land_start()
 {
     // set target to stopping point
     Vector3f stopping_point;
-    wp_nav->get_loiter_stopping_point_xy(stopping_point);
+    loiter_nav->get_stopping_point_xy(stopping_point);
 
     // call location specific land start function
     land_start(stopping_point);
@@ -230,7 +230,7 @@ void Copter::ModeAuto::land_start(const Vector3f& destination)
     _mode = Auto_Land;
 
     // initialise loiter target destination
-    wp_nav->init_loiter_target(destination);
+    loiter_nav->init_target(destination);
 
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
@@ -360,7 +360,7 @@ void Copter::ModeAuto::payload_place_start()
 {
     // set target to stopping point
     Vector3f stopping_point;
-    wp_nav->get_loiter_stopping_point_xy(stopping_point);
+    loiter_nav->get_stopping_point_xy(stopping_point);
 
     // call location specific place start function
     payload_place_start(stopping_point);
@@ -852,7 +852,7 @@ void Copter::ModeAuto::land_run()
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
         // set target to current position
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
         return;
     }
 
@@ -928,7 +928,7 @@ void Copter::ModeAuto::payload_place_start(const Vector3f& destination)
     nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
 
     // initialise loiter target destination
-    wp_nav->init_loiter_target(destination);
+    loiter_nav->init_target(destination);
 
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
@@ -947,7 +947,7 @@ void Copter::ModeAuto::payload_place_run()
     if (!payload_place_run_should_run()) {
         zero_throttle_and_relax_ac();
         // set target to current position
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
         return;
     }
 
@@ -1000,7 +1000,7 @@ void Copter::ModeAuto::payload_place_run_loiter()
     land_run_horizontal_control();
 
     // run loiter controller
-    wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call attitude controller
     const float target_yaw_rate = 0;

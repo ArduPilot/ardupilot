@@ -100,7 +100,7 @@ bool Copter::ModePosHold::init(bool ignore_checks)
         poshold.pitch_mode = POSHOLD_LOITER;
         // set target to current position
         // only init here as we can switch to PosHold in flight with a velocity <> 0 that will be used as _last_vel in PosControl and never updated again as we inhibit Reset_I
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
     }else{
         // if not landed start in pilot override to avoid hard twitch
         poshold.roll_mode = POSHOLD_PILOT_OVERRIDE;
@@ -136,7 +136,7 @@ void Copter::ModePosHold::run()
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
         zero_throttle_and_relax_ac();
         pos_control->relax_alt_hold_controllers(0.0f);
         return;
@@ -177,7 +177,7 @@ void Copter::ModePosHold::run()
 
     // relax loiter target if we might be landed
     if (ap.land_complete_maybe) {
-        wp_nav->loiter_soften_for_landing();
+        loiter_nav->soften_for_landing();
     }
 
     // if landed initialise loiter targets, set throttle to zero and exit
@@ -188,7 +188,7 @@ void Copter::ModePosHold::run()
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0, 0, 0);
@@ -409,7 +409,7 @@ void Copter::ModePosHold::run()
             poshold.pitch_mode = POSHOLD_BRAKE_TO_LOITER;
             poshold.brake_to_loiter_timer = POSHOLD_BRAKE_TO_LOITER_TIMER;
             // init loiter controller
-            wp_nav->init_loiter_target(inertial_nav.get_position());
+            loiter_nav->init_target(inertial_nav.get_position());
             // set delay to start of wind compensation estimate updates
             poshold.wind_comp_start_timer = POSHOLD_WIND_COMP_START_TIMER;
         }
@@ -440,11 +440,11 @@ void Copter::ModePosHold::run()
                     poshold_update_brake_angle_from_velocity(poshold.brake_pitch, -vel_fw);
 
                     // run loiter controller
-                    wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+                    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
                     // calculate final roll and pitch output by mixing loiter and brake controls
-                    poshold.roll = poshold_mix_controls(brake_to_loiter_mix, poshold.brake_roll + poshold.wind_comp_roll, wp_nav->get_roll());
-                    poshold.pitch = poshold_mix_controls(brake_to_loiter_mix, poshold.brake_pitch + poshold.wind_comp_pitch, wp_nav->get_pitch());
+                    poshold.roll = poshold_mix_controls(brake_to_loiter_mix, poshold.brake_roll + poshold.wind_comp_roll, loiter_nav->get_roll());
+                    poshold.pitch = poshold_mix_controls(brake_to_loiter_mix, poshold.brake_pitch + poshold.wind_comp_pitch, loiter_nav->get_pitch());
 
                     // check for pilot input
                     if (!is_zero(target_roll) || !is_zero(target_pitch)) {
@@ -471,11 +471,11 @@ void Copter::ModePosHold::run()
 
                 case POSHOLD_LOITER:
                     // run loiter controller
-                    wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+                    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
                     // set roll angle based on loiter controller outputs
-                    poshold.roll = wp_nav->get_roll();
-                    poshold.pitch = wp_nav->get_pitch();
+                    poshold.roll = loiter_nav->get_roll();
+                    poshold.pitch = loiter_nav->get_pitch();
 
                     // update wind compensation estimate
                     poshold_update_wind_comp_estimate();

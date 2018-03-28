@@ -196,7 +196,8 @@ public:
         k_param_wp_nav,
         k_param_attitude_control,
         k_param_pos_control,
-        k_param_circle_nav,     // 104
+        k_param_circle_nav,
+        k_param_loiter_nav,     // 105
 
         // 110: Telemetry control
         //

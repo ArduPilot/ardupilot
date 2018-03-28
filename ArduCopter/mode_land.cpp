@@ -14,8 +14,8 @@ bool Copter::ModeLand::init(bool ignore_checks)
     if (land_with_gps) {
         // set target to stopping point
         Vector3f stopping_point;
-        wp_nav->get_loiter_stopping_point_xy(stopping_point);
-        wp_nav->init_loiter_target(stopping_point);
+        loiter_nav->get_stopping_point_xy(stopping_point);
+        loiter_nav->init_target(stopping_point);
     }
 
     // initialize vertical speeds and leash lengths
@@ -57,7 +57,7 @@ void Copter::ModeLand::gps_run()
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
 
         // disarm when the landing detector says we've landed
         if (ap.land_complete) {
