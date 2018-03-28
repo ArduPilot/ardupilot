@@ -71,30 +71,30 @@ AP_BattMonitor::init()
         switch (get_type(instance)) {
             case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY:
             case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT:
-                drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance], _params[instance]);
+                drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance], _params[instance], instance);
                 _num_instances++;
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_SOLO:
-                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance],
+                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance], instance,
                                                                   hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                           100000, true, 20));
                 _num_instances++;
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_MAXELL:
-                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance],
+                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance], instance,
                                                                     hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                             100000, true, 20));
                 _num_instances++;
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-                drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance], _params[instance]);
+                drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance], _params[instance], instance);
                 _num_instances++;
 #endif
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_UAVCAN_BatteryInfo:
 #if HAL_WITH_UAVCAN
-                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance]);
+                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance], instance);
                 _num_instances++;
 #endif
                 break;
@@ -470,6 +470,15 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
         temperature = state[instance].temperature;
         return (AP_HAL::millis() - state[instance].temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
     }
+}
+
+bool AP_BattMonitor::extended_arming_checks(bool report) const
+{
+    bool success = true;
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        success &= drivers[i]->extended_arming_checks(report);
+    }
+    return success;
 }
 
 

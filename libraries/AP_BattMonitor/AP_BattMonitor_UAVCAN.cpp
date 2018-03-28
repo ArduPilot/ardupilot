@@ -15,8 +15,12 @@ extern const AP_HAL::HAL& hal;
 #define debug_bm_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { printf(fmt, ##args); }} while (0)
 
 /// Constructor
-AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_UAVCAN_Type type, AP_BattMonitor_Params &params) :
-    AP_BattMonitor_Backend(mon, mon_state, params),
+AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon,
+                                             AP_BattMonitor::BattMonitor_State &mon_state,
+                                             BattMonitor_UAVCAN_Type type,
+                                             AP_BattMonitor_Params &params,
+                                             uint8_t instance) :
+    AP_BattMonitor_Backend(mon, mon_state, params, instance),
     _type(type)
 {
     // starts with not healthy

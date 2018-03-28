@@ -164,6 +164,9 @@ public:
     float get_resistance() const { return get_resistance(AP_BATT_PRIMARY_INSTANCE); }
     float get_resistance(uint8_t instance) const { return state[instance].resistance; }
 
+    // battery arming checks
+    bool extended_arming_checks(bool report) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:

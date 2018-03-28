@@ -15,18 +15,21 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include "AP_BattMonitor.h"
+#include <GCS_MAVLink/GCS.h>
 #include "AP_BattMonitor_Backend.h"
+
+extern const AP_HAL::HAL& hal;
 
 /*
   base class constructor.
   This incorporates initialisation as well.
 */
 AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state,
-                                               AP_BattMonitor_Params &params) :
+                                               AP_BattMonitor_Params &params, uint8_t instance) :
         _mon(mon),
         _state(mon_state),
-        _params(params)
+        _params(params),
+        _instance(instance)
 {
 }
 
@@ -90,4 +93,63 @@ void AP_BattMonitor_Backend::update_resistance_estimate()
 
     // update estimated voltage without sag
     _state.voltage_resting_estimate = _state.voltage + _state.current_amps * _state.resistance;
+}
+
+bool AP_BattMonitor_Backend::extended_arming_checks(bool report) const
+{
+    char failure_str[41]; // only 50 characters fit in statustext, reserve 9 for "Battery X"
+    float voltage;
+
+    switch (_params.failsafe_voltage_source()) {
+        case AP_BattMonitor_Params::BattMonitor_LowVoltageSource_Raw:
+        default:
+            voltage = _state.voltage;
+            break;
+        case AP_BattMonitor_Params::BattMonitor_LowVoltageSource_SagCompensated:
+            voltage = _mon.voltage_resting_estimate(_instance);
+            break;
+    }
+
+    if (_params._critical_voltage > 0 && voltage <= _params._critical_voltage) {
+        hal.util->snprintf(failure_str, ARRAY_SIZE(failure_str), "critical failsafe (%.2fV)", voltage);
+        goto failed;
+    }
+
+    if (_params._low_voltage > 0 && voltage <= _params._low_voltage) {
+        hal.util->snprintf(failure_str, ARRAY_SIZE(failure_str), "low failsafe (%.2fV)", voltage);
+        goto failed;
+    }
+
+    if (has_current()) {
+        float remaining_mah = _params._pack_capacity - _state.consumed_mah;
+        if (_params._critical_capacity > 0 && remaining_mah < _params._critical_capacity) {
+            hal.util->snprintf(failure_str, ARRAY_SIZE(failure_str), "critical failsafe (%.0f mAh)", remaining_mah);
+            goto failed;
+        }
+
+        if (_params._low_capacity > 0 && remaining_mah < _params._low_capacity) {
+            hal.util->snprintf(failure_str, ARRAY_SIZE(failure_str), "low failsafe (%.0f mAh)", remaining_mah);
+            goto failed;
+        }
+    }
+
+    if (!_state.healthy) {
+        hal.util->snprintf(failure_str, ARRAY_SIZE(failure_str), "is unhealthy");
+        goto failed;
+    }
+
+    if (_state.failsafe != AP_BattMonitor::BatteryFailsafe_None) {
+        hal.util->snprintf(failure_str, ARRAY_SIZE(failure_str), "is in a %s failsafe",
+                           _state.failsafe == AP_BattMonitor::BatteryFailsafe_Low ? "low" : "critical");
+        goto failed;
+    }
+
+    return true;
+
+failed:
+    if (report) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d %s", _instance, failure_str);
+    }
+
+    return false;
 }

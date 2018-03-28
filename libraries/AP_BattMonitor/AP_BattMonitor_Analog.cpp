@@ -9,8 +9,9 @@ extern const AP_HAL::HAL& hal;
 /// Constructor
 AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon,
                                              AP_BattMonitor::BattMonitor_State &mon_state,
-                                             AP_BattMonitor_Params &params) :
-    AP_BattMonitor_Backend(mon, mon_state, params)
+                                             AP_BattMonitor_Params &params,
+                                             uint8_t instance) :
+    AP_BattMonitor_Backend(mon, mon_state, params, instance)
 {
     _volt_pin_analog_source = hal.analogin->channel(_params._volt_pin);
     _curr_pin_analog_source = hal.analogin->channel(_params._curr_pin);

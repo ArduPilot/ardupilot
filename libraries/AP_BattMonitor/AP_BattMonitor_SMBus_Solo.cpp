@@ -29,8 +29,9 @@
 AP_BattMonitor_SMBus_Solo::AP_BattMonitor_SMBus_Solo(AP_BattMonitor &mon,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
                                                    AP_BattMonitor_Params &params,
+                                                   uint8_t instance,
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_BattMonitor_SMBus(mon, mon_state, params, std::move(dev))
+    : AP_BattMonitor_SMBus(mon, mon_state, params, instance, std::move(dev))
 {
     _pec_supported = true;
 }
