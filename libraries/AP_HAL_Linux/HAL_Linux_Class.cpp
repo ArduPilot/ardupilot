@@ -288,12 +288,13 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {"uartF",         true,  0, 'F'},
         {"log-directory",       true,  0, 'l'},
         {"terrain-directory",   true,  0, 't'},
+        {"storage-directory",   true,  0, 's'},
         {"module-directory",    true,  0, 'M'},
         {"help",                false,  0, 'h'},
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:l:t:he:SM:",
+    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:l:t:s:he:SM:",
                     options);
 
     /*
@@ -324,6 +325,9 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
             break;
         case 't':
             utilInstance.set_custom_terrain_directory(gopt.optarg);
+            break;
+        case 's':
+            utilInstance.set_custom_storage_directory(gopt.optarg);
             break;
 #if AP_MODULE_SUPPORTED
         case 'M':

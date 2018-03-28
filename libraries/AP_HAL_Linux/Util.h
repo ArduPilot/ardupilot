@@ -47,9 +47,13 @@ public:
     void set_system_clock(uint64_t time_utc_usec);
     const char *get_custom_log_directory() const override final { return custom_log_directory; }
     const char *get_custom_terrain_directory() const override final { return custom_terrain_directory; }
+    const char *get_custom_storage_directory() const override final { return custom_storage_directory; }
 
     void set_custom_log_directory(const char *_custom_log_directory) { custom_log_directory = _custom_log_directory; }
     void set_custom_terrain_directory(const char *_custom_terrain_directory) { custom_terrain_directory = _custom_terrain_directory; }
+    void set_custom_storage_directory(const char *_custom_storage_directory) {
+        custom_storage_directory = _custom_storage_directory;
+    }
 
     bool is_chardev_node(const char *path);
     void set_imu_temp(float current) override;
@@ -107,6 +111,7 @@ private:
     char *const *saved_argv;
     const char *custom_log_directory = nullptr;
     const char *custom_terrain_directory = nullptr;
+    const char *custom_storage_directory = nullptr;
     static const char *_hw_names[UTIL_NUM_HARDWARES];
 };
 
