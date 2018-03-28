@@ -20,6 +20,10 @@
 #define AP_MOTORS_HELI_DUAL_SERVO5_POS                60
 #define AP_MOTORS_HELI_DUAL_SERVO6_POS               180
 
+// collective control direction definitions
+#define AP_MOTORS_HELI_DUAL_COLLECTIVE_DIRECTION_NORMAL        0
+#define AP_MOTORS_HELI_DUAL_COLLECTIVE_DIRECTION_REVERSED      1
+
 // rsc function output channel
 #define AP_MOTORS_HELI_DUAL_RSC                     CH_8
 
@@ -124,6 +128,7 @@ protected:
     AP_Int16        _servo4_pos;                    // angular location of swash servo #4
     AP_Int16        _servo5_pos;                    // angular location of swash servo #5
     AP_Int16        _servo6_pos;                    // angular location of swash servo #6
+    AP_Int8         _collective_direction;          // Collective control direction, normal or reversed
     AP_Int16        _swash1_phase_angle;            // phase angle correction for 1st swash.
     AP_Int16        _swash2_phase_angle;            // phase angle correction for 2nd swash.
     AP_Int8         _dual_mode;                     // which dual mode the heli is
