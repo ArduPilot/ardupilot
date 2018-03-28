@@ -152,6 +152,13 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("COL2_MID", 18, AP_MotorsHeli_Dual, _collective2_mid, AP_MOTORS_HELI_DUAL_COLLECTIVE2_MID),
 
+    // @Param: COL_CTRL_DIR
+    // @DisplayName: Collective Control Direction
+    // @Description: Collective Control Direction - 0 for Normal. 1 for Reversed
+    // @Values: 0: Normal, 1: Reversed
+    // @User: Standard
+    AP_GROUPINFO("COL_CTRL_DIR", 19, AP_MotorsHeli_Dual, _collective_direction, AP_MOTORS_HELI_DUAL_COLLECTIVE_DIRECTION_NORMAL),
+
     AP_GROUPEND
 };
 
@@ -493,6 +500,12 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     // scale collective pitch for rear swashplate (servos 4,5,6)
     float collective2_scaler = ((float)(_collective2_max-_collective2_min))*0.001f;
     float collective2_out_scaled = collective2_out * collective2_scaler + (_collective2_min - 1000)*0.001f;
+
+    // Collective control direction. Swash plates move up for negative collective pitch, down for positive collective pitch
+    if (_collective_direction == AP_MOTORS_HELI_DUAL_COLLECTIVE_DIRECTION_REVERSED){
+        collective_out_scaled = 1 - collective_out_scaled;
+        collective2_out_scaled = 1 - collective2_out_scaled;
+    }
 
     // feed power estimate into main rotor controller
     // ToDo: add main rotor cyclic power?
