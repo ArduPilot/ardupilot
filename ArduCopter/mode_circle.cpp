@@ -97,12 +97,12 @@ void Copter::ModeCircle::run()
 
 uint32_t Copter::ModeCircle::wp_distance() const
 {
-    return wp_nav->get_loiter_distance_to_target();
+    return copter.circle_nav->get_distance_to_target();
 }
 
 int32_t Copter::ModeCircle::wp_bearing() const
 {
-    return wp_nav->get_loiter_bearing_to_target();
+    return copter.circle_nav->get_bearing_to_target();
 }
 
 #endif
