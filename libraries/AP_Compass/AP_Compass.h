@@ -395,7 +395,7 @@ private:
     AP_Int8 _learn;
 
     // board orientation from AHRS
-    enum Rotation _board_orientation;
+    enum Rotation _board_orientation = ROTATION_NONE;
     Matrix3f* _custom_rotation;
 
     // primary instance
