@@ -1,5 +1,5 @@
-Release 3.8.5beta1, 16th January 2018
---------------------------------
+Release 3.8.5beta2, 28th March 2018
+------------------------------------
 
 This is a minor release with three new features, all related to
 airspeed.
@@ -21,6 +21,10 @@ the primary stops communicating). More sophisticated failover methods
 will be introduced in the future. To enable a 2nd airspeed sensor set
 the ARSPD2_TYPE parameter to the type of the 2nd sensor. You can
 combine any types of sensor.
+
+The beta2 release also corrects the orientation of the Here GPS 20948
+compass.
+
 
 Release 3.8.4, 9th January 2018
 -------------------------------
