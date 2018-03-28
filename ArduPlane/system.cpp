@@ -592,7 +592,7 @@ void Plane::startup_INS_ground(void)
     if (airspeed.enabled()) {
         // initialize airspeed sensor
         // --------------------------
-        zero_airspeed(true);
+        airspeed.calibrate(true);
     } else {
         gcs().send_text(MAV_SEVERITY_WARNING,"No airspeed");
     }
