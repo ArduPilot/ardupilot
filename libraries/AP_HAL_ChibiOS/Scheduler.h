@@ -75,6 +75,18 @@ public:
     void     hal_initialized() { _hal_initialized = true; }
 
     bool     check_called_boost(void);
+
+    /*
+      disable interrupts and return a context that can be used to
+      restore the interrupt state. This can be used to protect
+      critical regions
+     */
+    void *disable_interrupts_save(void) override;
+
+    /*
+      restore interrupt state from disable_interrupts_save()
+     */
+    void restore_interrupts(void *) override;
     
 private:
     bool _initialized;

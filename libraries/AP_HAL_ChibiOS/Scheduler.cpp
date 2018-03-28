@@ -416,4 +416,22 @@ void Scheduler::system_initialized()
     _initialized = true;
 }
 
+/*
+  disable interrupts and return a context that can be used to
+  restore the interrupt state. This can be used to protect
+  critical regions
+*/
+void *Scheduler::disable_interrupts_save(void)
+{
+    return (void *)(uintptr_t)chSysGetStatusAndLockX();
+}
+
+/*
+  restore interrupt state from disable_interrupts_save()
+*/
+void Scheduler::restore_interrupts(void *state)
+{
+    chSysRestoreStatusX((syssts_t)(uintptr_t)state);
+}
+
 #endif
