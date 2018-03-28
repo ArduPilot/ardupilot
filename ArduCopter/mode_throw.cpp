@@ -79,7 +79,7 @@ void Copter::ModeThrow::run()
         stage = Throw_PosHold;
 
         // initialise the loiter target to the curent position and velocity
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
@@ -168,10 +168,10 @@ void Copter::ModeThrow::run()
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // run loiter controller
-        wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+        loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), 0.0f);
 
         // call height controller
         pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
