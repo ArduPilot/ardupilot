@@ -397,6 +397,7 @@ void AC_WPNav::init_brake_target(float accel_cmss)
     Vector3f stopping_point;
 
     // initialise position controller
+    _pos_control.set_desired_velocity_xy(0.0f,0.0f);
     _pos_control.set_desired_accel_xy(0.0f,0.0f);
     _pos_control.init_xy_controller();
 
@@ -405,10 +406,9 @@ void AC_WPNav::init_brake_target(float accel_cmss)
     _pos_control.set_accel_xy(accel_cmss);
     _pos_control.calc_leash_length_xy();
 
-    _pos_control.get_stopping_point_xy(stopping_point);
-
     // set target position
-    init_loiter_target(stopping_point);
+    _pos_control.get_stopping_point_xy(stopping_point);
+    _pos_control.set_xy_target(stopping_point.x, stopping_point.y);
 }
 
 // update_brake - run the stop controller - gets called at 400hz
