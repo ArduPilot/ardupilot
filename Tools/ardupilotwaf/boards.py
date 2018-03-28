@@ -437,7 +437,10 @@ class linux(Board):
 
         if self.with_uavcan:
             cfg.define('UAVCAN_EXCEPTIONS', 0)
-    
+
+        if cfg.options.apstatedir:
+            cfg.define('AP_STATEDIR', cfg.options.apstatedir)
+
     def build(self, bld):
         super(linux, self).build(bld)
         if bld.options.upload:
