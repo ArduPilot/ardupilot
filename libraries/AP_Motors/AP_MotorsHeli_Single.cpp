@@ -116,6 +116,13 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
 
+    // @Param: COL_CTRL_DIR
+    // @DisplayName: Collective Control Direction
+    // @Description: Collective Control Direction - 0 for Normal. 1 for Reversed
+    // @Values: 0: Normal, 1: Reversed
+    // @User: Standard
+    AP_GROUPINFO("COL_CTRL_DIR", 19, AP_MotorsHeli_Single, _collective_direction, AP_MOTORS_HELI_SINGLE_COLLECTIVE_DIRECTION_NORMAL),
+
     // Indices 16-18 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
     // parameters up to and including 29 are reserved for tradheli
 
@@ -232,7 +239,7 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
     float thrcrv[5];
     for (uint8_t i = 0; i < 5; i++) {
         thrcrv[i]=_rsc_thrcrv[i]*0.001f;
-    } 
+    }
     _main_rotor.set_ramp_time(_rsc_ramp_time);
     _main_rotor.set_runup_time(_rsc_runup_time);
     _main_rotor.set_critical_speed(_rsc_critical*0.001f);
@@ -415,16 +422,21 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     // ToDo: add main rotor cyclic power?
     _main_rotor.set_collective(fabsf(collective_out));
 
-    // swashplate servos
+    // scale collective pitch for swashplate servos
     float collective_scalar = ((float)(_collective_max-_collective_min))*0.001f;
-    float coll_out_scaled = collective_out * collective_scalar + (_collective_min - 1000)*0.001f;
-    float servo1_out = ((_rollFactor[CH_1] * roll_out) + (_pitchFactor[CH_1] * pitch_out))*0.45f + _collectiveFactor[CH_1] * coll_out_scaled;
-    float servo2_out = ((_rollFactor[CH_2] * roll_out) + (_pitchFactor[CH_2] * pitch_out))*0.45f + _collectiveFactor[CH_2] * coll_out_scaled;
+    float collective_out_scaled = collective_out * collective_scalar + (_collective_min - 1000)*0.001f;
+
+    // Collective control direction. Swash moves up for negative collective pitch, down for positive collective pitch
+    if (_collective_direction == AP_MOTORS_HELI_SINGLE_COLLECTIVE_DIRECTION_REVERSED){
+        collective_out_scaled = 1 - collective_out_scaled;
+    }
+    float servo1_out = ((_rollFactor[CH_1] * roll_out) + (_pitchFactor[CH_1] * pitch_out))*0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
+    float servo2_out = ((_rollFactor[CH_2] * roll_out) + (_pitchFactor[CH_2] * pitch_out))*0.45f + _collectiveFactor[CH_2] * collective_out_scaled;
     if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_H1) {
         servo1_out += 0.5f;
         servo2_out += 0.5f;
     }
-    float servo3_out = ((_rollFactor[CH_3] * roll_out) + (_pitchFactor[CH_3] * pitch_out))*0.45f + _collectiveFactor[CH_3] * coll_out_scaled;
+    float servo3_out = ((_rollFactor[CH_3] * roll_out) + (_pitchFactor[CH_3] * pitch_out))*0.45f + _collectiveFactor[CH_3] * collective_out_scaled;
 
     // rescale from -1..1, so we can use the pwm calc that includes trim
     servo1_out = 2*servo1_out - 1;

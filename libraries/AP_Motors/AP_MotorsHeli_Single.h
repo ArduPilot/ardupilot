@@ -21,6 +21,10 @@
 #define AP_MOTORS_HELI_SINGLE_SWASH_CCPM                       0
 #define AP_MOTORS_HELI_SINGLE_SWASH_H1                         1
 
+// collective control direction definitions
+#define AP_MOTORS_HELI_SINGLE_COLLECTIVE_DIRECTION_NORMAL      0
+#define AP_MOTORS_HELI_SINGLE_COLLECTIVE_DIRECTION_REVERSED    1
+
 // tail types
 #define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO                   0
 #define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO           1
@@ -137,7 +141,8 @@ protected:
     // parameters
     AP_Int16        _servo1_pos;                // Angular location of swash servo #1
     AP_Int16        _servo2_pos;                // Angular location of swash servo #2
-    AP_Int16        _servo3_pos;                // Angular location of swash servo #3    
+    AP_Int16        _servo3_pos;                // Angular location of swash servo #3
+    AP_Int8         _collective_direction;      // Collective control direction, normal or reversed 
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int8         _swash_type;                // Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
     AP_Int16        _ext_gyro_gain_std;         // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
