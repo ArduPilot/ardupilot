@@ -31,6 +31,7 @@ LIBRARIES += AP_Mount
 LIBRARIES += AP_Vehicle
 LIBRARIES += AP_InertialNav
 LIBRARIES += AC_WPNav
+LIBRARIES += AC_Loiter
 LIBRARIES += AC_Circle
 LIBRARIES += AP_Declination
 LIBRARIES += AC_Fence
