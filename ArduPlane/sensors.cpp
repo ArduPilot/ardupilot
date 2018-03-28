@@ -96,15 +96,6 @@ void Plane::read_airspeed(void)
     }
 }
 
-void Plane::zero_airspeed(bool in_startup)
-{
-    airspeed.calibrate(in_startup);
-    read_airspeed();
-    // update barometric calibration with new airspeed supplied temperature
-    barometer.update_calibration();
-    gcs().send_text(MAV_SEVERITY_INFO,"Airspeed calibration started");
-}
-
 // read the receiver RSSI as an 8 bit number for MAVLink
 // RC_CHANNELS_SCALED message
 void Plane::read_receiver_rssi(void)
