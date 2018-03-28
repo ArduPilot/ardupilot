@@ -58,4 +58,18 @@ public:
 
     virtual void create_uavcan_thread() {};
 
+    /*
+      disable interrupts and return a context that can be used to
+      restore the interrupt state. This can be used to protect
+      critical regions
+
+      Warning: may not be implemented on all HALs
+     */
+    virtual void *disable_interrupts_save(void) { return nullptr; }
+
+    /*
+      restore interrupt state from disable_interrupts_save()
+     */
+    virtual void restore_interrupts(void *) {}
+    
 };
