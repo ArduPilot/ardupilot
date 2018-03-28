@@ -24,7 +24,7 @@ bool Sub::poshold_init()
 
     // set target to current position
     // only init here as we can switch to PosHold in flight with a velocity <> 0 that will be used as _last_vel in PosControl and never updated again as we inhibit Reset_I
-    wp_nav.init_loiter_target();
+    loiter_nav.init_target();
 
     last_pilot_heading = ahrs.yaw_sensor;
 
@@ -40,7 +40,7 @@ void Sub::poshold_run()
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        wp_nav.init_loiter_target();
+        loiter_nav.init_target();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         return;
@@ -50,7 +50,7 @@ void Sub::poshold_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run loiter controller
-    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav.update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     ///////////////////////
     // update xy outputs //
@@ -64,7 +64,7 @@ void Sub::poshold_run()
     if (fabsf(pilot_lateral) > 0.1 || fabsf(pilot_forward) > 0.1) {
         lateral_out = pilot_lateral;
         forward_out = pilot_forward;
-        wp_nav.init_loiter_target(); // initialize target to current position after repositioning
+        loiter_nav.init_target(); // initialize target to current position after repositioning
     } else {
         translate_wpnav_rp(lateral_out, forward_out);
     }

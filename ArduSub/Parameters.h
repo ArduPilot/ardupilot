@@ -96,6 +96,7 @@ public:
         k_param_circle_nav, // Disabled
         k_param_avoid, // Relies on proximity and fence
         k_param_NavEKF3,
+        k_param_loiter_nav,
 
 
         // Other external hardware interfaces

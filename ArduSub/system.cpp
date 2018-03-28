@@ -124,6 +124,7 @@ void Sub::init_ardupilot()
 
 #if AVOIDANCE_ENABLED == ENABLED
     wp_nav.set_avoidance(&avoid);
+    loiter_nav.set_avoidance(&avoid);
 #endif
 
     pos_control.set_dt(MAIN_LOOP_SECONDS);
