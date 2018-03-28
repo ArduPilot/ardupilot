@@ -253,8 +253,8 @@ def run_step(step):
 
     binary = binary_path(step, debug=opts.debug)
 
-    if step.startswith("default"):
-        vehicle = step[8:]
+    if step.startswith("defaults"):
+        vehicle = step[9:]
         return get_default_params(vehicle, binary)
 
     fly_opts = {
@@ -384,7 +384,7 @@ def write_fullresults():
     vehicle_files = [ ('{vehicle} build log', '{vehicle}.txt'),
                       ('{vehicle} code size', '{vehicle}.sizes.txt'),
                       ('{vehicle} stack sizes', '{vehicle}.framesizes.txt'),
-                      ('{vehicle} defaults', 'default_params/{vehicle}-defaults.parm'),
+                      ('{vehicle} defaults', '{vehicle}-defaults.parm'),
                       ('{vehicle} core', '{vehicle}.core'),
                       ('{vehicle} ELF', '{vehicle}.elf'),
     ]
