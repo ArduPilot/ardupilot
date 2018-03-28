@@ -61,11 +61,11 @@ private:
 
 class ChibiOS::DigitalSource : public AP_HAL::DigitalSource {
 public:
-    DigitalSource(uint8_t v);
+    DigitalSource(ioline_t line);
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value);
     void    toggle();
 private:
-    uint8_t _v;
+    ioline_t line;
 };

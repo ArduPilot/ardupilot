@@ -113,8 +113,13 @@ void GPIO::toggle(uint8_t pin)
 }
 
 /* Alternative interface: */
-AP_HAL::DigitalSource* GPIO::channel(uint16_t n) {
-    return new DigitalSource(0);
+AP_HAL::DigitalSource* GPIO::channel(uint16_t pin)
+{
+    struct gpio_entry *g = gpio_by_pin_num(pin);
+    if (!g) {
+        return nullptr;
+    }
+    return new DigitalSource(g->pal_line);
 }
 
 extern const AP_HAL::HAL& hal;
@@ -175,23 +180,28 @@ bool GPIO::usb_connected(void)
     return _usb_connected;
 }
 
-DigitalSource::DigitalSource(uint8_t v) :
-    _v(v)
+DigitalSource::DigitalSource(ioline_t _line) :
+    line(_line)
 {}
 
 void DigitalSource::mode(uint8_t output)
-{}
-
-uint8_t DigitalSource::read() {
-    return _v;
+{
+    palSetLineMode(line, output);
 }
 
-void DigitalSource::write(uint8_t value) {
-    _v = value;
+uint8_t DigitalSource::read()
+{
+    return palReadLine(line);
 }
 
-void DigitalSource::toggle() {
-    _v = !_v;
+void DigitalSource::write(uint8_t value)
+{
+    palWriteLine(line, value);
+}
+
+void DigitalSource::toggle()
+{
+    palToggleLine(line);
 }
 
 void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel)
