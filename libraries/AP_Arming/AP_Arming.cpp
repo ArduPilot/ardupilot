@@ -414,13 +414,6 @@ bool AP_Arming::battery_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BATTERY)) {
 
-        if (AP_Notify::flags.failsafe_battery) {
-            if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery failsafe on");
-            }
-            return false;
-        }
-
         for (uint8_t i = 0; i < _battery.num_instances(); i++) {
             if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
                 if (report) {
@@ -432,6 +425,8 @@ bool AP_Arming::battery_checks(bool report)
                 return false;
             }
         }
+
+        return AP::battery().extended_arming_checks(report);
      }
     return true;
 }
