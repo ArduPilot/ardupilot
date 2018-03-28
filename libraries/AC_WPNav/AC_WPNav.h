@@ -257,12 +257,6 @@ public:
     int32_t get_roll() const { return _pos_control.get_roll(); }
     int32_t get_pitch() const { return _pos_control.get_pitch(); }
 
-    /// get_desired_alt - get desired altitude (in cm above ekf origin) from loiter or wp controller which should be fed into throttle controller
-    float get_desired_alt() const { return _pos_control.get_alt_target(); }
-
-    /// set_desired_alt - set desired altitude (in cm above ekf origin)
-    void set_desired_alt(float desired_alt) { _pos_control.set_alt_target(desired_alt); }
-
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
 
