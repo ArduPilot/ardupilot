@@ -20,7 +20,7 @@ using namespace Linux;
 
 // name the storage file after the sketch so you can use the same board
 // card for ArduCopter and ArduPlane
-#define STORAGE_FILE HAL_BOARD_STORAGE_DIRECTORY "/" SKETCHNAME ".stg"
+#define STORAGE_FILE SKETCHNAME ".stg"
 
 extern const AP_HAL::HAL& hal;
 
@@ -93,12 +93,30 @@ static int mkdir_p(const char *path, int len, mode_t mode)
 
 void Storage::_storage_create(void)
 {
-    mkdir_p(HAL_BOARD_STORAGE_DIRECTORY, strlen(HAL_BOARD_STORAGE_DIRECTORY), 0777);
-    unlink(STORAGE_FILE);
-    int fd = open(STORAGE_FILE, O_RDWR|O_CREAT|O_CLOEXEC, 0666);
-    if (fd == -1) {
-        AP_HAL::panic("Failed to create " STORAGE_FILE);
+    const char *dpath = HAL_BOARD_STORAGE_DIRECTORY, *p;
+    int dfd = -1;
+
+    p = hal.util->get_custom_storage_directory();
+    if (p) {
+        dpath = p;
     }
+
+    mkdir_p(dpath, strlen(dpath), 0777);
+    dfd = open(dpath, O_RDWR|O_CLOEXEC);
+    if (dfd < 0) {
+        AP_HAL::panic("Error opening storage directory: %s\n", dpath);
+    }
+
+    unlinkat(dfd, STORAGE_FILE, 0);
+    int fd = openat(dfd, STORAGE_FILE, O_RDWR|O_CREAT|O_CLOEXEC, 0666);
+
+    close(dfd);
+
+    if (fd == -1) {
+        AP_HAL::panic("Failed to create %s/%s", HAL_BOARD_STORAGE_DIRECTORY,
+                      STORAGE_FILE);
+    }
+
     for (uint16_t loc=0; loc<sizeof(_buffer); loc += LINUX_STORAGE_MAX_WRITE) {
         if (write(fd, &_buffer[loc], LINUX_STORAGE_MAX_WRITE) != LINUX_STORAGE_MAX_WRITE) {
             perror("write");
