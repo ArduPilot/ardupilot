@@ -20,6 +20,7 @@ public:
 
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
+    virtual const char *get_custom_storage_directory() const { return nullptr;  }
 
     // get path to custom defaults file for AP_Param
     virtual const char* get_custom_defaults_file() const {
