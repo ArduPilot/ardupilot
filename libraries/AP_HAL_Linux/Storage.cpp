@@ -20,19 +20,80 @@ using namespace Linux;
 
 // name the storage file after the sketch so you can use the same board
 // card for ArduCopter and ArduPlane
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
-#define STORAGE_DIR "."
-#else
-#define STORAGE_DIR HAL_BOARD_STORAGE_DIRECTORY
-#endif
-
-#define STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
+#define STORAGE_FILE HAL_BOARD_STORAGE_DIRECTORY "/" SKETCHNAME ".stg"
 
 extern const AP_HAL::HAL& hal;
 
+static inline int is_dir(const char *path)
+{
+    struct stat st;
+
+    if (stat(path, &st) < 0) {
+        return -errno;
+    }
+
+    return S_ISDIR(st.st_mode);
+}
+
+static int mkdir_p(const char *path, int len, mode_t mode)
+{
+    char *start, *end;
+
+    start = strndupa(path, len);
+    end = start + len;
+
+    /*
+     * scan backwards, replacing '/' with '\0' while the component doesn't
+     * exist
+     */
+    for (;;) {
+        int r = is_dir(start);
+        if (r > 0) {
+            end += strlen(end);
+
+            if (end == start + len) {
+                return 0;
+            }
+
+            /* end != start, since it would be caught on the first
+             * iteration */
+            *end = '/';
+            break;
+        } else if (r == 0) {
+            return -ENOTDIR;
+        }
+
+        if (end == start) {
+            break;
+        }
+
+        *end = '\0';
+
+        /* Find the next component, backwards, discarding extra '/'*/
+        while (end > start && *end != '/') {
+            end--;
+        }
+
+        while (end > start && *(end - 1) == '/') {
+            end--;
+        }
+    }
+
+    while (end < start + len) {
+        if (mkdir(start, mode) < 0 && errno != EEXIST) {
+            return -errno;
+        }
+
+        end += strlen(end);
+        *end = '/';
+    }
+
+    return 0;
+}
+
 void Storage::_storage_create(void)
 {
-    mkdir(STORAGE_DIR, 0777);
+    mkdir_p(HAL_BOARD_STORAGE_DIRECTORY, strlen(HAL_BOARD_STORAGE_DIRECTORY), 0777);
     unlink(STORAGE_FILE);
     int fd = open(STORAGE_FILE, O_RDWR|O_CREAT|O_CLOEXEC, 0666);
     if (fd == -1) {
