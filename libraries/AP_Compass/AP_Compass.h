@@ -56,6 +56,11 @@ public:
     Compass(const Compass &other) = delete;
     Compass &operator=(const Compass&) = delete;
 
+    // get singleton instance
+    static Compass *get_singleton() {
+        return _singleton;
+    }
+
     friend class CompassLearn;
 
     /// Initialize the compass device.
@@ -326,6 +331,7 @@ public:
     uint8_t get_filter_range() const { return uint8_t(_filter_range.get()); }
 
 private:
+    static Compass *_singleton;
     /// Register a new compas driver, allocating an instance number
     ///
     /// @return number of compass instances
@@ -465,4 +471,8 @@ private:
     AP_Int32 _driver_type_mask;
     
     AP_Int8 _filter_range;
+};
+
+namespace AP {
+    Compass &compass();
 };
