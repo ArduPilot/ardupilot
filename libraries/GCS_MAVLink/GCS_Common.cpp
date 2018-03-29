@@ -156,8 +156,6 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
             // if signing is off start by sending MAVLink1.
             status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
         }
-        // announce that we are MAVLink2 capable
-        hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_MAVLINK2);
     } else if (status) {
         // user has asked to only send MAVLink1
         status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
@@ -2117,7 +2115,7 @@ void GCS_MAVLINK::send_autopilot_version() const
 
     mavlink_msg_autopilot_version_send(
         chan,
-        hal.util->get_capabilities(),
+        capabilities(),
         flight_sw_version,
         middleware_sw_version,
         os_sw_version,
@@ -4387,6 +4385,25 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const uint8_t c
         return false;
     }
 }
+
+uint64_t GCS_MAVLINK::capabilities() const
+{
+    uint64_t ret = 0;
+
+    AP_SerialManager::SerialProtocol mavlink_protocol = serialmanager_p->get_mavlink_protocol(chan);
+    if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2) {
+        ret |= MAV_PROTOCOL_CAPABILITY_MAVLINK2;
+    }
+
+    AP_AdvancedFailsafe *failsafe = get_advanced_failsafe();
+    if (failsafe != nullptr && failsafe->enabled()) {
+        // Copter and Sub may also set this bit as they can always terminate
+        ret |= MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION;
+    }
+
+    return ret;
+}
+
 
 GCS &gcs()
 {
