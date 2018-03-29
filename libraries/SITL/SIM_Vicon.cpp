@@ -29,7 +29,9 @@ using namespace SITL;
 Vicon::Vicon()
 {
     int tmp[2];
-    pipe(tmp);
+    if (pipe(tmp) == -1) {
+        AP_HAL::panic("pipe() failed");
+    }
     fd_my_end    = tmp[1];
     fd_their_end = tmp[0];
 
