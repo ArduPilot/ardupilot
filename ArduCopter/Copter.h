@@ -77,7 +77,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
-#include <AP_RPM/AP_RPM.h>
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 #include <AP_Button/AP_Button.h>
@@ -156,6 +155,9 @@
 #if WINCH_ENABLED == ENABLED
  # include <AP_WheelEncoder/AP_WheelEncoder.h>
  # include <AP_Winch/AP_Winch.h>
+#endif
+#if RPM_ENABLED == ENABLED
+ #include <AP_RPM/AP_RPM.h>
 #endif
 
 // Local modules
@@ -237,7 +239,9 @@ private:
         int8_t glitch_count;
     } rangefinder_state = { false, false, 0, 0 };
 
+#if RPM_ENABLED == ENABLED
     AP_RPM rpm_sensor;
+#endif
 
     // Inertial Navigation EKF
     NavEKF2 EKF2{&ahrs, rangefinder};
