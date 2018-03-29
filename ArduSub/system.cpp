@@ -27,8 +27,6 @@ void Sub::init_ardupilot()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
-    init_capabilities();
-
     // load parameters from EEPROM
     load_parameters();
 
