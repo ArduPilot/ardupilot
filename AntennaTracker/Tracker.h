@@ -202,9 +202,6 @@ private:
     void one_second_loop();
     void ten_hz_logging_loop();
 
-    // capabilities.cpp
-    void init_capabilities(void);
-
     // control_auto.cpp
     void update_auto(void);
     void calc_angle_error(float pitch, float yaw, bool direction_reversed);
