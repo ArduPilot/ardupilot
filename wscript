@@ -23,6 +23,9 @@ from waflib import Build, ConfigSet, Configure, Context, Utils
 # this makes recompilation at least when defines change. which might
 # be sufficient.
 
+# Default installation prefix for Linux boards
+default_prefix = '/usr/'
+
 def _set_build_context_variant(variant):
     for c in Context.classes:
         if not issubclass(c, Build.BuildContext):
