@@ -1157,7 +1157,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: MANUAL_RCMASK
     // @DisplayName: Manual R/C pass-through mask
-    // @Description: Mask of R/C channels to pass directly to corresponding output channel when in MANUAL mode. When in any mode except MANUAL the channels selected with this option behave normally. This parameter is designed to allow for complex mixing strategies to be used for MANUAL flight using transmitter based mixing. Note that when this option is used you need to be very careful with pre-flight checks to ensure that the output is correct both in MANUAL and non-MANUAL modes.
+    // @Description: Mask of R/C channels to pass directly to corresponding output channel when in MANUAL mode. This will bypass Arming. When in any mode except MANUAL the channels selected with this option behave normally, so conduct a preflight check to ensure correct operation in all modes. This parameter is designed to allow for complex mixing strategies to be used for MANUAL flight using transmitter based mixing.
     // @Bitmask: 0:Chan1,1:Chan2,2:Chan3,3:Chan4,4:Chan5,5:Chan6,6:Chan7,7:Chan8,8:Chan9,9:Chan10,10:Chan11,11:Chan12,12:Chan13,13:Chan14,14:Chan15,15:Chan16
     // @User: Advanced
     AP_GROUPINFO("MANUAL_RCMASK", 10, ParametersG2, manual_rc_mask, 0),
