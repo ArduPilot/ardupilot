@@ -225,8 +225,10 @@ void Copter::init_ardupilot()
     // init visual odometry
     init_visual_odom();
 
+#if RPM_ENABLED == ENABLED
     // initialise AP_RPM library
     rpm_sensor.init();
+#endif
 
 #if MODE_AUTO_ENABLED == ENABLED
     // initialise mission library
