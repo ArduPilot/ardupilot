@@ -92,6 +92,8 @@ public:
     // update terrain state. Should be called at 1Hz or more
     void update(void);
 
+    bool enabled() const { return enable; }
+
     // return status enum for health reporting
     enum TerrainStatus status(void) const { return system_status; }
 
