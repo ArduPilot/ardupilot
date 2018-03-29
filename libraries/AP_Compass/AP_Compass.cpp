@@ -462,6 +462,13 @@ Compass::Compass(void) :
     _null_init_done(false),
     _hil_mode(false)
 {
+    if (_singleton != nullptr) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Compass must be singleton");
+#endif
+        return;
+    }
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         _backends[i] = nullptr;
@@ -1324,3 +1331,15 @@ bool Compass::consistent() const
     return true;
 }
 
+
+// singleton instance
+Compass *Compass::_singleton;
+
+namespace AP {
+
+Compass &compass()
+{
+    return *Compass::get_singleton();
+}
+
+}
