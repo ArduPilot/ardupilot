@@ -17,8 +17,6 @@ void Tracker::init_tracker()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
-    init_capabilities();
-
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();
 
