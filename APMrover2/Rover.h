@@ -396,9 +396,6 @@ private:
     void balancebot_pitch_control(float &throttle);
     bool is_balancebot() const;
 
-    // capabilities.cpp
-    void init_capabilities(void);
-
     // commands_logic.cpp
     void update_mission(void);
 
