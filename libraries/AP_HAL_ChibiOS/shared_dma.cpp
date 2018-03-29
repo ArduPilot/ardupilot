@@ -20,6 +20,8 @@
   code to handle sharing of DMA channels between peripherals
  */
 
+#if CH_CFG_USE_SEMAPHORES == TRUE
+
 using namespace ChibiOS;
 
 Shared_DMA::dma_lock Shared_DMA::locks[SHARED_DMA_MAX_STREAM_ID];
@@ -183,3 +185,5 @@ void Shared_DMA::lock_all(void)
         chBSemWait(&locks[i].semaphore);
     }
 }
+
+#endif // CH_CFG_USE_SEMAPHORES

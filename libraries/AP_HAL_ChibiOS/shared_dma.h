@@ -81,7 +81,9 @@ private:
     
     static struct dma_lock {
         // semaphore to ensure only one peripheral uses a DMA channel at a time
+#if CH_CFG_USE_SEMAPHORES == TRUE
         binary_semaphore_t semaphore;
+#endif // CH_CFG_USE_SEMAPHORES
 
         // a de-allocation function that is called to release an existing user
         dma_deallocate_fn_t deallocate;
@@ -90,3 +92,4 @@ private:
         Shared_DMA *obj;
     } locks[SHARED_DMA_MAX_STREAM_ID];
 };
+
