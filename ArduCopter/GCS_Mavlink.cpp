@@ -190,12 +190,14 @@ void NOINLINE Copter::send_vfr_hud(mavlink_channel_t chan)
  */
 void NOINLINE Copter::send_rpm(mavlink_channel_t chan)
 {
+#if RPM_ENABLED == ENABLED
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         mavlink_msg_rpm_send(
             chan,
             rpm_sensor.get_rpm(0),
             rpm_sensor.get_rpm(1));
     }
+#endif
 }
 
 
@@ -366,8 +368,10 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_RPM:
+#if RPM_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RPM);
         copter.send_rpm(chan);
+#endif
         break;
 
     case MSG_TERRAIN:

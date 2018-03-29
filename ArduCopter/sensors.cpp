@@ -89,12 +89,14 @@ bool Copter::rangefinder_alt_ok()
  */
 void Copter::rpm_update(void)
 {
+#if RPM_ENABLED == ENABLED
     rpm_sensor.update();
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RCIN)) {
             DataFlash.Log_Write_RPM(rpm_sensor);
         }
     }
+#endif
 }
 
 // initialise compass
