@@ -89,6 +89,7 @@ void DeviceBus::bus_thread(void *arg)
     return;
 }
 
+#if CH_CFG_USE_HEAP == TRUE
 AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb, AP_HAL::Device *_hal_device)
 {
     if (!thread_started) {
@@ -133,6 +134,7 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
 
     return callback;
 }
+#endif // CH_CFG_USE_HEAP
 
 /*
  * Adjust the timer for the next call: it needs to be called from the bus
