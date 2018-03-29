@@ -96,12 +96,14 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BRK_ACCEL",   9, AC_WPNav, _loiter_brake_accel_cmss, WPNAV_LOITER_BRAKE_ACCEL),
 
+#if AP_TERRAIN_AVAILABLE && (RANGEFINDER_ENABLED == ENABLED)
     // @Param: RFND_USE
     // @DisplayName: Waypoint missions use rangefinder for terrain following
     // @Description: This controls if waypoint missions use rangefinder for terrain following
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO("RFND_USE",   10, AC_WPNav, _rangefinder_use, 1),
+#endif
 
     // @Param: BRK_DELAY
     // @DisplayName: Loiter brake start delay (in seconds)
@@ -1249,7 +1251,7 @@ void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector
 // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
 bool AC_WPNav::get_terrain_offset(float& offset_cm)
 {
-#if AP_TERRAIN_AVAILABLE
+#if AP_TERRAIN_AVAILABLE && (RANGEFINDER_ENABLED == ENABLED)
     // use range finder if connected
     if (_rangefinder_available && _rangefinder_use) {
         if (_rangefinder_healthy) {
