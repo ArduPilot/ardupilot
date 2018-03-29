@@ -413,7 +413,7 @@ def write_mcu_config(f):
     flash_reserve_start = get_config(
         'FLASH_RESERVE_START_KB', default=16, type=int)
     f.write('\n// location of loaded firmware\n')
-    f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % flash_reserve_start*1024)
+    f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % (0x08000000 + flash_reserve_start*1024))
     f.write('\n')
 
     ram_size_kb = get_mcu_config('RAM_SIZE_KB', True)
