@@ -156,7 +156,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_TM
 #define CH_CFG_USE_TM                       TRUE
+#endif
 
 /**
  * @brief   Threads registry APIs.
@@ -173,7 +175,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_WAITEXIT
 #define CH_CFG_USE_WAITEXIT                 TRUE
+#endif
 
 /**
  * @brief   Semaphores APIs.
@@ -181,7 +185,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_SEMAPHORES
 #define CH_CFG_USE_SEMAPHORES               TRUE
+#endif
 
 /**
  * @brief   Semaphores queuing mode.
@@ -200,7 +206,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_MUTEXES
 #define CH_CFG_USE_MUTEXES                  TRUE
+#endif
 
 /**
  * @brief   Enables recursive behavior on mutexes.
@@ -220,7 +228,9 @@
  * @note    The default is @p TRUE.
  * @note    Requires @p CH_CFG_USE_MUTEXES.
  */
+#ifndef CH_CFG_USE_CONDVARS
 #define CH_CFG_USE_CONDVARS                 TRUE
+#endif
 
 /**
  * @brief   Conditional Variables APIs with timeout.
@@ -230,7 +240,9 @@
  * @note    The default is @p TRUE.
  * @note    Requires @p CH_CFG_USE_CONDVARS.
  */
+#ifndef CH_CFG_USE_CONDVARS_TIMEOUT
 #define CH_CFG_USE_CONDVARS_TIMEOUT         TRUE
+#endif
 
 /**
  * @brief   Events Flags APIs.
@@ -257,7 +269,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_MESSAGES
 #define CH_CFG_USE_MESSAGES                 TRUE
+#endif
 
 /**
  * @brief   Synchronous Messages queuing mode.
@@ -278,7 +292,9 @@
  * @note    The default is @p TRUE.
  * @note    Requires @p CH_CFG_USE_SEMAPHORES.
  */
+#ifndef CH_CFG_USE_MAILBOXES
 #define CH_CFG_USE_MAILBOXES                TRUE
+#endif
 
 /**
  * @brief   Core Memory Manager APIs.
@@ -287,7 +303,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_MEMCORE
 #define CH_CFG_USE_MEMCORE                  TRUE
+#endif
 
 /**
  * @brief   Heap Allocator APIs.
@@ -299,7 +317,9 @@
  *          @p CH_CFG_USE_SEMAPHORES.
  * @note    Mutexes are recommended.
  */
+#ifndef CH_CFG_USE_HEAP
 #define CH_CFG_USE_HEAP                     TRUE
+#endif
 
 /**
  * @brief   Memory Pools Allocator APIs.
@@ -308,7 +328,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_MEMPOOLS
 #define CH_CFG_USE_MEMPOOLS                 TRUE
+#endif
 
 /**
  * @brief   Dynamic Threads APIs.
@@ -319,7 +341,9 @@
  * @note    Requires @p CH_CFG_USE_WAITEXIT.
  * @note    Requires @p CH_CFG_USE_HEAP and/or @p CH_CFG_USE_MEMPOOLS.
  */
+#ifndef CH_CFG_USE_DYNAMIC
 #define CH_CFG_USE_DYNAMIC                  TRUE
+#endif
 
 /** @} */
 
@@ -335,7 +359,9 @@
  *
  * @note    The default is @p FALSE.
  */
+#ifndef CH_DBG_STATISTICS
 #define CH_DBG_STATISTICS                   TRUE
+#endif
 
 /**
  * @brief   Debug option, system state check.
@@ -409,7 +435,9 @@
  *
  * @note    The default is @p FALSE.
  */
+#ifndef CH_DBG_FILL_THREADS
 #define CH_DBG_FILL_THREADS                 TRUE
+#endif
 
 /**
  * @brief   Debug option, threads profiling.
@@ -524,10 +552,12 @@
  * We flush all memory on STM32F7 to allow gdb to access variables currently
  * in the dcache
  */
+#ifndef CH_CFG_SYSTEM_HALT_HOOK
 #define CH_CFG_SYSTEM_HALT_HOOK(reason) do {                               \
         extern void memory_flush_all(void); \
         memory_flush_all(); \
 } while(0)
+#endif
 
 /**
  * @brief   Trace hook.
