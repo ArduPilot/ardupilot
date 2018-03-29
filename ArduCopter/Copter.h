@@ -658,9 +658,6 @@ private:
     // baro_ground_effect.cpp
     void update_ground_effect_detector(void);
 
-    // capabilities.cpp
-    void init_capabilities(void);
-
     // commands.cpp
     void update_home_from_EKF();
     void set_home_to_current_location_inflight();

@@ -40,6 +40,7 @@ protected:
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
     void send_nav_controller_output() const override;
+    uint64_t capabilities() const override;
 
 private:
 
