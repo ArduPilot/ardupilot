@@ -154,6 +154,8 @@ public:
     bool healthy(uint8_t i) const { return _state[i].healthy; }
     bool healthy(void) const { return healthy(get_primary()); }
     uint8_t get_healthy_mask() const;
+    // returns true if all detected compasses healthy:
+    bool all_healthy(void) const;
 
     /// Returns the current offset values
     ///
@@ -476,6 +478,8 @@ private:
     AP_Int32 _driver_type_mask;
     
     AP_Int8 _filter_range;
+
+    void initialise_health_status(void);
 };
 
 namespace AP {

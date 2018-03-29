@@ -499,11 +499,35 @@ Compass::init()
         // detect available backends. Only called once
         _detect_backends();
     }
-    if (_compass_count != 0) {
-        // get initial health status
-        hal.scheduler->delay(100);
-        read();
+    initialise_health_status();
+    return true;
+}
+
+bool Compass::all_healthy(void) const
+{
+    for (uint8_t i=0; i<_compass_count; i++) {
+        if (!_state[i].healthy) {
+            return false;
+        }
     }
+    return true;
+}
+
+void Compass::initialise_health_status(void)
+{
+    if (_compass_count == 0) {
+        return;
+    }
+
+    // get initial health status
+    for (uint8_t attempts=0; attempts<10; attempts++) {
+        read();
+        if (all_healthy()) {
+            break;
+        }
+        hal.scheduler->delay(10);
+    }
+
     // set the dev_id to 0 for undetected compasses, to make it easier
     // for users to see how many compasses are detected. We don't do a
     // set_and_save() as the user may have temporarily removed the
@@ -512,7 +536,6 @@ Compass::init()
     for (uint8_t i=_compass_count; i<COMPASS_MAX_INSTANCES; i++) {
         _state[i].dev_id.set(0);
     }
-    return true;
 }
 
 //  Register a new compass instance
