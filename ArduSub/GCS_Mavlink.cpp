@@ -972,6 +972,21 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     }     // end switch
 } // end handle mavlink
 
+uint64_t GCS_MAVLINK_Sub::capabilities() const
+{
+    return (MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+            MAV_PROTOCOL_CAPABILITY_MISSION_INT |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED |
+            MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |
+            MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION |
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+            (sub.terrain.enabled() ? MAV_PROTOCOL_CAPABILITY_TERRAIN : 0) |
+#endif
+            MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET |
+            GCS_MAVLINK::capabilities()
+        );
+}
 
 // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
 void GCS_MAVLINK_Sub::handle_rc_channels_override(const mavlink_message_t *msg)
