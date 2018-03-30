@@ -1925,6 +1925,17 @@ void GCS_MAVLINK::_handle_common_vision_position_estimate_data(const uint64_t us
                                angErr,
                                timestamp_ms,
                                reset_timestamp_ms);
+
+    // log data
+    DataFlash_Class::instance()->Log_Write("VISP", "TimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
+                                           "smmmrrr", "F000000", "Qffffff",
+                                           (uint64_t)timestamp_ms * 1000,
+                                           (double)x,
+                                           (double)y,
+                                           (double)z,
+                                           (double)roll,
+                                           (double)pitch,
+                                           (double)yaw);
 }
 
 void GCS_MAVLINK::handle_att_pos_mocap(mavlink_message_t *msg)
