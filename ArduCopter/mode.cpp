@@ -1,7 +1,5 @@
 #include "Copter.h"
 
-Copter::Mode::AutoYaw Copter::Mode::auto_yaw;
-
 /*
  * High level calls to set and update flight modes logic for individual
  * flight modes is in control_acro.cpp, control_stabilize.cpp, etc
@@ -620,9 +618,4 @@ float Copter::Mode::get_avoidance_adjusted_climbrate(float target_rate)
 uint16_t Copter::Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
-}
-
-void Copter::Mode::AutoYaw::set_mode_to_default(bool rtl)
-{
-    set_mode(default_mode(rtl));
 }
