@@ -26,27 +26,27 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: SV1_POS
     // @DisplayName: Servo 1 Position
-    // @Description: Angular location of swash servo #1
+    // @Description: Angular location of swash servo #1 - only used for H3 swash type
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV1_POS", 1, AP_MotorsHeli_Single, _servo1_pos, AP_MOTORS_HELI_SINGLE_SERVO1_POS),
 
     // @Param: SV2_POS
     // @DisplayName: Servo 2 Position
-    // @Description: Angular location of swash servo #2
+    // @Description: Angular location of swash servo #2 - only used for H3 swash type
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV2_POS", 2, AP_MotorsHeli_Single, _servo2_pos, AP_MOTORS_HELI_SINGLE_SERVO2_POS),
 
     // @Param: SV3_POS
     // @DisplayName: Servo 3 Position
-    // @Description: Angular location of swash servo #3
+    // @Description: Angular location of swash servo #3 - only used for H3 swash type
     // @Range: -180 180
-    // @Units: Degrees
+    // @Units: deg
     // @User: Standard
     // @Increment: 1
     AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeli_Single, _servo3_pos, AP_MOTORS_HELI_SINGLE_SERVO3_POS),
@@ -60,10 +60,10 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: SWASH_TYPE
     // @DisplayName: Swash Type
-    // @Description: Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
-    // @Values: 0:3-Servo CCPM, 1:H1 Mechanical Mixing
+    // @Description: Swash Type Setting
+    // @Values: 0:H3 CCPM Adjustable, 1:H1 Straight Swash, 2:H3_140 CCPM
     // @User: Standard
-    AP_GROUPINFO("SWASH_TYPE", 5, AP_MotorsHeli_Single, _swash_type, AP_MOTORS_HELI_SINGLE_SWASH_CCPM),
+    AP_GROUPINFO("SWASH_TYPE", 5, AP_MotorsHeli_Single, _swash_type, AP_MOTORS_HELI_SINGLE_SWASH_H3),
 
     // @Param: GYR_GAIN
     // @DisplayName: External Gyro Gain
@@ -76,8 +76,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: PHANG
     // @DisplayName: Swashplate Phase Angle Compensation
-    // @Description: Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
-    // @Range: -90 90
+    // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
+    // @Range: -30 30
     // @Units: Degrees
     // @User: Advanced
     // @Increment: 1
@@ -296,17 +296,16 @@ void AP_MotorsHeli_Single::calculate_scalars()
     }
 }
 
-// calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
+// CCPM Mixers - calculate mixing scale factors by swashplate type
 void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
-{
-    if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_CCPM) {                     //CCPM Swashplate, perform control mixing
-
-        // roll factors
+{   //Three-Servo adjustable CCPM mixer factors
+    if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_H3) {
+        // aileron factors
         _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - _phase_angle));
         _rollFactor[CH_2] = cosf(radians(_servo2_pos + 90 - _phase_angle));
         _rollFactor[CH_3] = cosf(radians(_servo3_pos + 90 - _phase_angle));
 
-        // pitch factors
+        // elevator factors
         _pitchFactor[CH_1] = cosf(radians(_servo1_pos - _phase_angle));
         _pitchFactor[CH_2] = cosf(radians(_servo2_pos - _phase_angle));
         _pitchFactor[CH_3] = cosf(radians(_servo3_pos - _phase_angle));
@@ -315,15 +314,34 @@ void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
         _collectiveFactor[CH_1] = 1;
         _collectiveFactor[CH_2] = 1;
         _collectiveFactor[CH_3] = 1;
+    }
 
-    }else{              //H1 Swashplate, keep servo outputs separated
+    //Three-Servo H3-140 CCPM mixer factors
+    else if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_H3_140) {
+        // aileron factors
+        _rollFactor[CH_1] = 1;
+        _rollFactor[CH_2] = -1;
+        _rollFactor[CH_3] = 0;
 
-        // roll factors
+        // elevator factors
+        _pitchFactor[CH_1] = 1;
+        _pitchFactor[CH_2] = 1;
+        _pitchFactor[CH_3] = -1;
+
+        // collective factors
+        _collectiveFactor[CH_1] = 1;
+        _collectiveFactor[CH_2] = 1;
+        _collectiveFactor[CH_3] = 1;
+    }
+
+    //H1 straight outputs, no mixing
+    else {
+        // aileron factors
         _rollFactor[CH_1] = 1;
         _rollFactor[CH_2] = 0;
         _rollFactor[CH_3] = 0;
 
-        // pitch factors
+        // elevator factors
         _pitchFactor[CH_1] = 0;
         _pitchFactor[CH_2] = 1;
         _pitchFactor[CH_3] = 0;
@@ -556,11 +574,11 @@ void AP_MotorsHeli_Single::servo_test()
 // parameter_check - check if helicopter specific parameters are sensible
 bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
 {
-    // returns false if Phase Angle is outside of range 
-    if ((_phase_angle > 90) || (_phase_angle < -90)){
+    // returns false if Phase Angle is outside of range
+    if ((_phase_angle > 30) || (_phase_angle < -30)){
         if (display_msg) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_PHANG out of range");
-        }
+      }
         return false;
     }
 

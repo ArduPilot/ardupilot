@@ -1,5 +1,13 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+ArduHeli 3.5.6 11-Apr-2018
+Changes from Copter 3.5.5
+1) EKF updates by Paul Riseborough
+2) support for reverse collective and H3-140 swashplates
+3) Alt Hold angle limiter fix for helicopters
+4) five-point spline interpolated throttle curve
+5) DDVP ramp/runup improvement
+------------------------------------------------------------------
 Copter 3.5.5 31-Jan-2018 / 3.5.5-rc1 24-Jan-2018
 Changes from 3.5.4
 1) ICM20948 compass orientation fix
