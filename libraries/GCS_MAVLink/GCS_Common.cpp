@@ -2095,7 +2095,7 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
     case MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE:
-        handle_vision_position_estimate(msg);
+        handle_global_vision_position_estimate(msg);
         break;
 
     case MAVLINK_MSG_ID_VICON_POSITION_ESTIMATE:
