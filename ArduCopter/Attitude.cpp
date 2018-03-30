@@ -30,33 +30,6 @@ float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
 }
 
 /*************************************************************
- * yaw controllers
- *************************************************************/
-
-// roi_yaw - returns heading towards location held in roi
-float Copter::Mode::AutoYaw::roi_yaw()
-{
-    roi_yaw_counter++;
-    if (roi_yaw_counter >= 4) {
-        roi_yaw_counter = 0;
-        _roi_yaw = get_bearing_cd(copter.inertial_nav.get_position(), roi);
-    }
-
-    return _roi_yaw;
-}
-
-float Copter::Mode::AutoYaw::look_ahead_yaw()
-{
-    const Vector3f& vel = copter.inertial_nav.get_velocity();
-    float speed = norm(vel.x,vel.y);
-    // Commanded Yaw to automatically look ahead.
-    if (copter.position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
-        _look_ahead_yaw = degrees(atan2f(vel.y,vel.x))*100.0f;
-    }
-    return _look_ahead_yaw;
-}
-
-/*************************************************************
  *  throttle control
  ****************************************************************/
 
