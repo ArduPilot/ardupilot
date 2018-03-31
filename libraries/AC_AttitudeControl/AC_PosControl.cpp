@@ -1185,7 +1185,7 @@ void AC_PosControl::check_for_ekf_z_reset()
     // check for position shift
     float alt_shift;
     uint32_t reset_ms = _ahrs.getLastPosDownReset(alt_shift);
-    if (reset_ms != _ekf_z_reset_ms) {
+    if (reset_ms != 0 && reset_ms != _ekf_z_reset_ms) {
         shift_alt_target(-alt_shift * 100.0f);
         _ekf_z_reset_ms = reset_ms;
     }
