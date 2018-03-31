@@ -414,12 +414,6 @@ void AC_WPNav::init_brake_target(float accel_cmss)
 // update_brake - run the stop controller - gets called at 400hz
 void AC_WPNav::update_brake(float ekfGndSpdLimit, float ekfNavVelGainScaler)
 {
-    // calculate dt
-    float dt = _pos_control.time_since_last_xy_update();
-    if (dt >= 0.2f) {
-        dt = 0.0f;
-    }
-
     // send adjusted feed forward velocity back to position controller
     _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
     _pos_control.update_xy_controller(ekfNavVelGainScaler);
