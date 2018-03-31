@@ -36,7 +36,7 @@ public:
     };
 
     // constructor
-    AP_Follow(const AP_AHRS &ahrs);
+    AP_Follow();
 
     // set which target to follow
     void set_target_sysid(uint8_t sysid) { _sysid = sysid; }
@@ -86,9 +86,6 @@ private:
 
     // get offsets in meters in NED frame
     bool get_offsets_ned(Vector3f &offsets) const;
-
-    // references
-    const AP_AHRS &_ahrs;
 
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled
