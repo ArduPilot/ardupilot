@@ -1003,13 +1003,13 @@ ParametersG2::ParametersG2(void)
     ,afs(copter.mission, copter.barometer, copter.gps, copter.rcmap)
 #endif
 #if MODE_SMARTRTL_ENABLED == ENABLED
-    ,smart_rtl(copter.ahrs)
+    ,smart_rtl()
 #endif
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     ,mode_flowhold_ptr(&copter.mode_flowhold)
 #endif
 #if MODE_FOLLOW_ENABLED == ENABLED
-    ,follow(copter.ahrs)
+    ,follow()
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
