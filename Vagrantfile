@@ -42,10 +42,21 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/artful32"
 
   # LTS, EOL April, 2019:
+  config.vm.define "trusty32", autostart: false do |trusty32|
+    config.vm.box = "ubuntu/trusty32"
+    config.vm.provision "trusty32", type: "shell", path: "Tools/vagrant/initvagrant.sh"
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (trusty32)"
+    end
+  end
+
+  # LTS, EOL April, 2019:
   config.vm.define "trusty64", autostart: false do |trusty64|
     config.vm.box = "ubuntu/trusty64"
     config.vm.provision "trusty64", type: "shell", path: "Tools/vagrant/initvagrant.sh"
-    config.vm.name = "ArduPilot (Trusty64)"
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (trusty64)"
+    end
   end
 
   # LTS, EOL April 2021
@@ -53,24 +64,35 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.box = "ubuntu/xenial32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.name = "ArduPilot (Xenial32)"
-    config.vm.gui = true
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (xenial32)"
+    end
   end
 
   # EOL January 2018
   config.vm.define "zesty32", autostart: false do |zesty32|
     config.vm.box = "ubuntu/zesty32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (zesty32)"
+    end
   end
 
   # EOL July 2018
   config.vm.define "artful32", primary: true do |artful32|
     config.vm.box = "ubuntu/artful32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (artful32)"
+    end
   end
 
   config.vm.define "bionic32", autostart: false do |bionic32|
     config.vm.box = "ubuntu/bionic32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (bionic32)"
+    end
   end
 
 end
