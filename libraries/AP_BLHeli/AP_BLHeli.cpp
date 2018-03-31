@@ -41,12 +41,14 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MASK",  1, AP_BLHeli, channel_mask, 0),
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     // @Param: AUTO
     // @DisplayName: auto-enable for multicopter motors
     // @Description: If set to 1 this auto-enables BLHeli pass-thru support for all multicopter motors
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("AUTO",  2, AP_BLHeli, channel_auto, 0),
+#endif
     
     AP_GROUPEND
 };
@@ -993,14 +995,19 @@ void AP_BLHeli::update(void)
         debug("BLHeli installed");
     }
 
+    uint16_t mask = uint16_t(channel_mask.get());
+    
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    /*
+      plane and copter can use AP_Motors to get an automatic mask
+     */
     AP_Motors *motors = AP_Motors::get_instance();
-    uint16_t motors_mask = 0;
     if (motors) {
-        motors_mask = motors->get_motor_mask();
+        mask |= motors->get_motor_mask();
     }
+#endif
     
     // add motors from channel mask
-    uint16_t mask = uint16_t(channel_mask.get()) | motors_mask;
     for (uint8_t i=0; i<16 && num_motors < max_motors; i++) {
         if (mask & (1U<<i)) {
             motor_map[num_motors] = i;
