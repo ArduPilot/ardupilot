@@ -47,7 +47,7 @@ private:
     const uint8_t component_id = 18;
 
     // we share channels with the ArduPilot binary!
-    const uint8_t mavlink_ch = 17;
+    const mavlink_channel_t mavlink_ch = (mavlink_channel_t)(MAVLINK_COMM_0+5);
 
     int fd_their_end;
     int fd_my_end;
