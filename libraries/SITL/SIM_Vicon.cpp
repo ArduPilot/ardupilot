@@ -38,6 +38,10 @@ Vicon::Vicon()
     // make sure we don't screw the simulation up by blocking:
     fcntl(fd_my_end, F_SETFL, fcntl(fd_my_end, F_GETFL, 0) | O_NONBLOCK);
     fcntl(fd_their_end, F_SETFL, fcntl(fd_their_end, F_GETFL, 0) | O_NONBLOCK);
+
+    if (!valid_channel(mavlink_ch)) {
+        AP_HAL::panic("Invalid mavlink channel");
+    }
 }
 
 void Vicon::maybe_send_heartbeat()
@@ -100,20 +104,21 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     observation.attitude.to_euler(roll, pitch, yaw);
 
     mavlink_message_t msg;
-    mavlink_msg_vicon_position_estimate_pack_chan(system_id,
-                                                  component_id,
-                                                  mavlink_ch,
-                                                  &msg,
-                                                  observation.time_ms*1000,
-                                                  observation.position.x,
-                                                  observation.position.y,
-                                                  observation.position.z,
-                                                  roll,
-                                                  pitch,
-                                                  yaw);
+    const uint16_t n = mavlink_msg_vicon_position_estimate_pack_chan(
+        system_id,
+        component_id,
+        mavlink_ch,
+        &msg,
+        observation.time_ms*1000,
+        observation.position.x,
+        observation.position.y,
+        observation.position.z,
+        roll,
+        pitch,
+        yaw);
 
-    // ::fprintf(stderr, "Vicon: writing pos=(%03.03f %03.03f %03.03f) att=(%01.03f %01.03f %01.03f)\n", observation.position.x, observation.position.y, observation.position.z, roll, pitch, yaw);
-    if (::write(fd_my_end, (void*)&msg, sizeof(msg)) != sizeof(msg)) {
+    // ::fprintf(stderr, "Vicon: %u: writing pos=(%03.03f %03.03f %03.03f) att=(%01.03f %01.03f %01.03f)\n", observation.time_ms, observation.position.x, observation.position.y, observation.position.z, roll, pitch, yaw);
+    if (::write(fd_my_end, (void*)&msg, n) != n) {
         ::fprintf(stderr, "Vicon: write failure\n");
         // abort();
     }
