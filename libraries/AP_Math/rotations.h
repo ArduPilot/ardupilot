@@ -24,7 +24,7 @@
 
 // NOTE!! these rotation values are stored to EEPROM, so be careful not to
 // change the numbering of any existing entry when adding a new entry.
-enum Rotation {
+enum Rotation : uint8_t {
     ROTATION_NONE                = 0,
     ROTATION_YAW_45              = 1,
     ROTATION_YAW_90              = 2,
