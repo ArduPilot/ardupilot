@@ -45,7 +45,9 @@
 
 /* string names for well known SPI devices */
 #define HAL_BARO_MS5611_NAME "ms5611"
+#ifndef HAL_BARO_MS5611_SPI_INT_NAME
 #define HAL_BARO_MS5611_SPI_INT_NAME "ms5611_int"
+#endif
 #define HAL_BARO_MS5611_SPI_EXT_NAME "ms5611_ext"
 #define HAL_BARO_LPS22H_NAME "lps22h"
 
