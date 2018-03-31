@@ -1380,7 +1380,7 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs)
             velInnovVarZ : velBodyInnovVar.z
          };
         WriteBlock(&pkt11, sizeof(pkt11));
-        updateTime_ms = lastUpdateTime_ms;
+        lastUpdateTime_ms = updateTime_ms;
     }
 
     // log state variances every 0.49s
