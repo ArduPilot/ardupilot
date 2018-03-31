@@ -35,7 +35,7 @@ class OpticalFlow;
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
 #define AP_AHRS_YAW_P_MIN  0.05f        // minimum value for AHRS_YAW_P parameter
 
-enum AHRS_VehicleClass {
+enum AHRS_VehicleClass : uint8_t {
     AHRS_VEHICLE_UNKNOWN,
     AHRS_VEHICLE_GROUND,
     AHRS_VEHICLE_COPTER,
