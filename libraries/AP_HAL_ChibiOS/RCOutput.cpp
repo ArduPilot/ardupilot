@@ -1081,7 +1081,7 @@ void RCOutput::serial_bit_irq(void)
 */
 bool RCOutput::serial_read_byte(uint8_t &b)
 {
-    bool timed_out = ((chEvtWaitAnyTimeout(serial_event_mask, MS2ST(2)) & serial_event_mask) == 0);
+    bool timed_out = ((chEvtWaitAnyTimeout(serial_event_mask, MS2ST(10)) & serial_event_mask) == 0);
 
     uint16_t byteval = irq.byteval;
 
