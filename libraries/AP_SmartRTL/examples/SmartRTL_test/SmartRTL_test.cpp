@@ -29,7 +29,7 @@ public:
 static DummyVehicle vehicle;
 
 AP_AHRS_NavEKF &ahrs(vehicle.ahrs);
-AP_SmartRTL smart_rtl{ahrs, true};
+AP_SmartRTL smart_rtl{true};
 AP_BoardConfig board_config;
 
 void setup();

@@ -72,8 +72,7 @@ const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
 *    seconds before initiating the return journey.
 */
 
-AP_SmartRTL::AP_SmartRTL(const AP_AHRS& ahrs, bool example_mode) :
-    _ahrs(ahrs),
+AP_SmartRTL::AP_SmartRTL(bool example_mode) :
     _example_mode(example_mode)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -170,7 +169,7 @@ bool AP_SmartRTL::pop_point(Vector3f& point)
 void AP_SmartRTL::set_home(bool position_ok)
 {
     Vector3f current_pos;
-    position_ok &= _ahrs.get_relative_position_NED_origin(current_pos);
+    position_ok &= AP::ahrs().get_relative_position_NED_origin(current_pos);
     set_home(position_ok, current_pos);
 }
 
@@ -217,7 +216,7 @@ void AP_SmartRTL::update(bool position_ok, bool save_position)
     }
 
     Vector3f current_pos;
-    position_ok &= _ahrs.get_relative_position_NED_origin(current_pos);
+    position_ok &= AP::ahrs().get_relative_position_NED_origin(current_pos);
     update(position_ok, current_pos);
 }
 

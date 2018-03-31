@@ -30,7 +30,7 @@ class AP_SmartRTL {
 public:
 
     // constructor, destructor
-    AP_SmartRTL(const AP_AHRS& ahrs, bool example_mode = false);
+    AP_SmartRTL(bool example_mode = false);
 
     // initialise safe rtl including setting up background processes
     void init();
@@ -164,9 +164,6 @@ private:
 
     // logging
     void log_action(SRTL_Actions action, const Vector3f &point = Vector3f());
-
-    // external references
-    const AP_AHRS& _ahrs;
 
     // parameters
     AP_Float _accuracy;
