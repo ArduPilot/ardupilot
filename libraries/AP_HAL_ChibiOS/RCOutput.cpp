@@ -547,6 +547,7 @@ void RCOutput::set_group_mode(pwm_group &group)
     case MODE_PWM_ONESHOT:
         // for oneshot we force 1Hz output and then trigger on each loop
         group.pwm_cfg.period = group.pwm_cfg.frequency;
+        group.rc_frequency = 1;
         if (group.pwm_started) {
             pwmChangePeriod(group.pwm_drv, group.pwm_cfg.period);
         }
