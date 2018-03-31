@@ -1417,7 +1417,7 @@ Format characters in the format string for binary log messages
 // message types 0 to 63 reserved for vehicle specific use
 
 // message types for common messages
-enum LogMessages {
+enum LogMessages : uint8_t {
     LOG_NKF1_MSG = 64,
     LOG_NKF2_MSG,
     LOG_NKF3_MSG,
