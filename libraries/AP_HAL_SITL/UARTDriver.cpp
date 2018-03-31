@@ -226,7 +226,10 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         }
 
         /* we want to be able to re-use ports quickly */
-        setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+        if (setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
+            fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
+            exit(1);
+        }
 
         fprintf(stderr, "bind port %u for %u\n",
                 (unsigned)ntohs(sockaddr.sin_port),
