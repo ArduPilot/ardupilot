@@ -27,8 +27,10 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if 0
-#define debug(fmt, args ...) do { printf("ESC: " fmt "\n", ## args); } while (0)
+#if 1
+#define debug(fmt, args ...) do { if (debug_uart) debug_uart->printf("ESC: " fmt "\n", ## args); } while (0)
+#elif 0
+#define debug(fmt, args ...) do { hal.uartD->printf("ESC: " fmt "\n", ## args); } while (0)
 #else
 #define debug(fmt, args ...)
 #endif
@@ -56,6 +58,14 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("TEST",  3, AP_BLHeli, run_test, 0),
+
+    // @Param: TMOUT
+    // @DisplayName: BLHeli protocol timeout
+    // @Description: This sets the inactivity timeout for the BLHeli protocol in seconds. If no packets are received in this time normal MAVLink operations are resumed. A value of 0 means no timeout
+    // @Units: s
+    // @Range: 0 300
+    // @User: Advanced
+    AP_GROUPINFO("TMOUT",  4, AP_BLHeli, timeout_sec, 30),
     
     AP_GROUPEND
 };
@@ -1002,7 +1012,9 @@ bool AP_BLHeli::protocol_handler(uint8_t b, AP_HAL::UARTDriver *_uart)
  */
 void AP_BLHeli::update(void)
 {
-    if (initialised && AP_HAL::millis() - last_valid_ms > 4000) {
+    if (initialised &&
+        timeout_sec &&
+        AP_HAL::millis() - last_valid_ms > uint32_t(timeout_sec.get())*1000U) {
         // we're not processing requests any more, shutdown serial
         // output
         if (serial_start_ms) {
@@ -1020,7 +1032,7 @@ void AP_BLHeli::update(void)
             debug_uart = hal.console;
             uint8_t saved_chan = blheli.chan;
             blheli.chan = run_test.get() - 1;
-            debug_uart->printf("Running test on channel %u\n", blheli.chan);
+            debug("Running test on channel %u\n", blheli.chan);
             run_test.set_and_notify(0);
             for (uint8_t tries=0; tries<5; tries++) {
                 blheli.ack = ACK_OK;

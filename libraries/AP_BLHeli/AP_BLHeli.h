@@ -43,6 +43,7 @@ private:
     AP_Int32 channel_mask;
     AP_Int8 channel_auto;
     AP_Int8 run_test;
+    AP_Int16 timeout_sec;
     
     enum mspState {
         MSP_IDLE=0,
