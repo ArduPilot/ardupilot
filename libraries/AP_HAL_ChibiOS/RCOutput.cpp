@@ -31,6 +31,8 @@ extern const AP_HAL::HAL& hal;
 extern AP_IOMCU iomcu;
 #endif
 
+#define RCOU_SERIAL_TIMING_DEBUG 0
+
 struct RCOutput::pwm_group RCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
 struct RCOutput::irq_state RCOutput::irq;
 
@@ -1034,6 +1036,10 @@ void RCOutput::serial_bit_irq(void)
     uint32_t now = AP_HAL::micros();
     uint8_t bit = palReadLine(irq.line);
     bool send_signal = false;
+
+#if RCOU_SERIAL_TIMING_DEBUG
+    palWriteLine(HAL_GPIO_LINE_GPIO55, bit);
+#endif
     
     if (irq.nbits == 0 || bit == irq.last_bit) {
         // start of byte, should be low
@@ -1124,6 +1130,11 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     // GPIO lines not setup for PWM outputs in hwdef.dat
     return false;
 #endif
+
+#if RCOU_SERIAL_TIMING_DEBUG
+    hal.gpio->pinMode(54, 1);
+    hal.gpio->pinMode(55, 1);
+#endif
     
     // assume GPIO mappings for PWM outputs start at 50
     const uint8_t gpio_pin = 50 + chan;
@@ -1138,8 +1149,15 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     irq.bit_time_us = serial_group->serial.bit_time_us;
     irq.last_bit = 0;
     irq.waiter = chThdGetSelfX();
+
+#if RCOU_SERIAL_TIMING_DEBUG
+    palWriteLine(HAL_GPIO_LINE_GPIO54, 1);
+#endif
     
     if (!hal.gpio->attach_interrupt(gpio_pin, serial_bit_irq, HAL_GPIO_INTERRUPT_BOTH)) {
+#if RCOU_SERIAL_TIMING_DEBUG
+        palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
+#endif
         return false;
     }
     
@@ -1154,6 +1172,9 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     
     ((GPIO *)hal.gpio)->_set_mode(gpio_pin, restore_mode);
     chThdSetPriority(oldprio);
+#if RCOU_SERIAL_TIMING_DEBUG
+    palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
+#endif
     return i;
 }
 
