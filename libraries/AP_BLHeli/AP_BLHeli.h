@@ -42,6 +42,7 @@ private:
     // mask of channels to use for BLHeli protocol
     AP_Int32 channel_mask;
     AP_Int8 channel_auto;
+    AP_Int8 run_test;
     
     enum mspState {
         MSP_IDLE=0,
@@ -156,6 +157,7 @@ private:
     } blheli;
 
     AP_HAL::UARTDriver *uart;
+    AP_HAL::UARTDriver *debug_uart;
     
     static const uint8_t max_motors = 8;
     uint8_t num_motors;
@@ -166,8 +168,11 @@ private:
     // last valid packet timestamp
     uint32_t last_valid_ms;
 
-    // have we started serial ESC output?
-    bool serial_started;
+    // when did we start the serial ESC output?
+    uint32_t serial_start_ms;
+
+    // have we disabled motor outputs?
+    bool motors_disabled;
 
     // mapping from BLHeli motor numbers to RC output channels
     uint8_t motor_map[max_motors];

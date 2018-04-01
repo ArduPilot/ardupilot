@@ -49,6 +49,13 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("AUTO",  2, AP_BLHeli, channel_auto, 0),
 #endif
+
+    // @Param: TEST
+    // @DisplayName: internal test of BLHeli interface
+    // @Description: Setting test to 1 enables an internal test
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("TEST",  3, AP_BLHeli, run_test, 0),
     
     AP_GROUPEND
 };
@@ -337,6 +344,8 @@ void AP_BLHeli::msp_process_command(void)
         // set the output to each motor
         uint8_t nmotors = msp.dataSize / 2;
         debug("MSP_SET_MOTOR %u", nmotors);
+        SRV_Channels::set_disabled_channel_mask(0xFFFF);
+        motors_disabled = true;
         hal.rcout->cork();
         for (uint8_t i = 0; i < nmotors; i++) {
             if (i >= num_motors) {
@@ -365,7 +374,7 @@ void AP_BLHeli::msp_process_command(void)
         default:
             n = 0;
             hal.rcout->serial_end();
-            serial_started = false;
+            serial_start_ms = 0;
             break;
         }
         msp_send_reply(msp.cmdMSP, &n, 1);
@@ -437,12 +446,23 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     if (blheli.chan >= num_motors) {
         return false;
     }
-    hal.scheduler->delay(10);
     if (!hal.rcout->serial_setup_output(motor_map[blheli.chan], 19200)) {
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
-    serial_started = true;
+    if (serial_start_ms == 0) {
+        serial_start_ms = AP_HAL::millis();
+    }
+    uint32_t now = AP_HAL::millis();
+    if (serial_start_ms == 0 || now - serial_start_ms < 1000) {
+        /*
+          we've just started the interface. We want it idle for at
+          least 1 second before we start sending serial data. 
+         */
+        hal.scheduler->delay(1100);
+    } else {
+        hal.scheduler->delay(10);
+    }
     memcpy(blheli.buf, buf, len);
     uint16_t crc = BL_CRC(buf, len);
     blheli.buf[len] = crc;
@@ -741,7 +761,7 @@ void AP_BLHeli::blheli_process_command(void)
         uint8_t b = 0;
         blheli_send_reply(&b, 1);
         hal.rcout->serial_end();
-        serial_started = false;
+        serial_start_ms = 0;
         break;
     }
     case cmd_DeviceReset: {
@@ -931,7 +951,7 @@ bool AP_BLHeli::process_input(uint8_t b)
         debug("Change to MSP mode");
         msp.escMode = PROTOCOL_NONE;
         hal.rcout->serial_end();
-        serial_started = false;
+        serial_start_ms = 0;
     }
     if (msp.escMode != PROTOCOL_4WAY && msp.state == MSP_IDLE && b == '/') {
         debug("Change to BLHeli mode");
@@ -969,6 +989,10 @@ bool AP_BLHeli::process_input(uint8_t b)
 bool AP_BLHeli::protocol_handler(uint8_t b, AP_HAL::UARTDriver *_uart)
 {
     uart = _uart;
+    if (hal.util->get_soft_armed()) {
+        // don't allow MSP control when armed
+        return false;
+    }
     return process_input(b);
 }
 
@@ -978,16 +1002,45 @@ bool AP_BLHeli::protocol_handler(uint8_t b, AP_HAL::UARTDriver *_uart)
  */
 void AP_BLHeli::update(void)
 {
-    if (initialised && serial_started && AP_HAL::millis() - last_valid_ms > 4000) {
+    if (initialised && AP_HAL::millis() - last_valid_ms > 4000) {
         // we're not processing requests any more, shutdown serial
         // output
-        hal.rcout->serial_end();
-        serial_started = false;
+        if (serial_start_ms) {
+            hal.rcout->serial_end();
+            serial_start_ms = 0;
+        }
+        if (motors_disabled) {
+            motors_disabled = false;
+            SRV_Channels::set_disabled_channel_mask(0);            
+        }
     }
     if (initialised || (channel_mask.get() == 0 && channel_auto.get() == 0)) {
+        if (initialised && run_test.get()) {
+            // run a connection test to the ESCs
+            debug_uart = hal.console;
+            uint8_t saved_chan = blheli.chan;
+            blheli.chan = run_test.get() - 1;
+            debug_uart->printf("Running test on channel %u\n", blheli.chan);
+            run_test.set_and_notify(0);
+            for (uint8_t tries=0; tries<5; tries++) {
+                blheli.ack = ACK_OK;
+                setDisconnected();
+                if (BL_ConnectEx()) {
+                    uint8_t buf[256];
+                    uint8_t cmd = blheli.interface_mode==imATM_BLB?CMD_READ_FLASH_ATM:CMD_READ_FLASH_SIL;
+                    blheli.address = 0x7c00;
+                    BL_ReadA(cmd, buf, sizeof(buf));
+                    break;
+                }
+            }
+            blheli.chan = saved_chan;
+            debug_uart = nullptr;
+        }
         return;
     }
     initialised = true;
+
+    run_test.set_and_notify(0);
     
     if (gcs().install_alternative_protocol(MAVLINK_COMM_0,
                                            FUNCTOR_BIND_MEMBER(&AP_BLHeli::protocol_handler,
