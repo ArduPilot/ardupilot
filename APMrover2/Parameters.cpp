@@ -303,8 +303,8 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: Turning maximum G force
     // @Description: The maximum turning acceleration (in units of gravities) that the rover can handle while remaining stable. The navigation code will keep the lateral acceleration below this level to avoid rolling over or slipping the wheels in turns
     // @Units: gravities
-    // @Range: 0.2 10
-    // @Increment: 0.1
+    // @Range: 0.1 10
+    // @Increment: 0.01
     // @User: Standard
     GSCALAR(turn_max_g,             "TURN_MAX_G",      1.0f),
 
