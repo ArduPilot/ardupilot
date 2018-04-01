@@ -422,6 +422,9 @@ public:
 
     static void push();
 
+    // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
+    static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
+
 private:
     struct {
         bool k_throttle_reversible:1;
@@ -449,6 +452,7 @@ private:
     // support for BLHeli protocol
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;
+    static uint16_t disabled_mask;
     
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 

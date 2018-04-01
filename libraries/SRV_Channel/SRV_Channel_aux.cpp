@@ -50,7 +50,9 @@ void SRV_Channel::output_ch(void)
             }
         }
     }
-    hal.rcout->write(ch_num, output_pwm);
+    if (!(SRV_Channels::disabled_mask & (1U<<ch_num))) {
+        hal.rcout->write(ch_num, output_pwm);
+    }
 }
 
 /*
