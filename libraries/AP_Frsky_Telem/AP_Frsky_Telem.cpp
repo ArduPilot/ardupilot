@@ -142,7 +142,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 _passthrough.home_timer = AP_HAL::millis();
                 return;
             }
-            if ((now - _passthrough.velandyaw_timer) >= 500) {
+            if ((now - _passthrough.velandyaw_timer) >= 100) {
                 send_uint32(DIY_FIRST_ID+5, calc_velandyaw());
                 _passthrough.velandyaw_timer = AP_HAL::millis();
                 return;
