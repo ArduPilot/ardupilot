@@ -205,6 +205,7 @@ private:
     uint8_t BL_WriteFlash(const uint8_t *buf, uint16_t n);
     bool BL_VerifyFlash(const uint8_t *buf, uint16_t n);
     void blheli_process_command(void);
+    void run_connection_test(uint8_t chan);
 
     // protocol handler hook
     bool protocol_handler(uint8_t , AP_HAL::UARTDriver *);
