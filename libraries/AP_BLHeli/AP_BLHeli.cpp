@@ -30,7 +30,7 @@ extern const AP_HAL::HAL& hal;
 #if 1
 #define debug(fmt, args ...) do { if (debug_uart) debug_uart->printf("ESC: " fmt "\n", ## args); } while (0)
 #elif 0
-#define debug(fmt, args ...) do { hal.uartD->printf("ESC: " fmt "\n", ## args); } while (0)
+#define debug(fmt, args ...) do { hal.uartF->printf("ESC: " fmt "\n", ## args); } while (0)
 #else
 #define debug(fmt, args ...)
 #endif
@@ -54,8 +54,8 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
 
     // @Param: TEST
     // @DisplayName: internal test of BLHeli interface
-    // @Description: Setting test to 1 enables an internal test
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: Setting SERVO_BLH_TEST to a motor number enables an internal test of the BLHeli ESC protocol to the corresponding ESC. The debug output is displayed on the USB console.
+    // @Values: 0:Disabled,1:TestMotor1,2:TestMotor2,3:TestMotor3,4:TestMotor4,5:TestMotor5,6:TestMotor6,7:TestMotor7,8:TestMotor8
     // @User: Advanced
     AP_GROUPINFO("TEST",  3, AP_BLHeli, run_test, 0),
 
@@ -244,21 +244,25 @@ void AP_BLHeli::msp_process_command(void)
     debug("MSP cmd %u len=%u", msp.cmdMSP, msp.dataSize);
     switch (msp.cmdMSP) {
     case MSP_API_VERSION: {
+        debug("MSP_API_VERSION");
         uint8_t buf[3] = { MSP_PROTOCOL_VERSION, API_VERSION_MAJOR, API_VERSION_MINOR };
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
     }
         
     case MSP_FC_VARIANT:
+        debug("MSP_FC_VARIANT");
         msp_send_reply(msp.cmdMSP, (const uint8_t *)ARDUPILOT_IDENTIFIER, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
         break;
         
     case MSP_FC_VERSION: {
+        debug("MSP_FC_VERSION");
         uint8_t version[3] = { 3, 3, 0 };
         msp_send_reply(msp.cmdMSP, version, sizeof(version));
         break;
     }
     case MSP_BOARD_INFO: {
+        debug("MSP_BOARD_INFO");
         // send a generic 'ArduPilot ChibiOS' board type
         uint8_t buf[7] = { 'A', 'R', 'C', 'H', 0, 0, 0 };
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
@@ -266,6 +270,7 @@ void AP_BLHeli::msp_process_command(void)
     }
 
     case MSP_BUILD_INFO: {
+        debug("MSP_BUILD_INFO");
          // build date, build time, git version
         uint8_t buf[26] {
                 0x4d, 0x61, 0x72, 0x20, 0x31, 0x36, 0x20, 0x32, 0x30,
@@ -276,16 +281,19 @@ void AP_BLHeli::msp_process_command(void)
     }
 
     case MSP_REBOOT:
+        debug("MSP_REBOOT");
         debug("MSP: rebooting");
         hal.scheduler->reboot(false);
         break;
 
     case MSP_UID:
         // MCU identifer
+        debug("MSP_UID");
         msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
         break;
 
     case MSP_ADVANCED_CONFIG: {
+        debug("MSP_ADVANCED_CONFIG");
         uint8_t buf[10];
         buf[0] = 1; // gyro sync denom
         buf[1] = 4; // pid process denom
@@ -300,6 +308,7 @@ void AP_BLHeli::msp_process_command(void)
     }
 
     case MSP_FEATURE_CONFIG: {
+        debug("MSP_FEATURE_CONFIG");
         uint8_t buf[4];
         putU32(buf, 0); // from MSPFeatures enum
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
@@ -307,6 +316,7 @@ void AP_BLHeli::msp_process_command(void)
     }
 
     case MSP_STATUS: {
+        debug("MSP_STATUS");
         uint8_t buf[21];
         putU16(&buf[0], 2500); // loop time usec
         putU16(&buf[2], 0);    // i2c error count
@@ -323,6 +333,7 @@ void AP_BLHeli::msp_process_command(void)
     }
 
     case MSP_MOTOR_3D_CONFIG: {
+        debug("MSP_MOTOR_3D_CONFIG");
         uint8_t buf[6];
         putU16(&buf[0], 1406); // 3D deadband low
         putU16(&buf[2], 1514); // 3D deadband high
@@ -332,6 +343,7 @@ void AP_BLHeli::msp_process_command(void)
     }
 
     case MSP_MOTOR_CONFIG: {
+        debug("MSP_MOTOR_CONFIG");
         uint8_t buf[6];
         putU16(&buf[0], 1070); // min throttle
         putU16(&buf[2], 2000); // max throttle
@@ -341,16 +353,19 @@ void AP_BLHeli::msp_process_command(void)
     }
 
     case MSP_MOTOR: {
+        debug("MSP_MOTOR");
         // get the output going to each motor
-        uint8_t buf[16];
-        for (uint8_t i = 0; i < 8; i++) {
-            putU16(&buf[2*i], hal.rcout->read(i));
+        uint8_t buf[16] {};
+        for (uint8_t i = 0; i < num_motors; i++) {
+            uint16_t v = hal.rcout->read(motor_map[i]);
+            putU16(&buf[2*i], v);
         }
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
     }
 
     case MSP_SET_MOTOR: {
+        debug("MSP_SET_MOTOR");
         // set the output to each motor
         uint8_t nmotors = msp.dataSize / 2;
         debug("MSP_SET_MOTOR %u", nmotors);
@@ -370,6 +385,7 @@ void AP_BLHeli::msp_process_command(void)
     }
     
     case MSP_SET_4WAY_IF: {
+        debug("MSP_SET_4WAY_IF");
         if (msp.dataSize == 0) {
             msp.escMode = PROTOCOL_4WAY;
         } else if (msp.dataSize == 2) {
@@ -1006,6 +1022,41 @@ bool AP_BLHeli::protocol_handler(uint8_t b, AP_HAL::UARTDriver *_uart)
     return process_input(b);
 }
 
+
+/*
+  run a connection test to the ESCs. This is used to test the
+  operation of the BLHeli ESC protocol
+*/
+void AP_BLHeli::run_connection_test(uint8_t chan)
+{
+    debug_uart = hal.console;
+    uint8_t saved_chan = blheli.chan;
+    blheli.chan = chan;
+    debug("Running test on channel %u", blheli.chan);
+    run_test.set_and_notify(0);
+    bool passed = false;
+    for (uint8_t tries=0; tries<5; tries++) {
+        blheli.ack = ACK_OK;
+        setDisconnected();
+        if (BL_ConnectEx()) {
+            uint8_t buf[256];
+            uint8_t cmd = blheli.interface_mode==imATM_BLB?CMD_READ_FLASH_ATM:CMD_READ_FLASH_SIL;
+            passed = true;
+            blheli.address = blheli.interface_mode==imATM_BLB?0:0x7c00;
+            passed &= BL_ReadA(cmd, buf, sizeof(buf));
+            BL_SendCMDRunRestartBootloader();
+            break;
+        }
+    }
+    hal.rcout->serial_end();
+    SRV_Channels::set_disabled_channel_mask(0);            
+    motors_disabled = false;
+    serial_start_ms = 0;
+    blheli.chan = saved_chan;
+    debug("Test %s", passed?"PASSED":"FAILED");
+    debug_uart = nullptr;
+}
+
 /*
   update BLHeli
   Used to install protocol handler
@@ -1027,26 +1078,8 @@ void AP_BLHeli::update(void)
         }
     }
     if (initialised || (channel_mask.get() == 0 && channel_auto.get() == 0)) {
-        if (initialised && run_test.get()) {
-            // run a connection test to the ESCs
-            debug_uart = hal.console;
-            uint8_t saved_chan = blheli.chan;
-            blheli.chan = run_test.get() - 1;
-            debug("Running test on channel %u\n", blheli.chan);
-            run_test.set_and_notify(0);
-            for (uint8_t tries=0; tries<5; tries++) {
-                blheli.ack = ACK_OK;
-                setDisconnected();
-                if (BL_ConnectEx()) {
-                    uint8_t buf[256];
-                    uint8_t cmd = blheli.interface_mode==imATM_BLB?CMD_READ_FLASH_ATM:CMD_READ_FLASH_SIL;
-                    blheli.address = 0x7c00;
-                    BL_ReadA(cmd, buf, sizeof(buf));
-                    break;
-                }
-            }
-            blheli.chan = saved_chan;
-            debug_uart = nullptr;
+        if (initialised && run_test.get() > 0) {
+            run_connection_test(run_test.get() - 1);
         }
         return;
     }
