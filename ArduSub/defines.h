@@ -65,13 +65,6 @@ enum mode_reason_t {
 #define ACRO_TRAINER_LEVELING   1
 #define ACRO_TRAINER_LIMITED    2
 
-// RC Feel roll/pitch definitions
-#define RC_FEEL_RP_VERY_SOFT        0
-#define RC_FEEL_RP_SOFT             25
-#define RC_FEEL_RP_MEDIUM           50
-#define RC_FEEL_RP_CRISP            75
-#define RC_FEEL_RP_VERY_CRISP       100
-
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
 #define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP               1   // auto pilot will face next waypoint or home during rtl
@@ -108,23 +101,22 @@ enum RTLState {
 };
 
 //  Logging parameters
-#define TYPE_AIRSTART_MSG               0x00
-#define TYPE_GROUNDSTART_MSG            0x01
-#define LOG_CONTROL_TUNING_MSG          0x04
-#define LOG_NAV_TUNING_MSG              0x05
-#define LOG_PERFORMANCE_MSG             0x06
-#define LOG_OPTFLOW_MSG                 0x0C
-#define LOG_EVENT_MSG                   0x0D
-#define LOG_ERROR_MSG                   0x13
-#define LOG_DATA_INT16_MSG              0x14
-#define LOG_DATA_UINT16_MSG             0x15
-#define LOG_DATA_INT32_MSG              0x16
-#define LOG_DATA_UINT32_MSG             0x17
-#define LOG_DATA_FLOAT_MSG              0x18
-#define LOG_MOTBATT_MSG                 0x1E
-#define LOG_PARAMTUNE_MSG               0x1F
-#define LOG_GUIDEDTARGET_MSG            0x22
-#define LOG_PROXIMITY_MSG               0x24
+enum LoggingParameters {
+    TYPE_AIRSTART_MSG,
+    TYPE_GROUNDSTART_MSG,
+    LOG_CONTROL_TUNING_MSG,
+    LOG_OPTFLOW_MSG,
+    LOG_EVENT_MSG,
+    LOG_ERROR_MSG,
+    LOG_DATA_INT16_MSG,
+    LOG_DATA_UINT16_MSG,
+    LOG_DATA_INT32_MSG,
+    LOG_DATA_UINT32_MSG,
+    LOG_DATA_FLOAT_MSG,
+    LOG_MOTBATT_MSG,
+    LOG_PARAMTUNE_MSG,
+    LOG_GUIDEDTARGET_MSG
+};
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -224,23 +216,12 @@ enum RTLState {
 // Baro specific error codes
 #define ERROR_CODE_BAD_DEPTH              0
 
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef FS_BATT_VOLTAGE_DEFAULT
-# define FS_BATT_VOLTAGE_DEFAULT       0       // default battery voltage below which failsafe will be triggered
-#endif
-
-#ifndef FS_BATT_MAH_DEFAULT
-# define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
-#endif
-
 // GCS failsafe
 #ifndef FS_GCS
 # define FS_GCS                        DISABLED
 #endif
 #ifndef FS_GCS_TIMEOUT_MS
-# define FS_GCS_TIMEOUT_MS             2500    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
+# define FS_GCS_TIMEOUT_MS             2500    // gcs failsafe triggers after this number of milliseconds with no GCS heartbeat
 #endif
 
 // missing terrain data failsafe
@@ -263,12 +244,6 @@ enum RTLState {
 #ifndef FS_EKF_THRESHOLD_DEFAULT
 # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif
-
-// Battery failsafe definitions (FS_BATT_ENABLE parameter)
-#define FS_BATT_DISABLED                    0       // battery failsafe disabled
-#define FS_BATT_WARN_ONLY                   1       // only warn gcs on battery failsafe
-#define FS_BATT_DISARM                      2       // disarm on battery failsafe
-#define FS_BATT_SURFACE                     3       // switch to SURFACE mode on battery failsafe
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED     0 // Disabled

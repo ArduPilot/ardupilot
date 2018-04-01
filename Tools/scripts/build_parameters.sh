@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-# set -x
+set -x
 
 WP_Auth_Dir="$HOME/WP_Auth"
 PARAMS_DIR="../buildlogs/Parameters"
@@ -9,9 +9,7 @@ PARAMS_DIR="../buildlogs/Parameters"
 # work from either APM directory or above
 [ -d ArduPlane ] || cd APM
 
-# copy combined parameters files away:
 /bin/mkdir -p "$PARAMS_DIR"
-/bin/cp Parameters.wiki Parameters.html *.pdef.xml "$PARAMS_DIR"
 
 generate_parameters() {
     VEHICLE="$1"

@@ -32,9 +32,10 @@ void Rover::init_ardupilot()
     //
 
     load_parameters();
-
+#if STATS_ENABLED == ENABLED
     // initialise stats module
     g2.stats.init();
+#endif
 
     gcs().set_dataflash(&DataFlash);
 
@@ -79,7 +80,7 @@ void Rover::init_ardupilot()
 
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init(serial_manager, fwver.fw_string, MAV_TYPE_GROUND_ROVER);
+    frsky_telemetry.init(serial_manager, fwver.fw_string, (is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
 #endif
 
 #if LOGGING_ENABLED == ENABLED
@@ -261,13 +262,6 @@ void Rover::startup_INS_ground(void)
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 }
-
-void Rover::resetPerfData(void) {
-    mainLoop_count = 0;
-    G_Dt_max = 0;
-    perf_mon_timer = millis();
-}
-
 
 void Rover::check_usb_mux(void)
 {

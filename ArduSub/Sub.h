@@ -147,7 +147,7 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler;
+    AP_Scheduler scheduler{FUNCTOR_BIND_MEMBER(&Sub::fast_loop, void)};
 
     // AP_Notify instance
     AP_Notify notify;
@@ -186,9 +186,9 @@ private:
 #endif
 
     // Inertial Navigation EKF
-    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, barometer, EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF2 EKF2{&ahrs, rangefinder};
+    NavEKF3 EKF3{&ahrs, rangefinder};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
@@ -235,7 +235,6 @@ private:
             uint8_t initialised         : 1; // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
             uint8_t system_time_set     : 1; // true if the system time has been set from the GPS
             uint8_t gps_base_pos_set    : 1; // true when the gps base position has been set (used for RTK gps only)
-            enum HomeState home_state   : 2; // home status (unset, set, locked)
             uint8_t at_bottom           : 1; // true if we are at the bottom
             uint8_t at_surface          : 1; // true if we are at the surface
             uint8_t depth_sensor_present: 1; // true if there is a depth sensor detected at boot
@@ -266,26 +265,24 @@ private:
 
     // Failsafe
     struct {
-        uint8_t pilot_input          : 1; // true if pilot input failsafe is active, handles things like joystick being disconnected during operation
-        uint8_t battery              : 1; // 2   // A status flag for the battery failsafe
-        uint8_t gcs                  : 1; // 4   // A status flag for the ground station failsafe
-        uint8_t ekf                  : 1; // 5   // true if ekf failsafe has occurred
-        uint8_t terrain              : 1; // 6   // true if the missing terrain data failsafe has occurred
-        uint8_t leak                 : 1; // true if leak recently detected
-        uint8_t internal_pressure    : 1; // true if internal pressure is over threshold
-        uint8_t internal_temperature : 1; // true if temperature is over threshold
-        uint8_t crash                : 1; // true if we are crashed
-        uint8_t sensor_health        : 1; // true if at least one sensor has triggered a failsafe (currently only used for depth in depth enabled modes)
-
         uint32_t last_leak_warn_ms;      // last time a leak warning was sent to gcs
         uint32_t last_gcs_warn_ms;
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
         uint32_t last_pilot_input_ms; // last time we received pilot input in the form of MANUAL_CONTROL or RC_CHANNELS_OVERRIDE messages
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
-        uint32_t last_battery_warn_ms; // last time a battery failsafe warning was sent to gcs
         uint32_t last_crash_warn_ms; // last time a crash warning was sent to gcs
         uint32_t last_ekf_warn_ms; // last time an ekf warning was sent to gcs
+
+        uint8_t pilot_input          : 1; // true if pilot input failsafe is active, handles things like joystick being disconnected during operation
+        uint8_t gcs                  : 1; // A status flag for the ground station failsafe
+        uint8_t ekf                  : 1; // true if ekf failsafe has occurred
+        uint8_t terrain              : 1; // true if the missing terrain data failsafe has occurred
+        uint8_t leak                 : 1; // true if leak recently detected
+        uint8_t internal_pressure    : 1; // true if internal pressure is over threshold
+        uint8_t internal_temperature : 1; // true if temperature is over threshold
+        uint8_t crash                : 1; // true if we are crashed
+        uint8_t sensor_health        : 1; // true if at least one sensor has triggered a failsafe (currently only used for depth in depth enabled modes)
     } failsafe;
 
     // sensor health for logging
@@ -328,9 +325,11 @@ private:
     uint32_t nav_delay_time_start;
 
     // Battery Sensors
-    AP_BattMonitor battery{MASK_LOG_CURRENT};
+    AP_BattMonitor battery{MASK_LOG_CURRENT,
+                           FUNCTOR_BIND_MEMBER(&Sub::handle_battery_failsafe, void, const char*, const int8_t),
+                           _failsafe_priorities};
 
-    AP_Arming_Sub arming{ahrs, barometer, compass, battery};
+    AP_Arming_Sub arming{ahrs, compass, battery};
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
@@ -346,9 +345,6 @@ private:
 
     // Flag indicating if we are currently using input hold
     bool input_hold_engaged;
-
-    // loop performance monitoring:
-    AP::PerfInfo perf_info;
 
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
@@ -397,16 +393,6 @@ private:
 
     AC_WPNav wp_nav;
     AC_Circle circle_nav;
-
-    // Performance monitoring
-    int16_t pmTest1;
-
-    // System Timers
-    // --------------
-    // Time in microseconds of main control loop
-    uint32_t fast_loopTimer;
-    // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-    uint16_t mainLoop_count;
 
     // Reference to the relay object
     AP_Relay relay;
@@ -461,10 +447,8 @@ private:
 
     void compass_accumulate(void);
     void compass_cal_update(void);
-    void perf_update(void);
     void fast_loop();
     void fifty_hz_loop();
-    void update_mount();
     void update_batt_compass(void);
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
@@ -474,8 +458,6 @@ private:
     void update_turn_counter();
     void read_AHRS(void);
     void update_altitude();
-    void set_home_state(enum HomeState new_home_state);
-    bool home_is_set();
     float get_smoothing_gain();
     void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
@@ -508,7 +490,6 @@ private:
     void gcs_check_input(void);
     void do_erase_logs(void);
     void Log_Write_Optflow();
-    void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
     void Log_Write_Attitude();
@@ -600,7 +581,7 @@ private:
     void failsafe_sensors_check(void);
     void failsafe_crash_check();
     void failsafe_ekf_check(void);
-    void failsafe_battery_check(void);
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
     void failsafe_gcs_check();
     void failsafe_pilot_input_check(void);
     void set_neutral_controls(void);
@@ -622,7 +603,6 @@ private:
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
-    void update_notify();
     bool init_arm_motors(bool arming_from_gcs);
     void init_disarm_motors();
     void motors_output();
@@ -640,7 +620,6 @@ private:
     void clear_input_hold();
     void init_barometer(bool save);
     void read_barometer(void);
-    void barometer_accumulate(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
     bool rangefinder_alt_ok(void);
@@ -648,10 +627,6 @@ private:
 #if OPTFLOW == ENABLED
     void init_optflow();
     void update_optical_flow(void);
-#endif
-    void read_battery(void);
-#if GRIPPER_ENABLED == ENABLED
-    void gripper_update();
 #endif
     void terrain_update();
     void terrain_logging();
@@ -690,7 +665,6 @@ private:
 #if CAMERA == ENABLED
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-    void update_trigger();
 #endif
 
 #if GRIPPER_ENABLED == ENABLED
@@ -710,8 +684,6 @@ private:
     void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
     void log_init(void);
     void init_capabilities(void);
-    void dataflash_periodic(void);
-    void ins_periodic();
     void accel_cal_update(void);
 
     void failsafe_leak_check();
@@ -732,6 +704,25 @@ private:
     uint16_t get_pilot_speed_dn();
 
     void convert_old_parameters(void);
+
+    enum Failsafe_Action {
+        Failsafe_Action_None    = 0,
+        Failsafe_Action_Warn    = 1,
+        Failsafe_Action_Disarm  = 2,
+        Failsafe_Action_Surface = 3
+    };
+
+    static constexpr int8_t _failsafe_priorities[] = {
+                                                      Failsafe_Action_Disarm,
+                                                      Failsafe_Action_Surface,
+                                                      Failsafe_Action_Warn,
+                                                      Failsafe_Action_None,
+                                                      -1 // the priority list must end with a sentinel of -1
+                                                     };
+
+    static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
+                  "_failsafe_priorities is missing the sentinel");
+
 
 public:
     void mavlink_delay_cb();

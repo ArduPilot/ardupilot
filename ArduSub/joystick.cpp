@@ -6,6 +6,7 @@
 // Anonymous namespace to hold variables used only in this file
 namespace {
 float cam_tilt = 1500.0;
+float cam_pan = 1500.0;
 int16_t lights1 = 1100;
 int16_t lights2 = 1100;
 int16_t rollTrim = 0;
@@ -61,8 +62,9 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     bool shift = false;
 
-    // Neutralize camera tilt speed setpoint
+    // Neutralize camera tilt and pan speed setpoint
     cam_tilt = 1500;
+    cam_pan = 1500;
 
     // Detect if any shift button is pressed
     for (uint8_t i = 0 ; i < 16 ; i++) {
@@ -84,20 +86,21 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     buttons_prev = buttons;
 
-    // Set channels to override
-    if (!roll_pitch_flag) {
-        channels[0] = 1500 + pitchTrim; // pitch
-        channels[1] = 1500 + rollTrim;  // roll
-    } else {
-        // adjust roll and pitch with joystick input instead of forward and lateral
-        channels[0] = constrain_int16((x+pitchTrim)*rpyScale+rpyCenter,1100,1900);
-        channels[1] = constrain_int16((y+rollTrim)*rpyScale+rpyCenter,1100,1900);
+    // attitude mode:
+    if (roll_pitch_flag == 1) {
+    // adjust roll/pitch trim with joystick input instead of forward/lateral
+        pitchTrim = -x * rpyScale;
+        rollTrim  =  y * rpyScale;
     }
+
+    channels[0] = constrain_int16(pitchTrim + rpyCenter,1100,1900); // pitch
+    channels[1] = constrain_int16(rollTrim  + rpyCenter,1100,1900); // roll
 
     channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900); // throttle
     channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                 // yaw
 
-    if (!roll_pitch_flag) {
+    // maneuver mode:
+    if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
         channels[4] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900); // forward for ROV
         channels[5] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900); // lateral for ROV
@@ -107,7 +110,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         channels[5] = constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900); // lateral for ROV
     }
 
-    channels[6] = 0;             // Unused
+    channels[6] = cam_pan;       // camera pan
     channels[7] = cam_tilt;      // camera tilt
     channels[8] = lights1;       // lights 1
     channels[9] = lights2;       // lights 2
@@ -118,7 +121,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     y_last = y;
     z_last = z;
 
-    hal.rcin->set_overrides(channels, 10);
+    hal.rcin->set_overrides(channels, 11);
 }
 
 void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
@@ -191,10 +194,10 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         }
         break;
     case JSButton::button_function_t::k_mount_pan_right:
-        // Not implemented
+        cam_pan = 1900;
         break;
     case JSButton::button_function_t::k_mount_pan_left:
-        // Not implemented
+        cam_pan = 1100;
         break;
     case JSButton::button_function_t::k_lights1_cycle:
         if (!held) {
@@ -660,8 +663,8 @@ void Sub::default_js_buttons()
         {JSButton::button_function_t::k_mount_center,           JSButton::button_function_t::k_none},
 
         {JSButton::button_function_t::k_input_hold_set,         JSButton::button_function_t::k_none},
-        {JSButton::button_function_t::k_mount_tilt_down,        JSButton::button_function_t::k_none},
-        {JSButton::button_function_t::k_mount_tilt_up,          JSButton::button_function_t::k_none},
+        {JSButton::button_function_t::k_mount_tilt_down,        JSButton::button_function_t::k_mount_pan_left},
+        {JSButton::button_function_t::k_mount_tilt_up,          JSButton::button_function_t::k_mount_pan_right},
         {JSButton::button_function_t::k_gain_inc,               JSButton::button_function_t::k_trim_pitch_dec},
 
         {JSButton::button_function_t::k_gain_dec,               JSButton::button_function_t::k_trim_pitch_inc},
@@ -688,6 +691,10 @@ void Sub::set_neutral_controls()
     }
 
     hal.rcin->set_overrides(channels, 10);
+
+    // Clear pitch/roll trim settings
+    pitchTrim = 0;
+    rollTrim  = 0;
 }
 
 void Sub::clear_input_hold()

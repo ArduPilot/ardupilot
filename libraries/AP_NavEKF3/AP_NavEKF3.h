@@ -35,7 +35,7 @@ class NavEKF3 {
     friend class NavEKF3_core;
 
 public:
-    NavEKF3(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
+    NavEKF3(const AP_AHRS *ahrs, const RangeFinder &rng);
 
     /* Do not allow copies */
     NavEKF3(const NavEKF3 &other) = delete;
@@ -359,7 +359,6 @@ private:
     uint8_t primary;   // current primary core
     NavEKF3_core *core = nullptr;
     const AP_AHRS *_ahrs;
-    AP_Baro &_baro;
     const RangeFinder &_rng;
 
     uint32_t _frameTimeUsec;        // time per IMU frame

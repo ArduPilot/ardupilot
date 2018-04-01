@@ -9,10 +9,11 @@ class AP_RangeFinder_LightWareSerial : public AP_RangeFinder_Backend
 public:
     // constructor
     AP_RangeFinder_LightWareSerial(RangeFinder::RangeFinder_State &_state,
-                                   AP_SerialManager &serial_manager);
+                                   AP_SerialManager &serial_manager,
+                                   uint8_t serial_instance);
 
     // static detection function
-    static bool detect(AP_SerialManager &serial_manager);
+    static bool detect(AP_SerialManager &serial_manager, uint8_t serial_instance);
 
     // update state
     void update(void);

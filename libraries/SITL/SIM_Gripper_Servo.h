@@ -53,7 +53,6 @@ private:
     uint64_t last_update_us;
 
     bool should_report();
-    bool zero_report_done = false;
 
     // dangle load from a string:
     const float string_length = 2.0f; // metres

@@ -1,8 +1,8 @@
 git checkout  master
-git pull git://github.com/ArduPilot/ardupilot.git master
+git pull --rebase git://github.com/ArduPilot/ardupilot.git master
 
 # Step 2: Merge the changes and update on GitHub.
 
-#git checkout RevoMini
-#git merge --no-ff master
-#git push origin RevoMini
+git checkout Revo
+git rebase master && git push origin Revo
+

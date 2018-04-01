@@ -19,7 +19,7 @@ static AP_Baro baro;
 static AP_SerialManager serial_manager;
 
 // choose which AHRS system to use
-static AP_AHRS_DCM ahrs{ins, baro};
+static AP_AHRS_DCM ahrs{};
 
 void setup(void)
 {

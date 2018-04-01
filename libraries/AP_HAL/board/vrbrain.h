@@ -41,8 +41,8 @@
 #define HAL_GPIO_A_LED_PIN        25
 #define HAL_GPIO_B_LED_PIN        26
 #define HAL_GPIO_C_LED_PIN        27
-#define HAL_GPIO_LED_ON           HIGH
-#define HAL_GPIO_LED_OFF          LOW
+#define HAL_GPIO_LED_ON           1
+#define HAL_GPIO_LED_OFF          0
 #define EXTERNAL_LED_GPS          28    // GPS LED - AN10
 #define EXTERNAL_LED_ARMED        29    // Armed LED - AN11
 #define EXTERNAL_LED_MOTOR1       30    // Motor1 LED - AN8

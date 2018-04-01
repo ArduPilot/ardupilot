@@ -19,49 +19,29 @@
 #include "hal.h"
 #include "hrt.h"
 #include <stdint.h>
-/*
- * HRT GPT configuration
- */
 
-
-//static void hrt_cb(GPTDriver*);
 static uint64_t timer_base = 0;
-static const GPTConfig hrtcfg = {
-  1000000,    /* 1MHz timer clock.*/
-  NULL,   /* Timer callback.*/
-  0,
-  0
-};
-
-
-void hrt_init()
-{
-	gptStart(&HRT_TIMER, &hrtcfg);
-	gptStartContinuous(&HRT_TIMER, 0xFFFF);
-}
 
 uint64_t hrt_micros()
 {
-	static volatile uint64_t last_micros = 0;
-	static volatile uint64_t micros;
+	static volatile uint64_t last_micros;
 
+    /*
+      use chSysGetStatusAndLockX() to prevent an interrupt while
+      allowing this call from any context
+     */
 	syssts_t sts = chSysGetStatusAndLockX();
-	micros = timer_base + (uint64_t)gptGetCounterX(&HRT_TIMER);
+	uint64_t micros;
+	micros = timer_base + (uint64_t)chVTGetSystemTimeX();
 	// we are doing this to avoid an additional interupt routing
 	// since we are definitely going to get called atleast once in
 	// a full timer period
-	if(last_micros > micros) {
-		timer_base += 0x10000;
-		micros += 0x10000;
+	if (last_micros > micros) {
+        const uint64_t step = ST2US(1ULL<<CH_CFG_ST_RESOLUTION);
+		timer_base += step;
+		micros += step;
 	}
 	last_micros = micros;
 	chSysRestoreStatusX(sts);
 	return micros;
 }
-
-/*
-static void  hrt_cb(GPTDriver* gptd)
-{
-	timer_base += 0x10000;
-}
-*/

@@ -36,22 +36,24 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(three_hz_loop,          3,     75),
     SCHED_TASK(update_turn_counter,   10,     50),
     SCHED_TASK(compass_accumulate,   100,    100),
-    SCHED_TASK(barometer_accumulate,  50,     90),
-    SCHED_TASK(update_notify,         50,     90),
+    SCHED_TASK_CLASS(AP_Baro,             &sub.barometer,    accumulate,          50,  90),
+    SCHED_TASK_CLASS(AP_Notify,           &sub.notify,       update,              50,  90),
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK(gcs_check_input,      400,    180),
     SCHED_TASK(gcs_send_heartbeat,     1,    110),
     SCHED_TASK(gcs_send_deferred,     50,    550),
     SCHED_TASK(gcs_data_stream_send,  50,    550),
-    SCHED_TASK(update_mount,          50,     75),
+#if MOUNT == ENABLED
+    SCHED_TASK_CLASS(AP_Mount,            &sub.camera_mount, update,              50,  75),
+#endif
 #if CAMERA == ENABLED
-    SCHED_TASK(update_trigger,        50,     75),
+    SCHED_TASK_CLASS(AP_Camera,           &sub.camera,       update_trigger,      50,  75),
 #endif
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
-    SCHED_TASK(dataflash_periodic,    400,    300),
-    SCHED_TASK(ins_periodic,          400,    50),
-    SCHED_TASK(perf_update,           0.1,    75),
+    SCHED_TASK_CLASS(DataFlash_Class,     &sub.DataFlash,    periodic_tasks,     400, 300),
+    SCHED_TASK_CLASS(AP_InertialSensor,   &sub.ins,          periodic,           400,  50),
+    SCHED_TASK_CLASS(AP_Scheduler,        &sub.scheduler,    update_logging,     0.1,  75),
 #if RPM_ENABLED == ENABLED
     SCHED_TASK(rpm_update,            10,    200),
 #endif
@@ -59,7 +61,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,      10,    100),
     SCHED_TASK(terrain_update,        10,    100),
 #if GRIPPER_ENABLED == ENABLED
-    SCHED_TASK(gripper_update,            10,     75),
+    SCHED_TASK_CLASS(AP_Gripper,          &g2.gripper,       update,              10,  75),
 #endif
 #ifdef USERHOOK_FASTLOOP
     SCHED_TASK(userhook_FastLoop,    100,     75),
@@ -78,6 +80,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #endif
 };
 
+constexpr int8_t Sub::_failsafe_priorities[5];
 
 void Sub::setup()
 {
@@ -87,63 +90,13 @@ void Sub::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
-
-    // setup initial performance counters
-    perf_info.reset(scheduler.get_loop_rate_hz());
-    fast_loopTimer = AP_HAL::micros();
-}
-
-void Sub::perf_update(void)
-{
-    if (should_log(MASK_LOG_PM)) {
-        Log_Write_Performance();
-    }
-    if (scheduler.debug()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
-                          (unsigned)perf_info.get_num_long_running(),
-                          (unsigned)perf_info.get_num_loops(),
-                          (unsigned long)perf_info.get_max_time(),
-                          (unsigned long)perf_info.get_min_time(),
-                          (unsigned long)perf_info.get_avg_time(),
-                          (unsigned long)perf_info.get_stddev_time());
-    }
-    perf_info.reset(scheduler.get_loop_rate_hz());
-    pmTest1 = 0;
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
 }
 
 void Sub::loop()
 {
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    uint32_t timer = micros();
-
-    // check loop time
-    perf_info.check_loop_time(timer - fast_loopTimer);
-
-    // used by PI Loops
-    G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.0f;
-    fast_loopTimer          = timer;
-
-    // for mainloop failure monitoring
-    mainLoop_count++;
-
-    // Execute the fast loop
-    // ---------------------
-    fast_loop();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    // run all the tasks that are due to run. Note that we only
-    // have to call this once per loop, as the tasks are scheduled
-    // in multiples of the main loop tick. So if they don't run on
-    // the first call to the scheduler they won't run on a later
-    // call until scheduler.tick() is called again
-    const uint32_t loop_us = scheduler.get_loop_period_us();
-    const uint32_t time_available = (timer + loop_us) - micros();
-    scheduler.run(time_available > loop_us ? 0u : time_available);
+    scheduler.loop();
+    G_Dt = scheduler.get_loop_period_s();
 }
 
 
@@ -209,37 +162,12 @@ void Sub::fifty_hz_loop()
     SRV_Channels::output_ch_all();
 }
 
-// updates the status of notify
-// should be called at 50hz
-void Sub::update_notify()
-{
-    notify.update();
-}
-
-// update_mount - update camera mount position
-// should be run at 50hz
-void Sub::update_mount()
-{
-#if MOUNT == ENABLED
-    // update camera mount's position
-    camera_mount.update();
-#endif
-}
-
-#if CAMERA == ENABLED
-// update camera trigger
-void Sub::update_trigger(void)
-{
-    camera.update_trigger();
-}
-#endif
-
 // update_batt_compass - read battery and compass
 // should be called at 10hz
 void Sub::update_batt_compass(void)
 {
     // read battery before compass because it may be used for motor interference compensation
-    read_battery();
+    battery.read();
 
     if (g.compass_enabled) {
         // update compass with throttle value - used for compassmot
@@ -277,10 +205,10 @@ void Sub::ten_hz_logging_loop()
         DataFlash.Log_Write_RCOUT();
     }
     if (should_log(MASK_LOG_NTUN) && mode_requires_GPS(control_mode)) {
-        Log_Write_Nav_Tuning();
+        pos_control.write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_Vibration(ins);
+        DataFlash.Log_Write_Vibration();
     }
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control.control_monitor_log();
@@ -304,18 +232,8 @@ void Sub::twentyfive_hz_logging()
 
     // log IMU data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_IMU(ins);
+        DataFlash.Log_Write_IMU();
     }
-}
-
-void Sub::dataflash_periodic(void)
-{
-    DataFlash.periodic_tasks();
-}
-
-void Sub::ins_periodic()
-{
-    ins.periodic();
 }
 
 // three_hz_loop - 3.3hz loop

@@ -63,12 +63,6 @@
 #define AP_SERIALMANAGER_SToRM32_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_SToRM32_BUFSIZE_TX     128
 
-// Aerotenne uLanding Altimeter
-// Note that size of UART FIFO is 128 for Altera-OcPoc board
-#define AP_SERIALMANAGER_ULANDING_BAUD           115200
-#define AP_SERIALMANAGER_ULANDING_BUFSIZE_RX     128
-#define AP_SERIALMANAGER_ULANDING_BUFSIZE_TX     128
-
 #define AP_SERIALMANAGER_VOLZ_BAUD           115
 #define AP_SERIALMANAGER_VOLZ_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_VOLZ_BUFSIZE_TX     128
@@ -98,10 +92,10 @@ public:
         SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
-        SerialProtocol_Lidar = 9,
+        SerialProtocol_Rangefinder = 9,
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
         SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
-        SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support
+        SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support - deprecated, users should use Rangefinder
         SerialProtocol_Beacon = 13,
         SerialProtocol_Volz = 14,                    // Volz servo protocol
         SerialProtocol_Sbus1 = 15

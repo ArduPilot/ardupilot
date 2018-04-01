@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_CIRCLE_ENABLED == ENABLED
+
 /*
  * Init and run calls for circle flight mode
  */
@@ -13,7 +15,6 @@ bool Copter::ModeCircle::init(bool ignore_checks)
         // initialize speeds and accelerations
         pos_control->set_speed_xy(wp_nav->get_speed_xy());
         pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
-        pos_control->set_jerk_xy_to_default();
         pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
         pos_control->set_accel_z(g.pilot_accel_z);
 
@@ -77,11 +78,11 @@ void Copter::ModeCircle::run()
     if (pilot_yaw_override) {
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(copter.circle_nav->get_roll(),
                                                                       copter.circle_nav->get_pitch(),
-                                                                      target_yaw_rate, get_smoothing_gain());
+                                                                      target_yaw_rate);
     }else{
         attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(),
                                                            copter.circle_nav->get_pitch(),
-                                                           copter.circle_nav->get_yaw(),true, get_smoothing_gain());
+                                                           copter.circle_nav->get_yaw(), true);
     }
 
     // adjust climb rate using rangefinder
@@ -103,3 +104,5 @@ int32_t Copter::ModeCircle::wp_bearing() const
 {
     return wp_nav->get_loiter_bearing_to_target();
 }
+
+#endif

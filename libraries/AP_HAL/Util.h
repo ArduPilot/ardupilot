@@ -81,7 +81,7 @@ public:
     /*
       return a stream for access to a system shell, if available
      */
-    virtual AP_HAL::Stream *get_shell_stream() { return nullptr; }
+    virtual AP_HAL::BetterStream *get_shell_stream() { return nullptr; }
 
     /* Support for an imu heating system */
     virtual void set_imu_temp(float current) {}

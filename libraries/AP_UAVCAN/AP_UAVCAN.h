@@ -15,8 +15,10 @@
 #include <AP_GPS/GPS_Backend.h>
 #include <AP_Baro/AP_Baro_Backend.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_BattMonitor/AP_BattMonitor_Backend.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
+#include <uavcan/equipment/indication/RGB565.hpp>
 
 #ifndef UAVCAN_NODE_POOL_SIZE
 #define UAVCAN_NODE_POOL_SIZE 8192
@@ -34,6 +36,7 @@
 #define AP_UAVCAN_MAX_GPS_NODES 4
 #define AP_UAVCAN_MAX_MAG_NODES 4
 #define AP_UAVCAN_MAX_BARO_NODES 4
+#define AP_UAVCAN_MAX_BI_NUMBER 4
 
 #define AP_UAVCAN_SW_VERS_MAJOR 1
 #define AP_UAVCAN_SW_VERS_MINOR 0
@@ -41,12 +44,18 @@
 #define AP_UAVCAN_HW_VERS_MAJOR 1
 #define AP_UAVCAN_HW_VERS_MINOR 0
 
+#define AP_UAVCAN_MAX_LED_DEVICES 4
+#define AP_UAVCAN_LED_DELAY_MILLISECONDS 50
+
 class AP_UAVCAN {
 public:
     AP_UAVCAN();
     ~AP_UAVCAN();
 
     static const struct AP_Param::GroupInfo var_info[];
+
+    // Return uavcan from @iface or nullptr if it's not ready or doesn't exist
+    static AP_UAVCAN *get_uavcan(uint8_t iface);
 
     // this function will register the listening class on a first free channel or on the specified channel
     // if preferred_channel = 0 then free channel will be searched for
@@ -94,9 +103,29 @@ public:
     uint8_t register_mag_listener_to_node(AP_Compass_Backend* new_listener, uint8_t node);
     void update_mag_state(uint8_t node, uint8_t sensor_id);
 
+    struct BatteryInfo_Info {
+        float temperature;
+        float voltage;
+        float current;
+        float remaining_capacity_wh;
+        float full_charge_capacity_wh;
+        uint8_t status_flags;
+    };
+
+    uint8_t register_BM_bi_listener_to_id(AP_BattMonitor_Backend* new_listener, uint8_t id);
+    void remove_BM_bi_listener(AP_BattMonitor_Backend* rem_listener);
+    BatteryInfo_Info *find_bi_id(uint8_t id);
+    uint8_t find_smallest_free_bi_id();
+    void update_bi_state(uint8_t id);
+
     // synchronization for RC output
     bool rc_out_sem_take();
     void rc_out_sem_give();
+    
+    // synchronization for LED output
+    bool led_out_sem_take();
+    void led_out_sem_give();
+    void led_out_send();
 
     // output from do_cyclic
     void rc_out_send_servos();
@@ -132,6 +161,13 @@ private:
     AP_Compass_Backend* _mag_listeners[AP_UAVCAN_MAX_LISTENERS];
     uint8_t _mag_listener_sensor_ids[AP_UAVCAN_MAX_LISTENERS];
 
+    // ------------------------- BatteryInfo
+    uint16_t _bi_id[AP_UAVCAN_MAX_BI_NUMBER];
+    uint16_t _bi_id_taken[AP_UAVCAN_MAX_BI_NUMBER];
+    BatteryInfo_Info _bi_id_state[AP_UAVCAN_MAX_BI_NUMBER];
+    uint16_t _bi_BM_listener_to_id[AP_UAVCAN_MAX_LISTENERS];
+    AP_BattMonitor_Backend* _bi_BM_listeners[AP_UAVCAN_MAX_LISTENERS];
+
     struct {
         uint16_t pulse;
         uint16_t safety_pulse;
@@ -143,7 +179,21 @@ private:
     uint8_t _rco_armed;
     uint8_t _rco_safety;
 
+    typedef struct {
+        bool enabled;
+        uint8_t led_index;
+        uavcan::equipment::indication::RGB565 rgb565_color;
+    } _led_device;
+
+    struct {
+        bool broadcast_enabled;
+        _led_device devices[AP_UAVCAN_MAX_LED_DEVICES];
+        uint8_t devices_count;
+        uint64_t last_update;
+    } _led_conf;
+
     AP_HAL::Semaphore *_rc_out_sem;
+    AP_HAL::Semaphore *_led_out_sem;
 
     class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
         SystemClock()
@@ -219,6 +269,7 @@ public:
     void rco_force_safety_off(void);
     void rco_arm_actuators(bool arm);
     void rco_write(uint16_t pulse_len, uint8_t ch);
+    bool led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue);
 
     void set_parent_can_mgr(AP_HAL::CANManager* parent_can_mgr)
     {

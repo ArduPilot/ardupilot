@@ -23,8 +23,8 @@
 
 class AP_AHRS_DCM : public AP_AHRS {
 public:
-    AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro)
-        : AP_AHRS(ins, baro)
+    AP_AHRS_DCM()
+        : AP_AHRS()
         , _omega_I_sum_time(0.0f)
         , _renorm_val_sum(0.0f)
         , _renorm_val_count(0)

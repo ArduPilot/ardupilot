@@ -49,10 +49,6 @@ MAVLink_routing GCS_MAVLINK::routing;
 // static AP_SerialManager pointer
 const AP_SerialManager *GCS_MAVLINK::serialmanager_p;
 
-// snoop function for vehicle types that want to see messages for
-// other targets
-void (*GCS_MAVLINK::msg_snoop)(const mavlink_message_t* msg) = nullptr;
-
 /*
   lock a channel, preventing use by MAVLink
  */

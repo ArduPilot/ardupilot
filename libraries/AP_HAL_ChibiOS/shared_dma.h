@@ -41,6 +41,9 @@ public:
     // blocking lock call
     void lock(void);
 
+    // non-blocking lock call
+    bool lock_nonblock(void);
+    
     // unlock call. The DMA channel will not be immediately
     // deallocated. Instead it will be deallocated if another driver
     // needs it
@@ -65,6 +68,9 @@ private:
     uint8_t stream_id2;
     bool have_lock;
 
+    // core of lock call, after semaphores gained
+    void lock_core(void);
+    
     static struct dma_lock {
         // semaphore to ensure only one peripheral uses a DMA channel at a time
         binary_semaphore_t semaphore;

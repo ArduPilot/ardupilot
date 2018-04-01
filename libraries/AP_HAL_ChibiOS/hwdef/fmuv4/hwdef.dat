@@ -1,6 +1,8 @@
 # hw definition file for processing by chibios_hwdef.py
 # for FMUv4 hardware
 
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4
+
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
@@ -15,9 +17,6 @@ STM32_VDD 330U
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
-
-# ArduPilot highres timer
-HRT_TIMER 6
 
 # flash size
 FLASH_SIZE_KB 2048
@@ -173,9 +172,16 @@ define STORAGE_FLASH_PAGE 22
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1
 
+# pixracer has 3 LEDs, Red, Green, Blue
+define HAL_HAVE_PIXRACER_LED
+
+define HAL_GPIO_LED_ON  0
+define HAL_GPIO_LED_OFF 1
+
 define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
+
 
 # enable RTSCTS
 define AP_FEATURE_RTSCTS 1
@@ -189,3 +195,6 @@ define HAL_BATT_CURR_SCALE 17.0
 # setup serial port defaults for ESP8266
 define HAL_SERIAL5_PROTOCOL SerialProtocol_MAVLink
 define HAL_SERIAL5_BAUD 921600
+
+
+

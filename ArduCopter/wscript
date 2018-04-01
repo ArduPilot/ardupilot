@@ -32,9 +32,9 @@ def build(bld):
             'AP_Gripper',
             'AP_Beacon',
             'AP_Arming',
-            'AP_VisualOdom',
             'AP_WheelEncoder',
             'AP_Winch',
+            'AP_Follow',
         ],
     )
 

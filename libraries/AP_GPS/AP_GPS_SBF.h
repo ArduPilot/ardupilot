@@ -72,7 +72,6 @@ private:
     const char* _port_enable = "\nSSSSSSSSSS\n";
    
     uint32_t crc_error_counter = 0;
-    uint32_t last_injected_data_ms = 0;
     uint32_t RxState;
     uint32_t RxError;
 
@@ -207,5 +206,5 @@ private:
         CPUOVERLOAD   = (1 << 9),
         INVALIDCONFIG = (1 << 10),
         OUTOFGEOFENCE = (1 << 11),
-    } RxError_bits;
+    };
 };

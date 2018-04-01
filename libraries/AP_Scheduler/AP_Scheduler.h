@@ -23,6 +23,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/Util.h>
 #include <AP_Math/AP_Math.h>
+#include "PerfInfo.h"       // loop perf monitoring
 
 #define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
 
@@ -52,7 +53,10 @@
 class AP_Scheduler
 {
 public:
-    AP_Scheduler();
+
+    FUNCTOR_TYPEDEF(scheduler_fastloop_fn_t, void);
+
+    AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn = nullptr);
 
     /* Do not allow copies */
     AP_Scheduler(const AP_Scheduler &other) = delete;
@@ -68,10 +72,23 @@ public:
     };
 
     // initialise scheduler
-    void init(const Task *tasks, uint8_t num_tasks);
+    void init(const Task *tasks, uint8_t num_tasks, uint32_t log_performance_bit);
+
+    // called by vehicle's main loop - which should be the only thing
+    // that function does
+    void loop();
+
+    // call to update any logging the scheduler might do; call at 1Hz
+    void update_logging();
+
+    // write out PERF message to dataflash
+    void Log_Write_Performance();
 
     // call when one tick has passed
     void tick(void);
+
+    // return current tick counter
+    uint16_t ticks() const { return _tick_counter; }
 
     // run the tasks. Call this once per 'tick'.
     // time_available is the amount of time available to run
@@ -82,7 +99,7 @@ public:
     uint16_t time_available_usec(void);
 
     // return debug parameter
-    uint8_t debug(void) { return _debug; }
+    uint8_t debug_flags(void) { return _debug; }
 
     // return load average, as a number between 0 and 1. 1 means
     // 100% load. Calculated from how much spare time we have at the
@@ -111,12 +128,27 @@ public:
         return _loop_period_s;
     }
 
+    float get_filtered_loop_time(void) const {
+        return perf_info.get_filtered_time();
+    }
+
+    // get the time in seconds that the last loop took
+    float get_last_loop_time_s(void) const {
+        return _last_loop_time_s;
+    }
+    
     static const struct AP_Param::GroupInfo var_info[];
 
     // current running task, or -1 if none. Used to debug stuck tasks
     static int8_t current_task;
 
+    // loop performance monitoring:
+    AP::PerfInfo perf_info;
+
 private:
+    // function that is called before anything in the scheduler table:
+    scheduler_fastloop_fn_t _fastloop_fn;
+
     // used to enable scheduler debugging
     AP_Int8 _debug;
 
@@ -157,6 +189,15 @@ private:
     // number of ticks that _spare_micros is counted over
     uint8_t _spare_ticks;
 
+    // start of loop timing
+    uint32_t _loop_timer_start_us;
+
+    // time of last loop in seconds
+    float _last_loop_time_s;
+    
     // performance counters
     AP_HAL::Util::perf_counter_t *_perf_counters;
+
+    // bitmask bit which indicates if we should log PERF message to dataflash
+    uint32_t _log_performance_bit;
 };

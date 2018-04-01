@@ -11,6 +11,9 @@ ARM_LD      :=  arm-none-eabi-ld
 ARM_GDB     :=  arm-none-eabi-gdb
 ARM_OBJCOPY :=  arm-none-eabi-objcopy
 
+SIZE     := arm-none-eabi-size
+DISAS    := arm-none-eabi-objdump
+
 #TOOLCHAIN = arm-none-eabi
 include $(MK_DIR)/find_tools.mk
 
@@ -35,6 +38,9 @@ MEMORY_TARGET    ?= flash
 STFLASH := /usr/local/stlink/st-flash
 STUTIL  := /usr/local/stlink/st-util
 
+
+
+BL_ADDRESS    := 0x08000000
 FLASH_ADDRESS := 0x08010000
 
 UPLOADER := dfu-util
@@ -47,11 +53,11 @@ BLDROOT := $(SRCROOT)/..
 BUILD_PATH       := $(BUILDROOT)
 
 LIBRARIES_PATH   := $(BLDROOT)/libraries
-REVO_PATH        := $(LIBRARIES_PATH)/AP_HAL_F4Light
-WIRISH_PATH      := $(REVO_PATH)/wirish
-BOARDS_PATH      := $(REVO_PATH)/boards
-HARDWARE_PATH    := $(REVO_PATH)/hardware
-HAL_PATH         := $(REVO_PATH)/hardware/hal
+HAL_PATH         := $(LIBRARIES_PATH)/AP_HAL_F4Light
+WIRISH_PATH      := $(HAL_PATH)/wirish
+BOARDS_PATH      := $(HAL_PATH)/boards
+HARDWARE_PATH    := $(HAL_PATH)/hardware
+HAL_HW_PATH      := $(HAL_PATH)/hardware/hal
 STM32_PATH       := $(HARDWARE_PATH)/STM32F4xx_DSP_StdPeriph_Lib_V1.1.0
 STM32USB_PATH    := $(HARDWARE_PATH)/STM32_USB_Driver
 cpu_flags        := -mthumb -mcpu=cortex-m4 -march=armv7e-m -mfpu=fpv4-sp-d16 -mfloat-abi=hard
@@ -68,11 +74,13 @@ TOOLS_PATH       := $(BLDROOT)/libraries/AP_HAL_F4Light/support/tools
 LDDIR            := $(BOARDS_PATH)/$(BOARD)/ld
 
 
+BOOTLOADERS      := $(BLDROOT)/Tools/bootloaders
+APJTOOL          := $(BLDROOT)/Tools/ardupilotwaf/px_mkfw.py
+
+
 # $(BOARD)- and $(MEMORY_TARGET)-specific configuration
 include $(BOARDS_PATH)/$(BOARD)/target-config.mk
 
-SIZE     := arm-none-eabi-size
-DISAS    := arm-none-eabi-objdump
 
 ##
 ## Compilation flags
@@ -82,9 +90,6 @@ EXTRAFLAGS += -DHAVE_STD_NULLPTR_T=0  -DHAVE_BYTESWAP_H=0
 EXTRAFLAGS += $(SKETCHLIBINCLUDES) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE  -DSKETCH_MAIN=ArduPilot_main
 GITFLAGS   := -DGIT_VERSION="\"$(GIT_VERSION) $(shell date --rfc-3339=seconds)\""
 
-
-# -Wformat=1 
-# -Werror=init-self -Wno-missing-field-initializers 
 
 #-Werror
 WARNFLAGS       =   -Wall -Wshadow -Wpointer-arith -Wcast-align -Wno-psabi -Wno-unused-parameter -Wno-error=cast-align -Wno-error=unused-but-set-variable
@@ -98,8 +103,7 @@ OPTFLAGS        = -Os
 OPTFLAGS       += -fsingle-precision-constant -g3 -fno-strict-aliasing  -fomit-frame-pointer -frename-registers
 #-fno-strength-reduce
 OPTFLAGS       += -fno-builtin-printf -fno-aggressive-loop-optimizations -fpredictive-commoning
-#OPTFLAGS       += -fassociative-math
-# -freciprocal-math -ffast-math - cause EKF errors
+#OPTFLAGS       += -fassociative-math -freciprocal-math -ffast-math - cause EKF errors
 OPTFLAGS       += -fno-signed-zeros -fno-trapping-math 
 OPTFLAGS       += -finline-functions-called-once -fearly-inlining -finline-small-functions
 OPTFLAGS       += -fmerge-all-constants 
@@ -147,8 +151,9 @@ GLOBAL_CXXFLAGS += -fconserve-space -fno-enforce-eh-specs  -fno-use-cxa-atexit
 GLOBAL_CXXFLAGS += -std=gnu++11
 
 # Downgrade some diagnostics about nonconformant code from errors to warnings. Thus, using "-fpermissive" will allow some nonconforming code to compile.
-GLOBAL_CXXFLAGS += $(GLOBAL_CFLAGS)  -fpermissive
-#-fpermissive 
+GLOBAL_CXXFLAGS += $(GLOBAL_CFLAGS)
+#  -fpermissive
+
 # missing definitions
 GLOBAL_CXXFLAGS += -c -include $(WIRISH_PATH)/defs.h
 
@@ -181,7 +186,7 @@ LDFLAGS         += -Wl,--relax
 # used to collect files from HAL folders tree
 TGT_BIN := 
 
-COREINCLUDES = -I$(HAL_PATH) -I$(STM32_PATH) -I$(WIRISH_PATH) -I$(BOARDS_PATH)/$(BOARD) -I$(STM32USB_PATH) \
+COREINCLUDES = -I$(HAL_HW_PATH) -I$(STM32_PATH) -I$(WIRISH_PATH) -I$(BOARDS_PATH)/$(BOARD) -I$(STM32USB_PATH) \
  -I$(HARDWARE_PATH) \
  -I$(STM32_PATH)/Libraries/STM32F4xx_StdPeriph_Driver/inc \
  -I$(STM32_PATH)/Libraries/CMSIS/Include \
@@ -312,11 +317,11 @@ f4light-program:
 
 
 f4light-clean: clean
-	$(v) $(FIND) $(REVO_PATH) -type f -name "*.d"  -delete
-	$(v) $(FIND) $(REVO_PATH) -type f -name "*.o"  -delete
-	$(v) $(FIND) $(REVO_PATH) -type f -name "*.i"  -delete
-	$(v) $(FIND) $(REVO_PATH) -type f -name "*.ii" -delete
-	$(v) $(FIND) $(REVO_PATH) -type f -name "*.d"  -delete
+	$(v) $(FIND) $(HAL_PATH) -type f -name "*.d"  -delete
+	$(v) $(FIND) $(HAL_PATH) -type f -name "*.o"  -delete
+	$(v) $(FIND) $(HAL_PATH) -type f -name "*.i"  -delete
+	$(v) $(FIND) $(HAL_PATH) -type f -name "*.ii" -delete
+	$(v) $(FIND) $(HAL_PATH) -type f -name "*.d"  -delete
 
 
 # Link the final object. this line sets compilation order
@@ -345,12 +350,23 @@ $(BUILD_PATH)/$(BOARD).bin: $(SKETCHELF)
 	$(SILENT_DISAS) $(DISAS) -S $(SKETCHELF) > $(BUILD_PATH)/$(BOARD).disas
 	@echo " "
 	$(TOOLS_PATH)/dfu-convert --ihex $(BUILD_PATH)/$(BOARD).hex $(BUILD_PATH)/$(BOARD).dfu 
+	# python $(APJTOOL) --image $(BUILD_PATH)/$(BOARD).bin --prototype $(BUILDROOT)/apj.prototype > $(BUILD_PATH)/$(BOARD).apj
+	python $(APJTOOL)   --image $(BUILD_PATH)/$(BOARD).bin --board_id  $(BOARD_TYPE) --board_revision $(BOARD_REV) > $(BUILD_PATH)/$(BOARD).apj
+	dd if=/dev/zero ibs=1k count=64 | tr "\000" "\377" >$(BUILDROOT)/rom.bin
+	dd if=$(BOOTLOADERS)/$(BOOTLOADER).bin of=$(BUILDROOT)/rom.bin conv=notrunc
+	(printf '%02x %02x' "$(BOARD_TYPE)" "$(BOARD_REV)" ) | xxd -r -p - $(BUILDROOT)/board_id.bin
+	dd if=$(BUILDROOT)/board_id.bin of=$(BUILDROOT)/rom.bin obs=1 seek=16368 conv=notrunc
+	(cat $(BUILDROOT)/rom.bin; cat $(BUILD_PATH)/$(BOARD).bin) > $(BUILD_PATH)/$(BOARD)_bl.bin
+	$(TOOLS_PATH)/dfu-convert -b $(BL_ADDRESS):$(BUILDROOT)/rom.bin -b $(FLASH_ADDRESS):$(BUILD_PATH)/$(BOARD).bin $(BUILD_PATH)/$(BOARD)_bl.dfu 
 	$(v)cp $(BUILD_PATH)/$(BOARD).hex .
 	$(v)cp $(BUILD_PATH)/$(BOARD).bin .
 	$(v)cp $(BUILD_PATH)/$(BOARD).dfu .
+	$(v)cp $(BUILD_PATH)/$(BOARD).apj .
+	$(v)cp $(BUILD_PATH)/$(BOARD)_bl.bin .
+	$(v)cp $(BUILD_PATH)/$(BOARD)_bl.dfu .
 	@echo "Object file sizes:"
-	@find $(BUILD_PATH) -iname *.o | xargs $(SIZE) -t >  $(BUILD_PATH)/$(BOARD).sizes
-	@cd $(REVO_PATH); find .             -iname *.o | xargs $(SIZE) -t >> $(BUILD_PATH)/$(BOARD).sizes
+	@find $(BUILD_PATH)             -iname "*.o" | xargs $(SIZE) -t >  $(BUILD_PATH)/$(BOARD).sizes
+	cd $(HAL_PATH); find  . -follow -iname "*.o" | xargs $(SIZE) -t >> $(BUILD_PATH)/$(BOARD).sizes
 	@cat $(BUILD_PATH)/$(BOARD).sizes
 	@echo " "
 	@echo "Final Size:"

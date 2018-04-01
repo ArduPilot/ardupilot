@@ -8,7 +8,7 @@
 // attitude control default definition
 #define AR_ATTCONTROL_STEER_ANG_P       1.00f
 #define AR_ATTCONTROL_STEER_RATE_FF     0.20f
-#define AR_ATTCONTROL_STEER_RATE_P      1.00f
+#define AR_ATTCONTROL_STEER_RATE_P      0.20f
 #define AR_ATTCONTROL_STEER_RATE_I      0.50f
 #define AR_ATTCONTROL_STEER_RATE_IMAX   1.00f
 #define AR_ATTCONTROL_STEER_RATE_D      0.00f
@@ -45,7 +45,7 @@ public:
     // positive lateral acceleration is to the right.
     float get_steering_out_lat_accel(float desired_accel, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed);
 
-    // return a steering servo output from -1 to +1 given a yaw error in radians
+    // return a steering servo output from -1 to +1 given an angle error in radians
     float get_steering_out_angle_error(float angle_err, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed);
 
     // return a steering servo output from -1 to +1 given a
@@ -92,6 +92,9 @@ public:
     // get latest desired speed recorded during call to get_throttle_out_speed.  For reporting purposes only
     float get_desired_speed() const;
 
+    // get minimum stopping distance (in meters) given a speed (in m/s)
+    float get_stopping_distance(float speed);
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -111,8 +114,8 @@ private:
     // steering control
     uint32_t _steer_lat_accel_last_ms;  // system time of last call to lateral acceleration controller (i.e. get_steering_out_lat_accel)
     uint32_t _steer_turn_last_ms;   // system time of last call to steering rate controller
-    float    _desired_lat_accel;    // desired lateral acceleration from latest call to get_steering_out_lat_accel (for reporting purposes)
-    float    _desired_turn_rate;    // desired turn rate either from external caller or from lateral acceleration controller (for reporting purpose)
+    float    _desired_lat_accel;    // desired lateral acceleration (in m/s/s) from latest call to get_steering_out_lat_accel (for reporting purposes)
+    float    _desired_turn_rate;    // desired turn rate (in radians/sec) either from external caller or from lateral acceleration controller
 
     // throttle control
     uint32_t _speed_last_ms;        // system time of last call to get_throttle_out_speed

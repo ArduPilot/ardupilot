@@ -33,7 +33,7 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t *msg)
     mavlink_msg_serial_control_decode(msg, &packet);
 
     AP_HAL::UARTDriver *port = nullptr;
-    AP_HAL::Stream *stream = nullptr;
+    AP_HAL::BetterStream *stream = nullptr;
 
     if (packet.flags & SERIAL_CONTROL_FLAG_REPLY) {
         // how did this packet get to us?

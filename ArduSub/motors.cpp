@@ -33,9 +33,9 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
 
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
-    // call update_notify a few times to ensure the message gets out
+    // call notify update a few times to ensure the message gets out
     for (uint8_t i=0; i<=10; i++) {
-        update_notify();
+        notify.update();
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -44,13 +44,13 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
 
     initial_armed_bearing = ahrs.yaw_sensor;
 
-    if (ap.home_state == HOME_UNSET) {
+    if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
 
         // Always use absolute altitude for ROV
         // ahrs.resetHeightDatum();
         // Log_Write_Event(DATA_EKF_ALT_RESET);
-    } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
+    } else if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location(false);
     }
@@ -75,7 +75,7 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     mainloop_failsafe_enable();
 
     // perf monitor ignores delay due to arming
-    perf_info.ignore_this_loop();
+    scheduler.perf_info.ignore_this_loop();
 
     // flag exiting this function
     in_arm_motors = false;

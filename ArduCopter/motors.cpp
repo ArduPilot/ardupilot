@@ -156,9 +156,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
 
-    // reset battery failsafe
-    set_failsafe_battery(false);
-
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
     // call notify update a few times to ensure the message gets out
@@ -176,14 +173,14 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
     initial_armed_bearing = ahrs.yaw_sensor;
 
-    if (ap.home_state == HOME_UNSET) {
+    if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
         ahrs.resetHeightDatum();
         Log_Write_Event(DATA_EKF_ALT_RESET);
 
         // we have reset height, so arming height is zero
         arming_altitude_m = 0;        
-    } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
+    } else if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location(false);
 
@@ -193,7 +190,9 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     update_super_simple_bearing(false);
 
     // Reset SmartRTL return location. If activated, SmartRTL will ultimately try to land at this point
+#if MODE_SMARTRTL_ENABLED == ENABLED
     g2.smart_rtl.set_home(position_ok());
+#endif
 
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
@@ -220,7 +219,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     failsafe_enable();
 
     // perf monitor ignores delay due to arming
-    perf_info.ignore_this_loop();
+    scheduler.perf_info.ignore_this_loop();
 
     // flag exiting this function
     in_arm_motors = false;
@@ -272,8 +271,10 @@ void Copter::init_disarm_motors()
     // send disarm command to motors
     motors->armed(false);
 
+#if MODE_AUTO_ENABLED == ENABLED
     // reset the mission
     mission.reset();
+#endif
 
     DataFlash_Class::instance()->set_vehicle_armed(false);
 

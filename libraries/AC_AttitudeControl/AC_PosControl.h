@@ -19,12 +19,10 @@
 #define POSCONTROL_ACCEL_XY_MAX                 980.0f  // max horizontal acceleration in cm/s/s that the position velocity controller will ask from the lower accel controller
 #define POSCONTROL_STOPPING_DIST_UP_MAX         300.0f  // max stopping distance (in cm) vertically while climbing
 #define POSCONTROL_STOPPING_DIST_DOWN_MAX       200.0f  // max stopping distance (in cm) vertically while descending
-#define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // default jerk limit on horizontal acceleration (unit: m/s/s/s)
 
 #define POSCONTROL_SPEED                        500.0f  // default horizontal speed in cm/s
 #define POSCONTROL_SPEED_DOWN                  -150.0f  // default descent rate in cm/s
 #define POSCONTROL_SPEED_UP                     250.0f  // default climb rate in cm/s
-#define POSCONTROL_VEL_XY_MAX_FROM_POS_ERR      200.0f  // max speed output from pos_to_vel controller when feed forward is used
 
 #define POSCONTROL_ACCEL_Z                      250.0f  // default vertical acceleration in cm/s/s.
 
@@ -50,13 +48,6 @@ public:
     AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                   const AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
-    // xy_mode - specifies behavior of xy position controller
-    enum xy_mode {
-        XY_MODE_POS_ONLY = 0,           // position correction only (i.e. no velocity feed-forward)
-        XY_MODE_POS_LIMITED_AND_VEL_FF, // for loiter - rate-limiting the position correction, velocity feed-forward
-        XY_MODE_POS_AND_VEL_FF          // for velocity controller - unlimited position correction, velocity feed-forward
-    };
-
     ///
     /// initialisation functions
     ///
@@ -65,10 +56,6 @@ public:
     ///     updates z axis accel controller's D term filter
     void set_dt(float delta_sec);
     float get_dt() const { return _dt; }
-
-    /// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
-    void set_dt_xy(float dt_xy);
-    float get_dt_xy() const { return _dt_xy; }
 
     ///
     /// z position controller
@@ -96,7 +83,7 @@ public:
     float get_accel_z() const { return _accel_z_cms; }
 
     /// calc_leash_length - calculates the vertical leash lengths from maximum speed, acceleration
-    ///     called by pos_to_rate_z if z-axis speed or accelerations are changed
+    ///     called by update_z_controller if z-axis speed or accelerations are changed
     void calc_leash_length_z();
 
     /// set_alt_target - set altitude target in cm above home
@@ -169,6 +156,9 @@ public:
     /// xy position controller
     ///
 
+    /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
+    float get_lean_angle_max_cd() const;
+
     /// init_xy_controller - initialise the xy controller
     ///     sets target roll angle, pitch angle and I terms based on vehicle current lean angles
     ///     should be called once whenever significant changes to the position target are made
@@ -185,10 +175,6 @@ public:
     void set_speed_xy(float speed_cms);
     float get_speed_xy() const { return _speed_cms; }
 
-    /// set_jerk_xy - set max horizontal jerk in cm/s/s/s
-    void set_jerk_xy(float jerk_cmsss) { _jerk_cmsss = jerk_cmsss; }
-    void set_jerk_xy_to_default() { _jerk_cmsss = POSCONTROL_JERK_LIMIT_CMSSS; }
-
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
     void set_limit_accel_xy(void) { _limit.accel_xy = true; }
@@ -196,6 +182,9 @@ public:
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration
     ///     should be called whenever the speed, acceleration or position kP is modified
     void calc_leash_length_xy();
+
+    /// set the horizontal leash length
+    void set_leash_length_xy(float leash) { _leash = leash; _flags.recalc_leash_xy = false; }
 
     /// get_pos_target - get target as position vector (from home in cm)
     const Vector3f& get_pos_target() const { return _pos_target; }
@@ -218,6 +207,9 @@ public:
     // clear desired velocity feed-forward in z axis
     void clear_desired_velocity_ff_z() { _flags.use_desvel_ff_z = false; }
 
+    // set desired acceleration in cm/s in xy axis
+    void set_desired_accel_xy(float accel_lat_cms, float accel_lon_cms) { _accel_desired.x = accel_lat_cms; _accel_desired.y = accel_lon_cms; }
+
     /// set_desired_velocity_xy - sets desired velocity in cm/s in lat and lon directions
     ///     when update_xy_controller is next called the position target is moved based on the desired velocity and
     ///     the desired velocities are fed forward into the rate_to_accel step
@@ -225,7 +217,7 @@ public:
 
     /// set_desired_velocity - sets desired velocity in cm/s in all 3 axis
     ///     when update_vel_controller_xyz is next called the position target is moved based on the desired velocity
-    void set_desired_velocity(const Vector3f &des_vel) { _vel_desired = des_vel; freeze_ff_xy(); }
+    void set_desired_velocity(const Vector3f &des_vel) { _vel_desired = des_vel; }
 
     // overrides the velocity process variable for one timestep
     void override_vehicle_velocity_xy(const Vector2f& vel_xy) { _vehicle_horiz_vel = vel_xy; _flags.vehicle_horiz_vel_override = true; }
@@ -233,15 +225,12 @@ public:
     /// freeze_ff_z - used to stop the feed forward being calculated during a known discontinuity
     void freeze_ff_z() { _flags.freeze_ff_z = true; }
 
-    /// freeze_ff_xy - used to stop the feed forward being calculated during a known discontinuity
-    void freeze_ff_xy() { _flags.freeze_ff_xy = true; }
-
     // is_active_xy - returns true if the xy position controller has been run very recently
     bool is_active_xy() const;
 
     /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
-    void update_xy_controller(xy_mode mode, float ekfNavVelGainScaler, bool use_althold_lean_angle);
+    void update_xy_controller(float ekfNavVelGainScaler);
 
     /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
     void set_target_to_stopping_point_xy();
@@ -295,10 +284,16 @@ public:
     const Vector3f& get_accel_target() const { return _accel_target; }
 
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+    void accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss, float& roll_target, float& pitch_target) const;
+
+    // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const;
 
     // time_since_last_xy_update - returns time in seconds since the horizontal position controller was last run
     float time_since_last_xy_update() const;
+
+    // write log to dataflash
+    void write_log();
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -309,11 +304,9 @@ protected:
             uint16_t recalc_leash_z     : 1;    // 1 if we should recalculate the z axis leash length
             uint16_t recalc_leash_xy    : 1;    // 1 if we should recalculate the xy axis leash length
             uint16_t reset_desired_vel_to_pos   : 1;    // 1 if we should reset the rate_to_accel_xy step
-            uint16_t reset_rate_to_accel_xy     : 1;    // 1 if we should reset the rate_to_accel_xy step
             uint16_t reset_accel_to_lean_xy     : 1;    // 1 if we should reset the accel to lean angle step
             uint16_t reset_rate_to_accel_z      : 1;    // 1 if we should reset the rate_to_accel_z step
             uint16_t reset_accel_to_throttle    : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
-            uint16_t freeze_ff_xy       : 1;    // 1 use to freeze feed forward during step updates
             uint16_t freeze_ff_z        : 1;    // 1 used to freeze velocity to accel feed forward for one iteration
             uint16_t use_desvel_ff_z    : 1;    // 1 to use z-axis desired velocity as feed forward into velocity step
             uint16_t vehicle_horiz_vel_override : 1; // 1 if we should use _vehicle_horiz_vel as our velocity process variable for one timestep
@@ -332,43 +325,38 @@ protected:
     /// z controller private methods
     ///
 
-    // pos_to_rate_z - position to rate controller for Z axis
-    // target altitude should be placed into _pos_target.z using or set with one of these functions
+    // run position control for Z axis
+    // target altitude should be set with one of these functions
     //          set_alt_target
     //          set_target_to_stopping_point_z
     //          init_takeoff
-    void pos_to_rate_z();
-
-    // rate_to_accel_z - calculates desired accel required to achieve the velocity target
-    void rate_to_accel_z();
-
-    // accel_to_throttle - alt hold's acceleration controller
-    void accel_to_throttle(float accel_target_z);
+    void run_z_controller();
 
     ///
     /// xy controller private methods
     ///
 
+    /// move velocity target using desired acceleration
+    void desired_accel_to_vel(float nav_dt);
+
     /// desired_vel_to_pos - move position target using desired velocities
     void desired_vel_to_pos(float nav_dt);
 
-    /// pos_to_rate_xy - horizontal position error to velocity controller
+    /// run horizontal position controller correcting position and velocity
     ///     converts position (_pos_target) to target velocity (_vel_target)
-    ///     when use_desired_rate is set to true:
-    ///         desired velocity (_vel_desired) is combined into final target velocity and
-    ///         velocity due to position error is reduce to a maximum of 1m/s
-    void pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainScaler);
-
-    /// rate_to_accel_xy - horizontal desired rate to desired acceleration
-    ///    converts desired velocities in lat/lon directions to accelerations in lat/lon frame
-    void rate_to_accel_xy(float dt, float ekfNavVelGainScaler);
-
-    /// accel_to_lean_angles - horizontal desired acceleration to lean angles
-    ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-    void accel_to_lean_angles(float dt_xy, float ekfNavVelGainScaler, bool use_althold_lean_angle);
+    ///     desired velocity (_vel_desired) is combined into final target velocity
+    ///     converts desired velocities in lat/lon directions to accelerations in lat/lon frame
+    ///     converts desired accelerations provided in lat/lon frame to roll/pitch angles
+    void run_xy_controller(float dt, float ekfNavVelGainScaler);
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
+
+    /// limit vector to a given length, returns true if vector was limited
+    static bool limit_vector_length(float& vector_x, float& vector_y, float max_length);
+
+    /// Proportional controller with piecewise sqrt sections to constrain second derivative
+    static Vector3f sqrt_controller(const Vector3f& error, float p, float second_ord_lim);
 
     /// initialise and check for ekf position resets
     void init_ekf_xy_reset();
@@ -384,6 +372,7 @@ protected:
 
     // parameters
     AP_Float    _accel_xy_filt_hz;      // XY acceleration filter cutoff frequency
+    AP_Float    _lean_angle_max;        // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
     AC_P        _p_pos_z;
     AC_P        _p_vel_z;
     AC_PID      _pid_accel_z;
@@ -392,7 +381,6 @@ protected:
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
-    float       _dt_xy;                 // time difference (in seconds) between update_xy_controller and update_vel_controller_xyz calls
     uint32_t    _last_update_xy_ms;     // system time of last update_xy_controller call
     uint32_t    _last_update_z_ms;      // system time of last update_z_controller call
     float       _speed_down_cms;        // max descent rate in cm/s
@@ -401,7 +389,6 @@ protected:
     float       _accel_z_cms;           // max vertical acceleration in cm/s/s
     float       _accel_last_z_cms;      // max vertical acceleration in cm/s/s
     float       _accel_cms;             // max horizontal acceleration in cm/s/s
-    float       _jerk_cmsss;            // max horizontal jerk in cm/s/s/s
     float       _leash;                 // horizontal leash length in cm.  target will never be further than this distance from the vehicle
     float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
     float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle
@@ -417,14 +404,13 @@ protected:
     Vector3f    _vel_target;            // velocity target in cm/s calculated by pos_to_rate step
     Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s
     Vector3f    _vel_last;              // previous iterations velocity in cm/s
-    Vector3f    _accel_feedforward;     // feedforward acceleration in cm/s/s
+    Vector3f    _accel_desired;         // desired acceleration in cm/s/s (feed forward)
     Vector3f    _accel_target;          // acceleration target in cm/s/s
     Vector3f    _accel_error;           // acceleration error in cm/s/s
     Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
     float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
 
-    Vector2f    _accel_target_jerk_limited; // acceleration target jerk limited to 100deg/s/s
     LowPassFilterVector2f _accel_target_filter; // acceleration target filter
 
     // ekf reset handling

@@ -31,7 +31,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_Menu/AP_Menu.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_GPS/AP_GPS.h>         // ArduPilot GPS library
@@ -64,6 +63,7 @@
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
+#include <AP_Scheduler/PerfInfo.h>                  // loop perf monitoring
 
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_L1_Control/AP_L1_Control.h>
@@ -94,8 +94,8 @@
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_ICEngine/AP_ICEngine.h>
+#include <AP_Gripper/AP_Gripper.h>
 #include <AP_Landing/AP_Landing.h>
-#include <AP_Scheduler/PerfInfo.h>       // loop perf monitoring
 
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
@@ -122,7 +122,7 @@
 class AP_AdvancedFailsafe_Plane : public AP_AdvancedFailsafe
 {
 public:
-    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap);
+    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, const AP_GPS &_gps, const RCMapper &_rcmap);
 
     // called to set all outputs to termination state
     void terminate_vehicle(void);
@@ -214,11 +214,11 @@ private:
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, barometer, EKF2, EKF3};
+    NavEKF2 EKF2{&ahrs, rangefinder};
+    NavEKF3 EKF3{&ahrs, rangefinder};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs{ins, barometer};
+    AP_AHRS_DCM ahrs;
 #endif
 
     AP_TECS TECS_controller{ahrs, aparm, landing, g2.soaring_controller};
@@ -329,9 +329,6 @@ private:
         // has the saved mode for failsafe been set?
         bool saved_mode_set:1;
 
-        // flag to hold whether battery low voltage threshold has been breached
-        bool low_battery:1;
-
         // true if an adsb related failsafe has occurred
         bool adsb:1;
 
@@ -392,7 +389,9 @@ private:
     int32_t altitude_error_cm;
 
     // Battery Sensors
-    AP_BattMonitor battery{MASK_LOG_CURRENT};
+    AP_BattMonitor battery{MASK_LOG_CURRENT,
+                           FUNCTOR_BIND_MEMBER(&Plane::handle_battery_failsafe, void, const char*, const int8_t),
+                           _failsafe_priorities};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
@@ -626,13 +625,13 @@ private:
             FUNCTOR_BIND_MEMBER(&Plane::disarm_if_autoland_complete, void),
             FUNCTOR_BIND_MEMBER(&Plane::update_flight_stage, void)};
 
-    AP_ADSB adsb{ahrs};
+    AP_ADSB adsb;
 
     // avoidance of adsb enabled vehicles (normally manned vheicles)
     AP_Avoidance_Plane avoidance_adsb{ahrs, adsb};
 
     // Outback Challenge Failsafe Support
-    AP_AdvancedFailsafe_Plane afs {mission, barometer, gps, rcmap};
+    AP_AdvancedFailsafe_Plane afs {mission, gps, rcmap};
 
     /*
       meta data to support counting the number of circles in a loiter
@@ -684,9 +683,6 @@ private:
     // Location structure defined in AP_Common
     const struct Location &home = ahrs.get_home();
 
-    // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState home_is_set = HOME_UNSET;
-
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
     Location prev_WP_loc {};
 
@@ -737,10 +733,6 @@ private:
 
     // loop performance monitoring:
     AP::PerfInfo perf_info;
-    uint32_t mainLoop_count;
-    uint32_t fast_loopTimer;
-    uint32_t last_log_dropped;
-
     struct {
         uint32_t last_trim_check;
         uint32_t last_trim_save;
@@ -756,7 +748,7 @@ private:
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming_Plane arming{ahrs, barometer, compass, battery};
+    AP_Arming_Plane arming{ahrs, compass, battery};
 
     AP_Param param_loader {var_info};
 
@@ -796,6 +788,7 @@ private:
     void send_vfr_hud(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
+    void send_pid_info(const mavlink_channel_t chan, const DataFlash_Class::PID_Info *pid_info, const uint8_t axis, const float achieved);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
 
@@ -885,7 +878,7 @@ private:
     void failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason);
     void failsafe_short_off_event(mode_reason_t reason);
     void failsafe_long_off_event(mode_reason_t reason);
-    void low_battery_event(void);
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
     void update_events(void);
     uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);
@@ -938,7 +931,6 @@ private:
     void read_rangefinder(void);
     void read_airspeed(void);
     void zero_airspeed(bool in_startup);
-    void read_battery(void);
     void read_receiver_rssi(void);
     void rpm_update(void);
     void button_update(void);
@@ -979,7 +971,6 @@ private:
     void airspeed_ratio_update(void);
     void update_mount(void);
     void update_trigger(void);    
-    void log_perf_info(void);
     void compass_save(void);
     void update_logging1(void);
     void update_logging2(void);
@@ -1071,6 +1062,24 @@ private:
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);
     void avoid_adsb_run();
+
+    enum Failsafe_Action {
+        Failsafe_Action_None      = 0,
+        Failsafe_Action_RTL       = 1,
+        Failsafe_Action_Land      = 2,
+        Failsafe_Action_Terminate = 3
+    };
+
+    // list of priorities, highest priority first
+    static constexpr int8_t _failsafe_priorities[] = {
+                                                      Failsafe_Action_Terminate,
+                                                      Failsafe_Action_Land,
+                                                      Failsafe_Action_RTL,
+                                                      Failsafe_Action_None,
+                                                      -1 // the priority list must end with a sentinel of -1
+                                                     };
+    static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
+                  "_failsafe_priorities is missing the sentinel");
 
 public:
     void mavlink_delay_cb();

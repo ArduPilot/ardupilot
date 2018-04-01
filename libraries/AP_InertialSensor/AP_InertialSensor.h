@@ -324,8 +324,8 @@ public:
         uint32_t last_sent_ms;
 
         // all samples are multiplied by this
-        static const uint16_t multiplier_accel = INT16_MAX/radians(2000);
-        static const uint16_t multiplier_gyro = INT16_MAX/(16*GRAVITY_MSS);
+        static const uint16_t multiplier_accel = INT16_MAX/(16*GRAVITY_MSS);
+        static const uint16_t multiplier_gyro = INT16_MAX/radians(2000);
         uint16_t multiplier = multiplier_accel;
 
         // push blocks to DataFlash at regular intervals.  each
@@ -562,4 +562,8 @@ private:
     uint32_t _gyro_startup_error_count[INS_MAX_INSTANCES];
     bool _startup_error_counts_set;
     uint32_t _startup_ms;
+};
+
+namespace AP {
+    AP_InertialSensor &ins();
 };

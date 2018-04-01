@@ -149,6 +149,7 @@ px4:
 px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build $(PX4_ROOT)/Images/*.px4 $(PX4_ROOT)/Images/*.bin
 	$(v) /bin/rm -rf $(PX4_ROOT)/src/modules/uORB/topics $(PX4_ROOT)/src/platforms/nuttx/px4_messages
+	$(v) /bin/rm -rf $(SKETCHBOOK)/modules/uavcan/libuavcan/include/dsdlc_generated
 	$(v) /bin/rm -f $(SRCROOT)/*.o
 
 px4-cleandep: clean
@@ -156,6 +157,7 @@ px4-cleandep: clean
 	$(v) find $(PX4_ROOT)/Build -type f -name '*.d' | xargs rm -f
 	$(v) find $(UAVCAN_DIRECTORY) -type f -name '*.d' | xargs rm -f
 	$(v) find $(SKETCHBOOK)/$(SKETCH) -type f -name '*.d' | xargs rm -f
+	$(v) /bin/rm -rf $(SKETCHBOOK)/modules/uavcan/libuavcan/include/dsdlc_generated
 
 px4-v2-upload-solo: px4-v2
 	scp $(SKETCH)-v2.px4 root@10.1.1.10:/tmp/

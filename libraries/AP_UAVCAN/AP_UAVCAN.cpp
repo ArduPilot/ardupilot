@@ -18,14 +18,22 @@
 // Zubax GPS and other GPS, baro, magnetic sensors
 #include <uavcan/equipment/gnss/Fix.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
+
 #include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
 #include <uavcan/equipment/ahrs/MagneticFieldStrength2.hpp>
 #include <uavcan/equipment/air_data/StaticPressure.hpp>
 #include <uavcan/equipment/air_data/StaticTemperature.hpp>
+
 #include <uavcan/equipment/actuator/ArrayCommand.hpp>
 #include <uavcan/equipment/actuator/Command.hpp>
 #include <uavcan/equipment/actuator/Status.hpp>
+
 #include <uavcan/equipment/esc/RawCommand.hpp>
+#include <uavcan/equipment/indication/LightsCommand.hpp>
+#include <uavcan/equipment/indication/SingleLightCommand.hpp>
+#include <uavcan/equipment/indication/RGB565.hpp>
+
+#include <uavcan/equipment/power/BatteryInfo.hpp>
 
 extern const AP_HAL::HAL& hal;
 
@@ -300,9 +308,39 @@ static void air_data_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equipmen
 static void (*air_data_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticTemperature>& msg)
         = { air_data_st_cb0, air_data_st_cb1 };
 
+static void battery_info_st_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::power::BatteryInfo>& msg, uint8_t mgr)
+{
+    if (hal.can_mgr[mgr] != nullptr) {
+        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+        if (ap_uavcan != nullptr) {
+            AP_UAVCAN::BatteryInfo_Info *state = ap_uavcan->find_bi_id((uint16_t) msg.battery_id);
+
+            if (state != nullptr) {
+                state->temperature = msg.temperature;
+                state->voltage = msg.voltage;
+                state->current = msg.current;
+                state->full_charge_capacity_wh = msg.full_charge_capacity_wh;
+                state->remaining_capacity_wh = msg.remaining_capacity_wh;
+                state->status_flags = msg.status_flags;
+
+                // after all is filled, update all listeners with new data
+                ap_uavcan->update_bi_state((uint16_t) msg.battery_id);
+            }
+        }
+    }
+}
+
+static void battery_info_st_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::power::BatteryInfo>& msg)
+{   battery_info_st_cb(msg, 0); }
+static void battery_info_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::power::BatteryInfo>& msg)
+{   battery_info_st_cb(msg, 1); }
+static void (*battery_info_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::power::BatteryInfo>& msg)
+        = { battery_info_st_cb0, battery_info_st_cb1 };
+
 // publisher interfaces
 static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[MAX_NUMBER_OF_CAN_DRIVERS];
 
 AP_UAVCAN::AP_UAVCAN() :
     _node_allocator(
@@ -342,7 +380,15 @@ AP_UAVCAN::AP_UAVCAN() :
         _mag_listener_sensor_ids[i] = 0;
     }
 
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
+        _bi_id[i] = UINT8_MAX;
+        _bi_id_taken[i] = 0;
+        _bi_BM_listener_to_id[i] = UINT8_MAX;
+        _bi_BM_listeners[i] = nullptr;
+    }
+
     _rc_out_sem = hal.util->new_semaphore();
+    _led_out_sem = hal.util->new_semaphore();
 
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
 }
@@ -446,6 +492,14 @@ bool AP_UAVCAN::try_init(void)
                         return false;
                     }
 
+                    uavcan::Subscriber<uavcan::equipment::power::BatteryInfo> *battery_info_st;
+                    battery_info_st = new uavcan::Subscriber<uavcan::equipment::power::BatteryInfo>(*node);
+                    const int battery_info_start_res = battery_info_st->start(battery_info_st_cb_arr[_uavcan_i]);
+                    if (battery_info_start_res < 0) {
+                        debug_uavcan(1, "UAVCAN BatteryInfo subscriber start problem\n\r");
+                        return false;
+                    }
+
                     act_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*node);
                     act_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
                     act_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
@@ -453,6 +507,12 @@ bool AP_UAVCAN::try_init(void)
                     esc_raw[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*node);
                     esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
                     esc_raw[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+                    rgb_led[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*node);
+                    rgb_led[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                    rgb_led[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
+                    _led_conf.devices_count = 0;
 
                     /*
                      * Informing other nodes that we're ready to work.
@@ -620,6 +680,46 @@ void AP_UAVCAN::do_cyclic(void)
 
 		rc_out_sem_give();
 	}
+
+    if (led_out_sem_take()) {
+
+    	led_out_send();
+    	led_out_sem_give();
+    }
+
+}
+
+bool AP_UAVCAN::led_out_sem_take()
+{
+    bool sem_ret = _led_out_sem->take(10);
+    if (!sem_ret) {
+        debug_uavcan(1, "AP_UAVCAN LEDOut semaphore fail\n\r");
+    }
+    return sem_ret;
+}
+
+void AP_UAVCAN::led_out_sem_give()
+{
+    _led_out_sem->give();
+}
+
+void AP_UAVCAN::led_out_send()
+{
+    if (_led_conf.broadcast_enabled && ((AP_HAL::micros64() - _led_conf.last_update) > (AP_UAVCAN_LED_DELAY_MILLISECONDS * 1000))) {
+        uavcan::equipment::indication::LightsCommand msg;
+        uavcan::equipment::indication::SingleLightCommand cmd;
+
+        for (uint8_t i = 0; i < _led_conf.devices_count; i++) {
+            if (_led_conf.devices[i].enabled) {
+                cmd.light_id =_led_conf.devices[i].led_index;
+                cmd.color = _led_conf.devices[i].rgb565_color;
+                msg.commands.push_back(cmd);
+            }
+        }
+
+        rgb_led[_uavcan_i]->broadcast(msg);
+        _led_conf.last_update = AP_HAL::micros64();
+    }
 }
 
 uavcan::ISystemClock & AP_UAVCAN::get_system_clock()
@@ -882,7 +982,6 @@ uint8_t AP_UAVCAN::register_baro_listener_to_node(AP_Baro_Backend* new_listener,
     return ret;
 }
 
-
 void AP_UAVCAN::remove_baro_listener(AP_Baro_Backend* rem_listener)
 {
     // Check for all listeners and compare pointers
@@ -1114,6 +1213,146 @@ void AP_UAVCAN::update_mag_state(uint8_t node, uint8_t sensor_id)
             }
         }
     }
+}
+
+uint8_t AP_UAVCAN::register_BM_bi_listener_to_id(AP_BattMonitor_Backend* new_listener, uint8_t id)
+{
+    uint8_t sel_place = UINT8_MAX, ret = 0;
+
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
+        if (_bi_BM_listeners[i] == nullptr) {
+            sel_place = i;
+            break;
+        }
+    }
+
+    if (sel_place != UINT8_MAX) {
+        for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
+            if (_bi_id[i] == id) {
+                _bi_BM_listeners[sel_place] = new_listener;
+                _bi_BM_listener_to_id[sel_place] = i;
+                _bi_id_taken[i]++;
+                ret = i + 1;
+
+                debug_uavcan(2, "reg_BI place:%d, chan: %d\n\r", sel_place, i);
+                break;
+            }
+        }
+    }
+
+    return ret;
+}
+
+void AP_UAVCAN::remove_BM_bi_listener(AP_BattMonitor_Backend* rem_listener)
+{
+    // Check for all listeners and compare pointers
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
+       if (_bi_BM_listeners[i] == rem_listener) {
+           _bi_BM_listeners[i] = nullptr;
+
+           // Also decrement usage counter and reset listening node
+           if (_bi_id_taken[_bi_BM_listener_to_id[i]] > 0) {
+               _bi_id_taken[_bi_BM_listener_to_id[i]]--;
+           }
+           _bi_BM_listener_to_id[i] = UINT8_MAX;
+       }
+    }
+}
+
+AP_UAVCAN::BatteryInfo_Info *AP_UAVCAN::find_bi_id(uint8_t id)
+{
+    // Check if such node is already defined
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
+        if (_bi_id[i] == id) {
+            return &_bi_id_state[i];
+        }
+    }
+
+    // If not - try to find free space for it
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
+        if (_bi_id[i] == UINT8_MAX) {
+            _bi_id[i] = id;
+            return &_bi_id_state[i];
+        }
+    }
+
+    // If no space is left - return nullptr
+    return nullptr;
+}
+
+uint8_t AP_UAVCAN::find_smallest_free_bi_id()
+{
+    uint8_t ret = UINT8_MAX;
+
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
+        if (_bi_id_taken[i] == 0) {
+            ret = MIN(ret, _bi_id[i]);
+        }
+    }
+
+    return ret;
+}
+
+void AP_UAVCAN::update_bi_state(uint8_t id)
+{
+    // Go through all listeners of specified node and call their's update methods
+    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BI_NUMBER; i++) {
+        if (_bi_id[i] == id) {
+            for (uint8_t j = 0; j < AP_UAVCAN_MAX_LISTENERS; j++) {
+                if (_bi_BM_listener_to_id[j] == i) {
+                    _bi_BM_listeners[j]->handle_bi_msg(_bi_id_state[i].voltage, _bi_id_state[i].current, _bi_id_state[i].temperature);
+                }
+            }
+        }
+    }
+}
+
+bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue) {
+    
+    if (_led_conf.devices_count >= AP_UAVCAN_MAX_LED_DEVICES) {
+        return false;
+    }
+    if (!led_out_sem_take()) {
+        return false;
+    }
+    
+    uavcan::equipment::indication::RGB565 color;
+    
+    color.red = (red >> 3);
+    color.green = (green >> 2);
+    color.blue = (blue >> 3);
+
+    // check if a device instance exists. if so, break so the instance index is remembered
+    uint8_t instance = 0;
+    for (; instance < _led_conf.devices_count; instance++) {
+        if (!_led_conf.devices[instance].enabled || (_led_conf.devices[instance].led_index == led_index)) {
+            break;
+        }
+    }
+    
+    // load into the correct instance.
+    // if an existing instance was found in above for loop search,
+    // then instance value is < _led_conf.devices_count.
+    // otherwise a new one was just found so we increment the count.
+    // Either way, the correct instance is the cirrent value of instance
+    _led_conf.devices[instance].led_index = led_index;
+    _led_conf.devices[instance].rgb565_color = color;
+    _led_conf.devices[instance].enabled = true;
+    if (instance == _led_conf.devices_count) {
+        _led_conf.devices_count++;
+    }
+
+    _led_conf.broadcast_enabled = true;
+    led_out_sem_give();
+    return true;
+}
+
+AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t iface)
+{
+    if (iface >= MAX_NUMBER_OF_CAN_INTERFACES || !hal.can_mgr[iface]) {
+        return nullptr;
+    }
+    return hal.can_mgr[iface]->get_UAVCAN();
 }
 
 #endif // HAL_WITH_UAVCAN

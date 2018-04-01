@@ -94,29 +94,32 @@ void __attribute__((noreturn)) error_throb(uint32_t num){
     /* Error fade. */
     while (1) {
         uint16_t k;
-        for(k=0; k<num; k++) {
-            if (CC == TOP_CNT)  {
-                slope = -1;
-            } else if (CC == 0) {
-                slope = 1;
+        for(k=0; k<num+1; k++) {
+            uint32_t m;
+            for(m=100000;m>0;m--){
+                if (CC == TOP_CNT)  {
+                    slope = -1;
+                } else if (CC == 0) {
+                    slope = 1;
+                }
+    
+                if (i == TOP_CNT)  {
+                    CC += slope;
+                    i = 0;
+                }
+
+                if (i < CC) {
+                    n=1;
+                } else {
+                    n=0;
+                }
+                gpio_write_bit(pp->gpio_device, pp->gpio_bit, n);
+
+                volatile int j =10;
+                while(--j);
+
+                i++;
             }
-
-            if (i == TOP_CNT)  {
-                CC += slope;
-                i = 0;
-            }
-
-            if (i < CC) {
-                n=1;
-            } else {
-                n=0;
-            }
-            gpio_write_bit(pp->gpio_device, pp->gpio_bit, n);
-
-            volatile int j =10;
-            while(--j);
-
-            i++;
         }
         emerg_delay(3000); // on 168MHz ~0.1ms so 300ms
     }

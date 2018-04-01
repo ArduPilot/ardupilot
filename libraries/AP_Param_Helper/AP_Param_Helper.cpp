@@ -5,9 +5,13 @@
 #if defined(HAL_NEEDS_PARAM_HELPER)
 
 const AP_Param::GroupInfo AP_Param_Helper::var_info[] = {
+#if defined(F4LIGHT_HAL_VARINFO)
+    F4LIGHT_HAL_VARINFO
+#endif
+
 // only if board defines parameters
 #ifdef BOARD_HAL_VARINFO
-    BOARD_HAL_VARINFO,
+    BOARD_HAL_VARINFO
 #endif
     AP_GROUPEND
 };

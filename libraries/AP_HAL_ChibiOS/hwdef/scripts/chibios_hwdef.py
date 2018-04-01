@@ -3,7 +3,8 @@
 setup board.h for chibios
 '''
 
-import argparse, sys, fnmatch, os, dma_resolver, shlex
+import argparse, sys, fnmatch, os, dma_resolver, shlex, pickle
+import shutil
 
 parser = argparse.ArgumentParser("chibios_pins.py")
 parser.add_argument(
@@ -56,6 +57,9 @@ spi_list = []
 # all config lines in order
 alllines = []
 
+# allow for extra env vars
+env_vars = {}
+
 mcu_type = None
 
 
@@ -97,6 +101,12 @@ def get_alt_function(mcu, pin, function):
             return alt_map[s]
     return None
 
+def have_type_prefix(ptype):
+    '''return True if we have a peripheral starting with the given peripheral type'''
+    for t in bytype.keys():
+        if t.startswith(ptype):
+            return True
+    return False
 
 def get_ADC1_chan(mcu, pin):
     '''return ADC1 channel for an analog pin'''
@@ -205,6 +215,13 @@ class generic_pin(object):
         v = 'FLOATING'
         if self.is_CS():
             v = "PULLUP"
+        if (self.type.startswith('USART') or
+            self.type.startswith('UART')) and (
+            (self.label.endswith('_TX') or
+             self.label.endswith('_RX'))):
+            # default RX/TX lines to pullup, to prevent spurious bytes
+            # on disconnected ports
+            v = "PULLUP"
         for e in self.extra:
             if e in values:
                 v = e
@@ -274,6 +291,10 @@ def get_config(name, column=0, required=True, default=None, type=None):
             error("Badly formed config value %s (got %s)" % (name, ret))
     return ret
 
+def enable_can(f):
+    '''setup for a CAN enabled board'''
+    f.write('#define HAL_WITH_UAVCAN 1\n')
+    env_vars['HAL_WITH_UAVCAN'] = '1'
 
 def write_mcu_config(f):
     '''write MCU config defines'''
@@ -283,32 +304,32 @@ def write_mcu_config(f):
     f.write('// crystal frequency\n')
     f.write('#define STM32_HSECLK %sU\n\n' % get_config('OSCILLATOR_HZ'))
     f.write('// UART used for stdout (printf)\n')
-    f.write('#define HAL_STDOUT_SERIAL %s\n\n' % get_config('STDOUT_SERIAL'))
-    f.write('// baudrate used for stdout (printf)\n')
-    f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % get_config(
-        'STDOUT_BAUDRATE', type=int))
+    if get_config('STDOUT_SERIAL', required=False):
+        f.write('#define HAL_STDOUT_SERIAL %s\n\n' % get_config('STDOUT_SERIAL'))
+        f.write('// baudrate used for stdout (printf)\n')
+        f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % get_config('STDOUT_BAUDRATE', type=int))
     if 'SDIO' in bytype:
         f.write('// SDIO available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
+        env_vars['CHIBIOS_FATFS_FLAG'] = 'USE_FATFS=yes'
     else:
         f.write('#define HAL_USE_SDC FALSE\n')
+        env_vars['CHIBIOS_FATFS_FLAG'] = 'USE_FATFS=no'
     if 'OTG1' in bytype:
         f.write('#define STM32_USB_USE_OTG1                  TRUE\n')
         f.write('#define HAL_USE_USB TRUE\n')
         f.write('#define HAL_USE_SERIAL_USB TRUE\n')
     if 'OTG2' in bytype:
         f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
+    if have_type_prefix('CAN'):
+        enable_can(f)
     # write any custom STM32 defines
     for d in alllines:
         if d.startswith('STM32_'):
             f.write('#define %s\n' % d)
         if d.startswith('define '):
             f.write('#define %s\n' % d[7:])
-    hrt_timer = get_config('HRT_TIMER', default='5')
-    hrt_timer = int(hrt_timer)
-    f.write('#define HRT_TIMER GPTD%u\n' % hrt_timer)
-    f.write('#define STM32_GPT_USE_TIM%u TRUE\n' % hrt_timer)
     flash_size = get_config('FLASH_SIZE_KB', type=int)
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
     f.write('#define CRT1_AREAS_NUMBER 1\n')
@@ -352,10 +373,16 @@ MEMORY
 INCLUDE common.ld
 ''' % (flash_base, flash_length, ram_size))
 
+def copy_common_linkerscript(outdir, hwdef):
+    dirpath = os.path.dirname(hwdef)
+    shutil.copy(os.path.join(dirpath, "../common/common.ld"),
+                os.path.join(outdir, "common.ld"))
+
+
 
 def write_USB_config(f):
     '''write USB config defines'''
-    if not 'OTG1' in bytype:
+    if not have_type_prefix('OTG'):
         return;
     f.write('// USB configuration\n')
     f.write('#define HAL_USB_VENDOR_ID %s\n' % get_config('USB_VENDOR', default=0x0483)) # default to ST
@@ -498,13 +525,16 @@ def write_UART_config(f):
 
 def write_I2C_config(f):
     '''write I2C config defines'''
+    if not have_type_prefix('I2C'):
+        print("No I2C peripherals")
+        f.write('#define HAL_USE_I2C FALSE\n')
+        return
     if not 'I2C_ORDER' in config:
         error("Missing I2C_ORDER config")
     i2c_list = config['I2C_ORDER']
     f.write('// I2C configuration\n')
     if len(i2c_list) == 0:
-        f.write('#define HAL_USE_I2C FALSE\n')
-        return
+        error("I2C_ORDER invalid")
     devlist = []
     for dev in i2c_list:
         if not dev.startswith('I2C') or dev[3] not in "1234":
@@ -540,10 +570,19 @@ def write_PWM_config(f):
                     pwm_out.append(p)
                 if p.type not in pwm_timers:
                     pwm_timers.append(p.type)
+
+    if not pwm_out:
+        print("No PWM output defined")
+        f.write('#define HAL_USE_PWM FALSE\n')
+        
     if rc_in is not None:
         a = rc_in.label.split('_')
         chan_str = a[1][2:]
         timer_str = a[0][3:]
+        if chan_str[-1] == 'N':
+            # it is an inverted channel
+            f.write('#define HAL_RCIN_IS_INVERTED\n')
+            chan_str = chan_str[:-1]
         if not is_int(chan_str) or not is_int(timer_str):
             error("Bad timer channel %s" % rc_in.label)
         if int(chan_str) not in [1, 2]:
@@ -877,7 +916,10 @@ def build_peripheral_list():
         if type.startswith('SDIO'):
             peripherals.append(type)
         if type.startswith('TIM') and p.has_extra('RCIN'):
-            peripherals.append(p.label)
+            label = p.label
+            if label[-1] == 'N':
+                label = label[:-1]
+            peripherals.append(label)
         done.add(type)
     return peripherals
 
@@ -939,6 +981,11 @@ def process_line(line):
                 continue
             newpins.append(pin)
         allpins = newpins
+    if a[0] == 'env':
+        print("Adding environment %s" % ' '.join(a[1:]))
+        if len(a[1:]) < 2:
+            error("Bad env line for %s" % a[0])
+        env_vars[a[1]] = ' '.join(a[2:])
 
 
 def process_file(filename):
@@ -985,4 +1032,11 @@ write_hwdef_header(os.path.join(outdir, "hwdef.h"))
 
 # write out ldscript.ld
 write_ldscript(os.path.join(outdir, "ldscript.ld"))
+
+# copy the shared linker script into the build directory; it must
+# exist in the same directory as the ldscript.ld file we generate.
+copy_common_linkerscript(outdir, args.hwdef)
+
+# write out env.py
+pickle.dump(env_vars, open(os.path.join(outdir, "env.py"), "wb"))
 

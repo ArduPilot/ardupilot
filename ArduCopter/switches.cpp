@@ -232,6 +232,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_RTL:
+#if MODE_RTL_ENABLED == ENABLED
             if (ch_flag == AUX_SWITCH_HIGH) {
                 // engage RTL (if not possible we remain in current flight mode)
                 set_mode(RTL, MODE_REASON_TX_COMMAND);
@@ -241,6 +242,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     reset_control_switch();
                 }
             }
+#endif
             break;
 
         case AUXSW_SAVE_TRIM:
@@ -250,6 +252,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_SAVE_WP:
+#if MODE_AUTO_ENABLED == ENABLED
             // save waypoint when switch is brought high
             if (ch_flag == AUX_SWITCH_HIGH) {
 
@@ -301,6 +304,28 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     Log_Write_Event(DATA_SAVEWP_ADD_WP);
                 }
             }
+#endif
+            break;
+
+        case AUXSW_MISSION_RESET:
+#if MODE_AUTO_ENABLED == ENABLED
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                mission.reset();
+            }
+#endif
+            break;
+
+        case AUXSW_AUTO:
+#if MODE_AUTO_ENABLED == ENABLED
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                set_mode(AUTO, MODE_REASON_TX_COMMAND);
+            } else {
+                // return to flight mode switch's flight mode if we are currently in AUTO
+                if (control_mode == AUTO) {
+                    reset_control_switch();
+                }
+            }
+#endif
             break;
 
         case AUXSW_CAMERA_TRIGGER:
@@ -336,6 +361,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_ACRO_TRAINER:
+#if MODE_ACRO_ENABLED == ENABLED
             switch(ch_flag) {
                 case AUX_SWITCH_LOW:
                     g.acro_trainer = ACRO_TRAINER_DISABLED;
@@ -350,6 +376,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     Log_Write_Event(DATA_ACRO_TRAINER_LIMITED);
                     break;
             }
+#endif
             break;
 
         case AUXSW_GRIPPER:
@@ -373,17 +400,6 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // if we are disarmed the pilot must want to test the pump
             sprayer.test_pump((ch_flag == AUX_SWITCH_HIGH) && !motors->armed());
 #endif
-            break;
-
-        case AUXSW_AUTO:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                set_mode(AUTO, MODE_REASON_TX_COMMAND);
-            } else {
-                // return to flight mode switch's flight mode if we are currently in AUTO
-                if (control_mode == AUTO) {
-                    reset_control_switch();
-                }
-            }
             break;
 
         case AUXSW_AUTOTUNE:
@@ -449,12 +465,6 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     break;
             }
 #endif
-            break;
-
-        case AUXSW_MISSION_RESET:
-            if (ch_flag == AUX_SWITCH_HIGH) {
-                mission.reset();
-            }
             break;
 
         case AUXSW_ATTCON_FEEDFWD:
@@ -530,6 +540,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_BRAKE:
+#if MODE_BRAKE_ENABLED == ENABLED
             // brake flight mode
             if (ch_flag == AUX_SWITCH_HIGH) {
                 set_mode(BRAKE, MODE_REASON_TX_COMMAND);
@@ -539,9 +550,11 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     reset_control_switch();
                 }
             }
+#endif
             break;
 
         case AUXSW_THROW:
+#if MODE_THROW_ENABLED == ENABLED
             // throw flight mode
             if (ch_flag == AUX_SWITCH_HIGH) {
                 set_mode(THROW, MODE_REASON_TX_COMMAND);
@@ -551,9 +564,11 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     reset_control_switch();
                 }
             }
+#endif
             break;
 
         case AUXSW_AVOID_ADSB:
+#if ADSB_ENABLED == ENABLED
             // enable or disable AP_Avoidance
             if (ch_flag == AUX_SWITCH_HIGH) {
                 avoidance_adsb.enable();
@@ -562,10 +577,11 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 avoidance_adsb.disable();
                 Log_Write_Event(DATA_AVOIDANCE_ADSB_DISABLE);
             }
+#endif
             break;
 
         case AUXSW_PRECISION_LOITER:
-#if PRECISION_LANDING == ENABLED
+#if PRECISION_LANDING == ENABLED && MODE_LOITER_ENABLED == ENABLED
             switch (ch_flag) {
                 case AUX_SWITCH_HIGH:
                     mode_loiter.set_precision_loiter_enabled(true);
@@ -604,6 +620,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_SMART_RTL:
+#if MODE_SMARTRTL_ENABLED == ENABLED
             if (ch_flag == AUX_SWITCH_HIGH) {
                 // engage SmartRTL (if not possible we remain in current flight mode)
                 set_mode(SMART_RTL, MODE_REASON_TX_COMMAND);
@@ -613,8 +630,9 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     reset_control_switch();
                 }
             }
+#endif
             break;
-            
+
         case AUXSW_INVERTED:
 #if FRAME_CONFIG == HELI_FRAME
             switch (ch_flag) {

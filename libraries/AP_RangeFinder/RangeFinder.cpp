@@ -553,8 +553,10 @@ void RangeFinder::init(void)
         // init called a 2nd time?
         return;
     }
-    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
-        detect_instance(i);
+    for (uint8_t i=0, serial_instance = 0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        // serial_instance will be increased inside detect_instance
+        // if a serial driver is loaded for this instance
+        detect_instance(i, serial_instance);
         if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
@@ -607,7 +609,7 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend)
 /*
   detect if an instance of a rangefinder is connected. 
  */
-void RangeFinder::detect_instance(uint8_t instance)
+void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 {
     enum RangeFinder_Type _type = (enum RangeFinder_Type)state[instance].type.get();
     switch (_type) {
@@ -671,21 +673,21 @@ void RangeFinder::detect_instance(uint8_t instance)
         break;
 #endif
     case RangeFinder_TYPE_LWSER:
-        if (AP_RangeFinder_LightWareSerial::detect(serial_manager)) {
+        if (AP_RangeFinder_LightWareSerial::detect(serial_manager, serial_instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LightWareSerial(state[instance], serial_manager);
+            drivers[instance] = new AP_RangeFinder_LightWareSerial(state[instance], serial_manager, serial_instance++);
         }
         break;
     case RangeFinder_TYPE_LEDDARONE:
-        if (AP_RangeFinder_LeddarOne::detect(serial_manager)) {
+        if (AP_RangeFinder_LeddarOne::detect(serial_manager, serial_instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_LeddarOne(state[instance], serial_manager);
+            drivers[instance] = new AP_RangeFinder_LeddarOne(state[instance], serial_manager, serial_instance++);
         }
         break;
     case RangeFinder_TYPE_ULANDING:
-        if (AP_RangeFinder_uLanding::detect(serial_manager)) {
+        if (AP_RangeFinder_uLanding::detect(serial_manager, serial_instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_uLanding(state[instance], serial_manager);
+            drivers[instance] = new AP_RangeFinder_uLanding(state[instance], serial_manager, serial_instance++);
         }
         break;
 #if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
@@ -704,9 +706,9 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
         break;
     case RangeFinder_TYPE_MBSER:
-        if (AP_RangeFinder_MaxsonarSerialLV::detect(serial_manager)) {
+        if (AP_RangeFinder_MaxsonarSerialLV::detect(serial_manager, serial_instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RangeFinder_MaxsonarSerialLV(state[instance], serial_manager);
+            drivers[instance] = new AP_RangeFinder_MaxsonarSerialLV(state[instance], serial_manager, serial_instance++);
         }
         break;
     case RangeFinder_TYPE_ANALOG:

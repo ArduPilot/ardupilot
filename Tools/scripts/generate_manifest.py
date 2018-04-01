@@ -58,14 +58,14 @@ class ManifestGenerator():
         return releasetype.upper()
 
     def looks_like_binaries_directory(self, dir):
-        '''returns True if dir looks like it is a build_binaries.sh output directory'''
+        '''returns True if dir looks like it is a build_binaries.py output directory'''
         for entry in os.listdir(dir):
             if entry in {"AntennaTracker", "Copter", "Plane", "Rover", "Sub"}:
                 return True
         return False
 
     def git_sha_from_git_version(self, filepath):
-        '''parses get-version.txt (as emitted by build_binaries.sh, returns git sha from it'''
+        '''parses get-version.txt (as emitted by build_binaries.py, returns git sha from it'''
         content = open(filepath).read()
         sha_regex = re.compile("commit (?P<sha>[0-9a-f]+)")
         m = sha_regex.search(content)

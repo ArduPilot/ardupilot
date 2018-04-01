@@ -62,7 +62,7 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
       than 100Hz is downsampled. For 50Hz main loop rate we need a
       shorter buffer.
      */
-    if (_ahrs->get_ins().get_sample_rate() < 100) {
+    if (AP::ins().get_sample_rate() < 100) {
         imu_buffer_length = 13;
     } else {
         // maximum 260 msec delay at 100 Hz fusion rate
@@ -91,6 +91,9 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedRangeBeacon.init(imu_buffer_length)) {
         return false;
     }
+    if(!storedExtNav.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
     if(!storedIMU.init(imu_buffer_length)) {
         return false;
     }
@@ -110,7 +113,7 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
 void NavEKF2_core::InitialiseVariables()
 {
     // calculate the nominal filter update rate
-    const AP_InertialSensor &ins = _ahrs->get_ins();
+    const AP_InertialSensor &ins = AP::ins();
     localFilterTimeStep_ms = (uint8_t)(1000*ins.get_loop_delta_t());
     localFilterTimeStep_ms = MAX(localFilterTimeStep_ms,10);
 
@@ -125,7 +128,7 @@ void NavEKF2_core::InitialiseVariables()
     lastPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
     lastTasPassTime_ms = 0;
-    lastSynthYawTime_ms = imuSampleTime_ms;
+    lastYawTime_ms = imuSampleTime_ms;
     lastTimeGpsReceived_ms = 0;
     secondLastGpsTime_ms = 0;
     lastDecayTime_ms = imuSampleTime_ms;
@@ -277,6 +280,7 @@ void NavEKF2_core::InitialiseVariables()
     ekfGpsRefHgt = 0.0;
     velOffsetNED.zero();
     posOffsetNED.zero();
+    memset(&velPosObs, 0, sizeof(velPosObs));
 
     // range beacon fusion variables
     memset(&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
@@ -317,6 +321,16 @@ void NavEKF2_core::InitialiseVariables()
     memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
     last_gps_idx = 0;
 
+    // external nav data fusion
+    memset(&extNavDataNew, 0, sizeof(extNavDataNew));
+    memset(&extNavDataDelayed, 0, sizeof(extNavDataDelayed));
+    extNavDataToFuse = false;
+    extNavMeasTime_ms = 0;
+    extNavLastPosResetTime_ms = 0;
+    extNavUsedForYaw = false;
+    extNavUsedForPos = false;
+    extNavYawResetRequest = false;
+
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
@@ -326,6 +340,7 @@ void NavEKF2_core::InitialiseVariables()
     storedRange.reset();
     storedOutput.reset();
     storedRangeBeacon.reset();
+    storedExtNav.reset();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -355,8 +370,10 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     // set re-used variables to zero
     InitialiseVariables();
 
+    const AP_InertialSensor &ins = AP::ins();
+
     // Initialise IMU data
-    dtIMUavg = _ahrs->get_ins().get_loop_delta_t();
+    dtIMUavg = ins.get_loop_delta_t();
     readIMUData();
     storedIMU.reset_history(imuDataNew);
     imuDataDelayed = imuDataNew;
@@ -365,7 +382,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     Vector3f initAccVec;
 
     // TODO we should average accel readings over several cycles
-    initAccVec = _ahrs->get_ins().get_accel(imu_index);
+    initAccVec = ins.get_accel(imu_index);
 
     // read the magnetometer data
     readMagData();

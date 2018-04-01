@@ -31,6 +31,7 @@ typedef const char * PGM_P;
 #define TO_STRING2(x) #x
 #define TO_STRING(x) TO_STRING2(x)
 
+
 static inline int max(int a, int b){
     if(a>b) return a;
     return b;
@@ -47,17 +48,10 @@ static inline uint8_t pgm_read_byte(const void * v){
 }
 
 // this can be used on Arduino's world to load an address so limiting to uint16_t cause HardFault
-# if 0
-static inline uint16_t pgm_read_word(const void * v){
-    const uint16_t * addr = (const uint16_t *)v;
-    return *addr;
-}
-#else 
 static inline uint32_t pgm_read_word(const void * v){
     const uint32_t * addr = (const uint32_t *)v;
     return *addr;
 }
-#endif
 
 
 #include <AP_HAL_F4Light/AP_HAL_F4Light.h>
@@ -70,6 +64,14 @@ static inline uint32_t pgm_read_word(const void * v){
 #endif
 
 using namespace F4Light;
+
+
+#include "../osd_ns.h"
+
+class OSDns::BetterStream : public AP_HAL::BetterStream {};
+
+using namespace OSDns;
+
 
 typedef uint32_t byte_32;
 typedef int16_t byte_16;

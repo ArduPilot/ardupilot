@@ -139,36 +139,6 @@ void dma_detach_interrupt(dma_stream stream) {
     dev->regs->STREAM[stream].CR &= ~ (DMA_CR_TCIE | DMA_CR_HTIE | DMA_CR_TEIE | DMA_CR_DMEIE ); //0x1e;
 }
 
-#if 0
-inline void dma_setup_transfer(dma_stream    stream,
-                                      __IO void     *peripheral_address,
-                                      __IO void     *memory_address0,
-                                      uint32_t         flags,
-                                      uint32_t         fifo_flags) {
-    const dma_dev * dev=DMAS[(stream>>4) & 3]; 
-    stream &= 0xF;
-    dev->regs->STREAM[stream].CR &= ~DMA_CR_EN; // disable
-    dev->regs->STREAM[stream].PAR = (uint32_t)peripheral_address;
-    dev->regs->STREAM[stream].M0AR = (uint32_t)memory_address0;
-    dev->regs->STREAM[stream].FCR = fifo_flags & 0x87; // mask out reserved bits
-    dev->regs->STREAM[stream].CR = flags & 0x0feffffe; // mask out reserved and enable
-}
-
-// memory-memory
-inline void dma_setup_transfer_mm(dma_stream    stream,
-                                      __IO void     *memory_address0,
-                                      __IO void     *memory_address1,
-                                      uint32_t         flags,
-                                      uint32_t         fifo_flags) {
-    const dma_dev * dev=DMAS[(stream>>4) & 3]; 
-    stream &= 0xF;
-    dev->regs->STREAM[stream].CR &= ~DMA_CR_EN; // disable
-    dev->regs->STREAM[stream].M0AR = (uint32_t)memory_address0;
-    dev->regs->STREAM[stream].M1AR = (uint32_t)memory_address1;
-    dev->regs->STREAM[stream].FCR = fifo_flags & 0x87; // mask out reserved bits
-    dev->regs->STREAM[stream].CR = flags & 0x0feffffe; // mask out reserved and enable
-}
-#endif
 
 // ST similar way
 void dma_init_transfer(dma_stream stream, DMA_InitType *v){

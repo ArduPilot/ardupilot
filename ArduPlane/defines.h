@@ -116,12 +116,22 @@ typedef enum GeofenceEnableReason {
     GCS_TOGGLED          //Fence enabled/disabled by the GCS via Mavlink
 } GeofenceEnableReason;
 
+// PID broadcast bitmask
+enum tuning_pid_bits {
+    TUNING_BITS_ROLL  = (1 <<  0),
+    TUNING_BITS_PITCH = (1 <<  1),
+    TUNING_BITS_YAW   = (1 <<  2),
+    TUNING_BITS_STEER = (1 <<  3),
+    TUNING_BITS_LAND  = (1 <<  4),
+    TUNING_BITS_END // dummy just used for static checking
+};
+
+static_assert(TUNING_BITS_END <= (1 << 24) + 1, "Tuning bit mask is too large to be set by MAVLink");
 
 // Logging message types
 enum log_messages {
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
-    LOG_PERFORMANCE_MSG,
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,

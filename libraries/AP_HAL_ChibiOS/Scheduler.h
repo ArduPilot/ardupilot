@@ -49,21 +49,6 @@
 #define APM_I2C_PRIORITY        176
 #endif
 
-/* how long to boost priority of the main thread for each main
-   loop. This needs to be long enough for all interrupt-level drivers
-   (mostly SPI drivers) to run, and for the main loop of the vehicle
-   code to start the AHRS update.
-
-   Priority boosting of the main thread in delay_microseconds_boost()
-   avoids the problem that drivers in hpwork all happen to run right
-   at the start of the period where the main vehicle loop is calling
-   wait_for_sample(). That causes main loop timing jitter, which
-   reduces performance. Using the priority boost the main loop
-   temporarily runs at a priority higher than hpwork and the timer
-   thread, which results in much more consistent loop timing.
-*/
-#define APM_MAIN_PRIORITY_BOOST_USEC 150
-
 #define APM_MAIN_THREAD_STACK_SIZE 8192
 
 /* Scheduler implementation: */
@@ -89,13 +74,16 @@ public:
     void     system_initialized();
     void     hal_initialized() { _hal_initialized = true; }
 
+    bool     check_called_boost(void);
+    
 private:
     bool _initialized;
     volatile bool _hal_initialized;
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
     AP_HAL::Proc _failsafe;
-
+    bool _called_boost;
+    
     volatile bool _timer_suspended;
 
     AP_HAL::MemberProc _timer_proc[CHIBIOS_SCHEDULER_MAX_TIMER_PROCS];

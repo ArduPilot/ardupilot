@@ -1,5 +1,9 @@
 APMrover2 Release Notes:
 ========================
+Rover V3.2.2 19-Mar-2018 / V3.2.2-rc1 08-Mar-2018
+Changes from 3.2.1:
+1) Fix loss of steering control when stopping in Acro and Steering modes
+--------------------------------
 APM:Rover V3.2.1 29-Jan-2018 / V3.2.1-rc1 24-Jan-2018 
 Changes from 3.2.0:
 1) Fix mode switch logic to allow Auto, Guided, RTL, SmartRTL, Steering, Acro using non-GPS navigation (i.e. wheel encoders, visual odometry)

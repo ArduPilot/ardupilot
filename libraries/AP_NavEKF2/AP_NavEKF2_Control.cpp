@@ -169,7 +169,8 @@ void NavEKF2_core::setAidingMode()
         // GPS aiding is the preferred option unless excluded by the user
         bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit);
         bool canUseRangeBeacon = readyToUseRangeBeacon() && filterIsStable;
-        if(canUseGPS || canUseRangeBeacon) {
+        bool canUseExtNav = readyToUseExtNav();
+        if(canUseGPS || canUseRangeBeacon || canUseExtNav) {
             PV_AidingMode = AID_ABSOLUTE;
         } else if (optFlowDataPresent() && filterIsStable) {
             PV_AidingMode = AID_RELATIVE;
@@ -206,17 +207,17 @@ void NavEKF2_core::setAidingMode()
         bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms <= minTestTime_ms);
 
         // Check if GPS is being used
-        bool gpsPosUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
+        bool posUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
         bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
         // Check if attitude drift has been constrained by a measurement source
-        bool attAiding = gpsPosUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed;
+        bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed;
 
         // check if velocity drift has been constrained by a measurement source
         bool velAiding = gpsVelUsed || airSpdUsed || optFlowUsed;
 
         // check if position drift has been constrained by a measurement source
-        bool posAiding = gpsPosUsed || rngBcnUsed;
+        bool posAiding = posUsed || rngBcnUsed;
 
         // Check if the loss of attitude aiding has become critical
         bool attAidLossCritical = false;
@@ -300,6 +301,7 @@ void NavEKF2_core::setAidingMode()
         case AID_ABSOLUTE: {
             bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && !gpsInhibit);
             bool canUseRangeBeacon = readyToUseRangeBeacon();
+            bool canUseExtNav = readyToUseExtNav();
             // We have commenced aiding and GPS usage is allowed
             if (canUseGPS) {
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using GPS",(unsigned)imu_index);
@@ -311,6 +313,18 @@ void NavEKF2_core::setAidingMode()
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using range beacons",(unsigned)imu_index);
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
                 gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffset);
+            }
+            // We have commenced aiding and external nav usage is allowed
+            if (canUseExtNav) {
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using external nav data",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNavDataDelayed.pos.x,(double)extNavDataDelayed.pos.y,(double)extNavDataDelayed.pos.z);
+                // handle yaw reset as special case
+                extNavYawResetRequest = true;
+                controlMagYawReset();
+                // handle height reset as special case
+                hgtMea = -extNavDataDelayed.pos.z;
+                posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                ResetHeight();
             }
             // reset the last fusion accepted times to prevent unwanted activation of timeout logic
             lastPosPassTime_ms = imuSampleTime_ms;
@@ -385,6 +399,12 @@ bool NavEKF2_core::readyToUseRangeBeacon(void) const
     return tiltAlignComplete && yawAlignComplete && rngBcnGoodToAlign && rngBcnDataToFuse;
 }
 
+// return true if the filter to be ready to use external nav data
+bool NavEKF2_core::readyToUseExtNav(void) const
+{
+    return tiltAlignComplete && extNavDataToFuse;
+}
+
 // return true if we should use the compass
 bool NavEKF2_core::use_compass(void) const
 {
@@ -405,7 +425,7 @@ bool NavEKF2_core::assume_zero_sideslip(void) const
 // set the LLH location of the filters NED origin
 bool NavEKF2_core::setOriginLLH(const Location &loc)
 {
-    if (PV_AidingMode == AID_ABSOLUTE) {
+    if (PV_AidingMode == AID_ABSOLUTE && !extNavUsedForPos) {
         return false;
     }
     EKF_origin = loc;
@@ -500,7 +520,7 @@ void  NavEKF2_core::updateFilterStatus(void)
     filterStatus.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
     filterStatus.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
-    filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE); // The GPS is glitching
+    filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && !extNavUsedForPos; // GPS glitching is affecting navigation accuracy
 }
 
 #endif // HAL_CPU_CLASS

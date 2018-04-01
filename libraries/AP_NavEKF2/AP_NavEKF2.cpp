@@ -555,38 +555,9 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     AP_GROUPEND
 };
 
-NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
+NavEKF2::NavEKF2(const AP_AHRS *ahrs, const RangeFinder &rng) :
     _ahrs(ahrs),
-    _baro(baro),
-    _rng(rng),
-    gpsNEVelVarAccScale(0.05f),     // Scale factor applied to horizontal velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
-    gpsDVelVarAccScale(0.07f),      // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
-    gpsPosVarAccScale(0.05f),       // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
-    magDelay_ms(60),                // Magnetometer measurement delay (msec)
-    tasDelay_ms(240),               // Airspeed measurement delay (msec)
-    tiltDriftTimeMax_ms(15000),      // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
-    posRetryTimeUseVel_ms(10000),   // Position aiding retry time with velocity measurements (msec)
-    posRetryTimeNoVel_ms(7000),     // Position aiding retry time without velocity measurements (msec)
-    hgtRetryTimeMode0_ms(10000),    // Height retry time with vertical velocity measurement (msec)
-    hgtRetryTimeMode12_ms(5000),    // Height retry time without vertical velocity measurement (msec)
-    tasRetryTime_ms(5000),          // True airspeed timeout and retry interval (msec)
-    magFailTimeLimit_ms(10000),     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
-    magVarRateScale(0.005f),        // scale factor applied to magnetometer variance due to angular rate and measurement timing jitter. Assume timing jitter of 10msec
-    gyroBiasNoiseScaler(2.0f),      // scale factor applied to imu gyro bias learning before the vehicle is armed
-    hgtAvg_ms(100),                 // average number of msec between height measurements
-    betaAvg_ms(100),                // average number of msec between synthetic sideslip measurements
-    covTimeStepMax(0.1f),           // maximum time (sec) between covariance prediction updates
-    covDelAngMax(0.05f),            // maximum delta angle between covariance prediction updates
-    DCM33FlowMin(0.71f),            // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
-    fScaleFactorPnoise(1e-10f),     // Process noise added to focal length scale factor state variance at each time step
-    flowTimeDeltaAvg_ms(100),       // average interval between optical flow measurements (msec)
-    flowIntervalMax_ms(100),        // maximum allowable time between flow fusion events
-    gndEffectTimeout_ms(1000),      // time in msec that baro ground effect compensation will timeout after initiation
-    gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
-    gndGradientSigma(50),           // RMS terrain gradient percentage assumed by the terrain height estimation
-    fusionTimeStep_ms(10),          // The minimum number of msec between covariance prediction and fusion operations
-    runCoreSelection(false),        // true when the default primary core has stabilised after startup and core selection can run
-    inhibitGpsVertVelUse(false)     // true when GPS vertical velocity use is prohibited
+    _rng(rng)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -608,12 +579,11 @@ void NavEKF2::check_log_write(void)
         logging.log_gps = false;
     }
     if (logging.log_baro) {
-        DataFlash_Class::instance()->Log_Write_Baro(_baro, imuSampleTime_us);
+        DataFlash_Class::instance()->Log_Write_Baro(imuSampleTime_us);
         logging.log_baro = false;
     }
     if (logging.log_imu) {
-        const AP_InertialSensor &ins = _ahrs->get_ins();
-        DataFlash_Class::instance()->Log_Write_IMUDT(ins, imuSampleTime_us, _logging_mask.get());
+        DataFlash_Class::instance()->Log_Write_IMUDT(imuSampleTime_us, _logging_mask.get());
         logging.log_imu = false;
     }
 
@@ -628,7 +598,7 @@ bool NavEKF2::InitialiseFilter(void)
     if (_enable == 0) {
         return false;
     }
-    const AP_InertialSensor &ins = _ahrs->get_ins();
+    const AP_InertialSensor &ins = AP::ins();
 
     imuSampleTime_us = AP_HAL::micros64();
 
@@ -717,7 +687,7 @@ void NavEKF2::UpdateFilter(void)
 
     imuSampleTime_us = AP_HAL::micros64();
     
-    const AP_InertialSensor &ins = _ahrs->get_ins();
+    const AP_InertialSensor &ins = AP::ins();
 
     bool statePredictEnabled[num_cores];
     for (uint8_t i=0; i<num_cores; i++) {
@@ -1051,7 +1021,7 @@ bool NavEKF2::getHAGL(float &HAGL) const
 }
 
 // return the Euler roll, pitch and yaw angle in radians for the specified instance
-void NavEKF2::getEulerAngles(int8_t instance, Vector3f &eulers)
+void NavEKF2::getEulerAngles(int8_t instance, Vector3f &eulers) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1495,6 +1465,26 @@ void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing)
         core[instance].getTimingStatistics(timing);
     } else {
         memset(&timing, 0, sizeof(timing));
+    }
+}
+
+/*
+ * Write position and quaternion data from an external navigation system
+ *
+ * pos        : XYZ position (m) in a RH navigation frame with the Z axis pointing down and XY axes horizontal. Frame must be aligned with NED if the magnetomer is being used for yaw.
+ * quat       : quaternion describing the the rotation from navigation frame to body frame
+ * posErr     : 1-sigma spherical position error (m)
+ * angErr     : 1-sigma spherical angle error (rad)
+ * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+ * resetTime_ms : system time of the last position reset request (mSec)
+ *
+*/
+void NavEKF2::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].writeExtNavData(sensOffset, pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
+        }
     }
 }
 

@@ -109,6 +109,7 @@ enum control_mode_t {
     GUIDED_NOGPS = 20,  // guided mode but only accepts attitude and altitude
     SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
     FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
+    FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
 };
 
 enum mode_reason_t {
@@ -182,13 +183,6 @@ enum tuning_func {
 #define ACRO_TRAINER_DISABLED   0
 #define ACRO_TRAINER_LEVELING   1
 #define ACRO_TRAINER_LIMITED    2
-
-// RC Feel roll/pitch definitions
-#define RC_FEEL_RP_VERY_SOFT        0
-#define RC_FEEL_RP_SOFT             25
-#define RC_FEEL_RP_MEDIUM           50
-#define RC_FEEL_RP_CRISP            75
-#define RC_FEEL_RP_VERY_CRISP       100
 
 // Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
 #define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
@@ -311,30 +305,27 @@ enum DevOptions {
 };
 
 //  Logging parameters
-#define TYPE_AIRSTART_MSG               0x00
-#define TYPE_GROUNDSTART_MSG            0x01
-#define LOG_CONTROL_TUNING_MSG          0x04
-#define LOG_NAV_TUNING_MSG              0x05
-#define LOG_PERFORMANCE_MSG             0x06
-#define LOG_OPTFLOW_MSG                 0x0C
-#define LOG_EVENT_MSG                   0x0D
-#define LOG_PID_MSG                     0x0E    // deprecated
-#define LOG_INAV_MSG                    0x11    // deprecated
-#define LOG_CAMERA_MSG_DEPRECATED       0x12    // deprecated
-#define LOG_ERROR_MSG                   0x13
-#define LOG_DATA_INT16_MSG              0x14
-#define LOG_DATA_UINT16_MSG             0x15
-#define LOG_DATA_INT32_MSG              0x16
-#define LOG_DATA_UINT32_MSG             0x17
-#define LOG_DATA_FLOAT_MSG              0x18
-#define LOG_AUTOTUNE_MSG                0x19
-#define LOG_AUTOTUNEDETAILS_MSG         0x1A
-#define LOG_MOTBATT_MSG                 0x1E
-#define LOG_PARAMTUNE_MSG               0x1F
-#define LOG_HELI_MSG                    0x20
-#define LOG_PRECLAND_MSG                0x21
-#define LOG_GUIDEDTARGET_MSG            0x22
-#define LOG_THROW_MSG                   0x23
+enum LoggingParameters {
+     TYPE_AIRSTART_MSG,
+     TYPE_GROUNDSTART_MSG,
+     LOG_CONTROL_TUNING_MSG,
+     LOG_OPTFLOW_MSG,
+     LOG_EVENT_MSG,
+     LOG_ERROR_MSG,
+     LOG_DATA_INT16_MSG,
+     LOG_DATA_UINT16_MSG,
+     LOG_DATA_INT32_MSG,
+     LOG_DATA_UINT32_MSG,
+     LOG_DATA_FLOAT_MSG,
+     LOG_AUTOTUNE_MSG,
+     LOG_AUTOTUNEDETAILS_MSG,
+     LOG_MOTBATT_MSG,
+     LOG_PARAMTUNE_MSG,
+     LOG_HELI_MSG,
+     LOG_PRECLAND_MSG,
+     LOG_GUIDEDTARGET_MSG,
+     LOG_THROW_MSG,
+};
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -483,13 +474,6 @@ enum DevOptions {
 #define FS_THR_ENABLED_ALWAYS_LAND                 3
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL      4
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND     5
-
-// Battery failsafe definitions (FS_BATT_ENABLE parameter)
-#define FS_BATT_DISABLED                    0       // battery failsafe disabled
-#define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
-#define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
-#define FS_BATT_SMARTRTL_OR_RTL             3       // switch to SmartRTL, if can't, switch to RTL
-#define FS_BATT_SMARTRTL_OR_LAND            4       // switch to SmartRTL, if can't, swtich to LAND
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED                        0

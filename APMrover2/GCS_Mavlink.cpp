@@ -54,7 +54,8 @@ void Rover::send_heartbeat(mavlink_channel_t chan)
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(MAV_TYPE_GROUND_ROVER,
+    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(
+                                            is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER,
                                             base_mode,
                                             control_mode->mode_number(),
                                             system_status);
@@ -102,28 +103,19 @@ void Rover::send_extended_status1(mavlink_channel_t chan)
 
 void Rover::send_location(mavlink_channel_t chan)
 {
-    uint32_t fix_time;
-    // if we have a GPS fix, take the time as the last fix time. That
-    // allows us to correctly calculate velocities and extrapolate
-    // positions.
-    // If we don't have a GPS fix then we are dead reckoning, and will
-    // use the current boot time as the fix time.
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-        fix_time = gps.last_fix_time_ms();
-    } else {
-        fix_time = millis();
-    }
-    const Vector3f &vel = gps.velocity();
+    const uint32_t now = AP_HAL::millis();
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
     mavlink_msg_global_position_int_send(
         chan,
-        fix_time,
+        now,
         current_loc.lat,                    // in 1E7 degrees
         current_loc.lng,                    // in 1E7 degrees
         current_loc.alt * 10UL,             // millimeters above sea level
         (current_loc.alt - home.alt) * 10,  // millimeters above home
         vel.x * 100,   // X speed cm/s (+ve North)
         vel.y * 100,   // Y speed cm/s (+ve East)
-        vel.z * -100,  // Z speed cm/s (+ve up)
+        vel.z * 100,   // Z speed cm/s (+ve Down)
         ahrs.yaw_sensor);
 }
 
@@ -320,11 +312,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_location(chan);
         break;
 
-    case MSG_LOCAL_POSITION:
-        CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
-        send_local_position(rover.ahrs);
-        break;
-
     case MSG_NAV_CONTROLLER_OUTPUT:
         if (rover.control_mode->is_autopilot_mode()) {
             CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
@@ -359,17 +346,12 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure(rover.barometer);
+        send_scaled_pressure();
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(rover.ins, rover.compass, rover.barometer);
-        break;
-
-    case MSG_AHRS:
-        CHECK_PAYLOAD_SIZE(AHRS);
-        send_ahrs(rover.ahrs);
+        send_sensor_offsets(rover.ins, rover.compass);
         break;
 
     case MSG_SIMSTATE:
@@ -524,10 +506,6 @@ void
 GCS_MAVLINK_Rover::data_stream_send(void)
 {
     gcs().set_out_of_time(false);
-
-    if (!rover.in_mavlink_delay) {
-        rover.DataFlash.handle_log_send(*this);
-    }
 
     send_queued_parameters();
 
@@ -710,7 +688,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             new_home_loc.alt = packet.z * 100;
             // handle relative altitude
             if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                if (rover.home_is_set == HOME_UNSET) {
+                if (!rover.ahrs.home_is_set()) {
                     // cannot use relative altitude if home is not set
                     break;
                 }
@@ -907,19 +885,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 default:
                     result = MAV_RESULT_FAILED;
                     break;
-            }
-            break;
-
-        case MAV_CMD_GET_HOME_POSITION:
-            if (rover.home_is_set != HOME_UNSET) {
-                send_home(rover.ahrs.get_home());
-                Location ekf_origin;
-                if (rover.ahrs.get_origin(ekf_origin)) {
-                    send_ekf_origin(ekf_origin);
-                }
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
             }
             break;
 
@@ -1390,10 +1355,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         rover.g2.proximity.handle_msg(msg);
         break;
 
-    case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
-        rover.g2.visual_odom.handle_msg(msg);
-        break;
-
     default:
         handle_common_message(msg);
         break;
@@ -1495,6 +1456,15 @@ AP_AdvancedFailsafe *GCS_MAVLINK_Rover::get_advanced_failsafe() const
 {
 #if ADVANCED_FAILSAFE == ENABLED
     return &rover.g2.afs;
+#else
+    return nullptr;
+#endif
+}
+
+AP_VisualOdom *GCS_MAVLINK_Rover::get_visual_odom() const
+{
+#if VISUAL_ODOMETRY_ENABLED == ENABLED
+    return &rover.g2.visual_odom;
 #else
     return nullptr;
 #endif

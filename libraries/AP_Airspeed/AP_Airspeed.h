@@ -164,8 +164,11 @@ public:
 
     // get current primary sensor
     uint8_t get_primary(void) const { return primary; }
+
+    static AP_Airspeed *get_singleton() { return _singleton; }
     
 private:
+    static AP_Airspeed *_singleton;
 
     AP_Int8 primary_sensor;
     

@@ -582,7 +582,7 @@ again:
         /* Wait for any clock stretching to finish */
         while (!SCL_read) {
             SCL_H; // may be another thread causes LOW
-            hal_yield(0); // пока ожидаем - пусть другие работают
+            hal_yield(0); // while we wait - let others work
 
             if(systick_uptime()-t > MAX_I2C_TIME) return false;
         }

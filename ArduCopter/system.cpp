@@ -20,15 +20,6 @@ static void failsafe_check_static()
 
 void Copter::init_ardupilot()
 {
-    if (!hal.gpio->usb_connected()) {
-        // USB is not connected, this means UART0 may be a Xbee, with
-        // its darned bricking problem. We can't write to it for at
-        // least one second after powering up. Simplest solution for
-        // now is to delay for 1 second. Something more elegant may be
-        // added later
-        delay(1000);
-    }
-
     // initialise serial port
     serial_manager.init_console();
 
@@ -48,10 +39,14 @@ void Copter::init_ardupilot()
     // load parameters from EEPROM
     load_parameters();
 
-    G_Dt = scheduler.get_loop_period_s();
+    // time per loop - this gets updated in the main loop() based on
+    // actual loop rate
+    G_Dt = 1.0 / scheduler.get_loop_rate_hz();
 
+#if STATS_ENABLED == ENABLED
     // initialise stats module
     g2.stats.init();
+#endif
 
     gcs().set_dataflash(&DataFlash);
 
@@ -108,7 +103,7 @@ void Copter::init_ardupilot()
     snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", fwver.fw_string, get_frame_string());
     frsky_telemetry.init(serial_manager, firmware_buf,
                          get_frame_mav_type(),
-                         &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value);
+                         &ap.value);
 #endif
 
 #if LOGGING_ENABLED == ENABLED
@@ -151,8 +146,10 @@ void Copter::init_ardupilot()
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
+#if BEACON_ENABLED == ENABLED
     // give AHRS the range beacon sensor
     ahrs.set_beacon(&g2.beacon);
+#endif
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
@@ -220,23 +217,33 @@ void Copter::init_ardupilot()
     // init proximity sensor
     init_proximity();
 
+#if BEACON_ENABLED == ENABLED
     // init beacons used for non-gps position estimation
-    init_beacon();
+    g2.beacon.init();
+#endif
 
     // init visual odometry
     init_visual_odom();
 
+#if RPM_ENABLED == ENABLED
     // initialise AP_RPM library
     rpm_sensor.init();
+#endif
 
+#if MODE_AUTO_ENABLED == ENABLED
     // initialise mission library
     mission.init();
+#endif
 
+#if MODE_SMARTRTL_ENABLED == ENABLED
     // initialize SmartRTL
     g2.smart_rtl.init();
+#endif
 
     // initialise DataFlash library
+#if MODE_AUTO_ENABLED == ENABLED
     DataFlash.set_mission(&mission);
+#endif
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
 
     // initialise the flight mode and aux switch
@@ -268,6 +275,9 @@ void Copter::init_ardupilot()
     // disable safety if requested
     BoardConfig.init_safety();
 
+    // default enable RC override
+    copter.ap.rc_override_enable = true;
+    
     hal.console->printf("\nReady to FLY ");
 
     // flag that initialisation has completed
@@ -408,7 +418,7 @@ void Copter::update_auto_armed()
         }
 #else
         // if motors are armed and throttle is above zero auto_armed should be true
-        // if motors are armed and we are in throw mode, then auto_ermed should be true
+        // if motors are armed and we are in throw mode, then auto_armed should be true
         if(motors->armed() && (!ap.throttle_zero || control_mode == THROW)) {
             set_auto_armed(true);
         }
@@ -607,11 +617,13 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
+#if MODE_CIRCLE_ENABLED == ENABLED
     circle_nav = new AC_Circle(inertial_nav, *ahrs_view, *pos_control);
-    if (wp_nav == nullptr) {
+    if (circle_nav == nullptr) {
         AP_HAL::panic("Unable to allocate CircleNav");
     }
     AP_Param::load_object_from_eeprom(circle_nav, circle_nav->var_info);
+#endif
 
     // reload lines from the defaults file that may now be accessible
     AP_Param::reload_defaults_file();

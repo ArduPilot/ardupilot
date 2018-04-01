@@ -57,7 +57,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_visual_odom,     50,     50),
     SCHED_TASK(update_wheel_encoder,   20,     50),
     SCHED_TASK(update_compass,         10,   2000),
-    SCHED_TASK(update_mission,         10,   1000),
+    SCHED_TASK(update_mission,         50,    500),
     SCHED_TASK(update_logging1,        10,   1000),
     SCHED_TASK(update_logging2,        10,   1000),
     SCHED_TASK(gcs_retry_deferred,     50,   1000),
@@ -85,8 +85,11 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,       10,    100),
     SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
     SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,       50,   50),
+    SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1,  75),
     SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  100),
+#if STATS_ENABLED == ENABLED
     SCHED_TASK(stats_update,            1,    100),
+#endif
     SCHED_TASK(crash_check,            10,   1000),
     SCHED_TASK(cruise_learn_update,    50,     50),
 #if ADVANCED_FAILSAFE == ENABLED
@@ -94,6 +97,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
 };
 
+constexpr int8_t Rover::_failsafe_priorities[7];
+
+#if STATS_ENABLED == ENABLED
 /*
   update AP_Stats
 */
@@ -102,6 +108,7 @@ void Rover::stats_update(void)
     g2.stats.set_flying(motor_active());
     g2.stats.update();
 }
+#endif
 
 /*
   setup is called when the sketch starts
@@ -114,7 +121,7 @@ void Rover::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
 }
 
 /*
@@ -122,34 +129,8 @@ void Rover::setup()
  */
 void Rover::loop()
 {
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    const uint32_t timer = AP_HAL::micros();
-
-    delta_us_fast_loop  = timer - fast_loopTimer_us;
-    G_Dt                = delta_us_fast_loop * 1.0e-6f;
-    fast_loopTimer_us   = timer;
-
-    if (delta_us_fast_loop > G_Dt_max) {
-        G_Dt_max = delta_us_fast_loop;
-    }
-
-    mainLoop_count++;
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    // run all the tasks that are due to run. Note that we only
-    // have to call this once per loop, as the tasks are scheduled
-    // in multiples of the main loop tick. So if they don't run on
-    // the first call to the scheduler they won't run on a later
-    // call until scheduler.tick() is called again
-    uint32_t remaining = (timer + 20000) - micros();
-    if (remaining > 19500) {
-        remaining = 19500;
-    }
-    scheduler.run(remaining);
+    scheduler.loop();
+    G_Dt = scheduler.get_last_loop_time_s();
 }
 
 void Rover::update_soft_armed()
@@ -193,7 +174,7 @@ void Rover::ahrs_update()
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        DataFlash.Log_Write_IMU(ins);
+        DataFlash.Log_Write_IMU();
     }
 }
 
@@ -264,7 +245,7 @@ void Rover::update_logging2(void)
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        DataFlash.Log_Write_Vibration(ins);
+        DataFlash.Log_Write_Vibration();
     }
 }
 
@@ -304,18 +285,6 @@ void Rover::one_second_loop(void)
     static uint8_t counter;
 
     counter++;
-
-    // write perf data every 20s
-    if (counter % 10 == 0) {
-        if (scheduler.debug() != 0) {
-            hal.console->printf("G_Dt_max=%u\n", G_Dt_max);
-        }
-        if (should_log(MASK_LOG_PM)) {
-            Log_Write_Performance();
-        }
-        G_Dt_max = 0;
-        resetPerfData();
-    }
 
     // save compass offsets once a minute
     if (counter >= 60) {

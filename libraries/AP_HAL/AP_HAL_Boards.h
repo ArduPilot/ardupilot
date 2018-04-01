@@ -69,6 +69,10 @@
 #define HAL_BOARD_SUBTYPE_CHIBIOS_SPARKY2       5004
 #define HAL_BOARD_SUBTYPE_CHIBIOS_REVOMINI      5005
 #define HAL_BOARD_SUBTYPE_CHIBIOS_MINIPIX       5006
+#define HAL_BOARD_SUBTYPE_CHIBIOS_CRAZYFLIE2    5007
+#define HAL_BOARD_SUBTYPE_CHIBIOS_OMNIBUSF7V2   5008
+#define HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC       5009
+#define HAL_BOARD_SUBTYPE_CHIBIOS_F4BY          5010
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -110,6 +114,10 @@
 #define HAL_BARO_LPS25H     13
 #define HAL_BARO_20789_I2C_I2C  14
 #define HAL_BARO_20789_I2C_SPI  15
+#define HAL_BARO_LPS22H_SPI	16
+#define HAL_BARO_LPS25H_IMU_I2C 17
+#define HAL_BARO_FBM320_I2C 18
+#define HAL_BARO_DPS280_I2C 19
 
 /* Compass driver types */
 #define HAL_COMPASS_NONE                0
@@ -133,6 +141,8 @@
 #define HAL_COMPASS_LIS3MDL            19
 #define HAL_COMPASS_MAG3110            20
 #define HAL_COMPASS_BMM150_I2C         21
+#define HAL_COMPASS_QMC5883L           22
+#define HAL_COMPASS_IST8310            23
 
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1
@@ -236,9 +246,18 @@
 #define HAL_INS_DEFAULT HAL_INS_NONE
 #endif
 
+#ifndef HAL_GPS_TYPE_DEFAULT
+#define HAL_GPS_TYPE_DEFAULT 1
+#endif
+
+#ifndef HAL_CAN_DRIVER_DEFAULT
+#define HAL_CAN_DRIVER_DEFAULT 0
+#endif
+
 #ifdef HAVE_LIBDL
 #define AP_MODULE_SUPPORTED 1
 #else
 #define AP_MODULE_SUPPORTED 0
 #endif
+
 

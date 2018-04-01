@@ -160,7 +160,7 @@ uint8_t SPIDevice::_transfer(uint8_t data) {
     (void)_desc.dev->SPIx->DR; // read fake data out
 
     //wait for TXE before send
-    while (!spi_is_tx_empty(_desc.dev)) {    // надо дожидаться окончания передачи.
+    while (!spi_is_tx_empty(_desc.dev)) {    // should wait transfer finished
         if(!spi_is_busy(_desc.dev) ) break;
     }
 
@@ -168,7 +168,7 @@ uint8_t SPIDevice::_transfer(uint8_t data) {
     _desc.dev->SPIx->DR = data;
 
     //wait for read byte
-    while (!spi_is_rx_nonempty(_desc.dev)) {    // надо дожидаться окончания передачи.
+    while (!spi_is_rx_nonempty(_desc.dev)) {    // should wait transfer finished
         if(!spi_is_busy(_desc.dev) ) break;
     }
     
@@ -177,7 +177,7 @@ uint8_t SPIDevice::_transfer(uint8_t data) {
 
 void SPIDevice::send(uint8_t out) {
     //wait for TXE before send
-    while (!spi_is_tx_empty(_desc.dev)) {    // надо дожидаться окончания передачи.
+    while (!spi_is_tx_empty(_desc.dev)) {    // should wait transfer finished
         if(!spi_is_busy(_desc.dev) ) break;
     }
     //write 1byte
@@ -529,7 +529,7 @@ spi_baud_rate SPIDevice::determine_baud_rate(SPIFrequency freq)
 void SPIDevice::get_dma_ready(){
     const Spi_DMA &dp = _desc.dev->dma;
 
-//  проверить, не занят ли поток DMA перед использованием
+//  check for DMA not busy before use
     uint32_t t = hal_micros();
     while(dma_is_stream_enabled(dp.stream_rx) || dma_is_stream_enabled(dp.stream_tx) ) {   // wait for previous transfer termination
         if(hal_micros() - t > 1000) break; // DMA transfer can't be more than 1ms

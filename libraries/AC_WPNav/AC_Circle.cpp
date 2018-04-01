@@ -54,6 +54,8 @@ void AC_Circle::init(const Vector3f& center)
     _center = center;
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
+    _pos_control.set_desired_accel_xy(0.0f,0.0f);
+    _pos_control.set_desired_velocity_xy(0.0f,0.0f);
     _pos_control.init_xy_controller();
 
     // set initial position target to reasonable stopping point
@@ -72,6 +74,8 @@ void AC_Circle::init(const Vector3f& center)
 void AC_Circle::init()
 {
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
+    _pos_control.set_desired_accel_xy(0.0f,0.0f);
+    _pos_control.set_desired_velocity_xy(0.0f,0.0f);
     _pos_control.init_xy_controller();
 
     // set initial position target to reasonable stopping point
@@ -107,61 +111,55 @@ void AC_Circle::update()
 {
     // calculate dt
     float dt = _pos_control.time_since_last_xy_update();
-
-    // update circle position at poscontrol update rate
-    if (dt >= _pos_control.get_dt_xy()) {
-
-        // double check dt is reasonable
-        if (dt >= 0.2f) {
-            dt = 0.0f;
-        }
-
-        // ramp angular velocity to maximum
-        if (_angular_vel < _angular_vel_max) {
-            _angular_vel += fabsf(_angular_accel) * dt;
-            _angular_vel = MIN(_angular_vel, _angular_vel_max);
-        }
-        if (_angular_vel > _angular_vel_max) {
-            _angular_vel -= fabsf(_angular_accel) * dt;
-            _angular_vel = MAX(_angular_vel, _angular_vel_max);
-        }
-
-        // update the target angle and total angle traveled
-        float angle_change = _angular_vel * dt;
-        _angle += angle_change;
-        _angle = wrap_PI(_angle);
-        _angle_total += angle_change;
-
-        // if the circle_radius is zero we are doing panorama so no need to update loiter target
-        if (!is_zero(_radius)) {
-            // calculate target position
-            Vector3f target;
-            target.x = _center.x + _radius * cosf(-_angle);
-            target.y = _center.y - _radius * sinf(-_angle);
-            target.z = _pos_control.get_alt_target();
-
-            // update position controller target
-            _pos_control.set_xy_target(target.x, target.y);
-
-            // heading is 180 deg from vehicles target position around circle
-            _yaw = wrap_PI(_angle-M_PI) * DEGX100;
-        }else{
-            // set target position to center
-            Vector3f target;
-            target.x = _center.x;
-            target.y = _center.y;
-            target.z = _pos_control.get_alt_target();
-
-            // update position controller target
-            _pos_control.set_xy_target(target.x, target.y);
-
-            // heading is same as _angle but converted to centi-degrees
-            _yaw = _angle * DEGX100;
-        }
-
-        // update position controller
-        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f, false);
+    if (dt >= 0.2f) {
+        dt = 0.0f;
     }
+
+    // ramp angular velocity to maximum
+    if (_angular_vel < _angular_vel_max) {
+        _angular_vel += fabsf(_angular_accel) * dt;
+        _angular_vel = MIN(_angular_vel, _angular_vel_max);
+    }
+    if (_angular_vel > _angular_vel_max) {
+        _angular_vel -= fabsf(_angular_accel) * dt;
+        _angular_vel = MAX(_angular_vel, _angular_vel_max);
+    }
+
+    // update the target angle and total angle traveled
+    float angle_change = _angular_vel * dt;
+    _angle += angle_change;
+    _angle = wrap_PI(_angle);
+    _angle_total += angle_change;
+
+    // if the circle_radius is zero we are doing panorama so no need to update loiter target
+    if (!is_zero(_radius)) {
+        // calculate target position
+        Vector3f target;
+        target.x = _center.x + _radius * cosf(-_angle);
+        target.y = _center.y - _radius * sinf(-_angle);
+        target.z = _pos_control.get_alt_target();
+
+        // update position controller target
+        _pos_control.set_xy_target(target.x, target.y);
+
+        // heading is 180 deg from vehicles target position around circle
+        _yaw = wrap_PI(_angle-M_PI) * DEGX100;
+    } else {
+        // set target position to center
+        Vector3f target;
+        target.x = _center.x;
+        target.y = _center.y;
+        target.z = _pos_control.get_alt_target();
+
+        // update position controller target
+        _pos_control.set_xy_target(target.x, target.y);
+
+        // heading is same as _angle but converted to centi-degrees
+        _yaw = _angle * DEGX100;
+    }
+
+    // update position controller
+    _pos_control.update_xy_controller(1.0f);
 }
 
 // get_closest_point_on_circle - returns closest point on the circle

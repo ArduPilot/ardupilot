@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include "hwdef.h"
+
 #define _CHIBIOS_RT_CONF_
 
 /*===========================================================================*/
@@ -46,9 +48,10 @@
 /**
  * @brief   System tick frequency.
  * @details Frequency of the system timer that drives the system ticks. This
- *          setting also defines the system tick time unit.
+ *          setting also defines the system tick time unit. We set this to 1000000
+ *          in ArduPilot so we get maximum resolution for timing of delays
  */
-#define CH_CFG_ST_FREQUENCY                 10000
+#define CH_CFG_ST_FREQUENCY                 1000000
 
 /**
  * @brief   Time delta constant for the tick-less mode.
@@ -339,7 +342,9 @@
  *
  * @note    The default is @p FALSE.
  */
-#define CH_DBG_SYSTEM_STATE_CHECK           TRUE
+#ifndef CH_DBG_SYSTEM_STATE_CHECK
+#define CH_DBG_SYSTEM_STATE_CHECK           FALSE
+#endif
 
 /**
  * @brief   Debug option, parameters checks.
@@ -348,7 +353,10 @@
  *
  * @note    The default is @p FALSE.
  */
-#define CH_DBG_ENABLE_CHECKS                TRUE
+#ifndef CH_DBG_ENABLE_CHECKS
+#define CH_DBG_ENABLE_CHECKS                FALSE
+#endif
+
 
 /**
  * @brief   Debug option, consistency checks.
@@ -358,7 +366,9 @@
  *
  * @note    The default is @p FALSE.
  */
-#define CH_DBG_ENABLE_ASSERTS               TRUE
+#ifndef CH_DBG_ENABLE_ASSERTS
+#define CH_DBG_ENABLE_ASSERTS               FALSE
+#endif
 
 /**
  * @brief   Debug option, trace buffer.
@@ -385,7 +395,9 @@
  * @note    The default failure mode is to halt the system with the global
  *          @p panic_msg variable set to @p NULL.
  */
-#define CH_DBG_ENABLE_STACK_CHECK           TRUE
+#ifndef CH_DBG_ENABLE_STACK_CHECK
+#define CH_DBG_ENABLE_STACK_CHECK           FALSE
+#endif
 
 /**
  * @brief   Debug option, stacks initialization.

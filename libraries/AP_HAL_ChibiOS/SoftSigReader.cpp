@@ -68,6 +68,9 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
         icucfg.mode = ICU_INPUT_ACTIVE_LOW;
         icucfg.dier = STM32_TIM_DIER_CC2DE;
     }
+#ifdef HAL_RCIN_IS_INVERTED
+    icucfg.mode = (icucfg.mode==ICU_INPUT_ACTIVE_LOW)?ICU_INPUT_ACTIVE_HIGH:ICU_INPUT_ACTIVE_LOW;
+#endif
     icuStart(_icu_drv, &icucfg);
     //Extended Timer Setup to enable DMA transfer
     //selected offset for TIM_CCR1 and for two words

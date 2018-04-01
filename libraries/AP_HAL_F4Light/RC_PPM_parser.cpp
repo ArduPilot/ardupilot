@@ -163,11 +163,11 @@ void PPM_parser::_process_sbus_pulse(uint16_t width_s0, uint16_t width_s1, F4Lig
 
     // pull in the low bits
     nlow = bits_s0;          // length of low bits
-    if (nlow + bit_ofs > 12) { // переехали за границу байта?
-        nlow = 12 - bit_ofs;   // остаток этого байта
+    if (nlow + bit_ofs > 12) { // goes over byte boundary?
+        nlow = 12 - bit_ofs;   // remaining part of byte
     }
-    bits_s0 -= nlow;  // непосчитанный остаток нулевых битов
-    state.bit_ofs += nlow; // добить нулями до конца байта
+    bits_s0 -= nlow;  // zero bit residual
+    state.bit_ofs += nlow; // fill by zeros till byte end
 
     if (state.bit_ofs == 25*12 && bits_s0 > 12) { // all frame got and was gap
         // we have a full frame

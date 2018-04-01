@@ -77,10 +77,9 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
-AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
+AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, Compass &compass,
                      const AP_BattMonitor &battery) :
     ahrs(ahrs_ref),
-    barometer(baro),
     _compass(compass),
     _battery(battery),
     armed(false),
@@ -116,7 +115,7 @@ bool AP_Arming::barometer_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BARO)) {
-        if (!barometer.all_healthy()) {
+        if (!AP::baro().all_healthy()) {
             if (report) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Barometer not healthy");
             }
@@ -173,7 +172,7 @@ bool AP_Arming::ins_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
-        const AP_InertialSensor &ins = ahrs.get_ins();
+        const AP_InertialSensor &ins = AP::ins();
         if (!ins.get_gyro_health_all()) {
             if (report) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Gyros not healthy");
@@ -347,7 +346,7 @@ bool AP_Arming::gps_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
         //GPS OK?
-        if (home_status() == HOME_UNSET ||
+        if (!AP::ahrs().home_is_set() ||
             gps.status() < AP_GPS::GPS_OK_FIX_3D) {
             if (report) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Bad GPS Position");

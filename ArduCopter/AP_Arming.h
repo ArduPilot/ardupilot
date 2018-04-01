@@ -7,19 +7,17 @@ class AP_Arming_Copter : public AP_Arming
 public:
     friend class Copter;
     friend class ToyMode;
-    AP_Arming_Copter(const AP_AHRS_NavEKF &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                     const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav,
-                     const AP_InertialSensor &ins)
-        : AP_Arming(ahrs_ref, baro, compass, battery)
+    AP_Arming_Copter(const AP_AHRS_NavEKF &ahrs_ref, Compass &compass,
+                     const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav)
+        : AP_Arming(ahrs_ref, compass, battery)
         , _inav(inav)
-        , _ins(ins)
         , _ahrs_navekf(ahrs_ref)
     {
     }
 
     /* Do not allow copies */
     AP_Arming_Copter(const AP_Arming_Copter &other) = delete;
-    AP_Arming_Copter &operator=(const AP_Baro&) = delete;
+    AP_Arming_Copter &operator=(const AP_Arming_Copter&) = delete;
 
     void update(void);
     bool all_checks_passing(bool arming_from_gcs);
@@ -49,12 +47,9 @@ protected:
 
     void set_pre_arm_check(bool b);
 
-    enum HomeState home_status() const override;
-
 private:
 
     const AP_InertialNav_NavEKF &_inav;
-    const AP_InertialSensor &_ins;
     const AP_AHRS_NavEKF &_ahrs_navekf;
 
     void parameter_checks_pid_warning_message(bool display_failure, const char *error_msg);

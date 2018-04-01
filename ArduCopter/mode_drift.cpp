@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_DRIFT_ENABLED == ENABLED
+
 /*
  * Init and run calls for drift flight mode
  */
@@ -58,7 +60,7 @@ void Copter::ModeDrift::run()
     }
 
     // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, copter.aparm.angle_max);
+    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
@@ -100,7 +102,7 @@ void Copter::ModeDrift::run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // output pilot's throttle with angle boost
     attitude_control->set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true, g.throttle_filt);
@@ -124,3 +126,4 @@ float Copter::ModeDrift::get_throttle_assist(float velz, float pilot_throttle_sc
     
     return constrain_float(pilot_throttle_scaled + thr_assist, 0.0f, 1.0f);
 }
+#endif

@@ -285,7 +285,7 @@ bool AP_Proximity_LightWareSF40C::send_request_for_distance()
     }
 
     // prepare request
-    char request_str[15];
+    char request_str[16];
     snprintf(request_str, sizeof(request_str), "?TS,%d,%d\r\n", (int)(_sector_width_deg[_last_sector]), (int)(_sector_middle_deg[_last_sector]));
     uart->write(request_str);
 
