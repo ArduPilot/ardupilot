@@ -29,6 +29,7 @@ SRV_Channels *SRV_Channels::instance;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
 AP_BLHeli *SRV_Channels::blheli_ptr;
+uint16_t SRV_Channels::disabled_mask;
 
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
