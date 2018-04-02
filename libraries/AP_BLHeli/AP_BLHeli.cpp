@@ -16,7 +16,9 @@
   implementation of MSP and BLHeli-4way protocols for pass-through ESC
   calibration and firmware update
 
-  With thanks to betaflight for a great reference implementation
+  With thanks to betaflight for a great reference
+  implementation. Several of the functions below are based on
+  betaflight equivalent functions
  */
 
 #include "AP_BLHeli.h"
@@ -39,6 +41,10 @@ extern const AP_HAL::HAL& hal;
 #else
 #define debug(fmt, args ...)
 #endif
+
+// key for locking UART for exclusive use. This prevents any other writes from corrupting
+// the MSP protocol on hal.console
+#define BLHELI_UART_LOCK_KEY 0x20180402
 
 const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Param: MASK
@@ -221,7 +227,7 @@ void AP_BLHeli::msp_send_reply(uint8_t cmd, const uint8_t *buf, uint8_t len)
         c ^= msp.buf[i+3];
     }
     *b++ = c;
-    uart->write(&msp.buf[0], len+6);
+    uart->write_locked(&msp.buf[0], len+6, BLHELI_UART_LOCK_KEY);
 }
 
 void AP_BLHeli::putU16(uint8_t *b, uint16_t v)
@@ -294,9 +300,7 @@ void AP_BLHeli::msp_process_command(void)
     }
 
     case MSP_REBOOT:
-        debug("MSP_REBOOT");
-        debug("MSP: rebooting");
-        hal.scheduler->reboot(false);
+        debug("MSP: ignoring reboot command");
         break;
 
     case MSP_UID:
@@ -440,7 +444,7 @@ void AP_BLHeli::blheli_send_reply(const uint8_t *buf, uint16_t len)
     b += len;
     *b++ = blheli.ack;
     putU16_BE(b, crc_xmodem(&blheli.buf[0], len+6));
-    uart->write(&blheli.buf[0], len+8);
+    uart->write_locked(&blheli.buf[0], len+8, BLHELI_UART_LOCK_KEY);
     debug("OutB(%u) 0x%02x ack=0x%02x", len+8, (unsigned)blheli.command, blheli.ack);
 }
 
@@ -1019,6 +1023,14 @@ bool AP_BLHeli::process_input(uint8_t b)
         blheli.state = BLHELI_IDLE;
     }
 
+    if (valid_packet) {
+        if (uart->lock_port(BLHELI_UART_LOCK_KEY)) {
+            uart_locked = true;
+        } else {
+            return false;
+        }
+    }
+
     return valid_packet;
 }
 
@@ -1078,6 +1090,7 @@ void AP_BLHeli::update(void)
 {
     if (initialised &&
         timeout_sec &&
+        uart_locked &&
         AP_HAL::millis() - last_valid_ms > uint32_t(timeout_sec.get())*1000U) {
         // we're not processing requests any more, shutdown serial
         // output
@@ -1089,6 +1102,9 @@ void AP_BLHeli::update(void)
             motors_disabled = false;
             SRV_Channels::set_disabled_channel_mask(0);            
         }
+        uart->lock_port(0);
+        uart_locked = false;
+        debug("Unlocked UART");
     }
     if (initialised || (channel_mask.get() == 0 && channel_auto.get() == 0)) {
         if (initialised && run_test.get() > 0) {
@@ -1135,16 +1151,19 @@ void AP_BLHeli::update(void)
     }
 }
 
-static uint8_t updateCrc8(uint8_t crc, uint8_t crc_seed)
+/*
+  implement the 8 bit CRC used by the BLHeli ESC telemetry protocol
+ */
+uint8_t AP_BLHeli::telem_crc8(uint8_t crc, uint8_t crc_seed) const
 {
     uint8_t crc_u = crc;
     crc_u ^= crc_seed;
 
-    for (int i=0; i<8; i++) {
+    for (uint8_t i=0; i<8; i++) {
         crc_u = ( crc_u & 0x80 ) ? 0x7 ^ ( crc_u << 1 ) : ( crc_u << 1 );
     }
 
-    return (crc_u);
+    return crc_u;
 }
 
 /*
@@ -1165,7 +1184,7 @@ void AP_BLHeli::read_telemetry_packet(void)
     
     // calculate crc
     for (uint8_t i=0; i<telem_packet_size-1; i++) {    
-        crc = updateCrc8(buf[i], crc);
+        crc = telem_crc8(buf[i], crc);
     }
 
     if (buf[telem_packet_size-1] != crc) {
