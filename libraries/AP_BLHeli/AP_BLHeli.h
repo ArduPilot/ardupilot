@@ -23,6 +23,9 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+
+#if HAL_SUPPORT_RCOUT_SERIAL
+
 #include <AP_Param/AP_Param.h>
 #include "msp_protocol.h"
 #include "blheli_4way_protocol.h"
@@ -33,6 +36,7 @@ public:
     AP_BLHeli();
     
     void update(void);
+    void update_telemetry(void);
     bool process_input(uint8_t b);
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -216,3 +220,5 @@ private:
 #ifndef UDID_START
 #define UDID_START	0x1FFF7A10
 #endif
+
+#endif // HAL_SUPPORT_RCOUT_SERIAL

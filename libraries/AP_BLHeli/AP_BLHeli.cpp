@@ -20,6 +20,9 @@
  */
 
 #include "AP_BLHeli.h"
+
+#if HAL_SUPPORT_RCOUT_SERIAL
+
 #include <AP_Math/crc.h>
 #include <AP_Motors/AP_Motors_Class.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -1114,3 +1117,13 @@ void AP_BLHeli::update(void)
     }
     debug("ESC: mapped %u motors with mask 0x%04x", num_motors, mask);
 }
+
+/*
+  update BLHeli telemetry handling
+  This is called on push() in SRV_Channels
+ */
+void AP_BLHeli::update_telemetry(void)
+{
+}
+
+#endif // HAL_SUPPORT_RCOUT_SERIAL
