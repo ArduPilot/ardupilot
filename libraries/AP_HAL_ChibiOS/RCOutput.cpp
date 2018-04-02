@@ -776,9 +776,13 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
 /*
   create a DSHOT 16 bit packet. Based on prepareDshotPacket from betaflight
  */
-uint16_t RCOutput::create_dshot_packet(const uint16_t value)
+uint16_t RCOutput::create_dshot_packet(const uint16_t value, bool telem_request)
 {
-    uint16_t packet = (value << 1); // no telemetry request
+    uint16_t packet = (value << 1);
+
+    if (telem_request) {
+        packet |= 1;
+    }
 
     // compute checksum
     uint16_t csum = 0;
@@ -836,7 +840,12 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
                 // dshot values are from 48 to 2047. Zero means off.
                 value += 47;
             }
-            uint16_t packet = create_dshot_packet(value);
+            uint16_t chan_mask = (1U<<chan);
+            bool request_telemetry = (telem_request_mask & chan_mask)?true:false;
+            uint16_t packet = create_dshot_packet(value, request_telemetry);
+            if (request_telemetry) {
+                telem_request_mask &= ~chan_mask;
+            }
             fill_DMA_buffer_dshot(group.dma_buffer + i, 4, packet, group.bit_width_mul);
         }
     }
