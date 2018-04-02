@@ -27,6 +27,8 @@
 #include <AP_Motors/AP_Motors_Class.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -67,8 +69,16 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Description: This sets the inactivity timeout for the BLHeli protocol in seconds. If no packets are received in this time normal MAVLink operations are resumed. A value of 0 means no timeout
     // @Units: s
     // @Range: 0 300
-    // @User: Advanced
+    // @User: Standard
     AP_GROUPINFO("TMOUT",  4, AP_BLHeli, timeout_sec, 60),
+
+    // @Param: TRATE
+    // @DisplayName: BLHeli telemetry rate
+    // @Description: This sets the rate in Hz for requesting telemetry from ESCs. It is the rate per ESC. Setting to zero disables telemetry requests
+    // @Units: Hz
+    // @Range: 0 500
+    // @User: Standard
+    AP_GROUPINFO("TRATE",  5, AP_BLHeli, telem_rate, 0),
     
     AP_GROUPEND
 };
@@ -1116,6 +1126,80 @@ void AP_BLHeli::update(void)
         }
     }
     debug("ESC: mapped %u motors with mask 0x%04x", num_motors, mask);
+
+    if (telem_rate > 0) {
+        AP_SerialManager *serial_manager = AP_SerialManager::get_instance();
+        if (serial_manager) {
+            telem_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_ESCTelemetry,0);
+        }
+    }
+}
+
+static uint8_t updateCrc8(uint8_t crc, uint8_t crc_seed)
+{
+    uint8_t crc_u = crc;
+    crc_u ^= crc_seed;
+
+    for (int i=0; i<8; i++) {
+        crc_u = ( crc_u & 0x80 ) ? 0x7 ^ ( crc_u << 1 ) : ( crc_u << 1 );
+    }
+
+    return (crc_u);
+}
+
+/*
+  read an ESC telemetry packet
+ */
+void AP_BLHeli::read_telemetry_packet(void)
+{
+    uint8_t buf[telem_packet_size];
+    uint8_t crc = 0;
+    for (uint8_t i=0; i<telem_packet_size; i++) {
+        int16_t v = telem_uart->read();
+        if (v < 0) {
+            // short read, we should have 10 bytes ready when this function is called
+            return;
+        }
+        buf[i] = uint8_t(v);
+    }
+    
+    // calculate crc
+    for (uint8_t i=0; i<telem_packet_size-1; i++) {    
+        crc = updateCrc8(buf[i], crc);
+    }
+
+    if (buf[telem_packet_size-1] != crc) {
+        // bad crc
+        return;
+    }
+    uint8_t temperature = buf[0];
+    uint16_t voltage = (buf[1]<<8) | buf[2];
+    uint16_t current = (buf[3]<<8) | buf[4];
+    uint16_t consumption = (buf[5]<<8) | buf[6];
+    uint16_t rpm = (buf[7]<<8) | buf[8];
+
+    DataFlash_Class *df = DataFlash_Class::instance();
+    if (df && df->logging_enabled()) {
+        struct log_Esc pkt = {
+            LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC1_MSG+last_telem_esc)),
+            time_us     : AP_HAL::micros64(),
+            rpm         : int32_t(rpm*100U),
+            voltage     : uint16_t(voltage),
+            current     : uint16_t(current),
+            temperature : int16_t(temperature * 100U),
+            current_tot : consumption
+        };
+        df->WriteBlock(&pkt, sizeof(pkt));
+    }
+#if 0
+    hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u\n",
+                        last_telem_esc,
+                        temperature,
+                        voltage,
+                        current,
+                        consumption,
+                        rpm);
+#endif
 }
 
 /*
@@ -1124,6 +1208,54 @@ void AP_BLHeli::update(void)
  */
 void AP_BLHeli::update_telemetry(void)
 {
+    if (!telem_uart) {
+        return;
+    }
+    uint32_t now = AP_HAL::micros();
+    uint32_t nbytes = telem_uart->available();
+    uint32_t telem_rate_us = 1000000U / uint32_t(telem_rate.get() * num_motors);
+    if (telem_rate_us < 2000) {
+        // make sure we have a gap between frames
+        telem_rate_us = 2000;
+    }
+    
+    if (nbytes > telem_packet_size) {
+        // if we have more than 10 bytes then we don't know which ESC
+        // they are from. Throw them all away
+        if (nbytes > telem_packet_size*2) {
+            // something badly wrong with this uart, disable ESC
+            // telemetry so we don't chew lots of CPU reading garbage
+            telem_uart = nullptr;
+            return;
+        }
+        while (nbytes--) {
+            telem_uart->read();
+        }
+        return;
+    }
+    if (nbytes > 0 &&
+        nbytes < telem_packet_size &&
+        now - last_telem_request_us < telem_rate_us) {
+        // wait a bit longer, we don't have enough bytes yet
+        return;
+    }
+    if (nbytes > 0 && nbytes < telem_packet_size) {
+        // we've waited long enough, discard bytes if we don't have 10 yet
+        while (nbytes--) {
+            telem_uart->read();
+        }
+        return;
+    }
+    if (nbytes == telem_packet_size) {
+        // we have a full packet ready to parse
+        read_telemetry_packet();
+    }
+    if (now - last_telem_request_us >= telem_rate_us) {
+        last_telem_esc = (last_telem_esc + 1) % num_motors;
+        uint16_t mask = 1U << motor_map[last_telem_esc];
+        hal.rcout->set_telem_request_mask(mask);
+        last_telem_request_us = now;
+    }
 }
 
 #endif // HAL_SUPPORT_RCOUT_SERIAL
