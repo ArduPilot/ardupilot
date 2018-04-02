@@ -409,7 +409,7 @@ void AP_BLHeli::msp_process_command(void)
             msp.escMode = (enum escProtocol)msp.buf[0];
             msp.portIndex = msp.buf[1];
         }
-        debug("escMode=%u portIndex=%u", msp.escMode, msp.portIndex);
+        debug("escMode=%u portIndex=%u num_motors=%u", msp.escMode, msp.portIndex, num_motors);
         uint8_t n = num_motors;
         switch (msp.escMode) {
         case PROTOCOL_4WAY:
@@ -1128,9 +1128,11 @@ void AP_BLHeli::update(void)
     /*
       plane and copter can use AP_Motors to get an automatic mask
      */
-    AP_Motors *motors = AP_Motors::get_instance();
-    if (motors) {
-        mask |= motors->get_motor_mask();
+    if (channel_auto.get() == 1) {
+        AP_Motors *motors = AP_Motors::get_instance();
+        if (motors) {
+            mask |= motors->get_motor_mask();
+        }
     }
 #endif
     
