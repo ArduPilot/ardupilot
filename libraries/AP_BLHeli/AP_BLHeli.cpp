@@ -34,13 +34,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if 1
-#define debug(fmt, args ...) do { if (debug_uart) debug_uart->printf("ESC: " fmt "\n", ## args); } while (0)
-#elif 0
-#define debug(fmt, args ...) do { hal.uartF->printf("ESC: " fmt "\n", ## args); } while (0)
-#else
-#define debug(fmt, args ...)
-#endif
+#define debug(fmt, args ...) do { if (debug_level) { gcs().send_text(MAV_SEVERITY_INFO, "ESC: " fmt, ## args); } } while (0)
 
 // key for locking UART for exclusive use. This prevents any other writes from corrupting
 // the MSP protocol on hal.console
@@ -85,6 +79,13 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Range: 0 500
     // @User: Standard
     AP_GROUPINFO("TRATE",  5, AP_BLHeli, telem_rate, 0),
+
+    // @Param: DEBUG
+    // @DisplayName: BLHeli debug level
+    // @Description: When set to 1 this enabled verbose debugging output over MAVLink when the blheli protocol is active. This can be used to diagnose failures.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("DEBUG",  6, AP_BLHeli, debug_level, 0),
     
     AP_GROUPEND
 };
@@ -376,8 +377,17 @@ void AP_BLHeli::msp_process_command(void)
         debug("MSP_MOTOR");
         // get the output going to each motor
         uint8_t buf[16] {};
+        uint16_t min_pwm = 1000;
+        uint16_t max_pwm = 2000;
+        hal.rcout->get_esc_scaling(min_pwm, max_pwm);
         for (uint8_t i = 0; i < num_motors; i++) {
             uint16_t v = hal.rcout->read(motor_map[i]);
+            if (v < min_pwm && v > 120 && v < 260) {
+                // assume this is oneshot125. We really should have
+                // that as a AP_HAL::RCOutput mode, but for now we
+                // need to cope with it this way
+                v /= 8;
+            }
             putU16(&buf[2*i], v);
         }
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
@@ -813,9 +823,9 @@ void AP_BLHeli::blheli_process_command(void)
             SRV_Channels::set_disabled_channel_mask(0);            
         }
         if (uart_locked) {
+            debug("Unlocked UART");
             uart->lock_port(0);
             uart_locked = false;
-            debug("Unlocked UART");
         }
         break;
     }
@@ -1112,9 +1122,9 @@ void AP_BLHeli::update(void)
             motors_disabled = false;
             SRV_Channels::set_disabled_channel_mask(0);            
         }
+        debug("Unlocked UART");
         uart->lock_port(0);
         uart_locked = false;
-        debug("Unlocked UART");
     }
     if (initialised || (channel_mask.get() == 0 && channel_auto.get() == 0)) {
         if (initialised && run_test.get() > 0) {
