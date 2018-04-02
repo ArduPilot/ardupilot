@@ -77,3 +77,9 @@
 // allow for generic boards
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC
 #endif
+
+#ifdef HAL_GPIO_LINE_GPIO50
+// we can only support RCOut serial if we have GPIO tags on the PWM
+// outputs of the board
+#define HAL_SUPPORT_RCOUT_SERIAL 1
+#endif
