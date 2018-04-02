@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Units: s
     // @Range: 0 300
     // @User: Advanced
-    AP_GROUPINFO("TMOUT",  4, AP_BLHeli, timeout_sec, 30),
+    AP_GROUPINFO("TMOUT",  4, AP_BLHeli, timeout_sec, 60),
     
     AP_GROUPEND
 };
