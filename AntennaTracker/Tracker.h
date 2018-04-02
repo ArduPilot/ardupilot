@@ -221,7 +221,6 @@ private:
     void update_scan(void);
     bool servo_test_set_servo(uint8_t servo_num, uint16_t pwm);
     void read_radio();
-    void init_barometer(bool full_calibration);
     void update_barometer(void);
     void update_ahrs();
     void update_compass(void);

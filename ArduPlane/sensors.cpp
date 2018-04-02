@@ -1,17 +1,6 @@
 #include "Plane.h"
 #include <AP_RSSI/AP_RSSI.h>
 
-void Plane::init_barometer(bool full_calibration)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
-    } else {
-        barometer.update_calibration();
-    }
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 void Plane::init_rangefinder(void)
 {
     rangefinder.init();

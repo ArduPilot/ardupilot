@@ -861,6 +861,28 @@ void GCS_MAVLINK_Sub::handle_change_alt_request(AP_Mission::Mission_Command &cmd
     // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
 }
 
+MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration_baro()
+{
+    if (!sub.sensor_health.depth) {
+        return MAV_RESULT_FAILED;
+    }
+
+    AP::baro().calibrate(true);
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+{
+    if (is_equal(packet.param6,1.0f)) {
+        // compassmot calibration
+        //result = sub.mavlink_compassmot(chan);
+        gcs().send_text(MAV_SEVERITY_INFO, "#CompassMot calibration not supported");
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
+}
+
 void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
@@ -1121,63 +1143,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_MISSION_START:
             if (sub.motors.armed() && sub.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
                 result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        case MAV_CMD_PREFLIGHT_CALIBRATION:
-            // exit immediately if armed
-            if (sub.motors.armed()) {
-                result = MAV_RESULT_FAILED;
-                break;
-            }
-            if (is_equal(packet.param1,1.0f)) {
-                if (sub.calibrate_gyros()) {
-                    result = MAV_RESULT_ACCEPTED;
-                } else {
-                    result = MAV_RESULT_FAILED;
-                }
-            } else if (is_equal(packet.param3,1.0f)) {
-                if (!sub.sensor_health.depth || sub.motors.armed()) {
-                    result = MAV_RESULT_FAILED;
-                } else {
-                    sub.init_barometer(true);
-                    result = MAV_RESULT_ACCEPTED;
-                }
-            } else if (is_equal(packet.param4,1.0f)) {
-                result = MAV_RESULT_UNSUPPORTED;
-            } else if (is_equal(packet.param5,1.0f)) {
-                // 3d accel calibration
-                result = MAV_RESULT_ACCEPTED;
-                if (!sub.calibrate_gyros()) {
-                    result = MAV_RESULT_FAILED;
-                    break;
-                }
-                sub.ins.acal_init();
-                sub.ins.get_acal()->start(this);
-
-            } else if (is_equal(packet.param5,2.0f)) {
-                // calibrate gyros
-                if (!sub.calibrate_gyros()) {
-                    result = MAV_RESULT_FAILED;
-                    break;
-                }
-                // accel trim
-                float trim_roll, trim_pitch;
-                if (sub.ins.calibrate_trim(trim_roll, trim_pitch)) {
-                    // reset ahrs's trim to suggested values from calibration routine
-                    sub.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-                    result = MAV_RESULT_ACCEPTED;
-                } else {
-                    result = MAV_RESULT_FAILED;
-                }
-            } else if (is_equal(packet.param5,4.0f)) {
-                // simple accel calibration
-                result = sub.ins.simple_accel_cal(sub.ahrs);
-            } else if (is_equal(packet.param6,1.0f)) {
-                // compassmot calibration
-                //result = sub.mavlink_compassmot(chan);
-                gcs().send_text(MAV_SEVERITY_INFO, "#CompassMot calibration not supported");
-                result = MAV_RESULT_UNSUPPORTED;
             }
             break;
 

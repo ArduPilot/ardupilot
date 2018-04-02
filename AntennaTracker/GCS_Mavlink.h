@@ -28,6 +28,8 @@ protected:
 
     bool set_mode(uint8_t mode) override;
 
+    MAV_RESULT _handle_command_preflight_calibration_baro() override;
+
 private:
 
     void packetReceived(const mavlink_status_t &status, mavlink_message_t &msg) override;

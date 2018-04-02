@@ -143,7 +143,7 @@ void Sub::init_ardupilot()
 #endif
 
     // Init baro and determine if we have external (depth) pressure sensor
-    init_barometer(false);
+    barometer.calibrate(false);
     barometer.update();
 
     for (uint8_t i = 0; i < barometer.num_instances(); i++) {
@@ -230,20 +230,6 @@ void Sub::startup_INS_ground()
 }
 
 // calibrate gyros - returns true if successfully calibrated
-bool Sub::calibrate_gyros()
-{
-    // gyro offset calibration
-    sub.ins.init_gyro();
-
-    // reset ahrs gyro bias
-    if (sub.ins.gyro_calibrated_ok_all()) {
-        sub.ahrs.reset_gyro_drift();
-        return true;
-    }
-
-    return false;
-}
-
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
 bool Sub::position_ok()
 {

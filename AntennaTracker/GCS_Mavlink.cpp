@@ -446,6 +446,16 @@ uint8_t GCS_MAVLINK_Tracker::sysid_my_gcs() const
     return tracker.g.sysid_my_gcs;
 }
 
+MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro()
+{
+    MAV_RESULT ret = GCS_MAVLINK::_handle_command_preflight_calibration_baro();
+    if (ret == MAV_RESULT_ACCEPTED) {
+        // zero the altitude difference on next baro update
+        tracker.nav_status.need_altitude_calibration = true;
+    }
+    return ret;
+}
+
 void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
@@ -474,55 +484,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
         send_text(MAV_SEVERITY_INFO,"Command received: ");
         
         switch(packet.command) {
-            
-            case MAV_CMD_PREFLIGHT_CALIBRATION:
-            {
-                if (is_equal(packet.param1,1.0f)) {
-                    tracker.ins.init_gyro();
-                    if (tracker.ins.gyro_calibrated_ok_all()) {
-                        tracker.ahrs.reset_gyro_drift();
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
-                }
-                if (is_equal(packet.param3,1.0f)) {
-                    tracker.init_barometer(false);
-                    // zero the altitude difference on next baro update
-                    tracker.nav_status.need_altitude_calibration = true;
-                    result = MAV_RESULT_ACCEPTED;
-                }
-                if (is_equal(packet.param4,1.0f)) {
-                    // Can't trim radio
-                    result = MAV_RESULT_UNSUPPORTED;
-                } else if (is_equal(packet.param5,1.0f)) {
-                    result = MAV_RESULT_ACCEPTED;
-                    // start with gyro calibration
-                    tracker.ins.init_gyro();
-                    // reset ahrs gyro bias
-                    if (tracker.ins.gyro_calibrated_ok_all()) {
-                        tracker.ahrs.reset_gyro_drift();
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
-                    // start accel cal
-                    tracker.ins.acal_init();
-                    tracker.ins.get_acal()->start(this);
-                } else if (is_equal(packet.param5,2.0f)) {
-                    // start with gyro calibration
-                    tracker.ins.init_gyro();
-                    // accel trim
-                    float trim_roll, trim_pitch;
-                    if (tracker.ins.calibrate_trim(trim_roll, trim_pitch)) {
-                        // reset ahrs's trim to suggested values from calibration routine
-                        tracker.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
-                }
-                break;
-            }
 
             case MAV_CMD_COMPONENT_ARM_DISARM:
                 if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {

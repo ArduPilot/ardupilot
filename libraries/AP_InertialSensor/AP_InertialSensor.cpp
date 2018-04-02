@@ -1846,7 +1846,7 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
 /*
   perform a simple 1D accel calibration, returning mavlink result code
  */
-MAV_RESULT AP_InertialSensor::simple_accel_cal(AP_AHRS &ahrs)
+MAV_RESULT AP_InertialSensor::simple_accel_cal()
 {
     uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES];
@@ -1974,7 +1974,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal(AP_AHRS &ahrs)
         }
 
         // force trim to zero
-        ahrs.set_trim(Vector3f(0, 0, 0));
+        AP::ahrs().set_trim(Vector3f(0, 0, 0));
     } else {
         hal.console->printf("\nFAILED\n");
         // restore old values
@@ -1996,8 +1996,8 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal(AP_AHRS &ahrs)
     }
 
     // and reset state estimators
-    ahrs.reset();
-        
+    AP::ahrs().reset();
+
     // stop flashing leds
     AP_Notify::flags.initialising = false;
 

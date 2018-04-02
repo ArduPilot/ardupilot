@@ -39,17 +39,6 @@ void Rover::compass_accumulate(void)
     }
 }
 
-void Rover::init_barometer(bool full_calibration)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
-    } else {
-        barometer.update_calibration();
-    }
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 void Rover::init_rangefinder(void)
 {
     rangefinder.init();

@@ -1,16 +1,5 @@
 #include "Tracker.h"
 
-void Tracker::init_barometer(bool full_calibration)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
-    } else {
-        barometer.update_calibration();
-    }
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 // read the barometer and return the updated altitude in meters
 void Tracker::update_barometer(void)
 {

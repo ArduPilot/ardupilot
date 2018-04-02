@@ -618,7 +618,6 @@ private:
     JSButton* get_button(uint8_t index);
     void default_js_buttons(void);
     void clear_input_hold();
-    void init_barometer(bool save);
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
@@ -633,7 +632,6 @@ private:
     bool terrain_use();
     void init_ardupilot();
     void startup_INS_ground();
-    bool calibrate_gyros();
     bool position_ok();
     bool ekf_position_ok();
     bool optflow_position_ok();
