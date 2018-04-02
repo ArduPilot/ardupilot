@@ -1700,10 +1700,11 @@ void DataFlash_Class::Log_Write_ESC(void)
                 struct log_Esc pkt = {
                     LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ESC1_MSG + i)),
                     time_us     : time_us,
-                    rpm         : (int16_t)(esc_status.esc[i].esc_rpm/10),
-                    voltage     : (int16_t)(esc_status.esc[i].esc_voltage*100.0f + .5f),
-                    current     : (int16_t)(esc_status.esc[i].esc_current*100.0f + .5f),
-                    temperature : (int16_t)(esc_status.esc[i].esc_temperature*100.0f + .5f)
+                    rpm         : (int32_t)(esc_status.esc[i].esc_rpm/10),
+                    voltage     : (uint16_t)(esc_status.esc[i].esc_voltage*100.0f + .5f),
+                    current     : (uint16_t)(esc_status.esc[i].esc_current*100.0f + .5f),
+                    temperature : (int16_t)(esc_status.esc[i].esc_temperature*100.0f + .5f),
+                    current_tot : 0
                 };
 
                 WriteBlock(&pkt, sizeof(pkt));
