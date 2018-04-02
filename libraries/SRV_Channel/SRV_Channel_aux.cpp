@@ -166,8 +166,10 @@ void SRV_Channels::enable_aux_servos()
             hal.rcout->enable_ch(channels[i].ch_num);
         }
     }
-    
+
+#if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr->update();
+#endif
 }
 
 /// enable output channels using a channel mask
