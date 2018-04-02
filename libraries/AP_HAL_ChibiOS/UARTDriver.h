@@ -46,6 +46,14 @@ public:
 
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
+
+    // lock a port for exclusive use. Use a key of 0 to unlock
+    bool lock_port(uint32_t key) override;
+
+    // write to a locked port. If port is locked and key is not correct then 0 is returned
+    // and write is discarded
+    size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
+    
     struct SerialDef {
         BaseSequentialStream* serial;
         bool is_usb;
@@ -87,6 +95,9 @@ private:
 
     // index into uart_drivers table
     uint8_t serial_num;
+
+    // key for a locked port
+    uint32_t lock_key;
     
     uint32_t _baudrate;
     uint16_t tx_len;

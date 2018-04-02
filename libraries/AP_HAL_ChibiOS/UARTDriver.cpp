@@ -447,8 +447,8 @@ int16_t UARTDriver::read()
 /* Empty implementations of Print virtual methods */
 size_t UARTDriver::write(uint8_t c)
 {
-    if (!chMtxTryLock(&_write_mutex)) {
-        return -1;
+    if (lock_key != 0 || !chMtxTryLock(&_write_mutex)) {
+        return 0;
     }
     
     if (!_initialised) {
@@ -473,12 +473,12 @@ size_t UARTDriver::write(uint8_t c)
 
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
-    if (!_initialised) {
+    if (!_initialised || lock_key != 0) {
 		return 0;
 	}
 
     if (!chMtxTryLock(&_write_mutex)) {
-        return -1;
+        return 0;
     }
 
     if (_blocking_writes && !unbuffered_writes) {
@@ -499,6 +499,38 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         write_pending_bytes();
     }
     chMtxUnlock(&_write_mutex);
+    return ret;
+}
+
+/*
+  lock the uart for exclusive use by write_locked() with the right key
+ */
+bool UARTDriver::lock_port(uint32_t key)
+{
+    if (lock_key && key != lock_key && key != 0) {
+        // someone else is using it
+        return false;
+    }
+    lock_key = key;
+    return true;
+}
+
+/* 
+   write to a locked port. If port is locked and key is not correct then 0 is returned
+   and write is discarded. All writes are non-blocking
+*/
+size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key)
+{
+    if (lock_key != 0 && key != lock_key) {
+        return 0;
+    }
+    if (!chMtxTryLock(&_write_mutex)) {
+        return 0;
+    }
+    size_t ret = _writebuf.write(buffer, size);
+
+    chMtxUnlock(&_write_mutex);
+
     return ret;
 }
 
