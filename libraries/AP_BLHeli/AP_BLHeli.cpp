@@ -805,6 +805,15 @@ void AP_BLHeli::blheli_process_command(void)
         blheli_send_reply(&b, 1);
         hal.rcout->serial_end();
         serial_start_ms = 0;
+        if (motors_disabled) {
+            motors_disabled = false;
+            SRV_Channels::set_disabled_channel_mask(0);            
+        }
+        if (uart_locked) {
+            uart->lock_port(0);
+            uart_locked = false;
+            debug("Unlocked UART");
+        }
         break;
     }
     case cmd_DeviceReset: {
@@ -1009,6 +1018,9 @@ bool AP_BLHeli::process_input(uint8_t b)
         if (blheli.state == BLHELI_COMMAND_RECEIVED) {
             valid_packet = true;
             last_valid_ms = AP_HAL::millis();
+            if (uart->lock_port(BLHELI_UART_LOCK_KEY)) {
+                uart_locked = true;
+            }
             blheli_process_command();
             blheli.state = BLHELI_IDLE;
             msp.state = MSP_IDLE;
@@ -1016,19 +1028,14 @@ bool AP_BLHeli::process_input(uint8_t b)
     } else if (msp.state == MSP_COMMAND_RECEIVED) {
         if (msp.packetType == MSP_PACKET_COMMAND) {
             valid_packet = true;
+            if (uart->lock_port(BLHELI_UART_LOCK_KEY)) {
+                uart_locked = true;
+            }
             last_valid_ms = AP_HAL::millis();
             msp_process_command();
         }
         msp.state = MSP_IDLE;
         blheli.state = BLHELI_IDLE;
-    }
-
-    if (valid_packet) {
-        if (uart->lock_port(BLHELI_UART_LOCK_KEY)) {
-            uart_locked = true;
-        } else {
-            return false;
-        }
     }
 
     return valid_packet;
