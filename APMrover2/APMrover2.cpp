@@ -38,62 +38,62 @@ Rover rover;
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(Rover, &rover, func, _interval_ticks, _max_time_micros)
 
 /*
-  scheduler table - all regular tasks should be listed here, along
-  with how often they should be called (in 20ms units) and the maximum
-  time they are expected to take (in microseconds)
-*/
+  scheduler table - all regular tasks are listed here, along with how
+  often they should be called (in Hz) and the maximum time
+  they are expected to take (in microseconds)
+ */
 const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
-    SCHED_TASK(read_radio,             50,   1000),
-    SCHED_TASK(ahrs_update,            50,   6400),
-    SCHED_TASK(read_rangefinders,      50,   2000),
-    SCHED_TASK(update_current_mode,    50,   1500),
-    SCHED_TASK(set_servos,             50,   1500),
-    SCHED_TASK(update_GPS_50Hz,        50,   2500),
-    SCHED_TASK(update_GPS_10Hz,        10,   2500),
-    SCHED_TASK(update_alt,             10,   3400),
-    SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,   50),
-    SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,   50),
-    SCHED_TASK(update_visual_odom,     50,     50),
-    SCHED_TASK(update_wheel_encoder,   20,     50),
-    SCHED_TASK(update_compass,         10,   2000),
-    SCHED_TASK(update_mission,         50,    500),
-    SCHED_TASK(update_logging1,        10,   1000),
-    SCHED_TASK(update_logging2,        10,   1000),
+    SCHED_TASK(read_radio,             50,    200),
+    SCHED_TASK(ahrs_update,            50,   1500),
+    SCHED_TASK(read_rangefinders,      50,    200),
+    SCHED_TASK(update_current_mode,    50,    200),
+    SCHED_TASK(set_servos,             50,    200),
+    SCHED_TASK(update_GPS_50Hz,        50,    300),
+    SCHED_TASK(update_GPS_10Hz,        10,    300),
+    SCHED_TASK(update_alt,             10,    200),
+    SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200),
+    SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200),
+    SCHED_TASK(update_visual_odom,     50,    200),
+    SCHED_TASK(update_wheel_encoder,   20,    200),
+    SCHED_TASK(update_compass,         10,    200),
+    SCHED_TASK(update_mission,         50,    200),
+    SCHED_TASK(update_logging1,        10,    200),
+    SCHED_TASK(update_logging2,        10,    200),
     SCHED_TASK(gcs_retry_deferred,     50,   1000),
-    SCHED_TASK(gcs_update,             50,   1700),
+    SCHED_TASK(gcs_update,             50,   1000),
     SCHED_TASK(gcs_data_stream_send,   50,   3000),
-    SCHED_TASK(read_control_switch,     7,   1000),
-    SCHED_TASK(read_aux_switch,        10,    100),
-    SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10, 1000),
-    SCHED_TASK(read_receiver_rssi,     10,   1000),
-    SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50, 1000),
-    SCHED_TASK(check_usb_mux,           3,   1000),
+    SCHED_TASK(read_control_switch,     7,    200),
+    SCHED_TASK(read_aux_switch,        10,    200),
+    SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300),
+    SCHED_TASK(read_receiver_rssi,     10,    200),
+    SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200),
+    SCHED_TASK(check_usb_mux,           3,    200),
 #if MOUNT == ENABLED
-    SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  600),
+    SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200),
 #endif
 #if CAMERA == ENABLED
-    SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update_trigger, 50,  600),
+    SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update_trigger, 50,  200),
 #endif
-    SCHED_TASK(gcs_failsafe_check,     10,    600),
-    SCHED_TASK(fence_check,            10,    100),
-    SCHED_TASK(compass_accumulate,     50,    900),
-    SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  100),
+    SCHED_TASK(gcs_failsafe_check,     10,    200),
+    SCHED_TASK(fence_check,            10,    200),
+    SCHED_TASK(compass_accumulate,     50,    200),
+    SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200),
     SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300),
-    SCHED_TASK(one_second_loop,         1,   3000),
-    SCHED_TASK(compass_cal_update,     50,    100),
-    SCHED_TASK(accel_cal_update,       10,    100),
+    SCHED_TASK(one_second_loop,         1,   1500),
+    SCHED_TASK(compass_cal_update,     50,    200),
+    SCHED_TASK(accel_cal_update,       10,    200),
     SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
-    SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,       50,   50),
-    SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1,  75),
-    SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  100),
+    SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,       50,  200),
+    SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200),
+    SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200),
 #if STATS_ENABLED == ENABLED
-    SCHED_TASK(stats_update,            1,    100),
+    SCHED_TASK(stats_update,            1,    200),
 #endif
-    SCHED_TASK(crash_check,            10,   1000),
-    SCHED_TASK(cruise_learn_update,    50,     50),
+    SCHED_TASK(crash_check,            10,    200),
+    SCHED_TASK(cruise_learn_update,    50,    200),
 #if ADVANCED_FAILSAFE == ENABLED
-    SCHED_TASK(afs_fs_check,           10,    100),
+    SCHED_TASK(afs_fs_check,           10,    200),
 #endif
 };
 
