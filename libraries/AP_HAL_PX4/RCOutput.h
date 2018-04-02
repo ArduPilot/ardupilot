@@ -29,6 +29,11 @@ public:
         _esc_pwm_min = min_pwm;
         _esc_pwm_max = max_pwm;
     }
+    bool     get_esc_scaling(uint16_t &min_pwm, uint16_t &max_pwm) override {
+        min_pwm = _esc_pwm_min;
+        max_pwm = _esc_pwm_max;
+        return true;
+    }
     float    scale_esc_to_unity(uint16_t pwm) override {
         return 2.0 * ((float) pwm - _esc_pwm_min) / (_esc_pwm_max - _esc_pwm_min) - 1.0;
     }
