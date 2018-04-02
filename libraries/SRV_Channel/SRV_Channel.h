@@ -449,9 +449,11 @@ private:
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
 
+#if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;
+#endif
     static uint16_t disabled_mask;
     
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
