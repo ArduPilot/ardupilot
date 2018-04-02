@@ -177,4 +177,10 @@ public:
       set default update rate
      */
     virtual void    set_default_rate(uint16_t rate_hz) {}
+
+    /*
+      enable telemetry request for a mask of channels. This is used
+      with DShot to get telemetry feedback
+     */
+    virtual void set_telem_request_mask(uint16_t mask) {}
 };
