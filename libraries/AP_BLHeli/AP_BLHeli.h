@@ -48,6 +48,7 @@ private:
     AP_Int8 channel_auto;
     AP_Int8 run_test;
     AP_Int16 timeout_sec;
+    AP_Int16 telem_rate;
     
     enum mspState {
         MSP_IDLE=0,
@@ -163,6 +164,7 @@ private:
 
     AP_HAL::UARTDriver *uart;
     AP_HAL::UARTDriver *debug_uart;
+    AP_HAL::UARTDriver *telem_uart;    
     
     static const uint8_t max_motors = 8;
     uint8_t num_motors;
@@ -181,6 +183,11 @@ private:
 
     // mapping from BLHeli motor numbers to RC output channels
     uint8_t motor_map[max_motors];
+
+    // when did we last request telemetry?
+    uint32_t last_telem_request_us;
+    uint8_t last_telem_esc;
+    static const uint8_t telem_packet_size = 10;
 
     bool msp_process_byte(uint8_t c);
     void blheli_crc_update(uint8_t c);
@@ -210,7 +217,8 @@ private:
     bool BL_VerifyFlash(const uint8_t *buf, uint16_t n);
     void blheli_process_command(void);
     void run_connection_test(uint8_t chan);
-
+    void read_telemetry_packet(void);
+    
     // protocol handler hook
     bool protocol_handler(uint8_t , AP_HAL::UARTDriver *);
 };
