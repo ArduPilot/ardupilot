@@ -726,7 +726,8 @@ void RCOutput::timer_tick(void)
     uint64_t now = AP_HAL::micros64();
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
-        if (group.current_mode >= MODE_PWM_DSHOT150 &&
+        if (serial_group != &group &&
+            group.current_mode >= MODE_PWM_DSHOT150 &&
             group.current_mode <= MODE_PWM_DSHOT1200 &&
             now - group.last_dshot_send_us > 900) {
             // do a blocking send now, to guarantee DShot sends at
@@ -737,7 +738,8 @@ void RCOutput::timer_tick(void)
         }
     }
     if (trigger_groupmask == 0 ||
-        min_pulse_trigger_us == 0) {
+        min_pulse_trigger_us == 0 ||
+        serial_group != nullptr) {
         return;
     }
     if (now > min_pulse_trigger_us &&
