@@ -34,7 +34,9 @@
 #define APM_STARTUP_PRIORITY     10
 
 #ifndef APM_SPI_PRIORITY
-#define APM_SPI_PRIORITY        179
+// SPI priority needs to be above main priority to ensure fast sampling of IMUs can keep up
+// with the data rate
+#define APM_SPI_PRIORITY        181
 #endif
 
 #ifndef APM_UAVCAN_PRIORITY
