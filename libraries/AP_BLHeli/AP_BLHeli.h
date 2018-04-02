@@ -49,6 +49,7 @@ private:
     AP_Int8 run_test;
     AP_Int16 timeout_sec;
     AP_Int16 telem_rate;
+    AP_Int8 debug_level;
     
     enum mspState {
         MSP_IDLE=0,
