@@ -260,4 +260,7 @@
 #define AP_MODULE_SUPPORTED 0
 #endif
 
+#ifndef HAL_SUPPORT_RCOUT_SERIAL
+#define HAL_SUPPORT_RCOUT_SERIAL 0
+#endif
 
