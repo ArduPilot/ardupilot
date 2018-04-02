@@ -6,7 +6,7 @@
 
 #include "ap_version.h"
 
-#define THISFIRMWARE "APM:Rover V3.2.3-rc1"
+#define THISFIRMWARE "APM:Rover V3.2.3-rc2"
 
 // the following line is parsed by the autotest scripts
 #define FIRMWARE_VERSION 3,2,3,FIRMWARE_VERSION_TYPE_RC
