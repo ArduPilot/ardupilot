@@ -135,6 +135,7 @@ private:
         uint32_t bit_width_mul;
         uint32_t rc_frequency;
         bool in_serial_dma;
+        uint64_t last_dshot_send_us;
 
         // serial output
         struct {
@@ -212,9 +213,6 @@ private:
     // which output groups need triggering
     uint8_t trigger_groupmask;
 
-    // mask of groups needing retriggering for DShot
-    uint8_t dshot_delayed_trigger_mask;
-    
     // widest pulse for oneshot triggering
     uint16_t trigger_widest_pulse;
 
@@ -230,7 +228,7 @@ private:
     /*
       DShot handling
      */
-    const uint8_t dshot_post = 2;
+    const uint8_t dshot_post = 6;
     const uint16_t dshot_bit_length = 16 + dshot_post;
     const uint16_t dshot_buffer_length = dshot_bit_length*4*sizeof(uint32_t);
     uint32_t dshot_pulse_time_us;
