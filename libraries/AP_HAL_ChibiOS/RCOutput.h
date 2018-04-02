@@ -109,6 +109,12 @@ public:
       serial_setup_output()
      */
     void serial_end(void) override;
+
+    /*
+      enable telemetry request for a mask of channels. This is used
+      with DShot to get telemetry feedback
+     */
+    void set_telem_request_mask(uint16_t mask) { telem_request_mask = (mask >> chan_offset); }
     
 private:
     struct pwm_group {
@@ -232,9 +238,11 @@ private:
     const uint16_t dshot_bit_length = 16 + dshot_post;
     const uint16_t dshot_buffer_length = dshot_bit_length*4*sizeof(uint32_t);
     uint32_t dshot_pulse_time_us;
+    uint16_t telem_request_mask;
+    
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);    
-    uint16_t create_dshot_packet(const uint16_t value);
+    uint16_t create_dshot_packet(const uint16_t value, bool telem_request);
     void fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
     void dshot_send(pwm_group &group, bool blocking);
     static void dma_irq_callback(void *p, uint32_t flags);
