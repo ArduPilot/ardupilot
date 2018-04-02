@@ -1873,7 +1873,7 @@ void GCS_MAVLINK::handle_vision_position_estimate(mavlink_message_t *msg)
     mavlink_vision_position_estimate_t m;
     mavlink_msg_vision_position_estimate_decode(msg, &m);
 
-    _handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+    _handle_common_vision_position_estimate_data(m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
 }
 
 void GCS_MAVLINK::handle_global_vision_position_estimate(mavlink_message_t *msg)
@@ -1881,7 +1881,7 @@ void GCS_MAVLINK::handle_global_vision_position_estimate(mavlink_message_t *msg)
     mavlink_global_vision_position_estimate_t m;
     mavlink_msg_global_vision_position_estimate_decode(msg, &m);
 
-    _handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+    _handle_common_vision_position_estimate_data(m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
 }
 
 void GCS_MAVLINK::handle_vicon_position_estimate(mavlink_message_t *msg)
@@ -1889,14 +1889,13 @@ void GCS_MAVLINK::handle_vicon_position_estimate(mavlink_message_t *msg)
     mavlink_vicon_position_estimate_t m;
     mavlink_msg_vicon_position_estimate_decode(msg, &m);
 
-    _handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+    _handle_common_vision_position_estimate_data(m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
 }
 
 // there are several messages which all have identical fields in them.
 // This function provides common handling for the data contained in
 // these packets
-void GCS_MAVLINK::_handle_common_vision_position_estimate_data(const uint64_t usec,
-                                                               const float x,
+void GCS_MAVLINK::_handle_common_vision_position_estimate_data(const float x,
                                                                const float y,
                                                                const float z,
                                                                const float roll,
@@ -1915,7 +1914,7 @@ void GCS_MAVLINK::_handle_common_vision_position_estimate_data(const uint64_t us
     attitude.from_euler(roll, pitch, yaw); // from_vector312?
     const float posErr = 0; // parameter required?
     const float angErr = 0; // parameter required?
-    const uint32_t timestamp_ms = usec * 0.001;
+    const uint32_t timestamp_ms = AP_HAL::millis();
     const uint32_t reset_timestamp_ms = 0; // no data available
 
     AP::ahrs().writeExtNavData(sensor_offset,
@@ -1942,7 +1941,7 @@ void GCS_MAVLINK::handle_att_pos_mocap(mavlink_message_t *msg)
     Quaternion attitude = Quaternion(m.q);
     const float posErr = 0; // parameter required?
     const float angErr = 0; // parameter required?
-    const uint32_t timestamp_ms = m.time_usec * 0.001;
+    const uint32_t timestamp_ms = AP_HAL::millis();
     const uint32_t reset_timestamp_ms = 0; // no data available
 
     AP::ahrs().writeExtNavData(sensor_offset,
