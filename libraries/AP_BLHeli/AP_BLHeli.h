@@ -181,6 +181,9 @@ private:
     // have we disabled motor outputs?
     bool motors_disabled;
 
+    // have we locked the UART?
+    bool uart_locked;
+
     // mapping from BLHeli motor numbers to RC output channels
     uint8_t motor_map[max_motors];
 
@@ -217,6 +220,7 @@ private:
     bool BL_VerifyFlash(const uint8_t *buf, uint16_t n);
     void blheli_process_command(void);
     void run_connection_test(uint8_t chan);
+    uint8_t telem_crc8(uint8_t crc, uint8_t crc_seed) const;
     void read_telemetry_packet(void);
     
     // protocol handler hook
