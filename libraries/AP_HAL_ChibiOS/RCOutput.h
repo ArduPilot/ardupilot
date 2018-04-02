@@ -39,6 +39,11 @@ public:
         _esc_pwm_min = min_pwm;
         _esc_pwm_max = max_pwm;
     }
+    bool     get_esc_scaling(uint16_t &min_pwm, uint16_t &max_pwm) override {
+        min_pwm = _esc_pwm_min;
+        max_pwm = _esc_pwm_max;
+        return true;
+    }
     void set_output_mode(uint16_t mask, enum output_mode mode) override;
 
     float scale_esc_to_unity(uint16_t pwm) override {
