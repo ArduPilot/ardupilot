@@ -1,10 +1,11 @@
 APMrover2 Release Notes:
 ========================
-Rover V3.2.3-rc1 02-Apr-2018
+Rover V3.2.3-rc1/rc2 02-Apr-2018
 Changes from 3.2.2:
 1) Waypoint origin uses previous waypoint or vehicle stopping point
 2) Boats send correct mav-type to ground station
-3) TURN_MAX_G parameter description updates (allows lower values) 
+3) TURN_MAX_G parameter description updates (allows lower values)
+4) fix two-paddle input decoding
 --------------------------------
 Rover V3.2.2 19-Mar-2018 / V3.2.2-rc1 08-Mar-2018
 Changes from 3.2.1:
