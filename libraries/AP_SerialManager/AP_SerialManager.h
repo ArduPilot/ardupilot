@@ -98,7 +98,8 @@ public:
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support - deprecated, users should use Rangefinder
         SerialProtocol_Beacon = 13,
         SerialProtocol_Volz = 14,                    // Volz servo protocol
-        SerialProtocol_Sbus1 = 15
+        SerialProtocol_Sbus1 = 15,
+        SerialProtocol_ESCTelemetry = 16
     };
 
     // get singleton instance
