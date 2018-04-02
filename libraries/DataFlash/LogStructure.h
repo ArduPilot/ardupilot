@@ -820,10 +820,11 @@ struct PACKED log_GPS_SBF_EVENT {
 struct PACKED log_Esc {
     LOG_PACKET_HEADER;
     uint64_t time_us;     
-    int16_t rpm;
-    int16_t voltage;
-    int16_t current;
+    int32_t rpm;
+    uint16_t voltage;
+    uint16_t current;
     int16_t temperature;
+    uint16_t current_tot;
 };
 
 struct PACKED log_AIRSPEED {
@@ -1069,10 +1070,10 @@ struct PACKED log_DSTL {
 #define BARO_UNITS "smPOnsmO"
 #define BARO_MULTS "F00B0C?0"
 
-#define ESC_LABELS "TimeUS,RPM,Volt,Curr,Temp"
-#define ESC_FMT   "Qcccc"
-#define ESC_UNITS "sqvAO"
-#define ESC_MULTS "FBBBB"
+#define ESC_LABELS "TimeUS,RPM,Volt,Curr,Temp,CTot"
+#define ESC_FMT   "QeCCcH"
+#define ESC_UNITS "sqvAO-"
+#define ESC_MULTS "FBBBB-"
 
 #define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,VV,SMS,Delta"
 #define GPA_FMT   "QCCCCBIH"
