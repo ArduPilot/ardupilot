@@ -335,7 +335,7 @@ void AP_BLHeli::msp_process_command(void)
     case MSP_STATUS: {
         debug("MSP_STATUS");
         uint8_t buf[21];
-        putU16(&buf[0], 2500); // loop time usec
+        putU16(&buf[0], 1000); // loop time usec
         putU16(&buf[2], 0);    // i2c error count
         putU16(&buf[4], 0x27); // available sensors
         putU32(&buf[6], 0);    // flight modes
@@ -361,10 +361,13 @@ void AP_BLHeli::msp_process_command(void)
 
     case MSP_MOTOR_CONFIG: {
         debug("MSP_MOTOR_CONFIG");
+        uint16_t min_pwm = 1000;
+        uint16_t max_pwm = 2000;
+        hal.rcout->get_esc_scaling(min_pwm, max_pwm);
         uint8_t buf[6];
-        putU16(&buf[0], 1070); // min throttle
-        putU16(&buf[2], 2000); // max throttle
-        putU16(&buf[4], 1000); // min command
+        putU16(&buf[0], min_pwm+30); // min throttle
+        putU16(&buf[2], max_pwm); // max throttle
+        putU16(&buf[4], min_pwm); // min command
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
     }
@@ -1130,7 +1133,7 @@ void AP_BLHeli::update(void)
     }
 
     uint16_t mask = uint16_t(channel_mask.get());
-    
+
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     /*
       plane and copter can use AP_Motors to get an automatic mask
