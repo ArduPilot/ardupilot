@@ -109,7 +109,7 @@ void AP_IOMCU::init(void)
     thread_ctx = chThdCreateFromHeap(NULL,
                                      THD_WORKING_AREA_SIZE(1024),
                                      "IOMCU",
-                                     180,
+                                     183,
                                      thread_start,
                                      this);
     if (thread_ctx == nullptr) {
