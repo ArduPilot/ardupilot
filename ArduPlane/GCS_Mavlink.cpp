@@ -9,7 +9,7 @@ MAV_TYPE GCS_MAVLINK_Plane::frame_type() const
 
 MAV_MODE GCS_MAVLINK_Plane::base_mode() const
 {
-    uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+    uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
@@ -23,7 +23,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case MANUAL:
     case TRAINING:
     case ACRO:
-        base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+        _base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
     case STABILIZE:
     case FLY_BY_WIRE_A:
@@ -34,7 +34,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case QLOITER:
     case QLAND:
     case CRUISE:
-        base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
+        _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
     case AUTO:
     case RTL:
@@ -43,8 +43,8 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case GUIDED:
     case CIRCLE:
     case QRTL:
-        base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
-                    MAV_MODE_FLAG_STABILIZE_ENABLED;
+        _base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
+                     MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
@@ -54,35 +54,35 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     }
 
     if (!plane.training_manual_pitch || !plane.training_manual_roll) {
-        base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
+        _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
     }
 
     if (plane.control_mode != MANUAL && plane.control_mode != INITIALISING) {
         // stabiliser of some form is enabled
-        base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
+        _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
 
     if (plane.g.stick_mixing != STICK_MIXING_DISABLED && plane.control_mode != INITIALISING) {
         // all modes except INITIALISING have some form of manual
         // override if stick mixing is enabled
-        base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+        _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
 
 #if HIL_SUPPORT
     if (plane.g.hil_mode == 1) {
-        base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
+        _base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
     }
 #endif
 
     // we are armed if we are not initialising
     if (plane.control_mode != INITIALISING && plane.arming.is_armed()) {
-        base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
+        _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
     // indicate we have set a custom mode
-    base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+    _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    return (MAV_MODE)base_mode;
+    return (MAV_MODE)_base_mode;
 }
 
 uint32_t GCS_MAVLINK_Plane::custom_mode() const
