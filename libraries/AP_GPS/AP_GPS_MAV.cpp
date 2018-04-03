@@ -122,7 +122,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
             Location loc = {};
             loc.lat = packet.lat;
             loc.lng = packet.lon;
-            loc.alt = packet.alt;
+            loc.alt = packet.alt * 0.1f;
             state.location = loc;
             state.location.options = 0;
             state.hdop = MIN(packet.eph, GPS_UNKNOWN_DOP);
