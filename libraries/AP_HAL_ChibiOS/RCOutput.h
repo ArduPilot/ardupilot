@@ -227,6 +227,9 @@ private:
     // widest pulse for oneshot triggering
     uint16_t trigger_widest_pulse;
 
+    // are we using oneshot125 for the iomcu?
+    bool iomcu_oneshot125;
+
     // push out values to local PWM
     void push_local(void);
 
