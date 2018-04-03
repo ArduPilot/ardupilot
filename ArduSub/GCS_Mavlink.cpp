@@ -931,6 +931,10 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         mavlink_manual_control_t packet;
         mavlink_msg_manual_control_decode(msg, &packet);
 
+        if (packet.target != sub.g.sysid_this_mav) {
+            break; // only accept control aimed at us
+        }
+
         sub.transform_manual_control_to_rc_override(packet.x,packet.y,packet.z,packet.r,packet.buttons);
 
         sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
