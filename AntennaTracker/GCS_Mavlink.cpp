@@ -22,7 +22,7 @@ MAV_TYPE GCS_MAVLINK_Tracker::frame_type() const
 
 MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
 {
-    uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+    uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
     // MAVLink enabled ground station can work out something about
@@ -33,7 +33,7 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
     // ArduPlane documentation
     switch (tracker.control_mode) {
     case MANUAL:
-        base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+        _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
 
     case STOP:
@@ -42,7 +42,7 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
     case SCAN:
     case SERVO_TEST:
     case AUTO:
-        base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
+        _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
             MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
@@ -55,10 +55,10 @@ MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
 
     // we are armed if safety switch is not disarmed
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-        base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
+        _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
-    return (MAV_MODE)base_mode;
+    return (MAV_MODE)_base_mode;
 }
 
 uint32_t GCS_MAVLINK_Tracker::custom_mode() const
