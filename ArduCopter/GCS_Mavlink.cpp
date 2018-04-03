@@ -814,10 +814,16 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
     {
-        if(msg->sysid != copter.g.sysid_my_gcs) break;                         // Only accept control from our gcs
+        if (msg->sysid != copter.g.sysid_my_gcs) {
+            break; // only accept control from our gcs
+        }
 
         mavlink_manual_control_t packet;
         mavlink_msg_manual_control_decode(msg, &packet);
+
+        if (packet.target != copter.g.sysid_this_mav) {
+            break; // only accept control aimed at us
+        }
 
         if (packet.z < 0) { // Copter doesn't do negative thrust
             break;
