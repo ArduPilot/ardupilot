@@ -51,7 +51,6 @@ void RCOutput::init()
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         //Start Pwm groups
         pwm_group &group = pwm_group_list[i];
-        group.ch_mask = 0;
         group.current_mode = MODE_PWM_NORMAL;
         for (uint8_t j = 0; j < 4; j++ ) {
             if (group.chan[j] != CHAN_DISABLED) {
@@ -91,9 +90,12 @@ void RCOutput::set_freq_group(pwm_group &group)
     
     uint16_t freq_set = group.rc_frequency;
     uint32_t old_clock = group.pwm_cfg.frequency;
+    uint32_t old_period = group.pwm_cfg.period;
 
-    if (freq_set > 400) {
-        // use a 8MHz clock
+    if (freq_set > 400 || group.current_mode == MODE_PWM_ONESHOT125) {
+        // use a 8MHz clock for higher frequencies or for
+        // oneshot125. Using 8MHz for oneshot125 results in the full
+        // 1000 steps for smooth output
         group.pwm_cfg.frequency = 8000000;
     } else if (freq_set <= 400) {
         // use a 1MHz clock
@@ -112,7 +114,13 @@ void RCOutput::set_freq_group(pwm_group &group)
         psc = (pwmp->clock / pwmp->config->frequency) - 1;
     }
 
-    group.pwm_cfg.period = group.pwm_cfg.frequency/freq_set;
+    if (group.current_mode == MODE_PWM_ONESHOT ||
+        group.current_mode == MODE_PWM_ONESHOT125) {
+        // force a period of 0, meaning no pulses till we trigger
+        group.pwm_cfg.period = 0;
+    } else {
+        group.pwm_cfg.period = group.pwm_cfg.frequency/freq_set;
+    }
     
     bool force_reconfig = false;
     for (uint8_t j=0; j<4; j++) {
@@ -122,7 +130,10 @@ void RCOutput::set_freq_group(pwm_group &group)
         }
     }
 
-    if (old_clock != group.pwm_cfg.frequency || !group.pwm_started || force_reconfig) {
+    if (old_clock != group.pwm_cfg.frequency ||
+        old_period != group.pwm_cfg.period ||
+        !group.pwm_started ||
+        force_reconfig) {
         // we need to stop and start to setup the new clock
         if (group.pwm_started) {
             pwmStop(group.pwm_drv);
@@ -281,7 +292,13 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 #if HAL_WITH_IO_MCU
     // handle IO MCU channels
     if (AP_BoardConfig::io_enabled()) {
-        iomcu.write_channel(chan, period_us);
+        uint16_t io_period_us = period_us;
+        if (iomcu_oneshot125) {
+            // the iomcu only has one oneshot setting, so we need to scale by a factor
+            // of 8 here for oneshot125
+            io_period_us /= 8;
+        }
+        iomcu.write_channel(chan, io_period_us);
     }
 #endif
     if (chan < chan_offset) {
@@ -335,6 +352,10 @@ void RCOutput::push_local(void)
                                (_esc_pwm_max - _esc_pwm_min), (period_us - _esc_pwm_min));
                     }
                     pwmEnableChannel(group.pwm_drv, j, period_us);
+                } else if (group.current_mode == MODE_PWM_ONESHOT125) {
+                    // this gives us a width in 125 ns increments, giving 1000 steps over the 125 to 250 range
+                    uint32_t width = ((group.pwm_cfg.frequency/1000000U) * period_us) / 8U;
+                    pwmEnableChannel(group.pwm_drv, j, width);                    
                 } else if (group.current_mode < MODE_PWM_DSHOT150) {
                     uint32_t width = (group.pwm_cfg.frequency/1000000U) * period_us;
                     pwmEnableChannel(group.pwm_drv, j, width);
@@ -346,6 +367,7 @@ void RCOutput::push_local(void)
                     widest_pulse = period_us;
                 }
                 if (group.current_mode == MODE_PWM_ONESHOT ||
+                    group.current_mode == MODE_PWM_ONESHOT125 ||
                     (group.current_mode >= MODE_PWM_DSHOT150 &&
                      group.current_mode <= MODE_PWM_DSHOT1200)) {
                     need_trigger |= (1U<<i);
@@ -547,8 +569,9 @@ void RCOutput::set_group_mode(pwm_group &group)
     }
             
     case MODE_PWM_ONESHOT:
-        // for oneshot we force 1Hz output and then trigger on each loop
-        group.pwm_cfg.period = group.pwm_cfg.frequency;
+    case MODE_PWM_ONESHOT125:
+        // for oneshot we set a period of 0, which results in no pulses till we trigger
+        group.pwm_cfg.period = 0;
         group.rc_frequency = 1;
         if (group.pwm_started) {
             pwmChangePeriod(group.pwm_drv, group.pwm_cfg.period);
@@ -561,6 +584,8 @@ void RCOutput::set_group_mode(pwm_group &group)
         break;
     }
 
+    set_freq_group(group);
+    
     if (group.current_mode != MODE_PWM_NONE &&
         !group.pwm_started) {
         pwmStart(group.pwm_drv, &group.pwm_cfg);
@@ -587,13 +612,20 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
         if (mode_requires_dma(mode) && !group.have_up_dma) {
             mode = MODE_PWM_NONE;
         }
-        group.current_mode = mode;
-        set_group_mode(group);
+        if (group.current_mode != mode) {
+            group.current_mode = mode;
+            set_group_mode(group);
+        }
     }
 #if HAL_WITH_IO_MCU
-    if (mode == MODE_PWM_ONESHOT &&
+    if ((mode == MODE_PWM_ONESHOT ||
+         mode == MODE_PWM_ONESHOT125) &&
         (mask & ((1U<<chan_offset)-1)) &&
         AP_BoardConfig::io_enabled()) {
+        iomcu_oneshot125 = (mode == MODE_PWM_ONESHOT125);
+        // also setup IO to use a 1Hz frequency, so we only get output
+        // when we trigger
+        iomcu.set_freq(0xFF, 1);
         return iomcu.set_oneshot_mode();
     }
 #endif
@@ -685,7 +717,8 @@ void RCOutput::trigger_groups(void)
             // doing serial output, don't send pulses
             continue;
         }
-        if (group.current_mode == MODE_PWM_ONESHOT) {
+        if (group.current_mode == MODE_PWM_ONESHOT ||
+            group.current_mode == MODE_PWM_ONESHOT125) {
             if (trigger_groupmask & (1U<<i)) {
                 // this triggers pulse output for a channel group
                 group.pwm_drv->tim->EGR = STM32_TIM_EGR_UG;
@@ -737,16 +770,15 @@ void RCOutput::timer_tick(void)
             dshot_send(group, true);
         }
     }
-    if (trigger_groupmask == 0 ||
-        min_pulse_trigger_us == 0 ||
+    if (min_pulse_trigger_us == 0 ||
         serial_group != nullptr) {
         return;
     }
     if (now > min_pulse_trigger_us &&
-        now - min_pulse_trigger_us > 10000) {
-        // trigger at a minimum of 100Hz
+        now - min_pulse_trigger_us > 4000) {
+        // trigger at a minimum of 250Hz
         trigger_groups();
-    }    
+    }
 }
 
 /*
