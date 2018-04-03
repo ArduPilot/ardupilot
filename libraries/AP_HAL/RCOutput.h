@@ -170,6 +170,7 @@ public:
         MODE_PWM_NONE,
         MODE_PWM_NORMAL,
         MODE_PWM_ONESHOT,
+        MODE_PWM_ONESHOT125,
         MODE_PWM_BRUSHED,
         MODE_PWM_DSHOT150,
         MODE_PWM_DSHOT300,
