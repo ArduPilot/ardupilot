@@ -32,7 +32,7 @@ MAV_TYPE GCS_MAVLINK_Sub::frame_type() const
 
 MAV_MODE GCS_MAVLINK_Sub::base_mode() const
 {
-    uint8_t base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
+    uint8_t _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
 
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
@@ -47,7 +47,7 @@ MAV_MODE GCS_MAVLINK_Sub::base_mode() const
     case GUIDED:
     case CIRCLE:
     case POSHOLD:
-        base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
+        _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
@@ -58,16 +58,16 @@ MAV_MODE GCS_MAVLINK_Sub::base_mode() const
 
     // all modes except INITIALISING have some form of manual
     // override if stick mixing is enabled
-    base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+    _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
 
     if (sub.motors.armed()) {
-        base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
+        _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
     // indicate we have set a custom mode
-    base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+    _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-    return (MAV_MODE)base_mode;
+    return (MAV_MODE)_base_mode;
 }
 
 uint32_t GCS_MAVLINK_Sub::custom_mode() const
