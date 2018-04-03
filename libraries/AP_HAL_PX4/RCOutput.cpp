@@ -111,7 +111,7 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_
     // we can't set this per channel
     if (freq_hz > 50 || freq_hz == 1) {
         // we're being asked to set the alt rate
-        if (_output_mode == MODE_PWM_ONESHOT) {
+        if (_output_mode == MODE_PWM_ONESHOT || _output_mode == MODE_PWM_ONESHOT125) {
             /*
               set a 1Hz update for oneshot. This periodic output will
               never actually trigger, instead we will directly trigger
@@ -177,7 +177,7 @@ void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz, uint32_
  */
 void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
 {
-    if (freq_hz > 50 && _output_mode == MODE_PWM_ONESHOT) {
+    if (freq_hz > 50 && (_output_mode == MODE_PWM_ONESHOT || _output_mode == MODE_PWM_ONESHOT125)) {
         // rate is irrelevent in oneshot
         return;
     }
@@ -332,6 +332,13 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
         _max_channel = ch + 1;
     }
 
+    if (_output_mode == MODE_PWM_ONESHOT125) {
+        // we treat oneshot125 very simply on HAL_PX4, with 1us
+        // resolution. Correctly handling it would use a 125 nsec
+        // step size, to give the full 1000 steps
+        period_us /= 8;
+    }
+
     // keep unscaled value
     _last_sent[ch] = period_us;
         
@@ -355,7 +362,8 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
       output
      */
     if (period_us != _period[ch] ||
-        _output_mode == MODE_PWM_ONESHOT) {
+        _output_mode == MODE_PWM_ONESHOT ||
+        _output_mode == MODE_PWM_ONESHOT125) {
         _period[ch] = period_us;
         _need_update = true;
     }
@@ -553,7 +561,8 @@ void PX4RCOutput::push()
 #endif
     if (_corking) {
         _corking = false;
-        if (_output_mode == MODE_PWM_ONESHOT) {
+        if (_output_mode == MODE_PWM_ONESHOT ||
+            _output_mode == MODE_PWM_ONESHOT125) {
             // run timer immediately in oneshot mode
             _send_outputs();
         }
@@ -562,7 +571,7 @@ void PX4RCOutput::push()
 
 void PX4RCOutput::timer_tick(void)
 {
-    if (_output_mode != MODE_PWM_ONESHOT && !_corking) {
+    if (_output_mode != MODE_PWM_ONESHOT && _output_mode != MODE_PWM_ONESHOT125 && !_corking) {
         /* in oneshot mode the timer does nothing as the outputs are
          * sent from push() */
         _send_outputs();
@@ -604,7 +613,7 @@ void PX4RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
         // no change
         return;
     }
-    if (mode == MODE_PWM_ONESHOT) {
+    if (mode == MODE_PWM_ONESHOT || mode == MODE_PWM_ONESHOT125) {
         // when using oneshot we don't want the regular pulses. The
         // best we can do with the current PX4Firmware code is ask for
         // 1Hz. This does still produce pulses, but the trigger calls
@@ -619,6 +628,7 @@ void PX4RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
     _output_mode = mode;
     switch (_output_mode) {
     case MODE_PWM_ONESHOT:
+    case MODE_PWM_ONESHOT125:
         ioctl(_pwm_fd, PWM_SERVO_SET_ONESHOT, 1);
         if (_alt_fd != -1) {
             ioctl(_alt_fd, PWM_SERVO_SET_ONESHOT, 1);
