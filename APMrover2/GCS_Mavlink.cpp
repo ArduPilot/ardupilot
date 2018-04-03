@@ -14,7 +14,7 @@ MAV_TYPE GCS_MAVLINK_Rover::frame_type() const
 
 MAV_MODE GCS_MAVLINK_Rover::base_mode() const
 {
-    uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+    uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
@@ -25,34 +25,34 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
     if (rover.control_mode->has_manual_input()) {
-        base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+        _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
 
     if (rover.control_mode->is_autopilot_mode()) {
-        base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
+        _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
     }
 
 #if defined(ENABLE_STICK_MIXING) && (ENABLE_STICK_MIXING == ENABLED) // TODO ???? Remove !
     if (control_mode->stick_mixing_enabled()) {
         // all modes except INITIALISING have some form of manual
         // override if stick mixing is enabled
-        base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+        _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
 #endif
 
 #if HIL_MODE != HIL_MODE_DISABLED
-    base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
+    _base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
 #endif
 
     // we are armed if we are not initialising
     if (rover.control_mode != &rover.mode_initializing && rover.arming.is_armed()) {
-        base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
+        _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
     // indicate we have set a custom mode
-    base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+    _base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
-return (MAV_MODE)base_mode;
+return (MAV_MODE)_base_mode;
 }
 
 uint32_t GCS_MAVLINK_Rover::custom_mode() const
