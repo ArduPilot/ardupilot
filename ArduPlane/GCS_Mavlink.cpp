@@ -1418,10 +1418,16 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
     {
-        if (msg->sysid != plane.g.sysid_my_gcs) break;                         // Only accept control from our gcs
+        if (msg->sysid != plane.g.sysid_my_gcs) {
+            break; // only accept control from our gcs
+        }
 
         mavlink_manual_control_t packet;
         mavlink_msg_manual_control_decode(msg, &packet);
+
+        if (packet.target != plane.g.sysid_this_mav) {
+            break; // only accept messages aimed at us
+        }
 
         bool override_active = false;
         int16_t roll = (packet.y == INT16_MAX) ? 0 : plane.channel_roll->get_radio_min() + (plane.channel_roll->get_radio_max() - plane.channel_roll->get_radio_min()) * (packet.y + 1000) / 2000.0f;
