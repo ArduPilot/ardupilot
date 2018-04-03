@@ -1312,10 +1312,10 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg)
     mavlink_set_mode_t packet;
     mavlink_msg_set_mode_decode(msg, &packet);
 
-    const MAV_MODE base_mode = (MAV_MODE)packet.base_mode;
-    const uint32_t custom_mode = packet.custom_mode;
+    const MAV_MODE _base_mode = (MAV_MODE)packet.base_mode;
+    const uint32_t _custom_mode = packet.custom_mode;
 
-    const MAV_RESULT result = _set_mode_common(base_mode, custom_mode);
+    const MAV_RESULT result = _set_mode_common(_base_mode, _custom_mode);
 
     // send ACK or NAK
     mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
@@ -1324,21 +1324,21 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg)
 /*
   code common to both SET_MODE mavlink message and command long set_mode msg
 */
-MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode)
+MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32_t _custom_mode)
 {
     MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
     // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
-    if (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
-        if (set_mode(custom_mode)) {
+    if (_base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
+        if (set_mode(_custom_mode)) {
             result = MAV_RESULT_ACCEPTED;
         }
-    } else if (base_mode == (MAV_MODE)MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
+    } else if (_base_mode == (MAV_MODE)MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
         // set the safety switch position. Must be in a command by itself
-        if (custom_mode == 0) {
+        if (_custom_mode == 0) {
             // turn safety off (pwm outputs flow to the motors)
             hal.rcout->force_safety_off();
             result = MAV_RESULT_ACCEPTED;
-        } else if (custom_mode == 1) {
+        } else if (_custom_mode == 1) {
             // turn safety on (no pwm outputs to the motors)
             if (hal.rcout->force_safety_on()) {
                 result = MAV_RESULT_ACCEPTED;
@@ -2328,10 +2328,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_send_banner(const mavlink_command_long
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_long_t &packet)
 {
-    const MAV_MODE base_mode = (MAV_MODE)packet.param1;
-    const uint32_t custom_mode = (uint32_t)packet.param2;
+    const MAV_MODE _base_mode = (MAV_MODE)packet.param1;
+    const uint32_t _custom_mode = (uint32_t)packet.param2;
 
-    return _set_mode_common(base_mode, custom_mode);
+    return _set_mode_common(_base_mode, _custom_mode);
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_long_t &packet)
