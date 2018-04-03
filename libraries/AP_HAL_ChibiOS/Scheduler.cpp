@@ -51,6 +51,8 @@ Scheduler::Scheduler()
 
 void Scheduler::init()
 {
+    chVTObjectInit(&_boost_timer);
+    
     // setup the timer thread - this will call tasks at 1kHz
     _timer_thread_ctx = chThdCreateStatic(_timer_thread_wa,
                      sizeof(_timer_thread_wa),
@@ -129,10 +131,12 @@ static void set_high_priority()
 /*
   return the main thread to normal priority
  */
-static void set_normal_priority()
+static void set_normal_priority(void *ctx)
 {
 #if APM_MAIN_PRIORITY_BOOST != APM_MAIN_PRIORITY
-    hal_chibios_set_priority(APM_MAIN_PRIORITY);
+    thread_t *task = (thread_t *)ctx;
+    // we don't need a reschedule as that happens automatically on ISR exit
+    task->realprio = APM_MAIN_PRIORITY;
 #endif
 }
 
@@ -140,13 +144,13 @@ static void set_normal_priority()
   a variant of delay_microseconds that boosts priority to
   APM_MAIN_PRIORITY_BOOST for APM_MAIN_PRIORITY_BOOST_USEC
   microseconds when the time completes. This significantly improves
-  the regularity of timing of the main loop as it takes
+  the regularity of timing of the main loop
  */
 void Scheduler::delay_microseconds_boost(uint16_t usec)
 {
     set_high_priority();
     delay_microseconds(usec); //Suspends Thread for desired microseconds
-    set_normal_priority();
+    chVTSet(&_boost_timer, US2ST(200), set_normal_priority, chThdGetSelfX());
     _called_boost = true;
 }
 

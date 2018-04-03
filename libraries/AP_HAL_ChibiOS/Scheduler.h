@@ -22,7 +22,6 @@
 
 #define CHIBIOS_SCHEDULER_MAX_TIMER_PROCS 8
 
-#define APM_MAIN_PRIORITY_BOOST 180 // same as normal for now
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      178
 #define APM_RCIN_PRIORITY       177
@@ -32,6 +31,17 @@
 #define APM_IO_PRIORITY          58
 #define APM_SHELL_PRIORITY       57
 #define APM_STARTUP_PRIORITY     10
+
+/*
+  boost priority handling
+ */
+#ifndef APM_MAIN_PRIORITY_BOOST
+#define APM_MAIN_PRIORITY_BOOST 182
+#endif
+
+#ifndef APM_MAIN_PRIORITY_BOOST_USEC
+#define APM_MAIN_PRIORITY_BOOST_USEC 200
+#endif
 
 #ifndef APM_SPI_PRIORITY
 // SPI priority needs to be above main priority to ensure fast sampling of IMUs can keep up
@@ -110,6 +120,7 @@ private:
 
     volatile bool _timer_event_missed;
 
+    virtual_timer_t _boost_timer;
     thread_t* _timer_thread_ctx;
     thread_t* _rcin_thread_ctx;
     thread_t* _io_thread_ctx;
