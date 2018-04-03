@@ -382,12 +382,6 @@ void AP_BLHeli::msp_process_command(void)
         hal.rcout->get_esc_scaling(min_pwm, max_pwm);
         for (uint8_t i = 0; i < num_motors; i++) {
             uint16_t v = hal.rcout->read(motor_map[i]);
-            if (v < min_pwm && v > 120 && v < 260) {
-                // assume this is oneshot125. We really should have
-                // that as a AP_HAL::RCOutput mode, but for now we
-                // need to cope with it this way
-                v /= 8;
-            }
             putU16(&buf[2*i], v);
         }
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
@@ -614,7 +608,7 @@ bool AP_BLHeli::BL_ReadA(uint8_t cmd, uint8_t *buf, uint16_t n)
  */
 bool AP_BLHeli::BL_ConnectEx(void)
 {
-    debug("BL_ConnectEx start");
+    debug("BL_ConnectEx %u/%u at %u", blheli.chan, num_motors, motor_map[blheli.chan]);
     setDisconnected();
     const uint8_t BootInit[] = {0,0,0,0,0,0,0,0,0,0,0,0,0x0D,'B','L','H','e','l','i',0xF4,0x7D};
     if (!BL_SendBuf(BootInit, 21)) {
@@ -1163,7 +1157,7 @@ void AP_BLHeli::update(void)
             num_motors++;
         }
     }
-    debug("ESC: mapped %u motors with mask 0x%04x", num_motors, mask);
+    debug("ESC: %u motors mask=0x%04x", num_motors, mask);
 
     if (telem_rate > 0) {
         AP_SerialManager *serial_manager = AP_SerialManager::get_instance();
