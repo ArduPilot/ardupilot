@@ -994,6 +994,12 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate)
     }
 
     serial_group = new_serial_group;
+
+    // run the thread doing serial IO at highest priority. This is needed to ensure we don't
+    // lose bytes when we switch between output and input
+    serial_thread = chThdGetSelfX();
+    serial_priority  = chThdGetSelfX()->realprio;
+    chThdSetPriority(HIGHPRIO);
     
     // remember the bit period for serial_read_byte()
     serial_group->serial.bit_time_us = 1000000UL / baudrate;
@@ -1170,9 +1176,6 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     uint32_t restore_mode = PAL_MODE_ALTERNATE(group.alt_functions[group.serial.chan]) | PAL_STM32_OSPEED_MID2 | PAL_STM32_OTYPE_PUSHPULL;
     uint16_t i = 0;
 
-    tprio_t oldprio = chThdGetSelfX()->realprio;
-    chThdSetPriority(HIGHPRIO);
-
 #ifndef HAL_GPIO_LINE_GPIO50
     // GPIO lines not setup for PWM outputs in hwdef.dat
     return false;
@@ -1218,7 +1221,6 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     irq.waiter = nullptr;
     
     ((GPIO *)hal.gpio)->_set_mode(gpio_pin, restore_mode);
-    chThdSetPriority(oldprio);
 #if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
@@ -1240,6 +1242,10 @@ void RCOutput::serial_end(void)
         set_group_mode(group);
         set_freq_group(group);
         irq.waiter = nullptr;
+        if (serial_thread == chThdGetSelfX()) {
+            chThdSetPriority(serial_priority);
+            serial_thread = nullptr;
+        }
     }
     serial_group = nullptr;
 }

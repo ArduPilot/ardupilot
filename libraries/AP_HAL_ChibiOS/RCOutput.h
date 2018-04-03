@@ -193,6 +193,8 @@ private:
     
     // the group being used for serial output
     struct pwm_group *serial_group;
+    thread_t *serial_thread;
+    tprio_t serial_priority;
 
     static pwm_group pwm_group_list[];
     uint16_t _esc_pwm_min;
