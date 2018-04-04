@@ -21,34 +21,39 @@ void Copter::update_home_from_EKF()
 void Copter::set_home_to_current_location_inflight() {
     // get current location from EKF
     Location temp_loc;
-    if (inertial_nav.get_location(temp_loc)) {
-        const struct Location &ekf_origin = inertial_nav.get_origin();
-        temp_loc.alt = ekf_origin.alt;
-        if (!set_home(temp_loc, false)) {
-            return;
-        }
-        // we have successfully set AHRS home, set it for SmartRTL
-#if MODE_SMARTRTL_ENABLED == ENABLED
-        g2.smart_rtl.set_home(true);
-#endif
+    if (!ahrs.get_location(temp_loc)) {
+        return;
     }
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        // this is very likely; if we can get_location then we
+        // should be able to get_origin!
+        temp_loc.alt = ekf_origin.alt;
+    }
+    if (!set_home(temp_loc, false)) {
+        return;
+    }
+#if MODE_SMARTRTL_ENABLED == ENABLED
+    // we have successfully set AHRS home, set it for SmartRTL
+    g2.smart_rtl.set_home(true);
+#endif
 }
 
 // set_home_to_current_location - set home to current GPS location
 bool Copter::set_home_to_current_location(bool lock) {
     // get current location from EKF
     Location temp_loc;
-    if (inertial_nav.get_location(temp_loc)) {
-        if (!set_home(temp_loc, lock)) {
-            return false;
-        }
-        // we have successfully set AHRS home, set it for SmartRTL
-#if MODE_SMARTRTL_ENABLED == ENABLED
-        g2.smart_rtl.set_home(true);
-#endif
-        return true;
+    if (!ahrs.get_location(temp_loc)) {
+        return false;
     }
-    return false;
+    if (!set_home(temp_loc, lock)) {
+        return false;
+    }
+#if MODE_SMARTRTL_ENABLED == ENABLED
+    // we have successfully set AHRS home, set it for SmartRTL
+    g2.smart_rtl.set_home(true);
+#endif
+    return true;
 }
 
 // set_home - sets ahrs home (used for RTL) to specified location
@@ -141,8 +146,13 @@ void Copter::set_ekf_origin(const Location& loc)
 bool Copter::far_from_EKF_origin(const Location& loc)
 {
     // check distance to EKF origin
-    const struct Location &ekf_origin = inertial_nav.get_origin();
-    if (get_distance(ekf_origin, loc) > EKF_ORIGIN_MAX_DIST_M) {
+    struct Location ekf_origin;
+    if (!ahrs.get_origin(ekf_origin)) {
+        // this retains compatability with the old AP_InertialNav
+        // which returned 0-lat, 0-lon etc upon failure
+        return true;
+    }
+   if (get_distance(ekf_origin, loc) > EKF_ORIGIN_MAX_DIST_M) {
         return true;
     }
 
