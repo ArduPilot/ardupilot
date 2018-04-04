@@ -200,20 +200,20 @@ void DataFlash_Class::Log_Write_RCIN(void)
     struct log_RCIN pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RCIN_MSG),
         time_us       : AP_HAL::micros64(),
-        chan1         : hal.rcin->read(0),
-        chan2         : hal.rcin->read(1),
-        chan3         : hal.rcin->read(2),
-        chan4         : hal.rcin->read(3),
-        chan5         : hal.rcin->read(4),
-        chan6         : hal.rcin->read(5),
-        chan7         : hal.rcin->read(6),
-        chan8         : hal.rcin->read(7),
-        chan9         : hal.rcin->read(8),
-        chan10        : hal.rcin->read(9),
-        chan11        : hal.rcin->read(10),
-        chan12        : hal.rcin->read(11),
-        chan13        : hal.rcin->read(12),
-        chan14        : hal.rcin->read(13)
+        chan1         : RC_Channels::get_radio_in(0),
+        chan2         : RC_Channels::get_radio_in(1),
+        chan3         : RC_Channels::get_radio_in(2),
+        chan4         : RC_Channels::get_radio_in(3),
+        chan5         : RC_Channels::get_radio_in(4),
+        chan6         : RC_Channels::get_radio_in(5),
+        chan7         : RC_Channels::get_radio_in(6),
+        chan8         : RC_Channels::get_radio_in(7),
+        chan9         : RC_Channels::get_radio_in(8),
+        chan10        : RC_Channels::get_radio_in(9),
+        chan11        : RC_Channels::get_radio_in(10),
+        chan12        : RC_Channels::get_radio_in(11),
+        chan13        : RC_Channels::get_radio_in(12),
+        chan14        : RC_Channels::get_radio_in(13)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
