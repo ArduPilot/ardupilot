@@ -3,6 +3,16 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define LOITER_SPEED_DEFAULT                1250.0f // default loiter speed in cm/s
+#define LOITER_SPEED_MIN                    20.0f   // minimum loiter speed in cm/s
+#define LOITER_ACCEL_MAX_DEFAULT            500.0f  // default acceleration in loiter mode
+#define LOITER_BRAKE_ACCEL_DEFAULT          250.0f  // minimum acceleration in loiter mode
+#define LOITER_BRAKE_JERK_DEFAULT           500.0f  // maximum jerk in cm/s/s/s in loiter mode
+#define LOITER_BRAKE_START_DELAY_DEFAULT    1.0f    // delay (in seconds) before loiter braking begins after sticks are released
+#define LOITER_VEL_CORRECTION_MAX           200.0f  // max speed used to correct position errors in loiter
+#define LOITER_POS_CORRECTION_MAX           200.0f  // max position error in loiter
+#define LOITER_ACTIVE_TIMEOUT_MS            200     // loiter controller is considered active if it has been called within the past 200ms (0.2 seconds)
+
 const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
     // @Param: ANG_MAX
