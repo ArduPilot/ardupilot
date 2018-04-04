@@ -71,6 +71,9 @@ public:
 
 protected:
 
+    // sanity check parameters
+    void sanity_check_params();
+
     /// updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
     ///		updated velocity sent directly to position controller
     void calc_desired_velocity(float nav_dt, float ekfGndSpdLimit);
