@@ -206,7 +206,11 @@ void Copter::failsafe_terrain_on_event()
 void Copter::gpsglitch_check()
 {
     // get filter status
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
+    nav_filter_status filt_status;
+    if (!ahrs.get_filter_status(filt_status)) {
+        // Errr.. maybe?
+        return;
+    }
     bool gps_glitching = filt_status.flags.gps_glitching;
 
     // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
