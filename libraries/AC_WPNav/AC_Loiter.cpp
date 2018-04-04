@@ -73,15 +73,13 @@ AC_Loiter::AC_Loiter(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_Po
     _attitude_control(attitude_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    // sanity check some parameters
-    _speed_cms = MAX(_speed_cms, LOITER_SPEED_MIN);
-    _accel_cmss = MIN(_accel_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max() * 0.01f)));
 }
 
 /// init_target to a position in cm from ekf origin
 void AC_Loiter::init_target(const Vector3f& position)
 {
+    sanity_check_params();
+
     // initialise pos controller speed, acceleration
     _pos_control.set_speed_xy(LOITER_VEL_CORRECTION_MAX);
     _pos_control.set_accel_xy(_accel_cmss);
@@ -108,8 +106,7 @@ void AC_Loiter::init_target()
     const Vector3f& curr_pos = _inav.get_position();
     const Vector3f& curr_vel = _inav.get_velocity();
 
-    // sanity check loiter speed
-    _speed_cms = MAX(_speed_cms, LOITER_SPEED_MIN);
+    sanity_check_params();
 
     // initialise pos controller speed and acceleration
     _pos_control.set_speed_xy(LOITER_VEL_CORRECTION_MAX);
@@ -209,6 +206,13 @@ void AC_Loiter::update(float ekfGndSpdLimit, float ekfNavVelGainScaler)
 
     calc_desired_velocity(dt,ekfGndSpdLimit);
     _pos_control.update_xy_controller(ekfNavVelGainScaler);
+}
+
+// sanity check parameters
+void AC_Loiter::sanity_check_params()
+{
+    _speed_cms = MAX(_speed_cms, LOITER_SPEED_MIN);
+    _accel_cmss = MIN(_accel_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max() * 0.01f)));
 }
 
 /// calc_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
