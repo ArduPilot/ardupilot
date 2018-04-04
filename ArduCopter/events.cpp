@@ -119,7 +119,7 @@ void Copter::failsafe_gcs_check()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // clear overrides so that RC control can be regained with radio.
-    hal.rcin->clear_overrides();
+    RC_Channels::clear_overrides();
     failsafe.rc_override_active = false;
 
     if (should_disarm_on_failsafe()) {
