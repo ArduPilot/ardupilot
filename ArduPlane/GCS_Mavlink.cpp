@@ -1393,19 +1393,19 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // and RC PWM values.
         if(msg->sysid != plane.g.sysid_my_gcs) break;                         // Only accept control from our gcs
         mavlink_rc_channels_override_t packet;
-        int16_t v[8];
+        bool override_active = false;
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        v[0] = packet.chan1_raw;
-        v[1] = packet.chan2_raw;
-        v[2] = packet.chan3_raw;
-        v[3] = packet.chan4_raw;
-        v[4] = packet.chan5_raw;
-        v[5] = packet.chan6_raw;
-        v[6] = packet.chan7_raw;
-        v[7] = packet.chan8_raw;
+        override_active |= RC_Channels::set_override(0, packet.chan1_raw);
+        override_active |= RC_Channels::set_override(1, packet.chan2_raw);
+        override_active |= RC_Channels::set_override(2, packet.chan3_raw);
+        override_active |= RC_Channels::set_override(3, packet.chan4_raw);
+        override_active |= RC_Channels::set_override(4, packet.chan5_raw);
+        override_active |= RC_Channels::set_override(5, packet.chan6_raw);
+        override_active |= RC_Channels::set_override(6, packet.chan7_raw);
+        override_active |= RC_Channels::set_override(7, packet.chan8_raw);
 
-        if (hal.rcin->set_overrides(v, 8)) {
+        if (override_active) {
             plane.failsafe.last_valid_rc_ms = AP_HAL::millis();
             plane.failsafe.AFS_last_valid_rc_ms =  plane.failsafe.last_valid_rc_ms;
         }
@@ -1429,10 +1429,10 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         int16_t throttle = (packet.z == INT16_MAX) ? 0 : plane.channel_throttle->get_radio_min() + (plane.channel_throttle->get_radio_max() - plane.channel_throttle->get_radio_min()) * (packet.z) / 1000.0f;
         int16_t yaw = (packet.r == INT16_MAX) ? 0 : plane.channel_rudder->get_radio_min() + (plane.channel_rudder->get_radio_max() - plane.channel_rudder->get_radio_min()) * (packet.r + 1000) / 2000.0f;
 
-        override_active |= hal.rcin->set_override(uint8_t(plane.rcmap.roll() - 1), roll);
-        override_active |= hal.rcin->set_override(uint8_t(plane.rcmap.pitch() - 1), pitch);
-        override_active |= hal.rcin->set_override(uint8_t(plane.rcmap.throttle() - 1), throttle);
-        override_active |= hal.rcin->set_override(uint8_t(plane.rcmap.yaw() - 1), yaw);
+        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.roll() - 1), roll);
+        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.pitch() - 1), pitch);
+        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.throttle() - 1), throttle);
+        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.yaw() - 1), yaw);
 
         if (override_active) {
             plane.failsafe.last_valid_rc_ms = AP_HAL::millis();
