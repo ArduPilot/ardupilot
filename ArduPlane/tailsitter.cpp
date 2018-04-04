@@ -118,7 +118,7 @@ void QuadPlane::tailsitter_output(void)
     
     if (tailsitter.input_mask_chan > 0 &&
         tailsitter.input_mask > 0 &&
-        hal.rcin->read(tailsitter.input_mask_chan-1) > 1700) {
+        RC_Channels::get_radio_in(tailsitter.input_mask_chan-1) > 1700) {
         // the user is learning to prop-hang
         if (tailsitter.input_mask & TAILSITTER_MASK_AILERON) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.channel_roll->get_control_in_zero_dz());
