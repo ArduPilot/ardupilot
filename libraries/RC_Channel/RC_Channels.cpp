@@ -115,6 +115,29 @@ RC_Channels::RC_Channels(void)
     }
 }
 
+uint16_t RC_Channels::get_radio_in(const uint8_t chan)
+{
+    if (chan >= NUM_RC_CHANNELS) {
+        return 0;
+    }
+    return channels[chan].get_radio_in();
+}
+
+uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
+{
+    uint8_t read_channels = MIN(num_channels, NUM_RC_CHANNELS);
+    for (uint8_t i = 0; i < read_channels; i++) {
+        chans[i] = channels[i].get_radio_in();
+    }
+
+    // clear any excess channels we couldn't read
+    if (read_channels < num_channels) {
+        memset(&chans[NUM_RC_CHANNELS], 0, sizeof(uint16_t) * (num_channels - read_channels));
+    }
+
+    return read_channels;
+}
+
 /*
   call read() and set_pwm() on all channels
  */
@@ -124,4 +147,42 @@ RC_Channels::set_pwm_all(void)
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         channels[i].set_pwm(channels[i].read());
     }
+}
+
+uint8_t RC_Channels::get_valid_channel_count(void)
+{
+    return MIN(NUM_RC_CHANNELS, hal.rcin->num_channels());
+}
+
+int16_t RC_Channels::get_receiver_rssi(void)
+{
+    return hal.rcin->get_rssi();
+}
+
+bool RC_Channels::has_new_input(void)
+{
+    return hal.rcin->new_input();
+}
+
+void RC_Channels::clear_overrides(void)
+{
+    hal.rcin->clear_overrides();
+}
+
+bool RC_Channels::set_override(const uint8_t chan, const int16_t value)
+{
+    if (chan < NUM_RC_CHANNELS) {
+        return hal.rcin->set_override(chan, value);
+    }
+    return false;
+}
+
+bool RC_Channels::set_overrides(int16_t *overrides, const uint8_t len)
+{
+    return hal.rcin->set_overrides(overrides, len);
+}
+
+bool RC_Channels::receiver_bind(const int dsmMode)
+{
+    return hal.rcin->rc_bind(dsmMode);
 }
