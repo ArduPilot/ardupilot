@@ -115,8 +115,8 @@ void Copter::Log_Write_Control_Tuning()
     // get terrain altitude
     float terr_alt = 0.0f;
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    if (terrain.height_above_terrain(terr_alt, true)) {
-        terr_alt = 0.0f;
+    if (!terrain.height_above_terrain(terr_alt, true)) {
+        terr_alt = DataFlash.quiet_nan();
     }
 #endif
 
