@@ -101,7 +101,7 @@ void Rover::rudder_arm_disarm_check()
 
 void Rover::read_radio()
 {
-    if (!hal.rcin->new_input()) {
+    if (!RC_Channels::has_new_input()) {
         // check if we lost RC link
         control_failsafe(channel_throttle->get_radio_in());
         return;

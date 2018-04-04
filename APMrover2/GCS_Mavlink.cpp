@@ -948,19 +948,16 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         }
 
         mavlink_rc_channels_override_t packet;
-        int16_t v[8];
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        v[0] = packet.chan1_raw;
-        v[1] = packet.chan2_raw;
-        v[2] = packet.chan3_raw;
-        v[3] = packet.chan4_raw;
-        v[4] = packet.chan5_raw;
-        v[5] = packet.chan6_raw;
-        v[6] = packet.chan7_raw;
-        v[7] = packet.chan8_raw;
-
-        hal.rcin->set_overrides(v, 8);
+        RC_Channels::set_override(0, packet.chan1_raw);
+        RC_Channels::set_override(1, packet.chan2_raw);
+        RC_Channels::set_override(2, packet.chan3_raw);
+        RC_Channels::set_override(3, packet.chan4_raw);
+        RC_Channels::set_override(4, packet.chan5_raw);
+        RC_Channels::set_override(5, packet.chan6_raw);
+        RC_Channels::set_override(6, packet.chan7_raw);
+        RC_Channels::set_override(7, packet.chan8_raw);
 
         rover.failsafe.rc_override_timer = AP_HAL::millis();
         rover.failsafe_trigger(FAILSAFE_EVENT_RC, false);
@@ -982,8 +979,8 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         
         const int16_t roll = (packet.y == INT16_MAX) ? 0 : rover.channel_steer->get_radio_min() + (rover.channel_steer->get_radio_max() - rover.channel_steer->get_radio_min()) * (packet.y + 1000) / 2000.0f;
         const int16_t throttle = (packet.z == INT16_MAX) ? 0 : rover.channel_throttle->get_radio_min() + (rover.channel_throttle->get_radio_max() - rover.channel_throttle->get_radio_min()) * (packet.z + 1000) / 2000.0f;
-        hal.rcin->set_override(uint8_t(rover.rcmap.roll() - 1), roll);
-        hal.rcin->set_override(uint8_t(rover.rcmap.throttle() - 1), throttle);
+        RC_Channels::set_override(uint8_t(rover.rcmap.roll() - 1), roll);
+        RC_Channels::set_override(uint8_t(rover.rcmap.throttle() - 1), throttle);
 
         rover.failsafe.rc_override_timer = AP_HAL::millis();
         rover.failsafe_trigger(FAILSAFE_EVENT_RC, false);

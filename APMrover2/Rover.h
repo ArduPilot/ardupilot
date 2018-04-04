@@ -241,10 +241,6 @@ private:
     // This is set to -1 when we need to re-read the switch
     uint8_t oldSwitchPosition;
 
-    // These are values received from the GCS if the user is using GCS joystick
-    // control and are substituted for the values coming from the RC radio
-    int16_t rc_override[8];
-
     // A flag if GCS joystick control is in use
     bool rc_override_active;
 

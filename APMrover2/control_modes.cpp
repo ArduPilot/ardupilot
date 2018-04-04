@@ -63,7 +63,7 @@ void Rover::read_control_switch()
     // as a spring loaded trainer switch).
     if (oldSwitchPosition != switchPosition ||
         (g.reset_switch_chan != 0 &&
-         hal.rcin->read(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
+         RC_Channels::get_radio_in(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
         if (switch_debouncer == false) {
             // this ensures that mode switches only happen if the
             // switch changes for 2 reads. This prevents momentary
@@ -85,7 +85,7 @@ void Rover::read_control_switch()
 }
 
 uint8_t Rover::readSwitch(void) {
-    const uint16_t pulsewidth = hal.rcin->read(g.mode_channel - 1);
+    const uint16_t pulsewidth = RC_Channels::get_radio_in(g.mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) {
         return 255;  // This is an error condition
     }
