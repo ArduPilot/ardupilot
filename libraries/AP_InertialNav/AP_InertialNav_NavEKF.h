@@ -23,11 +23,6 @@ public:
     void        update(float dt);
 
     /**
-     * get_filter_status - returns filter status as a series of flags
-     */
-    nav_filter_status get_filter_status() const;
-
-    /**
      * get_position - returns the current position relative to the home location in cm.
      *
      * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t)

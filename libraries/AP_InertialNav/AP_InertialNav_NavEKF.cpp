@@ -46,16 +46,6 @@ void AP_InertialNav_NavEKF::update(float dt)
 }
 
 /**
- * get_filter_status : returns filter status as a series of flags
- */
-nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
-{
-    nav_filter_status status;
-    _ahrs_ekf.get_filter_status(status);
-    return status;
-}
-
-/**
  * get_position - returns the current position relative to the home location in cm.
  *
  * @return
