@@ -1018,7 +1018,6 @@ struct PACKED log_Performance {
     uint16_t num_long_running;
     uint16_t num_loops;
     uint32_t max_time;
-    uint16_t ins_error_count;
     uint32_t mem_avail;
     uint16_t load;
 };
@@ -1236,7 +1235,7 @@ Format characters in the format string for binary log messages
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
       "PRX", "QBfffffffffff", "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s-mmmmmmmmmhm", "F-BBBBBBBBB00" }, \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
-      "PM",  "QHHIHIH", "TimeUS,NLon,NLoop,MaxT,INSErr,Mem,Load", "s----b%", "F----0A" }, \
+      "PM",  "QHHIIH", "TimeUS,NLon,NLoop,MaxT,Mem,Load", "s---b%", "F---0A" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }
 
