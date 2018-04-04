@@ -957,8 +957,7 @@ void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
     mavlink_status_t *status = mavlink_get_channel_status(chan);
 
     uint16_t values[18];
-    memset(values, 0, sizeof(values));
-    hal.rcin->read(values, 18);
+    RC_Channels::get_radio_in(values, 18);
 
     if (status && (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
         // for mavlink1 send RC_CHANNELS_RAW, for compatibility with OSD implementations
@@ -983,7 +982,7 @@ void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
     mavlink_msg_rc_channels_send(
         chan,
         now,
-        hal.rcin->num_channels(),
+        RC_Channels::get_valid_channel_count(),
         values[0],
         values[1],
         values[2],
@@ -1715,7 +1714,7 @@ MAV_RESULT GCS_MAVLINK::handle_rc_bind(const mavlink_command_long_t &packet)
     // initiate bind procedure. We accept the DSM type from either
     // param1 or param2 due to a past mixup with what parameter is the
     // right one
-    if (!hal.rcin->rc_bind(packet.param2>0?packet.param2:packet.param1)) {
+    if (!RC_Channels::receiver_bind(packet.param2>0?packet.param2:packet.param1)) {
         return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_ACCEPTED;
