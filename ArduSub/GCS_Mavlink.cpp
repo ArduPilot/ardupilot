@@ -949,19 +949,16 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             break;    // Only accept control from our gcs
         }
         mavlink_rc_channels_override_t packet;
-        int16_t v[8];
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        v[0] = packet.chan1_raw;
-        v[1] = packet.chan2_raw;
-        v[2] = packet.chan3_raw;
-        v[3] = packet.chan4_raw;
-        v[4] = packet.chan5_raw;
-        v[5] = packet.chan6_raw;
-        v[6] = packet.chan7_raw;
-        v[7] = packet.chan8_raw;
-
-        hal.rcin->set_overrides(v, 8);
+        RC_Channels::set_override(0, packet.chan1_raw);
+        RC_Channels::set_override(1, packet.chan2_raw);
+        RC_Channels::set_override(2, packet.chan3_raw);
+        RC_Channels::set_override(3, packet.chan4_raw);
+        RC_Channels::set_override(4, packet.chan5_raw);
+        RC_Channels::set_override(5, packet.chan6_raw);
+        RC_Channels::set_override(6, packet.chan7_raw);
+        RC_Channels::set_override(7, packet.chan8_raw);
 
         sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
         // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
