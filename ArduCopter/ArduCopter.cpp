@@ -356,9 +356,7 @@ void Copter::ten_hz_logging_loop()
         DataFlash.Log_Write_Proximity(g2.proximity);  // Write proximity sensor distances
 #endif
 #if BEACON_ENABLED == ENABLED
-        if (g2.beacon.enabled()) {
-            DataFlash.Log_Write_Beacon(g2.beacon);
-        }
+        DataFlash.Log_Write_Beacon(g2.beacon);
 #endif
     }
 #if FRAME_CONFIG == HELI_FRAME
