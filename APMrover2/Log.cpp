@@ -33,16 +33,6 @@ void Rover::Log_Write_Steering()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write beacon position and distances
-void Rover::Log_Write_Beacon()
-{
-    // exit immediately if feature is disabled
-    if (!g2.beacon.enabled()) {
-        return;
-    }
-
-    DataFlash.Log_Write_Beacon(g2.beacon);
-}
 struct PACKED log_Startup {
     LOG_PACKET_HEADER;
     uint64_t time_us;
