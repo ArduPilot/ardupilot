@@ -162,7 +162,13 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     _ahrs.getCorrectedDeltaVelocityNED(inertial_data_newest.correctedVehicleDeltaVelocityNED, inertial_data_newest.dt);
     inertial_data_newest.Tbn = _ahrs.get_rotation_body_to_ned();
     inertial_data_newest.inertialNavVelocity = _inav.get_velocity()*0.01f;
-    inertial_data_newest.inertialNavVelocityValid = _inav.get_filter_status().flags.horiz_vel;
+    inertial_data_newest.inertialNavVelocityValid = false;
+    if (AP::ahrs().have_inertial_nav()) {
+        Vector3f vel;
+        if (AP::ahrs().get_velocity_NED(vel)) {
+            inertial_data_newest.inertialNavVelocityValid = true;
+        }
+    }
     _inertial_history.push_back(inertial_data_newest);
 
     // update estimator of target position
