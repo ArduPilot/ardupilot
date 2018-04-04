@@ -28,13 +28,6 @@ public:
     nav_filter_status get_filter_status() const;
 
     /**
-     * get_origin - returns the inertial navigation origin in lat/lon/alt
-     *
-     * @return origin Location
-     */
-    struct Location get_origin() const;
-
-    /**
      * get_position - returns the current position relative to the home location in cm.
      *
      * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t)
@@ -42,12 +35,6 @@ public:
      * @return
      */
     const Vector3f&    get_position() const;
-
-    /**
-     * get_llh - updates the provided location with the latest calculated location including absolute altitude
-     *  returns true on success (i.e. the EKF knows it's latest position), false on failure
-     */
-    bool get_location(struct Location &loc) const;
 
     /**
      * get_latitude - returns the latitude of the current position estimation in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
