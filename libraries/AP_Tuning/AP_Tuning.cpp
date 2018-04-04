@@ -1,5 +1,6 @@
 #include "AP_Tuning.h"
 #include <GCS_MAVLink/GCS.h>
+#include <RC_Channel/RC_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -141,7 +142,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
     }
     last_check_ms = now;
 
-    if (channel > hal.rcin->num_channels()) {
+    if (channel > RC_Channels::get_valid_channel_count()) {
         // not valid channel
         return;
     }
