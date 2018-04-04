@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_AHRS/AP_AHRS.h>
+
 /*
   compass learning using magnetic field tables from AP_Declination
  */
