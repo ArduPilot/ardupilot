@@ -787,25 +787,25 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         if (!copter.ap.rc_override_enable) {
             if (copter.failsafe.rc_override_active) {  // if overrides were active previously, disable them
                 copter.failsafe.rc_override_active = false;
-                hal.rcin->clear_overrides();
+                RC_Channels::clear_overrides();
             }
             break;
         }
         mavlink_rc_channels_override_t packet;
-        int16_t v[8];
+        bool override_active = false;
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        v[0] = packet.chan1_raw;
-        v[1] = packet.chan2_raw;
-        v[2] = packet.chan3_raw;
-        v[3] = packet.chan4_raw;
-        v[4] = packet.chan5_raw;
-        v[5] = packet.chan6_raw;
-        v[6] = packet.chan7_raw;
-        v[7] = packet.chan8_raw;
+        override_active |= RC_Channels::set_override(0, packet.chan1_raw);
+        override_active |= RC_Channels::set_override(1, packet.chan2_raw);
+        override_active |= RC_Channels::set_override(2, packet.chan3_raw);
+        override_active |= RC_Channels::set_override(3, packet.chan4_raw);
+        override_active |= RC_Channels::set_override(4, packet.chan5_raw);
+        override_active |= RC_Channels::set_override(5, packet.chan6_raw);
+        override_active |= RC_Channels::set_override(6, packet.chan7_raw);
+        override_active |= RC_Channels::set_override(7, packet.chan8_raw);
 
         // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-        copter.failsafe.rc_override_active = hal.rcin->set_overrides(v, 8);
+        copter.failsafe.rc_override_active = override_active;
 
         // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
@@ -835,10 +835,10 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         int16_t throttle = (packet.z == INT16_MAX) ? 0 : copter.channel_throttle->get_radio_min() + (copter.channel_throttle->get_radio_max() - copter.channel_throttle->get_radio_min()) * (packet.z) / 1000.0f;
         int16_t yaw = (packet.r == INT16_MAX) ? 0 : copter.channel_yaw->get_radio_min() + (copter.channel_yaw->get_radio_max() - copter.channel_yaw->get_radio_min()) * (packet.r + 1000) / 2000.0f;
 
-        override_active |= hal.rcin->set_override(uint8_t(copter.rcmap.roll() - 1), roll);
-        override_active |= hal.rcin->set_override(uint8_t(copter.rcmap.pitch() - 1), pitch);
-        override_active |= hal.rcin->set_override(uint8_t(copter.rcmap.throttle() - 1), throttle);
-        override_active |= hal.rcin->set_override(uint8_t(copter.rcmap.yaw() - 1), yaw);
+        override_active |= RC_Channels::set_override(uint8_t(copter.rcmap.roll() - 1), roll);
+        override_active |= RC_Channels::set_override(uint8_t(copter.rcmap.pitch() - 1), pitch);
+        override_active |= RC_Channels::set_override(uint8_t(copter.rcmap.throttle() - 1), throttle);
+        override_active |= RC_Channels::set_override(uint8_t(copter.rcmap.yaw() - 1), yaw);
 
         // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
         copter.failsafe.rc_override_active = override_active;
