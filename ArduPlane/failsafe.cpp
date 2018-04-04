@@ -47,13 +47,13 @@ void Plane::failsafe_check(void)
             afs.heartbeat();
         }
 
-        if (hal.rcin->num_channels() < 5) {
+        if (RC_Channels::get_valid_channel_count() < 5) {
             // we don't have any RC input to pass through
             return;
         }
 
         // pass RC inputs to outputs every 20ms
-        hal.rcin->clear_overrides();
+        RC_Channels::clear_overrides();
 
         int16_t roll = channel_roll->get_control_in_zero_dz();
         int16_t pitch = channel_pitch->get_control_in_zero_dz();

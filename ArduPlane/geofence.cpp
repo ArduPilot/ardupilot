@@ -175,7 +175,7 @@ void Plane::geofence_update_pwm_enabled_state()
     if (g.fence_channel == 0) {
         is_pwm_enabled = false;
     } else {
-        is_pwm_enabled = (hal.rcin->read(g.fence_channel-1) > FENCE_ENABLE_PWM);
+        is_pwm_enabled = (RC_Channels::get_radio_in(g.fence_channel-1) > FENCE_ENABLE_PWM);
     }
     if (is_pwm_enabled && geofence_state == nullptr) {
         // we need to load the fence

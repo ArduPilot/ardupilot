@@ -171,7 +171,7 @@ void Plane::rudder_arm_disarm_check()
 
 void Plane::read_radio()
 {
-    if (!hal.rcin->new_input()) {
+    if (!RC_Channels::has_new_input()) {
         control_failsafe();
         return;
     }

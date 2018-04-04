@@ -63,7 +63,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     // This is how to handle a long loss of control signal failsafe.
     gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event on: type=%u/reason=%u", fstype, reason);
     //  If the GCS is locked up we allow control to revert to RC
-    hal.rcin->clear_overrides();
+    RC_Channels::clear_overrides();
     failsafe.state = fstype;
     switch(control_mode)
     {
