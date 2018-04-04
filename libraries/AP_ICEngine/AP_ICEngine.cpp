@@ -126,7 +126,7 @@ void AP_ICEngine::update(void)
     uint16_t cvalue = 1500;
     if (start_chan != 0) {
         // get starter control channel
-        cvalue = hal.rcin->read(start_chan-1);
+        cvalue = RC_Channels::get_radio_in(start_chan-1);
     }
 
     bool should_run = false;
@@ -271,7 +271,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     }
     if (start_chan != 0) {
         // get starter control channel
-        if (hal.rcin->read(start_chan-1) <= 1300) {
+        if (RC_Channels::get_radio_in(start_chan-1) <= 1300) {
             gcs().send_text(MAV_SEVERITY_INFO, "Engine: start control disabled");
             return false;
         }
