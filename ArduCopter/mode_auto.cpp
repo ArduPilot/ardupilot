@@ -1804,7 +1804,12 @@ bool Copter::ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
     if (mode() == Auto_CircleMoveToEdge) {
         if (copter.wp_nav->reached_wp_destination()) {
             const Vector3f curr_pos = copter.inertial_nav.get_position();
-            Vector3f circle_center = copter.pv_location_to_vector(cmd.content.location);
+            Vector3f circle_center;
+            if (!copter.pv_location_to_vector(cmd.content.location, circle_center)) {
+                // no idea where we are?!  Perfect, let's say we're
+                // all done and go home...
+                return true;
+            }
 
             // set target altitude if not provided
             if (is_zero(circle_center.z)) {
@@ -1994,8 +1999,11 @@ void Copter::set_auto_yaw_roi(const Location &roi_location)
 #if MOUNT == ENABLED
         // check if mount type requires us to rotate the quad
         if(!camera_mount.has_pan_control()) {
-            roi_WP = pv_location_to_vector(roi_location);
-            set_auto_yaw_mode(AUTO_YAW_ROI);
+            if (pv_location_to_vector(roi_location, roi_WP)) {
+                set_auto_yaw_mode(AUTO_YAW_ROI);
+            } else {
+                set_auto_yaw_mode(AUTO_YAW_HOLD);
+            }
         }
         // send the command to the camera mount
         camera_mount.set_roi_target(roi_location);
@@ -2008,8 +2016,11 @@ void Copter::set_auto_yaw_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the quad at the location
-        roi_WP = pv_location_to_vector(roi_location);
-        set_auto_yaw_mode(AUTO_YAW_ROI);
+        if (pv_location_to_vector(roi_location, roi_WP)) {
+            set_auto_yaw_mode(AUTO_YAW_ROI);
+        } else {
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
 #endif  // MOUNT == ENABLED
     }
 }
