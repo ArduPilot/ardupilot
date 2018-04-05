@@ -29,11 +29,16 @@ void Sub::set_home_to_current_location_inflight()
 {
     // get current location from EKF
     Location temp_loc;
-    if (inertial_nav.get_location(temp_loc)) {
-        const struct Location &ekf_origin = inertial_nav.get_origin();
-        temp_loc.alt = ekf_origin.alt;
-        set_home(temp_loc, false);
+    if (ahrs.get_location(temp_loc)) {
+        return;
     }
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        // this is very likely; if we can get_location then we
+        // should be able to get_origin!
+        temp_loc.alt = ekf_origin.alt;
+    }
+    set_home(temp_loc, false);
 }
 
 // set_home_to_current_location - set home to current GPS location
@@ -41,16 +46,15 @@ bool Sub::set_home_to_current_location(bool lock)
 {
     // get current location from EKF
     Location temp_loc;
-    if (inertial_nav.get_location(temp_loc)) {
-
+    if (!ahrs.get_location(temp_loc)) {
+        return false;
+    }
         // Make home always at the water's surface.
         // This allows disarming and arming again at depth.
         // This also ensures that mission items with relative altitude frame, are always
         // relative to the water's surface, whether in a high elevation lake, or at sea level.
-        temp_loc.alt -= barometer.get_altitude() * 100.0f;
-        return set_home(temp_loc, lock);
-    }
-    return false;
+    temp_loc.alt -= barometer.get_altitude() * 100.0f;
+    return set_home(temp_loc, lock);
 }
 
 // set_home - sets ahrs home (used for RTL) to specified location
@@ -136,7 +140,12 @@ void Sub::set_ekf_origin(const Location& loc)
 bool Sub::far_from_EKF_origin(const Location& loc)
 {
     // check distance to EKF origin
-    const struct Location &ekf_origin = inertial_nav.get_origin();
+    struct Location ekf_origin;
+    if (!ahrs.get_origin(ekf_origin)) {
+        // this retains compatability with the old AP_InertialNav
+        // which returned 0-lat, 0-lon etc upon failure
+        return true;
+    }
     if (get_distance(ekf_origin, loc) > EKF_ORIGIN_MAX_DIST_M) {
         return true;
     }
