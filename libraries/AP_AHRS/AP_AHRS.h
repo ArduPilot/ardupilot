@@ -445,6 +445,12 @@ public:
         return _home_status;
     }
     void set_home_status(enum HomeState new_status) {
+        if (_home_status == HOME_UNSET &&
+            new_status != HOME_UNSET) {
+            // update navigation scalers.  used to offset the
+            // shrinking longitude as we go towards the poles
+            scaleLongDown = longitude_scale(_home);
+        }
         _home_status = new_status;
     }
     bool home_is_set(void) const {
@@ -567,6 +573,11 @@ public:
     // Write position and quaternion data from an external navigation system
     virtual void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) { }
 
+    bool pv_location_to_vector(const Location& loc, Vector3f &ret);
+    bool pv_alt_above_origin(float alt_above_home_cm, float &ret);
+    bool pv_alt_above_home(float alt_above_origin_cm, float &ret);
+    bool pv_distance_to_home_cm(const Vector3f &destination, float &ret);
+
 protected:
     AHRS_VehicleClass _vehicle_class;
 
@@ -667,6 +678,8 @@ private:
 
     // Flag for if we have g_gps lock and have set the home location in AHRS
     enum HomeState _home_status = HOME_UNSET;
+
+    float scaleLongDown = 1;
 
 };
 
