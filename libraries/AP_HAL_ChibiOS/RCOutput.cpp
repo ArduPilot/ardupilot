@@ -1172,7 +1172,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     }
     pwm_group &group = *serial_group;
     uint8_t chan = group.chan[group.serial.chan];
-    uint32_t gpio_mode = PAL_MODE_INPUT | PAL_STM32_OSPEED_LOWEST | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP;
+    uint32_t gpio_mode = PAL_MODE_INPUT_PULLUP;
     uint32_t restore_mode = PAL_MODE_ALTERNATE(group.alt_functions[group.serial.chan]) | PAL_STM32_OSPEED_MID2 | PAL_STM32_OTYPE_PUSHPULL;
     uint16_t i = 0;
 
