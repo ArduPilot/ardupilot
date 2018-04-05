@@ -22,6 +22,7 @@
 #include <SITL/SITL.h>
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
+#include <SITL/SIM_Vicon.h>
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
@@ -52,6 +53,10 @@ public:
         return _base_port;
     }
 
+    // create a file desciptor attached to a virtual device; type of
+    // device is given by name parameter
+    int sim_fd(const char *name, const char *arg);
+
     bool use_rtscts(void) const {
         return _use_rtscts;
     }
@@ -59,8 +64,11 @@ public:
     // simulated airspeed, sonar and battery monitor
     uint16_t sonar_pin_value;    // pin 0
     uint16_t airspeed_pin_value; // pin 1
+    uint16_t airspeed_2_pin_value; // pin 2
     uint16_t voltage_pin_value;  // pin 13
     uint16_t current_pin_value;  // pin 12
+    uint16_t voltage2_pin_value;  // pin 15
+    uint16_t current2_pin_value;  // pin 14
 
     // return TCP client address for uartC
     const char *get_client_address(void) const { return _client_address; }
@@ -191,6 +199,7 @@ private:
     uint8_t store_index_wind;
     uint32_t last_store_time_wind;
     VectorN<readings_wind,wind_buffer_length> buffer_wind;
+    VectorN<readings_wind,wind_buffer_length> buffer_wind_2;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
 
@@ -203,6 +212,9 @@ private:
 
     // simulated ADSb
     SITL::ADSB *adsb;
+
+    // simulated vicon system:
+    SITL::Vicon *vicon;
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};

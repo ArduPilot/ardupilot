@@ -169,15 +169,15 @@ private:
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2{&ahrs, barometer, rangefinder};
-    NavEKF3 EKF3{&ahrs, barometer, rangefinder};
-    AP_AHRS_NavEKF ahrs{ins, barometer, EKF2, EKF3};
+    NavEKF2 EKF2{&ahrs, rangefinder};
+    NavEKF3 EKF3{&ahrs, rangefinder};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs{ins, barometer};
+    AP_AHRS_DCM ahrs;
 #endif
 
     // Arming/Disarming management class
-    AP_Arming_Rover arming{ahrs, barometer, compass, battery, g2.fence};
+    AP_Arming_Rover arming{ahrs, compass, battery, g2.fence};
 
     AP_L1_Control L1_controller{ahrs, nullptr};
 
@@ -292,7 +292,9 @@ private:
     aux_switch_pos aux_ch7;
 
     // Battery Sensors
-    AP_BattMonitor battery{MASK_LOG_CURRENT};
+    AP_BattMonitor battery{MASK_LOG_CURRENT,
+                           FUNCTOR_BIND_MEMBER(&Rover::handle_battery_failsafe, void, const char*, const int8_t),
+                           _failsafe_priorities};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
@@ -315,9 +317,6 @@ private:
     // Location structure defined in AP_Common
     // The home location used for RTL.  The location is set when we first get stable GPS lock
     const struct Location &home;
-
-    // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState home_is_set = HOME_UNSET;
 
     // true if the system time has been set from the GPS
     bool system_time_set;
@@ -460,6 +459,7 @@ private:
 
     // failsafe.cpp
     void failsafe_trigger(uint8_t failsafe_type, bool on);
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
@@ -469,7 +469,6 @@ private:
     void fence_send_mavlink_status(mavlink_channel_t chan);
 
     // GCS_Mavlink.cpp
-    void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
@@ -488,7 +487,6 @@ private:
     // Log.cpp
     void Log_Write_Performance();
     void Log_Write_Steering();
-    void Log_Write_Beacon();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Throttle();
     void Log_Write_Nav_Tuning();
@@ -522,7 +520,6 @@ private:
     // sensors.cpp
     void init_compass(void);
     void compass_accumulate(void);
-    void init_barometer(bool full_calibration);
     void init_rangefinder(void);
     void init_beacon();
     void init_visual_odom();
@@ -555,6 +552,28 @@ private:
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
     bool is_boat() const;
+
+    enum Failsafe_Action {
+        Failsafe_Action_None          = 0,
+        Failsafe_Action_RTL           = 1,
+        Failsafe_Action_Hold          = 2,
+        Failsafe_Action_SmartRTL      = 3,
+        Failsafe_Action_SmartRTL_Hold = 4,
+        Failsafe_Action_Terminate     = 5
+    };
+
+    static constexpr int8_t _failsafe_priorities[] = {
+                                                       Failsafe_Action_Terminate,
+                                                       Failsafe_Action_Hold,
+                                                       Failsafe_Action_RTL,
+                                                       Failsafe_Action_SmartRTL_Hold,
+                                                       Failsafe_Action_SmartRTL,
+                                                       Failsafe_Action_None,
+                                                       -1 // the priority list must end with a sentinel of -1
+                                                      };
+    static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
+                  "_failsafe_priorities is missing the sentinel");
+
 
 public:
     void mavlink_delay_cb();

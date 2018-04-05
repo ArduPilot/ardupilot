@@ -63,7 +63,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-    case MAV_CMD_NAV_DELAY:                    // 94 Delay the next navigation command
+    case MAV_CMD_NAV_DELAY:                    // 93 Delay the next navigation command
         do_nav_delay(cmd);
         break;
 
@@ -145,7 +145,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 #endif
 
 #if NAV_GUIDED == ENABLED
-    case MAV_CMD_DO_GUIDED_LIMITS:                      // 220  accept guided mode limits
+    case MAV_CMD_DO_GUIDED_LIMITS:                      // 222  accept guided mode limits
         do_guided_limits(cmd);
         break;
 #endif

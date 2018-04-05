@@ -33,16 +33,6 @@ void Rover::Log_Write_Steering()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write beacon position and distances
-void Rover::Log_Write_Beacon()
-{
-    // exit immediately if feature is disabled
-    if (!g2.beacon.enabled()) {
-        return;
-    }
-
-    DataFlash.Log_Write_Beacon(g2.beacon);
-}
 struct PACKED log_Startup {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -216,7 +206,7 @@ void Rover::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 
 void Rover::Log_Write_Baro(void)
 {
-    DataFlash.Log_Write_Baro(barometer);
+    DataFlash.Log_Write_Baro();
 }
 
 // log ahrs home and EKF origin to dataflash
@@ -231,7 +221,7 @@ void Rover::Log_Write_Home_And_Origin()
 #endif
 
     // log ahrs home if set
-    if (home_is_set != HOME_UNSET) {
+    if (ahrs.home_is_set()) {
         DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
     }
 }

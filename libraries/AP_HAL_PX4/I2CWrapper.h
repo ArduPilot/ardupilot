@@ -34,8 +34,8 @@ private:
     static pthread_mutex_t instance_lock;
     bool init_done;
     bool init_ok;
-    char devname[10];
-    char devpath[14];
+    char devname[11];
+    char devpath[15];
 };
 
 

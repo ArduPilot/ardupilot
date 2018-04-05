@@ -4,6 +4,7 @@
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AC_WPNav/AC_WPNav.h>
+#include <AC_WPNav/AC_Loiter.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
@@ -140,6 +141,7 @@ private:
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
+    AC_Loiter *loiter_nav;
     
     // maximum vertical velocity the pilot may request
     AP_Int16 pilot_velocity_z_max;
@@ -175,7 +177,7 @@ private:
     void init_throttle_wait();
 
     // use multicopter rate controller
-    void multicopter_attitude_rate_update(float yaw_rate_cds, float smoothing_gain);
+    void multicopter_attitude_rate_update(float yaw_rate_cds);
     
     // main entry points for VTOL flight modes
     void init_stabilize(void);
@@ -268,7 +270,7 @@ private:
 
     // HEARTBEAT mav_type override
     AP_Int8 mav_type;
-    uint8_t get_mav_type(void) const;
+    MAV_TYPE get_mav_type(void) const;
     
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
@@ -299,8 +301,6 @@ private:
 
     // pitch when we enter loiter mode
     int32_t loiter_initial_pitch_cd;
-    
-    const float smoothing_gain = 6;
 
     // true if we have reached the airspeed threshold for transition
     enum {

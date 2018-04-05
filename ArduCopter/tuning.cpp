@@ -140,10 +140,12 @@ void Copter::tuning() {
         break;
 #endif
 
+#if RANGEFINDER_ENABLED == ENABLED
     case TUNING_RANGEFINDER_GAIN:
         // set rangefinder gain
         g.rangefinder_gain.set(tuning_value);
         break;
+#endif
 
 #if 0
         // disabled for now - we need accessor functions
@@ -177,8 +179,8 @@ void Copter::tuning() {
 #endif
 
     case TUNING_RC_FEEL_RP:
-        // roll-pitch input smoothing
-        g.rc_feel_rp = control_in / 10;
+        // convert from control_in to input time constant
+        attitude_control->set_input_tc(1.0f / (2.0f + MAX((control_in * 0.01f), 0.0f)));
         break;
 
     case TUNING_RATE_PITCH_KP:

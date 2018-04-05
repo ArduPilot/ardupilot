@@ -53,8 +53,8 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
      */
 
     // Calculate the expected EKF time step
-    if (_ahrs->get_ins().get_sample_rate() > 0) {
-        dtEkfAvg = 1.0f / _ahrs->get_ins().get_sample_rate();
+    if (AP::ins().get_sample_rate() > 0) {
+        dtEkfAvg = 1.0f / AP::ins().get_sample_rate();
         dtEkfAvg = MAX(dtEkfAvg,EKF_TARGET_DT);
     } else {
         return false;
@@ -155,7 +155,7 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
 void NavEKF3_core::InitialiseVariables()
 {
     // calculate the nominal filter update rate
-    const AP_InertialSensor &ins = _ahrs->get_ins();
+    const AP_InertialSensor &ins = AP::ins();
     localFilterTimeStep_ms = (uint8_t)(1000*ins.get_loop_delta_t());
     localFilterTimeStep_ms = MAX(localFilterTimeStep_ms, (uint8_t)EKF_TARGET_DT_MS);
 
@@ -430,7 +430,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     Vector3f initAccVec;
 
     // TODO we should average accel readings over several cycles
-    initAccVec = _ahrs->get_ins().get_accel(imu_index);
+    initAccVec = AP::ins().get_accel(imu_index);
 
     // normalise the acceleration vector
     float pitch=0, roll=0;
@@ -1630,7 +1630,7 @@ Vector3f NavEKF3_core::calcRotVecVariances()
         q3 = -q3;
     }
     float t2 = q0*q0;
-    float t3 = acos(q0);
+    float t3 = acosf(q0);
     float t4 = -t2+1.0f;
     float t5 = t2-1.0f;
     if ((t4 > 1e-9f) && (t5 < -1e-9f)) {

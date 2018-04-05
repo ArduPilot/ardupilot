@@ -16,20 +16,11 @@ void ModeAcro::update()
     float desired_steering, desired_throttle;
     get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
 
-    // convert pilot throttle input to desired speed (up to twice the cruise speed)
+    // convert pilot throttle input to desired speed
     float target_speed = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
 
     // convert pilot steering input to desired turn rate in radians/sec
     const float target_turn_rate = (desired_steering / 4500.0f) * radians(g2.acro_turn_rate);
-
-    // determine if pilot is requesting pivot turn
-    const bool is_pivot_turning = g2.motors.have_skid_steering() && is_zero(target_speed) && (!is_zero(desired_steering));
-
-    // stop vehicle if target speed is zero and not pivot turning
-    if (is_zero(target_speed) && !is_pivot_turning) {
-        stop_vehicle();
-        return;
-    }
 
     // set reverse flag backing up
     const bool reversed = is_negative(target_speed);

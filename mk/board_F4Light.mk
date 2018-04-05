@@ -38,6 +38,9 @@ MEMORY_TARGET    ?= flash
 STFLASH := /usr/local/stlink/st-flash
 STUTIL  := /usr/local/stlink/st-util
 
+
+
+BL_ADDRESS    := 0x08000000
 FLASH_ADDRESS := 0x08010000
 
 UPLOADER := dfu-util
@@ -69,6 +72,10 @@ SUPPORT_PATH     := $(BLDROOT)/libraries/AP_HAL_F4Light/support
 TOOLS_PATH       := $(BLDROOT)/libraries/AP_HAL_F4Light/support/tools
 # Support files for linker
 LDDIR            := $(BOARDS_PATH)/$(BOARD)/ld
+
+
+BOOTLOADERS      := $(BLDROOT)/Tools/bootloaders
+APJTOOL          := $(BLDROOT)/Tools/ardupilotwaf/px_mkfw.py
 
 
 # $(BOARD)- and $(MEMORY_TARGET)-specific configuration
@@ -343,9 +350,20 @@ $(BUILD_PATH)/$(BOARD).bin: $(SKETCHELF)
 	$(SILENT_DISAS) $(DISAS) -S $(SKETCHELF) > $(BUILD_PATH)/$(BOARD).disas
 	@echo " "
 	$(TOOLS_PATH)/dfu-convert --ihex $(BUILD_PATH)/$(BOARD).hex $(BUILD_PATH)/$(BOARD).dfu 
+	# python $(APJTOOL) --image $(BUILD_PATH)/$(BOARD).bin --prototype $(BUILDROOT)/apj.prototype > $(BUILD_PATH)/$(BOARD).apj
+	python $(APJTOOL)   --image $(BUILD_PATH)/$(BOARD).bin --board_id  $(BOARD_TYPE) --board_revision $(BOARD_REV) > $(BUILD_PATH)/$(BOARD).apj
+	dd if=/dev/zero ibs=1k count=64 | tr "\000" "\377" >$(BUILDROOT)/rom.bin
+	dd if=$(BOOTLOADERS)/$(BOOTLOADER).bin of=$(BUILDROOT)/rom.bin conv=notrunc
+	(printf '%02x %02x' "$(BOARD_TYPE)" "$(BOARD_REV)" ) | xxd -r -p - $(BUILDROOT)/board_id.bin
+	dd if=$(BUILDROOT)/board_id.bin of=$(BUILDROOT)/rom.bin obs=1 seek=16368 conv=notrunc
+	(cat $(BUILDROOT)/rom.bin; cat $(BUILD_PATH)/$(BOARD).bin) > $(BUILD_PATH)/$(BOARD)_bl.bin
+	$(TOOLS_PATH)/dfu-convert -b $(BL_ADDRESS):$(BUILDROOT)/rom.bin -b $(FLASH_ADDRESS):$(BUILD_PATH)/$(BOARD).bin $(BUILD_PATH)/$(BOARD)_bl.dfu 
 	$(v)cp $(BUILD_PATH)/$(BOARD).hex .
 	$(v)cp $(BUILD_PATH)/$(BOARD).bin .
 	$(v)cp $(BUILD_PATH)/$(BOARD).dfu .
+	$(v)cp $(BUILD_PATH)/$(BOARD).apj .
+	$(v)cp $(BUILD_PATH)/$(BOARD)_bl.bin .
+	$(v)cp $(BUILD_PATH)/$(BOARD)_bl.dfu .
 	@echo "Object file sizes:"
 	@find $(BUILD_PATH)             -iname "*.o" | xargs $(SIZE) -t >  $(BUILD_PATH)/$(BOARD).sizes
 	cd $(HAL_PATH); find  . -follow -iname "*.o" | xargs $(SIZE) -t >> $(BUILD_PATH)/$(BOARD).sizes

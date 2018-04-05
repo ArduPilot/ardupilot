@@ -148,17 +148,7 @@
 #define BOARD_DATAFLASH_NAME            "dataflash"
 #define BOARD_DATAFLASH_PAGES           0x2000
 #define BOARD_DATAFLASH_ERASE_SIZE (65536)// in bytes
-
-#if 0// use it as FAT and share it via USB
-#define BOARD_DATAFLASH_FATFS
-#define USB_MASSSTORAGE
-#define HAL_BOARD_LOG_DIRECTORY "0:/"
-#define HAL_BOARD_TERRAIN_DIRECTORY "0:/TERRAIN"
-//#define HAL_PARAM_DEFAULTS_PATH "0:/APM/defaults.parm"
-#else
-// old dataflash logs
-#endif
-
+#define HAL_BOARD_LOG_DIRECTORY "" // should be defined to logs works
 
 #define BOARD_UARTS_LAYOUT 1
 #define USE_SOFTSERIAL 1
@@ -186,157 +176,27 @@
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 
-//#define HAL_CONSOLE USB_Driver // console on USB
-//#define HAL_CONSOLE_PORT 0 // USB
-#define HAL_CONSOLE uart1Driver // console on radio
-#define HAL_CONSOLE_PORT 1 // console on radio
+#define HAL_CONSOLE USB_Driver // console on USB
+#define HAL_CONSOLE_PORT 0 // USB
+//#define HAL_CONSOLE uart1Driver // console on radio
+//#define HAL_CONSOLE_PORT 1 // console on radio
 
 /*
-    // @Param: MOTOR_LAYOUT
-    // @DisplayName: Motor layout scheme
-    // @Description: Selects how motors are numbered
-    // @Values: 0:ArduCopter, 1: Ardupilot with pins 2&3 for servos 2:OpenPilot,3:CleanFlight
-    // @User: Advanced
-    AP_GROUPINFO("_MOTOR_LAYOUT", 0,  HAL_F4Light, _motor_layout, 0),
-
-    // @Param: UART_SBUS
-    // @DisplayName: What UART to use as SBUS input
-    // @Description: Allows to use any UART as SBUS input
-    // @Values: 0:disabled,1:UART1(Main port)
-    // @User: Advanced
-    AP_GROUPINFO("UART_SBUS", 3, AP_Param_Helper, _uart_sbus, 0), \
-
-    // @Param: USE_SOFTSERIAL
-    // @DisplayName: Use SoftwareSerial driver
-    // @Description: Use SoftwareSerial driver instead SoftwareI2C on Input Port pins 7 & 8
-    // @Values: 0:disabled,1:enabled
-    // @User: Advanced
-    AP_GROUPINFO("_USE_SOFTSERIAL", 1,  HAL_F4Light, _use_softserial, 0),
-
-    // @Param: SERVO_MASK
-    // @DisplayName: Servo Mask of Input port
-    // @Description: Enable selected pins of Input port to be used as Servo Out
-    // @Values: 0:disabled,1:enable pin3 (PPM_1), 2: enable pin4 (PPM_2), 4: enable pin5 (UART6_TX) , 8: enable pin6 (UART6_RX), 16: enable pin7, 32: enable pin8
-    // @User: Advanced
-    AP_GROUPINFO("SERVO_MASK", 2, AP_Param_Helper, _servo_mask, 0) \
-
-    // @Param: CONNECT_COM
-    // @DisplayName: connect to COM port
-    // @Description: Allows to connect USB to arbitrary Serial Port, thus allowing to configure devices on that Serial Ports. Auto-reset.
-    // @Values: 0:disabled, 1:connect to Serial1, 2:connect to Serial2, etc
-    // @User: Advanced
-    AP_GROUPINFO("CONNECT_COM", 2, AP_Param_Helper, _connect_com, 0) \
-
-    // @Param: CONNECT_ESC
-    // @DisplayName: connect to ESC inputs via 4wayIf
-    // @Description: Allows to connect USB to ESC inputs, thus allowing to configure ESC as on 4-wayIf. Auto-reset.
-    // @Values: 0:disabled, 1:connect uartA to ESC, 2: connect uartB to ESC, etc
-    // @User: Advanced
-    AP_GROUPINFO("CONNECT_ESC", 2, AP_Param_Helper, _connect_esc, 0) \
-
     // @Param: FLEXI_I2C
     // @DisplayName: use FlexiPort as I2C, not USART
     // @Description: Allows to switch FlexiPort usage between USART and I2C modes
     // @Values: 0:USART, 1:I2C
     // @User: Advanced
     AP_GROUPINFO("FLEXI_I2C",    6, AP_Param_Helper, _flexi_i2c, 0) \
-
-    // @Param: PWM_TYPE
-    // @DisplayName: PWM protocol used
-    // @Description: Allows to ignore MOT_PWM_TYPE  param and set PWM protocol independently
-    // @Values: 0:use MOT_PWM_TYPE, 1:OneShot 2:OneShot125 3:OneShot42 4:PWM125
-    // @User: Advanced
-    AP_GROUPINFO("PWM_TYPE",     7, AP_Param_Helper, _pwm_type, 0)
-    
-    
-    // @Param: TIME_OFFSET
-    // @DisplayName: offset from GMT time
-    // @Description: Allows to see local date & time in logs
-    // @Values: -11..+11
-    AP_GROUPINFO("TIME_OFFSET",  10, AP_Param_Helper, _time_offset, 0), \
-
-    // @Param: CONSOLE_UART
-    // @DisplayName: number of port to use as console
-    // @Description: Allows to specify console port
-    // @Values: 0:USB, 1:connect to UART 1, 2:connect to UART 2, etc
-    AP_GROUPINFO("CONSOLE_UART", 11, AP_Param_Helper, _console_uart, 0), \
-
-    
-    // @Param: RC_INPUT
-    // @DisplayName: Type of RC input
-    // @Description: allows to force specified RC input poty
-    // @Values: 0:auto, 1:PPM1 (pin3), 2: PPM2 (pin4) etc
-    // @User: Advanced
-    AP_GROUPINFO("RC_INPUT",     9, AP_Param_Helper, _rc_input, 0)
-
-    // @Param: EE_DEFERRED
-    // @DisplayName: Emulated EEPROM write mode
-    // @Description: Allows to control when changes to EEPROM are saved - ASAP or on disarm
-    // @Values: 0: save changes ASAP, 1:save changes on disarm. All changes will be lost in case of crash!
-    // @User: Advanced
-    AP_GROUPINFO("EE_DEFERRED",     7, AP_Param_Helper, _eeprom_deferred, 0)
-
-    // @Param: AIBAO_FS
-    // @DisplayName: Support FailSafe for Walkera Aibao RC
-    // @Description: Allows to translate of  Walkera Aibao RC FailSafe to Ardupilot's failsafe
-    // @Values: 0: not translate, 1:translate
-    // @User: Advanced
-    AP_GROUPINFO("AIBAO_FS",     7, AP_Param_Helper, _aibao_fs, 0)
-    
-    // @Param: OVERCLOCK
-    // @DisplayName: Set CPU frequency
-    // @Description: Allows to set overclocking frequency for CPU. If anything went wrong then normal freq will be restored after reboot
-    // @Values: 0: standard 168MHz, 1:180MHz, 2:192MHz, 3:216MHz, 4:240MHz(*), 5:264MHz
-    // @User: Advanced
-    AP_GROUPINFO("OVERCLOCK",     7, AP_Param_Helper, _overclock, 0),
-
-    // @Param: RC_FS
-    // @DisplayName: Set time of RC failsafe
-    // @Description: if none of RC channel changes in that time, then failsafe triggers
-    // @Values: 0: turned off, >0 - time in seconds. Good values are starting 60s for digital protocols
-    // @User: Advanced
-    AP_GROUPINFO("RC_FS",        17, AP_Param_Helper, _rc_fs, 0)
-
 */
+
 #define BOARD_HAL_VARINFO \
-    AP_GROUPINFO("MOTOR_LAYOUT", 1, AP_Param_Helper, _motor_layout, 0), \
-    AP_GROUPINFO("SERVO_MASK",   2, AP_Param_Helper, _servo_mask, 0), \
-    AP_GROUPINFO("UART_SBUS",    3, AP_Param_Helper, _uart_sbus, 0), \
-    AP_GROUPINFO("SOFTSERIAL",   4, AP_Param_Helper, _use_softserial, 0), \
-    AP_GROUPINFO("CONNECT_COM",  5, AP_Param_Helper, _connect_com, 0), \
-    AP_GROUPINFO("CONNECT_ESC",  6, AP_Param_Helper, _connect_esc, 0), \
-    AP_GROUPINFO("FLEXI_I2C",    7, AP_Param_Helper, _flexi_i2c, 0), \
-    AP_GROUPINFO("PWM_TYPE",     8, AP_Param_Helper, _pwm_type, 0), \
-    AP_GROUPINFO("USB_STORAGE",  10, AP_Param_Helper, _usb_storage, 0), \
-    AP_GROUPINFO("TIME_OFFSET",  11, AP_Param_Helper, _time_offset, 0), \
-    AP_GROUPINFO("CONSOLE_UART", 12, AP_Param_Helper, _console_uart, HAL_CONSOLE_PORT), \
-    AP_GROUPINFO("EE_DEFERRED",  13, AP_Param_Helper, _eeprom_deferred, 0), \
-    AP_GROUPINFO("RC_INPUT",     14, AP_Param_Helper, _rc_input, 0), \
-    AP_GROUPINFO("AIBAO_FS",     15, AP_Param_Helper, _aibao_fs, 0), \
-    AP_GROUPINFO("OVERCLOCK",    16, AP_Param_Helper, _overclock, 0), \
-    AP_GROUPINFO("CORRECT_GYRO", 17, AP_Param_Helper, _correct_gyro, 0), \
-    AP_GROUPINFO("RC_FS",        18, AP_Param_Helper, _rc_fs, 0)
+    AP_GROUPINFO("FLEXI_I2C",    30, AP_Param_Helper, _flexi_i2c, 0),
     
 
 // parameters
 #define BOARD_HAL_PARAMS \
-    AP_Int8 _motor_layout; \
-    AP_Int8 _use_softserial; \
-    AP_Int8 _servo_mask;   \
-    AP_Int8 _connect_com;  \
-    AP_Int8 _connect_esc; \
-    AP_Int8 _uart_sbus; \
-    AP_Int8 _flexi_i2c; \
-    AP_Int8 _pwm_type; \
-    AP_Int8 _usb_storage; \
-    AP_Int8 _time_offset; \
-    AP_Int8 _console_uart; \
-    AP_Int8 _eeprom_deferred; \
-    AP_Int8 _rc_input; \
-    AP_Int8 _aibao_fs; \
-    AP_Int8 _overclock; \
-    AP_Int8 _correct_gyro; \
-    AP_Int8 _rc_fs; 
+    AP_Int8 _flexi_i2c; 
     
 #define ERROR_USART _USART1 // main port - telemetry, all panic messages goes there
 

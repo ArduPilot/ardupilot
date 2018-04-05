@@ -24,8 +24,11 @@
 
 #define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID 0x0001
 #define AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID 0x0002
+#define AP_BEACON_MARVELMIND_DISTANCES_DATAGRAM_ID 0x0004
 #define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID 0x0011
 #define AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID 0x0012
+
+#define MAX_BUFFERED_POSITIONS 3
 
 extern const AP_HAL::HAL& hal;
 
@@ -78,10 +81,10 @@ uint8_t AP_Beacon_Marvelmind::mark_position_ready()
     hedge->position_buffer[ind].ready = true;
     hedge->position_buffer[ind].processed = false;
     ind++;
-    if (ind >= hedge->max_buffered_positions) {
+    if (ind >= MAX_BUFFERED_POSITIONS) {
         ind = 0;
     }
-    if (hedge->_last_values_count < hedge->max_buffered_positions) {
+    if (hedge->_last_values_count < MAX_BUFFERED_POSITIONS) {
         hedge->_last_values_count++;
     }
     hedge->_have_new_values = true;
@@ -214,6 +217,23 @@ void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
     order_stationary_beacons();
 }
 
+void AP_Beacon_Marvelmind::process_beacons_distances_datagram()
+{
+    if (32 != input_buffer[4]) {
+        return; // incorrect size
+    }
+    raw_beacon_distances.address = input_buffer[5]; // Address of hedgehog
+    for (uint8_t i = 0; i < 4; i++) {
+        const uint8_t ofs = 6 + i * 6;
+        raw_beacon_distances.beacon[i].address = input_buffer[ofs];
+        raw_beacon_distances.beacon[i].distance = input_buffer[ofs + 1]
+                | (((uint32_t) input_buffer[ofs + 2]) << 8)
+                | (((uint32_t) input_buffer[ofs + 3]) << 16)
+                | (((uint32_t) input_buffer[ofs + 4]) << 24);
+        set_beacon_distance(i, raw_beacon_distances.beacon[i].distance * 0.001f);  // millimeters -> meters
+    }
+}
+
 void AP_Beacon_Marvelmind::update(void)
 {
     if (uart == nullptr || hedge == nullptr || hedge->position_buffer == nullptr) {
@@ -245,6 +265,7 @@ void AP_Beacon_Marvelmind::update(void)
                 data_id = (((uint16_t)received_char) << 8) + input_buffer[2];
                 good_byte = (data_id == AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID)
                          || (data_id == AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID)
+                         || (data_id == AP_BEACON_MARVELMIND_DISTANCES_DATAGRAM_ID)
                          || (data_id == AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID)
                          || (data_id == AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID);
                 break;
@@ -254,6 +275,7 @@ void AP_Beacon_Marvelmind::update(void)
                     good_byte = (received_char == 0x10);
                     break;
                 }
+                case AP_BEACON_MARVELMIND_DISTANCES_DATAGRAM_ID:
                 case AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID:
                 case AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID:
                     good_byte = true;
@@ -291,7 +313,7 @@ void AP_Beacon_Marvelmind::update(void)
                             // add to position_buffer
                             process_position_datagram(cur_position);
                             vehicle_position_initialized = true;
-                            set_stationary_beacons_positions_and_distances();
+                            set_stationary_beacons_positions();
                             break;
                         }
 
@@ -299,7 +321,13 @@ void AP_Beacon_Marvelmind::update(void)
                         {
                             process_beacons_positions_datagram();
                             beacon_position_initialized = true;
-                            set_stationary_beacons_positions_and_distances();
+                            set_stationary_beacons_positions();
+                            break;
+                        }
+
+                        case AP_BEACON_MARVELMIND_DISTANCES_DATAGRAM_ID:
+                        {
+                            process_beacons_distances_datagram();
                             break;
                         }
 
@@ -307,7 +335,7 @@ void AP_Beacon_Marvelmind::update(void)
                         {
                             process_position_highres_datagram(cur_position);
                             vehicle_position_initialized = true;
-                            set_stationary_beacons_positions_and_distances();
+                            set_stationary_beacons_positions();
                             break;
                         }
 
@@ -315,7 +343,7 @@ void AP_Beacon_Marvelmind::update(void)
                         {
                             process_beacons_positions_highres_datagram();
                             beacon_position_initialized = true;
-                            set_stationary_beacons_positions_and_distances();
+                            set_stationary_beacons_positions();
                             break;
                         }
                     }
@@ -333,7 +361,6 @@ void AP_Beacon_Marvelmind::update(void)
 // Create and initialize MarvelmindHedge structure
 //////////////////////////////////////////////////////////////////////////////
 AP_Beacon_Marvelmind::MarvelmindHedge::MarvelmindHedge() :
-    max_buffered_positions{3},
     position_buffer{nullptr},
     positions_beacons{},
     pause{false},
@@ -342,12 +369,12 @@ AP_Beacon_Marvelmind::MarvelmindHedge::MarvelmindHedge() :
     _last_values_next{0},
     _have_new_values{false}
 {
-    position_buffer = new PositionValue[max_buffered_positions];
+    position_buffer = new PositionValue[MAX_BUFFERED_POSITIONS];
     if (position_buffer == nullptr) {
         hal.console->printf("MarvelMind: Not enough memory\n");
         return;
     }
-    for (uint8_t i = 0; i < max_buffered_positions; i++) {
+    for (uint8_t i = 0; i < MAX_BUFFERED_POSITIONS; i++) {
         position_buffer[i].ready = false;
         position_buffer[i].processed = false;
     }
@@ -366,30 +393,23 @@ bool AP_Beacon_Marvelmind::healthy()
     return ((AP_HAL::millis() - last_update_ms) < AP_BEACON_TIMEOUT_MS);
 }
 
-void AP_Beacon_Marvelmind::set_stationary_beacons_positions_and_distances()
+void AP_Beacon_Marvelmind::set_stationary_beacons_positions()
 {
     if (vehicle_position_initialized && beacon_position_initialized) {
         if (hedge->_have_new_values) {
-            vehicle_position_NED__m = Vector3f(cur_position.y / 1000.0f,
-                                               cur_position.x / 1000.0f,
-                                              -cur_position.z / 1000.0f); //Transform Marvelmind ENU to Ardupilot NED
+            vehicle_position_NED__m = Vector3f(cur_position.y * 0.001f,
+                                               cur_position.x * 0.001f,
+                                              -cur_position.z * 0.001f); //Transform Marvelmind ENU to Ardupilot NED
             //TODO: Calculate Accuracy of the received signal. Marvelmind *advertises* +/- 2cms
             set_vehicle_position(vehicle_position_NED__m, 0.02f);
             last_update_ms = AP_HAL::millis();
         }
         for (uint8_t i=0; i < hedge->positions_beacons.num_beacons; ++i) {
             if (hedge->positions_beacons.updated) {
-                beacon_position_NED__m[i] = Vector3f(hedge->positions_beacons.beacons[i].y / 1000.0f,
-                                                     hedge->positions_beacons.beacons[i].x / 1000.0f,
-                                                    -hedge->positions_beacons.beacons[i].z / 1000.0f); //Transform Marvelmind ENU to Ardupilot NED
+                beacon_position_NED__m[i] = Vector3f(hedge->positions_beacons.beacons[i].y * 0.001f,
+                                                     hedge->positions_beacons.beacons[i].x * 0.001f,
+                                                    -hedge->positions_beacons.beacons[i].z * 0.001f); //Transform Marvelmind ENU to Ardupilot NED
                 set_beacon_position(i, beacon_position_NED__m[i]);
-            }
-            if (hedge->_have_new_values) {
-                // this is a big hack:
-                // The distances measured in the hedgehog to each beacon are not available in the Marvelmind serial protocol
-                // As a workaround we use the triangulated position calculated by the Marvelmind hardware and calculate the distances to the beacons
-                // as a result the EKF will not have to resolve ambiguities
-                set_beacon_distance(i, (beacon_position_NED__m[i] - vehicle_position_NED__m).length());
             }
         }
         hedge->positions_beacons.updated = false;

@@ -43,6 +43,9 @@ void Copter::init_rc_in()
 
     // initialise throttle_zero flag
     ap.throttle_zero = true;
+
+    // Allow override by default at start
+    ap.rc_override_enable = true;
 }
 
  // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration

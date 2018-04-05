@@ -1,16 +1,5 @@
 #include "Tracker.h"
 
-void Tracker::init_barometer(bool full_calibration)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
-    } else {
-        barometer.update_calibration();
-    }
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 // read the barometer and return the updated altitude in meters
 void Tracker::update_barometer(void)
 {
@@ -125,5 +114,12 @@ void Tracker::update_GPS(void)
             DataFlash.Log_Write_GPS(gps, 0);
         }
     }
+}
+
+void Tracker::handle_battery_failsafe(const char* type_str, const int8_t action)
+{
+    // NOP
+    // useful failsafes in the future would include actually recalling the vehicle
+    // that is tracked before the tracker loses power to continue tracking it
 }
 

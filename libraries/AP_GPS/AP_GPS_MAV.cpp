@@ -80,8 +80,10 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
 
             if (have_vel_h) {
                 Vector3f vel(packet.vn, packet.ve, 0);
-                if (have_vel_v)
+                if (have_vel_v) {
                     vel.z = packet.vd;
+                    state.have_vertical_velocity = true;
+                }
 
                 state.velocity = vel;
                 state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
@@ -120,7 +122,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
             Location loc = {};
             loc.lat = packet.lat;
             loc.lng = packet.lon;
-            loc.alt = packet.alt;
+            loc.alt = packet.alt * 0.1f;
             state.location = loc;
             state.location.options = 0;
             state.hdop = MIN(packet.eph, GPS_UNKNOWN_DOP);

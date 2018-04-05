@@ -19,6 +19,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 
 #include "GCS.h"
 
@@ -200,8 +201,8 @@ void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery, const uint8
                                     MAV_BATTERY_TYPE_UNKNOWN, // type
                                     got_temperature ? ((int16_t) (temp * 100)) : INT16_MAX, // temperature. INT16_MAX if unknown
                                     battery.get_cell_voltages(instance).cells, // cell voltages
-                                    battery.has_current(instance) ? battery.current_amps(instance) * 100 : -1, // current
-                                    battery.has_current(instance) ? battery.current_total_mah(instance) : -1, // total current
+                                    battery.has_current(instance) ? battery.current_amps(instance) * 100 : -1, // current in centiampere
+                                    battery.has_current(instance) ? battery.consumed_mah(instance) : -1,       // total consumed current in milliampere.hour
                                     battery.has_consumed_energy(instance) ? battery.consumed_wh(instance) * 36 : -1, // consumed energy in hJ (hecto-Joules)
                                     battery.capacity_remaining_pct(instance));
 }
@@ -315,9 +316,10 @@ bool GCS_MAVLINK::send_proximity(const AP_Proximity &proximity) const
 }
 
 // report AHRS2 state
-void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
+void GCS_MAVLINK::send_ahrs2()
 {
 #if AP_AHRS_NAVEKF_AVAILABLE
+    const AP_AHRS &ahrs = AP::ahrs();
     Vector3f euler;
     struct Location loc {};
     if (ahrs.get_secondary_attitude(euler)) {
@@ -329,11 +331,12 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
                                loc.lat,
                                loc.lng);
     }
-    AP_AHRS_NavEKF &_ahrs = reinterpret_cast<AP_AHRS_NavEKF&>(ahrs);
-    if (_ahrs.get_NavEKF2().activeCores() > 0 &&
+    const AP_AHRS_NavEKF &_ahrs = reinterpret_cast<const AP_AHRS_NavEKF&>(ahrs);
+    const NavEKF2 &ekf2 = _ahrs.get_NavEKF2_const();
+    if (ekf2.activeCores() > 0 &&
         HAVE_PAYLOAD_SPACE(chan, AHRS3)) {
-        _ahrs.get_NavEKF2().getLLH(loc);
-        _ahrs.get_NavEKF2().getEulerAngles(-1,euler);
+        ekf2.getLLH(loc);
+        ekf2.getEulerAngles(-1,euler);
         mavlink_msg_ahrs3_send(chan,
                                euler.x,
                                euler.y,
@@ -845,10 +848,6 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
             cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
         }
     }
-    // if a snoop handler has been setup then use it
-    if (msg_snoop != nullptr) {
-        msg_snoop(&msg);
-    }
     if (routing.check_and_forward(chan, &msg) &&
         accept_packet(status, msg)) {
         handleMessage(&msg);
@@ -1062,15 +1061,23 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.z);        
 }
 
-void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
+void GCS_MAVLINK::send_scaled_pressure()
 {
     uint32_t now = AP_HAL::millis();
+    const AP_Baro &barometer = AP::baro();
     float pressure = barometer.get_pressure(0);
+    float diff_pressure = 0; // pascal
+
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed != nullptr) {
+        diff_pressure = airspeed->get_differential_pressure();
+    }
+
     mavlink_msg_scaled_pressure_send(
         chan,
         now,
         pressure*0.01f, // hectopascal
-        (pressure - barometer.get_ground_pressure(0))*0.01f, // hectopascal
+        diff_pressure*0.01f, // hectopascal
         barometer.get_temperature(0)*100); // 0.01 degrees C
 
     if (barometer.num_instances() > 1 &&
@@ -1096,7 +1103,7 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
     }
 }
 
-void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer)
+void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass)
 {
     // run this message at a much lower rate - otherwise it
     // pointlessly wastes quite a lot of bandwidth
@@ -1109,6 +1116,8 @@ void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compas
     const Vector3f &mag_offsets = compass.get_offsets(0);
     const Vector3f &accel_offsets = ins.get_accel_offsets(0);
     const Vector3f &gyro_offsets = ins.get_gyro_offsets(0);
+
+    const AP_Baro &barometer = AP::baro();
 
     mavlink_msg_sensor_offsets_send(chan,
                                     mag_offsets.x,
@@ -1125,8 +1134,9 @@ void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compas
                                     accel_offsets.z);
 }
 
-void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
+void GCS_MAVLINK::send_ahrs()
 {
+    const AP_AHRS &ahrs = AP::ahrs();
     const Vector3f &omega_I = ahrs.get_gyro_drift();
     mavlink_msg_ahrs_send(
         chan,
@@ -1302,10 +1312,10 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg)
     mavlink_set_mode_t packet;
     mavlink_msg_set_mode_decode(msg, &packet);
 
-    const MAV_MODE base_mode = (MAV_MODE)packet.base_mode;
-    const uint32_t custom_mode = packet.custom_mode;
+    const MAV_MODE _base_mode = (MAV_MODE)packet.base_mode;
+    const uint32_t _custom_mode = packet.custom_mode;
 
-    const MAV_RESULT result = _set_mode_common(base_mode, custom_mode);
+    const MAV_RESULT result = _set_mode_common(_base_mode, _custom_mode);
 
     // send ACK or NAK
     mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, result);
@@ -1314,21 +1324,21 @@ void GCS_MAVLINK::handle_set_mode(mavlink_message_t* msg)
 /*
   code common to both SET_MODE mavlink message and command long set_mode msg
 */
-MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode)
+MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32_t _custom_mode)
 {
     MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
     // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
-    if (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
-        if (set_mode(custom_mode)) {
+    if (_base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
+        if (set_mode(_custom_mode)) {
             result = MAV_RESULT_ACCEPTED;
         }
-    } else if (base_mode == (MAV_MODE)MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
+    } else if (_base_mode == (MAV_MODE)MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
         // set the safety switch position. Must be in a command by itself
-        if (custom_mode == 0) {
+        if (_custom_mode == 0) {
             // turn safety off (pwm outputs flow to the motors)
             hal.rcout->force_safety_off();
             result = MAV_RESULT_ACCEPTED;
-        } else if (custom_mode == 1) {
+        } else if (_custom_mode == 1) {
             // turn safety on (no pwm outputs to the motors)
             if (hal.rcout->force_safety_on()) {
                 result = MAV_RESULT_ACCEPTED;
@@ -1343,7 +1353,7 @@ MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE base_mode, const uint32_
 /*
   send OPTICAL_FLOW message
  */
-void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow)
+void GCS_MAVLINK::send_opticalflow(const OpticalFlow &optflow)
 {
     // exit immediately if no optical flow sensor or not healthy
     if (!optflow.healthy()) {
@@ -1353,11 +1363,13 @@ void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optf
     // get rates from sensor
     const Vector2f &flowRate = optflow.flowRate();
     const Vector2f &bodyRate = optflow.bodyRate();
+
+    const AP_AHRS &ahrs = AP::ahrs();
     float hagl = 0;
-
     if (ahrs.have_inertial_nav()) {
-
-        ahrs.get_hagl(hagl);
+        if (!ahrs.get_hagl(hagl)) {
+            return;
+        }
     }
 
     // populate and send message
@@ -1435,8 +1447,10 @@ void GCS_MAVLINK::send_autopilot_version() const
 /*
   send LOCAL_POSITION_NED message
  */
-void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
+void GCS_MAVLINK::send_local_position() const
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
     Vector3f local_position, velocity;
     if (!ahrs.get_relative_position_NED_home(local_position) ||
         !ahrs.get_velocity_NED(velocity)) {
@@ -1502,17 +1516,17 @@ void GCS_MAVLINK::send_ekf_origin(const Location &ekf_origin) const
 }
 
 /*
-  wrapper for sending heartbeat
+  Send MAVLink heartbeat
  */
-void GCS_MAVLINK::send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status)
+void GCS_MAVLINK::send_heartbeat()
 {
     mavlink_msg_heartbeat_send(
         chan,
-        type,
+        frame_type(),
         MAV_AUTOPILOT_ARDUPILOTMEGA,
-        base_mode,
-        custom_mode,
-        system_status);
+        base_mode(),
+        custom_mode(),
+        system_status());
 }
 
 float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
@@ -1662,7 +1676,7 @@ MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_long_t &
 
     bool should_terminate = packet.param1 > 0.5f;
 
-    if (failsafe->gcs_terminate(should_terminate)) {
+    if (failsafe->gcs_terminate(should_terminate, "GCS request")) {
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
@@ -1845,7 +1859,108 @@ void GCS_MAVLINK::handle_data_packet(mavlink_message_t *msg)
 #endif
 }
 
+void GCS_MAVLINK::handle_vision_position_delta(mavlink_message_t *msg)
+{
+    AP_VisualOdom *visual_odom = get_visual_odom();
+    if (visual_odom == nullptr) {
+        return;
+    }
+    visual_odom->handle_msg(msg);
+}
 
+void GCS_MAVLINK::handle_vision_position_estimate(mavlink_message_t *msg)
+{
+    mavlink_vision_position_estimate_t m;
+    mavlink_msg_vision_position_estimate_decode(msg, &m);
+
+    _handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+}
+
+void GCS_MAVLINK::handle_global_vision_position_estimate(mavlink_message_t *msg)
+{
+    mavlink_global_vision_position_estimate_t m;
+    mavlink_msg_global_vision_position_estimate_decode(msg, &m);
+
+    _handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+}
+
+void GCS_MAVLINK::handle_vicon_position_estimate(mavlink_message_t *msg)
+{
+    mavlink_vicon_position_estimate_t m;
+    mavlink_msg_vicon_position_estimate_decode(msg, &m);
+
+    _handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+}
+
+// there are several messages which all have identical fields in them.
+// This function provides common handling for the data contained in
+// these packets
+void GCS_MAVLINK::_handle_common_vision_position_estimate_data(const uint64_t usec,
+                                                               const float x,
+                                                               const float y,
+                                                               const float z,
+                                                               const float roll,
+                                                               const float pitch,
+                                                               const float yaw)
+{
+    // sensor assumed to be at 0,0,0 body-frame; need parameters for this?
+    // or a new message 
+    const Vector3f sensor_offset = {};
+    const Vector3f pos = {
+        x,
+        y,
+        z
+    };
+    Quaternion attitude;
+    attitude.from_euler(roll, pitch, yaw); // from_vector312?
+    const float posErr = 0; // parameter required?
+    const float angErr = 0; // parameter required?
+    const uint32_t timestamp_ms = usec * 0.001;
+    const uint32_t reset_timestamp_ms = 0; // no data available
+
+    AP::ahrs().writeExtNavData(sensor_offset,
+                               pos,
+                               attitude,
+                               posErr,
+                               angErr,
+                               timestamp_ms,
+                               reset_timestamp_ms);
+}
+
+void GCS_MAVLINK::handle_att_pos_mocap(mavlink_message_t *msg)
+{
+    mavlink_att_pos_mocap_t m;
+    mavlink_msg_att_pos_mocap_decode(msg, &m);
+
+    // sensor assumed to be at 0,0,0 body-frame; need parameters for this?
+    const Vector3f sensor_offset = {};
+    const Vector3f pos = {
+        m.x,
+        m.y,
+        m.z
+    };
+    Quaternion attitude = Quaternion(m.q);
+    const float posErr = 0; // parameter required?
+    const float angErr = 0; // parameter required?
+    const uint32_t timestamp_ms = m.time_usec * 0.001;
+    const uint32_t reset_timestamp_ms = 0; // no data available
+
+    AP::ahrs().writeExtNavData(sensor_offset,
+                               pos,
+                               attitude,
+                               posErr,
+                               angErr,
+                               timestamp_ms,
+                               reset_timestamp_ms);
+}
+
+void GCS_MAVLINK::handle_command_ack(const mavlink_message_t* msg)
+{
+    AP_AccelCal *accelcal = AP::ins().get_acal();
+    if (accelcal != nullptr) {
+        accelcal->handleMessage(msg);
+    }
+}
 
 /*
   handle messages which don't require vehicle specific data
@@ -1853,6 +1968,11 @@ void GCS_MAVLINK::handle_data_packet(mavlink_message_t *msg)
 void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
 {
     switch (msg->msgid) {
+    case MAVLINK_MSG_ID_COMMAND_ACK: {
+        handle_command_ack(msg);
+        break;
+    }
+
     case MAVLINK_MSG_ID_SETUP_SIGNING:
         handle_setup_signing(msg);
         break;
@@ -1965,6 +2085,26 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_DATA96:
         handle_data_packet(msg);
         break;        
+
+    case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
+        handle_vision_position_delta(msg);
+        break;
+
+    case MAVLINK_MSG_ID_VISION_POSITION_ESTIMATE:
+        handle_vision_position_estimate(msg);
+        break;
+
+    case MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE:
+        handle_global_vision_position_estimate(msg);
+        break;
+
+    case MAVLINK_MSG_ID_VICON_POSITION_ESTIMATE:
+        handle_vicon_position_estimate(msg);
+        break;
+
+    case MAVLINK_MSG_ID_ATT_POS_MOCAP:
+        handle_att_pos_mocap(msg);
+        break;
     }
 
 }
@@ -2079,6 +2219,86 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlin
     return MAV_RESULT_ACCEPTED;
 }
 
+bool GCS_MAVLINK::calibrate_gyros()
+{
+    AP::ins().init_gyro();
+    if (!AP::ins().gyro_calibrated_ok_all()) {
+        return false;
+    }
+    AP::ahrs().reset_gyro_drift();
+    return true;
+}
+
+MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro()
+{
+    // fast barometer calibration
+    gcs().send_text(MAV_SEVERITY_INFO, "Updating barometer calibration");
+    AP::baro().update_calibration();
+    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
+
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed != nullptr) {
+        airspeed->calibrate(false);
+    }
+
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+{
+    if (is_equal(packet.param1,1.0f)) {
+        if (!calibrate_gyros()) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param3,1.0f)) {
+        return _handle_command_preflight_calibration_baro();
+    }
+
+    if (is_equal(packet.param5,1.0f)) {
+        // start with gyro calibration
+        if (!calibrate_gyros()) {
+            return MAV_RESULT_FAILED;
+        }
+        // start accel cal
+        AP::ins().acal_init();
+        AP::ins().get_acal()->start(this);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param5,2.0f)) {
+        if (!calibrate_gyros()) {
+            return MAV_RESULT_FAILED;
+        }
+        float trim_roll, trim_pitch;
+        if (!AP::ins().calibrate_trim(trim_roll, trim_pitch)) {
+            return MAV_RESULT_FAILED;
+        }
+        // reset ahrs's trim to suggested values from calibration routine
+        AP::ahrs().set_trim(Vector3f(trim_roll, trim_pitch, 0));
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param5,4.0f)) {
+        // simple accel calibration
+        return AP::ins().simple_accel_cal();
+    }
+
+    return MAV_RESULT_UNSUPPORTED;
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_command_long_t &packet)
+{
+    if (hal.util->get_soft_armed()) {
+        // *preflight*, remember?
+        return MAV_RESULT_FAILED;
+    }
+    // now call subclass methods:
+    return _handle_command_preflight_calibration(packet);
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
 {
     Compass *compass = get_compass();
@@ -2108,10 +2328,24 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_send_banner(const mavlink_command_long
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_long_t &packet)
 {
-    const MAV_MODE base_mode = (MAV_MODE)packet.param1;
-    const uint32_t custom_mode = (uint32_t)packet.param2;
+    const MAV_MODE _base_mode = (MAV_MODE)packet.param1;
+    const uint32_t _custom_mode = (uint32_t)packet.param2;
 
-    return _set_mode_common(base_mode, custom_mode);
+    return _set_mode_common(_base_mode, _custom_mode);
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_long_t &packet)
+{
+    if (!AP::ahrs().home_is_set()) {
+        return MAV_RESULT_FAILED;
+    }
+    send_home(AP::ahrs().get_home());
+
+    Location ekf_origin;
+    if (AP::ahrs().get_origin(ekf_origin)) {
+        send_ekf_origin(ekf_origin);
+    }
+    return MAV_RESULT_ACCEPTED;
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
@@ -2152,10 +2386,18 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         break;
     }
 
+    case MAV_CMD_PREFLIGHT_CALIBRATION:
+        result = handle_command_preflight_calibration(packet);
+        break;
+
     case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS: {
         result = handle_command_preflight_set_sensor_offsets(packet);
         break;
     }
+
+    case MAV_CMD_GET_HOME_POSITION:
+        result = handle_command_get_home_position(packet);
+        break;
 
     case MAV_CMD_PREFLIGHT_STORAGE:
         if (is_equal(packet.param1, 2.0f)) {
@@ -2364,6 +2606,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         /* fall through */
     case MSG_SYSTEM_TIME:
         ret = try_send_gps_message(id);
+        break;
+
+    case MSG_LOCAL_POSITION:
+        CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
+        send_local_position();
+        break;
+
+    case MSG_AHRS:
+        CHECK_PAYLOAD_SIZE(AHRS);
+        send_ahrs();
         break;
 
     default:

@@ -12,8 +12,11 @@ undef USART3
 undef USART3_TX
 undef USART3_RX
 undef CAN1
+undef CAN1_RX
+undef CAN1_TX
 undef CAN2
-undef HAL_WITH_UAVCAN
+undef CAN2_RX
+undef CAN2_TX
 undef IOMCU_UART
 undef AP_FEATURE_SBUS_OUT
 undef HAL_OS_FATFS_IO
@@ -49,3 +52,5 @@ DMA_PRIORITY SPI2_*
 DMA_NOSHARE SPI2_*
 undef PA1
 PA1 UART4_RX UART4 NODMA
+
+env DEFAULT_PARAMETERS 'Tools/Frame_params/SkyViper-2450GPS/defaults.parm'

@@ -12,8 +12,14 @@
 
 #define MAVLINK_SEND_UART_BYTES(chan, buf, len) comm_send_buffer(chan, buf, len)
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// allow extra mavlink channels in SITL for:
+//    Vicon
+#define MAVLINK_COMM_NUM_BUFFERS 6
+#else
 // allow five telemetry ports
 #define MAVLINK_COMM_NUM_BUFFERS 5
+#endif
 
 /*
   The MAVLink protocol code generator does its own alignment, so

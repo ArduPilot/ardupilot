@@ -2,8 +2,12 @@
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
+#if HAL_WITH_UAVCAN
+#include "AP_BattMonitor_UAVCAN.h"
+#endif
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -20,7 +24,6 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2_", 24, AP_BattMonitor, AP_BattMonitor_Params),
 
-
     AP_GROUPEND
 };
 
@@ -28,9 +31,11 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AP_BattMonitor::AP_BattMonitor(uint32_t log_battery_bit) :
+AP_BattMonitor::AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handler_fn_t battery_failsafe_handler_fn, const int8_t *failsafe_priorities) :
     _log_battery_bit(log_battery_bit),
-    _num_instances(0)
+    _num_instances(0),
+    _battery_failsafe_handler_fn(battery_failsafe_handler_fn),
+    _failsafe_priorities(failsafe_priorities)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -48,6 +53,8 @@ AP_BattMonitor::init()
     if (_num_instances != 0) {
         return;
     }
+
+    _highest_failsafe_priority = INT8_MAX;
 
     convert_params();
 
@@ -82,6 +89,12 @@ AP_BattMonitor::init()
             case AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance], _params[instance]);
+                _num_instances++;
+#endif
+                break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_UAVCAN_BatteryInfo:
+#if HAL_WITH_UAVCAN
+                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance]);
                 _num_instances++;
 #endif
                 break;
@@ -189,6 +202,8 @@ AP_BattMonitor::read()
         df->Log_Write_Current();
         df->Log_Write_Power();
     }
+
+    check_failsafes();
 }
 
 // healthy - returns true if monitor is functioning
@@ -249,16 +264,16 @@ float AP_BattMonitor::current_amps(uint8_t instance) const {
     }
 }
 
-/// current_total_mah - returns total current drawn since start-up in amp-hours
-float AP_BattMonitor::current_total_mah(uint8_t instance) const {
+/// consumed_mah - returns total current drawn since start-up in milliampere.hours
+float AP_BattMonitor::consumed_mah(uint8_t instance) const {
     if (instance < _num_instances) {
-        return state[instance].current_total_mah;
+        return state[instance].consumed_mah;
     } else {
         return 0.0f;
     }
 }
 
-/// consumed_wh - returns energy consumed since start-up in watt-hours
+/// consumed_wh - returns energy consumed since start-up in Watt.hours
 float AP_BattMonitor::consumed_wh(uint8_t instance) const {
     if (instance < _num_instances) {
         return state[instance].consumed_wh;
@@ -287,13 +302,67 @@ int32_t AP_BattMonitor::pack_capacity_mah(uint8_t instance) const
     }
 }
 
- /// exhausted - returns true if the voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity_mah
-bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_capacity_mah)
+void AP_BattMonitor::check_failsafes(void)
+{
+    if (hal.util->get_soft_armed()) {
+        for (uint8_t i = 0; i < _num_instances; i++) {
+            const BatteryFailsafe type = check_failsafe(i);
+            if (type <= state[i].failsafe) {
+                continue;
+            }
+
+            int8_t action = 0;
+            const char *type_str = nullptr;
+            switch (type) {
+                case AP_BattMonitor::BatteryFailsafe_None:
+                    continue; // should not have been called in this case
+                case AP_BattMonitor::BatteryFailsafe_Low:
+                    action = _params[i]._failsafe_low_action;
+                    type_str = "low";
+                    break;
+                case AP_BattMonitor::BatteryFailsafe_Critical:
+                    action = _params[i]._failsafe_critical_action;
+                    type_str = "critical";
+                    break;
+            }
+
+            gcs().send_text(MAV_SEVERITY_WARNING, "Battery %d is %s %.2fV used %.0f mAh", i + 1, type_str,
+                            (double)voltage(i), (double)consumed_mah(i));
+            _has_triggered_failsafe = true;
+            AP_Notify::flags.failsafe_battery = true;
+            state[i].failsafe = type;
+
+            // map the desired failsafe action to a prioritiy level
+            int8_t priority = 0;
+            if (_failsafe_priorities != nullptr) {
+                while (_failsafe_priorities[priority] != -1) {
+                    if (_failsafe_priorities[priority] == action) {
+                        break;
+                    }
+                    priority++;
+                }
+
+            }
+
+            // trigger failsafe if the action was equal or higher priority
+            // It's valid to retrigger the same action if a different battery provoked the event
+            if (priority <= _highest_failsafe_priority) {
+                _battery_failsafe_handler_fn(type_str, action);
+                _highest_failsafe_priority = priority;
+            }
+        }
+    }
+}
+
+// returns the failsafe state of the battery
+AP_BattMonitor::BatteryFailsafe AP_BattMonitor::check_failsafe(const uint8_t instance)
 {
     // exit immediately if no monitors setup
     if (_num_instances == 0 || instance >= _num_instances) {
-        return false;
+        return BatteryFailsafe_None;
     }
+
+    const uint32_t now = AP_HAL::millis();
 
     // use voltage or sag compensated voltage
     float voltage_used;
@@ -307,14 +376,33 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
             break;
     }
 
-    // check voltage
-    if ((voltage_used > 0) && (low_voltage > 0) && (voltage_used < low_voltage)) {
+    // check critical battery levels
+    if ((voltage_used > 0) && (_params[instance]._critical_voltage > 0) && (voltage_used < _params[instance]._critical_voltage)) {
+        // this is the first time our voltage has dropped below minimum so start timer
+        if (state[instance].critical_voltage_start_ms == 0) {
+            state[instance].critical_voltage_start_ms = now;
+        } else if (_params[instance]._low_voltage_timeout > 0 &&
+                   now - state[instance].critical_voltage_start_ms > uint32_t(_params[instance]._low_voltage_timeout)*1000U) {
+            return BatteryFailsafe_Critical;
+        }
+    } else {
+        // acceptable voltage so reset timer
+        state[instance].critical_voltage_start_ms = 0;
+    }
+
+    // check capacity if current monitoring is enabled
+    if (has_current(instance) && (_params[instance]._critical_capacity > 0) &&
+        ((_params[instance]._pack_capacity - state[instance].consumed_mah) < _params[instance]._critical_capacity)) {
+        return BatteryFailsafe_Critical;
+    }
+
+    if ((voltage_used > 0) && (_params[instance]._low_voltage > 0) && (voltage_used < _params[instance]._low_voltage)) {
         // this is the first time our voltage has dropped below minimum so start timer
         if (state[instance].low_voltage_start_ms == 0) {
-            state[instance].low_voltage_start_ms = AP_HAL::millis();
+            state[instance].low_voltage_start_ms = now;
         } else if (_params[instance]._low_voltage_timeout > 0 &&
-                   AP_HAL::millis() - state[instance].low_voltage_start_ms > uint32_t(_params[instance]._low_voltage_timeout)*1000U) {
-            return true;
+                   now - state[instance].low_voltage_start_ms > uint32_t(_params[instance]._low_voltage_timeout)*1000U) {
+            return BatteryFailsafe_Low;
         }
     } else {
         // acceptable voltage so reset timer
@@ -322,13 +410,13 @@ bool AP_BattMonitor::exhausted(uint8_t instance, float low_voltage, float min_ca
     }
 
     // check capacity if current monitoring is enabled
-    if (has_current(instance) && (min_capacity_mah > 0) &&
-        (_params[instance]._pack_capacity - state[instance].current_total_mah < min_capacity_mah)) {
-        return true;
+    if (has_current(instance) && (_params[instance]._low_capacity > 0) &&
+        ((_params[instance]._pack_capacity - state[instance].consumed_mah) < _params[instance]._low_capacity)) {
+        return BatteryFailsafe_Low;
     }
 
     // if we've gotten this far then battery is ok
-    return false;
+    return BatteryFailsafe_None;
 }
 
 // return true if any battery is pushing too much power

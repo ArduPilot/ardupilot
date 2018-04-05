@@ -2095,10 +2095,11 @@ uint16_t AP_Param::count_parameters(void)
         AP_Param  *vp;
         AP_Param::ParamToken token;
 
-        vp = AP_Param::first(&token, nullptr);
-        do {
+        for (vp = AP_Param::first(&token, nullptr);
+             vp != nullptr;
+             vp = AP_Param::next_scalar(&token, nullptr)) {
             ret++;
-        } while (nullptr != (vp = AP_Param::next_scalar(&token, nullptr)));
+        }
         _parameter_count = ret;
     }
     return ret;

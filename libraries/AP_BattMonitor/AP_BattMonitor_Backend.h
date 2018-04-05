@@ -49,6 +49,10 @@ public:
     // update battery resistance estimate and voltage_resting_estimate
     void update_resistance_estimate();
 
+    // callback for UAVCAN messages
+    virtual void handle_bi_msg(float voltage, float current,
+            float temperature) {}
+
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)

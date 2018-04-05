@@ -96,6 +96,7 @@ public:
         k_param_circle_nav, // Disabled
         k_param_avoid, // Relies on proximity and fence
         k_param_NavEKF3,
+        k_param_loiter_nav,
 
 
         // Other external hardware interfaces
@@ -167,9 +168,9 @@ public:
         k_param_fs_ekf_thresh,
         k_param_fs_ekf_action,
         k_param_fs_crash_check,
-        k_param_failsafe_battery_enabled,
-        k_param_fs_batt_mah,
-        k_param_fs_batt_voltage,
+        k_param_failsafe_battery_enabled, // unused - moved to AP_BattMonitor
+        k_param_fs_batt_mah,              // unused - moved to AP_BattMonitor
+        k_param_fs_batt_voltage,          // unused - moved to AP_BattMonitor
         k_param_failsafe_pilot_input,
         k_param_failsafe_pilot_input_timeout,
 
@@ -224,11 +225,9 @@ public:
 
     AP_Float        throttle_filt;
 
+#if RANGEFINDER_ENABLED == ENABLED
     AP_Float        rangefinder_gain;
-
-    AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
-    AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
-    AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
+#endif
 
     AP_Int8         failsafe_leak;              // leak detection failsafe behavior
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
@@ -266,7 +265,9 @@ public:
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     AP_Int8         terrain_follow;
+#endif
 
     AP_Int16        rc_speed; // speed of fast RC Channels in Hz
 

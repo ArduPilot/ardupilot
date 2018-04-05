@@ -129,9 +129,9 @@ size_t SerialDriver::write(uint8_t c) {
     uint16_t n_try=3;
     do { // wait for free space
         if( ((transmitBufferWrite + 1) % SS_MAX_TX_BUFF) == transmitBufferRead ){
-            Scheduler::yield(); // пока ожидаем - пусть другие работают
-            if(! _blocking) n_try--;    // при неблокированном выводе уменьшим счетчик попыток
-        } else break; // дождались        
+            Scheduler::yield(); // while we wait - let others work
+            if(! _blocking) n_try--;    
+        } else break; // got it!
     } while(n_try);
 
     // Save new data in buffer and bump the write pointer

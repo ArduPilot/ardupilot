@@ -451,7 +451,7 @@ void NavEKF3_core::detectOptFlowTakeoff(void)
 {
     if (!onGround && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
         // we are no longer confidently on the ground so check the range finder and gyro for signs of takeoff
-        const AP_InertialSensor &ins = _ahrs->get_ins();
+        const AP_InertialSensor &ins = AP::ins();
         Vector3f angRateVec;
         Vector3f gyroBias;
         getGyroBias(gyroBias);

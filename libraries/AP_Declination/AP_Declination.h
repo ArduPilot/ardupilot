@@ -22,7 +22,13 @@ public:
     static float get_declination(float latitude_deg, float longitude_deg);
     
 private:
-    static const float declination_table[13][37];
-    static const float inclination_table[13][37];
-    static const float intensity_table[13][37];
+    static const float SAMPLING_RES;
+    static const float SAMPLING_MIN_LAT;
+    static const float SAMPLING_MAX_LAT;
+    static const float SAMPLING_MIN_LON;
+    static const float SAMPLING_MAX_LON;
+
+    static const float declination_table[19][37];
+    static const float inclination_table[19][37];
+    static const float intensity_table[19][37];
 };

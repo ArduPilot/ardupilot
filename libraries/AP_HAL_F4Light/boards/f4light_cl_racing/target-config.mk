@@ -6,6 +6,10 @@
    FLASH_SIZE     := 1048576
    SRAM_SIZE      := 131072
 
+    BOARD_TYPE     := 70
+    BOARD_REV      := 5
+    BOOTLOADER     := revo405_bl
+    
 # Memory target-specific configuration values
 
 ifeq ($(MEMORY_TARGET), ram)

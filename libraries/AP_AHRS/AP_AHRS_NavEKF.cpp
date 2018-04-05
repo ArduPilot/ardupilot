@@ -30,17 +30,12 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins,
-                               AP_Baro &baro,
-                               NavEKF2 &_EKF2,
+AP_AHRS_NavEKF::AP_AHRS_NavEKF(NavEKF2 &_EKF2,
                                NavEKF3 &_EKF3,
                                Flags flags) :
-    AP_AHRS_DCM(ins, baro),
+    AP_AHRS_DCM(),
     EKF2(_EKF2),
     EKF3(_EKF3),
-    _ekf2_started(false),
-    _ekf3_started(false),
-    _force_ekf(false),
     _ekf_flags(flags)
 {
     _dcm_matrix.identity();
@@ -169,6 +164,8 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             // Use the primary EKF to select the primary gyro
             const int8_t primary_imu = EKF2.getPrimaryCoreIMUIndex();
 
+            const AP_InertialSensor &_ins = AP::ins();
+
             // get gyro bias for primary EKF and change sign to give gyro drift
             // Note sign convention used by EKF is bias = measurement - truth
             _gyro_drift.zero();
@@ -236,6 +233,8 @@ void AP_AHRS_NavEKF::update_EKF3(void)
 
             update_cd_values();
             update_trig();
+
+            const AP_InertialSensor &_ins = AP::ins();
 
             // Use the primary EKF to select the primary gyro
             const int8_t primary_imu = EKF3.getPrimaryCoreIMUIndex();
@@ -903,7 +902,7 @@ void AP_AHRS_NavEKF::get_relative_position_D_home(float &posD) const
     float originD;
     if (!get_relative_position_D_origin(originD) ||
         !get_origin(originLLH)) {
-        posD = -_baro.get_altitude();
+        posD = -AP::baro().get_altitude();
         return;
     }
 
@@ -1162,6 +1161,13 @@ void  AP_AHRS_NavEKF::writeBodyFrameOdom(float quality, const Vector3f &delPos, 
     EKF3.writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, posOffset);
 }
 
+// Write position and quaternion data from an external navigation system
+void AP_AHRS_NavEKF::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+{
+    EKF2.writeExtNavData(sensOffset, pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
+}
+
+
 // inhibit GPS usage
 uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
 {
@@ -1249,6 +1255,7 @@ void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) cons
             return;
         }
         ret.zero();
+        const AP_InertialSensor &_ins = AP::ins();
         _ins.get_delta_velocity((uint8_t)imu_idx, ret);
         dt = _ins.get_delta_velocity_dt((uint8_t)imu_idx);
         ret -= accel_bias*dt;
@@ -1606,7 +1613,7 @@ uint8_t AP_AHRS_NavEKF::get_primary_IMU_index() const
         break;
     }
     if (imu == -1) {
-        imu = _ins.get_primary_accel();
+        imu = AP::ins().get_primary_accel();
     }
     return imu;
 }
@@ -1624,7 +1631,7 @@ uint8_t AP_AHRS_NavEKF::get_primary_accel_index(void) const
     if (ekf_type() != 0) {
         return get_primary_IMU_index();
     }
-    return _ins.get_primary_accel();
+    return AP::ins().get_primary_accel();
 }
 
 // get the index of the current primary gyro sensor
@@ -1633,7 +1640,7 @@ uint8_t AP_AHRS_NavEKF::get_primary_gyro_index(void) const
     if (ekf_type() != 0) {
         return get_primary_IMU_index();
     }
-    return _ins.get_primary_gyro();
+    return AP::ins().get_primary_gyro();
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

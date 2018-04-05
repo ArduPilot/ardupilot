@@ -27,7 +27,7 @@
 class AP_AdvancedFailsafe_Rover : public AP_AdvancedFailsafe
 {
 public:
-    AP_AdvancedFailsafe_Rover(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap);
+    AP_AdvancedFailsafe_Rover(AP_Mission &_mission, const AP_GPS &_gps, const RCMapper &_rcmap);
 
     // called to set all outputs to termination state
     void terminate_vehicle(void) override;

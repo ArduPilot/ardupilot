@@ -38,7 +38,6 @@
 #include "massstorage/mass_storage.h"
 #endif
 
-
 using namespace F4Light;
 
 
@@ -314,10 +313,7 @@ void HAL_F4Light::run(int argc,char* const argv[], Callbacks* callbacks) const
 }
 
 
-
 static bool lateInitDone=false;
-
-
 
 void HAL_F4Light::lateInit() {
     
@@ -334,6 +330,7 @@ void HAL_F4Light::lateInit() {
             if( (sig & ~CONSOLE_PORT_MASK) == CONSOLE_PORT_SIGNATURE) {
                 if(port != (sig & CONSOLE_PORT_MASK)) { // wrong console - reboot needed
                     board_set_rtc_register(CONSOLE_PORT_SIGNATURE | (port & CONSOLE_PORT_MASK), RTC_CONSOLE_REG);
+                    board_set_rtc_register(FORCE_APP_RTC_SIGNATURE, RTC_SIGNATURE_REG); // force bootloader to not wait
                     Scheduler::_reboot(false);
                 }
             } else { // no signature - set and check console
@@ -341,7 +338,7 @@ void HAL_F4Light::lateInit() {
 
                 AP_HAL::UARTDriver** up = uarts[port];
                 if(up && *up != console) {
-    
+                    board_set_rtc_register(FORCE_APP_RTC_SIGNATURE, RTC_SIGNATURE_REG); // force bootloader to not wait
                     Scheduler::_reboot(false);
                 }
             }
@@ -362,6 +359,7 @@ void HAL_F4Light::lateInit() {
             if((sig & ~OVERCLOCK_SIG_MASK ) == OVERCLOCK_SIGNATURE ) { // if correct signature
                 board_set_rtc_register(OVERCLOCK_SIGNATURE | oc, RTC_OVERCLOCK_REG); // set required clock in any case
                 if((sig & OVERCLOCK_SIG_MASK) != oc) {                 // if wrong clock
+                    board_set_rtc_register(FORCE_APP_RTC_SIGNATURE, RTC_SIGNATURE_REG); // force bootloader to not wait
                     Scheduler::_reboot(false);                 //  then reboot required
                 } 
             } else { // no signature, write only if needed
@@ -395,6 +393,7 @@ void HAL_F4Light::lateInit() {
             hal_param_helper->_usb_storage.save();
 
             board_set_rtc_register(MASS_STORAGE_SIGNATURE, RTC_MASS_STORAGE_REG);
+            board_set_rtc_register(FORCE_APP_RTC_SIGNATURE, RTC_SIGNATURE_REG); // force bootloader to not wait
             Scheduler::_reboot(false);
         }
     }
@@ -419,7 +418,6 @@ void HAL_F4Light::lateInit() {
         }
     }
 #endif
-
 
     RCOutput::lateInit(); // 2nd stage - now with loaded parameters
 

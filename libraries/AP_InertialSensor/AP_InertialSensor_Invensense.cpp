@@ -298,6 +298,16 @@ void AP_InertialSensor_Invensense::start()
     _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
     hal.scheduler->delay(1);
 
+    // clear interrupt on any read, and hold the data ready pin high
+    // until we clear the interrupt. We don't do this for the 20789 as
+    // that sensor has already setup the appropriate config inside the
+    // baro driver.
+    if (_mpu_type != Invensense_ICM20789) {    
+        uint8_t v = _register_read(MPUREG_INT_PIN_CFG) | BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN;
+        v &= BIT_BYPASS_EN;
+        _register_write(MPUREG_INT_PIN_CFG, v);
+    }
+
     // now that we have initialised, we set the bus speed to high
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 

@@ -27,7 +27,7 @@ prog_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): (.*)")
-# match e.g @Value{ArduCopter}: 0=Volcano, 1=Peppermint
+# match e.g @Value{Copter}: 0=Volcano, 1=Peppermint
 prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: (.*)")
 
 prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
@@ -106,7 +106,8 @@ for vehicle in vehicles:
         for field in fields:
             field_list.append(field[0])
             if field[0] in known_param_fields:
-                setattr(p, field[0], field[1])
+                value = re.sub('@PREFIX@', "", field[1])
+                setattr(p, field[0], value)
             else:
                 error("param: unknown parameter metadata field '%s'" % field[0])
         for req_field in required_param_fields:
@@ -155,7 +156,8 @@ def process_library(vehicle, library, pathprefix=None):
             fields = prog_param_fields.findall(field_text)
             for field in fields:
                 if field[0] in known_param_fields:
-                    setattr(p, field[0], field[1])
+                    value = re.sub('@PREFIX@', library.name, field[1])
+                    setattr(p, field[0], value)
                 else:
                     error("param: unknown parameter metadata field %s" % field[0])
             debug("matching %s" % field_text)
@@ -170,7 +172,8 @@ def process_library(vehicle, library, pathprefix=None):
                 if vehicle.truename not in only_for_vehicles:
                     continue;
                 if field[0] in known_param_fields:
-                    setattr(p, field[0], field[2])
+                    value = re.sub('@PREFIX@', library.name, field[2])
+                    setattr(p, field[0], value)
                 else:
                     error("tagged param: unknown parameter metadata field '%s'" % field[0])
             library.params.append(p)

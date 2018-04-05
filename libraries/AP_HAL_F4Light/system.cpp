@@ -12,6 +12,7 @@
 #include <AP_HAL/system.h>
 
 #include "Scheduler.h"
+#include <AP_Param_Helper/AP_Param_Helper.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -37,8 +38,10 @@ void panic(const char *errormsg, ...)
     va_end(ap);
     hal.console->printf("\n");
 
-    if(is_bare_metal()) { // bare metal build without bootloader should reboot to DFU after any fault
+    if(is_bare_metal() ||  hal_param_helper->_boot_dfu) { // bare metal build without bootloader should reboot to DFU after any fault
         board_set_rtc_register(DFU_RTC_SIGNATURE, RTC_SIGNATURE_REG);
+    } else {
+        board_set_rtc_register(BOOT_RTC_SIGNATURE, RTC_SIGNATURE_REG);
     }
 
     error_throb(0);

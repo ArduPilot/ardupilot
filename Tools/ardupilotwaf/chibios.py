@@ -12,15 +12,27 @@ import os
 import shutil
 import sys
 import re
+import pickle
+
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
     tmp_str = bldnode.find_node('include_dirs').read()
     tmp_str = tmp_str.replace(';\n','')
-    if 'include_dirs' == 'include_dirs':
-        tmp_str = tmp_str.replace('-I','')  #remove existing -I flags
-    _dynamic_env_data['include_dirs'] = re.split('; ', tmp_str)
-    #print _dynamic_env_data['include_dirs']
+    tmp_str = tmp_str.replace('-I','')  #remove existing -I flags
+    # split, coping with separator
+    idirs = re.split('; ', tmp_str)
+
+    # create unique list, coping with relative paths
+    idirs2 = []
+    for d in idirs:
+        if d.startswith('../'):
+            # relative paths from the make build are relative to BUILDROOT
+            d = os.path.join(bld.env.BUILDROOT, d)
+        d = os.path.normpath(d)
+        if not d in idirs2:
+            idirs2.append(d)
+    _dynamic_env_data['include_dirs'] = idirs2
 
 @feature('ch_ap_library', 'ch_ap_program')
 @before_method('process_source')
@@ -53,17 +65,29 @@ class upload_fw(Task.Task):
 
 class set_default_parameters(Task.Task):
     color='CYAN'
-    run_str='python ${APJ_TOOL} --set-file ${DEFAULT_PARAMETERS} ${SRC}'
     always_run = True
     def keyword(self):
         return "apj_tool"
+    def run(self):
+        rel_default_parameters = self.env.get_flat('DEFAULT_PARAMETERS')
+        abs_default_parameters = os.path.join(self.env.SRCROOT, rel_default_parameters)
+        apj_tool = self.env.APJ_TOOL
+        sys.path.append(os.path.dirname(apj_tool))
+        from apj_tool import embedded_defaults
+        defaults = embedded_defaults(self.inputs[0].abspath())
+        if not defaults.find():
+            print("Error: Param defaults support not found in firmware")
+            sys.exit(1)
+        defaults.set_file(abs_default_parameters)
+        defaults.save()
+
 
 class generate_fw(Task.Task):
     color='CYAN'
     run_str='${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
     python ${UPLOAD_TOOLS}/px_mkfw.py --image ${SRC}.bin \
     --prototype ${BUILDROOT}/apj.prototype > ${TGT} && \
-    ${TOOLS_SCRIPTS}/make_abin.sh ${SRC}.bin ${SRC}.abin'
+    cd ${TOOLS_SCRIPTS} && ./make_abin.sh $OLDPWD/${SRC}.bin $OLDPWD/${SRC}.abin'
     always_run = True
     def keyword(self):
         return "Generating"
@@ -94,6 +118,62 @@ def chibios_firmware(self):
                                 src=self.objcopy_target)
         _upload_task.set_run_after(generate_fw_task)
 
+def setup_can_build(cfg):
+    '''enable CAN build. By doing this here we can auto-enable CAN in
+    the build based on the presence of CAN pins in hwdef.dat'''
+    env = cfg.env
+    env.AP_LIBRARIES += [
+        'AP_UAVCAN',
+        'modules/uavcan/libuavcan/src/**/*.cpp',
+        'modules/uavcan/libuavcan_drivers/stm32/driver/src/*.cpp'
+        ]
+
+    env.CFLAGS += ['-DUAVCAN_STM32_CHIBIOS=1',
+                   '-DUAVCAN_STM32_NUM_IFACES=2']
+
+    env.CXXFLAGS += [
+        '-Wno-error=cast-align',
+        '-DUAVCAN_STM32_CHIBIOS=1',
+        '-DUAVCAN_STM32_NUM_IFACES=2'
+        ]
+
+    env.DEFINES += [
+        'UAVCAN_CPP_VERSION=UAVCAN_CPP03',
+        'UAVCAN_NO_ASSERTIONS=1',
+        'UAVCAN_NULLPTR=nullptr'
+        ]
+
+    env.INCLUDES += [
+        cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath(),
+        cfg.srcnode.find_dir('modules/uavcan/libuavcan_drivers/stm32/driver/include').abspath()
+        ]
+    cfg.get_board().with_uavcan = True
+
+def load_env_vars(env):
+    '''optionally load extra environment variables from env.py in the build directory'''
+    print("Checking for env.py")
+    env_py = os.path.join(env.BUILDROOT, 'env.py')
+    if not os.path.exists(env_py):
+        print("No env.py found")
+        return
+    e = pickle.load(open(env_py, 'rb'))
+    for k in e.keys():
+        v = e[k]
+        if k in env:
+            if isinstance(env[k], dict):
+                a = v.split('=')
+                env[k][a[0]] = '='.join(a[1:])
+                print("env updated %s=%s" % (k, v))
+            elif isinstance(env[k], list):
+                env[k].append(v)
+                print("env appended %s=%s" % (k, v))
+            else:
+                env[k] = v
+                print("env added %s=%s" % (k, v))
+        else:
+            env[k] = v
+            print("env set %s=%s" % (k, v))
+
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
@@ -114,12 +194,18 @@ def configure(cfg):
     env.AP_HAL_ROOT = srcpath('libraries/AP_HAL_ChibiOS')
     env.BUILDDIR = bldpath('modules/ChibiOS')
     env.BUILDROOT = bldpath('')
+    env.SRCROOT = srcpath('')
     env.PT_DIR = srcpath('Tools/ardupilotwaf/chibios/image')
     env.UPLOAD_TOOLS = srcpath('Tools/ardupilotwaf')
     env.CHIBIOS_SCRIPTS = srcpath('libraries/AP_HAL_ChibiOS/hwdef/scripts')
     env.TOOLS_SCRIPTS = srcpath('Tools/scripts')
     env.APJ_TOOL = srcpath('Tools/scripts/apj_tool.py')
     env.SERIAL_PORT = srcpath('/dev/serial/by-id/*_STLink*')
+
+    # relative paths to pass to make, relative to directory that make is run from
+    env.CH_ROOT_REL = os.path.relpath(env.CH_ROOT, env.BUILDROOT)
+    env.AP_HAL_REL = os.path.relpath(env.AP_HAL_ROOT, env.BUILDROOT)
+    env.BUILDDIR_REL = os.path.relpath(env.BUILDDIR, env.BUILDROOT)
 
     mk_custom = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/chibios_board.mk' % env.BOARD)
     mk_common = srcpath('libraries/AP_HAL_ChibiOS/hwdef/common/chibios_board.mk')
@@ -148,7 +234,17 @@ def configure(cfg):
     except Exception:
         print("Failed to generate hwdef.h")
 
-def build(bld):
+    load_env_vars(cfg.env)
+    if env.HAL_WITH_UAVCAN:
+        setup_can_build(cfg)
+
+def pre_build(bld):
+    '''pre-build hook to change dynamic sources'''
+    load_env_vars(bld.env)
+    if bld.env.HAL_WITH_UAVCAN:
+        bld.get_board().with_uavcan = True
+
+def build(bld):    
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD')),
@@ -159,7 +255,7 @@ def build(bld):
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule='touch Makefile && BUILDDIR=${BUILDDIR} CHIBIOS=${CH_ROOT} AP_HAL=${AP_HAL_ROOT} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f ${BOARD_MK}',
+        rule='touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f ${BOARD_MK}',
         group='dynamic_sources',
         target='modules/ChibiOS/include_dirs'
     )
@@ -172,7 +268,7 @@ def build(bld):
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     ch_task = bld(
         # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR}' CHIBIOS='${CH_ROOT}' AP_HAL=${AP_HAL_ROOT} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f ${BOARD_MK}",
+        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f ${BOARD_MK}",
         group='dynamic_sources',
         source=common_src,
         target='modules/ChibiOS/libch.a'

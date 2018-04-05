@@ -21,7 +21,6 @@
 
 const extern AP_HAL::HAL& hal;
 static bool _start_collect_sample;
-static void _snoop(const mavlink_message_t* msg);
 
 uint8_t AP_AccelCal::_num_clients = 0;
 AP_AccelCal_Client* AP_AccelCal::_clients[AP_ACCELCAL_MAX_NUM_CLIENTS] {};
@@ -97,8 +96,7 @@ void AP_AccelCal::update()
                                 return;
                         }
                         _printf("Place vehicle %s and press any key.", msg);
-                        // setup snooping of packets so we can see the COMMAND_ACK
-                        _gcs->set_snoop(_snoop);
+                        _waiting_for_mavlink_ack = true;
                     }
                 }
 
@@ -277,8 +275,6 @@ void AP_AccelCal::collect_sample()
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         cal->collect_sample();
     }
-    // setup snooping of packets so we can see the COMMAND_ACK
-    _gcs->set_snoop(nullptr);
     _start_collect_sample = false;
     update_status();
 }
@@ -357,8 +353,12 @@ bool AP_AccelCal::client_active(uint8_t client_num)
     return (bool)_clients[client_num]->_acal_get_calibrator(0);
 }
 
-static void _snoop(const mavlink_message_t* msg)
+void AP_AccelCal::handleMessage(const mavlink_message_t* msg)
 {
+    if (!_waiting_for_mavlink_ack) {
+        return;
+    }
+    _waiting_for_mavlink_ack = false;
     if (msg->msgid == MAVLINK_MSG_ID_COMMAND_ACK) {
         _start_collect_sample = true;
     }

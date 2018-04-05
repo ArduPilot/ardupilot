@@ -1,17 +1,6 @@
 #include "Plane.h"
 #include <AP_RSSI/AP_RSSI.h>
 
-void Plane::init_barometer(bool full_calibration)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
-    } else {
-        barometer.update_calibration();
-    }
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 void Plane::init_rangefinder(void)
 {
     rangefinder.init();
@@ -107,28 +96,6 @@ void Plane::read_airspeed(void)
     }
 }
 
-void Plane::zero_airspeed(bool in_startup)
-{
-    airspeed.calibrate(in_startup);
-    read_airspeed();
-    // update barometric calibration with new airspeed supplied temperature
-    barometer.update_calibration();
-    gcs().send_text(MAV_SEVERITY_INFO,"Airspeed calibration started");
-}
-
-// read_battery - reads battery voltage and current and invokes failsafe
-// should be called at 10hz
-void Plane::read_battery(void)
-{
-    battery.read();
-    compass.set_current(battery.current_amps());
-
-    if (hal.util->get_soft_armed() &&
-        battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
-        low_battery_event();
-    }
-}
-
 // read the receiver RSSI as an 8 bit number for MAVLink
 // RC_CHANNELS_SCALED message
 void Plane::read_receiver_rssi(void)
@@ -200,10 +167,6 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
 
-    if (plane.battery.healthy()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-
     // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control, geofence, motor, and battery output which we will set individually
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_GEOFENCE & ~MAV_SYS_STATUS_LOGGING & ~MAV_SYS_STATUS_SENSOR_BATTERY);
 
@@ -219,7 +182,7 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
 
-    if (g.fs_batt_voltage > 0 || g.fs_batt_mah > 0) {
+    if (battery.num_instances() > 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 
@@ -370,7 +333,7 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
 
-    if (plane.failsafe.low_battery) {
+    if (!plane.battery.healthy() || plane.battery.has_failsafed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 

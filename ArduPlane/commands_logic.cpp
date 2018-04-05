@@ -227,6 +227,23 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
                                             cmd.content.do_engine_control.cold_start,
                                             cmd.content.do_engine_control.height_delay_cm*0.01f);
         break;
+#if GRIPPER_ENABLED == ENABLED
+    case MAV_CMD_DO_GRIPPER:                            // Mission command to control gripper
+        switch (cmd.content.gripper.action) {
+            case GRIPPER_ACTION_RELEASE:
+                plane.g2.gripper.release();
+                gcs().send_text(MAV_SEVERITY_INFO, "Gripper Released");
+                break;
+            case GRIPPER_ACTION_GRAB:
+                plane.g2.gripper.grab();
+                gcs().send_text(MAV_SEVERITY_INFO, "Gripper Grabbed");
+                break;
+            default:
+                // do nothing
+                break;
+        }
+        break;
+#endif
     }
 
     return true;
@@ -328,6 +345,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_VTOL_TRANSITION:
     case MAV_CMD_DO_ENGINE_CONTROL:
+    case MAV_CMD_DO_GRIPPER:
         return true;
 
     default:
@@ -919,7 +937,7 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
         init_home();
     } else {
         ahrs.set_home(cmd.content.location);
-        home_is_set = HOME_SET_NOT_LOCKED;
+        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
         Log_Write_Home_And_Origin();
         gcs().send_home(cmd.content.location);
         // send ekf origin if set
@@ -1047,20 +1065,23 @@ bool Plane::verify_loiter_heading(bool init)
     int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
 
     if (init) {
-        loiter.total_cd =  wrap_360_cd(bearing_cd - heading_cd);
         loiter.sum_cd = 0;
     }
 
     /*
       Check to see if the the plane is heading toward the land
       waypoint. We use 20 degrees (+/-10 deg) of margin so that
-      we can handle 200 degrees/second of yaw. Allow turn count
-      to stop it too to ensure we don't loop around forever in
-      case high winds are forcing us beyond 200 deg/sec at this
-      particular moment.
+      we can handle 200 degrees/second of yaw.
+
+      After every full circle, extend acceptance criteria to ensure
+      aircraft will not loop forever in case high winds are forcing
+      it beyond 200 deg/sec when passing the desired exit course
     */
-    if (labs(heading_err_cd) <= 1000  ||
-            loiter.sum_cd > loiter.total_cd) {
+
+    // Use integer division to get discrete steps
+    int32_t expanded_acceptance = 1000 * (loiter.sum_cd / 36000);
+
+    if (labs(heading_err_cd) <= 1000 + expanded_acceptance) {
         // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
 
         // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location

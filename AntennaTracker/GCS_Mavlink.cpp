@@ -15,12 +15,14 @@
  *  pattern below when adding any new messages
  */
 
-void Tracker::send_heartbeat(mavlink_channel_t chan)
+MAV_TYPE GCS_MAVLINK_Tracker::frame_type() const
 {
-    uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    uint8_t system_status = MAV_STATE_ACTIVE;
-    uint32_t custom_mode = control_mode;
+    return MAV_TYPE_ANTENNA_TRACKER;
+}
 
+MAV_MODE GCS_MAVLINK_Tracker::base_mode() const
+{
+    uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
     // MAVLink enabled ground station can work out something about
@@ -29,9 +31,9 @@ void Tracker::send_heartbeat(mavlink_channel_t chan)
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    switch (control_mode) {
+    switch (tracker.control_mode) {
     case MANUAL:
-        base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+        _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
 
     case STOP:
@@ -40,7 +42,7 @@ void Tracker::send_heartbeat(mavlink_channel_t chan)
     case SCAN:
     case SERVO_TEST:
     case AUTO:
-        base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
+        _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED |
             MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
@@ -48,19 +50,28 @@ void Tracker::send_heartbeat(mavlink_channel_t chan)
         break;
 
     case INITIALISING:
-        system_status = MAV_STATE_CALIBRATING;
         break;
     }
 
     // we are armed if safety switch is not disarmed
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-        base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
+        _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
-    gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(MAV_TYPE_ANTENNA_TRACKER,
-                                            base_mode,
-                                            custom_mode,
-                                            system_status);
+    return (MAV_MODE)_base_mode;
+}
+
+uint32_t GCS_MAVLINK_Tracker::custom_mode() const
+{
+    return tracker.control_mode;
+}
+
+MAV_STATE GCS_MAVLINK_Tracker::system_status() const
+{
+    if (tracker.control_mode == INITIALISING) {
+        return MAV_STATE_CALIBRATING;
+    }
+    return MAV_STATE_ACTIVE;
 }
 
 void Tracker::send_attitude(mavlink_channel_t chan)
@@ -167,7 +178,7 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
         last_heartbeat_time = AP_HAL::millis();
-        tracker.send_heartbeat(chan);
+        send_heartbeat();
         return true;
 
     case MSG_ATTITUDE:
@@ -178,11 +189,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
     case MSG_LOCATION:
         CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
         tracker.send_location(chan);
-        break;
-
-    case MSG_LOCAL_POSITION:
-        CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
-        send_local_position(tracker.ahrs);
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
@@ -207,17 +213,12 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
 
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure(tracker.barometer);
+        send_scaled_pressure();
         break;
 
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(tracker.ins, tracker.compass, tracker.barometer);
-        break;
-
-    case MSG_AHRS:
-        CHECK_PAYLOAD_SIZE(AHRS);
-        send_ahrs(tracker.ahrs);
+        send_sensor_offsets(tracker.ins, tracker.compass);
         break;
 
     case MSG_SIMSTATE:
@@ -334,10 +335,6 @@ GCS_MAVLINK_Tracker::data_stream_send(void)
         return;
     }
 
-    if (!tracker.in_mavlink_delay) {
-        tracker.DataFlash.handle_log_send(*this);
-    }
-
     if (stream_trigger(STREAM_RAW_SENSORS)) {
         send_message(MSG_RAW_IMU1);
         send_message(MSG_RAW_IMU2);
@@ -385,14 +382,15 @@ GCS_MAVLINK_Tracker::data_stream_send(void)
   We eavesdrop on MAVLINK_MSG_ID_GLOBAL_POSITION_INT and
   MAVLINK_MSG_ID_SCALED_PRESSUREs
 */
-void Tracker::mavlink_snoop(const mavlink_message_t* msg)
+void GCS_MAVLINK_Tracker::packetReceived(const mavlink_status_t &status,
+                                         mavlink_message_t &msg)
 {
     // return immediately if sysid doesn't match our target sysid
-    if ((g.sysid_target != 0) && (g.sysid_target != msg->sysid)) {
+    if ((tracker.g.sysid_target != 0) && (tracker.g.sysid_target != msg.sysid)) {
         return;
     }
 
-    switch (msg->msgid) {
+    switch (msg.msgid) {
     case MAVLINK_MSG_ID_HEARTBEAT:
     {
         mavlink_check_target(msg);
@@ -403,8 +401,8 @@ void Tracker::mavlink_snoop(const mavlink_message_t* msg)
     {
         // decode
         mavlink_global_position_int_t packet;
-        mavlink_msg_global_position_int_decode(msg, &packet);
-        tracking_update_position(packet);
+        mavlink_msg_global_position_int_decode(&msg, &packet);
+        tracker.tracking_update_position(packet);
         break;
     }
     
@@ -412,24 +410,25 @@ void Tracker::mavlink_snoop(const mavlink_message_t* msg)
     {
         // decode
         mavlink_scaled_pressure_t packet;
-        mavlink_msg_scaled_pressure_decode(msg, &packet);
-        tracking_update_pressure(packet);
+        mavlink_msg_scaled_pressure_decode(&msg, &packet);
+        tracker.tracking_update_pressure(packet);
         break;
     }
     }
+    GCS_MAVLINK::packetReceived(status, msg);
 }
 
 // locks onto a particular target sysid and sets it's position data stream to at least 1hz
-void Tracker::mavlink_check_target(const mavlink_message_t* msg)
+void GCS_MAVLINK_Tracker::mavlink_check_target(const mavlink_message_t &msg)
 {
     // exit immediately if the target has already been set
-    if (target_set) {
+    if (tracker.target_set) {
         return;
     }
 
     // decode
     mavlink_heartbeat_t packet;
-    mavlink_msg_heartbeat_decode(msg, &packet);
+    mavlink_msg_heartbeat_decode(&msg, &packet);
 
     // exit immediately if this is not a vehicle we would track
     if ((packet.type == MAV_TYPE_ANTENNA_TRACKER) ||
@@ -440,22 +439,32 @@ void Tracker::mavlink_check_target(const mavlink_message_t* msg)
     }
 
     // set our sysid to the target, this ensures we lock onto a single vehicle
-    if (g.sysid_target == 0) {
-        g.sysid_target = msg->sysid;
+    if (tracker.g.sysid_target == 0) {
+        tracker.g.sysid_target = msg.sysid;
     }
 
     // send data stream request to target on all channels
     //  Note: this doesn't check success for all sends meaning it's not guaranteed the vehicle's positions will be sent at 1hz
-    gcs().request_datastream_position(msg->sysid, msg->compid);
-    gcs().request_datastream_airpressure(msg->sysid, msg->compid);
+    tracker.gcs().request_datastream_position(msg.sysid, msg.compid);
+    tracker.gcs().request_datastream_airpressure(msg.sysid, msg.compid);
 
     // flag target has been set
-    target_set = true;
+    tracker.target_set = true;
 }
 
 uint8_t GCS_MAVLINK_Tracker::sysid_my_gcs() const
 {
     return tracker.g.sysid_my_gcs;
+}
+
+MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro()
+{
+    MAV_RESULT ret = GCS_MAVLINK::_handle_command_preflight_calibration_baro();
+    if (ret == MAV_RESULT_ACCEPTED) {
+        // zero the altitude difference on next baro update
+        tracker.nav_status.need_altitude_calibration = true;
+    }
+    return ret;
 }
 
 void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
@@ -486,55 +495,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
         send_text(MAV_SEVERITY_INFO,"Command received: ");
         
         switch(packet.command) {
-            
-            case MAV_CMD_PREFLIGHT_CALIBRATION:
-            {
-                if (is_equal(packet.param1,1.0f)) {
-                    tracker.ins.init_gyro();
-                    if (tracker.ins.gyro_calibrated_ok_all()) {
-                        tracker.ahrs.reset_gyro_drift();
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
-                }
-                if (is_equal(packet.param3,1.0f)) {
-                    tracker.init_barometer(false);
-                    // zero the altitude difference on next baro update
-                    tracker.nav_status.need_altitude_calibration = true;
-                    result = MAV_RESULT_ACCEPTED;
-                }
-                if (is_equal(packet.param4,1.0f)) {
-                    // Can't trim radio
-                    result = MAV_RESULT_UNSUPPORTED;
-                } else if (is_equal(packet.param5,1.0f)) {
-                    result = MAV_RESULT_ACCEPTED;
-                    // start with gyro calibration
-                    tracker.ins.init_gyro();
-                    // reset ahrs gyro bias
-                    if (tracker.ins.gyro_calibrated_ok_all()) {
-                        tracker.ahrs.reset_gyro_drift();
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
-                    // start accel cal
-                    tracker.ins.acal_init();
-                    tracker.ins.get_acal()->start(this);
-                } else if (is_equal(packet.param5,2.0f)) {
-                    // start with gyro calibration
-                    tracker.ins.init_gyro();
-                    // accel trim
-                    float trim_roll, trim_pitch;
-                    if (tracker.ins.calibrate_trim(trim_roll, trim_pitch)) {
-                        // reset ahrs's trim to suggested values from calibration routine
-                        tracker.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        result = MAV_RESULT_FAILED;
-                    }
-                }
-                break;
-            }
 
             case MAV_CMD_COMPONENT_ARM_DISARM:
                 if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
@@ -840,4 +800,4 @@ void AP_Camera::send_feedback(mavlink_channel_t chan) {}
 /* end dummy methods to avoid having to link against AP_Camera */
 
 // dummy method to avoid linking AFS
-bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate) {return false;}
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}

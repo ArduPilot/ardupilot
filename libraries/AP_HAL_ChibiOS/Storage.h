@@ -25,6 +25,8 @@
 
 #define CH_STORAGE_SIZE HAL_STORAGE_SIZE
 
+#ifndef HAL_USE_EMPTY_STORAGE
+
 // when using flash storage we use a small line size to make storage
 // compact and minimise the number of erase cycles needed
 #define CH_STORAGE_LINE_SHIFT 3
@@ -71,3 +73,5 @@ private:
     bool using_fram;
 #endif
 };
+
+#endif // HAL_USE_EMPTY_STORAGE

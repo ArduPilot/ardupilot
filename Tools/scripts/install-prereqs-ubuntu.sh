@@ -9,24 +9,10 @@ PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo libftdi-dev zlib1g-dev \
           zip genromfs python-empy cmake cmake-data"
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
+# python-wxgtk packages are added to SITL_PKGS below
 SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing realpath"
 ASSUME_YES=false
 QUIET=false
-
-UBUNTU_YEAR="15" # Ubuntu Year were changes append
-UBUNTU_MONTH="10" # Ubuntu Month were changes append
-
-version=$(lsb_release -r -s)
-yrelease=$(echo "$version" | cut -d. -f1)
-mrelease=$(echo "$version" | cut -d. -f2)
-
-if [ "$yrelease" -ge "$UBUNTU_YEAR" ]; then
-    if [ "$yrelease" -gt "$UBUNTU_YEAR" ] || [ "$mrelease" -ge "$UBUNTU_MONTH" ]; then
-        SITL_PKGS+=" python-wxgtk3.0 libtool-bin"
-    else
-        SITL_PKGS+=" python-wxgtk2.8"
-    fi
-fi
 
 MACHINE_TYPE=$(uname -m)
 if [ ${MACHINE_TYPE} == 'x86_64' ]; then
@@ -91,6 +77,14 @@ sudo usermod -a -G dialout $USER
 
 $APT_GET remove modemmanager
 $APT_GET update
+
+if apt-cache search python-wxgtk3.0 | grep wx; then
+    SITL_PKGS+=" python-wxgtk3.0 libtool-bin"
+else
+    # we only support back to trusty:
+    SITL_PKGS+=" python-wxgtk2.8"
+fi
+
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS
 sudo pip2 -q install -U $PYTHON_PKGS
 

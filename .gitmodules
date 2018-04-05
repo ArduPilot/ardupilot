@@ -24,7 +24,7 @@
 	url = git://github.com/ArduPilot/ChibiOS.git
 [submodule "libraries/AP_HAL_F4Light/support/minimosd-extra"]
 	path = libraries/AP_HAL_F4Light/support/minimosd-extra
-	url = https://github.com/night-ghost/minimosd-extra
+	url = git://github.com/night-ghost/minimosd-extra
 [submodule "libraries/AP_HAL_F4Light/hardware/STM32F4xx_DSP_StdPeriph_Lib_V1.1.0/Libraries"]
 	path = libraries/AP_HAL_F4Light/hardware/STM32F4xx_DSP_StdPeriph_Lib_V1.1.0/Libraries
-	url = https://github.com/night-ghost/SPL
+	url = git://github.com/night-ghost/SPL

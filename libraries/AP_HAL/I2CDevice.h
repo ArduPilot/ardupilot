@@ -30,12 +30,6 @@ public:
 
     virtual ~I2CDevice() { }
 
-    /*
-     * Change device address. Note that this is the 7 bit address, it
-     * does not include the bit for read/write.
-     */
-    virtual void set_address(uint8_t address) = 0;
-
     /* Device implementation */
 
     /* See Device::set_speed() */

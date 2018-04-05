@@ -108,10 +108,10 @@ public:
         k_param_angle_max,
         k_param_gps_hdop_good,
         k_param_battery,
-        k_param_fs_batt_mah,
+        k_param_fs_batt_mah,            // unused - moved to AP_BattMonitor
         k_param_angle_rate_max,         // remove
         k_param_rssi_range,             // unused, replaced by rssi_ library parameters
-        k_param_rc_feel_rp,
+        k_param_rc_feel_rp,             // deprecated
         k_param_NavEKF,                 // deprecated - remove
         k_param_mission,                // mission library
         k_param_rc_13_old,
@@ -196,7 +196,8 @@ public:
         k_param_wp_nav,
         k_param_attitude_control,
         k_param_pos_control,
-        k_param_circle_nav,     // 104
+        k_param_circle_nav,
+        k_param_loiter_nav,     // 105
 
         // 110: Telemetry control
         //
@@ -239,7 +240,7 @@ public:
         k_param_rangefinder_enabled_old, // deprecated
         k_param_frame_type,
         k_param_optflow_enabled,    // deprecated
-        k_param_fs_batt_voltage,
+        k_param_fs_batt_voltage,    // unused - moved to AP_BattMonitor
         k_param_ch7_option,
         k_param_auto_slew_rate,     // deprecated - can be deleted
         k_param_rangefinder_type_old,     // deprecated
@@ -295,7 +296,7 @@ public:
         k_param_radio_tuning_high,
         k_param_radio_tuning_low,
         k_param_rc_speed = 192,
-        k_param_failsafe_battery_enabled,
+        k_param_failsafe_battery_enabled, // unused - moved to AP_BattMonitor
         k_param_throttle_mid,           // remove
         k_param_failsafe_gps_enabled,   // remove
         k_param_rc_9_old,
@@ -390,11 +391,9 @@ public:
     AP_Int16        rtl_altitude;
     AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
+#if RANGEFINDER_ENABLED == ENABLED
     AP_Float        rangefinder_gain;
-
-    AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
-    AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
-    AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
+#endif
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
@@ -405,7 +404,6 @@ public:
     AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
-    AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
 
     AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
     AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
@@ -457,8 +455,13 @@ public:
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
+#if MODE_THROW_ENABLED == ENABLED
     AP_Int8         throw_motor_start;
+#endif
+
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     AP_Int8         terrain_follow;
+#endif
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
@@ -471,9 +474,11 @@ public:
     AP_Float                acro_rp_expo;
 
     // Autotune
+#if AUTOTUNE_ENABLED == ENABLED
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
     AP_Float                autotune_min_d;
+#endif
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -498,16 +503,20 @@ public:
     // button checking
     AP_Button button;
 
+#if STATS_ENABLED == ENABLED
     // vehicle statistics
     AP_Stats stats;
+#endif
 
 #if GRIPPER_ENABLED
     AP_Gripper gripper;
 #endif
 
+#if MODE_THROW_ENABLED == ENABLED
     // Throw mode parameters
     AP_Int8 throw_nextmode;
     AP_Int8 throw_type;
+#endif
 
     // ground effect compensation enable/disable
     AP_Int8 gndeffect_comp_enabled;
@@ -540,7 +549,9 @@ public:
 
     // acro exponent parameters
     AP_Float acro_y_expo;
+#if MODE_ACRO_ENABLED == ENABLED
     AP_Float acro_thr_mid;
+#endif
 
     // frame class
     AP_Int8 frame_class;
@@ -578,6 +589,11 @@ public:
 #if OPTFLOW == ENABLED
     // we need a pointer to the mode for the G2 table
     void *mode_flowhold_ptr;
+#endif
+
+#if MODE_FOLLOW_ENABLED == ENABLED
+    // follow
+    AP_Follow follow;
 #endif
 };
 

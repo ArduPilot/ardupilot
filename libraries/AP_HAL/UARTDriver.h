@@ -2,8 +2,6 @@
 
 #include <stdint.h>
 
-#include <AP_Common/AP_Common.h>
-
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
 
@@ -52,13 +50,6 @@ public:
      * file descriptor
      */
     virtual bool set_unbuffered_writes(bool on){ return false; };
-
-    /* Implementations of BetterStream virtual methods. These are
-     * provided by AP_HAL to ensure consistency between ports to
-     * different boards
-     */
-    void printf(const char *s, ...) FMT_PRINTF(2, 3);
-    void vprintf(const char *s, va_list ap);
 
     /*
       wait for at least n bytes of incoming data, with timeout in

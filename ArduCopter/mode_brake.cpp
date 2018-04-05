@@ -9,9 +9,6 @@ bool Copter::ModeBrake::init(bool ignore_checks)
 {
     if (copter.position_ok() || ignore_checks) {
 
-        // set desired acceleration to zero
-        wp_nav->clear_pilot_desired_acceleration();
-
         // set target to current position
         wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
 
@@ -47,7 +44,7 @@ void Copter::ModeBrake::run()
 
     // relax stop target if we might be landed
     if (ap.land_complete_maybe) {
-        wp_nav->loiter_soften_for_landing();
+        loiter_nav->soften_for_landing();
     }
 
     // if landed immediately disarm
@@ -62,7 +59,7 @@ void Copter::ModeBrake::run()
     wp_nav->update_brake(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
 
     // body-frame rate controller is run directly from 100hz loop
 

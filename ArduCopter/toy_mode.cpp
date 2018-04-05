@@ -490,9 +490,13 @@ void ToyMode::update()
         break;
 
     case ACTION_MODE_ACRO:
+#if MODE_ACRO_ENABLED == ENABLED
         new_mode = ACRO;
+#else
+        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: ACRO is disabled");
+#endif
         break;
-        
+
     case ACTION_MODE_ALTHOLD:
         new_mode = ALT_HOLD;
         break;
@@ -538,7 +542,11 @@ void ToyMode::update()
         break;
 
     case ACTION_MODE_THROW:
+#if MODE_THROW_ENABLED == ENABLED
         new_mode = THROW;
+#else
+        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: THROW is disabled");
+#endif
         break;
 
     case ACTION_MODE_FLIP:

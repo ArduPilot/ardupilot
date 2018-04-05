@@ -79,7 +79,7 @@ public:
         uint32_t leak_detected      : 1;    // 1 if leak detected
         float    battery_voltage       ;    // battery voltage
         uint32_t gps_fusion         : 1;    // 0 = GPS fix rejected by EKF, not usable for flight. 1 = GPS in use by EKF, usable for flight
-        uint32_t gps_glitching      : 1;    // 1 if gps is glitching
+        uint32_t gps_glitching      : 1;    // 1 if GPS glitching is affecting navigation accuracy
         uint32_t have_pos_abs       : 1;    // 0 = no absolute position available, 1 = absolute position available
 
         // additional flags
@@ -143,8 +143,10 @@ public:
     const char* get_text() const { return _send_text; }
 
     static const struct AP_Param::GroupInfo var_info[];
+    uint8_t get_buzz_pin() const  { return _buzzer_pin; }
 
 private:
+
     static AP_Notify *_instance;
 
     // parameters
@@ -153,6 +155,7 @@ private:
     AP_Int8 _buzzer_enable;
     AP_Int8 _display_type;
     AP_Int8 _oreo_theme;
+    AP_Int8 _buzzer_pin;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed

@@ -119,19 +119,24 @@ void AP_Mount_SoloGimbal::handle_gimbal_report(mavlink_channel_t chan, mavlink_m
     _gimbal.update_target(_angle_ef_target_rad);
     _gimbal.receive_feedback(chan,msg);
 
-    if(!_params_saved && _frontend._dataflash != nullptr && _frontend._dataflash->logging_started()) {
+    DataFlash_Class *df = DataFlash_Class::instance();
+    if (df == nullptr) {
+        return;
+    }
+
+    if(!_params_saved && df->logging_started()) {
         _gimbal.fetch_params();       //last parameter save might not be stored in dataflash so retry
         _params_saved = true;
     }
 
     if (_gimbal.get_log_dt() > 1.0f/25.0f) {
-        _gimbal.write_logs(_frontend._dataflash);
+        _gimbal.write_logs();
     }
 }
 
 void AP_Mount_SoloGimbal::handle_param_value(mavlink_message_t *msg)
 {
-    _gimbal.handle_param_value(_frontend._dataflash, msg);
+    _gimbal.handle_param_value(msg);
 }
 
 /*

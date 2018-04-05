@@ -19,6 +19,7 @@
 
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Param_Helper/AP_Param_Helper.h>
 
 #include "RCInput.h"
 #include <systick.h>
@@ -253,7 +254,7 @@ void Scheduler::start_stats_task(){
 
 // task list is filled. so now we can do a trick -
 //    dequeue_task(_idle_task); // exclude idle task from task queue, it will be used by direct link.
-                              //  its own .next still shows to next task so no problems will
+                              //  its own .next still shows to next task so no problems will. This works but...
 
 }
 
@@ -334,7 +335,7 @@ void Scheduler::_delay_us_ny(uint16_t us){ // precise no yield delay
     uint32_t dt = us_ticks * us;  // delay time in ticks
     
     while ((stopwatch_getticks() - rtime) < dt) {
-        // __WFE(); 
+        // __WFE(); -- not helps very much
     }    
 
 #ifdef SHED_PROF
@@ -525,7 +526,7 @@ void Scheduler::_reboot(bool hold_in_bootloader) {
 
     if(hold_in_bootloader) {
 #if 1
-        if(is_bare_metal()) { // bare metal build without bootloader
+        if(is_bare_metal() || hal_param_helper->_boot_dfu) { // bare metal build without bootloader of parameter set
 
             board_set_rtc_register(DFU_RTC_SIGNATURE, RTC_SIGNATURE_REG);
 
@@ -689,7 +690,7 @@ void Scheduler::_set_10s_flag(){
 #endif
 
 /*
-[    common realization of all Device.PeriodicCallback;
+[    common implementation of all Device.PeriodicCallback;
 */
 
 AP_HAL::Device::PeriodicHandle Scheduler::_register_timer_task(uint32_t period_us, Handler proc, F4Light::Semaphore *sem){
@@ -736,7 +737,7 @@ bool Scheduler::unregister_timer_task(AP_HAL::Device::PeriodicHandle h)
 //[ -------- preemptive multitasking --------
 
 
-#if 0 // однажды назначенные задачи никто не отменяет
+#if 0 // once started tasks are never ended
 
 task_t* Scheduler::get_empty_task(){
     task_t* ptr = &s_main;
@@ -995,7 +996,7 @@ task_t *Scheduler::get_next_task(){
             ptr = ptr->next; // Next task in run queue will continue
 
 #if !defined(USE_MPU) || 1 
-            if(ptr->guard != STACK_GUARD){ // проверим сохранность дескриптора
+            if(ptr->guard != STACK_GUARD){ // check for TCB is not damaged
                 printf("PANIC: stack guard spoiled in process %d (from %d)\n", task->id, me->id);
                 dequeue_task(*ptr); // исключить задачу из планирования
                 goto skip_task;    // skip this tasks
@@ -1072,9 +1073,9 @@ task_t *Scheduler::get_next_task(){
                 // task loose tick
                 if(task->priority != 255) { // not for idle task
                     if(task->curr_prio>1)  task->curr_prio--;      // increase priority if task loose tick
-// в результате роста приоритета ожидающей задачи мы не останавливаем низкоприоритетные задачи полностью, а лишь замедляем их
-// выполнение, заставляя пропустить число тиков, равное разности приоритетов. В результате низкоприоритетная задача выполняется на меньшей скорости,
-// которую можно настраивать изменением разницы приоритетов
+// as a result of the rising priority of the waiting task, we do not completely stop the low priority tasks, but only slow them down
+// execution, forcing to skip the number of ticks equal to the priority difference. As a result, the low priority task is performed at a lower speed,
+// which can be adjusted by changing the priority difference                    
                 }
                 task = ptr; // winner
             } else { // ptr loose a chance - increase priority
@@ -1172,7 +1173,7 @@ void Scheduler::yield(uint16_t ttw) // time to wait
 
 // if yield() called with a time, then task don't want to run all this time so exclude it from time sliceing
     if(ttw) { // ttw cleared on sleep exit so always 0 if not set specially 
-        s_running->ttw=ttw;   // если переключение задачи происходит между записью и вызовом svc, мы всего лишь добавляем лишний тик
+        s_running->ttw=ttw;   // if switching tasks occurs between writing and calling svc, we just add an extra tick
     }
     asm volatile("svc 0");
 }
@@ -1241,7 +1242,7 @@ void Scheduler::_ioc_timer_event(uint32_t v){ // isr at low priority to do all I
 #endif
 
 #ifdef MTASK_PROF
-// исключить время работы прерывания из времени задачи, которую оно прервало
+// To exclude the interruption time from the task's time, which it interrupted
     s_running->in_isr += full_t;
 #endif
 
@@ -1384,12 +1385,12 @@ void Scheduler::_switch_task(){
 
 ////////////////////////////////////
 /*
-union Revo_handler { // кровь кишки ассемблер :) преобразование функторов в унифицированный вид для вызова из С
+union Revo_handler { // blood, bowels, assembler :) transform functors into a unified view for calling from C
     voidFuncPtr vp;
-    AP_HAL::MemberProc mp;          это С а не С++ поэтому мы не можем объявить поддержку функторов явно, и вынуждены передавать
-    uint64_t h; // treat as handle             <-- как 64-битное число
-    uint32_t w[2]; // words, to check. если функтор то старшее - адрес флеша, младшее - адрес в RAM. 
-                                       Если ссылка на функцию то младшее - адрес флеша, старше 0
+    AP_HAL::MemberProc mp;          this is C not C ++, so we can not declare the support of functors explicitly, and are forced to pass
+    uint64_t h; // treat as handle             <-- as 64-bit integer
+    uint32_t w[2]; // words, to check. if this is a functor then the high is the address of the flash and the lower one is the address in RAM.
+                                       if this is a function pointer then lower word is an address in flash and high is 0
 };
 */
 

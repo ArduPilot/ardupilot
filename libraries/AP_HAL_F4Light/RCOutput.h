@@ -61,7 +61,7 @@ public:
     static void _set_output_mode(enum output_mode mode);
     
     static void do_4way_if(AP_HAL::UARTDriver* uart);
-/*
+/* can be overrided
     void     set_safety_pwm(uint32_t chmask, uint16_t period_us) override;
     void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us) override;
     bool     force_safety_on(void) override;
