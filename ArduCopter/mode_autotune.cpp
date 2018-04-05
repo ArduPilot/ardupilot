@@ -1186,7 +1186,7 @@ inline bool Copter::ModeAutoTune::yaw_enabled() {
 
 // twitching_test_rate - twitching tests
 // update min and max and test for end conditions
-void Copter::ModeAutoTune::twitching_test_rate(float rate, float rate_target, float &meas_rate_min, float &meas_rate_max)
+void Copter::ModeAutoTune::twitching_test_rate(float rate, float rate_target_max, float &meas_rate_min, float &meas_rate_max)
 {
     // capture maximum rate
     if (rate > meas_rate_max) {
@@ -1196,25 +1196,25 @@ void Copter::ModeAutoTune::twitching_test_rate(float rate, float rate_target, fl
     }
 
     // capture minimum measurement after the measurement has peaked (aka "bounce back")
-    if ((rate < meas_rate_min) && (meas_rate_max > rate_target * 0.5f)) {
+    if ((rate < meas_rate_min) && (meas_rate_max > rate_target_max * 0.5f)) {
         // the measurement is bouncing back
         meas_rate_min = rate;
     }
 
     // calculate early stopping time based on the time it takes to get to 90%
-    if (meas_rate_max < rate_target * 0.75f) {
+    if (meas_rate_max < rate_target_max * 0.75f) {
         // the measurement not reached the 90% threshold yet
         step_stop_time = step_start_time + (millis() - step_start_time) * 3.0f;
         step_stop_time = MIN(step_stop_time, step_start_time + AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
 
-    if (meas_rate_max > rate_target) {
-        // the measured rate has passed the target rate
+    if (meas_rate_max > rate_target_max) {
+        // the measured rate has passed the maximum target rate
         step = UPDATE_GAINS;
     }
 
     if (meas_rate_max-meas_rate_min > meas_rate_max*g.autotune_aggressiveness) {
-        // the measurement has passed 50% of the target rate and bounce back is larger than the threshold
+        // the measurement has passed 50% of the maximum rate and bounce back is larger than the threshold
         step = UPDATE_GAINS;
     }
 
@@ -1226,48 +1226,48 @@ void Copter::ModeAutoTune::twitching_test_rate(float rate, float rate_target, fl
 
 // twitching_test_angle - twitching tests
 // update min and max and test for end conditions
-void Copter::ModeAutoTune::twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max)
+void Copter::ModeAutoTune::twitching_test_angle(float angle, float rate, float angle_target_max, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max)
 {
-    // capture maximum measurement
+    // capture maximum angle
     if (angle > meas_angle_max) {
-        // the measurement is continuing to increase without stopping
+        // the angle still increasing
         meas_angle_max = angle;
+        meas_angle_min = angle;
+    }
+
+    // capture minimum angle after we have reached a reasonable maximum angle
+    if ((angle < meas_angle_min) && (meas_angle_max > angle_target_max * 0.5f)) {
+        // the measurement is bouncing back
         meas_angle_min = angle;
     }
 
     // capture maximum rate
     if (rate > meas_rate_max) {
-        // the measurement is continuing to increase without stopping
+        // the measurement is still increasing
         meas_rate_max = rate;
         meas_rate_min = rate;
     }
 
-    // capture maximum rate
+    // capture minimum rate after we have reached maximum rate
     if (rate < meas_rate_min) {
-        // the measurement is continuing to increase without stopping
+        // the measurement is still decreasing
         meas_rate_min = rate;
     }
 
-    // capture minimum measurement after the measurement has peaked (aka "bounce back")
-    if ((angle < meas_angle_min) && (meas_angle_max > angle_target * 0.5f)) {
-        // the measurement is bouncing back
-        meas_angle_min = angle;
-    }
-
     // calculate early stopping time based on the time it takes to get to 90%
-    if (meas_angle_max < angle_target * 0.75f) {
+    if (meas_angle_max < angle_target_max * 0.75f) {
         // the measurement not reached the 90% threshold yet
         step_stop_time = step_start_time + (millis() - step_start_time) * 3.0f;
         step_stop_time = MIN(step_stop_time, step_start_time + AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
 
-    if (meas_angle_max > angle_target) {
-        // the measurement has passed the target
+    if (meas_angle_max > angle_target_max) {
+        // the measurement has passed the maximum angle
         step = UPDATE_GAINS;
     }
 
     if (meas_angle_max-meas_angle_min > meas_angle_max*g.autotune_aggressiveness) {
-        // the measurement has passed 50% of the target and bounce back is larger than the threshold
+        // the measurement has passed 50% of the maximum angle and bounce back is larger than the threshold
         step = UPDATE_GAINS;
     }
 
@@ -1412,14 +1412,14 @@ void Copter::ModeAutoTune::updating_rate_p_up_d_down(float &tune_d, float tune_d
         }
         // decrease D gain (which should decrease bounce back)
         tune_d -= tune_d*tune_d_step_ratio;
-        // stop tuning if we hit minimum D
+        // do not decrease the D term past the minimum
         if (tune_d <= tune_d_min) {
             tune_d = tune_d_min;
             Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
         }
         // decrease P gain to match D gain reduction
         tune_p -= tune_p*tune_p_step_ratio;
-        // stop tuning if we hit minimum P
+        // do not decrease the P term past the minimum
         if (tune_p <= tune_p_min) {
             tune_p = tune_p_min;
             Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
@@ -1450,7 +1450,7 @@ void Copter::ModeAutoTune::updating_rate_p_up_d_down(float &tune_d, float tune_d
 // P is decreased to ensure we are not overshooting the target
 void Copter::ModeAutoTune::updating_angle_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max)
 {
-    if ((meas_angle_max < angle_target*(1+0.5f*g.autotune_aggressiveness)) && (fabs(meas_rate_min) < meas_rate_max*g.autotune_aggressiveness)) {
+    if ((meas_angle_max < angle_target*(1+0.5f*g.autotune_aggressiveness)) && (meas_rate_min > -meas_rate_max*g.autotune_aggressiveness)) {
         if (ignore_next == false) {
             // if maximum measurement was lower than target so increment the success counter
             counter++;
@@ -1479,7 +1479,7 @@ void Copter::ModeAutoTune::updating_angle_p_down(float &tune_p, float tune_p_min
 // P is increased until we achieve our target within a reasonable time
 void Copter::ModeAutoTune::updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max)
 {
-    if ((meas_angle_max > angle_target*(1+0.5f*g.autotune_aggressiveness)) || (fabs(meas_rate_min) > meas_rate_max*g.autotune_aggressiveness)) {
+    if ((meas_angle_max > angle_target*(1+0.5f*g.autotune_aggressiveness)) || (meas_rate_min < -meas_rate_max*g.autotune_aggressiveness)) {
         // ignore the next result unless it is the same as this one
         ignore_next = 1;
         // if maximum measurement was greater than target so increment the success counter
