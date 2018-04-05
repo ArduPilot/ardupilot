@@ -15,7 +15,6 @@ public:
 
 private:
     AP_InertialSensor ins;
-    AP_Baro baro;
     AP_GPS  gps;
     Compass compass;
     AP_AHRS_DCM ahrs{};

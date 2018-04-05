@@ -51,6 +51,9 @@
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
+#define BARO_LOOP_FREQ    10.f                  // low pass filter frequency for GPS data in Hz
+#define ADJ_RATE_DEFAULT  0                     // disabled
+#define ADJ_TC_DEFAULT    300                   // default GPS filtering TC (=5 minutes)
 
 extern const AP_HAL::HAL& hal;
 
@@ -137,6 +140,22 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // Slot 12 used to be TEMP3
 #endif
 
+    // @Param: ADJ_RATE
+    // @DisplayName: baro adjustment rate
+    // @Description: Rate of barometer adjustment using GPS. If enabled (>=0.1), the barometer ground pressure is slowly adjusted with GPS altitude.  Recommended value: 1cm/sec
+    // @Units: m/s
+    // @Range: 0 1
+    // @Increment: 0.01
+    AP_GROUPINFO("ADJ_RATE", 13, AP_Baro, _gps_adj_step, ADJ_RATE_DEFAULT),
+
+    // @Param: ADJ_TC
+    // @DisplayName: GPS filter time constant
+    // @Description: Time constant for the low pass filter applied to the GPS signal. As we only want to compensate for long-term trends, the should be fairly large (30sec...several mintes)
+    // @Units: s
+    // @Range: 10 600
+    // @Increment: 1
+    AP_GROUPINFO("ADJ_TC", 14, AP_Baro, _gps_adj_timeconstant, ADJ_TC_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -151,6 +170,10 @@ AP_Baro::AP_Baro()
     _instance = this;
     
     AP_Param::setup_object_defaults(this, var_info);
+    
+    for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
+        _gps_alt_error[i].set_cutoff_frequency(BARO_LOOP_FREQ, 1.f/float(_gps_adj_timeconstant.get()));
+    }
 }
 
 // calibrate the barometer. This must be called at least once before
@@ -222,6 +245,8 @@ void AP_Baro::calibrate(bool save)
 
     _guessed_ground_temperature = get_external_temperature();
 
+    update_gps_calibration();
+    
     // panic if all sensors are not calibrated
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].calibrated) {
@@ -256,8 +281,32 @@ void AP_Baro::update_calibration()
     // always update the guessed ground temp
     _guessed_ground_temperature = get_external_temperature();
 
+    update_gps_calibration();
+    
     // force EAS2TAS to recalculate
     _EAS2TAS = 0;
+
+    // reset alt offset on calibration
+    _alt_offset.set_and_save(0);
+}
+
+// calibrate reference GPS altitude
+void AP_Baro::update_gps_calibration()
+{
+    float vacc;
+    const bool gps_vacc_ret = AP_GPS::gps().vertical_accuracy(vacc);
+
+    // Make sure the vertical accuracy is within limits
+    if (gps_vacc_ret && vacc < BARO_MAX_GPS_ACCURACY && AP_GPS::gps().is_healthy()) {
+        const Location loc = AP_GPS::gps().location();
+        _gps_calibration_altitude = float(loc.alt) / 100.0;
+        for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
+            _gps_alt_error[i].reset();
+        }
+        _gps_calibrated = true;
+    } else {
+        _gps_calibrated = false;
+    }
 }
 
 // return altitude difference in meters between current pressure and a
@@ -330,7 +379,6 @@ float AP_Baro::get_ground_temperature(void) const
         return _user_ground_temperature;
     }
 }
-
 
 /*
   set external temperature to be used for calibration (degrees C)
@@ -590,11 +638,27 @@ void AP_Baro::update(void)
         }
     }
 
+    // find current GPS altitude
+    float gps_alt = 0.0f;
+    bool process_gps_alt = false;
+    if (!is_zero(_gps_adj_step) && _gps_calibrated) {
+        float gps_vacc;
+        if (AP_GPS::gps().vertical_accuracy(gps_vacc)) {
+            if (gps_vacc < BARO_MAX_GPS_ACCURACY && AP_GPS::gps().is_healthy()) {
+                const Location loc = AP_GPS::gps().location();
+                gps_alt = float(loc.alt) * 1e-2;
+                process_gps_alt = true;
+            }
+        }
+    }
+
+    const float gps_adj_step = float(_gps_adj_step) / BARO_LOOP_FREQ;
+
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].healthy) {
             // update altitude calculation
-            float ground_pressure = sensors[i].ground_pressure;
-            if (!is_positive(ground_pressure) || isnan(ground_pressure) || isinf(ground_pressure)) {
+            const float ground_pressure = sensors[i].ground_pressure;
+            if (is_zero(ground_pressure) || isnan(ground_pressure) || isinf(ground_pressure)) {
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
             float altitude = sensors[i].altitude;
@@ -608,8 +672,31 @@ void AP_Baro::update(void)
             }
             // sanity check altitude
             sensors[i].alt_ok = !(isnan(altitude) || isinf(altitude));
+
             if (sensors[i].alt_ok) {
-                sensors[i].altitude = altitude + _alt_offset_active;
+                altitude += _alt_offset_active;
+
+                if (process_gps_alt) {
+                    // calculation of actual error based on current and calibrated GPS altitude
+                    const float gps_err = gps_alt - _gps_calibration_altitude - altitude;
+
+                    // limitation of error magnitude
+                    float prev_err = _gps_alt_error[i].get();
+                    const float constr_gps_err_diff = constrain_value(gps_err - prev_err, -BARO_GPS_MAX_ERR, BARO_GPS_MAX_ERR);
+
+                    // limitation of error change rate
+                    _gps_alt_error[i].apply(prev_err + constr_gps_err_diff);
+                    prev_err += constrain_value(_gps_alt_error[i].get() - prev_err, -gps_adj_step, gps_adj_step);
+                    _gps_alt_error[i].reset(prev_err);
+                }
+
+                sensors[i].altitude = altitude;
+
+                if (_gps_calibrated) {
+                    // if the GPS lock is lost - there should not be a step change, so
+                    // continue to add last known correction
+                    sensors[i].altitude += _gps_alt_error[i].get();
+                }
             }
         }
         if (_hil.have_alt) {

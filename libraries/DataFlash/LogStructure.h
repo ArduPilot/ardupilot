@@ -327,6 +327,7 @@ struct PACKED log_BARO {
     uint32_t sample_time_ms;
     float   drift_offset;
     float   ground_temp;
+    float   gps_corr;
 };
 
 struct PACKED log_AHRS {
@@ -1064,10 +1065,10 @@ struct PACKED log_DSTL {
 #define ACC_MULTS "FF000"
 
 // see "struct sensor" in AP_Baro.h and "Log_Write_Baro":
-#define BARO_LABELS "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp"
-#define BARO_FMT   "QffcfIff"
-#define BARO_UNITS "smPOnsmO"
-#define BARO_MULTS "F00B0C?0"
+#define BARO_LABELS "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp,GPSCr"
+#define BARO_FMT   "QffcfIfff"
+#define BARO_UNITS "smPOnsmOm"
+#define BARO_MULTS "F00B0C?00"
 
 #define ESC_LABELS "TimeUS,RPM,Volt,Curr,Temp"
 #define ESC_FMT   "Qcccc"
