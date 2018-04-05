@@ -22,7 +22,7 @@ void Copter::read_inertia()
     } else {
         // with inertial nav we can update the altitude and climb rate at 50hz
         float alt;
-        if (pv_alt_above_home(inertial_nav.get_altitude(), alt)) {
+        if (ahrs.pv_alt_above_home(inertial_nav.get_altitude(), alt)) {
             current_loc.alt = alt;
         } else {
             current_loc.alt = 0.0f; // retain compatability with inertial_nav

@@ -27,7 +27,6 @@ Copter::Copter(void)
     : DataFlash(fwver.fw_string, g.log_bitmask),
     flight_modes(&g.flight_mode1),
     control_mode(STABILIZE),
-    scaleLongDown(1),
     simple_cos_yaw(1.0f),
     super_simple_cos_yaw(1.0),
     land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),

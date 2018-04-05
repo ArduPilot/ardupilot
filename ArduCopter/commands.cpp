@@ -82,8 +82,6 @@ bool Copter::set_home(const Location& loc, bool lock)
 
     // init inav and compass declination
     if (!ahrs.home_is_set()) {
-        // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
-        scaleLongDown = longitude_scale(loc);
         // record home is set
         ahrs.set_home_status(HOME_SET_NOT_LOCKED);
         Log_Write_Event(DATA_SET_HOME);

@@ -1407,7 +1407,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 pos_vector += copter.inertial_nav.get_position();
             } else {
                 // convert from alt-above-home to alt-above-ekf-origin
-                if (!copter.pv_alt_above_origin(pos_vector.z, pos_vector.z)) {
+                if (!copter.ahrs.pv_alt_above_origin(pos_vector.z, pos_vector.z)) {
                     break;
                 }
             }
@@ -1524,7 +1524,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                     loc.flags.terrain_alt = false;
                     break;
             }
-            if (!copter.pv_location_to_vector(loc, pos_neu_cm)) {
+            if (!copter.ahrs.pv_location_to_vector(loc, pos_neu_cm)) {
                 break;
             }
         }

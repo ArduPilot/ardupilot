@@ -414,9 +414,6 @@ private:
     const struct AP_Param::GroupInfo *motors_var_info;
 
     // GPS variables
-    // Sometimes we need to remove the scaling for distance calcs
-    float scaleLongDown;
-
     int32_t _home_bearing;
     uint32_t _home_distance;
 
@@ -881,12 +878,6 @@ private:
     // Parameters.cpp
     void load_parameters(void);
     void convert_pid_parameters(void);
-
-    // position_vector.cpp
-    bool pv_location_to_vector(const Location& loc, Vector3f &ret);
-    bool pv_alt_above_origin(float alt_above_home_cm, float &ret);
-    bool pv_alt_above_home(float alt_above_origin_cm, float &ret);
-    bool pv_distance_to_home_cm(const Vector3f &destination, float &ret);
 
     // precision_landing.cpp
     void init_precland();
