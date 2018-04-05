@@ -318,9 +318,6 @@ void Copter::ModeAutoTune::run()
     float target_yaw_rate;
     int16_t target_climb_rate;
 
-    // tell the user what's going on
-    do_gcs_announcements();
-
     // initialize vertical speeds and acceleration
     pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control->set_accel_z(g.pilot_accel_z);
@@ -410,6 +407,8 @@ void Copter::ModeAutoTune::run()
         }else{
             // somehow get attitude requests from autotuning
             autotune_attitude_control();
+            // tell the user what's going on
+            do_gcs_announcements();
         }
 
         // call position controller
