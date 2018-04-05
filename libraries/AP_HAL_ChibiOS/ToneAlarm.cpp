@@ -72,7 +72,7 @@ void ToneAlarm::stop()
 
 bool ToneAlarm::play()
 {
-    uint16_t cur_time = AP_HAL::millis();
+    const uint32_t cur_time = AP_HAL::millis();
     if(tune_num != prev_tune_num) {
         stop();
         tune_changed = true;
