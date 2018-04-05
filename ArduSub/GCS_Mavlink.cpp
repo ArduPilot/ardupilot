@@ -1327,7 +1327,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 pos_vector += sub.inertial_nav.get_position();
             } else {
                 // convert from alt-above-home to alt-above-ekf-origin
-                pos_vector.z = sub.pv_alt_above_origin(pos_vector.z);
+                if (!sub.ahrs.pv_alt_above_origin(pos_vector.z, pos_vector.z)) {
+                    break;
+                }
             }
         }
 
@@ -1426,7 +1428,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                 loc.flags.terrain_alt = false;
                 break;
             }
-            pos_neu_cm = sub.pv_location_to_vector(loc);
+            if (!sub.ahrs.pv_location_to_vector(loc, pos_neu_cm)) {
+                break;
+            }
         }
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {

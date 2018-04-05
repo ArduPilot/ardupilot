@@ -550,8 +550,11 @@ void Sub::set_auto_yaw_roi(const Location &roi_location)
 #if MOUNT == ENABLED
         // check if mount type requires us to rotate the quad
         if (!camera_mount.has_pan_control()) {
-            roi_WP = pv_location_to_vector(roi_location);
-            set_auto_yaw_mode(AUTO_YAW_ROI);
+            if (ahrs.pv_location_to_vector(roi_location, roi_WP)) {
+                set_auto_yaw_mode(AUTO_YAW_ROI);
+            } else {
+                set_auto_yaw_mode(AUTO_YAW_HOLD);
+            }
         }
         // send the command to the camera mount
         camera_mount.set_roi_target(roi_location);
@@ -564,8 +567,11 @@ void Sub::set_auto_yaw_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the quad at the location
-        roi_WP = pv_location_to_vector(roi_location);
-        set_auto_yaw_mode(AUTO_YAW_ROI);
+        if (ahrs.pv_location_to_vector(roi_location, roi_WP)) {
+            set_auto_yaw_mode(AUTO_YAW_ROI);
+        } else {
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
 #endif  // MOUNT == ENABLED
     }
 }

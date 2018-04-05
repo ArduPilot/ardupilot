@@ -662,8 +662,11 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     if (auto_mode == Auto_CircleMoveToEdge) {
         if (wp_nav.reached_wp_destination()) {
             Vector3f curr_pos = inertial_nav.get_position();
-            Vector3f circle_center = pv_location_to_vector(cmd.content.location);
-
+            Vector3f circle_center;
+            if (!ahrs.pv_location_to_vector(cmd.content.location, circle_center)) {
+                // who knows?  Let's say yes.
+                return true;
+            }
             // set target altitude if not provided
             if (is_zero(circle_center.z)) {
                 circle_center.z = curr_pos.z;
