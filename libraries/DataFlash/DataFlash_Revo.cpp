@@ -458,21 +458,12 @@ void DataFlash_Revo::ReadManufacturerID()
     if (!cs_assert()) return;
 
     // Read manufacturer and ID command...
-#if 0
-    spi_write(JEDEC_DEVICE_ID); //
-
-    df_manufacturer = spi_read();
-    df_device = spi_read(); //memorytype
-    df_device = (df_device << 8) | spi_read(); //capacity
-    spi_read(); // ignore 4th byte
-#else
     cmd[0] = JEDEC_DEVICE_ID;
 
     _spi->transfer(cmd, 1, buffer[1], 4);
 
     df_manufacturer =  buffer[1][0];
     df_device       = (buffer[1][1] << 8) | buffer[1][2]; //capacity
-#endif
 
     cs_release();
 }
@@ -1019,7 +1010,7 @@ void DataFlash_Revo::ListAvailableLogs(AP_HAL::BetterStream *port)
             break;
         }
     }
-    port->println();
+    port->println("");
 }
 
 #endif
