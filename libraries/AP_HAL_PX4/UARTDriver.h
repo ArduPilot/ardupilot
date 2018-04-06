@@ -58,7 +58,11 @@ public:
       A return value of zero means the HAL does not support this API
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
-    
+
+    uint32_t bw_in_kilobytes_per_second() const override {
+        return _baudrate/(9*1024);
+    }
+
 private:
     const char *_devpath;
     int _fd;
