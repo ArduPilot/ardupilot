@@ -581,9 +581,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
 NavEKF3::NavEKF3(const AP_AHRS *ahrs, const RangeFinder &rng) :
     _ahrs(ahrs),
-    _rng(rng),
-    runCoreSelection(false),        // true when the default primary core has stabilised after startup and core selection can run
-    inhibitGpsVertVelUse(false)     // true when GPS vertical velocity use is prohibited
+    _rng(rng)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
