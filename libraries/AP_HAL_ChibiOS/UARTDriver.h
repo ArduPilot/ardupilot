@@ -96,7 +96,14 @@ public:
       A return value of zero means the HAL does not support this API
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
-    
+
+    uint32_t bw_in_kilobytes_per_second() const override {
+        if (sdef.is_usb) {
+            return 200;
+        }
+        return _baudrate/(9*1024);
+    }
+
 private:
     bool tx_bounce_buf_ready;
     const SerialDef &sdef;
