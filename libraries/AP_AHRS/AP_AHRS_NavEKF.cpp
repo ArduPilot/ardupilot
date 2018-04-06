@@ -1642,5 +1642,11 @@ uint8_t AP_AHRS_NavEKF::get_primary_gyro_index(void) const
     return AP::ins().get_primary_gyro();
 }
 
+
+AP_AHRS_NavEKF &AP::ahrs_navekf()
+{
+    return static_cast<AP_AHRS_NavEKF&>(*AP_AHRS::get_singleton());
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
