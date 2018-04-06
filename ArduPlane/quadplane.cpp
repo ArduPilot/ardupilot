@@ -1931,12 +1931,15 @@ void QuadPlane::vtol_position_controller(void)
 void QuadPlane::setup_target_position(void)
 {
     const Location &loc = plane.next_WP_loc;
-    Location origin = inertial_nav.get_origin();
-    Vector2f diff2d;
+    Location origin = {};
+    // Notionally get_origin may fail, leaving origin all-zeroes here.
+    // In practise you shouldn't be able to get here without an origin
+    // having been set.
+    ahrs.get_origin(origin);
 
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    diff2d = location_diff(origin, loc);
+    const Vector2f diff2d = location_diff(origin, loc);
     poscontrol.target.x = diff2d.x * 100;
     poscontrol.target.y = diff2d.y * 100;
     poscontrol.target.z = plane.next_WP_loc.alt - origin.alt;
