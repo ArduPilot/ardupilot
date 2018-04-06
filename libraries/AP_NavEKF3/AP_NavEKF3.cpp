@@ -816,7 +816,7 @@ int8_t NavEKF3::getPrimaryCoreIMUIndex(void) const
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF3::getPosNE(int8_t instance, Vector2f &posNE)
+bool NavEKF3::getPosNE(int8_t instance, Vector2f &posNE) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
@@ -828,7 +828,7 @@ bool NavEKF3::getPosNE(int8_t instance, Vector2f &posNE)
 // Write the last calculated D position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF3::getPosD(int8_t instance, float &posD)
+bool NavEKF3::getPosD(int8_t instance, float &posD) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
@@ -838,7 +838,7 @@ bool NavEKF3::getPosD(int8_t instance, float &posD)
 }
 
 // return NED velocity in m/s
-void NavEKF3::getVelNED(int8_t instance, Vector3f &vel)
+void NavEKF3::getVelNED(int8_t instance, Vector3f &vel) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -847,7 +847,7 @@ void NavEKF3::getVelNED(int8_t instance, Vector3f &vel)
 }
 
 // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
-float NavEKF3::getPosDownDerivative(int8_t instance)
+float NavEKF3::getPosDownDerivative(int8_t instance) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     // return the value calculated from a complementary filer applied to the EKF height and vertical acceleration
@@ -866,7 +866,7 @@ void NavEKF3::getAccelNED(Vector3f &accelNED) const
 }
 
 // return body axis gyro bias estimates in rad/sec
-void NavEKF3::getGyroBias(int8_t instance, Vector3f &gyroBias)
+void NavEKF3::getGyroBias(int8_t instance, Vector3f &gyroBias) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -875,7 +875,7 @@ void NavEKF3::getGyroBias(int8_t instance, Vector3f &gyroBias)
 }
 
 // return accelerometer bias estimate in m/s/s
-void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias)
+void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -884,7 +884,7 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias)
 }
 
 // return tilt error convergence metric for the specified instance
-void NavEKF3::getTiltError(int8_t instance, float &ang)
+void NavEKF3::getTiltError(int8_t instance, float &ang) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -944,7 +944,7 @@ void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-void NavEKF3::getWind(int8_t instance, Vector3f &wind)
+void NavEKF3::getWind(int8_t instance, Vector3f &wind) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -953,7 +953,7 @@ void NavEKF3::getWind(int8_t instance, Vector3f &wind)
 }
 
 // return earth magnetic field estimates in measurement units / 1000
-void NavEKF3::getMagNED(int8_t instance, Vector3f &magNED)
+void NavEKF3::getMagNED(int8_t instance, Vector3f &magNED) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -962,7 +962,7 @@ void NavEKF3::getMagNED(int8_t instance, Vector3f &magNED)
 }
 
 // return body magnetic field estimates in measurement units / 1000
-void NavEKF3::getMagXYZ(int8_t instance, Vector3f &magXYZ)
+void NavEKF3::getMagXYZ(int8_t instance, Vector3f &magXYZ) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -971,7 +971,7 @@ void NavEKF3::getMagXYZ(int8_t instance, Vector3f &magXYZ)
 }
 
 // return the magnetometer in use for the specified instance
-uint8_t NavEKF3::getActiveMag(int8_t instance)
+uint8_t NavEKF3::getActiveMag(int8_t instance) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1048,7 +1048,7 @@ bool NavEKF3::getHAGL(float &HAGL) const
 }
 
 // return the Euler roll, pitch and yaw angle in radians for the specified instance
-void NavEKF3::getEulerAngles(int8_t instance, Vector3f &eulers)
+void NavEKF3::getEulerAngles(int8_t instance, Vector3f &eulers) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1074,7 +1074,7 @@ void NavEKF3::getQuaternion(int8_t instance, Quaternion &quat) const
 }
 
 // return the innovations for the specified instance
-void NavEKF3::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov)
+void NavEKF3::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1092,7 +1092,7 @@ void NavEKF3::getOutputTrackingError(int8_t instance, Vector3f &error) const
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-void NavEKF3::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset)
+void NavEKF3::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1101,7 +1101,7 @@ void NavEKF3::getVariances(int8_t instance, float &velVar, float &posVar, float 
 }
 
 // return the diagonals from the covariance matrix for the specified instance
-void NavEKF3::getStateVariances(int8_t instance, float stateVar[24])
+void NavEKF3::getStateVariances(int8_t instance, float stateVar[24]) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1137,7 +1137,7 @@ void NavEKF3::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, 
 
 // return data for debugging optical flow fusion
 void NavEKF3::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov,
-                           float &HAGL, float &rngInnov, float &range, float &gndOffsetErr)
+                           float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1182,7 +1182,7 @@ void NavEKF3::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms,
 }
 
 // return data for debugging body frame odometry fusion
-uint32_t NavEKF3::getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vector3f &velInnovVar)
+uint32_t NavEKF3::getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vector3f &velInnovVar) const
 {
     uint32_t ret = 0;
     if (instance < 0 || instance >= num_cores) {
@@ -1198,7 +1198,7 @@ uint32_t NavEKF3::getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vec
 
 // return data for debugging range beacon fusion
 bool NavEKF3::getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED,
-                                  float &offsetHigh, float &offsetLow, Vector3f &posNED)
+                                  float &offsetHigh, float &offsetLow, Vector3f &posNED) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1254,7 +1254,7 @@ void NavEKF3::setTerrainHgtStable(bool val)
   7 = badly conditioned synthetic sideslip fusion
   7 = filter is not initialised
 */
-void NavEKF3::getFilterFaults(int8_t instance, uint16_t &faults)
+void NavEKF3::getFilterFaults(int8_t instance, uint16_t &faults) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1275,7 +1275,7 @@ void NavEKF3::getFilterFaults(int8_t instance, uint16_t &faults)
   7 = unassigned
   7 = unassigned
 */
-void NavEKF3::getFilterTimeouts(int8_t instance, uint8_t &timeouts)
+void NavEKF3::getFilterTimeouts(int8_t instance, uint8_t &timeouts) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1288,7 +1288,7 @@ void NavEKF3::getFilterTimeouts(int8_t instance, uint8_t &timeouts)
 /*
   return filter status flags
 */
-void NavEKF3::getFilterStatus(int8_t instance, nav_filter_status &status)
+void NavEKF3::getFilterStatus(int8_t instance, nav_filter_status &status) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1301,7 +1301,7 @@ void NavEKF3::getFilterStatus(int8_t instance, nav_filter_status &status)
 /*
 return filter gps quality check status
 */
-void  NavEKF3::getFilterGpsStatus(int8_t instance, nav_gps_status &status)
+void  NavEKF3::getFilterGpsStatus(int8_t instance, nav_gps_status &status) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1544,7 +1544,7 @@ void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 /*
   get timing statistics structure
 */
-void NavEKF3::getTimingStatistics(int8_t instance, struct ekf_timing &timing)
+void NavEKF3::getTimingStatistics(int8_t instance, struct ekf_timing &timing) const
 {
     if (instance < 0 || instance >= num_cores) {
         instance = primary;
