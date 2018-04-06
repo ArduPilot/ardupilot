@@ -1114,15 +1114,6 @@ AP_AdvancedFailsafe *GCS_MAVLINK_Rover::get_advanced_failsafe() const
 #endif
 }
 
-AP_VisualOdom *GCS_MAVLINK_Rover::get_visual_odom() const
-{
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    return &rover.g2.visual_odom;
-#else
-    return nullptr;
-#endif
-}
-
 bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
 {
     Mode *new_mode = rover.mode_from_mode_num((enum Mode::Number)mode);
