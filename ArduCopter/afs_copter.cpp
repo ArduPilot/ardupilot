@@ -8,7 +8,7 @@
 
 // Constructor
 AP_AdvancedFailsafe_Copter::AP_AdvancedFailsafe_Copter(AP_Mission &_mission, const AP_GPS &_gps, const RCMapper &_rcmap) :
-    AP_AdvancedFailsafe(_mission, _baro, _gps, _rcmap)
+    AP_AdvancedFailsafe(_mission, _gps, _rcmap)
 {}
 
 
