@@ -125,16 +125,13 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t pin)
 extern const AP_HAL::HAL& hal;
 
 /* 
-   Attach an interrupt handler to a GPIO pin number. The pin number
-   must be one specified with a GPIO() marker in hwdef.dat
+   Attach an interrupt handler to ioline_t
  */
-bool GPIO::attach_interrupt(uint8_t pin, AP_HAL::Proc p, uint8_t mode)
+bool GPIO::_attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode)
 {
-    struct gpio_entry *g = gpio_by_pin_num(pin, false);
-    if (!g) {
-        return false;
-    }
-    uint8_t pad = PAL_PAD(g->pal_line);
+    uint8_t pad = PAL_PAD(line);
+    // convert the line to a EXT_MODE_GPIOn value,  this is STM32 specific
+    uint8_t ext_port = uint32_t(PAL_PORT(line)) >> 24;
     if (p && ext_irq[pad] != nullptr && ext_irq[pad] != p) {
         // already used
         return false;
@@ -167,12 +164,25 @@ bool GPIO::attach_interrupt(uint8_t pin, AP_HAL::Proc p, uint8_t mode)
         _ext_started = false;
     }
     extcfg.channels[pad].mode = chmode;
-    extcfg.channels[pad].mode |= (p?EXT_CH_MODE_AUTOSTART:0) | g->port;
+    extcfg.channels[pad].mode |= (p?EXT_CH_MODE_AUTOSTART:0) | ext_port;
     ext_irq[pad] = p;
     extcfg.channels[pad].cb = ext_interrupt_cb;
     extStart(&EXTD1, &extcfg);
     _ext_started = true;
     return true;
+}
+
+/* 
+   Attach an interrupt handler to a GPIO pin number. The pin number
+   must be one specified with a GPIO() marker in hwdef.dat
+ */
+bool GPIO::attach_interrupt(uint8_t pin, AP_HAL::Proc p, uint8_t mode)
+{
+    struct gpio_entry *g = gpio_by_pin_num(pin, false);
+    if (!g) {
+        return false;
+    }
+    return _attach_interrupt(g->pal_line, p, mode);
 }
 
 bool GPIO::usb_connected(void)
@@ -208,18 +218,6 @@ void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel)
 {
     if (ext_irq[channel] != nullptr) {
         ext_irq[channel]();
-    }
-}
-
-/* 
-   set the output mode for a pin. Used to restore an alternate function
-   after using a pin as GPIO. Private to HAL_ChibiOS
-*/
-void GPIO::_set_mode(uint8_t pin, uint32_t mode)
-{
-    struct gpio_entry *g = gpio_by_pin_num(pin, false);
-    if (g) {
-        palSetLineMode(g->pal_line, mode);
     }
 }
 
