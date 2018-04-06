@@ -549,11 +549,6 @@ private:
     // last esc calibration notification update
     uint32_t esc_calibration_notify_update_ms;
 
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    // last visual odometry update time
-    uint32_t visual_odom_last_update_ms;
-#endif
-
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
@@ -837,7 +832,6 @@ private:
     void update_proximity();
     void update_sensor_status_flags(void);
     void init_visual_odom();
-    void update_visual_odom();
     void winch_init();
     void winch_update();
 
