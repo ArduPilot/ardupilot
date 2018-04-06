@@ -79,7 +79,7 @@ matrix:
     - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v2"
     - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v4"
+      env: CI_BUILD_TARGET="px4-v4 revo-mini"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest-copter"
     - compiler: "gcc"
