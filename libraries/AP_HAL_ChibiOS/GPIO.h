@@ -48,11 +48,8 @@ public:
 
     void set_usb_connected() { _usb_connected = true; }
 
-    /* 
-       set the output mode for a pin. Used to restore an alternate function
-       after using a pin as GPIO. Private to HAL_ChibiOS
-    */
-    void _set_mode(uint8_t pin, uint32_t mode);
+    /* attach interrupt via ioline_t */
+    bool _attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode);
     
 private:
     bool _usb_connected;

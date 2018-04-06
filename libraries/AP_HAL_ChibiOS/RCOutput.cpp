@@ -1171,15 +1171,10 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
         return 0;
     }
     pwm_group &group = *serial_group;
-    uint8_t chan = group.chan[group.serial.chan];
+    const ioline_t line = group.pal_lines[group.serial.chan];
     uint32_t gpio_mode = PAL_MODE_INPUT_PULLUP;
     uint32_t restore_mode = PAL_MODE_ALTERNATE(group.alt_functions[group.serial.chan]) | PAL_STM32_OSPEED_MID2 | PAL_STM32_OTYPE_PUSHPULL;
     uint16_t i = 0;
-
-#ifndef HAL_GPIO_LINE_GPIO50
-    // GPIO lines not setup for PWM outputs in hwdef.dat
-    return false;
-#endif
 
 #if RCOU_SERIAL_TIMING_DEBUG
     hal.gpio->pinMode(54, 1);
@@ -1187,8 +1182,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 #endif
     
     // assume GPIO mappings for PWM outputs start at 50
-    const uint8_t gpio_pin = 50 + chan;
-    ((GPIO *)hal.gpio)->_set_mode(gpio_pin, gpio_mode);
+    palSetLineMode(line, gpio_mode);
 
     chEvtGetAndClearEvents(serial_event_mask);
 
@@ -1204,7 +1198,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     palWriteLine(HAL_GPIO_LINE_GPIO54, 1);
 #endif
     
-    if (!hal.gpio->attach_interrupt(gpio_pin, serial_bit_irq, HAL_GPIO_INTERRUPT_BOTH)) {
+    if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, HAL_GPIO_INTERRUPT_BOTH)) {
 #if RCOU_SERIAL_TIMING_DEBUG
         palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
@@ -1217,10 +1211,10 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
         }
     }
 
-    hal.gpio->attach_interrupt(gpio_pin, nullptr, 0);
+    ((GPIO *)hal.gpio)->_attach_interrupt(line, nullptr, 0);
     irq.waiter = nullptr;
     
-    ((GPIO *)hal.gpio)->_set_mode(gpio_pin, restore_mode);
+    palSetLineMode(line, restore_mode);
 #if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
