@@ -19,6 +19,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <GCS_MAVLink/GCS.h>
 
 class AP_VisualOdom_Backend;
 
@@ -30,6 +31,11 @@ public:
     friend class AP_VisualOdom_Backend;
 
     AP_VisualOdom();
+
+    // get singleton instance
+    static AP_VisualOdom *get_singleton() {
+        return _singleton;
+    }
 
     // external position backend types (used by _TYPE parameter)
     enum AP_VisualOdom_Type {
@@ -72,6 +78,8 @@ public:
 
 private:
 
+    static AP_VisualOdom *_singleton;
+
     // parameters
     AP_Int8 _type;
     AP_Vector3f _pos_offset;    // position offset of the camera in the body frame
@@ -82,4 +90,8 @@ private:
 
     // state of backend
     VisualOdomState _state;
+};
+
+namespace AP {
+    AP_VisualOdom *visualodom();
 };

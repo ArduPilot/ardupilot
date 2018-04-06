@@ -61,6 +61,11 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
 AP_VisualOdom::AP_VisualOdom()
 {
     AP_Param::setup_object_defaults(this, var_info);
+    if (_singleton != nullptr) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "BUG: multiple VisualOdometrys not allowed");
+        return;
+    }
+    _singleton = this;
 }
 
 // detect and initialise any sensors
@@ -103,3 +108,14 @@ void AP_VisualOdom::handle_msg(mavlink_message_t *msg)
     }
 }
 
+// singleton instance
+AP_VisualOdom *AP_VisualOdom::_singleton;
+
+namespace AP {
+
+AP_VisualOdom *visualodom()
+{
+    return AP_VisualOdom::get_singleton();
+}
+
+}
