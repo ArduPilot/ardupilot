@@ -399,9 +399,9 @@ int32_t Copter::Mode::get_alt_above_ground(void)
 
 void Copter::Mode::land_run_vertical_control(bool pause_descent)
 {
+#if PRECISION_LANDING == ENABLED
     AC_PrecLand &precland = copter.precland;
 
-#if PRECISION_LANDING == ENABLED
     const bool navigating = pos_control->is_active_xy();
     bool doing_precision_landing = !ap.land_repo_active && precland.target_acquired() && navigating;
 #else
@@ -445,7 +445,6 @@ void Copter::Mode::land_run_vertical_control(bool pause_descent)
 
 void Copter::Mode::land_run_horizontal_control()
 {
-    AC_PrecLand &precland = copter.precland;
     LowPassFilterFloat &rc_throttle_control_in_filter = copter.rc_throttle_control_in_filter;
     AP_Vehicle::MultiCopter &aparm = copter.aparm;
 
@@ -486,6 +485,7 @@ void Copter::Mode::land_run_horizontal_control()
     }
 
 #if PRECISION_LANDING == ENABLED
+    AC_PrecLand &precland = copter.precland;
     bool doing_precision_landing = !ap.land_repo_active && precland.target_acquired();
     // run precision landing
     if (doing_precision_landing) {
