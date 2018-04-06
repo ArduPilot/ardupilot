@@ -336,9 +336,6 @@ private:
     // Store the time the last GPS message was received.
     uint32_t last_gps_msg_ms{0};
 
-    // last visual odometry update time
-    uint32_t visual_odom_last_update_ms;
-
     // last wheel encoder update times
     float wheel_encoder_last_angle_rad[WHEELENCODER_MAX_INSTANCES];     // distance in radians at time of last update to EKF
     float wheel_encoder_last_distance_m[WHEELENCODER_MAX_INSTANCES];    // distance in meters at time of last update to EKF (for reporting to GCS)
@@ -493,7 +490,6 @@ private:
     void init_compass_location(void);
     void init_beacon();
     void init_visual_odom();
-    void update_visual_odom();
     void update_wheel_encoder();
     void compass_cal_update(void);
     void compass_save(void);
