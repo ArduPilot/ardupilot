@@ -74,7 +74,7 @@ void Copter::set_throttle_takeoff()
 // used only for manual throttle modes
 // thr_mid should be in the range 0 to 1
 // returns throttle output 0 to 1
-float Copter::get_pilot_desired_throttle(int16_t throttle_control, float thr_mid)
+float Copter::Mode::get_pilot_desired_throttle(int16_t throttle_control, float thr_mid) const
 {
     if (thr_mid <= 0.0f) {
         thr_mid = motors->get_throttle_hover();

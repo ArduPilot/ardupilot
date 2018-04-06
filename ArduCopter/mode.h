@@ -177,13 +177,14 @@ protected:
     heli_flags_t &heli_flags;
 #endif
 
+    float get_pilot_desired_throttle(int16_t throttle_control, float thr_mid = 0.0f) const;
+
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_climb_rate(float throttle_control);
-    float get_pilot_desired_throttle(int16_t throttle_control, float thr_mid = 0.0f);
     float get_non_takeoff_throttle(void);
     void update_simple_mode(void);
     bool set_mode(control_mode_t mode, mode_reason_t reason);
