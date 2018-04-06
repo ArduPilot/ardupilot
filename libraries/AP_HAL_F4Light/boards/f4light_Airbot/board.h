@@ -181,14 +181,13 @@
 #ifdef USB_MASSSTORAGE
 
 #define BOARD_HAL_VARINFO \
-    AP_GROUPINFO("DBG_WAYBACK",  30, AP_Param_Helper, _dbg_wayback, 0), \
-    AP_GROUPINFO("USB_STORAGE",  31, AP_Param_Helper, _usb_storage, 0), \
+    AP_GROUPINFO("USB_STORAGE",  30, AP_Param_Helper, _usb_storage, 0), \
+    AP_GROUPINFO("DBG_WAYBACK",  31, AP_Param_Helper, _dbg_wayback, 0), 
 
 #else
 
 #define BOARD_HAL_VARINFO \
-    AP_GROUPINFO("DBG_WAYBACK",  30, AP_Param_Helper, _dbg_wayback, 0), \
-
+    AP_GROUPINFO("DBG_WAYBACK",  30, AP_Param_Helper, _dbg_wayback, 0), 
 #endif
 
 
