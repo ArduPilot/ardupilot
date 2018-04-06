@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 
 #if defined(BOARD_DSM_USART)
 UARTDriver DSM_parser::uartSDriver(BOARD_DSM_USART); // UART connected to DSM pin
-#elif defined(BOARD_USART5_RX_PIN)
+#elif defined(BOARD_USART5_RX_PIN) && defined(BOARD_USART5_TX_PIN)
 UARTDriver DSM_parser::uartSDriver(_UART5);
 #endif
 
