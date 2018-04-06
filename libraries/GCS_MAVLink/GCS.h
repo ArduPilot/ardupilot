@@ -291,7 +291,6 @@ protected:
     // enforcement of GCS sysid
     bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg);
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
-    virtual AP_VisualOdom *get_visual_odom() const { return nullptr; }
     virtual bool set_mode(uint8_t mode) = 0;
     void set_ekf_origin(const Location& loc);
 
