@@ -52,7 +52,7 @@
 #define TOSHIBA_LED_I2C_BUS  2       // external I2C
 
 
- #define HAL_MINIMIZE_FEATURES 1
+#define HAL_MINIMIZE_FEATURES 1
 
  #define AC_TERRAIN             DISABLED // no SD card with POSIX IO
  #define PRECISION_LANDING      DISABLED
@@ -71,7 +71,13 @@
 // #define MOUNT                 DISABLED 
 // #define ADSB_ENABLED          DISABLED
 
+ #define LOGGING_ENABLED ENABLED
 
-#define LOGGING_ENABLED ENABLED
-
+ // exclude some useless modes 
+ #define MODE_SPORT_ENABLED DISABLE
+ #define MODE_DRIFT_ENABLED DISABLE
+ #define MODE_BRAKE_ENABLED DISABLE
+ #define MODE_GUIDED_NOGPS_ENABLED DISABLE
+ 
+ 
 #define STATS_ENABLED DISABLED // to reduce flash degradation
