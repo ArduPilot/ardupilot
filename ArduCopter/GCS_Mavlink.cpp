@@ -1324,16 +1324,6 @@ AP_AdvancedFailsafe *GCS_MAVLINK_Copter::get_advanced_failsafe() const
 #endif
 }
 
-AP_VisualOdom *GCS_MAVLINK_Copter::get_visual_odom() const
-{
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    return &copter.g2.visual_odom;
-#else
-    return nullptr;
-#endif
-}
-
-
 MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_long_t &packet) {
     MAV_RESULT result = MAV_RESULT_FAILED;
 
