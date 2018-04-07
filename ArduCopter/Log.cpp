@@ -5,28 +5,6 @@
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
-#if AUTOTUNE_ENABLED == ENABLED
-
-
-struct PACKED log_AutoTuneDetails {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float    angle_cd;      // lean angle in centi-degrees
-    float    rate_cds;      // current rotation rate in centi-degrees / second
-};
-
-// Write an Autotune data packet
-void Copter::ModeAutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
-{
-    struct log_AutoTuneDetails pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),
-        time_us     : AP_HAL::micros64(),
-        angle_cd    : angle_cd,
-        rate_cds    : rate_cds
-    };
-    copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-#endif
 
 struct PACKED log_Optflow {
     LOG_PACKET_HEADER;
@@ -507,12 +485,6 @@ void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocit
 // units and "Format characters" for field type information
 const struct LogStructure Copter::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-#if AUTOTUNE_ENABLED == ENABLED
-    { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
-      "ATUN", "QBBfffffff",       "TimeUS,Axis,TuneStep,Targ,Min,Max,RP,RD,SP,ddt", "s--ddd---o", "F--BBB---0" },
-    { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
-      "ATDE", "Qff",          "TimeUS,Angle,Rate", "sdk", "FBB" },
-#endif
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
       "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi", "s-----", "F-----" },
 #if OPTFLOW == ENABLED
