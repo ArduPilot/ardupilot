@@ -417,6 +417,8 @@ void Copter::ModeAutoTune::run()
     }
 }
 
+#if AUTOTUNE_ENABLED == ENABLED
+
 struct PACKED log_AutoTune {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -449,6 +451,26 @@ void Copter::ModeAutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, 
     };
     copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
+
+struct PACKED log_AutoTuneDetails {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float    angle_cd;      // lean angle in centi-degrees
+    float    rate_cds;      // current rotation rate in centi-degrees / second
+};
+
+// Write an Autotune data packet
+void Copter::ModeAutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
+{
+    struct log_AutoTuneDetails pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),
+        time_us     : AP_HAL::micros64(),
+        angle_cd    : angle_cd,
+        rate_cds    : rate_cds
+    };
+    copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+#endif
 
 bool Copter::ModeAutoTune::check_level(const LEVEL_ISSUE issue, const float current, const float maximum)
 {
