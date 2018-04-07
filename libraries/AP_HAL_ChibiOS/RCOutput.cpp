@@ -48,11 +48,16 @@ struct RCOutput::irq_state RCOutput::irq;
  */
 void RCOutput::init()
 {
+    uint8_t pwm_count = AP_BoardConfig::get_pwm_count();
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         //Start Pwm groups
         pwm_group &group = pwm_group_list[i];
         group.current_mode = MODE_PWM_NORMAL;
         for (uint8_t j = 0; j < 4; j++ ) {
+            uint8_t chan = group.chan[j];
+            if (chan >= pwm_count) {
+                group.chan[j] = CHAN_DISABLED;
+            }
             if (group.chan[j] != CHAN_DISABLED) {
                 total_channels = MAX(total_channels, group.chan[j]+1);
                 group.ch_mask |= (1U<<group.chan[j]);
