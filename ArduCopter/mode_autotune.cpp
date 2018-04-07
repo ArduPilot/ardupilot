@@ -417,6 +417,39 @@ void Copter::ModeAutoTune::run()
     }
 }
 
+struct PACKED log_AutoTune {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t axis;           // roll or pitch
+    uint8_t tune_step;      // tuning PI or D up or down
+    float   meas_target;    // target achieved rotation rate
+    float   meas_min;       // maximum achieved rotation rate
+    float   meas_max;       // maximum achieved rotation rate
+    float   new_gain_rp;    // newly calculated gain
+    float   new_gain_rd;    // newly calculated gain
+    float   new_gain_sp;    // newly calculated gain
+    float   new_ddt;        // newly calculated gain
+};
+
+// Write an Autotune data packet
+void Copter::ModeAutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
+{
+    struct log_AutoTune pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
+        time_us     : AP_HAL::micros64(),
+        axis        : _axis,
+        tune_step   : tune_step,
+        meas_target : meas_target,
+        meas_min    : meas_min,
+        meas_max    : meas_max,
+        new_gain_rp : new_gain_rp,
+        new_gain_rd : new_gain_rd,
+        new_gain_sp : new_gain_sp,
+        new_ddt     : new_ddt
+    };
+    copter.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 bool Copter::ModeAutoTune::check_level(const LEVEL_ISSUE issue, const float current, const float maximum)
 {
     if (current > maximum) {
