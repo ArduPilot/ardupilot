@@ -97,18 +97,11 @@ void AP_MotorsTailsitter::output_to_motors()
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder,   _rudder*SERVO_OUTPUT_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle*THROTTLE_RANGE);
 
-    // also support differential roll with twin motors
+    // also support differential roll with wing motors
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  throttle_left*THROTTLE_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right*THROTTLE_RANGE);
-    // if the left/right motor pair controls roll in hover mode, the other pair controls the pitch axis
-    // call these motors top and bottom since they are dorsal and ventral, respectively
-    // Also note that this corresponds to "+" quadcopter configuration with top/bot == front/back
-    if (!motor_enabled[3]) {
-        throttle_top = 0;
-    }
-    if (!motor_enabled[4]) {
-        throttle_bot = 0;
-    }
+
+    // and differential pitch with vertical tail motors
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleTop, throttle_top*THROTTLE_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleBot, throttle_bot*THROTTLE_RANGE);
 
