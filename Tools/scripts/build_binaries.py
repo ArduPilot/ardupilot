@@ -477,7 +477,15 @@ is bob we will attempt to checkout bob-AVR'''
     def common_boards(self):
         '''returns list of boards common to all vehicles'''
         # note that while we do not use these for AntennaTracker!
-        return ["erlebrain2", "navio", "navio2", "pxf", "pxfmini"]
+        return ["fmuv2",
+                "fmuv3",
+                "fmuv4",
+                "mindpx-v2",
+                "erlebrain2",
+                "navio",
+                "navio2",
+                "pxf",
+                "pxfmini"]
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''
