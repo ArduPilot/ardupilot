@@ -1247,6 +1247,7 @@ void AP_BLHeli::read_telemetry_packet(void)
 
     if (buf[telem_packet_size-1] != crc) {
         // bad crc
+        debug("Bad CRC on %u\n", last_telem_esc);
         return;
     }
     uint8_t temperature = buf[0];
