@@ -130,8 +130,37 @@ extern const AP_HAL::HAL& hal;
 bool GPIO::_attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode)
 {
     uint8_t pad = PAL_PAD(line);
+    stm32_gpio_t *pal_port = PAL_PORT(line);
+    uint8_t ext_port = 0xff;
+    const struct {
+        stm32_gpio_t *port;
+        uint8_t ext_port;
+    } port_mapping[] = {
+        { GPIOA, EXT_MODE_GPIOA },
+        { GPIOB, EXT_MODE_GPIOB },
+        { GPIOC, EXT_MODE_GPIOC },
+        { GPIOD, EXT_MODE_GPIOD },
+        { GPIOE, EXT_MODE_GPIOE },
+        { GPIOF, EXT_MODE_GPIOF },
+#ifdef GPIOG
+        { GPIOG, EXT_MODE_GPIOG },
+#endif
+#ifdef GPIOH
+        { GPIOH, EXT_MODE_GPIOH },
+#endif
+#ifdef GPIOI
+        { GPIOI, EXT_MODE_GPIOI },
+#endif
+    };
     // convert the line to a EXT_MODE_GPIOn value,  this is STM32 specific
-    uint8_t ext_port = uint32_t(PAL_PORT(line)) >> 24;
+    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(port_mapping); i++) {
+        if (pal_port == port_mapping[i].port) {
+            ext_port = port_mapping[i].ext_port;
+        }
+    }
+    if (ext_port == 0xff) {
+        return false;
+    }
     if (p && ext_irq[pad] != nullptr && ext_irq[pad] != p) {
         // already used
         return false;
