@@ -50,6 +50,7 @@ private:
     AP_Int16 timeout_sec;
     AP_Int16 telem_rate;
     AP_Int8 debug_level;
+    AP_Int8 output_type;
     
     enum mspState {
         MSP_IDLE=0,

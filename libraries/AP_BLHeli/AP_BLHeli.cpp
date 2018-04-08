@@ -86,6 +86,13 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("DEBUG",  6, AP_BLHeli, debug_level, 0),
+
+    // @Param: OTYPE
+    // @DisplayName: Output type override
+    // @Description: When set to a non-zero value this overrides the output type for the output channels given by SERVO_BLH_MASK. This can be used to enable DShot on outputs that are not part of the multicopter motors group.
+    // @Values: 0:None,1:OneShot,2:OneShot125,3:Brushed,4:DShot150,5:DShot300,6:DShot600,7:DShot1200
+    // @User: Advanced
+    AP_GROUPINFO("OTYPE",  7, AP_BLHeli, output_type, 0),
     
     AP_GROUPEND
 };
@@ -1138,6 +1145,40 @@ void AP_BLHeli::update(void)
 
     uint16_t mask = uint16_t(channel_mask.get());
 
+    /*
+      allow mode override - this makes it possible to use DShot for
+      rovers and subs, plus for quadplane fwd motors
+     */
+    AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE;
+    switch (AP_Motors::pwm_type(output_type.get())) {
+    case AP_Motors::PWM_TYPE_ONESHOT:
+        mode = AP_HAL::RCOutput::MODE_PWM_ONESHOT;
+        break;
+    case AP_Motors::PWM_TYPE_ONESHOT125:
+        mode = AP_HAL::RCOutput::MODE_PWM_ONESHOT125;
+        break;
+    case AP_Motors::PWM_TYPE_BRUSHED:
+        mode = AP_HAL::RCOutput::MODE_PWM_BRUSHED;
+        break;
+    case AP_Motors::PWM_TYPE_DSHOT150:
+        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT150;
+        break;
+    case AP_Motors::PWM_TYPE_DSHOT300:
+        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT300;
+        break;
+    case AP_Motors::PWM_TYPE_DSHOT600:
+        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT600;
+        break;
+    case AP_Motors::PWM_TYPE_DSHOT1200:
+        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT1200;
+        break;
+    default:
+        break;
+    }
+    if (mask && mode != AP_HAL::RCOutput::MODE_PWM_NONE) {
+        hal.rcout->set_output_mode(mask, mode);
+    }
+    
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     /*
       plane and copter can use AP_Motors to get an automatic mask
@@ -1165,6 +1206,7 @@ void AP_BLHeli::update(void)
             telem_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_ESCTelemetry,0);
         }
     }
+
 }
 
 /*
