@@ -374,6 +374,14 @@ PE15 VDD_5V_PERIPH_OC INPUT
 # define a LED, mapping it to GPIO(0)
 PE12 FMU_LED_AMBER OUTPUT GPIO(0)
 
+# power flag pins. These tell the MCU the status of the various power
+# supplies that are available. The pin names need to exactly match the
+# names used in AnalogIn.cpp. 
+PB5 VDD_BRICK_VALID INPUT PULLUP
+PB7 VDD_SERVO_VALID INPUT PULLUP
+PE10 VDD_5V_HIPOWER_OC INPUT PULLUP
+PE15 VDD_5V_PERIPH_OC INPUT PULLUP
+
 # now the SPI device table. This table creates all accessible SPI
 # devices, giving the name of the device (which is used by device
 # drivers to open the device), plus which SPI bus it it on, what
