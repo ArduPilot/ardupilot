@@ -45,6 +45,9 @@ public:
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
 
+    // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
+    bool have_vectored_thrust() const { return is_positive(_vector_throttle_base); }
+
     // output to motors and steering servos
     void output(bool armed, float dt);
 
@@ -103,6 +106,7 @@ protected:
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
     AP_Float _thrust_curve_expo; // thrust curve exponent from -1 to +1 with 0 being linear
+    AP_Float _vector_throttle_base;  // throttle level above which steering is scaled down when using vector thrust.  zero to disable vectored thrust
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
