@@ -19,6 +19,7 @@ void ModeAcro::update()
     const float steering_out = attitude_control.get_steering_out_rate(
                                                                     target_turn_rate,
                                                                     g2.motors.have_skid_steering(),
+                                                                    g2.motors.have_vectored_thrust(),
                                                                     g2.motors.limit.steer_left,
                                                                     g2.motors.limit.steer_right,
                                                                     reversed);
