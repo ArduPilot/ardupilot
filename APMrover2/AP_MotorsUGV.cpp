@@ -79,6 +79,14 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THST_EXPO", 9, AP_MotorsUGV, _thrust_curve_expo, 0.0f),
 
+    // @Param: VEC_THR_BASE
+    // @DisplayName: Vector thrust throttle base
+    // @Description: Throttle level above which steering is scaled down when using vector thrust.  zero to disable vectored thrust
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("VEC_THR_BASE", 10, AP_MotorsUGV, _vector_throttle_base, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -98,6 +106,9 @@ void AP_MotorsUGV::init()
 
     // set safety output
     setup_safety_output();
+
+    // sanity check parameters
+    _vector_throttle_base = constrain_float(_vector_throttle_base, 0.0f, 100.0f);
 }
 
 // setup output in case of main CPU failure
@@ -353,12 +364,14 @@ void AP_MotorsUGV::setup_pwm_type()
 // output to regular steering and throttle channels
 void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
 {
-    // always allow steering to move
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
-
     // output to throttle channels
     if (armed) {
-        // handle armed case
+        // vectored thrust handling
+        if (have_vectored_thrust() && (fabsf(throttle) > _vector_throttle_base)) {
+            // scale steering down linearly as throttle increases above _vector_throttle_base
+            const float steering_scalar = constrain_float(_vector_throttle_base / fabsf(throttle), 0.0f, 1.0f);
+            steering *= steering_scalar;
+        }
         output_throttle(SRV_Channel::k_throttle, throttle);
     } else {
         // handle disarmed case
@@ -368,6 +381,9 @@ void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }
     }
+
+    // always allow steering to move
+    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
 }
 
 // output to skid steering channels
