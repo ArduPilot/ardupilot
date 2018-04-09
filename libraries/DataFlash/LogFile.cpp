@@ -432,7 +432,7 @@ void DataFlash_Class::Log_Write_Baro_instance(uint64_t time_us, uint8_t baro_ins
     float drift_offset = baro.get_baro_drift_offset();
     float ground_temp = baro.get_ground_temperature();
     struct log_BARO pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
+        LOG_PACKET_HEADER_INIT(type),
         time_us       : time_us,
         altitude      : baro.get_altitude(baro_instance),
         pressure      : baro.get_pressure(baro_instance),
