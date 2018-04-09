@@ -117,8 +117,11 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         pitch,
         yaw);
 
+    uint8_t msgbuf[512];
+    uint16_t msgbuf_len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+
     // ::fprintf(stderr, "Vicon: %u: writing pos=(%03.03f %03.03f %03.03f) att=(%01.03f %01.03f %01.03f)\n", observation.time_ms, observation.position.x, observation.position.y, observation.position.z, roll, pitch, yaw);
-    if (::write(fd_my_end, (void*)&msg, n) != n) {
+    if (::write(fd_my_end, (void*)&msgbuf, msgbuf_len) != n) {
         ::fprintf(stderr, "Vicon: write failure\n");
         // abort();
     }
