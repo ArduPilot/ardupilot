@@ -57,6 +57,17 @@ for t in $CI_BUILD_TARGET; do
         ccache -s && ccache -z
         continue
     fi
+    if [ $t == "sitltest-plane" ]; then
+        echo "Installing pymavlink"
+        git submodule init
+        git submodule update
+        (cd modules/mavlink/pymavlink && python setup.py build install --user)
+        unset BUILDROOT
+        echo "Running SITL Plane test"
+        Tools/autotest/autotest.py build.ArduPlane fly.ArduPlane
+        ccache -s && ccache -z
+        continue
+    fi
     if [ $t == "sitltest-quadplane" ]; then
         echo "Installing pymavlink"
         git submodule init
