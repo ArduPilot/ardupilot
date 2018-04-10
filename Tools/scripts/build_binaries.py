@@ -155,6 +155,16 @@ is bob we will attempt to checkout bob-AVR'''
         except IOError as e:
             if e.errno != 2:
                 raise
+
+        # see if there's a hwdef.dat for this board:
+        if os.path.exists(os.path.join(self.basedir,
+                                       'libraries',
+                                       'AP_HAL_ChibiOS',
+                                       'hwdef',
+                                       board)):
+            self.progress("ChibiOS build: %s" % (board,))
+            return False
+
         self.progress("Skipping unsupported board %s" % (board,))
         return True
 
