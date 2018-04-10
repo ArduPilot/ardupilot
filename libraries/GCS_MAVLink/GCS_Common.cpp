@@ -943,7 +943,7 @@ void GCS_MAVLINK::send_system_time()
 {
     mavlink_msg_system_time_send(
         chan,
-        AP::gps().time_epoch_usec(),
+        hal.util->get_system_clock_us(),
         AP_HAL::millis());
 }
 
@@ -1782,6 +1782,22 @@ void GCS_MAVLINK::handle_common_gps_message(mavlink_message_t *msg)
     AP::gps().handle_msg(msg);
 }
 
+void GCS_MAVLINK::handle_system_time_message(mavlink_message_t *msg)
+{
+    // exit immediately if system time already set
+    if (hal.util->system_time_was_set()) {
+        return;
+    }
+
+    mavlink_system_time_t packet;
+    mavlink_msg_system_time_decode(msg, &packet);
+
+    // set system clock for log timestamps
+    hal.util->set_system_clock(packet.time_unix_usec);
+
+    // update signing timestamp
+    GCS_MAVLINK::update_signing_timestamp(packet.time_unix_usec);
+}
 
 void GCS_MAVLINK::handle_common_camera_message(const mavlink_message_t *msg)
 {
@@ -2140,6 +2156,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
 
     case MAVLINK_MSG_ID_ATT_POS_MOCAP:
         handle_att_pos_mocap(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SYSTEM_TIME:
+        handle_system_time_message(msg);
         break;
     }
 

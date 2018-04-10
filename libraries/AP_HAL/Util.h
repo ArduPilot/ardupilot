@@ -46,9 +46,19 @@ public:
     virtual void set_system_clock(uint64_t time_utc_usec) {}
 
     /*
+      check if system clock was already set
+     */
+    bool system_time_was_set() const;
+
+    /*
       get system clock in UTC milliseconds
      */
     uint64_t get_system_clock_ms() const;
+
+    /*
+      get system clock in UTC microseconds
+     */
+    uint64_t get_system_clock_us() const;
 
     /*
       get system time in UTC hours, minutes, seconds and milliseconds
@@ -123,4 +133,7 @@ protected:
     // values until the vehicle code has fully started
     bool soft_armed = false;
     uint64_t capabilities = 0;
+
+    // by default we consider system_time was not set
+    bool _system_time_was_set = false;
 };
