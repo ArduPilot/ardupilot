@@ -309,17 +309,6 @@ private:
     // This is used to enable the PX4IO override for testing
     bool px4io_override_enabled;
 
-    struct {
-        // These are trim values used for elevon control
-        // For elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are
-        // equivalent aileron and elevator, not left and right elevon
-        uint16_t trim1;
-        uint16_t trim2;
-        // These are used in the calculation of elevon1_trim and elevon2_trim
-        uint16_t ch1_temp;
-        uint16_t ch2_temp;
-    } elevon { 1500, 1500, 1500, 1500 };
-
     // Failsafe
     struct {
         // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
