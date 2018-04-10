@@ -213,8 +213,16 @@ void RCInput::_timer_tick(void)
     // and a timeout for the last valid input to handle failsafe
 }
 
+/*
+  start a bind operation, if supported
+ */
 bool RCInput::rc_bind(int dsmMode)
 {
+#if HAL_USE_ICU == TRUE
+    // ask AP_RCProtocol to start a bind
+    rcin_prot.start_bind();
+#endif
+    
 #ifdef HAL_RCINPUT_WITH_AP_RADIO
     if (radio) {
         radio->start_recv_bind();
