@@ -352,6 +352,9 @@ is bob we will attempt to checkout bob-AVR'''
                     continue
                 if self.skip_frame(board, frame):
                     continue
+
+                self.remove_tmpdir();
+
                 self.progress("Configuring for %s in %s" %
                               (board, self.buildroot))
                 try:
@@ -581,6 +584,11 @@ is bob we will attempt to checkout bob-AVR'''
                 self.progress("%s: %s=%s" % (filepath, name, value))
                 os.environ[name] = value
 
+    def remove_tmpdir(self):
+        if os.path.exists(self.tmpdir):
+            self.progress("Removing (%s)" % (self.tmpdir,))
+            shutil.rmtree(self.tmpdir)
+
     def run(self):
         self.validate()
 
@@ -593,9 +601,7 @@ is bob we will attempt to checkout bob-AVR'''
         os.environ["TMPDIR"] = self.tmpdir
 
         print(self.tmpdir)
-        if os.path.exists(self.tmpdir):
-            self.progress("Removing (%s)" % (self.tmpdir,))
-            shutil.rmtree(self.tmpdir)
+        self.remove_tmpdir();
 
         self.progress("Building in %s" % self.tmpdir)
 
