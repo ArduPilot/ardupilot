@@ -30,6 +30,12 @@ public:
     bool new_input();
     uint8_t num_channels();
 
+    // support for receivers that have FC initiated bind support
+    virtual void start_bind(void) {}
+
+    // allow for backends that need regular polling
+    virtual void update(void) {}
+
 protected:
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
     
