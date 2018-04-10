@@ -43,7 +43,7 @@ public:
 
     // read input from hal.rcin - create a control_in value
     void        set_pwm(int16_t pwm);
-    void        set_pwm_no_deadzone(int16_t pwm);
+    void        recompute_pwm_no_deadzone();
 
     // calculate an angle given dead_zone and trim. This is used by the quadplane code
     // for hover throttle
