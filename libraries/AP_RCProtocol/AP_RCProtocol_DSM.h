@@ -23,6 +23,9 @@ class AP_RCProtocol_DSM : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_DSM(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void start_bind(void) override;
+    void update(void) override;
+    
 private:
     void dsm_decode();
     bool dsm_decode_channel(uint16_t raw, unsigned shift, unsigned *channel, unsigned *value);
@@ -37,4 +40,15 @@ private:
         uint16_t bytes[16]; // including start bit and stop bit
         uint16_t bit_ofs;
     } dsm_state;
+
+    // bind state machine
+    enum {
+        BIND_STATE_NONE,
+        BIND_STATE1,
+        BIND_STATE2,
+        BIND_STATE3,
+        BIND_STATE4,
+    } bind_state;
+    uint32_t bind_last_ms;
+    
 };

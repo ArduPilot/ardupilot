@@ -19,10 +19,10 @@
  */
 #include "AP_RCProtocol_DSM.h"
 
-// #define DEBUG
-
-#ifdef DEBUG
 extern const AP_HAL::HAL& hal;
+
+// #define DEBUG
+#ifdef DEBUG
 # define debug(fmt, args...)	hal.console->printf(fmt "\n", ##args)
 #else
 # define debug(fmt, args...)	do {} while(0)
@@ -360,4 +360,72 @@ bool AP_RCProtocol_DSM::dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[
 	 * XXX Note that we may be in failsafe here; we need to work out how to detect that.
 	 */
 	return true;
+}
+
+
+/*
+  start bind on DSM satellites
+ */
+void AP_RCProtocol_DSM::start_bind(void)
+{
+    bind_state = BIND_STATE1;
+}
+
+
+/*
+  update function used for bind state machine
+ */
+void AP_RCProtocol_DSM::update(void)
+{
+#if defined(HAL_GPIO_SPEKTRUM_PWR) && defined(HAL_GPIO_SPEKTRUM_RC)
+    switch (bind_state) {
+    case BIND_STATE_NONE:
+        break;
+
+    case BIND_STATE1:
+        hal.gpio->write(HAL_GPIO_SPEKTRUM_PWR, !HAL_SPEKTRUM_PWR_ENABLED);
+        hal.gpio->pinMode(HAL_GPIO_SPEKTRUM_RC, 1);
+        hal.gpio->write(HAL_GPIO_SPEKTRUM_RC, 1);
+        bind_last_ms = AP_HAL::millis();
+        bind_state = BIND_STATE2;
+        break;
+
+    case BIND_STATE2: {
+        uint32_t now = AP_HAL::millis();
+        if (now - bind_last_ms > 500) {
+            hal.gpio->write(HAL_GPIO_SPEKTRUM_PWR, HAL_SPEKTRUM_PWR_ENABLED);
+            bind_last_ms = now;
+            bind_state = BIND_STATE3;
+        }
+        break;
+    }
+
+    case BIND_STATE3: {
+        uint32_t now = AP_HAL::millis();
+        if (now - bind_last_ms > 72) {
+            // 9 pulses works with all satellite receivers, and supports the highest
+            // available protocol
+            const uint8_t num_pulses = 9;
+            for (uint8_t i=0; i<num_pulses; i++) {
+                hal.scheduler->delay_microseconds(120);
+                hal.gpio->write(HAL_GPIO_SPEKTRUM_RC, 0);
+                hal.scheduler->delay_microseconds(120);
+                hal.gpio->write(HAL_GPIO_SPEKTRUM_RC, 1);                
+            }
+            bind_last_ms = now;
+            bind_state = BIND_STATE4;
+        }
+        break;
+    }
+        
+    case BIND_STATE4: {
+        uint32_t now = AP_HAL::millis();
+        if (now - bind_last_ms > 50) {
+            hal.gpio->pinMode(HAL_GPIO_SPEKTRUM_RC, 0);
+            bind_state = BIND_STATE_NONE;
+        }
+        break;
+    }
+    }
+#endif
 }

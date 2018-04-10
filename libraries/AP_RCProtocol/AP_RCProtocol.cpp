@@ -57,6 +57,13 @@ bool AP_RCProtocol::new_input()
 {
     bool ret = _new_input;
     _new_input = false;
+
+    // run update function on backends
+    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+        if (backend[i] != nullptr) {
+            backend[i]->update();
+        }
+    }
     return ret;
 }
 
@@ -74,4 +81,16 @@ uint16_t AP_RCProtocol::read(uint8_t chan)
         return backend[_detected_protocol]->read(chan);
     }
     return 0;
+}
+
+/*
+  ask for bind start on supported receivers (eg spektrum satellite)
+ */
+void AP_RCProtocol::start_bind(void)
+{
+    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+        if (backend[i] != nullptr) {
+            backend[i]->start_bind();
+        }
+    }
 }
