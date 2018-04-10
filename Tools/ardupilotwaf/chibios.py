@@ -85,9 +85,17 @@ class set_default_parameters(Task.Task):
 class generate_fw(Task.Task):
     color='CYAN'
     run_str='${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
-    python ${UPLOAD_TOOLS}/px_mkfw.py --image ${SRC}.bin \
-    --prototype ${BUILDROOT}/apj.prototype > ${TGT} && \
-    cd ${TOOLS_SCRIPTS} && ./make_abin.sh $OLDPWD/${SRC}.bin $OLDPWD/${SRC}.abin'
+    python ${UPLOAD_TOOLS}/px_mkfw.py --image ${SRC}.bin --prototype ${BUILDROOT}/apj.prototype > ${TGT}'
+    always_run = True
+    def keyword(self):
+        return "Generating"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
+class build_abin(Task.Task):
+    '''build an abin file for skyviper firmware upload via web UI'''
+    color='CYAN'
+    run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC}.bin ${SRC}.abin'
     always_run = True
     def keyword(self):
         return "Generating"
@@ -103,9 +111,14 @@ def chibios_firmware(self):
     self.objcopy_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
 
     generate_fw_task = self.create_task('generate_fw',
-                            src=link_output,
-                            tgt=self.objcopy_target)
+                                        src=link_output,
+                                        tgt=self.objcopy_target)
     generate_fw_task.set_run_after(self.link_task)
+
+    if self.env.BUILD_ABIN:
+        abin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.abin').name)
+        abin_task = self.create_task('build_abin', src=link_output, tgt=abin_target)
+        abin_task.set_run_after(generate_fw_task)
 
     if self.env.DEFAULT_PARAMETERS:
         default_params_task = self.create_task('set_default_parameters',
