@@ -8,26 +8,18 @@ extern const AP_HAL::HAL& hal;
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 
-// ArduCopter/defines.h sets this, and this definition will be moved into ArduPlane/defines.h when that is patched to use the lib
-#ifdef APM_BUILD_DIRECTORY
-  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    #define RALLY_LIMIT_KM_DEFAULT 0.3f
-    #define RALLY_INCLUDE_HOME_DEFAULT 1
-  #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    #define RALLY_LIMIT_KM_DEFAULT 5.0f
-    #define RALLY_INCLUDE_HOME_DEFAULT 0
-  #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
-    #define RALLY_LIMIT_KM_DEFAULT 0.5f
-    #define RALLY_INCLUDE_HOME_DEFAULT 0
-  #endif
-#endif  // APM_BUILD_DIRECTORY
-
-#ifndef RALLY_LIMIT_KM_DEFAULT
-#define RALLY_LIMIT_KM_DEFAULT 1.0f
-#endif
-
-#ifndef RALLY_INCLUDE_HOME_DEFAULT
-#define RALLY_INCLUDE_HOME_DEFAULT 0
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+  #define RALLY_LIMIT_KM_DEFAULT 0.3f
+  #define RALLY_INCLUDE_HOME_DEFAULT 1
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+  #define RALLY_LIMIT_KM_DEFAULT 5.0f
+  #define RALLY_INCLUDE_HOME_DEFAULT 0
+#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+  #define RALLY_LIMIT_KM_DEFAULT 0.5f
+  #define RALLY_INCLUDE_HOME_DEFAULT 0
+#else
+  #define RALLY_LIMIT_KM_DEFAULT 1.0f
+  #define RALLY_INCLUDE_HOME_DEFAULT 0
 #endif
 
 const AP_Param::GroupInfo AP_Rally::var_info[] = {
