@@ -58,3 +58,6 @@ undef PA1
 PA1 UART4_RX UART4 NODMA
 
 env DEFAULT_PARAMETERS 'Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
+
+# the web UI uses an abin file for firmware uploads
+env BUILD_ABIN True
