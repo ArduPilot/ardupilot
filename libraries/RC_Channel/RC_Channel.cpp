@@ -122,14 +122,12 @@ RC_Channel::set_pwm(int16_t pwm)
     }
 }
 
-// read input from APM_RC - create a control_in value, but use a 
-// zero value for the dead zone. When done this way the control_in
-// value can be used as servo_out to give the same output as input
+// recompute control values with no deadzone
+// When done this way the control_in value can be used as servo_out
+// to give the same output as input
 void
-RC_Channel::set_pwm_no_deadzone(int16_t pwm)
+RC_Channel::recompute_pwm_no_deadzone()
 {
-    radio_in = pwm;
-
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range_dz(0);
     } else {
