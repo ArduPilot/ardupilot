@@ -82,7 +82,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
     _structures = structures;
 
 #if defined(HAL_BOARD_LOG_DIRECTORY)
- #if HAL_OS_POSIX_IO
+ #if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
     if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
         DFMessageWriter_DFLogStart *message_writer =
