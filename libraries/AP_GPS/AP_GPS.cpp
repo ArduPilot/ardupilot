@@ -671,6 +671,11 @@ void AP_GPS::update_instance(uint8_t instance)
         !AP::ahrs().have_ekf_logging()) {
         DataFlash_Class::instance()->Log_Write_GPS(instance);
     }
+
+    if (state[instance].status >= GPS_OK_FIX_3D) {
+        const uint64_t now = time_epoch_usec(instance);
+        AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
+    }
 }
 
 /*

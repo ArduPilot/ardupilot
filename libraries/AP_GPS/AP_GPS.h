@@ -22,6 +22,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_RTC/AP_RTC.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -556,7 +557,6 @@ private:
         GPS_AUTO_CONFIG_DISABLE = 0,
         GPS_AUTO_CONFIG_ENABLE  = 1
     };
-
 };
 
 namespace AP {
