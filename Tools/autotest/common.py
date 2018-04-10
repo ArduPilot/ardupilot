@@ -674,14 +674,14 @@ class AutoTest(ABC):
 
         tstart = self.get_sim_time()
         required_value = 831
-        self.progress("Waiting for EKF value %u" % required_value)
+        self.progress("Waiting for EKF flag %u" % required_value)
         while timeout is None or self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
             current = m.flags
             if (tstart - self.get_sim_time()) % 5 == 0:
                 self.progress("Wait EKF.flags: required:%u current:%u" %
-                              (required_value, current))
-            if current == required_value:
+                              (required_value, current & required_value))
+            if (current & 3072) == 0 and (current & required_value) == required_value:
                 self.progress("EKF Flags OK")
                 return True
         self.progress("Failed to get EKF.flags=%u" % required_value)
