@@ -108,7 +108,7 @@ AC_Sprayer::update()
 
     // get horizontal velocity
     Vector3f velocity;
-    if (_ahrs.get_velocity_NED(velocity)) {
+    if (!_ahrs.get_velocity_NED(velocity)) {
         return;
     }
     float ground_speed = norm(velocity.x * 100.0f, velocity.y * 100.0f);
