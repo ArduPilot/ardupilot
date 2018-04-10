@@ -110,6 +110,9 @@ private:
     
     float _temp_filtered;
     float _accel_scale;
+
+    float _fifo_accel_scale;
+    float _fifo_gyro_scale;
     LowPassFilter2pFloat _temp_filter;
 
     enum Rotation _rotation;

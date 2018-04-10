@@ -317,6 +317,10 @@ void AP_InertialSensor_Invensense::start()
     set_gyro_orientation(_gyro_instance, _rotation);
     set_accel_orientation(_accel_instance, _rotation);
 
+    // setup scale factors for fifo data after downsampling
+    _fifo_accel_scale = _accel_scale / (MAX(_fifo_downsample_rate,2)/2);
+    _fifo_gyro_scale = GYRO_SCALE / _fifo_downsample_rate;
+    
     // allocate fifo buffer
     _fifo_buffer = (uint8_t *)hal.util->malloc_type(MPU_FIFO_BUFFER_LEN * MPU_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
     if (_fifo_buffer == nullptr) {
@@ -474,11 +478,9 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
         _accum.count++;
 
         if (_accum.count == _fifo_downsample_rate) {
-            float ascale = _accel_scale / (_fifo_downsample_rate/2);
-            _accum.accel *= ascale;
 
-            float gscale = GYRO_SCALE / _fifo_downsample_rate;
-            _accum.gyro *= gscale;
+            _accum.accel *= _fifo_accel_scale;
+            _accum.gyro *= _fifo_gyro_scale;
             
             _rotate_and_correct_accel(_accel_instance, _accum.accel);
             _rotate_and_correct_gyro(_gyro_instance, _accum.gyro);
@@ -659,7 +661,7 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
             }
             // calculate rate we will be giving samples to the backend
             _backend_rate_hz *= (8 / _fifo_downsample_rate);
-            
+
             // for logging purposes set the oversamping rate
             _set_accel_oversampling(_accel_instance, _fifo_downsample_rate/2);
             _set_gyro_oversampling(_gyro_instance, _fifo_downsample_rate);
