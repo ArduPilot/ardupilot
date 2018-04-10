@@ -1950,10 +1950,20 @@ void GCS_MAVLINK::_handle_common_vision_position_estimate_data(const uint64_t us
                                timestamp_ms,
                                reset_timestamp_ms);
 
-    // log data
+    _log_vision_position_estimate_data(usec, x, y, z, roll, pitch, yaw);
+}
+
+void GCS_MAVLINK::_log_vision_position_estimate_data(const uint64_t usec,
+                                                               const float x,
+                                                               const float y,
+                                                               const float z,
+                                                               const float roll,
+                                                               const float pitch,
+                                                               const float yaw)
+{
     DataFlash_Class::instance()->Log_Write("VISP", "TimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
                                            "smmmrrr", "F000000", "Qffffff",
-                                           (uint64_t)timestamp_ms * 1000,
+                                           (uint64_t)usec,
                                            (double)x,
                                            (double)y,
                                            (double)z,
@@ -1987,6 +1997,14 @@ void GCS_MAVLINK::handle_att_pos_mocap(mavlink_message_t *msg)
                                angErr,
                                timestamp_ms,
                                reset_timestamp_ms);
+   
+    // calculate euler orientation for logging
+    float roll;
+    float pitch;
+    float yaw;
+    attitude.to_euler(roll, pitch, yaw);
+
+    _log_vision_position_estimate_data(m.time_usec, m.x, m.y, m.z, roll, pitch, yaw);
 }
 
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t* msg)

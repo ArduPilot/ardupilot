@@ -457,6 +457,13 @@ private:
                                                       const float roll,
                                                       const float pitch,
                                                       const float yaw);
+    void _log_vision_position_estimate_data(const uint64_t usec,
+                                            const float x,
+                                            const float y,
+                                            const float z,
+                                            const float roll,
+                                            const float pitch,
+                                            const float yaw);
     void push_deferred_messages();
 
     void lock_channel(mavlink_channel_t chan, bool lock);
