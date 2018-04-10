@@ -239,6 +239,9 @@ void AP_Notify::add_backends(void)
 # else
     ADD_BACKEND(new AP_BoardLED());
 # endif
+#ifdef BUZZER_PIN
+    ADD_BACKEND(new Buzzer());
+#endif
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
     ADD_BACKEND(new Display());
