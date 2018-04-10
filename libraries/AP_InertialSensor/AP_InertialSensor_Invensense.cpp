@@ -215,6 +215,10 @@ void AP_InertialSensor_Invensense::start()
         gdev = DEVTYPE_INS_ICM20789;
         adev = DEVTYPE_INS_ICM20789;
         break;
+    case Invensense_ICM20689:
+        gdev = DEVTYPE_INS_ICM20689;
+        adev = DEVTYPE_INS_ICM20689;
+        break;
     }
 
     /*
@@ -240,6 +244,10 @@ void AP_InertialSensor_Invensense::start()
         break;
 
     case Invensense_ICM20789:
+        temp_zero = 25;
+        temp_sensitivity = 0.003;
+        break;
+    case Invensense_ICM20689:
         temp_zero = 25;
         temp_sensitivity = 0.003;
         break;
@@ -693,7 +701,7 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
             // setup for 4kHz accels
             _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_FCHOICE_B, true);
         } else {
-            uint8_t fifo_size = (_mpu_type == Invensense_ICM20789) ? 1:0;
+            uint8_t fifo_size = (_mpu_type == Invensense_ICM20789 || _mpu_type == Invensense_ICM20689) ? 1:0;
             _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_DLPF_CFG_218HZ | (fifo_size<<6), true);
         }
     }
@@ -725,6 +733,9 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
     case MPU_WHOAMI_ICM20789:
     case MPU_WHOAMI_ICM20789_R1:
         _mpu_type = Invensense_ICM20789;
+        return true;
+    case MPU_WHOAMI_ICM20689:
+        _mpu_type = Invensense_ICM20689;
         return true;
     }
     // not a value WHOAMI result
