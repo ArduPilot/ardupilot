@@ -416,6 +416,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_A_RAT_PIT_I",    0.25 },
     { "Q_A_RAT_PIT_FILT", 10.0 },
     { "Q_M_SPOOL_TIME",   0.25 },
+    { "Q_M_HOVER_LEARN",     0 },
     { "Q_LOIT_ANG_MAX",   15.0 },
     { "Q_LOIT_ACC_MAX",   250.0 },
     { "Q_LOIT_BRK_ACCEL", 50.0 },
@@ -781,6 +782,7 @@ void QuadPlane::run_z_controller(void)
         // controller. We need to assume the integrator may be way off
 
         // the base throttle we start at is the current throttle we are using
+        // note that AC_PosControl::run_z_controller() adds the Z pid (_pid_accel_z) output to _motors.get_throttle_hover()
         float base_throttle = constrain_float(motors->get_throttle() - motors->get_throttle_hover(), -1, 1) * 1000;
         pos_control->get_accel_z_pid().set_integrator(base_throttle);
 
@@ -1605,6 +1607,34 @@ void QuadPlane::check_throttle_suppression(void)
     last_motors_active_ms = 0;
 }
 
+// update estimated throttle required to hover (if necessary)
+//  called at 100hz
+void QuadPlane::update_throttle_hover()
+{
+    if (!enable) {
+        return;
+    }
+    
+    // if not armed or landed exit
+    if (!motors->armed() || !is_flying_vtol()) {
+        return;
+    }
+
+    // do not update while climbing or descending
+    if (!is_zero(pos_control->get_desired_velocity().z)) {
+        return;
+    }
+
+    // get throttle output
+    float throttle = motors->get_throttle();
+
+    // calc average throttle if we are in a level hover
+    if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z()) < 60 &&
+            labs(ahrs_view->roll_sensor) < 500 && labs(ahrs_view->pitch_sensor) < 500) {
+        // Can we set the time constant automatically
+        motors->update_throttle_hover(0.01f);
+    }
+}
 /*
   output motors and do any copter needed
  */

@@ -781,6 +781,11 @@ void Plane::servos_output(void)
     }
 }
 
+void Plane::update_throttle_hover() {
+    // update hover throttle at 100Hz
+    quadplane.update_throttle_hover();
+}
+
 /*
   implement automatic persistent trim of control surfaces with
   AUTO_TRIM=2, only available when SERVO_RNG_ENABLE=1 as otherwise it
