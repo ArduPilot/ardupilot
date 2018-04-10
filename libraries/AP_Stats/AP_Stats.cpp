@@ -1,6 +1,7 @@
 #include "AP_Stats.h"
 
 #include <AP_Math/AP_Math.h>
+#include <AP_RTC/AP_RTC.h>
 
 const extern AP_HAL::HAL& hal;
 
@@ -96,10 +97,14 @@ void AP_Stats::update()
         params.bootcount.set_and_save(params_reset == 0 ? 1 : 0);
         params.flttime.set_and_save(0);
         params.runtime.set_and_save(0);
-        uint32_t system_clock = hal.util->get_system_clock_ms() / 1000;
-        // can't store Unix seconds in a 32-bit float.  Change the
-        // time base to Jan 1st 2016:
-        system_clock -= 1451606400;
+        uint32_t system_clock = 0; // in seconds
+        uint64_t rtc_clock_us;
+        if (AP::rtc().get_utc_usec(rtc_clock_us)) {
+            system_clock = rtc_clock_us / 1000000;
+            // can't store Unix seconds in a 32-bit float.  Change the
+            // time base to Jan 1st 2016:
+            system_clock -= 1451606400;
+        }
         params.reset.set_and_save(system_clock);
         copy_variables_from_parameters();
     }
