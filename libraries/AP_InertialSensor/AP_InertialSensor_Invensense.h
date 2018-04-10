@@ -63,6 +63,7 @@ public:
         Invensense_ICM20608,
         Invensense_ICM20602,
         Invensense_ICM20789,
+        Invensense_ICM20689,
     };
     
 private:
