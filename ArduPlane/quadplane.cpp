@@ -1242,6 +1242,9 @@ void QuadPlane::update_transition(void)
     if (is_tailsitter()) {
         if (transition_state == TRANSITION_ANGLE_WAIT_FW &&
             tailsitter_transition_fw_complete()) {
+            // stop the top and bottom motors when in fixed-wing mode
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleTop, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleBot, 0);
             gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done");
             transition_state = TRANSITION_DONE;
         }
@@ -1344,6 +1347,8 @@ void QuadPlane::update_transition(void)
                                                                       plane.nav_pitch_cd,
                                                                       0);
         attitude_control->set_throttle_out(motors->get_throttle_hover(), true, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleTop, motors->get_throttle_hover());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleBot, motors->get_throttle_hover());
         run_rate_controller();
         motors_output();
         break;
@@ -1525,6 +1530,36 @@ void QuadPlane::check_throttle_suppression(void)
     last_motors_active_ms = 0;
 }
 
+// update estimated throttle required to hover (if necessary)
+//  called at 100hz
+void QuadPlane::update_throttle_hover()
+{
+    // only learn hover throttle for tailsitters
+    if (!is_tailsitter()) {
+        return;
+    }
+
+    // if not armed or landed exit
+    if (!motors->armed() || !is_flying_vtol()) {
+        return;
+    }
+
+    // do not update while climbing or descending
+    if (!is_zero(pos_control->get_desired_velocity().z)) {
+        return;
+    }
+
+    // get throttle output
+    float throttle = motors->get_throttle();
+
+    // calc average throttle if we are in a level hover
+    if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z()) < 60 &&
+            labs(ahrs_view->roll_sensor) < 500 && labs(ahrs_view->pitch_sensor) < 500) {
+        // Can we set the time constant automatically
+        motors->update_throttle_hover(0.01f);
+    }
+}
+
 /*
   output motors and do any copter needed
  */
@@ -1546,7 +1581,7 @@ void QuadPlane::motors_output(void)
           transition. That is taken care of by the fixed wing
           stabilisation code
          */
-        return;
+//        return;
     }
 
     // see if motors should be shut down
