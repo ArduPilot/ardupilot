@@ -474,7 +474,7 @@ bool AP_InertialSensor_Invensense::_accumulate_fast_sampling(uint8_t *samples, u
         _accum.count++;
 
         if (_accum.count == _fifo_downsample_rate) {
-            float ascale = _accel_scale / (_fifo_downsample_rate/2);
+            float ascale = _accel_scale / (_fifo_downsample_rate * 0.5f);
             _accum.accel *= ascale;
 
             float gscale = GYRO_SCALE / _fifo_downsample_rate;
