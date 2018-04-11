@@ -49,7 +49,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_rangefinders,      50,    200),
     SCHED_TASK(update_current_mode,    50,    200),
     SCHED_TASK(set_servos,             50,    200),
-    SCHED_TASK(update_GPS_50Hz,        50,    300),
+    SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300),
     SCHED_TASK(update_GPS_10Hz,        10,    300),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200),
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200),
@@ -299,22 +299,6 @@ void Rover::one_second_loop(void)
     // functioning correctly
     update_sensor_status_flags();
 }
-
-void Rover::update_GPS_50Hz(void)
-{
-    static uint32_t last_gps_reading[GPS_MAX_INSTANCES];
-    gps.update();
-
-    for (uint8_t i=0; i < gps.num_sensors(); i++) {
-        if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
-            last_gps_reading[i] = gps.last_message_time_ms(i);
-            if (should_log(MASK_LOG_GPS)) {
-                DataFlash.Log_Write_GPS(gps, i);
-            }
-        }
-    }
-}
-
 
 void Rover::update_GPS_10Hz(void)
 {
