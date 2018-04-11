@@ -17,7 +17,11 @@
 
 #include "AP_HAL_Linux.h"
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
+#define RCIN_PRUSS_RAM_BASE   0x4a301000
+#else
 #define RCIN_PRUSS_RAM_BASE   0x4a303000
+#endif
 
 // we use 300 ring buffer entries to guarantee that a full 25 byte
 // frame of 12 bits per byte
