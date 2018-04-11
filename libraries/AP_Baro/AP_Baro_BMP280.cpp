@@ -191,7 +191,7 @@ void AP_Baro_BMP280::_update_pressure(int32_t press_raw)
     p = ((p + var1 + var2) >> 8) + (((int64_t)_p7) << 4);
 
 
-    const float press = (float)p / 25600.0f;
+    const float press = (float)p / 256.0f;
     if (!pressure_ok(press)) {
         return;
     }
