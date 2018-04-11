@@ -412,17 +412,7 @@ void Plane::update_GPS_50Hz(void)
     ahrs.get_relative_position_D_home(relative_altitude);
     relative_altitude *= -1.0f;
 
-    static uint32_t last_gps_reading[GPS_MAX_INSTANCES];
     gps.update();
-
-    for (uint8_t i=0; i<gps.num_sensors(); i++) {
-        if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
-            last_gps_reading[i] = gps.last_message_time_ms(i);
-            if (should_log(MASK_LOG_GPS)) {
-                Log_Write_GPS(i);
-            }
-        }
-    }
 }
 
 /*

@@ -272,13 +272,6 @@ void Plane::Log_Write_AETR()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-void Plane::Log_Write_GPS(uint8_t instance)
-{
-    if (!ahrs.have_ekf_logging()) {
-        DataFlash.Log_Write_GPS(gps, instance);
-    }
-}
-
 void Plane::Log_Write_IMU()
 {
     DataFlash.Log_Write_IMU();
@@ -396,7 +389,6 @@ void Plane::Log_Write_Optflow() {}
  #endif
 
 void Plane::Log_Arm_Disarm() {}
-void Plane::Log_Write_GPS(uint8_t instance) {}
 void Plane::Log_Write_IMU() {}
 void Plane::Log_Write_RC(void) {}
 void Plane::Log_Write_Airspeed(void) {}

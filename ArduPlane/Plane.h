@@ -801,7 +801,6 @@ private:
     void Log_Write_Sonar();
     void Log_Write_Optflow();
     void Log_Arm_Disarm();
-    void Log_Write_GPS(uint8_t instance);
     void Log_Write_IMU();
     void Log_Write_RC(void);
     void Log_Write_Airspeed(void);
