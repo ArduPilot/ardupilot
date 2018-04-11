@@ -521,6 +521,9 @@ public:
     // ground effect compensation enable/disable
     AP_Int8 gndeffect_comp_enabled;
 
+    // temperature calibration handling
+    AP_TempCalibration temp_calibration;
+
 #if BEACON_ENABLED == ENABLED
     // beacon (non-GPS positioning) library
     AP_Beacon beacon;
@@ -578,9 +581,6 @@ public:
 
     // Land alt final stage
     AP_Int16 land_alt_low;
-
-    // temperature calibration handling
-    AP_TempCalibration temp_calibration;
 
 #if TOY_MODE_ENABLED == ENABLED
     ToyMode toy_mode;
