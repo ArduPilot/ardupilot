@@ -48,10 +48,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     AP_GROUPEND
 };
 
-AC_Sprayer::AC_Sprayer(const AP_AHRS_NavEKF &ahrs) :
-    _ahrs(ahrs),
-    _speed_over_min_time(0),
-    _speed_under_min_time(0)
+AC_Sprayer::AC_Sprayer()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -107,7 +104,7 @@ void AC_Sprayer::update()
 
     // get horizontal velocity
     Vector3f velocity;
-    if (!_ahrs.get_velocity_NED(velocity)) {
+    if (!AP::ahrs().get_velocity_NED(velocity)) {
         // treat unknown velocity as zero which should lead to pump stopping
         // velocity will already be zero but this avoids a coverity warning
         velocity.zero();
