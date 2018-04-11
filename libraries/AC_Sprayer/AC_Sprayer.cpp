@@ -92,8 +92,7 @@ void AC_Sprayer::stop_spraying()
 }
 
 /// update - adjust pwm of servo controlling pump speed according to the desired quantity and our horizontal speed
-void
-AC_Sprayer::update()
+void AC_Sprayer::update()
 {
     // exit immediately if we are disabled or shouldn't be running
     if (!_enabled || !running()) {
@@ -136,7 +135,7 @@ AC_Sprayer::update()
         }
         // reset the speed under timer
         _speed_under_min_time = 0;
-    }else{
+    } else {
         // we are under the min speed.
         if (_flags.spraying) {
             // set the timer if this is the first time we've dropped below the min speed
@@ -168,7 +167,7 @@ AC_Sprayer::update()
         SRV_Channels::move_servo(SRV_Channel::k_sprayer_pump, pos, 0, 10000);
         SRV_Channels::set_output_pwm(SRV_Channel::k_sprayer_spinner, _spinner_pwm);
         _flags.spraying = true;
-    }else{
+    } else {
         stop_spraying();
     }
 }
