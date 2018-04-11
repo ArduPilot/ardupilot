@@ -53,6 +53,7 @@
 
 
 #define HAL_MINIMIZE_FEATURES 1
+#define DEVO_TELEM_ENABLED ENABLED
 
  #define AC_TERRAIN             DISABLED // no SD card with POSIX IO
  #define PRECISION_LANDING      DISABLED
