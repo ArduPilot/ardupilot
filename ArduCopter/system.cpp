@@ -210,6 +210,7 @@ void Copter::init_ardupilot()
 
     // read Baro pressure at ground
     //-----------------------------
+    barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.calibrate();
 
     // initialise rangefinder
