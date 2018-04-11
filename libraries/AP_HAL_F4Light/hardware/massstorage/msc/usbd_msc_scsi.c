@@ -276,7 +276,7 @@ int8_t SCSI_ProcessCmd(USB_OTG_CORE_HANDLE  *pdev,
     break;
   }
 
-    MSC_BOT_CBW_finish(pdev);
+  MSC_BOT_CBW_finish(pdev);
 
   return ret;
 }
@@ -613,8 +613,10 @@ static int8_t SCSI_Read10(uint8_t lun , uint8_t *params)
         p->is_write = false;
     }
 
+//    printf("\nUSB: enqueue read blk=%ld\n", SCSI_blk_addr / SCSI_blk_size);
+
     uint32_t fifoemptymsk = 0x1 << (MSC_IN_EP & 0x7F);
-    USB_OTG_MODIFY_REG32(&cdev->regs.DREGS->DIEPEMPMSK, fifoemptymsk, 0); // clear FIFO Empty mask until real data write
+    USB_OTG_MODIFY_REG32(&cdev->regs.DREGS->DIEPEMPMSK, fifoemptymsk, 0); // clear FIFO Empty mask until real data write to prevent interrupt
 
     hal_set_task_active(task_handle); // resume task 
     hal_context_switch_isr();         // and reschedule tasks after interrupt
@@ -732,6 +734,8 @@ static int8_t SCSI_Write10 (uint8_t lun , uint8_t *params)
         p->is_write = true;
     }
 
+//    printf("\nUSB: enqueue write blk=%ld\n", SCSI_blk_addr / SCSI_blk_size);
+
     hal_set_task_active(task_handle); // resume task
     hal_context_switch_isr();         // and reschedule tasks after interrupt
     return 0;
@@ -767,18 +771,26 @@ static void usb_task(){
 
         int8_t ret;
         if(p->is_write){
+//    printf("\nUSB: do write blk=%ld\n", SCSI_blk_addr / SCSI_blk_size);
+
             ret = SCSI_ProcessWrite(p->lun);            
         } else {
+//    printf("\nUSB: do read blk=%ld\n", SCSI_blk_addr / SCSI_blk_size);
             MSC_BOT_DataLen = MSC_MEDIA_PACKET;
             ret = SCSI_ProcessRead(p->lun);            
+
+            uint32_t fifoemptymsk = 0x1 << (MSC_IN_EP & 0x7F);
+            USB_OTG_MODIFY_REG32(&cdev->regs.DREGS->DIEPEMPMSK, 0, fifoemptymsk); // Set FIFO Empty mask after real data write to allow next interrupt
+
         }   
+        MSC_BOT_CBW_finish(p->pdev);
+
         if(ret<0) {
 #ifdef SCSI_DEBUG            
             l->ret = ret;
 #endif
             MSC_BOT_SendCSW (p->pdev, CSW_CMD_FAILED);
         } else {
-            MSC_BOT_CBW_finish(p->pdev);
 #ifdef SCSI_DEBUG            
             l->ret = 1;
 #endif
@@ -839,6 +851,7 @@ static int8_t SCSI_ProcessRead (uint8_t lun)
   
   len = MIN(SCSI_blk_len , MSC_MEDIA_PACKET); 
   
+  // read block from storage
   if( USBD_STORAGE_fops->Read(lun ,
                               MSC_BOT_Data, 
                               SCSI_blk_addr / SCSI_blk_size, 
@@ -847,8 +860,8 @@ static int8_t SCSI_ProcessRead (uint8_t lun)
     SCSI_SenseCode(lun, HARDWARE_ERROR, UNRECOVERED_READ_ERROR);
     return -1; 
   }
-  
-  
+ 
+  // and setup TX 
   DCD_EP_Tx (cdev, 
              MSC_IN_EP,
              MSC_BOT_Data,
