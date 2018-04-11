@@ -41,3 +41,8 @@ void ModeAcro::update()
         calc_throttle(target_speed, false);
     }
 }
+
+bool ModeAcro::requires_velocity() const
+{
+    return g2.motors.have_skid_steering()? false: true;
+}

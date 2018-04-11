@@ -176,9 +176,9 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
 
-    // acro mode requires a velocity estimate
+    // acro mode requires a velocity estimate for non skid-steer rovers
     bool requires_position() const override { return false; }
-    bool requires_velocity() const override { return true; }
+    bool requires_velocity() const override;
 };
 
 
