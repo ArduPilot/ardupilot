@@ -1,15 +1,5 @@
 #include "Tracker.h"
 
-// read the barometer and return the updated altitude in meters
-void Tracker::update_barometer(void)
-{
-    barometer.update();
-    if (should_log(MASK_LOG_IMU)) {
-        Log_Write_Baro();
-    }
-}
-
-
 /*
   update INS and attitude
  */
