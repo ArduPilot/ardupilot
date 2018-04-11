@@ -585,6 +585,22 @@ AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
     return AP_GPS::GPS_OK_FIX_3D;
 }
 
+bool AP_GPS::should_df_log() const
+{
+    DataFlash_Class *instance = DataFlash_Class::instance();
+    if (instance == nullptr) {
+        return false;
+    }
+    if (_log_gps_bit == (uint32_t)-1) {
+        return false;
+    }
+    if (!instance->should_log(_log_gps_bit)) {
+        return false;
+    }
+    return true;
+}
+
+
 /*
   update one GPS instance. This should be called at 10Hz or greater
  */
@@ -624,6 +640,7 @@ void AP_GPS::update_instance(uint8_t instance)
     // if we did not get a message, and the idle timer of 2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
     // detection to run again
+    bool data_should_be_logged = false;
     if (!result) {
         if (tnow - timing[instance].last_message_time_ms > GPS_TIMEOUT_MS) {
             memset(&state[instance], 0, sizeof(state[instance]));
@@ -642,6 +659,9 @@ void AP_GPS::update_instance(uint8_t instance)
                 drivers[instance] = nullptr;
                 state[instance].status = NO_GPS;
             }
+            // log this data as a "flag" that the GPS is no longer
+            // valid (see PR#8144)
+            data_should_be_logged = true;
         }
     } else {
         // delta will only be correct after parsing two messages
@@ -650,6 +670,14 @@ void AP_GPS::update_instance(uint8_t instance)
         if (state[instance].status >= GPS_OK_FIX_2D) {
             timing[instance].last_fix_time_ms = tnow;
         }
+
+        data_should_be_logged = true;
+    }
+
+    if (data_should_be_logged &&
+        should_df_log() &&
+        !AP::ahrs().have_ekf_logging()) {
+        DataFlash_Class::instance()->Log_Write_GPS(instance);
     }
 }
 
