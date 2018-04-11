@@ -103,6 +103,7 @@ void Rover::init_ardupilot()
     init_visual_odom();
 
     // and baro for EKF
+    barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.calibrate();
 
     // Do GPS init

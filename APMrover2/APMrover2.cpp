@@ -51,7 +51,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(set_servos,             50,    200),
     SCHED_TASK(update_GPS_50Hz,        50,    300),
     SCHED_TASK(update_GPS_10Hz,        10,    300),
-    SCHED_TASK(update_alt,             10,    200),
+    SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200),
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200),
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200),
     SCHED_TASK(update_visual_odom,     50,    200),
@@ -175,14 +175,6 @@ void Rover::ahrs_update()
 
     if (should_log(MASK_LOG_IMU)) {
         DataFlash.Log_Write_IMU();
-    }
-}
-
-void Rover::update_alt()
-{
-    barometer.update();
-    if (should_log(MASK_LOG_IMU)) {
-        Log_Write_Baro();
     }
 }
 
