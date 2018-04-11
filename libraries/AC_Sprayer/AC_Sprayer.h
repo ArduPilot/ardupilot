@@ -32,7 +32,7 @@
 /// @brief  Object managing a crop sprayer comprised of a spinner and a pump both controlled by pwm
 class AC_Sprayer {
 public:
-    AC_Sprayer(const AP_AHRS_NavEKF &ahrs);
+    AC_Sprayer();
 
     /* Do not allow copies */
     AC_Sprayer(const AC_Sprayer &other) = delete;
@@ -61,7 +61,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    const AP_AHRS_NavEKF &_ahrs;            ///< pointers to other objects we depend upon
 
     // parameters
     AP_Int8         _enabled;               ///< top level enable/disable control
