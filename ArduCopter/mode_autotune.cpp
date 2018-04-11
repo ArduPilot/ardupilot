@@ -848,9 +848,9 @@ void Copter::ModeAutoTune::autotune_attitude_control()
                     mode = SUCCESS;
                     update_gcs(AUTOTUNE_MESSAGE_SUCCESS);
                     Log_Write_Event(DATA_AUTOTUNE_SUCCESS);
-                    AP_Notify::events.autotune_complete = 1;
+                    AP_Notify::events.autotune_complete = true;
                 } else {
-                    AP_Notify::events.autotune_next_axis = 1;
+                    AP_Notify::events.autotune_next_axis = true;
                 }
                 break;
             }
@@ -1481,7 +1481,7 @@ void Copter::ModeAutoTune::updating_angle_p_up(float &tune_p, float tune_p_max, 
     if ((meas_angle_max > angle_target*(1+0.5f*g.autotune_aggressiveness)) ||
             ((meas_angle_max > angle_target) && (meas_rate_min < -meas_rate_max*g.autotune_aggressiveness))) {
         // ignore the next result unless it is the same as this one
-        ignore_next = 1;
+        ignore_next = true;
         // if maximum measurement was greater than target so increment the success counter
         counter++;
     }else{
