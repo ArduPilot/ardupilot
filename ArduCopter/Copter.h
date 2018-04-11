@@ -555,7 +555,7 @@ private:
 
     // Crop Sprayer
 #if SPRAYER == ENABLED
-    AC_Sprayer sprayer{ahrs};
+    AC_Sprayer sprayer;
 #endif
 
     // Parachute release
