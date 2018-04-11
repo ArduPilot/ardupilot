@@ -222,14 +222,6 @@ float AR_AttitudeControl::get_steering_out_heading(float heading_rad, bool skid_
 // desired yaw rate in radians/sec. Positive yaw is to the right.
 float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_steering, bool motor_limit_left, bool motor_limit_right, bool reversed)
 {
-    // get speed forward
-    float speed;
-    if (!get_forward_speed(speed)) {
-        // we expect caller will not try to control heading using rate control without a valid speed estimate
-        // on failure to get speed we do not attempt to steer
-        return 0.0f;
-    }
-
     // calculate dt
     const uint32_t now = AP_HAL::millis();
     float dt = (now - _steer_turn_last_ms) / 1000.0f;
@@ -255,19 +247,29 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
         _desired_turn_rate = constrain_float(_desired_turn_rate, -_steer_rate_max, _steer_rate_max);
     }
 
-    // only use positive speed. Use reverse flag instead of negative speeds.
-    speed = fabsf(speed);
-
-    // enforce minimum speed to stop oscillations when first starting to move
+    float scaler = 1.0f;
     bool low_speed = false;
-    if (speed < AR_ATTCONTROL_STEER_SPEED_MIN) {
-        low_speed = true;
-        speed = AR_ATTCONTROL_STEER_SPEED_MIN;
-    }
 
     // scaler to linearize output because turn rate increases as vehicle speed increases on non-skid steering vehicles
-    float scaler = 1.0f;
     if (!skid_steering) {
+
+        // get speed forward
+        float speed;
+        if (!get_forward_speed(speed)) {
+            // we expect caller will not try to control heading using rate control without a valid speed estimate
+            // on failure to get speed we do not attempt to steer
+            return 0.0f;
+        }
+
+        // only use positive speed. Use reverse flag instead of negative speeds.
+        speed = fabsf(speed);
+
+        // enforce minimum speed to stop oscillations when first starting to move
+        if (speed < AR_ATTCONTROL_STEER_SPEED_MIN) {
+            low_speed = true;
+            speed = AR_ATTCONTROL_STEER_SPEED_MIN;
+        }
+
         scaler = 1.0f / fabsf(speed);
     }
 
