@@ -46,6 +46,7 @@ void Tracker::init_tracker()
     AP_Notify::flags.failsafe_battery = false;
 
     // init baro before we start the GCS, so that the CLI baro test works
+    barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.init();
 
     // we start by assuming USB connected, as we initialed the serial

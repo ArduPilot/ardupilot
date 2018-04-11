@@ -220,7 +220,6 @@ private:
     void update_scan(void);
     bool servo_test_set_servo(uint8_t servo_num, uint16_t pwm);
     void read_radio();
-    void update_barometer(void);
     void update_ahrs();
     void update_compass(void);
     void compass_accumulate(void);
@@ -256,7 +255,6 @@ private:
     void init_capabilities(void);
     void compass_cal_update();
     void Log_Write_Attitude();
-    void Log_Write_Baro(void);
     void Log_Write_Vehicle_Pos(int32_t lat,int32_t lng,int32_t alt, const Vector3f& vel);
     void Log_Write_Vehicle_Baro(float pressure, float altitude);
     void Log_Write_Vehicle_Startup_Messages();
