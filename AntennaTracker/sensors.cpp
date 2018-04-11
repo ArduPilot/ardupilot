@@ -98,11 +98,6 @@ void Tracker::update_GPS(void)
                 ground_start_count = 0;
             }
         }
-
-        // log GPS data
-        if (should_log(MASK_LOG_GPS)) {
-            DataFlash.Log_Write_GPS(gps, 0);
-        }
     }
 }
 
