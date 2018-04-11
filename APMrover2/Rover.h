@@ -384,7 +384,6 @@ private:
     // APMrover2.cpp
     void stats_update();
     void ahrs_update();
-    void update_alt();
     void gcs_failsafe_check(void);
     void update_compass(void);
     void update_logging1(void);
@@ -491,7 +490,6 @@ private:
     void Log_Arm_Disarm();
     void Log_Write_RC(void);
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
-    void Log_Write_Baro(void);
     void Log_Write_Home_And_Origin();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_WheelEncoder();
