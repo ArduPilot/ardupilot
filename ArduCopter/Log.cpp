@@ -336,13 +336,6 @@ void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-void Copter::Log_Write_Baro(void)
-{
-    if (!ahrs.have_ekf_logging()) {
-        DataFlash.Log_Write_Baro();
-    }
-}
-
 struct PACKED log_ParameterTuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -616,7 +609,6 @@ void Copter::Log_Write_Data(uint8_t id, int16_t value) {}
 void Copter::Log_Write_Data(uint8_t id, uint16_t value) {}
 void Copter::Log_Write_Data(uint8_t id, float value) {}
 void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
-void Copter::Log_Write_Baro(void) {}
 void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
 void Copter::Log_Write_Home_And_Origin() {}
 void Copter::Log_Sensor_Health() {}
