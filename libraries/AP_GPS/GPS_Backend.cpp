@@ -172,17 +172,7 @@ void AP_GPS_Backend::Write_DataFlash_Log_Startup_messages() const
 
 bool AP_GPS_Backend::should_df_log() const
 {
-    DataFlash_Class *instance = DataFlash_Class::instance();
-    if (instance == nullptr) {
-        return false;
-    }
-    if (gps._log_gps_bit == (uint32_t)-1) {
-        return false;
-    }
-    if (!instance->should_log(gps._log_gps_bit)) {
-        return false;
-    }
-    return true;
+    return gps.should_df_log();
 }
 
 
