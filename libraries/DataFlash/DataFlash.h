@@ -93,7 +93,7 @@ public:
     void StopLogging();
 
     void Log_Write_Parameter(const char *name, float value);
-    void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, uint64_t time_us=0);
+    void Log_Write_GPS(uint8_t instance, uint64_t time_us=0);
     void Log_Write_RFND(const RangeFinder &rangefinder);
     void Log_Write_IMU();
     void Log_Write_IMUDT(uint64_t time_us, uint8_t imu_mask);
