@@ -4,9 +4,6 @@
 void Sub::read_barometer(void)
 {
     barometer.update();
-    if (should_log(MASK_LOG_IMU)) {
-        Log_Write_Baro();
-    }
 
     if (ap.depth_sensor_present) {
         sensor_health.depth = barometer.healthy(depth_sensor_idx);
