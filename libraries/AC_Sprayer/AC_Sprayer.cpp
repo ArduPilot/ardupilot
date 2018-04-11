@@ -48,8 +48,8 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     AP_GROUPEND
 };
 
-AC_Sprayer::AC_Sprayer(const AP_InertialNav* inav) :
-    _inav(inav),
+AC_Sprayer::AC_Sprayer(const AP_AHRS_NavEKF &ahrs) :
+    _ahrs(ahrs),
     _speed_over_min_time(0),
     _speed_under_min_time(0)
 {
@@ -107,8 +107,13 @@ AC_Sprayer::update()
     }
 
     // get horizontal velocity
-    const Vector3f &velocity = _inav->get_velocity();
-    float ground_speed = norm(velocity.x,velocity.y);
+    Vector3f velocity;
+    if (!_ahrs.get_velocity_NED(velocity)) {
+        // treat unknown velocity as zero which should lead to pump stopping
+        // velocity will already be zero but this avoids a coverity warning
+        velocity.zero();
+    }
+    float ground_speed = norm(velocity.x * 100.0f, velocity.y * 100.0f);
 
     // get the current time
     const uint32_t now = AP_HAL::millis();
