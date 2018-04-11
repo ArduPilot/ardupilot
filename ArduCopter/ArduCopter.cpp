@@ -468,13 +468,8 @@ void Copter::update_GPS(void)
     for (uint8_t i=0; i<gps.num_sensors(); i++) {
         if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
             last_gps_reading[i] = gps.last_message_time_ms(i);
-
-            // log GPS message
-            if (should_log(MASK_LOG_GPS) && !ahrs.have_ekf_logging()) {
-                DataFlash.Log_Write_GPS(gps, i);
-            }
-
             gps_updated = true;
+            break;
         }
     }
 
