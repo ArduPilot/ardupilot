@@ -604,6 +604,20 @@ void AP_Baro::init(void)
 #endif
 }
 
+bool AP_Baro::should_df_log() const
+{
+    DataFlash_Class *instance = DataFlash_Class::instance();
+    if (instance == nullptr) {
+        return false;
+    }
+    if (_log_baro_bit == (uint32_t)-1) {
+        return false;
+    }
+    if (!instance->should_log(_log_baro_bit)) {
+        return false;
+    }
+    return true;
+}
 
 /*
   call update on all drivers
@@ -670,6 +684,11 @@ void AP_Baro::update(void)
                 break;
             }
         }
+    }
+
+    // logging
+    if (should_df_log() && !AP::ahrs().have_ekf_logging()) {
+        DataFlash_Class::instance()->Log_Write_Baro();
     }
 }
 
