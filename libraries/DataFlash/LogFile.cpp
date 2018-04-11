@@ -133,8 +133,9 @@ bool DataFlash_Backend::Log_Write_Parameter(const AP_Param *ap,
 }
 
 // Write an GPS packet
-void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, uint64_t time_us)
+void DataFlash_Class::Log_Write_GPS(uint8_t i, uint64_t time_us)
 {
+    const AP_GPS &gps = AP::gps();
     if (time_us == 0) {
         time_us = AP_HAL::micros64();
     }
