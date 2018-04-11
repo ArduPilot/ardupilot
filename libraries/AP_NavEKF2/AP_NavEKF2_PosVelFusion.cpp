@@ -799,6 +799,9 @@ void NavEKF2_core::selectHeightForFusion()
     readBaroData();
     baroDataToFuse = storedBaro.recall(baroDataDelayed, imuDataDelayed.time_ms);
 
+    // determine if we use offset to baro data
+	bool reset_offset_value = false;
+
     // select height source
     if (extNavUsedForPos) {
         // always use external vision as the hight source if using for position.
@@ -809,7 +812,7 @@ void NavEKF2_core::selectHeightForFusion()
             activeHgtSource = HGT_SOURCE_RNG;
         } else {
             // determine if we are above or below the height switch region
-            float rangeMaxUse = 1e-4f * (float)frontend->_rng.max_distance_cm_orient(ROTATION_PITCH_270) * (float)frontend->_useRngSwHgt;
+            float rangeMaxUse = 1.0e-4f * (float)frontend->_rng.max_distance_cm_orient(ROTATION_PITCH_270) * (float)frontend->_useRngSwHgt;
             bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
             bool belowLowerSwHgt = (terrainState - stateStruct.position.z) < 0.7f * rangeMaxUse;
 
@@ -859,6 +862,7 @@ void NavEKF2_core::selectHeightForFusion()
         // calculate offset to baro data that enables us to switch to Baro height use during operation
         if  (activeHgtSource != HGT_SOURCE_BARO) {
             calcFiltBaroOffset();
+			reset_offset_value = true;
         }
         // filtered baro data used to provide a reference for takeoff
         // it is is reset to last height measurement on disarming in performArmingChecks()
@@ -916,8 +920,16 @@ void NavEKF2_core::selectHeightForFusion()
             posDownObsNoise = sq(constrain_float(1.5f * frontend->_gpsHorizPosNoise, 0.1f, 10.0f));
         }
     } else if (baroDataToFuse && (activeHgtSource == HGT_SOURCE_BARO)) {
-        // using Baro data
+        // use baro offset data once immediate after switch back to baro height use
+        if (reset_offset_value) {
+        // use offset to baro data
         hgtMea = baroDataDelayed.hgt - baroHgtOffset;
+        reset_offset_value = false;
+        } else {
+		// not use offset to baro data
+        hgtMea = baroDataDelayed.hgt;
+		}
+
         // enable fusion
         velPosObs[5] = -hgtMea;
         fuseHgtData = true;
