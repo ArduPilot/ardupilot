@@ -815,7 +815,6 @@ private:
     void Log_Write_GPS(uint8_t instance);
     void Log_Write_IMU();
     void Log_Write_RC(void);
-    void Log_Write_Baro(void);
     void Log_Write_Airspeed(void);
     void Log_Write_Home_And_Origin();
     void Log_Write_Vehicle_Startup_Messages();

@@ -861,9 +861,6 @@ void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
 void Plane::update_alt()
 {
     barometer.update();
-    if (should_log(MASK_LOG_IMU)) {
-        Log_Write_Baro();
-    }
 
     // calculate the sink rate.
     float sink_rate;
