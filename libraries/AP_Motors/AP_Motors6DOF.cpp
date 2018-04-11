@@ -341,7 +341,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
     float predicted_current_ratio = predicted_current/_batt_current_max;
     _batt_current_last = _batt_current;
 
-    if (predicted_current > _batt_current_max * 1.5) {
+    if (predicted_current > _batt_current_max * 1.5f) {
         batt_current_ratio = 2.5f;
     } else if (_batt_current < _batt_current_max && predicted_current > _batt_current_max) {
         batt_current_ratio = predicted_current_ratio;
