@@ -68,20 +68,21 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @DisplayName: Roll axis angle controller P gain
     // @Description: Roll axis angle controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate
     // @Range: 3.000 12.000
+    // @Range{Sub}: 0.0 12.000
     // @User: Standard
     AP_SUBGROUPINFO(_p_angle_roll, "ANG_RLL_", 13, AC_AttitudeControl, AC_P),
 
     // @Param: ANG_PIT_P
     // @DisplayName: Pitch axis angle controller P gain
     // @Description: Pitch axis angle controller P gain.  Converts the error between the desired pitch angle and actual angle to a desired pitch rate
-    // @Range: 3.000 12.000
+    // @Range{Sub}: 0.0 12.000
     // @User: Standard
     AP_SUBGROUPINFO(_p_angle_pitch, "ANG_PIT_", 14, AC_AttitudeControl, AC_P),
 
     // @Param: ANG_YAW_P
     // @DisplayName: Yaw axis angle controller P gain
     // @Description: Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate
-    // @Range: 3.000 6.000
+    // @Range{Sub}: 0.0 12.000
     // @User: Standard
     AP_SUBGROUPINFO(_p_angle_yaw, "ANG_YAW_", 15, AC_AttitudeControl, AC_P),
 
