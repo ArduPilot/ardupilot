@@ -1143,7 +1143,7 @@ static bool write_page(const uint8_t *ptr, uint32_t pageNum){
 
     buf.cmd[i++] = JEDEC_PAGE_WRITE;
     if(addr_4bit) {
-        buf.cmd[i++] = (PageAdr >> 16) & 0xff;
+        buf.cmd[i++] = (PageAdr >> 24) & 0xff;
     }
     buf.cmd[i++] = (PageAdr >> 16) & 0xff;
     buf.cmd[i++] = (PageAdr >>  8) & 0xff;
