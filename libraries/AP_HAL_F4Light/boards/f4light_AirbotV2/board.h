@@ -96,8 +96,8 @@
 
 //TODO add #define BOARD_HAS_UART3 ?
 
-#define BOARD_I2C_BUS_INT 1    // hardware internal I2C
-//#define BOARD_I2C_BUS_EXT 1  // external I2C
+//#define BOARD_I2C_BUS_INT 1    // hardware internal I2C
+#define BOARD_I2C_BUS_EXT 1  // external I2C
 #define BOARD_I2C_BUS_SLOW 1   // slow down bus with this number
 
 #define BOARD_I2C1_DISABLE // lots of drivers tries to scan all buses, spoiling device setup
@@ -106,14 +106,14 @@
 #define HAL_BARO_BMP280_NAME "bmp280"
 #define BOARD_BMP280_CS_PIN 104
 
-#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_INT
+#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_EXT
 #define HAL_BARO_MS5611_I2C_ADDR        (0x77)
 
 #define BOARD_COMPASS_DEFAULT HAL_COMPASS_HMC5843
 #define BOARD_COMPASS_HMC5843_I2C_ADDR 0x1E
 #define BOARD_COMPASS_HMC5843_ROTATION ROTATION_NONE
 
-#define HAL_COMPASS_HMC5843_I2C_BUS     BOARD_I2C_BUS_INT
+#define HAL_COMPASS_HMC5843_I2C_BUS     BOARD_I2C_BUS_EXT
 #define HAL_COMPASS_HMC5843_I2C_ADDR    BOARD_COMPASS_HMC5843_I2C_ADDR
 #define HAL_COMPASS_HMC5843_ROTATION    BOARD_COMPASS_HMC5843_ROTATION
 
