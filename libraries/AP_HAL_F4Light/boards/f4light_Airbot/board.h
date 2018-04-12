@@ -97,30 +97,29 @@
 
 // use soft I2C driver instead hardware
 //#define BOARD_SOFT_I2C2
-#define BOARD_I2C_BUS_INT   1  // hardware internal I2C
-//#define BOARD_I2C_BUS_EXT 1  // external I2C
+//#define BOARD_I2C_BUS_INT   1  // hardware internal I2C
+#define BOARD_I2C_BUS_EXT   1  // external I2C
 #define BOARD_I2C_BUS_SLOW  1 // slow down bus with this number
 
-#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_INT
+#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_EXT
 #define HAL_BARO_MS5611_I2C_ADDR        (0x77)
 
-#define HAL_BARO_BMP280_BUS             BOARD_I2C_BUS_INT
+#define HAL_BARO_BMP280_BUS             BOARD_I2C_BUS_EXT
 #define HAL_BARO_BMP280_I2C_ADDR        (0x76)
 
-#define HAL_BARO_BMP085_BUS             BOARD_I2C_BUS_INT
+#define HAL_BARO_BMP085_BUS             BOARD_I2C_BUS_EXT
 #define HAL_BARO_BMP085_I2C_ADDR        (0x77)
 
-#define HAL_BARO_MS5607_I2C_BUS         BOARD_I2C_BUS_INT
+#define HAL_BARO_MS5607_I2C_BUS         BOARD_I2C_BUS_EXT
 #define HAL_BARO_MS5607_I2C_ADDR        (0x77)
 
 
 #define BOARD_COMPASS_DEFAULT HAL_COMPASS_HMC5843
 //#define BOARD_HMC5883_DRDY_PIN  38  // PB7 - but it not used by driver
 
-#define HAL_COMPASS_HMC5843_I2C_BUS     BOARD_I2C_BUS_INT
+#define HAL_COMPASS_HMC5843_I2C_BUS     BOARD_I2C_BUS_EXT
 #define HAL_COMPASS_HMC5843_I2C_ADDR    (0x1E)
 #define HAL_COMPASS_HMC5843_ROTATION    ROTATION_NONE
-
 
 #define BOARD_INS_DEFAULT HAL_INS_MPU60XX_SPI
 #define BOARD_INS_ROTATION  ROTATION_YAW_180
