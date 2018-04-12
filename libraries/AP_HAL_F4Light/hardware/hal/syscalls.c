@@ -53,7 +53,7 @@ int _kill(int pid, int sig)
 
 void _exit(int status)
 {
-    __error(13, status, 0);
+    __error(13, status, 0, 0);
 }
 
 int _getpid(void)
