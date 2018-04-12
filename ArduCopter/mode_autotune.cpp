@@ -1200,9 +1200,9 @@ void Copter::ModeAutoTune::twitching_test_rate(float rate, float rate_target_max
         meas_rate_min = rate;
     }
 
-    // calculate early stopping time based on the time it takes to get to 90%
+    // calculate early stopping time based on the time it takes to get to 75%
     if (meas_rate_max < rate_target_max * 0.75f) {
-        // the measurement not reached the 90% threshold yet
+        // the measurement not reached the 75% threshold yet
         step_stop_time = step_start_time + (millis() - step_start_time) * 3.0f;
         step_stop_time = MIN(step_stop_time, step_start_time + AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
@@ -1253,7 +1253,7 @@ void Copter::ModeAutoTune::twitching_test_angle(float angle, float rate, float a
         meas_rate_min = rate;
     }
 
-    // calculate early stopping time based on the time it takes to get to 90%
+    // calculate early stopping time based on the time it takes to get to 75%
     if (meas_angle_max < angle_target_max * 0.75f) {
         // the measurement not reached the 75% threshold yet
         step_stop_time = step_start_time + (millis() - step_start_time) * 3.0f;
