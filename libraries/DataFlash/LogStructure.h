@@ -223,6 +223,7 @@ struct PACKED log_POWR {
     float Vcc;
     float Vservo;
     uint16_t flags;
+    uint8_t safety_and_arm;
 };
 
 struct PACKED log_EKF1 {
@@ -905,7 +906,7 @@ Format characters in the format string for binary log messages
     { LOG_BARO_MSG, sizeof(log_BARO), \
       "BARO",  BARO_FMT, BARO_LABELS }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","QffH","TimeUS,Vcc,VServo,Flags" },  \
+      "POWR","QffHB","TimeUS,Vcc,VServo,Flags,Safety" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "QHHHfffffff","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
