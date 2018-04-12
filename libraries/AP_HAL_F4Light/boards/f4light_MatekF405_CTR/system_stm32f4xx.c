@@ -466,7 +466,7 @@ void SetSysClock(uint8_t oc)
   else
   { /* If HSE fails to start-up, the application will have wrong clock
          configuration. User can add here some code to deal with this error */
-        __error(12,0,0);
+        __error(12,0,0,0);
   }
 
 /******************************************************************************/

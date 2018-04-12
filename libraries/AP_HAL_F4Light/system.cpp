@@ -33,6 +33,10 @@ void panic(const char *errormsg, ...)
 
     if(boardEmergencyHandler) boardEmergencyHandler(); // call emergency handler before
 
+    timer_disable_all(); // turn off all PWM
+
+    F4Light::Scheduler::_stop_multitask();
+    
     va_start(ap, errormsg);
     hal.console->vprintf(errormsg, ap);
     va_end(ap);
@@ -55,7 +59,7 @@ void cond_yield(){
         F4Light::Scheduler::yield(0);
     }
     
-    last_yield=F4Light::Scheduler::_micros();
+    last_yield = F4Light::Scheduler::_micros();
 }
 
 
