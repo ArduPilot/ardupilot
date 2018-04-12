@@ -436,12 +436,18 @@ bool DataFlash_Backend::Log_Write_Message(const char *message)
 void DataFlash_Class::Log_Write_Power(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    uint8_t safety_and_armed = uint8_t(hal.util->safety_switch_state());
+    if (hal.util->get_soft_armed()) {
+        // encode armed state in bit 3
+        safety_and_armed |= 1U<<2;
+    }
     struct log_POWR pkt = {
         LOG_PACKET_HEADER_INIT(LOG_POWR_MSG),
         time_us : AP_HAL::micros64(),
         Vcc     : hal.analogin->board_voltage(),
         Vservo  : hal.analogin->servorail_voltage(),
-        flags   : hal.analogin->power_status_flags()
+        flags   : hal.analogin->power_status_flags(),
+        safety_and_arm : safety_and_armed
     };
     WriteBlock(&pkt, sizeof(pkt));
 #endif
