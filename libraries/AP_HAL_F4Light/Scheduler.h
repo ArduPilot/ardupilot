@@ -104,6 +104,9 @@ extern "C" {
 
     void switchContext();
     void __do_context_switch();
+    void hal_try_kill_task_or_reboot(uint8_t n);
+    void hal_go_next_task();
+    void hal_stop_multitask();
 
     extern task_t *s_running; // running task 
     extern task_t *next_task; // task to run next
@@ -338,7 +341,7 @@ public:
         task->active=true;
         _forced_task = task; // force it, to not spent time for  search by priority
         context_switch_isr();
-  } 
+    } 
 #endif
 //]  
 
@@ -391,6 +394,10 @@ public:
     }
 
     static void SVC_Handler(uint32_t * svc_args); // many functions called via SVC for hardware serialization
+    
+    static void _try_kill_task_or_reboot(uint8_t n); // exception occures in armed state - try to kill current task
+    static void _go_next_task();
+    static void _stop_multitask();
 
     static volatile bool need_switch_task;   // should be public for access from C code
 //}
