@@ -164,7 +164,7 @@ bool AP_Compass_Backend::field_ok(const Vector3f &field)
     }
 
     const float range = (float)_compass.get_filter_range();
-    if (range == 0) {
+    if (range <= 0) {
         return true;
     }
 
