@@ -1,3 +1,13 @@
+Release 3.8.5beta3, 14th April 2018
+-----------------------------------
+
+This is a safety release, fixing an issue where the external safety
+button can activate in flight on some boards, causing them to crash. A
+new parameter BRD_SAFETYOPTION is added which controls the behaviour
+of the safety button. The default is to de-activate the safety button
+when armed.
+
+
 Release 3.8.5beta2, 28th March 2018
 ------------------------------------
 
