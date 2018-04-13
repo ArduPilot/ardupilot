@@ -69,7 +69,7 @@ private:
     uint16_t _enabled_channels;
     uint32_t _period_max;
     uint32_t _last_safety_options_check_ms;
-    uint16_t _last_safety_options;
+    uint16_t _last_safety_options = 0xFFFF;
     struct {
         int pwm_sub;
         actuator_outputs_s outputs;
