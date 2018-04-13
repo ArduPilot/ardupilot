@@ -309,6 +309,29 @@ void PX4RCOutput::force_safety_pending_requests(void)
             _safety_state_request_last_ms = now;
         }
     }
+    // also update safety button options if needed
+    if (now - _last_safety_options_check_ms > 1000) {
+        _last_safety_options_check_ms = now;
+        AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+        if (boardconfig) {
+            uint16_t desired_options = 0;
+            uint16_t options = boardconfig->get_safety_button_options();
+            if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
+                desired_options |= PWM_SERVO_SET_SAFETY_OPTION_DISABLE_BUTTON_OFF;
+            }
+            if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
+                desired_options |= PWM_SERVO_SET_SAFETY_OPTION_DISABLE_BUTTON_ON;
+            }
+            if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && hal.util->get_soft_armed()) {
+                desired_options |= PWM_SERVO_SET_SAFETY_OPTION_DISABLE_BUTTON_OFF | PWM_SERVO_SET_SAFETY_OPTION_DISABLE_BUTTON_ON;
+            }
+            if (_last_safety_options != desired_options) {
+                if (ioctl(_pwm_fd, PWM_SERVO_SET_SAFETY_OPTIONS, desired_options) == OK) {
+                    _last_safety_options = desired_options;
+                }
+            }
+        }
+    }
 }
 
 void PX4RCOutput::force_safety_no_wait(void)
