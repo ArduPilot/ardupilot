@@ -46,7 +46,7 @@ public:
     AP_BoardConfig &operator=(const AP_BoardConfig&) = delete;
 
     // singleton support
-    AP_BoardConfig *get_instance(void) {
+    static AP_BoardConfig *get_instance(void) {
         return instance;
     }
     
@@ -124,6 +124,20 @@ public:
         return 0;
 #endif
     }
+
+#if AP_FEATURE_SAFETY_BUTTON
+    enum board_safety_button_option {
+        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF=1,
+        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=2,
+        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED=4,
+    };
+
+    // return safety button options. Bits are in enum board_safety_button_option
+    uint16_t get_safety_button_options(void) {
+        return uint16_t(state.safety_option.get());
+    }
+#endif
+
     
 private:
     static AP_BoardConfig *instance;
@@ -134,6 +148,7 @@ private:
     struct {
         AP_Int8 pwm_count;
         AP_Int8 safety_enable;
+        AP_Int16 safety_option;
         AP_Int32 ignore_safety_channels;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         AP_Int8 ser1_rtscts;
