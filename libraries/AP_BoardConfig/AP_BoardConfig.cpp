@@ -82,6 +82,12 @@
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
 #endif
 
+#if AP_FEATURE_SAFETY_BUTTON
+#ifndef BOARD_SAFETY_OPTION_DEFAULT
+#define BOARD_SAFETY_OPTION_DEFAULT (BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)
+#endif
+#endif
+
 extern const AP_HAL::HAL& hal;
 AP_BoardConfig *AP_BoardConfig::instance;
 
@@ -195,6 +201,15 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Group: ""
     // @Path: ../libraries/AP_Param_Helper/AP_Param_Helper.cpp
     AP_SUBGROUPINFO(param_helper, "", 12, AP_BoardConfig, AP_Param_Helper),
+#endif
+
+#if AP_FEATURE_SAFETY_BUTTON
+    // @Param: SAFETYOPTION
+    // @DisplayName: Options for safety button behavior
+    // @Description: This controls the activation of the safety button. It allows you to control if the safety button can be used for safety enable and/or disable, and whether the button is only active when disarmed
+    // @Bitmask: 0:ActiveForSafetyEnable,1:ActiveForSafetyDisable,2:ActiveWhenDisarmed
+    // @User: Standard
+    AP_GROUPINFO("SAFETYOPTION",   13, AP_BoardConfig, state.safety_option, BOARD_SAFETY_OPTION_DEFAULT),
 #endif
     
     AP_GROUPEND
