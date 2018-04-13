@@ -724,5 +724,4 @@ public:
 extern const AP_HAL::HAL& hal;
 extern Sub sub;
 
-using AP_HAL::millis;
 using AP_HAL::micros;

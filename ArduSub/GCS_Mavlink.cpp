@@ -1285,7 +1285,7 @@ void Sub::mavlink_delay_cb()
 
     DataFlash.EnableWrites(false);
 
-    uint32_t tnow = millis();
+    uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs_send_heartbeat();
