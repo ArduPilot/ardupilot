@@ -105,7 +105,6 @@
 #define BBB_P9_31 110
 #define BBB_P9_41 20
 #define BBB_P9_42 7
-#define BBB_D13   90
 
 namespace Linux {
 
