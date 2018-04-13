@@ -44,7 +44,7 @@ void Copter::ekf_check()
     }
 
     // compare compass and velocity variance vs threshold
-    if (ekf_over_threshold() || ekf_check_position_problem()) {
+    if (ekf_over_threshold()) {
         // if compass is not yet flagged as bad
         if (!ekf_check_state.bad_variance) {
             // increase counter
@@ -86,38 +86,6 @@ void Copter::ekf_check()
     // To-Do: add ekf variances to extended status
 }
 
-// ekf_check_position_problem - returns true if the EKF has a positioning problem
-bool Copter::ekf_check_position_problem()
-{
-    // either otflow or abs means we're OK:
-    if (optflow_position_ok()) {
-        return false;
-    }
-    if (ekf_position_ok()) {
-        return false;
-    }
-
-    // We don't know where we are.  Is this a problem?
-    if (copter.flightmode->requires_GPS()) {
-        // Oh, yes, we have a problem
-        return true;
-    }
-    // sometimes LAND *does* require GPS:
-    if (control_mode == LAND && landing_with_GPS()) {
-        return true;
-    }
-
-    // we're in a non-GPS mode (e.g. althold/stabilize)
-
-    if (g.fs_ekf_action == FS_EKF_ACTION_LAND_EVEN_STABILIZE) {
-        // the user is making an issue out of it
-        return true;
-    }
-
-    return false;
-}
-
-
 // ekf_over_threshold - returns true if the ekf's variance are over the tolerance
 bool Copter::ekf_over_threshold()
 {
@@ -144,7 +112,15 @@ bool Copter::ekf_over_threshold()
         over_thresh_count++;
     }
 
-    return (over_thresh_count >= 2);
+    if (over_thresh_count >= 2) {
+        return true;
+    }
+
+    // either optflow relative or absolute position estimate OK
+    if (optflow_position_ok() || ekf_position_ok()) {
+        return false;
+    }
+    return true;
 }
 
 
@@ -160,6 +136,17 @@ void Copter::failsafe_ekf_event()
     failsafe.ekf = true;
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
 
+    // does this mode require position?
+    if (!copter.flightmode->requires_GPS() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
+        return;
+    }
+
+    // sometimes LAND *does* require GPS:
+    if (control_mode == LAND && landing_with_GPS()) {
+        mode_land.do_not_use_GPS();
+        return;
+    }
+
     // take action based on fs_ekf_action parameter
     switch (g.fs_ekf_action) {
         case FS_EKF_ACTION_ALTHOLD:
@@ -168,14 +155,11 @@ void Copter::failsafe_ekf_event()
                 set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
             }
             break;
+        case FS_EKF_ACTION_LAND:
+        case FS_EKF_ACTION_LAND_EVEN_STABILIZE:
         default:
             set_mode_land_with_pause(MODE_REASON_EKF_FAILSAFE);
             break;
-    }
-
-    // if flight mode is already LAND ensure it's not the GPS controlled LAND
-    if (control_mode == LAND) {
-        mode_land.do_not_use_GPS();
     }
 }
 
