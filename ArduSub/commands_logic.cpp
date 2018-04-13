@@ -519,7 +519,7 @@ void Sub::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // do_nav_delay - Delay the next navigation command
 void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    nav_delay_time_start = millis();
+    nav_delay_time_start = AP_HAL::millis();
 
     if (cmd.content.nav_delay.seconds > 0) {
         // relative delay
@@ -580,11 +580,11 @@ bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // start timer if necessary
     if (loiter_time == 0) {
-        loiter_time = millis();
+        loiter_time = AP_HAL::millis();
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
@@ -648,11 +648,11 @@ bool Sub::verify_loiter_time()
 
     // start our loiter timer
     if (loiter_time == 0) {
-        loiter_time = millis();
+        loiter_time = AP_HAL::millis();
     }
 
     // check if loiter timer has run out
-    return (((millis() - loiter_time) / 1000) >= loiter_time_max);
+    return (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max);
 }
 
 // verify_circle - check if we have circled the point enough
@@ -695,11 +695,11 @@ bool Sub::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // start timer if necessary
     if (loiter_time == 0) {
-        loiter_time = millis();
+        loiter_time = AP_HAL::millis();
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
@@ -724,7 +724,7 @@ bool Sub::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // verify_nav_delay - check if we have waited long enough
 bool Sub::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (millis() - nav_delay_time_start > (uint32_t)MAX(nav_delay_time_max,0)) {
+    if (AP_HAL::millis() - nav_delay_time_start > (uint32_t)MAX(nav_delay_time_max, 0)) {
         nav_delay_time_max = 0;
         return true;
     }
@@ -737,7 +737,7 @@ bool Sub::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 
 void Sub::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
-    condition_start = millis();
+    condition_start = AP_HAL::millis();
     condition_value = cmd.content.delay.seconds * 1000;     // convert seconds to milliseconds
 }
 
@@ -762,7 +762,7 @@ void Sub::do_yaw(const AP_Mission::Mission_Command& cmd)
 
 bool Sub::verify_wait_delay()
 {
-    if (millis() - condition_start > (uint32_t)MAX(condition_value,0)) {
+    if (AP_HAL::millis() - condition_start > (uint32_t)MAX(condition_value, 0)) {
         condition_value = 0;
         return true;
     }
