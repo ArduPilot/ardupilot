@@ -106,6 +106,10 @@ private:
     uint32_t last_rc_read_ms;
     uint32_t last_servo_read_ms;
     uint32_t last_debug_ms;
+    uint32_t last_safety_option_check_ms;
+
+    // last value of safety options
+    uint16_t last_safety_options = 0xFFFF;
 
     void send_servo_out(void);
     void read_rc_input(void);
@@ -114,6 +118,7 @@ private:
     void print_debug(void);
     void discard_input(void);
     void event_failed(uint8_t event);
+    void update_safety_options(void);
     
     // PAGE_STATUS values
     struct PACKED {
