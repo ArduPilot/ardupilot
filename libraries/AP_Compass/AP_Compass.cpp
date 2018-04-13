@@ -932,6 +932,13 @@ void Compass::_detect_backends(void)
                        AP_Compass_QMC5883L::name, true);
 #endif
 
+/* for chibios external board coniguration */
+#ifdef HAL_EXT_COMPASS_HMC5843_I2C_BUS
+    ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_EXT_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                                          true, ROTATION_ROLL_180),
+                AP_Compass_HMC5843::name, true);
+#endif
+
 #if HAL_WITH_UAVCAN
     if (_driver_enabled(DRIVER_UAVCAN)) {
         bool added;
