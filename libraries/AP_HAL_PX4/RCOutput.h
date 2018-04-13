@@ -68,6 +68,8 @@ private:
     uint32_t _rate_mask_alt;
     uint16_t _enabled_channels;
     uint32_t _period_max;
+    uint32_t _last_safety_options_check_ms;
+    uint16_t _last_safety_options;
     struct {
         int pwm_sub;
         actuator_outputs_s outputs;
