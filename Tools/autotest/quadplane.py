@@ -148,7 +148,6 @@ class AutoTestQuadPlane(AutoTest):
 
     def autotest(self):
         """Autotest QuadPlane in SITL."""
-        self.frame = 'quadplane'
         if not self.hasInit:
             self.init()
 
