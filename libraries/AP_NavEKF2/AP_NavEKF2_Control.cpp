@@ -416,10 +416,7 @@ bool NavEKF2_core::use_compass(void) const
  */
 bool NavEKF2_core::assume_zero_sideslip(void) const
 {
-    // we don't assume zero sideslip for ground vehicles as EKF could
-    // be quite sensitive to a rapid spin of the ground vehicle if
-    // traction is lost
-    return _ahrs->get_fly_forward() && _ahrs->get_vehicle_class() != AHRS_VEHICLE_GROUND;
+    return _ahrs->get_fly_forward();
 }
 
 // set the LLH location of the filters NED origin

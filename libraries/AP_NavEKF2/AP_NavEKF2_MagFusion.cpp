@@ -175,7 +175,14 @@ void NavEKF2_core::controlMagYawReset()
 // vector from GPS. It is used to align the yaw angle after launch or takeoff.
 void NavEKF2_core::realignYawGPS()
 {
-    if ((sq(gpsDataDelayed.vel.x) + sq(gpsDataDelayed.vel.y)) > 25.0f) {
+    float spdMinSq;
+    if (_ahrs->get_vehicle_class() == AHRS_VEHICLE_GROUND) {
+        spdMinSq = sq(gpsSpdAccuracy) * GPS_SPD_TO_ERR_RATIO_SQ;
+    } else {
+        spdMinSq = 25.0f;
+    }
+
+    if ((sq(gpsDataDelayed.vel.x) + sq(gpsDataDelayed.vel.y)) > spdMinSq) {
         // get quaternion from existing filter states and calculate roll, pitch and yaw angles
         Vector3f eulerAngles;
         stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);

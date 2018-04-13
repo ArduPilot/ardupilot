@@ -54,6 +54,9 @@
 // mag fusion final reset altitude
 #define EKF2_MAG_FINAL_RESET_ALT 2.5f
 
+// Square of GPS speed to accuracy ratio required to pass movement checks
+#define GPS_SPD_TO_ERR_RATIO_SQ 9.0f;
+
 class AP_AHRS;
 
 class NavEKF2_core
