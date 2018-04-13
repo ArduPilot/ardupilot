@@ -153,7 +153,14 @@ void NavEKF3_core::realignYawGPS()
     Vector3f eulerAngles;
     stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
 
-    if ((sq(gpsDataDelayed.vel.x) + sq(gpsDataDelayed.vel.y)) > 25.0f) {
+        float spdMinSq;
+        if (_ahrs->get_vehicle_class() == AHRS_VEHICLE_GROUND) {
+            spdMinSq = sq(gpsSpdAccuracy) * GPS_SPD_TO_ERR_RATIO_SQ;
+        } else {
+            spdMinSq = 25.0f;
+        }
+
+        if ((sq(gpsDataDelayed.vel.x) + sq(gpsDataDelayed.vel.y)) > spdMinSq) {
         // calculate course yaw angle
         float velYaw = atan2f(stateStruct.velocity.y,stateStruct.velocity.x);
 

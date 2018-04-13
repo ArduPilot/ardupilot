@@ -299,7 +299,7 @@ void NavEKF3_core::detectFlight()
         onGround indicates a high certainty we are not flying and inFlight indicates a high certainty we are flying. It is possible for
         both onGround and inFlight to be false if the status is uncertain, but they cannot both be true.
 
-        If we are a plane as indicated by the assume_zero_sideslip() status, then different logic is used
+        If we are a plane or ground vehicle as indicated by the assume_zero_sideslip() status, then different logic is used
 
         TODO - this logic should be moved out of the EKF and into the flight vehicle code.
     */
@@ -311,34 +311,49 @@ void NavEKF3_core::detectFlight()
         bool highAirSpd = false;
         bool largeHgtChange = false;
 
-        // trigger at 8 m/s airspeed
-        if (_ahrs->airspeed_sensor_enabled()) {
-            const AP_Airspeed *airspeed = _ahrs->get_airspeed();
-            if (airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 10.0f) {
-                highAirSpd = true;
+        if (_ahrs->get_vehicle_class() == AHRS_VEHICLE_GROUND) {
+            // trigger when velocity is statistically significant
+            float gndSpdMinSq = sq(gpsSpdAccuracy) * GPS_SPD_TO_ERR_RATIO_SQ;
+            if (gndSpdSq > gndSpdMinSq) {
+                highGndSpd = true;
             }
-        }
 
-        // trigger at 10 m/s GPS velocity, but not if GPS is reporting bad velocity errors
-        if (gndSpdSq > 100.0f && gpsSpdAccuracy < 1.0f) {
-            highGndSpd = true;
-        }
+            // Determine to a high certainty we are moving
+            if (motorsArmed && highGndSpd) {
+                airborneDetectTime_ms = imuSampleTime_ms;
+                onGround = false;
+                inFlight = true;
+            }
+        } else {
+            // trigger at 8 m/s airspeed
+            if (_ahrs->airspeed_sensor_enabled()) {
+                const AP_Airspeed *airspeed = _ahrs->get_airspeed();
+                if (airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 10.0f) {
+                    highAirSpd = true;
+                }
+            }
 
-        // trigger if more than 10m away from initial height
-        if (fabsf(hgtMea) > 10.0f) {
-            largeHgtChange = true;
-        }
+            // trigger at 10 m/s GPS velocity, but not if GPS is reporting bad velocity errors
+            if (gndSpdSq > 100.0f && gpsSpdAccuracy < 1.0f) {
+                highGndSpd = true;
+            }
 
-        // Determine to a high certainty we are flying
-        if (motorsArmed && highGndSpd && (highAirSpd || largeHgtChange)) {
-            onGround = false;
-            inFlight = true;
-        }
+            // trigger if more than 10m away from initial height
+            if (fabsf(hgtMea) > 10.0f) {
+                largeHgtChange = true;
+            }
 
-        // if is possible we are in flight, set the time this condition was last detected
-        if (motorsArmed && (highGndSpd || highAirSpd || largeHgtChange)) {
-            airborneDetectTime_ms = imuSampleTime_ms;
-            onGround = false;
+            // Determine to a high certainty we are flying
+            if (motorsArmed && highGndSpd && (highAirSpd || largeHgtChange)) {
+                onGround = false;
+                inFlight = true;
+            }
+
+            // if is possible we are in flight, set the time this condition was last detected
+            if (motorsArmed && (highGndSpd || highAirSpd || largeHgtChange)) {
+                airborneDetectTime_ms = imuSampleTime_ms;
+                onGround = false;
+            }
         }
 
         // Determine to a high certainty we are not flying
