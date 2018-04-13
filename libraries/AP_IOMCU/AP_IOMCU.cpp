@@ -17,6 +17,8 @@ extern const AP_HAL::HAL &hal;
 
 #define PKT_MAX_REGS 32
 
+//#define IOMCU_DEBUG
+
 struct PACKED IOPacket {
 	uint8_t 	count:6;
 	uint8_t 	code:2;
@@ -245,10 +247,12 @@ void AP_IOMCU::thread_main(void)
             last_servo_read_ms = AP_HAL::millis();
         }
 
+#ifdef IOMCU_DEBUG
         if (now - last_debug_ms > 1000) {
             print_debug();
             last_debug_ms = AP_HAL::millis();
         }
+#endif // IOMCU_DEBUG
 
         if (now - last_safety_option_check_ms > 1000) {
             update_safety_options();
@@ -465,13 +469,13 @@ void AP_IOMCU::write_channel(uint8_t chan, uint16_t pwm)
 
 void AP_IOMCU::print_debug(void)
 {
-#if 0
+#ifdef IOMCU_DEBUG
     const uint16_t *r = (const uint16_t *)&reg_status;
     for (uint8_t i=0; i<sizeof(reg_status)/2; i++) {
         hal.console->printf("%04x ", r[i]);
     }
     hal.console->printf("\n");
-#endif
+#endif // IOMCU_DEBUG
 }
 
 // trigger an ioevent
@@ -601,8 +605,8 @@ void AP_IOMCU::update_safety_options(void)
     }
     if (last_safety_options != desired_options) {
         uint16_t mask = (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
-		uint32_t bits_to_set = desired_options & mask;
-		uint32_t bits_to_clear = (~desired_options) & mask;
+        uint32_t bits_to_set = desired_options & mask;
+        uint32_t bits_to_clear = (~desired_options) & mask;
         if (modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, bits_to_clear, bits_to_set)) {
             last_safety_options = desired_options;
         }
