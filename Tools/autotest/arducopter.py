@@ -1106,7 +1106,6 @@ class AutoTestCopter(AutoTest):
 
     def autotest(self):
         """Autotest ArduCopter in SITL."""
-        self.frame = '+'
         if not self.hasInit:
             self.init()
 
