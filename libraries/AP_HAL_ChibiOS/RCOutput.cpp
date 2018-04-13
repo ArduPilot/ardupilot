@@ -133,6 +133,11 @@ void RCOutput::set_freq_group(pwm_group &group)
             group.pwm_cfg.channels[j].mode = PWM_OUTPUT_ACTIVE_HIGH;
             force_reconfig = true;
         }
+        if (group.pwm_cfg.channels[j].mode == PWM_COMPLEMENTARY_OUTPUT_ACTIVE_LOW) {
+            group.pwm_cfg.channels[j].mode = PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH;
+            force_reconfig = true;
+        }
+
     }
 
     if (old_clock != group.pwm_cfg.frequency ||
@@ -516,8 +521,13 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
     group.bit_width_mul = (freq + (target_frequency/2)) / target_frequency;
 
     for (uint8_t j=0; j<4; j++) {
-        if (group.pwm_cfg.channels[j].mode != PWM_OUTPUT_DISABLED) {
-            group.pwm_cfg.channels[j].mode = active_high?PWM_OUTPUT_ACTIVE_HIGH:PWM_OUTPUT_ACTIVE_LOW;
+        pwmmode_t mode = group.pwm_cfg.channels[j].mode;
+        if (mode != PWM_OUTPUT_DISABLED) {
+            if(mode == PWM_COMPLEMENTARY_OUTPUT_ACTIVE_LOW || mode == PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH) {
+               group.pwm_cfg.channels[j].mode = active_high?PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH:PWM_COMPLEMENTARY_OUTPUT_ACTIVE_LOW;
+            } else {
+               group.pwm_cfg.channels[j].mode = active_high?PWM_OUTPUT_ACTIVE_HIGH:PWM_OUTPUT_ACTIVE_LOW;
+            }
         }
     }
     

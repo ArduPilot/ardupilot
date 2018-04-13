@@ -689,6 +689,7 @@ def write_PWM_config(f):
             if p.type != t:
                 continue
             chan_str = p.label[7]
+            is_complementary = p.label[-1] == 'N';
             if not is_int(chan_str):
                 error("Bad channel for PWM %s" % p)
             chan = int(chan_str)
@@ -696,7 +697,10 @@ def write_PWM_config(f):
                 error("Bad channel number %u for PWM %s" % (chan, p))
             pwm = p.extra_value('PWM', type=int)
             chan_list[chan - 1] = pwm - 1
-            chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
+            if is_complementary:
+                chan_mode[chan - 1] = 'PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH'
+            else:
+                chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
             alt_functions[chan - 1] = p.af
             pal_lines[chan - 1] = 'PAL_LINE(GPIO%s, %uU)' % (p.port, p.pin)
         groups.append('HAL_PWM_GROUP%u' % group)
