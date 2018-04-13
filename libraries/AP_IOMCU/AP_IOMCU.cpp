@@ -11,6 +11,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -86,6 +87,8 @@ enum ioevents {
 #define P_SETUP_ARMING_IO_ARM_OK (1<<0)
 #define P_SETUP_ARMING_FMU_ARMED (1<<1)
 #define P_SETUP_ARMING_RC_HANDLING_DISABLED (1<<6)
+#define P_SETUP_ARMING_SAFETY_DISABLE_ON	(1 << 11) // disable use of safety button for safety off->on
+#define P_SETUP_ARMING_SAFETY_DISABLE_OFF	(1 << 12) // disable use of safety button for safety on->off
 
 #define PAGE_REG_SETUP_PWM_RATE_MASK 2
 #define PAGE_REG_SETUP_DEFAULTRATE   3
@@ -245,6 +248,11 @@ void AP_IOMCU::thread_main(void)
         if (now - last_debug_ms > 1000) {
             print_debug();
             last_debug_ms = AP_HAL::millis();
+        }
+
+        if (now - last_safety_option_check_ms > 1000) {
+            update_safety_options();
+            last_safety_option_check_ms = now;
         }
     }
 }
@@ -571,6 +579,34 @@ void AP_IOMCU::set_default_rate(uint16_t rate_hz)
 void AP_IOMCU::set_oneshot_mode(void)
 {
     trigger_event(IOEVENT_SET_ONESHOT_ON);
+}
+
+// handling of BRD_SAFETYOPTION parameter
+void AP_IOMCU::update_safety_options(void)
+{
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+    if (!boardconfig) {
+        return;
+    }
+    uint16_t desired_options = 0;
+    uint16_t options = boardconfig->get_safety_button_options();
+    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
+        desired_options |= P_SETUP_ARMING_SAFETY_DISABLE_OFF;
+    }
+    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
+        desired_options |= P_SETUP_ARMING_SAFETY_DISABLE_ON;
+    }
+    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && hal.util->get_soft_armed()) {
+        desired_options |= (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
+    }
+    if (last_safety_options != desired_options) {
+        uint16_t mask = (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
+		uint32_t bits_to_set = desired_options & mask;
+		uint32_t bits_to_clear = (~desired_options) & mask;
+        if (modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, bits_to_clear, bits_to_set)) {
+            last_safety_options = desired_options;
+        }
+    }
 }
 
 #endif // HAL_WITH_IO_MCU
