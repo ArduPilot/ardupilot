@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
  * AP_Relay.cpp
  *
@@ -39,6 +37,7 @@
 #define RELAY1_PIN_DEFAULT -1
 #define RELAY2_PIN_DEFAULT -1
 #define RELAY3_PIN_DEFAULT -1
+#define RELAY4_PIN_DEFAULT -1
 #endif
 
 const AP_Param::GroupInfo AP_Relay::var_info[] = {
@@ -62,7 +61,6 @@ const AP_Param::GroupInfo AP_Relay::var_info[] = {
     // @User: Standard
     // @Values: -1:Disabled,13:APM2 A9 pin,47:APM1 relay,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     AP_GROUPINFO("PIN3",  2, AP_Relay, _pin[2], RELAY3_PIN_DEFAULT),
-//    AP_GROUPINFO("PIN3",  2, AP_Relay, _pin[2], -1),
 
     // @Param: PIN4
     // @DisplayName: Fourth Relay Pin
