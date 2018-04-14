@@ -20,6 +20,7 @@
 #include "Util.h"
 #include <chheap.h>
 #include "ToneAlarm.h"
+#include "RCOutput.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -85,12 +86,11 @@ void* Util::try_alloc_from_ccm_ram(size_t size)
  */
 Util::safety_state Util::safety_switch_state(void)
 {
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        return iomcu.get_safety_switch_state();
-    }
-#endif
+#if HAL_USE_PWM == TRUE
+    return ((RCOutput *)hal.rcout)->_safety_switch_state();
+#else
     return SAFETY_NONE;
+#endif
 }
 
 void Util::set_imu_temp(float current)

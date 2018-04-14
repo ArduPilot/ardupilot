@@ -63,6 +63,12 @@ public:
      */
     void force_safety_off(void) override;
 
+    /*
+      set PWM to send to a set of channels when the safety switch is
+      in the safe state
+     */
+    void set_safety_pwm(uint32_t chmask, uint16_t period_us) override;
+    
     bool enable_px4io_sbus_out(uint16_t rate_hz) override;
 
     /*
@@ -120,6 +126,11 @@ public:
       with DShot to get telemetry feedback
      */
     void set_telem_request_mask(uint16_t mask) { telem_request_mask = (mask >> chan_offset); }
+
+    /*
+      get safety switch state, used by Util.cpp
+    */
+    AP_HAL::Util::safety_state _safety_switch_state(void);
     
 private:
     struct pwm_group {
@@ -212,6 +223,7 @@ private:
     // these values are for the local channels. Non-local channels are handled by IOMCU
     uint32_t en_mask;
     uint16_t period[16];
+    uint16_t safe_pwm[16]; // pwm to use when safety is on
     uint8_t num_channels;
     bool corked;
     // mask of channels that are running in high speed
@@ -240,6 +252,18 @@ private:
 
     // setup output frequency for a group
     void set_freq_group(pwm_group &group);
+
+    // safety switch state
+    AP_HAL::Util::safety_state safety_state;
+    uint32_t safety_update_ms;
+    uint8_t led_counter;
+    int8_t safety_button_counter;
+
+    // mask of channels to allow when safety on
+    uint16_t safety_mask;
+
+    // update safety switch and LED
+    void safety_update(void);
     
     /*
       DShot handling
