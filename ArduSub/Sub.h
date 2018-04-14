@@ -746,6 +746,8 @@ private:
 
     void convert_old_parameters(void);
 
+    bool control_check_barometer();
+
 public:
     void mavlink_delay_cb();
     void mainloop_failsafe_check();
