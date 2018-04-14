@@ -139,6 +139,15 @@ public:
     }
 #endif
 
+    // return the value of BRD_SAFETY_MASK
+    uint16_t get_safety_mask(void) const {
+#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM)
+        return uint16_t(state.ignore_safety_channels.get());
+#else
+        return 0;
+#endif
+    }
+
     
 private:
     static AP_BoardConfig *instance;
