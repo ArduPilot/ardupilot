@@ -51,6 +51,9 @@ bylabel = {}
 # list of SPI devices
 spidev = []
 
+# list of ROMFS files
+romfs = []
+
 # SPI bus list
 spi_list = []
 
@@ -803,6 +806,10 @@ def write_GPIO_config(f):
                 (label, p.port, p.pin))
     f.write('\n')
 
+def write_ROMFS(outdir):
+    '''create ROMFS embedded header'''
+    from embed import create_embedded_h
+    create_embedded_h(os.path.join(outdir, 'ap_romfs_embedded.h'), romfs)
 
 def write_prototype_file():
     '''write the prototype file for apj generation'''
@@ -878,6 +885,9 @@ def write_hwdef_header(outfilename):
     write_PWM_config(f)
     
     write_UART_config(f)
+
+    if len(romfs) > 0:
+        f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_H 1\n')
 
     f.write('''
 /*
@@ -1022,6 +1032,8 @@ def process_line(line):
             p.af = af
     if a[0] == 'SPIDEV':
         spidev.append(a[1:])
+    if a[0] == 'ROMFS':
+        romfs.append((a[1],a[2]))
     if a[0] == 'undef':
         print("Removing %s" % a[1])
         config.pop(a[1], '')
@@ -1093,9 +1105,10 @@ write_hwdef_header(os.path.join(outdir, "hwdef.h"))
 # write out ldscript.ld
 write_ldscript(os.path.join(outdir, "ldscript.ld"))
 
+write_ROMFS(outdir)
+
 # copy the shared linker script into the build directory; it must
 # exist in the same directory as the ldscript.ld file we generate.
 copy_common_linkerscript(outdir, args.hwdef)
 
 write_env_py(os.path.join(outdir, "env.py"))
-
