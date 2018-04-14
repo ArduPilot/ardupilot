@@ -140,6 +140,11 @@ public:
     // constructor
     RC_Channels(void);
 
+    // get singleton instance
+    static RC_Channels *get_singleton() {
+        return _singleton;
+    }
+
     static const struct AP_Param::GroupInfo var_info[];
 
     static RC_Channel *rc_channel(uint8_t chan) {
@@ -161,7 +166,12 @@ public:
     static void set_pwm_all(void);
     
 private:
+    static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;
     RC_Channel obj_channels[NUM_RC_CHANNELS];
+};
+
+namespace AP {
+    RC_Channels &rc();
 };
