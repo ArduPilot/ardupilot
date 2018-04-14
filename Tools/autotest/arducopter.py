@@ -633,7 +633,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(3, 1800)
 
         # wait for fence to trigger
-        self.wait_mode('RTL')
+        self.wait_mode('RTL', timeout=120)
 
         self.progress("Waiting for disarm")
         self.mav.motors_disarmed_wait()
@@ -1297,6 +1297,79 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_setting_modes_via_modeswitch(self):
+        self.context_push();
+        ex = None
+        try:
+            fltmode_ch = 5
+            self.set_parameter("FLTMODE_CH", fltmode_ch)
+            self.set_rc(fltmode_ch, 1000) # PWM for mode1
+            testmodes = [("FLTMODE1", 4, "GUIDED", 1165),
+                         ("FLTMODE2", 13, "SPORT", 1295),
+                         ("FLTMODE3", 6, "RTL", 1425),
+                         ("FLTMODE4", 7, "CIRCLE", 1555),
+                         ("FLTMODE5", 1, "ACRO", 1685),
+                         ("FLTMODE6", 17, "BRAKE", 1815),
+            ]
+            for mode in testmodes:
+                (parm, parm_value, name, pwm) = mode
+                self.set_parameter(parm, parm_value)
+
+            for mode in reversed(testmodes):
+                (parm, parm_value, name, pwm) = mode
+                self.set_rc(fltmode_ch, pwm)
+                self.wait_mode(name)
+
+            for mode in testmodes:
+                (parm, parm_value, name, pwm) = mode
+                self.set_rc(fltmode_ch, pwm)
+                self.wait_mode(name)
+
+            for mode in reversed(testmodes):
+                (parm, parm_value, name, pwm) = mode
+                self.set_rc(fltmode_ch, pwm)
+                self.wait_mode(name)
+
+            self.mavproxy.send('switch 6\n')
+            self.wait_mode("BRAKE")
+            self.mavproxy.send('switch 5\n')
+            self.wait_mode("ACRO")
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
+    def test_setting_modes_via_auxswitch(self):
+        self.context_push();
+        ex = None
+        try:
+            fltmode_ch = int(self.get_parameter("FLTMODE_CH"))
+            self.set_rc(fltmode_ch, 1000)
+            self.wait_mode("CIRCLE")
+            self.set_rc(9, 1000)
+            self.set_rc(10, 1000)
+            self.set_parameter("RC9_OPTION", 18) # land
+            self.set_parameter("RC10_OPTION", 55) # guided
+            self.set_rc(9, 1900)
+            self.wait_mode("LAND")
+            self.set_rc(10, 1900)
+            self.wait_mode("GUIDED")
+            self.set_rc(10, 1000) # this re-polls the mode switch
+            self.wait_mode("CIRCLE")
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop();
+
+        if ex is not None:
+            raise ex
+
     def guided_achieve_heading(self, heading):
         tstart = self.get_sim_time()
         self.run_cmd(mavutil.mavlink.MAV_CMD_CONDITION_YAW,
@@ -1414,6 +1487,15 @@ class AutoTestCopter(AutoTest):
             self.wait_mode('STABILIZE')
             self.progress("Waiting reading for arm")
             self.wait_ready_to_arm()
+
+            self.run_test("Set modes via modeswitch",
+                          self.test_setting_modes_via_modeswitch)
+
+            self.run_test("Set modes via auxswitch",
+                          self.test_setting_modes_via_auxswitch)
+
+            self.mavproxy.send('switch 6\n')  # stabilize mode
+            self.wait_mode('STABILIZE')
 
             # Arm
             self.run_test("Arm motors", self.arm_vehicle)
