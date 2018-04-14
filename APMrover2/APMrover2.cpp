@@ -64,7 +64,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(gcs_update,             50,   1000),
     SCHED_TASK(gcs_data_stream_send,   50,   3000),
     SCHED_TASK(read_control_switch,     7,    200),
-    SCHED_TASK(read_aux_switch,        10,    200),
+    SCHED_TASK_CLASS(AP_RCSwitch_Rover,   &rover.rcswitch,         read_aux_all,     10,     200),
     SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300),
     SCHED_TASK(read_receiver_rssi,     10,    200),
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200),

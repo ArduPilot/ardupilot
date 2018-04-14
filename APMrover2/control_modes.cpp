@@ -107,168 +107,198 @@ uint8_t Rover::readSwitch(void) {
     return 5;  // Hardware Manual
 }
 
-void Rover::reset_control_switch()
+void AP_RCSwitch_Rover::reset_control_switch()
 {
-    oldSwitchPosition = 254;
-    read_control_switch();
+    rover.oldSwitchPosition = 254;
+    rover.read_control_switch();
 }
 
-// ready auxiliary switch's position
-aux_switch_pos Rover::read_aux_switch_pos()
+// init_aux_switch_function - initialize aux functions
+void AP_RCSwitch_Rover::init_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
-    const uint16_t radio_in = channel_aux->get_radio_in();
-    if (radio_in < AUX_SWITCH_PWM_TRIGGER_LOW) return AUX_SWITCH_LOW;
-    if (radio_in > AUX_SWITCH_PWM_TRIGGER_HIGH) return AUX_SWITCH_HIGH;
-    return AUX_SWITCH_MIDDLE;
-}
-
-// initialise position of auxiliary switch
-void Rover::init_aux_switch()
-{
-    aux_ch7 = read_aux_switch_pos();
-}
-
-// read ch7 aux switch
-void Rover::read_aux_switch()
-{
-    // do not consume input during rc or throttle failsafe
-    if ((failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (failsafe.bits & FAILSAFE_EVENT_RC)) {
-        return;
-    }
-
-    // get ch7's current position
-    aux_switch_pos aux_ch7_pos = read_aux_switch_pos();
-
-    // return if no change to switch position
-    if (aux_ch7_pos == aux_ch7) {
-        return;
-    }
-    aux_ch7 = aux_ch7_pos;
-
-    switch ((enum ch7_option)g.ch7_option.get()) {
-    case CH7_DO_NOTHING:
+    // init channel options
+    switch(ch_option) {
+        // at the moment nothing needs initialisation:
+        // do_aux_function(ch_option, ch_flag);
         break;
-    case CH7_SAVE_WP:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
+    default:
+        AP_RCSwitch::init_aux_function(ch_option, ch_flag);
+        break;
+    }
+}
+
+
+bool AP_RCSwitch_Rover::in_rc_failsafe() const
+{
+    return ((rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) ||
+            (rover.failsafe.bits & FAILSAFE_EVENT_RC));
+}
+
+void AP_RCSwitch_Rover::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
+{
+    switch (ch_option) {
+    case DO_NOTHING:
+        break;
+    case SAVE_WP:
+        if (ch_flag == HIGH) {
             // do nothing if in AUTO mode
-            if (control_mode == &mode_auto) {
+            if (rover.control_mode == &rover.mode_auto) {
                 return;
             }
 
             // if disarmed clear mission and set home to current location
-            if (!arming.is_armed()) {
-                mission.clear();
-                set_home_to_current_location(false);
+            if (!rover.arming.is_armed()) {
+                rover.mission.clear();
+                rover.set_home_to_current_location(false);
                 return;
             }
 
             // record the waypoint if not in auto mode
-            if (control_mode != &mode_auto) {
+            if (rover.control_mode != &rover.mode_auto) {
                 // create new mission command
                 AP_Mission::Mission_Command cmd = {};
 
                 // set new waypoint to current location
-                cmd.content.location = current_loc;
+                cmd.content.location = rover.current_loc;
 
                 // make the new command to a waypoint
                 cmd.id = MAV_CMD_NAV_WAYPOINT;
 
                 // save command
-                if (mission.add_cmd(cmd)) {
-                    hal.console->printf("Added waypoint %u", static_cast<uint32_t>(mission.num_commands()));
+                if (rover.mission.add_cmd(cmd)) {
+                    hal.console->printf("Added waypoint %u", static_cast<uint32_t>(rover.mission.num_commands()));
                 }
             }
         }
         break;
 
     // learn cruise speed and throttle
-    case CH7_LEARN_CRUISE:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            cruise_learn_start();
-        } else if (aux_ch7 == AUX_SWITCH_LOW) {
-            cruise_learn_complete();
+    case LEARN_CRUISE:
+        if (ch_flag == HIGH) {
+            rover.cruise_learn_start();
+        } else if (ch_flag == LOW) {
+            rover.cruise_learn_complete();
         }
         break;
 
     // arm or disarm the motors
-    case CH7_ARM_DISARM:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            arm_motors(AP_Arming::RUDDER);
-        } else if (aux_ch7 == AUX_SWITCH_LOW) {
-            disarm_motors();
+    case ARMDISARM:
+        if (ch_flag == HIGH) {
+            rover.arm_motors(AP_Arming::RUDDER);
+        } else if (ch_flag == LOW) {
+            rover.disarm_motors();
         }
         break;
 
     // set mode to Manual
-    case CH7_MANUAL:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_manual, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_manual)) {
+    case aux_func_t::MANUAL:
+        if (ch_flag == HIGH) {
+            rover.set_mode(rover.mode_manual, MODE_REASON_TX_COMMAND);
+        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_manual)) {
             reset_control_switch();
         }
         break;
 
     // set mode to Acro
-    case CH7_ACRO:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_acro, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_acro)) {
+    case aux_func_t::ACRO:
+        if (ch_flag == HIGH) {
+            rover.set_mode(rover.mode_acro, MODE_REASON_TX_COMMAND);
+        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_acro)) {
             reset_control_switch();
         }
         break;
 
     // set mode to Steering
-    case CH7_STEERING:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_steering, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_steering)) {
+    case aux_func_t::STEERING:
+        if (ch_flag == HIGH) {
+            rover.set_mode(rover.mode_steering, MODE_REASON_TX_COMMAND);
+        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_steering)) {
             reset_control_switch();
         }
         break;
 
     // set mode to Hold
-    case CH7_HOLD:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_hold, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_hold)) {
+    case aux_func_t::HOLD:
+        if (ch_flag == HIGH) {
+            rover.set_mode(rover.mode_hold, MODE_REASON_TX_COMMAND);
+        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_hold)) {
             reset_control_switch();
         }
         break;
 
     // set mode to Auto
-    case CH7_AUTO:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_auto, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_auto)) {
+    case aux_func_t::AUTO:
+        if (ch_flag == HIGH) {
+            rover.set_mode(rover.mode_auto, MODE_REASON_TX_COMMAND);
+        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_auto)) {
             reset_control_switch();
         }
         break;
 
     // set mode to RTL
-    case CH7_RTL:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_rtl, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_rtl)) {
+    case aux_func_t::RTL:
+        if (ch_flag == HIGH) {
+            rover.set_mode(rover.mode_rtl, MODE_REASON_TX_COMMAND);
+        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_rtl)) {
             reset_control_switch();
         }
         break;
 
     // set mode to SmartRTL
-    case CH7_SMART_RTL:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_smartrtl, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_smartrtl)) {
+    case aux_func_t::SMART_RTL:
+        if (ch_flag == HIGH) {
+            rover.set_mode(rover.mode_smartrtl, MODE_REASON_TX_COMMAND);
+        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_smartrtl)) {
             reset_control_switch();
         }
         break;
 
     // set mode to Guided
-    case CH7_GUIDED:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_guided, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_guided)) {
+    case aux_func_t::GUIDED:
+        if (ch_flag == HIGH) {
+            rover.set_mode(rover.mode_guided, MODE_REASON_TX_COMMAND);
+        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_guided)) {
             reset_control_switch();
         }
+        break;
+    // the following functions are not implemented in Rover
+    case aux_func_t::FLIP:
+    case aux_func_t::SIMPLE_MODE:
+    case aux_func_t::SUPERSIMPLE_MODE:
+    case aux_func_t::SAVE_TRIM:
+    case aux_func_t::CAMERA_TRIGGER:
+    case aux_func_t::RANGEFINDER:
+    case aux_func_t::FENCE:
+    case aux_func_t::RESETTOARMEDYAW:
+    case aux_func_t::ACRO_TRAINER:
+    case aux_func_t::SPRAYER:
+    case aux_func_t::AUTOTUNE:
+    case aux_func_t::LAND:
+    case aux_func_t::GRIPPER:
+    case aux_func_t::PARACHUTE_ENABLE:
+    case aux_func_t::PARACHUTE_RELEASE:
+    case aux_func_t::PARACHUTE_3POS:
+    case aux_func_t::MISSION_RESET:
+    case aux_func_t::ATTCON_ACCEL_LIM:
+    case aux_func_t::ATTCON_FEEDFWD:
+    case aux_func_t::RETRACT_MOUNT:
+    case aux_func_t::RELAY:
+    case aux_func_t::RELAY2:
+    case aux_func_t::RELAY3:
+    case aux_func_t::RELAY4:
+    case aux_func_t::LANDING_GEAR:
+    case aux_func_t::LOST_COPTER_SOUND:
+    case aux_func_t::MOTOR_ESTOP:
+    case aux_func_t::MOTOR_INTERLOCK:
+    case aux_func_t::BRAKE:
+    case aux_func_t::THROW:
+    case aux_func_t::AVOID_ADSB:
+    case aux_func_t::PRECISION_LOITER:
+    case aux_func_t::AVOID_PROXIMITY:
+    case aux_func_t::INVERTED:
+    case aux_func_t::WINCH_ENABLE:
+    case aux_func_t::WINCH_CONTROL:
+    case aux_func_t::RC_OVERRIDE_ENABLE:
         break;
     }
 }

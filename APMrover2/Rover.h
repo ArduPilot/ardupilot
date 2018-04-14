@@ -83,6 +83,8 @@
 #include <SITL/SITL.h>
 #endif
 
+#include "AP_RCSwitch.h"
+
 // Local modules
 #include "AP_MotorsUGV.h"
 #include "mode.h"
@@ -116,6 +118,7 @@ public:
     friend class ModeManual;
     friend class ModeRTL;
     friend class ModeSmartRTL;
+    friend class AP_RCSwitch_Rover;
 
     Rover(void);
 
@@ -259,6 +262,8 @@ private:
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
 
+    AP_RCSwitch_Rover rcswitch;
+
     // true if we have a position estimate from AHRS
     bool have_position;
 
@@ -283,9 +288,6 @@ private:
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
-
-    // CH7 auxiliary switches last known position
-    aux_switch_pos aux_ch7;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -439,9 +441,6 @@ private:
     void read_control_switch();
     uint8_t readSwitch(void);
     void reset_control_switch();
-    aux_switch_pos read_aux_switch_pos();
-    void init_aux_switch();
-    void read_aux_switch();
     bool motor_active();
 
     // crash_check.cpp

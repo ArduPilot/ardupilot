@@ -152,8 +152,7 @@ void Rover::init_ardupilot()
 
     // set the correct flight mode
     // ---------------------------
-    reset_control_switch();
-    init_aux_switch();
+    rcswitch.init();
 
     // disable safety if requested
     BoardConfig.init_safety();
