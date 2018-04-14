@@ -53,6 +53,12 @@ public:
         WINCH_ENABLE =        44, // winch enable/disable
         WINCH_CONTROL =       45, // winch control
         RC_OVERRIDE_ENABLE =  46, // enable RC Override
+        LEARN_CRUISE =        47, // learn cruise throttle (Rover)
+        MANUAL       =        48, // manual mode
+        ACRO         =        49, // acro mode
+        STEERING     =        50, // steering mode
+        HOLD         =        51, // hold mode
+        GUIDED       =        52, // guided mode
     };
     typedef enum aux_func aux_func_t;
 
