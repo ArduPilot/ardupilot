@@ -124,6 +124,23 @@ void AP_RCSwitch_Copter::init_aux_function(const aux_func_t ch_option, const aux
 }
 
 // do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
+void AP_RCSwitch_Copter::do_aux_function_change_mode(const control_mode_t mode,
+                                                     const aux_switch_pos_t ch_flag)
+{
+    switch(ch_flag) {
+    case HIGH:
+        // engage mode (if not possible we remain in current flight mode)
+        copter.set_mode(mode, MODE_REASON_TX_COMMAND);
+        break;
+    default:
+        // return to flight mode switch's flight mode if we are currently
+        // in this mode
+        if (copter.control_mode == mode) {
+            reset_control_switch();
+        }
+    }
+}
+
 void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {
@@ -146,15 +163,7 @@ void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_s
 
         case RTL:
 #if MODE_RTL_ENABLED == ENABLED
-            if (ch_flag == HIGH) {
-                // engage RTL (if not possible we remain in current flight mode)
-                copter.set_mode(control_mode_t::RTL, MODE_REASON_TX_COMMAND);
-            } else {
-                // return to flight mode switch's flight mode if we are currently in RTL
-                if (copter.control_mode == control_mode_t::RTL) {
-                    reset_control_switch();
-                }
-            }
+            do_aux_function_change_mode(control_mode_t::RTL, ch_flag);
 #endif
             break;
 
@@ -230,14 +239,7 @@ void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_s
 
         case AUTO:
 #if MODE_AUTO_ENABLED == ENABLED
-            if (ch_flag == HIGH) {
-                copter.set_mode(control_mode_t::AUTO, MODE_REASON_TX_COMMAND);
-            } else {
-                // return to flight mode switch's flight mode if we are currently in AUTO
-                if (copter.control_mode == control_mode_t::AUTO) {
-                    reset_control_switch();
-                }
-            }
+            do_aux_function_change_mode(control_mode_t::AUTO, ch_flag);
 #endif
             break;
 
@@ -312,32 +314,12 @@ void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_s
 
         case AUTOTUNE:
 #if AUTOTUNE_ENABLED == ENABLED
-            // turn on auto tuner
-            switch(ch_flag) {
-                case LOW:
-                case MIDDLE:
-                    // restore flight mode based on flight mode switch position
-                    if (copter.control_mode == control_mode_t::AUTOTUNE) {
-                        reset_control_switch();
-                    }
-                    break;
-                case HIGH:
-                    // start an autotuning session
-                    copter.set_mode(control_mode_t::AUTOTUNE, MODE_REASON_TX_COMMAND);
-                    break;
-            }
+            do_aux_function_change_mode(control_mode_t::AUTOTUNE, ch_flag);
 #endif
             break;
 
         case LAND:
-            if (ch_flag == HIGH) {
-                copter.set_mode(control_mode_t::LAND, MODE_REASON_TX_COMMAND);
-            } else {
-                // return to flight mode switch's flight mode if we are currently in LAND
-                if (copter.control_mode == control_mode_t::LAND) {
-                    reset_control_switch();
-                }
-            }
+            do_aux_function_change_mode(control_mode_t::LAND, ch_flag);
             break;
 
         case PARACHUTE_ENABLE:
@@ -442,29 +424,13 @@ void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_s
 
         case BRAKE:
 #if MODE_BRAKE_ENABLED == ENABLED
-            // brake flight mode
-            if (ch_flag == HIGH) {
-                copter.set_mode(control_mode_t::BRAKE, MODE_REASON_TX_COMMAND);
-            } else {
-                // return to flight mode switch's flight mode if we are currently in BRAKE
-                if (copter.control_mode == control_mode_t::BRAKE) {
-                    reset_control_switch();
-                }
-            }
+            do_aux_function_change_mode(control_mode_t::BRAKE, ch_flag);
 #endif
             break;
 
         case THROW:
 #if MODE_THROW_ENABLED == ENABLED
-            // throw flight mode
-            if (ch_flag == HIGH) {
-                copter.set_mode(control_mode_t::THROW, MODE_REASON_TX_COMMAND);
-            } else {
-                // return to flight mode switch's flight mode if we are currently in throw mode
-                if (copter.control_mode == control_mode_t::THROW) {
-                    reset_control_switch();
-                }
-            }
+            do_aux_function_change_mode(control_mode_t::THROW, ch_flag);
 #endif
             break;
 
@@ -531,15 +497,7 @@ void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_s
 
         case SMART_RTL:
 #if MODE_SMARTRTL_ENABLED == ENABLED
-            if (ch_flag == HIGH) {
-                // engage SmartRTL (if not possible we remain in current flight mode)
-                copter.set_mode(control_mode_t::SMART_RTL, MODE_REASON_TX_COMMAND);
-            } else {
-                // return to flight mode switch's flight mode if we are currently in RTL
-                if (copter.control_mode == control_mode_t::SMART_RTL) {
-                    reset_control_switch();
-                }
-            }
+            do_aux_function_change_mode(control_mode_t::SMART_RTL, ch_flag);
 #endif
             break;
 

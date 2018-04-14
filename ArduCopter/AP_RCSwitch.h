@@ -22,4 +22,8 @@ protected:
 
     bool in_rc_failsafe() const override;
 
+private:
+
+    void do_aux_function_change_mode(const control_mode_t mode,
+                                     const aux_switch_pos_t ch_flag);
 };
