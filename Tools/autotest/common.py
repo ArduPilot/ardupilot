@@ -223,6 +223,11 @@ class AutoTest(ABC):
                         self.buildlogs_path("%s-valgrind.log" %
                                             self.log_name))
 
+    def start_test(self, description):
+        self.progress("#")
+        self.progress("########## %s  ##########" % description)
+        self.progress("#")
+
     #################################################
     # GENERAL UTILITIES
     #################################################
@@ -729,7 +734,7 @@ class AutoTest(ABC):
                       (wpnum_end, wpnum_end))
         raise WaitWaypointTimeout()
 
-    def wait_mode(self, mode, timeout=None):
+    def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
         mode_map = self.mav.mode_mapping()
         if mode_map is None or mode not in mode_map:
@@ -738,15 +743,15 @@ class AutoTest(ABC):
             raise ErrorException()
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
-        hastimeout = False
-        while self.mav.flightmode != mode and not hastimeout:
-            if timeout is not None:
-                hastimeout = self.get_sim_time() > tstart + timeout
+        self.mav.wait_heartbeat()
+        while self.mav.flightmode != mode:
+            if (timeout is not None and
+                self.get_sim_time() > tstart + timeout):
+                raise WaitModeTimeout()
             self.mav.wait_heartbeat()
+#            self.progress("heartbeat mode %s Want: %s" % (
+#                    self.mav.flightmode, mode))
         self.progress("Got mode %s" % mode)
-        if self.mav.flightmode != mode and hastimeout:
-            raise WaitModeTimeout()
-        return True
 
     def wait_ready_to_arm(self, timeout=None):
         # wait for EKF checks to pass
@@ -791,7 +796,7 @@ class AutoTest(ABC):
         self.progress("Failed to get EKF.flags=%u" % required_value)
         raise AutoTestTimeoutException()
 
-    def run_test(self, desc, function):
+    def run_test(self, desc, function, interact=False):
         self.progress("#")
         self.progress("########## %s ##########" % (desc))
         self.progress("#")
@@ -801,6 +806,9 @@ class AutoTest(ABC):
         except Exception as e:
             self.progress('FAILED: "%s": %s' % (desc, repr(e)))
             self.fail_list.append((desc, e))
+            if interact:
+                self.progress("Starting MAVProxy interaction as directed")
+                self.mavproxy.interact()
             return
         self.progress('PASSED: "%s"' % desc)
 
