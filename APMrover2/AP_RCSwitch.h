@@ -2,6 +2,7 @@
 
 #include <RC_Channel/AP_RCSwitch.h>
 #include "Rover.h"
+#include "mode.h"
 
 class AP_RCSwitch_Rover : public AP_RCSwitch
 {
@@ -22,4 +23,8 @@ protected:
 
     bool in_rc_failsafe() const override;
 
+private:
+
+    void do_aux_function_change_mode(Mode &mode,
+                                     const aux_switch_pos_t ch_flag);
 };

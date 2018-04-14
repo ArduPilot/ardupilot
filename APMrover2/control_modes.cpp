@@ -134,6 +134,23 @@ bool AP_RCSwitch_Rover::in_rc_failsafe() const
             (rover.failsafe.bits & FAILSAFE_EVENT_RC));
 }
 
+void AP_RCSwitch_Rover::do_aux_function_change_mode(Mode &mode,
+                                                    const aux_switch_pos_t ch_flag)
+{
+    switch(ch_flag) {
+    case HIGH:
+        rover.set_mode(mode, MODE_REASON_TX_COMMAND);
+        break;
+    case MIDDLE:
+        // do nothing
+        break;
+    case LOW:
+        if (rover.control_mode == &mode) {
+            reset_control_switch();
+        }
+    }
+}
+
 void AP_RCSwitch_Rover::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch (ch_option) {
@@ -192,74 +209,42 @@ void AP_RCSwitch_Rover::do_aux_function(const aux_func_t ch_option, const aux_sw
 
     // set mode to Manual
     case aux_func_t::MANUAL:
-        if (ch_flag == HIGH) {
-            rover.set_mode(rover.mode_manual, MODE_REASON_TX_COMMAND);
-        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_manual)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_manual, ch_flag);
         break;
 
     // set mode to Acro
     case aux_func_t::ACRO:
-        if (ch_flag == HIGH) {
-            rover.set_mode(rover.mode_acro, MODE_REASON_TX_COMMAND);
-        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_acro)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_acro, ch_flag);
         break;
 
     // set mode to Steering
     case aux_func_t::STEERING:
-        if (ch_flag == HIGH) {
-            rover.set_mode(rover.mode_steering, MODE_REASON_TX_COMMAND);
-        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_steering)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_steering, ch_flag);
         break;
 
     // set mode to Hold
     case aux_func_t::HOLD:
-        if (ch_flag == HIGH) {
-            rover.set_mode(rover.mode_hold, MODE_REASON_TX_COMMAND);
-        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_hold)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_hold, ch_flag);
         break;
 
     // set mode to Auto
     case aux_func_t::AUTO:
-        if (ch_flag == HIGH) {
-            rover.set_mode(rover.mode_auto, MODE_REASON_TX_COMMAND);
-        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_auto)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_auto, ch_flag);
         break;
 
     // set mode to RTL
     case aux_func_t::RTL:
-        if (ch_flag == HIGH) {
-            rover.set_mode(rover.mode_rtl, MODE_REASON_TX_COMMAND);
-        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_rtl)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_rtl, ch_flag);
         break;
 
     // set mode to SmartRTL
     case aux_func_t::SMART_RTL:
-        if (ch_flag == HIGH) {
-            rover.set_mode(rover.mode_smartrtl, MODE_REASON_TX_COMMAND);
-        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_smartrtl)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_smartrtl, ch_flag);
         break;
 
     // set mode to Guided
     case aux_func_t::GUIDED:
-        if (ch_flag == HIGH) {
-            rover.set_mode(rover.mode_guided, MODE_REASON_TX_COMMAND);
-        } else if ((ch_flag == LOW) && (rover.control_mode == &rover.mode_guided)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_guided, ch_flag);
         break;
     default:
         AP_RCSwitch::do_aux_function(ch_option, ch_flag);
