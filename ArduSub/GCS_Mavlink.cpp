@@ -1598,11 +1598,6 @@ AP_Camera *GCS_MAVLINK_Sub::get_camera() const
 #endif
 }
 
-AP_ServoRelayEvents *GCS_MAVLINK_Sub::get_servorelayevents() const
-{
-    return &sub.ServoRelayEvents;
-}
-
 AP_Rally *GCS_MAVLINK_Sub::get_rally() const
 {
 #if AC_RALLY == ENABLED
