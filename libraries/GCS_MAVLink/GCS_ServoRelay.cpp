@@ -4,7 +4,7 @@
 
 MAV_RESULT GCS_MAVLINK::handle_servorelay_message(mavlink_command_long_t &packet)
 {
-    AP_ServoRelayEvents *handler = get_servorelayevents();
+    AP_ServoRelayEvents *handler = AP::servorelayevents();
     if (handler == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
     }
