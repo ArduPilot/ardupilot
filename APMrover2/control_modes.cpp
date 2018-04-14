@@ -261,44 +261,8 @@ void AP_RCSwitch_Rover::do_aux_function(const aux_func_t ch_option, const aux_sw
             reset_control_switch();
         }
         break;
-    // the following functions are not implemented in Rover
-    case aux_func_t::FLIP:
-    case aux_func_t::SIMPLE_MODE:
-    case aux_func_t::SUPERSIMPLE_MODE:
-    case aux_func_t::SAVE_TRIM:
-    case aux_func_t::CAMERA_TRIGGER:
-    case aux_func_t::RANGEFINDER:
-    case aux_func_t::FENCE:
-    case aux_func_t::RESETTOARMEDYAW:
-    case aux_func_t::ACRO_TRAINER:
-    case aux_func_t::SPRAYER:
-    case aux_func_t::AUTOTUNE:
-    case aux_func_t::LAND:
-    case aux_func_t::GRIPPER:
-    case aux_func_t::PARACHUTE_ENABLE:
-    case aux_func_t::PARACHUTE_RELEASE:
-    case aux_func_t::PARACHUTE_3POS:
-    case aux_func_t::MISSION_RESET:
-    case aux_func_t::ATTCON_ACCEL_LIM:
-    case aux_func_t::ATTCON_FEEDFWD:
-    case aux_func_t::RETRACT_MOUNT:
-    case aux_func_t::RELAY:
-    case aux_func_t::RELAY2:
-    case aux_func_t::RELAY3:
-    case aux_func_t::RELAY4:
-    case aux_func_t::LANDING_GEAR:
-    case aux_func_t::LOST_COPTER_SOUND:
-    case aux_func_t::MOTOR_ESTOP:
-    case aux_func_t::MOTOR_INTERLOCK:
-    case aux_func_t::BRAKE:
-    case aux_func_t::THROW:
-    case aux_func_t::AVOID_ADSB:
-    case aux_func_t::PRECISION_LOITER:
-    case aux_func_t::AVOID_PROXIMITY:
-    case aux_func_t::INVERTED:
-    case aux_func_t::WINCH_ENABLE:
-    case aux_func_t::WINCH_CONTROL:
-    case aux_func_t::RC_OVERRIDE_ENABLE:
+    default:
+        AP_RCSwitch::do_aux_function(ch_option, ch_flag);
         break;
     }
 }
