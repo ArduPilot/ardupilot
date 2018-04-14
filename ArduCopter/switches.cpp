@@ -114,7 +114,6 @@ void AP_RCSwitch_Copter::init_aux_function(const aux_func_t ch_option, const aux
     case RTL:
     case SAVE_TRIM:
     case SAVE_WP:
-    case CAMERA_TRIGGER:
     case RESETTOARMEDYAW:
     case AUTO:
         break;
@@ -160,7 +159,7 @@ void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_s
             break;
 
         case SAVE_TRIM:
-            if ((ch_flag == HIGH) && (copter.control_mode <= ACRO) && (copter.channel_throttle->get_control_in() == 0)) {
+            if ((ch_flag == HIGH) && (copter.control_mode <= control_mode_t::ACRO) && (copter.channel_throttle->get_control_in() == 0)) {
                 copter.save_trim();
             }
             break;
@@ -238,14 +237,6 @@ void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_s
                 if (copter.control_mode == control_mode_t::AUTO) {
                     reset_control_switch();
                 }
-            }
-#endif
-            break;
-
-        case CAMERA_TRIGGER:
-#if CAMERA == ENABLED
-            if (ch_flag == HIGH) {
-                copter.camera.take_picture();
             }
 #endif
             break;
@@ -639,9 +630,9 @@ void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_s
                 }
             }
             break;
-        case DO_NOTHING:
-        case RESETTOARMEDYAW:
-            break;
+    default:
+        AP_RCSwitch::do_aux_function(ch_option, ch_flag);
+        break;
     }
 }
 
