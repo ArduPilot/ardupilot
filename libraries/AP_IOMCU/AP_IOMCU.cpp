@@ -12,6 +12,8 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_ROMFS/AP_ROMFS.h>
+#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -95,8 +97,13 @@ enum ioevents {
 #define PAGE_REG_SETUP_PWM_RATE_MASK 2
 #define PAGE_REG_SETUP_DEFAULTRATE   3
 #define PAGE_REG_SETUP_ALTRATE       4
+#define PAGE_REG_SETUP_REBOOT_BL    10
+#define PAGE_REG_SETUP_CRC			11
 #define PAGE_REG_SETUP_SBUS_RATE    19
 #define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
+
+// magic value for rebooting to bootloader
+#define REBOOT_BL_MAGIC 14662
 
 #define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
@@ -111,6 +118,18 @@ AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
  */
 void AP_IOMCU::init(void)
 {
+    //upload_fw(fw_name);
+
+    // uart runs at 1.5MBit
+    uart.begin(1500*1000, 256, 256);
+    uart.set_blocking_writes(false);
+    uart.set_unbuffered_writes(true);
+
+    // check IO firmware CRC
+    hal.scheduler->delay(2000);
+    
+    check_crc();
+        
     thread_ctx = chThdCreateFromHeap(NULL,
                                      THD_WORKING_AREA_SIZE(1024),
                                      "IOMCU",
@@ -146,12 +165,11 @@ void AP_IOMCU::event_failed(uint8_t event)
 void AP_IOMCU::thread_main(void)
 {
     thread_ctx = chThdGetSelfX();
-    
-    // uart runs at 1.5MBit
+
     uart.begin(1500*1000, 256, 256);
     uart.set_blocking_writes(false);
     uart.set_unbuffered_writes(true);
-
+    
     trigger_event(IOEVENT_INIT);
     
     while (true) {
@@ -411,7 +429,7 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
 
     // wait for the expected number of reply bytes or timeout
     if (!uart.wait_timeout(4, 10)) {
-        hal.console->printf("no reply for %u/%u/%u\n", page, offset, count);
+        //hal.console->printf("no reply for %u/%u/%u\n", page, offset, count);
         return false;
     }
     
@@ -611,6 +629,44 @@ void AP_IOMCU::update_safety_options(void)
             last_safety_options = desired_options;
         }
     }
+}
+
+/*
+  check ROMFS firmware against CRC on IOMCU, and if incorrect then upload new firmware
+ */
+bool AP_IOMCU::check_crc(void)
+{
+    // flash size minus 4k bootloader
+	const uint32_t flash_size = 0x10000 - 0x1000;
+    uint32_t fw_size;
+    
+    fw = AP_ROMFS::find_file(fw_name, fw_size);
+    if (!fw) {
+        hal.console->printf("failed to find %s\n", fw_name);
+        return false;
+    }
+    uint32_t crc = crc_crc32(0, fw, fw_size);
+
+    // pad to max size
+	while (fw_size < flash_size) {
+		uint8_t b = 0xff;
+		crc = crc_crc32(crc, &b, 1);
+		fw_size++;
+	}
+
+    uint32_t io_crc = 0;
+    if (read_registers(PAGE_SETUP, PAGE_REG_SETUP_CRC, 2, (uint16_t *)&io_crc) &&
+        io_crc == crc) {
+        hal.console->printf("IOMCU: CRC ok\n");
+        return true;
+    }
+
+    const uint16_t magic = REBOOT_BL_MAGIC;
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
+    hal.scheduler->delay(100);
+    upload_fw(fw_name);
+
+    return false;
 }
 
 #endif // HAL_WITH_IO_MCU
