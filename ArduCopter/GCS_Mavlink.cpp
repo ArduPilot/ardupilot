@@ -1809,11 +1809,6 @@ AP_Camera *GCS_MAVLINK_Copter::get_camera() const
 #endif
 }
 
-AP_ServoRelayEvents *GCS_MAVLINK_Copter::get_servorelayevents() const
-{
-    return &copter.ServoRelayEvents;
-}
-
 AP_AdvancedFailsafe *GCS_MAVLINK_Copter::get_advanced_failsafe() const
 {
 #if ADVANCED_FAILSAFE == ENABLED
