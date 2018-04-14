@@ -8,22 +8,16 @@
 // functionality - for example, not doing anything while landed.
 class AP_Avoidance_Plane : public AP_Avoidance {
 public:
-    static AP_Avoidance_Plane create(AP_AHRS &ahrs, class AP_ADSB &adsb) {
-        return AP_Avoidance_Plane{ahrs, adsb};
+    AP_Avoidance_Plane(AP_AHRS &ahrs, class AP_ADSB &adsb)
+        : AP_Avoidance(ahrs, adsb)
+    {
     }
-
-    constexpr AP_Avoidance_Plane(AP_Avoidance_Plane &&other) = default;
 
     /* Do not allow copies */
     AP_Avoidance_Plane(const AP_Avoidance_Plane &other) = delete;
     AP_Avoidance_Plane &operator=(const AP_Avoidance_Plane&) = delete;
 
 protected:
-    AP_Avoidance_Plane(AP_AHRS &ahrs, class AP_ADSB &adsb)
-        : AP_Avoidance(ahrs, adsb)
-    {
-    }
-
     // override avoidance handler
     MAV_COLLISION_ACTION handle_avoidance(const AP_Avoidance::Obstacle *obstacle, MAV_COLLISION_ACTION requested_action) override;
 

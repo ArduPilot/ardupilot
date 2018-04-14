@@ -33,13 +33,7 @@ class RangeFinder
     friend class AP_RangeFinder_Backend;
 
 public:
-    static RangeFinder create(AP_SerialManager &_serial_manager,
-                              enum Rotation orientation_default)
-    {
-        return RangeFinder(_serial_manager, orientation_default);
-    }
-
-    constexpr RangeFinder(RangeFinder &&other) = default;
+    RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default);
 
     /* Do not allow copies */
     RangeFinder(const RangeFinder &other) = delete;
@@ -166,8 +160,6 @@ public:
 
 
 private:
-    RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default);
-
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances:3;
@@ -175,7 +167,7 @@ private:
     AP_SerialManager &serial_manager;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 
-    void detect_instance(uint8_t instance);
+    void detect_instance(uint8_t instance, uint8_t& serial_instance);
     void update_instance(uint8_t instance);  
 
     bool _add_backend(AP_RangeFinder_Backend *driver);

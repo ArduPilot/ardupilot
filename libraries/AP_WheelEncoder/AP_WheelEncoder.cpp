@@ -25,7 +25,7 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @Description: What type of WheelEncoder is connected
     // @Values: 0:None,1:Quadrature
     // @User: Standard
-    AP_GROUPINFO("_TYPE",    0, AP_WheelEncoder, _type[0], 0),
+    AP_GROUPINFO_FLAGS("_TYPE", 0, AP_WheelEncoder, _type[0], 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _CPR
     // @DisplayName: WheelEncoder counts per revolution

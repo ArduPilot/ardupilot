@@ -19,10 +19,10 @@ void loop();
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // Relay
-static AP_Relay relay = AP_Relay::create();
+static AP_Relay relay;
 
 // Parachute
-static AP_Parachute parachute = AP_Parachute::create(relay);
+static AP_Parachute parachute{relay};
 
 void setup()
 {

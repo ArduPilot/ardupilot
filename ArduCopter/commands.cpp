@@ -1,17 +1,10 @@
 #include "Copter.h"
 
-/*
- * the home_state has a number of possible values (see enum HomeState in defines.h's)
- *   HOME_UNSET             = home is not set, no GPS positions yet received
- *   HOME_SET_NOT_LOCKED    = home is set to EKF origin or armed location (can be moved)
- *   HOME_SET_AND_LOCKED    = home has been set by user, cannot be moved except by user initiated do-set-home command
- */
-
 // checks if we should update ahrs/RTL home position from the EKF
 void Copter::update_home_from_EKF()
 {
     // exit immediately if home already set
-    if (ap.home_state != HOME_UNSET) {
+    if (ahrs.home_is_set()) {
         return;
     }
 
@@ -31,7 +24,13 @@ void Copter::set_home_to_current_location_inflight() {
     if (inertial_nav.get_location(temp_loc)) {
         const struct Location &ekf_origin = inertial_nav.get_origin();
         temp_loc.alt = ekf_origin.alt;
-        set_home(temp_loc, false);
+        if (!set_home(temp_loc, false)) {
+            return;
+        }
+        // we have successfully set AHRS home, set it for SmartRTL
+#if MODE_SMARTRTL_ENABLED == ENABLED
+        g2.smart_rtl.set_home(true);
+#endif
     }
 }
 
@@ -40,7 +39,14 @@ bool Copter::set_home_to_current_location(bool lock) {
     // get current location from EKF
     Location temp_loc;
     if (inertial_nav.get_location(temp_loc)) {
-        return set_home(temp_loc, lock);
+        if (!set_home(temp_loc, lock)) {
+            return false;
+        }
+        // we have successfully set AHRS home, set it for SmartRTL
+#if MODE_SMARTRTL_ENABLED == ENABLED
+        g2.smart_rtl.set_home(true);
+#endif
+        return true;
     }
     return false;
 }
@@ -70,12 +76,14 @@ bool Copter::set_home(const Location& loc, bool lock)
     ahrs.set_home(loc);
 
     // init inav and compass declination
-    if (ap.home_state == HOME_UNSET) {
+    if (!ahrs.home_is_set()) {
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
         scaleLongDown = longitude_scale(loc);
         // record home is set
-        set_home_state(HOME_SET_NOT_LOCKED);
+        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
+        Log_Write_Event(DATA_SET_HOME);
 
+#if MODE_AUTO_ENABLED == ENABLED
         // log new home position which mission library will pull from ahrs
         if (should_log(MASK_LOG_CMD)) {
             AP_Mission::Mission_Command temp_cmd;
@@ -83,11 +91,12 @@ bool Copter::set_home(const Location& loc, bool lock)
                 DataFlash.Log_Write_Mission_Cmd(mission, temp_cmd);
             }
         }
+#endif
     }
 
     // lock home position
     if (lock) {
-        set_home_state(HOME_SET_AND_LOCKED);
+        ahrs.set_home_status(HOME_SET_AND_LOCKED);
     }
 
     // log ahrs home and ekf origin dataflash

@@ -16,6 +16,7 @@ bool Copter::current_mode_has_user_takeoff(bool must_navigate)
             return true;
         case ALT_HOLD:
         case SPORT:
+        case FLOWHOLD:
             return !must_navigate;
         default:
             return false;
@@ -35,16 +36,19 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 #endif
 
         switch(control_mode) {
+#if MODE_GUIDED_ENABLED == ENABLED
             case GUIDED:
-                if (guided_takeoff_start(takeoff_alt_cm)) {
+                if (mode_guided.takeoff_start(takeoff_alt_cm)) {
                     set_auto_armed(true);
                     return true;
                 }
                 return false;
+#endif
             case LOITER:
             case POSHOLD:
             case ALT_HOLD:
             case SPORT:
+            case FLOWHOLD:
                 set_auto_armed(true);
                 takeoff_timer_start(takeoff_alt_cm);
                 return true;
@@ -59,7 +63,7 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 void Copter::takeoff_timer_start(float alt_cm)
 {
     // calculate climb rate
-    float speed = MIN(wp_nav->get_speed_up(), MAX(g.pilot_velocity_z_max*2.0f/3.0f, g.pilot_velocity_z_max-50.0f));
+    float speed = MIN(wp_nav->get_speed_up(), MAX(g.pilot_speed_up*2.0f/3.0f, g.pilot_speed_up-50.0f));
 
     // sanity check speed and target
     if (takeoff_state.running || speed <= 0.0f || alt_cm <= 0.0f) {
@@ -178,5 +182,5 @@ void Copter::auto_takeoff_attitude_run(float target_yaw_rate)
     }
     
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
 }

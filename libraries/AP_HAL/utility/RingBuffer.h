@@ -133,6 +133,14 @@ public:
         return buffer->write((uint8_t*)&object, sizeof(T)) == sizeof(T);
     }
 
+    // push N objects
+    bool push(const T *object, uint32_t n) {
+        if (buffer->space() < n*sizeof(T)) {
+            return false;
+        }
+        return buffer->write((uint8_t*)object, n*sizeof(T)) == n*sizeof(T);
+    }
+    
     /*
       throw away an object
      */
@@ -162,6 +170,17 @@ public:
         return push(object);
     }
 
+    /*
+     * push_force() N objects
+     */
+    bool push_force(const T *object, uint32_t n) {
+        uint32_t _space = buffer->space();
+        if (_space < sizeof(T)*n) {
+            buffer->advance(sizeof(T)*(n-_space));
+        }
+        return push(object, n);
+    }
+    
     /*
       peek copies an object out without advancing the read pointer
      */

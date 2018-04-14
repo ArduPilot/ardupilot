@@ -1,5 +1,6 @@
 from LogAnalyzer import Test,TestResult
 import DataflashLog
+from VehicleType import VehicleType
 
 import collections
 
@@ -26,10 +27,33 @@ class TestPitchRollCoupling(Test):
             self.result.statusMessage = "No ATT log data"
             return
 
+        if not "CTUN" in logdata.channels:
+            self.result.status = TestResult.StatusType.UNKNOWN
+            self.result.statusMessage = "No CTUN log data"
+            return
+
+        if "BarAlt" in logdata.channels['CTUN']:
+            self.ctun_baralt_att = 'BarAlt'
+        else:
+            self.ctun_baralt_att = 'BAlt'
+
         # figure out where each mode begins and ends, so we can treat auto and manual modes differently and ignore acro/tune modes
-        autoModes   = ["RTL","AUTO","LAND","LOITER","GUIDED","CIRCLE","OF_LOITER","HYBRID"]     # use NTUN DRol+DPit
-        manualModes = ["STABILIZE","DRIFT","ALTHOLD","ALT_HOLD","POSHOLD"]                      # use CTUN RollIn/DesRoll + PitchIn/DesPitch
-        ignoreModes = ["ACRO","SPORT","FLIP","AUTOTUNE",""]                            # ignore data from these modes
+        autoModes   = ["RTL",
+                       "AUTO",
+                       "LAND",
+                       "LOITER",
+                       "GUIDED",
+                       "CIRCLE",
+                       "OF_LOITER",
+                       "POSHOLD",
+                       "BRAKE",
+                       "AVOID_ADSB",
+                       "GUIDED_NOGPS",
+                       "SMARTRTL"]
+        # use CTUN RollIn/DesRoll + PitchIn/DesPitch
+        manualModes = ["STABILIZE", "DRIFT", "ALTHOLD", "ALT_HOLD", "POSHOLD"]
+        # ignore data from these modes:
+        ignoreModes = ["ACRO", "SPORT", "FLIP", "AUTOTUNE","", "THROW",]
         autoSegments   = []  # list of (startLine,endLine) pairs
         manualSegments = []  # list of (startLine,endLine) pairs
         orderedModes = collections.OrderedDict(sorted(logdata.modeChanges.items(), key=lambda t: t[0]))
@@ -90,7 +114,7 @@ class TestPitchRollCoupling(Test):
                 lit = DataflashLog.LogIterator(logdata, startLine)
                 assert(lit.currentLine == startLine)
                 while lit.currentLine <= endLine:
-                    relativeAlt = lit["CTUN"]["BarAlt"]
+                    relativeAlt = lit["CTUN"][self.ctun_baralt_att]
                     if relativeAlt > minAltThreshold:
                         roll  = lit["ATT"]["Roll"]
                         pitch = lit["ATT"]["Pitch"]

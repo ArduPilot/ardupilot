@@ -494,6 +494,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
         jamInd     : _buffer.mon_hw_60.jamInd,
         aPower     : _buffer.mon_hw_60.aPower,
         agcCnt     : _buffer.mon_hw_60.agcCnt,
+        config     : _unconfigured_messages,
     };
     if (_payload_length == 68) {
         pkt.noisePerMS = _buffer.mon_hw_68.noisePerMS;

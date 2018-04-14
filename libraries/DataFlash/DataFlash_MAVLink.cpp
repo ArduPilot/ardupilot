@@ -35,7 +35,7 @@ void DataFlash_MAVLink::Init()
 
     _blocks = nullptr;
     while (_blockcount >= 8) { // 8 is a *magic* number
-        _blocks = (struct dm_block *) malloc(_blockcount * sizeof(_blocks[0]));
+        _blocks = (struct dm_block *) calloc(_blockcount, sizeof(_blocks[0]));
         if (_blocks != nullptr) {
             break;
         }

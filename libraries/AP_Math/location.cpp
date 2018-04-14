@@ -46,13 +46,29 @@ uint32_t get_distance_cm(const struct Location &loc1, const struct Location &loc
     return get_distance(loc1, loc2) * 100;
 }
 
+// return horizontal distance between two positions in cm
+float get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
+{
+    return norm(destination.x-origin.x,destination.y-origin.y);
+}
+
 // return bearing in centi-degrees between two locations
 int32_t get_bearing_cd(const struct Location &loc1, const struct Location &loc2)
 {
     int32_t off_x = loc2.lng - loc1.lng;
     int32_t off_y = (loc2.lat - loc1.lat) / longitude_scale(loc2);
-    int32_t bearing = 9000 + atan2f(-off_y, off_x) * 5729.57795f;
+    int32_t bearing = 9000 + atan2f(-off_y, off_x) * DEGX100;
     if (bearing < 0) bearing += 36000;
+    return bearing;
+}
+
+// return bearing in centi-degrees between two positions
+float get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
+{
+    float bearing = atan2f(destination.y-origin.y, destination.x-origin.x) * DEGX100;
+    if (bearing < 0) {
+        bearing += 36000.0f;
+    }
     return bearing;
 }
 

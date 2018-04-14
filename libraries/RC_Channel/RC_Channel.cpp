@@ -27,6 +27,8 @@ extern const AP_HAL::HAL& hal;
 
 #include "RC_Channel.h"
 
+uint32_t RC_Channel::configured_mask;
+
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
     // @DisplayName: RC min PWM
@@ -335,3 +337,17 @@ bool RC_Channel::in_trim_dz()
     return is_bounded_int32(radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
 }
 
+
+bool RC_Channel::min_max_configured() const
+{
+    if (configured_mask & (1U << ch_in)) {
+        return true;
+    }
+    if (radio_min.configured() && radio_max.configured()) {
+        // once a channel is known to be configured it has to stay
+        // configured due to the nature of AP_Param
+        configured_mask |= (1U<<ch_in);
+        return true;
+    }
+    return false;
+}

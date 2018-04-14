@@ -36,12 +36,12 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Description: Radio Receiver RSSI type. If your radio receiver supports RSSI of some kind, set it here, then set its associated RSSI_XXXXX parameters, if any.
     // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue,3:ReceiverProtocol
     // @User: Standard
-    AP_GROUPINFO("TYPE", 0, AP_RSSI, rssi_type,  BOARD_RSSI_DEFAULT),
+    AP_GROUPINFO_FLAGS("TYPE", 0, AP_RSSI, rssi_type,  BOARD_RSSI_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
     // @Param: ANA_PIN
     // @DisplayName: Receiver RSSI analog sensing pin
     // @Description: This selects an analog pin where the receiver RSSI voltage will be read.
-    // @Values: 0:APM2 A0,1:APM2 A1,13:APM2 A13,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15: Pixhawk ADC6,103:Pixhawk SBUS
+    // @Values: 0:APM2 A0,1:APM2 A1,13:APM2 A13,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,103:Pixhawk SBUS,15:Pixhawk2 ADC
     // @User: Standard
     AP_GROUPINFO("ANA_PIN", 1, AP_RSSI, rssi_analog_pin,  BOARD_RSSI_ANA_PIN),
 

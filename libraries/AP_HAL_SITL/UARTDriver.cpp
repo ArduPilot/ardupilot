@@ -35,6 +35,7 @@
 #include <netinet/tcp.h>
 #include <sys/select.h>
 #include <termios.h>
+#include <sys/time.h>
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
@@ -66,6 +67,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
              tcp:0:wait       // tcp listen on use base_port + 0
              tcpclient:192.168.2.15:5762
              uart:/dev/ttyUSB0:57600
+             sim:ParticleSensor_SDS021:
          */
         char *saveptr = nullptr;
         char *s = strdup(path);
@@ -88,6 +90,12 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _uart_path = strdup(args1);
             _uart_baudrate = baudrate;
             _uart_start_connection();
+        } else if (strcmp(devtype, "sim") == 0) {
+            ::printf("SIM connection %s:%s\n", args1, args2);
+            if (!_connected) {
+                _connected = true;
+                _fd = _sitlState->sim_fd(args1, args2);
+            }
         } else {
             AP_HAL::panic("Invalid device path: %s", path);
         }
@@ -146,13 +154,25 @@ size_t UARTDriver::write(uint8_t c)
 
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
-    if (txspace() <= (ssize_t)size) {
+    if (txspace() <= size) {
         size = txspace();
     }
     if (size <= 0) {
         return 0;
     }
-    _writebuffer.write(buffer, size);
+    if (_unbuffered_writes) {
+        // write buffer straight to the file descriptor
+        const ssize_t nwritten = ::write(_fd, buffer, size);
+        if (nwritten == -1 && errno != EAGAIN && _uart_path) {
+            close(_fd);
+            _fd = -1;
+            _connected = false;
+        }
+        // these have no effect
+        tcdrain(_fd);
+    } else {
+        _writebuffer.write(buffer, size);
+    }
     return size;
 }
 
@@ -206,7 +226,10 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         }
 
         /* we want to be able to re-use ports quickly */
-        setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+        if (setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
+            fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
+            exit(1);
+        }
 
         fprintf(stderr, "bind port %u for %u\n",
                 (unsigned)ntohs(sockaddr.sin_port),
@@ -335,9 +358,7 @@ void UARTDriver::_uart_start_connection(void)
     tcsetattr(_fd, TCSANOW, &t);
 
     // set baudrate
-    tcgetattr(_fd, &t);
-    cfsetspeed(&t, _uart_baudrate);
-    tcsetattr(_fd, TCSANOW, &t);
+    set_speed(_uart_baudrate);
 
     _connected = true;
     _use_send_recv = false;
@@ -392,6 +413,23 @@ void UARTDriver::_set_nonblocking(int fd)
 {
     unsigned v = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, v | O_NONBLOCK);
+}
+
+bool UARTDriver::set_unbuffered_writes(bool on) {
+    if (_fd == -1) {
+        return false;
+    }
+    _unbuffered_writes = on;
+
+    // this has no effect
+    unsigned v = fcntl(_fd, F_GETFL, 0);
+    v &= ~O_NONBLOCK;
+#if defined(__APPLE__) && defined(__MACH__)
+    fcntl(_fd, F_SETFL | F_NOCACHE, v | O_SYNC);
+#else
+    fcntl(_fd, F_SETFL, v | O_DIRECT | O_SYNC);
+#endif
+    return _unbuffered_writes;
 }
 
 void UARTDriver::_check_reconnect(void)

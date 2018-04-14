@@ -9,8 +9,8 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static AP_BoardConfig board_config = AP_BoardConfig::create();
-static Compass compass = Compass::create();
+static AP_BoardConfig board_config;
+static Compass compass;
 
 uint32_t timer;
 
@@ -62,7 +62,6 @@ static void loop()
             // use roll = 0, pitch = 0 for this example
             dcm_matrix.from_euler(0, 0, 0);
             heading = compass.calculate_heading(dcm_matrix, i);
-            compass.learn_offsets();
 
             const Vector3f &mag = compass.get_field(i);
 

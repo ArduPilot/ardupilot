@@ -37,6 +37,7 @@ This provides some support code and variables for MAVLink enabled sketches
 #endif
 
 AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
+bool gcs_alternative_active[MAVLINK_COMM_NUM_BUFFERS];
 
 mavlink_system_t mavlink_system = {7,1};
 
@@ -48,10 +49,6 @@ MAVLink_routing GCS_MAVLINK::routing;
 
 // static AP_SerialManager pointer
 const AP_SerialManager *GCS_MAVLINK::serialmanager_p;
-
-// snoop function for vehicle types that want to see messages for
-// other targets
-void (*GCS_MAVLINK::msg_snoop)(const mavlink_message_t* msg) = nullptr;
 
 /*
   lock a channel, preventing use by MAVLink
@@ -143,6 +140,10 @@ uint16_t comm_get_available(mavlink_channel_t chan)
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
 {
     if (!valid_channel(chan)) {
+        return;
+    }
+    if (gcs_alternative_active[chan]) {
+        // an alternative protocol is active
         return;
     }
     mavlink_comm_port[chan]->write(buf, len);

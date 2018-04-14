@@ -1,12 +1,5 @@
 #include "Sub.h"
 
-void Sub::init_barometer(bool save)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    barometer.calibrate(save);
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 // return barometric altitude in centimeters
 void Sub::read_barometer(void)
 {
@@ -162,34 +155,6 @@ void Sub::update_optical_flow(void)
 }
 #endif  // OPTFLOW == ENABLED
 
-// read_battery - check battery voltage and current and invoke failsafe if necessary
-// called at 10hz
-void Sub::read_battery(void)
-{
-    battery.read();
-
-    // update compass with current value
-    if (battery.has_current()) {
-        compass.set_current(battery.current_amps());
-    }
-
-    // update motors with voltage and current
-    if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
-        motors.set_voltage(battery.voltage());
-    }
-
-    if (battery.has_current()) {
-        motors.set_current(battery.current_amps());
-    }
-
-    failsafe_battery_check();
-
-    // log battery info to the dataflash
-    if (should_log(MASK_LOG_CURRENT)) {
-        Log_Write_Current();
-    }
-}
-
 void Sub::compass_cal_update()
 {
     if (!hal.util->get_soft_armed()) {
@@ -209,11 +174,3 @@ void Sub::accel_cal_update()
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
 }
-
-#if GRIPPER_ENABLED == ENABLED
-// gripper update
-void Sub::gripper_update()
-{
-    g2.gripper.update();
-}
-#endif

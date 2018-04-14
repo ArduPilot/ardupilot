@@ -1,8 +1,8 @@
 from __future__ import print_function
 
-from LogAnalyzer import Test,TestResult
+from LogAnalyzer import Test, TestResult
 import DataflashLog
-
+from VehicleType import VehicleType
 
 class TestPerformance(Test):
     '''check performance monitoring messages (PM) for issues with slow loops, etc'''

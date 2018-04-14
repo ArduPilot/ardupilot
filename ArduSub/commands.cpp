@@ -11,7 +11,7 @@
 void Sub::update_home_from_EKF()
 {
     // exit immediately if home already set
-    if (ap.home_state != HOME_UNSET) {
+    if (ahrs.home_is_set()) {
         return;
     }
 
@@ -73,11 +73,12 @@ bool Sub::set_home(const Location& loc, bool lock)
     ahrs.set_home(loc);
 
     // init inav and compass declination
-    if (ap.home_state == HOME_UNSET) {
+    if (!ahrs.home_is_set()) {
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
         scaleLongDown = longitude_scale(loc);
         // record home is set
-        set_home_state(HOME_SET_NOT_LOCKED);
+        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
+        Log_Write_Event(DATA_SET_HOME);
 
         // log new home position which mission library will pull from ahrs
         if (should_log(MASK_LOG_CMD)) {
@@ -90,7 +91,7 @@ bool Sub::set_home(const Location& loc, bool lock)
 
     // lock home position
     if (lock) {
-        set_home_state(HOME_SET_AND_LOCKED);
+        ahrs.set_home_status(HOME_SET_AND_LOCKED);
     }
 
     // log ahrs home and ekf origin dataflash

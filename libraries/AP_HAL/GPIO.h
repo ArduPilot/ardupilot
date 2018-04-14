@@ -11,6 +11,7 @@
 #define HAL_GPIO_INTERRUPT_HIGH 1
 #define HAL_GPIO_INTERRUPT_FALLING 2
 #define HAL_GPIO_INTERRUPT_RISING 3
+#define HAL_GPIO_INTERRUPT_BOTH 4
 
 class AP_HAL::DigitalSource {
 public:

@@ -280,8 +280,7 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
 
             if (_sample_buffer == nullptr) {
                 _sample_buffer =
-                        (CompassSample*) malloc(sizeof(CompassSample) *
-                                                COMPASS_CAL_NUM_SAMPLES);
+                    (CompassSample*) calloc(COMPASS_CAL_NUM_SAMPLES, sizeof(CompassSample));
             }
 
             if(_sample_buffer != nullptr) {

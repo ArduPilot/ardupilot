@@ -18,9 +18,10 @@
   Management for hal.storage to allow for backwards compatible mapping
   of storage offsets to available storage
  */
-#include "StorageManager.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include "StorageManager.h"
+
 
 extern const AP_HAL::HAL& hal;
 
@@ -45,6 +46,7 @@ const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_ARE
     { StorageFence,   5676,   256},
     { StorageMission, 5932,  2132}, 
     { StorageKeys,    8064,    64}, 
+    { StorageBindInfo,8128,    56}, 
 #endif
 #if STORAGE_NUM_AREAS >= 12
     { StorageParam,    8192,  1280},
@@ -71,6 +73,7 @@ const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREA
     { StorageFence,   5676,   256},
     { StorageMission, 5932,  2132},
     { StorageKeys,    8064,    64}, 
+    { StorageBindInfo,8128,    56},
 #endif
 #if STORAGE_NUM_AREAS >= 12
     { StorageParam,    8192,  1280},

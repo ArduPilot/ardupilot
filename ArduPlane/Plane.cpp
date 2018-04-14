@@ -24,12 +24,10 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Plane class
  */
 Plane::Plane(void)
-    : DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask))
+    : DataFlash(fwver.fw_string, g.log_bitmask)
 {
     // C++11 doesn't allow in-class initialisation of bitfields
     auto_state.takeoff_complete = true;
-    auto_state.next_wp_no_crosstrack = true;
-    auto_state.no_crosstrack = true;
 }
 
 Plane plane;

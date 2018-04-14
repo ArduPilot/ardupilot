@@ -5,7 +5,7 @@
 
 ByteBuffer::ByteBuffer(uint32_t _size)
 {
-    buf = (uint8_t*)malloc(_size);
+    buf = (uint8_t*)calloc(1, _size);
     size = buf ? _size : 0;
 }
 
@@ -22,7 +22,7 @@ bool ByteBuffer::set_size(uint32_t _size)
     head = tail = 0;
     if (_size != size) {
         free(buf);
-        buf = (uint8_t*)malloc(_size);
+        buf = (uint8_t*)calloc(1, _size);
         if (!buf) {
             size = 0;
             return false;

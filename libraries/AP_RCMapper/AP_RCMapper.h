@@ -6,9 +6,7 @@
 
 class RCMapper {
 public:
-    static RCMapper create() { return RCMapper{}; }
-
-    constexpr RCMapper(RCMapper &&other) = default;
+    RCMapper();
 
     /* Do not allow copies */
     RCMapper(const RCMapper &other) = delete;
@@ -35,8 +33,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    RCMapper();
-
     // channel mappings
     AP_Int8 _ch_roll;
     AP_Int8 _ch_pitch;

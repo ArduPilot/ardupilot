@@ -29,8 +29,8 @@ extern const AP_HAL::HAL &hal;
 
 #define MS4525D0_I2C_ADDR 0x28
 
-AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend) :
-    AP_Airspeed_Backend(_frontend)
+AP_Airspeed_MS4525::AP_Airspeed_MS4525(AP_Airspeed &_frontend, uint8_t _instance) :
+    AP_Airspeed_Backend(_frontend, _instance)
 {
 }
 

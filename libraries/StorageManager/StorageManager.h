@@ -27,9 +27,9 @@
   storage. Use larger areas for other boards
  */
 #if HAL_STORAGE_SIZE >= 16384
-#define STORAGE_NUM_AREAS 13
+#define STORAGE_NUM_AREAS 14
 #elif HAL_STORAGE_SIZE >= 8192
-#define STORAGE_NUM_AREAS 9
+#define STORAGE_NUM_AREAS 10
 #elif HAL_STORAGE_SIZE >= 4096
 #define STORAGE_NUM_AREAS 4
 #else
@@ -47,7 +47,8 @@ public:
         StorageFence   = 1,
         StorageRally   = 2,
         StorageMission = 3,
-        StorageKeys    = 4
+        StorageKeys    = 4,
+        StorageBindInfo= 5
     };
 
     // erase whole of storage

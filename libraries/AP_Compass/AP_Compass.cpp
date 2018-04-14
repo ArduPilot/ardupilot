@@ -24,6 +24,7 @@
 #include "AP_Compass_UAVCAN.h"
 #endif
 #include "AP_Compass_MMC3416.h"
+#include "AP_Compass_MAG3110.h"
 #include "AP_Compass.h"
 
 extern AP_HAL::HAL& hal;
@@ -36,6 +37,10 @@ extern AP_HAL::HAL& hal;
 
 #ifndef AP_COMPASS_OFFSETS_MAX_DEFAULT
 #define AP_COMPASS_OFFSETS_MAX_DEFAULT 850
+#endif
+
+#ifndef HAL_COMPASS_FILTER_DEFAULT
+ #define HAL_COMPASS_FILTER_DEFAULT 0 // turned off by default
 #endif
 
 const AP_Param::GroupInfo Compass::var_info[] = {
@@ -130,7 +135,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: ORIENT
     // @DisplayName: Compass orientation
-    // @Description: The orientation of the compass relative to the autopilot board. This will default to the right value for each board type, but can be changed if you have an external compass. See the documentation for your external compass for the right value. The correct orientation should give the X axis forward, the Y axis to the right and the Z axis down. So if your aircraft is pointing west it should show a positive value for the Y axis, and a value close to zero for the X axis. On a PX4 or Pixhawk with an external compass the correct value is zero if the compass is correctly oriented. NOTE: This orientation is combined with any AHRS_ORIENTATION setting.
+    // @Description: The orientation of the first external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll90
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 8, Compass, _state[0].orientation, ROTATION_NONE),
@@ -194,7 +199,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: PRIMARY
     // @DisplayName: Choose primary compass
-    // @Description: If more than one compass is available this selects which compass is the primary. Normally 0=External, 1=Internal. If no External compass is attached this parameter is ignored
+    // @Description: If more than one compass is available, this selects which compass is the primary. When external compasses are connected, they will be ordered first. NOTE: If no external compass is attached, this parameter is ignored.
     // @Values: 0:FirstCompass,1:SecondCompass,2:ThirdCompass
     // @User: Advanced
     AP_GROUPINFO("PRIMARY", 12, Compass, _primary, 0),
@@ -276,7 +281,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: ORIENT2
     // @DisplayName: Compass2 orientation
-    // @Description: The orientation of the second compass relative to the frame (if external) or autopilot board (if internal).
+    // @Description: The orientation of a second external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll90
     // @User: Advanced
     AP_GROUPINFO("ORIENT2", 19, Compass, _state[1].orientation, ROTATION_NONE),
@@ -297,7 +302,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: ORIENT3
     // @DisplayName: Compass3 orientation
-    // @Description: The orientation of the third compass relative to the frame (if external) or autopilot board (if internal).
+    // @Description: The orientation of a third external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll90
     // @User: Advanced
     AP_GROUPINFO("ORIENT3", 22, Compass, _state[2].orientation, ROTATION_NONE),
@@ -422,12 +427,24 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OFFS_MAX", 31, Compass, _offset_max, AP_COMPASS_OFFSETS_MAX_DEFAULT),
 
+    // @Group: PMOT
+    // @Path: Compass_PerMotor.cpp
+    AP_SUBGROUPINFO(_per_motor, "PMOT", 32, Compass, Compass_PerMotor),
+
     // @Param: TYPEMASK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
     // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,10:QFLIGHT,11:UAVCAN,12:QMC5883
     // @User: Advanced
     AP_GROUPINFO("TYPEMASK", 33, Compass, _driver_type_mask, 0),
+
+    // @Param: FLTR_RNG
+    // @DisplayName: Range in which sample is accepted
+    // @Description: This sets the range around the average value that new samples must be within to be accepted. This can help reduce the impact of noise on sensors that are on long I2C cables. The value is a percentage from the average value. A value of zero disables this filter.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    AP_GROUPINFO("FLTR_RNG", 34, Compass, _filter_range, HAL_COMPASS_FILTER_DEFAULT),
     
     AP_GROUPEND
 };
@@ -444,7 +461,6 @@ Compass::Compass(void) :
     _compass_count(0),
     _board_orientation(ROTATION_NONE),
     _null_init_done(false),
-    _thr_or_curr(0.0f),
     _hil_mode(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -511,6 +527,20 @@ bool Compass::_driver_enabled(enum DriverType driver_type)
 }
 
 /*
+  see if we already have probed a driver by bus type
+ */
+bool Compass::_have_driver(AP_HAL::Device::BusType bus_type, uint8_t bus_num, uint8_t address, uint8_t devtype) const
+{
+    uint32_t id = AP_HAL::Device::make_bus_id(bus_type, bus_num, address, devtype);
+    for (uint8_t i=0; i<_compass_count; i++) {
+        if (id == uint32_t(_state[i].dev_id.get())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
   detect available backends for this board
  */
 void Compass::_detect_backends(void)
@@ -520,7 +550,7 @@ void Compass::_detect_backends(void)
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if AP_FEATURE_BOARD_DETECT
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
         // default to disabling LIS3MDL on pixhawk2 due to hardware issue
         _driver_type_mask.set_default(1U<<DRIVER_LIS3MDL);
@@ -546,7 +576,7 @@ void Compass::_detect_backends(void)
     
 #if HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
     ADD_BACKEND(DRIVER_SITL, AP_Compass_HIL::detect(*this), nullptr, false);
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
+#elif AP_FEATURE_BOARD_DETECT
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PX4V1:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK:
@@ -555,16 +585,20 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
     case AP_BoardConfig::PX4_BOARD_PIXRACER: 
+    case AP_BoardConfig::PX4_BOARD_MINDPXV2: 
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:{
         bool both_i2c_external = (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2);
         // external i2c bus
         ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
                                                               true, ROTATION_ROLL_180),
                     AP_Compass_HMC5843::name, true);
-        // internal i2c bus
-        ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR),
-                                              both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_YAW_270),
-                    AP_Compass_HMC5843::name, both_i2c_external);
+
+        if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_MINDPXV2) {
+            // internal i2c bus
+            ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                                                  both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_YAW_270),
+                        AP_Compass_HMC5843::name, both_i2c_external);
+        }
 
         //external i2c bus
         ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_QMC5883L_I2C_ADDR),
@@ -572,7 +606,7 @@ void Compass::_detect_backends(void)
         			AP_Compass_QMC5883L::name, true);
         //internal i2c bus
         ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_QMC5883L_I2C_ADDR),
-                								both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_YAW_270),
+                								both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_ROLL_180_YAW_270),
         			AP_Compass_QMC5883L::name,both_i2c_external);
         
 #if !HAL_MINIMIZE_FEATURES
@@ -580,13 +614,13 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(*this,
                                                                         hal.i2c_mgr->get_device(1, HAL_COMPASS_AK09916_I2C_ADDR),
                                                                         hal.i2c_mgr->get_device(1, HAL_COMPASS_ICM20948_I2C_ADDR),
-                                                                        true, ROTATION_NONE),
+                                                                        true, ROTATION_PITCH_180_YAW_90),
                      AP_Compass_AK09916::name, true);
 
         ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(*this,
                                                                         hal.i2c_mgr->get_device(0, HAL_COMPASS_AK09916_I2C_ADDR),
                                                                         hal.i2c_mgr->get_device(0, HAL_COMPASS_ICM20948_I2C_ADDR),
-                                                                        both_i2c_external, ROTATION_NONE),
+                                                                        both_i2c_external, ROTATION_PITCH_180_YAW_90),
                      AP_Compass_AK09916::name, true);
         
         // lis3mdl on bus 0 with default address
@@ -609,13 +643,17 @@ void Compass::_detect_backends(void)
                                                               true, ROTATION_YAW_90),
                     AP_Compass_LIS3MDL::name, true);
         
-        // AK09916
-        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_AK09916_I2C_ADDR),
-                                                              true, ROTATION_YAW_270),
+        // AK09916. This can be found twice, due to the ICM20948 i2c bus pass-thru, so we need to be careful to avoid that
+        if (!_have_driver(AP_HAL::Device::BUS_TYPE_I2C, 1, HAL_COMPASS_AK09916_I2C_ADDR, AP_Compass_Backend::DEVTYPE_ICM20948)) {
+            ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_AK09916_I2C_ADDR),
+                                                                  true, ROTATION_YAW_270),
                     AP_Compass_AK09916::name, true);
-        ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_AK09916_I2C_ADDR),
-                                                              both_i2c_external, both_i2c_external?ROTATION_YAW_270:ROTATION_NONE),
-                    AP_Compass_AK09916::name, both_i2c_external);
+        }
+        if (!_have_driver(AP_HAL::Device::BUS_TYPE_I2C, 0, HAL_COMPASS_AK09916_I2C_ADDR, AP_Compass_Backend::DEVTYPE_ICM20948)) {
+            ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_AK09916_I2C_ADDR),
+                                                                  both_i2c_external, both_i2c_external?ROTATION_YAW_270:ROTATION_NONE),
+                        AP_Compass_AK09916::name, both_i2c_external);
+        }
 
         // IST8310 on external and internal bus
         ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_IST8310_I2C_ADDR),
@@ -627,12 +665,44 @@ void Compass::_detect_backends(void)
         }
         break;
 
+    case AP_BoardConfig::PX4_BOARD_PCNC1:
+        ADD_BACKEND(DRIVER_BMM150,
+                    AP_Compass_BMM150::probe(*this, hal.i2c_mgr->get_device(0, 0x10)),
+                    AP_Compass_BMM150::name, true);
+        break;
+        
     case AP_BoardConfig::PX4_BOARD_AEROFC:
 #ifdef HAL_COMPASS_IST8310_I2C_BUS
         ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_IST8310_I2C_BUS, HAL_COMPASS_IST8310_I2C_ADDR),
                                                               true, ROTATION_PITCH_180_YAW_90), AP_Compass_IST8310::name, true);
 #endif
         break;
+
+    case AP_BoardConfig::VRX_BOARD_BRAIN54: {
+        // external i2c bus
+        ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                                              true, ROTATION_ROLL_180),
+                    AP_Compass_HMC5843::name, true);
+        }
+        // internal i2c bus
+        ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                                              false, ROTATION_YAW_270),
+                    AP_Compass_HMC5843::name, false);
+        break;
+
+    case AP_BoardConfig::VRX_BOARD_BRAIN51:
+    case AP_BoardConfig::VRX_BOARD_BRAIN52:
+    case AP_BoardConfig::VRX_BOARD_BRAIN52E:
+    case AP_BoardConfig::VRX_BOARD_CORE10:
+    case AP_BoardConfig::VRX_BOARD_UBRAIN51:
+    case AP_BoardConfig::VRX_BOARD_UBRAIN52: {
+        // external i2c bus
+        ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                                              true, ROTATION_ROLL_180),
+                    AP_Compass_HMC5843::name, true);
+        }
+        break;
+
     default:
         break;
     }
@@ -654,10 +724,19 @@ void Compass::_detect_backends(void)
                     AP_Compass_AK8963::name, false);
         break;
 
+    case AP_BoardConfig::PX4_BOARD_SP01:
+        ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 1, ROTATION_NONE),
+                    AP_Compass_AK8963::name, false);
+        break;
+        
     case AP_BoardConfig::PX4_BOARD_PIXRACER:
         ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
                                                               false, ROTATION_PITCH_180),
                     AP_Compass_HMC5843::name, false);
+        // R15 has LIS3MDL on spi bus instead of HMC; same CS pin
+        ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME),
+                                                              false, ROTATION_NONE),
+                    AP_Compass_LIS3MDL::name, false);
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
                     AP_Compass_AK8963::name, false);
         break;
@@ -685,6 +764,14 @@ void Compass::_detect_backends(void)
                     AP_Compass_AK8963::name, false);
         break;
 
+    case AP_BoardConfig::PX4_BOARD_MINDPXV2:
+        ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                                              false, ROTATION_YAW_90),
+                    AP_Compass_HMC5843::name, false);
+        ADD_BACKEND(DRIVER_LSM303D, AP_Compass_LSM303D::probe(*this, hal.spi->get_device(HAL_INS_LSM9DS0_A_NAME), ROTATION_PITCH_180_YAW_270),
+                    AP_Compass_LSM303D::name, false);
+        break;
+        
     default:
         break;
     }
@@ -733,6 +820,9 @@ void Compass::_detect_backends(void)
                 AP_Compass_HMC5843::name, true);
     ADD_BACKEND(DRIVER_AK8963,AP_Compass_AK8963::probe_mpu9250(*this, 0),
                  AP_Compass_AK8963::name, false);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_EDGE
+    ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR), true),
+                AP_Compass_HMC5843::name, true);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
@@ -749,8 +839,16 @@ void Compass::_detect_backends(void)
     ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 0),
                 AP_Compass_AK8963::name, false);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
-    ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
+#ifndef HAL_COMPASS_HMC5843_ROTATION
+# define HAL_COMPASS_HMC5843_ROTATION ROTATION_NONE
+#endif
+    ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR),
+                                                          false, HAL_COMPASS_HMC5843_ROTATION),
                 AP_Compass_HMC5843::name, false);
+ #if defined(HAL_COMPASS_HMC5843_I2C_EXT_BUS) && CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
+    ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_EXT_BUS, HAL_COMPASS_HMC5843_I2C_ADDR),true),
+                 AP_Compass_HMC5843::name, true);
+ #endif
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843_MPU6000
     ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe_mpu6000(*this),
                 AP_Compass_HMC5843::name, false);
@@ -767,6 +865,22 @@ void Compass::_detect_backends(void)
                 AP_Compass_HMC5843::name, true);
     ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_IST8310_I2C_BUS, HAL_COMPASS_IST8310_I2C_ADDR),
                                                           true, ROTATION_PITCH_180_YAW_90), AP_Compass_IST8310::name, true);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_LIS3MDL
+    ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME), false, ROTATION_ROLL_180_YAW_90),
+                AP_Compass_LIS3MDL::name, false);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_MAG3110                
+    ADD_BACKEND(DRIVER_MAG3110, AP_Compass_MAG3110::probe(*this, hal.i2c_mgr->get_device(HAL_MAG3110_I2C_BUS, HAL_MAG3110_I2C_ADDR), ROTATION_NONE),
+                AP_Compass_MAG3110::name, true);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_IST8310
+    ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_IST8310_I2C_BUS, HAL_COMPASS_IST8310_I2C_ADDR),
+                                                           true, ROTATION_PITCH_180_YAW_90), AP_Compass_IST8310::name, true);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QMC5883L
+    ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_QMC5883L_I2C_ADDR),
+                                                           true,ROTATION_ROLL_180),
+                AP_Compass_QMC5883L::name, true);
+    ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_QMC5883L_I2C_ADDR),
+                                                           false,ROTATION_PITCH_180_YAW_270),
+                AP_Compass_QMC5883L::name, false);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
                 AP_Compass_HMC5843::name, false);
@@ -774,8 +888,48 @@ void Compass::_detect_backends(void)
                 AP_Compass_AK8963::name, false);
     ADD_BACKEND(DRIVER_LSM9DS1, AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m")),
                 AP_Compass_LSM9DS1::name, false);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_BMM150_I2C
+    ADD_BACKEND(DRIVER_BMM150, AP_Compass_BMM150::probe(*this, hal.i2c_mgr->get_device(HAL_COMPASS_BMM150_I2C_BUS, HAL_COMPASS_BMM150_I2C_ADDR)),
+                AP_Compass_BMM150::name, true);
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NONE
+    // no compass
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
+#endif
+
+
+#if defined(BOARD_I2C_BUS_EXT) && CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
+// autodetect external i2c bus
+    ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_COMPASS_QMC5883L_I2C_ADDR),
+                                                               true,ROTATION_NONE),
+               AP_Compass_QMC5883L::name, true);
+
+    ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_COMPASS_HMC5843_I2C_ADDR)),
+                AP_Compass_HMC5843::name, true);
+
+
+    // lis3mdl
+    ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(*this, hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_COMPASS_LIS3MDL_I2C_ADDR),
+                                                          true, ROTATION_NONE),
+                AP_Compass_LIS3MDL::name, true);
+        
+    // AK09916
+    ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(*this, hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_COMPASS_AK09916_I2C_ADDR),
+                                                          true, ROTATION_NONE),
+                AP_Compass_AK09916::name, true);
+
+    ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_COMPASS_IST8310_I2C_ADDR),
+                                                          ROTATION_NONE), 
+                AP_Compass_IST8310::name, true);
+
+    ADD_BACKEND(DRIVER_BMM150, AP_Compass_BMM150::probe(*this, hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_COMPASS_BMM150_I2C_ADDR)),
+                AP_Compass_BMM150::name, true);
+
+    ADD_BACKEND(DRIVER_MAG3110, AP_Compass_MAG3110::probe(*this, hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_MAG3110_I2C_ADDR), ROTATION_NONE),
+                AP_Compass_MAG3110::name, true);
+
+    ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_COMPASS_QMC5883L_I2C_ADDR), ROTATION_NONE),
+                       AP_Compass_QMC5883L::name, true);
 #endif
 
 #if HAL_WITH_UAVCAN
@@ -924,7 +1078,10 @@ Compass::use_for_yaw(void) const
 bool
 Compass::use_for_yaw(uint8_t i) const
 {
-    return _state[i].use_for_yaw;
+    // when we are doing in-flight compass learning the state
+    // estimator must not use the compass. The learning code turns off
+    // inflight learning when it has converged
+    return _state[i].use_for_yaw && _learn.get() != LEARN_INFLIGHT;
 }
 
 void
@@ -1085,7 +1242,7 @@ void Compass::motor_compensation_type(const uint8_t comp_type)
 {
     if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
         _motor_comp_type = (int8_t)comp_type;
-        _thr_or_curr = 0;                               // set current current or throttle to zero
+        _thr = 0; // set current  throttle to zero
         for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
             set_motor_compensation(i, Vector3f(0,0,0)); // clear out invalid compensation vectors
         }

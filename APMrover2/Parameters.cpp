@@ -28,7 +28,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: Log bitmask
     // @Description: Bitmap of what log types to enable in dataflash. This values is made up of the sum of each of the log types you want to be saved on dataflash. On a PX4 or Pixhawk the large storage size of a microSD card means it is usually best just to enable all log types by setting this to 65535. On APM2 the smaller 4 MByte dataflash means you need to be more selective in your logging or you may run out of log space while flying (in which case it will wrap and overwrite the start of the log). The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Rangefinder=16384, Arming=32768, FullLogs=65535
     // @Values: 0:Disabled,5190:APM2-Default,65535:PX4/Pixhawk-Default
-    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:MODE,7:IMU,8:CMD,9:CURRENT,10:COMPASS,11:TECS,12:CAMERA,13:RC,14:RANGEFINDER,15:ARM/DISARM,19:IMU_RAW
+    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:THR,5:NTUN,7:IMU,8:CMD,9:CURRENT,10:RANGEFINDER,11:COMPASS,12:CAMERA,13:STEERING,14:RC,15:ARM/DISARM,19:IMU_RAW
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 
@@ -41,7 +41,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: INITIAL_MODE
     // @DisplayName: Initial driving mode
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver. Usually used in combination with when AUTO_TRIGGER_PIN or AUTO_KICKSTART.
-    // @Values: 0:MANUAL,2:LEARNING,3:STEERING,4:HOLD,10:AUTO,11:RTL,15:GUIDED
+    // @Values: 0:MANUAL,1:ACRO,3:STEERING,4:HOLD,10:AUTO,11:RTL,15:GUIDED
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     MANUAL),
 
@@ -106,7 +106,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
-    GSCALAR(speed_cruise,        "CRUISE_SPEED",    SPEED_CRUISE),
+    GSCALAR(speed_cruise,        "CRUISE_SPEED",    CRUISE_SPEED),
 
     // @Param: SPEED_TURN_GAIN
     // @DisplayName: Target speed reduction while turning
@@ -129,7 +129,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: CH7_OPTION
     // @DisplayName: Channel 7 option
     // @Description: What to do use channel 7 for
-    // @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed
+    // @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm,4:Manual,5:Acro,6:Steering,7:Hold,8:Auto,9:RTL,10:SmartRTL,11:Guided
     // @User: Standard
     GSCALAR(ch7_option,             "CH7_OPTION",          CH7_OPTION),
 
@@ -142,17 +142,17 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(throttle_cruise,        "CRUISE_THROTTLE",    50),
 
-    // @Param: SKID_STEER_IN
-    // @DisplayName: Skid steering input
+    // @Param: PILOT_STEER_TYPE
+    // @DisplayName: Pilot input steering type
     // @Description: Set this to 1 for skid steering input rovers (tank track style in RC controller). When enabled, servo1 is used for the left track control, servo3 is used for right track control
-    // @Values: 0:Disabled, 1:SkidSteeringInput
+    // @Values: 0:Default,1:Two Paddles Input,2:Direction reversed when backing up,3:Direction unchanged when backing up
     // @User: Standard
-    GSCALAR(skid_steer_in,           "SKID_STEER_IN",     0),
+    GSCALAR(pilot_steer_type, "PILOT_STEER_TYPE", 0),
 
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action
     // @Description: What to do on a failsafe event
-    // @Values: 0:Nothing,1:RTL,2:HOLD
+    // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold
     // @User: Standard
     GSCALAR(fs_action,    "FS_ACTION",     2),
 
@@ -188,7 +188,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_CRASH_CHECK
     // @DisplayName: Crash check action
     // @Description: What to do on a crash event. When enabled the rover will go to hold if a crash is detected.
-    // @Values: 0:Disabled,1:HOLD,2:HoldAndDisarm
+    // @Values: 0:Disabled,1:Hold,2:HoldAndDisarm
     // @User: Standard
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    FS_CRASH_DISABLE),
 
@@ -241,7 +241,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: MODE1
     // @DisplayName: Mode1
-    // @Values: 0:Manual,3:Steering,4:Hold,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
     GSCALAR(mode1,           "MODE1",         MANUAL),
@@ -249,35 +249,35 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: MODE2
     // @DisplayName: Mode2
     // @Description: Driving mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,3:Steering,4:Hold,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     GSCALAR(mode2,           "MODE2",         MANUAL),
 
     // @Param: MODE3
     // @DisplayName: Mode3
     // @Description: Driving mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,3:Steering,4:Hold,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     GSCALAR(mode3,           "MODE3",         MANUAL),
 
     // @Param: MODE4
     // @DisplayName: Mode4
     // @Description: Driving mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,3:Steering,4:Hold,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     GSCALAR(mode4,           "MODE4",         MANUAL),
 
     // @Param: MODE5
     // @DisplayName: Mode5
     // @Description: Driving mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,3:Steering,4:Hold,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     GSCALAR(mode5,           "MODE5",         MANUAL),
 
     // @Param: MODE6
     // @DisplayName: Mode6
     // @Description: Driving mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,3:Steering,4:Hold,10:Auto,11:RTL,15:Guided
+    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     GSCALAR(mode6,           "MODE6",         MANUAL),
 
@@ -303,10 +303,10 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: Turning maximum G force
     // @Description: The maximum turning acceleration (in units of gravities) that the rover can handle while remaining stable. The navigation code will keep the lateral acceleration below this level to avoid rolling over or slipping the wheels in turns
     // @Units: gravities
-    // @Range: 0.2 10
-    // @Increment: 0.1
+    // @Range: 0.1 10
+    // @Increment: 0.01
     // @User: Standard
-    GSCALAR(turn_max_g,             "TURN_MAX_G",      2.0f),
+    GSCALAR(turn_max_g,             "TURN_MAX_G",      1.0f),
 
     // variables not in the g class which contain EEPROM saved variables
 
@@ -450,10 +450,11 @@ const AP_Param::Info Rover::var_info[] = {
   2nd group of parameters
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
+#if STATS_ENABLED == ENABLED
     // @Group: STAT
     // @Path: ../libraries/AP_Stats/AP_Stats.cpp
     AP_SUBGROUPINFO(stats, "STAT", 1, ParametersG2, AP_Stats),
-
+#endif
     // @Param: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
     // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
@@ -504,6 +505,56 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TURN_RADIUS", 11, ParametersG2, turn_radius, 0.9),
 
+    // @Param: ACRO_TURN_RATE
+    // @DisplayName: Acro mode turn rate maximum
+    // @Description: Acro mode turn rate maximum
+    // @Units: deg/s
+    // @Range: 0 360
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ACRO_TURN_RATE", 12, ParametersG2, acro_turn_rate, 180.0f),
+
+    // @Group: SRTL_
+    // @Path: ../libraries/AP_SmartRTL/AP_SmartRTL.cpp
+    AP_SUBGROUPINFO(smart_rtl, "SRTL_", 13, ParametersG2, AP_SmartRTL),
+
+    // @Param: WP_SPEED
+    // @DisplayName: Waypoint speed default
+    // @Description: Waypoint speed default.  If zero use CRUISE_SPEED.
+    // @Units: m/s
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("WP_SPEED", 14, ParametersG2, wp_speed, 0.0f),
+
+    // @Param: RTL_SPEED
+    // @DisplayName: Return-to-Launch speed default
+    // @Description: Return-to-Launch speed default.  If zero use WP_SPEED or CRUISE_SPEED.
+    // @Units: m/s
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("RTL_SPEED", 15, ParametersG2, rtl_speed, 0.0f),
+
+    // @Param: FRAME_CLASS
+    // @DisplayName: Frame Class
+    // @Description: Frame Class
+    // @Values: 0:Undefined,1:Rover,2:Boat
+    // @User: Standard
+    AP_GROUPINFO("FRAME_CLASS", 16, ParametersG2, frame_class, 1),
+
+    // @Group: FENCE_
+    // @Path: ../libraries/AC_Fence/AC_Fence.cpp
+    AP_SUBGROUPINFO(fence, "FENCE_", 17, ParametersG2, AC_Fence),
+
+    // @Group: PRX
+    // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
+    AP_SUBGROUPINFO(proximity, "PRX", 18, ParametersG2, AP_Proximity),
+
+    // @Group: AVOID_
+    // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
+    AP_SUBGROUPINFO(avoid, "AVOID_", 19, ParametersG2, AC_Avoid),
+
     AP_GROUPEND
 };
 
@@ -515,7 +566,11 @@ ParametersG2::ParametersG2(void)
 #endif
     beacon(rover.serial_manager),
     motors(rover.ServoRelayEvents),
-    attitude_control(rover.ahrs)
+    attitude_control(rover.ahrs),
+    smart_rtl(),
+    fence(rover.ahrs),
+    proximity(rover.serial_manager),
+    avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

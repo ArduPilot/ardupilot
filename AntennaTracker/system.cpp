@@ -79,7 +79,7 @@ void Tracker::init_tracker()
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
-    init_barometer(true);
+    barometer.calibrate();
 
     // initialise DataFlash library
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
@@ -110,7 +110,7 @@ void Tracker::init_tracker()
     gcs().send_text(MAV_SEVERITY_INFO,"Ready to track");
     hal.scheduler->delay(1000); // Why????
 
-    set_mode(AUTO); // tracking
+    set_mode(AUTO, MODE_REASON_STARTUP); // tracking
 
     if (g.startup_delay > 0) {
         // arm servos with trim value to allow them to start up (required
@@ -120,13 +120,6 @@ void Tracker::init_tracker()
 
     // disable safety if requested
     BoardConfig.init_safety();    
-}
-
-// updates the status of the notify objects
-// should be called at 50hz
-void Tracker::update_notify()
-{
-    notify.update();
 }
 
 /*
@@ -218,7 +211,7 @@ void Tracker::prepare_servos()
     SRV_Channels::output_ch_all();
 }
 
-void Tracker::set_mode(enum ControlMode mode)
+void Tracker::set_mode(enum ControlMode mode, mode_reason_t reason)
 {
     if (control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
@@ -241,7 +234,7 @@ void Tracker::set_mode(enum ControlMode mode)
     }
 
 	// log mode change
-	DataFlash.Log_Write_Mode(control_mode);
+	DataFlash.Log_Write_Mode(control_mode, reason);
 }
 
 void Tracker::check_usb_mux(void)

@@ -343,13 +343,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
         if (strncasecmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
+            printf("Creating model %s at speed %.1f\n", model_str, speedup);
             sitl_model = model_constructors[i].constructor(home_str, model_str);
             sitl_model->set_interface_ports(_simulator_address, _simulator_port_in, _simulator_port_out);
             sitl_model->set_speedup(speedup);
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
             _synthetic_clock_mode = true;
-            printf("Started model %s at %s at speed %.1f\n", model_str, home_str, speedup);
             break;
         }
     }
@@ -372,6 +372,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
         // set right default throttle for rover (allowing for reverse)
         pwm_input[2] = 1500;
+    } else if (strcmp(SKETCH, "ArduSub") == 0) {
+        _vehicle = ArduSub;
+        for(uint8_t i = 0; i < 8; i++) {
+            pwm_input[i] = 1500;
+        }
     } else {
         _vehicle = ArduPlane;
         if (_framerate == 0) {

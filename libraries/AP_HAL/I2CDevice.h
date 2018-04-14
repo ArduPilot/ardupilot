@@ -30,12 +30,6 @@ public:
 
     virtual ~I2CDevice() { }
 
-    /*
-     * Change device address. Note that this is the 7 bit address, it
-     * does not include the bit for read/write.
-     */
-    virtual void set_address(uint8_t address) = 0;
-
     /* Device implementation */
 
     /* See Device::set_speed() */
@@ -77,7 +71,10 @@ public:
 class I2CDeviceManager {
 public:
     /* Get a device handle */
-    virtual OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) = 0;
+    virtual OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
+                                                 uint32_t bus_clock=400000,
+                                                 bool use_smbus = false,
+                                                 uint32_t timeout_ms=4) = 0;
 };
 
 }

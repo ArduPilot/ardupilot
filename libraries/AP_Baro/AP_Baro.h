@@ -24,13 +24,16 @@ class AP_Baro
     friend class AP_Baro_SITL; // for access to sensors[]
 
 public:
-    static AP_Baro create() { return AP_Baro{}; }
-
-    constexpr AP_Baro(AP_Baro &&other) = default;
+    AP_Baro();
 
     /* Do not allow copies */
     AP_Baro(const AP_Baro &other) = delete;
     AP_Baro &operator=(const AP_Baro&) = delete;
+
+    // get singleton
+    static AP_Baro *get_instance(void) {
+        return _instance;
+    }
 
     // barometer types
     typedef enum {
@@ -60,6 +63,10 @@ public:
     float get_temperature(void) const { return get_temperature(_primary); }
     float get_temperature(uint8_t instance) const { return sensors[instance].temperature; }
 
+    // get pressure correction in Pascal. Divide by 100 for millibars or hectopascals
+    float get_pressure_correction(void) const { return get_pressure_correction(_primary); }
+    float get_pressure_correction(uint8_t instance) const { return sensors[instance].p_correction; }
+    
     // accumulate a reading on sensors. Some backends without their
     // own thread or a timer may need this.
     void accumulate(void);
@@ -165,9 +172,12 @@ public:
     // set a pressure correction from AP_TempCalibration
     void set_pressure_correction(uint8_t instance, float p_correction);
 
-private:
-    AP_Baro();
+    uint8_t get_filter_range() const { return _filter_range; }
 
+private:
+    // singleton
+    static AP_Baro *_instance;
+    
     // how many drivers do we have?
     uint8_t _num_drivers;
     AP_Baro_Backend *drivers[BARO_MAX_DRIVERS];
@@ -210,4 +220,9 @@ private:
     uint32_t                            _last_notify_ms;
 
     bool _add_backend(AP_Baro_Backend *backend);
+    AP_Int8                            _filter_range;  // valid value range from mean value
+};
+
+namespace AP {
+    AP_Baro &baro();
 };

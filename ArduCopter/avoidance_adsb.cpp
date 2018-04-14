@@ -1,6 +1,7 @@
 #include "Copter.h"
 #include <AP_Notify/AP_Notify.h>
 
+#if ADSB_ENABLED == ENABLED
 void Copter::avoidance_adsb_update(void)
 {
     adsb.update();
@@ -24,7 +25,9 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
 
     // take no action in some flight modes
     if (copter.control_mode == LAND ||
+#if MODE_THROW_ENABLED == ENABLED
         copter.control_mode == THROW ||
+#endif
         copter.control_mode == FLIP) {
         actual_action = MAV_COLLISION_ACTION_NONE;
     }
@@ -182,7 +185,7 @@ bool AP_Avoidance_Copter::handle_avoidance_vertical(const AP_Avoidance::Obstacle
     }
 
     // send target velocity
-    copter.avoid_adsb_set_velocity(velocity_neu);
+    copter.mode_avoid_adsb.set_velocity(velocity_neu);
     return true;
 }
 
@@ -208,7 +211,7 @@ bool AP_Avoidance_Copter::handle_avoidance_horizontal(const AP_Avoidance::Obstac
         velocity_neu.x *= copter.wp_nav->get_speed_xy();
         velocity_neu.y *= copter.wp_nav->get_speed_xy();
         // send target velocity
-        copter.avoid_adsb_set_velocity(velocity_neu);
+        copter.mode_avoid_adsb.set_velocity(velocity_neu);
         return true;
     }
 
@@ -240,10 +243,11 @@ bool AP_Avoidance_Copter::handle_avoidance_perpendicular(const AP_Avoidance::Obs
             }
         }
         // send target velocity
-        copter.avoid_adsb_set_velocity(velocity_neu);
+        copter.mode_avoid_adsb.set_velocity(velocity_neu);
         return true;
     }
 
     // if we got this far we failed to set the new target
     return false;
 }
+#endif

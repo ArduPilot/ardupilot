@@ -12,7 +12,7 @@ void Rover::crash_check()
 {
   static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
 
-  // return immediately if disarmed, or crash checking disabled or in HOLD mode
+  // return immediately if disarmed, crash checking is disabled or vehicle is Hold, Manual or Acro mode
   if (!arming.is_armed() || g.fs_crash_check == FS_CRASH_DISABLE || (!control_mode->is_autopilot_mode())) {
     crash_counter = 0;
     return;

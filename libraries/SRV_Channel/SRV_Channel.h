@@ -17,6 +17,9 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_Common/Bitmask.h>
+#include <AP_Volz_Protocol/AP_Volz_Protocol.h>
+#include <AP_SBusOut/AP_SBusOut.h>
+#include <AP_BLHeli/AP_BLHeli.h>
 
 #define NUM_SERVO_CHANNELS 16
 
@@ -30,6 +33,7 @@ class SRV_Channels;
 class SRV_Channel {
 public:
     friend class SRV_Channels;
+
     // constructor
     SRV_Channel(void);
 
@@ -116,6 +120,7 @@ public:
         k_motor12               = 85,
         k_dspoilerLeft2         = 86,           ///< differential spoiler 2 (left wing)
         k_dspoilerRight2        = 87,           ///< differential spoiler 2 (right wing)
+        k_winch                 = 88,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -278,6 +283,9 @@ public:
     // return zero on error.
     static float get_output_norm(SRV_Channel::Aux_servo_function_t function);
 
+    // get output channel mask for a function
+    static uint16_t get_output_channel_mask(SRV_Channel::Aux_servo_function_t function);
+    
     // limit slew rate to given limit in percent per second
     static void limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt);
 
@@ -402,6 +410,21 @@ public:
     static bool upgrade_parameters(const uint8_t old_keys[14], uint16_t aux_channel_mask, RCMapper *rcmap);
     static void upgrade_motors_servo(uint8_t ap_motors_key, uint8_t ap_motors_idx, uint8_t new_channel);
 
+    // given a zero-based motor channel, return the k_motor function for that channel
+    static SRV_Channel::Aux_servo_function_t get_motor_function(uint8_t channel) {
+        if (channel < 8) {
+            return SRV_Channel::Aux_servo_function_t(SRV_Channel::k_motor1+channel);
+        }
+        return SRV_Channel::Aux_servo_function_t((SRV_Channel::k_motor9+(channel-8)));
+    }
+    
+    static void cork();
+
+    static void push();
+
+    // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
+    static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
+
 private:
     struct {
         bool k_throttle_reversible:1;
@@ -417,6 +440,22 @@ private:
     // this static arrangement is to avoid having static objects in AP_Param tables
     static SRV_Channel *channels;
     static SRV_Channels *instance;
+
+    // support for Volz protocol
+    AP_Volz_Protocol volz;
+    static AP_Volz_Protocol *volz_ptr;
+
+    // support for SBUS protocol
+    AP_SBusOut sbus;
+    static AP_SBusOut *sbus_ptr;
+
+#if HAL_SUPPORT_RCOUT_SERIAL
+    // support for BLHeli protocol
+    AP_BLHeli blheli;
+    static AP_BLHeli *blheli_ptr;
+#endif
+    static uint16_t disabled_mask;
+    
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
     static struct srv_function {

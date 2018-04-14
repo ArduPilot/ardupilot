@@ -80,17 +80,17 @@ extern const AP_HAL::HAL& hal;
 #define PIXART_SROM_CRC_RESULT 0xBEEF
 
 // constructor
-AP_OpticalFlow_Pixart::AP_OpticalFlow_Pixart(OpticalFlow &_frontend) :
+AP_OpticalFlow_Pixart::AP_OpticalFlow_Pixart(const char *devname, OpticalFlow &_frontend) :
     OpticalFlow_backend(_frontend)
 {
-    _dev = std::move(hal.spi->get_device("external0m3"));
+    _dev = std::move(hal.spi->get_device(devname));
 }
 
 
 // detect the device
-AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(OpticalFlow &_frontend)
+AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(const char *devname, OpticalFlow &_frontend)
 {
-    AP_OpticalFlow_Pixart *sensor = new AP_OpticalFlow_Pixart(_frontend);
+    AP_OpticalFlow_Pixart *sensor = new AP_OpticalFlow_Pixart(devname, _frontend);
     if (!sensor) {
         return nullptr;
     }
@@ -104,6 +104,9 @@ AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(OpticalFlow &_frontend)
 // setup the device
 bool AP_OpticalFlow_Pixart::setup_sensor(void)
 {
+    if (!_dev) {
+        return false;
+    }
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         AP_HAL::panic("Unable to get bus semaphore");
     }
@@ -306,11 +309,14 @@ void AP_OpticalFlow_Pixart::timer(void)
     }
     
 #if 0
+    static uint32_t last_print_ms;
     static int fd = -1;
     if (fd == -1) {
         fd = open("/dev/ttyACM0", O_WRONLY);
     }
     // used for debugging
+    static int32_t sum_x;
+    static int32_t sum_y;
     sum_x += burst.delta_x;
     sum_y += burst.delta_y;
     

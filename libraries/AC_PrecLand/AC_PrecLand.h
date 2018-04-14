@@ -25,6 +25,12 @@ class AC_PrecLand
     friend class AC_PrecLand_SITL;
 
 public:
+    AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav);
+
+    /* Do not allow copies */
+    AC_PrecLand(const AC_PrecLand &other) = delete;
+    AC_PrecLand &operator=(const AC_PrecLand&) = delete;
+
     // precision landing behaviours (held in PRECLAND_ENABLED parameter)
     enum PrecLandBehaviour {
         PRECLAND_BEHAVIOUR_DISABLED,
@@ -40,16 +46,6 @@ public:
         PRECLAND_TYPE_SITL_GAZEBO,
         PRECLAND_TYPE_SITL,
     };
-
-    static AC_PrecLand create(const AP_AHRS& ahrs, const AP_InertialNav& inav) {
-        return AC_PrecLand{ahrs, inav};
-    }
-
-    constexpr AC_PrecLand(AC_PrecLand &&other) = default;
-
-    /* Do not allow copies */
-    AC_PrecLand(const AC_PrecLand &other) = delete;
-    AC_PrecLand &operator=(const AC_PrecLand&) = delete;
 
     // perform any required initialisation of landing controllers
     void init();
@@ -85,8 +81,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav);
-
     enum estimator_type_t {
         ESTIMATOR_TYPE_RAW_SENSOR = 0,
         ESTIMATOR_TYPE_KALMAN_FILTER = 1

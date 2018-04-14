@@ -104,8 +104,9 @@ void AP_RangeFinder_analog::update(void)
     case RangeFinder::FUNCTION_HYPERBOLA:
         if (v <= offset) {
             dist_m = 0;
+        } else {
+            dist_m = scaling / (v - offset);
         }
-        dist_m = scaling / (v - offset);
         if (isinf(dist_m) || dist_m > _max_distance_cm * 0.01f) {
             dist_m = _max_distance_cm * 0.01f;
         }

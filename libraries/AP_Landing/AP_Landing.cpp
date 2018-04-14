@@ -308,6 +308,7 @@ bool AP_Landing::is_on_approach(void) const
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_on_approach();
     case TYPE_DEEPSTALL:
+        return deepstall.is_on_approach();
     default:
         return false;
     }
@@ -580,6 +581,8 @@ void AP_Landing::log(void) const
         type_slope_log();
         break;
     case TYPE_DEEPSTALL:
+        deepstall.log();
+        break;
     default:
         break;
     }

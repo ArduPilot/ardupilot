@@ -538,12 +538,12 @@ void RCOutput_Tap::push()
         out[i] = RPMSTOPPED;
     }
 
-/*
+    /*
      * Value packet format, little endian
      *
-     * | 15 | 14 | 13 | 12 | 11  | 10  | 11 | 12 | 11 | 10 ...... 0 |
-     * --------------------------------------------------------------
-     * | -- | -- | -- | -- | REV | FEN | BL | GL | RL |  RPM value  |
+     * | 15  | 14  | 13 | 12 | 11 | 10 ...... 0 |
+     * ------------------------------------------
+     * | REV | FEN | BL | GL | RL |  RPM value  |
      *
      * RPM value: [ RPMMIN, RPMMAX ]
      * RL: LED1
@@ -553,24 +553,26 @@ void RCOutput_Tap::push()
      * REV: Reverse direction
      */
 
-// TODO: enable feedback from 1 ESC and read data back
-#if 0
-	out[_next_channel_reply] |= RUN_FEEDBACK_ENABLE_MASK;
-#endif
-
     EscPacket packet = {0xfe, _channels_count, ESCBUS_MSG_ID_RUN};
     packet.len *= sizeof(packet.d.reqRun.value[0]);
 
+    uint32_t tnow = AP_HAL::millis();
+    if (tnow - _last_led_update_msec > 250) {
+        _led_on = !_led_on;
+        _last_led_update_msec = tnow;
+    }
+
     for (uint8_t i = 0; i < _channels_count; i++) {
         packet.d.reqRun.value[i] = out[i] & RUN_CHANNEL_VALUE_MASK;
+        if (_led_on) {
+            packet.d.reqRun.value[i] |= RUN_LED_ON_MASK;
+        }
     }
 
     int ret = _send_packet(packet);
     if (ret < 1) {
         debug("TX ERROR: ret: %d, errno: %d", ret, errno);
     }
-
-    _next_channel_reply = (_next_channel_reply + 1) % _channels_count;
 
     hal.util->perf_end(_perf_rcout);
 }

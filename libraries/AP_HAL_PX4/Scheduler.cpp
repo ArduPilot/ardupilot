@@ -363,12 +363,12 @@ void *PX4Scheduler::_uart_thread(void *arg)
         sched->delay_microseconds_semaphore(1000);
 
         // process any pending serial bytes
-        ((PX4UARTDriver *)hal.uartA)->_timer_tick();
-        ((PX4UARTDriver *)hal.uartB)->_timer_tick();
-        ((PX4UARTDriver *)hal.uartC)->_timer_tick();
-        ((PX4UARTDriver *)hal.uartD)->_timer_tick();
-        ((PX4UARTDriver *)hal.uartE)->_timer_tick();
-        ((PX4UARTDriver *)hal.uartF)->_timer_tick();
+        hal.uartA->_timer_tick();
+        hal.uartB->_timer_tick();
+        hal.uartC->_timer_tick();
+        hal.uartD->_timer_tick();
+        hal.uartE->_timer_tick();
+        hal.uartF->_timer_tick();
     }
     return nullptr;
 }
@@ -407,7 +407,7 @@ void *PX4Scheduler::_storage_thread(void *arg)
 
         // process any pending storage writes
         perf_begin(sched->_perf_storage_timer);
-        ((PX4Storage *)hal.storage)->_timer_tick();
+        hal.storage->_timer_tick();
         perf_end(sched->_perf_storage_timer);
     }
     return nullptr;
@@ -455,6 +455,25 @@ void PX4Scheduler::system_initialized()
                       "more than once");
     }
     _initialized = true;
+}
+
+
+/*
+  disable interrupts and return a context that can be used to
+  restore the interrupt state. This can be used to protect
+  critical regions
+*/
+void *PX4Scheduler::disable_interrupts_save(void)
+{
+    return (void *)(uintptr_t)irqsave();
+}
+
+/*
+  restore interrupt state from disable_interrupts_save()
+*/
+void PX4Scheduler::restore_interrupts(void *state)
+{
+    irqrestore((irqstate_t)(uintptr_t)state);
 }
 
 #endif

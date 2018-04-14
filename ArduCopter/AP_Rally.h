@@ -20,18 +20,12 @@
 class AP_Rally_Copter : public AP_Rally
 {
 public:
-    static AP_Rally_Copter create(AP_AHRS &ahrs) {
-        return AP_Rally_Copter{ahrs};
-    }
-
-    constexpr AP_Rally_Copter(AP_Rally_Copter &&other) = default;
+    AP_Rally_Copter(AP_AHRS &ahrs) : AP_Rally(ahrs) { }
 
     /* Do not allow copies */
     AP_Rally_Copter(const AP_Rally_Copter &other) = delete;
     AP_Rally_Copter &operator=(const AP_Rally_Copter&) = delete;
 
 private:
-    AP_Rally_Copter(AP_AHRS &ahrs) : AP_Rally(ahrs) { }
-
     bool is_valid(const Location &rally_point) const override;
 };

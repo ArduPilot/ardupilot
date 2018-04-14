@@ -9,6 +9,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <nuttx/progmem.h>
+
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "Storage.h"
 using namespace VRBRAIN;
@@ -16,173 +19,48 @@ using namespace VRBRAIN;
 /*
   This stores eeprom data in the VRBRAIN MTD interface with a 4k size, and
   a in-memory buffer. This keeps the latency and devices IOs down.
- */
+*/
 
 // name the storage file after the sketch so you can use the same sd
 // card for ArduCopter and ArduPlane
 #define STORAGE_DIR "/fs/microsd/APM"
-#define OLD_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
-#define OLD_STORAGE_FILE_BAK STORAGE_DIR "/" SKETCHNAME ".bak"
 //#define SAVE_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".sav"
 #define MTD_PARAMS_FILE "/fs/mtd"
-#define MTD_SIGNATURE 0x14012014
-#define MTD_SIGNATURE_OFFSET (8192-4)
-#define STORAGE_RENAME_OLD_FILE 0
 
 extern const AP_HAL::HAL& hal;
 
+extern "C" int mtd_main(int, char **);
+
 VRBRAINStorage::VRBRAINStorage(void) :
-    _fd(-1),
-    _dirty_mask(0),
     _perf_storage(perf_alloc(PC_ELAPSED, "APM_storage")),
     _perf_errors(perf_alloc(PC_COUNT, "APM_storage_errors"))
 {
 }
 
-/*
-  get signature from bytes at offset MTD_SIGNATURE_OFFSET
- */
-uint32_t VRBRAINStorage::_mtd_signature(void)
+void VRBRAINStorage::_storage_open(void)
 {
-    int mtd_fd = open(MTD_PARAMS_FILE, O_RDONLY);
-    if (mtd_fd == -1) {
-        AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
-    }
-    uint32_t v;
-    if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
-        AP_HAL::panic("Failed to seek in " MTD_PARAMS_FILE);
-    }
-    bus_lock(true);
-    if (read(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
-        AP_HAL::panic("Failed to read signature from " MTD_PARAMS_FILE);
-    }
-    bus_lock(false);
-    close(mtd_fd);
-    return v;
-}
-
-/*
-  put signature bytes at offset MTD_SIGNATURE_OFFSET
- */
-void VRBRAINStorage::_mtd_write_signature(void)
-{
-    int mtd_fd = open(MTD_PARAMS_FILE, O_WRONLY);
-    if (mtd_fd == -1) {
-        AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
-    }
-    uint32_t v = MTD_SIGNATURE;
-    if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
-        AP_HAL::panic("Failed to seek in " MTD_PARAMS_FILE);
-    }
-    bus_lock(true);
-    if (write(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
-        AP_HAL::panic("Failed to write signature in " MTD_PARAMS_FILE);
-    }
-    bus_lock(false);
-    close(mtd_fd);
-}
-
-/*
-  upgrade from microSD to MTD (FRAM)
- */
-void VRBRAINStorage::_upgrade_to_mtd(void)
-{
-    // the MTD is completely uninitialised - try to get a
-    // copy from OLD_STORAGE_FILE
-    int old_fd = open(OLD_STORAGE_FILE, O_RDONLY);
-    if (old_fd == -1) {
-        ::printf("Failed to open %s\n", OLD_STORAGE_FILE);
+    if (_initialised) {
         return;
     }
 
-    int mtd_fd = open(MTD_PARAMS_FILE, O_WRONLY);
-    if (mtd_fd == -1) {
-        AP_HAL::panic("Unable to open MTD for upgrade");
-    }
+    _dirty_mask.clearall();
 
-    if (::read(old_fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-        close(old_fd);
-        close(mtd_fd);
-        ::printf("Failed to read %s\n", OLD_STORAGE_FILE);
-        return;        
-    }
-    close(old_fd);
-    ssize_t ret;
-    bus_lock(true);
-    if ((ret=::write(mtd_fd, _buffer, sizeof(_buffer))) != sizeof(_buffer)) {
-        ::printf("mtd write of %u bytes returned %d errno=%d\n", sizeof(_buffer), ret, errno);
-        AP_HAL::panic("Unable to write MTD for upgrade");
-    }
-    bus_lock(false);
-    close(mtd_fd);
-#if STORAGE_RENAME_OLD_FILE
-    rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
+    // load from storage backend
+#if USE_FLASH_STORAGE
+    _flash_load();
+#else
+    _mtd_load();
 #endif
-    ::printf("Upgraded MTD from %s\n", OLD_STORAGE_FILE);
-}
-            
-
-void VRBRAINStorage::_storage_open(void)
-{
-	if (_initialised) {
-		return;
-	}
-
-        struct stat st;
-        _have_mtd = (stat(MTD_PARAMS_FILE, &st) == 0);
-
-        // VRBRAIN should always have /fs/mtd_params
-        if (!_have_mtd) {
-            AP_HAL::panic("Failed to find " MTD_PARAMS_FILE);
-        }
-
-        /*
-          cope with upgrading from OLD_STORAGE_FILE to MTD
-         */
-        bool good_signature = (_mtd_signature() == MTD_SIGNATURE);
-        if (stat(OLD_STORAGE_FILE, &st) == 0) {
-            if (good_signature) {
-#if STORAGE_RENAME_OLD_FILE
-                rename(OLD_STORAGE_FILE, OLD_STORAGE_FILE_BAK);
-#endif
-            } else {
-                _upgrade_to_mtd();
-            }
-        }
-
-        // we write the signature every time, even if it already is
-        // good, as this gives us a way to detect if the MTD device is
-        // functional. It is better to panic now than to fail to save
-        // parameters in flight
-        _mtd_write_signature();
-
-	_dirty_mask = 0;
-	int fd = open(MTD_PARAMS_FILE, O_RDONLY);
-	if (fd == -1) {
-            AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
-	}
-        const uint16_t chunk_size = 128;
-        for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
-            bus_lock(true);
-            ssize_t ret = read(fd, &_buffer[ofs], chunk_size);
-            bus_lock(false);
-            if (ret != chunk_size) {
-                ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
-                         (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
-                AP_HAL::panic("Failed to read " MTD_PARAMS_FILE);
-            }
-	}
-	close(fd);
 
 #ifdef SAVE_STORAGE_FILE
-        fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-        if (fd != -1) {
-            write(fd, _buffer, sizeof(_buffer));
-            close(fd);
-            ::printf("Saved storage file %s\n", SAVE_STORAGE_FILE);
-        }
+    fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if (fd != -1) {
+        write(fd, _buffer, sizeof(_buffer));
+        close(fd);
+        ::printf("Saved storage file %s\n", SAVE_STORAGE_FILE);
+    }
 #endif
-	_initialised = true;
+    _initialised = true;
 }
 
 /*
@@ -191,119 +69,247 @@ void VRBRAINStorage::_storage_open(void)
   below, which both update _dirty_mask. If we lose the race then the
   result is that a line is written more than once, but it won't result
   in a line not being written.
- */
+*/
 void VRBRAINStorage::_mark_dirty(uint16_t loc, uint16_t length)
 {
     uint16_t end = loc + length;
-    for (uint8_t line=loc>>VRBRAIN_STORAGE_LINE_SHIFT;
+    for (uint16_t line=loc>>VRBRAIN_STORAGE_LINE_SHIFT;
          line <= end>>VRBRAIN_STORAGE_LINE_SHIFT;
          line++) {
-        _dirty_mask |= 1U << line;
+        _dirty_mask.set(line);
     }
 }
 
 void VRBRAINStorage::read_block(void *dst, uint16_t loc, size_t n)
 {
-	if (loc >= sizeof(_buffer)-(n-1)) {
-		return;
-	}
-	_storage_open();
-	memcpy(dst, &_buffer[loc], n);
+    if (loc >= sizeof(_buffer)-(n-1)) {
+        return;
+    }
+    _storage_open();
+    memcpy(dst, &_buffer[loc], n);
 }
 
 void VRBRAINStorage::write_block(uint16_t loc, const void *src, size_t n)
 {
-	if (loc >= sizeof(_buffer)-(n-1)) {
-		return;
-	}
-	if (memcmp(src, &_buffer[loc], n) != 0) {
-		_storage_open();
-		memcpy(&_buffer[loc], src, n);
-		_mark_dirty(loc, n);
-	}
-}
-
-void VRBRAINStorage::bus_lock(bool lock)
-{
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    if (loc >= sizeof(_buffer)-(n-1)) {
+        return;
+    }
+    if (memcmp(src, &_buffer[loc], n) != 0) {
+        _storage_open();
+        memcpy(&_buffer[loc], src, n);
+        _mark_dirty(loc, n);
+    }
 }
 
 void VRBRAINStorage::_timer_tick(void)
 {
-	if (!_initialised || _dirty_mask == 0) {
-		return;
-	}
-	perf_begin(_perf_storage);
+    if (!_initialised || _dirty_mask.empty()) {
+        return;
+    }
+    perf_begin(_perf_storage);
 
-	if (_fd == -1) {
-		_fd = open(MTD_PARAMS_FILE, O_WRONLY);
-		if (_fd == -1) {
-			perf_end(_perf_storage);
-			perf_count(_perf_errors);
-			return;	
-		}
-	}
+#if !USE_FLASH_STORAGE
+    if (_fd == -1) {
+        _fd = open(MTD_PARAMS_FILE, O_WRONLY);
+        if (_fd == -1) {
+            perf_end(_perf_storage);
+            perf_count(_perf_errors);
+            return;
+        }
+    }
+#endif
 
-	// write out the first dirty set of lines. We don't write more
-	// than one to keep the latency of this call to a minimum
-	uint8_t i, n;
-	for (i=0; i<VRBRAIN_STORAGE_NUM_LINES; i++) {
-		if (_dirty_mask & (1<<i)) {
-			break;
-		}
-	}
-	if (i == VRBRAIN_STORAGE_NUM_LINES) {
-		// this shouldn't be possible
-		perf_end(_perf_storage);
-		perf_count(_perf_errors);
-		return;
-	}
-	uint32_t write_mask = (1U<<i);
-	// see how many lines to write
-	for (n=1; (i+n) < VRBRAIN_STORAGE_NUM_LINES &&
-		     n < (VRBRAIN_STORAGE_MAX_WRITE>>VRBRAIN_STORAGE_LINE_SHIFT); n++) {
-		if (!(_dirty_mask & (1<<(n+i)))) {
-			break;
-		}		
-		// mark that line clean
-		write_mask |= (1<<(n+i));
-	}
+    // write out the first dirty line. We don't write more
+    // than one to keep the latency of this call to a minimum
+    uint16_t i;
+    for (i=0; i<VRBRAIN_STORAGE_NUM_LINES; i++) {
+        if (_dirty_mask.get(i)) {
+            break;
+        }
+    }
+    if (i == VRBRAIN_STORAGE_NUM_LINES) {
+        // this shouldn't be possible
+        perf_end(_perf_storage);
+        perf_count(_perf_errors);
+        return;
+    }
 
-	/*
-	  write the lines. This also updates _dirty_mask. Note that
-	  because this is a SCHED_FIFO thread it will not be preempted
-	  by the main task except during blocking calls. This means we
-	  don't need a semaphore around the _dirty_mask updates.
-	 */
-	if (lseek(_fd, i<<VRBRAIN_STORAGE_LINE_SHIFT, SEEK_SET) == (i<<VRBRAIN_STORAGE_LINE_SHIFT)) {
-		_dirty_mask &= ~write_mask;
-                bus_lock(true);
-		ssize_t ret = write(_fd, &_buffer[i<<VRBRAIN_STORAGE_LINE_SHIFT], n<<VRBRAIN_STORAGE_LINE_SHIFT);
-                bus_lock(false);
-                if (ret != n<<VRBRAIN_STORAGE_LINE_SHIFT) {
-                    // write error - likely EINTR
-                    _dirty_mask |= write_mask;
-                    close(_fd);
-                    _fd = -1;
-                    perf_count(_perf_errors);
-		}
-	}
-	perf_end(_perf_storage);
+    // save to storage backend
+#if USE_FLASH_STORAGE
+    _flash_write(i);
+#else
+    _mtd_write(i);
+#endif
+    
+    perf_end(_perf_storage);
 }
+
+#if !USE_FLASH_STORAGE
+void VRBRAINStorage::bus_lock(bool lock)
+{
+#if defined (CONFIG_ARCH_BOARD_PX4FMU_V4)
+    /*
+      this is needed on Pixracer where the ms5611 may be on the same
+      bus as FRAM, and the NuttX ramtron driver does not go via the
+      PX4 spi bus abstraction. The ramtron driver relies on
+      SPI_LOCK(). We need to prevent the ms5611 reads which happen in
+      interrupt context from interfering with the FRAM operations. As
+      the px4 spi bus abstraction just uses interrupt blocking as the
+      locking mechanism we need to block interrupts here as well.
+    */
+    if (lock) {
+        irq_state = irqsave();
+    } else {
+        irqrestore(irq_state);
+    }
+#endif
+}
+
+
+/*
+  write one storage line. This also updates _dirty_mask. 
+*/
+void VRBRAINStorage::_mtd_write(uint16_t line)
+{
+    uint16_t ofs = line * VRBRAIN_STORAGE_LINE_SIZE;
+    if (lseek(_fd, ofs, SEEK_SET) != ofs) {
+        return;
+    }
+
+    // mark the line clean
+    _dirty_mask.clear(line);
+    
+    bus_lock(true);
+    ssize_t ret = write(_fd, &_buffer[ofs], VRBRAIN_STORAGE_LINE_SIZE);
+    bus_lock(false);
+
+    if (ret != VRBRAIN_STORAGE_LINE_SIZE) {
+        // write error - likely EINTR
+        _dirty_mask.set(line);
+        close(_fd);
+        _fd = -1;
+        perf_count(_perf_errors);
+    }
+}
+
+/*
+  load all data from mtd
+ */
+void VRBRAINStorage::_mtd_load(void)
+{
+    if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "start " MTD_PARAMS_FILE)) {
+        printf("mtd: started OK\n");
+        if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "readtest " MTD_PARAMS_FILE)) {
+            printf("mtd: readtest OK\n");
+        } else {
+            AP_BoardConfig::sensor_config_error("mtd: failed readtest");
+        }
+    } else {
+        AP_BoardConfig::sensor_config_error("mtd: failed start");
+    }
+
+    int fd = open(MTD_PARAMS_FILE, O_RDONLY);
+    if (fd == -1) {
+        AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
+    }
+    const uint16_t chunk_size = 128;
+    for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
+        bus_lock(true);
+        ssize_t ret = read(fd, &_buffer[ofs], chunk_size);
+        bus_lock(false);
+        if (ret != chunk_size) {
+            ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
+                     (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
+            AP_HAL::panic("Failed to read " MTD_PARAMS_FILE);
+        }
+    }
+    close(fd);
+}
+
+#else // USE_FLASH_STORAGE
+
+/*
+  load all data from flash
+ */
+void VRBRAINStorage::_flash_load(void)
+{
+    _flash_page = up_progmem_npages() - 2;
+    if (up_progmem_pagesize(_flash_page) != 128*1024U ||
+        up_progmem_pagesize(_flash_page+1) != 128*1024U) {
+        AP_HAL::panic("Bad flash page sizes %u %u",
+                      up_progmem_pagesize(_flash_page),
+                      up_progmem_pagesize(_flash_page+1));
+    }
+        
+    printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
+    
+    if (!_flash.init()) {
+        AP_HAL::panic("unable to init flash storage");
+    }
+}
+
+/*
+  write one storage line. This also updates _dirty_mask. 
+*/
+void VRBRAINStorage::_flash_write(uint16_t line)
+{
+    if (_flash.write(line*VRBRAIN_STORAGE_LINE_SIZE, VRBRAIN_STORAGE_LINE_SIZE)) {
+        // mark the line clean
+        _dirty_mask.clear(line);
+    } else {
+        perf_count(_perf_errors);
+    }
+}
+
+/*
+  callback to write data to flash
+ */
+bool VRBRAINStorage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
+{
+    size_t base_address = up_progmem_getaddress(_flash_page+sector);
+    bool ret = up_progmem_write(base_address+offset, data, length) == length;
+    if (!ret && _flash_erase_ok()) {
+        // we are getting flash write errors while disarmed. Try
+        // re-writing all of flash
+        uint32_t now = AP_HAL::millis();
+        if (now - _last_re_init_ms > 5000) {
+            _last_re_init_ms = now;
+            bool ok = _flash.re_initialise();
+            printf("Storage: failed at %u:%u for %u - re-init %u\n",
+                   sector, offset, length, (unsigned)ok);
+        }
+    }
+    return ret;
+}
+
+/*
+  callback to read data from flash
+ */
+bool VRBRAINStorage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
+{
+    size_t base_address = up_progmem_getaddress(_flash_page+sector);
+    const uint8_t *b = ((const uint8_t *)base_address)+offset;
+    memcpy(data, b, length);
+    return true;
+}
+
+/*
+  callback to erase flash sector
+ */
+bool VRBRAINStorage::_flash_erase_sector(uint8_t sector)
+{
+    return up_progmem_erasepage(_flash_page+sector) > 0;
+}
+
+/*
+  callback to check if erase is allowed
+ */
+bool VRBRAINStorage::_flash_erase_ok(void)
+{
+    // only allow erase while disarmed
+    return !hal.util->get_soft_armed();
+}
+#endif // USE_FLASH_STORAGE
+
 
 #endif // CONFIG_HAL_BOARD

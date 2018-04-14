@@ -237,10 +237,11 @@ void *Scheduler::_uart_thread(void *arg)
 
         // process any pending serial bytes
         //((UARTDriver *)hal.uartA)->timer_tick();
-        ((UARTDriver *)hal.uartB)->timer_tick();
-        ((UARTDriver *)hal.uartC)->timer_tick();
-        ((UARTDriver *)hal.uartD)->timer_tick();
-        ((UARTDriver *)hal.uartE)->timer_tick();
+        hal.uartB->timer_tick();
+        hal.uartC->timer_tick();
+        hal.uartD->timer_tick();
+        hal.uartE->timer_tick();
+        hal.uartF->timer_tick();
     }
     return nullptr;
 }

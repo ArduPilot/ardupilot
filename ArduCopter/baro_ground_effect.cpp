@@ -37,7 +37,7 @@ void Copter::update_ground_effect_detector(void)
     }
 
     // if we aren't taking off yet, reset the takeoff timer, altitude and complete flag
-    bool throttle_up = mode_has_manual_throttle(control_mode) && channel_throttle->get_control_in() > 0;
+    const bool throttle_up = flightmode->has_manual_throttle() && channel_throttle->get_control_in() > 0;
     if (!throttle_up && ap.land_complete) {
         gndeffect_state.takeoff_time_ms = tnow_ms;
         gndeffect_state.takeoff_alt_cm = inertial_nav.get_altitude();

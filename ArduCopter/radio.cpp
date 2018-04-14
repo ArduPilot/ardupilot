@@ -43,14 +43,23 @@ void Copter::init_rc_in()
 
     // initialise throttle_zero flag
     ap.throttle_zero = true;
+
+    // Allow override by default at start
+    ap.rc_override_enable = true;
 }
 
  // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
 void Copter::init_rc_out()
 {
-    motors->set_update_rate(g.rc_speed);
     motors->set_loop_rate(scheduler.get_loop_rate_hz());
     motors->init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
+
+    // enable aux servos to cope with multiple output channels per motor
+    SRV_Channels::enable_aux_servos();
+
+    // update rate must be set after motors->init() to allow for motor mapping
+    motors->set_update_rate(g.rc_speed);
+
 #if FRAME_CONFIG != HELI_FRAME
     motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #else
@@ -79,7 +88,6 @@ void Copter::init_rc_out()
 void Copter::enable_motor_output()
 {
     // enable motors
-    motors->enable();
     motors->output_min();
 }
 
@@ -186,4 +194,17 @@ void Copter::radio_passthrough_to_motors()
                                   channel_pitch->norm_input(),
                                   channel_throttle->get_control_in_zero_dz()*0.001,
                                   channel_yaw->norm_input());
+}
+
+/*
+  return the throttle input for mid-stick as a control-in value
+ */
+int16_t Copter::get_throttle_mid(void)
+{
+#if TOY_MODE_ENABLED == ENABLED
+    if (g2.toy_mode.enabled()) {
+        return g2.toy_mode.get_throttle_mid();
+    }
+#endif
+    return channel_throttle->get_control_mid();
 }

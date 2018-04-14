@@ -89,10 +89,15 @@ void OpticalFlow::init(void)
     }
 
     if (!backend) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-        if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK) {
+#if AP_FEATURE_BOARD_DETECT
+        if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK ||
+            AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2 ||
+            AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PCNC1) {
             // possibly have pixhart on external SPI
-            backend = AP_OpticalFlow_Pixart::detect(*this);
+            backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
+        }
+        if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_SP01) {
+            backend = AP_OpticalFlow_Pixart::detect("pixartPC15", *this);
         }
         if (backend == nullptr) {
             backend = AP_OpticalFlow_PX4Flow::detect(*this);
@@ -104,6 +109,8 @@ void OpticalFlow::init(void)
         backend = new AP_OpticalFlow_Onboard(*this);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         backend = AP_OpticalFlow_PX4Flow::detect(*this);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+        backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #endif
     }
 

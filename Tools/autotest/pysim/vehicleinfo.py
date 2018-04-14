@@ -107,7 +107,7 @@ class VehicleInfo(object):
         },
     },
     "ArduPlane": {
-        "default_frame": "jsbsim",
+        "default_frame": "plane",
         "frames": {
             # PLANE
             "quadplane-tilttri": {
@@ -209,6 +209,10 @@ class VehicleInfo(object):
         "default_frame": "vectored",
         "frames": {
             "vectored": {
+                "waf_target": "bin/ardusub",
+                "default_params_filename": "default_params/sub.parm",
+            },
+            "gazebo-bluerov2": {
                 "waf_target": "bin/ardusub",
                 "default_params_filename": "default_params/sub.parm",
             },

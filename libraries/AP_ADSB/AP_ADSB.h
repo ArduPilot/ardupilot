@@ -31,11 +31,10 @@
 
 class AP_ADSB {
 public:
-    static AP_ADSB create(const AP_AHRS &ahrs) {
-        return AP_ADSB{ahrs};
+    AP_ADSB()
+    {
+        AP_Param::setup_object_defaults(this, var_info);
     }
-
-    constexpr AP_ADSB(AP_ADSB &&other) = default;
 
     /* Do not allow copies */
     AP_ADSB(const AP_ADSB &other) = delete;
@@ -76,12 +75,6 @@ public:
     void handle_message(const mavlink_channel_t chan, const mavlink_message_t* msg);
 
 private:
-    AP_ADSB(const AP_AHRS &ahrs)
-        : _ahrs(ahrs)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    }
-
     // initialize _vehicle_list
     void init();
 
@@ -114,10 +107,6 @@ private:
 
     // handle ADS-B transceiver report for ping2020
     void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
-
-    // reference to AHRS, so we can ask for our position,
-    // heading and speed
-    const AP_AHRS &_ahrs;
 
     AP_Int8     _enabled;
 

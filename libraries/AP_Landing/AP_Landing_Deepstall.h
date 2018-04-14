@@ -68,6 +68,7 @@ private:
     AP_Float yaw_rate_limit;
     AP_Float time_constant;
     AP_Float min_abort_alt;
+    AP_Float aileron_scalar;
     int32_t loiter_sum_cd;         // used for tracking the progress on loitering
     deepstall_stage stage;
     Location landing_point;
@@ -86,6 +87,7 @@ private:
     float crosstrack_error; // current crosstrack error
     float predicted_travel_distance; // distance the aircraft is perdicted to travel during deepstall
     bool hold_level; // locks the target yaw rate of the aircraft to 0, serves to hold the aircraft level at all times
+    float approach_alt_offset;     // approach altitude offset
 
     //public AP_Landing interface
     void do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
@@ -101,7 +103,9 @@ private:
     int32_t get_target_airspeed_cm(void) const;
     bool is_throttle_suppressed(void) const;
     bool is_flying_forward(void) const;
+    bool is_on_approach(void) const;
     bool terminate(void);
+    void log(void) const;
 
     bool send_deepstall_message(mavlink_channel_t chan) const;
 

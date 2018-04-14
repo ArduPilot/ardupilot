@@ -4,9 +4,8 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 */
 #include "Variometer.h"
 
-Variometer::Variometer(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms) :
+Variometer::Variometer(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
     _ahrs(ahrs),
-    _spdHgt(spdHgt),
     _aparm(parms),
     new_data(false)
 {
@@ -75,6 +74,6 @@ float Variometer::correct_netto_rate(float climb_rate,
     //float temp_netto = netto_rate;
     //float dVdt = SpdHgt_Controller->get_VXdot();
     //netto_rate = netto_rate + aspd*dVdt/GRAVITY_MSS;
-    //gcs().send_text(MAV_SEVERITY_INFO, "%f %f %f %f\n",temp_netto,dVdt,netto_rate,barometer.get_altitude());
+    //gcs().send_text(MAV_SEVERITY_INFO, "%f %f %f %f",temp_netto,dVdt,netto_rate,barometer.get_altitude());
     return netto_rate;
 }

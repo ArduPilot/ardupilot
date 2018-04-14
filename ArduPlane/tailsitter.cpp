@@ -21,7 +21,7 @@
 /*
   return true when flying a tailsitter
  */
-bool QuadPlane::is_tailsitter(void)
+bool QuadPlane::is_tailsitter(void) const
 {
     return available() && frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER;
 }
@@ -31,7 +31,17 @@ bool QuadPlane::is_tailsitter(void)
  */
 bool QuadPlane::tailsitter_active(void)
 {
-    return is_tailsitter() && in_vtol_mode();
+    if (!is_tailsitter()) {
+        return false;
+    }
+    if (in_vtol_mode()) {
+        return true;
+    }
+    // check if we are in ANGLE_WAIT fixed wing transition
+    if (transition_state == TRANSITION_ANGLE_WAIT_FW) {
+        return true;
+    }
+    return false;
 }
 
 /*
@@ -42,7 +52,7 @@ void QuadPlane::tailsitter_output(void)
     if (!is_tailsitter()) {
         return;
     }
-    if (!tailsitter_active()) {
+    if (!tailsitter_active() || in_tailsitter_vtol_transition()) {
         if (tailsitter.vectored_forward_gain > 0) {
             // thrust vectoring in fixed wing flight
             float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
@@ -55,13 +65,32 @@ void QuadPlane::tailsitter_output(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, 0);
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 0);
         }
+        if (in_tailsitter_vtol_transition() && !throttle_wait && is_flying() && hal.util->get_soft_armed()) {
+            /*
+              during transitions to vtol mode set the throttle to the
+              hover throttle, and set the altitude controller
+              integrator to the same throttle level
+             */
+            uint8_t throttle = motors->get_throttle_hover() * 100;
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
+            pos_control->get_accel_z_pid().set_integrator(throttle*10);
+        }
         return;
     }
-
+    
     motors_output();
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
 
+    if (hal.util->get_soft_armed()) {
+        // scale surfaces for throttle
+        tailsitter_speed_scaling();
+    }
+
+    
     if (tailsitter.vectored_hover_gain > 0) {
         // thrust vectoring VTOL modes
         float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
@@ -110,18 +139,42 @@ void QuadPlane::tailsitter_output(void)
 /*
   return true when we have completed enough of a transition to switch to fixed wing control
  */
-bool QuadPlane::tailsitter_transition_complete(void)
+bool QuadPlane::tailsitter_transition_fw_complete(void)
 {
     if (plane.fly_inverted()) {
         // transition immediately
         return true;
     }
+    int32_t roll_cd = labs(ahrs_view->roll_sensor);
+    if (roll_cd > 9000) {
+        roll_cd = 18000 - roll_cd;
+    }
     if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle*100 ||
-        labs(ahrs_view->roll_sensor) > tailsitter.transition_angle*100 ||
+        roll_cd > tailsitter.transition_angle*100 ||
+        AP_HAL::millis() - transition_start_ms > uint32_t(transition_time_ms)) {
+        return true;
+    }
+    // still waiting
+    return false;
+}
+
+
+/*
+  return true when we have completed enough of a transition to switch to VTOL control
+ */
+bool QuadPlane::tailsitter_transition_vtol_complete(void) const
+{
+    if (plane.fly_inverted()) {
+        // transition immediately
+        return true;
+    }
+    if (labs(plane.ahrs.pitch_sensor) > tailsitter.transition_angle*100 ||
+        labs(plane.ahrs.roll_sensor) > tailsitter.transition_angle*100 ||
         AP_HAL::millis() - transition_start_ms > 2000) {
         return true;
     }
     // still waiting
+    attitude_control->reset_rate_controller_I_terms();
     return false;
 }
 
@@ -140,3 +193,37 @@ void QuadPlane::tailsitter_check_input(void)
         plane.channel_rudder->set_control_in(-roll_in);
     }
 }
+
+/*
+  return true if we are a tailsitter transitioning to VTOL flight  
+ */
+bool QuadPlane::in_tailsitter_vtol_transition(void) const
+{
+    return is_tailsitter() && in_vtol_mode() && transition_state == TRANSITION_ANGLE_WAIT_VTOL;
+}
+
+/*
+  account for speed scaling of control surfaces in hover
+*/
+void QuadPlane::tailsitter_speed_scaling(void)
+{
+    const float hover_throttle = motors->get_throttle_hover();
+    const float throttle = motors->get_throttle();
+    const float scaling_max = 5;
+    float scaling = 1;
+    if (is_zero(throttle)) {
+        scaling = scaling_max;
+    } else {
+        scaling = constrain_float(hover_throttle / throttle, 1/scaling_max, scaling_max);
+    }
+    const SRV_Channel::Aux_servo_function_t functions[2] = {
+        SRV_Channel::Aux_servo_function_t::k_aileron,
+        SRV_Channel::Aux_servo_function_t::k_elevator};
+    for (uint8_t i=0; i<ARRAY_SIZE(functions); i++) {
+        int32_t v = SRV_Channels::get_output_scaled(functions[i]);
+        v *= scaling;
+        v = constrain_int32(v, -SERVO_MAX, SERVO_MAX);
+        SRV_Channels::set_output_scaled(functions[i], v);
+    }
+}
+    

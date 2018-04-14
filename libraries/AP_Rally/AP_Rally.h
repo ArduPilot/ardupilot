@@ -36,11 +36,7 @@ struct PACKED RallyLocation {
 /// @brief    Object managing Rally Points
 class AP_Rally {
 public:
-    static AP_Rally create(AP_AHRS &ahrs) {
-        return AP_Rally{ahrs};
-    }
-
-    constexpr AP_Rally(AP_Rally &&other) = default;
+    AP_Rally(AP_AHRS &ahrs);
 
     /* Do not allow copies */
     AP_Rally(const AP_Rally &other) = delete;
@@ -65,9 +61,6 @@ public:
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
-
-protected:
-    AP_Rally(AP_AHRS &ahrs);
 
 private:
     virtual bool is_valid(const Location &rally_point) const { return true; }

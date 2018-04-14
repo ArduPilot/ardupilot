@@ -35,14 +35,14 @@ void Sub::init_ardupilot()
     BoardConfig_CAN.init();
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if AP_FEATURE_BOARD_DETECT
     // Detection won't work until after BoardConfig.init()
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-        AP_Param::set_default_by_name("GND_EXT_BUS", 0);
+        AP_Param::set_by_name("GND_EXT_BUS", 0);
         break;
     default:
-        AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+        AP_Param::set_by_name("GND_EXT_BUS", 1);
         break;
     }
 #else
@@ -124,6 +124,7 @@ void Sub::init_ardupilot()
 
 #if AVOIDANCE_ENABLED == ENABLED
     wp_nav.set_avoidance(&avoid);
+    loiter_nav.set_avoidance(&avoid);
 #endif
 
     pos_control.set_dt(MAIN_LOOP_SECONDS);
@@ -143,7 +144,7 @@ void Sub::init_ardupilot()
 #endif
 
     // Init baro and determine if we have external (depth) pressure sensor
-    init_barometer(false);
+    barometer.calibrate(false);
     barometer.update();
 
     for (uint8_t i = 0; i < barometer.num_instances(); i++) {
@@ -229,21 +230,7 @@ void Sub::startup_INS_ground()
     ahrs.reset();
 }
 
-// calibrate gyros - returns true if succesfully calibrated
-bool Sub::calibrate_gyros()
-{
-    // gyro offset calibration
-    sub.ins.init_gyro();
-
-    // reset ahrs gyro bias
-    if (sub.ins.gyro_calibrated_ok_all()) {
-        sub.ahrs.reset_gyro_drift();
-        return true;
-    }
-
-    return false;
-}
-
+// calibrate gyros - returns true if successfully calibrated
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
 bool Sub::position_ok()
 {

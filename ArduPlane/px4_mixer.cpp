@@ -271,7 +271,7 @@ bool Plane::setup_failsafe_mixing(void)
     unsigned mixer_status = 0;
     uint16_t manual_mask = uint16_t(g2.manual_rc_mask.get());
 
-    buf = (char *)malloc(buf_size);
+    buf = (char *)calloc(1, buf_size);
     if (buf == nullptr) {
         goto failed;
     }

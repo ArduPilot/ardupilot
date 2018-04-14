@@ -35,7 +35,7 @@ class OpticalFlow;
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
 #define AP_AHRS_YAW_P_MIN  0.05f        // minimum value for AHRS_YAW_P parameter
 
-enum AHRS_VehicleClass {
+enum AHRS_VehicleClass : uint8_t {
     AHRS_VEHICLE_UNKNOWN,
     AHRS_VEHICLE_GROUND,
     AHRS_VEHICLE_COPTER,
@@ -53,45 +53,23 @@ public:
     friend class AP_AHRS_View;
     
     // Constructor
-    AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
-        roll(0.0f),
-        pitch(0.0f),
-        yaw(0.0f),
-        roll_sensor(0),
-        pitch_sensor(0),
-        yaw_sensor(0),
+    AP_AHRS() :
         _vehicle_class(AHRS_VEHICLE_UNKNOWN),
-        _compass(nullptr),
-        _optflow(nullptr),
-        _airspeed(nullptr),
-        _beacon(nullptr),
-        _compass_last_update(0),
-        _ins(ins),
-        _baro(baro),
-        _gps(gps),
         _cos_roll(1.0f),
         _cos_pitch(1.0f),
-        _cos_yaw(1.0f),
-        _sin_roll(0.0f),
-        _sin_pitch(0.0f),
-        _sin_yaw(0.0f),
-        _active_accel_instance(0)
+        _cos_yaw(1.0f)
     {
+        _singleton = this;
+
         // load default values from var_info table
         AP_Param::setup_object_defaults(this, var_info);
 
         // base the ki values by the sensors maximum drift
         // rate.
-        _gyro_drift_limit = ins.get_gyro_drift_rate();
+        _gyro_drift_limit = AP::ins().get_gyro_drift_rate();
 
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
-
-        // initialise _home
-        _home.options    = 0;
-        _home.alt        = 0;
-        _home.lng        = 0;
-        _home.lat        = 0;
 
         _last_trim = _trim.get();
         _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
@@ -100,6 +78,11 @@ public:
 
     // empty virtual destructor
     virtual ~AP_AHRS() {}
+
+    // get singleton instance
+    static AP_AHRS *get_singleton() {
+        return _singleton;
+    }
 
     // init sets up INS board orientation
     virtual void init() {
@@ -179,7 +162,7 @@ public:
     // allow for runtime change of orientation
     // this makes initial config easier
     void set_orientation() {
-        _ins.set_board_orientation((enum Rotation)_board_orientation.get());
+        AP::ins().set_board_orientation((enum Rotation)_board_orientation.get());
         if (_compass != nullptr) {
             _compass->set_board_orientation((enum Rotation)_board_orientation.get());
         }
@@ -201,26 +184,14 @@ public:
         return _beacon;
     }
 
-    const AP_GPS &get_gps() const {
-        return _gps;
-    }
-
-    const AP_InertialSensor &get_ins() const {
-        return _ins;
-    }
-
-    const AP_Baro &get_baro() const {
-        return _baro;
-    }
-
     // get the index of the current primary accelerometer sensor
     virtual uint8_t get_primary_accel_index(void) const {
-        return _ins.get_primary_accel();
+        return AP::ins().get_primary_accel();
     }
 
     // get the index of the current primary gyro sensor
     virtual uint8_t get_primary_gyro_index(void) const {
-        return _ins.get_primary_gyro();
+        return AP::ins().get_primary_gyro();
     }
     
     // accelerometer values in the earth frame in m/s/s
@@ -228,7 +199,7 @@ public:
         return _accel_ef[i];
     }
     virtual const Vector3f &get_accel_ef(void) const {
-        return get_accel_ef(_ins.get_primary_accel());
+        return get_accel_ef(AP::ins().get_primary_accel());
     }
 
     // blended accelerometer values in the earth frame in m/s/s
@@ -301,8 +272,10 @@ public:
     // otherwise false. This call fills in lat, lng and alt
     virtual bool get_position(struct Location &loc) const = 0;
 
+    virtual bool get_hagl(float &height) const { return false; }
+
     // return a wind estimation vector, in m/s
-    virtual Vector3f wind_estimate(void) = 0;
+    virtual Vector3f wind_estimate(void) const = 0;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
@@ -448,17 +421,17 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // return secondary attitude solution if available, as eulers in radians
-    virtual bool get_secondary_attitude(Vector3f &eulers) {
+    virtual bool get_secondary_attitude(Vector3f &eulers) const {
         return false;
     }
 
     // return secondary attitude solution if available, as quaternion
-    virtual bool get_secondary_quaternion(Quaternion &quat) {
+    virtual bool get_secondary_quaternion(Quaternion &quat) const {
         return false;
     }
     
     // return secondary position solution if available
-    virtual bool get_secondary_position(struct Location &loc) {
+    virtual bool get_secondary_position(struct Location &loc) const {
         return false;
     }
 
@@ -466,6 +439,16 @@ public:
     // home without telling AHRS about the change
     const struct Location &get_home(void) const {
         return _home;
+    }
+
+    enum HomeState home_status(void) const {
+        return _home_status;
+    }
+    void set_home_status(enum HomeState new_status) {
+        _home_status = new_status;
+    }
+    bool home_is_set(void) const {
+        return _home_status != HOME_UNSET;
     }
 
     // set the home location in 10e7 degrees. This should be called
@@ -477,6 +460,9 @@ public:
     // be called when the EKF has no absolute position reference (i.e. GPS)
     // from which to decide the origin on its own
     virtual bool set_origin(const Location &loc) { return false; }
+
+    // returns the inertial navigation origin in lat/lon/alt
+    virtual bool get_origin(Location &ret) const { return false; }
 
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
@@ -531,8 +517,8 @@ public:
     }
     
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
-    // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
-    // inconsistency that will be accpeted by the filter
+    // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
+    // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
     virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const {
         return false;
@@ -547,7 +533,12 @@ public:
     }
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
-    virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const { ret.zero(); _ins.get_delta_velocity(ret); dt = _ins.get_delta_velocity_dt(); }
+    virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
+        ret.zero();
+        const AP_InertialSensor &_ins = AP::ins();
+        _ins.get_delta_velocity(ret);
+        dt = _ins.get_delta_velocity_dt();
+    }
 
     // create a view
     AP_AHRS_View *create_view(enum Rotation rotation);
@@ -558,7 +549,23 @@ public:
     // return calculated SSA
     float getSSA(void);
 
+    // rotate a 2D vector from earth frame to body frame
+    // in result, x is forward, y is right
+    Vector2f rotate_earth_to_body2D(const Vector2f &ef_vector) const;
+
+    // rotate a 2D vector from earth frame to body frame
+    // in input, x is forward, y is right
+    Vector2f rotate_body_to_earth2D(const Vector2f &bf) const;
+    
     virtual void update_AOA_SSA(void);
+
+    // get_hgt_ctrl_limit - get maximum height to be observed by the
+    // control loops in meters and a validity flag.  It will return
+    // false when no limiting is required
+    virtual bool get_hgt_ctrl_limit(float &limit) const { return false; };
+
+    // Write position and quaternion data from an external navigation system
+    virtual void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) { }
 
 protected:
     AHRS_VehicleClass _vehicle_class;
@@ -616,12 +623,6 @@ protected:
     // time in microseconds of last compass update
     uint32_t _compass_last_update;
 
-    // note: we use ref-to-pointer here so that our caller can change the GPS without our noticing
-    //       IMU under us without our noticing.
-    AP_InertialSensor   &_ins;
-    AP_Baro             &_baro;
-    const AP_GPS        &_gps;
-
     // a vector to capture the difference between the controller and body frames
     AP_Vector3f         _trim;
 
@@ -660,6 +661,13 @@ protected:
     // AOA and SSA
     float _AOA, _SSA;
     uint32_t _last_AOA_update_ms;
+
+private:
+    static AP_AHRS *_singleton;
+
+    // Flag for if we have g_gps lock and have set the home location in AHRS
+    enum HomeState _home_status = HOME_UNSET;
+
 };
 
 #include "AP_AHRS_DCM.h"
@@ -670,3 +678,7 @@ protected:
 #else
 #define AP_AHRS_TYPE AP_AHRS
 #endif
+
+namespace AP {
+    AP_AHRS &ahrs();
+};

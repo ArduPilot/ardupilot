@@ -49,9 +49,8 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
 
 /// Constructor for PID
 AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff) :
-    AC_PID(initial_p, initial_i, initial_d, initial_imax, initial_filt_hz, dt)
+    AC_PID(initial_p, initial_i, initial_d, initial_imax, initial_filt_hz, dt, initial_ff)
 {
-    _ff = initial_ff;
     _last_requested_rate = 0;
 }
 

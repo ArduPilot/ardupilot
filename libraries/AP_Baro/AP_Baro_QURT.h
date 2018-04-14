@@ -1,9 +1,9 @@
 #pragma once
 
 #include "AP_Baro_Backend.h"
-#include <AP_HAL_QURT/Semaphores.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#include <AP_HAL_QURT/Semaphores.h>
 extern "C" {
 #include "bmp280_api.h"
 }

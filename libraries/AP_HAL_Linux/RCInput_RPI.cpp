@@ -38,6 +38,9 @@
 #define RCIN_RPI_MAX_COUNTER     1300
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 #define PPM_INPUT_RPI RPI_GPIO_5
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#define PPM_INPUT_RPI NAVIO_GPIO_PPM_IN
+#define PAGE_SIZE           (4*1024)
 #else
 #define PPM_INPUT_RPI RPI_GPIO_4
 #endif
@@ -110,8 +113,8 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     uint64_t pageInfo;
     void *offset;
 
-    _virt_pages = (void **)malloc(page_count * sizeof(void *));
-    _phys_pages = (void **)malloc(page_count * sizeof(void *));
+    _virt_pages = (void **)calloc(page_count, sizeof(void *));
+    _phys_pages = (void **)calloc(page_count, sizeof(void *));
     _page_count = page_count;
 
     if ((fdMem = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC)) < 0) {

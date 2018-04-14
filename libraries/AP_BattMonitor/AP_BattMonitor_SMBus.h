@@ -15,9 +15,23 @@ class AP_BattMonitor_SMBus : public AP_BattMonitor_Backend
 {
 public:
 
+    // Smart Battery Data Specification Revision 1.1
+    enum BATTMONITOR_SMBUS {
+        BATTMONITOR_SMBUS_TEMP = 0x08,                 // Temperature
+        BATTMONITOR_SMBUS_VOLTAGE = 0x09,              // Voltage
+        BATTMONITOR_SMBUS_CURRENT = 0x0A,              // Current
+        BATTMONITOR_SMBUS_REMAINING_CAPACITY = 0x0F,   // Remaining Capacity
+        BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY = 0x10, // Full Charge Capacity
+        BATTMONITOR_SMBUS_SPECIFICATION_INFO = 0x1A,   // Specification Info
+        BATTMONITOR_SMBUS_SERIAL = 0x1C,               // Serial Number
+        BATTMONITOR_SMBUS_MANUFACTURE_NAME = 0x20,     // Manufacture Name
+        BATTMONITOR_SMBUS_MANUFACTURE_DATA = 0x23,     // Manufacture Data
+    };
+
     /// Constructor
     AP_BattMonitor_SMBus(AP_BattMonitor &mon,
                     AP_BattMonitor::BattMonitor_State &mon_state,
+                    AP_BattMonitor_Params &params,
                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     // virtual destructor to reduce compiler warnings
@@ -27,6 +41,8 @@ public:
 
     // all smart batteries are expected to provide current
     bool has_current() const override { return true; }
+
+    void init(void) override;
 
 protected:
 
@@ -64,6 +80,8 @@ protected:
     uint16_t _full_charge_capacity; // full charge capacity, used to stash the value before setting the parameter
 
     bool _has_cell_voltages;        // smbus backends flag this as true once they have recieved a valid cell voltage report
+
+    virtual void timer(void) = 0;   // timer function to read from the battery
 
 };
 

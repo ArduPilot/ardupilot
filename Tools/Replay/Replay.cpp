@@ -102,11 +102,11 @@ void ReplayVehicle::load_parameters(void)
 
 static const struct LogStructure min_log_structure[] = {
     { LOG_FORMAT_MSG, sizeof(log_Format),
-      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },
+      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns", "-b---", "-----" },
     { LOG_PARAMETER_MSG, sizeof(log_Parameter),
-      "PARM", "QNf",        "TimeUS,Name,Value" }, 
+      "PARM", "QNf",        "TimeUS,Name,Value", "s--", "F--" },
     { LOG_MESSAGE_MSG, sizeof(log_Message),
-      "MSG",  "QZ",     "TimeUS,Message"},
+      "MSG",  "QZ",     "TimeUS,Message", "s-", "F-" },
 };
 
 void ReplayVehicle::setup(void) 
@@ -954,6 +954,6 @@ GCS_Dummy _gcs;
 
 // dummy methods to avoid linking with these libraries
 void AP_Camera::send_feedback(mavlink_channel_t) {}
-bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate) { return false; }
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
 
 AP_HAL_MAIN_CALLBACKS(&replay);

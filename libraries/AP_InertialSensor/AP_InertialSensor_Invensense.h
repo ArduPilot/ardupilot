@@ -62,6 +62,7 @@ public:
         Invensense_MPU9250,
         Invensense_ICM20608,
         Invensense_ICM20602,
+        Invensense_ICM20789,
     };
     
 private:
@@ -104,13 +105,14 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    uint16_t _error_count;
-
     float temp_sensitivity = 1.0/340; // degC/LSB
     float temp_zero = 36.53; // degC
     
     float _temp_filtered;
     float _accel_scale;
+
+    float _fifo_accel_scale;
+    float _fifo_gyro_scale;
     LowPassFilter2pFloat _temp_filter;
 
     enum Rotation _rotation;
@@ -124,6 +126,12 @@ private:
 
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
+
+    // what downsampling rate are we using from the FIFO?
+    uint8_t _fifo_downsample_rate;
+
+    // what rate are we generating samples into the backend?
+    uint16_t _backend_rate_hz;
 
     // Last status from register user control
     uint8_t _last_stat_user_ctrl;    
@@ -188,3 +196,7 @@ private:
     static const uint8_t MAX_EXT_SENS_DATA = 24;
     uint8_t _ext_sens_data = 0;
 };
+
+#ifndef INS_INVENSENSE_20789_I2C_ADDR
+#define INS_INVENSENSE_20789_I2C_ADDR 0x68
+#endif

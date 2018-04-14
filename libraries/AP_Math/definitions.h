@@ -30,6 +30,9 @@
 #define DEG_TO_RAD      (M_PI / 180.0f)
 #define RAD_TO_DEG      (180.0f / M_PI)
 
+// Centi-degrees to radians
+#define DEGX100 5729.57795f
+
 // GPS Specific double precision conversions
 // The precision here does matter when using the wsg* functions for converting
 // between LLH and ECEF coordinates.
@@ -44,7 +47,7 @@ static const double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
 // radius of earth in meters
 #define RADIUS_OF_EARTH 6378100
 
-// convert a longitude or latitude point to meters or centimeteres.
+// convert a longitude or latitude point to meters or centimeters.
 // Note: this does not include the longitude scaling which is dependent upon location
 #define LATLON_TO_M     0.01113195f
 #define LATLON_TO_CM    1.113195f
@@ -63,6 +66,15 @@ static const double WGS84_B = (WGS84_A * (1 - WGS84_F));
 
 // Eccentricity of the Earth
 static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
+
+// air density at 15C at sea level in kg/m^3
+#define AIR_DENSITY_SEA_LEVEL    1.225f
+
+#define C_TO_KELVIN 273.15f
+
+// Gas Constant is from Aerodynamics for Engineering Students, Third Edition, E.L.Houghton and N.B.Carruthers
+#define ISA_GAS_CONSTANT 287.26f
+#define ISA_LAPSE_RATE 0.0065f
 
 /*
   use AP_ prefix to prevent conflict with OS headers, such as NuttX

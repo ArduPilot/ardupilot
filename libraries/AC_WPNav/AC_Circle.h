@@ -11,8 +11,6 @@
 #define AC_CIRCLE_RATE_DEFAULT      20.0f       // turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
 #define AC_CIRCLE_ANGULAR_ACCEL_MIN 2.0f        // angular acceleration should never be less than 2deg/sec
 
-#define AC_CIRCLE_DEGX100           5729.57795f // constant to convert from radians to centi-degrees
-
 class AC_Circle
 {
 public:
@@ -59,6 +57,12 @@ public:
     //  result's altitude (i.e. z) will be set to the circle_center's altitude
     //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
     void get_closest_point_on_circle(Vector3f &result);
+
+    /// get horizontal distance to loiter target in cm
+    float get_distance_to_target() const { return _pos_control.get_distance_to_target(); }
+
+    /// get bearing to target in centi-degrees
+    int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target(); }
 
     static const struct AP_Param::GroupInfo var_info[];
 

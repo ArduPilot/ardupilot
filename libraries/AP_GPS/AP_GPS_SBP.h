@@ -31,6 +31,8 @@ public:
 
     AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
+    bool supports_mavlink_gps_rtk_message() { return true; }
+
     // Methods
     bool read();
 

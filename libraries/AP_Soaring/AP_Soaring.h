@@ -29,7 +29,6 @@ class SoaringController {
     ExtendedKalmanFilter _ekf{};
     AP_AHRS &_ahrs;
     AP_SpdHgtControl &_spdHgt;
-    const AP_Vehicle::FixedWing &_aparm;
     Variometer _vario;
 
     // store aircraft location at last update

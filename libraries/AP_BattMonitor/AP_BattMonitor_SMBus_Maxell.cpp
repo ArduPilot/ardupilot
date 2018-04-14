@@ -5,11 +5,6 @@
 #include "AP_BattMonitor_SMBus_Maxell.h"
 #include <utility>
 
-#define BATTMONITOR_SMBUS_MAXELL_VOLTAGE    0x09    // voltage register
-#define BATTMONITOR_SMBUS_MAXELL_CURRENT    0x0a    // current register
-#define BATTMONITOR_SMBUS_MAXELL_SPECIFICATION_INFO    0x1a    // specification info
-#define BATTMONITOR_SMBUS_MAXELL_MANUFACTURE_NAME  0x20    // manufacturer name
-
 #define BATTMONITOR_SMBUS_MAXELL_NUM_CELLS 6
 uint8_t maxell_cell_ids[] = { 0x3f,  // cell 1
                               0x3e,  // cell 2
@@ -38,11 +33,10 @@ uint8_t maxell_cell_ids[] = { 0x3f,  // cell 1
 // Constructor
 AP_BattMonitor_SMBus_Maxell::AP_BattMonitor_SMBus_Maxell(AP_BattMonitor &mon,
                                                    AP_BattMonitor::BattMonitor_State &mon_state,
+                                                   AP_BattMonitor_Params &params,
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_BattMonitor_SMBus(mon, mon_state, std::move(dev))
-{
-    _dev->register_periodic_callback(100000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_SMBus_Maxell::timer, void));
-}
+    : AP_BattMonitor_SMBus(mon, mon_state, params, std::move(dev))
+{}
 
 void AP_BattMonitor_SMBus_Maxell::timer()
 {
@@ -55,7 +49,7 @@ void AP_BattMonitor_SMBus_Maxell::timer()
     uint32_t tnow = AP_HAL::micros();
 
     // read voltage (V)
-    if (read_word(BATTMONITOR_SMBUS_MAXELL_VOLTAGE, data)) {
+    if (read_word(BATTMONITOR_SMBUS_VOLTAGE, data)) {
         _state.voltage = (float)data / 1000.0f;
         _state.last_time_micros = tnow;
         _state.healthy = true;
@@ -78,7 +72,7 @@ void AP_BattMonitor_SMBus_Maxell::timer()
     }
 
     // read current (A)
-    if (read_word(BATTMONITOR_SMBUS_MAXELL_CURRENT, data)) {
+    if (read_word(BATTMONITOR_SMBUS_CURRENT, data)) {
         _state.current_amps = -(float)((int16_t)data) / 1000.0f;
         _state.last_time_micros = tnow;
     }
@@ -148,7 +142,7 @@ bool AP_BattMonitor_SMBus_Maxell::check_pec_support()
 
     // specification info
     uint16_t data;
-    if (!read_word(BATTMONITOR_SMBUS_MAXELL_SPECIFICATION_INFO, data)) {
+    if (!read_word(BATTMONITOR_SMBUS_SPECIFICATION_INFO, data)) {
         return false;
     }
 
@@ -164,7 +158,7 @@ bool AP_BattMonitor_SMBus_Maxell::check_pec_support()
 
     // check manufacturer name
     uint8_t buff[SMBUS_READ_BLOCK_MAXIMUM_TRANSFER + 1];
-    if (read_block(BATTMONITOR_SMBUS_MAXELL_MANUFACTURE_NAME, buff, true)) {
+    if (read_block(BATTMONITOR_SMBUS_MANUFACTURE_NAME, buff, true)) {
         // Hitachi maxell batteries do not support PEC
         if (strcmp((char*)buff, "Hitachi maxell") == 0) {
             _pec_supported = false;

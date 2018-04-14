@@ -10,8 +10,8 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static AP_SerialManager serial_manager = AP_SerialManager::create();
-static RangeFinder sonar = RangeFinder::create(serial_manager, ROTATION_PITCH_270);
+static AP_SerialManager serial_manager;
+static RangeFinder sonar{serial_manager, ROTATION_PITCH_270};
 
 void setup()
 {

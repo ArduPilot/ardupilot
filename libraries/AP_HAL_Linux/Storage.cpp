@@ -20,13 +20,14 @@ using namespace Linux;
 
 // name the storage file after the sketch so you can use the same board
 // card for ArduCopter and ArduPlane
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-#define STORAGE_DIR "/data/ftp/internal_000/ardupilot"
-#elif APM_BUILD_TYPE(APM_BUILD_Replay)
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
 #define STORAGE_DIR "."
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
+#define STORAGE_DIR "/mnt/APM"
 #else
-#define STORAGE_DIR "/var/APM"
+#define STORAGE_DIR HAL_BOARD_STORAGE_DIRECTORY
 #endif
+
 #define STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
 
 extern const AP_HAL::HAL& hal;

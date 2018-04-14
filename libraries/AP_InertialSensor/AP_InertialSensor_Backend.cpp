@@ -2,8 +2,10 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 #include <DataFlash/DataFlash.h>
+#if AP_MODULE_SUPPORTED
 #include <AP_Module/AP_Module.h>
 #include <stdio.h>
+#endif
 
 #define SENSOR_RATE_DEBUG 0
 
@@ -160,8 +162,10 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     }
     _imu._gyro_last_sample_us[instance] = sample_us;
 
+#if AP_MODULE_SUPPORTED
     // call gyro_sample hook if any
     AP_Module::call_hook_gyro_sample(instance, dt, gyro);
+#endif
 
     // push gyros if optical flow present
     if (hal.opticalflow)
@@ -200,8 +204,17 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _sem->give();
     }
 
-    DataFlash_Class *dataflash = get_dataflash();
-    if (dataflash != nullptr) {
+    log_gyro_raw(instance, sample_us, gyro);
+}
+
+void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gyro)
+{
+    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    if (dataflash == nullptr) {
+        // should not have been called
+        return;
+    }
+    if (should_log_imu_raw()) {
         uint64_t now = AP_HAL::micros64();
         struct log_GYRO pkt = {
             LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+instance)),
@@ -212,6 +225,8 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
             GyrZ      : gyro.z
         };
         dataflash->WriteBlock(&pkt, sizeof(pkt));
+    } else {
+        _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
     }
 }
 
@@ -278,8 +293,10 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     }
     _imu._accel_last_sample_us[instance] = sample_us;
 
+#if AP_MODULE_SUPPORTED
     // call accel_sample hook if any
     AP_Module::call_hook_accel_sample(instance, dt, accel, fsync_set);
+#endif    
     
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
@@ -299,8 +316,17 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         _sem->give();
     }
 
-    DataFlash_Class *dataflash = get_dataflash();
-    if (dataflash != nullptr) {
+    log_accel_raw(instance, sample_us, accel);
+}
+
+void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)
+{
+    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    if (dataflash == nullptr) {
+        // should not have been called
+        return;
+    }
+    if (should_log_imu_raw()) {
         uint64_t now = AP_HAL::micros64();
         struct log_ACCEL pkt = {
             LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+instance)),
@@ -311,6 +337,8 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
             AccZ      : accel.z
         };
         dataflash->WriteBlock(&pkt, sizeof(pkt));
+    } else {
+        _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
     }
 }
 
@@ -410,18 +438,19 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance)
     _sem->give();
 }
 
-DataFlash_Class *AP_InertialSensor_Backend::get_dataflash() const
+bool AP_InertialSensor_Backend::should_log_imu_raw() const
 {
-    DataFlash_Class *instance = DataFlash_Class::instance();
-    if (instance == nullptr) {
-        return nullptr;
-    }
     if (_imu._log_raw_bit == (uint32_t)-1) {
         // tracker does not set a bit
-        return nullptr;
+        return false;
+    }
+    const DataFlash_Class *instance = DataFlash_Class::instance();
+    if (instance == nullptr) {
+        return false;
     }
     if (!instance->should_log(_imu._log_raw_bit)) {
-        return nullptr;
+        return false;
     }
-    return instance;
+    return true;
 }
+

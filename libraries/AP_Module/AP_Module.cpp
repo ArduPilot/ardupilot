@@ -13,13 +13,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <AP_HAL/AP_HAL.h>
+
+#if AP_MODULE_SUPPORTED
+
 /*
   support for external modules
  */
 
 #include <stdio.h>
-#include <dirent.h>
 #if defined(HAVE_LIBDL)
+#include <dirent.h>
 #include <dlfcn.h>
 #endif
 #include <AP_Module/AP_Module.h>
@@ -75,6 +79,7 @@ void AP_Module::module_scan(const char *path)
 */
 void AP_Module::init(const char *module_path)
 {
+#if AP_MODULE_SUPPORTED
     // scan through module directory looking for *.so
     DIR *d;
     struct dirent *de;
@@ -95,6 +100,7 @@ void AP_Module::init(const char *module_path)
         free(path);
     }
     closedir(d);
+#endif
 }
 
 
@@ -278,3 +284,5 @@ void AP_Module::call_hook_accel_sample(uint8_t instance, float dt, const Vector3
     }
 #endif
 }
+
+#endif // AP_MODULE_SUPPORTED

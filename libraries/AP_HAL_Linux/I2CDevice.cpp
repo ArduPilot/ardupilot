@@ -344,7 +344,10 @@ I2CDeviceManager::get_device(std::vector<const char *> devpaths, uint8_t address
 }
 
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
-I2CDeviceManager::get_device(uint8_t bus, uint8_t address)
+I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
+                             uint32_t bus_clock,
+                             bool use_smbus,
+                             uint32_t timeout_ms)
 {
     for (uint8_t i = 0, n = _buses.size(); i < n; i++) {
         if (_buses[i]->bus == bus) {

@@ -66,7 +66,7 @@
 #define FL_FLTEXP   FL_PREC
 #define FL_FLTFIX   FL_LONG
 
-void print_vprintf(AP_HAL::Print *s, const char *fmt, va_list ap)
+void print_vprintf(AP_HAL::BetterStream *s, const char *fmt, va_list ap)
 {
         unsigned char c;        /* holds a char from the format string */
         uint16_t flags;
@@ -111,7 +111,7 @@ void print_vprintf(AP_HAL::Print *s, const char *fmt, va_list ap)
                         continue;
                     case '+':
                         flags |= FL_PLUS;
-                        /* FALLTHROUGH */
+                        FALLTHROUGH;
                     case ' ':
                         flags |= FL_SPACE;
                         continue;

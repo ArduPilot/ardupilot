@@ -29,9 +29,7 @@ class AP_RPM
     friend class AP_RPM_Backend;
 
 public:
-    static AP_RPM create() { return AP_RPM{}; }
-
-    constexpr AP_RPM(AP_RPM &&other) = default;
+    AP_RPM();
 
     /* Do not allow copies */
     AP_RPM(const AP_RPM &other) = delete;
@@ -95,8 +93,6 @@ public:
     bool enabled(uint8_t instance) const;
 
 private:
-    AP_RPM();
-
     RPM_State state[RPM_MAX_INSTANCES];
     AP_RPM_Backend *drivers[RPM_MAX_INSTANCES];
     uint8_t num_instances:2;

@@ -12,9 +12,10 @@
 /// @brief	Class managing the control of landing gear
 class AP_LandingGear {
 public:
-    static AP_LandingGear create() { return AP_LandingGear{}; }
-
-    constexpr AP_LandingGear(AP_LandingGear &&other) = default;
+    AP_LandingGear() {
+        // setup parameter defaults
+        AP_Param::setup_object_defaults(this, var_info);
+    }
 
     /* Do not allow copies */
     AP_LandingGear(const AP_LandingGear &other) = delete;
@@ -46,11 +47,6 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
-    AP_LandingGear() {
-        // setup parameter defaults
-        AP_Param::setup_object_defaults(this, var_info);
-    }
-
     // Parameters
     AP_Int16    _servo_retract_pwm;     // PWM value to move servo to when gear is retracted
     AP_Int16    _servo_deploy_pwm;      // PWM value to move servo to when gear is deployed

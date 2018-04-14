@@ -155,6 +155,9 @@ static int main_loop(int argc, char **argv)
     hal.uartE->begin(57600);
     hal.scheduler->init();
 
+    // init the I2C wrapper class
+    PX4_I2C::init_lock();
+    
     /*
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run

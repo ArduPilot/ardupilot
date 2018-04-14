@@ -32,16 +32,19 @@ extern const AP_HAL::HAL& hal;
 const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_CHEK_MSG, sizeof(log_Chek),
-      "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }
+      "CHEK",
+      "QccCLLffff",
+      "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD",
+      "sdddDUmnnn",
+      "FBBBGGB000"}
 };
 
-LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, 
+LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, Compass &_compass, AP_GPS &_gps, 
                      AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const char **&_nottypes):
     DataFlashFileReader(),
     vehicle(VehicleType::VEHICLE_UNKNOWN),
     ahrs(_ahrs),
     ins(_ins),
-    baro(_baro),
     compass(_compass),
     gps(_gps),
     airspeed(_airspeed),
@@ -227,7 +230,7 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 						 sim_attitude);
 	} else if (streq(name, "BARO")) {
 	  msgparser[f.type] = new LR_MsgHandler_BARO(formats[f.type], dataflash,
-                                                  last_timestamp_usec, baro);
+                                                  last_timestamp_usec);
 	} else if (streq(name, "ARM")) {
 	  msgparser[f.type] = new LR_MsgHandler_ARM(formats[f.type], dataflash,
                                                   last_timestamp_usec);

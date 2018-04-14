@@ -28,9 +28,7 @@ public:
         RSSI_RECEIVER           = 3
     };
 
-    static AP_RSSI create() { return AP_RSSI{}; }
-
-    constexpr AP_RSSI(AP_RSSI &&other) = default;
+    AP_RSSI();
 
     /* Do not allow copies */
     AP_RSSI(const AP_RSSI &other) = delete;
@@ -57,8 +55,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AP_RSSI();
-
     // RSSI parameters
     AP_Int8         rssi_type;                              // Type of RSSI being used
     AP_Int8         rssi_analog_pin;                        // Analog pin RSSI value found on

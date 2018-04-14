@@ -36,15 +36,15 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static AP_BoardConfig board_config = AP_BoardConfig::create();
+static AP_BoardConfig board_config;
 
 // create board led object
 AP_BoardLED board_led;
 
 // This example uses GPS system. Create it.
-static AP_GPS gps = AP_GPS::create();
+static AP_GPS gps;
 // Serial manager is needed for UART comunications
-static AP_SerialManager serial_manager = AP_SerialManager::create();
+static AP_SerialManager serial_manager;
 
 
 void setup()

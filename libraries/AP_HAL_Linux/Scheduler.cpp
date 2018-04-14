@@ -25,6 +25,10 @@
 #include <AP_HAL_Linux/qflight/qflight_buffer.h>
 #endif
 
+#if HAL_WITH_UAVCAN
+#include "CAN.h"
+#endif
+
 using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
@@ -271,6 +275,16 @@ void Scheduler::_timer_task()
     _run_uarts();
     RCInput::from(hal.rcin)->_timer_tick();
 #endif
+
+#if HAL_WITH_UAVCAN
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    for (i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
+        if(hal.can_mgr[i] != nullptr) {
+            CANManager::from(hal.can_mgr[i])->_timer_tick();
+        }
+    }
+#endif
+#endif
 }
 
 void Scheduler::_run_io(void)
@@ -295,12 +309,12 @@ void Scheduler::_run_io(void)
 void Scheduler::_run_uarts()
 {
     // process any pending serial bytes
-    UARTDriver::from(hal.uartA)->_timer_tick();
-    UARTDriver::from(hal.uartB)->_timer_tick();
-    UARTDriver::from(hal.uartC)->_timer_tick();
-    UARTDriver::from(hal.uartD)->_timer_tick();
-    UARTDriver::from(hal.uartE)->_timer_tick();
-    UARTDriver::from(hal.uartF)->_timer_tick();
+    hal.uartA->_timer_tick();
+    hal.uartB->_timer_tick();
+    hal.uartC->_timer_tick();
+    hal.uartD->_timer_tick();
+    hal.uartE->_timer_tick();
+    hal.uartF->_timer_tick();
 }
 
 void Scheduler::_rcin_task()
@@ -326,7 +340,7 @@ void Scheduler::_tonealarm_task()
 void Scheduler::_io_task()
 {
     // process any pending storage writes
-    Storage::from(hal.storage)->_timer_tick();
+    hal.storage->_timer_tick();
 
     // run registered IO processes
     _run_io();

@@ -15,11 +15,12 @@ import sys
 import time
 import traceback
 
-import apmrover2
-import arducopter
-import arduplane
-import quadplane
-import ardusub
+from apmrover2 import *
+from arducopter import *
+from quadplane import *
+from arduplane import *
+from ardusub import *
+
 from pysim import util
 from pymavlink import mavutil
 from pymavlink.generator import mavtemplate
@@ -77,15 +78,20 @@ def build_all():
 
 
 def build_binaries():
-    """Run the build_binaries.sh script."""
-    print("Running build_binaries.sh")
+    """Run the build_binaries.py script."""
+    print("Running build_binaries.py")
     # copy the script as it changes git branch, which can change the script while running
-    orig = util.reltopdir('Tools/scripts/build_binaries.sh')
-    copy = util.reltopdir('./build_binaries.sh')
+    orig = util.reltopdir('Tools/scripts/build_binaries.py')
+    copy = util.reltopdir('./build_binaries.py')
     shutil.copy2(orig, copy)
 
+    # also copy generate_manifest library:
+    orig_gm = util.reltopdir('Tools/scripts/generate_manifest.py')
+    copy_gm = util.reltopdir('./generate_manifest.py')
+    shutil.copy2(orig_gm, copy_gm)
+
     if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
-        print("Failed build_binaries.sh")
+        print("Failed build_binaries.py")
         return False
     return True
 
@@ -121,23 +127,31 @@ def build_examples():
 def build_parameters():
     """Run the param_parse.py script."""
     print("Running param_parse.py")
-    if util.run_cmd(util.reltopdir('Tools/autotest/param_metadata/param_parse.py'), directory=util.reltopdir('.')) != 0:
-        print("Failed param_parse.py")
-        return False
+    for vehicle in 'ArduPlane', 'ArduCopter', 'ArduSub', 'APMrover2', 'AntennaTracker':
+        if util.run_cmd([util.reltopdir('Tools/autotest/param_metadata/param_parse.py'), '--vehicle', vehicle], directory=util.reltopdir('.')) != 0:
+            print("Failed param_parse.py (%s)" % vehicle)
+            return False
     return True
 
 
 def convert_gpx():
     """Convert any tlog files to GPX and KML."""
     mavlog = glob.glob(buildlogs_path("*.tlog"))
+    passed = True
     for m in mavlog:
         util.run_cmd(util.reltopdir("modules/mavlink/pymavlink/tools/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
         kml = m + '.kml'
-        util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
-        util.run_cmd('zip %s.kmz %s.kml' % (m, m), checkfail=False)
+        try:
+            util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml))
+        except CalledProcessError as e:
+            passed = False
+        try:
+            util.run_cmd('zip %s.kmz %s.kml' % (m, m))
+        except CalledProcessError as e:
+            passed = False
         util.run_cmd("mavflightview.py --imagefile=%s.png %s" % (m, m))
-    return True
+    return passed
 
 
 def test_prerequisites():
@@ -178,7 +192,10 @@ __bin_names = {
 }
 
 def binary_path(step, debug=False):
-    vehicle = step.split(".")[1]
+    try:
+        vehicle = step.split(".")[1]
+    except Exception:
+        return None
 
     if vehicle in __bin_names:
         binary_name = __bin_names[vehicle]
@@ -236,8 +253,8 @@ def run_step(step):
 
     binary = binary_path(step, debug=opts.debug)
 
-    if step.startswith("default"):
-        vehicle = step[8:]
+    if step.startswith("defaults"):
+        vehicle = step[9:]
         return get_default_params(vehicle, binary)
 
     fly_opts = {
@@ -248,25 +265,31 @@ def run_step(step):
         "gdbserver": opts.gdbserver,
     }
     if opts.speedup is not None:
-        fly_opts.speedup = opts.speedup
+        fly_opts["speedup"] = opts.speedup
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter(binary, frame=opts.frame, **fly_opts)
+        arducopter = AutoTestCopter(binary, frame=opts.frame, **fly_opts)
+        return arducopter.autotest()
 
     if step == 'fly.CopterAVC':
-        return arducopter.fly_CopterAVC(binary, **fly_opts)
+        arducopter = AutoTestCopter(binary, **fly_opts)
+        return arducopter.autotest_heli()
 
     if step == 'fly.ArduPlane':
-        return arduplane.fly_ArduPlane(binary, **fly_opts)
+        arduplane = AutoTestPlane(binary, **fly_opts)
+        return arduplane.autotest()
 
     if step == 'fly.QuadPlane':
-        return quadplane.fly_QuadPlane(binary, **fly_opts)
+        quadplane = AutoTestQuadPlane(binary, **fly_opts)
+        return quadplane.autotest()
 
     if step == 'drive.APMrover2':
-        return apmrover2.drive_APMrover2(binary, frame=opts.frame, **fly_opts)
+        apmrover2 = AutoTestRover(binary, frame=opts.frame, **fly_opts)
+        return apmrover2.autotest()
 
     if step == 'dive.ArduSub':
-        return ardusub.dive_ArduSub(binary, **fly_opts)
+        ardusub = AutoTestSub(binary, **fly_opts)
+        return ardusub.autotest()
 
     if step == 'build.All':
         return build_all()
@@ -361,7 +384,7 @@ def write_fullresults():
     vehicle_files = [ ('{vehicle} build log', '{vehicle}.txt'),
                       ('{vehicle} code size', '{vehicle}.sizes.txt'),
                       ('{vehicle} stack sizes', '{vehicle}.framesizes.txt'),
-                      ('{vehicle} defaults', 'default_params/{vehicle}-defaults.parm'),
+                      ('{vehicle} defaults', '{vehicle}-defaults.parm'),
                       ('{vehicle} core', '{vehicle}.core'),
                       ('{vehicle} ELF', '{vehicle}.elf'),
     ]
@@ -411,8 +434,11 @@ def check_logs(step):
         newname = buildlogs_path("%s.core" % vehicle)
         print("Renaming %s to %s" % (corefile, newname))
         shutil.move(corefile, newname)
-        util.run_cmd('/bin/cp A*/A*.elf %s' % buildlogs_dirpath(),
-                     directory=util.reltopdir('.'))
+        try:
+            util.run_cmd('/bin/cp build/sitl/bin/* %s' % buildlogs_dirpath(),
+                         directory=util.reltopdir('.'))
+        except Exception:
+            print("Unable to save binary")
 
 def run_tests(steps):
     """Run a list of steps."""

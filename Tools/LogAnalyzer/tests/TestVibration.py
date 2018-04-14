@@ -1,7 +1,8 @@
 from __future__ import print_function
 
-from LogAnalyzer import Test,TestResult
+from LogAnalyzer import Test, TestResult
 import DataflashLog
+from VehicleType import VehicleType
 
 import numpy
 

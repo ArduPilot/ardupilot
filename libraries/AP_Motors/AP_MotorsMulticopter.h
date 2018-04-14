@@ -154,6 +154,7 @@ protected:
     AP_Float            _batt_voltage_min;      // minimum voltage used to scale lift
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
     AP_Float            _batt_current_time_constant;    // Time constant used to limit the maximum current
+    AP_Int8             _batt_idx;              // battery index used for compensation
     AP_Int16            _pwm_min;               // minimum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's min pwm used)
     AP_Int16            _pwm_max;               // maximum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's max pwm used)
     AP_Float            _throttle_hover;        // estimated throttle required to hover throttle in the range 0 ~ 1

@@ -9,12 +9,13 @@
 
 class AP_PitchController {
 public:
-    static AP_PitchController create(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms,
-                                    DataFlash_Class &_dataflash) {
-        return AP_PitchController{ahrs, parms, _dataflash};
+    AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash)
+        : aparm(parms)
+        , autotune(gains, AP_AutoTune::AUTOTUNE_PITCH, parms, _dataflash)
+        , _ahrs(ahrs)
+    {
+        AP_Param::setup_object_defaults(this, var_info);
     }
-
-    constexpr AP_PitchController(AP_PitchController &&other) = default;
 
     /* Do not allow copies */
     AP_PitchController(const AP_PitchController &other) = delete;
@@ -38,14 +39,6 @@ public:
     AP_Float &kFF(void) { return gains.FF; }
 
 private:
-    AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash)
-        : aparm(parms)
-        , autotune(gains, AP_AutoTune::AUTOTUNE_PITCH, parms, _dataflash)
-        , _ahrs(ahrs)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    }
-
     const AP_Vehicle::FixedWing &aparm;
     AP_AutoTune::ATGains gains;
     AP_AutoTune autotune;

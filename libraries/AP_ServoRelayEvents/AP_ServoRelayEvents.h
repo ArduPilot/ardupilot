@@ -11,11 +11,17 @@
 
 class AP_ServoRelayEvents {
 public:
-    static AP_ServoRelayEvents create(AP_Relay &_relay) {
-        return AP_ServoRelayEvents{_relay};
+    AP_ServoRelayEvents(AP_Relay &_relay)
+        : relay(_relay)
+        , mask(0)
+        , type(EVENT_TYPE_RELAY)
+        , start_time_ms(0)
+        , delay_ms(0)
+        , repeat(0)
+        , channel(0)
+        , servo_value(0)
+    {
     }
-
-    constexpr AP_ServoRelayEvents(AP_ServoRelayEvents &&other) = default;
 
     /* Do not allow copies */
     AP_ServoRelayEvents(const AP_ServoRelayEvents &other) = delete;
@@ -31,18 +37,6 @@ public:
     void update_events(void);
 
 private:
-    AP_ServoRelayEvents(AP_Relay &_relay)
-        : relay(_relay)
-        , mask(0)
-        , type(EVENT_TYPE_RELAY)
-        , start_time_ms(0)
-        , delay_ms(0)
-        , repeat(0)
-        , channel(0)
-        , servo_value(0)
-    {
-    }
-
     AP_Relay &relay;
     uint16_t mask;
 

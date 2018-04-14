@@ -21,11 +21,12 @@
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    static AP_L1_Control create(AP_AHRS &ahrs, const AP_SpdHgtControl *spdHgtControl) {
-        return AP_L1_Control{ahrs, spdHgtControl};
+    AP_L1_Control(AP_AHRS &ahrs, const AP_SpdHgtControl *spdHgtControl)
+        : _ahrs(ahrs)
+        , _spdHgtControl(spdHgtControl)
+    {
+        AP_Param::setup_object_defaults(this, var_info);
     }
-
-    constexpr AP_L1_Control(AP_L1_Control &&other) = default;
 
     /* Do not allow copies */
     AP_L1_Control(const AP_L1_Control &other) = delete;
@@ -49,7 +50,7 @@ public:
     float turn_distance(float wp_radius) const;
     float turn_distance(float wp_radius, float turn_angle) const;
     float loiter_radius (const float loiter_radius) const;
-    void update_waypoint(const struct Location &prev_WP, const struct Location &next_WP);
+    void update_waypoint(const struct Location &prev_WP, const struct Location &next_WP, float dist_min = 0.0f);
     void update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction);
     void update_heading_hold(int32_t navigation_heading_cd);
     void update_level_flight(void);
@@ -75,13 +76,6 @@ public:
     }
 
 private:
-    AP_L1_Control(AP_AHRS &ahrs, const AP_SpdHgtControl *spdHgtControl)
-        : _ahrs(ahrs)
-        , _spdHgtControl(spdHgtControl)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    }
-
     // reference to the AHRS object
     AP_AHRS &_ahrs;
 

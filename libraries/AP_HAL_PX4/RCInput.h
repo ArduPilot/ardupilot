@@ -4,6 +4,7 @@
 #include <drivers/drv_rc_input.h>
 #include <systemlib/perf_counter.h>
 #include <pthread.h>
+#include <AP_Radio/AP_Radio.h>
 
 
 #ifndef RC_INPUT_MAX_CHANNELS
@@ -44,4 +45,9 @@ private:
 
     uint8_t last_input_source = input_rc_s::RC_INPUT_SOURCE_UNKNOWN;
     const char *input_source_name(uint8_t id) const;
+
+#if HAL_RCINPUT_WITH_AP_RADIO
+    AP_Radio *radio;
+    uint32_t last_radio_us;
+#endif
 };

@@ -16,13 +16,19 @@ void Copter::failsafe_radio_on_event()
     } else {
         if (control_mode == AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
             // continue mission
-        } else if (control_mode == LAND && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
-            // continue landing
+        } else if (control_mode == LAND &&
+                   battery.has_failsafed() &&
+                   battery.get_highest_failsafe_priority() <= FAILSAFE_LAND_PRIORITY) {
+            // continue landing or other high priority failsafes
         } else {
-            if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
-            } else {
+            if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
                 set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
+            } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL) {
+                set_mode_SmartRTL_or_RTL(MODE_REASON_RADIO_FAILSAFE);
+            } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND) {
+                set_mode_SmartRTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
+            } else { // g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND
+                set_mode_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             }
         }
     }
@@ -42,33 +48,39 @@ void Copter::failsafe_radio_off_event()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
-void Copter::failsafe_battery_event(void)
+void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
-    // return immediately if low battery event has already been triggered
-    if (failsafe.battery) {
-        return;
-    }
-
-    // failsafe check
-    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors->armed()) {
-        if (should_disarm_on_failsafe()) {
-            init_disarm_motors();
-        } else {
-            if (g.failsafe_battery_enabled == FS_BATT_RTL || control_mode == AUTO) {
-                set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-            } else {
-                set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-            }
-        }
-    }
-
-    // set the low battery flag
-    set_failsafe_battery(true);
-
-    // warn the ground station and log to dataflash
-    gcs().send_text(MAV_SEVERITY_WARNING,"Low battery");
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
+    // failsafe check
+    if (should_disarm_on_failsafe()) {
+        init_disarm_motors();
+    } else {
+        switch ((Failsafe_Action)action) {
+            case Failsafe_Action_None:
+                return;
+            case Failsafe_Action_Land:
+                set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+                break;
+            case Failsafe_Action_RTL:
+                set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+                break;
+            case Failsafe_Action_SmartRTL:
+                set_mode_SmartRTL_or_RTL(MODE_REASON_BATTERY_FAILSAFE);
+                break;
+            case Failsafe_Action_SmartRTL_Land:
+                set_mode_SmartRTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+                break;
+            case Failsafe_Action_Terminate:
+#if ADVANCED_FAILSAFE == ENABLED
+                char battery_type_str[17];
+                snprintf(battery_type_str, 17, "%s battery", type_str);
+                g2.afs.gcs_terminate(true, battery_type_str);
+#else
+                init_disarm_motors();
+#endif
+        }
+    }
 }
 
 // failsafe_gcs_check - check for ground station failsafe
@@ -115,7 +127,11 @@ void Copter::failsafe_gcs_check()
     } else {
         if (control_mode == AUTO && g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
             // continue mission
-        } else if (g.failsafe_gcs != FS_GCS_DISABLED) {
+        } else if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL) {
+            set_mode_SmartRTL_or_RTL(MODE_REASON_GCS_FAILSAFE);
+        } else if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND) {
+            set_mode_SmartRTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
+        } else { // g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL
             set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
         }
     }
@@ -177,8 +193,10 @@ void Copter::failsafe_terrain_on_event()
 
     if (should_disarm_on_failsafe()) {
         init_disarm_motors();
+#if MODE_RTL_ENABLED == ENABLED
     } else if (control_mode == RTL) {
-        rtl_restart_without_terrain();
+        mode_rtl.restart_without_terrain();
+#endif
     } else {
         set_mode_RTL_or_land_with_pause(MODE_REASON_TERRAIN_FAILSAFE);
     }
@@ -214,6 +232,33 @@ void Copter::set_mode_RTL_or_land_with_pause(mode_reason_t reason)
         set_mode_land_with_pause(reason);
     } else {
         // alert pilot to mode change
+        AP_Notify::events.failsafe_mode_change = 1;
+    }
+}
+
+// set_mode_SmartRTL_or_land_with_pause - sets mode to SMART_RTL if possible or LAND with 4 second delay before descent starts
+// this is always called from a failsafe so we trigger notification to pilot
+void Copter::set_mode_SmartRTL_or_land_with_pause(mode_reason_t reason)
+{
+    // attempt to switch to SMART_RTL, if this failed then switch to Land
+    if (!set_mode(SMART_RTL, reason)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Using Land Mode");
+        set_mode_land_with_pause(reason);
+    } else {
+        AP_Notify::events.failsafe_mode_change = 1;
+    }
+}
+
+// set_mode_SmartRTL_or_RTL - sets mode to SMART_RTL if possible or RTL if possible or LAND with 4 second delay before descent starts
+// this is always called from a failsafe so we trigger notification to pilot
+void Copter::set_mode_SmartRTL_or_RTL(mode_reason_t reason)
+{
+    // attempt to switch to SmartRTL, if this failed then attempt to RTL
+    // if that fails, then land
+    if (!set_mode(SMART_RTL, reason)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Trying RTL Mode");
+        set_mode_RTL_or_land_with_pause(reason);
+    } else {
         AP_Notify::events.failsafe_mode_change = 1;
     }
 }

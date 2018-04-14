@@ -29,6 +29,26 @@
 #  endif
 #endif
 
+
+#ifdef WAF_BUILD
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
+// cygwin path length issues in configure mean these come out wrong,
+// so fix them here
+#ifndef HAVE_CMATH_ISFINITE
+# define HAVE_CMATH_ISFINITE
+# define NEED_CMATH_ISFINITE_STD_NAMESPACE
+#endif
+#ifndef HAVE_CMATH_ISINF
+# define HAVE_CMATH_ISINF
+# define NEED_CMATH_ISINF_STD_NAMESPACE
+#endif
+#ifndef HAVE_CMATH_ISNAN
+# define HAVE_CMATH_ISNAN
+# define NEED_CMATH_ISNAN_STD_NAMESPACE
+#endif
+#endif
+#endif
+
 #if defined(HAVE_CMATH_ISFINITE) && defined(NEED_CMATH_ISFINITE_STD_NAMESPACE)
 using std::isfinite;
 #endif

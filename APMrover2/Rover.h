@@ -67,6 +67,7 @@
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <APM_Control/AR_AttitudeControl.h>
+#include <AP_SmartRTL/AP_SmartRTL.h>
 #include <DataFlash/DataFlash.h>
 #include <Filter/AverageFilter.h>                   // Mode Filter from Filter library
 #include <Filter/Butter.h>                          // Filter library - butterworth filter
@@ -75,6 +76,9 @@
 #include <Filter/ModeFilter.h>                      // Mode Filter from Filter library
 #include <RC_Channel/RC_Channel.h>                  // RC Channel Library
 #include <StorageManager/StorageManager.h>
+#include <AC_Fence/AC_Fence.h>
+#include <AP_Proximity/AP_Proximity.h>
+#include <AC_Avoidance/AC_Avoid.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -104,12 +108,14 @@ public:
 #endif
     friend class GCS_Rover;
     friend class Mode;
+    friend class ModeAcro;
     friend class ModeAuto;
     friend class ModeGuided;
     friend class ModeHold;
     friend class ModeSteering;
     friend class ModeManual;
     friend class ModeRTL;
+    friend class ModeSmartRTL;
 
     Rover(void);
 
@@ -130,17 +136,17 @@ private:
     ParametersG2 g2;
 
     // main loop scheduler
-    AP_Scheduler scheduler = AP_Scheduler::create();
+    AP_Scheduler scheduler;
 
     // mapping between input channels
-    RCMapper rcmap = RCMapper::create();
+    RCMapper rcmap;
 
     // board specific config
-    AP_BoardConfig BoardConfig = AP_BoardConfig::create();
+    AP_BoardConfig BoardConfig;
 
 #if HAL_WITH_UAVCAN
     // board specific config for CAN bus
-    AP_BoardConfig_CAN BoardConfig_CAN = AP_BoardConfig_CAN::create();
+    AP_BoardConfig_CAN BoardConfig_CAN;
 #endif
 
     // primary control channels
@@ -151,11 +157,11 @@ private:
     DataFlash_Class DataFlash;
 
     // sensor drivers
-    AP_GPS gps = AP_GPS::create();
-    AP_Baro barometer = AP_Baro::create();
-    Compass compass = Compass::create();
-    AP_InertialSensor ins = AP_InertialSensor::create();
-    RangeFinder rangefinder = RangeFinder::create(serial_manager, ROTATION_NONE);
+    AP_GPS gps;
+    AP_Baro barometer;
+    Compass compass;
+    AP_InertialSensor ins;
+    RangeFinder rangefinder{serial_manager, ROTATION_NONE};
     AP_Button button;
 
     // flight modes convenience array
@@ -163,61 +169,61 @@ private:
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2 = NavEKF2::create(&ahrs, barometer, rangefinder);
-    NavEKF3 EKF3 = NavEKF3::create(&ahrs, barometer, rangefinder);
-    AP_AHRS_NavEKF ahrs = AP_AHRS_NavEKF::create(ins, barometer, gps, EKF2, EKF3);
+    NavEKF2 EKF2{&ahrs, rangefinder};
+    NavEKF3 EKF3{&ahrs, rangefinder};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
 #else
-    AP_AHRS_DCM ahrs = AP_AHRS_DCM::create(ins, barometer, gps);
+    AP_AHRS_DCM ahrs;
 #endif
 
     // Arming/Disarming management class
-    AP_Arming_Rover arming = AP_Arming_Rover::create(ahrs, barometer, compass, battery);
+    AP_Arming_Rover arming{ahrs, compass, battery, g2.fence};
 
-    AP_L1_Control L1_controller = AP_L1_Control::create(ahrs, nullptr);
+    AP_L1_Control L1_controller{ahrs, nullptr};
 
     // selected navigation controller
     AP_Navigation *nav_controller;
 
     // Mission library
-    AP_Mission mission = AP_Mission::create(ahrs,
+    AP_Mission mission{ahrs,
             FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
             FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
-            FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void));
+            FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)};
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    OpticalFlow optflow = OpticalFlow::create(ahrs);
+    OpticalFlow optflow{ahrs};
 #endif
 
     // RSSI
-    AP_RSSI rssi = AP_RSSI::create();
+    AP_RSSI rssi;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
 #endif
 
-    AP_SerialManager serial_manager = AP_SerialManager::create();
+    AP_SerialManager serial_manager;
 
     // GCS handling
     GCS_Rover _gcs;  // avoid using this; use gcs()
     GCS_Rover &gcs() { return _gcs; }
 
     // relay support
-    AP_Relay relay = AP_Relay::create();
+    AP_Relay relay;
 
-    AP_ServoRelayEvents ServoRelayEvents = AP_ServoRelayEvents::create(relay);
+    AP_ServoRelayEvents ServoRelayEvents{relay};
 
     // The rover's current location
     struct Location current_loc;
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera = AP_Camera::create(&relay, MASK_LOG_CAMERA, current_loc, gps, ahrs);
+    AP_Camera camera{&relay, MASK_LOG_CAMERA, current_loc, ahrs};
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps solution for altitude rather than gps only.
-    AP_Mount camera_mount = AP_Mount::create(ahrs, current_loc);
+    AP_Mount camera_mount{ahrs, current_loc};
 #endif
 
     // true if initialisation has completed
@@ -255,7 +261,7 @@ private:
     } failsafe;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
-    AP_Notify notify = AP_Notify::create();
+    AP_Notify notify;
 
     // true if we have a position estimate from AHRS
     bool have_position;
@@ -286,11 +292,13 @@ private:
     aux_switch_pos aux_ch7;
 
     // Battery Sensors
-    AP_BattMonitor battery = AP_BattMonitor::create();
+    AP_BattMonitor battery{MASK_LOG_CURRENT,
+                           FUNCTOR_BIND_MEMBER(&Rover::handle_battery_failsafe, void, const char*, const int8_t),
+                           _failsafe_priorities};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry = AP_Frsky_Telem::create(ahrs, battery, rangefinder);
+    AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
 #endif
 
     uint32_t control_sensors_present;
@@ -310,9 +318,6 @@ private:
     // The home location used for RTL.  The location is set when we first get stable GPS lock
     const struct Location &home;
 
-    // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState home_is_set = HOME_UNSET;
-
     // true if the system time has been set from the GPS
     bool system_time_set;
 
@@ -323,20 +328,6 @@ private:
     // The main loop execution time.  Seconds
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
     float G_Dt;
-
-    // Performance monitoring
-    // Timer used to accrue data and trigger recording of the performance monitoring log message
-    int32_t perf_mon_timer;
-    // The maximum main loop execution time, in microseconds, recorded in the current performance monitoring interval
-    uint32_t G_Dt_max;
-
-    // System Timers
-    // Time in microseconds of start of main control loop.
-    uint32_t fast_loopTimer_us;
-    // Number of milliseconds used in last main loop cycle
-    uint32_t delta_us_fast_loop;
-    // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-    uint16_t mainLoop_count;
 
     // set if we are driving backwards
     bool in_reverse;
@@ -378,10 +369,12 @@ private:
     ModeInitializing mode_initializing;
     ModeHold mode_hold;
     ModeManual mode_manual;
+    ModeAcro mode_acro;
     ModeGuided mode_guided;
     ModeAuto mode_auto;
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
+    ModeSmartRTL mode_smartrtl;
 
     // cruise throttle and speed learning
     struct {
@@ -395,8 +388,6 @@ private:
     // APMrover2.cpp
     void stats_update();
     void ahrs_update();
-    void mount_update(void);
-    void update_trigger(void);
     void update_alt();
     void gcs_failsafe_check(void);
     void update_compass(void);
@@ -418,9 +409,7 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void do_RTL(void);
-    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool stay_active_at_dest);
-    void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
-    void do_loiter_time(const AP_Mission::Mission_Command& cmd);
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
     void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_RTL();
@@ -451,7 +440,7 @@ private:
     void delay(uint32_t ms);
 
     // control_modes.cpp
-    Mode *control_mode_from_num(enum mode num);
+    Mode *mode_from_mode_num(enum mode num);
     void read_control_switch();
     uint8_t readSwitch(void);
     void reset_control_switch();
@@ -468,17 +457,18 @@ private:
     void cruise_learn_update();
     void cruise_learn_complete();
 
-    // events.cpp
-    void update_events(void);
-
     // failsafe.cpp
     void failsafe_trigger(uint8_t failsafe_type, bool on);
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
 #if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
 #endif
 
+    // fence.cpp
+    void fence_check();
+    void fence_send_mavlink_status(mavlink_channel_t chan);
+
     // GCS_Mavlink.cpp
-    void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
@@ -489,6 +479,7 @@ private:
     void send_rangefinder(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
+    void send_fence_status(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);
@@ -496,13 +487,11 @@ private:
     // Log.cpp
     void Log_Write_Performance();
     void Log_Write_Steering();
-    void Log_Write_Beacon();
     void Log_Write_Startup(uint8_t type);
-    void Log_Write_Control_Tuning();
+    void Log_Write_Throttle();
     void Log_Write_Nav_Tuning();
     void Log_Write_Attitude();
     void Log_Write_Rangefinder();
-    void Log_Write_Current();
     void Log_Arm_Disarm();
     void Log_Write_RC(void);
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
@@ -510,6 +499,7 @@ private:
     void Log_Write_Home_And_Origin();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_WheelEncoder();
+    void Log_Write_Proximity();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
     void Log_Write_Vehicle_Startup_Messages();
@@ -530,19 +520,16 @@ private:
     // sensors.cpp
     void init_compass(void);
     void compass_accumulate(void);
-    void init_barometer(bool full_calibration);
     void init_rangefinder(void);
     void init_beacon();
-    void update_beacon();
     void init_visual_odom();
     void update_visual_odom();
     void update_wheel_encoder();
-    void read_battery(void);
     void read_receiver_rssi(void);
     void compass_cal_update(void);
     void accel_cal_update(void);
     void read_rangefinders(void);
-    void button_update(void);
+    void init_proximity();
     void update_sensor_status_flags(void);
 
     // Steering.cpp
@@ -556,31 +543,47 @@ private:
     bool set_mode(Mode &new_mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
-    void update_notify();
-    void resetPerfData(void);
     void check_usb_mux(void);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
-    void notify_mode(enum mode new_mode);
+    void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
     void change_arm_state(void);
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
+    bool is_boat() const;
 
-    // test.cpp
-    void print_hit_enter();
-    void print_enabled(bool b);
+    enum Failsafe_Action {
+        Failsafe_Action_None          = 0,
+        Failsafe_Action_RTL           = 1,
+        Failsafe_Action_Hold          = 2,
+        Failsafe_Action_SmartRTL      = 3,
+        Failsafe_Action_SmartRTL_Hold = 4,
+        Failsafe_Action_Terminate     = 5
+    };
+
+    static constexpr int8_t _failsafe_priorities[] = {
+                                                       Failsafe_Action_Terminate,
+                                                       Failsafe_Action_Hold,
+                                                       Failsafe_Action_RTL,
+                                                       Failsafe_Action_SmartRTL_Hold,
+                                                       Failsafe_Action_SmartRTL,
+                                                       Failsafe_Action_None,
+                                                       -1 // the priority list must end with a sentinel of -1
+                                                      };
+    static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
+                  "_failsafe_priorities is missing the sentinel");
+
 
 public:
     void mavlink_delay_cb();
     void failsafe_check();
 
-    void dataflash_periodic(void);
     void update_soft_armed();
     // Motor test
     void motor_test_output();
     bool mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value);
-    uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec);
+    MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type, int16_t throttle_value, float timeout_sec);
     void motor_test_stop();
 };
 

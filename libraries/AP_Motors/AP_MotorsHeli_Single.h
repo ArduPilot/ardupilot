@@ -27,10 +27,8 @@
 #define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH    2
 #define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH  3
 
-// default direct-drive variable pitch tail defaults
-#define AP_MOTORS_HELI_SINGLE_DDVPT_SPEED_DEFAULT              500
-#define AP_MOTORS_HELI_SINGLE_DDVPT_RAMP_TIME                  2
-#define AP_MOTORS_HELI_SINGLE_DDVPT_RUNUP_TIME                 3
+// direct-drive variable pitch defaults
+#define AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT               500
 
 // default external gyro gain
 #define AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN                    350
@@ -57,9 +55,6 @@ public:
     // set update rate to motors - a value in hertz
     void set_update_rate(uint16_t speed_hz) override;
 
-    // enable - starts allowing signals to be sent to motors and servos
-    void enable() override;
-
     // output_test - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
@@ -82,7 +77,7 @@ public:
 
     // calculate_armed_scalars - recalculates scalars that can change while armed
     void calculate_armed_scalars() override;
-    
+
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t get_motor_mask() override;
@@ -100,7 +95,7 @@ public:
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     bool parameter_check(bool display_msg) const override;
-    
+
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -157,7 +152,7 @@ protected:
     SRV_Channel    *_swash_servo_3;
     SRV_Channel    *_yaw_servo;
     SRV_Channel    *_servo_aux;
-    
+
     bool            _acro_tail = false;
     float           _rollFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
     float           _pitchFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];

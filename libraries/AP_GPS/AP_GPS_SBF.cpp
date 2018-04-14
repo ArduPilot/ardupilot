@@ -64,30 +64,43 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_SBF::read(void)
 {
-    uint32_t now = AP_HAL::millis();
-
-    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
-        _init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
-        const char *init_str = _initialisation_blob[_init_blob_index];
-
-        if (now > _init_blob_time) {
-            if (now > _config_last_ack_time + 2500) {
-                // try to enable input on the GPS port if we have not made progress on configuring it
-                Debug("SBF Sending port enable");
-                port->write((const uint8_t*)_port_enable, strlen(_port_enable));
-                _config_last_ack_time = now;
-            } else {
-                Debug("SBF sending init string: %s", init_str);
-                port->write((const uint8_t*)init_str, strlen(init_str));
-            }
-            _init_blob_time = now + 1000;
-        }
-    }
-
     bool ret = false;
-    while (port->available() > 0) {
+    uint32_t available_bytes = port->available();
+    for (uint32_t i = 0; i < available_bytes; i++) {
         uint8_t temp = port->read();
         ret |= parse(temp);
+    }
+
+    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+        if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
+            uint32_t now = AP_HAL::millis();
+            const char *init_str = _initialisation_blob[_init_blob_index];
+
+            if (now > _init_blob_time) {
+                if (now > _config_last_ack_time + 2500) {
+                    // try to enable input on the GPS port if we have not made progress on configuring it
+                    Debug("SBF Sending port enable");
+                    port->write((const uint8_t*)_port_enable, strlen(_port_enable));
+                    _config_last_ack_time = now;
+                } else {
+                    Debug("SBF sending init string: %s", init_str);
+                    port->write((const uint8_t*)init_str, strlen(init_str));
+                }
+                _init_blob_time = now + 1000;
+            }
+        } else if (gps._raw_data == 2) { // only manage disarm/rearms when the user opts into it
+            if (hal.util->get_soft_armed()) {
+                _has_been_armed = true;
+            } else if (_has_been_armed && (RxState & SBF_DISK_MOUNTED)) {
+                // since init is done at this point and unmounting should be rate limited,
+                // take over the _init_blob_time variable
+                uint32_t now = AP_HAL::millis();
+                if (now > _init_blob_time) {
+                    unmount_disk();
+                    _init_blob_time = now + 1000;
+                }
+            }
+        }
     }
 
     return ret;
@@ -293,7 +306,7 @@ AP_GPS_SBF::process_message(void)
             state.have_vertical_accuracy = true;
         }
 
-        // Update position state (don't use −2·10^10)
+        // Update position state (don't use -2·10^10)
         if (temp.Latitude > -200000) {
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
@@ -362,8 +375,8 @@ AP_GPS_SBF::process_message(void)
     {
         const msg5908 &temp = sbf_msg.data.msg5908u;
 
-        // select the maximum variance, as the EKF will apply it to all the columnds in it's estimate
-        // FIXME: Support returning the covariance matric to the EKF
+        // select the maximum variance, as the EKF will apply it to all the columns in it's estimate
+        // FIXME: Support returning the covariance matrix to the EKF
         float max_variance_squared = MAX(temp.Cov_VnVn, MAX(temp.Cov_VeVe, temp.Cov_VuVu));
         if (is_positive(max_variance_squared)) {
             state.have_speed_accuracy = true;
@@ -380,18 +393,6 @@ AP_GPS_SBF::process_message(void)
 
 void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
-    if (gps._raw_data) {
-        if (!(RxState & SBF_DISK_MOUNTED)){
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
-        }
-        else if (RxState & SBF_DISK_FULL) {
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
-        }
-        else if (!(RxState & SBF_DISK_ACTIVITY)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
-        }
-    }
-
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
         _init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
         gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not fully configured (%d/%d)", state.instance + 1,
@@ -400,11 +401,49 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 }
 
 bool AP_GPS_SBF::is_configured (void) {
-    return (!gps._raw_data || (RxState & SBF_DISK_ACTIVITY)) &&
-            (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE ||
+    return (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE ||
              _init_blob_index >= ARRAY_SIZE(_initialisation_blob));
 }
 
 bool AP_GPS_SBF::is_healthy (void) const {
     return (RxError & RX_ERROR_MASK) == 0;
+}
+
+void AP_GPS_SBF::mount_disk (void) const {
+    const char* command = "emd, DSK1, Mount\n";
+    Debug("Mounting disk");
+    port->write((const uint8_t*)command, strlen(command));
+}
+
+void AP_GPS_SBF::unmount_disk (void) const {
+    const char* command = "emd, DSK1, Unmount\n";
+    Debug("Unmounting disk");
+    port->write((const uint8_t*)command, strlen(command));
+}
+
+bool AP_GPS_SBF::prepare_for_arming(void) {
+    bool is_logging = true; // assume that its logging until proven otherwise
+    if (gps._raw_data) {
+        if (!(RxState & SBF_DISK_MOUNTED)){
+            is_logging = false;
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
+
+            // simply attempt to mount the disk, no need to check if the command was
+            // ACK/NACK'd as we don't continuously attempt to remount the disk
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: Attempting to mount disk", state.instance + 1);
+            mount_disk();
+            // reset the flag to indicate if we should be logging
+            _has_been_armed = false;
+        }
+        else if (RxState & SBF_DISK_FULL) {
+            is_logging = false;
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
+        }
+        else if (!(RxState & SBF_DISK_ACTIVITY)) {
+            is_logging = false;
+            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
+        }
+    }
+
+    return is_logging;
 }

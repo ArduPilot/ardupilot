@@ -55,11 +55,13 @@
 extern const AP_HAL::HAL &hal;
 
 // baudrates to try to detect GPSes with
-const uint32_t AP_GPS::_baudrates[] = {4800U, 19200U, 38400U, 115200U, 57600U, 9600U, 230400U};
+const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57600U, 230400U};
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
 const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
+
+AP_GPS *AP_GPS::_singleton;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::var_info[] = {
@@ -69,7 +71,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,12:QURT,13:ERB,14:MAV,15:NOVA
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
+    AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], HAL_GPS_TYPE_DEFAULT),
 
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
@@ -132,8 +134,8 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: RAW_DATA
     // @DisplayName: Raw data logging
-    // @Description: Enable logging of RXM raw data from uBlox which includes carrier phase and pseudo range information. This allows for post processing of dataflash logs for more precise positioning. Note that this requires a raw capable uBlox such as the 6P or 6T.
-    // @Values: 0:Disabled,1:log every sample,5:log every 5 samples
+    // @Description: Handles logging raw data; on uBlox chips that support raw data this will log RXM messages into dataflash log; on Septentrio this will log on the equipment's SD card and when set to 2, the autopilot will try to stop logging after disarming and restart after arming
+    // @Values: 0:Ignore,1:Always log,2:Stop logging when disarmed (SBF only),5:Only log every five samples (uBlox only)
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("RAW_DATA", 9, AP_GPS, _raw_data, 0),
@@ -151,7 +153,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Description: Determines whether the configuration for this GPS should be written to non-volatile memory on the GPS. Currently working for UBlox 6 series and above.
     // @Values: 0:Do not save config,1:Save config,2:Save only when needed
     // @User: Advanced
-    AP_GROUPINFO("SAVE_CFG", 11, AP_GPS, _save_config, 0),
+    AP_GROUPINFO("SAVE_CFG", 11, AP_GPS, _save_config, 2),
 
     // @Param: GNSS_MODE2
     // @DisplayName: GNSS system configuration
@@ -267,6 +269,11 @@ AP_GPS::AP_GPS()
                     "GPS initilisation blob is to large to be completely sent before the baud rate changes");
 
     AP_Param::setup_object_defaults(this, var_info);
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_GPS must be singleton");
+    }
+    _singleton = this;
 }
 
 /// Startup initialisation.
@@ -883,6 +890,12 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         last_send_time_ms[chan] = now;
     }
     const Location &loc = location(0);
+    float hacc = 0.0f;
+    float vacc = 0.0f;
+    float sacc = 0.0f;
+    horizontal_accuracy(0, hacc);
+    vertical_accuracy(0, vacc);
+    speed_accuracy(0, sacc);
     mavlink_msg_gps_raw_int_send(
         chan,
         last_fix_time_ms(0)*(uint64_t)1000,
@@ -894,7 +907,12 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         get_vdop(0),
         ground_speed(0)*100,  // cm/s
         ground_course(0)*100, // 1/100 degrees,
-        num_sats(0));
+        num_sats(0),
+        0,                    // TODO: Elipsoid height in mm
+        hacc * 1000,          // one-sigma standard deviation in mm
+        vacc * 1000,          // one-sigma standard deviation in mm
+        sacc * 1000,          // one-sigma standard deviation in mm/s
+        0);                   // TODO one-sigma heading accuracy standard deviation
 }
 
 void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
@@ -926,17 +944,13 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         rtk_age_ms(1));
 }
 
-void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan)
+void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
-    if (drivers[0] != nullptr && drivers[0]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
-        drivers[0]->send_mavlink_gps_rtk(chan);
+    if (inst >= GPS_MAX_RECEIVERS) {
+        return;
     }
-}
-
-void AP_GPS::send_mavlink_gps2_rtk(mavlink_channel_t chan)
-{
-    if (drivers[1] != nullptr && drivers[1]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
-        drivers[1]->send_mavlink_gps_rtk(chan);
+    if (drivers[inst] != nullptr && drivers[inst]->supports_mavlink_gps_rtk_message()) {
+        drivers[inst]->send_mavlink_gps_rtk(chan);
     }
 }
 
@@ -1443,16 +1457,6 @@ void AP_GPS::calc_blended_state(void)
         corrected_location[i].alt += (int)(_hgt_offset_cm[i]);
     }
 
-    // Calculate the weighted sum of horizontal and vertical position offsets relative to the blended location
-    blended_alt_offset_cm = 0.0f;
-    blended_NE_offset_m.zero();
-    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (_blend_weights[i] > 0.0f) {
-            blended_NE_offset_m += location_diff(state[GPS_BLENDED_INSTANCE].location, corrected_location[i]) * _blend_weights[i];
-            blended_alt_offset_cm += (float)(corrected_location[i].alt - state[GPS_BLENDED_INSTANCE].location.alt) * _blend_weights[i];
-        }
-    }
-
     // If the GPS week is the same then use a blended time_week_ms
     // If week is different, then use time stamp from GPS with largest weighting
     // detect inconsistent week data
@@ -1506,3 +1510,22 @@ bool AP_GPS::is_healthy(uint8_t instance) const {
            last_message_delta_time_ms(instance) < GPS_MAX_DELTA_MS &&
            drivers[instance]->is_healthy();
 }
+
+bool AP_GPS::prepare_for_arming(void) {
+    bool all_passed = true;
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        if (drivers[i] != nullptr) {
+            all_passed &= drivers[i]->prepare_for_arming();
+        }
+    }
+    return all_passed;
+}
+
+namespace AP {
+
+AP_GPS &gps()
+{
+    return AP_GPS::gps();
+}
+
+};

@@ -16,13 +16,14 @@
  */
 void Rover::failsafe_check()
 {
-    static uint16_t last_mainLoop_count;
+    static uint16_t last_ticks;
     static uint32_t last_timestamp;
     const uint32_t tnow = AP_HAL::micros();
 
-    if (mainLoop_count != last_mainLoop_count) {
+    const uint16_t ticks = scheduler.ticks();
+    if (ticks != last_ticks) {
         // the main loop is running, all is OK
-        last_mainLoop_count = mainLoop_count;
+        last_ticks = ticks;
         last_timestamp = tnow;
         return;
     }
@@ -72,13 +73,62 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
             case 0:
                 break;
             case 1:
-                set_mode(mode_rtl, MODE_REASON_FAILSAFE);
+                if (!set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
+                    set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                }
                 break;
             case 2:
                 set_mode(mode_hold, MODE_REASON_FAILSAFE);
                 break;
+            case 3:
+                if (!set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
+                    if (!set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
+                        set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                    }
+                }
+                break;
+            case 4:
+                if (!set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
+                    set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                }
+                break;
         }
     }
+}
+
+void Rover::handle_battery_failsafe(const char* type_str, const int8_t action)
+{
+        switch ((Failsafe_Action)action) {
+            case Failsafe_Action_None:
+                break;
+            case Failsafe_Action_SmartRTL:
+                if (set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
+                    break;
+                }
+                FALLTHROUGH;
+            case Failsafe_Action_RTL:
+                if (set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
+                    break;
+                }
+                FALLTHROUGH;
+            case Failsafe_Action_Hold:
+                set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                break;
+            case Failsafe_Action_SmartRTL_Hold:
+                if (!set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
+                    set_mode(mode_hold, MODE_REASON_FAILSAFE);
+                }
+                break;
+            case Failsafe_Action_Terminate:
+#if ADVANCED_FAILSAFE == ENABLED
+                char battery_type_str[17];
+                snprintf(battery_type_str, 17, "%s battery", type_str);
+                afs.gcs_terminate(true, battery_type_str);
+#else
+                disarm_motors();
+#endif // ADVANCED_FAILSAFE == ENABLED
+                break;
+        }
 }
 
 #if ADVANCED_FAILSAFE == ENABLED
@@ -88,6 +138,6 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
 void Rover::afs_fs_check(void)
 {
     // perform AFS failsafe checks
-    g2.afs.check(rover.last_heartbeat_ms, false, failsafe.last_valid_rc_ms);  // Rover don't have fence
+    g2.afs.check(rover.last_heartbeat_ms, rover.g2.fence.get_breaches() != 0, failsafe.last_valid_rc_ms);
 }
 #endif

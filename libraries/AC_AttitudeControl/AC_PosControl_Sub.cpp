@@ -1,10 +1,8 @@
 #include "AC_PosControl_Sub.h"
 
 AC_PosControl_Sub::AC_PosControl_Sub(const AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                                     const AP_Motors& motors, AC_AttitudeControl& attitude_control,
-                                     AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
-                                     AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy) :
-    AC_PosControl(ahrs, inav, motors, attitude_control, p_pos_z, p_vel_z, pid_accel_z, p_pos_xy, pi_vel_xy),
+                                     const AP_Motors& motors, AC_AttitudeControl& attitude_control) :
+    AC_PosControl(ahrs, inav, motors, attitude_control),
     _alt_max(0.0f),
     _alt_min(0.0f)
 {}

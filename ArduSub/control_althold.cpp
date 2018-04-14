@@ -17,7 +17,7 @@ bool Sub::althold_init()
 
     // initialize vertical speeds and leash lengths
     // sets the maximum speed up and down returned by position controller
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // initialise position and desired velocity
@@ -36,7 +36,7 @@ void Sub::althold_run()
     uint32_t tnow = AP_HAL::millis();
 
     // initialize vertical speeds and acceleration
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_accel_z(g.pilot_accel_z);
 
     if (!motors.armed()) {
@@ -59,7 +59,7 @@ void Sub::althold_run()
 
     // call attitude controller
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
         last_pilot_heading = ahrs.yaw_sensor;
         last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 
@@ -71,11 +71,11 @@ void Sub::althold_run()
             target_yaw_rate = 0; // Stop rotation on yaw axis
 
             // call attitude controller with target yaw rate = 0 to decelerate on yaw axis
-            attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+            attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
             last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
 
         } else { // call attitude controller holding absolute absolute bearing
-            attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, last_pilot_heading, true, get_smoothing_gain());
+            attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, last_pilot_heading, true);
         }
     }
 

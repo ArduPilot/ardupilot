@@ -24,7 +24,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Sub class
  */
 Sub::Sub(void)
-    : DataFlash(DataFlash_Class::create(fwver.fw_string, g.log_bitmask)),
+    : DataFlash(fwver.fw_string, g.log_bitmask),
           control_mode(MANUAL),
           motors(MAIN_LOOP_RATE),
           scaleLongDown(1),
@@ -48,14 +48,10 @@ Sub::Sub(void)
           inertial_nav(ahrs),
           ahrs_view(ahrs, ROTATION_NONE),
           attitude_control(ahrs_view, aparm, motors, MAIN_LOOP_SECONDS),
-          pos_control(ahrs_view, inertial_nav, motors, attitude_control,
-                      g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
-                      g.p_pos_xy, g.pi_vel_xy),
+          pos_control(ahrs_view, inertial_nav, motors, attitude_control),
           wp_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
+          loiter_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
           circle_nav(inertial_nav, ahrs_view, pos_control),
-          pmTest1(0),
-          fast_loopTimer(0),
-          mainLoop_count(0),
           in_mavlink_delay(false),
           param_loader(var_info),
           last_pilot_yaw_input_ms(0)

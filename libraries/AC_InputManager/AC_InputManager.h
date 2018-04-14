@@ -11,9 +11,10 @@
 /// @brief  Class managing the pilot's control inputs
 class AC_InputManager{
 public:
-    static AC_InputManager create() { return AC_InputManager{}; }
-
-    constexpr AC_InputManager(AC_InputManager &&other) = default;
+    AC_InputManager() {
+        // setup parameter defaults
+        AP_Param::setup_object_defaults(this, var_info);
+    }
 
     /* Do not allow copies */
     AC_InputManager(const AC_InputManager &other) = delete;
@@ -23,11 +24,6 @@ public:
     void set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
 
 protected:
-    AC_InputManager() {
-        // setup parameter defaults
-        AP_Param::setup_object_defaults(this, var_info);
-    }
-
     // internal variables
     uint16_t            _loop_rate;             // rate at which output() function is called (normally 400hz)
 

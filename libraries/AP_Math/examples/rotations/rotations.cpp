@@ -253,16 +253,41 @@ static void missing_rotations(void)
             }
 }
 
+static void test_rotate_matrix(void)
+{
+    for (enum Rotation r = ROTATION_NONE;
+         r < ROTATION_MAX;
+         r = (enum Rotation)((uint8_t)r+1)) {
+        //hal.console->printf("\nROTATION(%d)\n", r);
+        Vector3f vec(1,2,3);
+        Vector3f vec2 = vec;
+        vec.rotate(r);
+        Matrix3f m;
+        m.from_rotation(r);
+        vec2 = m * vec2;
+        //print_vector(vec);
+        //print_vector(vec2);
+        if ((vec - vec2).length() > 1e-5) {
+            hal.console->printf("Rotation Test Failed!!! %.8f\n", (double)(vec - vec2).length());
+            return;
+        }
+    }
+    hal.console->printf("test_rotate_matrix passed\n");
+}
+
+
 /*
  *  rotation tests
  */
 void setup(void)
 {
+    hal.console->begin(115200);
     hal.console->printf("rotation unit tests\n\n");
     test_rotation_accuracy();
     test_eulers();
     missing_rotations();
     test_rotate_inverse();
+    test_rotate_matrix();
     hal.console->printf("rotation unit tests done\n\n");
 }
 

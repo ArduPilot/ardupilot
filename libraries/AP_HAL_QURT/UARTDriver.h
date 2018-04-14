@@ -48,7 +48,7 @@ public:
 
     void _read_callback(char *buf, size_t size);
 
-    void timer_tick(void);
+    void _timer_tick(void) override;
     
 private:
     const char *devname;
