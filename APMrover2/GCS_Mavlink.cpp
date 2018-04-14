@@ -1420,11 +1420,6 @@ AP_Camera *GCS_MAVLINK_Rover::get_camera() const
 #endif
 }
 
-AP_ServoRelayEvents *GCS_MAVLINK_Rover::get_servorelayevents() const
-{
-    return &rover.ServoRelayEvents;
-}
-
 AP_AdvancedFailsafe *GCS_MAVLINK_Rover::get_advanced_failsafe() const
 {
 #if ADVANCED_FAILSAFE == ENABLED
