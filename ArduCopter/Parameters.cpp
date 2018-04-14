@@ -644,7 +644,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(BoardConfig_CAN,        "CAN_",       AP_BoardConfig_CAN),
 #endif
 
-#if SPRAYER == ENABLED
+#if SPRAYER_ENABLED == ENABLED
     // @Group: SPRAY_
     // @Path: ../libraries/AC_Sprayer/AC_Sprayer.cpp
     GOBJECT(sprayer,                "SPRAY_",       AC_Sprayer),

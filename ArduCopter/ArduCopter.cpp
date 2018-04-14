@@ -403,7 +403,7 @@ void Copter::three_hz_loop()
     fence_check();
 #endif // AC_FENCE_ENABLED
 
-#if SPRAYER == ENABLED
+#if SPRAYER_ENABLED == ENABLED
     sprayer.update();
 #endif
 
