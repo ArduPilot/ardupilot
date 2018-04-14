@@ -81,6 +81,10 @@ void RCOutput::init()
 
     // setup default output rate of 50Hz
     set_freq(0xFFFF, 50);
+
+#ifdef HAL_GPIO_PIN_SAFETY_IN
+    safety_state = AP_HAL::Util::SAFETY_DISARMED;
+#endif
 }
 
 /*
@@ -314,6 +318,12 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     if (chan < chan_offset) {
         return;
     }
+    
+    if (safety_state == AP_HAL::Util::SAFETY_DISARMED && !(safety_mask & (1U<<chan))) {
+        // implement safety pwm value
+        period_us = safe_pwm[chan];
+    }
+
     chan -= chan_offset;
 
     period[chan] = period_us;
@@ -336,6 +346,7 @@ void RCOutput::push_local(void)
 
     uint16_t widest_pulse = 0;
     uint8_t need_trigger = 0;
+    bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
 
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
@@ -352,6 +363,12 @@ void RCOutput::push_local(void)
             }
             if (outmask & (1UL<<chan)) {
                 uint32_t period_us = period[chan];
+
+                if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
+                    // safety is on, overwride pwm
+                    period_us = safe_pwm[chan+chan_offset];
+                }
+                
                 if (group.current_mode == MODE_PWM_BRUSHED) {
                     if (period_us <= _esc_pwm_min) {
                         period_us = 0;
@@ -647,31 +664,6 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
 }
 
 /*
-  force the safety switch on, disabling PWM output from the IO board
-*/
-bool RCOutput::force_safety_on(void)
-{
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        return iomcu.force_safety_on();
-    }
-#endif
-    return false;
-}
-
-/*
-  force the safety switch off, enabling PWM output from the IO board
-*/
-void RCOutput::force_safety_off(void)
-{
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        iomcu.force_safety_off();
-    }
-#endif
-}
-
-/*
   start corking output
  */
 void RCOutput::cork(void)
@@ -762,15 +754,13 @@ void RCOutput::trigger_groups(void)
 }
 
 /*
-  periodic timer. The only need for a periodic timer is in oneshot
-  mode where we want to sustain a minimum output rate for when the
-  main loop is busy doing something like gyro calibration
-
-  A mininum output rate helps with some oneshot ESCs
+  periodic timer. This is used for oneshot and dshot modes, plus for
+  safety switch update
  */
-
 void RCOutput::timer_tick(void)
 {
+    safety_update();
+    
     uint64_t now = AP_HAL::micros64();
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
@@ -879,10 +869,19 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
             return;
         }
     }
+    
+    bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
+    
     for (uint8_t i=0; i<4; i++) {
         uint8_t chan = group.chan[i];
         if (chan != CHAN_DISABLED) {
             uint16_t pwm = period[chan];
+
+            if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
+                // safety is on, overwride pwm
+                pwm = safe_pwm[chan+chan_offset];
+            }
+            
             pwm = constrain_int16(pwm, _esc_pwm_min, _esc_pwm_max);
             uint16_t value = 2000UL * uint32_t(pwm - _esc_pwm_min) / uint32_t(_esc_pwm_max - _esc_pwm_min);
             if (value != 0) {
@@ -1257,6 +1256,130 @@ void RCOutput::serial_end(void)
         }
     }
     serial_group = nullptr;
+}
+
+/*
+  get safety switch state for Util.cpp
+ */
+AP_HAL::Util::safety_state RCOutput::_safety_switch_state(void)
+{
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        return iomcu.get_safety_switch_state();
+    }
+#endif
+    return safety_state;
+}
+
+/*
+  force the safety switch on, disabling PWM output from the IO board
+*/
+bool RCOutput::force_safety_on(void)
+{
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        return iomcu.force_safety_on();
+    }
+    return false;
+#else
+    safety_state = AP_HAL::Util::SAFETY_DISARMED;
+    return true;
+#endif
+}
+
+/*
+  force the safety switch off, enabling PWM output from the IO board
+*/
+void RCOutput::force_safety_off(void)
+{
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.force_safety_off();
+    }
+#else
+    safety_state = AP_HAL::Util::SAFETY_ARMED;
+#endif
+}
+
+/*
+  set PWM to send to a set of channels when the safety switch is
+  in the safe state
+*/
+void RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
+{
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.set_safety_pwm(chmask, period_us);
+    }
+#endif
+    for (uint8_t i=0; i<16; i++) {
+        if (chmask & (1U<<i)) {
+            safe_pwm[i] = period_us;
+        }
+    }
+}
+
+/*
+  update safety state
+ */
+void RCOutput::safety_update(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - safety_update_ms < 100) {
+        // update safety at 10Hz
+        return;
+    }
+    safety_update_ms = now;
+
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+
+    if (boardconfig) {
+        // remember mask of channels to allow with safety on
+        safety_mask = boardconfig->get_safety_mask();
+    }
+    
+#ifdef HAL_GPIO_PIN_SAFETY_IN
+    // handle safety button
+    uint16_t safety_options = 0;
+    if (boardconfig) {
+        safety_options = boardconfig->get_safety_button_options();
+    }
+    bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_IN);
+    if (!(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) &&
+        hal.util->get_soft_armed()) {
+        safety_pressed = false;
+    }
+    if (safety_state==AP_HAL::Util::SAFETY_DISARMED &&
+        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
+        safety_pressed = false;        
+    }
+    if (safety_state==AP_HAL::Util::SAFETY_ARMED &&
+        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
+        safety_pressed = false;        
+    }
+    if (safety_pressed) {
+        safety_button_counter++;
+    } else {
+        safety_button_counter = 0;
+    }
+    if (safety_button_counter == 10) {
+        // safety has been pressed for 1 second, change state
+        if (safety_state==AP_HAL::Util::SAFETY_ARMED) {
+            safety_state = AP_HAL::Util::SAFETY_DISARMED;
+        } else {
+            safety_state = AP_HAL::Util::SAFETY_ARMED;
+        }
+    }
+#elif HAL_WITH_IO_MCU
+    safety_state = _safety_switch_state();
+    iomcu.set_safety_mask(safety_mask);
+#endif
+
+#ifdef HAL_GPIO_PIN_LED_SAFETY
+    led_counter = (led_counter+1) % 16;
+    const uint16_t led_pattern = safety_state==AP_HAL::Util::SAFETY_DISARMED?0x5500:0xFFFF;
+    palWriteLine(HAL_GPIO_PIN_LED_SAFETY, (led_pattern & (1U << led_counter))?0:1);
+#endif
 }
 
 #endif // HAL_USE_PWM
