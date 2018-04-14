@@ -101,7 +101,7 @@
 #if AC_AVOID_ENABLED == ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
 #endif
-#if SPRAYER == ENABLED
+#if SPRAYER_ENABLED == ENABLED
  # include <AC_Sprayer/AC_Sprayer.h>
 #endif
 #if GRIPPER_ENABLED == ENABLED
@@ -544,7 +544,7 @@ private:
     AP_RSSI rssi;
 
     // Crop Sprayer
-#if SPRAYER == ENABLED
+#if SPRAYER_ENABLED == ENABLED
     AC_Sprayer sprayer;
 #endif
 

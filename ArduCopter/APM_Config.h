@@ -22,7 +22,7 @@
 //#define ADSB_ENABLED          DISABLED            // disable ADSB support
 //#define PRECISION_LANDING     DISABLED            // disable precision landing using companion computer or IRLock sensor
 //#define BEACON_ENABLED        DISABLED            // disable beacon support
-//#define SPRAYER               DISABLED            // disable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
+//#define SPRAYER_ENABLED       DISABLED            // disable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define WINCH_ENABLED         DISABLED            // disable winch support
 //#define GRIPPER_ENABLED       DISABLED            // disable gripper support
 //#define RPM_ENABLED           DISABLED            // disable rotations per minute sensor support
