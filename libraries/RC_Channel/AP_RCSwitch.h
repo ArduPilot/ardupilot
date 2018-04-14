@@ -82,7 +82,7 @@ protected:
 
     virtual bool in_rc_failsafe() const = 0;
 
-
+    void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag);
 
 private:

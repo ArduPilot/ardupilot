@@ -58,12 +58,35 @@ void AP_RCSwitch::do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag)
     }
 }
 
+void AP_RCSwitch::do_aux_function_relay(const uint8_t relay, bool val)
+{
+    AP_ServoRelayEvents *servorelayevents = AP::servorelayevents();
+    if (servorelayevents == nullptr) {
+        return;
+    }
+    servorelayevents->do_set_relay(relay, val);
+}
+
 void AP_RCSwitch::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {
     case CAMERA_TRIGGER:
         do_aux_function_camera_trigger(ch_flag);
         break;
+
+    case RELAY:
+        do_aux_function_relay(0, ch_flag == HIGH);
+        break;
+    case RELAY2:
+        do_aux_function_relay(1, ch_flag == HIGH);
+        break;
+    case RELAY3:
+        do_aux_function_relay(2, ch_flag == HIGH);
+        break;
+    case RELAY4:
+        do_aux_function_relay(3, ch_flag == HIGH);
+        break;
+
     default:
         gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", ch_option);
         break;
