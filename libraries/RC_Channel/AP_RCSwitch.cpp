@@ -47,6 +47,29 @@ void AP_RCSwitch::read_aux_all()
     }
 }
 
+void AP_RCSwitch::do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag)
+{
+    AP_Camera *camera = AP::camera();
+    if (camera == nullptr) {
+        return;
+    }
+    if (ch_flag == HIGH) {
+        camera->take_picture();
+    }
+}
+
+void AP_RCSwitch::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
+{
+    switch(ch_option) {
+    case CAMERA_TRIGGER:
+        do_aux_function_camera_trigger(ch_flag);
+        break;
+    default:
+        gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", ch_option);
+        break;
+    }
+}
+
 
 void AP_RCSwitch::init()
 {

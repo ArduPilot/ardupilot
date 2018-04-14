@@ -77,10 +77,13 @@ protected:
 
     void init_aux_switches();
     virtual void init_aux_function(aux_func_t ch_option, aux_switch_pos_t);
-    virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t) = 0;
+    virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t);
     virtual void reset_control_switch() = 0;
 
     virtual bool in_rc_failsafe() const = 0;
+
+
+    void do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag);
 
 private:
 
