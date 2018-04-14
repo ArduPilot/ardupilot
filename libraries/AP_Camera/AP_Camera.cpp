@@ -451,3 +451,15 @@ void AP_Camera::update_trigger()
         }
     }
 }
+
+// singleton instance
+AP_Camera *AP_Camera::_singleton;
+
+namespace AP {
+
+AP_Camera *camera()
+{
+    return AP_Camera::get_singleton();
+}
+
+}
