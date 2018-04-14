@@ -322,6 +322,10 @@ void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_s
             do_aux_function_change_mode(control_mode_t::LAND, ch_flag);
             break;
 
+        case GUIDED:
+            do_aux_function_change_mode(control_mode_t::GUIDED, ch_flag);
+            break;
+
         case PARACHUTE_ENABLE:
 #if PARACHUTE == ENABLED
             // Parachute enable/disable
