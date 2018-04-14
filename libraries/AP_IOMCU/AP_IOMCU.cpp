@@ -61,6 +61,7 @@ enum iopage {
     PAGE_PWM_INFO = 7,
     PAGE_SETUP = 50,
     PAGE_DIRECT_PWM = 54,
+    PAGE_DISARMED_PWM = 108,
 };
 
 // pending IO events to send, used as an event mask
@@ -77,6 +78,7 @@ enum ioevents {
     IOEVENT_ENABLE_SBUS,
     IOEVENT_SET_HEATER_TARGET,
     IOEVENT_SET_DEFAULT_RATE,
+    IOEVENT_SET_SAFETY_MASK,
 };
 
 // setup page registers
@@ -100,6 +102,7 @@ enum ioevents {
 #define PAGE_REG_SETUP_REBOOT_BL    10
 #define PAGE_REG_SETUP_CRC			11
 #define PAGE_REG_SETUP_SBUS_RATE    19
+#define PAGE_REG_SETUP_IGNORE_SAFETY 20 /* bitmask of surfaces to ignore the safety status */
 #define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
 
 // magic value for rebooting to bootloader
@@ -244,6 +247,13 @@ void AP_IOMCU::thread_main(void)
                 continue;
             }
         }
+
+        if (mask & EVENT_MASK(IOEVENT_SET_SAFETY_MASK)) {
+            if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_IGNORE_SAFETY, pwm_out.safety_mask)) {
+                event_failed(IOEVENT_SET_SAFETY_MASK);
+                continue;
+            }
+        }
         
         // check for regular timed events
         uint32_t now = AP_HAL::millis();
@@ -275,6 +285,13 @@ void AP_IOMCU::thread_main(void)
         if (now - last_safety_option_check_ms > 1000) {
             update_safety_options();
             last_safety_option_check_ms = now;
+        }
+
+        // update safety pwm
+        if (pwm_out.safety_pwm_set != pwm_out.safety_pwm_sent) {
+            uint8_t set = pwm_out.safety_pwm_set;
+            write_registers(PAGE_DISARMED_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm);            
+            pwm_out.safety_pwm_sent = set;
         }
     }
 }
@@ -668,6 +685,35 @@ bool AP_IOMCU::check_crc(void)
     upload_fw(fw_name);
 
     return false;
+}
+
+/*
+  set the pwm to use when safety is on
+ */
+void AP_IOMCU::set_safety_pwm(uint16_t chmask, uint16_t period_us)
+{
+    bool changed = false;
+    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+        if (chmask & (1U<<i)) {
+            if (pwm_out.safety_pwm[i] != period_us) {
+                pwm_out.safety_pwm[i] = period_us;
+                changed = true;
+            }
+        }
+    }
+    if (changed) {
+        pwm_out.safety_pwm_set++;
+    }
+}
+
+
+// set mask of channels that ignore safety state
+void AP_IOMCU::set_safety_mask(uint16_t chmask)
+{
+    if (pwm_out.safety_mask != chmask) {
+        pwm_out.safety_mask = chmask;
+        trigger_event(IOEVENT_SET_SAFETY_MASK);        
+    }
 }
 
 /*
