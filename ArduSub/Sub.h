@@ -436,6 +436,14 @@ private:
     AP_Terrain terrain{ahrs, mission, rally};
 #endif
 
+    // used to allow attitude and depth control without a position system
+    struct attitude_no_gps_struct {
+        uint32_t last_message_ms;
+        mavlink_set_attitude_target_t packet;
+    };
+
+    attitude_no_gps_struct set_attitude_target_no_gps {0};
+
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;

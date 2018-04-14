@@ -49,7 +49,27 @@ void Sub::althold_run()
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
+
+    // Check if set_attitude_target_no_gps is valid
+    if (tnow - sub.set_attitude_target_no_gps.last_message_ms < 5000) {
+        float target_yaw;
+        Quaternion(
+            set_attitude_target_no_gps.packet.q
+        ).to_euler(
+            target_roll,
+            target_pitch,
+            target_yaw
+        );
+        target_roll = degrees(target_roll);
+        target_pitch = degrees(target_pitch);
+        target_yaw = degrees(target_yaw);
+
+        attitude_control.input_euler_angle_roll_pitch_yaw(target_roll * 1e2f, target_pitch * 1e2f, target_yaw * 1e2f, true);
+        return;
+
+    } else {
+        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
+    }
 
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());

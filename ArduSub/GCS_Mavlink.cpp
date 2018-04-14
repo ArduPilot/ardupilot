@@ -1006,6 +1006,12 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         mavlink_set_attitude_target_t packet;
         mavlink_msg_set_attitude_target_decode(msg, &packet);
 
+        // ensure type_mask specifies to use attitude
+        // the thrust can be used from the altitude hold
+        if (packet.type_mask & (1<<6)) {
+            sub.set_attitude_target_no_gps = {AP_HAL::millis(), packet};
+        }
+
         // ensure type_mask specifies to use attitude and thrust
         if ((packet.type_mask & ((1<<7)|(1<<6))) != 0) {
             break;
