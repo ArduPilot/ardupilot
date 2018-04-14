@@ -401,22 +401,6 @@ void AP_RCSwitch_Copter::do_aux_function(const aux_func_t ch_option, const aux_s
 #endif
             break;
 
-        case RELAY:
-            copter.ServoRelayEvents.do_set_relay(0, ch_flag == HIGH);
-            break;
-
-        case RELAY2:
-            copter.ServoRelayEvents.do_set_relay(1, ch_flag == HIGH);
-            break;
-
-        case RELAY3:
-            copter.ServoRelayEvents.do_set_relay(2, ch_flag == HIGH);
-            break;
-
-	   case RELAY4:
-            copter.ServoRelayEvents.do_set_relay(3, ch_flag == HIGH);
-            break;
-
        case LANDING_GEAR:
             switch (ch_flag) {
                 case LOW:
