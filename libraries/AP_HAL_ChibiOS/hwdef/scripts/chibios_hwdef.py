@@ -345,7 +345,7 @@ def write_mcu_config(f):
     flash_size = get_config('FLASH_SIZE_KB', type=int)
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
     f.write('#define CRT1_AREAS_NUMBER 1\n')
-    if mcu_type in ['STM32F427xx', 'STM32F405xx']:
+    if mcu_type in ['STM32F427xx', 'STM32F407xx','STM32F405xx']:
         def_ccm_size = 64
     else:
         def_ccm_size = None
