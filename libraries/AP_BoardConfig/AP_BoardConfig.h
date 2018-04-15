@@ -121,7 +121,8 @@ public:
 #if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM)
         return instance?instance->state.pwm_count.get():4;
 #else
-        return 0;
+        // default to 16, which means all PWM channels available
+        return 16;
 #endif
     }
 
