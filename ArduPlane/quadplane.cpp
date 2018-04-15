@@ -352,6 +352,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
     AP_SUBGROUPPTR(loiter_nav, "LOIT_",  2, QuadPlane, AC_Loiter),
 
+    // @Param: TAILSIT_THSCMX
+    // @DisplayName: Maximum control throttle scaling value
+    // @Description: Maximum value of throttle scaling for tailsitter velocity scaling, reduce this value to remove low thorottle D ossilaitons 
+    // @Range: 1 5
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_THSCMX", 3, QuadPlane, tailsitter.throttle_scale_max, 5),
+	
     AP_GROUPEND
 };
 
