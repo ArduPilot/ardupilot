@@ -1101,7 +1101,7 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
  */
 void RCOutput::serial_bit_irq(void)
 {
-    uint32_t now = AP_HAL::micros();
+    systime_t now = chVTGetSystemTimeX();
     uint8_t bit = palReadLine(irq.line);
     bool send_signal = false;
 
@@ -1116,12 +1116,12 @@ void RCOutput::serial_bit_irq(void)
             send_signal = true;
         } else {
             irq.nbits = 1;
-            irq.byte_start_us = now;
+            irq.byte_start_tick = now;
             irq.bitmask = 0;
         }
     } else {
-        uint32_t dt = now - irq.byte_start_us;
-        uint8_t bitnum = (dt+(irq.bit_time_us/2)) / irq.bit_time_us;
+        systime_t dt = now - irq.byte_start_tick;
+        uint8_t bitnum = (dt+(irq.bit_time_tick/2)) / irq.bit_time_tick;
 
         if (bitnum > 10) {
             bitnum = 10;
@@ -1137,7 +1137,7 @@ void RCOutput::serial_bit_irq(void)
             irq.byteval = irq.bitmask & 0x3FF;
             irq.bitmask = 0;
             irq.nbits = 1;
-            irq.byte_start_us = now;
+            irq.byte_start_tick = now;
         }
     }
     irq.last_bit = bit;
@@ -1205,7 +1205,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     irq.nbits = 0;
     irq.bitmask = 0;
     irq.byteval = 0;
-    irq.bit_time_us = serial_group->serial.bit_time_us;
+    irq.bit_time_tick = serial_group->serial.bit_time_us;
     irq.last_bit = 0;
     irq.waiter = chThdGetSelfX();
 
