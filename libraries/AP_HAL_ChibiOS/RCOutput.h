@@ -169,7 +169,7 @@ private:
         ioline_t line;
 
         // time the current byte started
-        uint32_t byte_start_us;
+        systime_t byte_start_tick;
 
         // number of bits we have read in this byte
         uint8_t nbits;
@@ -180,8 +180,8 @@ private:
         // value of completed byte (includes start and stop bits)        
         uint16_t byteval;
 
-        // expected time per bit
-        uint32_t bit_time_us;
+        // expected time per bit in system ticks
+        systime_t bit_time_tick;
 
         // the bit value of the last bit received
         uint8_t last_bit;
