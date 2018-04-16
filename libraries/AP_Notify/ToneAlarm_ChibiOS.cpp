@@ -79,6 +79,15 @@ void ToneAlarm_ChibiOS::update()
         }
     }
 
+    // notify the user when their mode change was successful
+    if (AP_Notify::events.user_mode_change) {
+        if (AP_Notify::flags.armed) {
+            play_tune(TONE_NOTIFY_MODE_CHANGE_LOUD);
+        } else {
+            play_tune(TONE_NOTIFY_MODE_CHANGE_SOFT);
+        }
+    }
+
     // check if battery status has changed
     if (flags.failsafe_battery != AP_Notify::flags.failsafe_battery) {
         flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
