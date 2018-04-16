@@ -108,8 +108,10 @@
 #define     TONE_GPS_WARNING_TUNE               8
 #define     TONE_ARMING_FAILURE_TUNE            9
 #define     TONE_PARACHUTE_RELEASE_TUNE         10
+#define     TONE_NOTIFY_MODE_CHANGE_LOUD        11
+#define     TONE_NOTIFY_MODE_CHANGE_SOFT        12
 
-#define TONE_NUMBER_OF_TUNES 11
+#define TONE_NUMBER_OF_TUNES 13
 
 #ifdef HAL_PWM_ALARM
 
