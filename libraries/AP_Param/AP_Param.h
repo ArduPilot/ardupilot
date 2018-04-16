@@ -65,13 +65,16 @@
 // ignore the enable parameter on this group
 #define AP_PARAM_FLAG_IGNORE_ENABLE (1<<5)
 
+// always save this parameter
+#define AP_PARAM_FLAG_FORCE_SAVE    (1<<6)
+
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   6
+#define AP_PARAM_FRAME_TYPE_SHIFT   7
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)

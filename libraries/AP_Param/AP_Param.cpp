@@ -1033,6 +1033,11 @@ bool AP_Param::save(bool force_save)
         return false;
     }
 
+    // always save a parameter that is marked as force save
+    if (ginfo != nullptr && (ginfo->flags & AP_PARAM_FLAG_FORCE_SAVE)) {
+        force_save = true;
+    }
+
     // if the value is the default value then don't save
     if (phdr.type <= AP_PARAM_FLOAT) {
         float v1 = cast_to_float((enum ap_var_type)phdr.type);
