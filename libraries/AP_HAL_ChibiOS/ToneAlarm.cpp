@@ -32,7 +32,10 @@ const char* ToneAlarm::tune[TONE_NUMBER_OF_TUNES] = {
                                 "batt_war_fast:d=4,o=6,b=512:8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a",
                                 "GPS_war:d=4,o=6,b=512:a,a,a,1f#",
                                 "Arm_fail:d=4,o=4,b=512:b,a,p",
-                                "para_rel:d=16,o=6,b=512:a,g,a,g,a,g,a,g"};
+                                "para_rel:d=16,o=6,b=512:a,g,a,g,a,g,a,g",
+                                "modechangeloud:d=4,o=6,b=400:8e",
+                                "modechangesoft:d=4,o=6,b=400:8e",
+};
 
 //Tune Repeat true: play rtttl tune in loop, false: play only once
 bool ToneAlarm::tune_repeat[TONE_NUMBER_OF_TUNES] = {false,true,false,false,false,false,true,true,false,false,false};
