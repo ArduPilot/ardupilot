@@ -75,6 +75,9 @@ public:
     // set to oneshot mode
     void set_oneshot_mode(void);
 
+    // check if IO is healthy
+    bool healthy(void);
+
 private:
     AP_HAL::UARTDriver &uart;
 
@@ -194,6 +197,8 @@ private:
     uint32_t last_servo_out_us;
 
     bool corked;
+
+    bool crc_is_ok;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";

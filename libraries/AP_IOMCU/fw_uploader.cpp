@@ -436,6 +436,9 @@ bool AP_IOMCU::verify_rev3(uint32_t fw_size_local)
         debug("CRC wrong: received: 0x%x, expected: 0x%x", (unsigned)crc, (unsigned)sum);
         return false;
     }
+
+    crc_is_ok = true;
+    
     return true;
 }
 

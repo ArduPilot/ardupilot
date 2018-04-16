@@ -658,6 +658,7 @@ bool AP_IOMCU::check_crc(void)
     if (read_registers(PAGE_SETUP, PAGE_REG_SETUP_CRC, 2, (uint16_t *)&io_crc) &&
         io_crc == crc) {
         hal.console->printf("IOMCU: CRC ok\n");
+        crc_is_ok = true;
         return true;
     }
 
@@ -667,6 +668,15 @@ bool AP_IOMCU::check_crc(void)
     upload_fw(fw_name);
 
     return false;
+}
+
+/*
+  check that IO is healthy. This should be used in arming checks
+ */
+bool AP_IOMCU::healthy(void)
+{
+    // for now just check CRC
+    return crc_is_ok;
 }
 
 #endif // HAL_WITH_IO_MCU
