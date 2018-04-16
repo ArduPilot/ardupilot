@@ -533,7 +533,7 @@ void GCS_MAVLINK::handle_mission_clear_all(AP_Mission &mission, mavlink_message_
     // clear all waypoints
     if (mission.clear()) {
         // send ack
-        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_RESULT_ACCEPTED,
+        mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ACCEPTED,
                                      MAV_MISSION_TYPE_MISSION);
     }else{
         // send nack
