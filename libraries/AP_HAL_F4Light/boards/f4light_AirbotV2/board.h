@@ -167,6 +167,8 @@
 #define SERVO_PIN_5 48 // PA1
 #define SERVO_PIN_6 22 // PA8
 
+#define MOTOR_LAYOUT_DEFAULT 0
+
 #if 1
  #define HAL_CONSOLE USB_Driver // console on USB
  #define HAL_CONSOLE_PORT 0

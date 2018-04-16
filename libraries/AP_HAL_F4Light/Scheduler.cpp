@@ -584,7 +584,7 @@ void Scheduler::_print_stats(){
             if(is_zero(shed_eff)) shed_eff = eff;
             else              shed_eff = shed_eff*(1 - 1/Kf) + eff*(1/Kf);
 
-            printf("\nSched stats:\n  %% of full time: %5.2f  Efficiency %5.3f max loop time %ld\n", (task_time/10.0)/t /* in percent*/ , shed_eff, max_loop_time);
+            printf("\nSched stats: uptime %lds\n  %% of full time: %5.2f  Efficiency %5.3f max loop time %ld\n", t/1000, (task_time/10.0)/t /* in percent*/ , shed_eff, max_loop_time);
             printf("delay times: in main %5.2f including in timer %5.2f",         (delay_time/10.0)/t, (delay_int_time/10.0)/t);
             max_loop_time=0;
 
@@ -1279,8 +1279,8 @@ void SVC_Handler(){
         : "=rm" (svc_args) );
 
     Scheduler::SVC_Handler(svc_args);
-    
 }
+
 
 // svc executes on same priority as Timer7 ISR so there is no need to prevent interrupts
 void Scheduler::SVC_Handler(uint32_t * svc_args){
