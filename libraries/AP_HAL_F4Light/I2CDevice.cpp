@@ -95,7 +95,7 @@ void I2CDevice::init(){
 
     switch(_bus) {
     case 0:         // this is always internal bus
-#ifndef BOARD_I2C1_DISABLE
+#if defined(I2C1_SDA) && defined(I2C1_SCL) && !defined(BOARD_I2C1_DISABLE)
 	    _offs =0;
  #if defined(BOARD_I2C_BUS_SLOW) && BOARD_I2C_BUS_SLOW==0
             _slow=true;
@@ -103,9 +103,11 @@ void I2CDevice::init(){
 
  #if defined(BOARD_SOFT_I2C) || defined(BOARD_SOFT_I2C1)
             if(s_i2c==NULL) s_i2c = new Soft_I2C;
+            const stm32_pin_info &p_sda = PIN_MAP[_I2C1->sda_pin];
+            const stm32_pin_info &p_scl = PIN_MAP[_I2C1->scl_pin];
             s_i2c->init_hw( 
-                _I2C1->gpio_port, _I2C1->scl_pin,
-                _I2C1->gpio_port, _I2C1->sda_pin,
+                p_scl.gpio_device, p_scl.gpio_bit,
+                p_sda.gpio_device, p_sda.gpio_bit,
                 _timers[_bus]
             );
  #else
@@ -117,7 +119,7 @@ void I2CDevice::init(){
 #endif
 
     case 1:     // flexi port - I2C2
-#if !defined( BOARD_I2C2_DISABLE) &&  !defined(BOARD_HAS_UART3) // in this case I2C on FlexiPort will be bus 2
+#if defined(I2C2_SDA) && defined(I2C2_SCL) && !defined( BOARD_I2C2_DISABLE) &&  !defined(BOARD_HAS_UART3) // in this case I2C on FlexiPort will be bus 2
 
 	    _offs = 2;
  #if defined(BOARD_I2C_BUS_SLOW) && BOARD_I2C_BUS_SLOW==1
@@ -126,9 +128,11 @@ void I2CDevice::init(){
 
  #if defined(BOARD_SOFT_I2C) || defined(BOARD_SOFT_I2C2)
             if(s_i2c==NULL) s_i2c = new Soft_I2C;
+            const stm32_pin_info &p_sda = PIN_MAP[_I2C2->sda_pin];
+            const stm32_pin_info &p_scl = PIN_MAP[_I2C2->scl_pin];
             s_i2c->init_hw( 
-                _I2C2->gpio_port, _I2C2->scl_pin,
-                _I2C2->gpio_port, _I2C2->sda_pin,
+                p_scl.gpio_device, p_scl.gpio_bit,
+                p_sda.gpio_device, p_sda.gpio_bit,
                 _timers[_bus]
             );
  #else
@@ -148,9 +152,11 @@ void I2CDevice::init(){
             if(hal_param_helper->_flexi_i2c){ // move external I2C to flexi port
  #if defined(BOARD_SOFT_I2C) || defined(BOARD_SOFT_I2C3)
                 if(s_i2c==NULL) s_i2c = new Soft_I2C;
+                const stm32_pin_info &p_sda = PIN_MAP[_I2C2->sda_pin];
+                const stm32_pin_info &p_scl = PIN_MAP[_I2C2->scl_pin];
                 s_i2c->init_hw( 
-                    _I2C2->gpio_port, _I2C2->scl_pin,
-                    _I2C2->gpio_port, _I2C2->sda_pin,
+                    p_scl.gpio_device, p_scl.gpio_bit,
+                    p_sda.gpio_device, p_sda.gpio_bit,
                     _timers[_bus]
                 );
  #else
@@ -169,6 +175,10 @@ void I2CDevice::init(){
 #endif
             }        
             break;
+
+// TODO 
+#if defined(I2C3_SDA) && defined(I2C3_SCL)
+#endif
 
     default:
             return;

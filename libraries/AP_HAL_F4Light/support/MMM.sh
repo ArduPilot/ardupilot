@@ -11,129 +11,55 @@ mkdir -p $ROOT/Release/Copter
 mkdir -p $ROOT/Release/Plane
 
 
+make_copter(){
+ local BOARD=$1
+ 
+ cd $ROOT/ArduCopter
+ make f4light-clean
+ make f4light BOARD=$BOARD && (
+
+  cp $ROOT/ArduCopter/$BOARD.bin $ROOT/Release/Copter
+  cp $ROOT/ArduCopter/$BOARD.hex $ROOT/Release/Copter
+  cp $ROOT/ArduCopter/$BOARD.dfu $ROOT/Release/Copter
+  cp $ROOT/ArduCopter/${BOARD}_bl.bin $ROOT/Release/Copter
+  cp $ROOT/ArduCopter/${BOARD}_bl.dfu $ROOT/Release/Copter
+ )
+}
+
+make_plane(){
+ local BOARD=$1
+
+ cd $ROOT/ArduPlane
+ make f4light-clean
+ make f4light VERBOSE=1 BOARD=$BOARD && (
+
+ cp $ROOT/ArduPlane/$BOARD.bin $ROOT/Release/Plane
+ cp $ROOT/ArduPlane/$BOARD.hex $ROOT/Release/Plane
+ cp $ROOT/ArduPlane/$BOARD.dfu $ROOT/Release/Plane
+ cp $ROOT/ArduPlane/${BOARD}_bl.bin $ROOT/Release/Plane
+ cp $ROOT/ArduPlane/${BOARD}_bl.dfu $ROOT/Release/Plane
+ )
+
+}
+
 ( # RevoMini board
- cd $ROOT/ArduCopter
- make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_Revolution && (
-
- cp $ROOT/ArduCopter/f4light_Revolution.bin $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Revolution.hex $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Revolution.dfu $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Revolution_bl.bin $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Revolution_bl.dfu $ROOT/Release/Copter
- )
-) && (
- cd $ROOT/ArduPlane
- make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_Revolution && (
-
- cp $ROOT/ArduPlane/f4light_Revolution.bin $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Revolution.hex $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Revolution.dfu $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Revolution_bl.bin $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Revolution_bl.dfu $ROOT/Release/Plane
- )
+ make_copter "f4light_Revolution" && \
+ make_plane  "f4light_Revolution"
 ) && ( # AirBotF4 board
- cd $ROOT/ArduCopter
- make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_Airbot  && (
-
- cp $ROOT/ArduCopter/f4light_Airbot.bin $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Airbot.hex $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Airbot.dfu $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Airbot_bl.bin $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Airbot_bl.dfu $ROOT/Release/Copter
-
- make f4light-clean
-
- )
-) && (
- cd $ROOT/ArduPlane
- make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_Airbot && (
-
- cp $ROOT/ArduPlane/f4light_Airbot.bin $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Airbot.hex $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Airbot.dfu $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Airbot_bl.bin $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Airbot_bl.dfu $ROOT/Release/Plane
-
- make f4light-clean
-
- )
+ make_copter "f4light_Airbot" && \
+ make_plane  "f4light_Airbot"
 ) && ( # Cl_Racing F4 board
- cd $ROOT/ArduCopter
- make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_cl_racing  && (
-
- cp $ROOT/ArduCopter/f4light_cl_racing.bin $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_cl_racing.hex $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_cl_racing.dfu $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_cl_racing_bl.bin $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_cl_racing_bl.dfu $ROOT/Release/Copter
-
- make f4light-clean
-
- )
-) && (
- cd $ROOT/ArduPlane
- make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_Airbot && (
-
- cp $ROOT/ArduPlane/f4light_cl_racing.bin $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_cl_racing.hex $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_cl_racing.dfu $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_cl_racing_bl.bin $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_cl_racing_bl.dfu $ROOT/Release/Plane
-
- )
-) && ( # AirBotF4 board
- cd $ROOT/ArduCopter
- make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_AirbotV2  && (
-
- cp $ROOT/ArduCopter/f4light_AirbotV2.bin $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_AirbotV2.hex $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_AirbotV2.dfu $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_AirbotV2_bl.bin $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_AirbotV2_bl.dfu $ROOT/Release/Copter
-
-
- )
-) && (
- cd $ROOT/ArduPlane
- make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_AirbotV2 && (
-
- cp $ROOT/ArduPlane/f4light_AirbotV2.bin $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_AirbotV2.hex $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_AirbotV2.dfu $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_AirbotV2_bl.bin $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_AirbotV2_bl.dfu $ROOT/Release/Plane
- )
-
+ make_copter "f4light_cl_racing" && \
+ make_plane  "f4light_cl_racing"
+) && ( # AirBotV2 board
+ make_copter "f4light_AirbotV2" && \
+ make_plane  "f4light_AirbotV2"
 ) && ( # RevoMini board with SD card
- cd $ROOT/ArduCopter
- make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_Revolution_SD && (
-
- cp $ROOT/ArduCopter/f4light_Revolution_SD.bin $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Revolution_SD.hex $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Revolution_SD.dfu $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Revolution_SD_bl.bin $ROOT/Release/Copter
- cp $ROOT/ArduCopter/f4light_Revolution_SD_bl.dfu $ROOT/Release/Copter
- )
-) && (
- cd $ROOT/ArduPlane
- make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_Revolution_SD && (
-
- cp $ROOT/ArduPlane/f4light_Revolution_SD.bin $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Revolution_SD.hex $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Revolution_SD.dfu $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Revolution_SD_bl.bin $ROOT/Release/Plane
- cp $ROOT/ArduPlane/f4light_Revolution_SD_bl.dfu $ROOT/Release/Plane
- )
+ make_copter "f4light_Revolution_SD" && \
+ make_plane  "f4light_Revolution_SD"
+) && ( # MatekF405_CTR board
+ make_copter "f4light_MatekF405_CTR" && \
+ make_plane  "f4light_MatekF405_CTR"
 ) && (
  cd $ROOT
 

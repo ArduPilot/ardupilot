@@ -98,7 +98,6 @@ extern uint32_t i2c_bit_time;
  */
 typedef struct i2c_dev {
     I2C_TypeDef* I2Cx;          
-    const gpio_dev *gpio_port;        
     uint8_t sda_pin;             
     uint8_t scl_pin;             
     uint32_t clk;          
@@ -158,6 +157,7 @@ uint32_t i2c_get_operation_time(uint8_t *psr1);
 
 extern const i2c_dev* const _I2C1;
 extern const i2c_dev* const _I2C2;
+extern const i2c_dev* const _I2C3;
 
 #ifdef __cplusplus
   }

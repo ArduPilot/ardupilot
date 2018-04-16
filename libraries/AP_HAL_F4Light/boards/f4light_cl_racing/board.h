@@ -86,6 +86,13 @@
 
 //TODO add #define BOARD_HAS_UART3 ?
 
+#define I2C1_SDA PB9
+#define I2C1_SCL PB8
+
+#define I2C2_SDA PB11
+#define I2C2_SCL PB10
+
+
 //#define BOARD_I2C_BUS_INT 1    // hardware internal I2C
 #define BOARD_I2C_BUS_EXT 2  // external I2C
 #define BOARD_I2C_BUS_SLOW 2   // slow down bus with this number
@@ -164,6 +171,8 @@
 
 #define SERVO_PIN_5 105 // PB4   - buzzer
 //#define SERVO_PIN_6 22 // PA8
+
+#define MOTOR_LAYOUT_DEFAULT 3 // Cleanflight
 
  #define HAL_CONSOLE USB_Driver // console on USB
  #define HAL_CONSOLE_PORT 0

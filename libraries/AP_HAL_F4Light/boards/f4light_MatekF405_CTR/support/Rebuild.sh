@@ -8,14 +8,13 @@ export PATH=/usr/local/bin:$PATH
 echo $ROOT
 
 
-( # AirBotF4 board
+( # MatekF405_CTR board
  cd $ROOT/ArduCopter
  make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_AirbotV2
+ make f4light VERBOSE=1 BOARD=f4light_MatekF405_CTR
 ) && (
  cd $ROOT/ArduPlane
  make f4light-clean
- make f4light VERBOSE=1 BOARD=f4light_AirbotV2
+ make f4light VERBOSE=1 BOARD=f4light_MatekF405_CTR
 )
 
-# at 4e017bf5b3da4f2a9ffc2e1cc0a37b94edac2bdc
