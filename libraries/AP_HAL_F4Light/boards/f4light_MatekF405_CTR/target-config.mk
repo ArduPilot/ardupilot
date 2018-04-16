@@ -7,7 +7,7 @@
    SRAM_SIZE      := 131072
 
     BOARD_TYPE     := 70
-    BOARD_REV      := 2
+    BOARD_REV      := 8
     BOOTLOADER     := revo405_bl
     
 # Memory target-specific configuration values

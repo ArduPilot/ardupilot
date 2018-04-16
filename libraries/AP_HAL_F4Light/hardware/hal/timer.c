@@ -444,7 +444,7 @@ void timer_set_mode(const timer_dev *dev, timer_Channel channel, timer_mode mode
 
     /* TODO decide about the basic timers */
     assert_param(dev->type != TIMER_BASIC);
-    if (dev->type == TIMER_BASIC)
+    if (!dev || dev->type == TIMER_BASIC)
         return;
 
     switch (mode) {
