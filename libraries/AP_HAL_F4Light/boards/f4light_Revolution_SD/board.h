@@ -100,6 +100,11 @@
 
 #define BOARD_NR_GPIO_PINS      109
 
+#define I2C1_SDA PB9
+#define I2C1_SCL PB8
+
+#define I2C2_SDA PB11
+#define I2C2_SCL PB10
 
 #define BOARD_I2C_BUS_INT       0  // hardware I2C
 
@@ -174,6 +179,7 @@
 #define SERVO_PIN_5 48 // PA1
 #define SERVO_PIN_6 47 // PA0
 
+#define MOTOR_LAYOUT_DEFAULT 0
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 

@@ -46,8 +46,10 @@ static F4Light::I2CDeviceManager i2c_mgr_instance;
 // XXX make sure these are assigned correctly
 static USBDriver          USB_Driver(1);        // ACM
 static UARTDriver uart1Driver(_USART1); // main port
-static UARTDriver uart6Driver(_USART6); // pin 7&8(REVO)/5&6(RevoMini) of input port
 
+#if defined(BOARD_USART6_RX_PIN) && defined(BOARD_USART6_TX_PIN)
+static UARTDriver uart6Driver(_USART6); // pin 7&8(REVO)/5&6(RevoMini) of input port
+#endif
 
 
 #ifdef BOARD_HAS_UART3
@@ -66,6 +68,10 @@ static UARTDriver uart6Driver(_USART6); // pin 7&8(REVO)/5&6(RevoMini) of input 
 
 #if defined(BOARD_USART4_RX_PIN) && defined( BOARD_USART4_TX_PIN)
  static UARTDriver uart4Driver(_UART4);  // pin 5&6 of servo port
+#endif
+
+#if defined(BOARD_USART5_RX_PIN) && defined( BOARD_USART5_TX_PIN)
+ static UARTDriver uart5Driver(_UART5);  
 #endif
 
 static UART_PPM uartPPM2(1); // PPM2 input
@@ -132,47 +138,59 @@ AP_SerialManager.cpp line 159
 HAL_F4Light::HAL_F4Light() :
     AP_HAL::HAL(
         &USB_Driver,            // uartA - USB console                                         - Serial0
-        &uart6Driver,           // uartB - pin 7&8(REVO)/5&6(RevoMini) of input port - for GPS - Serial3
-        &uart1Driver,           // uartC - main port  - for telemetry                          - Serial1
 
 #if   BOARD_UARTS_LAYOUT == 1 // Revolution
 
+        &uart6Driver,           // uartB - pin 7&8(REVO)/5&6(RevoMini) of input port - for GPS - Serial3
+        &uart1Driver,           // uartC - main port  - for telemetry                          - Serial1
         &uart3Driver,           // uartD - flexi port                                          - Serial2 
         &uart4Driver,           // uartE - PWM pins 5&6                                        - Serial4
         &softDriver,            // uartF - soft UART on pins 7&8                               - Serial5 
 
 #elif BOARD_UARTS_LAYOUT == 2 // Airbot
 
+        &uart6Driver,           // uartB - pin 7&8(REVO)/5&6(RevoMini) of input port - for GPS - Serial3
+        &uart1Driver,           // uartC - main port  - for telemetry                          - Serial1
         &uart4Driver,           // uartD - PWM pins 5&6                                        - Serial2 
         &uartPPM2,              // uartE - input data from PPM2 pin                            - Serial4
         &uartPPM1,              // uartF - input data from PPM1 pin                            - Serial5 
         
 #elif BOARD_UARTS_LAYOUT == 3 // AirbotV2
 
+        &uart6Driver,           // uartB - pin 7&8(REVO)/5&6(RevoMini) of input port - for GPS - Serial3
+        &uart1Driver,           // uartC - main port  - for telemetry                          - Serial1
         &uartOSDdriver,         // uartD - OSD emulated UART                                   - Serial2
         &uart4Driver,           // uartE - PWM pins 5&6                                        - Serial4 
         &uartPPM2,              // uartF - input data from PPM2 pin                            - Serial5
 
 #elif BOARD_UARTS_LAYOUT == 4 // MiniOSD
 
+        &uart6Driver,           // uartB - pin 7&8(REVO)/5&6(RevoMini) of input port - for GPS - Serial3
+        &uart1Driver,           // uartC - main port  - for telemetry                          - Serial1
         NULL,
         NULL,
         NULL,
         
 #elif BOARD_UARTS_LAYOUT == 5 // MicroOSD
 
+        &uart6Driver,           // uartB - pin 7&8(REVO)/5&6(RevoMini) of input port - for GPS - Serial3
+        &uart1Driver,           // uartC - main port  - for telemetry                          - Serial1
         NULL,
         NULL,
         NULL,
         
-#elif BOARD_UARTS_LAYOUT == 6 // MatekF405_OSD
+#elif BOARD_UARTS_LAYOUT == 6 // MatekF405_CTR
 
-        NULL,
-        NULL,
-        NULL,
+        &uart4Driver,           // uartB - UART4 for GPS                                       - Serial3
+        &uart1Driver,           // uartC - UART1 for telemetry                                 - Serial1
+        &uartOSDdriver,         // uartD - OSD emulated UART                                   - Serial2
+        &uart3Driver,           // uartE - UART3                                               - Serial4 
+        &uart5Driver,           // uartF - UART5                                               - Serial5
         
 #elif BOARD_UARTS_LAYOUT == 7 // Cl_Racing F4
 
+        &uart6Driver,           // uartB - pin 7&8(REVO)/5&6(RevoMini) of input port - for GPS - Serial3
+        &uart1Driver,           // uartC - main port  - for telemetry                          - Serial1
         &uartOSDdriver,         // uartD - OSD emulated UART                                   - Serial2
         &uartPPM1,              // uartE - input data from PPM1 pin                            - Serial4
         NULL,                   // no uartF

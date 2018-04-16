@@ -333,7 +333,7 @@ void SystemCoreClockUpdate(void)
   SystemCoreClock >>= tmp;
 }
 
-extern void __error(uint32_t num, uint32_t pc, uint32_t lr);
+extern void __error(uint32_t num, uint32_t pc, uint32_t lr, uint32_t flag);
 
 /**
   * @brief  Configures the System clock source, PLL Multiplier and Divider factors, 
@@ -444,7 +444,7 @@ void SetSysClock(uint8_t oc)
     RCC->CR |= RCC_CR_PLLON | cr_flags;
 
 
-    // Wait till the main PLL is ready. Yes this is endless loop but this is a very early stage
+    /* Wait till the main PLL is ready */
     while((RCC->CR & RCC_CR_PLLRDY) == 0)  {  }
    
    
