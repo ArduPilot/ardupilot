@@ -64,6 +64,11 @@ public:
     void force_safety_off(void) override;
 
     /*
+      is there an ongoing attempt to force the safety
+     */
+    bool is_forcing_safety(void) override;
+
+    /*
       set PWM to send to a set of channels when the safety switch is
       in the safe state
      */

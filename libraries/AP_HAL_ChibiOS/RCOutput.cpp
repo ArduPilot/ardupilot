@@ -1302,6 +1302,18 @@ void RCOutput::force_safety_off(void)
 }
 
 /*
+  is there an ongoing attempt to force the safety
+ */
+bool RCOutput::is_forcing_safety(void)
+{
+#if HAL_WITH_IO_MCU
+    return iomcu.is_forcing_safety();
+#else
+    return false;
+#endif
+}
+
+/*
   set PWM to send to a set of channels when the safety switch is
   in the safe state
 */
