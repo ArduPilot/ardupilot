@@ -355,7 +355,7 @@ private:
 
     // last wheel encoder update times
     float wheel_encoder_last_angle_rad[WHEELENCODER_MAX_INSTANCES];     // distance in radians at time of last update to EKF
-    float wheel_encoder_last_distance_m[4];                             // distance in meters at time of last update to EKF (for reporting to GCS, use length 4 to fit the mavlink message)
+    float wheel_encoder_last_distance_m[WHEELENCODER_MAX_INSTANCES];                             // distance in meters at time of last update to EKF (for reporting to GCS, use length 4 to fit the mavlink message)
     uint32_t wheel_encoder_last_update_ms[WHEELENCODER_MAX_INSTANCES];  // system time of last ping from each encoder
     uint32_t wheel_encoder_last_ekf_update_ms;                          // system time of last encoder data push to EKF
     float wheel_encoder_rpm[WHEELENCODER_MAX_INSTANCES];                // for reporting to GCS
