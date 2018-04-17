@@ -200,6 +200,7 @@ void AP_IOMCU::thread_main(void)
                 event_failed(IOEVENT_FORCE_SAFETY_OFF);
                 continue;
             }
+            _forcing_safety = false;
         }
 
         if (mask & EVENT_MASK(IOEVENT_FORCE_SAFETY_ON)) {
@@ -207,6 +208,7 @@ void AP_IOMCU::thread_main(void)
                 event_failed(IOEVENT_FORCE_SAFETY_ON);
                 continue;
             }
+            _forcing_safety = false;
         }
 
         
@@ -530,6 +532,7 @@ AP_HAL::Util::safety_state AP_IOMCU::get_safety_switch_state(void) const
 // force safety on
 bool AP_IOMCU::force_safety_on(void)
 {
+    _forcing_safety = true;
     trigger_event(IOEVENT_FORCE_SAFETY_ON);
     return true;
 }
@@ -537,6 +540,7 @@ bool AP_IOMCU::force_safety_on(void)
 // force safety off
 void AP_IOMCU::force_safety_off(void)
 {
+    _forcing_safety = true;
     trigger_event(IOEVENT_FORCE_SAFETY_OFF);
 }
 
