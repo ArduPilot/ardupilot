@@ -608,7 +608,7 @@ uint32_t DataFlash_Class::num_dropped() const
 
 void DataFlash_Class::internal_error() const {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    abort();
+    AP_HAL::panic("Internal DataFlash error");
 #endif
 }
 
@@ -878,7 +878,11 @@ int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
         case 'Z' : len += sizeof(char[64]); break;
         case 'q' : len += sizeof(int64_t); break;
         case 'Q' : len += sizeof(uint64_t); break;
-        default: return -1;
+        default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            AP_HAL::panic("Unknown format specifier (%c)", fmt[i]);
+#endif
+            return -1;
         }
     }
     return len;
