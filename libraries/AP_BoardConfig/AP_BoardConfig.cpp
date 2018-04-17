@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_BoardConfig.h"
 #include <stdio.h>
+#include <AP_RTC/AP_RTC.h>
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -227,6 +228,8 @@ void AP_BoardConfig::init()
     // rebooting
     hal.util->set_imu_target_temp((int8_t *)&_imu_target_temperature);
 #endif
+
+    AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
 }
 
 // set default value for BRD_SAFETY_MASK
