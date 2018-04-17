@@ -185,14 +185,14 @@ void Copter::ModeThrow::run()
     if ((stage != prev_stage) || (now - last_log_ms) > 100) {
         prev_stage = stage;
         last_log_ms = now;
-        float velocity = inertial_nav.get_velocity().length();
-        float velocity_z = inertial_nav.get_velocity().z;
-        float accel = copter.ins.get_accel().length();
-        float ef_accel_z = ahrs.get_accel_ef().z;
-        bool throw_detect = (stage > Throw_Detecting) || throw_detected();
-        bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
-        bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
-        bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
+        const float velocity = inertial_nav.get_velocity().length();
+        const float velocity_z = inertial_nav.get_velocity().z;
+        const float accel = copter.ins.get_accel().length();
+        const float ef_accel_z = ahrs.get_accel_ef().z;
+        const bool throw_detect = (stage > Throw_Detecting) || throw_detected();
+        const bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
+        const bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
+        const bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
         DataFlash_Class::instance()->Log_Write(
             "THRO",
             "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk",
@@ -201,10 +201,10 @@ void Copter::ModeThrow::run()
             "QBffffbbbb",
             AP_HAL::micros64(),
             (uint8_t)stage,
-            velocity,
-            velocity_z,
-            accel,
-            ef_accel_z,
+            (double)velocity,
+            (double)velocity_z,
+            (double)accel,
+            (double)ef_accel_z,
             throw_detect,
             attitude_ok,
             height_ok,
