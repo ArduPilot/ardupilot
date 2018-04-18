@@ -286,7 +286,7 @@ class AutoTest(ABC):
 
     def get_parameter(self, name):
         self.mavproxy.send("param fetch %s\n" % name)
-        self.mavproxy.expect("%s = (.*)" % (name,))
+        self.mavproxy.expect("%s = ([0-9.]*)" % (name,))
         return float(self.mavproxy.match.group(1))
 
     #################################################
