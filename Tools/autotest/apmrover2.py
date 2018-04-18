@@ -469,6 +469,17 @@ class AutoTestRover(AutoTest):
         self.progress("RTL Mission OK")
         return True
 
+    def test_servorelayevents(self):
+        self.mavproxy.send("relay set 0 0\n")
+        off = self.get_parameter("SIM_PIN_MASK")
+        self.mavproxy.send("relay set 0 1\n")
+        on = self.get_parameter("SIM_PIN_MASK")
+        if on == off:
+            self.progress("Pin mask unchanged after relay command")
+            return False
+        self.progress("Pin mask changed after relay command")
+        return True
+
     def autotest(self):
         """Autotest APMrover2 in SITL."""
         if not self.hasInit:
@@ -541,6 +552,12 @@ class AutoTestRover(AutoTest):
 
             self.progress("Setting mode via MAV_COMMAND_DO_SET_MODE")
             if not self.do_set_mode_via_command_long():
+                failed = True
+
+            # test ServoRelayEvents:
+            self.progress("########## Test ServoRelayEvents ##########")
+            if not self.test_servorelayevents():
+                self.progress("Failed servo relay events")
                 failed = True
 
             # Throttle Failsafe
