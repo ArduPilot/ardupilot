@@ -136,9 +136,6 @@ public:
     // set_blocking_writes_all - sets block_writes on or off for all serial channels
     void set_blocking_writes_all(bool blocking);
 
-    // set_console_baud - sets the console's baud rate to the rate specified by the protocol
-    void set_console_baud(enum SerialProtocol protocol, uint8_t instance) const;
-
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -146,11 +143,16 @@ private:
     static AP_SerialManager *_instance;
     
     // array of uart info
-    struct {
+    struct UARTState {
         AP_Int8 protocol;
         AP_Int32 baud;
         AP_HAL::UARTDriver* uart;
     } state[SERIALMANAGER_NUM_PORTS];
+
+    // search through managed serial connections looking for the
+    // instance-nth UART which is running protocol protocol
+    const UARTState *find_protocol_instance(enum SerialProtocol protocol,
+                                      uint8_t instance) const;
 
     uint32_t map_baudrate(int32_t rate) const;
 
