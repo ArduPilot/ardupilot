@@ -85,6 +85,9 @@ bool AP_Baro_MS56XX::_init()
         AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
     }
 
+    // set bus speed to high
+    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+
     // high retries for init
     _dev->set_retries(10);
     
