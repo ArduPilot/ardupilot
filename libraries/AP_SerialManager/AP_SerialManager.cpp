@@ -276,10 +276,8 @@ void AP_SerialManager::init()
     }
 }
 
-// find_serial - searches available serial ports for the first instance that allows the given protocol
-//  instance should be zero if searching for the first instance, 1 for the second, etc
-//  returns uart on success, nullptr if a serial port cannot be found
-AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, uint8_t instance) const
+
+const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum SerialProtocol protocol, uint8_t instance) const
 {
     uint8_t found_instance = 0;
 
@@ -287,7 +285,7 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
     for(uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
         if (protocol_match(protocol, (enum SerialProtocol)state[i].protocol.get())) {
             if (found_instance == instance) {
-                return state[i].uart;
+                return &state[i];
             }
             found_instance++;
         }
@@ -297,25 +295,28 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
     return nullptr;
 }
 
+// find_serial - searches available serial ports for the first instance that allows the given protocol
+//  instance should be zero if searching for the first instance, 1 for the second, etc
+//  returns uart on success, nullptr if a serial port cannot be found
+AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, uint8_t instance) const
+{
+    const struct UARTState *_state = find_protocol_instance(protocol, instance);
+    if (_state == nullptr) {
+        return nullptr;
+    }
+    return _state->uart;
+}
+
 // find_baudrate - searches available serial ports for the first instance that allows the given protocol
 //  instance should be zero if searching for the first instance, 1 for the second, etc
 //  returns baudrate on success, 0 if a serial port cannot be found
 uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t instance) const
 {
-    uint8_t found_instance = 0;
-
-    // search for matching protocol
-    for(uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if (protocol_match(protocol, (enum SerialProtocol)state[i].protocol.get())) {
-            if (found_instance == instance) {
-                return map_baudrate(state[i].baud);
-            }
-            found_instance++;
-        }
+    const struct UARTState *_state = find_protocol_instance(protocol, instance);
+    if (_state == nullptr) {
+        return 0;
     }
-
-    // if we got this far we did not find the uart
-    return 0;
+    return _state->baud;
 }
 
 // get_mavlink_channel - provides the mavlink channel associated with a given protocol
@@ -360,24 +361,6 @@ void AP_SerialManager::set_blocking_writes_all(bool blocking)
     for (uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
         if (state[i].uart != nullptr) {
             state[i].uart->set_blocking_writes(blocking);
-        }
-    }
-}
-
-// set_console_baud - sets the console's baud rate to the rate specified by the protocol
-void AP_SerialManager::set_console_baud(enum SerialProtocol protocol, uint8_t instance) const
-{
-    uint8_t found_instance = 0;
-
-    // find baud rate of this protocol
-    for (uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if (protocol_match(protocol, (enum SerialProtocol)state[i].protocol.get())) {
-            if (instance == found_instance) {
-                // set console's baud rate
-                state[0].uart->begin(map_baudrate(state[i].baud));
-                return;
-            }
-            found_instance++;
         }
     }
 }
