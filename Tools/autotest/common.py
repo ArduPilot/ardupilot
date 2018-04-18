@@ -263,6 +263,13 @@ class AutoTest(ABC):
         m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
         return m.time_boot_ms * 1.0e-3
 
+    def get_sim_time_cached(self):
+        """Get SITL time."""
+        x = self.mav.messages.get("SYSTEM_TIME", None)
+        if x is None:
+            return self.get_sim_time()
+        return x.time_boot_ms * 1.0e-3
+
     def sim_location(self):
         """Return current simulator location."""
         m = self.mav.recv_match(type='SIMSTATE', blocking=True)
@@ -348,7 +355,7 @@ class AutoTest(ABC):
     def set_rc(self, chan, pwm, timeout=20):
         """Setup a simulated RC control to a PWM value"""
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             self.mavproxy.send('rc %u %u\n' % (chan, pwm))
             m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
             chan_pwm = getattr(m, "chan" + str(chan) + "_raw")

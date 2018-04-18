@@ -990,6 +990,33 @@ class AutoTestCopter(AutoTest):
 
         self.progress("CIRCLE OK for %u seconds" % holdtime)
 
+    # fly_autotune - autotune the virtual vehicle
+    def fly_autotune(self):
+
+        # hold position in loiter
+        self.mavproxy.send('mode autotune\n')
+        self.wait_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        sim_time_expected = 5000
+        deadline = tstart + sim_time_expected
+        while self.get_sim_time_cached() < deadline:
+            now = self.get_sim_time_cached()
+            m = self.mav.recv_match(type='STATUSTEXT',
+                                    blocking=True,
+                                    timeout=1)
+            if m is None:
+                continue
+            self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
+            if "AutoTune: Success" in m.text:
+                self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+                # near enough for now:
+                return
+
+        self.progress("AUTOTUNE failed (%u seconds)" %
+                      (self.get_sim_time() - tstart))
+        raise NotAchievedException()
+
     # fly_auto_test - fly mission which tests a significant number of commands
     def fly_auto_test(self):
         # Fly mission #1
@@ -1395,6 +1422,9 @@ class AutoTestCopter(AutoTest):
             # Takeoff
             self.run_test("Takeoff to test fly Square",
                           lambda: self.takeoff(10))
+
+            # AutoTune mode
+            self.run_test("Fly AUTOTUNE mode", self.fly_autotune)
 
             # Fly a square in Stabilize mode
             self.run_test("Fly a square and save WPs with CH7",
